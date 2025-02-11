@@ -33,5 +33,5 @@ WARNING: When using this feature, carefully check that the output is correct bef
 Example commands:
 ```bash
 # Update the expected output in one test file
-go test -run ^TestResolvers/metrics_sql_duckdb$ ./runtime/resolvers
+go test -run ^TestResolvers/metrics_sql_duckdb$ ./runtime/resolvers -update
 ```

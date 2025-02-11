@@ -173,7 +173,12 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 			return nil, err
 		}
 		planChange = true
-		s.logger.Named("billing").Info("new subscription created", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("plan_id", sub.Plan.ID), zap.String("plan_name", sub.Plan.Name))
+		s.logger.Named("billing").Info("new subscription created",
+			zap.String("org_id", org.ID),
+			zap.String("org_name", org.Name),
+			zap.String("plan_id", sub.Plan.ID),
+			zap.String("plan_name", sub.Plan.Name),
+		)
 	} else {
 		// schedule plan change
 		oldPlan := sub.Plan
@@ -183,7 +188,14 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 				return nil, err
 			}
 			planChange = true
-			s.logger.Named("billing").Info("plan changed", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("old_plan_id", oldPlan.ID), zap.String("old_plan_name", oldPlan.Name), zap.String("new_plan_id", sub.Plan.ID), zap.String("new_plan_name", sub.Plan.Name))
+			s.logger.Named("billing").Info("plan changed",
+				zap.String("org_id", org.ID),
+				zap.String("org_name", org.Name),
+				zap.String("old_plan_id", oldPlan.ID),
+				zap.String("old_plan_name", oldPlan.Name),
+				zap.String("new_plan_id", sub.Plan.ID),
+				zap.String("new_plan_name", sub.Plan.Name),
+			)
 		}
 	}
 
@@ -196,6 +208,13 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		// send plan changed email
 
 		if plan.PlanType == billing.TeamPlanType {
+			s.logger.Named("billing").Info("upgraded to team plan",
+				zap.String("org_id", org.ID),
+				zap.String("org_name", org.Name),
+				zap.String("plan_id", sub.Plan.ID),
+				zap.String("plan_name", sub.Plan.Name),
+			)
+
 			// special handling for team plan to send custom email
 			err = s.admin.Email.SendTeamPlanStarted(&email.TeamPlan{
 				ToEmail:          org.BillingEmail,
@@ -372,6 +391,7 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
 		LogoAssetID:                         org.LogoAssetID,
+		FaviconAssetID:                      org.FaviconAssetID,
 		CustomDomain:                        org.CustomDomain,
 		QuotaProjects:                       valOrDefault(sub.Plan.Quotas.NumProjects, org.QuotaProjects),
 		QuotaDeployments:                    valOrDefault(sub.Plan.Quotas.NumDeployments, org.QuotaDeployments),
@@ -487,6 +507,7 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
 		LogoAssetID:                         org.LogoAssetID,
+		FaviconAssetID:                      org.FaviconAssetID,
 		CustomDomain:                        org.CustomDomain,
 		QuotaProjects:                       org.QuotaProjects,
 		QuotaDeployments:                    org.QuotaDeployments,
@@ -860,6 +881,7 @@ func (s *Server) updateQuotasAndHandleBillingIssues(ctx context.Context, org *da
 		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
 		LogoAssetID:                         org.LogoAssetID,
+		FaviconAssetID:                      org.FaviconAssetID,
 		CustomDomain:                        org.CustomDomain,
 		QuotaProjects:                       valOrDefault(sub.Plan.Quotas.NumProjects, org.QuotaProjects),
 		QuotaDeployments:                    valOrDefault(sub.Plan.Quotas.NumDeployments, org.QuotaDeployments),

@@ -78,6 +78,18 @@ type ConfigProperties struct {
 	Secret string `mapstructure:"secret"`
 }
 
+func NewConfigProperties(in map[string]any) (*ConfigProperties, error) {
+	gcsConfig := &ConfigProperties{}
+	err := mapstructure.WeakDecode(in, gcsConfig)
+	if err != nil {
+		return nil, err
+	}
+	if gcsConfig.SecretJSON != "" && (gcsConfig.KeyID != "" || gcsConfig.Secret != "") {
+		return nil, errors.New("cannot provide both secretJSON and keyID/secret")
+	}
+	return gcsConfig, nil
+}
+
 func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("gcs driver can't be shared")

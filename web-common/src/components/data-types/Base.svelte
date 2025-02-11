@@ -3,7 +3,8 @@
   export let isNull = false;
   export let dark = false;
   export let truncate = false;
-  $: color = dark ? "" : "text-gray-900";
+  export let color = "text-gray-900";
+  $: color = dark ? "" : color;
 </script>
 
 <span

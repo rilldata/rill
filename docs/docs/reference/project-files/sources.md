@@ -103,7 +103,7 @@ Files that are *nested at any level* under your native `sources` directory will 
 
 **`database_url`**
  — Postgres connection string that should be used. Refer to Postgres [documentation](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING) for more details _(optional)_.
-  - If not specified in the source YAML, the `connector.postgres.database_url` connection string will need to be set when [deploying the project to Rill Cloud](/build/credentials/#setting-credentials-for-a-rill-cloud-project).
+  - If not specified in the source YAML, the `connector.postgres.database_url` connection string will need to be set when [deploying the project to Rill Cloud](/deploy/deploy-credentials#configure-environmental-variables-and-credentials-for-rill-cloud).
 
 **`duckdb`** – Specifies the raw parameters to inject into the DuckDB [`read_csv`](https://duckdb.org/docs/data/csv/overview.html), [`read_json`](https://duckdb.org/docs/data/json/overview.html) or [`read_parquet`](https://duckdb.org/docs/data/parquet/overview) statement that Rill generates internally _(optional)_. 
 
@@ -126,4 +126,4 @@ duckdb:
 ```
 
 **`dsn`** - Used to set the Snowflake connection string. For more information, refer to our [Snowflake connector page](/reference/connectors/snowflake.md) and the official [Go Snowflake Driver](https://pkg.go.dev/github.com/snowflakedb/gosnowflake#hdr-Connection_String) documentation _(optional)_.
-  - If not specified in the source YAML, the `connector.snowflake.dsn` connection string will need to be set when [deploying the project to Rill Cloud](/build/credentials/#setting-credentials-for-a-rill-cloud-project).
+  - If not specified in the source YAML, the `connector.snowflake.dsn` connection string will need to be set when [deploying the project to Rill Cloud](/deploy/deploy-credentials#configure-environmental-variables-and-credentials-for-rill-cloud).

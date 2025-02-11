@@ -91,12 +91,12 @@ function createColumnDefinitionForDimensions(
           isTimeDimension(dimensionNames?.[level], timeConfig?.timeDimension)
         ) {
           const timeGrain = getTimeGrainFromDimension(dimensionNames?.[level]);
+          const duration = timeGrainToDuration(timeGrain);
+
           const dt = addZoneOffset(
-            removeLocalTimezoneOffset(
-              new Date(value),
-              timeGrainToDuration(timeGrain),
-            ),
+            removeLocalTimezoneOffset(new Date(value), duration),
             timeConfig?.timeZone,
+            duration,
           );
           const timeFormatter = timeFormat(
             timeGrain ? TIME_GRAIN[timeGrain].d3format : "%H:%M",
@@ -153,12 +153,11 @@ function formatRowDimensionValue(
   if (isTimeDimension(dimension, timeConfig?.timeDimension)) {
     if (value === "Total" || value === "LOADING_CELL") return value;
     const timeGrain = getTimeGrainFromDimension(dimension);
+    const duration = timeGrainToDuration(timeGrain);
     const dt = addZoneOffset(
-      removeLocalTimezoneOffset(
-        new Date(value),
-        timeGrainToDuration(timeGrain),
-      ),
+      removeLocalTimezoneOffset(new Date(value), duration),
       timeConfig?.timeZone,
+      duration,
     );
     const timeFormatter = timeFormat(
       timeGrain ? TIME_GRAIN[timeGrain]?.d3format : "%H:%M",

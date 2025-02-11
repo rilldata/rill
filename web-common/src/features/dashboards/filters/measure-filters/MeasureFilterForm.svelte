@@ -19,7 +19,6 @@
   export let name: string;
   export let open: boolean;
   export let filter: MeasureFilterEntry | undefined = undefined;
-  export let onRemove: () => void;
   export let onApply: (params: {
     dimension: string;
     oldDimension: string;
@@ -56,7 +55,7 @@
     }),
   });
 
-  const { form, errors, submit, enhance, reset } = superForm(
+  const { form, errors, submit, enhance } = superForm(
     defaults(initialValues, yup(validationSchema)),
     {
       SPA: true,
@@ -94,23 +93,6 @@
       label: getDimensionDisplayName(d),
     })) ?? [];
 
-  export function handleDismiss() {
-    if (!filter) {
-      onRemove();
-    } else {
-      open = false;
-      reset({
-        data: {
-          dimension: dimensionName,
-          operation:
-            filter?.operation ?? MeasureFilterOperationOptions[0].value,
-          value1: filter?.value1 ?? "",
-          value2: filter?.value2 ?? "",
-        },
-      });
-    }
-  }
-
   function expressionIsBetween(op: MeasureFilterOperation | string) {
     return (
       isMFO(op) &&
@@ -126,9 +108,7 @@
 
 <svelte:window
   on:keydown={(e) => {
-    if (e.key === "Escape") {
-      handleDismiss();
-    } else if (e.key === "Enter") {
+    if (e.key === "Enter") {
       submit();
     }
   }}

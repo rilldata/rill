@@ -70,6 +70,18 @@ The syntax for fixed metrics is specific to DuckDB as an OLAP engine.
 
 :::
 
+### Window Functions
+
+In addition to standard metrics, it is possible to define running window calculations of your data whether you are looking to monitor a cumulative trend, smooth out fluctuations, etc.
+In the below example, bids is another measure defined in the metrics view and we are getting the previous and current date's values and averaging them. 
+```yaml
+  - display_name: bids_1day_rolling_avg
+    expression: AVG(bids)
+    requires: [bids]
+    window:
+      order: timestamp
+      frame: RANGE BETWEEN INTERVAL 1 DAY PRECEDING AND CURRENT ROW
+```
 ## Dimension Expressions
 
 To utilize an expression, replace the `column` property with `expression` and apply a non-aggregate sql expression. Common use cases would be editing fields such as `string_split(domain, '.')` or combining values `concat(domain, child_url)`.

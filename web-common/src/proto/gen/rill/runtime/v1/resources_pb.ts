@@ -604,6 +604,11 @@ export class ProjectParserState extends Message<ProjectParserState> {
   currentCommitSha = "";
 
   /**
+   * @generated from field: google.protobuf.Timestamp current_commit_on = 4;
+   */
+  currentCommitOn?: Timestamp;
+
+  /**
    * @generated from field: bool watching = 3;
    */
   watching = false;
@@ -618,6 +623,7 @@ export class ProjectParserState extends Message<ProjectParserState> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "parse_errors", kind: "message", T: ParseError, repeated: true },
     { no: 2, name: "current_commit_sha", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "current_commit_on", kind: "message", T: Timestamp },
     { no: 3, name: "watching", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
@@ -2265,6 +2271,13 @@ export class ExploreSpec extends Message<ExploreSpec> {
    */
   securityRules: SecurityRule[] = [];
 
+  /**
+   * Banner text that can be displayed in Rill Cloud.
+   *
+   * @generated from field: string banner = 18;
+   */
+  banner = "";
+
   constructor(data?: PartialMessage<ExploreSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2287,6 +2300,7 @@ export class ExploreSpec extends Message<ExploreSpec> {
     { no: 15, name: "default_preset", kind: "message", T: ExplorePreset },
     { no: 16, name: "embeds_hide_pivot", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 12, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
+    { no: 18, name: "banner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExploreSpec {
@@ -4304,13 +4318,6 @@ export class ComponentSpec extends Message<ComponentSpec> {
   output?: ComponentVariable;
 
   /**
-   * Templated string that should evaluate to a boolean.
-   *
-   * @generated from field: string show = 10;
-   */
-  show = "";
-
-  /**
    * @generated from field: bool defined_in_canvas = 6;
    */
   definedInCanvas = false;
@@ -4329,7 +4336,6 @@ export class ComponentSpec extends Message<ComponentSpec> {
     { no: 5, name: "renderer_properties", kind: "message", T: Struct },
     { no: 8, name: "input", kind: "message", T: ComponentVariable, repeated: true },
     { no: 9, name: "output", kind: "message", T: ComponentVariable },
-    { no: 10, name: "show", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "defined_in_canvas", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
@@ -4484,39 +4490,113 @@ export class Canvas extends Message<Canvas> {
  */
 export class CanvasSpec extends Message<CanvasSpec> {
   /**
+   * Display name for the canvas.
+   *
    * @generated from field: string display_name = 1;
    */
   displayName = "";
 
   /**
+   * Max width in pixels of the canvas.
+   *
    * @generated from field: uint32 max_width = 2;
    */
   maxWidth = 0;
 
   /**
+   * Horizontal gap in pixels of the canvas.
+   *
+   * @generated from field: uint32 gap_x = 9;
+   */
+  gapX = 0;
+
+  /**
+   * Vertical gap in pixels of the canvas.
+   *
+   * @generated from field: uint32 gap_y = 10;
+   */
+  gapY = 0;
+
+  /**
+   * Name of the theme to use. Only one of theme and embedded_theme can be set.
+   *
    * @generated from field: string theme = 7;
    */
   theme = "";
 
   /**
+   * Theme to use, provided inline. Only one of theme and embedded_theme can be set.
+   *
    * @generated from field: rill.runtime.v1.ThemeSpec embedded_theme = 8;
    */
   embeddedTheme?: ThemeSpec;
 
   /**
+   * List of selectable time ranges with comparison time ranges.
+   * If the list is empty, a default list should be shown.
+   * TODO: Once the canvas APIs have stabilized, rename ExploreTimeRange to a non-explore-specific name.
+   *
+   * @generated from field: repeated rill.runtime.v1.ExploreTimeRange time_ranges = 11;
+   */
+  timeRanges: ExploreTimeRange[] = [];
+
+  /**
+   * List of selectable time zones.
+   * If the list is empty, a default list should be shown.
+   * The values should be valid IANA location identifiers.
+   *
+   * @generated from field: repeated string time_zones = 12;
+   */
+  timeZones: string[] = [];
+
+  /**
+   * Indicates if filters should be enabled for the canvas.
+   *
+   * @generated from field: bool filters_enabled = 13;
+   */
+  filtersEnabled = false;
+
+  /**
+   * Preset UI state to show by default.
+   *
+   * @generated from field: rill.runtime.v1.CanvasPreset default_preset = 15;
+   */
+  defaultPreset?: CanvasPreset;
+
+  /**
+   * Variables that can be used in the canvas.
+   *
    * @generated from field: repeated rill.runtime.v1.ComponentVariable variables = 5;
    */
   variables: ComponentVariable[] = [];
 
   /**
+   * Items to render on the canvas
+   *
    * @generated from field: repeated rill.runtime.v1.CanvasItem items = 4;
    */
   items: CanvasItem[] = [];
 
   /**
+   * Layout is an untyped object pending a formal definition.
+   *
+   * @generated from field: google.protobuf.Value layout = 16;
+   */
+  layout?: Value;
+
+  /**
+   * Security rules to apply for access to the canvas.
+   *
    * @generated from field: repeated rill.runtime.v1.SecurityRule security_rules = 6;
    */
   securityRules: SecurityRule[] = [];
+
+  /**
+   * Banner text that can be displayed in Rill Cloud.
+   *
+   * @generated from field: string banner = 17;
+   */
+  banner = "";
 
   constructor(data?: PartialMessage<CanvasSpec>) {
     super();
@@ -4528,11 +4608,19 @@ export class CanvasSpec extends Message<CanvasSpec> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "max_width", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 9, name: "gap_x", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 10, name: "gap_y", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 7, name: "theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "embedded_theme", kind: "message", T: ThemeSpec },
+    { no: 11, name: "time_ranges", kind: "message", T: ExploreTimeRange, repeated: true },
+    { no: 12, name: "time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 13, name: "filters_enabled", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 15, name: "default_preset", kind: "message", T: CanvasPreset },
     { no: 5, name: "variables", kind: "message", T: ComponentVariable, repeated: true },
     { no: 4, name: "items", kind: "message", T: CanvasItem, repeated: true },
+    { no: 16, name: "layout", kind: "message", T: Value },
     { no: 6, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
+    { no: 17, name: "banner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasSpec {
@@ -4657,6 +4745,64 @@ export class CanvasItem extends Message<CanvasItem> {
 }
 
 /**
+ * @generated from message rill.runtime.v1.CanvasPreset
+ */
+export class CanvasPreset extends Message<CanvasPreset> {
+  /**
+   * Time range for the explore.
+   * It corresponds to the `range` property of the explore's `time_ranges`.
+   * If not found in `time_ranges`, it should be added to the list.
+   *
+   * @generated from field: optional string time_range = 1;
+   */
+  timeRange?: string;
+
+  /**
+   * Comparison mode.
+   * TODO: Once the canvas APIs have stabilized, rename ExploreComparisonMode to a non-explore-specific name.
+   *
+   * @generated from field: rill.runtime.v1.ExploreComparisonMode comparison_mode = 2;
+   */
+  comparisonMode = ExploreComparisonMode.UNSPECIFIED;
+
+  /**
+   * If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use.
+   *
+   * @generated from field: optional string comparison_dimension = 8;
+   */
+  comparisonDimension?: string;
+
+  constructor(data?: PartialMessage<CanvasPreset>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.CanvasPreset";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "time_range", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "comparison_mode", kind: "enum", T: proto3.getEnumType(ExploreComparisonMode) },
+    { no: 8, name: "comparison_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasPreset {
+    return new CanvasPreset().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CanvasPreset {
+    return new CanvasPreset().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CanvasPreset {
+    return new CanvasPreset().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CanvasPreset | PlainMessage<CanvasPreset> | undefined, b: CanvasPreset | PlainMessage<CanvasPreset> | undefined): boolean {
+    return proto3.util.equals(CanvasPreset, a, b);
+  }
+}
+
+/**
  * API defines a custom operation for querying data stored in Rill.
  *
  * @generated from message rill.runtime.v1.API
@@ -4730,6 +4876,16 @@ export class APISpec extends Message<APISpec> {
    */
   openapiResponseSchema?: Struct;
 
+  /**
+   * @generated from field: repeated rill.runtime.v1.SecurityRule security_rules = 6;
+   */
+  securityRules: SecurityRule[] = [];
+
+  /**
+   * @generated from field: bool skip_nested_security = 7;
+   */
+  skipNestedSecurity = false;
+
   constructor(data?: PartialMessage<APISpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4743,6 +4899,8 @@ export class APISpec extends Message<APISpec> {
     { no: 3, name: "openapi_summary", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "openapi_parameters", kind: "message", T: Struct, repeated: true },
     { no: 5, name: "openapi_response_schema", kind: "message", T: Struct },
+    { no: 6, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
+    { no: 7, name: "skip_nested_security", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): APISpec {

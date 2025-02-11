@@ -6,13 +6,15 @@
     isChartComponentType,
     type CanvasComponentObj,
   } from "@rilldata/web-common/features/canvas/components/util";
+  import AlignmentInput from "@rilldata/web-common/features/canvas/inspector/AlignmentInput.svelte";
   import ChartTypeSelector from "@rilldata/web-common/features/canvas/inspector/ChartTypeSelector.svelte";
   import MarkSelector from "@rilldata/web-common/features/canvas/inspector/MarkSelector.svelte";
   import MetricSelectorDropdown from "@rilldata/web-common/features/canvas/inspector/MetricSelectorDropdown.svelte";
+  import MultiFieldInput from "@rilldata/web-common/features/canvas/inspector/MultiFieldInput.svelte";
+  import SingleFieldInput from "@rilldata/web-common/features/canvas/inspector/SingleFieldInput.svelte";
   import { type V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
   import type { CanvasComponentType } from "../components/types";
-  import FieldSelectorDropdown from "./FieldSelectorDropdown.svelte";
   import PositionalFieldConfig from "./PositionalFieldConfig.svelte";
 
   export let component: CanvasComponentObj;
@@ -54,7 +56,6 @@
             textClass="text-sm"
             size="sm"
             labelGap={2}
-            optional={!!config.optional}
             label={config.label ?? key}
             bind:value={localParamValues[key]}
             onBlur={async () => {
@@ -71,7 +72,7 @@
 
           <!-- MEASURE / DIMENSION -->
         {:else if metricsView && (config.type === "measure" || config.type === "dimension")}
-          <FieldSelectorDropdown
+          <SingleFieldInput
             label={config.label ?? key}
             metricName={metricsView}
             id={key}
@@ -84,8 +85,7 @@
 
           <!-- MULTIPLE MEASURE / MULTIPLE DIMENSION -->
         {:else if metricsView && (config.type === "multi_measures" || config.type === "multi_dimensions")}
-          <FieldSelectorDropdown
-            multi
+          <MultiFieldInput
             label={config.label ?? key}
             metricName={metricsView}
             id={key}
@@ -99,12 +99,7 @@
           <!-- BOOLEAN SWITCH -->
         {:else if config.type === "boolean"}
           <div class="flex items-center justify-between py-2">
-            <InputLabel
-              small
-              label={config.label ?? key}
-              optional={!!config.optional}
-              id={key}
-            />
+            <InputLabel small label={config.label ?? key} id={key} />
             <Switch
               bind:checked={localParamValues[key]}
               on:click={async () => {
@@ -116,29 +111,42 @@
 
           <!-- TEXT AREA -->
         {:else if config.type === "textArea"}
-          <InputLabel
-            small
-            label={config.label ?? key}
-            optional={!!config.optional}
-            id={key}
-          />
-          <textarea
-            class="w-full p-2 border border-gray-300 rounded-sm"
-            rows="4"
-            bind:value={localParamValues[key]}
-            on:blur={async () => {
-              component.updateProperty(key, localParamValues[key]);
-            }}
-            placeholder={config.label ?? key}
-          />
+          <div class="flex flex-col gap-y-2">
+            <InputLabel
+              hint={config?.description}
+              small
+              label={config.label ?? key}
+              id={key}
+            />
+            <textarea
+              class="w-full p-2 border border-gray-300 rounded-sm"
+              rows="8"
+              bind:value={localParamValues[key]}
+              on:blur={async () => {
+                component.updateProperty(key, localParamValues[key]);
+              }}
+              placeholder={config.label ?? key}
+            />
+          </div>
 
+          <!-- TEXT AREA -->
+        {:else if config.type === "alignment"}
+          <AlignmentInput
+            {key}
+            label={config.label ?? key}
+            position={localParamValues[key]}
+            onChange={(updatedPosition) => {
+              localParamValues[key] = updatedPosition;
+              component.updateProperty(key, updatedPosition);
+            }}
+          />
           <!-- POSITIONAL CONFIG -->
         {:else if metricsView && config.type === "positional"}
           <PositionalFieldConfig
             {key}
             {config}
             {metricsView}
-            value={localParamValues[key] || {}}
+            fieldConfig={localParamValues[key] || {}}
             onChange={(updatedConfig) => {
               localParamValues[key] = updatedConfig;
               component.updateProperty(key, updatedConfig);

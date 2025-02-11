@@ -2,7 +2,9 @@ package duckdb
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"maps"
 	"strings"
 
@@ -14,13 +16,15 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 )
 
-type s3InputProps struct {
+var errGCSUsesNativeCreds = errors.New("GCS uses native credentials")
+
+type objectStoreInputProps struct {
 	Path   string             `mapstructure:"path"`
 	Format drivers.FileFormat `mapstructure:"format"`
 	DuckDB map[string]any     `mapstructure:"duckdb"`
 }
 
-func (p *s3InputProps) Validate() error {
+func (p *objectStoreInputProps) Validate() error {
 	if p.Path == "" {
 		return fmt.Errorf("missing property `path`")
 	}
@@ -45,6 +49,10 @@ func (e *objectStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.M
 	clone := *opts
 	newInputProps, err := e.modelInputProperties(opts.ModelName, opts.InputConnector, opts.InputHandle, opts.InputProperties)
 	if err != nil {
+		if errors.Is(err, errGCSUsesNativeCreds) {
+			e := &objectStoreToSelfExecutorNonNative{c: e.c}
+			return e.Execute(ctx, opts)
+		}
 		return nil, err
 	}
 	clone.InputProperties = newInputProps
@@ -56,7 +64,7 @@ func (e *objectStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.M
 }
 
 func (e *objectStoreToSelfExecutor) modelInputProperties(model, inputConnector string, inputHandle drivers.Handle, inputProps map[string]any) (map[string]any, error) {
-	parsed := &s3InputProps{}
+	parsed := &objectStoreInputProps{}
 	if err := mapstructure.WeakDecode(inputProps, parsed); err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
 	}
@@ -110,10 +118,13 @@ func (e *objectStoreToSelfExecutor) modelInputProperties(model, inputConnector s
 		m.PreExec = sb.String()
 	case "gcs":
 		// GCS works via S3 compatibility mode
-		gcsConfig := &gcs.ConfigProperties{}
-		err := mapstructure.WeakDecode(config, gcsConfig)
+		gcsConfig, err := gcs.NewConfigProperties(config)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse s3 config properties: %w", err)
+			return nil, err
+		}
+		// If no credentials are provided we assume that the user wants to use the native credentials
+		if gcsConfig.SecretJSON != "" || (gcsConfig.KeyID == "" && gcsConfig.Secret == "" && gcsConfig.SecretJSON == "") {
+			return nil, errGCSUsesNativeCreds
 		}
 		var sb strings.Builder
 		sb.WriteString("CREATE OR REPLACE TEMPORARY SECRET ")
@@ -164,4 +175,80 @@ func (e *objectStoreToSelfExecutor) modelInputProperties(model, inputConnector s
 		return nil, err
 	}
 	return propsMap, nil
+}
+
+// objectStoreToSelfExecutorNonNative is a non-native implementation of objectStoreToSelfExecutor.
+// It uses Rill's own connectors instead of duckdb's native connectors.
+type objectStoreToSelfExecutorNonNative struct {
+	c *connection
+}
+
+func (e *objectStoreToSelfExecutorNonNative) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
+	parsed := &objectStoreInputProps{}
+	if err := mapstructure.WeakDecode(opts.InputProperties, parsed); err != nil {
+		return nil, fmt.Errorf("failed to parse input properties: %w", err)
+	}
+	if err := parsed.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid input properties: %w", err)
+	}
+
+	store, ok := opts.InputHandle.AsObjectStore()
+	if !ok {
+		return nil, fmt.Errorf("input handle is not an object store")
+	}
+
+	iter, err := store.DownloadFiles(ctx, opts.InputProperties)
+	if err != nil {
+		return nil, err
+	}
+
+	var (
+		res           *drivers.ModelResult
+		resErr        error
+		appendToTable = false
+	)
+	var format string
+	if parsed.Format != "" {
+		format = fmt.Sprintf(".%s", parsed.Format)
+	} else {
+		format = fileutil.FullExt(parsed.Path)
+	}
+	for {
+		files, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return nil, err
+		}
+		m := &ModelInputProperties{}
+		from, err := sourceReader(files, format, parsed.DuckDB)
+		if err != nil {
+			return nil, err
+		}
+		m.SQL = "SELECT * FROM " + from
+		propsMap := make(map[string]any)
+		if err := mapstructure.Decode(m, &propsMap); err != nil {
+			return nil, err
+		}
+		opts.InputProperties = propsMap
+
+		if appendToTable {
+			opts.Incremental = true
+			opts.IncrementalRun = true
+			opts.PreviousResult = res
+		}
+		appendToTable = true
+		executor := &selfToSelfExecutor{c: e.c}
+		res, resErr = executor.Execute(ctx, opts)
+		if resErr != nil {
+			return nil, resErr
+		}
+	}
+	if res == nil && resErr == nil {
+		// the iterator returns an error if no files are found
+		// this should never happen
+		return nil, fmt.Errorf("no result")
+	}
+	return res, resErr
 }

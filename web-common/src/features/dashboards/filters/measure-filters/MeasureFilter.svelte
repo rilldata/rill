@@ -23,18 +23,13 @@
   export let allDimensions: MetricsViewSpecDimensionV2[];
 
   let open = !filter;
-  let form: MeasureFilterForm;
 </script>
 
 <Popover.Root
   bind:open
   onOpenChange={(open) => {
-    if (!open) {
-      // Clicking outside a menu triggers a transition
-      // Wait for that transition to finish before dismissing the pill
-      setTimeout(() => {
-        form.handleDismiss();
-      }, 60);
+    if (!open && !filter) {
+      onRemove();
     }
   }}
   preventScroll
@@ -80,14 +75,12 @@
 
   {#if open}
     <MeasureFilterForm
-      bind:this={form}
-      {dimensionName}
-      {name}
       bind:open
+      {name}
       {filter}
-      {onRemove}
-      {onApply}
+      {dimensionName}
       {allDimensions}
+      {onApply}
     />
   {/if}
 </Popover.Root>

@@ -12,10 +12,10 @@ export interface ImageSpec extends ComponentCommonProperties {
 
 export class ImageComponent extends BaseCanvasComponent<ImageSpec> {
   minSize = { width: 1, height: 1 };
-  defaultSize = { width: 5, height: 5 };
+  defaultSize = { width: 2, height: 2 };
 
   constructor(
-    fileArtifact: FileArtifact,
+    fileArtifact: FileArtifact | undefined = undefined,
     path: (string | number)[] = [],
     initialSpec: Partial<ImageSpec> = {},
   ) {

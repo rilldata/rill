@@ -1,77 +1,75 @@
 <script lang="ts">
-  import { page } from "$app/stores";
-  import { createAdminServiceGetOrganization } from "@rilldata/web-admin/client";
+  import { type V1OrganizationPermissions } from "@rilldata/web-admin/client";
+  import Tab from "@rilldata/web-admin/components/nav/Tab.svelte";
+  import {
+    width,
+    position,
+  } from "@rilldata/web-admin//components/nav/Tab.svelte";
 
-  $: ({
-    url: { pathname },
-    params: { organization },
-  } = $page);
+  export let organization: string;
+  export let organizationPermissions: V1OrganizationPermissions;
+  export let pathname: string;
 
-  // Get the list of tabs to display, depending on the user's permissions
-  $: tabsQuery = createAdminServiceGetOrganization(organization, {
-    query: {
-      select: (data) => {
-        let tabs = [
-          {
-            route: `/${organization}`,
-            label: "Projects",
-          },
-        ];
-
-        if (data.permissions.manageOrgMembers) {
-          tabs.push({
-            route: `/${organization}/-/users`,
-            label: "Users",
-          });
-        }
-
-        if (data.permissions.manageOrg) {
-          tabs.push({
-            route: `/${organization}/-/settings`,
-            label: "Settings",
-          });
-        }
-
-        return tabs;
-      },
+  $: tabs = [
+    {
+      route: `/${organization}`,
+      label: "Overview",
+      hasPermission: true,
     },
-  });
+    {
+      route: `/${organization}/-/users`,
+      label: "Users",
+      hasPermission: organizationPermissions.manageOrgMembers,
+    },
+    {
+      route: `/${organization}/-/settings`,
+      label: "Settings",
+      hasPermission: organizationPermissions.manageOrg,
+    },
+  ];
 
-  $: tabs = $tabsQuery.data;
-  // 1st entry is always the default page. so findLastIndex will make sure the correct page is matched.
+  $: showTabs =
+    organizationPermissions.manageOrg ||
+    organizationPermissions.manageOrgMembers;
+
   $: selectedIndex = tabs?.findLastIndex((t) => pathname.startsWith(t.route));
 </script>
 
-<!-- Hide the tabs when there is only one entry -->
-{#if tabs?.length && tabs?.length > 1}
-  <nav>
-    {#each tabs as tab, i (tab.route)}
-      <a href={tab.route} class:selected={selectedIndex === i}>
-        {tab.label}
-      </a>
-    {/each}
-  </nav>
-{:else}
-  <!-- Add a border to keep things consistent. It is cleaner to handle this here. -->
-  <div class="border-b"></div>
-{/if}
+<div>
+  {#if showTabs}
+    <nav>
+      {#each tabs as tab, i (tab.route)}
+        {#if tab.hasPermission}
+          <Tab
+            route={tab.route}
+            label={tab.label}
+            selected={selectedIndex === i}
+            {organization}
+          />
+        {/if}
+      {/each}
+    </nav>
+  {/if}
+  {#if $width && $position}
+    <span
+      style:width="{$width}px"
+      style:transform="translateX({$position}px) "
+    />
+  {/if}
+</div>
 
 <style lang="postcss">
-  a {
-    @apply p-2 flex gap-x-1 items-center;
-    @apply rounded-sm text-gray-500;
-    @apply text-xs font-medium justify-center;
-  }
-
-  .selected {
-    @apply text-gray-900;
-  }
-
-  a:hover {
-    @apply bg-slate-100 text-gray-700;
+  div {
+    @apply border-b pt-1;
+    @apply gap-y-[3px] flex flex-col;
   }
 
   nav {
-    @apply flex gap-x-6 px-[17px] border-b pt-1 pb-[3px];
+    @apply flex w-fit;
+    @apply gap-x-3 px-[17px];
+  }
+
+  span {
+    @apply h-[3px] bg-primary-500 rounded transition-all;
   }
 </style>

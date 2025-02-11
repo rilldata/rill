@@ -221,13 +221,19 @@ func NewDriverResolverResult(result *drivers.Result) ResolverResult {
 }
 
 type driverResolverResult struct {
-	rows *drivers.Result
+	rows     *drivers.Result
+	closeErr error
 }
 
 var _ ResolverResult = &driverResolverResult{}
 
 // Close implements ResolverResult.
 func (r *driverResolverResult) Close() error {
+	if r.closeErr != nil {
+		return r.closeErr
+	}
+	// it is okay to call Close multiple times
+	// so we don't need to track if it was already called
 	return r.rows.Close()
 }
 
@@ -239,6 +245,7 @@ func (r *driverResolverResult) Schema() *runtimev1.StructType {
 // Next implements ResolverResult.
 func (r *driverResolverResult) Next() (map[string]any, error) {
 	if !r.rows.Next() {
+		r.closeErr = r.rows.Close()
 		return nil, io.EOF
 	}
 	row := make(map[string]any)
@@ -251,6 +258,9 @@ func (r *driverResolverResult) Next() (map[string]any, error) {
 
 // MarshalJSON implements ResolverResult.
 func (r *driverResolverResult) MarshalJSON() ([]byte, error) {
+	defer func() {
+		r.closeErr = r.rows.Close()
+	}()
 	var out []map[string]any
 	for r.rows.Next() {
 		row := make(map[string]any)

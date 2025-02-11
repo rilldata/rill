@@ -19,10 +19,10 @@ export type ChartSpec = ComponentFilterProperties &
 
 export class ChartComponent extends BaseCanvasComponent<ChartSpec> {
   minSize = { width: 4, height: 4 };
-  defaultSize = { width: 12, height: 8 };
+  defaultSize = { width: 6, height: 4 };
 
   constructor(
-    fileArtifact: FileArtifact,
+    fileArtifact: FileArtifact | undefined = undefined,
     path: (string | number)[] = [],
     initialSpec: Partial<ChartSpec> = {},
   ) {
@@ -30,7 +30,6 @@ export class ChartComponent extends BaseCanvasComponent<ChartSpec> {
       metrics_view: "",
       title: "",
       description: "",
-      time_range: "P1D",
     };
     super(fileArtifact, path, defaultSpec, initialSpec);
   }
@@ -47,6 +46,7 @@ export class ChartComponent extends BaseCanvasComponent<ChartSpec> {
         y: { type: "positional", label: "Y-axis" },
         color: { type: "mark", label: "Color", meta: { type: "color" } },
         tooltip: { type: "tooltip", label: "Tooltip", showInUI: false },
+        vl_config: { type: "config", showInUI: false },
         ...commonOptions,
       },
       filter: getFilterOptions(false),
@@ -68,7 +68,6 @@ export class ChartComponent extends BaseCanvasComponent<ChartSpec> {
         type: "quantitative",
         field: measure,
       },
-      time_range: "PT24H",
     };
   }
 }

@@ -20,7 +20,7 @@ func PullCmd(ch *cmdutil.Helper) *cobra.Command {
 	var projectPath, projectName, environment string
 
 	pullCmd := &cobra.Command{
-		Use:   "pull",
+		Use:   "pull [<project-name>]",
 		Short: "Pull cloud credentials into local .env file",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// If projectPath is provided, normalize it
@@ -30,6 +30,10 @@ func PullCmd(ch *cmdutil.Helper) *cobra.Command {
 				if err != nil {
 					return err
 				}
+			}
+
+			if len(args) > 0 {
+				projectName = args[0]
 			}
 
 			// Parse and verify the project directory
@@ -111,7 +115,7 @@ func PullCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	pullCmd.Flags().StringVar(&projectPath, "path", ".", "Project directory")
 	pullCmd.Flags().StringVar(&projectName, "project", "", "Cloud project name (will attempt to infer from Git remote if not provided)")
-	pullCmd.Flags().StringVar(&environment, "environment", "", "Optional environment to resolve for (options: dev, prod)")
+	pullCmd.Flags().StringVar(&environment, "environment", "dev", "Environment to resolve for (options: dev, prod)")
 
 	return pullCmd
 }

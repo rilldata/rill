@@ -48,7 +48,7 @@
 
 <div
   style:height="{height}px"
-  class="px-2 border rounded-[20px] items-center justify-center inline-flex shrink-0 {getColorClass(
+  class="px-2 w-fit border rounded-[20px] items-center justify-center inline-flex shrink-0 {getColorClass(
     color,
   )} {className}"
 >

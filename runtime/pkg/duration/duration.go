@@ -114,6 +114,59 @@ func ParseISO8601(from string) (Duration, error) {
 	return d, nil
 }
 
+// ValidateISO8601 is a wrapper around ParseISO8601 with additional validation:
+// a) that the duration does not have seconds granularity,
+// b) if onlyStandard is true, that the duration does not use any of the Rill-specific extensions (such as year-to-date).
+// c) if onlySingular is true, that the duration does not consist of more than one component (e.g. P2Y is valid, P2Y3M is not).
+func ValidateISO8601(isoDuration string, onlyStandard, onlyOneComponent bool) error {
+	d, err := ParseISO8601(isoDuration)
+	if err != nil {
+		return err
+	}
+
+	sd, ok := d.(StandardDuration)
+	if !ok {
+		if onlyStandard {
+			return fmt.Errorf("only standard durations are allowed")
+		}
+		return nil
+	}
+
+	if sd.Second != 0 {
+		return fmt.Errorf("durations with seconds are not allowed")
+	}
+
+	if onlyOneComponent {
+		n := 0
+		if sd.Year != 0 {
+			n++
+		}
+		if sd.Month != 0 {
+			n++
+		}
+		if sd.Week != 0 {
+			n++
+		}
+		if sd.Day != 0 {
+			n++
+		}
+		if sd.Hour != 0 {
+			n++
+		}
+		if sd.Minute != 0 {
+			n++
+		}
+		if sd.Second != 0 {
+			n++
+		}
+		if n > 1 {
+			return fmt.Errorf("only one component is allowed")
+		}
+	}
+
+	return nil
+}
+
 // StandardDuration represents an ISO8601 duration with Rill-specific extensions.
 // See ParseISO8601 for details.
 type StandardDuration struct {

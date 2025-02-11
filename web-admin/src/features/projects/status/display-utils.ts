@@ -4,7 +4,6 @@ import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelt
 import InfoCircleFilled from "@rilldata/web-common/components/icons/InfoCircleFilled.svelte";
 import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
 import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
 
 export type StatusDisplay = {
   icon: any; // SvelteComponent
@@ -51,19 +50,6 @@ export const deploymentChipDisplays: Record<V1DeploymentStatus, StatusDisplay> =
       wrapperClass: "bg-primary-50 border-primary-300",
     },
   };
-
-export function prettyReconcileStatus(status: V1ReconcileStatus) {
-  switch (status) {
-    case V1ReconcileStatus.RECONCILE_STATUS_IDLE:
-      return "Idle";
-    case V1ReconcileStatus.RECONCILE_STATUS_PENDING:
-      return "Pending";
-    case V1ReconcileStatus.RECONCILE_STATUS_RUNNING:
-      return "Running";
-    case V1ReconcileStatus.RECONCILE_STATUS_UNSPECIFIED:
-      return "Unspecified";
-  }
-}
 
 export function getResourceKindTagColor(kind: string) {
   switch (kind) {

@@ -159,6 +159,10 @@ func (s *Server) assetHandler(w http.ResponseWriter, r *http.Request) error {
 		w.Header().Set("Content-Type", "image/jpeg")
 	case ".svg":
 		w.Header().Set("Content-Type", "image/svg+xml")
+	case ".gif":
+		w.Header().Set("Content-Type", "image/gif")
+	case ".ico":
+		w.Header().Set("Content-Type", "image/x-icon")
 	default:
 		w.Header().Set("Content-Type", "application/octet-stream")
 	}
@@ -280,7 +284,7 @@ func (s *Server) UploadProjectAssets(ctx context.Context, req *adminv1.UploadPro
 	if proj.Subpath != "" {
 		archivePath = filepath.Join(archivePath, proj.Subpath)
 	}
-	err = archive.Create(ctx, files, archivePath, assetResp.SignedUrl, assetResp.SigningHeaders)
+	err = archive.CreateAndUpload(ctx, files, archivePath, assetResp.SignedUrl, assetResp.SigningHeaders)
 	if err != nil {
 		return nil, err
 	}
@@ -322,7 +326,7 @@ func gitToFilesList(gitPath, repo, branch, subpath, token string) ([]drivers.Dir
 	var entries []drivers.DirEntry
 	err = doublestar.GlobWalk(srcProjDir, "**", func(p string, d fs.DirEntry) error {
 		// Ignore unnecessary paths
-		if drivers.IsIgnored(p, nil) {
+		if drivers.IsIgnored(path.Join(string(filepath.Separator), p), nil) {
 			return nil
 		}
 

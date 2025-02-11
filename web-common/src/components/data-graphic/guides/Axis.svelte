@@ -20,7 +20,7 @@ This component will draw an axis on the specified side.
   export let fontSize: number | undefined = undefined;
   export let placement = "middle";
 
-  export let labelColor = "fill-gray-600 dark:fill-gray-400";
+  export let labelColor = "fill-gray-600";
   export let numberKind: NumberKind = NumberKind.ANY;
 
   // superlabel properties
@@ -196,7 +196,7 @@ This component will draw an axis on the specified side.
     {#if showTicks}
       <!-- tick mark -->
       <line
-        class="stroke-gray-400 dark:stroke-gray-600"
+        class="stroke-gray-400"
         x1={tickPlacement.x1}
         x2={tickPlacement.x2}
         y1={tickPlacement.y1}

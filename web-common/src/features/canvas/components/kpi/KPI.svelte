@@ -15,68 +15,50 @@
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
   import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { extent } from "d3-array";
   import type { KPISpec } from ".";
-  import { useMetricsViewSpecMeasure } from "../selectors";
   import {
     useKPIComparisonTotal,
     useKPISparkline,
     useKPITotals,
+    validateKPISchema,
   } from "./selector";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
 
   const ctx = getCanvasStateManagers();
+  const {
+    spec,
+    timeControls: { showTimeComparison },
+  } = ctx.canvasEntity;
 
   let containerWidth: number;
   let containerHeight: number;
 
-  $: instanceId = $runtime?.instanceId;
   $: kpiProperties = rendererProperties as KPISpec;
 
   $: ({
     metrics_view: metricsViewName,
     measure: measureName,
-    time_range: timeRange,
     sparkline: showSparkline,
     comparison_range: comparisonTimeRange,
   } = kpiProperties);
 
-  $: measureQuery = useMetricsViewSpecMeasure(
-    instanceId,
-    metricsViewName,
-    measureName,
-  );
+  $: schema = validateKPISchema(ctx, kpiProperties);
+  $: measure = spec.getMeasureForMetricView(measureName, metricsViewName);
 
-  $: measure = $measureQuery?.data;
-
-  $: measureValue = useKPITotals(
-    ctx,
-    instanceId,
-    metricsViewName,
-    measureName,
-    timeRange,
-  );
+  $: measureValue = useKPITotals(ctx, kpiProperties, $schema.isValid);
 
   $: comparisonValue = useKPIComparisonTotal(
     ctx,
-    instanceId,
-    metricsViewName,
-    measureName,
-    comparisonTimeRange,
+    kpiProperties,
+    $schema.isValid,
   );
+  $: showComparison = $showTimeComparison || comparisonTimeRange;
 
-  $: sparkline = useKPISparkline(
-    ctx,
-    instanceId,
-    metricsViewName,
-    measureName,
-    timeRange,
-    undefined,
-  );
-
+  $: sparkline = useKPISparkline(ctx, kpiProperties, $schema.isValid);
   $: sparkData = $sparkline?.data || [];
+  $: isEmptySparkline = sparkData.every((y) => y[measureName] === null);
 
   const focusedAreaGradient: [string, string] = [
     MainAreaColorGradientDark,
@@ -84,10 +66,10 @@
   ];
 
   $: [yMin, yMax] = extent(sparkData, (d) => d[measureName]);
-  $: [xMin, xMax] = extent(sparkData, (d) => d["ts"]);
+  $: [xMin, xMax] = extent(sparkData, (d) => d["ts_position"]);
 
-  $: measureValueFormatter = measure
-    ? createMeasureValueFormatter<null>(measure, "big-number")
+  $: measureValueFormatter = $measure
+    ? createMeasureValueFormatter<null>($measure, "big-number")
     : () => "no data";
 
   $: measureValueFormatted = $measureValue.data
@@ -101,7 +83,14 @@
       ? ($measureValue.data - $comparisonValue.data) / $comparisonValue.data
       : undefined;
 
-  $: measureIsPercentage = measure?.formatPreset === FormatPreset.PERCENTAGE;
+  $: measureIsPercentage = $measure?.formatPreset === FormatPreset.PERCENTAGE;
+
+  $: sparklineHeight =
+    containerHeight -
+    (!showComparison ||
+    (comparisonValue && $comparisonValue?.data === undefined)
+      ? 80
+      : 104);
 
   function getFormattedDiff(comparisonValue) {
     if (!$measureValue.data) return "";
@@ -110,33 +99,20 @@
   }
 </script>
 
-{#if measure}
-  <div
-    bind:clientWidth={containerWidth}
-    bind:clientHeight={containerHeight}
-    class="flex flex-col h-full w-full bg-white p-4"
-  >
-    <div class="flex justify-between items-center mb-2">
-      <span class="font-semibold text-lg truncate pr-2"
-        >{measure?.displayName || measureName}</span
-      >
-      {#if comparisonTimeRange && $comparisonValue.data}
-        <span class="text-sm text-gray-500">
-          vs last {humaniseISODuration(
-            comparisonTimeRange?.toUpperCase(),
-            false,
-          )}
-        </span>
-      {/if}
-    </div>
-
-    <div class="flex justify-between items-center mb-2">
-      <span class="text-2xl font-light">{measureValueFormatted}</span>
-      {#if $comparisonValue.data}
+{#if $schema.isValid}
+  {#if measure}
+    <div
+      bind:clientWidth={containerWidth}
+      bind:clientHeight={containerHeight}
+      class="flex flex-col h-full w-full bg-white pt-4 items-center gap-y-1"
+    >
+      <div class="measure-label">{$measure?.displayName || measureName}</div>
+      <div class="measure-value">{measureValueFormatted}</div>
+      {#if showComparison && $comparisonValue.data}
         <div class="flex items-baseline gap-x-3 text-sm">
           <div
             role="complementary"
-            class="w-fit max-w-full overflow-hidden text-ellipsis ui-copy-inactive"
+            class="w-fit max-w-full overflow-hidden text-ellipsis text-gray-500"
             class:font-semibold={$measureValue.data && $measureValue.data >= 0}
           >
             {#if $comparisonValue.data != null}
@@ -150,45 +126,75 @@
           {#if comparisonPercChange != null && !measureIsPercentage}
             <div
               role="complementary"
-              class="w-fit ui-copy-inactive"
+              class="w-fit font-semibold ui-copy-inactive"
               class:text-red-500={$measureValue.data && $measureValue.data < 0}
             >
               <PercentageChange
+                color="text-gray-500"
+                showPosSign
                 tabularNumber={false}
                 value={formatMeasurePercentageDifference(comparisonPercChange)}
               />
             </div>
           {/if}
+          {#if comparisonTimeRange}
+            <span class="comparison-range">
+              vs last {humaniseISODuration(
+                comparisonTimeRange?.toUpperCase(),
+                false,
+              )}
+            </span>
+          {/if}
         </div>
       {/if}
+      {#if containerHeight && containerWidth && showSparkline && sparkData.length && !isEmptySparkline}
+        <SimpleDataGraphic
+          height={sparklineHeight}
+          width={containerWidth + 10}
+          overflowHidden={false}
+          top={5}
+          bottom={0}
+          right={0}
+          left={0}
+          {xMin}
+          {xMax}
+          {yMin}
+          {yMax}
+        >
+          <ChunkedLine
+            lineOpacity={0.6}
+            stopOpacity={0.2}
+            lineColor={MainLineColor}
+            areaGradientColors={focusedAreaGradient}
+            data={sparkData}
+            xAccessor="ts"
+            yAccessor={measureName}
+          />
+        </SimpleDataGraphic>
+      {/if}
     </div>
-
-    {#if containerHeight && containerWidth && showSparkline && sparkData.length}
-      <SimpleDataGraphic
-        height={containerHeight - 90}
-        width={containerWidth - 16}
-        overflowHidden={false}
-        top={10}
-        bottom={0}
-        right={10}
-        left={0}
-        {xMin}
-        {xMax}
-        {yMin}
-        {yMax}
-      >
-        <ChunkedLine
-          lineColor={MainLineColor}
-          areaGradientColors={focusedAreaGradient}
-          data={sparkData}
-          xAccessor="ts"
-          yAccessor={measureName}
-        />
-      </SimpleDataGraphic>
-    {/if}
-  </div>
+  {:else}
+    <div class="flex items-center justify-center w-24">
+      <Spinner status={EntityStatus.Running} />
+    </div>
+  {/if}
 {:else}
-  <div class="flex items-center justify-center w-24">
-    <Spinner status={EntityStatus.Running} />
+  <div
+    class="flex w-full h-full p-2 text-xl bg-white items-center justify-center text-red-500"
+  >
+    {$schema.error}
   </div>
 {/if}
+
+<style lang="postcss">
+  .measure-label {
+    @apply font-medium text-sm truncate;
+    @apply pr-2 text-gray-700;
+  }
+  .measure-value {
+    @apply text-3xl font-medium text-gray-700;
+  }
+  .comparison-range {
+    @apply text-sm text-gray-500;
+  }
+</style>

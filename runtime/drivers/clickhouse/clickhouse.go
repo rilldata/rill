@@ -92,8 +92,6 @@ var spec = drivers.Spec{
 	ImplementsOLAP: true,
 }
 
-var maxOpenConnections = 20
-
 type driver struct{}
 
 type configProperties struct {
@@ -121,6 +119,17 @@ type configProperties struct {
 	// EmbedPort is the port to run Clickhouse locally (0 is random port).
 	EmbedPort      int  `mapstructure:"embed_port"`
 	CanScaleToZero bool `mapstructure:"can_scale_to_zero"`
+	// MaxOpenConns is the maximum number of open connections to the database.
+	// https://github.com/ClickHouse/clickhouse-go/blob/main/clickhouse_options.go
+	MaxOpenConns int `mapstructure:"max_open_conns"`
+	// MaxIdleConns is the maximum number of connections in the idle connection pool. Default is 5s.
+	MaxIdleConns int `mapstructure:"max_idle_conns"`
+	// DialTimeout is the timeout for dialing the Clickhouse server. Defaults to 60s.
+	DialTimeout string `mapstructure:"dial_timeout"`
+	// ConnMaxLifetime is the maximum amount of time a connection may be reused.
+	ConnMaxLifetime string `mapstructure:"conn_max_lifetime"`
+	// ReadTimeout is the maximum amount of time a connection may be reused. Default is 300s.
+	ReadTimeout string `mapstructure:"read_timeout"`
 }
 
 // Open connects to Clickhouse using std API.
@@ -141,6 +150,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	// build clickhouse options
 	var opts *clickhouse.Options
 	var embed *embedClickHouse
+	maxOpenConnections := 20 // Very roughly approximating the number of queries required for a typical page load.
 	if conf.DSN != "" {
 		opts, err = clickhouse.ParseDSN(conf.DSN)
 		if err != nil {
@@ -156,6 +166,9 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		}
 		opts.Addr = []string{host}
 		opts.Protocol = clickhouse.Native
+		if conf.Port == 8123 || conf.Port == 8443 { // Default HTTP ports
+			opts.Protocol = clickhouse.HTTP
+		}
 		if conf.SSL {
 			opts.TLS = &tls.Config{
 				MinVersion: tls.VersionTLS12,
@@ -174,6 +187,43 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		if conf.Database != "" {
 			opts.Auth.Database = conf.Database
 		}
+
+		// max_open_conns
+		if conf.MaxOpenConns != 0 {
+			maxOpenConnections = conf.MaxOpenConns
+		}
+
+		// max_idle_conns
+		if conf.MaxIdleConns != 0 {
+			opts.MaxIdleConns = conf.MaxIdleConns
+		}
+
+		// dial_timeout
+		if conf.DialTimeout != "" {
+			d, err := time.ParseDuration(conf.DialTimeout)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse dial_timeout: %w", err)
+			}
+			opts.DialTimeout = d
+		}
+
+		// conn_max_lifetime
+		if conf.ConnMaxLifetime != "" {
+			d, err := time.ParseDuration(conf.ConnMaxLifetime)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse conn_max_lifetime: %w", err)
+			}
+			opts.ConnMaxLifetime = d
+		}
+
+		// read_timeout
+		if conf.ReadTimeout != "" {
+			d, err := time.ParseDuration(conf.ReadTimeout)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse read_timeout: %w", err)
+			}
+			opts.ReadTimeout = d
+		}
 	} else if conf.Provision {
 		// run clickhouse locally
 		dataDir, err := st.DataDir(instanceID)
@@ -185,13 +235,28 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 			return nil, err
 		}
 
-		embed = newEmbedClickHouse(conf.EmbedPort, dataDir, tempDir, logger)
+		embed, err = newEmbedClickHouse(conf.EmbedPort, dataDir, tempDir, logger)
+		if err != nil {
+			return nil, err
+		}
 		opts, err = embed.start()
 		if err != nil {
 			return nil, err
 		}
 	} else {
 		return nil, errors.New("no clickhouse connection configured: 'dsn', 'host' or 'managed: true' must be set")
+	}
+
+	// Apply our own defaults for the options.
+	// We increase timeouts to decrease the chance of dropped connections with scaled-to-zero ClickHouse.
+	if opts.DialTimeout == 0 {
+		opts.DialTimeout = time.Second * 60
+	}
+	if opts.ReadTimeout == 0 {
+		opts.ReadTimeout = time.Second * 300
+	}
+	if opts.ConnMaxLifetime == 0 {
+		opts.ConnMaxLifetime = time.Hour
 	}
 
 	db := sqlx.NewDb(otelsql.OpenDB(clickhouse.Connector(opts)), "clickhouse")
@@ -213,8 +278,6 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		// connection with http protocol is successful
 		logger.Warn("clickHouse connection is established with HTTP protocol. Use native port for better performance")
 	}
-	// very roughly approximating num queries required for a typical page load
-	// TODO: copied from druid reevaluate
 	db.SetMaxOpenConns(maxOpenConnections)
 
 	err = otelsql.RegisterDBStatsMetrics(db.DB, otelsql.WithAttributes(semconv.DBSystemClickhouse, attribute.String("instance_id", instanceID)))

@@ -30,7 +30,12 @@
   }
 </script>
 
-<Popover bind:open={isOpen}>
+<Popover
+  bind:open={isOpen}
+  onOutsideClick={() => {
+    isOpen = false;
+  }}
+>
   <PopoverTrigger asChild let:builder>
     <Button type="secondary" builders={[builder]} selected={isOpen}
       >Share</Button

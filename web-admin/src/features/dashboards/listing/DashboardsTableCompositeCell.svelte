@@ -50,7 +50,7 @@
     {/if}
   </div>
   <div class="pl-[22px] flex gap-x-1 text-gray-500 text-xs font-normal">
-    <span class="shrink-0">{name}</span>
+    <span class="truncate">{name}</span>
     {#if isValidLastRefreshedDate}
       <span>•</span>
       <Tooltip distance={8}>

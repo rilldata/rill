@@ -154,6 +154,13 @@ service QueryService {
     };
   }
 
+  rpc MetricsViewTimeRanges(MetricsViewTimeRangesRequest) returns (MetricsViewTimeRangesResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/time-ranges",
+      body: "*"
+    };
+  }
+
   // Canvas APIs
 
   // ResolveCanvas is a convenience API that returns a canvas and all its referenced components and metrics views.
@@ -560,6 +567,9 @@ message TimeRange {
   TimeGrain round_to_grain = 5;
   // Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
   string time_zone = 6;
+  // Optional. Rill format time range. Should only be used for alerts and reports.
+  // For dashboard call ResolveTimeRanges.
+  string expression = 7;
 }
 
 // Present for backwards compatibility
@@ -777,6 +787,17 @@ message MetricsViewSearchResponse {
   }
 
   repeated SearchResult results = 1;
+}
+
+message MetricsViewTimeRangesRequest {
+  string instance_id = 1;
+  string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
+  repeated string expressions = 3;
+  int32 priority = 4;
+}
+
+message MetricsViewTimeRangesResponse {
+  repeated TimeRange time_ranges = 1;
 }
 
 // **********
@@ -1024,13 +1045,8 @@ message TimeRangeSummary {
   google.protobuf.Timestamp min = 1;
   // Not optional, not null
   google.protobuf.Timestamp max = 2;
-  message Interval {
-    int32 months = 1;
-    int32 days = 2;
-    int64 micros = 3;
-  }
   // Not optional, not null
-  Interval interval = 3;
+  google.protobuf.Timestamp watermark = 4;
 }
 
 message ColumnCardinalityRequest {

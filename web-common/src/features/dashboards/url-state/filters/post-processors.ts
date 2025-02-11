@@ -34,3 +34,16 @@ export const andOrPostprocessor = ([left, right]) => {
   if (op === "AND") return createAndExpression(exprs);
   return createOrExpression(exprs);
 };
+
+export const objectPostprocessor = ([
+  _1,
+  _2,
+  keyValue,
+  otherKeyValuesMatches,
+]) => {
+  const obj = { ...keyValue };
+  otherKeyValuesMatches.forEach(([_1, _2, _3, keyValue]) => {
+    Object.assign(obj, keyValue);
+  });
+  return obj;
+};
