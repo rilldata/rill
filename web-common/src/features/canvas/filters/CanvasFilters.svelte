@@ -11,6 +11,7 @@
   import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import { isExpressionUnsupported } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
+  import { onDestroy } from "svelte";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
   import CanvasComparisonPill from "./CanvasComparisonPill.svelte";
@@ -41,13 +42,19 @@
       },
       spec: { allDimensions, allSimpleMeasures },
       timeControls: {
-        selectedTimeRange,
-        selectedComparisonTimeRange,
-        selectedTimezone: activeTimeZone,
         allTimeRange,
+        timeRangeStateStore,
+        comparisonRangeStateStore,
+        selectedTimezone,
+        destroy,
       },
     },
   } = getCanvasStateManagers();
+
+  $: ({ selectedTimeRange, timeStart, timeEnd } = $timeRangeStateStore || {});
+
+  $: selectedComparisonTimeRange =
+    $comparisonRangeStateStore?.selectedComparisonTimeRange;
 
   $: dimensionIdMap = getMapFromArray(
     $allDimensions,
@@ -88,6 +95,8 @@
     }
     setMeasureFilter(dimension, filter);
   }
+
+  onDestroy(destroy);
 </script>
 
 <div class="flex flex-col gap-y-2 size-full">
@@ -95,18 +104,15 @@
     <Calendar size="16px" />
     <CanvasSuperPill
       allTimeRange={$allTimeRange}
-      selectedTimeRange={$selectedTimeRange}
-      activeTimeZone={$activeTimeZone}
+      {selectedTimeRange}
+      activeTimeZone={$selectedTimezone}
     />
     <CanvasComparisonPill
       allTimeRange={$allTimeRange}
-      selectedTimeRange={$selectedTimeRange}
-      selectedComparisonTimeRange={$selectedComparisonTimeRange}
+      {selectedTimeRange}
+      {selectedComparisonTimeRange}
     />
-    <CanvasGrainSelector
-      selectedTimeRange={$selectedTimeRange}
-      selectedComparisonTimeRange={$selectedComparisonTimeRange}
-    />
+    <CanvasGrainSelector {selectedTimeRange} {selectedComparisonTimeRange} />
   </div>
   <div class="relative flex flex-row gap-x-2 gap-y-2 items-start ml-2">
     {#if !readOnly}
@@ -137,9 +143,9 @@
                 {name}
                 {label}
                 {selectedValues}
-                timeStart={$selectedTimeRange.start.toISOString()}
-                timeEnd={$selectedTimeRange.end.toISOString()}
-                timeControlsReady
+                {timeStart}
+                {timeEnd}
+                timeControlsReady={!!$timeRangeStateStore}
                 excludeMode={$isFilterExcludeMode(name)}
                 onRemove={() => removeDimensionFilter(name)}
                 onToggleFilterMode={() => toggleDimensionFilterMode(name)}

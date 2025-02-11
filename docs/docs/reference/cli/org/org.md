@@ -25,5 +25,6 @@ Manage organisations
 * [rill org rename](rename.md)	 - Rename organization
 * [rill org show](show.md)	 - Show org details
 * [rill org switch](switch.md)	 - Switch to other organization
+* [rill org upload-favicon](upload-favicon.md)	 - Upload a custom favicon
 * [rill org upload-logo](upload-logo.md)	 - Upload a custom logo
 
