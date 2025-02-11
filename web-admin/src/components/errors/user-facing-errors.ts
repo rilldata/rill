@@ -45,6 +45,12 @@ export function createUserFacingError(
       header: "Project not found",
       body: "The project you requested could not be found. Please check that you have provided a valid project name.",
     };
+  } else if (status === 404 && message === "resource not found") {
+    return {
+      statusCode: 404,
+      header: "Resource not found",
+      body: "This resource may have been deleted, renamed, or is temporarily unavailable.",
+    };
   } else if (status === 404) {
     return {
       statusCode: 404,
