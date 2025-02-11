@@ -21,6 +21,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+// If changing this value also update maxAcquiredConnDuration in runtime/drivers/duckdb/duckdb.go
 const _defaultIngestTimeout = 3 * time.Hour
 
 func init() {
