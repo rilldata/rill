@@ -16,6 +16,7 @@
   import CanvasFilters from "./filters/CanvasFilters.svelte";
   import DropZone from "./components/DropZone.svelte";
   import RowDropZone from "./RowDropZone.svelte";
+  import RowWrapper from "./RowWrapper.svelte";
 
   const initialHeights: Record<CanvasComponentType, number> = {
     line_chart: 350,
@@ -64,6 +65,7 @@
   };
 
   export let fileArtifact: FileArtifact;
+  export let editable = false;
 
   let mousePosition = { x: 0, y: 0 };
   let initialMousePosition: { x: number; y: number } | null = null;
@@ -639,12 +641,15 @@
   on:keydown={(e) => {
     if (e.key === "Backspace" && selected) {
       e.preventDefault();
-      removeItems(
-        Array.from(selected).map((id) => {
-          const [row, order] = id.split("-").slice(1).map(Number);
-          return { row, order };
-        }),
-      );
+
+      if (document.activeElement?.tagName !== "INPUT") {
+        removeItems(
+          Array.from(selected).map((id) => {
+            const [row, order] = id.split("-").slice(1).map(Number);
+            return { row, order };
+          }),
+        );
+      }
     }
   }}
 />
@@ -656,6 +661,11 @@
 {/if}
 
 <div
+  role="presentation"
+  on:click|self={() => {
+    setSelectedComponentIndex(null);
+    selected = new Set();
+  }}
   class="size-full overflow-hidden overflow-y-auto pb-48 pt-2 px-2 flex flex-col items-center bg-white select-none"
 >
   <div
@@ -663,62 +673,62 @@
     bind:clientWidth
   >
     {#each rowMaps as { items, height, layout }, rowIndex (rowIndex)}
-      <section
-        role="presentation"
-        class="size-full grid min-h-fit row relative"
-        style:z-index={50 - rowIndex * 2}
-        style:--row-height="{height}px"
-        style:max-width="{maxWidth}px"
-        style:grid-template-columns={layout.map((el) => `${el}fr`).join(" ")}
+      <RowWrapper
+        zIndex={50 - rowIndex * 2}
+        {maxWidth}
+        gridTemplate={layout.map((el) => `${el}fr`).join(" ")}
       >
         {#each items as itemIndex, columnIndex (columnIndex)}
           {@const id = getId(rowIndex, columnIndex)}
           {@const item = canvasItems[Number(itemIndex)]}
 
           <div
+            style:z-index={4 - columnIndex}
             class="p-2 relative pointer-events-none size-full container"
             style:min-height="{height}px"
             style:height="{height}px"
           >
-            {#if columnIndex === 0}
+            {#if editable}
+              {#if columnIndex === 0}
+                <ElementDivider
+                  left
+                  activelyResizing={false}
+                  hoveringOnDropZone={passedThreshold &&
+                    hoveredDropZone === `${rowIndex}-${columnIndex}`}
+                  {rowIndex}
+                  resizeIndex={-1}
+                  addIndex={columnIndex}
+                  rowLength={items.length}
+                  {spreadEvenly}
+                  {addItems}
+                />
+              {/if}
+
               <ElementDivider
-                left
-                activelyResizing={false}
+                onMouseDown={onColumResizeStart}
+                activelyResizing={resizeInfo?.row === rowIndex &&
+                  resizeInfo?.column === columnIndex}
                 hoveringOnDropZone={passedThreshold &&
-                  hoveredDropZone === `${rowIndex}-${columnIndex}`}
+                  hoveredDropZone === `${rowIndex}-${columnIndex + 1}`}
+                columnWidth={layout[columnIndex]}
                 {rowIndex}
-                resizeIndex={-1}
-                addIndex={columnIndex}
+                resizeIndex={columnIndex}
+                addIndex={columnIndex + 1}
                 rowLength={items.length}
                 {spreadEvenly}
                 {addItems}
               />
+
+              <DropZone
+                column={columnIndex}
+                row={rowIndex}
+                maxColumns={items.length}
+                allowDrop={!!dragItemInfo && passedThreshold}
+                onHover={setDropZone}
+                onMouseLeave={resetDropZone}
+                {onDrop}
+              />
             {/if}
-
-            <ElementDivider
-              onMouseDown={onColumResizeStart}
-              activelyResizing={resizeInfo?.row === rowIndex &&
-                resizeInfo?.column === columnIndex}
-              hoveringOnDropZone={passedThreshold &&
-                hoveredDropZone === `${rowIndex}-${columnIndex + 1}`}
-              columnWidth={layout[columnIndex]}
-              {rowIndex}
-              resizeIndex={columnIndex}
-              addIndex={columnIndex + 1}
-              rowLength={items.length}
-              {spreadEvenly}
-              {addItems}
-            />
-
-            <DropZone
-              column={columnIndex}
-              row={rowIndex}
-              maxColumns={items.length}
-              allowDrop={!!dragItemInfo && passedThreshold}
-              onHover={setDropZone}
-              onMouseLeave={resetDropZone}
-              {onDrop}
-            />
 
             <article
               role="presentation"
@@ -728,14 +738,16 @@
                 dragItemInfo.order === columnIndex}
               class:pointer-events-none={resizeInfo}
               class:pointer-events-auto={!resizeInfo}
-              class="card w-full cursor-pointer z-0 p-4 h-full relative bg-white overflow-hidden rounded-sm border flex items-center justify-center"
+              class:editable
+              class="card w-full cursor-pointer z-10 p-4 h-full relative bg-white overflow-hidden rounded-sm border flex items-center justify-center"
               on:mousedown={(e) => {
-                if (e.shiftKey) {
-                  selected.add(id);
-                  selected = selected;
+                if (e.button !== 0 || !editable) return;
+                // if (e.shiftKey) {
+                //   selected.add(id);
+                //   selected = selected;
 
-                  return;
-                }
+                //   return;
+                // }
                 setSelectedComponentIndex(Number(itemIndex));
 
                 selected = new Set([id]);
@@ -777,33 +789,17 @@
           </div>
         {/each}
 
-        <RowDropZone
-          allowDrop={!!dragItemInfo}
-          resizeIndex={rowIndex}
-          dropIndex={rowIndex + 1}
-          {passedThreshold}
-          {onRowResizeStart}
-          {onDrop}
-          activelyResizing={resizeRow === rowIndex}
-          addItem={(type) => {
-            initializeRow(rowIndex + 1, [
-              {
-                name: canvasItems.length,
-                type,
-              },
-            ]);
-          }}
-        />
-        {#if rowIndex === 0}
+        {#if editable}
           <RowDropZone
             allowDrop={!!dragItemInfo}
-            dropIndex={0}
+            resizeIndex={rowIndex}
+            dropIndex={rowIndex + 1}
             {passedThreshold}
             {onRowResizeStart}
             {onDrop}
-            activelyResizing={false}
+            activelyResizing={resizeRow === rowIndex}
             addItem={(type) => {
-              initializeRow(rowIndex, [
+              initializeRow(rowIndex + 1, [
                 {
                   name: canvasItems.length,
                   type,
@@ -811,23 +807,48 @@
               ]);
             }}
           />
+
+          {#if rowIndex === 0}
+            <RowDropZone
+              allowDrop={!!dragItemInfo}
+              dropIndex={0}
+              {passedThreshold}
+              {onRowResizeStart}
+              {onDrop}
+              activelyResizing={false}
+              addItem={(type) => {
+                initializeRow(rowIndex, [
+                  {
+                    name: canvasItems.length,
+                    type,
+                  },
+                ]);
+              }}
+            />
+          {/if}
         {/if}
-      </section>
+      </RowWrapper>
     {:else}
-      <AddComponentDropdown
-        componentForm
-        onMouseEnter={() => {
-          if (timeout) clearTimeout(timeout);
-        }}
-        onItemClick={(type) => {
-          initializeRow(0, [
-            {
-              name: canvasItems.length,
-              type,
-            },
-          ]);
-        }}
-      />
+      {#if editable}
+        <AddComponentDropdown
+          componentForm
+          onMouseEnter={() => {
+            if (timeout) clearTimeout(timeout);
+          }}
+          onItemClick={(type) => {
+            initializeRow(0, [
+              {
+                name: canvasItems.length,
+                type,
+              },
+            ]);
+          }}
+        />
+      {:else}
+        <div class="size-full flex items-center justify-center">
+          <p class="text-lg text-gray-500">No components added</p>
+        </div>
+      {/if}
     {/each}
   </div>
 </div>
@@ -837,7 +858,7 @@
     @apply shadow-sm;
   }
 
-  .card:hover {
+  .card.editable:hover {
     @apply shadow-md;
   }
 
@@ -855,13 +876,8 @@
     container-name: row-container;
   }
 
-  .row {
-    /* height: var(--row-height); */
-    grid-auto-rows: max-content;
-  }
-
   @container row-container (inline-size < 600px) {
-    .row {
+    :global(.canvas-row) {
       grid-template-columns: repeat(1, 1fr) !important;
       /* grid-auto-rows: max-content; */
     }

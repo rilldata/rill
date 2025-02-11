@@ -76,7 +76,7 @@
     role="presentation"
     class:left
     class:right={!left}
-    class="flex pointer-events-auto shadow-sm absolute top-1/2 w-fit z-[50] bg-white -translate-y-1/2 border rounded-sm"
+    class="flex pointer-events-auto shadow-sm absolute top-1/2 w-fit z-20 bg-white -translate-y-1/2 border rounded-sm"
     on:mouseleave={() => {
       timeout = setTimeout(() => (hovered = false), 150);
     }}
@@ -88,7 +88,7 @@
       disabled={rowLength >= 4}
     />
     <button
-      class="h-7 px-2 grid place-content-center z-50 border-l hover:bg-gray-100 text-slate-500"
+      class="h-7 px-2 grid place-content-center border-l hover:bg-gray-100 text-slate-500"
       on:click={(e) => {
         e.stopPropagation();
         e.preventDefault();
