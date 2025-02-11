@@ -15,7 +15,7 @@
 </script>
 
 {#if title || description}
-  <div class="w-full h-fit flex flex-col bg-white px-2 pt-2 items-start">
+  <div class="w-full h-fit flex flex-col bg-white px-2 pt-2 pb-1 items-start">
     {#if title}
       <div class="flex items-center gap-x-2">
         <h1 class:faint class="title">{title}</h1>
@@ -32,7 +32,7 @@
     {/if}
   </div>
 {:else if atleastOneFilter}
-  <div class="absolute top-0 left-0 z-50 px-2 py-1">
+  <div class="absolute top-0 left-0 z-50 pl-1 pt-1">
     <LocalFiltersHeader {atleastOneFilter} {filters} />
   </div>
 {/if}
