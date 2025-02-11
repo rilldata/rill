@@ -36,24 +36,28 @@ func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
 			if err := validateQueryFlags(resolver, sql, properties, args); err != nil {
 				return err
 			}
-			// If the limit is negative, use the default limit and print a warning
+
+			// Parse and validate limit
+			limitInt := 100 // Default limit
 			if limit != "" {
-				limitInt, err := strconv.Atoi(limit)
+				var err error
+				limitInt, err = strconv.Atoi(limit)
 				if err != nil {
 					return fmt.Errorf("invalid limit: %w", err)
 				}
 				if limitInt < 0 {
-					limit = "100"
+					limitInt = 100
 					fmt.Printf("WARNING: limit is negative, using default limit of 100\n")
 				}
 			}
+			limit = strconv.Itoa(limitInt)
 
-			// If the resolver is not provided, use the sql
+			// Default resolver to "sql" if not provided
 			if resolver == "" {
 				resolver = "sql"
 			}
 
-			// Initialize if nil
+			// Initialize maps if nil
 			if properties == nil {
 				properties = make(map[string]string)
 			}
@@ -73,58 +77,55 @@ func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			// Set properties
+			// Build resolver properties
 			if sql != "" {
 				properties["sql"] = sql
 			}
 			if connector != "" {
 				properties["connector"] = connector
 			}
-			if limit != "" {
-				properties["limit"] = limit
-			}
+			properties["limit"] = limit // Always set limit
 
-			// Before passing to QueryResolver, convert the string maps to any maps
-			propsMap := make(map[string]any)
+			// Convert string maps to interface{} maps
+			propsMap := make(map[string]any, len(properties))
 			for k, v := range properties {
 				propsMap[k] = v
 			}
-			argsMap := make(map[string]any)
+			argsMap := make(map[string]any, len(args))
 			for k, v := range args {
 				argsMap[k] = v
 			}
 
-			// Build the properties and args
+			// Build the properties and args structs
 			resolverProperties, resolverArgs, err := buildStructs(propsMap, argsMap)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to build resolver properties and args: %w", err)
 			}
 
 			// Connect to the runtime
 			rt, instanceID, err := ch.OpenRuntimeClient(cmd.Context(), ch.Org, project, local)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to connect to runtime: %w", err)
 			}
 			defer rt.Close()
 
 			// Execute the query
 			res, err := rt.RuntimeServiceClient.QueryResolver(cmd.Context(), &runtimev1.QueryResolverRequest{
-				InstanceId:         instanceID,         // The instance ID to query
-				Resolver:           resolver,           // This is the type of resolver to use (e.g. sql, metrics_view, etc.)
-				ResolverProperties: resolverProperties, // These are resolver-specific properties
-				ResolverArgs:       resolverArgs,       // These are resolver-specific arguments
+				InstanceId:         instanceID,
+				Resolver:           resolver,
+				ResolverProperties: resolverProperties,
+				ResolverArgs:       resolverArgs,
 			})
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to execute query: %w", err)
 			}
 
-			// Print the data in the requested format (default: human)
 			ch.PrintQueryResponse(res)
-
 			return nil
 		},
 	}
 
+	// Project flags
 	queryCmd.Flags().StringVar(&project, "project", "", "Project name")
 	queryCmd.Flags().StringVar(&path, "path", ".", "Project directory")
 	queryCmd.Flags().BoolVar(&local, "local", false, "Target local runtime instead of Rill Cloud")
@@ -141,12 +142,10 @@ func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
 }
 
 func validateQueryFlags(resolver, sql string, properties, args map[string]string) error {
-	// If the users provides a resolver via a flag, they cannot provide a sql
 	if resolver != "" && sql != "" {
 		return fmt.Errorf("cannot combine --resolver and --sql")
 	}
 
-	// If the user provides args or properties, they must provide a resolver
 	if (len(args) > 0 || len(properties) > 0) && resolver == "" {
 		return fmt.Errorf("must provide --resolver when using --args or --properties")
 	}
@@ -159,23 +158,19 @@ func buildStruct(m map[string]any) (*structpb.Struct, error) {
 		return nil, nil
 	}
 
-	anyMap := make(map[string]interface{}, len(m))
-	for k, v := range m {
-		anyMap[k] = v
-	}
-	return structpb.NewStruct(anyMap)
+	return structpb.NewStruct(m)
 }
 
-// returns both the properties and args as structs
+// buildStructs converts the properties and args maps into protobuf Struct types
 func buildStructs(properties, args map[string]any) (*structpb.Struct, *structpb.Struct, error) {
 	propertiesStruct, err := buildStruct(properties)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("failed to build properties struct: %w", err)
 	}
 
 	argsStruct, err := buildStruct(args)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("failed to build args struct: %w", err)
 	}
 
 	return propertiesStruct, argsStruct, nil
