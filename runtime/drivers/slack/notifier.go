@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/mitchellh/mapstructure"
+	"github.com/rilldata/rill/admin/pkg/urlutil"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
@@ -86,7 +87,7 @@ func (n *notifier) sendReportToUsers(d ReportStatusData) error {
 	unsubLink := d.UnsubscribeLink
 
 	for _, email := range n.props.Users {
-		d.UnsubscribeLink = fmt.Sprintf("%s&slack_user=%s", unsubLink, email)
+		d.UnsubscribeLink = urlutil.MustWithQuery(unsubLink, map[string]string{"slack_user": email})
 
 		buf := new(bytes.Buffer)
 		err := n.templates.Lookup("scheduled_report.slack").Execute(buf, d)

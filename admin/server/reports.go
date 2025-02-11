@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path"
 	"regexp"
@@ -71,21 +72,27 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		return nil, fmt.Errorf("failed to issue magic auth tokens: %w", err)
 	}
 
-	addOpenURL := false
-	if req.WebOpenMode == "full" { // TODO check backwards compatibility here
-		addOpenURL = true
+	externalEmailSet := make(map[string]bool)
+	if req.WebOpenMode == adminv1.ReportOptions_OPEN_MODE_LEGACY {
+		for _, email := range req.EmailRecipients {
+			_, err := s.admin.DB.FindUserByEmail(ctx, email)
+			if err != nil {
+				if errors.Is(err, database.ErrNotFound) {
+					externalEmailSet[email] = true
+				} else {
+					return nil, fmt.Errorf("failed to find user by email: %w", err)
+				}
+			}
+		}
 	}
 
 	for _, recipient := range recipients {
 		if recipient == ownerEmail {
 			urls[recipient] = &adminv1.GetReportMetaResponse_URLs{
+				OpenUrl:        s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, tokens[recipient], req.ExecutionTime.AsTime()),
 				ExportUrl:      s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, tokens[recipient]),
 				EditUrl:        s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report),
 				UnsubscribeUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportUnsubscribe(org.Name, proj.Name, req.Report, tokens[recipient], recipient),
-			}
-
-			if addOpenURL {
-				urls[recipient].OpenUrl = s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, tokens[recipient], req.ExecutionTime.AsTime())
 			}
 			continue
 		}
@@ -93,8 +100,10 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 			ExportUrl:      s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, tokens[recipient]),
 			UnsubscribeUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportUnsubscribe(org.Name, proj.Name, req.Report, tokens[recipient], recipient),
 		}
-		if addOpenURL {
+		if req.WebOpenMode == adminv1.ReportOptions_OPEN_MODE_CREATOR {
 			urls[recipient].OpenUrl = s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, tokens[recipient], req.ExecutionTime.AsTime())
+		} else if req.WebOpenMode == adminv1.ReportOptions_OPEN_MODE_LEGACY && !externalEmailSet[recipient] {
+			urls[recipient].OpenUrl = s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, "", req.ExecutionTime.AsTime())
 		}
 	}
 
@@ -498,12 +507,14 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID s
 	res.Annotations.WebOpenPath = opts.WebOpenPath
 	res.Annotations.WebOpenState = opts.WebOpenState
 	switch opts.WebOpenMode {
-	case adminv1.ReportOptions_OPEN_MODE_FULL:
-		res.Annotations.WebOpenMode = "full"
+	case adminv1.ReportOptions_OPEN_MODE_LEGACY, adminv1.ReportOptions_OPEN_MODE_UNSPECIFIED: // backwards compatibility
+		res.Annotations.WebOpenMode = WebOpenModeLegacy
+	case adminv1.ReportOptions_OPEN_MODE_CREATOR:
+		res.Annotations.WebOpenMode = WebOpenModeCreator
 	case adminv1.ReportOptions_OPEN_MODE_NONE:
-		res.Annotations.WebOpenMode = "none"
-	case adminv1.ReportOptions_OPEN_MODE_UNSPECIFIED:
-		res.Annotations.WebOpenMode = "unspecified"
+		res.Annotations.WebOpenMode = WebOpenModeNone
+	case adminv1.ReportOptions_OPEN_MODE_FILTERED:
+		res.Annotations.WebOpenMode = WebOpenModeFiltered
 	default:
 		return nil, fmt.Errorf("unknown open mode: %v", opts.WebOpenMode)
 	}
@@ -556,12 +567,14 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 	res.Annotations.WebOpenPath = opts.WebOpenPath
 	res.Annotations.WebOpenState = opts.WebOpenState
 	switch opts.WebOpenMode {
-	case adminv1.ReportOptions_OPEN_MODE_FULL:
-		res.Annotations.WebOpenMode = "full"
+	case adminv1.ReportOptions_OPEN_MODE_LEGACY, adminv1.ReportOptions_OPEN_MODE_UNSPECIFIED: // backwards compatibility
+		res.Annotations.WebOpenMode = WebOpenModeLegacy
+	case adminv1.ReportOptions_OPEN_MODE_CREATOR:
+		res.Annotations.WebOpenMode = WebOpenModeCreator
 	case adminv1.ReportOptions_OPEN_MODE_NONE:
-		res.Annotations.WebOpenMode = "none"
-	case adminv1.ReportOptions_OPEN_MODE_UNSPECIFIED:
-		res.Annotations.WebOpenMode = "unspecified"
+		res.Annotations.WebOpenMode = WebOpenModeNone
+	case adminv1.ReportOptions_OPEN_MODE_FILTERED:
+		res.Annotations.WebOpenMode = WebOpenModeFiltered
 	default:
 		return nil, fmt.Errorf("unknown open mode: %v", opts.WebOpenMode)
 	}
@@ -736,12 +749,14 @@ func recreateReportOptionsFromSpec(spec *runtimev1.ReportSpec) (*adminv1.ReportO
 	opts.WebOpenPath = annotations.WebOpenPath
 	opts.WebOpenState = annotations.WebOpenState
 	switch annotations.WebOpenMode {
-	case WebOpenModeFull:
-		opts.WebOpenMode = adminv1.ReportOptions_OPEN_MODE_FULL
+	case WebOpenModeLegacy:
+		opts.WebOpenMode = adminv1.ReportOptions_OPEN_MODE_LEGACY
+	case WebOpenModeCreator:
+		opts.WebOpenMode = adminv1.ReportOptions_OPEN_MODE_CREATOR
 	case WebOpenModeNone:
 		opts.WebOpenMode = adminv1.ReportOptions_OPEN_MODE_NONE
-	case WebOpenModeUnspecified:
-		opts.WebOpenMode = adminv1.ReportOptions_OPEN_MODE_UNSPECIFIED
+	case WebOpenModeFiltered:
+		opts.WebOpenMode = adminv1.ReportOptions_OPEN_MODE_FILTERED
 	default:
 		return nil, fmt.Errorf("unknown web open mode: %s", annotations.WebOpenMode)
 	}
@@ -797,9 +812,10 @@ type reportAnnotations struct {
 type WebOpenMode string
 
 const (
-	WebOpenModeFull        WebOpenMode = "full"
-	WebOpenModeNone        WebOpenMode = "none"
-	WebOpenModeUnspecified WebOpenMode = "unspecified"
+	WebOpenModeLegacy   WebOpenMode = "legacy"
+	WebOpenModeCreator  WebOpenMode = "creator"
+	WebOpenModeNone     WebOpenMode = "none"
+	WebOpenModeFiltered WebOpenMode = "filtered"
 )
 
 func parseReportAnnotations(annotations map[string]string) reportAnnotations {
@@ -816,14 +832,16 @@ func parseReportAnnotations(annotations map[string]string) reportAnnotations {
 	res.Explore = annotations["explore"]
 	res.Canvas = annotations["canvas"]
 	switch annotations["web_open_mode"] {
-	case "full":
-		res.WebOpenMode = WebOpenModeFull
+	case "legacy":
+		res.WebOpenMode = WebOpenModeLegacy
+	case "creator":
+		res.WebOpenMode = WebOpenModeCreator
 	case "none":
 		res.WebOpenMode = WebOpenModeNone
-	case "unspecified":
-		res.WebOpenMode = WebOpenModeUnspecified
+	case "filtered":
+		res.WebOpenMode = WebOpenModeFiltered
 	case "": // backwards compatibility
-		res.WebOpenMode = WebOpenModeUnspecified
+		res.WebOpenMode = WebOpenModeLegacy
 	}
 
 	return res

@@ -200,9 +200,12 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// storage client
-			bucketConfig := map[string]interface{}{
-				"bucket":                              conf.DataBucket,
-				"google_application_credentials_json": conf.DataBucketCredentialsJSON,
+			var bucketConfig map[string]interface{}
+			if conf.DataBucket != "" {
+				bucketConfig = map[string]interface{}{
+					"bucket":                              conf.DataBucket,
+					"google_application_credentials_json": conf.DataBucketCredentialsJSON,
+				}
 			}
 			storage, err := storage.New(conf.DataDir, bucketConfig)
 			if err != nil {

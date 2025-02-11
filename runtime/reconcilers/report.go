@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -405,6 +406,25 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	}
 	if w, ok := rep.Spec.Annotations["web_open_mode"]; ok {
 		webOpenMode = w
+	} else {
+		webOpenMode = "legacy" // backward compatibility
+		if _, ok = rep.Spec.Annotations["web_open_path"]; !ok {
+			webOpenMode = "none" // for older reports if web_open_path is not set
+		}
+	}
+
+	var reqWebOpenMode adminv1.ReportOptionsOpenMode
+	switch webOpenMode {
+	case "legacy":
+		reqWebOpenMode = adminv1.ReportOptions_OPEN_MODE_LEGACY
+	case "creator":
+		reqWebOpenMode = adminv1.ReportOptions_OPEN_MODE_CREATOR
+	case "none":
+		reqWebOpenMode = adminv1.ReportOptions_OPEN_MODE_NONE
+	case "filtered":
+		reqWebOpenMode = adminv1.ReportOptions_OPEN_MODE_FILTERED
+	default:
+		return false, fmt.Errorf("invalid web open mode: %s", webOpenMode)
 	}
 
 	anonRecipients := false
@@ -417,7 +437,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		}
 	}
 
-	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, ownerID, explore, canvas, webOpenMode, emailRecipients, anonRecipients, t)
+	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, ownerID, explore, canvas, reqWebOpenMode, emailRecipients, anonRecipients, t)
 	if err != nil {
 		return false, fmt.Errorf("failed to get report metadata: %w", err)
 	}
