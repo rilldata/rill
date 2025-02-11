@@ -55,6 +55,7 @@
             capitalizeLabel={false}
             textClass="text-sm"
             size="sm"
+            placeholder={config?.meta?.placeholder ?? ""}
             labelGap={2}
             label={config.label ?? key}
             bind:value={localParamValues[key]}
