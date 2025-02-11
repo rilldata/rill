@@ -9,6 +9,7 @@
     MainLineColor,
   } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
   import MeasureValueMouseover from "@rilldata/web-common/features/dashboards/time-series/MeasureValueMouseover.svelte";
+  import { niceMeasureExtents } from "@rilldata/web-common/features/dashboards/time-series/utils";
   import { NumberKind } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { TimeRoundingStrategy } from "@rilldata/web-common/lib/time/types";
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
@@ -33,7 +34,12 @@
   let mouseoverValue: { x: Date; y: number } | undefined = undefined;
   let hovered = false;
 
-  $: [yMin, yMax] = extent(sparkData, (d) => d[measureName]);
+  $: [yExtentMin, yExtentMax] = extent(sparkData, (d) => d[measureName]);
+  $: [yMin, yMax] = niceMeasureExtents(
+    [yExtentMin, yExtentMax],
+    (isSparkRight ? 6 : 5) / 5,
+  );
+
   $: [xMin, xMax] = extent(sparkData, (d) => d["ts_position"]);
   $: hoveredTime = mouseoverValue?.x instanceof Date && mouseoverValue?.x;
 </script>
@@ -56,7 +62,7 @@
   >
     <ChunkedLine
       lineOpacity={0.75}
-      areaEndOffset="75%"
+      areaEndOffset="95%"
       lineColor={MainLineColor}
       areaGradientColors={focusedAreaGradient}
       data={sparkData}
