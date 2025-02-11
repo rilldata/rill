@@ -45,14 +45,16 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 			if err != nil {
 				return err
 			}
-
-			if confirm {
-				_, err = client.DeleteUser(ctx, &adminv1.DeleteUserRequest{Email: email})
-				if err != nil {
-					return fmt.Errorf("failed to delete user %q: %w", email, err)
-				}
-				fmt.Printf("User %q deleted successfully\n", email)
+			if !confirm {
+				ch.PrintfWarn("Aborted\n")
+				return nil
 			}
+
+			_, err = client.DeleteUser(ctx, &adminv1.DeleteUserRequest{Email: email})
+			if err != nil {
+				return fmt.Errorf("failed to delete user %q: %w", email, err)
+			}
+			ch.PrintfSuccess("User %q deleted successfully\n", email)
 
 			return nil
 		},
