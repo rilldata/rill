@@ -1183,7 +1183,7 @@ message CreateAssetRequest {
   string type = 2 [(validate.rules).string = {in: ["deploy", "image"]}];
   string name = 3 [(validate.rules).string.min_len = 1]; // Eg. "rilldata__project_name"
   string extension = 4; // Eg. ".tar.gz"
-  bool cacheable = 5;
+  bool public = 5;
   int64 estimated_size_bytes = 6;
 }
 

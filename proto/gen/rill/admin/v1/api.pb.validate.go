@@ -6374,7 +6374,7 @@ func (m *CreateAssetRequest) validate(all bool) error {
 
 	// no validation rules for Extension
 
-	// no validation rules for Cacheable
+	// no validation rules for Public
 
 	// no validation rules for EstimatedSizeBytes
 

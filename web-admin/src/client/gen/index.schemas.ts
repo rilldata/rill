@@ -111,7 +111,7 @@ export type AdminServiceCreateAssetBody = {
   type?: string;
   name?: string;
   extension?: string;
-  cacheable?: boolean;
+  public?: boolean;
   estimatedSizeBytes?: string;
 };
 

@@ -1942,12 +1942,12 @@ func (c *connection) FindAsset(ctx context.Context, id string) (*database.Asset,
 	return res, nil
 }
 
-func (c *connection) InsertAsset(ctx context.Context, id, organizationID, path, ownerID string, cacheable bool) (*database.Asset, error) {
+func (c *connection) InsertAsset(ctx context.Context, id, organizationID, path, ownerID string, public bool) (*database.Asset, error) {
 	res := &database.Asset{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO assets (id, org_id, path, owner_id, cacheable)
+		INSERT INTO assets (id, org_id, path, owner_id, public)
 		VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-		id, organizationID, path, ownerID, cacheable,
+		id, organizationID, path, ownerID, public,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("asset", err)

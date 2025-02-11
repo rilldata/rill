@@ -2434,7 +2434,7 @@ paths:
               extension:
                 type: string
                 title: Eg. ".tar.gz"
-              cacheable:
+              public:
                 type: boolean
               estimatedSizeBytes:
                 type: string
