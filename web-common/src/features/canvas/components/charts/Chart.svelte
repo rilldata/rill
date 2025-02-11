@@ -2,6 +2,7 @@
   import VegaLiteRenderer from "@rilldata/web-common/components/vega/VegaLiteRenderer.svelte";
   import ComponentHeader from "@rilldata/web-common/features/canvas/ComponentHeader.svelte";
   import type { ChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
+  import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
   import { getComponentFilterProperties } from "@rilldata/web-common/features/canvas/components/util";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
@@ -93,9 +94,5 @@
     {/if}
   {/if}
 {:else}
-  <div
-    class="flex w-full h-full p-2 text-xl bg-white items-center justify-center text-red-500"
-  >
-    {$schema.error}
-  </div>
+  <ComponentError error={$schema.error} />
 {/if}
