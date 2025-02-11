@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/rilldata/rill/admin/jobs"
-
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/ai"
 	"github.com/rilldata/rill/admin/billing"
