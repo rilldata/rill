@@ -1,1 +1,1 @@
-ALTER TABLE orgs ADD COLUMN cached_plan_display_name TEXT;
+ALTER TABLE orgs ADD COLUMN favicon_asset_id UUID REFERENCES assets(id) ON DELETE SET NULL;

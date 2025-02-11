@@ -69,11 +69,13 @@ export type RuntimeServiceWatchResourcesParams = {
 export type RuntimeServiceListResourcesParams = {
   kind?: string;
   path?: string;
+  skipSecurityChecks?: boolean;
 };
 
 export type RuntimeServiceGetResourceParams = {
   "name.kind"?: string;
   "name.name"?: string;
+  skipSecurityChecks?: boolean;
 };
 
 export type QueryServiceExportReportBody = {
@@ -1075,6 +1077,7 @@ export interface V1PullTrigger {
 export interface V1ProjectParserState {
   parseErrors?: V1ParseError[];
   currentCommitSha?: string;
+  currentCommitOn?: string;
   watching?: boolean;
 }
 
@@ -1932,6 +1935,8 @@ The values should be valid IANA location identifiers. */
   /** Security for the explore dashboard.
 These are not currently parsed from YAML, but will be derived from the parent metrics view. */
   securityRules?: V1SecurityRule[];
+  /** Banner text that can be displayed in Rill Cloud. */
+  banner?: string;
 }
 
 export interface V1ExploreState {
@@ -2384,6 +2389,8 @@ The values should be valid IANA location identifiers. */
   layout?: unknown;
   /** Security rules to apply for access to the canvas. */
   securityRules?: V1SecurityRule[];
+  /** Banner text that can be displayed in Rill Cloud. */
+  banner?: string;
 }
 
 export interface V1CanvasState {

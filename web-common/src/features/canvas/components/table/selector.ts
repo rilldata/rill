@@ -99,12 +99,19 @@ export function validateTableSchema(
           error: `Metrics view ${metrics_view} not found`,
         };
       }
+
+      if (!measures.length && !rowDimensions.length && !colDimensions.length) {
+        return {
+          isValid: false,
+          error: "Select at least one measure or dimension for the table",
+        };
+      }
       const validateMeasuresRes = validateMeasures(metricsView, measures);
       if (!validateMeasuresRes.isValid) {
         const invalidMeasures = validateMeasuresRes.invalidMeasures.join(", ");
         return {
           isValid: false,
-          error: `Invalid measure(s) ${invalidMeasures} selected for the table`,
+          error: `Invalid measure(s) "${invalidMeasures}" selected for the table`,
         };
       }
 
@@ -119,7 +126,7 @@ export function validateTableSchema(
 
         return {
           isValid: false,
-          error: `Invalid dimension(s) ${invalidDimensions} selected for the table`,
+          error: `Invalid dimension(s) "${invalidDimensions}" selected for the table`,
         };
       }
       return {
