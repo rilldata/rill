@@ -1,8 +1,9 @@
 <script lang="ts">
   import VegaLiteRenderer from "@rilldata/web-common/components/vega/VegaLiteRenderer.svelte";
+  import ComponentHeader from "@rilldata/web-common/features/canvas/ComponentHeader.svelte";
   import type { ChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
   import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
-  import ComponentTitle from "@rilldata/web-common/features/canvas/ComponentTitle.svelte";
+  import { getComponentFilterProperties } from "@rilldata/web-common/features/canvas/components/util";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
@@ -38,6 +39,8 @@
 
   $: spec = generateSpec(chartType, chartConfig, $data);
 
+  $: componentFilters = getComponentFilterProperties(rendererProperties);
+
   $: measure = getMeasureForMetricView(
     chartConfig.y?.field,
     chartConfig.metrics_view,
@@ -53,7 +56,8 @@
     ? mergedVlConfig(chartConfig.vl_config)
     : undefined;
 
-  $: title = getChartTitle(chartConfig, $data);
+  $: title = chartConfig?.title || getChartTitle(chartConfig, $data);
+  $: description = chartConfig?.description;
 </script>
 
 {#if $schema.isValid}
@@ -64,9 +68,12 @@
   {:else if $data.error}
     <div class="text-red-500">{$data.error.message}</div>
   {:else}
-    {#if !chartConfig.title && !chartConfig.description}
-      <ComponentTitle faint {title} />
-    {/if}
+    <ComponentHeader
+      faint={!chartConfig?.title}
+      {title}
+      {description}
+      filters={componentFilters}
+    />
     {#if hasNoData}
       <div
         class="flex w-full h-full p-2 text-xl ui-copy-disabled items-center justify-center"

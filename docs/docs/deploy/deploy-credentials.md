@@ -7,7 +7,7 @@ sidebar_position: 10
 ## Overview
 
 
-When deploying a project, credentials that have been defined in your `.env` file will but automatically passed into your Rill Cloud project. However, for [remote sources](/reference/connectors/connectors.md) that are dynamically retrieving your credentials via the CLI, such as S3 and GCS, you will need to ensure that these are [defined in the .env file](/manage/project-management/variables-and-credentials#credentials-naming-schema). 
+When deploying a project, credentials that have been defined in your `.env` file will be automatically passed into your Rill Cloud project. However, for [remote sources](/reference/connectors/connectors.md) that are dynamically retrieving your credentials via the CLI, such as S3 and GCS, you will need to ensure that these are [defined in the .env file](/manage/project-management/variables-and-credentials#credentials-naming-schema). 
 
 
 [Local credentials](/build/credentials/#setting-credentials-for-rill-developer) are used by Rill Developer to connect to sources from your local machine, while [deployment credentials](/deploy/deploy-credentials#configure-environmental-variables-and-credentials-for-rill-cloud) are what is used by Rill Cloud for production workloads. There are a [few ways to setup credentials in Rill Developer](../build/credentials/#setting-credentials-for-rill-developer), however you will need to ensure that they are set up in your `.env` file for a seemless experience.

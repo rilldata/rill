@@ -917,8 +917,13 @@ func (d *db) tableMeta(name string) (*tableMeta, error) {
 		return nil, err
 	}
 
-	// this is required because release version does not delete table directory as of now
-	_, err = os.Stat(d.localTableDir(name, m.Version))
+	// this is required because release version does not delete entire table directory but only the version directory
+	// and hence the meta file may exist but the db file may not
+	if m.Type == "TABLE" {
+		_, err = os.Stat(d.localDBPath(name, m.Version))
+	} else {
+		_, err = os.Stat(d.localTableDir(name, m.Version))
+	}
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			return nil, errNotFound
