@@ -11,11 +11,14 @@ import (
 )
 
 func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
-	var force bool
-
 	deleteCmd := &cobra.Command{
 		Use:   "delete <email>",
 		Short: "Delete a user",
+		Long: `Delete a user from the system. This action is permanent and cannot be undone.
+
+Example:
+  rill sudo user delete user@example.com
+`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			client, err := ch.Client()
@@ -41,13 +44,17 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			ch.PrintfError("\nDeleting a user is a permanent action and cannot be undone.\n")
 			ch.PrintfError("The user will be removed from all organizations and their data will be deleted.\n")
-			confirm, err := cmdutil.ConfirmPrompt(fmt.Sprintf("Are you sure you want to delete user %q?", email), "", false)
-			if err != nil {
-				return err
-			}
-			if !confirm {
-				ch.PrintfWarn("Aborted\n")
-				return nil
+
+			// If not interactive, confirm the deletion
+			if !ch.Interactive {
+				confirm, err := cmdutil.ConfirmPrompt(fmt.Sprintf("Are you sure you want to delete user %q?", email), "", false)
+				if err != nil {
+					return err
+				}
+				if !confirm {
+					ch.PrintfWarn("Aborted\n")
+					return nil
+				}
 			}
 
 			_, err = client.DeleteUser(ctx, &adminv1.DeleteUserRequest{Email: email})
@@ -59,9 +66,6 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 			return nil
 		},
 	}
-
-	deleteCmd.Flags().BoolVar(&force, "force", false, "Allows superusers to bypass certain checks")
-	_ = deleteCmd.Flags().MarkHidden("force")
 
 	return deleteCmd
 }
