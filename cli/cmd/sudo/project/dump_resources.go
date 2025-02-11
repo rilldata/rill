@@ -2,13 +2,13 @@ package project
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
 
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
+	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -16,7 +16,6 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/encoding/protojson"
 )
 
 func DumpResources(ch *cmdutil.Helper) *cobra.Command {
@@ -61,15 +60,14 @@ func DumpResources(ch *cmdutil.Helper) *cobra.Command {
 
 			var m sync.Mutex
 			failedProjects := map[string]error{}
-			resources := map[string]map[string]json.RawMessage{}
-
+			resources := map[string]map[string][]*runtimev1.Resource{}
 			grp, ctx := errgroup.WithContext(ctx)
 			for _, name := range res.Names {
 				org := strings.Split(name, "/")[0]
 				project := strings.Split(name, "/")[1]
 
 				grp.Go(func() error {
-					row, err := dumpResourcesForProject(ctx, client, org, project, typ)
+					row, err := resourcesForProject(ctx, client, org, project, typ)
 					if err != nil {
 						m.Lock()
 						failedProjects[name] = err
@@ -77,7 +75,12 @@ func DumpResources(ch *cmdutil.Helper) *cobra.Command {
 						return nil
 					}
 					m.Lock()
-					resources[name] = row
+					projects, ok := resources[org]
+					if !ok {
+						projects = map[string][]*runtimev1.Resource{}
+						resources[org] = projects
+					}
+					projects[project] = row
 					m.Unlock()
 					return nil
 				})
@@ -88,12 +91,7 @@ func DumpResources(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			// marshal as json with indentation
-			jsonData, err := json.MarshalIndent(resources, "", "  ")
-			if err != nil {
-				return fmt.Errorf("failed to marshal resources: %w", err)
-			}
-			ch.Println(string(jsonData))
+			printer.NewPrinter(printer.FormatJSON).PrintResource(resources)
 
 			for name, err := range failedProjects {
 				ch.Println()
@@ -115,7 +113,7 @@ func DumpResources(ch *cmdutil.Helper) *cobra.Command {
 	return searchCmd
 }
 
-func dumpResourcesForProject(ctx context.Context, c *client.Client, org, project, filter string) (map[string]json.RawMessage, error) {
+func resourcesForProject(ctx context.Context, c *client.Client, org, project, filter string) ([]*runtimev1.Resource, error) {
 	proj, err := c.GetProject(ctx, &adminv1.GetProjectRequest{
 		OrganizationName:    org,
 		Name:                project,
@@ -135,7 +133,13 @@ func dumpResourcesForProject(ctx context.Context, c *client.Client, org, project
 		return nil, fmt.Errorf("failed to connect to runtime: %w", err)
 	}
 
-	res, err := rt.ListResources(ctx, &runtimev1.ListResourcesRequest{InstanceId: depl.RuntimeInstanceId})
+	req := &runtimev1.ListResourcesRequest{
+		InstanceId: depl.RuntimeInstanceId,
+	}
+	if filter != "" {
+		req.Kind = parseResourceKind(filter)
+	}
+	res, err := rt.ListResources(ctx, req)
 	if err != nil {
 		msg := err.Error()
 		if s, ok := status.FromError(err); ok {
@@ -144,18 +148,36 @@ func dumpResourcesForProject(ctx context.Context, c *client.Client, org, project
 		return nil, fmt.Errorf("runtime error, failed to list resources: %v", msg)
 	}
 
-	result := make(map[string]json.RawMessage)
-	for _, r := range res.Resources {
-		jsonData, err := protojson.MarshalOptions{Indent: " "}.Marshal(r)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal resource: %w", err)
-		}
+	return res.Resources, nil
+}
 
-		kind := runtime.PrettifyResourceKind(r.Meta.Name.Kind)
-		if filter != "" && !strings.EqualFold(kind, filter) {
-			continue
-		}
-		result[kind+"/"+r.Meta.Name.Name] = jsonData
+func parseResourceKind(k string) string {
+	switch strings.ToLower(strings.TrimSpace(k)) {
+	case "source":
+		return runtime.ResourceKindSource
+	case "model":
+		return runtime.ResourceKindModel
+	case "metricsview", "metrics_view":
+		return runtime.ResourceKindMetricsView
+	case "explore":
+		return runtime.ResourceKindExplore
+	case "migration":
+		return runtime.ResourceKindMigration
+	case "report":
+		return runtime.ResourceKindReport
+	case "alert":
+		return runtime.ResourceKindAlert
+	case "theme":
+		return runtime.ResourceKindTheme
+	case "component":
+		return runtime.ResourceKindComponent
+	case "canvas":
+		return runtime.ResourceKindCanvas
+	case "api":
+		return runtime.ResourceKindAPI
+	case "connector":
+		return runtime.ResourceKindConnector
+	default:
+		return k
 	}
-	return result, nil
 }

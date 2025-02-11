@@ -2,6 +2,7 @@ package printer
 
 import (
 	"encoding/json"
+	"fmt"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -10,7 +11,9 @@ import (
 
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 func (p *Printer) PrintOrgs(orgs []*adminv1.Organization, defaultOrg string) {
@@ -539,4 +542,107 @@ type billingIssue struct {
 	Level        string `header:"level" json:"level"`
 	Metadata     string `header:"metadata" json:"metadata"`
 	EventTime    string `header:"event_time,timestamp(ms|utc|human)" json:"event_time"`
+}
+
+func (p *Printer) PrintResource(resources map[string]map[string][]*runtimev1.Resource) {
+	if len(resources) == 0 {
+		p.PrintfWarn("No resources found\n")
+		return
+	}
+
+	rows := make([]*resource, 0)
+	for org, projects := range resources {
+		for project, rs := range projects {
+			for _, r := range rs {
+				rows = append(rows, resourceRow(org, project, r))
+			}
+		}
+	}
+	p.PrintData(rows)
+}
+
+func resourceRow(org, project string, r *runtimev1.Resource) *resource {
+	meta, err := protojson.MarshalOptions{Indent: " "}.Marshal(r.Meta)
+	if err != nil {
+		meta = []byte(err.Error())
+	}
+	var (
+		spec, state       json.RawMessage
+		specErr, stateErr error
+	)
+
+	switch r.Meta.Name.Kind {
+	case runtime.ResourceKindSource:
+		spec, specErr = protojson.MarshalOptions{Indent: " "}.Marshal(r.GetSource().Spec)
+		state, stateErr = protojson.MarshalOptions{Indent: " "}.Marshal(r.GetSource().State)
+	case runtime.ResourceKindModel:
+		spec, specErr = protojson.MarshalOptions{Indent: " "}.Marshal(r.GetModel().Spec)
+		state, stateErr = protojson.MarshalOptions{Indent: " "}.Marshal(r.GetModel().State)
+	case runtime.ResourceKindMetricsView:
+		spec, specErr = protojson.MarshalOptions{Indent: " "}.Marshal(r.GetMetricsView().Spec)
+		state, stateErr = protojson.MarshalOptions{Indent: " "}.Marshal(r.GetMetricsView().State)
+	case runtime.ResourceKindExplore:
+		spec, specErr = protojson.MarshalOptions{Indent: " "}.Marshal(r.GetExplore().Spec)
+		state, stateErr = protojson.MarshalOptions{Indent: " "}.Marshal(r.GetExplore().State)
+	case runtime.ResourceKindMigration:
+		spec, specErr = protojson.MarshalOptions{Indent: " "}.Marshal(r.GetMigration().Spec)
+		state, stateErr = protojson.MarshalOptions{Indent: " "}.Marshal(r.GetMigration().State)
+	case runtime.ResourceKindReport:
+		spec, specErr = protojson.MarshalOptions{Indent: " "}.Marshal(r.GetReport().Spec)
+		state, stateErr = protojson.MarshalOptions{Indent: " "}.Marshal(r.GetReport().State)
+	case runtime.ResourceKindAlert:
+		spec, specErr = protojson.MarshalOptions{Indent: " "}.Marshal(r.GetAlert().Spec)
+		state, stateErr = protojson.MarshalOptions{Indent: " "}.Marshal(r.GetAlert().State)
+	case runtime.ResourceKindPullTrigger:
+		spec, specErr = protojson.MarshalOptions{Indent: " "}.Marshal(r.GetPullTrigger().Spec)
+		state, stateErr = protojson.MarshalOptions{Indent: " "}.Marshal(r.GetPullTrigger().State)
+	case runtime.ResourceKindRefreshTrigger:
+		spec, specErr = protojson.MarshalOptions{Indent: " "}.Marshal(r.GetRefreshTrigger().Spec)
+		state, stateErr = protojson.MarshalOptions{Indent: " "}.Marshal(r.GetRefreshTrigger().State)
+	case runtime.ResourceKindTheme:
+		spec, specErr = protojson.MarshalOptions{Indent: " "}.Marshal(r.GetTheme().Spec)
+		state, stateErr = protojson.MarshalOptions{Indent: " "}.Marshal(r.GetTheme().State)
+	case runtime.ResourceKindComponent:
+		spec, specErr = protojson.MarshalOptions{Indent: " "}.Marshal(r.GetComponent().Spec)
+		state, stateErr = protojson.MarshalOptions{Indent: " "}.Marshal(r.GetComponent().State)
+	case runtime.ResourceKindCanvas:
+		spec, specErr = protojson.MarshalOptions{Indent: " "}.Marshal(r.GetCanvas().Spec)
+		state, stateErr = protojson.MarshalOptions{Indent: " "}.Marshal(r.GetCanvas().State)
+	case runtime.ResourceKindAPI:
+		spec, specErr = protojson.MarshalOptions{Indent: " "}.Marshal(r.GetApi().Spec)
+		state, stateErr = protojson.MarshalOptions{Indent: " "}.Marshal(r.GetApi().State)
+	case runtime.ResourceKindConnector:
+		spec, specErr = protojson.MarshalOptions{Indent: " "}.Marshal(r.GetConnector().Spec)
+		state, stateErr = protojson.MarshalOptions{Indent: " "}.Marshal(r.GetConnector().State)
+	default:
+		specErr = fmt.Errorf("unknown resource kind %q", r.Meta.Name.Kind)
+		stateErr = fmt.Errorf("unknown resource kind %q", r.Meta.Name.Kind)
+	}
+
+	if specErr != nil {
+		spec = []byte(specErr.Error())
+	}
+	if stateErr != nil {
+		state = []byte(stateErr.Error())
+	}
+
+	return &resource{
+		Org:          org,
+		Project:      project,
+		ResourceType: runtime.PrettifyResourceKind(r.Meta.Name.Kind),
+		ResourceName: r.Meta.Name.Name,
+		Meta:         meta,
+		Spec:         spec,
+		State:        state,
+	}
+}
+
+type resource struct {
+	Org          string          `header:"org" json:"org"`
+	Project      string          `header:"project" json:"project"`
+	ResourceType string          `header:"resource_type" json:"resource_type"`
+	ResourceName string          `header:"resource_name" json:"resource_name"`
+	Meta         json.RawMessage `header:"meta" json:"meta"`
+	Spec         json.RawMessage `header:"spec" json:"spec"`
+	State        json.RawMessage `header:"state" json:"state"`
 }
