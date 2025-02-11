@@ -13,6 +13,7 @@
   import { resourceColorMapping } from "../entity-management/resource-icon-mapping";
   import { ResourceKind } from "../entity-management/resource-selectors";
   import { createAndPreviewExplore } from "./create-and-preview-explore";
+  import NavigateOrDropdown from "./NavigateOrDropdown.svelte";
 
   export let resource: V1Resource | undefined;
 
@@ -38,10 +39,7 @@
 {:else}
   <DropdownMenu.Root>
     <DropdownMenu.Trigger asChild let:builder>
-      <Button type="secondary" builders={[builder]}>
-        Go to dashboard
-        <CaretDownIcon />
-      </Button>
+      <NavigateOrDropdown resources={dashboards} {builder} />
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="end">
       <DropdownMenu.Group>
