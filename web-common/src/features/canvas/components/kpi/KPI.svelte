@@ -1,5 +1,6 @@
 <script lang="ts">
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
+  import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
@@ -188,11 +189,7 @@
     </div>
   {/if}
 {:else}
-  <div
-    class="flex w-full h-full p-2 text-xl bg-white items-center justify-center text-red-500"
-  >
-    {$schema.error}
-  </div>
+  <ComponentError error={$schema.error} />
 {/if}
 
 <style lang="postcss">
