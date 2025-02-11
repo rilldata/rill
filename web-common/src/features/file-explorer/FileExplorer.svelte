@@ -143,6 +143,8 @@
       await fileArtifacts.saveAll();
     }
   }
+
+  $: console.log({ fileTree });
 </script>
 
 <svelte:window
