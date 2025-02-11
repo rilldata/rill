@@ -63,22 +63,6 @@ export function displayResourceKind(kind: ResourceKind | undefined) {
   }
 }
 
-export const resourceKindToHumanReadable = {
-  [ResourceKind.ProjectParser]: "project parser",
-  [ResourceKind.Alert]: "alert",
-  [ResourceKind.Report]: "report",
-  [ResourceKind.Source]: "source",
-  [ResourceKind.Connector]: "connector",
-  [ResourceKind.Model]: "model",
-  [ResourceKind.MetricsView]: "metrics view",
-  [ResourceKind.Explore]: "dashboard",
-  [ResourceKind.Theme]: "theme",
-  [ResourceKind.Component]: "component",
-  [ResourceKind.Canvas]: "dashboard",
-  [ResourceKind.API]: "API",
-  [ResourceKind.RefreshTrigger]: "refresh trigger",
-};
-
 export type UserFacingResourceKinds = Exclude<
   ResourceKind,
   ResourceKind.ProjectParser | ResourceKind.RefreshTrigger

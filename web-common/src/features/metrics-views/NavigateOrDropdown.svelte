@@ -10,7 +10,6 @@
   } from "../entity-management/resource-selectors";
 
   export let resources: V1Resource[];
-
   export let builder: Builder;
 
   $: firstResource = resources?.[0];
