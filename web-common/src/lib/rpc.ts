@@ -51,3 +51,9 @@ export function initRPC() {
 export function registerMethod<T>(name: string, func: (params: T) => Promise<unknown> | unknown) {
     methods[name] = func;
 }
+
+export function emit(method: string, params?: unknown) {
+    if (window.parent !== window) {
+        window.parent.postMessage({ method, params } as RPCRequest, "*");
+    }
+}
