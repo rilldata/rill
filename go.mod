@@ -19,6 +19,7 @@ require (
 	github.com/MicahParks/keyfunc v1.9.0
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/XSAM/otelsql v0.27.0
+	github.com/alecthomas/participle/v2 v2.1.1
 	github.com/alicebob/miniredis v2.5.0+incompatible
 	github.com/apache/arrow/go/v15 v15.0.2
 	github.com/aws/aws-sdk-go v1.49.0
@@ -108,6 +109,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.31.0
 	go.opentelemetry.io/otel/sdk/metric v1.31.0
 	go.opentelemetry.io/otel/trace v1.33.0
+	go.uber.org/atomic v1.11.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
 	go.uber.org/zap/exp v0.2.0
@@ -387,7 +389,6 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v0.42.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.21.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.2.0 // indirect
-	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/goleak v1.3.0 // indirect
 	go.uber.org/mock v0.4.0 // indirect
 	golang.org/x/crypto v0.31.0 // indirect
@@ -419,10 +420,11 @@ require (
 
 exclude modernc.org/sqlite v1.18.1
 
-// Adds changes from the two PRs :
+// Adds changes from the following PRs :
 // https://github.com/apache/arrow/pull/41638
 // https://github.com/apache/arrow/pull/42003
-replace github.com/apache/arrow/go/v15 v15.0.2 => github.com/rilldata/arrow/go/v15 v15.0.0-20241221060748-f48dd933c1b0
+// https://github.com/apache/arrow/pull/41698
+replace github.com/apache/arrow/go/v15 v15.0.2 => github.com/rilldata/arrow/go/v15 v15.0.0-20250102090621-2b8f541ea250
 
 // security vulnerability in dgrijalva/jwt-go
 replace github.com/dgrijalva/jwt-go => github.com/golang-jwt/jwt v3.2.1+incompatible

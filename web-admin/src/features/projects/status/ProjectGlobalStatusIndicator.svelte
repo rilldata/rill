@@ -6,6 +6,8 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { useProjectDeployment } from "./selectors";
+  import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
+  import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
 
   const queryClient = useQueryClient();
 
@@ -45,6 +47,10 @@
     $projectParserQuery?.data?.projectParser.state.parseErrors.length > 0;
 </script>
 
-{#if isDeploymentNotOk || hasResourceErrors || hasParseErrors}
+{#if $projectParserQuery.isLoading || $hasResourceErrorsQuery.isLoading}
+  <LoadingSpinner />
+{:else if isDeploymentNotOk || hasResourceErrors || hasParseErrors}
   <CancelCircle className="text-red-600" />
+{:else}
+  <CheckCircle className="text-green-400" />
 {/if}

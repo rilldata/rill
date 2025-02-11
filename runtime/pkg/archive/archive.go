@@ -23,7 +23,7 @@ var ignoreFileList = []string{
 	"/.git",
 }
 
-func Download(ctx context.Context, downloadURL, downloadDst, projPath string, clean bool) error {
+func Download(ctx context.Context, downloadURL, downloadDst, projPath string, clean, ignorePaths bool) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, downloadURL, http.NoBody)
 	if err != nil {
 		return err
@@ -59,14 +59,14 @@ func Download(ctx context.Context, downloadURL, downloadDst, projPath string, cl
 	}
 
 	// untar to the project path
-	err = untar(downloadDst, filepath.Clean(projPath))
+	err = untar(downloadDst, filepath.Clean(projPath), ignorePaths)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func Create(ctx context.Context, files []drivers.DirEntry, root, url string, headers map[string]string) error {
+func CreateAndUpload(ctx context.Context, files []drivers.DirEntry, root, url string, headers map[string]string) error {
 	// generate a tar ball
 	b := &bytes.Buffer{}
 
@@ -76,6 +76,26 @@ func Create(ctx context.Context, files []drivers.DirEntry, root, url string, hea
 	}
 
 	err = uploadTarBall(ctx, url, b, headers)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func Create(ctx context.Context, files []drivers.DirEntry, root string) (*bytes.Buffer, error) {
+	b := &bytes.Buffer{}
+
+	err := createTar(b, files, root)
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
+}
+
+func Upload(ctx context.Context, url string, body io.Reader, headers map[string]string) error {
+	err := uploadTarBall(ctx, url, body, headers)
 	if err != nil {
 		return err
 	}
@@ -130,7 +150,7 @@ func createTar(writer io.Writer, files []drivers.DirEntry, root string) error {
 	return nil
 }
 
-func untar(src, dest string) error {
+func untar(src, dest string, ignorePaths bool) error {
 	file, err := os.Open(src)
 	if err != nil {
 		return err
@@ -157,6 +177,12 @@ func untar(src, dest string) error {
 		if err != nil {
 			return err
 		}
+
+		// nolint:gosec // sanitizeArchivePath checks for GSC-G305 and throws error but linter cannot know this
+		if ignorePaths && drivers.IsIgnored(filepath.Join(string(filepath.Separator), header.Name), nil) {
+			continue
+		}
+
 		switch header.Typeflag {
 		case tar.TypeDir:
 			// Handle directory

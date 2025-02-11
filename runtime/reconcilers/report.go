@@ -37,8 +37,8 @@ type ReportReconciler struct {
 	C *runtime.Controller
 }
 
-func newReportReconciler(c *runtime.Controller) runtime.Reconciler {
-	return &ReportReconciler{C: c}
+func newReportReconciler(ctx context.Context, c *runtime.Controller) (runtime.Reconciler, error) {
+	return &ReportReconciler{C: c}, nil
 }
 
 func (r *ReportReconciler) Close(ctx context.Context) error {
@@ -361,7 +361,7 @@ func (r *ReportReconciler) executeSingle(ctx context.Context, self *runtimev1.Re
 		} else {
 			rep.State.CurrentExecution.ErrorMessage = fmt.Sprintf("Report run failed: %v", reportErr.Error())
 		}
-		reportErr = fmt.Errorf("Last report run failed with error: %v", reportErr.Error())
+		reportErr = fmt.Errorf("last report run failed with error: %v", reportErr.Error())
 	}
 
 	// Log it

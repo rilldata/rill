@@ -36,6 +36,10 @@ connectors:
 
 env:
   foo: bar
+
+mock_users:
+- email: foo@bar.com
+  custom_attribute: yeah
 `,
 	})
 
@@ -1546,6 +1550,18 @@ theme:
   colors:
     primary: red
 `,
+		// Canvas referencing the external theme resource
+		`canvases/c1.yaml`: `
+type: canvas
+theme: t1
+`,
+		// Canvas that defines an inline theme
+		`canvases/c2.yaml`: `
+type: canvas
+theme:
+  colors:
+    primary: red
+`,
 	})
 
 	resources := []*Resource{
@@ -1601,6 +1617,33 @@ theme:
 				},
 			},
 		},
+		{
+			Name:  ResourceName{Kind: ResourceKindCanvas, Name: "c1"},
+			Paths: []string{"/canvases/c1.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindTheme, Name: "t1"}},
+			CanvasSpec: &runtimev1.CanvasSpec{
+				DisplayName:    "C1",
+				Theme:          "t1",
+				FiltersEnabled: true,
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindCanvas, Name: "c2"},
+			Paths: []string{"/canvases/c2.yaml"},
+			CanvasSpec: &runtimev1.CanvasSpec{
+				DisplayName: "C2",
+				EmbeddedTheme: &runtimev1.ThemeSpec{
+					PrimaryColor: &runtimev1.Color{
+						Red:   1,
+						Green: 0,
+						Blue:  0,
+						Alpha: 1,
+					},
+					PrimaryColorRaw: "red",
+				},
+				FiltersEnabled: true,
+			},
+		},
 	}
 
 	p, err := Parse(ctx, repo, "", "", "duckdb")
@@ -1627,34 +1670,43 @@ func TestComponentsAndCanvas(t *testing.T) {
 		`rill.yaml`: ``,
 		`components/c1.yaml`: fmt.Sprintf(`
 type: component
-data:
-  api: MetricsViewAggregation
-  args:
-    metrics_view: foo
-vega_lite: >
-  %s
+vega_lite:
+  spec: '%s'
 `, vegaLiteSpec),
 		`components/c2.yaml`: fmt.Sprintf(`
 type: component
-data:
-  api: MetricsViewAggregation
-  args:
-    metrics_view: bar
-vega_lite: >
-  %s
+vega_lite:
+  spec: '%s'
 `, vegaLiteSpec),
 		`components/c3.yaml`: `
 type: component
-data:
-  metrics_sql: SELECT 1
-line_chart:
-  x: time
-  y: total_sales
+kpi:
+  metrics_view: foo
+  measure: bar
+  time_range: P1W
 `,
 		`canvases/d1.yaml`: `
 type: canvas
-columns: 4
-gap: 3
+
+max_width: 4
+gap_x: 1
+gap_y: 2
+
+time_ranges:
+  - P2W
+  - range: P4W
+  - range: P2M
+    comparison_offsets:
+      - P1M
+      - offset: P4M
+        range: P2M
+
+filters:
+  enable: false
+
+defaults:
+  time_range: P4W
+
 items:
 - component: c1
 - component: c2
@@ -1663,6 +1715,10 @@ items:
 - component:
     markdown:
       content: "Hello world!"
+
+layout:
+- 1, 2, 3
+- 4, 5, 6
 `,
 	})
 
@@ -1670,11 +1726,8 @@ items:
 		{
 			Name:  ResourceName{Kind: ResourceKindComponent, Name: "c1"},
 			Paths: []string{"/components/c1.yaml"},
-			Refs:  []ResourceName{{Kind: ResourceKindAPI, Name: "MetricsViewAggregation"}},
 			ComponentSpec: &runtimev1.ComponentSpec{
 				DisplayName:        "C1",
-				Resolver:           "api",
-				ResolverProperties: must(structpb.NewStruct(map[string]any{"api": "MetricsViewAggregation", "args": map[string]any{"metrics_view": "foo"}})),
 				Renderer:           "vega_lite",
 				RendererProperties: must(structpb.NewStruct(map[string]any{"spec": vegaLiteSpec})),
 			},
@@ -1682,11 +1735,8 @@ items:
 		{
 			Name:  ResourceName{Kind: ResourceKindComponent, Name: "c2"},
 			Paths: []string{"/components/c2.yaml"},
-			Refs:  []ResourceName{{Kind: ResourceKindAPI, Name: "MetricsViewAggregation"}},
 			ComponentSpec: &runtimev1.ComponentSpec{
 				DisplayName:        "C2",
-				Resolver:           "api",
-				ResolverProperties: must(structpb.NewStruct(map[string]any{"api": "MetricsViewAggregation", "args": map[string]any{"metrics_view": "bar"}})),
 				Renderer:           "vega_lite",
 				RendererProperties: must(structpb.NewStruct(map[string]any{"spec": vegaLiteSpec})),
 			},
@@ -1694,12 +1744,11 @@ items:
 		{
 			Name:  ResourceName{Kind: ResourceKindComponent, Name: "c3"},
 			Paths: []string{"/components/c3.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindMetricsView, Name: "foo"}},
 			ComponentSpec: &runtimev1.ComponentSpec{
 				DisplayName:        "C3",
-				Resolver:           "metrics_sql",
-				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 1"})),
-				Renderer:           "line_chart",
-				RendererProperties: must(structpb.NewStruct(map[string]any{"x": "time", "y": "total_sales"})),
+				Renderer:           "kpi",
+				RendererProperties: must(structpb.NewStruct(map[string]any{"metrics_view": "foo", "measure": "bar", "time_range": "P1W"})),
 			},
 		},
 		{
@@ -1721,13 +1770,31 @@ items:
 			},
 			CanvasSpec: &runtimev1.CanvasSpec{
 				DisplayName: "D1",
-				Columns:     4,
-				Gap:         3,
+				MaxWidth:    4,
+				GapX:        1,
+				GapY:        2,
+				TimeRanges: []*runtimev1.ExploreTimeRange{
+					{Range: "P2W"},
+					{Range: "P4W"},
+					{
+						Range: "P2M",
+						ComparisonTimeRanges: []*runtimev1.ExploreComparisonTimeRange{
+							{Offset: "P1M"},
+							{Offset: "P4M", Range: "P2M"},
+						},
+					},
+				},
+				FiltersEnabled: false,
+				DefaultPreset: &runtimev1.CanvasPreset{
+					TimeRange:      asPtr("P4W"),
+					ComparisonMode: runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_NONE,
+				},
 				Items: []*runtimev1.CanvasItem{
 					{Component: "c1"},
 					{Component: "c2", Width: asPtr(uint32(1)), Height: asPtr(uint32(2))},
 					{Component: "d1--component-2", DefinedInCanvas: true},
 				},
+				Layout: must(structpb.NewValue([]any{"1, 2, 3", "4, 5, 6"})),
 			},
 		},
 	}
@@ -1752,6 +1819,28 @@ sql: select * from m1
 		`apis/a2.yaml`: `
 type: api
 metrics_sql: select * from m1
+`,
+		// api a3 with security rules
+		`apis/a3.yaml`: `
+type: api
+sql: select * from m1
+security:
+  access: true
+`,
+		// api a4
+		`apis/a4.yaml`: `
+type: api
+metrics_sql: select * from m1
+security:
+  access: '{{ .user.admin }}'
+`,
+		// api a5
+		`apis/a5.yaml`: `
+type: api
+metrics_sql: select * from m1
+skip_nested_security: true
+security:
+  access: '{{ .user.admin }}'
 `,
 	})
 
@@ -1782,8 +1871,50 @@ metrics_sql: select * from m1
 				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
 			},
 		},
+		{
+			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a3"},
+			Paths: []string{"/apis/a3.yaml"},
+			APISpec: &runtimev1.APISpec{
+				Resolver:           "sql",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"connector": "duckdb", "sql": "select * from m1"})),
+				SecurityRules: []*runtimev1.SecurityRule{
+					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
+						Condition: "true",
+						Allow:     true,
+					}}},
+				},
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a4"},
+			Paths: []string{"/apis/a4.yaml"},
+			APISpec: &runtimev1.APISpec{
+				Resolver:           "metrics_sql",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
+				SecurityRules: []*runtimev1.SecurityRule{
+					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
+						Condition: "{{ .user.admin }}",
+						Allow:     true,
+					}}},
+				},
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a5"},
+			Paths: []string{"/apis/a5.yaml"},
+			APISpec: &runtimev1.APISpec{
+				Resolver:           "metrics_sql",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
+				SecurityRules: []*runtimev1.SecurityRule{
+					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
+						Condition: "{{ .user.admin }}",
+						Allow:     true,
+					}}},
+				},
+				SkipNestedSecurity: true,
+			},
+		},
 	}
-
 	p, err := Parse(ctx, repo, "", "", "duckdb")
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
@@ -2228,4 +2359,11 @@ func normalizeJSON(t *testing.T, s string) string {
 	b, err := json.Marshal(v)
 	require.NoError(t, err)
 	return string(b)
+}
+
+func must[T any](v T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return v
 }

@@ -8,28 +8,29 @@ import (
 
 // rewriteApproxComparisons rewrites the AST to use a LEFT or RIGHT join instead of a FULL joins for comparisons,
 // which enables more efficient query execution at the cost of some accuracy.
-// ---- CTE Optimization ---- //
+// ---- CTE rewrite ---- //
 // Extracts out the base or comparison query into a CTE depending on the sort field.
-// This is done to enable more efficient query execution by adding filter in the join query to select only dimension values present in the CTE.
-func (e *Executor) rewriteApproxComparisons(ast *AST) {
+// This is done to prevent running a group by query on comparison time range without a limit which can fail in some olap engines if dim cardinality is very high by adding filter in the join query to select only dimension values present in the CTE.
+// This does cause CTE to be scanned twice but at least query will not fail.
+func (e *Executor) rewriteApproxComparisons(ast *AST, isMultiPhase bool) {
 	if !e.instanceCfg.MetricsApproximateComparisons {
 		return
 	}
 
-	_ = e.rewriteApproxComparisonsWalk(ast, ast.Root)
+	_ = e.rewriteApproxComparisonsWalk(ast, ast.Root, isMultiPhase)
 }
 
-func (e *Executor) rewriteApproxComparisonsWalk(a *AST, n *SelectNode) bool {
+func (e *Executor) rewriteApproxComparisonsWalk(a *AST, n *SelectNode, isMultiPhase bool) bool {
 	// If n is a comparison node, rewrite it
 	var rewrote bool
 	if n.JoinComparisonSelect != nil {
-		rewrote = e.rewriteApproxComparisonNode(a, n)
+		rewrote = e.rewriteApproxComparisonNode(a, n, isMultiPhase)
 	}
 
 	// Recursively walk the base select.
 	// NOTE: Probably doesn't matter, but should we walk the left join and comparison sub-selects?
 	if n.FromSelect != nil {
-		rewroteNested := e.rewriteApproxComparisonsWalk(a, n.FromSelect)
+		rewroteNested := e.rewriteApproxComparisonsWalk(a, n.FromSelect, isMultiPhase)
 		rewrote = rewrote || rewroteNested
 	}
 
@@ -41,14 +42,15 @@ func (e *Executor) rewriteApproxComparisonsWalk(a *AST, n *SelectNode) bool {
 	return rewrote
 }
 
-func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode) bool {
+func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode, isMultiPhase bool) bool {
 	// Can only rewrite when sorting by exactly one field.
 	if len(a.Root.OrderBy) != 1 {
 		return false
 	}
 	sortField := a.Root.OrderBy[0]
 
-	if e.olap.Dialect() == drivers.DialectDruid {
+	cteRewrite := e.instanceCfg.MetricsApproximateComparisonsCTE && !isMultiPhase
+	if e.olap.Dialect() == drivers.DialectDruid && cteRewrite {
 		// if there are unnests in the query, we can't rewrite the query for Druid
 		// it fails with join on cte having multi value dimension, issue - https://github.com/apache/druid/issues/16896
 		for _, dim := range n.FromSelect.DimFields {
@@ -112,9 +114,8 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode) bool {
 		n.FromSelect.Limit = a.Root.Limit
 		n.FromSelect.Offset = a.Root.Offset
 
-		// don't optimize for ClickHouse as its unable to inline the CTE results causing multiple scans
-		if e.olap.Dialect() != drivers.DialectClickHouse {
-			// ---- CTE Optimization ---- //
+		if cteRewrite {
+			// rewrite base query as CTE and use results from CTE in the comparison query
 			// make FromSelect a CTE
 			a.convertToCTE(n.FromSelect)
 
@@ -134,9 +135,8 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode) bool {
 		n.JoinComparisonSelect.Limit = a.Root.Limit
 		n.JoinComparisonSelect.Offset = a.Root.Offset
 
-		// don't optimize for ClickHouse as its unable to inline the CTE results causing multiple scans
-		if e.olap.Dialect() != drivers.DialectClickHouse {
-			// ---- CTE Optimization ---- //
+		if cteRewrite {
+			// rewrite comparison query as CTE and use results from CTE in the base query
 			// make JoinComparisonSelect a CTE
 			a.convertToCTE(n.JoinComparisonSelect)
 
@@ -155,9 +155,8 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode) bool {
 		n.FromSelect.Limit = a.Root.Limit
 		n.FromSelect.Offset = a.Root.Offset
 
-		// don't optimize for ClickHouse as its unable to inline the CTE results causing multiple scans
-		if e.olap.Dialect() != drivers.DialectClickHouse {
-			// ---- CTE Optimization ---- //
+		if cteRewrite {
+			// rewrite base query as CTE and use results from CTE in the comparison query
 			// make FromSelect a CTE
 			a.convertToCTE(n.FromSelect)
 

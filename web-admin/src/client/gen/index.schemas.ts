@@ -114,7 +114,7 @@ export type AdminServiceCreateAssetBody = {
   type?: string;
   name?: string;
   extension?: string;
-  cacheable?: boolean;
+  public?: boolean;
   estimatedSizeBytes?: string;
 };
 
@@ -194,6 +194,10 @@ export type AdminServiceListMagicAuthTokensParams = {
 export type AdminServiceUnsubscribeReportBody = {
   email?: string;
   slackUser?: string;
+};
+
+export type AdminServiceRedeployProjectParams = {
+  superuserForceAccess?: boolean;
 };
 
 export type AdminServiceAddProjectMemberUserBody = {
@@ -302,6 +306,7 @@ export type AdminServiceUpdateOrganizationBody = {
   newName?: string;
   displayName?: string;
   logoAssetId?: string;
+  faviconAssetId?: string;
   billingEmail?: string;
 };
 
@@ -877,6 +882,7 @@ export interface V1Organization {
   displayName?: string;
   description?: string;
   logoUrl?: string;
+  faviconUrl?: string;
   customDomain?: string;
   quotas?: V1OrganizationQuotas;
   billingCustomerId?: string;
@@ -1085,10 +1091,13 @@ export interface V1GetReportMetaResponse {
 }
 
 export interface V1GetRepoMetaResponse {
+  /** If the Git-related fields are set, the archive-related fields will not be set (and vice versa). */
   gitUrl?: string;
   gitUrlExpiresOn?: string;
   gitSubpath?: string;
   archiveDownloadUrl?: string;
+  archiveId?: string;
+  archiveCreatedOn?: string;
 }
 
 /**

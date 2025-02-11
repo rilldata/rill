@@ -3,6 +3,9 @@
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   export let title: string;
   export let titleIcon: "none" | "info" | "error" = "none";
+  // Edge case with slots where conditional display breaks the logic.
+  // TODO: once we move out of slots we should get rid of this.
+  export let suppressFooter = false;
 </script>
 
 <div class="settings-container">
@@ -22,7 +25,7 @@
       {/if}
     </div>
   </div>
-  {#if $$slots["contact"] || $$slots["action"]}
+  {#if ($$slots["contact"] || $$slots["action"]) && !suppressFooter}
     <div class="settings-footer">
       <slot name="contact" />
       {#if $$slots["action"]}
@@ -35,7 +38,7 @@
 
 <style lang="postcss">
   .settings-container {
-    @apply w-full max-w-[844px] border border-slate-200 text-slate-700;
+    @apply w-full border border-slate-200 text-slate-700 rounded-sm;
   }
 
   .settings-header {

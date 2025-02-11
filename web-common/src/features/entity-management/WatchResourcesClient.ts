@@ -3,6 +3,7 @@ import { ResourceKind } from "@rilldata/web-common/features/entity-management/re
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   getConnectorServiceOLAPListTablesQueryKey,
+  getQueryServiceResolveCanvasQueryKey,
   getRuntimeServiceAnalyzeConnectorsQueryKey,
   getRuntimeServiceGetExploreQueryKey,
   getRuntimeServiceGetModelPartitionsQueryKey,
@@ -236,6 +237,17 @@ export class WatchResourcesClient {
                 }),
               )
               .catch(console.error);
+            return;
+          }
+
+          case ResourceKind.Canvas: {
+            void queryClient.refetchQueries(
+              getQueryServiceResolveCanvasQueryKey(
+                this.instanceId,
+                res.name.name,
+                {},
+              ),
+            );
             return;
           }
 

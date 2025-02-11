@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"regexp"
-	"slices"
 	"strings"
 	"time"
 
@@ -19,7 +18,6 @@ import (
 	"github.com/rilldata/rill/cli/pkg/local"
 	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
-	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/spf13/cobra"
@@ -49,9 +47,12 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 	opts := &DeployOpts{}
 
 	deployCmd := &cobra.Command{
-		Use:   "deploy",
+		Use:   "deploy [<path>]",
 		Short: "Deploy project to Rill Cloud by uploading the project files",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) > 0 {
+				opts.GitPath = args[0]
+			}
 			return DeployWithUploadFlow(cmd.Context(), ch, opts)
 		},
 	}
@@ -175,6 +176,7 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 			return err
 		}
 		printer.ColorGreenBold.Printf("All files uploaded successfully.\n\n")
+
 		// Update the project
 		// Silently ignores other flags like description etc which are handled with project update.
 		res, err := adminClient.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
@@ -190,6 +192,23 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 			return fmt.Errorf("update project failed with error %w", err)
 		}
 		ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventDeploySuccess)
+
+		// Fetch vars from .env
+		vars, err := local.ParseDotenv(ctx, localProjectPath)
+		if err != nil {
+			ch.PrintfWarn("Failed to parse .env: %v\n", err)
+		} else if len(vars) > 0 {
+			_, err = adminClient.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
+				Organization: ch.Org,
+				Project:      opts.Name,
+				Variables:    vars,
+			})
+			if err != nil {
+				ch.PrintfWarn("Failed to upload .env: %v\n", err)
+			}
+		}
+
+		// Success
 		ch.PrintfSuccess("Updated project \"%s/%s\".\n\n", ch.Org, res.Project.Name)
 		return nil
 	}
@@ -233,8 +252,20 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 	// Success!
 	ch.PrintfSuccess("Created project \"%s/%s\". Use `rill project rename` to change name if required.\n\n", ch.Org, res.Project.Name)
 
-	// we parse the project and check if credentials are available for the connectors used by the project.
-	variablesFlow(ctx, ch, localProjectPath, opts.SubPath, opts.Name)
+	// Upload .env
+	vars, err := local.ParseDotenv(ctx, localProjectPath)
+	if err != nil {
+		ch.PrintfWarn("Failed to parse .env: %v\n", err)
+	} else if len(vars) > 0 {
+		_, err = adminClient.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
+			Organization: ch.Org,
+			Project:      opts.Name,
+			Variables:    vars,
+		})
+		if err != nil {
+			ch.PrintfWarn("Failed to upload .env: %v\n", err)
+		}
+	}
 
 	// Open browser
 	if res.Project.FrontendUrl != "" {
@@ -247,63 +278,6 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 	}
 	ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventDeploySuccess)
 	return nil
-}
-
-func variablesFlow(ctx context.Context, ch *cmdutil.Helper, gitPath, subPath, projectName string) {
-	// Parse the project's connectors
-	repo, instanceID, err := cmdutil.RepoForProjectPath(gitPath)
-	if err != nil {
-		return
-	}
-	parser, err := rillv1.Parse(ctx, repo, instanceID, "prod", "duckdb")
-	if err != nil {
-		return
-	}
-	connectors := parser.AnalyzeConnectors(ctx)
-	for _, c := range connectors {
-		if c.Err != nil {
-			return
-		}
-	}
-
-	// Remove the default DuckDB connector we always add
-	for i, c := range connectors {
-		if c.Name == "duckdb" {
-			connectors = slices.Delete(connectors, i, i+1)
-			break
-		}
-	}
-
-	// Exit early if all connectors can be used anonymously
-	foundNotAnonymous := false
-	for _, c := range connectors {
-		if !c.AnonymousAccess {
-			foundNotAnonymous = true
-		}
-	}
-	if !foundNotAnonymous {
-		return
-	}
-
-	ch.PrintfWarn("\nCould not access all connectors. Rill requires credentials for the following connectors:\n\n")
-	for _, c := range connectors {
-		if c.AnonymousAccess {
-			continue
-		}
-		fmt.Printf(" - %s", c.Name)
-		if len(c.Resources) == 1 {
-			fmt.Printf(" (used by %s)", c.Resources[0].Name.Name)
-		} else if len(c.Resources) > 1 {
-			fmt.Printf(" (used by %s and others)", c.Resources[0].Name.Name)
-		}
-		fmt.Print("\n")
-	}
-	if subPath == "" {
-		ch.PrintfWarn("\nRun `rill env configure --project %s` to provide credentials.\n\n", projectName)
-	} else {
-		ch.PrintfWarn("\nRun `rill env configure --project %s` from directory `%s` to provide credentials.\n\n", projectName, gitPath)
-	}
-	time.Sleep(2 * time.Second)
 }
 
 func createOrgFlow(ctx context.Context, ch *cmdutil.Helper, defaultName string) error {

@@ -10,15 +10,15 @@
   } from "@tanstack/svelte-table";
   import { createEventDispatcher, setContext } from "svelte";
   import { writable } from "svelte/store";
+  import Toolbar from "./Toolbar.svelte";
 
   export let data: unknown[] = [];
   export let columns: ColumnDef<unknown, unknown>[] = [];
   export let columnVisibility: Record<string, boolean> = {};
-  export let maxWidthOverride: string | null = null;
+  export let kind: string;
+  export let toolbar: boolean = true;
 
   const dispatch = createEventDispatcher();
-
-  let maxWidth = maxWidthOverride ?? "max-w-[800px]";
 
   let sorting = [];
   function setSorting(updater) {
@@ -73,30 +73,32 @@
   $: data && rerender();
 </script>
 
-<slot name="toolbar" />
+{#if toolbar}
+  <slot name="toolbar">
+    <Toolbar />
+  </slot>
+{/if}
 
-<table class="w-full {maxWidth}">
+<table class="w-full">
   <slot name="header" />
   <tbody>
-    {#if $table.getRowModel().rows.length === 0}
-      <tr>
-        <td class="text-center py-4">
-          <slot name="empty" />
-        </td>
+    {#each $table.getRowModel().rows as row (row.id)}
+      <tr on:click={() => handleClickRow(row)}>
+        {#each row.getVisibleCells() as cell (cell.id)}
+          <td class="hover:bg-slate-50">
+            <svelte:component
+              this={flexRender(cell.column.columnDef.cell, cell.getContext())}
+            />
+          </td>
+        {/each}
       </tr>
     {:else}
-      {#each $table.getRowModel().rows as row}
-        <tr on:click={() => handleClickRow(row)}>
-          {#each row.getVisibleCells() as cell}
-            <td class="hover:bg-slate-50">
-              <svelte:component
-                this={flexRender(cell.column.columnDef.cell, cell.getContext())}
-              />
-            </td>
-          {/each}
-        </tr>
-      {/each}
-    {/if}
+      <tr>
+        <td class="text-center py-4">
+          <span class="text-gray-500"> No {kind}s found. </span>
+        </td>
+      </tr>
+    {/each}
   </tbody>
 </table>
 

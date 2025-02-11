@@ -7,6 +7,7 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/pkg/rilltime"
 	"golang.org/x/exp/maps"
 	"gopkg.in/yaml.v3"
 )
@@ -16,6 +17,7 @@ type ExploreYAML struct {
 	DisplayName string                 `yaml:"display_name"`
 	Title       string                 `yaml:"title"` // Deprecated: use display_name
 	Description string                 `yaml:"description"`
+	Banner      string                 `yaml:"banner"`
 	MetricsView string                 `yaml:"metrics_view"`
 	Dimensions  *FieldSelectorYAML     `yaml:"dimensions"`
 	Measures    *FieldSelectorYAML     `yaml:"measures"`
@@ -154,7 +156,7 @@ func (p *Parser) parseExplore(node *Node) error {
 
 	// Parse theme if present.
 	// If it returns a themeSpec, it will be inserted as a separate resource later in this function.
-	themeName, themeSpec, err := p.parseExploreTheme(&tmp.Theme)
+	themeName, themeSpec, err := p.parseThemeRef(&tmp.Theme)
 	if err != nil {
 		return err
 	}
@@ -165,18 +167,14 @@ func (p *Parser) parseExplore(node *Node) error {
 	// Build and validate time ranges
 	var timeRanges []*runtimev1.ExploreTimeRange
 	for _, tr := range tmp.TimeRanges {
-		if err := validateISO8601(tr.Range, false, false); err != nil {
+		if _, err := rilltime.Parse(tr.Range, rilltime.ParseOptions{}); err != nil {
 			return fmt.Errorf("invalid time range %q: %w", tr.Range, err)
 		}
 		res := &runtimev1.ExploreTimeRange{Range: tr.Range}
 		for _, ctr := range tr.ComparisonTimeRanges {
-			if err := validateISO8601(ctr.Offset, false, false); err != nil {
-				return fmt.Errorf("invalid comparison offset %q: %w", ctr.Offset, err)
-			}
-			if ctr.Range != "" {
-				if err := validateISO8601(ctr.Range, false, false); err != nil {
-					return fmt.Errorf("invalid comparison range %q: %w", ctr.Range, err)
-				}
+			err = rilltime.ParseCompatibility(ctr.Range, ctr.Offset)
+			if err != nil {
+				return err
 			}
 			res.ComparisonTimeRanges = append(res.ComparisonTimeRanges, &runtimev1.ExploreComparisonTimeRange{
 				Offset: ctr.Offset,
@@ -198,7 +196,7 @@ func (p *Parser) parseExplore(node *Node) error {
 	var defaultPreset *runtimev1.ExplorePreset
 	if tmp.Defaults != nil {
 		if tmp.Defaults.TimeRange != "" {
-			if err := validateISO8601(tmp.Defaults.TimeRange, false, false); err != nil {
+			if _, err := rilltime.Parse(tmp.Defaults.TimeRange, rilltime.ParseOptions{}); err != nil {
 				return fmt.Errorf("invalid time range %q: %w", tmp.Defaults.TimeRange, err)
 			}
 		}
@@ -271,28 +269,26 @@ func (p *Parser) parseExplore(node *Node) error {
 	}
 	r.ExploreSpec.Description = tmp.Description
 	r.ExploreSpec.MetricsView = tmp.MetricsView
+	r.ExploreSpec.Banner = tmp.Banner
 	r.ExploreSpec.Dimensions = dimensions
 	r.ExploreSpec.DimensionsSelector = dimensionsSelector
 	r.ExploreSpec.Measures = measures
 	r.ExploreSpec.MeasuresSelector = measuresSelector
+	r.ExploreSpec.Theme = themeName
+	r.ExploreSpec.EmbeddedTheme = themeSpec
 	r.ExploreSpec.TimeRanges = timeRanges
 	r.ExploreSpec.TimeZones = tmp.TimeZones
 	r.ExploreSpec.DefaultPreset = defaultPreset
 	r.ExploreSpec.EmbedsHidePivot = tmp.Embeds.HidePivot
 	r.ExploreSpec.SecurityRules = rules
 
-	if themeName != "" && themeSpec == nil {
-		r.ExploreSpec.Theme = themeName
-	}
-
-	if themeSpec != nil {
-		r.ExploreSpec.EmbeddedTheme = themeSpec
-	}
-
 	return nil
 }
 
-func (p *Parser) parseExploreTheme(n *yaml.Node) (string, *runtimev1.ThemeSpec, error) {
+// parseThemeRef parses a theme from a YAML node.
+// It accepts either a reference to a theme by name or an inline definition of a theme.
+// It returns either a theme name or a theme spec, not both.
+func (p *Parser) parseThemeRef(n *yaml.Node) (string, *runtimev1.ThemeSpec, error) {
 	if n == nil || n.IsZero() {
 		return "", nil, nil
 	}

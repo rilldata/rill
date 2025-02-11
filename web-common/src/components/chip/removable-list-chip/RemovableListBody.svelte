@@ -2,6 +2,7 @@
   export let label: string;
   export let values: string[];
   export let show = 1;
+  export let smallChip = false;
   export let labelMaxWidth = "160px";
   export let valueMaxWidth = "320px";
 
@@ -9,17 +10,26 @@
 </script>
 
 <div class="flex gap-x-2 items-center">
-  <span class="font-bold truncate" style:max-width={labelMaxWidth}>
+  <span
+    class="font-bold truncate"
+    style:max-width={smallChip ? "150px" : labelMaxWidth}
+  >
     {label}
   </span>
 
-  {#each values.slice(0, show) as value (value)}
-    <span class="truncate" style:max-width={valueMaxWidth}>
-      {value}
-    </span>
-  {/each}
+  {#if !smallChip}
+    {#each values.slice(0, show) as value (value)}
+      <span class="truncate" style:max-width={valueMaxWidth}>
+        {value}
+      </span>
+    {/each}
+  {/if}
 
-  {#if values.length > 1}
+  {#if smallChip}
+    <span class="italic">
+      {values.length} selected
+    </span>
+  {:else if values.length > 1}
     <span class="italic">
       +{whatsLeft} other{#if whatsLeft !== 1}s{/if}
     </span>

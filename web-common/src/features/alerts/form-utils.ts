@@ -87,7 +87,7 @@ export function getAlertQueryArgsFromFormValues(
         op: formValues.criteriaOperation,
         exprs: formValues.criteria
           .map(mapMeasureFilterToExpr)
-          .filter((e) => !!e) as V1Expression[],
+          .filter((e) => !!e),
       },
     }),
     timeRange: {
@@ -98,7 +98,7 @@ export function getAlertQueryArgsFromFormValues(
     sort: [
       {
         name: formValues.measure,
-        desc: false,
+        desc: true,
       },
     ],
     ...(formValues.comparisonTimeRange

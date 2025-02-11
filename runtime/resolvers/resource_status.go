@@ -5,10 +5,8 @@ import (
 	"errors"
 	"io"
 	"slices"
-	"strconv"
 	"strings"
 
-	"github.com/mitchellh/hashstructure/v2"
 	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -55,16 +53,8 @@ func (r *resourceStatusResolver) Close() error {
 	return nil
 }
 
-func (r *resourceStatusResolver) Cacheable() bool {
-	return false
-}
-
-func (r *resourceStatusResolver) Key() string {
-	hash, err := hashstructure.Hash(r.props, hashstructure.FormatV2, nil)
-	if err != nil {
-		panic(err)
-	}
-	return strconv.FormatUint(hash, 16)
+func (r *resourceStatusResolver) CacheKey(ctx context.Context) ([]byte, bool, error) {
+	return nil, false, nil
 }
 
 func (r *resourceStatusResolver) Refs() []*runtimev1.ResourceName {

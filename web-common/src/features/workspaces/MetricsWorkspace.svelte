@@ -1,6 +1,5 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import ViewSelector from "@rilldata/web-common/features/visual-editing/ViewSelector.svelte";
   import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
@@ -86,6 +85,7 @@
     onTitleChange={onChangeCallback}
     showInspectorToggle={$selectedView === "code" && isModelingSupported}
     slot="header"
+    codeToggle
     titleInput={fileName}
   >
     <div class="flex gap-x-2" slot="cta">
@@ -97,8 +97,6 @@
       {:else}
         <GoToDashboardButton {resource} />
       {/if}
-
-      <ViewSelector allowSplit={false} bind:selectedView={$selectedView} />
     </div>
   </WorkspaceHeader>
 

@@ -91,6 +91,18 @@ describe("expression", () => {
           ),
         ]),
       },
+      {
+        expr: `country IN (['U\\'S','I\\nN'])`,
+        expectedExprString: `country IN (['U\\'S','I\\nN'])`,
+        expectedExprObject: createInExpression("country", [["U'S", "I\nN"]]),
+      },
+      {
+        expr: `country IN ({'US':['SF','LA'],'IN':['BLR','DLH'],'UK':'London'})`,
+        expectedExprString: `country IN ({'US':['SF','LA'],'IN':['BLR','DLH'],'UK':'London'})`,
+        expectedExprObject: createInExpression("country", [
+          { US: ["SF", "LA"], IN: ["BLR", "DLH"], UK: "London" },
+        ]),
+      },
     ];
 
     const compiledGrammar = nearley.Grammar.fromCompiled(grammar);

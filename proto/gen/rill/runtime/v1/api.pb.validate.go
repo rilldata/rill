@@ -5186,6 +5186,8 @@ func (m *GenerateMetricsViewFileRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	// no validation rules for Model
+
 	// no validation rules for Connector
 
 	// no validation rules for Database
@@ -6776,6 +6778,8 @@ func (m *ListResourcesRequest) validate(all bool) error {
 
 	// no validation rules for Path
 
+	// no validation rules for SkipSecurityChecks
+
 	if len(errors) > 0 {
 		return ListResourcesRequestMultiError(errors)
 	}
@@ -7316,6 +7320,8 @@ func (m *GetResourceRequest) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for SkipSecurityChecks
 
 	if len(errors) > 0 {
 		return GetResourceRequestMultiError(errors)
@@ -9512,6 +9518,35 @@ func (m *IssueDevJWTRequest) validate(all bool) error {
 	}
 
 	// no validation rules for Admin
+
+	if all {
+		switch v := interface{}(m.GetAttributes()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, IssueDevJWTRequestValidationError{
+					field:  "Attributes",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, IssueDevJWTRequestValidationError{
+					field:  "Attributes",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetAttributes()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return IssueDevJWTRequestValidationError{
+				field:  "Attributes",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	if len(errors) > 0 {
 		return IssueDevJWTRequestMultiError(errors)

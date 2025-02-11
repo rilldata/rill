@@ -2,7 +2,6 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import type {
     V1Expression,
-    V1MetricsViewSpec,
     V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -22,7 +21,6 @@
   export let comparisonTimeRange: V1TimeRange | undefined;
   export let timeControlsReady: boolean;
   export let activeMeasureName: string;
-  export let metricsView: V1MetricsViewSpec;
 
   const StateManagers = getStateManagers();
   const {
@@ -48,6 +46,7 @@
   } = StateManagers;
 
   let parentElement: HTMLDivElement;
+  let suppressTooltip = false;
 
   $: ({ instanceId } = $runtime);
 
@@ -74,7 +73,16 @@
   <div class="pl-2.5 pb-3">
     <LeaderboardControls exploreName={$exploreName} />
   </div>
-  <div bind:this={parentElement} class="overflow-y-auto leaderboard-display">
+  <div
+    bind:this={parentElement}
+    class="overflow-y-auto leaderboard-display"
+    on:scroll={() => {
+      suppressTooltip = true;
+    }}
+    on:scrollend={() => {
+      suppressTooltip = false;
+    }}
+  >
     {#if parentElement}
       <div class="leaderboard-grid overflow-hidden pb-4">
         {#each $visibleDimensions as dimension (dimension.name)}
@@ -97,7 +105,7 @@
               {dimension}
               isSummableMeasure={$isSummableMeasure}
               {parentElement}
-              {metricsView}
+              {suppressTooltip}
               {timeControlsReady}
               selectedValues={$selectedDimensionValues(dimension.name)}
               isBeingCompared={$isBeingComparedReadable(dimension.name)}

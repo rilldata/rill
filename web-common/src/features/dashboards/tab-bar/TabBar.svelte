@@ -9,8 +9,8 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
-  import Tab from "./Tab.svelte";
   import type { ComponentType } from "svelte";
+  import Tab from "./Tab.svelte";
 
   type TabName = MetricsEventScreenName.Pivot | MetricsEventScreenName.Explore;
   type TabData = { label: string; Icon: ComponentType; beta?: true };

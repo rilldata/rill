@@ -678,6 +678,11 @@ export class UpdateOrganizationRequest extends Message<UpdateOrganizationRequest
   logoAssetId?: string;
 
   /**
+   * @generated from field: optional string favicon_asset_id = 7;
+   */
+  faviconAssetId?: string;
+
+  /**
    * @generated from field: optional string billing_email = 4;
    */
   billingEmail?: string;
@@ -695,6 +700,7 @@ export class UpdateOrganizationRequest extends Message<UpdateOrganizationRequest
     { no: 3, name: "new_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 5, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 6, name: "logo_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 7, name: "favicon_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 4, name: "billing_email", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
@@ -2619,9 +2625,9 @@ export class CreateAssetRequest extends Message<CreateAssetRequest> {
   extension = "";
 
   /**
-   * @generated from field: bool cacheable = 5;
+   * @generated from field: bool public = 5;
    */
-  cacheable = false;
+  public = false;
 
   /**
    * @generated from field: int64 estimated_size_bytes = 6;
@@ -2640,7 +2646,7 @@ export class CreateAssetRequest extends Message<CreateAssetRequest> {
     { no: 2, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "extension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "cacheable", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 6, name: "estimated_size_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
   ]);
 
@@ -2724,6 +2730,11 @@ export class RedeployProjectRequest extends Message<RedeployProjectRequest> {
    */
   project = "";
 
+  /**
+   * @generated from field: bool superuser_force_access = 3;
+   */
+  superuserForceAccess = false;
+
   constructor(data?: PartialMessage<RedeployProjectRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2734,6 +2745,7 @@ export class RedeployProjectRequest extends Message<RedeployProjectRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RedeployProjectRequest {
@@ -9243,6 +9255,8 @@ export class GetRepoMetaRequest extends Message<GetRepoMetaRequest> {
  */
 export class GetRepoMetaResponse extends Message<GetRepoMetaResponse> {
   /**
+   * If the Git-related fields are set, the archive-related fields will not be set (and vice versa).
+   *
    * @generated from field: string git_url = 1;
    */
   gitUrl = "";
@@ -9258,12 +9272,19 @@ export class GetRepoMetaResponse extends Message<GetRepoMetaResponse> {
   gitSubpath = "";
 
   /**
-   * archive_download_url is set when repo is managed by Rill
-   * either archive_download_url or git related details will be set
-   *
    * @generated from field: string archive_download_url = 4;
    */
   archiveDownloadUrl = "";
+
+  /**
+   * @generated from field: string archive_id = 5;
+   */
+  archiveId = "";
+
+  /**
+   * @generated from field: google.protobuf.Timestamp archive_created_on = 6;
+   */
+  archiveCreatedOn?: Timestamp;
 
   constructor(data?: PartialMessage<GetRepoMetaResponse>) {
     super();
@@ -9277,6 +9298,8 @@ export class GetRepoMetaResponse extends Message<GetRepoMetaResponse> {
     { no: 2, name: "git_url_expires_on", kind: "message", T: Timestamp },
     { no: 3, name: "git_subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "archive_download_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "archive_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "archive_created_on", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetRepoMetaResponse {
@@ -11908,6 +11931,11 @@ export class Organization extends Message<Organization> {
   logoUrl = "";
 
   /**
+   * @generated from field: string favicon_url = 13;
+   */
+  faviconUrl = "";
+
+  /**
    * @generated from field: string custom_domain = 10;
    */
   customDomain = "";
@@ -11955,6 +11983,7 @@ export class Organization extends Message<Organization> {
     { no: 11, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "logo_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 13, name: "favicon_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "custom_domain", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "quotas", kind: "message", T: OrganizationQuotas },
     { no: 7, name: "billing_customer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },

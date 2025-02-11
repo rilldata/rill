@@ -1,4 +1,4 @@
-package duckdb
+package duckdb_test
 
 import (
 	"context"
@@ -14,6 +14,7 @@ import (
 
 	// Load postgres driver
 	_ "github.com/jackc/pgx/v5/stdlib"
+	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/postgres"
 )
 
@@ -61,6 +62,7 @@ func TestTransfer(t *testing.T) {
 	defer db.Close()
 
 	t.Run("AllDataTypes", func(t *testing.T) { allDataTypesTest(t, db, pg.DatabaseURL) })
+	t.Run("model_executor_postgres_to_duckDB", func(t *testing.T) { pgxToDuckDB(t, db, pg.DatabaseURL) })
 }
 
 func allDataTypesTest(t *testing.T, db *sql.DB, dbURL string) {
@@ -72,8 +74,13 @@ func allDataTypesTest(t *testing.T, db *sql.DB, dbURL string) {
 	require.NoError(t, err)
 	olap, _ := to.AsOLAP("")
 
-	tr := newDuckDBToDuckDB(to.(*connection), "postgres", zap.NewNop())
-	err = tr.Transfer(ctx, map[string]any{"sql": "select * from all_datatypes;", "db": dbURL}, map[string]any{"table": "sink"}, &drivers.TransferOptions{})
+	inputHandle, err := drivers.Open("postgres", "default", map[string]any{"database_url": dbURL}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+
+	tr, ok := to.AsTransporter(inputHandle, to)
+	require.True(t, ok)
+
+	err = tr.Transfer(ctx, map[string]any{"sql": "select * from all_datatypes;"}, map[string]any{"table": "sink"}, &drivers.TransferOptions{})
 	require.NoError(t, err)
 	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "select count(*) from sink"})
 	require.NoError(t, err)
@@ -85,4 +92,80 @@ func allDataTypesTest(t *testing.T, db *sql.DB, dbURL string) {
 	}
 	require.NoError(t, res.Close())
 	require.NoError(t, to.Close())
+}
+
+func pgxToDuckDB(t *testing.T, pgdb *sql.DB, dbURL string) {
+	duckDB, err := drivers.Open("duckdb", "default", map[string]any{"data_dir": t.TempDir()}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+
+	inputHandle, err := drivers.Open("postgres", "default", map[string]any{"database_url": dbURL}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+
+	opts := &drivers.ModelExecutorOptions{
+		InputHandle:     inputHandle,
+		InputConnector:  "postgres",
+		OutputHandle:    duckDB,
+		OutputConnector: "duckdb",
+		Env: &drivers.ModelEnv{
+			AllowHostAccess: false,
+			StageChanges:    true,
+		},
+		PreliminaryInputProperties: map[string]any{
+			"sql": "SELECT * FROM all_datatypes;",
+		},
+		PreliminaryOutputProperties: map[string]any{
+			"table": "sink",
+		},
+	}
+
+	me, ok := duckDB.AsModelExecutor("default", opts)
+	require.True(t, ok)
+
+	execOpts := &drivers.ModelExecuteOptions{
+		ModelExecutorOptions: opts,
+		InputProperties:      opts.PreliminaryInputProperties,
+		OutputProperties:     opts.PreliminaryOutputProperties,
+	}
+
+	_, err = me.Execute(context.Background(), execOpts)
+	require.NoError(t, err)
+
+	olap, ok := duckDB.AsOLAP("default")
+	require.True(t, ok)
+
+	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "select count(*) from sink"})
+	require.NoError(t, err)
+	for res.Next() {
+		var count int
+		err = res.Rows.Scan(&count)
+		require.NoError(t, err)
+		require.Equal(t, 1, count)
+	}
+	require.NoError(t, res.Close())
+
+	// ingest some more data in postges
+	_, err = pgdb.Exec("INSERT INTO all_datatypes(uuid, created_at) VALUES (gen_random_uuid(), '2024-01-02 12:46:55');")
+	require.NoError(t, err)
+
+	// drop older data from postgres
+	_, err = pgdb.Exec("DELETE FROM all_datatypes WHERE created_at < '2024-01-01 00:00:00';")
+	require.NoError(t, err)
+
+	// incremental run
+	execOpts.IncrementalRun = true
+	execOpts.InputProperties["sql"] = "SELECT * FROM all_datatypes WHERE created_at > '2024-01-01 00:00:00';"
+	_, err = me.Execute(context.Background(), execOpts)
+	require.NoError(t, err)
+
+	res, err = olap.Execute(context.Background(), &drivers.Statement{Query: "select count(*) from sink"})
+	require.NoError(t, err)
+	for res.Next() {
+		var count int
+		err = res.Rows.Scan(&count)
+		require.NoError(t, err)
+		require.Equal(t, 2, count)
+	}
+	require.NoError(t, res.Close())
+
+	require.NoError(t, duckDB.Close())
 }

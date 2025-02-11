@@ -6,6 +6,7 @@ import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 import "rill/runtime/v1/export_format.proto";
 import "rill/runtime/v1/expression.proto";
+import "rill/runtime/v1/resources.proto";
 import "rill/runtime/v1/schema.proto";
 import "rill/runtime/v1/time_grain.proto";
 import "validate/validate.proto";
@@ -153,9 +154,24 @@ service QueryService {
     };
   }
 
+  rpc MetricsViewTimeRanges(MetricsViewTimeRangesRequest) returns (MetricsViewTimeRangesResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/time-ranges",
+      body: "*"
+    };
+  }
+
   // Canvas APIs
 
-  // ResolveComponent resolves the data and renderer for a Component resource.
+  // ResolveCanvas is a convenience API that returns a canvas and all its referenced components and metrics views.
+  rpc ResolveCanvas(ResolveCanvasRequest) returns (ResolveCanvasResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/queries/canvases/{canvas}/resolve",
+      body: "*"
+    };
+  }
+
+  // ResolveComponent resolves renderer for a Component resource.
   rpc ResolveComponent(ResolveComponentRequest) returns (ResolveComponentResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/queries/components/{component}/resolve",
@@ -551,6 +567,9 @@ message TimeRange {
   TimeGrain round_to_grain = 5;
   // Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
   string time_zone = 6;
+  // Optional. Rill format time range. Should only be used for alerts and reports.
+  // For dashboard call ResolveTimeRanges.
+  string expression = 7;
 }
 
 // Present for backwards compatibility
@@ -770,29 +789,53 @@ message MetricsViewSearchResponse {
   repeated SearchResult results = 1;
 }
 
+message MetricsViewTimeRangesRequest {
+  string instance_id = 1;
+  string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
+  repeated string expressions = 3;
+  int32 priority = 4;
+}
+
+message MetricsViewTimeRangesResponse {
+  repeated TimeRange time_ranges = 1;
+}
+
 // **********
 // Canvas APIs
 // **********
+
+message ResolveCanvasRequest {
+  // Instance ID
+  string instance_id = 1;
+  // Canvas name
+  string canvas = 2;
+  // Optional args for resolving templating in the component properties
+  google.protobuf.Struct args = 3;
+}
+
+message ResolveCanvasResponse {
+  // The canvas resource.
+  Resource canvas = 1;
+  // All the component resources referenced by the canvas.
+  // The resources state.valid_spec.renderer_properties will have templating resolved for the provided args.
+  // (Corresponds to calling the ResolveComponent API for each component referenced in the canvas spec).
+  map<string, Resource> resolved_components = 2;
+  // All the metrics view resources referenced in the components' renderer_properties.metrics_view field.
+  map<string, Resource> referenced_metrics_views = 3;
+}
 
 message ResolveComponentRequest {
   // Instance ID
   string instance_id = 1;
   // Component name
   string component = 2;
-  // Optional args to pass to the data resolver and for resolving templating in the renderer properties
+  // Optional args for resolving templating in the renderer properties
   google.protobuf.Struct args = 3;
 }
 
 message ResolveComponentResponse {
-  // Show property with templating resolved for the provided args.
-  // If it resolves to false, the other fields are not set.
-  bool show = 1;
-  // Schema of the resolved component data
-  StructType schema = 2;
-  // Resolved component data
-  repeated google.protobuf.Struct data = 3;
   // Renderer properties with templating resolved for the provided args
-  google.protobuf.Struct renderer_properties = 4;
+  google.protobuf.Struct renderer_properties = 2;
 }
 
 // **********
@@ -1002,13 +1045,8 @@ message TimeRangeSummary {
   google.protobuf.Timestamp min = 1;
   // Not optional, not null
   google.protobuf.Timestamp max = 2;
-  message Interval {
-    int32 months = 1;
-    int32 days = 2;
-    int64 micros = 3;
-  }
   // Not optional, not null
-  Interval interval = 3;
+  google.protobuf.Timestamp watermark = 4;
 }
 
 message ColumnCardinalityRequest {

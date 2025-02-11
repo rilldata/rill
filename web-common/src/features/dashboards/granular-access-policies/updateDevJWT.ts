@@ -23,11 +23,14 @@ export async function updateDevJWT(
     });
   } else {
     try {
+      const { name, email, groups, admin, ...customAttributes } = mockUser;
+
       const { jwt } = await runtimeServiceIssueDevJWT({
-        name: mockUser?.name ? mockUser.name : "Mock User",
-        email: mockUser?.email,
-        groups: mockUser?.groups ? mockUser.groups : [],
-        admin: !!mockUser?.admin,
+        email,
+        name: name || "Mock User",
+        admin: !!admin,
+        groups: groups || [],
+        attributes: customAttributes,
       });
 
       if (!jwt) throw new Error("No JWT returned");

@@ -1513,6 +1513,10 @@ func (m *UpdateOrganizationRequest) validate(all bool) error {
 		// no validation rules for LogoAssetId
 	}
 
+	if m.FaviconAssetId != nil {
+		// no validation rules for FaviconAssetId
+	}
+
 	if m.BillingEmail != nil {
 
 		if err := m._validateEmail(m.GetBillingEmail()); err != nil {
@@ -6374,7 +6378,7 @@ func (m *CreateAssetRequest) validate(all bool) error {
 
 	// no validation rules for Extension
 
-	// no validation rules for Cacheable
+	// no validation rules for Public
 
 	// no validation rules for EstimatedSizeBytes
 
@@ -6596,6 +6600,8 @@ func (m *RedeployProjectRequest) validate(all bool) error {
 	// no validation rules for Organization
 
 	// no validation rules for Project
+
+	// no validation rules for SuperuserForceAccess
 
 	if len(errors) > 0 {
 		return RedeployProjectRequestMultiError(errors)
@@ -25829,6 +25835,37 @@ func (m *GetRepoMetaResponse) validate(all bool) error {
 
 	// no validation rules for ArchiveDownloadUrl
 
+	// no validation rules for ArchiveId
+
+	if all {
+		switch v := interface{}(m.GetArchiveCreatedOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GetRepoMetaResponseValidationError{
+					field:  "ArchiveCreatedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GetRepoMetaResponseValidationError{
+					field:  "ArchiveCreatedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetArchiveCreatedOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GetRepoMetaResponseValidationError{
+				field:  "ArchiveCreatedOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	if len(errors) > 0 {
 		return GetRepoMetaResponseMultiError(errors)
 	}
@@ -33095,6 +33132,8 @@ func (m *Organization) validate(all bool) error {
 	// no validation rules for Description
 
 	// no validation rules for LogoUrl
+
+	// no validation rules for FaviconUrl
 
 	// no validation rules for CustomDomain
 

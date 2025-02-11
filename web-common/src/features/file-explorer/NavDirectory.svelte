@@ -12,11 +12,6 @@
   export let onRename: (filePath: string, isDir: boolean) => void;
   export let onDuplicate: (filePath: string, isDir: boolean) => void;
   export let onDelete: (filePath: string, isDir: boolean) => void;
-  export let onGenerateChart: (data: {
-    table?: string;
-    connector?: string;
-    metricsView?: string;
-  }) => void;
   export let onMouseDown: (e: MouseEvent, dragData: NavDragData) => void;
 
   $: expanded = $directoryState[directory.path];
@@ -48,7 +43,6 @@
           {onRename}
           {onDuplicate}
           {onDelete}
-          {onGenerateChart}
           {onMouseDown}
         />
       {/each}
@@ -57,14 +51,7 @@
     {#each directory.files as file (file)}
       {@const filePath =
         directory.path === "/" ? `/${file}` : `${directory.path}/${file}`}
-      <NavFile
-        {filePath}
-        {onRename}
-        {onDuplicate}
-        {onDelete}
-        {onGenerateChart}
-        {onMouseDown}
-      />
+      <NavFile {filePath} {onRename} {onDuplicate} {onDelete} {onMouseDown} />
     {/each}
   {/if}
 </ul>

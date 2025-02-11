@@ -40,7 +40,7 @@ var spec = drivers.Spec{
 			Required:    false,
 			DocsURL:     "https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING",
 			Placeholder: "postgresql://postgres:postgres@localhost:5432/postgres",
-			Hint:        "Either set this or pass --env connector.postgres.database_url=... to rill start",
+			Hint:        "Can be configured here or by setting the 'connector.postgres.database_url' environment variable (using '.env' or '--env')",
 		},
 		{
 			Key:         "name",
@@ -55,6 +55,18 @@ var spec = drivers.Spec{
 }
 
 type driver struct{}
+
+type ConfigProperties struct {
+	DatabaseURL string `mapstructure:"database_url"`
+	DSN         string `mapstructure:"dsn"`
+}
+
+func (c *ConfigProperties) ResolveDSN() string {
+	if c.DSN != "" {
+		return c.DSN
+	}
+	return c.DatabaseURL
+}
 
 func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {

@@ -1,28 +1,16 @@
 import type { Config } from "tailwindcss";
 import {
   type LightnessMap,
+  TailwindColorSpacing,
   type ThemeColorKind,
   defaultPrimaryColors,
   defaultSecondaryColors,
   mutedColors,
 } from "./src/features/themes/color-config";
 
-/**
- * Takes a LightnessMap map object and a ThemeColorKind
- * ("primary" | "secondary" | "muted"),
- * and returns an object of the form e.g:
- * {
- *   "primary-50": "var(--color-primary-50)",
- *   "primary-100": "var(--color-primary-100)",
- * ...
- * }
- */
-function addThemeColorsAsVarRefs(
-  colorMap: LightnessMap,
-  themeColorKind: ThemeColorKind,
-) {
+function addThemeColorsAsVarRefs(themeColorKind: string) {
   return Object.fromEntries(
-    Object.keys(colorMap).map((colorNum) => {
+    TailwindColorSpacing.map((colorNum) => {
       return [
         `${colorNum}`,
         `hsl(var(--hsl-${themeColorKind}-${colorNum}) / <alpha-value>)`,
@@ -77,13 +65,13 @@ export default {
         primary: {
           DEFAULT: "hsl(var(--primary) / <alpha-value>)",
           foreground: "hsl(var(--primary-foreground) / <alpha-value>)",
-          ...addThemeColorsAsVarRefs(defaultPrimaryColors, "primary"),
+          ...addThemeColorsAsVarRefs("primary"),
         },
-
+        surface: "hsl(var(--surface) / <alpha-value>)",
         secondary: {
           DEFAULT: "hsl(var(--secondary) / <alpha-value>)",
           foreground: "hsl(var(--secondary-foreground) / <alpha-value>)",
-          ...addThemeColorsAsVarRefs(defaultSecondaryColors, "secondary"),
+          ...addThemeColorsAsVarRefs("secondary"),
         },
         destructive: {
           DEFAULT: "hsl(var(--destructive) / <alpha-value>)",
@@ -92,7 +80,7 @@ export default {
         muted: {
           DEFAULT: "hsl(var(--muted) / <alpha-value>)",
           foreground: "hsl(var(--muted-foreground) / <alpha-value>)",
-          ...addThemeColorsAsVarRefs(mutedColors, "muted"),
+          ...addThemeColorsAsVarRefs("muted"),
         },
         accent: {
           DEFAULT: "hsl(var(--accent) / <alpha-value>)",
