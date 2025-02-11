@@ -525,6 +525,7 @@ func initLogger(isVerbose bool, logFormat LogFormat) (logger *zap.Logger, cleanu
 	cfg := zap.NewProductionEncoderConfig()
 	// hide logger name like `console`
 	cfg.NameKey = zapcore.OmitKey
+	cfg.EncodeTime = zapcore.ISO8601TimeEncoder
 	fileCore := zapcore.NewCore(zapcore.NewJSONEncoder(cfg), zapcore.AddSync(luLogger), logLevel)
 
 	var consoleEncoder zapcore.Encoder
@@ -533,6 +534,7 @@ func initLogger(isVerbose bool, logFormat LogFormat) (logger *zap.Logger, cleanu
 	case LogFormatJSON:
 		cfg := zap.NewProductionEncoderConfig()
 		cfg.NameKey = zapcore.OmitKey
+		cfg.EncodeTime = zapcore.ISO8601TimeEncoder
 		// never
 		opts = append(opts, zap.AddStacktrace(zapcore.InvalidLevel))
 		consoleEncoder = zapcore.NewJSONEncoder(cfg)
