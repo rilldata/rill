@@ -15,7 +15,7 @@
 </script>
 
 {#if title || description}
-  <div class="w-full h-fit flex flex-col bg-white p-2 items-start">
+  <div class="w-full h-fit flex flex-col bg-white px-2 pt-2 items-start">
     {#if title}
       <div class="flex items-center gap-x-2">
         <h1 class:faint class="title">{title}</h1>
@@ -38,18 +38,10 @@
 {/if}
 
 <style lang="postcss">
-  h1 {
-    font-size: 16px;
-    font-weight: 500;
-  }
-
-  h2 {
-    font-size: 12px;
-    font-weight: 400;
-  }
   .title {
     font-size: 15px;
-    @apply font-medium text-slate-700 truncate;
+    line-height: 26px;
+    @apply font-medium text-gray-700 truncate;
   }
 
   .title.faint {
@@ -58,6 +50,6 @@
 
   .description {
     font-size: 13px;
-    @apply text-slate-600 leading-none;
+    @apply text-gray-500 font-normal leading-none;
   }
 </style>
