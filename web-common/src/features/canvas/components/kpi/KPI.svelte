@@ -114,10 +114,10 @@
     >
       <div
         class="flex flex-col {isSparkRight
-          ? 'w-36 justify-center items-start pl-4'
+          ? 'w-36 justify-center items-start pl-4 line-clamp-2'
           : 'w-full'} {!showSparkline || !isSparkRight ? 'items-center' : ''}"
       >
-        <div class="measure-label">{$measure?.displayName || measureName}</div>
+        <h2 class="measure-label">{$measure?.displayName || measureName}</h2>
         <div class="measure-value">{measureValueFormatted}</div>
         {#if showComparison && $comparisonValue.data}
           <div class="flex items-baseline gap-x-3 text-sm">
@@ -197,7 +197,7 @@
 
 <style lang="postcss">
   .measure-label {
-    @apply font-medium text-sm truncate;
+    @apply font-medium text-sm whitespace-normal;
     @apply pr-2 text-gray-700;
   }
   .measure-value {
