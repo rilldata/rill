@@ -73,9 +73,9 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 		c: c,
 	})
 	return re.RunCtx(ctx, func(ctx context.Context) (driver.Rows, retrier.Action, error) {
-		cacheCfg := queryCfgFromContext(ctx)
+		queryCfg := queryCfgFromContext(ctx)
 
-		dr := newDruidRequest(query, args, cacheCfg)
+		dr := newDruidRequest(query, args, queryCfg)
 		b, err := json.Marshal(dr)
 		if err != nil {
 			return nil, retrier.Fail, err
@@ -458,7 +458,7 @@ type DruidRequest struct {
 	Context        DruidQueryContext `json:"context"`
 }
 
-func newDruidRequest(query string, args []driver.NamedValue, cacheCfg *QueryCfg) *DruidRequest {
+func newDruidRequest(query string, args []driver.NamedValue, queryCfg *QueryCfg) *DruidRequest {
 	parameters := make([]DruidParameter, len(args))
 	for i, arg := range args {
 		parameters[i] = DruidParameter{
@@ -467,9 +467,9 @@ func newDruidRequest(query string, args []driver.NamedValue, cacheCfg *QueryCfg)
 		}
 	}
 	var useCache, populateCache *bool
-	if cacheCfg != nil {
-		useCache = &cacheCfg.UseCache
-		populateCache = &cacheCfg.PopulateCache
+	if queryCfg != nil {
+		useCache = &queryCfg.UseCache
+		populateCache = &queryCfg.PopulateCache
 	}
 	return &DruidRequest{
 		Query:          query,
