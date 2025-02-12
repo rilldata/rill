@@ -243,11 +243,11 @@ func (w *watcher) addDir(p string, replay, errIfNotExist bool) error {
 	relPath, err := filepath.Rel(w.root, p)
 	if err != nil {
 		// should never happen unless some bug in the code
-		return fmt.Errorf("failed to add path %q to watcher: failed to get relative path", zap.String("p", p))
+		return fmt.Errorf("failed to add path %q to watcher: failed to get relative path", p)
 	}
 	relPath = filepath.Join(string(filepath.Separator), relPath)
 	if drivers.IsIgnored(relPath, w.ignorePaths) {
-		w.logger.Debug("ignoring path", zap.String("path", relPath))
+		w.logger.Debug("watcher: ignoring path", zap.String("path", p))
 		return nil
 	}
 
