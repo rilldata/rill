@@ -2,6 +2,7 @@ package project
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -16,6 +17,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 func DumpResources(ch *cmdutil.Helper) *cobra.Command {
@@ -91,7 +93,7 @@ func DumpResources(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			printer.NewPrinter(printer.FormatJSON).PrintResource(resources)
+			printResources(ch.Printer, resources)
 
 			for name, err := range failedProjects {
 				ch.Println()
@@ -180,4 +182,59 @@ func parseResourceKind(k string) string {
 	default:
 		return k
 	}
+}
+
+func printResources(p *printer.Printer, resources map[string]map[string][]*runtimev1.Resource) {
+	if len(resources) == 0 {
+		p.PrintfWarn("No resources found\n")
+		return
+	}
+
+	rows := make([]map[string]any, 0)
+	for org, projectRes := range resources {
+		for proj, res := range projectRes {
+			for _, r := range res {
+				// convert each resource to a flattened JSON
+				row := make(map[string]any)
+				row["org"] = org
+				row["project"] = proj
+				row["resource_type"] = runtime.PrettifyResourceKind(r.Meta.Name.Kind)
+				row["resource_name"] = r.Meta.Name.Name
+				// marshal meta separately
+				meta, err := protojson.MarshalOptions{Indent: " ", Multiline: true}.Marshal(r.Meta)
+				if err != nil {
+					row["meta"] = fmt.Sprintf("failed to marshal meta: %v", err)
+				} else {
+					row["meta"] = json.RawMessage(meta)
+				}
+
+				// convert resource proto to json
+				rowJSON, err := protojson.Marshal(r)
+				if err != nil {
+					row["error"] = fmt.Sprintf("failed to marshal resource: %v", err)
+				}
+
+				// unmarshal the json to get the spec and state which is inside a model/source/metrics_view etc.
+				parsed := make(map[string]map[string]any)
+				err = json.Unmarshal(rowJSON, &parsed)
+				if err != nil {
+					row["error"] = fmt.Sprintf("failed to unmarshal resource: %v", err)
+				}
+				for k := range parsed {
+					if k != "meta" {
+						row["spec"] = parsed[k]["spec"].(map[string]any)
+						row["state"] = parsed[k]["state"].(map[string]any)
+						break
+					}
+				}
+				rows = append(rows, row)
+			}
+		}
+	}
+
+	jsonData, err := json.MarshalIndent(rows, "", "  ")
+	if err != nil {
+		p.PrintfWarn("Failed to marshal resources: %v\n", err)
+	}
+	fmt.Println(string(jsonData))
 }
