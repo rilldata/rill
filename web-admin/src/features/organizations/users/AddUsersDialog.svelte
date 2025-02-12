@@ -61,6 +61,7 @@
       isSuperUser = false;
     } catch (error) {
       console.error("Error adding user to organization", error);
+      throw error;
     }
   }
 
@@ -125,13 +126,14 @@
           eventBus.emit("notification", {
             type: "error",
             message: `Failed to invite ${failed.join(", ")}`,
+            options: {
+              persisted: true,
+            },
           });
         }
 
-        // Only close dialog if all invites succeeded
-        if (failed.length === 0) {
-          open = false;
-        }
+        // Close dialog after showing notifications
+        open = false;
       },
       validationMethod: "oninput",
     },
