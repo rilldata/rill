@@ -36,6 +36,7 @@ Over time, we'll make this the default Line implementation, but it's not quite t
   export let duration = 400;
 
   export let stopOpacity = 0.3;
+  export let areaEndOffset = "95%";
   // FIXME – this is a different prop than elsewhere
   export let lineColor = LineMutedColor;
   export let areaGradientColors: [string, string] | null = null;
@@ -163,7 +164,7 @@ Over time, we'll make this the default Line implementation, but it's not quite t
             stop-opacity={stopOpacity}
           />
           <stop
-            offset="95%"
+            offset={areaEndOffset}
             stop-color={areaGradientColors[1]}
             stop-opacity={stopOpacity}
           />
