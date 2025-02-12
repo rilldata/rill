@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { invalidate, invalidateAll } from "$app/navigation";
+  import { invalidate } from "$app/navigation";
   import {
     createAdminServiceUpdateOrganization,
     getAdminServiceGetOrganizationQueryKey,

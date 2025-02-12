@@ -8,6 +8,7 @@
     createAdminServiceRemoveOrganizationMemberUser,
     getAdminServiceListOrganizationInvitesQueryKey,
     getAdminServiceListOrganizationMemberUsersQueryKey,
+    getAdminServiceListUsergroupMemberUsersQueryKey,
   } from "@rilldata/web-admin/client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
@@ -43,6 +44,13 @@
 
       await queryClient.invalidateQueries(
         getAdminServiceListOrganizationInvitesQueryKey(organization),
+      );
+
+      await queryClient.invalidateQueries(
+        getAdminServiceListUsergroupMemberUsersQueryKey(
+          organization,
+          "all-users",
+        ),
       );
 
       eventBus.emit("notification", {

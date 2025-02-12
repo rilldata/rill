@@ -36,7 +36,7 @@
         type: "image",
         name: label,
         extension: ext,
-        cacheable: true,
+        public: true,
         estimatedSizeBytes: file.size.toString(),
       },
     });
