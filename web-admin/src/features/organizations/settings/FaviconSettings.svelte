@@ -8,11 +8,10 @@
   import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
   import UploadImagePopover from "@rilldata/web-admin/features/organizations/settings/UploadImagePopover.svelte";
   import { Button } from "@rilldata/web-common/components/button";
-  import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
   export let organization: string;
-  export let organizationLogoUrl: string | undefined;
+  export let organizationFaviconUrl: string | undefined;
 
   const orgUpdater = createAdminServiceUpdateOrganization();
   $: ({ error, isLoading, mutateAsync } = $orgUpdater);
@@ -21,7 +20,7 @@
     await mutateAsync({
       name: organization,
       data: {
-        logoAssetId: assetId,
+        faviconAssetId: assetId,
       },
     });
     void queryClient.invalidateQueries(
@@ -34,7 +33,7 @@
     await mutateAsync({
       name: organization,
       data: {
-        logoAssetId: "",
+        faviconAssetId: "",
       },
     });
     void queryClient.invalidateQueries(
@@ -44,13 +43,13 @@
   }
 </script>
 
-<SettingsContainer title="Logo" suppressFooter={!organizationLogoUrl}>
+<SettingsContainer title="Favicon" suppressFooter={!organizationFaviconUrl}>
   <div slot="body" class="flex flex-col gap-y-2">
     <div>
-      Click to upload your logo and customize Rill for your organization.
+      Click to upload your favicon and customize Rill for your organization.
     </div>
     <UploadImagePopover
-      imageUrl={organizationLogoUrl}
+      imageUrl={organizationFaviconUrl}
       accept="image/png, image/ico, image/x-ico, image/icon, image/x-icon"
       label="favicon"
       {organization}
@@ -59,11 +58,11 @@
       {onSave}
       {onRemove}
     >
-      <Rill width="64" height="40" />
+      <img src="/favicon.png" alt="favicon" class="h-10" />
     </UploadImagePopover>
   </div>
   <svelte:fragment slot="action">
-    {#if organizationLogoUrl}
+    {#if organizationFaviconUrl}
       <Button
         type="secondary"
         on:click={onRemove}
