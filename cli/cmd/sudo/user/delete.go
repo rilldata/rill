@@ -42,11 +42,11 @@ Example:
 				return fmt.Errorf("user %q not found: %w", email, err)
 			}
 
-			ch.PrintfError("\nDeleting a user is a permanent action and cannot be undone.\n")
-			ch.PrintfError("The user will be removed from all organizations and their data will be deleted.\n")
+			ch.PrintfWarn("\nDeleting a user is a permanent action and cannot be undone.\n")
+			ch.PrintfWarn("The user will be removed from all organizations and their data will be deleted.\n")
 
-			// If not interactive, confirm the deletion
-			if !ch.Interactive {
+			// If interactive, confirm the deletion
+			if ch.Interactive {
 				confirm, err := cmdutil.ConfirmPrompt(fmt.Sprintf("Are you sure you want to delete user %q?", email), "", false)
 				if err != nil {
 					return err
