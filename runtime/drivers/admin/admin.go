@@ -119,12 +119,14 @@ type Handle struct {
 	ignorePaths          []string
 
 	// git related fields
-	// These will not be set if downloadURL is set
+	// These will not be set if archiveDownloadURL is set
 	gitURL          string
 	gitURLExpiresOn time.Time
 
-	// downloadURL is set when using one-time uploads
-	downloadURL string
+	// archiveDownloadURL is set when using one-time uploads
+	archiveDownloadURL string
+	archiveID          string
+	archiveCreatedOn   time.Time
 }
 
 var _ drivers.Handle = &Handle{}
@@ -320,7 +322,7 @@ func (h *Handle) cloneOrPull(ctx context.Context) error {
 // Unsafe for concurrent use.
 func (h *Handle) cloneOrPullInner(ctx context.Context) (err error) {
 	if h.cloned {
-		if h.downloadURL != "" {
+		if h.archiveDownloadURL != "" {
 			// in case of one-time uploads we edit instance and close handle when artifacts are updated
 			// so we just pull virtual files and return early.
 			return h.pullVirtual(ctx)
@@ -341,7 +343,7 @@ func (h *Handle) cloneOrPullInner(ctx context.Context) (err error) {
 		return fmt.Errorf("repo handshake failed: %w", err)
 	}
 
-	if h.downloadURL != "" {
+	if h.archiveDownloadURL != "" {
 		// download repo
 		if err := h.download(); err != nil {
 			return err
@@ -405,9 +407,11 @@ func (h *Handle) checkHandshake(ctx context.Context) error {
 		h.projPath = filepath.Join(h.repoPath, meta.GitSubpath)
 	}
 
-	if meta.ArchiveDownloadUrl != "" {
-		h.downloadURL = meta.ArchiveDownloadUrl
-		return nil
+	h.archiveDownloadURL = meta.ArchiveDownloadUrl
+	h.archiveID = meta.ArchiveId
+	h.archiveCreatedOn = time.Time{}
+	if meta.ArchiveCreatedOn != nil {
+		h.archiveCreatedOn = meta.ArchiveCreatedOn.AsTime()
 	}
 
 	h.gitURL = meta.GitUrl
@@ -616,7 +620,7 @@ func (h *Handle) unstashVirtual() error {
 	return nil
 }
 
-// download repo when downloadURL is set.
+// download repo when archiveDownloadURL is set.
 // Unsafe for concurrent use.
 func (h *Handle) download() error {
 	ctx, cancel := context.WithTimeout(context.Background(), pullTimeout)
@@ -632,7 +636,7 @@ func (h *Handle) download() error {
 		return fmt.Errorf("download: %w", err)
 	}
 
-	err = archive.Download(ctx, h.downloadURL, downloadDst, h.projPath, true, false)
+	err = archive.Download(ctx, h.archiveDownloadURL, downloadDst, h.projPath, true, false)
 	if err != nil {
 		return err
 	}

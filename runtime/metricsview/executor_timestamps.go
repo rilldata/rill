@@ -26,7 +26,7 @@ func (e *Executor) resolveDuckDBClickHouseAndPinot(ctx context.Context) (Timesta
 	if e.metricsView.WatermarkExpression != "" {
 		watermarkExpr = e.metricsView.WatermarkExpression
 	} else {
-		watermarkExpr = fmt.Sprintf("MAX(%s)", timeDim)
+		watermarkExpr = fmt.Sprintf("max(%s)", timeDim)
 	}
 
 	rangeSQL := fmt.Sprintf(
@@ -146,49 +146,49 @@ func (e *Executor) resolveDruid(ctx context.Context) (TimestampsResult, error) {
 		return nil
 	})
 
-	group.Go(func() error {
-		var watermarkExpr string
-		if e.metricsView.WatermarkExpression != "" {
-			watermarkExpr = e.metricsView.WatermarkExpression
-		} else {
-			watermarkExpr = fmt.Sprintf("MAX(%s)", timeDim)
-		}
+	if e.metricsView.WatermarkExpression != "" {
+		group.Go(func() error {
+			maxSQL := fmt.Sprintf(
+				"SELECT %[1]s as \"watermark\" FROM %[2]s %[3]s",
+				e.metricsView.WatermarkExpression,
+				escapedTableName,
+				filter,
+			)
 
-		maxSQL := fmt.Sprintf(
-			"SELECT %[1]s as \"watermark\" FROM %[2]s %[3]s",
-			watermarkExpr,
-			escapedTableName,
-			filter,
-		)
+			rows, err := e.olap.Execute(ctx, &drivers.Statement{
+				Query:            maxSQL,
+				Priority:         e.priority,
+				ExecutionTimeout: defaultExecutionTimeout,
+			})
+			if err != nil {
+				return err
+			}
+			defer rows.Close()
 
-		rows, err := e.olap.Execute(ctx, &drivers.Statement{
-			Query:            maxSQL,
-			Priority:         e.priority,
-			ExecutionTimeout: defaultExecutionTimeout,
+			if rows.Next() {
+				err = rows.Scan(&ts.Watermark)
+				if err != nil {
+					return err
+				}
+			} else {
+				err = rows.Err()
+				if err != nil {
+					return err
+				}
+				return errors.New("no rows returned for max time")
+			}
+			return nil
 		})
-		if err != nil {
-			return err
-		}
-		defer rows.Close()
-
-		if rows.Next() {
-			err = rows.Scan(&ts.Watermark)
-			if err != nil {
-				return err
-			}
-		} else {
-			err = rows.Err()
-			if err != nil {
-				return err
-			}
-			return errors.New("no rows returned for max time")
-		}
-		return nil
-	})
+	}
 
 	err := group.Wait()
 	if err != nil {
 		return TimestampsResult{}, err
+	}
+
+	// If there's no custom watermark expression, the watermark defaults to the max time.
+	if e.metricsView.WatermarkExpression == "" {
+		ts.Watermark = ts.Max
 	}
 
 	return ts, nil

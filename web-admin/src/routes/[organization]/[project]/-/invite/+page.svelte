@@ -30,12 +30,14 @@
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
-  // TODO: check args and show welcome page
-
   let allowDomain = false;
+  let invited = false;
   $: userDomain = getUserDomain();
   $: isPublicDomain = userDomainIsPublic();
   const addToAllowlist = createAdminServiceCreateProjectWhitelistedDomain();
+
+  $: buttonText = invited || allowDomain ? "Continue" : "Skip for now";
+
   async function onContinue() {
     if (allowDomain) {
       try {
@@ -62,8 +64,6 @@
   }
 
   $: copyLink = `${$page.url.protocol}//${$page.url.host}/${organization}/${project}`;
-
-  let invited = false;
 </script>
 
 <div class="flex flex-col gap-5 w-[600px] my-16 sm:my-32 md:my-64 mx-auto">
@@ -110,6 +110,6 @@
     wide
     class="mx-auto"
   >
-    {invited ? "Continue" : "Skip"}
+    {buttonText}
   </Button>
 </div>

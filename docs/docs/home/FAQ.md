@@ -82,7 +82,7 @@ You need to [deploy your dashboard to Rill Cloud](https://docs.rilldata.com/depl
 Rill Cloud is where your deployed Rill project exists and can be shared to your colleagues, or end-users. For more information, please review [our documentation](https://docs.rilldata.com/concepts/developerVsCloud#rill-cloud).
 
 ### How do I deploy to Rill Cloud?
-You can deploy your project directly from the UI by selecting [the Deploy button](https://docs.rilldata.com/deploy/existing-project/#deploying-a-project-via-the-ui).
+You can deploy your project directly from the UI by selecting [the Deploy button](/deploy/deploy-dashboard/#deploying-a-project-from-rill-developer).
 
 <img src = '/img/deploy/existing-project/deploy-ui.gif' class='rounded-gif' />
 <br />

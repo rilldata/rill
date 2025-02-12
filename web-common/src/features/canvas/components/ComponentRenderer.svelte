@@ -6,6 +6,7 @@
   import { Markdown } from "./markdown";
   import { Table } from "./table";
 
+  import { KPIGrid } from "@rilldata/web-common/features/canvas/components/kpi-grid";
   import {
     createQueryServiceResolveComponent,
     type V1ComponentSpecRendererProperties,
@@ -17,6 +18,7 @@
 
   const components = new Map([
     ["kpi", KPI],
+    ["kpi_grid", KPIGrid],
     ["table", Table],
     ["markdown", Markdown],
     ["image", Image],

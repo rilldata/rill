@@ -16,6 +16,7 @@
   export let columns: ColumnDef<unknown, unknown>[] = [];
   export let columnVisibility: Record<string, boolean> = {};
   export let kind: string;
+  export let toolbar: boolean = true;
 
   const dispatch = createEventDispatcher();
 
@@ -72,9 +73,11 @@
   $: data && rerender();
 </script>
 
-<slot name="toolbar">
-  <Toolbar />
-</slot>
+{#if toolbar}
+  <slot name="toolbar">
+    <Toolbar />
+  </slot>
+{/if}
 
 <table class="w-full">
   <slot name="header" />

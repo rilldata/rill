@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -269,6 +269,22 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		}
 		// create temp table with the same schema using a deterministic name
 		tempName := fmt.Sprintf("__rill_temp_%s_%x", name, md5.Sum([]byte(sql)))
+		// clean up the temp table
+		defer func() {
+			// cleanup using a different ctx to prevent cleanups being impacted by the main ctx cancellation
+			// this is a best effort cleanup and query can still timeout and we don't want to wait forever due to blocked calls
+			// this is triggered before the table is even created to handle situations
+			// where before the client can trigger query cancel the query succeeds and the view is created but the driver stil reports query cancelled
+			ctx, cancel := graceful.WithMinimumDuration(ctx, 15*time.Second)
+			defer cancel()
+			err = c.Exec(ctx, &drivers.Statement{
+				Query:    fmt.Sprintf("DROP TABLE IF EXISTS %s %s", safeSQLName(tempName), onClusterClause),
+				Priority: 1,
+			})
+			if err != nil {
+				c.logger.Warn("clickhouse: failed to drop temp table", zap.String("name", tempName), zap.Error(err))
+			}
+		}()
 		err = c.Exec(ctx, &drivers.Statement{
 			Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %s %s AS %s", safeSQLName(tempName), onClusterClause, name),
 			Priority: 1,
@@ -276,26 +292,6 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		if err != nil {
 			return err
 		}
-		// clean up the temp table
-		defer func() {
-			var cancel context.CancelFunc
-
-			// If the original context is cancelled, create a new context for cleanup
-			if ctx.Err() != nil {
-				ctx, cancel = context.WithTimeout(context.Background(), 15*time.Second)
-			} else {
-				cancel = func() {}
-			}
-			defer cancel()
-
-			err = c.Exec(ctx, &drivers.Statement{
-				Query:    fmt.Sprintf("DROP TABLE %s %s", safeSQLName(tempName), onClusterClause),
-				Priority: 1,
-			})
-			if err != nil {
-				c.logger.Warn("clickhouse: failed to drop temp table", zap.String("name", tempName), zap.Error(err))
-			}
-		}()
 		// insert into temp table
 		err = c.Exec(ctx, &drivers.Statement{
 			Query:       fmt.Sprintf("INSERT INTO %s %s", safeSQLName(tempName), sql),
@@ -568,16 +564,20 @@ func (c *connection) createTable(ctx context.Context, name, sql string, outputPr
 			return fmt.Errorf("clickhouse: no columns specified for table %q", name)
 		}
 		// infer columns
-		v := tempName("view")
+		v := fmt.Sprintf("__rill_temp_%s_%x", name, md5.Sum([]byte(sql)))
+		defer func() {
+			// cleanup using a different ctx to prevent cleanups being impacted by the main ctx cancellation
+			// this is a best effort cleanup and query can still timeout and we don't want to wait forever due to blocked calls
+			// this is triggered before the view is even created to handle situations
+			// where before the client can trigger query cancel the query succeeds and the view is created but the driver stil reports query cancelled
+			ctx, cancel := graceful.WithMinimumDuration(ctx, 15*time.Second)
+			defer cancel()
+			_ = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP VIEW IF EXISTS %s %s", v, onClusterClause)})
+		}()
 		err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE VIEW %s %s AS %s", v, onClusterClause, sql)})
 		if err != nil {
 			return err
 		}
-		defer func() {
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-			defer cancel()
-			_ = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP VIEW %s %s", v, onClusterClause)})
-		}()
 		// create table with same schema as view
 		fmt.Fprintf(&create, " AS %s ", v)
 	} else {
@@ -1176,10 +1176,6 @@ func splitStructFieldStr(fieldStr string) (string, string, bool) {
 }
 
 var errUnsupportedType = errors.New("encountered unsupported clickhouse type")
-
-func tempName(prefix string) string {
-	return prefix + strings.ReplaceAll(uuid.New().String(), "-", "")
-}
 
 func safelocalTableName(name string) string {
 	return safeSQLName(name + "_local")

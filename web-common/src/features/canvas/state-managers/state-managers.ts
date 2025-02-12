@@ -27,7 +27,6 @@ export function createStateManagers({
   canvasName: string;
 }): StateManagers {
   const canvasNameStore = writable(canvasName);
-
   const canvasEntity = useCanvasEntity(canvasName);
 
   return {

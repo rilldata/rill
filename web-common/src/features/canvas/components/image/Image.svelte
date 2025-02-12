@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
   import type { ImageProperties } from "@rilldata/web-common/features/templates/types";
   import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
   import httpClient from "@rilldata/web-common/runtime-client/http-client";
@@ -77,7 +78,7 @@
 </script>
 
 {#if errorMessage}
-  <div class="error-message">{errorMessage}</div>
+  <ComponentError error={errorMessage} />
 {:else}
   <img
     src={imageSrc || ""}
@@ -86,10 +87,3 @@
     style={styleString}
   />
 {/if}
-
-<style>
-  .error-message {
-    color: red;
-    font-weight: bold;
-  }
-</style>

@@ -7,7 +7,7 @@ title: rill project connect-github
 Deploy project to Rill Cloud by pulling project files from a git repository
 
 ```
-rill project connect-github [flags]
+rill project connect-github [<path>] [flags]
 ```
 
 ### Flags

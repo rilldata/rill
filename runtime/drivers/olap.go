@@ -583,6 +583,8 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, []any, erro
 						prefix += ", "
 					}
 				}
+			} else if i > 0 {
+				prefix += ", "
 			}
 
 			if d == DialectDuckDB {

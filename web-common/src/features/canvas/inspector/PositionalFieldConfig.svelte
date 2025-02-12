@@ -23,7 +23,7 @@
   $: timeDimension = getTimeDimensionForMetricView(metricsView);
 
   function updateFieldConfig(fieldName: string) {
-    const isTime = fieldName === "__time";
+    const isTime = $timeDimension && fieldName === $timeDimension;
 
     let updatedConfig: FieldConfig;
     if (isTime && $timeDimension) {
@@ -73,6 +73,19 @@
         >
           <span class="ml-2">Show axis title</span>
         </DropdownMenu.CheckboxItem>
+        {#if !isDimension}
+          <DropdownMenu.CheckboxItem
+            checked={fieldConfig?.zeroBasedOrigin}
+            on:click={async () => {
+              updateFieldProperty(
+                "zeroBasedOrigin",
+                !fieldConfig?.zeroBasedOrigin,
+              );
+            }}
+          >
+            <span class="ml-2">Zero based origin</span>
+          </DropdownMenu.CheckboxItem>
+        {/if}
       </DropdownMenu.Content>
     </DropdownMenu.Root>
   </div>

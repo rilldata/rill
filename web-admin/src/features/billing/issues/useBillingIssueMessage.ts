@@ -81,15 +81,18 @@ export function useBillingIssueMessage(
         categorisedIssuesResp.data?.payment.length &&
         subscriptionResp.data?.subscription
       ) {
-        return {
-          isFetching: false,
-          error: undefined,
-          data: getMessageForPaymentIssues(
-            !!subscriptionResp.data.subscription.plan &&
-              !isTeamPlan(subscriptionResp.data.subscription.plan),
-            categorisedIssuesResp.data.payment,
-          ),
-        };
+        const paymentIssue = getMessageForPaymentIssues(
+          !!subscriptionResp.data.subscription.plan &&
+            !isTeamPlan(subscriptionResp.data.subscription.plan),
+          categorisedIssuesResp.data.payment,
+        );
+        // if we do not have any payment related message to show, skip it
+        if (paymentIssue)
+          return {
+            isFetching: false,
+            error: undefined,
+            data: paymentIssue,
+          };
       }
 
       if (allProjectsHibernatingResp.data) {

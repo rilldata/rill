@@ -22,7 +22,7 @@ type Client interface {
 	PaymentFailed(ctx context.Context, billingCustomerID, invoiceID, invoiceNumber, invoiceURL, amount, currency string, dueDate, failedAt time.Time) (*InsertResult, error)
 	PaymentSuccess(ctx context.Context, billingCustomerID, invoiceID string) (*InsertResult, error)
 
-	// org related joba
+	// org related jobs
 	InitOrgBilling(ctx context.Context, orgID string) (*InsertResult, error)
 	RepairOrgBilling(ctx context.Context, orgID string) (*InsertResult, error) // biller is just used for deduplication
 	StartOrgTrial(ctx context.Context, orgID string) (*InsertResult, error)

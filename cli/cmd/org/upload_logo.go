@@ -65,9 +65,9 @@ func UploadLogoCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Check the file is an image
 			ext := strings.TrimPrefix(filepath.Ext(path), ".")
 			switch ext {
-			case "png", "jpg", "jpeg":
+			case "png", "jpg", "jpeg", "gif", "svg", "ico":
 			default:
-				return fmt.Errorf("invalid file type %q (expected PNG or JPG)", ext)
+				return fmt.Errorf("invalid file type %q (expected PNG, JPG, GIF, SVG)", ext)
 			}
 
 			// Validate and open the path
@@ -98,7 +98,7 @@ func UploadLogoCmd(ch *cmdutil.Helper) *cobra.Command {
 				Type:               "image",
 				Name:               "logo",
 				Extension:          ext,
-				Cacheable:          true,
+				Public:             true,
 				EstimatedSizeBytes: fi.Size(),
 			})
 			if err != nil {

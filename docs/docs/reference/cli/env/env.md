@@ -6,6 +6,12 @@ title: rill env
 
 Manage variables for a project
 
+### Flags
+
+```
+      --org string   Organization Name
+```
+
 ### Global flags
 
 ```

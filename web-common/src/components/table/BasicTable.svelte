@@ -73,7 +73,7 @@
   style:--grid-template-columns={columnLayout}
 >
   {#each headers as headerGroup (headerGroup.id)}
-    <div class="row sticky top-0 z-30 bg-background">
+    <div class="row sticky top-0 z-30 bg-surface">
       {#each headerGroup.headers as header (header.id)}
         <svelte:element
           this={header.column.getCanSort() ? "button" : "div"}

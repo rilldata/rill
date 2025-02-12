@@ -2,6 +2,7 @@ package conncache
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -238,6 +239,7 @@ func TestHanging(t *testing.T) {
 		MaxIdleConnections:   2,
 		OpenTimeout:          100 * time.Millisecond,
 		CloseTimeout:         100 * time.Millisecond,
+		ErrTTL:               100 * time.Second,
 		CheckHangingInterval: 100 * time.Millisecond,
 		OpenFunc: func(ctx context.Context, cfg any) (Connection, error) {
 			time.Sleep(time.Second)
@@ -301,4 +303,39 @@ func TestAcquireCloseAfterOpening(t *testing.T) {
 
 	// Close cache
 	require.NoError(t, c.Close(context.Background()))
+}
+
+func TestErrorTTL(t *testing.T) {
+	opens := atomic.Int64{}
+	shouldError := true
+	c := New(Options{
+		MaxIdleConnections: 2,
+		ErrTTL:             250 * time.Millisecond,
+		OpenFunc: func(ctx context.Context, cfg any) (Connection, error) {
+			opens.Add(1)
+			if shouldError {
+				return nil, errors.New("errored!")
+			}
+			return &mockConn{cfg: cfg.(string)}, nil
+		},
+		KeyFunc: func(cfg any) string {
+			return cfg.(string)
+		},
+	})
+
+	_, _, err := c.Acquire(context.Background(), "foo")
+	require.NotNil(t, err)
+	require.Equal(t, int64(1), opens.Load())
+
+	_, _, err = c.Acquire(context.Background(), "foo")
+	require.NotNil(t, err)
+	require.Equal(t, int64(1), opens.Load())
+
+	time.Sleep(500 * time.Millisecond)
+	shouldError = false
+
+	_, r1, err := c.Acquire(context.Background(), "foo")
+	require.Nil(t, err)
+	require.Equal(t, int64(2), opens.Load())
+	r1()
 }

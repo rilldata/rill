@@ -66,6 +66,7 @@
       values.frequency,
       values.dayOfWeek,
       values.timeOfDay,
+      values.dayOfMonth,
     );
 
     try {

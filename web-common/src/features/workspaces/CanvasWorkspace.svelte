@@ -4,8 +4,6 @@
   import Canvas from "@rilldata/web-common/features/canvas/Canvas.svelte";
   import CanvasEditor from "@rilldata/web-common/features/canvas/CanvasEditor.svelte";
   import CanvasThemeProvider from "@rilldata/web-common/features/canvas/CanvasThemeProvider.svelte";
-  import AddComponentMenu from "@rilldata/web-common/features/canvas/components/AddComponentMenu.svelte";
-  import type { CanvasComponentType } from "@rilldata/web-common/features/canvas/components/types";
   import { getComponentRegistry } from "@rilldata/web-common/features/canvas/components/util";
   import VisualCanvasEditing from "@rilldata/web-common/features/canvas/inspector/VisualCanvasEditing.svelte";
   import { useDefaultMetrics } from "@rilldata/web-common/features/canvas/selector";
@@ -27,9 +25,11 @@
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { parseDocument } from "yaml";
   import PreviewButton from "../explores/PreviewButton.svelte";
-  import { findNextAvailablePosition } from "@rilldata/web-common/features/canvas/util";
+  import type { CanvasComponentType } from "../canvas/components/types";
+  import { parseDocument } from "yaml";
+  import { findNextAvailablePosition } from "../canvas/util";
+  import AddComponentMenu from "../canvas/components/AddComponentMenu.svelte";
 
   export let fileArtifact: FileArtifact;
 

@@ -1,7 +1,13 @@
 <script lang="ts">
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import type { ComponentType, SvelteComponent } from "svelte";
 
-  export let fields: { id: string; Icon: ComponentType<SvelteComponent> }[];
+  export let fields: {
+    id: string;
+    Icon: ComponentType<SvelteComponent>;
+    tooltip: string;
+  }[];
   export let selected: string | undefined;
   export let onClick: (value: string) => void = () => {};
   export let small = false;
@@ -9,14 +15,19 @@
 </script>
 
 <div class:small class:expand class="option-wrapper">
-  {#each fields as { id, Icon } (id)}
-    <button
-      on:click={() => onClick(id)}
-      class="-ml-[1px] first-of-type:-ml-0 px-2 border border-gray-300 first-of-type:rounded-l-[2px] last-of-type:rounded-r-[2px]"
-      class:selected={selected === id}
-    >
-      <Icon size={small ? "14px" : "16px"} />
-    </button>
+  {#each fields as { id, Icon, tooltip } (id)}
+    <Tooltip distance={4} location="top" alignment="start">
+      <TooltipContent slot="tooltip-content" maxWidth="280px">
+        {tooltip}
+      </TooltipContent>
+      <button
+        on:click={() => onClick(id)}
+        class="-ml-[1px] first-of-type:-ml-0 px-2 border border-gray-300 first-of-type:rounded-l-[2px] last-of-type:rounded-r-[2px]"
+        class:selected={selected === id}
+      >
+        <Icon size={small ? "14px" : "16px"} />
+      </button>
+    </Tooltip>
   {/each}
 </div>
 
@@ -45,7 +56,7 @@
     @apply flex-1;
   }
 
-  .option-wrapper > .selected {
+  .option-wrapper .selected {
     @apply border-primary-500 z-50 text-primary-500;
   }
 </style>

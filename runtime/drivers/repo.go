@@ -18,6 +18,7 @@ type RepoStore interface {
 	// Root returns directory where artifacts are stored.
 	Root(ctx context.Context) (string, error)
 	CommitHash(ctx context.Context) (string, error)
+	CommitTimestamp(ctx context.Context) (time.Time, error)
 	ListRecursive(ctx context.Context, glob string, skipDirs bool) ([]DirEntry, error)
 	Get(ctx context.Context, path string) (string, error)
 	FileHash(ctx context.Context, paths []string) (string, error)

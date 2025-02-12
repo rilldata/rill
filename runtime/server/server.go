@@ -361,15 +361,25 @@ func (s *Server) IssueDevJWT(ctx context.Context, req *runtimev1.IssueDevJWTRequ
 	attr := map[string]any{
 		"name":   req.Name,
 		"email":  req.Email,
-		"domain": req.Email[strings.LastIndex(req.Email, "@")+1:],
 		"groups": req.Groups,
 		"admin":  req.Admin,
+	}
+
+	for k, v := range req.Attributes.AsMap() {
+		attr[k] = v
+	}
+
+	// If possible, add "domain" inferred from "email"
+	email, ok := attr["email"].(string)
+	if ok && attr["domain"] == nil {
+		attr["domain"] = email[strings.LastIndex(email, "@")+1:]
 	}
 
 	jwt, err := auth.NewDevToken(attr)
 	if err != nil {
 		return nil, err
 	}
+
 	return &runtimev1.IssueDevJWTResponse{
 		Jwt: jwt,
 	}, nil

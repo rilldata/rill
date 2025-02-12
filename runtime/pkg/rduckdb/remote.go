@@ -166,13 +166,13 @@ func (d *db) pullFromRemote(ctx context.Context, updateCatalog bool) error {
 		if err != nil {
 			if errors.Is(err, errNotFound) {
 				// table not found in catalog
-				d.catalog.addTableVersion(table, remoteMeta)
+				d.catalog.addTableVersion(table, remoteMeta, true)
 			}
 			return err
 		}
 		// table is present in catalog but has version mismatch
 		if meta.Version != remoteMeta.Version {
-			d.catalog.addTableVersion(table, remoteMeta)
+			d.catalog.addTableVersion(table, remoteMeta, true)
 		}
 	}
 

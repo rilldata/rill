@@ -51,15 +51,9 @@ func newCatalog(removeVersionFunc func(string, string), removeSnapshotFunc func(
 		logger:             logger,
 	}
 	for _, meta := range tables {
-		c.tables[meta.Name] = &table{
-			name:                   meta.Name,
-			currentVersion:         meta.Version,
-			versionReferenceCounts: map[string]int{},
-			versionMeta:            map[string]*tableMeta{meta.Version: meta},
-		}
-		c.acquireVersion(c.tables[meta.Name], meta.Version)
+		c.addTableVersion(meta.Name, meta, false)
 	}
-	_ = c.acquireSnapshotUnsafe()
+	c.incrementSnapshotUnsafe()
 	return c
 }
 
@@ -80,7 +74,7 @@ func (c *catalog) tableMeta(name string) (*tableMeta, error) {
 
 // addTableVersion registers a new version of a table.
 // If the table name has not been seen before, it is added to the catalog.
-func (c *catalog) addTableVersion(name string, meta *tableMeta) {
+func (c *catalog) addTableVersion(name string, meta *tableMeta, incrementSnapshot bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -103,10 +97,8 @@ func (c *catalog) addTableVersion(name string, meta *tableMeta) {
 		c.releaseVersion(t, oldVersion)
 	}
 
-	c.currentSnapshotID++
-	c.acquireSnapshotUnsafe()
-	if c.currentSnapshotID > 1 {
-		c.releaseSnapshotUnsafe(c.snapshots[c.currentSnapshotID-1])
+	if incrementSnapshot {
+		c.incrementSnapshotUnsafe()
 	}
 }
 
@@ -127,12 +119,8 @@ func (c *catalog) removeTable(name string) {
 	t.deleted = true
 	t.currentVersion = ""
 
-	c.currentSnapshotID++
-	c.acquireSnapshotUnsafe()
 	c.releaseVersion(t, oldVersion)
-	if c.currentSnapshotID > 1 {
-		c.releaseSnapshotUnsafe(c.snapshots[c.currentSnapshotID-1])
-	}
+	c.incrementSnapshotUnsafe()
 }
 
 // listTables returns tableMeta for all active tables present in the catalog.
@@ -154,6 +142,21 @@ func (c *catalog) listTables() []*tableMeta {
 	return tables
 }
 
+// incrementSnapshotUnsafe increments the current snapshot.
+// It ensures that the currentSnapshotID always has at least one reference.
+func (c *catalog) incrementSnapshotUnsafe() {
+	// Increment snapshot ID
+	c.currentSnapshotID++
+
+	// Acquire new current snapshot
+	c.acquireSnapshotUnsafe()
+
+	// Release previous current snapshot
+	if c.currentSnapshotID > 1 {
+		c.releaseSnapshotUnsafe(c.snapshots[c.currentSnapshotID-1])
+	}
+}
+
 // acquireSnapshot acquires a snapshot of the current table versions.
 func (c *catalog) acquireSnapshot() *snapshot {
 	c.mu.Lock()
@@ -173,6 +176,7 @@ func (c *catalog) acquireSnapshotUnsafe() *snapshot {
 		referenceCount: 1,
 		tables:         make([]*tableMeta, 0),
 	}
+
 	for _, t := range c.tables {
 		if t.deleted {
 			continue
@@ -198,7 +202,7 @@ func (c *catalog) releaseSnapshot(s *snapshot) {
 
 func (c *catalog) releaseSnapshotUnsafe(s *snapshot) {
 	s.referenceCount--
-	if s.referenceCount > 0 {
+	if s.referenceCount > 0 || s.id == c.currentSnapshotID {
 		return
 	}
 
@@ -209,6 +213,7 @@ func (c *catalog) releaseSnapshotUnsafe(s *snapshot) {
 		}
 		c.releaseVersion(t, meta.Version)
 	}
+	// delete the older snapshot
 	delete(c.snapshots, s.id)
 	c.removeSnapshotFunc(s.id)
 }
@@ -237,6 +242,10 @@ func (c *catalog) releaseVersion(t *table, version string) {
 	delete(t.versionReferenceCounts, version)
 	if t.deleted && len(t.versionReferenceCounts) == 0 {
 		delete(c.tables, t.name)
+	}
+	if t.currentVersion == version {
+		// do not remove the current version
+		return
 	}
 	c.removeVersionFunc(t.name, version)
 }

@@ -16,7 +16,7 @@ export function generateVLBarChartSpec(
       title: data.fields[config.color.field]?.displayName || config.color.field,
     };
   }
-
   spec.encoding = baseEncoding;
+
   return spec;
 }

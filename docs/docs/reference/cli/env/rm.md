@@ -7,7 +7,7 @@ title: rill env rm
 Remove variable
 
 ```
-rill env rm <key> [flags]
+rill env rm [<project-name>] [<key>] [flags]
 ```
 
 ### Flags
@@ -25,6 +25,7 @@ rill env rm <key> [flags]
       --format string      Output format (options: "human", "json", "csv") (default "human")
   -h, --help               Print usage
       --interactive        Prompt for missing required parameters (default true)
+      --org string         Organization Name
 ```
 
 ### SEE ALSO

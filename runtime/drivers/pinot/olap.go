@@ -11,6 +11,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -55,6 +56,9 @@ func (c *connection) WithConnection(ctx context.Context, priority int, longRunni
 }
 
 func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
+	if c.logQueries {
+		c.logger.Info("pinot query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args))
+	}
 	res, err := c.Execute(ctx, stmt)
 	if err != nil {
 		return err
@@ -66,6 +70,9 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 }
 
 func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
+	if c.logQueries {
+		c.logger.Info("pinot query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args))
+	}
 	if stmt.DryRun {
 		rows, err := c.db.QueryxContext(ctx, "EXPLAIN PLAN FOR "+stmt.Query, stmt.Args...)
 		if err != nil {
@@ -122,7 +129,7 @@ func (c *connection) InformationSchema() drivers.InformationSchema {
 
 func (i informationSchema) All(ctx context.Context, like string) ([]*drivers.Table, error) {
 	// query /tables endpoint, for each table name, query /tables/{tableName}/schema
-	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, i.c.baseURL+"/tables", http.NoBody)
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, i.c.schemaURL+"/tables", http.NoBody)
 	for k, v := range i.c.headers {
 		req.Header.Set(k, v)
 	}
@@ -183,7 +190,7 @@ func (i informationSchema) All(ctx context.Context, like string) ([]*drivers.Tab
 }
 
 func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) (*drivers.Table, error) {
-	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, i.c.baseURL+"/tables/"+name+"/schema", http.NoBody)
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, i.c.schemaURL+"/tables/"+name+"/schema", http.NoBody)
 	for k, v := range i.c.headers {
 		req.Header.Set(k, v)
 	}

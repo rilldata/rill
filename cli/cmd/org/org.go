@@ -24,6 +24,7 @@ func OrgCmd(ch *cmdutil.Helper) *cobra.Command {
 	orgCmd.AddCommand(DeleteCmd(ch))
 	orgCmd.AddCommand(RenameCmd(ch))
 	orgCmd.AddCommand(UploadLogoCmd(ch))
+	orgCmd.AddCommand(UploadFaviconCmd(ch))
 
 	return orgCmd
 }

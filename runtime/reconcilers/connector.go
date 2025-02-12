@@ -24,8 +24,8 @@ type ConnectorReconciler struct {
 	C *runtime.Controller
 }
 
-func newConnectorReconciler(c *runtime.Controller) runtime.Reconciler {
-	return &ConnectorReconciler{C: c}
+func newConnectorReconciler(ctx context.Context, c *runtime.Controller) (runtime.Reconciler, error) {
+	return &ConnectorReconciler{C: c}, nil
 }
 
 func (r *ConnectorReconciler) Close(ctx context.Context) error {

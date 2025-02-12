@@ -2,10 +2,11 @@ import { parseDocument } from "yaml";
 import { createRuntimeServiceGetFile } from "../../../runtime-client";
 
 export interface MockUser {
-  name?: string;
   email?: string;
-  groups?: string[];
+  name?: string;
   admin?: boolean;
+  groups?: string[];
+  attributes?: { [key: string]: any };
 }
 
 export function useMockUsers(instanceId: string) {
@@ -23,6 +24,7 @@ export function useMockUsers(instanceId: string) {
             yamlObj?.mock_users?.filter((user: MockUser) => user?.email) || [];
           return mockUsers as Array<MockUser>;
         },
+        refetchOnMount: true,
       },
     },
   );

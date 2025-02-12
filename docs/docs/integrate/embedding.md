@@ -322,6 +322,18 @@ The response of the above POST request will then contain an `iframeSrc` value th
 }
 ```
 
+### Testing the dashboard
+
+While it is possible to create the iframeSrc URL via the CLI or code to _test_ your embed dashboard, it might be easier to start off using [Rill Developer's mock users](/manage/security#advanced-example-custom-attributes-embed-dashboards), especially if you have multiple attribute views that you want to test before deploying to Rill Cloud. You can pass specific custom_attributes as you would during iframe URL generation to view the pre-filtered explore dashboard. 
+
+```yaml
+- email: embed@rilldata.com
+  name: embed
+  custom_variable_1: Value_1
+  custom_variable_2: Value_2
+```
+
+
 ### Frontend: Embed the dashboard
 Your frontend should request an iframe URL from your backend API (which you set up in the previous step) and use the `iframeSrc` value of the response to render an HTML `<iframe>` element:
 ```html

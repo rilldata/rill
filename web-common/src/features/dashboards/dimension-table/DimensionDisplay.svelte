@@ -12,7 +12,6 @@
     type MetricsViewSpecDimensionV2,
     type V1Expression,
     type V1MetricsViewAggregationMeasure,
-    type V1MetricsViewSpec,
     type V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -36,7 +35,6 @@
   export let whereFilter: V1Expression;
   export let metricsViewName: string;
   export let dimensionThresholdFilters: DimensionThresholdFilter[];
-  export let metricsView: V1MetricsViewSpec;
   export let visibleMeasureNames: string[];
   export let timeControlsReady: boolean;
   export let dimension: MetricsViewSpecDimensionV2;
@@ -102,7 +100,6 @@
   $: measures = getMeasuresForDimensionTable(
     activeMeasureName,
     dimensionThresholdFilters,
-    metricsView,
     visibleMeasureNames,
   )
     .map(

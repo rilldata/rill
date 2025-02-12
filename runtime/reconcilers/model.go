@@ -22,12 +22,14 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
+	"golang.org/x/sync/semaphore"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
-	_modelDefaultTimeout = 60 * time.Minute
+	// If changing this value also update maxAcquiredConnDuration in runtime/drivers/duckdb/duckdb.go
+	_modelDefaultTimeout = 3 * time.Hour
 
 	_modelSyncPartitionsBatchSize    = 1000
 	_modelPendingPartitionsBatchSize = 1000
@@ -40,11 +42,22 @@ func init() {
 }
 
 type ModelReconciler struct {
-	C *runtime.Controller
+	C       *runtime.Controller
+	execSem *semaphore.Weighted
 }
 
-func newModelReconciler(c *runtime.Controller) runtime.Reconciler {
-	return &ModelReconciler{C: c}
+func newModelReconciler(ctx context.Context, c *runtime.Controller) (runtime.Reconciler, error) {
+	cfg, err := c.Runtime.InstanceConfig(ctx, c.InstanceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get model execution concurrency limit: %w", err)
+	}
+	if cfg.ModelConcurrentExecutionLimit <= 0 {
+		return nil, errors.New("model_concurrent_execution_limit must be greater than zero")
+	}
+	return &ModelReconciler{
+		C:       c,
+		execSem: semaphore.NewWeighted(int64(cfg.ModelConcurrentExecutionLimit)),
+	}, nil
 }
 
 func (r *ModelReconciler) Close(ctx context.Context) error {
@@ -118,6 +131,12 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	// Handle deletion
 	if self.Meta.DeletedOn != nil {
 		if prevManager != nil {
+			err := r.execSem.Acquire(ctx, 1)
+			if err != nil {
+				return runtime.ReconcileResult{Err: err}
+			}
+			defer r.execSem.Release(1)
+
 			err = prevManager.Delete(ctx, prevResult)
 			return runtime.ReconcileResult{Err: err}
 		}
@@ -133,12 +152,24 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	// Handle renames
 	if self.Meta.RenamedFrom != nil {
 		if prevManager != nil {
-			renameRes, err := prevManager.Rename(ctx, prevResult, self.Meta.Name.Name, modelEnv)
-			if err == nil {
-				err = r.updateStateWithResult(ctx, self, renameRes)
-			}
-			if err != nil {
-				r.C.Logger.Warn("failed to rename model", zap.String("model", n.Name), zap.String("renamed_from", self.Meta.RenamedFrom.Name), zap.Error(err))
+			// Using a nested scope to ensure the execSem is safely acquired and released.
+			func() {
+				err := r.execSem.Acquire(ctx, 1)
+				if err != nil {
+					return // Safe to ignore because the err can only be ctx.Err()
+				}
+				defer r.execSem.Release(1)
+
+				renameRes, err := prevManager.Rename(ctx, prevResult, self.Meta.Name.Name, modelEnv)
+				if err == nil {
+					err = r.updateStateWithResult(ctx, self, renameRes)
+				}
+				if err != nil {
+					r.C.Logger.Warn("failed to rename model", zap.String("model", n.Name), zap.String("renamed_from", self.Meta.RenamedFrom.Name), zap.Error(err))
+				}
+			}()
+			if ctx.Err() != nil { // Handle if the error was a ctx error
+				return runtime.ReconcileResult{Err: ctx.Err()}
 			}
 
 			// Note: Not exiting early. We may need to retrigger the model in some cases. We also need to set the correct retrigger time.
@@ -155,12 +186,18 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	if err != nil {
 		// If not staging changes, we need to drop the previous output (if any) before returning
 		if !modelEnv.StageChanges && prevManager != nil {
+			err := r.execSem.Acquire(ctx, 1)
+			if err != nil {
+				return runtime.ReconcileResult{Err: err}
+			}
+			defer r.execSem.Release(1)
+
 			err2 := prevManager.Delete(ctx, prevResult)
 			if err2 != nil {
 				r.C.Logger.Warn("failed to delete model output", zap.String("model", n.Name), zap.Error(err2))
 			}
 
-			err := r.clearPartitions(ctx, model)
+			err = r.clearPartitions(ctx, model)
 			if err != nil {
 				return runtime.ReconcileResult{Err: err}
 			}
@@ -225,6 +262,13 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		}
 		return runtime.ReconcileResult{Retrigger: refreshOn}
 	}
+
+	// Acquire the execution semaphore for the remainder of the function.
+	err = r.execSem.Acquire(ctx, 1)
+	if err != nil {
+		return runtime.ReconcileResult{Err: err}
+	}
+	defer r.execSem.Release(1)
 
 	// If the output connector has changed, drop data in the old output connector (if any).
 	// If only the output properties have changed, the executor will handle dropping existing data (to comply with StageChanges).

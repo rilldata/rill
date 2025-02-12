@@ -25,7 +25,7 @@ export const getRillTheme: (isCustomDashboard: boolean) => Config = (
   area: {
     line: { stroke: MainLineColor, strokeWidth: 1 },
     stroke: null,
-    fillOpacity: 0.7,
+    fillOpacity: 0.8,
     color: {
       x1: 1,
       y1: 1,
@@ -44,7 +44,7 @@ export const getRillTheme: (isCustomDashboard: boolean) => Config = (
       ],
     },
   },
-  bar: { fill: BarFill, opacity: 0.7 },
+  bar: { fill: BarFill, opacity: 0.8 },
   line: { stroke: defaultMarkColor, strokeWidth: 1.5, strokeOpacity: 1 },
   path: { stroke: defaultMarkColor },
   rect: { fill: defaultMarkColor },

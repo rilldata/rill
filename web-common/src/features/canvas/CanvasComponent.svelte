@@ -1,10 +1,12 @@
 <script lang="ts" context="module">
-  import { builderActions, getAttrs, type Builder } from "bits-ui";
-  import {
-    ResourceKind,
-    useResource,
-  } from "../entity-management/resource-selectors";
+  import ComponentHeader from "@rilldata/web-common/features/canvas/ComponentHeader.svelte";
   import ComponentRenderer from "@rilldata/web-common/features/canvas/components/ComponentRenderer.svelte";
+  import {
+    getComponentFilterProperties,
+    isChartComponentType,
+  } from "@rilldata/web-common/features/canvas/components/util";
+  import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import { builderActions, getAttrs, type Builder } from "bits-ui";
 </script>
 
 <script lang="ts">
@@ -13,22 +15,23 @@
   export let embed = false;
   export let selected = false;
   export let componentName: string;
-  export let instanceId: string;
+
+  const {
+    canvasEntity: {
+      spec: { getComponentResourceFromName },
+    },
+  } = getCanvasStateManagers();
 
   let isHovered = false;
 
-  $: resourceQuery = useResource(
-    instanceId,
-    componentName,
-    ResourceKind.Component,
-  );
-  $: ({ data: componentResource } = $resourceQuery);
+  $: component = getComponentResourceFromName(componentName);
+  $: ({ renderer, rendererProperties } = $component ?? {});
 
-  $: ({ renderer, rendererProperties } =
-    componentResource?.component?.spec ?? {});
+  $: isChartType = isChartComponentType(renderer);
 
   $: title = rendererProperties?.title;
   $: description = rendererProperties?.description;
+  $: componentFilters = getComponentFilterProperties(rendererProperties);
 
   function handleMouseEnter() {
     if (embed) return;
@@ -59,16 +62,9 @@
 >
   <div class="size-full relative">
     <div class="size-full overflow-hidden flex flex-col flex-none">
-      <div class="size-full overflow-hidden flex flex-col gap-y-1 flex-none">
-        {#if title || description}
-          <div class="w-full h-fit flex flex-col border-b bg-white p-2">
-            {#if title}
-              <h1 class="text-slate-700">{title}</h1>
-            {/if}
-            {#if description}
-              <h2 class="text-slate-600 leading-none">{description}</h2>
-            {/if}
-          </div>
+      <div class="size-full overflow-hidden flex flex-col flex-none relative">
+        {#if !isChartType}
+          <ComponentHeader {title} {description} filters={componentFilters} />
         {/if}
         {#if renderer && rendererProperties}
           <ComponentRenderer {renderer} {componentName} />
@@ -77,15 +73,3 @@
     </div>
   </div>
 </div>
-
-<style lang="postcss">
-  h1 {
-    font-size: 16px;
-    font-weight: 500;
-  }
-
-  h2 {
-    font-size: 12px;
-    font-weight: 400;
-  }
-</style>

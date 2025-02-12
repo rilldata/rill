@@ -1,4 +1,4 @@
-import type { CanvasResolvedSpec } from "@rilldata/web-common/features/canvas/stores/canvas-spec";
+import type { CanvasResolvedSpec } from "@rilldata/web-common/features/canvas/stores/spec";
 import {
   getDimensionDisplayName,
   getMeasureDisplayName,
@@ -43,7 +43,7 @@ import {
   type Writable,
 } from "svelte/store";
 
-export class CanvasFilters {
+export class Filters {
   private spec: CanvasResolvedSpec;
   // -------------------
   // STORES (writable)

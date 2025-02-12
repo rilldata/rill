@@ -39,12 +39,12 @@ export function getDimensionTableExportArgs(
 
       const timeRange = mapTimeRange(
         timeControlState,
+        dashboardState.selectedTimezone,
         validSpecStore.data.explore,
       );
       if (!timeRange) return undefined;
 
       const comparisonTimeRange = mapComparisonTimeRange(
-        dashboardState,
         timeControlState,
         timeRange,
       );

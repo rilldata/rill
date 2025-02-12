@@ -112,7 +112,7 @@
       </DropdownMenu.Trigger>
       <DropdownMenu.Content
         align="start"
-        class="border-none bg-gray-800 text-white min-w-60"
+        class="min-w-60"
         side="right"
         sideOffset={16}
       >

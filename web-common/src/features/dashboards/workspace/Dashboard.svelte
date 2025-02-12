@@ -90,7 +90,8 @@
       }
     : undefined;
 
-  $: metricsView = $explore.data?.metricsView ?? {};
+  $: exploreSpec = $explore.data?.explore;
+  $: timeRanges = exploreSpec?.timeRanges ?? [];
 
   let metricsWidth = DEFAULT_TIMESERIES_WIDTH;
   let resizing = false;
@@ -102,7 +103,7 @@
 >
   <div
     id="header"
-    class="border-b w-fit min-w-full flex flex-col bg-slate-50 slide"
+    class="border-b w-fit min-w-full flex flex-col bg-background slide"
     class:left-shift={extraLeftPadding}
   >
     {#if mockUserHasNoAccess}
@@ -110,7 +111,7 @@
     {:else}
       {#key exploreName}
         <section class="flex relative justify-between gap-x-4 py-4 pb-6 px-4">
-          <Filters />
+          <Filters {timeRanges} {metricsViewName} />
           <div class="absolute bottom-0 flex flex-col right-0">
             <TabBar {hidePivot} {exploreName} onPivot={$showPivot} />
           </div>
@@ -130,7 +131,7 @@
     <PivotDisplay />
   {:else}
     <div
-      class="flex gap-x-1 gap-y-2 size-full overflow-hidden pl-4 slide"
+      class="flex gap-x-1 gap-y-2 size-full overflow-hidden pl-4 slide bg-surface"
       class:flex-col={expandedMeasureName}
       class:flex-row={!expandedMeasureName}
       class:left-shift={extraLeftPadding}
@@ -187,7 +188,6 @@
               {comparisonTimeRange}
               activeMeasureName={$activeMeasureName}
               {timeControlsReady}
-              {metricsView}
               visibleMeasureNames={$visibleMeasures.map(
                 ({ name }) => name ?? "",
               )}
@@ -201,7 +201,6 @@
               {dimensionThresholdFilters}
               {timeRange}
               {comparisonTimeRange}
-              {metricsView}
               {timeControlsReady}
             />
           {/if}

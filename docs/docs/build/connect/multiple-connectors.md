@@ -5,7 +5,7 @@ sidebar_label: Multiple Connectors
 sidebar_position: 20
 ---
 
-Sometimes, you will need to set up multiple connectors of the same type in one project with different connection strings (DSN) or configurations for sources. A common example would be that you have a need for multiple [Snowflake](/reference/connectors/snowflake.md) sources that point to different databases and schemas. Therefore, when [deploying your project to Rill Cloud](/deploy/deploy-dashboard/#deploying-a-project-via-the-ui), you will want to specify multiple `snowflake.connector.dsn` connection strings, one corresponding to each unique "connection" you desire (with different connection parameters).
+Sometimes, you will need to set up multiple connectors of the same type in one project with different connection strings (DSN) or configurations for sources. A common example would be that you have a need for multiple [Snowflake](/reference/connectors/snowflake.md) sources that point to different databases and schemas. Therefore, when [deploying your project to Rill Cloud](/deploy/deploy-dashboard/#deploying-a-project-from-rill-developer), you will want to specify multiple `snowflake.connector.dsn` connection strings, one corresponding to each unique "connection" you desire (with different connection parameters).
 
 ## Defining multiple connectors in `rill.yaml`
 
@@ -51,7 +51,7 @@ sql: "select * from table_B"
 
 ## Setting credentials for each connector when deploying to Rill Cloud
 
-Finally, when deploying the project to Rill Cloud, you will want to follow the same steps to [set the credentials](/deploy/deploy-credentials#configure-environmental-variables-and-credentials-on-rill-cloud) for each connector.
+Finally, when deploying the project to Rill Cloud, you will want to follow the same steps to [set the credentials](/deploy/deploy-credentials#configure-environmental-variables-and-credentials-for-rill-cloud) for each connector.
 
 If using `rill env configure`, you should be prompted to input the correct `connector.<connector_name>.dsn` connection strings.
 

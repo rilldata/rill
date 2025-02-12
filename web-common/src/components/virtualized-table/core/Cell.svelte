@@ -62,9 +62,9 @@
   let activityStatus;
   $: {
     if (cellActive) {
-      activityStatus = "bg-gray-200 dark:bg-gray-600";
+      activityStatus = "bg-gray-200 ";
     } else if (rowActive && !cellActive) {
-      activityStatus = "bg-gray-100 dark:bg-gray-700";
+      activityStatus = "bg-gray-100 ";
     } else if (colSelected) {
       activityStatus = "bg-gray-50";
     } else {

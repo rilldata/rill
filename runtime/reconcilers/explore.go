@@ -18,8 +18,8 @@ type ExploreReconciler struct {
 	C *runtime.Controller
 }
 
-func newExploreReconciler(c *runtime.Controller) runtime.Reconciler {
-	return &ExploreReconciler{C: c}
+func newExploreReconciler(ctx context.Context, c *runtime.Controller) (runtime.Reconciler, error) {
+	return &ExploreReconciler{C: c}, nil
 }
 
 func (r *ExploreReconciler) Close(ctx context.Context) error {
@@ -66,10 +66,27 @@ func (r *ExploreReconciler) Reconcile(ctx context.Context, n *runtimev1.Resource
 		return runtime.ReconcileResult{}
 	}
 
+	// Get instance config
+	cfg, err := r.C.Runtime.InstanceConfig(ctx, r.C.InstanceID)
+	if err != nil {
+		return runtime.ReconcileResult{Err: err}
+	}
+
 	// Validate and rewrite
 	validSpec, validateErr := r.validateAndRewrite(ctx, self, e.Spec)
 
-	// Always capture the valid spec in the state, even if validation failed and it is nil.
+	// If spec validation failed and StageChanges is enabled, we will keep the old valid spec if its parent metrics view is still valid.
+	// This is not perfect, but increases the chance of keeping the dashboard working in many cases.
+	if validSpec == nil && cfg.StageChanges && e.State.ValidSpec != nil {
+		// Get the metrics view referenced by the old valid spec.
+		mvn := &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: e.State.ValidSpec.MetricsView}
+		mv, err := r.C.Get(ctx, mvn, false)
+		if err == nil && mv.GetMetricsView().State.ValidSpec != nil {
+			// Keep the old valid spec
+			validSpec = e.State.ValidSpec
+		}
+	}
+
 	// We update the state even if the validation result is unchanged to ensure the state version is incremented.
 	e.State.ValidSpec = validSpec
 	err = r.C.UpdateState(ctx, self.Meta.Name, self)

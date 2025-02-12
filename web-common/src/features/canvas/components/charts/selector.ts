@@ -198,7 +198,6 @@ export function validateChartSchema(
   let dimensions: string[] = [];
 
   if (y?.field) measures = [y.field];
-  if (x?.field && x.field !== "__time") dimensions = [x.field];
   if (typeof color === "object" && color?.field)
     dimensions = [...dimensions, color.field];
 
@@ -211,6 +210,10 @@ export function validateChartSchema(
           error: `Metrics view ${metrics_view} not found`,
         };
       }
+
+      const timeDimension = metricsView.timeDimension;
+      if (x?.field && x.field !== timeDimension) dimensions = [x.field];
+
       const validateMeasuresRes = validateMeasures(metricsView, measures);
       if (!validateMeasuresRes.isValid) {
         const invalidMeasures = validateMeasuresRes.invalidMeasures.join(", ");

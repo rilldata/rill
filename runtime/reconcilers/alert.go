@@ -40,8 +40,8 @@ type AlertReconciler struct {
 	C *runtime.Controller
 }
 
-func newAlertReconciler(c *runtime.Controller) runtime.Reconciler {
-	return &AlertReconciler{C: c}
+func newAlertReconciler(ctx context.Context, c *runtime.Controller) (runtime.Reconciler, error) {
+	return &AlertReconciler{C: c}, nil
 }
 
 func (r *AlertReconciler) Close(ctx context.Context) error {

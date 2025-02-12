@@ -24,8 +24,10 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// recommended size is 512MB - 1GB, entire data is buffered in memory before its written to disk
-const rowGroupBufferSize = int64(datasize.MB) * 512
+// entire data is buffered in memory before its written to disk so keeping it small reduces memory usage
+// but keeping it too small can lead to bad ingestion performance
+// 64MB seems to be a good balance
+const rowGroupBufferSize = int64(datasize.MB) * 64
 
 // QueryAsFiles implements drivers.SQLStore.
 // Fetches query result in arrow batches.
@@ -43,10 +45,10 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (it
 	} else if c.configProperties.DSN != "" { // get from driver configs
 		dsn = c.configProperties.DSN
 	} else {
-		return nil, fmt.Errorf("the property 'dsn' is required for Snowflake. Provide 'dsn' in the YAML properties or pass '--env connector.snowflake.dsn=...' to 'rill start'")
+		return nil, fmt.Errorf("the property 'dsn' is required for Snowflake: configure it in the YAML properties or set the 'connector.snowflake.dsn' environment variable")
 	}
 
-	parallelFetchLimit := 15
+	parallelFetchLimit := 5
 	if c.configProperties.ParallelFetchLimit != 0 {
 		parallelFetchLimit = c.configProperties.ParallelFetchLimit
 	}
@@ -95,6 +97,10 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (it
 	if len(batches) == 0 {
 		// empty result
 		return nil, drivers.ErrNoRows
+	}
+
+	for i := range batches {
+		batches[i] = batches[i].WithContext(ctx)
 	}
 
 	tempDir, err := c.storage.RandomTempDir("snowflake")

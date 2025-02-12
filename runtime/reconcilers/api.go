@@ -17,8 +17,8 @@ type APIReconciler struct {
 	C *runtime.Controller
 }
 
-func newAPIReconciler(c *runtime.Controller) runtime.Reconciler {
-	return &APIReconciler{C: c}
+func newAPIReconciler(ctx context.Context, c *runtime.Controller) (runtime.Reconciler, error) {
+	return &APIReconciler{C: c}, nil
 }
 
 func (r *APIReconciler) Close(ctx context.Context) error {

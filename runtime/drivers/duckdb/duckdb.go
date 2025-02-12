@@ -392,6 +392,9 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 		case "https":
 			return &httpsToSelfExecutor{c}, true
 		}
+		if _, ok := opts.InputHandle.AsObjectStore(); ok {
+			return &objectStoreToSelfExecutor{c}, true
+		}
 	}
 	if opts.InputHandle == c {
 		if opts.OutputHandle.Driver() == "file" {
@@ -726,7 +729,7 @@ func (c *connection) periodicallyEmitStats(d time.Duration) {
 }
 
 // maxAcquiredConnDuration is the maximum duration a connection can be held for before we consider it potentially hanging/deadlocked.
-const maxAcquiredConnDuration = 1 * time.Hour
+const maxAcquiredConnDuration = 3 * time.Hour
 
 // periodicallyCheckConnDurations periodically checks the durations of all acquired connections and logs a warning if any have been held for longer than maxAcquiredConnDuration.
 func (c *connection) periodicallyCheckConnDurations(d time.Duration) {

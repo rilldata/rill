@@ -31,6 +31,11 @@ func (c *connection) CommitHash(ctx context.Context) (string, error) {
 	return "", nil
 }
 
+// CommitTimestamp implements drivers.RepoStore.
+func (c *connection) CommitTimestamp(ctx context.Context) (time.Time, error) {
+	return time.Time{}, nil
+}
+
 // ListRecursive implements drivers.RepoStore.
 func (c *connection) ListRecursive(ctx context.Context, glob string, skipDirs bool) ([]drivers.DirEntry, error) {
 	// Check that folder hasn't been moved

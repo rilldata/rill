@@ -79,6 +79,13 @@ func TruncateTime(start time.Time, tg TimeGrain, tz *time.Location, firstDay, fi
 		start = start.AddDate(0, -monthsToSubtract, 0)
 		return start.In(time.UTC)
 	case TimeGrainYear:
+		if firstMonth < 1 {
+			firstMonth = 1
+		}
+		if firstMonth > 12 {
+			firstMonth = 12
+		}
+
 		start = start.In(tz)
 		year := start.Year()
 		if int(start.Month()) < firstMonth {

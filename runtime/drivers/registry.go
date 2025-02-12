@@ -83,6 +83,8 @@ type InstanceConfig struct {
 	ModelDefaultMaterialize bool `mapstructure:"rill.models.default_materialize"`
 	// ModelMaterializeDelaySeconds adds a delay before materializing models.
 	ModelMaterializeDelaySeconds uint32 `mapstructure:"rill.models.materialize_delay_seconds"`
+	// ModelConcurrentExecutionLimit sets the maximum number of concurrent model executions.
+	ModelConcurrentExecutionLimit uint32 `mapstructure:"rill.models.concurrent_execution_limit"`
 	// MetricsComparisonsExact indicates whether to rewrite metrics comparison queries to approximately correct queries.
 	// Approximated comparison queries are faster but may not return comparison data points for all values.
 	MetricsApproximateComparisons bool `mapstructure:"rill.metrics.approximate_comparisons"`
@@ -139,6 +141,7 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		StageChanges:                         true,
 		ModelDefaultMaterialize:              false,
 		ModelMaterializeDelaySeconds:         0,
+		ModelConcurrentExecutionLimit:        1,
 		MetricsApproximateComparisons:        true,
 		MetricsApproximateComparisonsCTE:     false,
 		MetricsApproxComparisonTwoPhaseLimit: 250,

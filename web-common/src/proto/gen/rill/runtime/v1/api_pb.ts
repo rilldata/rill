@@ -2801,6 +2801,13 @@ export class ListResourcesRequest extends Message<ListResourcesRequest> {
    */
   path = "";
 
+  /**
+   * Skip security checks
+   *
+   * @generated from field: bool skip_security_checks = 4;
+   */
+  skipSecurityChecks = false;
+
   constructor(data?: PartialMessage<ListResourcesRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2812,6 +2819,7 @@ export class ListResourcesRequest extends Message<ListResourcesRequest> {
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "skip_security_checks", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListResourcesRequest {
@@ -2986,6 +2994,11 @@ export class GetResourceRequest extends Message<GetResourceRequest> {
    */
   name?: ResourceName;
 
+  /**
+   * @generated from field: bool skip_security_checks = 3;
+   */
+  skipSecurityChecks = false;
+
   constructor(data?: PartialMessage<GetResourceRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2996,6 +3009,7 @@ export class GetResourceRequest extends Message<GetResourceRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "message", T: ResourceName },
+    { no: 3, name: "skip_security_checks", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetResourceRequest {
@@ -4045,6 +4059,14 @@ export class IssueDevJWTRequest extends Message<IssueDevJWTRequest> {
    */
   admin = false;
 
+  /**
+   * Additional arbitrary attributes to include in the JWT.
+   * They take precedence if they collide with name, email, groups or admin.
+   *
+   * @generated from field: google.protobuf.Struct attributes = 5;
+   */
+  attributes?: Struct;
+
   constructor(data?: PartialMessage<IssueDevJWTRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4057,6 +4079,7 @@ export class IssueDevJWTRequest extends Message<IssueDevJWTRequest> {
     { no: 2, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "groups", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 4, name: "admin", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "attributes", kind: "message", T: Struct },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): IssueDevJWTRequest {

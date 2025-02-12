@@ -8,7 +8,7 @@
   import { clamp } from "@rilldata/web-common/lib/clamp";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { slide } from "svelte/transition";
-  import type { LeaderboardItemData } from "./leaderboard-utils";
+  import { type LeaderboardItemData, makeHref } from "./leaderboard-utils";
   import LeaderboardItemFilterIcon from "./LeaderboardItemFilterIcon.svelte";
   import LeaderboardTooltipContent from "./LeaderboardTooltipContent.svelte";
   import LongBarZigZag from "./LongBarZigZag.svelte";
@@ -86,7 +86,7 @@
 
   $: negativeChange = deltaAbs !== null && deltaAbs < 0;
 
-  $: href = makeHref(uri);
+  $: href = makeHref(uri, dimensionValue);
 
   $: percentOfTotal = isSummableMeasure && pctOfTotal ? pctOfTotal : 0;
 
@@ -131,26 +131,6 @@
     ? `linear-gradient(to right, ${barColor}
     ${fourthCellBarLength}px, transparent ${fourthCellBarLength}px)`
     : undefined;
-
-  // uri template or "true" string literal or undefined
-  function makeHref(uriTemplateOrBoolean: string | boolean | null) {
-    if (!uriTemplateOrBoolean) {
-      return undefined;
-    }
-
-    const uri =
-      uriTemplateOrBoolean === true
-        ? dimensionValue
-        : uriTemplateOrBoolean.replace(/\s/g, "");
-
-    const hasProtocol = /^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(uri);
-
-    if (!hasProtocol) {
-      return "https://" + uri;
-    } else {
-      return uri;
-    }
-  }
 
   function shiftClickHandler(label: string) {
     let truncatedLabel = label?.toString();
@@ -312,12 +292,12 @@
   }
 
   td:first-of-type {
-    @apply p-0 bg-background;
+    @apply p-0 bg-surface;
   }
 
   a {
     @apply absolute right-0 z-50 h-[22px] w-[32px];
-    @apply bg-white flex items-center justify-center shadow-md rounded-sm;
+    @apply bg-surface flex items-center justify-center shadow-md rounded-sm;
   }
 
   a:hover {

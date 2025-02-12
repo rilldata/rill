@@ -604,6 +604,11 @@ export class ProjectParserState extends Message<ProjectParserState> {
   currentCommitSha = "";
 
   /**
+   * @generated from field: google.protobuf.Timestamp current_commit_on = 4;
+   */
+  currentCommitOn?: Timestamp;
+
+  /**
    * @generated from field: bool watching = 3;
    */
   watching = false;
@@ -618,6 +623,7 @@ export class ProjectParserState extends Message<ProjectParserState> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "parse_errors", kind: "message", T: ParseError, repeated: true },
     { no: 2, name: "current_commit_sha", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "current_commit_on", kind: "message", T: Timestamp },
     { no: 3, name: "watching", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
@@ -2265,6 +2271,13 @@ export class ExploreSpec extends Message<ExploreSpec> {
    */
   securityRules: SecurityRule[] = [];
 
+  /**
+   * Banner text that can be displayed in Rill Cloud.
+   *
+   * @generated from field: string banner = 18;
+   */
+  banner = "";
+
   constructor(data?: PartialMessage<ExploreSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2287,6 +2300,7 @@ export class ExploreSpec extends Message<ExploreSpec> {
     { no: 15, name: "default_preset", kind: "message", T: ExplorePreset },
     { no: 16, name: "embeds_hide_pivot", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 12, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
+    { no: 18, name: "banner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExploreSpec {
@@ -4564,11 +4578,25 @@ export class CanvasSpec extends Message<CanvasSpec> {
   items: CanvasItem[] = [];
 
   /**
+   * Layout is an untyped object pending a formal definition.
+   *
+   * @generated from field: google.protobuf.Value layout = 16;
+   */
+  layout?: Value;
+
+  /**
    * Security rules to apply for access to the canvas.
    *
    * @generated from field: repeated rill.runtime.v1.SecurityRule security_rules = 6;
    */
   securityRules: SecurityRule[] = [];
+
+  /**
+   * Banner text that can be displayed in Rill Cloud.
+   *
+   * @generated from field: string banner = 17;
+   */
+  banner = "";
 
   constructor(data?: PartialMessage<CanvasSpec>) {
     super();
@@ -4590,7 +4618,9 @@ export class CanvasSpec extends Message<CanvasSpec> {
     { no: 15, name: "default_preset", kind: "message", T: CanvasPreset },
     { no: 5, name: "variables", kind: "message", T: ComponentVariable, repeated: true },
     { no: 4, name: "items", kind: "message", T: CanvasItem, repeated: true },
+    { no: 16, name: "layout", kind: "message", T: Value },
     { no: 6, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
+    { no: 17, name: "banner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasSpec {

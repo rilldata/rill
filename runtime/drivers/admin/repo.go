@@ -10,6 +10,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"time"
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/go-git/go-git/v5"
@@ -26,6 +27,35 @@ func (h *Handle) Root(ctx context.Context) (string, error) {
 	return h.projPath, nil
 }
 
+func (h *Handle) CommitTimestamp(ctx context.Context) (time.Time, error) {
+	err := h.rlockEnsureCloned(ctx)
+	if err != nil {
+		return time.Time{}, err
+	}
+	defer h.repoMu.RUnlock()
+
+	if h.archiveDownloadURL != "" {
+		return h.archiveCreatedOn, nil
+	}
+
+	repo, err := git.PlainOpen(h.repoPath)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	ref, err := repo.Head()
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	commit, err := repo.CommitObject(ref.Hash())
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	return commit.Author.When, nil
+}
+
 func (h *Handle) CommitHash(ctx context.Context) (string, error) {
 	err := h.rlockEnsureCloned(ctx)
 	if err != nil {
@@ -33,10 +63,8 @@ func (h *Handle) CommitHash(ctx context.Context) (string, error) {
 	}
 	defer h.repoMu.RUnlock()
 
-	if h.downloadURL != "" {
-		// use downloadURL as a proxy for CommitHash for one-time uploads
-		// It will change when new data is uploaded
-		return h.downloadURL, nil
+	if h.archiveDownloadURL != "" {
+		return h.archiveID, nil
 	}
 
 	repo, err := git.PlainOpen(h.repoPath)

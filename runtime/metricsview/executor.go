@@ -42,6 +42,7 @@ type TimestampsResult struct {
 	Min       time.Time
 	Max       time.Time
 	Watermark time.Time
+	Now       time.Time
 }
 
 // NewExecutor creates a new Executor for the provided metrics view.
@@ -152,6 +153,7 @@ func (e *Executor) Timestamps(ctx context.Context) (TimestampsResult, error) {
 		return TimestampsResult{}, err
 	}
 
+	e.timestamps.Now = time.Now()
 	return e.timestamps, nil
 }
 

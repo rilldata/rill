@@ -14,9 +14,11 @@
     TabsTrigger,
   } from "@rilldata/web-common/components/tabs";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
 
   export let createMagicAuthTokens: boolean;
 
+  const { hidePublicUrl } = featureFlags;
   let isOpen = false;
   let copied = false;
 
@@ -30,7 +32,12 @@
   }
 </script>
 
-<Popover bind:open={isOpen}>
+<Popover
+  bind:open={isOpen}
+  onOutsideClick={() => {
+    isOpen = false;
+  }}
+>
   <PopoverTrigger asChild let:builder>
     <Button type="secondary" builders={[builder]} selected={isOpen}
       >Share</Button
@@ -40,7 +47,7 @@
     <Tabs>
       <TabsList>
         <TabsTrigger value="tab1">Copy URL</TabsTrigger>
-        {#if createMagicAuthTokens}
+        {#if createMagicAuthTokens && !$hidePublicUrl}
           <TabsTrigger value="tab2">Create public URL</TabsTrigger>
         {/if}
       </TabsList>

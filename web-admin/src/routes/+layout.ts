@@ -15,7 +15,7 @@ import {
   type V1User,
 } from "@rilldata/web-admin/client";
 import { redirectToLoginOrRequestAccess } from "@rilldata/web-admin/features/authentication/checkUserAccess";
-import { fetchOrganizationPermissions } from "@rilldata/web-admin/features/organizations/selectors";
+import { getFetchOrganizationQueryOptions } from "@rilldata/web-admin/features/organizations/selectors";
 import { fetchProjectDeploymentDetails } from "@rilldata/web-admin/features/projects/selectors";
 import { initPosthog } from "@rilldata/web-common/lib/analytics/posthog";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
@@ -23,7 +23,8 @@ import { fixLocalhostRuntimePort } from "@rilldata/web-common/runtime-client/fix
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { error, redirect, type Page } from "@sveltejs/kit";
 
-export const load = async ({ params, url, route }) => {
+export const load = async ({ params, url, route, depends }) => {
+  depends("root");
   // Route params
   const { organization, project, token: routeToken } = params;
   const pageState = {
@@ -75,10 +76,16 @@ export const load = async ({ params, url, route }) => {
 
   // Get organization permissions
   let organizationPermissions: V1OrganizationPermissions = {};
+  let organizationLogoUrl: string | undefined = undefined;
+  let organizationFaviconUrl: string | undefined = undefined;
   if (organization && !token) {
     try {
-      organizationPermissions =
-        await fetchOrganizationPermissions(organization);
+      const organizationResp = await queryClient.fetchQuery(
+        getFetchOrganizationQueryOptions(organization),
+      );
+      organizationPermissions = organizationResp.permissions ?? {};
+      organizationLogoUrl = organizationResp.organization?.logoUrl;
+      organizationFaviconUrl = organizationResp.organization?.faviconUrl;
     } catch (e) {
       if (e.response?.status !== 403) {
         throw error(e.response.status, "Error fetching organization");
@@ -90,6 +97,8 @@ export const load = async ({ params, url, route }) => {
     return {
       user,
       organizationPermissions,
+      organizationLogoUrl,
+      organizationFaviconUrl,
       projectPermissions: <V1ProjectPermissions>{},
     };
   }
@@ -112,6 +121,8 @@ export const load = async ({ params, url, route }) => {
     return {
       user,
       organizationPermissions,
+      organizationLogoUrl,
+      organizationFaviconUrl,
       projectPermissions,
       project: proj,
       runtime: runtimeData,

@@ -36,6 +36,10 @@ connectors:
 
 env:
   foo: bar
+
+mock_users:
+- email: foo@bar.com
+  custom_attribute: yeah
 `,
 	})
 
@@ -1711,6 +1715,10 @@ items:
 - component:
     markdown:
       content: "Hello world!"
+
+layout:
+- 1, 2, 3
+- 4, 5, 6
 `,
 	})
 
@@ -1786,6 +1794,7 @@ items:
 					{Component: "c2", Width: asPtr(uint32(1)), Height: asPtr(uint32(2))},
 					{Component: "d1--component-2", DefinedInCanvas: true},
 				},
+				Layout: must(structpb.NewValue([]any{"1, 2, 3", "4, 5, 6"})),
 			},
 		},
 	}
