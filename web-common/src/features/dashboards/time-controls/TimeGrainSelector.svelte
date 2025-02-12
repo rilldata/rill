@@ -47,6 +47,7 @@
   <DropdownMenu.Root bind:open>
     <DropdownMenu.Trigger asChild let:builder>
       <button
+        class:tdd
         use:builder.action
         {...builder}
         aria-label="Select a time grain"
@@ -86,3 +87,17 @@
     </DropdownMenu.Content>
   </DropdownMenu.Root>
 {/if}
+
+<style lang="postcss">
+  .tdd {
+    @apply border h-7 rounded-full px-2 pl-2.5;
+  }
+
+  .tdd:hover {
+    @apply bg-gray-50;
+  }
+
+  .tdd[data-state="open"] {
+    @apply bg-gray-50 border-gray-400;
+  }
+</style>
