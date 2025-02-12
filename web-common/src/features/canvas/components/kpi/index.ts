@@ -7,6 +7,7 @@ import type { InputParams } from "@rilldata/web-common/features/canvas/inspector
 import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
 import type {
   ComponentCommonProperties,
+  ComponentComparisonOptions,
   ComponentFilterProperties,
 } from "../types";
 
@@ -17,8 +18,16 @@ export interface KPISpec
     ComponentFilterProperties {
   metrics_view: string;
   measure: string;
-  sparkline?: boolean;
+  // Defaults to "bottom"
+  sparkline?: "none" | "bottom" | "right";
+  // Defaults to "delta" and "percent_change"
+  comparison?: ComponentComparisonOptions[];
 }
+
+export const defaultComparisonOptions: ComponentComparisonOptions[] = [
+  "delta",
+  "percent_change",
+];
 
 export class KPIComponent extends BaseCanvasComponent<KPISpec> {
   minSize = { width: 2, height: 2 };
@@ -32,7 +41,7 @@ export class KPIComponent extends BaseCanvasComponent<KPISpec> {
     const defaultSpec: KPISpec = {
       metrics_view: "",
       measure: "",
-      sparkline: true,
+      comparison: defaultComparisonOptions,
     };
     super(fileArtifact, path, defaultSpec, initialSpec);
   }
@@ -48,7 +57,8 @@ export class KPIComponent extends BaseCanvasComponent<KPISpec> {
       options: {
         metrics_view: { type: "metrics", label: "Metrics view" },
         measure: { type: "measure", label: "Measure" },
-        sparkline: { type: "boolean", optional: true, label: "Sparkline" },
+        sparkline: { type: "sparkline", optional: true, label: "Sparkline" },
+        comparison: { type: "comparison_options", label: "Comparison values" },
         ...commonOptions,
       },
       filter: getFilterOptions(),
@@ -59,7 +69,7 @@ export class KPIComponent extends BaseCanvasComponent<KPISpec> {
     return {
       metrics_view,
       measure,
-      sparkline: true,
+      comparison: defaultComparisonOptions,
     };
   }
 }

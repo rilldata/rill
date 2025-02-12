@@ -451,16 +451,6 @@ export interface V1UpdateBookmarkRequest {
   shared?: boolean;
 }
 
-export interface V1Subscription {
-  id?: string;
-  plan?: V1BillingPlan;
-  startDate?: string;
-  endDate?: string;
-  currentBillingCycleStartDate?: string;
-  currentBillingCycleEndDate?: string;
-  trialEndDate?: string;
-}
-
 export interface V1UpdateBillingSubscriptionResponse {
   organization?: V1Organization;
   subscription?: V1Subscription;
@@ -589,6 +579,16 @@ export interface V1SudoExtendTrialRequest {
 
 export interface V1SudoDeleteOrganizationBillingIssueResponse {
   [key: string]: any;
+}
+
+export interface V1Subscription {
+  id?: string;
+  plan?: V1BillingPlan;
+  startDate?: string;
+  endDate?: string;
+  currentBillingCycleStartDate?: string;
+  currentBillingCycleEndDate?: string;
+  trialEndDate?: string;
 }
 
 export interface V1Subquery {
@@ -1301,6 +1301,10 @@ export interface V1DenyProjectAccessResponse {
 }
 
 export interface V1DeleteUsergroupResponse {
+  [key: string]: any;
+}
+
+export interface V1DeleteUserResponse {
   [key: string]: any;
 }
 

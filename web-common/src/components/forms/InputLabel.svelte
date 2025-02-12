@@ -8,6 +8,7 @@
   export let hint: string | undefined = undefined;
   export let optional = false;
   export let capitalize = true;
+  export let faint = false;
   export let link: string | undefined = undefined;
   export let small = false;
 </script>
@@ -17,6 +18,7 @@
     for={id}
     class="line-clamp-1 {small ? 'text-xs' : 'text-sm'}"
     class:capitalize
+    class:faint
   >
     {label}
     {#if optional}
@@ -47,5 +49,9 @@
 
   label {
     @apply font-medium text-gray-800;
+  }
+
+  label.faint {
+    @apply text-gray-500;
   }
 </style>

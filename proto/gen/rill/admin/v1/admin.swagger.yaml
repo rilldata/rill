@@ -3475,6 +3475,26 @@ paths:
           type: string
       tags:
         - AdminService
+  /v1/users/{email}:
+    delete:
+      summary: DeleteUser deletes the user from the organization by email
+      operationId: AdminService_DeleteUser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DeleteUserResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: email
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
   /v1/users/bookmarks:
     get:
       summary: ListBookmarks lists all the bookmarks for the user and global ones for dashboard
@@ -4080,6 +4100,8 @@ definitions:
     properties:
       service:
         $ref: '#/definitions/v1Service'
+  v1DeleteUserResponse:
+    type: object
   v1DeleteUsergroupResponse:
     type: object
   v1DenyProjectAccessResponse:
