@@ -28,8 +28,12 @@
 
   export let data;
 
-  $: ({ projectPermissions, organizationPermissions, organizationLogoUrl } =
-    data);
+  $: ({
+    projectPermissions,
+    organizationPermissions,
+    organizationLogoUrl,
+    organizationFaviconUrl,
+  } = data);
   $: ({
     params: { organization },
     url: { pathname },
@@ -91,6 +95,11 @@
 
 <svelte:head>
   <meta content="Rill Cloud" name="description" />
+  {#if organizationFaviconUrl}
+    <link rel="icon" href={organizationFaviconUrl} />
+  {:else}
+    <link rel="icon" href="/favicon.png" />
+  {/if}
 </svelte:head>
 
 <RillTheme>

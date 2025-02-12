@@ -25,7 +25,8 @@ import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { error, redirect, type Page } from "@sveltejs/kit";
 import { isAxiosError } from "axios";
 
-export const load = async ({ params, url, route }) => {
+export const load = async ({ params, url, route, depends }) => {
+  depends("root");
   // Route params
   const { organization, project, token: routeToken } = params;
   const pageState = {
@@ -78,6 +79,7 @@ export const load = async ({ params, url, route }) => {
   // Get organization permissions
   let organizationPermissions: V1OrganizationPermissions = {};
   let organizationLogoUrl: string | undefined = undefined;
+  let organizationFaviconUrl: string | undefined = undefined;
   if (organization && !token) {
     try {
       const organizationResp = await queryClient.fetchQuery(
@@ -85,6 +87,7 @@ export const load = async ({ params, url, route }) => {
       );
       organizationPermissions = organizationResp.permissions ?? {};
       organizationLogoUrl = organizationResp.organization?.logoUrl;
+      organizationFaviconUrl = organizationResp.organization?.faviconUrl;
     } catch (e: unknown) {
       if (!isAxiosError<RpcStatus>(e) || !e.response) {
         throw error(500, "Error fetching organization");
@@ -106,6 +109,7 @@ export const load = async ({ params, url, route }) => {
       user,
       organizationPermissions,
       organizationLogoUrl,
+      organizationFaviconUrl,
       projectPermissions: <V1ProjectPermissions>{},
     };
   }
@@ -129,6 +133,7 @@ export const load = async ({ params, url, route }) => {
       user,
       organizationPermissions,
       organizationLogoUrl,
+      organizationFaviconUrl,
       projectPermissions,
       project: proj,
       runtime: runtimeData,
