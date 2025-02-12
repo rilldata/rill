@@ -342,6 +342,11 @@ service AdminService {
     };
   }
 
+  // DeleteUser deletes the user from the organization by email
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse) {
+    option (google.api.http) = {delete: "/v1/users/{email}"};
+  }
+
   // IssueRepresentativeAuthToken returns the temporary token for given email
   rpc IssueRepresentativeAuthToken(IssueRepresentativeAuthTokenRequest) returns (IssueRepresentativeAuthTokenResponse) {
     option (google.api.http) = {
@@ -1638,6 +1643,12 @@ message UpdateUserPreferencesRequest {
 message UpdateUserPreferencesResponse {
   UserPreferences preferences = 1;
 }
+
+message DeleteUserRequest {
+  string email = 1 [(validate.rules).string.email = true];
+}
+
+message DeleteUserResponse {}
 
 message ListBookmarksRequest {
   string project_id = 1;

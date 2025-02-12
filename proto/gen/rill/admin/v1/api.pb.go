@@ -8738,6 +8738,91 @@ func (x *UpdateUserPreferencesResponse) GetPreferences() *UserPreferences {
 	return nil
 }
 
+type DeleteUserRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Email string `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+}
+
+func (x *DeleteUserRequest) Reset() {
+	*x = DeleteUserRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_rill_admin_v1_api_proto_msgTypes[146]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DeleteUserRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteUserRequest) ProtoMessage() {}
+
+func (x *DeleteUserRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_rill_admin_v1_api_proto_msgTypes[146]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteUserRequest.ProtoReflect.Descriptor instead.
+func (*DeleteUserRequest) Descriptor() ([]byte, []int) {
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{146}
+}
+
+func (x *DeleteUserRequest) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+type DeleteUserResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *DeleteUserResponse) Reset() {
+	*x = DeleteUserResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_rill_admin_v1_api_proto_msgTypes[147]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DeleteUserResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteUserResponse) ProtoMessage() {}
+
+func (x *DeleteUserResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_rill_admin_v1_api_proto_msgTypes[147]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteUserResponse.ProtoReflect.Descriptor instead.
+func (*DeleteUserResponse) Descriptor() ([]byte, []int) {
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{147}
+}
+
 type ListBookmarksRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -8751,7 +8836,7 @@ type ListBookmarksRequest struct {
 func (x *ListBookmarksRequest) Reset() {
 	*x = ListBookmarksRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[146]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[148]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -8764,7 +8849,7 @@ func (x *ListBookmarksRequest) String() string {
 func (*ListBookmarksRequest) ProtoMessage() {}
 
 func (x *ListBookmarksRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[146]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[148]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8777,7 +8862,7 @@ func (x *ListBookmarksRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListBookmarksRequest.ProtoReflect.Descriptor instead.
 func (*ListBookmarksRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{146}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{148}
 }
 
 func (x *ListBookmarksRequest) GetProjectId() string {
@@ -8812,7 +8897,7 @@ type ListBookmarksResponse struct {
 func (x *ListBookmarksResponse) Reset() {
 	*x = ListBookmarksResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[147]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[149]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -8825,7 +8910,7 @@ func (x *ListBookmarksResponse) String() string {
 func (*ListBookmarksResponse) ProtoMessage() {}
 
 func (x *ListBookmarksResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[147]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[149]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8838,7 +8923,7 @@ func (x *ListBookmarksResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListBookmarksResponse.ProtoReflect.Descriptor instead.
 func (*ListBookmarksResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{147}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{149}
 }
 
 func (x *ListBookmarksResponse) GetBookmarks() []*Bookmark {
@@ -8859,7 +8944,7 @@ type GetBookmarkRequest struct {
 func (x *GetBookmarkRequest) Reset() {
 	*x = GetBookmarkRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[148]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[150]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -8872,7 +8957,7 @@ func (x *GetBookmarkRequest) String() string {
 func (*GetBookmarkRequest) ProtoMessage() {}
 
 func (x *GetBookmarkRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[148]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[150]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8885,7 +8970,7 @@ func (x *GetBookmarkRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetBookmarkRequest.ProtoReflect.Descriptor instead.
 func (*GetBookmarkRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{148}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{150}
 }
 
 func (x *GetBookmarkRequest) GetBookmarkId() string {
@@ -8906,7 +8991,7 @@ type GetBookmarkResponse struct {
 func (x *GetBookmarkResponse) Reset() {
 	*x = GetBookmarkResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[149]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[151]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -8919,7 +9004,7 @@ func (x *GetBookmarkResponse) String() string {
 func (*GetBookmarkResponse) ProtoMessage() {}
 
 func (x *GetBookmarkResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[149]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[151]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8932,7 +9017,7 @@ func (x *GetBookmarkResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetBookmarkResponse.ProtoReflect.Descriptor instead.
 func (*GetBookmarkResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{149}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{151}
 }
 
 func (x *GetBookmarkResponse) GetBookmark() *Bookmark {
@@ -8960,7 +9045,7 @@ type CreateBookmarkRequest struct {
 func (x *CreateBookmarkRequest) Reset() {
 	*x = CreateBookmarkRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[150]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[152]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -8973,7 +9058,7 @@ func (x *CreateBookmarkRequest) String() string {
 func (*CreateBookmarkRequest) ProtoMessage() {}
 
 func (x *CreateBookmarkRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[150]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[152]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8986,7 +9071,7 @@ func (x *CreateBookmarkRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateBookmarkRequest.ProtoReflect.Descriptor instead.
 func (*CreateBookmarkRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{150}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{152}
 }
 
 func (x *CreateBookmarkRequest) GetDisplayName() string {
@@ -9056,7 +9141,7 @@ type CreateBookmarkResponse struct {
 func (x *CreateBookmarkResponse) Reset() {
 	*x = CreateBookmarkResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[151]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[153]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9069,7 +9154,7 @@ func (x *CreateBookmarkResponse) String() string {
 func (*CreateBookmarkResponse) ProtoMessage() {}
 
 func (x *CreateBookmarkResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[151]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[153]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9082,7 +9167,7 @@ func (x *CreateBookmarkResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateBookmarkResponse.ProtoReflect.Descriptor instead.
 func (*CreateBookmarkResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{151}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{153}
 }
 
 func (x *CreateBookmarkResponse) GetBookmark() *Bookmark {
@@ -9108,7 +9193,7 @@ type UpdateBookmarkRequest struct {
 func (x *UpdateBookmarkRequest) Reset() {
 	*x = UpdateBookmarkRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[152]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[154]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9121,7 +9206,7 @@ func (x *UpdateBookmarkRequest) String() string {
 func (*UpdateBookmarkRequest) ProtoMessage() {}
 
 func (x *UpdateBookmarkRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[152]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[154]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9134,7 +9219,7 @@ func (x *UpdateBookmarkRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateBookmarkRequest.ProtoReflect.Descriptor instead.
 func (*UpdateBookmarkRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{152}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{154}
 }
 
 func (x *UpdateBookmarkRequest) GetBookmarkId() string {
@@ -9188,7 +9273,7 @@ type UpdateBookmarkResponse struct {
 func (x *UpdateBookmarkResponse) Reset() {
 	*x = UpdateBookmarkResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[153]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[155]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9201,7 +9286,7 @@ func (x *UpdateBookmarkResponse) String() string {
 func (*UpdateBookmarkResponse) ProtoMessage() {}
 
 func (x *UpdateBookmarkResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[153]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[155]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9214,7 +9299,7 @@ func (x *UpdateBookmarkResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateBookmarkResponse.ProtoReflect.Descriptor instead.
 func (*UpdateBookmarkResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{153}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{155}
 }
 
 type RemoveBookmarkRequest struct {
@@ -9228,7 +9313,7 @@ type RemoveBookmarkRequest struct {
 func (x *RemoveBookmarkRequest) Reset() {
 	*x = RemoveBookmarkRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[154]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[156]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9241,7 +9326,7 @@ func (x *RemoveBookmarkRequest) String() string {
 func (*RemoveBookmarkRequest) ProtoMessage() {}
 
 func (x *RemoveBookmarkRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[154]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[156]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9254,7 +9339,7 @@ func (x *RemoveBookmarkRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveBookmarkRequest.ProtoReflect.Descriptor instead.
 func (*RemoveBookmarkRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{154}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{156}
 }
 
 func (x *RemoveBookmarkRequest) GetBookmarkId() string {
@@ -9273,7 +9358,7 @@ type RemoveBookmarkResponse struct {
 func (x *RemoveBookmarkResponse) Reset() {
 	*x = RemoveBookmarkResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[155]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[157]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9286,7 +9371,7 @@ func (x *RemoveBookmarkResponse) String() string {
 func (*RemoveBookmarkResponse) ProtoMessage() {}
 
 func (x *RemoveBookmarkResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[155]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[157]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9299,7 +9384,7 @@ func (x *RemoveBookmarkResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveBookmarkResponse.ProtoReflect.Descriptor instead.
 func (*RemoveBookmarkResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{155}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{157}
 }
 
 type SearchUsersRequest struct {
@@ -9315,7 +9400,7 @@ type SearchUsersRequest struct {
 func (x *SearchUsersRequest) Reset() {
 	*x = SearchUsersRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[156]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[158]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9328,7 +9413,7 @@ func (x *SearchUsersRequest) String() string {
 func (*SearchUsersRequest) ProtoMessage() {}
 
 func (x *SearchUsersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[156]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[158]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9341,7 +9426,7 @@ func (x *SearchUsersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchUsersRequest.ProtoReflect.Descriptor instead.
 func (*SearchUsersRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{156}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{158}
 }
 
 func (x *SearchUsersRequest) GetEmailPattern() string {
@@ -9377,7 +9462,7 @@ type SearchUsersResponse struct {
 func (x *SearchUsersResponse) Reset() {
 	*x = SearchUsersResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[157]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[159]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9390,7 +9475,7 @@ func (x *SearchUsersResponse) String() string {
 func (*SearchUsersResponse) ProtoMessage() {}
 
 func (x *SearchUsersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[157]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[159]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9403,7 +9488,7 @@ func (x *SearchUsersResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchUsersResponse.ProtoReflect.Descriptor instead.
 func (*SearchUsersResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{157}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{159}
 }
 
 func (x *SearchUsersResponse) GetUsers() []*User {
@@ -9429,7 +9514,7 @@ type RevokeCurrentAuthTokenRequest struct {
 func (x *RevokeCurrentAuthTokenRequest) Reset() {
 	*x = RevokeCurrentAuthTokenRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[158]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[160]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9442,7 +9527,7 @@ func (x *RevokeCurrentAuthTokenRequest) String() string {
 func (*RevokeCurrentAuthTokenRequest) ProtoMessage() {}
 
 func (x *RevokeCurrentAuthTokenRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[158]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[160]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9455,7 +9540,7 @@ func (x *RevokeCurrentAuthTokenRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RevokeCurrentAuthTokenRequest.ProtoReflect.Descriptor instead.
 func (*RevokeCurrentAuthTokenRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{158}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{160}
 }
 
 type RevokeCurrentAuthTokenResponse struct {
@@ -9469,7 +9554,7 @@ type RevokeCurrentAuthTokenResponse struct {
 func (x *RevokeCurrentAuthTokenResponse) Reset() {
 	*x = RevokeCurrentAuthTokenResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[159]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[161]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9482,7 +9567,7 @@ func (x *RevokeCurrentAuthTokenResponse) String() string {
 func (*RevokeCurrentAuthTokenResponse) ProtoMessage() {}
 
 func (x *RevokeCurrentAuthTokenResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[159]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[161]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9495,7 +9580,7 @@ func (x *RevokeCurrentAuthTokenResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RevokeCurrentAuthTokenResponse.ProtoReflect.Descriptor instead.
 func (*RevokeCurrentAuthTokenResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{159}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{161}
 }
 
 func (x *RevokeCurrentAuthTokenResponse) GetTokenId() string {
@@ -9517,7 +9602,7 @@ type IssueRepresentativeAuthTokenRequest struct {
 func (x *IssueRepresentativeAuthTokenRequest) Reset() {
 	*x = IssueRepresentativeAuthTokenRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[160]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[162]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9530,7 +9615,7 @@ func (x *IssueRepresentativeAuthTokenRequest) String() string {
 func (*IssueRepresentativeAuthTokenRequest) ProtoMessage() {}
 
 func (x *IssueRepresentativeAuthTokenRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[160]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[162]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9543,7 +9628,7 @@ func (x *IssueRepresentativeAuthTokenRequest) ProtoReflect() protoreflect.Messag
 
 // Deprecated: Use IssueRepresentativeAuthTokenRequest.ProtoReflect.Descriptor instead.
 func (*IssueRepresentativeAuthTokenRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{160}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{162}
 }
 
 func (x *IssueRepresentativeAuthTokenRequest) GetEmail() string {
@@ -9571,7 +9656,7 @@ type IssueRepresentativeAuthTokenResponse struct {
 func (x *IssueRepresentativeAuthTokenResponse) Reset() {
 	*x = IssueRepresentativeAuthTokenResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[161]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[163]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9584,7 +9669,7 @@ func (x *IssueRepresentativeAuthTokenResponse) String() string {
 func (*IssueRepresentativeAuthTokenResponse) ProtoMessage() {}
 
 func (x *IssueRepresentativeAuthTokenResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[161]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[163]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9597,7 +9682,7 @@ func (x *IssueRepresentativeAuthTokenResponse) ProtoReflect() protoreflect.Messa
 
 // Deprecated: Use IssueRepresentativeAuthTokenResponse.ProtoReflect.Descriptor instead.
 func (*IssueRepresentativeAuthTokenResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{161}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{163}
 }
 
 func (x *IssueRepresentativeAuthTokenResponse) GetToken() string {
@@ -9618,7 +9703,7 @@ type RevokeServiceAuthTokenRequest struct {
 func (x *RevokeServiceAuthTokenRequest) Reset() {
 	*x = RevokeServiceAuthTokenRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[162]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[164]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9631,7 +9716,7 @@ func (x *RevokeServiceAuthTokenRequest) String() string {
 func (*RevokeServiceAuthTokenRequest) ProtoMessage() {}
 
 func (x *RevokeServiceAuthTokenRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[162]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[164]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9644,7 +9729,7 @@ func (x *RevokeServiceAuthTokenRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RevokeServiceAuthTokenRequest.ProtoReflect.Descriptor instead.
 func (*RevokeServiceAuthTokenRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{162}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{164}
 }
 
 func (x *RevokeServiceAuthTokenRequest) GetTokenId() string {
@@ -9663,7 +9748,7 @@ type RevokeServiceAuthTokenResponse struct {
 func (x *RevokeServiceAuthTokenResponse) Reset() {
 	*x = RevokeServiceAuthTokenResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[163]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[165]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9676,7 +9761,7 @@ func (x *RevokeServiceAuthTokenResponse) String() string {
 func (*RevokeServiceAuthTokenResponse) ProtoMessage() {}
 
 func (x *RevokeServiceAuthTokenResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[163]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[165]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9689,7 +9774,7 @@ func (x *RevokeServiceAuthTokenResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RevokeServiceAuthTokenResponse.ProtoReflect.Descriptor instead.
 func (*RevokeServiceAuthTokenResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{163}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{165}
 }
 
 type IssueServiceAuthTokenRequest struct {
@@ -9704,7 +9789,7 @@ type IssueServiceAuthTokenRequest struct {
 func (x *IssueServiceAuthTokenRequest) Reset() {
 	*x = IssueServiceAuthTokenRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[164]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[166]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9717,7 +9802,7 @@ func (x *IssueServiceAuthTokenRequest) String() string {
 func (*IssueServiceAuthTokenRequest) ProtoMessage() {}
 
 func (x *IssueServiceAuthTokenRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[164]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[166]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9730,7 +9815,7 @@ func (x *IssueServiceAuthTokenRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IssueServiceAuthTokenRequest.ProtoReflect.Descriptor instead.
 func (*IssueServiceAuthTokenRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{164}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{166}
 }
 
 func (x *IssueServiceAuthTokenRequest) GetOrganizationName() string {
@@ -9758,7 +9843,7 @@ type IssueServiceAuthTokenResponse struct {
 func (x *IssueServiceAuthTokenResponse) Reset() {
 	*x = IssueServiceAuthTokenResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[165]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[167]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9771,7 +9856,7 @@ func (x *IssueServiceAuthTokenResponse) String() string {
 func (*IssueServiceAuthTokenResponse) ProtoMessage() {}
 
 func (x *IssueServiceAuthTokenResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[165]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[167]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9784,7 +9869,7 @@ func (x *IssueServiceAuthTokenResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IssueServiceAuthTokenResponse.ProtoReflect.Descriptor instead.
 func (*IssueServiceAuthTokenResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{165}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{167}
 }
 
 func (x *IssueServiceAuthTokenResponse) GetToken() string {
@@ -9806,7 +9891,7 @@ type ListServiceAuthTokensRequest struct {
 func (x *ListServiceAuthTokensRequest) Reset() {
 	*x = ListServiceAuthTokensRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[166]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[168]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9819,7 +9904,7 @@ func (x *ListServiceAuthTokensRequest) String() string {
 func (*ListServiceAuthTokensRequest) ProtoMessage() {}
 
 func (x *ListServiceAuthTokensRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[166]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[168]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9832,7 +9917,7 @@ func (x *ListServiceAuthTokensRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListServiceAuthTokensRequest.ProtoReflect.Descriptor instead.
 func (*ListServiceAuthTokensRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{166}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{168}
 }
 
 func (x *ListServiceAuthTokensRequest) GetOrganizationName() string {
@@ -9860,7 +9945,7 @@ type ListServiceAuthTokensResponse struct {
 func (x *ListServiceAuthTokensResponse) Reset() {
 	*x = ListServiceAuthTokensResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[167]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[169]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9873,7 +9958,7 @@ func (x *ListServiceAuthTokensResponse) String() string {
 func (*ListServiceAuthTokensResponse) ProtoMessage() {}
 
 func (x *ListServiceAuthTokensResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[167]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[169]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9886,7 +9971,7 @@ func (x *ListServiceAuthTokensResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListServiceAuthTokensResponse.ProtoReflect.Descriptor instead.
 func (*ListServiceAuthTokensResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{167}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{169}
 }
 
 func (x *ListServiceAuthTokensResponse) GetTokens() []*ServiceToken {
@@ -9926,7 +10011,7 @@ type IssueMagicAuthTokenRequest struct {
 func (x *IssueMagicAuthTokenRequest) Reset() {
 	*x = IssueMagicAuthTokenRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[168]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[170]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9939,7 +10024,7 @@ func (x *IssueMagicAuthTokenRequest) String() string {
 func (*IssueMagicAuthTokenRequest) ProtoMessage() {}
 
 func (x *IssueMagicAuthTokenRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[168]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[170]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9952,7 +10037,7 @@ func (x *IssueMagicAuthTokenRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IssueMagicAuthTokenRequest.ProtoReflect.Descriptor instead.
 func (*IssueMagicAuthTokenRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{168}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{170}
 }
 
 func (x *IssueMagicAuthTokenRequest) GetOrganization() string {
@@ -10030,7 +10115,7 @@ type IssueMagicAuthTokenResponse struct {
 func (x *IssueMagicAuthTokenResponse) Reset() {
 	*x = IssueMagicAuthTokenResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[169]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[171]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -10043,7 +10128,7 @@ func (x *IssueMagicAuthTokenResponse) String() string {
 func (*IssueMagicAuthTokenResponse) ProtoMessage() {}
 
 func (x *IssueMagicAuthTokenResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[169]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[171]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10056,7 +10141,7 @@ func (x *IssueMagicAuthTokenResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IssueMagicAuthTokenResponse.ProtoReflect.Descriptor instead.
 func (*IssueMagicAuthTokenResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{169}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{171}
 }
 
 func (x *IssueMagicAuthTokenResponse) GetToken() string {
@@ -10087,7 +10172,7 @@ type ListMagicAuthTokensRequest struct {
 func (x *ListMagicAuthTokensRequest) Reset() {
 	*x = ListMagicAuthTokensRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[170]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[172]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -10100,7 +10185,7 @@ func (x *ListMagicAuthTokensRequest) String() string {
 func (*ListMagicAuthTokensRequest) ProtoMessage() {}
 
 func (x *ListMagicAuthTokensRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[170]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[172]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10113,7 +10198,7 @@ func (x *ListMagicAuthTokensRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListMagicAuthTokensRequest.ProtoReflect.Descriptor instead.
 func (*ListMagicAuthTokensRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{170}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{172}
 }
 
 func (x *ListMagicAuthTokensRequest) GetOrganization() string {
@@ -10156,7 +10241,7 @@ type ListMagicAuthTokensResponse struct {
 func (x *ListMagicAuthTokensResponse) Reset() {
 	*x = ListMagicAuthTokensResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[171]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[173]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -10169,7 +10254,7 @@ func (x *ListMagicAuthTokensResponse) String() string {
 func (*ListMagicAuthTokensResponse) ProtoMessage() {}
 
 func (x *ListMagicAuthTokensResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[171]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[173]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10182,7 +10267,7 @@ func (x *ListMagicAuthTokensResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListMagicAuthTokensResponse.ProtoReflect.Descriptor instead.
 func (*ListMagicAuthTokensResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{171}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{173}
 }
 
 func (x *ListMagicAuthTokensResponse) GetTokens() []*MagicAuthToken {
@@ -10208,7 +10293,7 @@ type GetCurrentMagicAuthTokenRequest struct {
 func (x *GetCurrentMagicAuthTokenRequest) Reset() {
 	*x = GetCurrentMagicAuthTokenRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[172]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[174]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -10221,7 +10306,7 @@ func (x *GetCurrentMagicAuthTokenRequest) String() string {
 func (*GetCurrentMagicAuthTokenRequest) ProtoMessage() {}
 
 func (x *GetCurrentMagicAuthTokenRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[172]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[174]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10234,7 +10319,7 @@ func (x *GetCurrentMagicAuthTokenRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCurrentMagicAuthTokenRequest.ProtoReflect.Descriptor instead.
 func (*GetCurrentMagicAuthTokenRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{172}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{174}
 }
 
 type GetCurrentMagicAuthTokenResponse struct {
@@ -10248,7 +10333,7 @@ type GetCurrentMagicAuthTokenResponse struct {
 func (x *GetCurrentMagicAuthTokenResponse) Reset() {
 	*x = GetCurrentMagicAuthTokenResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[173]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[175]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -10261,7 +10346,7 @@ func (x *GetCurrentMagicAuthTokenResponse) String() string {
 func (*GetCurrentMagicAuthTokenResponse) ProtoMessage() {}
 
 func (x *GetCurrentMagicAuthTokenResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[173]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[175]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10274,7 +10359,7 @@ func (x *GetCurrentMagicAuthTokenResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCurrentMagicAuthTokenResponse.ProtoReflect.Descriptor instead.
 func (*GetCurrentMagicAuthTokenResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{173}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{175}
 }
 
 func (x *GetCurrentMagicAuthTokenResponse) GetToken() *MagicAuthToken {
@@ -10295,7 +10380,7 @@ type RevokeMagicAuthTokenRequest struct {
 func (x *RevokeMagicAuthTokenRequest) Reset() {
 	*x = RevokeMagicAuthTokenRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[174]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[176]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -10308,7 +10393,7 @@ func (x *RevokeMagicAuthTokenRequest) String() string {
 func (*RevokeMagicAuthTokenRequest) ProtoMessage() {}
 
 func (x *RevokeMagicAuthTokenRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[174]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[176]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10321,7 +10406,7 @@ func (x *RevokeMagicAuthTokenRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RevokeMagicAuthTokenRequest.ProtoReflect.Descriptor instead.
 func (*RevokeMagicAuthTokenRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{174}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{176}
 }
 
 func (x *RevokeMagicAuthTokenRequest) GetTokenId() string {
@@ -10340,7 +10425,7 @@ type RevokeMagicAuthTokenResponse struct {
 func (x *RevokeMagicAuthTokenResponse) Reset() {
 	*x = RevokeMagicAuthTokenResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[175]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[177]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -10353,7 +10438,7 @@ func (x *RevokeMagicAuthTokenResponse) String() string {
 func (*RevokeMagicAuthTokenResponse) ProtoMessage() {}
 
 func (x *RevokeMagicAuthTokenResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[175]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[177]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10366,7 +10451,7 @@ func (x *RevokeMagicAuthTokenResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RevokeMagicAuthTokenResponse.ProtoReflect.Descriptor instead.
 func (*RevokeMagicAuthTokenResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{175}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{177}
 }
 
 type GetGithubRepoStatusRequest struct {
@@ -10380,7 +10465,7 @@ type GetGithubRepoStatusRequest struct {
 func (x *GetGithubRepoStatusRequest) Reset() {
 	*x = GetGithubRepoStatusRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[176]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[178]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -10393,7 +10478,7 @@ func (x *GetGithubRepoStatusRequest) String() string {
 func (*GetGithubRepoStatusRequest) ProtoMessage() {}
 
 func (x *GetGithubRepoStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[176]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[178]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10406,7 +10491,7 @@ func (x *GetGithubRepoStatusRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetGithubRepoStatusRequest.ProtoReflect.Descriptor instead.
 func (*GetGithubRepoStatusRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{176}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{178}
 }
 
 func (x *GetGithubRepoStatusRequest) GetGithubUrl() string {
@@ -10429,7 +10514,7 @@ type GetGithubRepoStatusResponse struct {
 func (x *GetGithubRepoStatusResponse) Reset() {
 	*x = GetGithubRepoStatusResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[177]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[179]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -10442,7 +10527,7 @@ func (x *GetGithubRepoStatusResponse) String() string {
 func (*GetGithubRepoStatusResponse) ProtoMessage() {}
 
 func (x *GetGithubRepoStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[177]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[179]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10455,7 +10540,7 @@ func (x *GetGithubRepoStatusResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetGithubRepoStatusResponse.ProtoReflect.Descriptor instead.
 func (*GetGithubRepoStatusResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{177}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{179}
 }
 
 func (x *GetGithubRepoStatusResponse) GetHasAccess() bool {
@@ -10488,7 +10573,7 @@ type GetGithubUserStatusRequest struct {
 func (x *GetGithubUserStatusRequest) Reset() {
 	*x = GetGithubUserStatusRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[178]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[180]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -10501,7 +10586,7 @@ func (x *GetGithubUserStatusRequest) String() string {
 func (*GetGithubUserStatusRequest) ProtoMessage() {}
 
 func (x *GetGithubUserStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[178]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[180]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10514,7 +10599,7 @@ func (x *GetGithubUserStatusRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetGithubUserStatusRequest.ProtoReflect.Descriptor instead.
 func (*GetGithubUserStatusRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{178}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{180}
 }
 
 type GetGithubUserStatusResponse struct {
@@ -10537,7 +10622,7 @@ type GetGithubUserStatusResponse struct {
 func (x *GetGithubUserStatusResponse) Reset() {
 	*x = GetGithubUserStatusResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[179]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[181]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -10550,7 +10635,7 @@ func (x *GetGithubUserStatusResponse) String() string {
 func (*GetGithubUserStatusResponse) ProtoMessage() {}
 
 func (x *GetGithubUserStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[179]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[181]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10563,7 +10648,7 @@ func (x *GetGithubUserStatusResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetGithubUserStatusResponse.ProtoReflect.Descriptor instead.
 func (*GetGithubUserStatusResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{179}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{181}
 }
 
 func (x *GetGithubUserStatusResponse) GetHasAccess() bool {
@@ -10625,7 +10710,7 @@ type ListGithubUserReposRequest struct {
 func (x *ListGithubUserReposRequest) Reset() {
 	*x = ListGithubUserReposRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[180]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[182]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -10638,7 +10723,7 @@ func (x *ListGithubUserReposRequest) String() string {
 func (*ListGithubUserReposRequest) ProtoMessage() {}
 
 func (x *ListGithubUserReposRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[180]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[182]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10651,7 +10736,7 @@ func (x *ListGithubUserReposRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListGithubUserReposRequest.ProtoReflect.Descriptor instead.
 func (*ListGithubUserReposRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{180}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{182}
 }
 
 type ListGithubUserReposResponse struct {
@@ -10665,7 +10750,7 @@ type ListGithubUserReposResponse struct {
 func (x *ListGithubUserReposResponse) Reset() {
 	*x = ListGithubUserReposResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[181]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[183]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -10678,7 +10763,7 @@ func (x *ListGithubUserReposResponse) String() string {
 func (*ListGithubUserReposResponse) ProtoMessage() {}
 
 func (x *ListGithubUserReposResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[181]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[183]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10691,7 +10776,7 @@ func (x *ListGithubUserReposResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListGithubUserReposResponse.ProtoReflect.Descriptor instead.
 func (*ListGithubUserReposResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{181}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{183}
 }
 
 func (x *ListGithubUserReposResponse) GetRepos() []*ListGithubUserReposResponse_Repo {
@@ -10717,7 +10802,7 @@ type ConnectProjectToGithubRequest struct {
 func (x *ConnectProjectToGithubRequest) Reset() {
 	*x = ConnectProjectToGithubRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[182]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[184]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -10730,7 +10815,7 @@ func (x *ConnectProjectToGithubRequest) String() string {
 func (*ConnectProjectToGithubRequest) ProtoMessage() {}
 
 func (x *ConnectProjectToGithubRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[182]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[184]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10743,7 +10828,7 @@ func (x *ConnectProjectToGithubRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ConnectProjectToGithubRequest.ProtoReflect.Descriptor instead.
 func (*ConnectProjectToGithubRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{182}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{184}
 }
 
 func (x *ConnectProjectToGithubRequest) GetOrganization() string {
@@ -10797,7 +10882,7 @@ type ConnectProjectToGithubResponse struct {
 func (x *ConnectProjectToGithubResponse) Reset() {
 	*x = ConnectProjectToGithubResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[183]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[185]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -10810,7 +10895,7 @@ func (x *ConnectProjectToGithubResponse) String() string {
 func (*ConnectProjectToGithubResponse) ProtoMessage() {}
 
 func (x *ConnectProjectToGithubResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[183]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[185]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10823,7 +10908,7 @@ func (x *ConnectProjectToGithubResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ConnectProjectToGithubResponse.ProtoReflect.Descriptor instead.
 func (*ConnectProjectToGithubResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{183}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{185}
 }
 
 type UploadProjectAssetsRequest struct {
@@ -10838,7 +10923,7 @@ type UploadProjectAssetsRequest struct {
 func (x *UploadProjectAssetsRequest) Reset() {
 	*x = UploadProjectAssetsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[184]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[186]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -10851,7 +10936,7 @@ func (x *UploadProjectAssetsRequest) String() string {
 func (*UploadProjectAssetsRequest) ProtoMessage() {}
 
 func (x *UploadProjectAssetsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[184]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[186]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10864,7 +10949,7 @@ func (x *UploadProjectAssetsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UploadProjectAssetsRequest.ProtoReflect.Descriptor instead.
 func (*UploadProjectAssetsRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{184}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{186}
 }
 
 func (x *UploadProjectAssetsRequest) GetOrganization() string {
@@ -10890,7 +10975,7 @@ type UploadProjectAssetsResponse struct {
 func (x *UploadProjectAssetsResponse) Reset() {
 	*x = UploadProjectAssetsResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[185]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[187]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -10903,7 +10988,7 @@ func (x *UploadProjectAssetsResponse) String() string {
 func (*UploadProjectAssetsResponse) ProtoMessage() {}
 
 func (x *UploadProjectAssetsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[185]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[187]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10916,7 +11001,7 @@ func (x *UploadProjectAssetsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UploadProjectAssetsResponse.ProtoReflect.Descriptor instead.
 func (*UploadProjectAssetsResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{185}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{187}
 }
 
 type GetCloneCredentialsRequest struct {
@@ -10931,7 +11016,7 @@ type GetCloneCredentialsRequest struct {
 func (x *GetCloneCredentialsRequest) Reset() {
 	*x = GetCloneCredentialsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[186]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[188]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -10944,7 +11029,7 @@ func (x *GetCloneCredentialsRequest) String() string {
 func (*GetCloneCredentialsRequest) ProtoMessage() {}
 
 func (x *GetCloneCredentialsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[186]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[188]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10957,7 +11042,7 @@ func (x *GetCloneCredentialsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCloneCredentialsRequest.ProtoReflect.Descriptor instead.
 func (*GetCloneCredentialsRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{186}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{188}
 }
 
 func (x *GetCloneCredentialsRequest) GetOrganization() string {
@@ -10991,7 +11076,7 @@ type GetCloneCredentialsResponse struct {
 func (x *GetCloneCredentialsResponse) Reset() {
 	*x = GetCloneCredentialsResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[187]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[189]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -11004,7 +11089,7 @@ func (x *GetCloneCredentialsResponse) String() string {
 func (*GetCloneCredentialsResponse) ProtoMessage() {}
 
 func (x *GetCloneCredentialsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[187]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[189]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11017,7 +11102,7 @@ func (x *GetCloneCredentialsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCloneCredentialsResponse.ProtoReflect.Descriptor instead.
 func (*GetCloneCredentialsResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{187}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{189}
 }
 
 func (x *GetCloneCredentialsResponse) GetGitRepoUrl() string {
@@ -11075,7 +11160,7 @@ type CreateWhitelistedDomainRequest struct {
 func (x *CreateWhitelistedDomainRequest) Reset() {
 	*x = CreateWhitelistedDomainRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[188]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[190]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -11088,7 +11173,7 @@ func (x *CreateWhitelistedDomainRequest) String() string {
 func (*CreateWhitelistedDomainRequest) ProtoMessage() {}
 
 func (x *CreateWhitelistedDomainRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[188]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[190]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11101,7 +11186,7 @@ func (x *CreateWhitelistedDomainRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateWhitelistedDomainRequest.ProtoReflect.Descriptor instead.
 func (*CreateWhitelistedDomainRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{188}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{190}
 }
 
 func (x *CreateWhitelistedDomainRequest) GetOrganization() string {
@@ -11134,7 +11219,7 @@ type CreateWhitelistedDomainResponse struct {
 func (x *CreateWhitelistedDomainResponse) Reset() {
 	*x = CreateWhitelistedDomainResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[189]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[191]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -11147,7 +11232,7 @@ func (x *CreateWhitelistedDomainResponse) String() string {
 func (*CreateWhitelistedDomainResponse) ProtoMessage() {}
 
 func (x *CreateWhitelistedDomainResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[189]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[191]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11160,7 +11245,7 @@ func (x *CreateWhitelistedDomainResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateWhitelistedDomainResponse.ProtoReflect.Descriptor instead.
 func (*CreateWhitelistedDomainResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{189}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{191}
 }
 
 type RemoveWhitelistedDomainRequest struct {
@@ -11175,7 +11260,7 @@ type RemoveWhitelistedDomainRequest struct {
 func (x *RemoveWhitelistedDomainRequest) Reset() {
 	*x = RemoveWhitelistedDomainRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[190]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[192]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -11188,7 +11273,7 @@ func (x *RemoveWhitelistedDomainRequest) String() string {
 func (*RemoveWhitelistedDomainRequest) ProtoMessage() {}
 
 func (x *RemoveWhitelistedDomainRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[190]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[192]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11201,7 +11286,7 @@ func (x *RemoveWhitelistedDomainRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveWhitelistedDomainRequest.ProtoReflect.Descriptor instead.
 func (*RemoveWhitelistedDomainRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{190}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{192}
 }
 
 func (x *RemoveWhitelistedDomainRequest) GetOrganization() string {
@@ -11227,7 +11312,7 @@ type RemoveWhitelistedDomainResponse struct {
 func (x *RemoveWhitelistedDomainResponse) Reset() {
 	*x = RemoveWhitelistedDomainResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[191]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[193]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -11240,7 +11325,7 @@ func (x *RemoveWhitelistedDomainResponse) String() string {
 func (*RemoveWhitelistedDomainResponse) ProtoMessage() {}
 
 func (x *RemoveWhitelistedDomainResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[191]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[193]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11253,7 +11338,7 @@ func (x *RemoveWhitelistedDomainResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveWhitelistedDomainResponse.ProtoReflect.Descriptor instead.
 func (*RemoveWhitelistedDomainResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{191}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{193}
 }
 
 type ListWhitelistedDomainsRequest struct {
@@ -11267,7 +11352,7 @@ type ListWhitelistedDomainsRequest struct {
 func (x *ListWhitelistedDomainsRequest) Reset() {
 	*x = ListWhitelistedDomainsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[192]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[194]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -11280,7 +11365,7 @@ func (x *ListWhitelistedDomainsRequest) String() string {
 func (*ListWhitelistedDomainsRequest) ProtoMessage() {}
 
 func (x *ListWhitelistedDomainsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[192]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[194]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11293,7 +11378,7 @@ func (x *ListWhitelistedDomainsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListWhitelistedDomainsRequest.ProtoReflect.Descriptor instead.
 func (*ListWhitelistedDomainsRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{192}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{194}
 }
 
 func (x *ListWhitelistedDomainsRequest) GetOrganization() string {
@@ -11314,7 +11399,7 @@ type ListWhitelistedDomainsResponse struct {
 func (x *ListWhitelistedDomainsResponse) Reset() {
 	*x = ListWhitelistedDomainsResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[193]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[195]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -11327,7 +11412,7 @@ func (x *ListWhitelistedDomainsResponse) String() string {
 func (*ListWhitelistedDomainsResponse) ProtoMessage() {}
 
 func (x *ListWhitelistedDomainsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[193]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[195]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11340,7 +11425,7 @@ func (x *ListWhitelistedDomainsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListWhitelistedDomainsResponse.ProtoReflect.Descriptor instead.
 func (*ListWhitelistedDomainsResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{193}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{195}
 }
 
 func (x *ListWhitelistedDomainsResponse) GetDomains() []*WhitelistedDomain {
@@ -11364,7 +11449,7 @@ type CreateProjectWhitelistedDomainRequest struct {
 func (x *CreateProjectWhitelistedDomainRequest) Reset() {
 	*x = CreateProjectWhitelistedDomainRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[194]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[196]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -11377,7 +11462,7 @@ func (x *CreateProjectWhitelistedDomainRequest) String() string {
 func (*CreateProjectWhitelistedDomainRequest) ProtoMessage() {}
 
 func (x *CreateProjectWhitelistedDomainRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[194]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[196]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11390,7 +11475,7 @@ func (x *CreateProjectWhitelistedDomainRequest) ProtoReflect() protoreflect.Mess
 
 // Deprecated: Use CreateProjectWhitelistedDomainRequest.ProtoReflect.Descriptor instead.
 func (*CreateProjectWhitelistedDomainRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{194}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{196}
 }
 
 func (x *CreateProjectWhitelistedDomainRequest) GetOrganization() string {
@@ -11430,7 +11515,7 @@ type CreateProjectWhitelistedDomainResponse struct {
 func (x *CreateProjectWhitelistedDomainResponse) Reset() {
 	*x = CreateProjectWhitelistedDomainResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[195]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[197]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -11443,7 +11528,7 @@ func (x *CreateProjectWhitelistedDomainResponse) String() string {
 func (*CreateProjectWhitelistedDomainResponse) ProtoMessage() {}
 
 func (x *CreateProjectWhitelistedDomainResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[195]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[197]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11456,7 +11541,7 @@ func (x *CreateProjectWhitelistedDomainResponse) ProtoReflect() protoreflect.Mes
 
 // Deprecated: Use CreateProjectWhitelistedDomainResponse.ProtoReflect.Descriptor instead.
 func (*CreateProjectWhitelistedDomainResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{195}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{197}
 }
 
 type RemoveProjectWhitelistedDomainRequest struct {
@@ -11472,7 +11557,7 @@ type RemoveProjectWhitelistedDomainRequest struct {
 func (x *RemoveProjectWhitelistedDomainRequest) Reset() {
 	*x = RemoveProjectWhitelistedDomainRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[196]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[198]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -11485,7 +11570,7 @@ func (x *RemoveProjectWhitelistedDomainRequest) String() string {
 func (*RemoveProjectWhitelistedDomainRequest) ProtoMessage() {}
 
 func (x *RemoveProjectWhitelistedDomainRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[196]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[198]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11498,7 +11583,7 @@ func (x *RemoveProjectWhitelistedDomainRequest) ProtoReflect() protoreflect.Mess
 
 // Deprecated: Use RemoveProjectWhitelistedDomainRequest.ProtoReflect.Descriptor instead.
 func (*RemoveProjectWhitelistedDomainRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{196}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{198}
 }
 
 func (x *RemoveProjectWhitelistedDomainRequest) GetOrganization() string {
@@ -11531,7 +11616,7 @@ type RemoveProjectWhitelistedDomainResponse struct {
 func (x *RemoveProjectWhitelistedDomainResponse) Reset() {
 	*x = RemoveProjectWhitelistedDomainResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[197]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[199]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -11544,7 +11629,7 @@ func (x *RemoveProjectWhitelistedDomainResponse) String() string {
 func (*RemoveProjectWhitelistedDomainResponse) ProtoMessage() {}
 
 func (x *RemoveProjectWhitelistedDomainResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[197]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[199]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11557,7 +11642,7 @@ func (x *RemoveProjectWhitelistedDomainResponse) ProtoReflect() protoreflect.Mes
 
 // Deprecated: Use RemoveProjectWhitelistedDomainResponse.ProtoReflect.Descriptor instead.
 func (*RemoveProjectWhitelistedDomainResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{197}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{199}
 }
 
 type ListProjectWhitelistedDomainsRequest struct {
@@ -11572,7 +11657,7 @@ type ListProjectWhitelistedDomainsRequest struct {
 func (x *ListProjectWhitelistedDomainsRequest) Reset() {
 	*x = ListProjectWhitelistedDomainsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[198]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[200]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -11585,7 +11670,7 @@ func (x *ListProjectWhitelistedDomainsRequest) String() string {
 func (*ListProjectWhitelistedDomainsRequest) ProtoMessage() {}
 
 func (x *ListProjectWhitelistedDomainsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[198]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[200]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11598,7 +11683,7 @@ func (x *ListProjectWhitelistedDomainsRequest) ProtoReflect() protoreflect.Messa
 
 // Deprecated: Use ListProjectWhitelistedDomainsRequest.ProtoReflect.Descriptor instead.
 func (*ListProjectWhitelistedDomainsRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{198}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{200}
 }
 
 func (x *ListProjectWhitelistedDomainsRequest) GetOrganization() string {
@@ -11626,7 +11711,7 @@ type ListProjectWhitelistedDomainsResponse struct {
 func (x *ListProjectWhitelistedDomainsResponse) Reset() {
 	*x = ListProjectWhitelistedDomainsResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[199]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[201]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -11639,7 +11724,7 @@ func (x *ListProjectWhitelistedDomainsResponse) String() string {
 func (*ListProjectWhitelistedDomainsResponse) ProtoMessage() {}
 
 func (x *ListProjectWhitelistedDomainsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[199]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[201]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11652,7 +11737,7 @@ func (x *ListProjectWhitelistedDomainsResponse) ProtoReflect() protoreflect.Mess
 
 // Deprecated: Use ListProjectWhitelistedDomainsResponse.ProtoReflect.Descriptor instead.
 func (*ListProjectWhitelistedDomainsResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{199}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{201}
 }
 
 func (x *ListProjectWhitelistedDomainsResponse) GetDomains() []*WhitelistedDomain {
@@ -11674,7 +11759,7 @@ type GetRepoMetaRequest struct {
 func (x *GetRepoMetaRequest) Reset() {
 	*x = GetRepoMetaRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[200]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[202]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -11687,7 +11772,7 @@ func (x *GetRepoMetaRequest) String() string {
 func (*GetRepoMetaRequest) ProtoMessage() {}
 
 func (x *GetRepoMetaRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[200]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[202]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11700,7 +11785,7 @@ func (x *GetRepoMetaRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRepoMetaRequest.ProtoReflect.Descriptor instead.
 func (*GetRepoMetaRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{200}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{202}
 }
 
 func (x *GetRepoMetaRequest) GetProjectId() string {
@@ -11733,7 +11818,7 @@ type GetRepoMetaResponse struct {
 func (x *GetRepoMetaResponse) Reset() {
 	*x = GetRepoMetaResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[201]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[203]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -11746,7 +11831,7 @@ func (x *GetRepoMetaResponse) String() string {
 func (*GetRepoMetaResponse) ProtoMessage() {}
 
 func (x *GetRepoMetaResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[201]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[203]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11759,7 +11844,7 @@ func (x *GetRepoMetaResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRepoMetaResponse.ProtoReflect.Descriptor instead.
 func (*GetRepoMetaResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{201}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{203}
 }
 
 func (x *GetRepoMetaResponse) GetGitUrl() string {
@@ -11804,7 +11889,7 @@ type PullVirtualRepoRequest struct {
 func (x *PullVirtualRepoRequest) Reset() {
 	*x = PullVirtualRepoRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[202]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[204]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -11817,7 +11902,7 @@ func (x *PullVirtualRepoRequest) String() string {
 func (*PullVirtualRepoRequest) ProtoMessage() {}
 
 func (x *PullVirtualRepoRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[202]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[204]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11830,7 +11915,7 @@ func (x *PullVirtualRepoRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PullVirtualRepoRequest.ProtoReflect.Descriptor instead.
 func (*PullVirtualRepoRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{202}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{204}
 }
 
 func (x *PullVirtualRepoRequest) GetProjectId() string {
@@ -11873,7 +11958,7 @@ type PullVirtualRepoResponse struct {
 func (x *PullVirtualRepoResponse) Reset() {
 	*x = PullVirtualRepoResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[203]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[205]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -11886,7 +11971,7 @@ func (x *PullVirtualRepoResponse) String() string {
 func (*PullVirtualRepoResponse) ProtoMessage() {}
 
 func (x *PullVirtualRepoResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[203]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[205]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11899,7 +11984,7 @@ func (x *PullVirtualRepoResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PullVirtualRepoResponse.ProtoReflect.Descriptor instead.
 func (*PullVirtualRepoResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{203}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{205}
 }
 
 func (x *PullVirtualRepoResponse) GetFiles() []*VirtualFile {
@@ -11932,7 +12017,7 @@ type GetReportMetaRequest struct {
 func (x *GetReportMetaRequest) Reset() {
 	*x = GetReportMetaRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[204]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[206]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -11945,7 +12030,7 @@ func (x *GetReportMetaRequest) String() string {
 func (*GetReportMetaRequest) ProtoMessage() {}
 
 func (x *GetReportMetaRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[204]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[206]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11958,7 +12043,7 @@ func (x *GetReportMetaRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetReportMetaRequest.ProtoReflect.Descriptor instead.
 func (*GetReportMetaRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{204}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{206}
 }
 
 func (x *GetReportMetaRequest) GetProjectId() string {
@@ -12015,7 +12100,7 @@ type GetReportMetaResponse struct {
 func (x *GetReportMetaResponse) Reset() {
 	*x = GetReportMetaResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[205]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[207]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -12028,7 +12113,7 @@ func (x *GetReportMetaResponse) String() string {
 func (*GetReportMetaResponse) ProtoMessage() {}
 
 func (x *GetReportMetaResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[205]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[207]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12041,7 +12126,7 @@ func (x *GetReportMetaResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetReportMetaResponse.ProtoReflect.Descriptor instead.
 func (*GetReportMetaResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{205}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{207}
 }
 
 func (x *GetReportMetaResponse) GetBaseUrls() *GetReportMetaResponse_URLs {
@@ -12077,7 +12162,7 @@ type GetAlertMetaRequest struct {
 func (x *GetAlertMetaRequest) Reset() {
 	*x = GetAlertMetaRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[206]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[208]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -12090,7 +12175,7 @@ func (x *GetAlertMetaRequest) String() string {
 func (*GetAlertMetaRequest) ProtoMessage() {}
 
 func (x *GetAlertMetaRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[206]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[208]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12103,7 +12188,7 @@ func (x *GetAlertMetaRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAlertMetaRequest.ProtoReflect.Descriptor instead.
 func (*GetAlertMetaRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{206}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{208}
 }
 
 func (x *GetAlertMetaRequest) GetProjectId() string {
@@ -12184,7 +12269,7 @@ type GetAlertMetaResponse struct {
 func (x *GetAlertMetaResponse) Reset() {
 	*x = GetAlertMetaResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[207]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[209]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -12197,7 +12282,7 @@ func (x *GetAlertMetaResponse) String() string {
 func (*GetAlertMetaResponse) ProtoMessage() {}
 
 func (x *GetAlertMetaResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[207]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[209]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12210,7 +12295,7 @@ func (x *GetAlertMetaResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAlertMetaResponse.ProtoReflect.Descriptor instead.
 func (*GetAlertMetaResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{207}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{209}
 }
 
 func (x *GetAlertMetaResponse) GetOpenUrl() string {
@@ -12247,7 +12332,7 @@ type CreateReportRequest struct {
 func (x *CreateReportRequest) Reset() {
 	*x = CreateReportRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[208]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[210]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -12260,7 +12345,7 @@ func (x *CreateReportRequest) String() string {
 func (*CreateReportRequest) ProtoMessage() {}
 
 func (x *CreateReportRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[208]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[210]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12273,7 +12358,7 @@ func (x *CreateReportRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateReportRequest.ProtoReflect.Descriptor instead.
 func (*CreateReportRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{208}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{210}
 }
 
 func (x *CreateReportRequest) GetOrganization() string {
@@ -12308,7 +12393,7 @@ type CreateReportResponse struct {
 func (x *CreateReportResponse) Reset() {
 	*x = CreateReportResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[209]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[211]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -12321,7 +12406,7 @@ func (x *CreateReportResponse) String() string {
 func (*CreateReportResponse) ProtoMessage() {}
 
 func (x *CreateReportResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[209]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[211]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12334,7 +12419,7 @@ func (x *CreateReportResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateReportResponse.ProtoReflect.Descriptor instead.
 func (*CreateReportResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{209}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{211}
 }
 
 func (x *CreateReportResponse) GetName() string {
@@ -12358,7 +12443,7 @@ type EditReportRequest struct {
 func (x *EditReportRequest) Reset() {
 	*x = EditReportRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[210]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[212]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -12371,7 +12456,7 @@ func (x *EditReportRequest) String() string {
 func (*EditReportRequest) ProtoMessage() {}
 
 func (x *EditReportRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[210]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[212]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12384,7 +12469,7 @@ func (x *EditReportRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EditReportRequest.ProtoReflect.Descriptor instead.
 func (*EditReportRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{210}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{212}
 }
 
 func (x *EditReportRequest) GetOrganization() string {
@@ -12424,7 +12509,7 @@ type EditReportResponse struct {
 func (x *EditReportResponse) Reset() {
 	*x = EditReportResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[211]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[213]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -12437,7 +12522,7 @@ func (x *EditReportResponse) String() string {
 func (*EditReportResponse) ProtoMessage() {}
 
 func (x *EditReportResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[211]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[213]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12450,7 +12535,7 @@ func (x *EditReportResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EditReportResponse.ProtoReflect.Descriptor instead.
 func (*EditReportResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{211}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{213}
 }
 
 type UnsubscribeReportRequest struct {
@@ -12466,7 +12551,7 @@ type UnsubscribeReportRequest struct {
 func (x *UnsubscribeReportRequest) Reset() {
 	*x = UnsubscribeReportRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[212]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[214]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -12479,7 +12564,7 @@ func (x *UnsubscribeReportRequest) String() string {
 func (*UnsubscribeReportRequest) ProtoMessage() {}
 
 func (x *UnsubscribeReportRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[212]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[214]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12492,7 +12577,7 @@ func (x *UnsubscribeReportRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UnsubscribeReportRequest.ProtoReflect.Descriptor instead.
 func (*UnsubscribeReportRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{212}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{214}
 }
 
 func (x *UnsubscribeReportRequest) GetOrganization() string {
@@ -12525,7 +12610,7 @@ type UnsubscribeReportResponse struct {
 func (x *UnsubscribeReportResponse) Reset() {
 	*x = UnsubscribeReportResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[213]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[215]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -12538,7 +12623,7 @@ func (x *UnsubscribeReportResponse) String() string {
 func (*UnsubscribeReportResponse) ProtoMessage() {}
 
 func (x *UnsubscribeReportResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[213]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[215]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12551,7 +12636,7 @@ func (x *UnsubscribeReportResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UnsubscribeReportResponse.ProtoReflect.Descriptor instead.
 func (*UnsubscribeReportResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{213}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{215}
 }
 
 type DeleteReportRequest struct {
@@ -12567,7 +12652,7 @@ type DeleteReportRequest struct {
 func (x *DeleteReportRequest) Reset() {
 	*x = DeleteReportRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[214]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[216]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -12580,7 +12665,7 @@ func (x *DeleteReportRequest) String() string {
 func (*DeleteReportRequest) ProtoMessage() {}
 
 func (x *DeleteReportRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[214]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[216]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12593,7 +12678,7 @@ func (x *DeleteReportRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteReportRequest.ProtoReflect.Descriptor instead.
 func (*DeleteReportRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{214}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{216}
 }
 
 func (x *DeleteReportRequest) GetOrganization() string {
@@ -12626,7 +12711,7 @@ type DeleteReportResponse struct {
 func (x *DeleteReportResponse) Reset() {
 	*x = DeleteReportResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[215]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[217]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -12639,7 +12724,7 @@ func (x *DeleteReportResponse) String() string {
 func (*DeleteReportResponse) ProtoMessage() {}
 
 func (x *DeleteReportResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[215]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[217]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12652,7 +12737,7 @@ func (x *DeleteReportResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteReportResponse.ProtoReflect.Descriptor instead.
 func (*DeleteReportResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{215}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{217}
 }
 
 type TriggerReportRequest struct {
@@ -12668,7 +12753,7 @@ type TriggerReportRequest struct {
 func (x *TriggerReportRequest) Reset() {
 	*x = TriggerReportRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[216]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[218]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -12681,7 +12766,7 @@ func (x *TriggerReportRequest) String() string {
 func (*TriggerReportRequest) ProtoMessage() {}
 
 func (x *TriggerReportRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[216]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[218]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12694,7 +12779,7 @@ func (x *TriggerReportRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TriggerReportRequest.ProtoReflect.Descriptor instead.
 func (*TriggerReportRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{216}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{218}
 }
 
 func (x *TriggerReportRequest) GetOrganization() string {
@@ -12727,7 +12812,7 @@ type TriggerReportResponse struct {
 func (x *TriggerReportResponse) Reset() {
 	*x = TriggerReportResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[217]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[219]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -12740,7 +12825,7 @@ func (x *TriggerReportResponse) String() string {
 func (*TriggerReportResponse) ProtoMessage() {}
 
 func (x *TriggerReportResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[217]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[219]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12753,7 +12838,7 @@ func (x *TriggerReportResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TriggerReportResponse.ProtoReflect.Descriptor instead.
 func (*TriggerReportResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{217}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{219}
 }
 
 type GenerateReportYAMLRequest struct {
@@ -12769,7 +12854,7 @@ type GenerateReportYAMLRequest struct {
 func (x *GenerateReportYAMLRequest) Reset() {
 	*x = GenerateReportYAMLRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[218]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[220]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -12782,7 +12867,7 @@ func (x *GenerateReportYAMLRequest) String() string {
 func (*GenerateReportYAMLRequest) ProtoMessage() {}
 
 func (x *GenerateReportYAMLRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[218]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[220]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12795,7 +12880,7 @@ func (x *GenerateReportYAMLRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GenerateReportYAMLRequest.ProtoReflect.Descriptor instead.
 func (*GenerateReportYAMLRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{218}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{220}
 }
 
 func (x *GenerateReportYAMLRequest) GetOrganization() string {
@@ -12830,7 +12915,7 @@ type GenerateReportYAMLResponse struct {
 func (x *GenerateReportYAMLResponse) Reset() {
 	*x = GenerateReportYAMLResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[219]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[221]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -12843,7 +12928,7 @@ func (x *GenerateReportYAMLResponse) String() string {
 func (*GenerateReportYAMLResponse) ProtoMessage() {}
 
 func (x *GenerateReportYAMLResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[219]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[221]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12856,7 +12941,7 @@ func (x *GenerateReportYAMLResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GenerateReportYAMLResponse.ProtoReflect.Descriptor instead.
 func (*GenerateReportYAMLResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{219}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{221}
 }
 
 func (x *GenerateReportYAMLResponse) GetYaml() string {
@@ -12879,7 +12964,7 @@ type CreateAlertRequest struct {
 func (x *CreateAlertRequest) Reset() {
 	*x = CreateAlertRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[220]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[222]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -12892,7 +12977,7 @@ func (x *CreateAlertRequest) String() string {
 func (*CreateAlertRequest) ProtoMessage() {}
 
 func (x *CreateAlertRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[220]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[222]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12905,7 +12990,7 @@ func (x *CreateAlertRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateAlertRequest.ProtoReflect.Descriptor instead.
 func (*CreateAlertRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{220}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{222}
 }
 
 func (x *CreateAlertRequest) GetOrganization() string {
@@ -12940,7 +13025,7 @@ type CreateAlertResponse struct {
 func (x *CreateAlertResponse) Reset() {
 	*x = CreateAlertResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[221]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[223]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -12953,7 +13038,7 @@ func (x *CreateAlertResponse) String() string {
 func (*CreateAlertResponse) ProtoMessage() {}
 
 func (x *CreateAlertResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[221]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[223]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12966,7 +13051,7 @@ func (x *CreateAlertResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateAlertResponse.ProtoReflect.Descriptor instead.
 func (*CreateAlertResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{221}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{223}
 }
 
 func (x *CreateAlertResponse) GetName() string {
@@ -12990,7 +13075,7 @@ type EditAlertRequest struct {
 func (x *EditAlertRequest) Reset() {
 	*x = EditAlertRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[222]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[224]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -13003,7 +13088,7 @@ func (x *EditAlertRequest) String() string {
 func (*EditAlertRequest) ProtoMessage() {}
 
 func (x *EditAlertRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[222]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[224]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13016,7 +13101,7 @@ func (x *EditAlertRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EditAlertRequest.ProtoReflect.Descriptor instead.
 func (*EditAlertRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{222}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{224}
 }
 
 func (x *EditAlertRequest) GetOrganization() string {
@@ -13056,7 +13141,7 @@ type EditAlertResponse struct {
 func (x *EditAlertResponse) Reset() {
 	*x = EditAlertResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[223]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[225]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -13069,7 +13154,7 @@ func (x *EditAlertResponse) String() string {
 func (*EditAlertResponse) ProtoMessage() {}
 
 func (x *EditAlertResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[223]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[225]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13082,7 +13167,7 @@ func (x *EditAlertResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EditAlertResponse.ProtoReflect.Descriptor instead.
 func (*EditAlertResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{223}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{225}
 }
 
 type UnsubscribeAlertRequest struct {
@@ -13098,7 +13183,7 @@ type UnsubscribeAlertRequest struct {
 func (x *UnsubscribeAlertRequest) Reset() {
 	*x = UnsubscribeAlertRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[224]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[226]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -13111,7 +13196,7 @@ func (x *UnsubscribeAlertRequest) String() string {
 func (*UnsubscribeAlertRequest) ProtoMessage() {}
 
 func (x *UnsubscribeAlertRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[224]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[226]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13124,7 +13209,7 @@ func (x *UnsubscribeAlertRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UnsubscribeAlertRequest.ProtoReflect.Descriptor instead.
 func (*UnsubscribeAlertRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{224}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{226}
 }
 
 func (x *UnsubscribeAlertRequest) GetOrganization() string {
@@ -13157,7 +13242,7 @@ type UnsubscribeAlertResponse struct {
 func (x *UnsubscribeAlertResponse) Reset() {
 	*x = UnsubscribeAlertResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[225]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[227]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -13170,7 +13255,7 @@ func (x *UnsubscribeAlertResponse) String() string {
 func (*UnsubscribeAlertResponse) ProtoMessage() {}
 
 func (x *UnsubscribeAlertResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[225]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[227]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13183,7 +13268,7 @@ func (x *UnsubscribeAlertResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UnsubscribeAlertResponse.ProtoReflect.Descriptor instead.
 func (*UnsubscribeAlertResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{225}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{227}
 }
 
 type DeleteAlertRequest struct {
@@ -13199,7 +13284,7 @@ type DeleteAlertRequest struct {
 func (x *DeleteAlertRequest) Reset() {
 	*x = DeleteAlertRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[226]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[228]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -13212,7 +13297,7 @@ func (x *DeleteAlertRequest) String() string {
 func (*DeleteAlertRequest) ProtoMessage() {}
 
 func (x *DeleteAlertRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[226]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[228]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13225,7 +13310,7 @@ func (x *DeleteAlertRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteAlertRequest.ProtoReflect.Descriptor instead.
 func (*DeleteAlertRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{226}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{228}
 }
 
 func (x *DeleteAlertRequest) GetOrganization() string {
@@ -13258,7 +13343,7 @@ type DeleteAlertResponse struct {
 func (x *DeleteAlertResponse) Reset() {
 	*x = DeleteAlertResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[227]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[229]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -13271,7 +13356,7 @@ func (x *DeleteAlertResponse) String() string {
 func (*DeleteAlertResponse) ProtoMessage() {}
 
 func (x *DeleteAlertResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[227]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[229]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13284,7 +13369,7 @@ func (x *DeleteAlertResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteAlertResponse.ProtoReflect.Descriptor instead.
 func (*DeleteAlertResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{227}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{229}
 }
 
 type GenerateAlertYAMLRequest struct {
@@ -13300,7 +13385,7 @@ type GenerateAlertYAMLRequest struct {
 func (x *GenerateAlertYAMLRequest) Reset() {
 	*x = GenerateAlertYAMLRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[228]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[230]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -13313,7 +13398,7 @@ func (x *GenerateAlertYAMLRequest) String() string {
 func (*GenerateAlertYAMLRequest) ProtoMessage() {}
 
 func (x *GenerateAlertYAMLRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[228]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[230]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13326,7 +13411,7 @@ func (x *GenerateAlertYAMLRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GenerateAlertYAMLRequest.ProtoReflect.Descriptor instead.
 func (*GenerateAlertYAMLRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{228}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{230}
 }
 
 func (x *GenerateAlertYAMLRequest) GetOrganization() string {
@@ -13361,7 +13446,7 @@ type GenerateAlertYAMLResponse struct {
 func (x *GenerateAlertYAMLResponse) Reset() {
 	*x = GenerateAlertYAMLResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[229]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[231]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -13374,7 +13459,7 @@ func (x *GenerateAlertYAMLResponse) String() string {
 func (*GenerateAlertYAMLResponse) ProtoMessage() {}
 
 func (x *GenerateAlertYAMLResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[229]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[231]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13387,7 +13472,7 @@ func (x *GenerateAlertYAMLResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GenerateAlertYAMLResponse.ProtoReflect.Descriptor instead.
 func (*GenerateAlertYAMLResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{229}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{231}
 }
 
 func (x *GenerateAlertYAMLResponse) GetYaml() string {
@@ -13410,7 +13495,7 @@ type GetAlertYAMLRequest struct {
 func (x *GetAlertYAMLRequest) Reset() {
 	*x = GetAlertYAMLRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[230]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[232]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -13423,7 +13508,7 @@ func (x *GetAlertYAMLRequest) String() string {
 func (*GetAlertYAMLRequest) ProtoMessage() {}
 
 func (x *GetAlertYAMLRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[230]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[232]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13436,7 +13521,7 @@ func (x *GetAlertYAMLRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAlertYAMLRequest.ProtoReflect.Descriptor instead.
 func (*GetAlertYAMLRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{230}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{232}
 }
 
 func (x *GetAlertYAMLRequest) GetOrganization() string {
@@ -13471,7 +13556,7 @@ type GetAlertYAMLResponse struct {
 func (x *GetAlertYAMLResponse) Reset() {
 	*x = GetAlertYAMLResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[231]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[233]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -13484,7 +13569,7 @@ func (x *GetAlertYAMLResponse) String() string {
 func (*GetAlertYAMLResponse) ProtoMessage() {}
 
 func (x *GetAlertYAMLResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[231]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[233]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13497,7 +13582,7 @@ func (x *GetAlertYAMLResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAlertYAMLResponse.ProtoReflect.Descriptor instead.
 func (*GetAlertYAMLResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{231}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{233}
 }
 
 func (x *GetAlertYAMLResponse) GetYaml() string {
@@ -13518,7 +13603,7 @@ type GetBillingSubscriptionRequest struct {
 func (x *GetBillingSubscriptionRequest) Reset() {
 	*x = GetBillingSubscriptionRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[232]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[234]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -13531,7 +13616,7 @@ func (x *GetBillingSubscriptionRequest) String() string {
 func (*GetBillingSubscriptionRequest) ProtoMessage() {}
 
 func (x *GetBillingSubscriptionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[232]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[234]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13544,7 +13629,7 @@ func (x *GetBillingSubscriptionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetBillingSubscriptionRequest.ProtoReflect.Descriptor instead.
 func (*GetBillingSubscriptionRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{232}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{234}
 }
 
 func (x *GetBillingSubscriptionRequest) GetOrganization() string {
@@ -13567,7 +13652,7 @@ type GetBillingSubscriptionResponse struct {
 func (x *GetBillingSubscriptionResponse) Reset() {
 	*x = GetBillingSubscriptionResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[233]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[235]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -13580,7 +13665,7 @@ func (x *GetBillingSubscriptionResponse) String() string {
 func (*GetBillingSubscriptionResponse) ProtoMessage() {}
 
 func (x *GetBillingSubscriptionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[233]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[235]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13593,7 +13678,7 @@ func (x *GetBillingSubscriptionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetBillingSubscriptionResponse.ProtoReflect.Descriptor instead.
 func (*GetBillingSubscriptionResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{233}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{235}
 }
 
 func (x *GetBillingSubscriptionResponse) GetOrganization() *Organization {
@@ -13630,7 +13715,7 @@ type UpdateBillingSubscriptionRequest struct {
 func (x *UpdateBillingSubscriptionRequest) Reset() {
 	*x = UpdateBillingSubscriptionRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[234]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[236]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -13643,7 +13728,7 @@ func (x *UpdateBillingSubscriptionRequest) String() string {
 func (*UpdateBillingSubscriptionRequest) ProtoMessage() {}
 
 func (x *UpdateBillingSubscriptionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[234]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[236]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13656,7 +13741,7 @@ func (x *UpdateBillingSubscriptionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateBillingSubscriptionRequest.ProtoReflect.Descriptor instead.
 func (*UpdateBillingSubscriptionRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{234}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{236}
 }
 
 func (x *UpdateBillingSubscriptionRequest) GetOrganization() string {
@@ -13692,7 +13777,7 @@ type UpdateBillingSubscriptionResponse struct {
 func (x *UpdateBillingSubscriptionResponse) Reset() {
 	*x = UpdateBillingSubscriptionResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[235]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[237]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -13705,7 +13790,7 @@ func (x *UpdateBillingSubscriptionResponse) String() string {
 func (*UpdateBillingSubscriptionResponse) ProtoMessage() {}
 
 func (x *UpdateBillingSubscriptionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[235]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[237]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13718,7 +13803,7 @@ func (x *UpdateBillingSubscriptionResponse) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use UpdateBillingSubscriptionResponse.ProtoReflect.Descriptor instead.
 func (*UpdateBillingSubscriptionResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{235}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{237}
 }
 
 func (x *UpdateBillingSubscriptionResponse) GetOrganization() *Organization {
@@ -13746,7 +13831,7 @@ type CancelBillingSubscriptionRequest struct {
 func (x *CancelBillingSubscriptionRequest) Reset() {
 	*x = CancelBillingSubscriptionRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[236]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[238]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -13759,7 +13844,7 @@ func (x *CancelBillingSubscriptionRequest) String() string {
 func (*CancelBillingSubscriptionRequest) ProtoMessage() {}
 
 func (x *CancelBillingSubscriptionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[236]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[238]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13772,7 +13857,7 @@ func (x *CancelBillingSubscriptionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CancelBillingSubscriptionRequest.ProtoReflect.Descriptor instead.
 func (*CancelBillingSubscriptionRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{236}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{238}
 }
 
 func (x *CancelBillingSubscriptionRequest) GetOrganization() string {
@@ -13791,7 +13876,7 @@ type CancelBillingSubscriptionResponse struct {
 func (x *CancelBillingSubscriptionResponse) Reset() {
 	*x = CancelBillingSubscriptionResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[237]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[239]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -13804,7 +13889,7 @@ func (x *CancelBillingSubscriptionResponse) String() string {
 func (*CancelBillingSubscriptionResponse) ProtoMessage() {}
 
 func (x *CancelBillingSubscriptionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[237]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[239]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13817,7 +13902,7 @@ func (x *CancelBillingSubscriptionResponse) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use CancelBillingSubscriptionResponse.ProtoReflect.Descriptor instead.
 func (*CancelBillingSubscriptionResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{237}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{239}
 }
 
 type RenewBillingSubscriptionRequest struct {
@@ -13833,7 +13918,7 @@ type RenewBillingSubscriptionRequest struct {
 func (x *RenewBillingSubscriptionRequest) Reset() {
 	*x = RenewBillingSubscriptionRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[238]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[240]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -13846,7 +13931,7 @@ func (x *RenewBillingSubscriptionRequest) String() string {
 func (*RenewBillingSubscriptionRequest) ProtoMessage() {}
 
 func (x *RenewBillingSubscriptionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[238]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[240]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13859,7 +13944,7 @@ func (x *RenewBillingSubscriptionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RenewBillingSubscriptionRequest.ProtoReflect.Descriptor instead.
 func (*RenewBillingSubscriptionRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{238}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{240}
 }
 
 func (x *RenewBillingSubscriptionRequest) GetOrganization() string {
@@ -13895,7 +13980,7 @@ type RenewBillingSubscriptionResponse struct {
 func (x *RenewBillingSubscriptionResponse) Reset() {
 	*x = RenewBillingSubscriptionResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[239]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[241]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -13908,7 +13993,7 @@ func (x *RenewBillingSubscriptionResponse) String() string {
 func (*RenewBillingSubscriptionResponse) ProtoMessage() {}
 
 func (x *RenewBillingSubscriptionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[239]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[241]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13921,7 +14006,7 @@ func (x *RenewBillingSubscriptionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RenewBillingSubscriptionResponse.ProtoReflect.Descriptor instead.
 func (*RenewBillingSubscriptionResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{239}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{241}
 }
 
 func (x *RenewBillingSubscriptionResponse) GetOrganization() *Organization {
@@ -13950,7 +14035,7 @@ type GetPaymentsPortalURLRequest struct {
 func (x *GetPaymentsPortalURLRequest) Reset() {
 	*x = GetPaymentsPortalURLRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[240]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[242]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -13963,7 +14048,7 @@ func (x *GetPaymentsPortalURLRequest) String() string {
 func (*GetPaymentsPortalURLRequest) ProtoMessage() {}
 
 func (x *GetPaymentsPortalURLRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[240]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[242]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13976,7 +14061,7 @@ func (x *GetPaymentsPortalURLRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPaymentsPortalURLRequest.ProtoReflect.Descriptor instead.
 func (*GetPaymentsPortalURLRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{240}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{242}
 }
 
 func (x *GetPaymentsPortalURLRequest) GetOrganization() string {
@@ -14004,7 +14089,7 @@ type GetPaymentsPortalURLResponse struct {
 func (x *GetPaymentsPortalURLResponse) Reset() {
 	*x = GetPaymentsPortalURLResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[241]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[243]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -14017,7 +14102,7 @@ func (x *GetPaymentsPortalURLResponse) String() string {
 func (*GetPaymentsPortalURLResponse) ProtoMessage() {}
 
 func (x *GetPaymentsPortalURLResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[241]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[243]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14030,7 +14115,7 @@ func (x *GetPaymentsPortalURLResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPaymentsPortalURLResponse.ProtoReflect.Descriptor instead.
 func (*GetPaymentsPortalURLResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{241}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{243}
 }
 
 func (x *GetPaymentsPortalURLResponse) GetUrl() string {
@@ -14049,7 +14134,7 @@ type ListPublicBillingPlansRequest struct {
 func (x *ListPublicBillingPlansRequest) Reset() {
 	*x = ListPublicBillingPlansRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[242]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[244]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -14062,7 +14147,7 @@ func (x *ListPublicBillingPlansRequest) String() string {
 func (*ListPublicBillingPlansRequest) ProtoMessage() {}
 
 func (x *ListPublicBillingPlansRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[242]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[244]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14075,7 +14160,7 @@ func (x *ListPublicBillingPlansRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListPublicBillingPlansRequest.ProtoReflect.Descriptor instead.
 func (*ListPublicBillingPlansRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{242}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{244}
 }
 
 type ListPublicBillingPlansResponse struct {
@@ -14089,7 +14174,7 @@ type ListPublicBillingPlansResponse struct {
 func (x *ListPublicBillingPlansResponse) Reset() {
 	*x = ListPublicBillingPlansResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[243]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[245]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -14102,7 +14187,7 @@ func (x *ListPublicBillingPlansResponse) String() string {
 func (*ListPublicBillingPlansResponse) ProtoMessage() {}
 
 func (x *ListPublicBillingPlansResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[243]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[245]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14115,7 +14200,7 @@ func (x *ListPublicBillingPlansResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListPublicBillingPlansResponse.ProtoReflect.Descriptor instead.
 func (*ListPublicBillingPlansResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{243}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{245}
 }
 
 func (x *ListPublicBillingPlansResponse) GetPlans() []*BillingPlan {
@@ -14136,7 +14221,7 @@ type GetBillingProjectCredentialsRequest struct {
 func (x *GetBillingProjectCredentialsRequest) Reset() {
 	*x = GetBillingProjectCredentialsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[244]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[246]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -14149,7 +14234,7 @@ func (x *GetBillingProjectCredentialsRequest) String() string {
 func (*GetBillingProjectCredentialsRequest) ProtoMessage() {}
 
 func (x *GetBillingProjectCredentialsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[244]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[246]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14162,7 +14247,7 @@ func (x *GetBillingProjectCredentialsRequest) ProtoReflect() protoreflect.Messag
 
 // Deprecated: Use GetBillingProjectCredentialsRequest.ProtoReflect.Descriptor instead.
 func (*GetBillingProjectCredentialsRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{244}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{246}
 }
 
 func (x *GetBillingProjectCredentialsRequest) GetOrganization() string {
@@ -14186,7 +14271,7 @@ type GetBillingProjectCredentialsResponse struct {
 func (x *GetBillingProjectCredentialsResponse) Reset() {
 	*x = GetBillingProjectCredentialsResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[245]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[247]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -14199,7 +14284,7 @@ func (x *GetBillingProjectCredentialsResponse) String() string {
 func (*GetBillingProjectCredentialsResponse) ProtoMessage() {}
 
 func (x *GetBillingProjectCredentialsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[245]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[247]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14212,7 +14297,7 @@ func (x *GetBillingProjectCredentialsResponse) ProtoReflect() protoreflect.Messa
 
 // Deprecated: Use GetBillingProjectCredentialsResponse.ProtoReflect.Descriptor instead.
 func (*GetBillingProjectCredentialsResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{245}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{247}
 }
 
 func (x *GetBillingProjectCredentialsResponse) GetRuntimeHost() string {
@@ -14259,7 +14344,7 @@ type TelemetryRequest struct {
 func (x *TelemetryRequest) Reset() {
 	*x = TelemetryRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[246]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[248]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -14272,7 +14357,7 @@ func (x *TelemetryRequest) String() string {
 func (*TelemetryRequest) ProtoMessage() {}
 
 func (x *TelemetryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[246]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[248]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14285,7 +14370,7 @@ func (x *TelemetryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TelemetryRequest.ProtoReflect.Descriptor instead.
 func (*TelemetryRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{246}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{248}
 }
 
 func (x *TelemetryRequest) GetName() string {
@@ -14318,7 +14403,7 @@ type TelemetryResponse struct {
 func (x *TelemetryResponse) Reset() {
 	*x = TelemetryResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[247]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[249]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -14331,7 +14416,7 @@ func (x *TelemetryResponse) String() string {
 func (*TelemetryResponse) ProtoMessage() {}
 
 func (x *TelemetryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[247]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[249]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14344,7 +14429,7 @@ func (x *TelemetryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TelemetryResponse.ProtoReflect.Descriptor instead.
 func (*TelemetryResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{247}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{249}
 }
 
 type RequestProjectAccessRequest struct {
@@ -14359,7 +14444,7 @@ type RequestProjectAccessRequest struct {
 func (x *RequestProjectAccessRequest) Reset() {
 	*x = RequestProjectAccessRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[248]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[250]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -14372,7 +14457,7 @@ func (x *RequestProjectAccessRequest) String() string {
 func (*RequestProjectAccessRequest) ProtoMessage() {}
 
 func (x *RequestProjectAccessRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[248]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[250]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14385,7 +14470,7 @@ func (x *RequestProjectAccessRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RequestProjectAccessRequest.ProtoReflect.Descriptor instead.
 func (*RequestProjectAccessRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{248}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{250}
 }
 
 func (x *RequestProjectAccessRequest) GetOrganization() string {
@@ -14411,7 +14496,7 @@ type RequestProjectAccessResponse struct {
 func (x *RequestProjectAccessResponse) Reset() {
 	*x = RequestProjectAccessResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[249]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[251]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -14424,7 +14509,7 @@ func (x *RequestProjectAccessResponse) String() string {
 func (*RequestProjectAccessResponse) ProtoMessage() {}
 
 func (x *RequestProjectAccessResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[249]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[251]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14437,7 +14522,7 @@ func (x *RequestProjectAccessResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RequestProjectAccessResponse.ProtoReflect.Descriptor instead.
 func (*RequestProjectAccessResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{249}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{251}
 }
 
 type GetProjectAccessRequestRequest struct {
@@ -14451,7 +14536,7 @@ type GetProjectAccessRequestRequest struct {
 func (x *GetProjectAccessRequestRequest) Reset() {
 	*x = GetProjectAccessRequestRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[250]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[252]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -14464,7 +14549,7 @@ func (x *GetProjectAccessRequestRequest) String() string {
 func (*GetProjectAccessRequestRequest) ProtoMessage() {}
 
 func (x *GetProjectAccessRequestRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[250]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[252]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14477,7 +14562,7 @@ func (x *GetProjectAccessRequestRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetProjectAccessRequestRequest.ProtoReflect.Descriptor instead.
 func (*GetProjectAccessRequestRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{250}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{252}
 }
 
 func (x *GetProjectAccessRequestRequest) GetId() string {
@@ -14498,7 +14583,7 @@ type GetProjectAccessRequestResponse struct {
 func (x *GetProjectAccessRequestResponse) Reset() {
 	*x = GetProjectAccessRequestResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[251]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[253]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -14511,7 +14596,7 @@ func (x *GetProjectAccessRequestResponse) String() string {
 func (*GetProjectAccessRequestResponse) ProtoMessage() {}
 
 func (x *GetProjectAccessRequestResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[251]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[253]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14524,7 +14609,7 @@ func (x *GetProjectAccessRequestResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetProjectAccessRequestResponse.ProtoReflect.Descriptor instead.
 func (*GetProjectAccessRequestResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{251}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{253}
 }
 
 func (x *GetProjectAccessRequestResponse) GetEmail() string {
@@ -14546,7 +14631,7 @@ type ApproveProjectAccessRequest struct {
 func (x *ApproveProjectAccessRequest) Reset() {
 	*x = ApproveProjectAccessRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[252]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[254]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -14559,7 +14644,7 @@ func (x *ApproveProjectAccessRequest) String() string {
 func (*ApproveProjectAccessRequest) ProtoMessage() {}
 
 func (x *ApproveProjectAccessRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[252]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[254]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14572,7 +14657,7 @@ func (x *ApproveProjectAccessRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ApproveProjectAccessRequest.ProtoReflect.Descriptor instead.
 func (*ApproveProjectAccessRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{252}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{254}
 }
 
 func (x *ApproveProjectAccessRequest) GetId() string {
@@ -14598,7 +14683,7 @@ type ApproveProjectAccessResponse struct {
 func (x *ApproveProjectAccessResponse) Reset() {
 	*x = ApproveProjectAccessResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[253]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[255]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -14611,7 +14696,7 @@ func (x *ApproveProjectAccessResponse) String() string {
 func (*ApproveProjectAccessResponse) ProtoMessage() {}
 
 func (x *ApproveProjectAccessResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[253]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[255]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14624,7 +14709,7 @@ func (x *ApproveProjectAccessResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ApproveProjectAccessResponse.ProtoReflect.Descriptor instead.
 func (*ApproveProjectAccessResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{253}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{255}
 }
 
 type DenyProjectAccessRequest struct {
@@ -14638,7 +14723,7 @@ type DenyProjectAccessRequest struct {
 func (x *DenyProjectAccessRequest) Reset() {
 	*x = DenyProjectAccessRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[254]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[256]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -14651,7 +14736,7 @@ func (x *DenyProjectAccessRequest) String() string {
 func (*DenyProjectAccessRequest) ProtoMessage() {}
 
 func (x *DenyProjectAccessRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[254]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[256]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14664,7 +14749,7 @@ func (x *DenyProjectAccessRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DenyProjectAccessRequest.ProtoReflect.Descriptor instead.
 func (*DenyProjectAccessRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{254}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{256}
 }
 
 func (x *DenyProjectAccessRequest) GetId() string {
@@ -14683,7 +14768,7 @@ type DenyProjectAccessResponse struct {
 func (x *DenyProjectAccessResponse) Reset() {
 	*x = DenyProjectAccessResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[255]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[257]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -14696,7 +14781,7 @@ func (x *DenyProjectAccessResponse) String() string {
 func (*DenyProjectAccessResponse) ProtoMessage() {}
 
 func (x *DenyProjectAccessResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[255]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[257]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14709,7 +14794,7 @@ func (x *DenyProjectAccessResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DenyProjectAccessResponse.ProtoReflect.Descriptor instead.
 func (*DenyProjectAccessResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{255}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{257}
 }
 
 type ListOrganizationBillingIssuesRequest struct {
@@ -14723,7 +14808,7 @@ type ListOrganizationBillingIssuesRequest struct {
 func (x *ListOrganizationBillingIssuesRequest) Reset() {
 	*x = ListOrganizationBillingIssuesRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[256]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[258]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -14736,7 +14821,7 @@ func (x *ListOrganizationBillingIssuesRequest) String() string {
 func (*ListOrganizationBillingIssuesRequest) ProtoMessage() {}
 
 func (x *ListOrganizationBillingIssuesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[256]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[258]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14749,7 +14834,7 @@ func (x *ListOrganizationBillingIssuesRequest) ProtoReflect() protoreflect.Messa
 
 // Deprecated: Use ListOrganizationBillingIssuesRequest.ProtoReflect.Descriptor instead.
 func (*ListOrganizationBillingIssuesRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{256}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{258}
 }
 
 func (x *ListOrganizationBillingIssuesRequest) GetOrganization() string {
@@ -14770,7 +14855,7 @@ type ListOrganizationBillingIssuesResponse struct {
 func (x *ListOrganizationBillingIssuesResponse) Reset() {
 	*x = ListOrganizationBillingIssuesResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[257]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[259]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -14783,7 +14868,7 @@ func (x *ListOrganizationBillingIssuesResponse) String() string {
 func (*ListOrganizationBillingIssuesResponse) ProtoMessage() {}
 
 func (x *ListOrganizationBillingIssuesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[257]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[259]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14796,7 +14881,7 @@ func (x *ListOrganizationBillingIssuesResponse) ProtoReflect() protoreflect.Mess
 
 // Deprecated: Use ListOrganizationBillingIssuesResponse.ProtoReflect.Descriptor instead.
 func (*ListOrganizationBillingIssuesResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{257}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{259}
 }
 
 func (x *ListOrganizationBillingIssuesResponse) GetIssues() []*BillingIssue {
@@ -14823,7 +14908,7 @@ type User struct {
 func (x *User) Reset() {
 	*x = User{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[258]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[260]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -14836,7 +14921,7 @@ func (x *User) String() string {
 func (*User) ProtoMessage() {}
 
 func (x *User) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[258]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[260]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14849,7 +14934,7 @@ func (x *User) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use User.ProtoReflect.Descriptor instead.
 func (*User) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{258}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{260}
 }
 
 func (x *User) GetId() string {
@@ -14917,7 +15002,7 @@ type Service struct {
 func (x *Service) Reset() {
 	*x = Service{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[259]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[261]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -14930,7 +15015,7 @@ func (x *Service) String() string {
 func (*Service) ProtoMessage() {}
 
 func (x *Service) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[259]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[261]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14943,7 +15028,7 @@ func (x *Service) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Service.ProtoReflect.Descriptor instead.
 func (*Service) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{259}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{261}
 }
 
 func (x *Service) GetId() string {
@@ -15010,7 +15095,7 @@ type Organization struct {
 func (x *Organization) Reset() {
 	*x = Organization{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[260]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[262]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -15023,7 +15108,7 @@ func (x *Organization) String() string {
 func (*Organization) ProtoMessage() {}
 
 func (x *Organization) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[260]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[262]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15036,7 +15121,7 @@ func (x *Organization) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Organization.ProtoReflect.Descriptor instead.
 func (*Organization) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{260}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{262}
 }
 
 func (x *Organization) GetId() string {
@@ -15140,7 +15225,7 @@ type Subscription struct {
 func (x *Subscription) Reset() {
 	*x = Subscription{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[261]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[263]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -15153,7 +15238,7 @@ func (x *Subscription) String() string {
 func (*Subscription) ProtoMessage() {}
 
 func (x *Subscription) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[261]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[263]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15166,7 +15251,7 @@ func (x *Subscription) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Subscription.ProtoReflect.Descriptor instead.
 func (*Subscription) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{261}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{263}
 }
 
 func (x *Subscription) GetId() string {
@@ -15230,7 +15315,7 @@ type UserQuotas struct {
 func (x *UserQuotas) Reset() {
 	*x = UserQuotas{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[262]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[264]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -15243,7 +15328,7 @@ func (x *UserQuotas) String() string {
 func (*UserQuotas) ProtoMessage() {}
 
 func (x *UserQuotas) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[262]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[264]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15256,7 +15341,7 @@ func (x *UserQuotas) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserQuotas.ProtoReflect.Descriptor instead.
 func (*UserQuotas) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{262}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{264}
 }
 
 func (x *UserQuotas) GetSingleuserOrgs() int32 {
@@ -15289,7 +15374,7 @@ type OrganizationQuotas struct {
 func (x *OrganizationQuotas) Reset() {
 	*x = OrganizationQuotas{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[263]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[265]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -15302,7 +15387,7 @@ func (x *OrganizationQuotas) String() string {
 func (*OrganizationQuotas) ProtoMessage() {}
 
 func (x *OrganizationQuotas) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[263]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[265]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15315,7 +15400,7 @@ func (x *OrganizationQuotas) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OrganizationQuotas.ProtoReflect.Descriptor instead.
 func (*OrganizationQuotas) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{263}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{265}
 }
 
 func (x *OrganizationQuotas) GetProjects() int32 {
@@ -15392,7 +15477,7 @@ type Project struct {
 func (x *Project) Reset() {
 	*x = Project{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[264]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[266]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -15405,7 +15490,7 @@ func (x *Project) String() string {
 func (*Project) ProtoMessage() {}
 
 func (x *Project) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[264]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[266]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15418,7 +15503,7 @@ func (x *Project) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Project.ProtoReflect.Descriptor instead.
 func (*Project) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{264}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{266}
 }
 
 func (x *Project) GetId() string {
@@ -15594,7 +15679,7 @@ type Deployment struct {
 func (x *Deployment) Reset() {
 	*x = Deployment{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[265]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[267]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -15607,7 +15692,7 @@ func (x *Deployment) String() string {
 func (*Deployment) ProtoMessage() {}
 
 func (x *Deployment) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[265]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[267]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15620,7 +15705,7 @@ func (x *Deployment) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Deployment.ProtoReflect.Descriptor instead.
 func (*Deployment) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{265}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{267}
 }
 
 func (x *Deployment) GetId() string {
@@ -15702,7 +15787,7 @@ type ProvisionerResource struct {
 func (x *ProvisionerResource) Reset() {
 	*x = ProvisionerResource{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[266]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[268]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -15715,7 +15800,7 @@ func (x *ProvisionerResource) String() string {
 func (*ProvisionerResource) ProtoMessage() {}
 
 func (x *ProvisionerResource) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[266]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[268]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15728,7 +15813,7 @@ func (x *ProvisionerResource) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProvisionerResource.ProtoReflect.Descriptor instead.
 func (*ProvisionerResource) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{266}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{268}
 }
 
 func (x *ProvisionerResource) GetId() string {
@@ -15790,7 +15875,7 @@ type OrganizationPermissions struct {
 func (x *OrganizationPermissions) Reset() {
 	*x = OrganizationPermissions{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[267]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[269]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -15803,7 +15888,7 @@ func (x *OrganizationPermissions) String() string {
 func (*OrganizationPermissions) ProtoMessage() {}
 
 func (x *OrganizationPermissions) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[267]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[269]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15816,7 +15901,7 @@ func (x *OrganizationPermissions) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OrganizationPermissions.ProtoReflect.Descriptor instead.
 func (*OrganizationPermissions) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{267}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{269}
 }
 
 func (x *OrganizationPermissions) GetReadOrg() bool {
@@ -15898,7 +15983,7 @@ type ProjectPermissions struct {
 func (x *ProjectPermissions) Reset() {
 	*x = ProjectPermissions{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[268]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[270]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -15911,7 +15996,7 @@ func (x *ProjectPermissions) String() string {
 func (*ProjectPermissions) ProtoMessage() {}
 
 func (x *ProjectPermissions) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[268]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[270]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15924,7 +16009,7 @@ func (x *ProjectPermissions) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProjectPermissions.ProtoReflect.Descriptor instead.
 func (*ProjectPermissions) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{268}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{270}
 }
 
 func (x *ProjectPermissions) GetReadProject() bool {
@@ -16084,7 +16169,7 @@ type MemberUser struct {
 func (x *MemberUser) Reset() {
 	*x = MemberUser{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[269]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[271]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -16097,7 +16182,7 @@ func (x *MemberUser) String() string {
 func (*MemberUser) ProtoMessage() {}
 
 func (x *MemberUser) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[269]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[271]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16110,7 +16195,7 @@ func (x *MemberUser) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MemberUser.ProtoReflect.Descriptor instead.
 func (*MemberUser) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{269}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{271}
 }
 
 func (x *MemberUser) GetUserId() string {
@@ -16175,7 +16260,7 @@ type UserInvite struct {
 func (x *UserInvite) Reset() {
 	*x = UserInvite{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[270]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[272]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -16188,7 +16273,7 @@ func (x *UserInvite) String() string {
 func (*UserInvite) ProtoMessage() {}
 
 func (x *UserInvite) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[270]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[272]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16201,7 +16286,7 @@ func (x *UserInvite) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserInvite.ProtoReflect.Descriptor instead.
 func (*UserInvite) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{270}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{272}
 }
 
 func (x *UserInvite) GetEmail() string {
@@ -16237,7 +16322,7 @@ type WhitelistedDomain struct {
 func (x *WhitelistedDomain) Reset() {
 	*x = WhitelistedDomain{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[271]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[273]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -16250,7 +16335,7 @@ func (x *WhitelistedDomain) String() string {
 func (*WhitelistedDomain) ProtoMessage() {}
 
 func (x *WhitelistedDomain) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[271]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[273]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16263,7 +16348,7 @@ func (x *WhitelistedDomain) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WhitelistedDomain.ProtoReflect.Descriptor instead.
 func (*WhitelistedDomain) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{271}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{273}
 }
 
 func (x *WhitelistedDomain) GetDomain() string {
@@ -16302,7 +16387,7 @@ type Bookmark struct {
 func (x *Bookmark) Reset() {
 	*x = Bookmark{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[272]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[274]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -16315,7 +16400,7 @@ func (x *Bookmark) String() string {
 func (*Bookmark) ProtoMessage() {}
 
 func (x *Bookmark) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[272]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[274]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16328,7 +16413,7 @@ func (x *Bookmark) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Bookmark.ProtoReflect.Descriptor instead.
 func (*Bookmark) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{272}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{274}
 }
 
 func (x *Bookmark) GetId() string {
@@ -16428,7 +16513,7 @@ type ServiceToken struct {
 func (x *ServiceToken) Reset() {
 	*x = ServiceToken{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[273]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[275]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -16441,7 +16526,7 @@ func (x *ServiceToken) String() string {
 func (*ServiceToken) ProtoMessage() {}
 
 func (x *ServiceToken) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[273]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[275]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16454,7 +16539,7 @@ func (x *ServiceToken) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ServiceToken.ProtoReflect.Descriptor instead.
 func (*ServiceToken) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{273}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{275}
 }
 
 func (x *ServiceToken) GetId() string {
@@ -16504,7 +16589,7 @@ type MagicAuthToken struct {
 func (x *MagicAuthToken) Reset() {
 	*x = MagicAuthToken{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[274]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[276]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -16517,7 +16602,7 @@ func (x *MagicAuthToken) String() string {
 func (*MagicAuthToken) ProtoMessage() {}
 
 func (x *MagicAuthToken) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[274]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[276]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16530,7 +16615,7 @@ func (x *MagicAuthToken) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MagicAuthToken.ProtoReflect.Descriptor instead.
 func (*MagicAuthToken) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{274}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{276}
 }
 
 func (x *MagicAuthToken) GetId() string {
@@ -16659,7 +16744,7 @@ type VirtualFile struct {
 func (x *VirtualFile) Reset() {
 	*x = VirtualFile{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[275]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[277]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -16672,7 +16757,7 @@ func (x *VirtualFile) String() string {
 func (*VirtualFile) ProtoMessage() {}
 
 func (x *VirtualFile) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[275]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[277]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16685,7 +16770,7 @@ func (x *VirtualFile) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VirtualFile.ProtoReflect.Descriptor instead.
 func (*VirtualFile) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{275}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{277}
 }
 
 func (x *VirtualFile) GetPath() string {
@@ -16740,7 +16825,7 @@ type ReportOptions struct {
 func (x *ReportOptions) Reset() {
 	*x = ReportOptions{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[276]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[278]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -16753,7 +16838,7 @@ func (x *ReportOptions) String() string {
 func (*ReportOptions) ProtoMessage() {}
 
 func (x *ReportOptions) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[276]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[278]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16766,7 +16851,7 @@ func (x *ReportOptions) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReportOptions.ProtoReflect.Descriptor instead.
 func (*ReportOptions) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{276}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{278}
 }
 
 func (x *ReportOptions) GetDisplayName() string {
@@ -16894,7 +16979,7 @@ type AlertOptions struct {
 func (x *AlertOptions) Reset() {
 	*x = AlertOptions{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[277]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[279]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -16907,7 +16992,7 @@ func (x *AlertOptions) String() string {
 func (*AlertOptions) ProtoMessage() {}
 
 func (x *AlertOptions) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[277]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[279]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16920,7 +17005,7 @@ func (x *AlertOptions) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AlertOptions.ProtoReflect.Descriptor instead.
 func (*AlertOptions) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{277}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{279}
 }
 
 func (x *AlertOptions) GetDisplayName() string {
@@ -17047,7 +17132,7 @@ type BillingPlan struct {
 func (x *BillingPlan) Reset() {
 	*x = BillingPlan{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[278]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[280]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -17060,7 +17145,7 @@ func (x *BillingPlan) String() string {
 func (*BillingPlan) ProtoMessage() {}
 
 func (x *BillingPlan) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[278]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[280]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17073,7 +17158,7 @@ func (x *BillingPlan) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BillingPlan.ProtoReflect.Descriptor instead.
 func (*BillingPlan) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{278}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{280}
 }
 
 func (x *BillingPlan) GetId() string {
@@ -17155,7 +17240,7 @@ type Quotas struct {
 func (x *Quotas) Reset() {
 	*x = Quotas{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[279]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[281]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -17168,7 +17253,7 @@ func (x *Quotas) String() string {
 func (*Quotas) ProtoMessage() {}
 
 func (x *Quotas) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[279]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[281]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17181,7 +17266,7 @@ func (x *Quotas) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Quotas.ProtoReflect.Descriptor instead.
 func (*Quotas) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{279}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{281}
 }
 
 func (x *Quotas) GetProjects() string {
@@ -17241,7 +17326,7 @@ type Usergroup struct {
 func (x *Usergroup) Reset() {
 	*x = Usergroup{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[280]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[282]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -17254,7 +17339,7 @@ func (x *Usergroup) String() string {
 func (*Usergroup) ProtoMessage() {}
 
 func (x *Usergroup) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[280]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[282]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17267,7 +17352,7 @@ func (x *Usergroup) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Usergroup.ProtoReflect.Descriptor instead.
 func (*Usergroup) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{280}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{282}
 }
 
 func (x *Usergroup) GetGroupId() string {
@@ -17320,7 +17405,7 @@ type MemberUsergroup struct {
 func (x *MemberUsergroup) Reset() {
 	*x = MemberUsergroup{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[281]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[283]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -17333,7 +17418,7 @@ func (x *MemberUsergroup) String() string {
 func (*MemberUsergroup) ProtoMessage() {}
 
 func (x *MemberUsergroup) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[281]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[283]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17346,7 +17431,7 @@ func (x *MemberUsergroup) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MemberUsergroup.ProtoReflect.Descriptor instead.
 func (*MemberUsergroup) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{281}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{283}
 }
 
 func (x *MemberUsergroup) GetGroupId() string {
@@ -17400,7 +17485,7 @@ type BillingIssue struct {
 func (x *BillingIssue) Reset() {
 	*x = BillingIssue{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[282]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[284]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -17413,7 +17498,7 @@ func (x *BillingIssue) String() string {
 func (*BillingIssue) ProtoMessage() {}
 
 func (x *BillingIssue) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[282]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[284]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17426,7 +17511,7 @@ func (x *BillingIssue) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BillingIssue.ProtoReflect.Descriptor instead.
 func (*BillingIssue) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{282}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{284}
 }
 
 func (x *BillingIssue) GetOrganization() string {
@@ -17491,7 +17576,7 @@ type BillingIssueMetadata struct {
 func (x *BillingIssueMetadata) Reset() {
 	*x = BillingIssueMetadata{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[283]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[285]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -17504,7 +17589,7 @@ func (x *BillingIssueMetadata) String() string {
 func (*BillingIssueMetadata) ProtoMessage() {}
 
 func (x *BillingIssueMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[283]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[285]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17517,7 +17602,7 @@ func (x *BillingIssueMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BillingIssueMetadata.ProtoReflect.Descriptor instead.
 func (*BillingIssueMetadata) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{283}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{285}
 }
 
 func (m *BillingIssueMetadata) GetMetadata() isBillingIssueMetadata_Metadata {
@@ -17634,7 +17719,7 @@ type BillingIssueMetadataOnTrial struct {
 func (x *BillingIssueMetadataOnTrial) Reset() {
 	*x = BillingIssueMetadataOnTrial{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[284]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[286]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -17647,7 +17732,7 @@ func (x *BillingIssueMetadataOnTrial) String() string {
 func (*BillingIssueMetadataOnTrial) ProtoMessage() {}
 
 func (x *BillingIssueMetadataOnTrial) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[284]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[286]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17660,7 +17745,7 @@ func (x *BillingIssueMetadataOnTrial) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BillingIssueMetadataOnTrial.ProtoReflect.Descriptor instead.
 func (*BillingIssueMetadataOnTrial) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{284}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{286}
 }
 
 func (x *BillingIssueMetadataOnTrial) GetEndDate() *timestamppb.Timestamp {
@@ -17689,7 +17774,7 @@ type BillingIssueMetadataTrialEnded struct {
 func (x *BillingIssueMetadataTrialEnded) Reset() {
 	*x = BillingIssueMetadataTrialEnded{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[285]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[287]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -17702,7 +17787,7 @@ func (x *BillingIssueMetadataTrialEnded) String() string {
 func (*BillingIssueMetadataTrialEnded) ProtoMessage() {}
 
 func (x *BillingIssueMetadataTrialEnded) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[285]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[287]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17715,7 +17800,7 @@ func (x *BillingIssueMetadataTrialEnded) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BillingIssueMetadataTrialEnded.ProtoReflect.Descriptor instead.
 func (*BillingIssueMetadataTrialEnded) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{285}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{287}
 }
 
 func (x *BillingIssueMetadataTrialEnded) GetEndDate() *timestamppb.Timestamp {
@@ -17741,7 +17826,7 @@ type BillingIssueMetadataNoPaymentMethod struct {
 func (x *BillingIssueMetadataNoPaymentMethod) Reset() {
 	*x = BillingIssueMetadataNoPaymentMethod{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[286]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[288]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -17754,7 +17839,7 @@ func (x *BillingIssueMetadataNoPaymentMethod) String() string {
 func (*BillingIssueMetadataNoPaymentMethod) ProtoMessage() {}
 
 func (x *BillingIssueMetadataNoPaymentMethod) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[286]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[288]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17767,7 +17852,7 @@ func (x *BillingIssueMetadataNoPaymentMethod) ProtoReflect() protoreflect.Messag
 
 // Deprecated: Use BillingIssueMetadataNoPaymentMethod.ProtoReflect.Descriptor instead.
 func (*BillingIssueMetadataNoPaymentMethod) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{286}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{288}
 }
 
 type BillingIssueMetadataNoBillableAddress struct {
@@ -17779,7 +17864,7 @@ type BillingIssueMetadataNoBillableAddress struct {
 func (x *BillingIssueMetadataNoBillableAddress) Reset() {
 	*x = BillingIssueMetadataNoBillableAddress{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[287]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[289]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -17792,7 +17877,7 @@ func (x *BillingIssueMetadataNoBillableAddress) String() string {
 func (*BillingIssueMetadataNoBillableAddress) ProtoMessage() {}
 
 func (x *BillingIssueMetadataNoBillableAddress) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[287]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[289]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17805,7 +17890,7 @@ func (x *BillingIssueMetadataNoBillableAddress) ProtoReflect() protoreflect.Mess
 
 // Deprecated: Use BillingIssueMetadataNoBillableAddress.ProtoReflect.Descriptor instead.
 func (*BillingIssueMetadataNoBillableAddress) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{287}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{289}
 }
 
 type BillingIssueMetadataPaymentFailed struct {
@@ -17819,7 +17904,7 @@ type BillingIssueMetadataPaymentFailed struct {
 func (x *BillingIssueMetadataPaymentFailed) Reset() {
 	*x = BillingIssueMetadataPaymentFailed{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[288]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[290]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -17832,7 +17917,7 @@ func (x *BillingIssueMetadataPaymentFailed) String() string {
 func (*BillingIssueMetadataPaymentFailed) ProtoMessage() {}
 
 func (x *BillingIssueMetadataPaymentFailed) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[288]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[290]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17845,7 +17930,7 @@ func (x *BillingIssueMetadataPaymentFailed) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use BillingIssueMetadataPaymentFailed.ProtoReflect.Descriptor instead.
 func (*BillingIssueMetadataPaymentFailed) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{288}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{290}
 }
 
 func (x *BillingIssueMetadataPaymentFailed) GetInvoices() []*BillingIssueMetadataPaymentFailedMeta {
@@ -17873,7 +17958,7 @@ type BillingIssueMetadataPaymentFailedMeta struct {
 func (x *BillingIssueMetadataPaymentFailedMeta) Reset() {
 	*x = BillingIssueMetadataPaymentFailedMeta{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[289]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[291]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -17886,7 +17971,7 @@ func (x *BillingIssueMetadataPaymentFailedMeta) String() string {
 func (*BillingIssueMetadataPaymentFailedMeta) ProtoMessage() {}
 
 func (x *BillingIssueMetadataPaymentFailedMeta) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[289]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[291]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17899,7 +17984,7 @@ func (x *BillingIssueMetadataPaymentFailedMeta) ProtoReflect() protoreflect.Mess
 
 // Deprecated: Use BillingIssueMetadataPaymentFailedMeta.ProtoReflect.Descriptor instead.
 func (*BillingIssueMetadataPaymentFailedMeta) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{289}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{291}
 }
 
 func (x *BillingIssueMetadataPaymentFailedMeta) GetInvoiceId() string {
@@ -17969,7 +18054,7 @@ type BillingIssueMetadataSubscriptionCancelled struct {
 func (x *BillingIssueMetadataSubscriptionCancelled) Reset() {
 	*x = BillingIssueMetadataSubscriptionCancelled{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[290]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[292]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -17982,7 +18067,7 @@ func (x *BillingIssueMetadataSubscriptionCancelled) String() string {
 func (*BillingIssueMetadataSubscriptionCancelled) ProtoMessage() {}
 
 func (x *BillingIssueMetadataSubscriptionCancelled) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[290]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[292]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17995,7 +18080,7 @@ func (x *BillingIssueMetadataSubscriptionCancelled) ProtoReflect() protoreflect.
 
 // Deprecated: Use BillingIssueMetadataSubscriptionCancelled.ProtoReflect.Descriptor instead.
 func (*BillingIssueMetadataSubscriptionCancelled) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{290}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{292}
 }
 
 func (x *BillingIssueMetadataSubscriptionCancelled) GetEndDate() *timestamppb.Timestamp {
@@ -18014,7 +18099,7 @@ type BillingIssueMetadataNeverSubscribed struct {
 func (x *BillingIssueMetadataNeverSubscribed) Reset() {
 	*x = BillingIssueMetadataNeverSubscribed{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[291]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[293]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -18027,7 +18112,7 @@ func (x *BillingIssueMetadataNeverSubscribed) String() string {
 func (*BillingIssueMetadataNeverSubscribed) ProtoMessage() {}
 
 func (x *BillingIssueMetadataNeverSubscribed) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[291]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[293]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18040,7 +18125,7 @@ func (x *BillingIssueMetadataNeverSubscribed) ProtoReflect() protoreflect.Messag
 
 // Deprecated: Use BillingIssueMetadataNeverSubscribed.ProtoReflect.Descriptor instead.
 func (*BillingIssueMetadataNeverSubscribed) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{291}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{293}
 }
 
 type ListGithubUserReposResponse_Repo struct {
@@ -18058,7 +18143,7 @@ type ListGithubUserReposResponse_Repo struct {
 func (x *ListGithubUserReposResponse_Repo) Reset() {
 	*x = ListGithubUserReposResponse_Repo{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[299]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[301]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -18071,7 +18156,7 @@ func (x *ListGithubUserReposResponse_Repo) String() string {
 func (*ListGithubUserReposResponse_Repo) ProtoMessage() {}
 
 func (x *ListGithubUserReposResponse_Repo) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[299]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[301]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18084,7 +18169,7 @@ func (x *ListGithubUserReposResponse_Repo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListGithubUserReposResponse_Repo.ProtoReflect.Descriptor instead.
 func (*ListGithubUserReposResponse_Repo) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{181, 0}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{183, 0}
 }
 
 func (x *ListGithubUserReposResponse_Repo) GetName() string {
@@ -18135,7 +18220,7 @@ type GetReportMetaResponse_URLs struct {
 func (x *GetReportMetaResponse_URLs) Reset() {
 	*x = GetReportMetaResponse_URLs{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[300]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[302]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -18148,7 +18233,7 @@ func (x *GetReportMetaResponse_URLs) String() string {
 func (*GetReportMetaResponse_URLs) ProtoMessage() {}
 
 func (x *GetReportMetaResponse_URLs) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[300]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[302]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18161,7 +18246,7 @@ func (x *GetReportMetaResponse_URLs) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetReportMetaResponse_URLs.ProtoReflect.Descriptor instead.
 func (*GetReportMetaResponse_URLs) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{205, 0}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{207, 0}
 }
 
 func (x *GetReportMetaResponse_URLs) GetOpenUrl() string {
@@ -19739,7 +19824,6 @@ var file_rill_admin_v1_api_proto_rawDesc = []byte{
 	0x6c, 0x12, 0x47, 0x0a, 0x12, 0x67, 0x69, 0x74, 0x5f, 0x75, 0x72, 0x6c, 0x5f, 0x65, 0x78, 0x70,
 	0x69, 0x72, 0x65, 0x73, 0x5f, 0x6f, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e,
 	0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e,
-	0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x52, 0x0f, 0x67, 0x69, 0x74, 0x55, 0x72,
 	0x6c, 0x45, 0x78, 0x70, 0x69, 0x72, 0x65, 0x73, 0x4f, 0x6e, 0x12, 0x1f, 0x0a, 0x0b, 0x67, 0x69,
 	0x74, 0x5f, 0x73, 0x75, 0x62, 0x70, 0x61, 0x74, 0x68, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52,
 	0x0a, 0x67, 0x69, 0x74, 0x53, 0x75, 0x62, 0x70, 0x61, 0x74, 0x68, 0x12, 0x30, 0x0a, 0x14, 0x61,
@@ -22207,7 +22291,7 @@ func file_rill_admin_v1_api_proto_rawDescGZIP() []byte {
 }
 
 var file_rill_admin_v1_api_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
-var file_rill_admin_v1_api_proto_msgTypes = make([]protoimpl.MessageInfo, 304)
+var file_rill_admin_v1_api_proto_msgTypes = make([]protoimpl.MessageInfo, 306)
 var file_rill_admin_v1_api_proto_goTypes = []any{
 	(GithubPermission)(0),                                 // 0: rill.admin.v1.GithubPermission
 	(DeploymentStatus)(0),                                 // 1: rill.admin.v1.DeploymentStatus
@@ -22360,237 +22444,239 @@ var file_rill_admin_v1_api_proto_goTypes = []any{
 	(*UserPreferences)(nil),                               // 148: rill.admin.v1.UserPreferences
 	(*UpdateUserPreferencesRequest)(nil),                  // 149: rill.admin.v1.UpdateUserPreferencesRequest
 	(*UpdateUserPreferencesResponse)(nil),                 // 150: rill.admin.v1.UpdateUserPreferencesResponse
-	(*ListBookmarksRequest)(nil),                          // 151: rill.admin.v1.ListBookmarksRequest
-	(*ListBookmarksResponse)(nil),                         // 152: rill.admin.v1.ListBookmarksResponse
-	(*GetBookmarkRequest)(nil),                            // 153: rill.admin.v1.GetBookmarkRequest
-	(*GetBookmarkResponse)(nil),                           // 154: rill.admin.v1.GetBookmarkResponse
-	(*CreateBookmarkRequest)(nil),                         // 155: rill.admin.v1.CreateBookmarkRequest
-	(*CreateBookmarkResponse)(nil),                        // 156: rill.admin.v1.CreateBookmarkResponse
-	(*UpdateBookmarkRequest)(nil),                         // 157: rill.admin.v1.UpdateBookmarkRequest
-	(*UpdateBookmarkResponse)(nil),                        // 158: rill.admin.v1.UpdateBookmarkResponse
-	(*RemoveBookmarkRequest)(nil),                         // 159: rill.admin.v1.RemoveBookmarkRequest
-	(*RemoveBookmarkResponse)(nil),                        // 160: rill.admin.v1.RemoveBookmarkResponse
-	(*SearchUsersRequest)(nil),                            // 161: rill.admin.v1.SearchUsersRequest
-	(*SearchUsersResponse)(nil),                           // 162: rill.admin.v1.SearchUsersResponse
-	(*RevokeCurrentAuthTokenRequest)(nil),                 // 163: rill.admin.v1.RevokeCurrentAuthTokenRequest
-	(*RevokeCurrentAuthTokenResponse)(nil),                // 164: rill.admin.v1.RevokeCurrentAuthTokenResponse
-	(*IssueRepresentativeAuthTokenRequest)(nil),           // 165: rill.admin.v1.IssueRepresentativeAuthTokenRequest
-	(*IssueRepresentativeAuthTokenResponse)(nil),          // 166: rill.admin.v1.IssueRepresentativeAuthTokenResponse
-	(*RevokeServiceAuthTokenRequest)(nil),                 // 167: rill.admin.v1.RevokeServiceAuthTokenRequest
-	(*RevokeServiceAuthTokenResponse)(nil),                // 168: rill.admin.v1.RevokeServiceAuthTokenResponse
-	(*IssueServiceAuthTokenRequest)(nil),                  // 169: rill.admin.v1.IssueServiceAuthTokenRequest
-	(*IssueServiceAuthTokenResponse)(nil),                 // 170: rill.admin.v1.IssueServiceAuthTokenResponse
-	(*ListServiceAuthTokensRequest)(nil),                  // 171: rill.admin.v1.ListServiceAuthTokensRequest
-	(*ListServiceAuthTokensResponse)(nil),                 // 172: rill.admin.v1.ListServiceAuthTokensResponse
-	(*IssueMagicAuthTokenRequest)(nil),                    // 173: rill.admin.v1.IssueMagicAuthTokenRequest
-	(*IssueMagicAuthTokenResponse)(nil),                   // 174: rill.admin.v1.IssueMagicAuthTokenResponse
-	(*ListMagicAuthTokensRequest)(nil),                    // 175: rill.admin.v1.ListMagicAuthTokensRequest
-	(*ListMagicAuthTokensResponse)(nil),                   // 176: rill.admin.v1.ListMagicAuthTokensResponse
-	(*GetCurrentMagicAuthTokenRequest)(nil),               // 177: rill.admin.v1.GetCurrentMagicAuthTokenRequest
-	(*GetCurrentMagicAuthTokenResponse)(nil),              // 178: rill.admin.v1.GetCurrentMagicAuthTokenResponse
-	(*RevokeMagicAuthTokenRequest)(nil),                   // 179: rill.admin.v1.RevokeMagicAuthTokenRequest
-	(*RevokeMagicAuthTokenResponse)(nil),                  // 180: rill.admin.v1.RevokeMagicAuthTokenResponse
-	(*GetGithubRepoStatusRequest)(nil),                    // 181: rill.admin.v1.GetGithubRepoStatusRequest
-	(*GetGithubRepoStatusResponse)(nil),                   // 182: rill.admin.v1.GetGithubRepoStatusResponse
-	(*GetGithubUserStatusRequest)(nil),                    // 183: rill.admin.v1.GetGithubUserStatusRequest
-	(*GetGithubUserStatusResponse)(nil),                   // 184: rill.admin.v1.GetGithubUserStatusResponse
-	(*ListGithubUserReposRequest)(nil),                    // 185: rill.admin.v1.ListGithubUserReposRequest
-	(*ListGithubUserReposResponse)(nil),                   // 186: rill.admin.v1.ListGithubUserReposResponse
-	(*ConnectProjectToGithubRequest)(nil),                 // 187: rill.admin.v1.ConnectProjectToGithubRequest
-	(*ConnectProjectToGithubResponse)(nil),                // 188: rill.admin.v1.ConnectProjectToGithubResponse
-	(*UploadProjectAssetsRequest)(nil),                    // 189: rill.admin.v1.UploadProjectAssetsRequest
-	(*UploadProjectAssetsResponse)(nil),                   // 190: rill.admin.v1.UploadProjectAssetsResponse
-	(*GetCloneCredentialsRequest)(nil),                    // 191: rill.admin.v1.GetCloneCredentialsRequest
-	(*GetCloneCredentialsResponse)(nil),                   // 192: rill.admin.v1.GetCloneCredentialsResponse
-	(*CreateWhitelistedDomainRequest)(nil),                // 193: rill.admin.v1.CreateWhitelistedDomainRequest
-	(*CreateWhitelistedDomainResponse)(nil),               // 194: rill.admin.v1.CreateWhitelistedDomainResponse
-	(*RemoveWhitelistedDomainRequest)(nil),                // 195: rill.admin.v1.RemoveWhitelistedDomainRequest
-	(*RemoveWhitelistedDomainResponse)(nil),               // 196: rill.admin.v1.RemoveWhitelistedDomainResponse
-	(*ListWhitelistedDomainsRequest)(nil),                 // 197: rill.admin.v1.ListWhitelistedDomainsRequest
-	(*ListWhitelistedDomainsResponse)(nil),                // 198: rill.admin.v1.ListWhitelistedDomainsResponse
-	(*CreateProjectWhitelistedDomainRequest)(nil),         // 199: rill.admin.v1.CreateProjectWhitelistedDomainRequest
-	(*CreateProjectWhitelistedDomainResponse)(nil),        // 200: rill.admin.v1.CreateProjectWhitelistedDomainResponse
-	(*RemoveProjectWhitelistedDomainRequest)(nil),         // 201: rill.admin.v1.RemoveProjectWhitelistedDomainRequest
-	(*RemoveProjectWhitelistedDomainResponse)(nil),        // 202: rill.admin.v1.RemoveProjectWhitelistedDomainResponse
-	(*ListProjectWhitelistedDomainsRequest)(nil),          // 203: rill.admin.v1.ListProjectWhitelistedDomainsRequest
-	(*ListProjectWhitelistedDomainsResponse)(nil),         // 204: rill.admin.v1.ListProjectWhitelistedDomainsResponse
-	(*GetRepoMetaRequest)(nil),                            // 205: rill.admin.v1.GetRepoMetaRequest
-	(*GetRepoMetaResponse)(nil),                           // 206: rill.admin.v1.GetRepoMetaResponse
-	(*PullVirtualRepoRequest)(nil),                        // 207: rill.admin.v1.PullVirtualRepoRequest
-	(*PullVirtualRepoResponse)(nil),                       // 208: rill.admin.v1.PullVirtualRepoResponse
-	(*GetReportMetaRequest)(nil),                          // 209: rill.admin.v1.GetReportMetaRequest
-	(*GetReportMetaResponse)(nil),                         // 210: rill.admin.v1.GetReportMetaResponse
-	(*GetAlertMetaRequest)(nil),                           // 211: rill.admin.v1.GetAlertMetaRequest
-	(*GetAlertMetaResponse)(nil),                          // 212: rill.admin.v1.GetAlertMetaResponse
-	(*CreateReportRequest)(nil),                           // 213: rill.admin.v1.CreateReportRequest
-	(*CreateReportResponse)(nil),                          // 214: rill.admin.v1.CreateReportResponse
-	(*EditReportRequest)(nil),                             // 215: rill.admin.v1.EditReportRequest
-	(*EditReportResponse)(nil),                            // 216: rill.admin.v1.EditReportResponse
-	(*UnsubscribeReportRequest)(nil),                      // 217: rill.admin.v1.UnsubscribeReportRequest
-	(*UnsubscribeReportResponse)(nil),                     // 218: rill.admin.v1.UnsubscribeReportResponse
-	(*DeleteReportRequest)(nil),                           // 219: rill.admin.v1.DeleteReportRequest
-	(*DeleteReportResponse)(nil),                          // 220: rill.admin.v1.DeleteReportResponse
-	(*TriggerReportRequest)(nil),                          // 221: rill.admin.v1.TriggerReportRequest
-	(*TriggerReportResponse)(nil),                         // 222: rill.admin.v1.TriggerReportResponse
-	(*GenerateReportYAMLRequest)(nil),                     // 223: rill.admin.v1.GenerateReportYAMLRequest
-	(*GenerateReportYAMLResponse)(nil),                    // 224: rill.admin.v1.GenerateReportYAMLResponse
-	(*CreateAlertRequest)(nil),                            // 225: rill.admin.v1.CreateAlertRequest
-	(*CreateAlertResponse)(nil),                           // 226: rill.admin.v1.CreateAlertResponse
-	(*EditAlertRequest)(nil),                              // 227: rill.admin.v1.EditAlertRequest
-	(*EditAlertResponse)(nil),                             // 228: rill.admin.v1.EditAlertResponse
-	(*UnsubscribeAlertRequest)(nil),                       // 229: rill.admin.v1.UnsubscribeAlertRequest
-	(*UnsubscribeAlertResponse)(nil),                      // 230: rill.admin.v1.UnsubscribeAlertResponse
-	(*DeleteAlertRequest)(nil),                            // 231: rill.admin.v1.DeleteAlertRequest
-	(*DeleteAlertResponse)(nil),                           // 232: rill.admin.v1.DeleteAlertResponse
-	(*GenerateAlertYAMLRequest)(nil),                      // 233: rill.admin.v1.GenerateAlertYAMLRequest
-	(*GenerateAlertYAMLResponse)(nil),                     // 234: rill.admin.v1.GenerateAlertYAMLResponse
-	(*GetAlertYAMLRequest)(nil),                           // 235: rill.admin.v1.GetAlertYAMLRequest
-	(*GetAlertYAMLResponse)(nil),                          // 236: rill.admin.v1.GetAlertYAMLResponse
-	(*GetBillingSubscriptionRequest)(nil),                 // 237: rill.admin.v1.GetBillingSubscriptionRequest
-	(*GetBillingSubscriptionResponse)(nil),                // 238: rill.admin.v1.GetBillingSubscriptionResponse
-	(*UpdateBillingSubscriptionRequest)(nil),              // 239: rill.admin.v1.UpdateBillingSubscriptionRequest
-	(*UpdateBillingSubscriptionResponse)(nil),             // 240: rill.admin.v1.UpdateBillingSubscriptionResponse
-	(*CancelBillingSubscriptionRequest)(nil),              // 241: rill.admin.v1.CancelBillingSubscriptionRequest
-	(*CancelBillingSubscriptionResponse)(nil),             // 242: rill.admin.v1.CancelBillingSubscriptionResponse
-	(*RenewBillingSubscriptionRequest)(nil),               // 243: rill.admin.v1.RenewBillingSubscriptionRequest
-	(*RenewBillingSubscriptionResponse)(nil),              // 244: rill.admin.v1.RenewBillingSubscriptionResponse
-	(*GetPaymentsPortalURLRequest)(nil),                   // 245: rill.admin.v1.GetPaymentsPortalURLRequest
-	(*GetPaymentsPortalURLResponse)(nil),                  // 246: rill.admin.v1.GetPaymentsPortalURLResponse
-	(*ListPublicBillingPlansRequest)(nil),                 // 247: rill.admin.v1.ListPublicBillingPlansRequest
-	(*ListPublicBillingPlansResponse)(nil),                // 248: rill.admin.v1.ListPublicBillingPlansResponse
-	(*GetBillingProjectCredentialsRequest)(nil),           // 249: rill.admin.v1.GetBillingProjectCredentialsRequest
-	(*GetBillingProjectCredentialsResponse)(nil),          // 250: rill.admin.v1.GetBillingProjectCredentialsResponse
-	(*TelemetryRequest)(nil),                              // 251: rill.admin.v1.TelemetryRequest
-	(*TelemetryResponse)(nil),                             // 252: rill.admin.v1.TelemetryResponse
-	(*RequestProjectAccessRequest)(nil),                   // 253: rill.admin.v1.RequestProjectAccessRequest
-	(*RequestProjectAccessResponse)(nil),                  // 254: rill.admin.v1.RequestProjectAccessResponse
-	(*GetProjectAccessRequestRequest)(nil),                // 255: rill.admin.v1.GetProjectAccessRequestRequest
-	(*GetProjectAccessRequestResponse)(nil),               // 256: rill.admin.v1.GetProjectAccessRequestResponse
-	(*ApproveProjectAccessRequest)(nil),                   // 257: rill.admin.v1.ApproveProjectAccessRequest
-	(*ApproveProjectAccessResponse)(nil),                  // 258: rill.admin.v1.ApproveProjectAccessResponse
-	(*DenyProjectAccessRequest)(nil),                      // 259: rill.admin.v1.DenyProjectAccessRequest
-	(*DenyProjectAccessResponse)(nil),                     // 260: rill.admin.v1.DenyProjectAccessResponse
-	(*ListOrganizationBillingIssuesRequest)(nil),          // 261: rill.admin.v1.ListOrganizationBillingIssuesRequest
-	(*ListOrganizationBillingIssuesResponse)(nil),         // 262: rill.admin.v1.ListOrganizationBillingIssuesResponse
-	(*User)(nil),                                      // 263: rill.admin.v1.User
-	(*Service)(nil),                                   // 264: rill.admin.v1.Service
-	(*Organization)(nil),                              // 265: rill.admin.v1.Organization
-	(*Subscription)(nil),                              // 266: rill.admin.v1.Subscription
-	(*UserQuotas)(nil),                                // 267: rill.admin.v1.UserQuotas
-	(*OrganizationQuotas)(nil),                        // 268: rill.admin.v1.OrganizationQuotas
-	(*Project)(nil),                                   // 269: rill.admin.v1.Project
-	(*Deployment)(nil),                                // 270: rill.admin.v1.Deployment
-	(*ProvisionerResource)(nil),                       // 271: rill.admin.v1.ProvisionerResource
-	(*OrganizationPermissions)(nil),                   // 272: rill.admin.v1.OrganizationPermissions
-	(*ProjectPermissions)(nil),                        // 273: rill.admin.v1.ProjectPermissions
-	(*MemberUser)(nil),                                // 274: rill.admin.v1.MemberUser
-	(*UserInvite)(nil),                                // 275: rill.admin.v1.UserInvite
-	(*WhitelistedDomain)(nil),                         // 276: rill.admin.v1.WhitelistedDomain
-	(*Bookmark)(nil),                                  // 277: rill.admin.v1.Bookmark
-	(*ServiceToken)(nil),                              // 278: rill.admin.v1.ServiceToken
-	(*MagicAuthToken)(nil),                            // 279: rill.admin.v1.MagicAuthToken
-	(*VirtualFile)(nil),                               // 280: rill.admin.v1.VirtualFile
-	(*ReportOptions)(nil),                             // 281: rill.admin.v1.ReportOptions
-	(*AlertOptions)(nil),                              // 282: rill.admin.v1.AlertOptions
-	(*BillingPlan)(nil),                               // 283: rill.admin.v1.BillingPlan
-	(*Quotas)(nil),                                    // 284: rill.admin.v1.Quotas
-	(*Usergroup)(nil),                                 // 285: rill.admin.v1.Usergroup
-	(*MemberUsergroup)(nil),                           // 286: rill.admin.v1.MemberUsergroup
-	(*BillingIssue)(nil),                              // 287: rill.admin.v1.BillingIssue
-	(*BillingIssueMetadata)(nil),                      // 288: rill.admin.v1.BillingIssueMetadata
-	(*BillingIssueMetadataOnTrial)(nil),               // 289: rill.admin.v1.BillingIssueMetadataOnTrial
-	(*BillingIssueMetadataTrialEnded)(nil),            // 290: rill.admin.v1.BillingIssueMetadataTrialEnded
-	(*BillingIssueMetadataNoPaymentMethod)(nil),       // 291: rill.admin.v1.BillingIssueMetadataNoPaymentMethod
-	(*BillingIssueMetadataNoBillableAddress)(nil),     // 292: rill.admin.v1.BillingIssueMetadataNoBillableAddress
-	(*BillingIssueMetadataPaymentFailed)(nil),         // 293: rill.admin.v1.BillingIssueMetadataPaymentFailed
-	(*BillingIssueMetadataPaymentFailedMeta)(nil),     // 294: rill.admin.v1.BillingIssueMetadataPaymentFailedMeta
-	(*BillingIssueMetadataSubscriptionCancelled)(nil), // 295: rill.admin.v1.BillingIssueMetadataSubscriptionCancelled
-	(*BillingIssueMetadataNeverSubscribed)(nil),       // 296: rill.admin.v1.BillingIssueMetadataNeverSubscribed
-	nil,                                      // 297: rill.admin.v1.SearchProjectNamesRequest.AnnotationsEntry
-	nil,                                      // 298: rill.admin.v1.GetProjectVariablesResponse.VariablesMapEntry
-	nil,                                      // 299: rill.admin.v1.UpdateProjectVariablesRequest.VariablesEntry
-	nil,                                      // 300: rill.admin.v1.GetIFrameRequest.QueryEntry
-	nil,                                      // 301: rill.admin.v1.CreateAssetResponse.SigningHeadersEntry
-	nil,                                      // 302: rill.admin.v1.SudoUpdateAnnotationsRequest.AnnotationsEntry
-	nil,                                      // 303: rill.admin.v1.GetGithubUserStatusResponse.OrganizationInstallationPermissionsEntry
-	(*ListGithubUserReposResponse_Repo)(nil), // 304: rill.admin.v1.ListGithubUserReposResponse.Repo
-	(*GetReportMetaResponse_URLs)(nil),       // 305: rill.admin.v1.GetReportMetaResponse.URLs
-	nil,                                      // 306: rill.admin.v1.GetReportMetaResponse.RecipientUrlsEntry
-	nil,                                      // 307: rill.admin.v1.GetAlertMetaRequest.AnnotationsEntry
-	nil,                                      // 308: rill.admin.v1.Project.AnnotationsEntry
-	(*timestamppb.Timestamp)(nil),            // 309: google.protobuf.Timestamp
-	(*structpb.Struct)(nil),                  // 310: google.protobuf.Struct
-	(*v1.Expression)(nil),                    // 311: rill.runtime.v1.Expression
-	(v1.ExportFormat)(0),                     // 312: rill.runtime.v1.ExportFormat
+	(*DeleteUserRequest)(nil),                             // 151: rill.admin.v1.DeleteUserRequest
+	(*DeleteUserResponse)(nil),                            // 152: rill.admin.v1.DeleteUserResponse
+	(*ListBookmarksRequest)(nil),                          // 153: rill.admin.v1.ListBookmarksRequest
+	(*ListBookmarksResponse)(nil),                         // 154: rill.admin.v1.ListBookmarksResponse
+	(*GetBookmarkRequest)(nil),                            // 155: rill.admin.v1.GetBookmarkRequest
+	(*GetBookmarkResponse)(nil),                           // 156: rill.admin.v1.GetBookmarkResponse
+	(*CreateBookmarkRequest)(nil),                         // 157: rill.admin.v1.CreateBookmarkRequest
+	(*CreateBookmarkResponse)(nil),                        // 158: rill.admin.v1.CreateBookmarkResponse
+	(*UpdateBookmarkRequest)(nil),                         // 159: rill.admin.v1.UpdateBookmarkRequest
+	(*UpdateBookmarkResponse)(nil),                        // 160: rill.admin.v1.UpdateBookmarkResponse
+	(*RemoveBookmarkRequest)(nil),                         // 161: rill.admin.v1.RemoveBookmarkRequest
+	(*RemoveBookmarkResponse)(nil),                        // 162: rill.admin.v1.RemoveBookmarkResponse
+	(*SearchUsersRequest)(nil),                            // 163: rill.admin.v1.SearchUsersRequest
+	(*SearchUsersResponse)(nil),                           // 164: rill.admin.v1.SearchUsersResponse
+	(*RevokeCurrentAuthTokenRequest)(nil),                 // 165: rill.admin.v1.RevokeCurrentAuthTokenRequest
+	(*RevokeCurrentAuthTokenResponse)(nil),                // 166: rill.admin.v1.RevokeCurrentAuthTokenResponse
+	(*IssueRepresentativeAuthTokenRequest)(nil),           // 167: rill.admin.v1.IssueRepresentativeAuthTokenRequest
+	(*IssueRepresentativeAuthTokenResponse)(nil),          // 168: rill.admin.v1.IssueRepresentativeAuthTokenResponse
+	(*RevokeServiceAuthTokenRequest)(nil),                 // 169: rill.admin.v1.RevokeServiceAuthTokenRequest
+	(*RevokeServiceAuthTokenResponse)(nil),                // 170: rill.admin.v1.RevokeServiceAuthTokenResponse
+	(*IssueServiceAuthTokenRequest)(nil),                  // 171: rill.admin.v1.IssueServiceAuthTokenRequest
+	(*IssueServiceAuthTokenResponse)(nil),                 // 172: rill.admin.v1.IssueServiceAuthTokenResponse
+	(*ListServiceAuthTokensRequest)(nil),                  // 173: rill.admin.v1.ListServiceAuthTokensRequest
+	(*ListServiceAuthTokensResponse)(nil),                 // 174: rill.admin.v1.ListServiceAuthTokensResponse
+	(*IssueMagicAuthTokenRequest)(nil),                    // 175: rill.admin.v1.IssueMagicAuthTokenRequest
+	(*IssueMagicAuthTokenResponse)(nil),                   // 176: rill.admin.v1.IssueMagicAuthTokenResponse
+	(*ListMagicAuthTokensRequest)(nil),                    // 177: rill.admin.v1.ListMagicAuthTokensRequest
+	(*ListMagicAuthTokensResponse)(nil),                   // 178: rill.admin.v1.ListMagicAuthTokensResponse
+	(*GetCurrentMagicAuthTokenRequest)(nil),               // 179: rill.admin.v1.GetCurrentMagicAuthTokenRequest
+	(*GetCurrentMagicAuthTokenResponse)(nil),              // 180: rill.admin.v1.GetCurrentMagicAuthTokenResponse
+	(*RevokeMagicAuthTokenRequest)(nil),                   // 181: rill.admin.v1.RevokeMagicAuthTokenRequest
+	(*RevokeMagicAuthTokenResponse)(nil),                  // 182: rill.admin.v1.RevokeMagicAuthTokenResponse
+	(*GetGithubRepoStatusRequest)(nil),                    // 183: rill.admin.v1.GetGithubRepoStatusRequest
+	(*GetGithubRepoStatusResponse)(nil),                   // 184: rill.admin.v1.GetGithubRepoStatusResponse
+	(*GetGithubUserStatusRequest)(nil),                    // 185: rill.admin.v1.GetGithubUserStatusRequest
+	(*GetGithubUserStatusResponse)(nil),                   // 186: rill.admin.v1.GetGithubUserStatusResponse
+	(*ListGithubUserReposRequest)(nil),                    // 187: rill.admin.v1.ListGithubUserReposRequest
+	(*ListGithubUserReposResponse)(nil),                   // 188: rill.admin.v1.ListGithubUserReposResponse
+	(*ConnectProjectToGithubRequest)(nil),                 // 189: rill.admin.v1.ConnectProjectToGithubRequest
+	(*ConnectProjectToGithubResponse)(nil),                // 190: rill.admin.v1.ConnectProjectToGithubResponse
+	(*UploadProjectAssetsRequest)(nil),                    // 191: rill.admin.v1.UploadProjectAssetsRequest
+	(*UploadProjectAssetsResponse)(nil),                   // 192: rill.admin.v1.UploadProjectAssetsResponse
+	(*GetCloneCredentialsRequest)(nil),                    // 193: rill.admin.v1.GetCloneCredentialsRequest
+	(*GetCloneCredentialsResponse)(nil),                   // 194: rill.admin.v1.GetCloneCredentialsResponse
+	(*CreateWhitelistedDomainRequest)(nil),                // 195: rill.admin.v1.CreateWhitelistedDomainRequest
+	(*CreateWhitelistedDomainResponse)(nil),               // 196: rill.admin.v1.CreateWhitelistedDomainResponse
+	(*RemoveWhitelistedDomainRequest)(nil),                // 197: rill.admin.v1.RemoveWhitelistedDomainRequest
+	(*RemoveWhitelistedDomainResponse)(nil),               // 198: rill.admin.v1.RemoveWhitelistedDomainResponse
+	(*ListWhitelistedDomainsRequest)(nil),                 // 199: rill.admin.v1.ListWhitelistedDomainsRequest
+	(*ListWhitelistedDomainsResponse)(nil),                // 200: rill.admin.v1.ListWhitelistedDomainsResponse
+	(*CreateProjectWhitelistedDomainRequest)(nil),         // 201: rill.admin.v1.CreateProjectWhitelistedDomainRequest
+	(*CreateProjectWhitelistedDomainResponse)(nil),        // 202: rill.admin.v1.CreateProjectWhitelistedDomainResponse
+	(*RemoveProjectWhitelistedDomainRequest)(nil),         // 203: rill.admin.v1.RemoveProjectWhitelistedDomainRequest
+	(*RemoveProjectWhitelistedDomainResponse)(nil),        // 204: rill.admin.v1.RemoveProjectWhitelistedDomainResponse
+	(*ListProjectWhitelistedDomainsRequest)(nil),          // 205: rill.admin.v1.ListProjectWhitelistedDomainsRequest
+	(*ListProjectWhitelistedDomainsResponse)(nil),         // 206: rill.admin.v1.ListProjectWhitelistedDomainsResponse
+	(*GetRepoMetaRequest)(nil),                            // 207: rill.admin.v1.GetRepoMetaRequest
+	(*GetRepoMetaResponse)(nil),                           // 208: rill.admin.v1.GetRepoMetaResponse
+	(*PullVirtualRepoRequest)(nil),                        // 209: rill.admin.v1.PullVirtualRepoRequest
+	(*PullVirtualRepoResponse)(nil),                       // 210: rill.admin.v1.PullVirtualRepoResponse
+	(*GetReportMetaRequest)(nil),                          // 211: rill.admin.v1.GetReportMetaRequest
+	(*GetReportMetaResponse)(nil),                         // 212: rill.admin.v1.GetReportMetaResponse
+	(*GetAlertMetaRequest)(nil),                           // 213: rill.admin.v1.GetAlertMetaRequest
+	(*GetAlertMetaResponse)(nil),                          // 214: rill.admin.v1.GetAlertMetaResponse
+	(*CreateReportRequest)(nil),                           // 215: rill.admin.v1.CreateReportRequest
+	(*CreateReportResponse)(nil),                          // 216: rill.admin.v1.CreateReportResponse
+	(*EditReportRequest)(nil),                             // 217: rill.admin.v1.EditReportRequest
+	(*EditReportResponse)(nil),                            // 218: rill.admin.v1.EditReportResponse
+	(*UnsubscribeReportRequest)(nil),                      // 219: rill.admin.v1.UnsubscribeReportRequest
+	(*UnsubscribeReportResponse)(nil),                     // 220: rill.admin.v1.UnsubscribeReportResponse
+	(*DeleteReportRequest)(nil),                           // 221: rill.admin.v1.DeleteReportRequest
+	(*DeleteReportResponse)(nil),                          // 222: rill.admin.v1.DeleteReportResponse
+	(*TriggerReportRequest)(nil),                          // 223: rill.admin.v1.TriggerReportRequest
+	(*TriggerReportResponse)(nil),                         // 224: rill.admin.v1.TriggerReportResponse
+	(*GenerateReportYAMLRequest)(nil),                     // 225: rill.admin.v1.GenerateReportYAMLRequest
+	(*GenerateReportYAMLResponse)(nil),                    // 226: rill.admin.v1.GenerateReportYAMLResponse
+	(*CreateAlertRequest)(nil),                            // 227: rill.admin.v1.CreateAlertRequest
+	(*CreateAlertResponse)(nil),                           // 228: rill.admin.v1.CreateAlertResponse
+	(*EditAlertRequest)(nil),                              // 229: rill.admin.v1.EditAlertRequest
+	(*EditAlertResponse)(nil),                             // 230: rill.admin.v1.EditAlertResponse
+	(*UnsubscribeAlertRequest)(nil),                       // 231: rill.admin.v1.UnsubscribeAlertRequest
+	(*UnsubscribeAlertResponse)(nil),                      // 232: rill.admin.v1.UnsubscribeAlertResponse
+	(*DeleteAlertRequest)(nil),                            // 233: rill.admin.v1.DeleteAlertRequest
+	(*DeleteAlertResponse)(nil),                           // 234: rill.admin.v1.DeleteAlertResponse
+	(*GenerateAlertYAMLRequest)(nil),                      // 235: rill.admin.v1.GenerateAlertYAMLRequest
+	(*GenerateAlertYAMLResponse)(nil),                     // 236: rill.admin.v1.GenerateAlertYAMLResponse
+	(*GetAlertYAMLRequest)(nil),                           // 237: rill.admin.v1.GetAlertYAMLRequest
+	(*GetAlertYAMLResponse)(nil),                          // 238: rill.admin.v1.GetAlertYAMLResponse
+	(*GetBillingSubscriptionRequest)(nil),                 // 239: rill.admin.v1.GetBillingSubscriptionRequest
+	(*GetBillingSubscriptionResponse)(nil),                // 240: rill.admin.v1.GetBillingSubscriptionResponse
+	(*UpdateBillingSubscriptionRequest)(nil),              // 241: rill.admin.v1.UpdateBillingSubscriptionRequest
+	(*UpdateBillingSubscriptionResponse)(nil),             // 242: rill.admin.v1.UpdateBillingSubscriptionResponse
+	(*CancelBillingSubscriptionRequest)(nil),              // 243: rill.admin.v1.CancelBillingSubscriptionRequest
+	(*CancelBillingSubscriptionResponse)(nil),             // 244: rill.admin.v1.CancelBillingSubscriptionResponse
+	(*RenewBillingSubscriptionRequest)(nil),               // 245: rill.admin.v1.RenewBillingSubscriptionRequest
+	(*RenewBillingSubscriptionResponse)(nil),              // 246: rill.admin.v1.RenewBillingSubscriptionResponse
+	(*GetPaymentsPortalURLRequest)(nil),                   // 247: rill.admin.v1.GetPaymentsPortalURLRequest
+	(*GetPaymentsPortalURLResponse)(nil),                  // 248: rill.admin.v1.GetPaymentsPortalURLResponse
+	(*ListPublicBillingPlansRequest)(nil),                 // 249: rill.admin.v1.ListPublicBillingPlansRequest
+	(*ListPublicBillingPlansResponse)(nil),                // 250: rill.admin.v1.ListPublicBillingPlansResponse
+	(*GetBillingProjectCredentialsRequest)(nil),           // 251: rill.admin.v1.GetBillingProjectCredentialsRequest
+	(*GetBillingProjectCredentialsResponse)(nil),          // 252: rill.admin.v1.GetBillingProjectCredentialsResponse
+	(*TelemetryRequest)(nil),                              // 253: rill.admin.v1.TelemetryRequest
+	(*TelemetryResponse)(nil),                             // 254: rill.admin.v1.TelemetryResponse
+	(*RequestProjectAccessRequest)(nil),                   // 255: rill.admin.v1.RequestProjectAccessRequest
+	(*RequestProjectAccessResponse)(nil),                  // 256: rill.admin.v1.RequestProjectAccessResponse
+	(*GetProjectAccessRequestRequest)(nil),                // 257: rill.admin.v1.GetProjectAccessRequestRequest
+	(*GetProjectAccessRequestResponse)(nil),               // 258: rill.admin.v1.GetProjectAccessRequestResponse
+	(*ApproveProjectAccessRequest)(nil),                   // 259: rill.admin.v1.ApproveProjectAccessRequest
+	(*ApproveProjectAccessResponse)(nil),                  // 260: rill.admin.v1.ApproveProjectAccessResponse
+	(*DenyProjectAccessRequest)(nil),                      // 261: rill.admin.v1.DenyProjectAccessRequest
+	(*DenyProjectAccessResponse)(nil),                     // 262: rill.admin.v1.DenyProjectAccessResponse
+	(*ListOrganizationBillingIssuesRequest)(nil),          // 263: rill.admin.v1.ListOrganizationBillingIssuesRequest
+	(*ListOrganizationBillingIssuesResponse)(nil),         // 264: rill.admin.v1.ListOrganizationBillingIssuesResponse
+	(*User)(nil),                                      // 265: rill.admin.v1.User
+	(*Service)(nil),                                   // 266: rill.admin.v1.Service
+	(*Organization)(nil),                              // 267: rill.admin.v1.Organization
+	(*Subscription)(nil),                              // 268: rill.admin.v1.Subscription
+	(*UserQuotas)(nil),                                // 269: rill.admin.v1.UserQuotas
+	(*OrganizationQuotas)(nil),                        // 270: rill.admin.v1.OrganizationQuotas
+	(*Project)(nil),                                   // 271: rill.admin.v1.Project
+	(*Deployment)(nil),                                // 272: rill.admin.v1.Deployment
+	(*ProvisionerResource)(nil),                       // 273: rill.admin.v1.ProvisionerResource
+	(*OrganizationPermissions)(nil),                   // 274: rill.admin.v1.OrganizationPermissions
+	(*ProjectPermissions)(nil),                        // 275: rill.admin.v1.ProjectPermissions
+	(*MemberUser)(nil),                                // 276: rill.admin.v1.MemberUser
+	(*UserInvite)(nil),                                // 277: rill.admin.v1.UserInvite
+	(*WhitelistedDomain)(nil),                         // 278: rill.admin.v1.WhitelistedDomain
+	(*Bookmark)(nil),                                  // 279: rill.admin.v1.Bookmark
+	(*ServiceToken)(nil),                              // 280: rill.admin.v1.ServiceToken
+	(*MagicAuthToken)(nil),                            // 281: rill.admin.v1.MagicAuthToken
+	(*VirtualFile)(nil),                               // 282: rill.admin.v1.VirtualFile
+	(*ReportOptions)(nil),                             // 283: rill.admin.v1.ReportOptions
+	(*AlertOptions)(nil),                              // 284: rill.admin.v1.AlertOptions
+	(*BillingPlan)(nil),                               // 285: rill.admin.v1.BillingPlan
+	(*Quotas)(nil),                                    // 286: rill.admin.v1.Quotas
+	(*Usergroup)(nil),                                 // 287: rill.admin.v1.Usergroup
+	(*MemberUsergroup)(nil),                           // 288: rill.admin.v1.MemberUsergroup
+	(*BillingIssue)(nil),                              // 289: rill.admin.v1.BillingIssue
+	(*BillingIssueMetadata)(nil),                      // 290: rill.admin.v1.BillingIssueMetadata
+	(*BillingIssueMetadataOnTrial)(nil),               // 291: rill.admin.v1.BillingIssueMetadataOnTrial
+	(*BillingIssueMetadataTrialEnded)(nil),            // 292: rill.admin.v1.BillingIssueMetadataTrialEnded
+	(*BillingIssueMetadataNoPaymentMethod)(nil),       // 293: rill.admin.v1.BillingIssueMetadataNoPaymentMethod
+	(*BillingIssueMetadataNoBillableAddress)(nil),     // 294: rill.admin.v1.BillingIssueMetadataNoBillableAddress
+	(*BillingIssueMetadataPaymentFailed)(nil),         // 295: rill.admin.v1.BillingIssueMetadataPaymentFailed
+	(*BillingIssueMetadataPaymentFailedMeta)(nil),     // 296: rill.admin.v1.BillingIssueMetadataPaymentFailedMeta
+	(*BillingIssueMetadataSubscriptionCancelled)(nil), // 297: rill.admin.v1.BillingIssueMetadataSubscriptionCancelled
+	(*BillingIssueMetadataNeverSubscribed)(nil),       // 298: rill.admin.v1.BillingIssueMetadataNeverSubscribed
+	nil,                                      // 299: rill.admin.v1.SearchProjectNamesRequest.AnnotationsEntry
+	nil,                                      // 300: rill.admin.v1.GetProjectVariablesResponse.VariablesMapEntry
+	nil,                                      // 301: rill.admin.v1.UpdateProjectVariablesRequest.VariablesEntry
+	nil,                                      // 302: rill.admin.v1.GetIFrameRequest.QueryEntry
+	nil,                                      // 303: rill.admin.v1.CreateAssetResponse.SigningHeadersEntry
+	nil,                                      // 304: rill.admin.v1.SudoUpdateAnnotationsRequest.AnnotationsEntry
+	nil,                                      // 305: rill.admin.v1.GetGithubUserStatusResponse.OrganizationInstallationPermissionsEntry
+	(*ListGithubUserReposResponse_Repo)(nil), // 306: rill.admin.v1.ListGithubUserReposResponse.Repo
+	(*GetReportMetaResponse_URLs)(nil),       // 307: rill.admin.v1.GetReportMetaResponse.URLs
+	nil,                                      // 308: rill.admin.v1.GetReportMetaResponse.RecipientUrlsEntry
+	nil,                                      // 309: rill.admin.v1.GetAlertMetaRequest.AnnotationsEntry
+	nil,                                      // 310: rill.admin.v1.Project.AnnotationsEntry
+	(*timestamppb.Timestamp)(nil),            // 311: google.protobuf.Timestamp
+	(*structpb.Struct)(nil),                  // 312: google.protobuf.Struct
+	(*v1.Expression)(nil),                    // 313: rill.runtime.v1.Expression
+	(v1.ExportFormat)(0),                     // 314: rill.runtime.v1.ExportFormat
 }
 var file_rill_admin_v1_api_proto_depIdxs = []int32{
-	309, // 0: rill.admin.v1.PingResponse.time:type_name -> google.protobuf.Timestamp
-	265, // 1: rill.admin.v1.ListOrganizationsResponse.organizations:type_name -> rill.admin.v1.Organization
-	265, // 2: rill.admin.v1.GetOrganizationResponse.organization:type_name -> rill.admin.v1.Organization
-	272, // 3: rill.admin.v1.GetOrganizationResponse.permissions:type_name -> rill.admin.v1.OrganizationPermissions
-	265, // 4: rill.admin.v1.CreateOrganizationResponse.organization:type_name -> rill.admin.v1.Organization
-	265, // 5: rill.admin.v1.UpdateOrganizationResponse.organization:type_name -> rill.admin.v1.Organization
-	269, // 6: rill.admin.v1.ListProjectsForOrganizationResponse.projects:type_name -> rill.admin.v1.Project
-	269, // 7: rill.admin.v1.GetProjectResponse.project:type_name -> rill.admin.v1.Project
-	270, // 8: rill.admin.v1.GetProjectResponse.prod_deployment:type_name -> rill.admin.v1.Deployment
-	273, // 9: rill.admin.v1.GetProjectResponse.project_permissions:type_name -> rill.admin.v1.ProjectPermissions
-	269, // 10: rill.admin.v1.GetProjectByIDResponse.project:type_name -> rill.admin.v1.Project
-	297, // 11: rill.admin.v1.SearchProjectNamesRequest.annotations:type_name -> rill.admin.v1.SearchProjectNamesRequest.AnnotationsEntry
+	311, // 0: rill.admin.v1.PingResponse.time:type_name -> google.protobuf.Timestamp
+	267, // 1: rill.admin.v1.ListOrganizationsResponse.organizations:type_name -> rill.admin.v1.Organization
+	267, // 2: rill.admin.v1.GetOrganizationResponse.organization:type_name -> rill.admin.v1.Organization
+	274, // 3: rill.admin.v1.GetOrganizationResponse.permissions:type_name -> rill.admin.v1.OrganizationPermissions
+	267, // 4: rill.admin.v1.CreateOrganizationResponse.organization:type_name -> rill.admin.v1.Organization
+	267, // 5: rill.admin.v1.UpdateOrganizationResponse.organization:type_name -> rill.admin.v1.Organization
+	271, // 6: rill.admin.v1.ListProjectsForOrganizationResponse.projects:type_name -> rill.admin.v1.Project
+	271, // 7: rill.admin.v1.GetProjectResponse.project:type_name -> rill.admin.v1.Project
+	272, // 8: rill.admin.v1.GetProjectResponse.prod_deployment:type_name -> rill.admin.v1.Deployment
+	275, // 9: rill.admin.v1.GetProjectResponse.project_permissions:type_name -> rill.admin.v1.ProjectPermissions
+	271, // 10: rill.admin.v1.GetProjectByIDResponse.project:type_name -> rill.admin.v1.Project
+	299, // 11: rill.admin.v1.SearchProjectNamesRequest.annotations:type_name -> rill.admin.v1.SearchProjectNamesRequest.AnnotationsEntry
 	29,  // 12: rill.admin.v1.GetProjectVariablesResponse.variables:type_name -> rill.admin.v1.ProjectVariable
-	298, // 13: rill.admin.v1.GetProjectVariablesResponse.variables_map:type_name -> rill.admin.v1.GetProjectVariablesResponse.VariablesMapEntry
-	309, // 14: rill.admin.v1.ProjectVariable.created_on:type_name -> google.protobuf.Timestamp
-	309, // 15: rill.admin.v1.ProjectVariable.updated_on:type_name -> google.protobuf.Timestamp
-	299, // 16: rill.admin.v1.UpdateProjectVariablesRequest.variables:type_name -> rill.admin.v1.UpdateProjectVariablesRequest.VariablesEntry
+	300, // 13: rill.admin.v1.GetProjectVariablesResponse.variables_map:type_name -> rill.admin.v1.GetProjectVariablesResponse.VariablesMapEntry
+	311, // 14: rill.admin.v1.ProjectVariable.created_on:type_name -> google.protobuf.Timestamp
+	311, // 15: rill.admin.v1.ProjectVariable.updated_on:type_name -> google.protobuf.Timestamp
+	301, // 16: rill.admin.v1.UpdateProjectVariablesRequest.variables:type_name -> rill.admin.v1.UpdateProjectVariablesRequest.VariablesEntry
 	29,  // 17: rill.admin.v1.UpdateProjectVariablesResponse.variables:type_name -> rill.admin.v1.ProjectVariable
-	263, // 18: rill.admin.v1.SearchProjectUsersResponse.users:type_name -> rill.admin.v1.User
-	310, // 19: rill.admin.v1.GetDeploymentCredentialsRequest.attributes:type_name -> google.protobuf.Struct
-	310, // 20: rill.admin.v1.GetIFrameRequest.attributes:type_name -> google.protobuf.Struct
-	300, // 21: rill.admin.v1.GetIFrameRequest.query:type_name -> rill.admin.v1.GetIFrameRequest.QueryEntry
-	264, // 22: rill.admin.v1.ListServicesResponse.services:type_name -> rill.admin.v1.Service
-	264, // 23: rill.admin.v1.CreateServiceResponse.service:type_name -> rill.admin.v1.Service
-	264, // 24: rill.admin.v1.UpdateServiceResponse.service:type_name -> rill.admin.v1.Service
-	264, // 25: rill.admin.v1.DeleteServiceResponse.service:type_name -> rill.admin.v1.Service
-	269, // 26: rill.admin.v1.CreateProjectResponse.project:type_name -> rill.admin.v1.Project
-	269, // 27: rill.admin.v1.UpdateProjectResponse.project:type_name -> rill.admin.v1.Project
-	301, // 28: rill.admin.v1.CreateAssetResponse.signing_headers:type_name -> rill.admin.v1.CreateAssetResponse.SigningHeadersEntry
-	310, // 29: rill.admin.v1.ProvisionRequest.args:type_name -> google.protobuf.Struct
-	271, // 30: rill.admin.v1.ProvisionResponse.resource:type_name -> rill.admin.v1.ProvisionerResource
-	274, // 31: rill.admin.v1.ListOrganizationMemberUsersResponse.members:type_name -> rill.admin.v1.MemberUser
-	275, // 32: rill.admin.v1.ListOrganizationInvitesResponse.invites:type_name -> rill.admin.v1.UserInvite
-	263, // 33: rill.admin.v1.ListSuperusersResponse.users:type_name -> rill.admin.v1.User
-	263, // 34: rill.admin.v1.SudoGetResourceResponse.user:type_name -> rill.admin.v1.User
-	265, // 35: rill.admin.v1.SudoGetResourceResponse.org:type_name -> rill.admin.v1.Organization
-	269, // 36: rill.admin.v1.SudoGetResourceResponse.project:type_name -> rill.admin.v1.Project
-	270, // 37: rill.admin.v1.SudoGetResourceResponse.deployment:type_name -> rill.admin.v1.Deployment
-	270, // 38: rill.admin.v1.SudoGetResourceResponse.instance:type_name -> rill.admin.v1.Deployment
-	265, // 39: rill.admin.v1.SudoUpdateOrganizationQuotasResponse.organization:type_name -> rill.admin.v1.Organization
-	265, // 40: rill.admin.v1.SudoUpdateOrganizationBillingCustomerResponse.organization:type_name -> rill.admin.v1.Organization
-	266, // 41: rill.admin.v1.SudoUpdateOrganizationBillingCustomerResponse.subscription:type_name -> rill.admin.v1.Subscription
-	309, // 42: rill.admin.v1.SudoExtendTrialResponse.trial_end:type_name -> google.protobuf.Timestamp
-	265, // 43: rill.admin.v1.SudoUpdateOrganizationCustomDomainResponse.organization:type_name -> rill.admin.v1.Organization
-	263, // 44: rill.admin.v1.SudoUpdateUserQuotasResponse.user:type_name -> rill.admin.v1.User
-	302, // 45: rill.admin.v1.SudoUpdateAnnotationsRequest.annotations:type_name -> rill.admin.v1.SudoUpdateAnnotationsRequest.AnnotationsEntry
-	269, // 46: rill.admin.v1.SudoUpdateAnnotationsResponse.project:type_name -> rill.admin.v1.Project
+	265, // 18: rill.admin.v1.SearchProjectUsersResponse.users:type_name -> rill.admin.v1.User
+	312, // 19: rill.admin.v1.GetDeploymentCredentialsRequest.attributes:type_name -> google.protobuf.Struct
+	312, // 20: rill.admin.v1.GetIFrameRequest.attributes:type_name -> google.protobuf.Struct
+	302, // 21: rill.admin.v1.GetIFrameRequest.query:type_name -> rill.admin.v1.GetIFrameRequest.QueryEntry
+	266, // 22: rill.admin.v1.ListServicesResponse.services:type_name -> rill.admin.v1.Service
+	266, // 23: rill.admin.v1.CreateServiceResponse.service:type_name -> rill.admin.v1.Service
+	266, // 24: rill.admin.v1.UpdateServiceResponse.service:type_name -> rill.admin.v1.Service
+	266, // 25: rill.admin.v1.DeleteServiceResponse.service:type_name -> rill.admin.v1.Service
+	271, // 26: rill.admin.v1.CreateProjectResponse.project:type_name -> rill.admin.v1.Project
+	271, // 27: rill.admin.v1.UpdateProjectResponse.project:type_name -> rill.admin.v1.Project
+	303, // 28: rill.admin.v1.CreateAssetResponse.signing_headers:type_name -> rill.admin.v1.CreateAssetResponse.SigningHeadersEntry
+	312, // 29: rill.admin.v1.ProvisionRequest.args:type_name -> google.protobuf.Struct
+	273, // 30: rill.admin.v1.ProvisionResponse.resource:type_name -> rill.admin.v1.ProvisionerResource
+	276, // 31: rill.admin.v1.ListOrganizationMemberUsersResponse.members:type_name -> rill.admin.v1.MemberUser
+	277, // 32: rill.admin.v1.ListOrganizationInvitesResponse.invites:type_name -> rill.admin.v1.UserInvite
+	265, // 33: rill.admin.v1.ListSuperusersResponse.users:type_name -> rill.admin.v1.User
+	265, // 34: rill.admin.v1.SudoGetResourceResponse.user:type_name -> rill.admin.v1.User
+	267, // 35: rill.admin.v1.SudoGetResourceResponse.org:type_name -> rill.admin.v1.Organization
+	271, // 36: rill.admin.v1.SudoGetResourceResponse.project:type_name -> rill.admin.v1.Project
+	272, // 37: rill.admin.v1.SudoGetResourceResponse.deployment:type_name -> rill.admin.v1.Deployment
+	272, // 38: rill.admin.v1.SudoGetResourceResponse.instance:type_name -> rill.admin.v1.Deployment
+	267, // 39: rill.admin.v1.SudoUpdateOrganizationQuotasResponse.organization:type_name -> rill.admin.v1.Organization
+	267, // 40: rill.admin.v1.SudoUpdateOrganizationBillingCustomerResponse.organization:type_name -> rill.admin.v1.Organization
+	268, // 41: rill.admin.v1.SudoUpdateOrganizationBillingCustomerResponse.subscription:type_name -> rill.admin.v1.Subscription
+	311, // 42: rill.admin.v1.SudoExtendTrialResponse.trial_end:type_name -> google.protobuf.Timestamp
+	267, // 43: rill.admin.v1.SudoUpdateOrganizationCustomDomainResponse.organization:type_name -> rill.admin.v1.Organization
+	265, // 44: rill.admin.v1.SudoUpdateUserQuotasResponse.user:type_name -> rill.admin.v1.User
+	304, // 45: rill.admin.v1.SudoUpdateAnnotationsRequest.annotations:type_name -> rill.admin.v1.SudoUpdateAnnotationsRequest.AnnotationsEntry
+	271, // 46: rill.admin.v1.SudoUpdateAnnotationsResponse.project:type_name -> rill.admin.v1.Project
 	3,   // 47: rill.admin.v1.SudoDeleteOrganizationBillingIssueRequest.type:type_name -> rill.admin.v1.BillingIssueType
-	274, // 48: rill.admin.v1.ListProjectMemberUsersResponse.members:type_name -> rill.admin.v1.MemberUser
-	275, // 49: rill.admin.v1.ListProjectInvitesResponse.invites:type_name -> rill.admin.v1.UserInvite
-	285, // 50: rill.admin.v1.GetUsergroupResponse.usergroup:type_name -> rill.admin.v1.Usergroup
-	286, // 51: rill.admin.v1.ListOrganizationMemberUsergroupsResponse.members:type_name -> rill.admin.v1.MemberUsergroup
-	286, // 52: rill.admin.v1.ListProjectMemberUsergroupsResponse.members:type_name -> rill.admin.v1.MemberUsergroup
-	274, // 53: rill.admin.v1.ListUsergroupMemberUsersResponse.members:type_name -> rill.admin.v1.MemberUser
-	263, // 54: rill.admin.v1.GetCurrentUserResponse.user:type_name -> rill.admin.v1.User
+	276, // 48: rill.admin.v1.ListProjectMemberUsersResponse.members:type_name -> rill.admin.v1.MemberUser
+	277, // 49: rill.admin.v1.ListProjectInvitesResponse.invites:type_name -> rill.admin.v1.UserInvite
+	287, // 50: rill.admin.v1.GetUsergroupResponse.usergroup:type_name -> rill.admin.v1.Usergroup
+	288, // 51: rill.admin.v1.ListOrganizationMemberUsergroupsResponse.members:type_name -> rill.admin.v1.MemberUsergroup
+	288, // 52: rill.admin.v1.ListProjectMemberUsergroupsResponse.members:type_name -> rill.admin.v1.MemberUsergroup
+	276, // 53: rill.admin.v1.ListUsergroupMemberUsersResponse.members:type_name -> rill.admin.v1.MemberUser
+	265, // 54: rill.admin.v1.GetCurrentUserResponse.user:type_name -> rill.admin.v1.User
 	148, // 55: rill.admin.v1.GetCurrentUserResponse.preferences:type_name -> rill.admin.v1.UserPreferences
-	263, // 56: rill.admin.v1.GetUserResponse.user:type_name -> rill.admin.v1.User
+	265, // 56: rill.admin.v1.GetUserResponse.user:type_name -> rill.admin.v1.User
 	148, // 57: rill.admin.v1.UpdateUserPreferencesRequest.preferences:type_name -> rill.admin.v1.UserPreferences
 	148, // 58: rill.admin.v1.UpdateUserPreferencesResponse.preferences:type_name -> rill.admin.v1.UserPreferences
-	277, // 59: rill.admin.v1.ListBookmarksResponse.bookmarks:type_name -> rill.admin.v1.Bookmark
-	277, // 60: rill.admin.v1.GetBookmarkResponse.bookmark:type_name -> rill.admin.v1.Bookmark
-	277, // 61: rill.admin.v1.CreateBookmarkResponse.bookmark:type_name -> rill.admin.v1.Bookmark
-	263, // 62: rill.admin.v1.SearchUsersResponse.users:type_name -> rill.admin.v1.User
-	278, // 63: rill.admin.v1.ListServiceAuthTokensResponse.tokens:type_name -> rill.admin.v1.ServiceToken
-	311, // 64: rill.admin.v1.IssueMagicAuthTokenRequest.filter:type_name -> rill.runtime.v1.Expression
-	279, // 65: rill.admin.v1.ListMagicAuthTokensResponse.tokens:type_name -> rill.admin.v1.MagicAuthToken
-	279, // 66: rill.admin.v1.GetCurrentMagicAuthTokenResponse.token:type_name -> rill.admin.v1.MagicAuthToken
+	279, // 59: rill.admin.v1.ListBookmarksResponse.bookmarks:type_name -> rill.admin.v1.Bookmark
+	279, // 60: rill.admin.v1.GetBookmarkResponse.bookmark:type_name -> rill.admin.v1.Bookmark
+	279, // 61: rill.admin.v1.CreateBookmarkResponse.bookmark:type_name -> rill.admin.v1.Bookmark
+	265, // 62: rill.admin.v1.SearchUsersResponse.users:type_name -> rill.admin.v1.User
+	280, // 63: rill.admin.v1.ListServiceAuthTokensResponse.tokens:type_name -> rill.admin.v1.ServiceToken
+	313, // 64: rill.admin.v1.IssueMagicAuthTokenRequest.filter:type_name -> rill.runtime.v1.Expression
+	281, // 65: rill.admin.v1.ListMagicAuthTokensResponse.tokens:type_name -> rill.admin.v1.MagicAuthToken
+	281, // 66: rill.admin.v1.GetCurrentMagicAuthTokenResponse.token:type_name -> rill.admin.v1.MagicAuthToken
 	0,   // 67: rill.admin.v1.GetGithubUserStatusResponse.user_installation_permission:type_name -> rill.admin.v1.GithubPermission
 	303, // 68: rill.admin.v1.GetGithubUserStatusResponse.organization_installation_permissions:type_name -> rill.admin.v1.GetGithubUserStatusResponse.OrganizationInstallationPermissionsEntry
 	304, // 69: rill.admin.v1.ListGithubUserReposResponse.repos:type_name -> rill.admin.v1.ListGithubUserReposResponse.Repo
@@ -24703,7 +24789,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[146].Exporter = func(v any, i int) any {
-			switch v := v.(*ListBookmarksRequest); i {
+			switch v := v.(*DeleteUserRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -24715,7 +24801,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[147].Exporter = func(v any, i int) any {
-			switch v := v.(*ListBookmarksResponse); i {
+			switch v := v.(*DeleteUserResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -24727,7 +24813,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[148].Exporter = func(v any, i int) any {
-			switch v := v.(*GetBookmarkRequest); i {
+			switch v := v.(*ListBookmarksRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -24739,7 +24825,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[149].Exporter = func(v any, i int) any {
-			switch v := v.(*GetBookmarkResponse); i {
+			switch v := v.(*ListBookmarksResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -24751,7 +24837,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[150].Exporter = func(v any, i int) any {
-			switch v := v.(*CreateBookmarkRequest); i {
+			switch v := v.(*GetBookmarkRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -24763,7 +24849,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[151].Exporter = func(v any, i int) any {
-			switch v := v.(*CreateBookmarkResponse); i {
+			switch v := v.(*GetBookmarkResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -24775,7 +24861,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[152].Exporter = func(v any, i int) any {
-			switch v := v.(*UpdateBookmarkRequest); i {
+			switch v := v.(*CreateBookmarkRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -24787,7 +24873,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[153].Exporter = func(v any, i int) any {
-			switch v := v.(*UpdateBookmarkResponse); i {
+			switch v := v.(*CreateBookmarkResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -24799,7 +24885,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[154].Exporter = func(v any, i int) any {
-			switch v := v.(*RemoveBookmarkRequest); i {
+			switch v := v.(*UpdateBookmarkRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -24811,7 +24897,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[155].Exporter = func(v any, i int) any {
-			switch v := v.(*RemoveBookmarkResponse); i {
+			switch v := v.(*UpdateBookmarkResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -24823,7 +24909,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[156].Exporter = func(v any, i int) any {
-			switch v := v.(*SearchUsersRequest); i {
+			switch v := v.(*RemoveBookmarkRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -24835,7 +24921,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[157].Exporter = func(v any, i int) any {
-			switch v := v.(*SearchUsersResponse); i {
+			switch v := v.(*RemoveBookmarkResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -24847,7 +24933,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[158].Exporter = func(v any, i int) any {
-			switch v := v.(*RevokeCurrentAuthTokenRequest); i {
+			switch v := v.(*SearchUsersRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -24859,7 +24945,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[159].Exporter = func(v any, i int) any {
-			switch v := v.(*RevokeCurrentAuthTokenResponse); i {
+			switch v := v.(*SearchUsersResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -24871,7 +24957,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[160].Exporter = func(v any, i int) any {
-			switch v := v.(*IssueRepresentativeAuthTokenRequest); i {
+			switch v := v.(*RevokeCurrentAuthTokenRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -24883,7 +24969,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[161].Exporter = func(v any, i int) any {
-			switch v := v.(*IssueRepresentativeAuthTokenResponse); i {
+			switch v := v.(*RevokeCurrentAuthTokenResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -24895,7 +24981,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[162].Exporter = func(v any, i int) any {
-			switch v := v.(*RevokeServiceAuthTokenRequest); i {
+			switch v := v.(*IssueRepresentativeAuthTokenRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -24907,7 +24993,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[163].Exporter = func(v any, i int) any {
-			switch v := v.(*RevokeServiceAuthTokenResponse); i {
+			switch v := v.(*IssueRepresentativeAuthTokenResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -24919,7 +25005,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[164].Exporter = func(v any, i int) any {
-			switch v := v.(*IssueServiceAuthTokenRequest); i {
+			switch v := v.(*RevokeServiceAuthTokenRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -24931,7 +25017,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[165].Exporter = func(v any, i int) any {
-			switch v := v.(*IssueServiceAuthTokenResponse); i {
+			switch v := v.(*RevokeServiceAuthTokenResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -24943,7 +25029,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[166].Exporter = func(v any, i int) any {
-			switch v := v.(*ListServiceAuthTokensRequest); i {
+			switch v := v.(*IssueServiceAuthTokenRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -24955,7 +25041,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[167].Exporter = func(v any, i int) any {
-			switch v := v.(*ListServiceAuthTokensResponse); i {
+			switch v := v.(*IssueServiceAuthTokenResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -24967,7 +25053,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[168].Exporter = func(v any, i int) any {
-			switch v := v.(*IssueMagicAuthTokenRequest); i {
+			switch v := v.(*ListServiceAuthTokensRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -24979,7 +25065,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[169].Exporter = func(v any, i int) any {
-			switch v := v.(*IssueMagicAuthTokenResponse); i {
+			switch v := v.(*ListServiceAuthTokensResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -24991,7 +25077,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[170].Exporter = func(v any, i int) any {
-			switch v := v.(*ListMagicAuthTokensRequest); i {
+			switch v := v.(*IssueMagicAuthTokenRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25003,7 +25089,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[171].Exporter = func(v any, i int) any {
-			switch v := v.(*ListMagicAuthTokensResponse); i {
+			switch v := v.(*IssueMagicAuthTokenResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25015,7 +25101,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[172].Exporter = func(v any, i int) any {
-			switch v := v.(*GetCurrentMagicAuthTokenRequest); i {
+			switch v := v.(*ListMagicAuthTokensRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25027,7 +25113,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[173].Exporter = func(v any, i int) any {
-			switch v := v.(*GetCurrentMagicAuthTokenResponse); i {
+			switch v := v.(*ListMagicAuthTokensResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25039,7 +25125,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[174].Exporter = func(v any, i int) any {
-			switch v := v.(*RevokeMagicAuthTokenRequest); i {
+			switch v := v.(*GetCurrentMagicAuthTokenRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25051,7 +25137,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[175].Exporter = func(v any, i int) any {
-			switch v := v.(*RevokeMagicAuthTokenResponse); i {
+			switch v := v.(*GetCurrentMagicAuthTokenResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25063,7 +25149,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[176].Exporter = func(v any, i int) any {
-			switch v := v.(*GetGithubRepoStatusRequest); i {
+			switch v := v.(*RevokeMagicAuthTokenRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25075,7 +25161,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[177].Exporter = func(v any, i int) any {
-			switch v := v.(*GetGithubRepoStatusResponse); i {
+			switch v := v.(*RevokeMagicAuthTokenResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25087,7 +25173,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[178].Exporter = func(v any, i int) any {
-			switch v := v.(*GetGithubUserStatusRequest); i {
+			switch v := v.(*GetGithubRepoStatusRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25099,7 +25185,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[179].Exporter = func(v any, i int) any {
-			switch v := v.(*GetGithubUserStatusResponse); i {
+			switch v := v.(*GetGithubRepoStatusResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25111,7 +25197,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[180].Exporter = func(v any, i int) any {
-			switch v := v.(*ListGithubUserReposRequest); i {
+			switch v := v.(*GetGithubUserStatusRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25123,7 +25209,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[181].Exporter = func(v any, i int) any {
-			switch v := v.(*ListGithubUserReposResponse); i {
+			switch v := v.(*GetGithubUserStatusResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25135,7 +25221,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[182].Exporter = func(v any, i int) any {
-			switch v := v.(*ConnectProjectToGithubRequest); i {
+			switch v := v.(*ListGithubUserReposRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25147,7 +25233,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[183].Exporter = func(v any, i int) any {
-			switch v := v.(*ConnectProjectToGithubResponse); i {
+			switch v := v.(*ListGithubUserReposResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25159,7 +25245,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[184].Exporter = func(v any, i int) any {
-			switch v := v.(*UploadProjectAssetsRequest); i {
+			switch v := v.(*ConnectProjectToGithubRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25171,7 +25257,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[185].Exporter = func(v any, i int) any {
-			switch v := v.(*UploadProjectAssetsResponse); i {
+			switch v := v.(*ConnectProjectToGithubResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25183,7 +25269,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[186].Exporter = func(v any, i int) any {
-			switch v := v.(*GetCloneCredentialsRequest); i {
+			switch v := v.(*UploadProjectAssetsRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25195,7 +25281,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[187].Exporter = func(v any, i int) any {
-			switch v := v.(*GetCloneCredentialsResponse); i {
+			switch v := v.(*UploadProjectAssetsResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25207,7 +25293,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[188].Exporter = func(v any, i int) any {
-			switch v := v.(*CreateWhitelistedDomainRequest); i {
+			switch v := v.(*GetCloneCredentialsRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25219,7 +25305,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[189].Exporter = func(v any, i int) any {
-			switch v := v.(*CreateWhitelistedDomainResponse); i {
+			switch v := v.(*GetCloneCredentialsResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25231,7 +25317,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[190].Exporter = func(v any, i int) any {
-			switch v := v.(*RemoveWhitelistedDomainRequest); i {
+			switch v := v.(*CreateWhitelistedDomainRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25243,7 +25329,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[191].Exporter = func(v any, i int) any {
-			switch v := v.(*RemoveWhitelistedDomainResponse); i {
+			switch v := v.(*CreateWhitelistedDomainResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25255,7 +25341,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[192].Exporter = func(v any, i int) any {
-			switch v := v.(*ListWhitelistedDomainsRequest); i {
+			switch v := v.(*RemoveWhitelistedDomainRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25267,7 +25353,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[193].Exporter = func(v any, i int) any {
-			switch v := v.(*ListWhitelistedDomainsResponse); i {
+			switch v := v.(*RemoveWhitelistedDomainResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25279,7 +25365,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[194].Exporter = func(v any, i int) any {
-			switch v := v.(*CreateProjectWhitelistedDomainRequest); i {
+			switch v := v.(*ListWhitelistedDomainsRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25291,7 +25377,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[195].Exporter = func(v any, i int) any {
-			switch v := v.(*CreateProjectWhitelistedDomainResponse); i {
+			switch v := v.(*ListWhitelistedDomainsResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25303,7 +25389,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[196].Exporter = func(v any, i int) any {
-			switch v := v.(*RemoveProjectWhitelistedDomainRequest); i {
+			switch v := v.(*CreateProjectWhitelistedDomainRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25315,7 +25401,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[197].Exporter = func(v any, i int) any {
-			switch v := v.(*RemoveProjectWhitelistedDomainResponse); i {
+			switch v := v.(*CreateProjectWhitelistedDomainResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25327,7 +25413,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[198].Exporter = func(v any, i int) any {
-			switch v := v.(*ListProjectWhitelistedDomainsRequest); i {
+			switch v := v.(*RemoveProjectWhitelistedDomainRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25339,7 +25425,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[199].Exporter = func(v any, i int) any {
-			switch v := v.(*ListProjectWhitelistedDomainsResponse); i {
+			switch v := v.(*RemoveProjectWhitelistedDomainResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25351,7 +25437,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[200].Exporter = func(v any, i int) any {
-			switch v := v.(*GetRepoMetaRequest); i {
+			switch v := v.(*ListProjectWhitelistedDomainsRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25363,7 +25449,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[201].Exporter = func(v any, i int) any {
-			switch v := v.(*GetRepoMetaResponse); i {
+			switch v := v.(*ListProjectWhitelistedDomainsResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25375,7 +25461,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[202].Exporter = func(v any, i int) any {
-			switch v := v.(*PullVirtualRepoRequest); i {
+			switch v := v.(*GetRepoMetaRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25387,7 +25473,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[203].Exporter = func(v any, i int) any {
-			switch v := v.(*PullVirtualRepoResponse); i {
+			switch v := v.(*GetRepoMetaResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25399,7 +25485,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[204].Exporter = func(v any, i int) any {
-			switch v := v.(*GetReportMetaRequest); i {
+			switch v := v.(*PullVirtualRepoRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25411,7 +25497,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[205].Exporter = func(v any, i int) any {
-			switch v := v.(*GetReportMetaResponse); i {
+			switch v := v.(*PullVirtualRepoResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25423,7 +25509,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[206].Exporter = func(v any, i int) any {
-			switch v := v.(*GetAlertMetaRequest); i {
+			switch v := v.(*GetReportMetaRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25435,7 +25521,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[207].Exporter = func(v any, i int) any {
-			switch v := v.(*GetAlertMetaResponse); i {
+			switch v := v.(*GetReportMetaResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25447,7 +25533,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[208].Exporter = func(v any, i int) any {
-			switch v := v.(*CreateReportRequest); i {
+			switch v := v.(*GetAlertMetaRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25459,7 +25545,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[209].Exporter = func(v any, i int) any {
-			switch v := v.(*CreateReportResponse); i {
+			switch v := v.(*GetAlertMetaResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25471,7 +25557,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[210].Exporter = func(v any, i int) any {
-			switch v := v.(*EditReportRequest); i {
+			switch v := v.(*CreateReportRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25483,7 +25569,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[211].Exporter = func(v any, i int) any {
-			switch v := v.(*EditReportResponse); i {
+			switch v := v.(*CreateReportResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25495,7 +25581,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[212].Exporter = func(v any, i int) any {
-			switch v := v.(*UnsubscribeReportRequest); i {
+			switch v := v.(*EditReportRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25507,7 +25593,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[213].Exporter = func(v any, i int) any {
-			switch v := v.(*UnsubscribeReportResponse); i {
+			switch v := v.(*EditReportResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25519,7 +25605,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[214].Exporter = func(v any, i int) any {
-			switch v := v.(*DeleteReportRequest); i {
+			switch v := v.(*UnsubscribeReportRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25531,7 +25617,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[215].Exporter = func(v any, i int) any {
-			switch v := v.(*DeleteReportResponse); i {
+			switch v := v.(*UnsubscribeReportResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25543,7 +25629,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[216].Exporter = func(v any, i int) any {
-			switch v := v.(*TriggerReportRequest); i {
+			switch v := v.(*DeleteReportRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25555,7 +25641,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[217].Exporter = func(v any, i int) any {
-			switch v := v.(*TriggerReportResponse); i {
+			switch v := v.(*DeleteReportResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25567,7 +25653,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[218].Exporter = func(v any, i int) any {
-			switch v := v.(*GenerateReportYAMLRequest); i {
+			switch v := v.(*TriggerReportRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25579,7 +25665,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[219].Exporter = func(v any, i int) any {
-			switch v := v.(*GenerateReportYAMLResponse); i {
+			switch v := v.(*TriggerReportResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25591,7 +25677,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[220].Exporter = func(v any, i int) any {
-			switch v := v.(*CreateAlertRequest); i {
+			switch v := v.(*GenerateReportYAMLRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25603,7 +25689,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[221].Exporter = func(v any, i int) any {
-			switch v := v.(*CreateAlertResponse); i {
+			switch v := v.(*GenerateReportYAMLResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25615,7 +25701,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[222].Exporter = func(v any, i int) any {
-			switch v := v.(*EditAlertRequest); i {
+			switch v := v.(*CreateAlertRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25627,7 +25713,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[223].Exporter = func(v any, i int) any {
-			switch v := v.(*EditAlertResponse); i {
+			switch v := v.(*CreateAlertResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25639,7 +25725,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[224].Exporter = func(v any, i int) any {
-			switch v := v.(*UnsubscribeAlertRequest); i {
+			switch v := v.(*EditAlertRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25651,7 +25737,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[225].Exporter = func(v any, i int) any {
-			switch v := v.(*UnsubscribeAlertResponse); i {
+			switch v := v.(*EditAlertResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25663,7 +25749,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[226].Exporter = func(v any, i int) any {
-			switch v := v.(*DeleteAlertRequest); i {
+			switch v := v.(*UnsubscribeAlertRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25675,7 +25761,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[227].Exporter = func(v any, i int) any {
-			switch v := v.(*DeleteAlertResponse); i {
+			switch v := v.(*UnsubscribeAlertResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25687,7 +25773,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[228].Exporter = func(v any, i int) any {
-			switch v := v.(*GenerateAlertYAMLRequest); i {
+			switch v := v.(*DeleteAlertRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25699,7 +25785,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[229].Exporter = func(v any, i int) any {
-			switch v := v.(*GenerateAlertYAMLResponse); i {
+			switch v := v.(*DeleteAlertResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25711,7 +25797,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[230].Exporter = func(v any, i int) any {
-			switch v := v.(*GetAlertYAMLRequest); i {
+			switch v := v.(*GenerateAlertYAMLRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25723,7 +25809,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[231].Exporter = func(v any, i int) any {
-			switch v := v.(*GetAlertYAMLResponse); i {
+			switch v := v.(*GenerateAlertYAMLResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25735,7 +25821,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[232].Exporter = func(v any, i int) any {
-			switch v := v.(*GetBillingSubscriptionRequest); i {
+			switch v := v.(*GetAlertYAMLRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25747,7 +25833,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[233].Exporter = func(v any, i int) any {
-			switch v := v.(*GetBillingSubscriptionResponse); i {
+			switch v := v.(*GetAlertYAMLResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25759,7 +25845,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[234].Exporter = func(v any, i int) any {
-			switch v := v.(*UpdateBillingSubscriptionRequest); i {
+			switch v := v.(*GetBillingSubscriptionRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25771,7 +25857,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[235].Exporter = func(v any, i int) any {
-			switch v := v.(*UpdateBillingSubscriptionResponse); i {
+			switch v := v.(*GetBillingSubscriptionResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25783,7 +25869,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[236].Exporter = func(v any, i int) any {
-			switch v := v.(*CancelBillingSubscriptionRequest); i {
+			switch v := v.(*UpdateBillingSubscriptionRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25795,7 +25881,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[237].Exporter = func(v any, i int) any {
-			switch v := v.(*CancelBillingSubscriptionResponse); i {
+			switch v := v.(*UpdateBillingSubscriptionResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25807,7 +25893,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[238].Exporter = func(v any, i int) any {
-			switch v := v.(*RenewBillingSubscriptionRequest); i {
+			switch v := v.(*CancelBillingSubscriptionRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25819,7 +25905,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[239].Exporter = func(v any, i int) any {
-			switch v := v.(*RenewBillingSubscriptionResponse); i {
+			switch v := v.(*CancelBillingSubscriptionResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25831,7 +25917,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[240].Exporter = func(v any, i int) any {
-			switch v := v.(*GetPaymentsPortalURLRequest); i {
+			switch v := v.(*RenewBillingSubscriptionRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25843,7 +25929,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[241].Exporter = func(v any, i int) any {
-			switch v := v.(*GetPaymentsPortalURLResponse); i {
+			switch v := v.(*RenewBillingSubscriptionResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25855,7 +25941,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[242].Exporter = func(v any, i int) any {
-			switch v := v.(*ListPublicBillingPlansRequest); i {
+			switch v := v.(*GetPaymentsPortalURLRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25867,7 +25953,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[243].Exporter = func(v any, i int) any {
-			switch v := v.(*ListPublicBillingPlansResponse); i {
+			switch v := v.(*GetPaymentsPortalURLResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25879,7 +25965,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[244].Exporter = func(v any, i int) any {
-			switch v := v.(*GetBillingProjectCredentialsRequest); i {
+			switch v := v.(*ListPublicBillingPlansRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25891,7 +25977,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[245].Exporter = func(v any, i int) any {
-			switch v := v.(*GetBillingProjectCredentialsResponse); i {
+			switch v := v.(*ListPublicBillingPlansResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25903,7 +25989,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[246].Exporter = func(v any, i int) any {
-			switch v := v.(*TelemetryRequest); i {
+			switch v := v.(*GetBillingProjectCredentialsRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25915,7 +26001,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[247].Exporter = func(v any, i int) any {
-			switch v := v.(*TelemetryResponse); i {
+			switch v := v.(*GetBillingProjectCredentialsResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25927,7 +26013,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[248].Exporter = func(v any, i int) any {
-			switch v := v.(*RequestProjectAccessRequest); i {
+			switch v := v.(*TelemetryRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25939,7 +26025,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[249].Exporter = func(v any, i int) any {
-			switch v := v.(*RequestProjectAccessResponse); i {
+			switch v := v.(*TelemetryResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25951,7 +26037,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[250].Exporter = func(v any, i int) any {
-			switch v := v.(*GetProjectAccessRequestRequest); i {
+			switch v := v.(*RequestProjectAccessRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25963,7 +26049,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[251].Exporter = func(v any, i int) any {
-			switch v := v.(*GetProjectAccessRequestResponse); i {
+			switch v := v.(*RequestProjectAccessResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25975,7 +26061,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[252].Exporter = func(v any, i int) any {
-			switch v := v.(*ApproveProjectAccessRequest); i {
+			switch v := v.(*GetProjectAccessRequestRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25987,7 +26073,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[253].Exporter = func(v any, i int) any {
-			switch v := v.(*ApproveProjectAccessResponse); i {
+			switch v := v.(*GetProjectAccessRequestResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -25999,7 +26085,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[254].Exporter = func(v any, i int) any {
-			switch v := v.(*DenyProjectAccessRequest); i {
+			switch v := v.(*ApproveProjectAccessRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -26011,7 +26097,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[255].Exporter = func(v any, i int) any {
-			switch v := v.(*DenyProjectAccessResponse); i {
+			switch v := v.(*ApproveProjectAccessResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -26023,7 +26109,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[256].Exporter = func(v any, i int) any {
-			switch v := v.(*ListOrganizationBillingIssuesRequest); i {
+			switch v := v.(*DenyProjectAccessRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -26035,7 +26121,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[257].Exporter = func(v any, i int) any {
-			switch v := v.(*ListOrganizationBillingIssuesResponse); i {
+			switch v := v.(*DenyProjectAccessResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -26047,7 +26133,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[258].Exporter = func(v any, i int) any {
-			switch v := v.(*User); i {
+			switch v := v.(*ListOrganizationBillingIssuesRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -26059,7 +26145,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[259].Exporter = func(v any, i int) any {
-			switch v := v.(*Service); i {
+			switch v := v.(*ListOrganizationBillingIssuesResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -26071,7 +26157,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[260].Exporter = func(v any, i int) any {
-			switch v := v.(*Organization); i {
+			switch v := v.(*User); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -26083,7 +26169,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[261].Exporter = func(v any, i int) any {
-			switch v := v.(*Subscription); i {
+			switch v := v.(*Service); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -26095,7 +26181,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[262].Exporter = func(v any, i int) any {
-			switch v := v.(*UserQuotas); i {
+			switch v := v.(*Organization); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -26107,7 +26193,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[263].Exporter = func(v any, i int) any {
-			switch v := v.(*OrganizationQuotas); i {
+			switch v := v.(*Subscription); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -26119,7 +26205,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[264].Exporter = func(v any, i int) any {
-			switch v := v.(*Project); i {
+			switch v := v.(*UserQuotas); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -26131,7 +26217,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[265].Exporter = func(v any, i int) any {
-			switch v := v.(*Deployment); i {
+			switch v := v.(*OrganizationQuotas); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -26143,7 +26229,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[266].Exporter = func(v any, i int) any {
-			switch v := v.(*ProvisionerResource); i {
+			switch v := v.(*Project); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -26155,7 +26241,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[267].Exporter = func(v any, i int) any {
-			switch v := v.(*OrganizationPermissions); i {
+			switch v := v.(*Deployment); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -26167,7 +26253,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[268].Exporter = func(v any, i int) any {
-			switch v := v.(*ProjectPermissions); i {
+			switch v := v.(*ProvisionerResource); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -26179,7 +26265,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[269].Exporter = func(v any, i int) any {
-			switch v := v.(*MemberUser); i {
+			switch v := v.(*OrganizationPermissions); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -26191,7 +26277,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[270].Exporter = func(v any, i int) any {
-			switch v := v.(*UserInvite); i {
+			switch v := v.(*ProjectPermissions); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -26203,7 +26289,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[271].Exporter = func(v any, i int) any {
-			switch v := v.(*WhitelistedDomain); i {
+			switch v := v.(*MemberUser); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -26215,7 +26301,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[272].Exporter = func(v any, i int) any {
-			switch v := v.(*Bookmark); i {
+			switch v := v.(*UserInvite); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -26227,7 +26313,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[273].Exporter = func(v any, i int) any {
-			switch v := v.(*ServiceToken); i {
+			switch v := v.(*WhitelistedDomain); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -26239,7 +26325,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[274].Exporter = func(v any, i int) any {
-			switch v := v.(*MagicAuthToken); i {
+			switch v := v.(*Bookmark); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -26251,7 +26337,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[275].Exporter = func(v any, i int) any {
-			switch v := v.(*VirtualFile); i {
+			switch v := v.(*ServiceToken); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -26263,7 +26349,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[276].Exporter = func(v any, i int) any {
-			switch v := v.(*ReportOptions); i {
+			switch v := v.(*MagicAuthToken); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -26275,7 +26361,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[277].Exporter = func(v any, i int) any {
-			switch v := v.(*AlertOptions); i {
+			switch v := v.(*VirtualFile); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -26287,7 +26373,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[278].Exporter = func(v any, i int) any {
-			switch v := v.(*BillingPlan); i {
+			switch v := v.(*ReportOptions); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -26299,7 +26385,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[279].Exporter = func(v any, i int) any {
-			switch v := v.(*Quotas); i {
+			switch v := v.(*AlertOptions); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -26311,7 +26397,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[280].Exporter = func(v any, i int) any {
-			switch v := v.(*Usergroup); i {
+			switch v := v.(*BillingPlan); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -26323,7 +26409,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[281].Exporter = func(v any, i int) any {
-			switch v := v.(*MemberUsergroup); i {
+			switch v := v.(*Quotas); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -26335,7 +26421,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[282].Exporter = func(v any, i int) any {
-			switch v := v.(*BillingIssue); i {
+			switch v := v.(*Usergroup); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -26347,7 +26433,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[283].Exporter = func(v any, i int) any {
-			switch v := v.(*BillingIssueMetadata); i {
+			switch v := v.(*MemberUsergroup); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -26359,7 +26445,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[284].Exporter = func(v any, i int) any {
-			switch v := v.(*BillingIssueMetadataOnTrial); i {
+			switch v := v.(*BillingIssue); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -26371,7 +26457,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[285].Exporter = func(v any, i int) any {
-			switch v := v.(*BillingIssueMetadataTrialEnded); i {
+			switch v := v.(*BillingIssueMetadata); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -26383,7 +26469,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[286].Exporter = func(v any, i int) any {
-			switch v := v.(*BillingIssueMetadataNoPaymentMethod); i {
+			switch v := v.(*BillingIssueMetadataOnTrial); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -26395,7 +26481,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[287].Exporter = func(v any, i int) any {
-			switch v := v.(*BillingIssueMetadataNoBillableAddress); i {
+			switch v := v.(*BillingIssueMetadataTrialEnded); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -26407,7 +26493,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[288].Exporter = func(v any, i int) any {
-			switch v := v.(*BillingIssueMetadataPaymentFailed); i {
+			switch v := v.(*BillingIssueMetadataNoPaymentMethod); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -26419,7 +26505,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[289].Exporter = func(v any, i int) any {
-			switch v := v.(*BillingIssueMetadataPaymentFailedMeta); i {
+			switch v := v.(*BillingIssueMetadataNoBillableAddress); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -26431,7 +26517,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[290].Exporter = func(v any, i int) any {
-			switch v := v.(*BillingIssueMetadataSubscriptionCancelled); i {
+			switch v := v.(*BillingIssueMetadataPaymentFailed); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -26443,6 +26529,30 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[291].Exporter = func(v any, i int) any {
+			switch v := v.(*BillingIssueMetadataPaymentFailedMeta); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_rill_admin_v1_api_proto_msgTypes[292].Exporter = func(v any, i int) any {
+			switch v := v.(*BillingIssueMetadataSubscriptionCancelled); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_rill_admin_v1_api_proto_msgTypes[293].Exporter = func(v any, i int) any {
 			switch v := v.(*BillingIssueMetadataNeverSubscribed); i {
 			case 0:
 				return &v.state
@@ -26454,7 +26564,7 @@ func file_rill_admin_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_admin_v1_api_proto_msgTypes[299].Exporter = func(v any, i int) any {
+		file_rill_admin_v1_api_proto_msgTypes[301].Exporter = func(v any, i int) any {
 			switch v := v.(*ListGithubUserReposResponse_Repo); i {
 			case 0:
 				return &v.state
@@ -26466,7 +26576,7 @@ func file_rill_admin_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_admin_v1_api_proto_msgTypes[300].Exporter = func(v any, i int) any {
+		file_rill_admin_v1_api_proto_msgTypes[302].Exporter = func(v any, i int) any {
 			switch v := v.(*GetReportMetaResponse_URLs); i {
 			case 0:
 				return &v.state
@@ -26510,11 +26620,11 @@ func file_rill_admin_v1_api_proto_init() {
 	file_rill_admin_v1_api_proto_msgTypes[81].OneofWrappers = []any{}
 	file_rill_admin_v1_api_proto_msgTypes[87].OneofWrappers = []any{}
 	file_rill_admin_v1_api_proto_msgTypes[143].OneofWrappers = []any{}
-	file_rill_admin_v1_api_proto_msgTypes[206].OneofWrappers = []any{
+	file_rill_admin_v1_api_proto_msgTypes[208].OneofWrappers = []any{
 		(*GetAlertMetaRequest_QueryForUserId)(nil),
 		(*GetAlertMetaRequest_QueryForUserEmail)(nil),
 	}
-	file_rill_admin_v1_api_proto_msgTypes[283].OneofWrappers = []any{
+	file_rill_admin_v1_api_proto_msgTypes[285].OneofWrappers = []any{
 		(*BillingIssueMetadata_OnTrial)(nil),
 		(*BillingIssueMetadata_TrialEnded)(nil),
 		(*BillingIssueMetadata_NoPaymentMethod)(nil),
@@ -26529,7 +26639,7 @@ func file_rill_admin_v1_api_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_rill_admin_v1_api_proto_rawDesc,
 			NumEnums:      5,
-			NumMessages:   304,
+			NumMessages:   306,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

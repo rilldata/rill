@@ -195,6 +195,7 @@ import type {
   V1IssueRepresentativeAuthTokenRequest,
   V1GetUserResponse,
   AdminServiceGetUserParams,
+  V1DeleteUserResponse,
   V1ListBookmarksResponse,
   AdminServiceListBookmarksParams,
   V1CreateBookmarkResponse,
@@ -7376,6 +7377,51 @@ export const createAdminServiceGetUser = <
   return query;
 };
 
+/**
+ * @summary DeleteUser deletes the user from the organization by email
+ */
+export const adminServiceDeleteUser = (email: string) => {
+  return httpClient<V1DeleteUserResponse>({
+    url: `/v1/users/${email}`,
+    method: "delete",
+  });
+};
+
+export type AdminServiceDeleteUserMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceDeleteUser>>
+>;
+
+export type AdminServiceDeleteUserMutationError = RpcStatus;
+
+export const createAdminServiceDeleteUser = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceDeleteUser>>,
+    TError,
+    { email: string },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceDeleteUser>>,
+    { email: string }
+  > = (props) => {
+    const { email } = props ?? {};
+
+    return adminServiceDeleteUser(email);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceDeleteUser>>,
+    TError,
+    { email: string },
+    TContext
+  >(mutationFn, mutationOptions);
+};
 /**
  * @summary ListBookmarks lists all the bookmarks for the user and global ones for dashboard
  */
