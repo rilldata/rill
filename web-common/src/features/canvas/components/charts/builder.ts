@@ -69,6 +69,11 @@ export function createYEncoding(
     field: sanitizeValueForVega(config.y.field),
     title: metaData?.displayName || config.y.field,
     type: config.y.type,
+    ...(config.y.zeroBasedOrigin !== true && {
+      scale: {
+        zero: false,
+      },
+    }),
     axis: {
       ...(config.y.type === "quantitative" && {
         formatType: config.y.field,
@@ -108,7 +113,7 @@ export function createOpacityEncoding(paramName: string) {
       { param: paramName, empty: false, value: 1 },
       {
         test: `length(data('${paramName}_store')) == 0`,
-        value: 0.7,
+        value: 0.8,
       },
     ],
     value: 0.2,

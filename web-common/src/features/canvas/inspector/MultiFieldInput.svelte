@@ -39,7 +39,7 @@
 </script>
 
 <div class="flex flex-col gap-y-2 pt-1">
-  <DropdownMenu.Root bind:open typeahead={false} closeOnItemClick={true}>
+  <DropdownMenu.Root bind:open typeahead={false} closeOnItemClick={false}>
     <DropdownMenu.Trigger asChild let:builder>
       <div class="flex justify-between gap-x-2">
         <InputLabel small {label} {id} />

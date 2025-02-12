@@ -1,19 +1,19 @@
 <script lang="ts">
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import {
     createRuntimeServiceCreateTrigger,
+    createRuntimeServiceListResources,
     getRuntimeServiceListResourcesQueryKey,
     V1ReconcileStatus,
-    type V1Resource,
     type V1ListResourcesResponse,
-    createRuntimeServiceListResources,
+    type V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import Button from "web-common/src/components/button/Button.svelte";
   import ProjectResourcesTable from "./ProjectResourcesTable.svelte";
   import RefreshAllSourcesAndModelsConfirmDialog from "./RefreshAllSourcesAndModelsConfirmDialog.svelte";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 
   const queryClient = useQueryClient();
   const createTrigger = createRuntimeServiceCreateTrigger();
@@ -65,24 +65,32 @@
     return currentRefetchInterval;
   }
 
-  $: resources = createRuntimeServiceListResources(instanceId, undefined, {
-    query: {
-      select: (data: V1ListResourcesResponse) => ({
-        ...data,
-        // Filter out project parser and refresh triggers
-        resources: data?.resources?.filter(
-          (resource: V1Resource) =>
-            resource.meta.name.kind !== ResourceKind.ProjectParser &&
-            resource.meta.name.kind !== ResourceKind.RefreshTrigger,
-        ),
-      }),
-      refetchInterval: (data) =>
-        calculateRefetchInterval(
-          $resources?.data ? currentRefetchInterval : INITIAL_REFETCH_INTERVAL,
-          data,
-        ),
+  $: resources = createRuntimeServiceListResources(
+    instanceId,
+    {
+      skipSecurityChecks: true, // Ensures admins can see all resources, regardless of the security policy
     },
-  });
+    {
+      query: {
+        select: (data: V1ListResourcesResponse) => ({
+          ...data,
+          // Filter out project parser and refresh triggers
+          resources: data?.resources?.filter(
+            (resource: V1Resource) =>
+              resource.meta.name.kind !== ResourceKind.ProjectParser &&
+              resource.meta.name.kind !== ResourceKind.RefreshTrigger,
+          ),
+        }),
+        refetchInterval: (data) =>
+          calculateRefetchInterval(
+            $resources?.data
+              ? currentRefetchInterval
+              : INITIAL_REFETCH_INTERVAL,
+            data,
+          ),
+      },
+    },
+  );
 
   $: hasReconcilingResources = $resources.data?.resources?.some(
     isResourceReconciling,
@@ -119,11 +127,7 @@
       }}
       disabled={isRefreshButtonDisabled}
     >
-      {#if isRefreshButtonDisabled}
-        Refreshing...
-      {:else}
-        Refresh all sources and models
-      {/if}
+      Refresh all sources and models
     </Button>
   </div>
 

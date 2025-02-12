@@ -1,6 +1,12 @@
 .PHONY: all
 all: cli
 
+.PHONE: cli-only
+cli-only:
+	cp scripts/install.sh cli/pkg/installscript/embed/install.sh
+	go run scripts/embed_duckdb_ext/main.go
+	go build -o rill cli/main.go
+
 .PHONY: cli
 cli: cli.prepare
 	go build -o rill cli/main.go 

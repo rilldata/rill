@@ -151,6 +151,7 @@
       <InputLabel
         capitalize={false}
         id="canvas-filter"
+        faint={!showFilterBar}
         small
         label="Filter bar"
       />

@@ -39,6 +39,7 @@ class FeatureFlags {
   clickhouseModeling = new FeatureFlag("user", false);
   twoTieredNavigation = new FeatureFlag("user", false);
   rillTime = new FeatureFlag("user", false);
+  hidePublicUrl = new FeatureFlag("user", false);
 
   constructor() {
     const updateFlags = debounce((userFlags: V1InstanceFeatureFlags) => {

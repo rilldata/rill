@@ -1,57 +1,94 @@
 <script lang="ts">
-  import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
+  import { json } from "@codemirror/lang-json";
+  import { EditorState } from "@codemirror/state";
+  import { EditorView } from "@codemirror/view";
   import type { CanvasComponentObj } from "@rilldata/web-common/features/canvas/components/util";
   import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
+  import { onDestroy, onMount } from "svelte";
+  import { base as baseExtensions } from "../../../components/editor/presets/base";
 
   export let component: CanvasComponentObj;
   export let paramValues: V1ComponentSpecRendererProperties;
 
   const KEY = "vl_config";
-
   let error: string | null = null;
+  let configEditor: EditorView;
+  let editorContainer: HTMLElement;
 
-  async function updateConfig() {
-    let config = paramValues[KEY];
+  onMount(() => {
+    configEditor = new EditorView({
+      state: EditorState.create({
+        doc: paramValues[KEY] || "",
+        extensions: [
+          baseExtensions(),
+          json(),
+          EditorView.updateListener.of((update) => {
+            if (update.docChanged) {
+              const newValue = update.state.doc.toString();
+              paramValues[KEY] = newValue;
 
-    if (!config) {
-      error = null;
-      component.updateProperty(KEY, null);
-      return;
-    }
+              if (!newValue) {
+                error = null;
+                component.updateProperty(KEY, null);
+                return;
+              }
 
-    // config is a string, we need to validate if it is a valid JSON
-    try {
-      config = JSON.parse(config);
-      config = JSON.stringify(config, null, 2);
-    } catch {
-      error = "Invalid JSON";
-      return;
-    }
+              try {
+                const parsed = JSON.parse(newValue);
+                const formatted = JSON.stringify(parsed, null, 2);
+                error = null;
+                component.updateProperty(KEY, formatted);
+              } catch {
+                error = "Invalid JSON";
+              }
+            }
+          }),
+          EditorView.theme({
+            "&": { height: "500px" },
+            ".cm-scroller": { overflow: "auto" },
+          }),
+        ],
+      }),
+      parent: editorContainer,
+    });
 
-    error = null;
-    component.updateProperty(KEY, config);
-  }
+    return () => {
+      configEditor.destroy();
+    };
+  });
+
+  onDestroy(() => configEditor?.destroy());
 </script>
 
-<div class="config-input">
-  <InputLabel small label="Vega Lite config" optional id="vl-config" />
-  <textarea
-    style:font-family="monospace"
-    class="w-full mt-2 p-2 border border-gray-300 rounded-sm"
-    rows="20"
-    bind:value={paramValues[KEY]}
-    on:blur={updateConfig}
-    placeholder="Optionally enter a Vega Lite config"
-  />
+<div>
+  <div class="border-y border-gray-200 px-3 py-5">
+    Enter desired <a
+      href="https://vega.github.io/vega-lite/docs/config.html"
+      target="_blank"
+      >Vega-Lite config
+    </a>below
+  </div>
+  <div bind:this={editorContainer} class="config-editor-container" />
 
   {#if error}
-    <div class="text-red-500 text-sm">{error}</div>
+    <div class="text-red-500 text-sm px-3">{error}</div>
   {/if}
 </div>
 
 <style lang="postcss">
-  .config-input {
-    @apply py-3 px-5;
-    @apply border-t border-gray-200;
+  .config-editor-container {
+    @apply my-2 pl-2 border-b border-gray-300;
+  }
+
+  :global(.config-editor-container .cm-editor) {
+    height: 500px;
+  }
+
+  :global(.config-editor-container .cm-editor .cm-scroller) {
+    overflow: auto;
+  }
+
+  :global(.config-editor-container .cm-gutter.cm-line-status-gutter) {
+    display: none !important;
   }
 </style>
