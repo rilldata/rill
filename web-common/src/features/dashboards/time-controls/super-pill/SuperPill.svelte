@@ -33,7 +33,6 @@
   export let activeTimeZone: string;
   export let timeStart: string | undefined;
   export let timeEnd: string | undefined;
-  export let toggleComplete: () => void;
   export let onSelectRange: (range: NamedRange | ISODurationString) => void;
   export let onPan: (direction: "left" | "right") => void;
   export let onTimeGrainSelect: (timeGrain: V1TimeGrain) => void;

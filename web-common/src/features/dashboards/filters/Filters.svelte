@@ -317,7 +317,6 @@
           {availableTimeZones}
           {timeRanges}
           complete={false}
-          toggleComplete={() => {}}
           {interval}
           {timeStart}
           {timeEnd}
