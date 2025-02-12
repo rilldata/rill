@@ -7,7 +7,11 @@ import { derived, writable } from "svelte/store";
 import { contexts } from "./constants";
 import { curveStepExtended } from "./marks/curveStepExtended";
 import { ScaleType } from "./state";
-import type { GraphicScale } from "./state/types";
+import type {
+  GraphicScale,
+  ScaleStore,
+  SimpleConfigurationStore,
+} from "./state/types";
 
 /**
  * Creates a string to be fed into the d attribute of a path,
@@ -215,9 +219,9 @@ export function createAdaptiveLineThicknessStore(yAccessor) {
   let data;
 
   // get xScale, yScale, and config from contexts
-  const xScale = getContext(contexts.scale("x"));
-  const yScale = getContext(contexts.scale("y"));
-  const config = getContext(contexts.config);
+  const xScale = getContext<ScaleStore>(contexts.scale("x"));
+  const yScale = getContext<ScaleStore>(contexts.scale("y"));
+  const config = getContext<SimpleConfigurationStore>(contexts.config);
 
   // capture data state.
   const dataStore = writable(data);
