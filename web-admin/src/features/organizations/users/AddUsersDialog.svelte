@@ -61,7 +61,6 @@
       isSuperUser = false;
     } catch (error) {
       console.error("Error adding user to organization", error);
-      throw error; // Propagate error to be handled by the form submission
     }
   }
 
