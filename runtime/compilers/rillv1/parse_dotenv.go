@@ -27,17 +27,6 @@ func (p *Parser) parseDotEnv(ctx context.Context, path string) error {
 	return nil
 }
 
-// parseDotEnvs parses and merges .env files at the given paths
-func (p *Parser) parseDotEnvs(ctx context.Context, paths []string) error {
-	for _, path := range paths {
-		err := p.parseDotEnv(ctx, path)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // mergeDotEnvMaps merges two env maps
 func mergeDotEnvMaps(a, b map[string]string) map[string]string {
 	merged := make(map[string]string, len(a)+len(b))
