@@ -69,7 +69,8 @@ export const RILL_LATEST = [
   "PT24H",
   "P7D",
   "P14D",
-  "P3M",
+  "P4W",
+
   "P12M",
 ] as const;
 
@@ -409,6 +410,8 @@ export function bucketYamlRanges(
   if (showDefaults) {
     return defaultBuckets;
   }
+
+  console.log({ availableRanges });
 
   return availableRanges.reduce(
     (record, { range }) => {
