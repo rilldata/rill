@@ -33,6 +33,9 @@
   const addOrganizationMemberUser =
     createAdminServiceAddOrganizationMemberUser();
 
+  // Add state for failed invites
+  let failedInvites: string[] = [];
+
   async function handleCreate(
     newEmail: string,
     newRole: string,
@@ -92,6 +95,9 @@
       SPA: true,
       validators: schema,
       async onUpdate({ form }) {
+        // Reset failed invites
+        failedInvites = [];
+
         if (!form.valid) return;
         const values = form.data;
         const emails = values.emails.map((e) => e.trim()).filter(Boolean);
@@ -123,19 +129,19 @@
 
         // Show error notification if any invites failed
         if (failed.length > 0) {
+          failedInvites = failed; // Store failed emails
           eventBus.emit("notification", {
             type: "error",
             message: `Failed to invite ${failed.length} ${
               failed.length === 1 ? "person" : "people"
             }`,
-            options: {
-              persisted: true,
-            },
           });
         }
 
         // Close dialog after showing notifications
-        open = false;
+        if (failedInvites.length === 0) {
+          open = false;
+        }
       },
       validationMethod: "oninput",
     },
@@ -154,12 +160,14 @@
     email = "";
     role = "";
     isSuperUser = false;
+    failedInvites = [];
   }}
   onOpenChange={(open) => {
     if (!open) {
       email = "";
       role = "";
       isSuperUser = false;
+      failedInvites = [];
     }
   }}
 >
@@ -201,6 +209,11 @@
           </Button>
         </svelte:fragment>
       </MultiInput>
+      {#if failedInvites.length > 0}
+        <div class="text-sm text-red-500 py-2">
+          {failedInvites.join(", ")}
+        </div>
+      {/if}
     </form>
   </DialogContent>
 </Dialog>
