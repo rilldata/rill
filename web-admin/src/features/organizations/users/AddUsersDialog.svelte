@@ -59,15 +59,9 @@
       email = "";
       role = "";
       isSuperUser = false;
-      open = false;
-
-      eventBus.emit("notification", { message: "User added to organization" });
     } catch (error) {
       console.error("Error adding user to organization", error);
-      eventBus.emit("notification", {
-        message: "Error adding user to organization",
-        type: "error",
-      });
+      throw error; // Propagate error to be handled by the form submission
     }
   }
 
@@ -104,30 +98,40 @@
         if (emails.length === 0) return;
 
         const succeeded = [];
-        let errored = false;
-        await Promise.all(
-          emails.map(async (email) => {
-            try {
-              await handleCreate(email, values.role, isSuperUser);
-              succeeded.push(email);
-            } catch (error) {
-              console.error("Error adding user to organization", error);
-              errored = true;
-            }
-          }),
-        );
+        const failed = [];
 
-        eventBus.emit("notification", {
-          type: "success",
-          message: `Invited ${succeeded.length} ${succeeded.length === 1 ? "person" : "people"} as ${values.role}`,
-        });
+        // Process invites sequentially to maintain order
+        for (const email of emails) {
+          try {
+            await handleCreate(email, values.role, isSuperUser);
+            succeeded.push(email);
+          } catch (error) {
+            failed.push(email);
+            console.error("Error adding user to organization", error);
+          }
+        }
 
-        if (errored) {
+        // Only show success notification if any invites succeeded
+        if (succeeded.length > 0) {
+          eventBus.emit("notification", {
+            type: "success",
+            message: `Successfully invited ${succeeded.length} ${
+              succeeded.length === 1 ? "person" : "people"
+            } as ${values.role}`,
+          });
+        }
+
+        // Show error notification if any invites failed
+        if (failed.length > 0) {
           eventBus.emit("notification", {
             type: "error",
-            message:
-              "Some invitations could not be sent. Please check the email addresses and try again.",
+            message: `Failed to invite ${failed.join(", ")}`,
           });
+        }
+
+        // Only close dialog if all invites succeeded
+        if (failed.length === 0) {
+          open = false;
         }
       },
       validationMethod: "oninput",
