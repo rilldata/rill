@@ -1,21 +1,27 @@
 import { test as base } from "@playwright/test";
-import { rmSync, writeFileSync, existsSync, mkdirSync } from "fs";
+import { rmSync, writeFileSync, existsSync, mkdirSync, cpSync } from "fs";
 import { spawn } from "node:child_process";
 import treeKill from "tree-kill";
 import { getOpenPort } from "./getOpenPort";
 import { asyncWaitUntil } from "@rilldata/web-common/lib/waitUtils";
 import axios from "axios";
 
+type ProjectInitArgs =
+  | {
+      path?: string;
+      empty?: boolean;
+    }
+  | undefined;
 type MyFixtures = {
-  includeRillYaml: boolean;
+  projectInit: ProjectInitArgs;
 };
 
 const BASE_PROJECT_DIRECTORY = "temp/test-project";
 
 export const test = base.extend<MyFixtures>({
-  includeRillYaml: [true, { option: true }],
+  projectInit: [undefined, { option: true }],
 
-  page: async ({ page, includeRillYaml }, use) => {
+  page: async ({ page, projectInit }, use) => {
     const TEST_PORT = await getOpenPort();
     const TEST_PORT_GRPC = await getOpenPort();
     const TEST_PROJECT_DIRECTORY = `${BASE_PROJECT_DIRECTORY}-${TEST_PORT}`;
@@ -26,8 +32,12 @@ export const test = base.extend<MyFixtures>({
       mkdirSync(TEST_PROJECT_DIRECTORY, { recursive: true });
     }
 
-    // Conditionally write the file
-    if (includeRillYaml) {
+    if (projectInit?.path) {
+      cpSync(projectInit.path, TEST_PROJECT_DIRECTORY, {
+        recursive: true,
+        force: true,
+      });
+    } else if (!projectInit?.empty) {
       writeFileSync(
         `${TEST_PROJECT_DIRECTORY}/rill.yaml`,
         'compiler: rill-beta\ntitle: "Test Project"',

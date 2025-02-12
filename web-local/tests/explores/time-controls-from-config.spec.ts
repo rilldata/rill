@@ -1,16 +1,23 @@
 import { expect } from "@playwright/test";
-import { useDashboardFlowTestSetup } from "web-local/tests/explores/dashboard-flow-test-setup";
+import { fileURLToPath } from "url";
 import { interactWithTimeRangeMenu } from "web-local/tests/utils/metricsViewHelpers";
 import { ResourceWatcher } from "web-local/tests/utils/ResourceWatcher";
+import { gotoNavEntry } from "web-local/tests/utils/waitHelpers";
 import { test } from "../utils/test";
+import { join } from "path";
 
 test.describe("time controls settings from explore preset", () => {
-  // dashboard test setup
-  useDashboardFlowTestSetup();
+  test.use({
+    projectInit: {
+      path: join(fileURLToPath(import.meta.url), "../../data/projects/AdBids"),
+    },
+  });
 
   test("preset time_range", async ({ page }) => {
     const watcher = new ResourceWatcher(page);
 
+    await page.getByLabel("/dashboards").click();
+    await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
     await page.getByLabel("code").click();
 
     // Set a time range that is one of the supported presets
@@ -234,8 +241,8 @@ test.describe("time controls settings from explore preset", () => {
 function getDashboardYaml(defaults: string, extras = "") {
   return `
 type: explore
-title: "AdBids_model_metrics_explore"
-metrics_view: "AdBids_model_metrics"
+title: "AdBids_metrics_explore"
+metrics_view: "AdBids_metrics"
 ${extras}
 
 measures: '*'
