@@ -1,7 +1,8 @@
 <script lang="ts">
   import { parseDocument, YAMLMap, YAMLSeq } from "yaml";
   import { clamp } from "@rilldata/web-common/lib/clamp";
-  import ElementDivider, { activeDivider } from "./ElementDivider.svelte";
+  import ElementDivider from "./ElementDivider.svelte";
+  import { dropZone, activeDivider } from "./stores/ui-stores";
   import AddComponentDropdown from "./AddComponentDropdown.svelte";
   import type { FileArtifact } from "../entity-management/file-artifact";
   import { getCanvasStateManagers } from "./state-managers/state-managers";
@@ -37,7 +38,6 @@
   const COLUMN_COUNT = 12;
   const MIN_HEIGHT = 160;
   const MIN_WIDTH = 3;
-  const MINIMUM_MOVEMENT = 12;
   const baseLayoutArrays = [
     [],
     [COLUMN_COUNT],
@@ -137,7 +137,8 @@
   $: mouseDelta = initialMousePosition
     ? calculateMouseDelta(initialMousePosition, mousePosition)
     : 0;
-  $: passedThreshold = mouseDelta > MINIMUM_MOVEMENT;
+
+  $: dropZone.setMouseDelta(mouseDelta);
 
   $: if (resizeRow !== -1 && initialMousePosition) {
     const diff = mousePosition.y - initialMousePosition.y;
@@ -615,7 +616,9 @@
   let timeout: ReturnType<typeof setTimeout> | null = null;
 
   function onDrop(row: number, column: number | null) {
-    if (!passedThreshold) return;
+    if (!$dropZone) return;
+    dropZone.clear();
+
     if (dragItemInfo) {
       if (column === null) {
         moveToNewRow([dragItemInfo], row);
@@ -695,6 +698,7 @@
                   resizeIndex={-1}
                   addIndex={columnIndex}
                   rowLength={items.length}
+                  dragging={!!dragItemInfo}
                   {isSpreadEvenly}
                   {spreadEvenly}
                   {addItems}
@@ -706,6 +710,7 @@
                 onMouseDown={onColumResizeStart}
                 columnWidth={layout[columnIndex]}
                 {rowIndex}
+                dragging={!!dragItemInfo}
                 resizeIndex={columnIndex}
                 addIndex={columnIndex + 1}
                 rowLength={items.length}
@@ -717,7 +722,7 @@
                 column={columnIndex}
                 row={rowIndex}
                 maxColumns={items.length}
-                allowDrop={!!dragItemInfo && passedThreshold}
+                allowDrop={!!dragItemInfo}
                 {onDrop}
               />
             {/if}
@@ -780,7 +785,6 @@
             allowDrop={!!dragItemInfo}
             resizeIndex={rowIndex}
             dropIndex={rowIndex + 1}
-            {passedThreshold}
             {onRowResizeStart}
             {onDrop}
             addItem={(type) => {
@@ -797,7 +801,6 @@
             <RowDropZone
               allowDrop={!!dragItemInfo}
               dropIndex={0}
-              {passedThreshold}
               {onRowResizeStart}
               {onDrop}
               addItem={(type) => {

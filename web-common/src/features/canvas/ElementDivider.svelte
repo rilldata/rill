@@ -1,51 +1,8 @@
-<script lang="ts" context="module">
-  import { writable } from "svelte/store";
-
-  export const dropZone = (() => {
-    const { subscribe, set } = writable<string | null>(null);
-
-    return {
-      subscribe,
-      set: (id: string) => {
-        set(id);
-      },
-      clear: () => {
-        set(null);
-      },
-    };
-  })();
-
-  export const hoveredDivider = (() => {
-    const { subscribe, set } = writable<string | null>(null);
-    let timeout: ReturnType<typeof setTimeout> | null = null;
-
-    return {
-      subscribe,
-      set: (id: string) => {
-        if (timeout) clearTimeout(timeout);
-        set(id);
-      },
-      reset: () => {
-        timeout = setTimeout(() => set(null), 50);
-      },
-    };
-  })();
-
-  export const activeDivider = (() => {
-    const { subscribe, set } = writable<string | null>(null);
-
-    return {
-      subscribe,
-      set,
-      reset: () => set(null),
-    };
-  })();
-</script>
-
 <script lang="ts">
   import { ArrowLeftRight } from "lucide-svelte";
   import AddComponentDropdown from "./AddComponentDropdown.svelte";
   import type { CanvasComponentType } from "./components/types";
+  import { dropZone, hoveredDivider, activeDivider } from "./stores/ui-stores";
 
   export let resizeIndex: number;
   export let addIndex: number;
@@ -53,6 +10,7 @@
   export let rowIndex: number;
   export let columnWidth: number | undefined = undefined;
   export let isSpreadEvenly: boolean;
+  export let dragging: boolean;
   export let addItems: (
     item: {
       position: { row: number; order: number };
@@ -111,7 +69,7 @@
   data-column={resizeIndex}
   class:show-on-left={firstElement}
   class:show-on-right={!firstElement}
-  style:pointer-events={notActiveDivider || isDropZone ? "none" : "auto"}
+  style:pointer-events={notActiveDivider || dragging ? "none" : "auto"}
   style:height="calc(100% - 16px)"
   class="absolute top-2 flex items-center justify-center w-4 disabled:opacity-60 z-10 disabled:cursor-not-allowed cursor-col-resize"
   on:mousedown={(e) => {

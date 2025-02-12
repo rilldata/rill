@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { dropZone } from "../ElementDivider.svelte";
+  import { dropZone } from "../stores/ui-stores";
 
   export let column: number;
   export let row: number;

@@ -1,16 +1,11 @@
 <script lang="ts">
   import AddComponentDropdown from "./AddComponentDropdown.svelte";
   import type { CanvasComponentType } from "./components/types";
-  import {
-    activeDivider,
-    hoveredDivider,
-    dropZone,
-  } from "./ElementDivider.svelte";
+  import { dropZone, hoveredDivider, activeDivider } from "./stores/ui-stores";
 
   export let allowDrop: boolean;
   export let resizeIndex = -1;
   export let dropIndex: number;
-  export let passedThreshold: boolean;
   export let onDrop: (row: number, column: number | null) => void;
   export let onRowResizeStart: (e: MouseEvent) => void;
   export let addItem: (type: CanvasComponentType) => void;
