@@ -46,7 +46,7 @@
         {disabled}
         on:mouseenter={onMouseEnter}
         use:builder.action
-        class="pointer-events-auto h-7 px-2 grid place-content-center z-50 hover:bg-gray-100 text-slate-500 disabled:opacity-50"
+        class="pointer-events-auto disabled:pointer-events-none h-7 px-2 grid place-content-center z-50 hover:bg-gray-100 text-slate-500 disabled:opacity-50"
       >
         <PlusCircle size="15px" />
       </button>

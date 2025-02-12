@@ -39,6 +39,7 @@
   class:bottom={!notResizable}
   class="absolute z-10 -left-20 h-20 flex items-center justify-center px-2"
   on:mouseenter={() => {
+    console.log(allowDrop);
     if (!allowDrop) return;
     dropZone.set(dropId);
   }}
@@ -53,7 +54,7 @@
 >
   <button
     data-row={resizeIndex}
-    class:cursor-not-allowed={notResizable && !allowDrop}
+    class:cursor-default={notResizable && !allowDrop}
     class:cursor-row-resize={!allowDrop && !notResizable}
     style:pointer-events={notActiveDivider || allowDrop ? "none" : "auto"}
     class="mx-20 w-full h-4 z-40 group flex items-center justify-center"

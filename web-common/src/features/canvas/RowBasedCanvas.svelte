@@ -326,6 +326,7 @@
     }
 
     activeDivider.set(null);
+    dropZone.clear();
   }
 
   function onRowResizeEnd() {
@@ -641,7 +642,7 @@
   }}
   on:keydown={(e) => {
     if (e.key === "Backspace" && selected) {
-      if (document.activeElement?.tagName !== "INPUT") {
+      if (e.target === document.body) {
         removeItems(
           Array.from(selected).map((id) => {
             const [row, order] = id.split("-").slice(1).map(Number);
@@ -736,7 +737,7 @@
               class:pointer-events-none={resizeColumnInfo}
               class:pointer-events-auto={!resizeColumnInfo}
               class:editable
-              class="card w-full cursor-pointer z-10 p-0 h-full relative outline outline-[1px] outline-gray-200 bg-white overflow-hidden rounded-sm flex items-center justify-center"
+              class="component-card w-full cursor-pointer z-10 p-0 h-full relative outline outline-[1px] outline-gray-200 bg-white overflow-hidden rounded-sm flex items-center justify-center"
               on:mousedown={(e) => {
                 if (e.button !== 0 || !editable) return;
 
@@ -841,11 +842,11 @@
 </div>
 
 <style lang="postcss">
-  .card {
+  .component-card {
     @apply shadow-sm;
   }
 
-  .card.editable:hover {
+  .component-card.editable:hover {
     @apply shadow-md;
   }
 
