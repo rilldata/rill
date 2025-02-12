@@ -1,5 +1,7 @@
 import { expect, type Locator } from "@playwright/test";
-import { useDashboardFlowTestSetup } from "web-local/tests/explores/dashboard-flow-test-setup";
+import { join } from "path";
+import { fileURLToPath } from "url";
+import { gotoNavEntry } from "web-local/tests/utils/waitHelpers";
 import { test } from "../utils/test";
 
 async function assertAAboveB(locA: Locator, locB: Locator) {
@@ -14,10 +16,18 @@ async function assertAAboveB(locA: Locator, locB: Locator) {
 }
 
 test.describe("leaderboard and dimension table sorting", () => {
-  useDashboardFlowTestSetup(true);
+  test.use({
+    projectInit: {
+      path: join(fileURLToPath(import.meta.url), "../../data/projects/AdBids"),
+    },
+  });
 
   test("leaderboard and dimension table sorting", async ({ page }) => {
     await page.waitForTimeout(1000);
+
+    await page.getByLabel("/dashboards").click();
+    await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
+    await page.getByRole("button", { name: "Preview" }).click();
 
     /**
      * LEADERBOARD
