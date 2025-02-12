@@ -5,7 +5,6 @@ import {
   fetchExploreSpec,
   fetchMetricsViewSchema,
 } from "@rilldata/web-common/features/explores/selectors";
-import { isHTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import { error } from "@sveltejs/kit";
 
 export const load = async ({ params: { token }, parent }) => {
