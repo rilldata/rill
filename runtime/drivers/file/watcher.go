@@ -245,7 +245,7 @@ func (w *watcher) addDir(p string, replay, errIfNotExist bool) error {
 		// should never happen unless some bug in the code
 		return fmt.Errorf("failed to add path %q to watcher: failed to get relative path", zap.String("p", p))
 	}
-	relPath = path.Join("/", relPath)
+	relPath = filepath.Join(string(filepath.Separator), relPath)
 	if drivers.IsIgnored(relPath, w.ignorePaths) {
 		w.logger.Debug("ignoring path", zap.String("path", relPath))
 		return nil
