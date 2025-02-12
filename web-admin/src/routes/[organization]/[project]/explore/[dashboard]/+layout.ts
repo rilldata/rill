@@ -1,3 +1,4 @@
+import type { V1Bookmark } from "@rilldata/web-admin/client";
 import {
   fetchBookmarks,
   isHomeBookmark,
@@ -8,61 +9,71 @@ import {
   fetchExploreSpec,
   fetchMetricsViewSchema,
 } from "@rilldata/web-common/features/explores/selectors";
-import { isHTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
-import { error } from "@sveltejs/kit";
+import {
+  type V1ExplorePreset,
+  type V1Resource,
+} from "@rilldata/web-common/runtime-client";
 
 export const load = async ({ params, depends, parent }) => {
   const { user, project, runtime } = await parent();
+
   const { dashboard: exploreName } = params;
+
   depends(exploreName, "explore");
 
-  const exploreSpecPromise = fetchExploreSpec(
-    runtime?.instanceId,
-    exploreName,
-  ).catch((e) => {
-    if (!isHTTPError(e)) throw error(500, "Error fetching explore spec");
-    throw error(e.response.status, e.response.data.message);
-  });
+  let explore: V1Resource | undefined;
+  let metricsView: V1Resource | undefined;
+  let defaultExplorePreset: V1ExplorePreset | undefined;
+  let exploreStateFromYAMLConfig: Partial<MetricsExplorerEntity> = {};
+  let bookmarks: V1Bookmark[] | undefined;
 
-  const bookmarksPromise = user
-    ? fetchBookmarks(project.id, exploreName).catch((e) => {
-        if (!isHTTPError(e)) throw error(500, "Error fetching bookmarks");
-        throw error(e.response.status, e.response.data.message);
-      })
-    : Promise.resolve([]);
-
-  // Call `GetExplore` and `ListBookmarks` concurrently
-  const [
-    { explore, metricsView, defaultExplorePreset, exploreStateFromYAMLConfig },
-    bookmarks,
-  ] = await Promise.all([exploreSpecPromise, bookmarksPromise]);
+  try {
+    [
+      {
+        explore,
+        metricsView,
+        defaultExplorePreset,
+        exploreStateFromYAMLConfig,
+      },
+      bookmarks,
+    ] = await Promise.all([
+      fetchExploreSpec(runtime?.instanceId, exploreName),
+      // public projects might not have a logged-in user. bookmarks are not available in this case
+      user ? fetchBookmarks(project.id, exploreName) : Promise.resolve([]),
+    ]);
+  } catch {
+    // error handled in +page.svelte for now
+    // TODO: move it here
+    return {
+      explore: <V1Resource>{},
+      metricsView: <V1Resource>{},
+      defaultExplorePreset: <V1ExplorePreset>{},
+      exploreStateFromYAMLConfig,
+    };
+  }
 
   const metricsViewSpec = metricsView.metricsView?.state?.validSpec ?? {};
   const exploreSpec = explore.explore?.state?.validSpec ?? {};
 
-  const schema = await fetchMetricsViewSchema(
-    runtime.instanceId,
-    exploreSpec.metricsView ?? "",
-  ).catch((e) => {
-    if (!isHTTPError(e)) throw error(500, "Error fetching metrics view schema");
-    throw error(e.response.status, e.response.data.message);
-  });
-
   let homeBookmarkExploreState: Partial<MetricsExplorerEntity> | undefined =
     undefined;
-  const homeBookmark = bookmarks.find(isHomeBookmark);
+  try {
+    const homeBookmark = bookmarks.find(isHomeBookmark);
+    const schema = await fetchMetricsViewSchema(
+      runtime?.instanceId,
+      exploreSpec.metricsView ?? "",
+    );
 
-  if (homeBookmark) {
-    try {
+    if (homeBookmark) {
       homeBookmarkExploreState = getDashboardStateFromUrl(
         homeBookmark.data ?? "",
         metricsViewSpec,
         exploreSpec,
         schema,
       );
-    } catch {
-      throw error(500, "Error creating the home bookmark state");
     }
+  } catch {
+    // TODO
   }
 
   return {

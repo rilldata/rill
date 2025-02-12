@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onNavigate } from "$app/navigation";
   import { page } from "$app/stores";
+  import { errorStore } from "@rilldata/web-admin/components/errors/error-store";
   import DashboardBuilding from "@rilldata/web-admin/features/dashboards/DashboardBuilding.svelte";
   import DashboardErrored from "@rilldata/web-admin/features/dashboards/DashboardErrored.svelte";
   import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
@@ -52,10 +53,23 @@
     },
   });
 
+  $: isDashboardNotFound =
+    !$explore.data &&
+    $explore.isError &&
+    $explore.error?.response?.status === 404;
   $: exploreTitle =
     $explore.data?.explore?.explore?.state?.validSpec?.displayName;
   $: metricsViewName = $explore.data?.metricsView?.meta?.name?.name;
   $: hasBanner = !!$explore.data?.explore?.explore?.state?.validSpec?.banner;
+
+  // If no dashboard is found, show a 404 page
+  $: if (isDashboardNotFound) {
+    errorStore.set({
+      statusCode: 404,
+      header: "Dashboard not found",
+      body: `The dashboard you requested could not be found. Please check that you provided the name of a working dashboard.`,
+    });
+  }
 
   // Display a dashboard banner
   $: if (hasBanner) {
@@ -68,6 +82,7 @@
 
   onNavigate(() => {
     viewAsUserStore.set(null);
+    errorStore.reset();
 
     // Clear out any dashboard banners
     if (hasBanner) {
