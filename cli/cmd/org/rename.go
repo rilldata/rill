@@ -27,8 +27,6 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.PrintfWarn("Warn: Renaming an org would invalidate dashboard URLs.\nConsider using the --display-name flag to set a new display name for the org.\n")
-
 			if !cmd.Flags().Changed("org") && ch.Interactive && !force {
 				orgNames, err := OrgNames(ctx, ch)
 				if err != nil {
@@ -57,10 +55,13 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 				Name: org.Name,
 			}
 
+			ch.PrintfWarn("Warn: Renaming an org would invalidate dashboard URLs.\nConsider using the --display-name flag to set a new display name for the org.\n")
+			hasDisplayName := org.DisplayName != ""
+
 			// Update display name
 			if cmd.Flags().Changed("display-name") {
 				req.DisplayName = &displayName
-			} else if ch.Interactive && !force {
+			} else if ch.Interactive && !force && hasDisplayName {
 				ok, err := confirmFieldChange("Org display name", force)
 				if err != nil {
 					return err
