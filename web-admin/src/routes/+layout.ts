@@ -24,7 +24,7 @@ import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { error, redirect, type Page } from "@sveltejs/kit";
 
 export const load = async ({ params, url, route, depends }) => {
-  depends("init");
+  depends("root");
   // Route params
   const { organization, project, token: routeToken } = params;
   const pageState = {

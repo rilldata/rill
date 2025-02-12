@@ -21,6 +21,8 @@
   export let onSave: (assetId: string) => Promise<void>;
   export let onRemove: () => Promise<void>;
 
+  // `imageUrl` is the saved image while `url` is the temporarily uploaded image.
+  // Since save only happens when `Save` is clicked these could be different.
   $: url = imageUrl;
 
   let open = false;
