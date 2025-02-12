@@ -194,40 +194,39 @@ func printResources(p *printer.Printer, resources map[string]map[string][]*runti
 	for org, projectRes := range resources {
 		for proj, res := range projectRes {
 			for _, r := range res {
-				// convert each resource to a flattened JSON
-				row := make(map[string]any)
+				row := make(map[string]any, 0)
+				rows = append(rows, row)
 				row["org"] = org
 				row["project"] = proj
 				row["resource_type"] = runtime.PrettifyResourceKind(r.Meta.Name.Kind)
 				row["resource_name"] = r.Meta.Name.Name
-				// marshal meta separately
-				meta, err := protojson.MarshalOptions{Indent: " ", Multiline: true}.Marshal(r.Meta)
-				if err != nil {
-					row["meta"] = fmt.Sprintf("failed to marshal meta: %v", err)
-				} else {
-					row["meta"] = json.RawMessage(meta)
-				}
 
-				// convert resource proto to json
+				// each resource has a meta field and a resource(source/model/metricsview etc) which has spec and state fields
+				// we want to flatten the resource to have the meta fields and spec and state fields at the top level
 				rowJSON, err := protojson.Marshal(r)
 				if err != nil {
-					row["error"] = fmt.Sprintf("failed to marshal resource: %v", err)
+					row["error"] = fmt.Sprintf("Failed to marshal resource: %v", err)
+					continue
 				}
-
-				// unmarshal the json to get the spec and state which is inside a model/source/metrics_view etc.
-				parsed := make(map[string]map[string]any)
-				err = json.Unmarshal(rowJSON, &parsed)
+				err = json.Unmarshal(rowJSON, &row)
 				if err != nil {
-					row["error"] = fmt.Sprintf("failed to unmarshal resource: %v", err)
+					row["error"] = fmt.Sprintf("Failed to unmarshal resource: %v", err)
+					continue
 				}
-				for k := range parsed {
-					if k != "meta" {
-						row["spec"] = parsed[k]["spec"].(map[string]any)
-						row["state"] = parsed[k]["state"].(map[string]any)
-						break
+				for k := range row {
+					if k == "meta" {
+						continue
 					}
+					resource, ok := row[k].(map[string]any)
+					if !ok {
+						delete(row, k)
+						continue
+					}
+					row["spec"] = resource["spec"]
+					row["state"] = resource["state"]
+					delete(row, k)
+					break
 				}
-				rows = append(rows, row)
 			}
 		}
 	}
