@@ -22,8 +22,10 @@
     ["image", Image],
   ]);
 
+  $: ({ instanceId } = $runtime);
+
   $: componentQuery = createQueryServiceResolveComponent(
-    $runtime.instanceId,
+    instanceId,
     componentName,
     { args: {} },
   );

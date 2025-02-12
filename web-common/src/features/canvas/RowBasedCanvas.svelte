@@ -1,7 +1,7 @@
 <script lang="ts">
   import { parseDocument, YAMLMap, YAMLSeq } from "yaml";
   import { clamp } from "@rilldata/web-common/lib/clamp";
-  import ElementDivider from "./ElementDivider.svelte";
+  import ElementDivider, { activeDivider } from "./ElementDivider.svelte";
   import AddComponentDropdown from "./AddComponentDropdown.svelte";
   import type { FileArtifact } from "../entity-management/file-artifact";
   import { getCanvasStateManagers } from "./state-managers/state-managers";
@@ -65,7 +65,7 @@
   };
 
   export let fileArtifact: FileArtifact;
-  export let editable = false;
+  export let editable = true;
 
   let mousePosition = { x: 0, y: 0 };
   let initialMousePosition: { x: number; y: number } | null = null;
@@ -75,11 +75,8 @@
   let offset = { x: 0, y: 0 };
   let resizeRow = -1;
   let initialHeight = 0;
-  // {row}-{order}
-  let hoveredDropZone: string | null = null;
-  // let rowHover: number | null = null;
   let dragItemInfo: DragItem | null = null;
-  let resizeInfo: {
+  let resizeColumnInfo: {
     width: number;
     row: number;
     column: number;
@@ -206,7 +203,7 @@
 
     if (!nextElementWidth) return;
 
-    resizeInfo = {
+    resizeColumnInfo = {
       width: Number(e.currentTarget.getAttribute("data-width")),
       row,
       column,
@@ -219,9 +216,9 @@
   }
 
   function onColumnResize(e: MouseEvent) {
-    if (!resizeInfo) return;
+    if (!resizeColumnInfo) return;
 
-    const { row, column, width, maxWidth, nextElementWidth } = resizeInfo;
+    const { row, column, width, maxWidth, nextElementWidth } = resizeColumnInfo;
     const layoutRow = [...rowMaps[row].layout];
 
     const delta = e.clientX - (initialMousePosition?.x ?? 0);
@@ -242,14 +239,15 @@
     window.removeEventListener("mousemove", onColumnResize);
     window.removeEventListener("mouseup", onColumnResizeEnd);
 
-    if (!resizeInfo) return;
+    if (!resizeColumnInfo) return;
     contents.setIn(
-      ["rows", resizeInfo.row, "layout"],
-      rowMaps[resizeInfo.row].layout.join(", "),
+      ["rows", resizeColumnInfo.row, "layout"],
+      rowMaps[resizeColumnInfo.row].layout.join(", "),
     );
 
     updateContents();
-    resizeInfo = null;
+    resizeColumnInfo = null;
+    document.body.style.cursor = "";
   }
 
   function getId(row: number, column: number) {
@@ -291,10 +289,10 @@
     clone.style.position = "absolute";
     clone.style.top = top + "px";
     clone.style.left = left + "px";
-    clone.style.width = width + 2 + "px";
-    clone.style.height = height + 2 + "px";
+    clone.style.width = width + "px";
+    clone.style.height = height + "px";
     clone.classList.add("outline", "outline-primary-300");
-    clone.style.opacity = "0.8";
+    clone.style.opacity = "0.6";
     clone.style.pointerEvents = "none";
     clone.style.zIndex = "1000";
     clone.classList.add("shadow-md");
@@ -324,6 +322,8 @@
     if (dragItemInfo) {
       onDragEnd();
     }
+
+    activeDivider.set(null);
   }
 
   function onRowResizeEnd() {
@@ -613,14 +613,6 @@
 
   let timeout: ReturnType<typeof setTimeout> | null = null;
 
-  function resetDropZone() {
-    hoveredDropZone = null;
-  }
-
-  function setDropZone(id: string) {
-    hoveredDropZone = id;
-  }
-
   function onDrop(row: number, column: number | null) {
     if (!passedThreshold) return;
     if (dragItemInfo) {
@@ -631,6 +623,11 @@
       }
     }
   }
+
+  function resetSelection() {
+    setSelectedComponentIndex(null);
+    selected = new Set();
+  }
 </script>
 
 <svelte:window
@@ -640,8 +637,6 @@
   }}
   on:keydown={(e) => {
     if (e.key === "Backspace" && selected) {
-      e.preventDefault();
-
       if (document.activeElement?.tagName !== "INPUT") {
         removeItems(
           Array.from(selected).map((id) => {
@@ -655,24 +650,29 @@
 />
 
 {#if filtersEnabled}
-  <header class="bg-background border-b py-4 px-2 w-full">
+  <header
+    role="presentation"
+    class="bg-background border-b py-4 px-2 w-full select-none"
+    on:click|self={resetSelection}
+  >
     <CanvasFilters />
   </header>
 {/if}
 
 <div
   role="presentation"
-  on:click|self={() => {
-    setSelectedComponentIndex(null);
-    selected = new Set();
-  }}
-  class="size-full overflow-hidden overflow-y-auto pb-48 pt-2 px-2 flex flex-col items-center bg-white select-none"
+  class:!cursor-grabbing={dragItemInfo}
+  class="size-full overflow-hidden overflow-y-auto p-2 pb-48 flex flex-col items-center bg-white select-none"
+  on:click|self={resetSelection}
 >
   <div
-    class="w-full h-fit flex flex-col items-center row-container relative"
+    class="w-full h-fit flex flex-col items-center row-container relative pointer-events-none"
+    style:max-width={maxWidth + "px"}
     bind:clientWidth
   >
     {#each rowMaps as { items, height, layout }, rowIndex (rowIndex)}
+      {@const isSpreadEvenly =
+        layout.join(", ") === baseLayoutArrays[layout.length].join(", ")}
       <RowWrapper
         zIndex={50 - rowIndex * 2}
         {maxWidth}
@@ -681,35 +681,28 @@
         {#each items as itemIndex, columnIndex (columnIndex)}
           {@const id = getId(rowIndex, columnIndex)}
           {@const item = canvasItems[Number(itemIndex)]}
-
           <div
             style:z-index={4 - columnIndex}
-            class="p-2 relative pointer-events-none size-full container"
+            class="p-2.5 relative pointer-events-none size-full container"
             style:min-height="{height}px"
             style:height="{height}px"
           >
             {#if editable}
               {#if columnIndex === 0}
                 <ElementDivider
-                  left
-                  activelyResizing={false}
-                  hoveringOnDropZone={passedThreshold &&
-                    hoveredDropZone === `${rowIndex}-${columnIndex}`}
                   {rowIndex}
                   resizeIndex={-1}
                   addIndex={columnIndex}
                   rowLength={items.length}
+                  {isSpreadEvenly}
                   {spreadEvenly}
                   {addItems}
                 />
               {/if}
 
               <ElementDivider
+                {isSpreadEvenly}
                 onMouseDown={onColumResizeStart}
-                activelyResizing={resizeInfo?.row === rowIndex &&
-                  resizeInfo?.column === columnIndex}
-                hoveringOnDropZone={passedThreshold &&
-                  hoveredDropZone === `${rowIndex}-${columnIndex + 1}`}
                 columnWidth={layout[columnIndex]}
                 {rowIndex}
                 resizeIndex={columnIndex}
@@ -724,8 +717,6 @@
                 row={rowIndex}
                 maxColumns={items.length}
                 allowDrop={!!dragItemInfo && passedThreshold}
-                onHover={setDropZone}
-                onMouseLeave={resetDropZone}
                 {onDrop}
               />
             {/if}
@@ -736,18 +727,13 @@
               class:selected={selected.has(id)}
               class:opacity-20={dragItemInfo?.row === rowIndex &&
                 dragItemInfo.order === columnIndex}
-              class:pointer-events-none={resizeInfo}
-              class:pointer-events-auto={!resizeInfo}
+              class:pointer-events-none={resizeColumnInfo}
+              class:pointer-events-auto={!resizeColumnInfo}
               class:editable
-              class="card w-full cursor-pointer z-10 p-4 h-full relative bg-white overflow-hidden rounded-sm border flex items-center justify-center"
+              class="card w-full cursor-pointer z-10 p-0 h-full relative outline outline-[1px] outline-gray-200 bg-white overflow-hidden rounded-sm flex items-center justify-center"
               on:mousedown={(e) => {
                 if (e.button !== 0 || !editable) return;
-                // if (e.shiftKey) {
-                //   selected.add(id);
-                //   selected = selected;
 
-                //   return;
-                // }
                 setSelectedComponentIndex(Number(itemIndex));
 
                 selected = new Set([id]);
@@ -766,7 +752,6 @@
               {#if item}
                 <PreviewElement
                   i={columnIndex}
-                  {instanceId}
                   selected={false}
                   component={item}
                 />
@@ -797,7 +782,6 @@
             {passedThreshold}
             {onRowResizeStart}
             {onDrop}
-            activelyResizing={resizeRow === rowIndex}
             addItem={(type) => {
               initializeRow(rowIndex + 1, [
                 {
@@ -815,7 +799,6 @@
               {passedThreshold}
               {onRowResizeStart}
               {onDrop}
-              activelyResizing={false}
               addItem={(type) => {
                 initializeRow(rowIndex, [
                   {
@@ -868,7 +851,7 @@
   }
 
   .selected {
-    @apply outline outline-primary-300;
+    @apply outline-2 outline-primary-300;
   }
 
   .row-container {
@@ -883,11 +866,11 @@
     }
   }
 
+  /* 
   .element {
     @apply size-full grid;
-    /* container-type: inline-size; */
     grid-template-columns: repeat(4, 1fr);
-  }
+  } */
 
   @container container (inline-size < 600px) {
     .element {

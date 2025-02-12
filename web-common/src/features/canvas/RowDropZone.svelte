@@ -1,71 +1,96 @@
 <script lang="ts">
   import AddComponentDropdown from "./AddComponentDropdown.svelte";
   import type { CanvasComponentType } from "./components/types";
+  import {
+    activeDivider,
+    hoveredDivider,
+    dropZone,
+  } from "./ElementDivider.svelte";
 
   export let allowDrop: boolean;
   export let resizeIndex = -1;
   export let dropIndex: number;
-  export let activelyResizing: boolean;
   export let passedThreshold: boolean;
   export let onDrop: (row: number, column: number | null) => void;
   export let onRowResizeStart: (e: MouseEvent) => void;
   export let addItem: (type: CanvasComponentType) => void;
 
-  let hovered = false;
-  let timeout: ReturnType<typeof setTimeout> | null = null;
+  $: dividerId = `row:${resizeIndex}::column:null`;
+  $: dropId = `row:${dropIndex}::column:null`;
 
-  $: showAddComponent = !allowDrop && !activelyResizing && hovered;
-  $: dropOnly = resizeIndex === -1;
+  $: isActiveDivider = $activeDivider === dividerId;
+  $: isDropZone = $dropZone === dropId;
+  $: isHoveredDivider = $hoveredDivider === dividerId;
+
+  $: notActiveDivider = !!$activeDivider && !isActiveDivider;
+
+  $: showAddComponent = isHoveredDivider && !isActiveDivider;
+  $: notResizable = resizeIndex === -1;
+
+  function focus() {
+    activeDivider.set(dividerId);
+  }
+
+  function hover() {
+    hoveredDivider.set(dividerId);
+  }
 </script>
 
 <div
   role="presentation"
-  class:pointer-events-none={!allowDrop}
+  style:pointer-events={allowDrop ? "auto" : "none"}
   style:width="calc(100% + 160px)"
-  class:top={dropOnly}
-  class:bottom={!dropOnly}
+  class:top={notResizable}
+  class:bottom={!notResizable}
   class="absolute z-10 -left-20 h-20 flex items-center justify-center px-2"
   on:mouseenter={() => {
-    if (timeout) clearTimeout(timeout);
-    hovered = true;
+    if (!allowDrop) return;
+    dropZone.set(dropId);
   }}
   on:mouseleave={() => {
-    timeout = setTimeout(() => {
-      hovered = false;
-    }, 150);
+    if (!allowDrop) return;
+    dropZone.clear();
   }}
   on:mouseup={() => {
+    if (!allowDrop) return;
     onDrop(dropIndex, null);
   }}
 >
-  <span
-    class:!hidden={!showAddComponent}
-    class="flex pointer-events-auto shadow-sm absolute left-1/2 w-fit z-50 bg-white -translate-x-1/2 border rounded-sm"
-  >
-    <AddComponentDropdown
-      onMouseEnter={() => {
-        if (timeout) clearTimeout(timeout);
-        hovered = true;
-      }}
-      onItemClick={(type) => {
-        hovered = false;
-        addItem(type);
-      }}
-    />
-  </span>
-
   <button
     data-row={resizeIndex}
-    class:cursor-not-allowed={dropOnly && !allowDrop}
-    class:cursor-row-resize={!allowDrop && !dropOnly}
-    class="mx-20 w-full h-4 group z-40 flex items-center justify-center pointer-events-auto"
-    on:mousedown={onRowResizeStart}
+    class:cursor-not-allowed={notResizable && !allowDrop}
+    class:cursor-row-resize={!allowDrop && !notResizable}
+    style:pointer-events={notActiveDivider || allowDrop ? "none" : "auto"}
+    class="mx-20 w-full h-4 z-40 group flex items-center justify-center"
+    on:mousedown={(e) => {
+      onRowResizeStart(e);
+      focus();
+    }}
+    on:mouseenter={hover}
+    on:mouseleave={hoveredDivider.reset}
   >
     <span
-      class:bg-primary-300={hovered && (!allowDrop || passedThreshold)}
-      class="w-full h-[3px] group-hover:bg-primary-300"
+      class:bg-primary-300={isActiveDivider || isHoveredDivider || isDropZone}
+      class="w-full h-[3px] rounded-full pointer-events-none"
     />
   </button>
+
+  {#if showAddComponent}
+    <span
+      role="presentation"
+      on:mouseleave={hoveredDivider.reset}
+      class:shift-down={notResizable}
+      class="flex shadow-sm pointer-events-auto absolute left-1/2 w-fit z-50 bg-white -translate-x-1/2 border rounded-sm"
+    >
+      <AddComponentDropdown
+        onMouseEnter={hover}
+        onItemClick={(type) => {
+          hoveredDivider.reset();
+          addItem(type);
+        }}
+      />
+    </span>
+  {/if}
 </div>
 
 <style lang="postcss">
@@ -79,5 +104,9 @@
 
   .bottom {
     @apply bottom-0 translate-y-1/2;
+  }
+
+  .shift-down {
+    @apply translate-y-[8px];
   }
 </style>
