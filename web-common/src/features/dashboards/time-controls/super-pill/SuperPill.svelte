@@ -87,7 +87,6 @@
       {timeStart}
       {timeEnd}
       {complete}
-      {toggleComplete}
       {onTimeGrainSelect}
     />
   {/if}
