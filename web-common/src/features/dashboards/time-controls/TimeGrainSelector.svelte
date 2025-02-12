@@ -6,7 +6,6 @@
   import type { V1TimeGrain } from "../../../runtime-client";
   import { getAllowedTimeGrains } from "@rilldata/web-common/lib/time/grains";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import Switch from "@rilldata/web-common/components/button/Switch.svelte";
 
   export let tdd = false;
   export let activeTimeGrain: V1TimeGrain | undefined;
@@ -14,8 +13,7 @@
   export let timeEnd: string | undefined;
   export let minTimeGrain: V1TimeGrain | undefined;
   export let onTimeGrainSelect: (timeGrain: V1TimeGrain) => void;
-  export let complete: boolean;
-  export let toggleComplete: () => void;
+  export let complete: boolean = false;
 
   let open = false;
 
@@ -43,10 +41,6 @@
           };
         })
     : [];
-
-  import { featureFlags } from "../../feature-flags";
-
-  const { rillTime } = featureFlags;
 </script>
 
 {#if activeTimeGrain && timeGrainOptions.length && minTimeGrain}
@@ -89,16 +83,6 @@
           {option.main}
         </DropdownMenu.CheckboxItem>
       {/each}
-
-      {#if $rillTime}
-        <DropdownMenu.Separator />
-        <div class="flex justify-between px-2 py-1">
-          <label for="complete" class="select-none cursor-pointer">
-            Complete periods
-          </label>
-          <Switch id="complete" checked={complete} on:click={toggleComplete} />
-        </div>
-      {/if}
     </DropdownMenu.Content>
   </DropdownMenu.Root>
 {/if}

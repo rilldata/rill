@@ -22,11 +22,15 @@
   import ComparisonSelector from "@rilldata/web-common/features/dashboards/time-controls/ComparisonSelector.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
-  import type { TimeGrain } from "@rilldata/web-common/lib/time/types";
+  import type {
+    DashboardTimeControls,
+    TimeGrain,
+  } from "@rilldata/web-common/lib/time/types";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
   import {
     createQueryServiceExport,
     V1ExportFormat,
+    V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
   import { fly } from "svelte/transition";
   import ExportMenu from "../../exports/ExportMenu.svelte";
@@ -36,6 +40,8 @@
   import exportTDD from "./export-tdd";
   import { getTDDExportArgs } from "./getTDDExportArgs";
   import type { TDDComparison } from "./types";
+  import type { TimeRange } from "@rilldata/web-common/lib/time/types";
+  import { useTimeControlStore } from "../time-controls/time-control-store";
 
   export let exploreName: string;
   export let dimensionName: string;
@@ -171,6 +177,48 @@
       searchText: $dimensionSearchText,
     });
   };
+
+  const timeControlsStore = useTimeControlStore(stateManagers);
+
+  $: ({ minTimeGrain, timeStart, timeEnd, selectedTimeRange } =
+    $timeControlsStore);
+
+  $: activeTimeGrain = selectedTimeRange?.interval;
+
+  $: baseTimeRange = selectedTimeRange?.start &&
+    selectedTimeRange?.end && {
+      name: selectedTimeRange?.name,
+      start: selectedTimeRange.start,
+      end: selectedTimeRange.end,
+    };
+
+  function onTimeGrainSelect(timeGrain: V1TimeGrain) {
+    if (baseTimeRange) {
+      makeTimeSeriesTimeRangeAndUpdateAppState(
+        baseTimeRange,
+        timeGrain,
+        $dashboardStore?.selectedComparisonTimeRange,
+      );
+    }
+  }
+
+  function makeTimeSeriesTimeRangeAndUpdateAppState(
+    timeRange: TimeRange,
+    timeGrain: V1TimeGrain,
+    /** we should only reset the comparison range when the user has explicitly chosen a new
+     * time range. Otherwise, the current comparison state should continue to be the
+     * source of truth.
+     */
+    comparisonTimeRange: DashboardTimeControls | undefined,
+  ) {
+    metricsExplorerStore.selectTimeRange(
+      exploreName,
+      timeRange,
+      timeGrain,
+      comparisonTimeRange,
+      $validSpecStore.data?.metricsView ?? {},
+    );
+  }
 </script>
 
 <div class="tdd-header">
@@ -188,7 +236,14 @@
         <Column size="16px" /> Columns
       </div>
       <div class="flex items-center gap-x-2">
-        <TimeGrainSelector {exploreName} tdd />
+        <TimeGrainSelector
+          tdd
+          {activeTimeGrain}
+          {onTimeGrainSelect}
+          {timeStart}
+          {timeEnd}
+          {minTimeGrain}
+        />
         <SearchableFilterChip
           label={selectedMeasureLabel}
           onSelect={switchMeasure}
