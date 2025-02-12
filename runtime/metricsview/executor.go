@@ -295,7 +295,6 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		if err != nil {
 			return nil, err
 		}
-		fmt.Println(sql)
 
 		res, err = e.olap.Execute(ctx, &drivers.Statement{
 			Query:            sql,
