@@ -1,16 +1,16 @@
 // WIP as of 04/19/2024
 
 import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
-import { writable, type Writable, get } from "svelte/store";
+import type { MetricsViewSpecAvailableTimeRange } from "@rilldata/web-common/runtime-client";
 import {
-  Interval,
   DateTime,
-  type DurationObjectUnits,
   type DateTimeUnit,
   Duration,
+  type DurationObjectUnits,
   IANAZone,
+  Interval,
 } from "luxon";
-import type { MetricsViewSpecAvailableTimeRange } from "@rilldata/web-common/runtime-client";
+import { get, writable, type Writable } from "svelte/store";
 
 // CONSTANTS -> time-control-constants.ts
 
@@ -70,7 +70,6 @@ export const RILL_LATEST = [
   "P7D",
   "P14D",
   "P4W",
-
   "P12M",
 ] as const;
 
@@ -410,8 +409,6 @@ export function bucketYamlRanges(
   if (showDefaults) {
     return defaultBuckets;
   }
-
-  console.log({ availableRanges });
 
   return availableRanges.reduce(
     (record, { range }) => {
