@@ -36,7 +36,7 @@
       <button
         {...builder}
         use:builder.action
-        class="shadow-sm hover:shadow-md flex bg-white h-[84px] flex-col justify-center gap-2 items-center rounded-md border border-slate-200 w-full"
+        class="pointer-events-auto shadow-sm hover:shadow-md flex bg-white h-[84px] flex-col justify-center gap-2 items-center rounded-md border border-slate-200 w-full"
       >
         <PlusCircle class="w-6 h-6 text-slate-500" />
         <span class="text-sm font-medium text-slate-500">Add a component</span>
@@ -46,8 +46,7 @@
         {disabled}
         on:mouseenter={onMouseEnter}
         use:builder.action
-        class="h-7 px-2 grid place-content-center z-50
-        hover:bg-gray-100 text-slate-500 disabled:opacity-50"
+        class="pointer-events-auto h-7 px-2 grid place-content-center z-50 hover:bg-gray-100 text-slate-500 disabled:opacity-50"
       >
         <PlusCircle size="15px" />
       </button>
