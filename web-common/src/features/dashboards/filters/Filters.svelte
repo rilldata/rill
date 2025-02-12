@@ -195,7 +195,7 @@
     );
   }
 
-  async function onSelectRange(name: string, syntax?: boolean) {
+  function onSelectRange(name: string) {
     if (!allTimeRange?.end) {
       return;
     }
@@ -217,19 +217,16 @@
       if (timeZone) metricsExplorerStore.setTimeZone($exploreName, timeZone);
     }
 
-    const interval = await deriveInterval(
-      syntax && !includesTimeZoneOffset
-        ? name + ` @ {${activeTimeZone}}`
-        : name,
+    const interval = deriveInterval(
+      name,
       DateTime.fromJSDate(allTimeRange.end),
-      metricsViewName,
     );
 
-    if (interval.isValid) {
+    if (interval?.isValid) {
       const validInterval = interval as Interval<true>;
       const baseTimeRange: TimeRange = {
         // Temporary fix for custom syntax
-        name: name,
+        name: name as TimeRangePreset,
         start: validInterval.start.toJSDate(),
         end: validInterval.end.toJSDate(),
       };
@@ -312,7 +309,6 @@
       <Calendar size="16px" />
       {#if allTimeRange?.start && allTimeRange?.end}
         <SuperPill
-          context={$exploreName}
           {allTimeRange}
           {selectedRangeAlias}
           showPivot={$showPivot}
