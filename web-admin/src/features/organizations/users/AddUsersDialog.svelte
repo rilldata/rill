@@ -33,7 +33,6 @@
   const addOrganizationMemberUser =
     createAdminServiceAddOrganizationMemberUser();
 
-  // Add state for failed invites
   let failedInvites: string[] = [];
 
   async function handleCreate(
@@ -211,7 +210,7 @@
       </MultiInput>
       {#if failedInvites.length > 0}
         <div class="text-sm text-red-500 py-2">
-          {failedInvites.join(", ")}
+          Failed to invite {failedInvites.join(", ")}
         </div>
       {/if}
     </form>
