@@ -2,12 +2,15 @@ package testruntime
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"os"
 	"path/filepath"
 	goruntime "runtime"
+	"testing"
 
 	"github.com/joho/godotenv"
+	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/clickhouse"
@@ -91,5 +94,31 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		dsn := os.Getenv("RILL_RUNTIME_DRUID_TEST_DSN")
 		require.NotEmpty(t, dsn, "Druid test DSN not configured")
 		return map[string]string{"dsn": dsn}
+	},
+	"postgres": func(t TestingT) map[string]string {
+		_, currentFile, _, _ := goruntime.Caller(0)
+		testdataPath := filepath.Join(currentFile, "..", "testdata")
+		postgresInitData := filepath.Join(testdataPath, "init_data", "postgres_init_data.sql")
+
+		pgc := pgtestcontainer.New(t.(*testing.T))
+		t.Cleanup(func() {
+			pgc.Terminate(t.(*testing.T))
+		})
+
+		db, err := sql.Open("pgx", pgc.DatabaseURL)
+		require.NoError(t, err)
+		defer db.Close()
+		sqlFile, err := os.ReadFile(postgresInitData)
+		require.NoError(t, err)
+		_, err = db.Exec(string(sqlFile))
+		require.NoError(t, err)
+
+		ip, err := pgc.Container.ContainerIP(context.Background())
+		require.NoError(t, err)
+
+		return map[string]string{
+			"dsn": pgc.DatabaseURL,
+			"ip":  ip,
+		}
 	},
 }
