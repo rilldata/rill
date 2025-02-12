@@ -47,6 +47,11 @@ export class TimeControls {
   selectedTimezone: Writable<string>;
 
   /**
+   * Optional metrics view name to focus on a single metrics view
+   */
+  private metricsViewName: string | undefined;
+
+  /**
    * Derived stores based on writables and spec
    */
   allTimeRange: Readable<AllTimeRange>;
@@ -59,7 +64,8 @@ export class TimeControls {
   private isInitialStateSet: boolean = false;
   private initialStateSubscriber: Unsubscriber | undefined;
 
-  constructor(specStore: CanvasSpecResponseStore) {
+  constructor(specStore: CanvasSpecResponseStore, metricsViewName?: string) {
+    this.metricsViewName = metricsViewName;
     this.allTimeRange = this.combinedTimeRangeSummaryStore(runtime, specStore);
 
     this.selectedTimeRange = writable(undefined);
@@ -68,7 +74,14 @@ export class TimeControls {
     this.selectedTimezone = writable("UTC");
 
     this.minTimeGrain = derived(specStore, (spec) => {
-      const metricsViews = spec?.data?.metricsViews || {};
+      let metricsViews = spec?.data?.metricsViews || {};
+
+      if (this.metricsViewName && metricsViews[this.metricsViewName]) {
+        metricsViews = {
+          [this.metricsViewName]: metricsViews[this.metricsViewName],
+        };
+      }
+
       const minTimeGrain = Object.keys(metricsViews).reduce<V1TimeGrain>(
         (min: V1TimeGrain, metricView) => {
           const metricsViewSpec = metricsViews[metricView]?.state?.validSpec;
@@ -87,7 +100,13 @@ export class TimeControls {
     });
 
     this.hasTimeSeries = derived(specStore, (spec) => {
-      const metricsViews = spec?.data?.metricsViews || {};
+      let metricsViews = spec?.data?.metricsViews || {};
+
+      if (this.metricsViewName && metricsViews[this.metricsViewName]) {
+        metricsViews = {
+          [this.metricsViewName]: metricsViews[this.metricsViewName],
+        };
+      }
       return Object.keys(metricsViews).some((metricView) => {
         const metricsViewSpec = metricsViews[metricView]?.state?.validSpec;
         return Boolean(metricsViewSpec?.timeDimension);
@@ -232,8 +251,15 @@ export class TimeControls {
     specStore: CanvasSpecResponseStore,
   ): Readable<AllTimeRange> => {
     return derived([runtime, specStore], ([r, spec], set) => {
-      const metricsReferred = Object.keys(spec?.data?.metricsViews || {});
-      if (!metricsReferred.length) {
+      const metricsViews = spec?.data?.metricsViews || {};
+      const metricsReferred = this.metricsViewName
+        ? [this.metricsViewName]
+        : Object.keys(metricsViews);
+
+      if (
+        !metricsReferred.length ||
+        (this.metricsViewName && !metricsViews[this.metricsViewName])
+      ) {
         return set({
           name: TimeRangePreset.ALL_TIME,
           start: new Date(0),
