@@ -25,6 +25,7 @@
     stacked_bar: 400,
     markdown: 160,
     kpi: 200,
+    kpi_grid: 200,
     image: 420,
     table: 400,
   };

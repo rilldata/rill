@@ -143,7 +143,10 @@
     on:mouseenter={hover}
   >
     <AddComponentDropdown
-      {onItemClick}
+      onItemClick={(e) => {
+        onItemClick(e);
+        hoveredDivider.reset();
+      }}
       onMouseEnter={hover}
       disabled={rowLength >= 4}
     />
