@@ -157,3 +157,23 @@ func NewPermissionDeniedError(msg string) error {
 func (e *PermissionDeniedError) Error() string {
 	return e.msg
 }
+
+type OlapCacheCtrl struct {
+	UseCache      bool
+	PopulateCache bool
+}
+type ctxKey int
+
+var olapCacheCtrlKey ctxKey
+
+func WithOLAPCacheCtrl(ctx context.Context, cache *OlapCacheCtrl) context.Context {
+	return context.WithValue(ctx, olapCacheCtrlKey, cache)
+}
+
+func OLAPCacheCtrlFromContext(ctx context.Context) *OlapCacheCtrl {
+	cache, ok := ctx.Value(olapCacheCtrlKey).(*OlapCacheCtrl)
+	if !ok {
+		return nil
+	}
+	return cache
+}

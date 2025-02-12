@@ -89,6 +89,10 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 		ctx, cancelFunc = context.WithTimeout(ctx, stmt.ExecutionTimeout)
 	}
 
+	if stmt.CacheCtrl != nil {
+		ctx = drivers.WithOLAPCacheCtrl(ctx, stmt.CacheCtrl)
+	}
+
 	var rows *sqlx.Rows
 	var err error
 

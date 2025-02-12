@@ -76,6 +76,12 @@ func (e *Executor) resolveDruid(ctx context.Context) (TimestampsResult, error) {
 	timeDim := e.olap.Dialect().EscapeIdentifier(e.metricsView.TimeDimension)
 	escapedTableName := e.olap.Dialect().EscapeTable(e.metricsView.Database, e.metricsView.DatabaseSchema, e.metricsView.Table)
 
+	// don't populate the cache, but use it if it's there as druid timeboundary query will create a cache entry for each segment
+	cacheCtrl := &drivers.OlapCacheCtrl{
+		UseCache:      true,
+		PopulateCache: false,
+	}
+
 	var ts TimestampsResult
 	group, ctx := errgroup.WithContext(ctx)
 
@@ -91,6 +97,7 @@ func (e *Executor) resolveDruid(ctx context.Context) (TimestampsResult, error) {
 			Query:            minSQL,
 			Priority:         e.priority,
 			ExecutionTimeout: defaultExecutionTimeout,
+			CacheCtrl:        cacheCtrl,
 		})
 		if err != nil {
 			return err
@@ -125,6 +132,7 @@ func (e *Executor) resolveDruid(ctx context.Context) (TimestampsResult, error) {
 			Query:            maxSQL,
 			Priority:         e.priority,
 			ExecutionTimeout: defaultExecutionTimeout,
+			CacheCtrl:        cacheCtrl,
 		})
 		if err != nil {
 			return err
@@ -159,6 +167,7 @@ func (e *Executor) resolveDruid(ctx context.Context) (TimestampsResult, error) {
 				Query:            maxSQL,
 				Priority:         e.priority,
 				ExecutionTimeout: defaultExecutionTimeout,
+				CacheCtrl:        cacheCtrl,
 			})
 			if err != nil {
 				return err

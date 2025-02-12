@@ -72,6 +72,7 @@ type Statement struct {
 	DryRun           bool
 	Priority         int
 	LongRunning      bool
+	CacheCtrl        *OlapCacheCtrl
 	ExecutionTimeout time.Duration
 }
 
