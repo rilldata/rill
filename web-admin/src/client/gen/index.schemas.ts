@@ -869,6 +869,7 @@ export interface V1Organization {
   billingCustomerId?: string;
   paymentCustomerId?: string;
   billingEmail?: string;
+  cachedPlanDisplayName?: string;
   createdOn?: string;
   updatedOn?: string;
 }

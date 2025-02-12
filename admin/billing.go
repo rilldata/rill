@@ -60,6 +60,7 @@ func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Org
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
 		CreatedByUserID:                     org.CreatedByUserID,
+		CachedPlanDisplayName:               org.CachedPlanDisplayName,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to update organization: %w", err)
@@ -163,6 +164,7 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
 		CreatedByUserID:                     org.CreatedByUserID,
+		CachedPlanDisplayName:               org.CachedPlanDisplayName,
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to update organization: %w", err)
@@ -222,6 +224,7 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 			PaymentCustomerID:                   org.PaymentCustomerID,
 			BillingEmail:                        org.BillingEmail,
 			CreatedByUserID:                     org.CreatedByUserID,
+			CachedPlanDisplayName:               org.CachedPlanDisplayName,
 		})
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to update organization: %w", err)
@@ -295,6 +298,7 @@ func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
 		CreatedByUserID:                     org.CreatedByUserID,
+		CachedPlanDisplayName:               org.CachedPlanDisplayName,
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to update organization: %w", err)

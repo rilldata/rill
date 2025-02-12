@@ -191,7 +191,11 @@ func (o *Orb) DeleteCustomer(ctx context.Context, customerID string) error {
 }
 
 func (o *Orb) CreateSubscription(ctx context.Context, customerID string, plan *Plan) (*Subscription, error) {
-	return o.createSubscription(ctx, customerID, plan)
+	sub, err := o.createSubscription(ctx, customerID, plan)
+	if err != nil {
+		return nil, err
+	}
+	return sub, nil
 }
 
 func (o *Orb) GetActiveSubscription(ctx context.Context, customerID string) (*Subscription, error) {
@@ -219,6 +223,7 @@ func (o *Orb) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string,
 	if err != nil {
 		return nil, err
 	}
+
 	return &Subscription{
 		ID:                           s.ID,
 		Customer:                     getBillingCustomerFromOrbCustomer(&s.Customer),
@@ -282,6 +287,7 @@ func (o *Orb) CancelSubscriptionsForCustomer(ctx context.Context, customerID str
 			cancelDate = sub.EndDate
 		}
 	}
+
 	return cancelDate, nil
 }
 

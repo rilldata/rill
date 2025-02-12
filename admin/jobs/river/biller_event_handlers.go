@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/rilldata/rill/admin"
+	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/riverqueue/river"
@@ -307,4 +308,59 @@ func (w *PaymentFailedGracePeriodCheckWorker) checkFailedInvoicesForOrg(ctx cont
 		}
 	}
 	return hasOverdue, nil
+}
+
+type PlanCacheUpdateArgs struct {
+	BillingCustomerID string
+}
+
+func (PlanCacheUpdateArgs) Kind() string { return "plan_cache_update" }
+
+type PlanCacheUpdateWorker struct {
+	river.WorkerDefaults[PlanCacheUpdateArgs]
+	admin *admin.Service
+}
+
+func (w *PlanCacheUpdateWorker) Work(ctx context.Context, job *river.Job[PlanCacheUpdateArgs]) error {
+	org, err := w.admin.DB.FindOrganizationForBillingCustomerID(ctx, job.Args.BillingCustomerID)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			// org got deleted, ignore
+			return nil
+		}
+		return fmt.Errorf("failed to find organization of billing customer id %q: %w", job.Args.BillingCustomerID, err)
+	}
+
+	// something related to plan changed, just fetch the latest plan from the biller
+	sub, err := w.admin.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
+	if err != nil {
+		if errors.Is(err, billing.ErrNotFound) {
+			return nil
+		}
+		return fmt.Errorf("failed to get subscriptions for org %q: %w", org.Name, err)
+	}
+
+	_, err = w.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
+		Name:                                org.Name,
+		DisplayName:                         org.DisplayName,
+		Description:                         org.Description,
+		LogoAssetID:                         org.LogoAssetID,
+		CustomDomain:                        org.CustomDomain,
+		QuotaProjects:                       org.QuotaProjects,
+		QuotaDeployments:                    org.QuotaDeployments,
+		QuotaSlotsTotal:                     org.QuotaSlotsTotal,
+		QuotaSlotsPerDeployment:             org.QuotaSlotsPerDeployment,
+		QuotaOutstandingInvites:             org.QuotaOutstandingInvites,
+		QuotaStorageLimitBytesPerDeployment: org.QuotaStorageLimitBytesPerDeployment,
+		BillingCustomerID:                   org.BillingCustomerID,
+		PaymentCustomerID:                   org.PaymentCustomerID,
+		BillingEmail:                        org.BillingEmail,
+		CreatedByUserID:                     org.CreatedByUserID,
+		CachedPlanDisplayName:               &sub.Plan.DisplayName,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to update plan cache for org %q: %w", org.Name, err)
+	}
+
+	return nil
 }
