@@ -125,7 +125,9 @@
         if (failed.length > 0) {
           eventBus.emit("notification", {
             type: "error",
-            message: `Failed to invite ${failed.join(", ")}`,
+            message: `Failed to invite ${failed.length} ${
+              failed.length === 1 ? "person" : "people"
+            }`,
             options: {
               persisted: true,
             },
