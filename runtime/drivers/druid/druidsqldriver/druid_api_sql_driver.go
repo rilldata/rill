@@ -17,7 +17,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/rilldata/rill/admin/pkg/urlutil"
-	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/druid/retrier"
 )
 
@@ -74,9 +73,9 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 		c: c,
 	})
 	return re.RunCtx(ctx, func(ctx context.Context) (driver.Rows, retrier.Action, error) {
-		cache := drivers.OLAPCacheCtrlFromContext(ctx)
+		cacheCfg := queryCfgFromContext(ctx)
 
-		dr := newDruidRequest(query, args, cache)
+		dr := newDruidRequest(query, args, cacheCfg)
 		b, err := json.Marshal(dr)
 		if err != nil {
 			return nil, retrier.Fail, err
@@ -426,6 +425,25 @@ type DruidQueryContext struct {
 	PopulateCache              *bool  `json:"populateCache,omitempty"`
 }
 
+type QueryCfg struct {
+	UseCache      bool
+	PopulateCache bool
+}
+type ctxKey int
+
+var queryCfgKey ctxKey
+
+func WithQueryCfg(ctx context.Context, cfg *QueryCfg) context.Context {
+	return context.WithValue(ctx, queryCfgKey, cfg)
+}
+
+func queryCfgFromContext(ctx context.Context) *QueryCfg {
+	if cfg, ok := ctx.Value(queryCfgKey).(*QueryCfg); ok {
+		return cfg
+	}
+	return nil
+}
+
 type DruidParameter struct {
 	Type  string `json:"type"`
 	Value any    `json:"value"`
@@ -440,7 +458,7 @@ type DruidRequest struct {
 	Context        DruidQueryContext `json:"context"`
 }
 
-func newDruidRequest(query string, args []driver.NamedValue, cache *drivers.OlapCacheCtrl) *DruidRequest {
+func newDruidRequest(query string, args []driver.NamedValue, cacheCfg *QueryCfg) *DruidRequest {
 	parameters := make([]DruidParameter, len(args))
 	for i, arg := range args {
 		parameters[i] = DruidParameter{
@@ -449,9 +467,9 @@ func newDruidRequest(query string, args []driver.NamedValue, cache *drivers.Olap
 		}
 	}
 	var useCache, populateCache *bool
-	if cache != nil {
-		useCache = &cache.UseCache
-		populateCache = &cache.PopulateCache
+	if cacheCfg != nil {
+		useCache = &cacheCfg.UseCache
+		populateCache = &cacheCfg.PopulateCache
 	}
 	return &DruidRequest{
 		Query:          query,

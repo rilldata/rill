@@ -72,8 +72,17 @@ type Statement struct {
 	DryRun           bool
 	Priority         int
 	LongRunning      bool
-	CacheCtrl        *OlapCacheCtrl
+	OlapQueryCfg     *OlapQueryCfg
 	ExecutionTimeout time.Duration
+}
+
+// OlapQueryCfg is used to send olap specific configs to underlying drivers on per query basis.
+// For example both Druid and ClickHouse supports specifying if cache should be used for the query or not and if the query results should be populated in cache or not.
+// UseCache can be used to enable/disable cache for the query.
+// PopulateCache can be used to enable/disable cache population for the query results.
+type OlapQueryCfg struct {
+	UseCache      bool
+	PopulateCache bool
 }
 
 // Result wraps the results of query.
