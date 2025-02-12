@@ -196,21 +196,17 @@ func printResources(p *printer.Printer, resources map[string]map[string][]*runti
 			for _, r := range res {
 				row := make(map[string]any, 0)
 				rows = append(rows, row)
-				row["org"] = org
-				row["project"] = proj
-				row["resource_type"] = runtime.PrettifyResourceKind(r.Meta.Name.Kind)
-				row["resource_name"] = r.Meta.Name.Name
 
 				// each resource has a meta field and a resource(source/model/metricsview etc) which has spec and state fields
 				// we want to flatten the resource to have the meta fields and spec and state fields at the top level
 				rowJSON, err := protojson.Marshal(r)
 				if err != nil {
-					row["error"] = fmt.Sprintf("Failed to marshal resource: %v", err)
+					p.PrintfWarn("Failed to marshal resource for org %v, project %v : %v\n", org, proj, err)
 					continue
 				}
 				err = json.Unmarshal(rowJSON, &row)
 				if err != nil {
-					row["error"] = fmt.Sprintf("Failed to unmarshal resource: %v", err)
+					p.PrintfWarn("Failed to unmarshal resource for org %v, project %v : %v\n", org, proj, err)
 					continue
 				}
 				for k := range row {
@@ -227,6 +223,11 @@ func printResources(p *printer.Printer, resources map[string]map[string][]*runti
 					delete(row, k)
 					break
 				}
+
+				row["org"] = org
+				row["project"] = proj
+				row["resource_type"] = runtime.PrettifyResourceKind(r.Meta.Name.Kind)
+				row["resource_name"] = r.Meta.Name.Name
 			}
 		}
 	}
