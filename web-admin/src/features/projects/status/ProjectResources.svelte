@@ -64,21 +64,28 @@
     return currentRefetchInterval;
   }
 
-  $: resources = createRuntimeServiceListResources(instanceId, undefined, {
-    query: {
-      select: (data: V1ListResourcesResponse) => ({
-        ...data,
-        // Filter out project parser and refresh triggers
-        resources: data?.resources?.filter(
-          (resource: V1Resource) =>
-            resource.meta.name.kind !== ResourceKind.ProjectParser &&
-            resource.meta.name.kind !== ResourceKind.RefreshTrigger,
-        ),
-      }),
-      refetchInterval: (data, query) =>
-        calculateRefetchInterval(currentRefetchInterval, data, query),
+  $: resources = createRuntimeServiceListResources(
+    instanceId,
+    {
+      // Ensure admins can see all resources, regardless of the security policy
+      skipSecurityChecks: true,
     },
-  });
+    {
+      query: {
+        select: (data: V1ListResourcesResponse) => ({
+          ...data,
+          // Filter out project parser and refresh triggers
+          resources: data?.resources?.filter(
+            (resource: V1Resource) =>
+              resource.meta.name.kind !== ResourceKind.ProjectParser &&
+              resource.meta.name.kind !== ResourceKind.RefreshTrigger,
+          ),
+        }),
+        refetchInterval: (data, query) =>
+          calculateRefetchInterval(currentRefetchInterval, data, query),
+      },
+    },
+  );
 
   $: hasReconcilingResources = $resources.data?.resources?.some(
     isResourceReconciling,
