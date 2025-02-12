@@ -41,7 +41,7 @@ export type AdminServiceGetReportMetaBody = {
   emailRecipients?: string[];
   anonRecipients?: boolean;
   resources?: V1ResourceName[];
-  webOpenMode?: ReportOptionsopenMode;
+  webOpenMode?: ReportOptionsOpenMode;
 };
 
 export type AdminServicePullVirtualRepoParams = {
@@ -693,7 +693,7 @@ export interface V1ReportOptions {
   webOpenState?: string;
   explore?: string;
   canvas?: string;
-  webOpenMode?: ReportOptionsopenMode;
+  webOpenMode?: ReportOptionsOpenMode;
   filter?: V1Expression;
 }
 
@@ -1606,11 +1606,11 @@ export interface ProtobufAny {
   [key: string]: unknown;
 }
 
-export type ReportOptionsopenMode =
-  (typeof ReportOptionsopenMode)[keyof typeof ReportOptionsopenMode];
+export type ReportOptionsOpenMode =
+  (typeof ReportOptionsOpenMode)[keyof typeof ReportOptionsOpenMode];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
-export const ReportOptionsopenMode = {
+export const ReportOptionsOpenMode = {
   OPEN_MODE_UNSPECIFIED: "OPEN_MODE_UNSPECIFIED",
   OPEN_MODE_LEGACY: "OPEN_MODE_LEGACY",
   OPEN_MODE_CREATOR: "OPEN_MODE_CREATOR",

@@ -9462,9 +9462,9 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
   resources: ResourceName[] = [];
 
   /**
-   * @generated from field: rill.admin.v1.ReportOptions.open_mode web_open_mode = 10;
+   * @generated from field: rill.admin.v1.ReportOptions.OpenMode web_open_mode = 10;
    */
-  webOpenMode = ReportOptions_open_mode.UNSPECIFIED;
+  webOpenMode = ReportOptions_OpenMode.UNSPECIFIED;
 
   constructor(data?: PartialMessage<GetReportMetaRequest>) {
     super();
@@ -9482,7 +9482,7 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
     { no: 7, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 8, name: "anon_recipients", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 9, name: "resources", kind: "message", T: ResourceName, repeated: true },
-    { no: 10, name: "web_open_mode", kind: "enum", T: proto3.getEnumType(ReportOptions_open_mode) },
+    { no: 10, name: "web_open_mode", kind: "enum", T: proto3.getEnumType(ReportOptions_OpenMode) },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetReportMetaRequest {
@@ -13334,9 +13334,9 @@ export class ReportOptions extends Message<ReportOptions> {
   canvas = "";
 
   /**
-   * @generated from field: rill.admin.v1.ReportOptions.open_mode web_open_mode = 18;
+   * @generated from field: rill.admin.v1.ReportOptions.OpenMode web_open_mode = 18;
    */
-  webOpenMode = ReportOptions_open_mode.UNSPECIFIED;
+  webOpenMode = ReportOptions_OpenMode.UNSPECIFIED;
 
   /**
    * use with OPEN_MODE_FILTERED
@@ -13369,7 +13369,7 @@ export class ReportOptions extends Message<ReportOptions> {
     { no: 14, name: "web_open_state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 16, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 17, name: "canvas", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 18, name: "web_open_mode", kind: "enum", T: proto3.getEnumType(ReportOptions_open_mode) },
+    { no: 18, name: "web_open_mode", kind: "enum", T: proto3.getEnumType(ReportOptions_OpenMode) },
     { no: 19, name: "filter", kind: "message", T: Expression, opt: true },
   ]);
 
@@ -13391,9 +13391,9 @@ export class ReportOptions extends Message<ReportOptions> {
 }
 
 /**
- * @generated from enum rill.admin.v1.ReportOptions.open_mode
+ * @generated from enum rill.admin.v1.ReportOptions.OpenMode
  */
-export enum ReportOptions_open_mode {
+export enum ReportOptions_OpenMode {
   /**
    * @generated from enum value: OPEN_MODE_UNSPECIFIED = 0;
    */
@@ -13427,8 +13427,8 @@ export enum ReportOptions_open_mode {
    */
   FILTERED = 4,
 }
-// Retrieve enum metadata with: proto3.getEnumType(ReportOptions_open_mode)
-proto3.util.setEnumType(ReportOptions_open_mode, "rill.admin.v1.ReportOptions.open_mode", [
+// Retrieve enum metadata with: proto3.getEnumType(ReportOptions_OpenMode)
+proto3.util.setEnumType(ReportOptions_OpenMode, "rill.admin.v1.ReportOptions.OpenMode", [
   { no: 0, name: "OPEN_MODE_UNSPECIFIED" },
   { no: 1, name: "OPEN_MODE_LEGACY" },
   { no: 2, name: "OPEN_MODE_CREATOR" },

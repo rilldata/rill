@@ -11,7 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func (h *Handle) GetReportMetadata(ctx context.Context, reportName, ownerID, explore, canvas string, webOpenMode adminv1.ReportOptionsOpenMode, emailRecipients []string, anonRecipients bool, executionTime time.Time) (*drivers.ReportMetadata, error) {
+func (h *Handle) GetReportMetadata(ctx context.Context, reportName, ownerID, explore, canvas string, webOpenMode adminv1.ReportOptions_OpenMode, emailRecipients []string, anonRecipients bool, executionTime time.Time) (*drivers.ReportMetadata, error) {
 	var resources []*adminv1.ResourceName
 	resources = append(resources, &adminv1.ResourceName{
 		Type: runtime.ResourceKindReport,

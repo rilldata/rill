@@ -413,7 +413,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		}
 	}
 
-	var reqWebOpenMode adminv1.ReportOptionsOpenMode
+	var reqWebOpenMode adminv1.ReportOptions_OpenMode
 	switch webOpenMode {
 	case "legacy":
 		reqWebOpenMode = adminv1.ReportOptions_OPEN_MODE_LEGACY

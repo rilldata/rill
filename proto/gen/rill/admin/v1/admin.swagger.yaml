@@ -3064,7 +3064,7 @@ paths:
                   type: object
                   $ref: '#/definitions/v1ResourceName'
               webOpenMode:
-                $ref: '#/definitions/ReportOptionsopen_mode'
+                $ref: '#/definitions/ReportOptionsOpenMode'
       tags:
         - AdminService
   /v1/services/tokens/{tokenId}:
@@ -3672,7 +3672,7 @@ definitions:
         type: string
       defaultBranch:
         type: string
-  ReportOptionsopen_mode:
+  ReportOptionsOpenMode:
     type: string
     enum:
       - OPEN_MODE_UNSPECIFIED
@@ -5006,7 +5006,7 @@ definitions:
       canvas:
         type: string
       webOpenMode:
-        $ref: '#/definitions/ReportOptionsopen_mode'
+        $ref: '#/definitions/ReportOptionsOpenMode'
       filter:
         $ref: '#/definitions/v1Expression'
         title: use with OPEN_MODE_FILTERED

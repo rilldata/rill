@@ -1959,7 +1959,7 @@ message GetReportMetaRequest {
   repeated string email_recipients = 7;
   bool anon_recipients = 8;
   repeated ResourceName resources = 9;
-  ReportOptions.open_mode web_open_mode = 10;
+  ReportOptions.OpenMode web_open_mode = 10;
   reserved 4;
 }
 
@@ -2447,14 +2447,14 @@ message ReportOptions {
   string web_open_state = 14; // Annotation for the base64-encoded UI state to open for the report.
   string explore = 16; // either canvas or explore should be set
   string canvas = 17;
-  enum open_mode {
+  enum OpenMode {
     OPEN_MODE_UNSPECIFIED = 0;
     OPEN_MODE_LEGACY = 1; // send this for older reports
     OPEN_MODE_CREATOR = 2; // send this for reports that should be opened with creators permissions
     OPEN_MODE_NONE = 3; // send this for reports that should not be opened or older reports which do not have any web_open_path
     OPEN_MODE_FILTERED = 4; // send this for reports that should be opened with creators permissions but with locked filters
   }
-  open_mode web_open_mode = 18;
+  OpenMode web_open_mode = 18;
   optional rill.runtime.v1.Expression filter = 19; // use with OPEN_MODE_FILTERED
 }
 
