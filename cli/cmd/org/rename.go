@@ -55,7 +55,7 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 				Name: org.Name,
 			}
 
-			ch.PrintfWarn("Warn: Renaming an org would invalidate dashboard URLs.\nConsider using the --display-name flag to set a new display name for the org.\n")
+			ch.PrintfWarn("\nWarn: Renaming an org would invalidate dashboard URLs.\n")
 			hasDisplayName := org.DisplayName != ""
 
 			// Update display name
@@ -84,7 +84,7 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 					return err
 				}
 				if ok {
-					newName, err = cmdutil.InputPrompt("Enter the new name", org.Name)
+					newName, err = cmdutil.InputPrompt("Enter new org name", org.Name)
 					if err != nil {
 						return err
 					}
@@ -100,10 +100,10 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			ch.PrintfSuccess("Renamed organization\n")
 			if req.NewName != nil && *req.NewName != name {
-				ch.Printf("Name: %s → %s\n", name, updatedOrg.Organization.Name)
+				ch.Printf("Updated name: %s to %s\n", name, updatedOrg.Organization.Name)
 			}
 			if req.DisplayName != nil && *req.DisplayName != org.DisplayName {
-				ch.Printf("Display Name: %s → %s\n", org.DisplayName, updatedOrg.Organization.DisplayName)
+				ch.Printf("Updated display name: %s to %s\n", org.DisplayName, updatedOrg.Organization.DisplayName)
 			}
 
 			ch.PrintOrgs([]*adminv1.Organization{updatedOrg.Organization}, "")
