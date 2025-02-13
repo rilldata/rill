@@ -94,27 +94,36 @@
       SPA: true,
       validators: schema,
       async onUpdate({ form }) {
-        // Reset failed invites
         failedInvites = [];
+        let succeeded = [];
+        let failed = [];
 
         if (!form.valid) return;
         const values = form.data;
         const emails = values.emails.map((e) => e.trim()).filter(Boolean);
         if (emails.length === 0) return;
 
-        const succeeded = [];
-        const failed = [];
+        const results = await Promise.all(
+          emails.map(async (email, index) => {
+            try {
+              await handleCreate(email, values.role, isSuperUser);
+              return { index, email, success: true };
+            } catch (error) {
+              console.error("Error adding user to organization", error);
+              return { index, email, success: false };
+            }
+          }),
+        );
 
-        // Process invites sequentially to maintain order
-        for (const email of emails) {
-          try {
-            await handleCreate(email, values.role, isSuperUser);
-            succeeded.push(email);
-          } catch (error) {
-            failed.push(email);
-            console.error("Error adding user to organization", error);
-          }
-        }
+        results
+          .sort((a, b) => a.index - b.index)
+          .forEach(({ email, success }) => {
+            if (success) {
+              succeeded.push(email);
+            } else {
+              failed.push(email);
+            }
+          });
 
         // Only show success notification if any invites succeeded
         if (succeeded.length > 0) {
