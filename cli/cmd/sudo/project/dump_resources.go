@@ -27,7 +27,7 @@ func DumpResources(ch *cmdutil.Helper) *cobra.Command {
 	var typ string
 
 	searchCmd := &cobra.Command{
-		Use:   "dump-resources [<pattern>]",
+		Use:   "dump-resources [<project-pattern>]",
 		Args:  cobra.MaximumNArgs(1),
 		Short: "Dump resources for projects by pattern",
 		RunE: func(cmd *cobra.Command, args []string) error {
