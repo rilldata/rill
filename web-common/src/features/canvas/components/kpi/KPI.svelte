@@ -1,6 +1,7 @@
 <script lang="ts">
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
+  import { getLocalComparison } from "@rilldata/web-common/features/canvas/components/kpi/util";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
@@ -13,7 +14,6 @@
   } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
-  import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
   import { type V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
   import type { Readable } from "svelte/store";
   import type { KPISpec } from ".";
@@ -48,9 +48,12 @@
     metrics_view: metricsViewName,
     measure: measureName,
     sparkline,
+    time_filters: timeFilters,
     comparison: comparisonOptions,
-    comparison_range: comparisonTimeRange,
   } = kpiProperties);
+
+  $: ({ showLocalTimeComparison, localComparisonTimeRange } =
+    getLocalComparison(timeFilters));
 
   $: schema = validateKPISchema(ctx, kpiProperties);
 
@@ -68,7 +71,7 @@
   $: isSparkRight = sparkline === "right";
 
   $: showComparison =
-    ($showTimeComparison || comparisonTimeRange) && comparisonOptions;
+    ($showTimeComparison || showLocalTimeComparison) && comparisonOptions;
   $: comparisonValue = useKPIComparisonTotal(
     ctx,
     kpiProperties,
@@ -79,9 +82,11 @@
     $measureValue.data != null && $comparisonValue.data
       ? ($measureValue.data - $comparisonValue.data) / $comparisonValue.data
       : undefined;
-  $: globalComparisonLabel =
-    $selectedComparisonTimeRange?.name &&
-    TIME_COMPARISON[$selectedComparisonTimeRange?.name]?.label;
+  $: comparisonLabel =
+    (localComparisonTimeRange?.name &&
+      TIME_COMPARISON[localComparisonTimeRange.name]?.label) ||
+    ($selectedComparisonTimeRange?.name &&
+      TIME_COMPARISON[$selectedComparisonTimeRange.name]?.label);
 
   $: adjustForPad = topPadding ? 12 : 0;
   $: sparklineHeight = isSparkRight
@@ -175,11 +180,9 @@
               </div>
             {/if}
           </div>
-          {#if comparisonTimeRange || globalComparisonLabel}
+          {#if comparisonLabel}
             <div class="comparison-range">
-              vs {comparisonTimeRange
-                ? `last ${humaniseISODuration(comparisonTimeRange?.toUpperCase(), false)}`
-                : globalComparisonLabel?.toLowerCase()}
+              vs {comparisonLabel?.toLowerCase()}
             </div>
           {/if}
         {/if}
