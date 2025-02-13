@@ -70,7 +70,7 @@ export class CanvasEntity {
     this.selectedComponentIndex.set(index);
   };
 
-  useComponent = (componentName: string) => {
+  useComponent = (componentName: string): CanvasComponentState => {
     let componentEntity = this.components.get(componentName);
 
     if (!componentEntity) {
@@ -87,6 +87,94 @@ export class CanvasEntity {
   setGridstack(gridstack: GridStack | null) {
     this.gridstack = gridstack;
   }
+
+  /**
+   * Helper method to get the time range and where clause for a given metrics view
+   * with the ability to override the time range and filter
+   */
+  createTimeAndFilterStoreV2 = (componentName: string) => {
+    const { timeControls, filters, spec, useComponent } = this;
+
+    const component = useComponent(componentName);
+
+    const metricsViewName = component.metricsViewName;
+
+    if (!metricsViewName) {
+      throw new Error("Metrics view name is not set for component");
+    }
+
+    const dimensionsStore = spec.getDimensionsForMetricView(metricsViewName);
+    const measuresStore = spec.getMeasuresForMetricView(metricsViewName);
+
+    return derived(
+      [
+        timeControls.timeRangeStateStore,
+        component.localTimeControls.timeRangeStateStore,
+        timeControls.comparisonRangeStateStore,
+        component.localTimeControls.comparisonRangeStateStore,
+        timeControls.selectedTimezone,
+        filters.whereFilter,
+        filters.dimensionThresholdFilters,
+        dimensionsStore,
+        measuresStore,
+      ],
+      ([
+        globalTimeRangeState,
+        localTimeRangeState,
+        globalComparisonRangeState,
+        localComparisonRangeState,
+        timeZone,
+        whereFilter,
+        dtf,
+        dimensions,
+        measures,
+      ]) => {
+        // Time Filters
+        let timeRange: V1TimeRange = {
+          start: globalTimeRangeState?.timeStart,
+          end: globalTimeRangeState?.timeEnd,
+          timeZone,
+        };
+
+        const timeGrain = globalTimeRangeState?.selectedTimeRange?.interval;
+
+        let comparisonRange: V1TimeRange = {
+          start: globalComparisonRangeState?.comparisonTimeStart,
+          end: globalComparisonRangeState?.comparisonTimeEnd,
+          timeZone,
+        };
+        if (component.timeFilterText) {
+          timeRange = {
+            start: localTimeRangeState?.timeStart,
+            end: localTimeRangeState?.timeEnd,
+            timeZone,
+          };
+
+          comparisonRange = {
+            start: localComparisonRangeState?.comparisonTimeStart,
+            end: localComparisonRangeState?.comparisonTimeEnd,
+            timeZone,
+          };
+        }
+
+        // Dimension Filters
+        const globalWhere =
+          buildValidMetricsViewFilter(whereFilter, dtf, dimensions, measures) ??
+          createAndExpression([]);
+
+        let where: V1Expression | undefined = globalWhere;
+
+        if (component.filterText) {
+          const componentWhere = component.localFilters.getFiltersFromText(
+            component.filterText,
+          );
+          where = mergeFilters(globalWhere, componentWhere);
+        }
+
+        return { timeRange, comparisonRange, where, timeGrain };
+      },
+    );
+  };
 
   /**
    * Helper method to get the time range and where clause for a given metrics view

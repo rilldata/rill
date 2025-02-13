@@ -149,7 +149,7 @@
     }
   }
 
-  $: if ((timeFilter ?? "") !== ($timeRangeText ?? "")) {
+  $: if (timeFilter && timeFilter !== $timeRangeText) {
     onChange($timeRangeText);
   }
 </script>

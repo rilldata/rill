@@ -6,6 +6,11 @@ import { TimeControls } from "./time-control";
 
 export class CanvasComponentState {
   name: string;
+
+  metricsViewName: string | undefined;
+  filterText: string | undefined;
+  timeFilterText: string | undefined;
+
   localFilters: Filters;
   localTimeControls: TimeControls;
 
@@ -17,11 +22,15 @@ export class CanvasComponentState {
     const componentResourceStore = spec.getComponentResourceFromName(name);
     const componentResource = get(componentResourceStore);
 
-    const metricsViewName = componentResource?.rendererProperties
+    this.metricsViewName = componentResource?.rendererProperties
       ?.metricsView as string | undefined;
+    this.filterText = componentResource?.rendererProperties
+      ?.dimension_filters as string | undefined;
+    this.timeFilterText = componentResource?.rendererProperties
+      ?.time_filters as string | undefined;
     this.name = name;
     this.localFilters = new Filters(spec);
-    this.localTimeControls = new TimeControls(specStore, metricsViewName);
+    this.localTimeControls = new TimeControls(specStore, this.metricsViewName);
 
     if (
       componentResource &&

@@ -21,6 +21,8 @@
     measure,
     sparkline: kpiGridProperties.sparkline,
     comparison: kpiGridProperties.comparison,
+    dimension_filters: kpiGridProperties.dimension_filters,
+    time_filters: kpiGridProperties.time_filters,
   }));
 
   // Calculate individual KPI width based on container width and number of KPIs
