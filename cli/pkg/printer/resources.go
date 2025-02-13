@@ -540,3 +540,32 @@ type billingIssue struct {
 	Metadata     string `header:"metadata" json:"metadata"`
 	EventTime    string `header:"event_time,timestamp(ms|utc|human)" json:"event_time"`
 }
+
+type queryResponse struct {
+	Data []map[string]any `header:"data" json:"data"`
+}
+
+func (p *Printer) PrintQueryResponse(r *runtimev1.QueryResolverResponse) {
+	if len(r.Data) == 0 {
+		p.PrintfWarn("No data found\n")
+		return
+	}
+
+	p.PrintData(toQueryResponse(r).Data)
+}
+
+func toQueryResponse(r *runtimev1.QueryResolverResponse) *queryResponse {
+	columns := r.Schema.Fields
+	data := make([]map[string]any, 0, len(r.Data))
+	for _, row := range r.Data {
+		rowData := make(map[string]any)
+		for _, field := range columns {
+			rowData[field.Name] = row.Fields[field.Name].GetStringValue()
+		}
+		data = append(data, rowData)
+	}
+
+	return &queryResponse{
+		Data: data,
+	}
+}
