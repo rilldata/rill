@@ -111,7 +111,7 @@ export type AdminServiceCreateAssetBody = {
   type?: string;
   name?: string;
   extension?: string;
-  cacheable?: boolean;
+  public?: boolean;
   estimatedSizeBytes?: string;
 };
 
@@ -1277,6 +1277,10 @@ export interface V1DenyProjectAccessResponse {
 }
 
 export interface V1DeleteUsergroupResponse {
+  [key: string]: any;
+}
+
+export interface V1DeleteUserResponse {
   [key: string]: any;
 }
 
