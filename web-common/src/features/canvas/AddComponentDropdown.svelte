@@ -1,12 +1,12 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { PlusCircle } from "lucide-svelte";
+  import type { ComponentType, SvelteComponent } from "svelte";
   import type { CanvasComponentType } from "./components/types";
+  import BigNumberIcon from "./icons/BigNumberIcon.svelte";
   import ChartIcon from "./icons/ChartIcon.svelte";
   import TableIcon from "./icons/TableIcon.svelte";
   import TextIcon from "./icons/TextIcon.svelte";
-  import BigNumberIcon from "./icons/BigNumberIcon.svelte";
-  import type { ComponentType, SvelteComponent } from "svelte";
 
   type MenuItem = {
     id: CanvasComponentType;
@@ -18,7 +18,7 @@
     { id: "bar_chart", label: "Chart", icon: ChartIcon },
     { id: "table", label: "Table", icon: TableIcon },
     { id: "markdown", label: "Text", icon: TextIcon },
-    { id: "kpi", label: "KPI", icon: BigNumberIcon },
+    { id: "kpi_grid", label: "KPI", icon: BigNumberIcon },
     { id: "image", label: "Image", icon: ChartIcon },
   ];
 
