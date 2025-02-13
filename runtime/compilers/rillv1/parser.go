@@ -797,10 +797,6 @@ func (p *Parser) insertDryRun(kind ResourceKind, name string) error {
 // insertResource inserts a resource in the parser's internal state.
 // After calling insertResource, the caller can directly modify the returned resource's spec.
 func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, refs ...ResourceName) (*Resource, error) {
-	source := kind == ResourceKindSource
-	if source {
-		kind = ResourceKindModel
-	}
 	// Create the resource if not already present (ensures the spec for its kind is never nil)
 	rn := ResourceName{Kind: kind, Name: name}
 	_, ok := p.Resources[rn.Normalized()]
