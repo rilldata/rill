@@ -19,8 +19,6 @@ test.describe("leaderboard and dimension table sorting", () => {
   });
 
   test("leaderboard and dimension table sorting", async ({ page }) => {
-    await page.waitForTimeout(1000);
-
     await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
     await page.getByRole("button", { name: "Preview" }).click();
