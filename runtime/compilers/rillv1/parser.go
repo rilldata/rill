@@ -563,6 +563,24 @@ func (p *Parser) parsePaths(ctx context.Context, paths []string) error {
 		if pathIsRillYAML(b) {
 			return 1
 		}
+
+		// Sort .env files by path depth with always root first. This ensures that .env files are parsed in order from root to deepest nested
+		aIsDotEnv := pathIsDotEnv(a)
+		bIsDotEnv := pathIsDotEnv(b)
+		if aIsDotEnv && !bIsDotEnv {
+			return -1
+		}
+		if !aIsDotEnv && bIsDotEnv {
+			return 1
+		}
+		if aIsDotEnv && bIsDotEnv {
+			aDepth := strings.Count(a, "/")
+			bDepth := strings.Count(b, "/")
+			if aDepth != bDepth {
+				return aDepth - bDepth
+			}
+		}
+
 		return strings.Compare(a, b)
 	})
 
@@ -1045,9 +1063,9 @@ func pathIsRillYAML(path string) bool {
 	return path == "/rill.yaml" || path == "/rill.yml"
 }
 
-// pathIsDotEnv returns true if the path is .env
+// pathIsDotEnv returns true if the path is a .env file (in any directory)
 func pathIsDotEnv(path string) bool {
-	return path == "/.env"
+	return strings.HasSuffix(path, "/.env")
 }
 
 // pathIsIgnored returns true if the path should be ignored by the parser.
