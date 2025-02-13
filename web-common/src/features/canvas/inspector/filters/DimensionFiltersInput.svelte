@@ -102,7 +102,7 @@
     <InputLabel
       capitalize={false}
       small
-      label="Local time range"
+      label="Local filters"
       {id}
       faint={!showFilter}
     />
