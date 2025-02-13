@@ -96,6 +96,7 @@ export type RuntimeServiceQueryResolverBody = {
   resolver?: string;
   resolverProperties?: RuntimeServiceQueryResolverBodyResolverProperties;
   resolverArgs?: RuntimeServiceQueryResolverBodyResolverArgs;
+  limit?: number;
 };
 
 export type QueryServiceQueryBatch200 = {

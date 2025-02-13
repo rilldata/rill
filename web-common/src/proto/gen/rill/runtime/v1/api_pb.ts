@@ -2495,6 +2495,11 @@ export class QueryResolverRequest extends Message<QueryResolverRequest> {
    */
   resolverArgs?: Struct;
 
+  /**
+   * @generated from field: int32 limit = 5;
+   */
+  limit = 0;
+
   constructor(data?: PartialMessage<QueryResolverRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2507,6 +2512,7 @@ export class QueryResolverRequest extends Message<QueryResolverRequest> {
     { no: 2, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "resolver_properties", kind: "message", T: Struct },
     { no: 4, name: "resolver_args", kind: "message", T: Struct },
+    { no: 5, name: "limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): QueryResolverRequest {

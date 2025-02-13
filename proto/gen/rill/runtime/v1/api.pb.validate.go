@@ -6009,6 +6009,8 @@ func (m *QueryResolverRequest) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for Limit
+
 	if len(errors) > 0 {
 		return QueryResolverRequestMultiError(errors)
 	}

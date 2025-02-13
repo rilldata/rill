@@ -2508,6 +2508,9 @@ paths:
                 type: object
               resolverArgs:
                 type: object
+              limit:
+                type: integer
+                format: int32
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/reports/{report}/export:

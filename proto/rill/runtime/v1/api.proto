@@ -601,6 +601,7 @@ message QueryResolverRequest {
   string resolver = 2;
   google.protobuf.Struct resolver_properties = 3;
   google.protobuf.Struct resolver_args = 4;
+  int32 limit = 5;
 }
 
 message QueryResolverResponse {
