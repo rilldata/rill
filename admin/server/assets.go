@@ -93,7 +93,7 @@ func (s *Server) CreateAsset(ctx context.Context, req *adminv1.CreateAssetReques
 
 	// Track the asset in the database.
 	// If the upload fails or the asset is never linked to a use case, a background job will delete it after some time.
-	asset, err := s.admin.DB.InsertAsset(ctx, assetID, org.ID, objectURL.String(), claims.OwnerID(), req.Cacheable)
+	asset, err := s.admin.DB.InsertAsset(ctx, assetID, org.ID, objectURL.String(), claims.OwnerID(), req.Public)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to insert asset: %s", err.Error())
 	}
@@ -106,8 +106,8 @@ func (s *Server) CreateAsset(ctx context.Context, req *adminv1.CreateAssetReques
 }
 
 // assetHandler serves a previously uploaded file asset.
-// If the asset is marked as cacheable, it sets caching headers that allows CDNs and browsers to cache the asset.
-// If the asset is not marked as cacheable, it guarantees that the asset can only be accessed by authenticated users with read access to the asset's organization.
+// If the asset is marked as public, it sets caching headers that allows CDNs and browsers to cache the asset.
+// If the asset is not marked as public, it guarantees that the asset can only be accessed by authenticated users with read access to the asset's organization.
 func (s *Server) assetHandler(w http.ResponseWriter, r *http.Request) error {
 	// Params
 	assetID := r.PathValue("asset_id")
@@ -123,7 +123,7 @@ func (s *Server) assetHandler(w http.ResponseWriter, r *http.Request) error {
 
 	// Check permissions
 	claims := auth.GetClaims(r.Context())
-	if !claims.OrganizationPermissions(r.Context(), *asset.OrganizationID).ReadOrg {
+	if !asset.Public && !claims.OrganizationPermissions(r.Context(), *asset.OrganizationID).ReadOrg {
 		ok, err := s.admin.DB.CheckOrganizationHasPublicProjects(r.Context(), *asset.OrganizationID)
 		if err != nil {
 			return err
@@ -139,8 +139,8 @@ func (s *Server) assetHandler(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	// Set caching headers if the asset is cacheable
-	if asset.Cacheable {
+	// Set caching headers if the asset is public
+	if asset.Public {
 		w.Header().Set("Cache-Control", "public, max-age=31536000")
 	} else {
 		w.Header().Set("Cache-Control", "no-store")
@@ -159,6 +159,10 @@ func (s *Server) assetHandler(w http.ResponseWriter, r *http.Request) error {
 		w.Header().Set("Content-Type", "image/jpeg")
 	case ".svg":
 		w.Header().Set("Content-Type", "image/svg+xml")
+	case ".gif":
+		w.Header().Set("Content-Type", "image/gif")
+	case ".ico":
+		w.Header().Set("Content-Type", "image/x-icon")
 	default:
 		w.Header().Set("Content-Type", "application/octet-stream")
 	}

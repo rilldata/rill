@@ -28,7 +28,8 @@ import (
 )
 
 const (
-	_modelDefaultTimeout = 60 * time.Minute
+	// If changing this value also update maxAcquiredConnDuration in runtime/drivers/duckdb/duckdb.go
+	_modelDefaultTimeout = 3 * time.Hour
 
 	_modelSyncPartitionsBatchSize    = 1000
 	_modelPendingPartitionsBatchSize = 1000

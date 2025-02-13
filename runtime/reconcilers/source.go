@@ -21,7 +21,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const _defaultIngestTimeout = 60 * time.Minute
+// If changing this value also update maxAcquiredConnDuration in runtime/drivers/duckdb/duckdb.go
+const _defaultIngestTimeout = 3 * time.Hour
 
 func init() {
 	runtime.RegisterReconcilerInitializer(runtime.ResourceKindSource, newSourceReconciler)
