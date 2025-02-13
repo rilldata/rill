@@ -5,7 +5,6 @@
   import { KPI } from "./kpi";
   import { Markdown } from "./markdown";
   import { Table } from "./table";
-
   import { KPIGrid } from "@rilldata/web-common/features/canvas/components/kpi-grid";
   import {
     createQueryServiceResolveComponent,

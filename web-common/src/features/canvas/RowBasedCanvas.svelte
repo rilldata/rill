@@ -850,6 +850,10 @@
     @apply shadow-md;
   }
 
+  .component-card:has(.component-error) {
+    @apply outline-red-200;
+  }
+
   .container {
     container-type: inline-size;
     container-name: container;

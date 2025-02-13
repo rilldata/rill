@@ -39,7 +39,6 @@
   class:bottom={!notResizable}
   class="absolute z-10 -left-20 h-20 flex items-center justify-center px-2"
   on:mouseenter={() => {
-    console.log(allowDrop);
     if (!allowDrop) return;
     dropZone.set(dropId);
   }}
