@@ -1,45 +1,64 @@
 <script lang="ts">
-  import { isChartComponentType } from "@rilldata/web-common/features/canvas/components/util";
+  import {
+    isCanvasComponentType,
+    isChartComponentType,
+  } from "@rilldata/web-common/features/canvas/components/util";
   import { Chart } from "./charts";
   import { Image } from "./image";
   import { KPI } from "./kpi";
   import { Markdown } from "./markdown";
   import { Table } from "./table";
 
+  import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
   import { KPIGrid } from "@rilldata/web-common/features/canvas/components/kpi-grid";
-  import {
-    createQueryServiceResolveComponent,
-    type V1ComponentSpecRendererProperties,
-  } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
+  import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
+  import type { Readable } from "svelte/store";
 
   export let renderer: string;
+  export let rendererProperties: V1ComponentSpecRendererProperties;
   export let componentName: string;
 
-  const components = new Map([
+  const ctx = getCanvasStateManagers();
+  const { componentTimeAndFilterStore } = ctx.canvasEntity;
+
+  const filterableComponents = new Map([
     ["kpi", KPI],
     ["kpi_grid", KPIGrid],
     ["table", Table],
+  ]);
+
+  const nonFilterableComponents = new Map([
     ["markdown", Markdown],
     ["image", Image],
   ]);
 
-  $: componentQuery = createQueryServiceResolveComponent(
-    $runtime.instanceId,
-    componentName,
-    { args: {} },
-  );
-  $: componentData = $componentQuery?.data;
-  $: rendererProperties =
-    componentData?.rendererProperties as V1ComponentSpecRendererProperties;
+  $: Component =
+    filterableComponents.get(renderer) || nonFilterableComponents.get(renderer);
+  $: isFilterable = filterableComponents.has(renderer);
 
-  $: Component = components.get(renderer);
+  let timeAndFilterStore: Readable<TimeAndFilterStore> | undefined;
+  $: if (
+    (isChartComponentType(renderer) || isFilterable) &&
+    rendererProperties?.metrics_view
+  ) {
+    timeAndFilterStore = componentTimeAndFilterStore(componentName);
+  }
 </script>
 
-{#if rendererProperties}
-  {#if isChartComponentType(renderer)}
-    <Chart {rendererProperties} {renderer} />
+{#if rendererProperties && isCanvasComponentType(renderer)}
+  {#if isChartComponentType(renderer) && timeAndFilterStore}
+    <Chart {rendererProperties} {renderer} {timeAndFilterStore} />
+  {:else if isFilterable && timeAndFilterStore}
+    <svelte:component
+      this={filterableComponents.get(renderer)}
+      {rendererProperties}
+      {timeAndFilterStore}
+    />
   {:else}
     <svelte:component this={Component} {rendererProperties} />
   {/if}
+{:else}
+  <ComponentError error="Invalid component type" />
 {/if}

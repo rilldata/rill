@@ -2,6 +2,7 @@
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
@@ -14,6 +15,7 @@
   import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
   import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
   import { type V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
+  import type { Readable } from "svelte/store";
   import type { KPISpec } from ".";
   import KPISparkline from "./KPISparkline.svelte";
   import {
@@ -24,6 +26,7 @@
   } from "./selector";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
+  export let timeAndFilterStore: Readable<TimeAndFilterStore>;
   export let topPadding = true;
 
   const ctx = getCanvasStateManagers();
@@ -52,7 +55,13 @@
   $: schema = validateKPISchema(ctx, kpiProperties);
 
   $: measure = spec.getMeasureForMetricView(measureName, metricsViewName);
-  $: measureValue = useKPITotals(ctx, kpiProperties, $schema.isValid);
+  $: measureValue = useKPITotals(
+    ctx,
+    kpiProperties,
+    timeAndFilterStore,
+    $schema.isValid,
+  );
+
   $: measureIsPercentage = $measure?.formatPreset === FormatPreset.PERCENTAGE;
 
   $: showSparkline = sparkline !== "none";
@@ -63,6 +72,7 @@
   $: comparisonValue = useKPIComparisonTotal(
     ctx,
     kpiProperties,
+    timeAndFilterStore,
     $schema.isValid,
   );
   $: comparisonPercChange =
@@ -94,6 +104,7 @@
   $: sparklineData = useKPISparkline(
     ctx,
     kpiProperties,
+    timeAndFilterStore,
     $schema.isValid && showSparkline,
   );
   $: sparkData = $sparklineData?.data || [];

@@ -1,11 +1,16 @@
+import type { QueryObserverResult } from "@rilldata/svelte-query";
 import { KPIGridComponent } from "@rilldata/web-common/features/canvas/components/kpi-grid";
 import type {
   ComponentInputParam,
   FilterInputParam,
   FilterInputTypes,
 } from "@rilldata/web-common/features/canvas/inspector/types";
+import type { CanvasResponse } from "@rilldata/web-common/features/canvas/selector";
 import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
-import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
+import type {
+  RpcStatus,
+  V1ComponentSpecRendererProperties,
+} from "@rilldata/web-common/runtime-client";
 import { ChartComponent } from "./charts";
 import { ImageComponent } from "./image";
 import { KPIComponent } from "./kpi";
@@ -144,4 +149,19 @@ export function getHeaderForComponent(
 ) {
   if (!componentType) return "Component";
   return DISPLAY_MAP[componentType] || "Component";
+}
+
+export function getComponentMetricsViewFromSpec(
+  componentName: string | undefined,
+  spec: QueryObserverResult<CanvasResponse, RpcStatus>,
+) {
+  if (!componentName) return undefined;
+  const resource = spec.data?.components?.[componentName]?.component;
+
+  if (resource) {
+    return resource?.state?.validSpec?.rendererProperties?.metrics_view as
+      | string
+      | undefined;
+  }
+  return undefined;
 }

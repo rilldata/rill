@@ -23,14 +23,14 @@ export class CanvasComponentState {
     const componentResource = get(componentResourceStore);
 
     this.metricsViewName = componentResource?.rendererProperties
-      ?.metricsView as string | undefined;
+      ?.metrics_view as string | undefined;
     this.filterText = componentResource?.rendererProperties
       ?.dimension_filters as string | undefined;
     this.timeFilterText = componentResource?.rendererProperties
       ?.time_filters as string | undefined;
     this.name = name;
     this.localFilters = new Filters(spec);
-    this.localTimeControls = new TimeControls(specStore, this.metricsViewName);
+    this.localTimeControls = new TimeControls(specStore, name);
 
     if (
       componentResource &&

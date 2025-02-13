@@ -1,3 +1,4 @@
+import { getComponentMetricsViewFromSpec } from "@rilldata/web-common/features/canvas/components/util";
 import type { CanvasSpecResponseStore } from "@rilldata/web-common/features/canvas/types";
 import {
   calculateComparisonTimeRangePartial,
@@ -65,25 +66,27 @@ export class TimeControls {
   comparisonRangeStateStore: Readable<ComparisonTimeRangeState | undefined>;
   timeRangeText: Readable<string>;
 
-  private metricsViewName: string | undefined;
+  private componentName: string | undefined;
   private isInitialStateSet: boolean = false;
   private initialStateSubscriber: Unsubscriber | undefined;
 
-  constructor(specStore: CanvasSpecResponseStore, metricsViewName?: string) {
-    this.metricsViewName = metricsViewName;
+  constructor(specStore: CanvasSpecResponseStore, componentName?: string) {
     this.allTimeRange = this.combinedTimeRangeSummaryStore(runtime, specStore);
-
     this.selectedTimeRange = writable(undefined);
     this.selectedComparisonTimeRange = writable(undefined);
     this.showTimeComparison = writable(false);
     this.selectedTimezone = writable("UTC");
+    this.componentName = componentName;
 
     this.minTimeGrain = derived(specStore, (spec) => {
       let metricsViews = spec?.data?.metricsViews || {};
-
-      if (this.metricsViewName && metricsViews[this.metricsViewName]) {
+      const metricsViewName = getComponentMetricsViewFromSpec(
+        componentName,
+        spec,
+      );
+      if (metricsViewName && metricsViews[metricsViewName]) {
         metricsViews = {
-          [this.metricsViewName]: metricsViews[this.metricsViewName],
+          [metricsViewName]: metricsViews[metricsViewName],
         };
       }
 
@@ -107,9 +110,13 @@ export class TimeControls {
     this.hasTimeSeries = derived(specStore, (spec) => {
       let metricsViews = spec?.data?.metricsViews || {};
 
-      if (this.metricsViewName && metricsViews[this.metricsViewName]) {
+      const metricsViewName = getComponentMetricsViewFromSpec(
+        componentName,
+        spec,
+      );
+      if (metricsViewName && metricsViews[metricsViewName]) {
         metricsViews = {
-          [this.metricsViewName]: metricsViews[this.metricsViewName],
+          [metricsViewName]: metricsViews[metricsViewName],
         };
       }
       return Object.keys(metricsViews).some((metricView) => {
@@ -294,13 +301,19 @@ export class TimeControls {
   ): Readable<AllTimeRange> => {
     return derived([runtime, specStore], ([r, spec], set) => {
       const metricsViews = spec?.data?.metricsViews || {};
-      const metricsReferred = this.metricsViewName
-        ? [this.metricsViewName]
+
+      const metricsViewName = getComponentMetricsViewFromSpec(
+        this.componentName,
+        spec,
+      );
+
+      const metricsReferred = metricsViewName
+        ? [metricsViewName]
         : Object.keys(metricsViews);
 
       if (
         !metricsReferred.length ||
-        (this.metricsViewName && !metricsViews[this.metricsViewName])
+        (metricsViewName && !metricsViews[metricsViewName])
       ) {
         return set({
           name: TimeRangePreset.ALL_TIME,
