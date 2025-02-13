@@ -30,10 +30,11 @@ export function getTableConfig(
 
   return derived(
     [getMetricsViewFromName(metrics_view), timeAndFilterStore],
-    ([metricsView, { timeRange, comparisonTimeRange, where }]) => {
+    ([metricsView, $timeAndFilterStore]) => {
+      const { timeRange, comparisonTimeRange, where } = $timeAndFilterStore;
       const enableComparison = canEnablePivotComparison(
         pivotState,
-        comparisonTimeRange.start,
+        comparisonTimeRange?.start,
       );
 
       const config: PivotDataStoreConfig = {
