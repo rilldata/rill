@@ -34,8 +34,6 @@
     ["image", Image],
   ]);
 
-  $: Component =
-    filterableComponents.get(renderer) || nonFilterableComponents.get(renderer);
   $: isFilterable = filterableComponents.has(renderer);
 
   let timeAndFilterStore: Readable<TimeAndFilterStore> | undefined;
@@ -57,7 +55,10 @@
       {timeAndFilterStore}
     />
   {:else}
-    <svelte:component this={Component} {rendererProperties} />
+    <svelte:component
+      this={nonFilterableComponents.get(renderer)}
+      {rendererProperties}
+    />
   {/if}
 {:else}
   <ComponentError error="Invalid component type" />
