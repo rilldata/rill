@@ -124,10 +124,6 @@ export function getComponentFilterProperties(
       | string
       | undefined,
     time_filters: rendererProperties?.time_filters as string | undefined,
-    time_range: rendererProperties?.time_range as string | undefined,
-    comparison_range: rendererProperties?.comparison_range as
-      | string
-      | undefined,
   };
 }
 

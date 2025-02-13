@@ -16,11 +16,7 @@ export type InputType =
   | CustomInputTypes
   | PositionalInputTypes;
 
-export type FilterInputTypes =
-  | "time_range"
-  | "comparison_range"
-  | "time_filters"
-  | "dimension_filters";
+export type FilterInputTypes = "time_filters" | "dimension_filters";
 
 export interface ComponentInputParam {
   type: InputType;
