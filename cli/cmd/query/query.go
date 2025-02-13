@@ -23,8 +23,9 @@ rill query --sql "SELECT * FROM my-table" --limit 10
 `
 
 func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
-	var sql, connector, resolver, limit, project, path string
+	var sql, connector, resolver, project, path string
 	var properties, args map[string]string
+	var limit int
 	var local bool
 
 	queryCmd := &cobra.Command{
@@ -36,21 +37,6 @@ func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
 			if err := validateQueryFlags(resolver, sql, properties, args); err != nil {
 				return err
 			}
-
-			// Parse and validate limit
-			limitInt := 100 // Default limit
-			if limit != "" {
-				var err error
-				limitInt, err = strconv.Atoi(limit)
-				if err != nil {
-					return fmt.Errorf("invalid limit: %w", err)
-				}
-				if limitInt < 0 {
-					limitInt = 100
-					fmt.Printf("WARNING: limit is negative, using default limit of 100\n")
-				}
-			}
-			limit = strconv.Itoa(limitInt)
 
 			// Default resolver to "sql" if not provided
 			if resolver == "" {
@@ -84,7 +70,9 @@ func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
 			if connector != "" {
 				properties["connector"] = connector
 			}
-			properties["limit"] = limit // Always set limit
+			if limit != 0 {
+				properties["limit"] = strconv.Itoa(limit)
+			}
 
 			// Convert string maps to interface{} maps
 			propsMap := make(map[string]any, len(properties))
@@ -136,7 +124,7 @@ func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
 	queryCmd.Flags().StringVar(&resolver, "resolver", "", "Explicit resolver (cannot be combined with --sql)")
 	queryCmd.Flags().StringToStringVar(&properties, "properties", nil, "Explicit resolver properties (only with --resolver)")
 	queryCmd.Flags().StringToStringVar(&args, "args", nil, "Explicit resolver args (only with --resolver)")
-	queryCmd.Flags().StringVar(&limit, "limit", "100", "The maximum number of rows to print (default: 100)")
+	queryCmd.Flags().IntVar(&limit, "limit", 100, "The maximum number of rows to print")
 
 	return queryCmd
 }

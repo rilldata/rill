@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"strconv"
 	"time"
 
 	"github.com/mitchellh/mapstructure"
@@ -33,7 +32,7 @@ type sqlResolver struct {
 type sqlProps struct {
 	Connector string `mapstructure:"connector"`
 	SQL       string `mapstructure:"sql"`
-	Limit     string `mapstructure:"limit"`
+	Limit     int64  `mapstructure:"limit"`
 }
 
 type sqlArgs struct {
@@ -64,14 +63,11 @@ func newSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolve
 		return nil, err
 	}
 
-	// If there is a limit, convert it to an int
 	interactiveRowLimit := cfg.InteractiveSQLRowLimit
-	if props.Limit != "" {
-		interactiveRowLimit, err = strconv.ParseInt(props.Limit, 10, 64)
-		if err != nil {
-			return nil, err
-		}
+	if props.Limit != 0 {
+		interactiveRowLimit = props.Limit
 	}
+
 	olap, release, err := opts.Runtime.OLAP(ctx, opts.InstanceID, props.Connector)
 	if err != nil {
 		return nil, err
