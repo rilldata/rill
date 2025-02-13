@@ -11,6 +11,7 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/metricsview"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func (p *Printer) PrintOrgs(orgs []*adminv1.Organization, defaultOrg string) {
@@ -541,31 +542,19 @@ type billingIssue struct {
 	EventTime    string `header:"event_time,timestamp(ms|utc|human)" json:"event_time"`
 }
 
-type queryResponse struct {
-	Data []map[string]any `header:"data" json:"data"`
-}
-
-func (p *Printer) PrintQueryResponse(r *runtimev1.QueryResolverResponse) {
-	if len(r.Data) == 0 {
+func (p *Printer) PrintQueryResponse(rows []*structpb.Struct) {
+	if len(rows) == 0 {
 		p.PrintfWarn("No data found\n")
 		return
 	}
 
-	p.PrintData(toQueryResponse(r).Data)
+	p.PrintData(toQueryResponse(rows))
 }
 
-func toQueryResponse(r *runtimev1.QueryResolverResponse) *queryResponse {
-	columns := r.Schema.Fields
-	data := make([]map[string]any, 0, len(r.Data))
-	for _, row := range r.Data {
-		rowData := make(map[string]any)
-		for _, field := range columns {
-			rowData[field.Name] = row.Fields[field.Name].GetStringValue()
-		}
-		data = append(data, rowData)
+func toQueryResponse(rows []*structpb.Struct) []map[string]any {
+	data := make([]map[string]any, 0, len(rows))
+	for _, row := range rows {
+		data = append(data, row.AsMap())
 	}
-
-	return &queryResponse{
-		Data: data,
-	}
+	return data
 }
