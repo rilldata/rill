@@ -50,8 +50,10 @@ export class CanvasEntity {
    */
   selectedComponentIndex: Writable<number | null>;
 
+  private specStore: CanvasSpecResponseStore;
+
   constructor(name: string) {
-    const specStore: CanvasSpecResponseStore = derived(runtime, (r, set) =>
+    this.specStore = derived(runtime, (r, set) =>
       useCanvas(r.instanceId, name, { queryClient }).subscribe(set),
     );
 
@@ -59,8 +61,8 @@ export class CanvasEntity {
 
     this.components = new Map();
     this.selectedComponentIndex = writable(null);
-    this.spec = new CanvasResolvedSpec(specStore);
-    this.timeControls = new TimeControls(specStore);
+    this.spec = new CanvasResolvedSpec(this.specStore);
+    this.timeControls = new TimeControls(this.specStore);
     this.filters = new Filters(this.spec);
   }
 
@@ -72,7 +74,11 @@ export class CanvasEntity {
     let componentEntity = this.components.get(componentName);
 
     if (!componentEntity) {
-      componentEntity = new CanvasComponentState(componentName, this.spec);
+      componentEntity = new CanvasComponentState(
+        componentName,
+        this.specStore,
+        this.spec,
+      );
       this.components.set(componentName, componentEntity);
     }
     return componentEntity;

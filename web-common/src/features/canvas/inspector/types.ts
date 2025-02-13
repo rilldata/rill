@@ -19,7 +19,7 @@ export type InputType =
 export type FilterInputTypes =
   | "time_range"
   | "comparison_range"
-  | "grain"
+  | "time_filters"
   | "dimension_filters";
 
 export interface ComponentInputParam {
@@ -33,7 +33,7 @@ export interface ComponentInputParam {
 
 export interface FilterInputParam {
   type: FilterInputTypes;
-  label: string;
+  meta?: Record<string, any>;
 }
 
 export interface InputParams<T> {

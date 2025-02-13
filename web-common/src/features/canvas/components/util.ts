@@ -31,21 +31,13 @@ export const commonOptions: Record<
 };
 
 export function getFilterOptions(
-  includeComparisonRange = true,
+  hasComparison = true,
+  hasGrain = true,
 ): Partial<Record<FilterInputTypes, FilterInputParam>> {
   return {
-    time_range: { type: "time_range", label: "Time Range" },
-    ...(includeComparisonRange
-      ? {
-          comparison_range: {
-            type: "comparison_range",
-            label: "Comparison Range",
-          },
-        }
-      : {}),
+    time_filters: { type: "time_filters", meta: { hasComparison, hasGrain } },
     dimension_filters: {
       type: "dimension_filters",
-      label: "Filters",
     },
   };
 }
@@ -126,6 +118,7 @@ export function getComponentFilterProperties(
     dimension_filters: rendererProperties?.dimension_filters as
       | string
       | undefined,
+    time_filters: rendererProperties?.time_filters as string | undefined,
     time_range: rendererProperties?.time_range as string | undefined,
     comparison_range: rendererProperties?.comparison_range as
       | string

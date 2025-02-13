@@ -13,7 +13,6 @@
 
   export let metricsView: string;
   export let selectedComponentName: string;
-  export let label: string;
   export let id: string;
   export let filter: string;
   export let onChange: (filter: string) => void = () => {};
@@ -47,7 +46,7 @@
     getMeasureFilterItems,
     getAllMeasureFilterItems,
     measureHasFilter,
-  } = componentStore.filters);
+  } = componentStore.localFilters);
 
   $: dimensionIdMap = getMapFromArray(
     $allDimensions,
@@ -96,7 +95,7 @@
 
 <div class="flex flex-col gap-y-2 pt-1">
   <div class="flex justify-between gap-x-2">
-    <InputLabel small {label} {id} />
+    <InputLabel small label="Filters" {id} />
 
     <FilterButton
       allDimensions={$allDimensions}
