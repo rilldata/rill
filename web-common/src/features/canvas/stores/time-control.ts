@@ -270,7 +270,8 @@ export class TimeControls {
 
         if (
           defaultPreset?.comparisonMode ===
-          V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
+            V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME &&
+          !this.componentName
         ) {
           const newComparisonRange = getComparisonTimeRange(
             timeRanges,

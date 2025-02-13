@@ -150,7 +150,7 @@ export function getHeaderForComponent(
 export function getComponentMetricsViewFromSpec(
   componentName: string | undefined,
   spec: QueryObserverResult<CanvasResponse, RpcStatus>,
-) {
+): string | undefined {
   if (!componentName) return undefined;
   const resource = spec.data?.components?.[componentName]?.component;
 
