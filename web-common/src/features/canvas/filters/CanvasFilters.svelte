@@ -266,8 +266,10 @@
   onDestroy(destroy);
 </script>
 
-<div class="flex flex-col gap-y-2 w-full h-20 justify-center">
-  <div class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center ml-2">
+<div class="flex flex-col gap-y-2 size-full pointer-events-none">
+  <div
+    class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center ml-2 pointer-events-auto w-fit"
+  >
     <Calendar size="16px" />
     <SuperPill
       allTimeRange={$allTimeRange}
@@ -308,7 +310,9 @@
     {#if !readOnly}
       <Filter size="16px" className="ui-copy-icon flex-none mt-[5px]" />
     {/if}
-    <div class="relative flex flex-row flex-wrap gap-x-2 gap-y-2">
+    <div
+      class="relative flex flex-row flex-wrap gap-x-2 gap-y-2 pointer-events-auto"
+    >
       {#if isComplexFilter}
         <AdvancedFilter advancedFilter={$whereFilter} />
       {:else if !allDimensionFilters.length && !allMeasureFilters.length}

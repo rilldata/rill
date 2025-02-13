@@ -1,20 +1,19 @@
 <script lang="ts">
+  import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
+  import { KPIGrid } from "@rilldata/web-common/features/canvas/components/kpi-grid";
   import {
     isCanvasComponentType,
     isChartComponentType,
   } from "@rilldata/web-common/features/canvas/components/util";
+  import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
+  import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
+  import type { Readable } from "svelte/store";
   import { Chart } from "./charts";
   import { Image } from "./image";
   import { KPI } from "./kpi";
   import { Markdown } from "./markdown";
   import { Table } from "./table";
-
-  import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
-  import { KPIGrid } from "@rilldata/web-common/features/canvas/components/kpi-grid";
-  import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-  import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
-  import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
-  import type { Readable } from "svelte/store";
 
   export let renderer: string;
   export let rendererProperties: V1ComponentSpecRendererProperties;
