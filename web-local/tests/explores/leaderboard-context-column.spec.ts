@@ -1,6 +1,4 @@
 import { expect } from "@playwright/test";
-import { join } from "path";
-import { fileURLToPath } from "url";
 import { interactWithTimeRangeMenu } from "web-local/tests/utils/metricsViewHelpers";
 import { ResourceWatcher } from "web-local/tests/utils/ResourceWatcher";
 import { gotoNavEntry } from "web-local/tests/utils/waitHelpers";
@@ -9,9 +7,7 @@ import { test } from "../utils/test";
 
 test.describe("leaderboard context column", () => {
   test.use({
-    projectInit: {
-      path: join(fileURLToPath(import.meta.url), "../../data/projects/AdBids"),
-    },
+    projectInit: { name: "AdBids" },
   });
 
   test("Leaderboard context column", async ({ page }) => {

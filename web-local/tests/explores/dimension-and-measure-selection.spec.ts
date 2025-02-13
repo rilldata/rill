@@ -1,15 +1,11 @@
 import { expect } from "@playwright/test";
-import { join } from "path";
-import { fileURLToPath } from "url";
 import { gotoNavEntry } from "web-local/tests/utils/waitHelpers";
 import { clickMenuButton } from "../utils/commonHelpers";
 import { test } from "../utils/test";
 
 test.describe("dimension and measure selectors", () => {
   test.use({
-    projectInit: {
-      path: join(fileURLToPath(import.meta.url), "../../data/projects/AdBids"),
-    },
+    projectInit: { name: "AdBids" },
   });
 
   test("dimension and measure selectors flow", async ({ page }) => {

@@ -1,6 +1,4 @@
 import { expect, type Locator } from "@playwright/test";
-import { join } from "path";
-import { fileURLToPath } from "url";
 import { gotoNavEntry } from "web-local/tests/utils/waitHelpers";
 import { test } from "../utils/test";
 
@@ -17,9 +15,7 @@ async function assertAAboveB(locA: Locator, locB: Locator) {
 
 test.describe("leaderboard and dimension table sorting", () => {
   test.use({
-    projectInit: {
-      path: join(fileURLToPath(import.meta.url), "../../data/projects/AdBids"),
-    },
+    projectInit: { name: "AdBids" },
   });
 
   test("leaderboard and dimension table sorting", async ({ page }) => {

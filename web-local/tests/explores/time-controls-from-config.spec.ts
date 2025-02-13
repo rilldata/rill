@@ -1,16 +1,12 @@
 import { expect } from "@playwright/test";
-import { fileURLToPath } from "url";
 import { interactWithTimeRangeMenu } from "web-local/tests/utils/metricsViewHelpers";
 import { ResourceWatcher } from "web-local/tests/utils/ResourceWatcher";
 import { gotoNavEntry } from "web-local/tests/utils/waitHelpers";
 import { test } from "../utils/test";
-import { join } from "path";
 
 test.describe("time controls settings from explore preset", () => {
   test.use({
-    projectInit: {
-      path: join(fileURLToPath(import.meta.url), "../../data/projects/AdBids"),
-    },
+    projectInit: { name: "AdBids" },
   });
 
   test("preset time_range", async ({ page }) => {

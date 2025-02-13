@@ -1,6 +1,4 @@
 import { expect } from "@playwright/test";
-import { join } from "path";
-import { fileURLToPath } from "url";
 import { clickMenuButton } from "web-local/tests/utils/commonHelpers";
 import { interactWithTimeRangeMenu } from "web-local/tests/utils/metricsViewHelpers";
 import { ResourceWatcher } from "web-local/tests/utils/ResourceWatcher";
@@ -526,9 +524,7 @@ const expectSortedDeltaCol = [
 
 test.describe("pivot run through", () => {
   test.use({
-    projectInit: {
-      path: join(fileURLToPath(import.meta.url), "../../data/projects/AdBids"),
-    },
+    projectInit: { name: "AdBids" },
   });
 
   test("pivot run through", async ({ page }) => {
