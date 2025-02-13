@@ -29,6 +29,7 @@
       Go to {firstResourceType}
     </a>
     <button
+      aria-label="Create resource menu"
       use:builder.action
       {...builder}
       class="text-inherit h-full aspect-square grid place-content-center hover:bg-primary-50"
