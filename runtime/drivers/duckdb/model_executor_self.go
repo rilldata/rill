@@ -121,13 +121,13 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 					from: filestore,
 				}
 				return executor.Execute(ctx, &clone)
-			} else {
-				props["path"] = ref.Paths[0]
-				clone.InputProperties = props
-				// call the objectStoreToSelfExecutor which has logic to download files based on path and then call selfToSelfExecutor
-				executor := &objectStoreToSelfExecutor{c: e.c}
-				return executor.Execute(ctx, &clone)
 			}
+			// gcs
+			props["path"] = ref.Paths[0]
+			clone.InputProperties = props
+			// call the objectStoreToSelfExecutor which has logic to download files based on path and then call selfToSelfExecutor
+			executor := &objectStoreToSelfExecutor{c: e.c}
+			return executor.Execute(ctx, &clone)
 		}
 	}
 

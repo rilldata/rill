@@ -88,7 +88,7 @@ func (p *Parser) parseSource(ctx context.Context, node *Node) error {
 	// Track as a model
 	// We allowed a special resource type (source) to ingest data from external connector
 	// After the unification of sources and models everything is a model
-	r, err := p.insertResource(ResourceKindModel, node.Name, node.Paths, node.Refs...)
+	r, err := p.insertResource(ResourceKindSource, node.Name, node.Paths, node.Refs...)
 	if err != nil {
 		return err
 	}
