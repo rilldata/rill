@@ -10,6 +10,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/drivers/druid/druidsqldriver"
 	"go.uber.org/zap"
 )
 
@@ -87,6 +88,13 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 	var cancelFunc context.CancelFunc
 	if stmt.ExecutionTimeout != 0 {
 		ctx, cancelFunc = context.WithTimeout(ctx, stmt.ExecutionTimeout)
+	}
+
+	if stmt.OlapQueryCfg != nil {
+		ctx = druidsqldriver.WithQueryCfg(ctx, &druidsqldriver.QueryCfg{
+			UseCache:      stmt.OlapQueryCfg.UseCache,
+			PopulateCache: stmt.OlapQueryCfg.PopulateCache,
+		})
 	}
 
 	var rows *sqlx.Rows
