@@ -12,11 +12,17 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 func TestWatch(t *testing.T) {
 	dir := t.TempDir()
-	c := connection{root: dir}
+	// create /tmp directory and ensure watcher does not watch it
+	tmpDir := filepath.Join(dir, "tmp")
+	err := os.Mkdir(tmpDir, 0777)
+	require.NoError(t, err)
+	createFile(t, filepath.Join(tmpDir, "file3"))
+	c := connection{root: dir, logger: zap.NewNop()}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -37,7 +43,7 @@ func TestWatch(t *testing.T) {
 	createFile(t, fullname1)
 
 	subDirName := filepath.Join(dir, "subdir")
-	err := os.Mkdir(subDirName, 0777)
+	err = os.Mkdir(subDirName, 0777)
 	require.NoError(t, err)
 
 	fullname2 := filepath.Join(subDirName, "file2")
@@ -95,6 +101,9 @@ func TestWatch(t *testing.T) {
 
 	require.Equal(t, runtimev1.FileEvent_FILE_EVENT_DELETE, batch2[1].Type)
 	require.Equal(t, "/subdir/file2", batch2[1].Path)
+
+	files := c.watcher.watcher.WatchList()
+	require.NotContains(t, files, tmpDir)
 }
 
 func createFile(t *testing.T, fullname string) {
