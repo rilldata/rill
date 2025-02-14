@@ -17,10 +17,6 @@ type RPCMethods = {
 const methods: RPCMethods = {
     echo(message: { message: string }) {
         return message;
-    },
-    setTheme({ theme }: { theme: string }) {
-        document.documentElement.setAttribute("data-theme", theme);
-        return { success: true };
     }
 };
 
@@ -43,8 +39,11 @@ async function handleRPCMessage(event: MessageEvent<RPCRequest>) {
 }
 
 export function initRPC() {
-    window.addEventListener("message", (event) => {
-        void handleRPCMessage(event);
+    window.removeEventListener("message", (_event: MessageEvent) => { })
+    window.addEventListener("message", (event: MessageEvent) => {
+        if (event.source && event.data) {
+            void handleRPCMessage(event as MessageEvent<RPCRequest>);
+        }
     });
 }
 
@@ -54,6 +53,6 @@ export function registerMethod<T>(name: string, func: (params: T) => Promise<unk
 
 export function emit(method: string, params?: unknown) {
     if (window.parent !== window) {
-        window.parent.postMessage({ method, params } as RPCRequest, "*");
+        window.parent.postMessage({ method, params } as RPCRequest);
     }
 }

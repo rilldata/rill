@@ -3,6 +3,8 @@
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
   import DashboardURLStateSyncWrapper from "@rilldata/web-common/features/dashboards/url-state/DashboardURLStateSyncWrapper.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
+  import EmbedPublicAPI from "@rilldata/web-admin/features/embeds/EmbedPublicAPI.svelte";
+
   import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
   import { errorStore } from "../errors/error-store";
 
@@ -14,6 +16,7 @@
   });
   $: ({ isSuccess, isError, error, data } = $explore);
   $: isExploreNotFound = isError && error?.response?.status === 404;
+
   // We check for explore.state.validSpec instead of meta.reconcileError. validSpec persists
   // from previous valid explores, allowing display even when the current explore spec is invalid
   // and a meta.reconcileError exists.
@@ -39,7 +42,9 @@
       <StateManagersProvider {exploreName} {metricsViewName}>
         <DashboardURLStateSyncWrapper>
           <DashboardThemeProvider>
-            <Dashboard {exploreName} {metricsViewName} isEmbedded />
+            <EmbedPublicAPI {instanceId}>
+              <Dashboard {exploreName} {metricsViewName} isEmbedded />
+            </EmbedPublicAPI>
           </DashboardThemeProvider>
         </DashboardURLStateSyncWrapper>
       </StateManagersProvider>
