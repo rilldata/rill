@@ -595,13 +595,6 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage project")
 	}
 
-	if req.ProdSlots != nil {
-		forceAccess := req.SuperuserForceAccess != nil && *req.SuperuserForceAccess && claims.Superuser(ctx)
-		if !forceAccess {
-			return nil, status.Error(codes.PermissionDenied, "does not have permission to change prod-slots")
-		}
-	}
-
 	if req.GithubUrl != nil && req.ArchiveAssetId != nil {
 		return nil, fmt.Errorf("cannot set both github_url and archive_asset_id")
 	}

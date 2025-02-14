@@ -6066,6 +6066,8 @@ func (m *UpdateProjectRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	// no validation rules for SuperuserForceAccess
+
 	if m.Description != nil {
 		// no validation rules for Description
 	}
@@ -6108,10 +6110,6 @@ func (m *UpdateProjectRequest) validate(all bool) error {
 
 	if m.ProdVersion != nil {
 		// no validation rules for ProdVersion
-	}
-
-	if m.SuperuserForceAccess != nil {
-		// no validation rules for SuperuserForceAccess
 	}
 
 	if len(errors) > 0 {

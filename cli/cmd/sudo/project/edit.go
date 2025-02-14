@@ -1,6 +1,8 @@
 package project
 
 import (
+	"fmt"
+
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -15,17 +17,15 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 		Short: "Edit the project details",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			isEditRequested := false
+
 			req := &adminv1.UpdateProjectRequest{
 				OrganizationName:     args[0],
 				Name:                 args[1],
-				SuperuserForceAccess: &[]bool{true}[0],
+				SuperuserForceAccess: true,
 			}
 
+			isEditRequested := false
 			if cmd.Flags().Changed("prod-slots") {
-				if prodSlots <= 0 {
-					return fmt.Errorf("--prod-slots must be greater than zero")
-				}
 				prodSlotsInt64 := int64(prodSlots)
 				req.ProdSlots = &prodSlotsInt64
 				isEditRequested = true
@@ -34,6 +34,10 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			if !isEditRequested {
 				ch.Printf("No edit requested\n")
 				return nil
+			}
+
+			if *req.ProdSlots <= 0 {
+				return fmt.Errorf("--prod-slots must be greater than zero")
 			}
 
 			client, err := ch.Client()
