@@ -82,8 +82,9 @@
 
   // Clear the banner when navigating away from the dashboard
   beforeNavigate(({ from, to }) => {
-    if (from?.url.pathname !== to?.url.pathname && hasBanner) {
-      eventBus.emit("banner", null);
+    const leavingExplore = from?.url.pathname !== to?.url.pathname;
+    if (leavingExplore && hasBanner) {
+        eventBus.emit("banner", null);
     }
   });
 
