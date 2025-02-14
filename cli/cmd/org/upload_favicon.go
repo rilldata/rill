@@ -98,7 +98,7 @@ func UploadFaviconCmd(ch *cmdutil.Helper) *cobra.Command {
 				Type:               "image",
 				Name:               "favicon",
 				Extension:          ext,
-				Cacheable:          true,
+				Public:             true,
 				EstimatedSizeBytes: fi.Size(),
 			})
 			if err != nil {
