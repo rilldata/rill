@@ -21,6 +21,12 @@
   export let rendererProperties: V1ComponentSpecRendererProperties;
 
   const ctx = getCanvasStateManagers();
+  let pivotDataStore: PivotDataStore;
+  let isFetching = false;
+  let assembled = false;
+
+  // Cache for pivot data stores
+  const pivotStoreCache = new Map<string, PivotDataStore>();
 
   $: tableSpec = rendererProperties as TableSpec;
 
@@ -62,19 +68,20 @@
   });
 
   $: pivotConfig = getTableConfig(ctx, tableSpec, $pivotState);
-  let pivotDataStore: PivotDataStore;
-  let isFetching = false;
-  let assembled = false;
 
-  // TODO: Consider moving to a memoized store
-  $: if ($schema.isValid) {
-    const pivotDashboardContext: PivotDashboardContext = {
-      metricsViewName: readable(tableSpec.metrics_view),
-      queryClient: ctx.queryClient,
-      enabled: !!ctx.canvasEntity.spec.canvasSpec,
-    };
-    pivotDataStore = createPivotDataStore(pivotDashboardContext, pivotConfig);
-
+  $: if ($schema.isValid && tableSpec.metrics_view) {
+    const cacheKey = tableSpec.metrics_view;
+    let store = pivotStoreCache.get(cacheKey);
+    if (!store) {
+      const pivotDashboardContext: PivotDashboardContext = {
+        metricsViewName: readable(tableSpec.metrics_view),
+        queryClient: ctx.queryClient,
+        enabled: !!ctx.canvasEntity.spec.canvasSpec,
+      };
+      store = createPivotDataStore(pivotDashboardContext, pivotConfig);
+      pivotStoreCache.set(cacheKey, store);
+    }
+    pivotDataStore = store;
     ({ isFetching, assembled } = $pivotDataStore);
   }
 
