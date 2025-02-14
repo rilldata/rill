@@ -77,7 +77,7 @@
   );
 
   // Stream the state to the parent
-  $: emit("state", {
+  $: emit("stateChange", {
     state: stateString,
   });
 </script>
