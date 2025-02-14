@@ -1,0 +1,116 @@
+# Explore YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/canvas-dashboards
+
+type: canvas
+title: "Canvas Dashboard"
+defaults:
+  time_range: PT24H
+  comparison_mode: time
+layout:
+  rows:
+    - 4, 3
+    - 5, 6, 7
+    - "2"
+  layout:
+    - 3, 9
+    - 4, 4, 4
+    - "12"
+    - "12"
+  heights:
+    - 21
+    - 21
+    - 21
+    - 12
+items:
+  - component:
+      bar_chart:
+        metrics_view: metrics_margin_metrics
+        x:
+          type: nominal
+          field: component
+        y:
+          type: quantitative
+          field: gross_margin_percent
+    height: 4
+    width: 6
+    x: 0
+    y: 0
+  - component:
+      bar_chart:
+        metrics_view: metrics_margin_metrics
+        x:
+          type: nominal
+          field: component
+        y:
+          type: quantitative
+          field: gross_margin_percent
+    height: 4
+    width: 6
+    x: 6
+    y: 0
+  - component:
+      table:
+        metrics_view: metrics_margin_metrics
+        measures:
+          - gross_margin_percent
+        row_dimensions:
+          - component
+    height: 10
+    width: 4
+    x: 0
+    y: 4
+  - component:
+      kpi:
+        metrics_view: metrics_margin_metrics
+        measure: gross_margin_percent
+        sparkline: true
+    height: 4
+    width: 6
+    x: 4
+    y: 4
+  - component:
+      image:
+        url: https://cdn.prod.website-files.com/659ddac460dbacbdc813b204/660b0f85094eb576187342cf_rill_logo_sq_gradient.svg
+    height: 2
+    width: 2
+    x: 10
+    y: 4
+  - component:
+      bar_chart:
+        metrics_view: metrics_margin_metrics
+        x:
+          type: nominal
+          field: component
+        y:
+          type: quantitative
+          field: gross_margin_percent
+    height: 4
+    width: 6
+    x: 0
+    y: 14
+  - component:
+      bar_chart:
+        metrics_view: metrics_margin_metrics
+        x:
+          type: nominal
+          field: component
+        y:
+          type: quantitative
+          field: gross_margin_percent
+    height: 4
+    width: 6
+    x: 6
+    y: 14
+  - component:
+      bar_chart:
+        metrics_view: metrics_margin_metrics
+        x:
+          type: nominal
+          field: component
+        y:
+          type: quantitative
+          field: gross_margin_percent
+    height: 4
+    width: 6
+    x: 0
+    y: 18

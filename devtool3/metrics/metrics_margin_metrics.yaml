@@ -1,0 +1,72 @@
+# Metrics view YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/dashboards
+# This file was generated using AI.
+
+version: 1
+type: metrics_view
+
+title: Metrics Margin Model KPIs
+model: metrics_margin_model
+timeseries: __time
+smallest_time_grain: "day"
+
+dimensions:
+  - name: customer
+    display_name: Customer
+    column: company
+    description: "The name of the customer"
+  - name: plan_name
+    display_name: Plan Name
+    column: plan_name
+    description: "The name of the billing plan"
+  - name: location
+    display_name: "Cost by Region"
+    column: "location"
+    description: "The region incurring costs"
+  - name: component
+    display_name: Cost by Component
+    column: component
+    description: "The component generating costs"
+  - name: app_name
+    display_name: "Cost by App Name"
+    column: "app_name"
+    description: "The app generating costs"
+  - name: sku_description
+    display_name: "Cost by SKU"
+    column: "sku_description"
+    description: "The sku description for costs"
+  - name: pipeline
+    display_name: "Cost by Data Pipeline"
+    column: "pipeline"
+    description: "The pipeline incurring costs"
+  - name: environment
+    display_name: "Cost by Environment"
+    column: "environment"
+    description: "The environment incurring costs"
+    
+measures:
+  - display_name: "Total Cost"
+    expression: "SUM(cost)"
+    name: total_cost
+    description: "The sum of cost"
+    format_preset: currency_usd
+  - display_name: "Total Revenue"
+    expression: SUM(revenue)
+    name: total_revenue
+    description: The sum of revenue
+    format_preset: currency_usd
+  - display_name: "Net Revenue"
+    expression: "SUM(revenue) - SUM(cost)"
+    name: net_revenue
+    description: "The sum of revenue minus the sum of cost"
+    format_preset: currency_usd
+  - display_name: "Gross Margin %"
+    expression: "(SUM(revenue) - SUM(cost))/SUM(revenue)"
+    name: gross_margin_percent
+    description: "Net revenue divided by sum of revenue"
+    format_preset: percentage
+  - display_name: "Unique Customers"
+    expression: "COUNT(DISTINCT company)"
+    name: unique_customers
+    description: "The count of unique companies"
+    format_preset: humanize
