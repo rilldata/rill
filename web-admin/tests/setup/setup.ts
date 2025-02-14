@@ -105,27 +105,8 @@ setup(
       `rm -rf ${examplesRepoPath} && git clone https://github.com/rilldata/rill-examples.git ${examplesRepoPath}`,
     );
 
-    // TODO:
-    // 1. Select the input with name="username"
-    // 2. Fill in the email address
-    // 3. Select the input with name="password"
-    // 4. Fill in the password
-    // 5. Click the button with type="submit" with text "Continue"
-
     // Log in with the admin account
     await page.goto("/");
-    // await page.getByRole("button", { name: "Continue with Email" }).click();
-
-    // await page.getByPlaceholder("Enter your email address").click();
-    // await page
-    //   .getByPlaceholder("Enter your email address")
-    //   .fill(process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL);
-    // await page.getByPlaceholder("Enter your email address").press("Tab");
-
-    // await page
-    //   .getByPlaceholder("Enter your password")
-    //   .fill(process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_PASSWORD);
-    // await page.getByRole("button", { name: "Continue with Email" }).click();
 
     // Select and fill in the email address
     await page.locator('input[name="username"]').click();
