@@ -1,5 +1,4 @@
 connectors:
-  - clickhouse
   - bigquery
 project_files:
   all_datatypes_column_duckdb.yaml:
