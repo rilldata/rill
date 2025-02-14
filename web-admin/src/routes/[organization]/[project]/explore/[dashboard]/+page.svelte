@@ -80,15 +80,10 @@
     });
   }
 
+  // Clear the banner when navigating away from the dashboard
   beforeNavigate(({ from, to }) => {
-    if (!from || !to || from.url.pathname === to.url.pathname) {
-      // Don't clear out any dashboard banners if we're navigating to the same page
-      return;
-    } else {
-      // Clear out any dashboard banners
-      if (hasBanner) {
-        eventBus.emit("banner", null);
-      }
+    if (from?.url.pathname !== to?.url.pathname && hasBanner) {
+      eventBus.emit("banner", null);
     }
   });
 
