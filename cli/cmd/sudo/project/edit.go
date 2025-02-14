@@ -12,7 +12,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	editCmd := &cobra.Command{
 		Use:   "edit <org> <project>",
 		Args:  cobra.ExactArgs(2),
-		Short: "edit the project details",
+		Short: "Edit the project details",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			isEditRequested := false
@@ -24,8 +24,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			if cmd.Flags().Changed("prod-slots") {
 				if prodSlots <= 0 {
-					ch.PrintfError("--prod-slots must be greater than zero\n")
-					return nil
+					return fmt.Errorf("--prod-slots must be greater than zero")
 				}
 				prodSlotsInt64 := int64(prodSlots)
 				req.ProdSlots = &prodSlotsInt64
