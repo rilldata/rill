@@ -14,12 +14,12 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-// QueryResolver enables superusers to query a resolver within a project
+// QueryResolver enables superusers and project admins to query a resolver within a project
 func (s *Server) QueryResolver(ctx context.Context, req *runtimev1.QueryResolverRequest) (*runtimev1.QueryResolverResponse, error) {
-	// Validate the caller is a superuser
+	// Validate the caller has the ReadResolvers permission
 	claims := auth.GetClaims(ctx)
-	if !claims.Can(auth.ManageInstances) {
-		return nil, status.Error(codes.PermissionDenied, "only superusers can query resolvers")
+	if !claims.CanInstance(req.InstanceId, auth.ReadResolvers) {
+		return nil, status.Error(codes.PermissionDenied, "only superusers and project admins can query resolvers")
 	}
 
 	// Resolver should exist
