@@ -49,7 +49,7 @@
   use:builderActions={{ builders }}
   role="presentation"
   data-index={i}
-  class="canvas-component pointer-events-auto size-full"
+  class="canvas-component size-full"
   data-selected={selected}
   data-hovered={isHovered}
   class:!cursor-default={embed}
@@ -62,9 +62,7 @@
 >
   <div class="size-full relative">
     <div class="size-full overflow-hidden flex flex-col flex-none">
-      <div
-        class="size-full overflow-hidden flex flex-col gap-y-1 flex-none relative"
-      >
+      <div class="size-full overflow-hidden flex flex-col flex-none relative">
         {#if !isChartType}
           <ComponentHeader {title} {description} filters={componentFilters} />
         {/if}
