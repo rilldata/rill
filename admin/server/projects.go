@@ -591,7 +591,14 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 
 	claims := auth.GetClaims(ctx)
 	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to delete project")
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage project")
+	}
+
+	if req.ProdSlots != nil {
+		forceAccess := req.SuperuserForceAccess != nil && *req.SuperuserForceAccess && claims.Superuser(ctx)
+		if !forceAccess {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to change prod-slots")
+		}
 	}
 
 	if req.GithubUrl != nil && req.ArchiveAssetId != nil {

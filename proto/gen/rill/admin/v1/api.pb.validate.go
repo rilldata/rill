@@ -6110,6 +6110,10 @@ func (m *UpdateProjectRequest) validate(all bool) error {
 		// no validation rules for ProdVersion
 	}
 
+	if m.SuperuserForceAccess != nil {
+		// no validation rules for SuperuserForceAccess
+	}
+
 	if len(errors) > 0 {
 		return UpdateProjectRequestMultiError(errors)
 	}
