@@ -695,15 +695,6 @@ func (d *db) Size() int64 {
 	return fileSize(paths)
 }
 
-func (d *db) SchemaLite() map[string]string {
-	tables := d.catalog.listTables()
-	schema := make(map[string]string, len(tables))
-	for _, t := range tables {
-		schema[t.Name] = t.Type
-	}
-	return schema
-}
-
 // acquireWriteConn syncs the write database, initializes the write handle and returns a write connection.
 // The release function should be called to release the connection.
 // It should be called with the writeMu locked.
