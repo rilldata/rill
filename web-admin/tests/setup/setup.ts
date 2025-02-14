@@ -127,15 +127,14 @@ setup(
     //   .fill(process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_PASSWORD);
     // await page.getByRole("button", { name: "Continue with Email" }).click();
 
-    // Fill in the email address
+    // Select and fill in the email address
+    await page.locator('input[name="username"]').click();
     await page
       .locator('input[name="username"]')
       .fill(process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL);
 
-    // Tab to the password input
-    await page.locator('input[name="username"]').press("Tab");
-
-    // Fill in the password
+    // Select and fill in the password
+    await page.locator('input[name="password"]').click();
     await page
       .locator('input[name="password"]')
       .fill(process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_PASSWORD);
