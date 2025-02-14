@@ -55,6 +55,11 @@ type DB interface {
 
 	// RenameTable renames a table in the database.
 	RenameTable(ctx context.Context, oldName, newName string) error
+
+	// Meta APIs
+
+	// Schema returns the schema of the database.
+	Schema(ctx context.Context, like string, matchCase bool) ([]*Table, error)
 }
 
 type DBOptions struct {
@@ -688,6 +693,15 @@ func (d *db) Size() int64 {
 		return nil
 	})
 	return fileSize(paths)
+}
+
+func (d *db) SchemaLite() map[string]string {
+	tables := d.catalog.listTables()
+	schema := make(map[string]string, len(tables))
+	for _, t := range tables {
+		schema[t.Name] = t.Type
+	}
+	return schema
 }
 
 // acquireWriteConn syncs the write database, initializes the write handle and returns a write connection.
