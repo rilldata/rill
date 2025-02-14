@@ -5,6 +5,7 @@
   import { createPivotDataStore } from "@rilldata/web-common/features/dashboards/pivot/pivot-data-store";
   import PivotEmpty from "@rilldata/web-common/features/dashboards/pivot/PivotEmpty.svelte";
   import PivotError from "@rilldata/web-common/features/dashboards/pivot/PivotError.svelte";
+  import PivotTable from "@rilldata/web-common/features/dashboards/pivot/PivotTable.svelte";
   import {
     PivotChipType,
     type PivotDashboardContext,
@@ -16,7 +17,6 @@
   import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
   import { readable, writable } from "svelte/store";
   import { getTableConfig, validateTableSchema } from "./selector";
-  import TableRenderer from "./TableRenderer.svelte";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
 
@@ -92,10 +92,28 @@
     {:else if !$pivotDataStore?.data || $pivotDataStore?.data?.length === 0}
       <PivotEmpty {assembled} {isFetching} {hasColumnAndNoMeasure} />
     {:else}
-      <TableRenderer
+      <PivotTable
         {pivotDataStore}
-        config={$pivotConfig}
-        pivotDashboardStore={pivotState}
+        config={pivotConfig}
+        {pivotState}
+        setPivotExpanded={(expanded) => {
+          pivotState.update((state) => ({
+            ...state,
+            expanded,
+          }));
+        }}
+        setPivotSort={(sorting) => {
+          pivotState.update((state) => ({
+            ...state,
+            sorting,
+          }));
+        }}
+        setPivotRowPage={(page) => {
+          pivotState.update((state) => ({
+            ...state,
+            rowPage: page,
+          }));
+        }}
       />
     {/if}
   {:else}
