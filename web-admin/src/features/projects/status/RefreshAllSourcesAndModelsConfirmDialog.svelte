@@ -31,8 +31,9 @@
           This will refresh all project sources and models.
           <br />
           <br />
-          <span class="font-medium">Note:</span> To refresh a single source or model,
-          use the refresh option behind the '...' button.
+          <span class="font-medium">Note:</span> To refresh a single resource, scroll
+          to the source or model, click the '...' button, and select the refresh
+          option.
         </div>
       </AlertDialogDescription>
     </AlertDialogHeader>
