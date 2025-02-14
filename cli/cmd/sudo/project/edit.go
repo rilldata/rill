@@ -58,10 +58,5 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	}
 
 	editCmd.Flags().IntVar(&prodSlots, "prod-slots", 0, "Slots to allocate for production deployments")
-	if !ch.IsDev() {
-		if err := editCmd.Flags().MarkHidden("prod-slots"); err != nil {
-			panic(err)
-		}
-	}
 	return editCmd
 }
