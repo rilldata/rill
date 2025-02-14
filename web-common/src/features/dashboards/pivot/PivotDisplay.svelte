@@ -10,6 +10,13 @@
   import { usePivotForExplore } from "./pivot-data-store";
 
   const stateManagers = getStateManagers();
+  const {
+    exploreName,
+    dashboardStore,
+    selectors: {
+      pivot: { columns },
+    },
+  } = stateManagers;
 
   let showPanels = true;
 
@@ -17,7 +24,8 @@
 
   $: ({ isFetching, assembled } = $pivotDataStore);
 
-  $: ({ exploreName, dashboardStore } = stateManagers);
+  $: hasColumnAndNoMeasure =
+    $columns.dimension.length > 0 && $columns.measure.length === 0;
 
   function removeActiveCell() {
     if (!$dashboardStore.pivot.activeCell) return;
@@ -43,7 +51,7 @@
       {#if $pivotDataStore?.error?.length}
         <PivotError errors={$pivotDataStore.error} />
       {:else if !$pivotDataStore?.data || $pivotDataStore?.data?.length === 0}
-        <PivotEmpty {assembled} {isFetching} />
+        <PivotEmpty {assembled} {isFetching} {hasColumnAndNoMeasure} />
       {:else}
         <PivotTable {pivotDataStore} />
       {/if}
