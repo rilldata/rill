@@ -618,3 +618,7 @@ export function getErrorState(errors: PivotQueryError[]): PivotDataState {
     totalColumns: 0,
   };
 }
+
+export function isElement(target: EventTarget | null): target is HTMLElement {
+  return target instanceof HTMLElement;
+}

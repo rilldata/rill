@@ -119,13 +119,14 @@ export function createTableCellQuery(
   const mergedFilter =
     mergeFilters(filterForInitialTable, whereFilter) ?? createAndExpression([]);
 
-  console.log(mergedFilter, "mergedFilter");
   const sortBy = [
     {
-      desc: false,
+      desc: isFlat ? true : false,
       name: isFlat ? measureNames[0] : anchorDimension || measureNames[0],
     },
   ];
+
+  const limit = isFlat ? "250" : "5000";
   return createPivotAggregationRowQuery(
     ctx,
     config,
@@ -133,7 +134,7 @@ export function createTableCellQuery(
     dimensionBody,
     mergedFilter,
     sortBy,
-    "5000",
+    limit,
     "0",
     timeRange,
   );

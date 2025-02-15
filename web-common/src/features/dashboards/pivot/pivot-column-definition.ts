@@ -252,15 +252,17 @@ export function getColumnDefForPivot(
         accessorFn: (row) => row[d.name],
         header: isFlat ? d.label || d.name : nestedLabel,
         cell: ({ row, getValue }) =>
-          cellComponent(PivotExpandableCell, {
-            value: formatRowDimensionValue(
-              getValue() as string,
-              row.depth,
-              config.time,
-              rowDimensionNames,
-            ),
-            row,
-          }),
+          isFlat
+            ? getValue()
+            : cellComponent(PivotExpandableCell, {
+                value: formatRowDimensionValue(
+                  getValue() as string,
+                  row.depth,
+                  config.time,
+                  rowDimensionNames,
+                ),
+                row,
+              }),
       };
     });
 
