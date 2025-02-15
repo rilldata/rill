@@ -54,11 +54,7 @@
 <div class="gap-y-1">
   <div class="flex justify-between items-center">
     <InputLabel small label={config.label ?? key} id={key} />
-    <FieldConfigDropdown
-      {isDimension}
-      {fieldConfig}
-      onChange={updateFieldProperty}
-    />
+    <FieldConfigDropdown {key} {fieldConfig} onChange={updateFieldProperty} />
   </div>
 
   <SingleFieldInput

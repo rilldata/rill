@@ -99,7 +99,7 @@ export function getChartData(
 export function createChartDataQuery(
   ctx: StateManagers,
   config: ChartConfig & ComponentFilterProperties,
-  limit = "500",
+  limit = "2000",
   offset = "0",
 ): CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> {
   const { canvasEntity } = ctx;
