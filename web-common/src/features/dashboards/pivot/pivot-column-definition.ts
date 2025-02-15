@@ -230,8 +230,7 @@ export function getColumnDefForPivot(
   columnDimensionAxes: Record<string, string[]> | undefined,
   totals: PivotDataRow,
 ) {
-  const IsNested = true;
-
+  const isFlat = config.isFlat;
   const { rowDimensionNames, colDimensionNames } = config;
 
   const measures = getMeasureColumnProps(config);
@@ -240,7 +239,9 @@ export function getColumnDefForPivot(
 
   let rowDimensionsForColumnDef = rowDimensions;
   let nestedLabel: string;
-  if (IsNested) {
+  if (isFlat) {
+    rowDimensionsForColumnDef = rowDimensions;
+  } else {
     rowDimensionsForColumnDef = rowDimensions.slice(0, 1);
     nestedLabel = rowDimensions.map((d) => d.label || d.name).join(" > ");
   }
@@ -249,7 +250,7 @@ export function getColumnDefForPivot(
       return {
         id: d.name,
         accessorFn: (row) => row[d.name],
-        header: nestedLabel,
+        header: isFlat ? d.label || d.name : nestedLabel,
         cell: ({ row, getValue }) =>
           cellComponent(PivotExpandableCell, {
             value: formatRowDimensionValue(
@@ -288,6 +289,10 @@ export function getColumnDefForPivot(
         },
       };
     });
+
+  if (config.isFlat) {
+    return [...rowDefinitions, ...leafColumns];
+  }
 
   const groupedColDef = createColumnDefinitionForDimensions(
     config,

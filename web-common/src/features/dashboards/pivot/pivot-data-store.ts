@@ -68,20 +68,31 @@ import {
 export function createTableCellQuery(
   ctx: PivotDashboardContext,
   config: PivotDataStoreConfig,
-  anchorDimension: string | undefined,
   columnDimensionAxesData: Record<string, string[]> | undefined,
   totalsRow: PivotDataRow,
   rowDimensionValues: string[],
 ) {
+  const {
+    rowDimensionNames,
+    colDimensionNames,
+    measureNames,
+    isFlat,
+    time,
+    whereFilter,
+  } = config;
+  const anchorDimension: string | undefined = rowDimensionNames?.[0];
+
   const rowPage = config.pivot.rowPage;
   if (rowDimensionValues.length === 0 && rowPage > 1) return readable(null);
 
-  let allDimensions = config.colDimensionNames;
-  if (anchorDimension) {
-    allDimensions = config.colDimensionNames.concat([anchorDimension]);
+  let allDimensions: string[] = [];
+
+  if (isFlat) {
+    allDimensions = colDimensionNames.concat(rowDimensionNames);
+  } else if (anchorDimension) {
+    allDimensions = colDimensionNames.concat([anchorDimension]);
   }
 
-  const { time } = config;
   const dimensionBody = allDimensions.map((dimension) => {
     if (isTimeDimension(dimension, time.timeDimension)) {
       return {
@@ -92,7 +103,7 @@ export function createTableCellQuery(
       };
     } else return { name: dimension };
   });
-  const measureBody = config.measureNames.map((m) => ({ name: m }));
+  const measureBody = measureNames.map((m) => ({ name: m }));
 
   const { filters: filterForInitialTable, timeFilters } =
     getFilterForPivotTable(
@@ -103,16 +114,16 @@ export function createTableCellQuery(
       anchorDimension,
     );
 
-  const timeRange: TimeRangeString = getTimeForQuery(config.time, timeFilters);
+  const timeRange: TimeRangeString = getTimeForQuery(time, timeFilters);
 
   const mergedFilter =
-    mergeFilters(filterForInitialTable, config.whereFilter) ??
-    createAndExpression([]);
+    mergeFilters(filterForInitialTable, whereFilter) ?? createAndExpression([]);
 
+  console.log(mergedFilter, "mergedFilter");
   const sortBy = [
     {
       desc: false,
-      name: anchorDimension || config.measureNames[0],
+      name: isFlat ? measureNames[0] : anchorDimension || measureNames[0],
     },
   ];
   return createPivotAggregationRowQuery(
@@ -199,6 +210,7 @@ export function createPivotDataStore(
         totalColumns: 0,
       });
     }
+
     const measureBody = measureNames.map((m) => ({ name: m }));
 
     const columnDimensionAxesQuery = getAxisForDimensions(
@@ -392,7 +404,11 @@ export function createPivotDataStore(
               readable(null);
 
             let columnDef: ColumnDef<PivotDataRow>[] = [];
-            if (colDimensionNames.length || !rowDimensionNames.length) {
+            if (
+              config.isFlat ||
+              colDimensionNames.length ||
+              !rowDimensionNames.length
+            ) {
               const slicedAxesDataForDef = sliceColumnAxesDataForDef(
                 config,
                 columnDimensionAxes?.data,
@@ -408,7 +424,6 @@ export function createPivotDataStore(
               initialTableCellQuery = createTableCellQuery(
                 ctx,
                 config,
-                rowDimensionNames[0],
                 columnDimensionAxes?.data,
                 totalsRowData,
                 rowDimensionValues,
@@ -485,14 +500,20 @@ export function createPivotDataStore(
                     }
                     cellData = initialTableCellData.data?.data || [];
                   }
-                  const tableDataWithCells = reduceTableCellDataIntoRows(
-                    config,
-                    anchorDimension,
-                    rowDimensionValues || [],
-                    columnDimensionAxes?.data || {},
-                    pivotSkeleton,
-                    cellData,
-                  );
+
+                  let tableDataWithCells: PivotDataRow[] = [];
+                  if (config.isFlat) {
+                    tableDataWithCells = cellData;
+                  } else {
+                    tableDataWithCells = reduceTableCellDataIntoRows(
+                      config,
+                      anchorDimension,
+                      rowDimensionValues || [],
+                      columnDimensionAxes?.data || {},
+                      pivotSkeleton,
+                      cellData,
+                    );
+                  }
                   pivotData = structuredClone(tableDataWithCells);
                 }
 

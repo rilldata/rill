@@ -4,13 +4,13 @@
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import { featureFlags } from "../../feature-flags";
-  import { getStateManagers } from "../state-managers/state-managers";
-  import ExportMenu from "../../exports/ExportMenu.svelte";
   import {
     V1ExportFormat,
     createQueryServiceExport,
   } from "../../../runtime-client";
+  import ExportMenu from "../../exports/ExportMenu.svelte";
+  import { featureFlags } from "../../feature-flags";
+  import { getStateManagers } from "../state-managers/state-managers";
   import exportPivot, { getPivotExportArgs } from "./pivot-export";
 
   export let showPanels = true;
@@ -23,6 +23,7 @@
 
   $: expanded = $dashboardStore?.pivot?.expanded ?? {};
   $: metricsViewProto = $dashboardStore.proto;
+  $: rowJoinType = $dashboardStore?.pivot?.rowJoinType ?? "nest";
 
   // function expandVisible() {
   //   // const lowestVisibleRow = 0;
@@ -78,6 +79,20 @@
     }}
   >
     <PivotPanel size="18px" open={showPanels} />
+  </Button>
+
+  <Button
+    compact
+    type="text"
+    selected={rowJoinType === "nest"}
+    on:click={() => {
+      metricsExplorerStore.setPivotRowJoinType(
+        $exploreName,
+        rowJoinType === "nest" ? "flat" : "nest",
+      );
+    }}
+  >
+    {rowJoinType === "nest" ? "Nested" : "Flat"} Mode
   </Button>
 
   <!-- <Button

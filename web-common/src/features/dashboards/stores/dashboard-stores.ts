@@ -538,6 +538,12 @@ const metricsViewReducers = {
       return state;
     });
   },
+
+  setPivotRowJoinType(name: string, rowJoinType: "flat" | "nest") {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pivot = { ...metricsExplorer.pivot, rowJoinType };
+    });
+  },
 };
 
 export const metricsExplorerStore: Readable<MetricsExplorerStoreType> &

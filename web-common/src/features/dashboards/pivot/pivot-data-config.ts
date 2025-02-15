@@ -51,6 +51,7 @@ export function getPivotConfig(
           comparisonTime: undefined,
           enableComparison: false,
           searchText,
+          isFlat: false,
         };
       }
 
@@ -106,7 +107,7 @@ export function getPivotConfig(
         return d.id;
       });
 
-      const colDimensionNames = dashboardStore.pivot.columns.dimension.map(
+      let colDimensionNames = dashboardStore.pivot.columns.dimension.map(
         (d) => {
           if (d.type === PivotChipType.Time) {
             return `${time.timeDimension}_rill_${d.id}`;
@@ -114,6 +115,14 @@ export function getPivotConfig(
           return d.id;
         },
       );
+
+      // const isFlat = dashboardStore.pivot.rowJoinType === "flat";
+      const isFlat = true;
+      /**
+       * For flat table, internally rows have all
+       * the dimensions and measures are in columns
+       */
+      if (isFlat) colDimensionNames = [];
 
       const config: PivotDataStoreConfig = {
         measureNames,
@@ -133,6 +142,7 @@ export function getPivotConfig(
         comparisonTime,
         time,
         searchText,
+        isFlat,
       };
 
       const currentKey = getPivotConfigKey(config);

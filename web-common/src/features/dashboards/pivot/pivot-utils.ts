@@ -188,13 +188,12 @@ export function getFilterForPivotTable(
   anchorDimension: string | undefined = undefined,
   yLimit = 100,
 ) {
-  // TODO: handle for already existing global filters
-
-  const { time } = config;
+  const { isFlat, time } = config;
 
   let rowFilters: V1Expression | undefined;
   if (
     anchorDimension &&
+    !isFlat &&
     !isTimeDimension(anchorDimension, time.timeDimension)
   ) {
     rowFilters = createInExpression(

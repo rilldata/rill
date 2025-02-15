@@ -190,6 +190,7 @@ export function getAxisForDimensions(
         };
       }
 
+      console.log("data", data);
       data.forEach((d, i: number) => {
         const dimensionName = dimensions[i];
 
