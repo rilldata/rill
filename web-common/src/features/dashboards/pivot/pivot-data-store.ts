@@ -51,6 +51,7 @@ import {
   isTimeDimension,
 } from "./pivot-utils";
 import {
+  type PivotAxesData,
   type PivotDashboardContext,
   type PivotDataRow,
   type PivotDataStore,
@@ -71,6 +72,8 @@ export function createTableCellQuery(
   columnDimensionAxesData: Record<string, string[]> | undefined,
   totalsRow: PivotDataRow,
   rowDimensionValues: string[],
+  limit = "5000",
+  offset = "0",
 ) {
   const {
     rowDimensionNames,
@@ -83,7 +86,8 @@ export function createTableCellQuery(
   const anchorDimension: string | undefined = rowDimensionNames?.[0];
 
   const rowPage = config.pivot.rowPage;
-  if (rowDimensionValues.length === 0 && rowPage > 1) return readable(null);
+  if (!isFlat && rowDimensionValues.length === 0 && rowPage > 1)
+    return readable(null);
 
   let allDimensions: string[] = [];
 
@@ -126,7 +130,6 @@ export function createTableCellQuery(
     },
   ];
 
-  const limit = isFlat ? "250" : "5000";
   return createPivotAggregationRowQuery(
     ctx,
     config,
@@ -135,7 +138,7 @@ export function createTableCellQuery(
     mergedFilter,
     sortBy,
     limit,
-    "0",
+    offset,
     timeRange,
   );
 }
@@ -213,6 +216,7 @@ export function createPivotDataStore(
     }
 
     const measureBody = measureNames.map((m) => ({ name: m }));
+    const isFlat = config.isFlat;
 
     const columnDimensionAxesQuery = getAxisForDimensions(
       ctx,
@@ -265,18 +269,23 @@ export function createPivotDataStore(
             ) || config.whereFilter;
         }
 
-        // Get sort order for the anchor dimension
-        const rowDimensionAxisQuery = getAxisForDimensions(
-          ctx,
-          config,
-          rowDimensionNames.slice(0, 1),
-          sortFilteredMeasureBody,
-          whereFilter,
-          sortPivotBy,
-          timeRange,
-          NUM_ROWS_PER_PAGE.toString(),
-          rowOffset.toString(),
-        );
+        let rowDimensionAxisQuery: Readable<PivotAxesData | null> =
+          readable(null);
+
+        if (!isFlat) {
+          // Get sort order for the anchor dimension
+          rowDimensionAxisQuery = getAxisForDimensions(
+            ctx,
+            config,
+            rowDimensionNames.slice(0, 1),
+            sortFilteredMeasureBody,
+            whereFilter,
+            sortPivotBy,
+            timeRange,
+            NUM_ROWS_PER_PAGE.toString(),
+            rowOffset.toString(),
+          );
+        }
 
         let globalTotalsQuery:
           | Readable<null>
@@ -303,7 +312,8 @@ export function createPivotDataStore(
         );
         if (
           (rowDimensionNames.length || colDimensionNames.length) &&
-          measureNames.length
+          measureNames.length &&
+          !isFlat
         ) {
           totalsRowQuery = getTotalsRowQuery(
             ctx,
@@ -399,14 +409,14 @@ export function createPivotDataStore(
               timeRange,
             );
 
-            let initialTableCellQuery:
+            let tableCellQuery:
               | Readable<null>
               | CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> =
               readable(null);
 
             let columnDef: ColumnDef<PivotDataRow>[] = [];
             if (
-              config.isFlat ||
+              isFlat ||
               colDimensionNames.length ||
               !rowDimensionNames.length
             ) {
@@ -422,12 +432,14 @@ export function createPivotDataStore(
                 totalsRowData,
               );
 
-              initialTableCellQuery = createTableCellQuery(
+              tableCellQuery = createTableCellQuery(
                 ctx,
                 config,
                 columnDimensionAxes?.data,
                 totalsRowData,
                 rowDimensionValues,
+                isFlat ? NUM_ROWS_PER_PAGE.toString() : "5000",
+                isFlat ? rowOffset.toString() : "0",
               );
             } else {
               columnDef = getColumnDefForPivot(
@@ -437,11 +449,11 @@ export function createPivotDataStore(
               );
             }
             /**
-             * Derive a store from initial table cell data query
+             * Derive a store from table cell data query
              */
             return derived(
-              [rowAxesQueryForMeasureTotals, initialTableCellQuery],
-              ([rowMeasureTotalsAxesQuery, initialTableCellData], cellSet) => {
+              [rowAxesQueryForMeasureTotals, tableCellQuery],
+              ([rowMeasureTotalsAxesQuery, tableCellData], cellSet) => {
                 if (rowMeasureTotalsAxesQuery?.isFetching) {
                   return cellSet({
                     isFetching: true,
@@ -454,7 +466,7 @@ export function createPivotDataStore(
                 }
 
                 const tableCellQueryError = getErrorFromResponses([
-                  initialTableCellData,
+                  tableCellData,
                 ]);
 
                 if (
@@ -475,19 +487,20 @@ export function createPivotDataStore(
                 );
 
                 let pivotSkeleton = mergedRowTotals;
-                if (rowPage > 1) {
+                if (!isFlat && rowPage > 1) {
                   pivotSkeleton = [...lastPivotData, ...mergedRowTotals];
                 }
 
                 let pivotData: PivotDataRow[] = [];
                 let cellData: V1MetricsViewAggregationResponseDataItem[] = [];
+                let isCellDataEmpty = false;
                 if (getPivotConfigKey(config) in expandedTableMap) {
                   pivotData = expandedTableMap[getPivotConfigKey(config)];
                 } else {
-                  if (initialTableCellData === null) {
+                  if (tableCellData === null) {
                     cellData = pivotSkeleton;
                   } else {
-                    if (initialTableCellData.isFetching) {
+                    if (tableCellData.isFetching) {
                       return cellSet({
                         isFetching: true,
                         data: pivotSkeleton,
@@ -499,12 +512,18 @@ export function createPivotDataStore(
                           : undefined,
                       });
                     }
-                    cellData = initialTableCellData.data?.data || [];
+                    cellData = tableCellData.data?.data || [];
+                    console.log("cellData", cellData);
+                    isCellDataEmpty = cellData.length === 0;
                   }
 
                   let tableDataWithCells: PivotDataRow[] = [];
-                  if (config.isFlat) {
-                    tableDataWithCells = cellData;
+                  if (isFlat) {
+                    if (rowPage > 1) {
+                      tableDataWithCells = [...lastPivotData, ...cellData];
+                    } else {
+                      tableDataWithCells = cellData;
+                    }
                   } else {
                     tableDataWithCells = reduceTableCellDataIntoRows(
                       config,
@@ -570,7 +589,9 @@ export function createPivotDataStore(
                     lastTotalColumns = totalColumns;
 
                     const reachedEndForRowData =
-                      rowDimensionValues.length === 0 && rowPage > 1;
+                      (isFlat
+                        ? isCellDataEmpty
+                        : rowDimensionValues.length === 0) && rowPage > 1;
                     return {
                       isFetching: false,
                       data: tableDataExpanded,

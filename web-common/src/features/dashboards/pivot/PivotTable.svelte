@@ -8,7 +8,7 @@
   import FlatTable from "@rilldata/web-common/features/dashboards/pivot/FlatTable.svelte";
   import { getMeasureColumnProps } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-definition";
   import {
-    calculateFirstColumnWidth,
+    calculateColumnWidth,
     calculateMeasureWidth,
     COLUMN_WIDTH_CONSTANTS as WIDTHS,
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-width-utils";
@@ -39,6 +39,11 @@
     PivotDataStoreConfig,
     PivotState,
   } from "./types";
+
+  // Import isMeasureColumn from FlatTable
+  function isMeasureColumn(header: any, colNumber: number) {
+    return !header.column.columns && header.column.columnDef.id;
+  }
 
   // Distance threshold (in pixels) for triggering data fetch
   const ROW_THRESHOLD = 200;
@@ -110,6 +115,7 @@
   $: assembled = $pivotDataStore.assembled;
   $: dataRows = $pivotDataStore.data;
   $: totalsRow = $pivotDataStore.totalsRowData;
+  $: isFlat = $config.isFlat;
 
   $: measures = getMeasureColumnProps($config);
   $: measureCount = measures.length;
@@ -128,6 +134,38 @@
     }
   });
 
+  // For flat tables, calculate widths for all columns including dimensions
+  $: if (isFlat && headerGroups.length > 0) {
+    headerGroups[0].headers.forEach((header) => {
+      const columnDef = header.column.columnDef;
+      const name = String(columnDef.header);
+
+      if (!$measureLengths.has(name)) {
+        let estimatedWidth;
+        if (isMeasureColumn(header, 0)) {
+          // For measures, use measure width calculation
+          const measure = measures.find((m) => m.name === columnDef.id);
+          if (measure) {
+            estimatedWidth = calculateMeasureWidth(
+              measure.name,
+              measure.label,
+              measure.formatter,
+              totalsRow,
+              dataRows,
+            );
+          }
+        } else {
+          // For dimensions, use column width calculation
+          estimatedWidth = calculateColumnWidth(name, timeDimension, dataRows);
+        }
+
+        if (estimatedWidth) {
+          measureLengths.update((lengths) => lengths.set(name, estimatedWidth));
+        }
+      }
+    });
+  }
+
   $: subHeaders = [
     {
       subHeaders: measures.map((m) => ({
@@ -144,6 +182,7 @@
     headerGroups[headerGroups.length - 2]?.headers?.slice(
       hasDimension ? 1 : 0,
     ) ?? subHeaders;
+
   $: measureGroupsLength = measureGroups.length;
   $: totalMeasureWidth = measures.reduce(
     (acc, { name }) => acc + ($measureLengths.get(name) ?? 0),
@@ -159,7 +198,7 @@
     : null;
   $: firstColumnWidth =
     hasDimension && firstColumnName
-      ? calculateFirstColumnWidth(firstColumnName, timeDimension, dataRows)
+      ? calculateColumnWidth(firstColumnName, timeDimension, dataRows)
       : 0;
 
   $: rows = $table.getRowModel().rows;
@@ -218,6 +257,7 @@
       const hasMoreDataThanOnePage = rows.length >= NUM_ROWS_PER_PAGE;
 
       if (isReachingPageEnd && hasMoreDataThanOnePage && canFetchMoreData) {
+        console.log("setPivotRowPage", $pivotState.rowPage + 1);
         setPivotRowPage($pivotState.rowPage + 1);
       }
     }
@@ -298,7 +338,7 @@
 
 <div
   class="table-wrapper relative"
-  class:with-row-dimension={hasDimension}
+  class:with-row-dimension={!isFlat && hasDimension}
   class:with-col-dimension={hasColumnDimension}
   style:--row-height="{ROW_HEIGHT}px"
   style:--header-height="{HEADER_HEIGHT}px"
@@ -378,15 +418,13 @@
     {/each}
   </div>
 
-  {#if $config.isFlat}
+  {#if isFlat}
     <FlatTable
       {headerGroups}
       {rows}
       {virtualRows}
       {before}
       {after}
-      {firstColumnWidth}
-      {totalLength}
       {measureCount}
       {canShowDataViewer}
       activeCell={$pivotState.activeCell}

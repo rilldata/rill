@@ -10,8 +10,6 @@
   export let virtualRows: { index: number }[];
   export let before: number;
   export let after: number;
-  export let firstColumnWidth: number;
-  export let totalLength: number;
   export let measureCount: number;
   export let canShowDataViewer = false;
   export let activeCell: { rowId: string; columnId: string } | null | undefined;
@@ -24,8 +22,10 @@
   export let assembled: boolean;
 
   function isMeasureColumn(header, colNumber: number) {
-    // TODO: Implement this
-    return false;
+    // For flat tables, measures are always at the end after dimensions
+    // We can identify them by checking if they are leaf columns (no subcolumns)
+    // and if their column definition has an accessorKey (which measures have)
+    return !header.column.columns && header.column.columnDef.accessorKey;
   }
 
   function isCellActive(cell: Cell<PivotDataRow, unknown>) {
@@ -36,18 +36,14 @@
   }
 </script>
 
-<table
-  role="presentation"
-  style:width="{totalLength + firstColumnWidth}px"
-  on:click={modified({ shift: onCellCopy })}
->
+<table role="presentation" on:click={modified({ shift: onCellCopy })}>
   <thead>
     {#each headerGroups as headerGroup (headerGroup.id)}
       <tr>
         {#each headerGroup.headers as header, i (header.id)}
           {@const sortDirection = header.column.getIsSorted()}
 
-          <th colSpan={header.colSpan}>
+          <th>
             <button
               class="header-cell"
               class:cursor-pointer={header.column.getCanSort()}
@@ -94,7 +90,6 @@
             on:mouseenter={onCellHover}
             on:mouseleave={onCellLeave}
             data-value={cell.getValue()}
-            class:totals-column={i > 0 && i <= measureCount}
           >
             <div class="cell pointer-events-none truncate" role="presentation">
               {#if result?.component && result?.props}
@@ -174,24 +169,6 @@
     @apply size-full p-1 px-2;
   }
 
-  /* The leftmost header cells have no bottom border unless they're the last row */
-  :global(.with-row-dimension)
-    thead
-    > tr:not(:last-of-type)
-    > th:first-of-type {
-    @apply border-b-0;
-  }
-
-  :global(.with-row-dimension) tr > th:first-of-type {
-    @apply sticky left-0 z-20;
-    @apply bg-white;
-  }
-
-  :global(.with-row-dimension) tr > td:first-of-type {
-    @apply sticky left-0 z-10;
-    @apply bg-white;
-  }
-
   tr > td:first-of-type:not(:last-of-type) {
     @apply border-r font-normal;
   }
@@ -216,12 +193,6 @@
     @apply bg-primary-100;
   }
 
-  .totals-column {
-    @apply bg-slate-50;
-  }
-  :global(.with-col-dimension) .totals-column {
-    @apply font-semibold;
-  }
   .interactive-cell {
     @apply cursor-pointer;
   }
