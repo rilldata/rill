@@ -67,22 +67,16 @@ type OLAPStore interface {
 
 // Statement wraps a query to execute against an OLAP driver.
 type Statement struct {
-	Query            string
-	Args             []any
-	DryRun           bool
-	Priority         int
-	LongRunning      bool
-	OlapQueryCfg     *OlapQueryCfg
+	Query       string
+	Args        []any
+	DryRun      bool
+	Priority    int
+	LongRunning bool
+	// *Cache configs are used to send olap specific cache configs to underlying drivers on per query basis. For example,
+	// both Druid and ClickHouse supports specifying if cache should be used for the query or not and if the query results should be populated in cache or not.
+	UseCache         *bool // can be used to enable/disable cache for the query
+	PopulateCache    *bool // can be used to enable/disable cache population for the query results
 	ExecutionTimeout time.Duration
-}
-
-// OlapQueryCfg is used to send olap specific configs to underlying drivers on per query basis.
-// For example both Druid and ClickHouse supports specifying if cache should be used for the query or not and if the query results should be populated in cache or not.
-// UseCache can be used to enable/disable cache for the query.
-// PopulateCache can be used to enable/disable cache population for the query results.
-type OlapQueryCfg struct {
-	UseCache      bool
-	PopulateCache bool
 }
 
 // Result wraps the results of query.

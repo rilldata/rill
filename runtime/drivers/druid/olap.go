@@ -90,11 +90,21 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 		ctx, cancelFunc = context.WithTimeout(ctx, stmt.ExecutionTimeout)
 	}
 
-	if stmt.OlapQueryCfg != nil {
-		ctx = druidsqldriver.WithQueryCfg(ctx, &druidsqldriver.QueryCfg{
-			UseCache:      stmt.OlapQueryCfg.UseCache,
-			PopulateCache: stmt.OlapQueryCfg.PopulateCache,
-		})
+	var queryCfg *druidsqldriver.QueryConfig
+	if stmt.UseCache != nil {
+		queryCfg = &druidsqldriver.QueryConfig{
+			UseCache: stmt.UseCache,
+		}
+	}
+	if stmt.PopulateCache != nil {
+		if queryCfg == nil {
+			queryCfg = &druidsqldriver.QueryConfig{}
+		}
+		queryCfg.PopulateCache = stmt.PopulateCache
+	}
+
+	if queryCfg != nil {
+		ctx = druidsqldriver.WithQueryConfig(ctx, queryCfg)
 	}
 
 	var rows *sqlx.Rows

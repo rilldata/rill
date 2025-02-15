@@ -73,7 +73,7 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 		c: c,
 	})
 	return re.RunCtx(ctx, func(ctx context.Context) (driver.Rows, retrier.Action, error) {
-		queryCfg := queryCfgFromContext(ctx)
+		queryCfg := queryConfigFromContext(ctx)
 
 		dr := newDruidRequest(query, args, queryCfg)
 		b, err := json.Marshal(dr)
@@ -425,25 +425,6 @@ type DruidQueryContext struct {
 	PopulateCache              *bool  `json:"populateCache,omitempty"`
 }
 
-type QueryCfg struct {
-	UseCache      bool
-	PopulateCache bool
-}
-type ctxKey int
-
-var queryCfgKey ctxKey
-
-func WithQueryCfg(ctx context.Context, cfg *QueryCfg) context.Context {
-	return context.WithValue(ctx, queryCfgKey, cfg)
-}
-
-func queryCfgFromContext(ctx context.Context) *QueryCfg {
-	if cfg, ok := ctx.Value(queryCfgKey).(*QueryCfg); ok {
-		return cfg
-	}
-	return nil
-}
-
 type DruidParameter struct {
 	Type  string `json:"type"`
 	Value any    `json:"value"`
@@ -458,7 +439,7 @@ type DruidRequest struct {
 	Context        DruidQueryContext `json:"context"`
 }
 
-func newDruidRequest(query string, args []driver.NamedValue, queryCfg *QueryCfg) *DruidRequest {
+func newDruidRequest(query string, args []driver.NamedValue, queryCfg *QueryConfig) *DruidRequest {
 	parameters := make([]DruidParameter, len(args))
 	for i, arg := range args {
 		parameters[i] = DruidParameter{
@@ -468,8 +449,8 @@ func newDruidRequest(query string, args []driver.NamedValue, queryCfg *QueryCfg)
 	}
 	var useCache, populateCache *bool
 	if queryCfg != nil {
-		useCache = &queryCfg.UseCache
-		populateCache = &queryCfg.PopulateCache
+		useCache = queryCfg.UseCache
+		populateCache = queryCfg.PopulateCache
 	}
 	return &DruidRequest{
 		Query:          query,
@@ -492,6 +473,24 @@ func (s *stmt) Exec(args []driver.Value) (driver.Result, error) {
 
 func (s *stmt) Query(args []driver.Value) (driver.Rows, error) {
 	return nil, fmt.Errorf("unsupported")
+}
+
+type QueryConfig struct {
+	UseCache      *bool
+	PopulateCache *bool
+}
+
+type queryCfgCtxKey struct{}
+
+func WithQueryConfig(ctx context.Context, cfg *QueryConfig) context.Context {
+	return context.WithValue(ctx, queryCfgCtxKey{}, cfg)
+}
+
+func queryConfigFromContext(ctx context.Context) *QueryConfig {
+	if cfg, ok := ctx.Value(queryCfgCtxKey{}).(*QueryConfig); ok {
+		return cfg
+	}
+	return nil
 }
 
 func identityTransformer(v any) (any, error) {
