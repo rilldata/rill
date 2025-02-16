@@ -1,20 +1,9 @@
-<script lang="ts" context="module">
-  import { writable } from "svelte/store";
-  const measureLengths = writable(new Map<string, number>());
-</script>
-
 <script lang="ts">
   import VirtualTooltip from "@rilldata/web-common/components/virtualized-table/VirtualTooltip.svelte";
   import FlatTable from "@rilldata/web-common/features/dashboards/pivot/FlatTable.svelte";
   import { getMeasureColumnProps } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-definition";
-  import {
-    calculateColumnWidth,
-    calculateMeasureWidth,
-    COLUMN_WIDTH_CONSTANTS as WIDTHS,
-  } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-width-utils";
   import { NUM_ROWS_PER_PAGE } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
   import { isElement } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
-  import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import {
     type Cell,
@@ -39,11 +28,6 @@
     PivotDataStoreConfig,
     PivotState,
   } from "./types";
-
-  // Import isMeasureColumn from FlatTable
-  function isMeasureColumn(header: any, colNumber: number) {
-    return !header.column.columns && header.column.columnDef.id;
-  }
 
   // Distance threshold (in pixels) for triggering data fetch
   const ROW_THRESHOLD = 200;
@@ -101,15 +85,9 @@
   let stickyRows = [0];
   let rowScrollOffset = 0;
   let scrollLeft = 0;
-  let initialMeasureIndexOnResize = 0;
-  let initLengthOnResize = 0;
-  let initScrollOnResize = 0;
-  let percentOfChangeDuringResize = 0;
-  let resizingMeasure = false;
-  let resizing = false;
 
   $: timeDimension = $config.time.timeDimension;
-  $: hasDimension = $pivotState.rows.dimension.length > 0;
+  $: hasRowDimension = $pivotState.rows.dimension.length > 0;
   $: hasColumnDimension = $pivotState.columns.dimension.length > 0;
   $: reachedEndForRows = !!$pivotDataStore?.reachedEndForRowData;
   $: assembled = $pivotDataStore.assembled;
@@ -118,88 +96,9 @@
   $: isFlat = $config.isFlat;
 
   $: measures = getMeasureColumnProps($config);
-  $: measureCount = measures.length;
-  $: measures.forEach(({ name, label, formatter }) => {
-    if (!$measureLengths.has(name)) {
-      const estimatedWidth = calculateMeasureWidth(
-        name,
-        label,
-        formatter,
-        totalsRow,
-        dataRows,
-      );
-      measureLengths.update((measureLengths) => {
-        return measureLengths.set(name, estimatedWidth);
-      });
-    }
-  });
-
-  // For flat tables, calculate widths for all columns including dimensions
-  $: if (isFlat && headerGroups.length > 0) {
-    headerGroups[0].headers.forEach((header) => {
-      const columnDef = header.column.columnDef;
-      const name = String(columnDef.header);
-
-      if (!$measureLengths.has(name)) {
-        let estimatedWidth;
-        if (isMeasureColumn(header, 0)) {
-          // For measures, use measure width calculation
-          const measure = measures.find((m) => m.name === columnDef.id);
-          if (measure) {
-            estimatedWidth = calculateMeasureWidth(
-              measure.name,
-              measure.label,
-              measure.formatter,
-              totalsRow,
-              dataRows,
-            );
-          }
-        } else {
-          // For dimensions, use column width calculation
-          estimatedWidth = calculateColumnWidth(name, timeDimension, dataRows);
-        }
-
-        if (estimatedWidth) {
-          measureLengths.update((lengths) => lengths.set(name, estimatedWidth));
-        }
-      }
-    });
-  }
-
-  $: subHeaders = [
-    {
-      subHeaders: measures.map((m) => ({
-        column: { columnDef: { name: m.name } },
-      })),
-    },
-  ];
-
-  let measureGroups: {
-    subHeaders: { column: { columnDef: { name: string } } }[];
-  }[];
-  // @ts-expect-error - I have manually added the name property in pivot-column-definition.ts
-  $: measureGroups =
-    headerGroups[headerGroups.length - 2]?.headers?.slice(
-      hasDimension ? 1 : 0,
-    ) ?? subHeaders;
-
-  $: measureGroupsLength = measureGroups.length;
-  $: totalMeasureWidth = measures.reduce(
-    (acc, { name }) => acc + ($measureLengths.get(name) ?? 0),
-    0,
-  );
-  $: totalLength = measureGroupsLength * totalMeasureWidth;
 
   $: headerGroups = $table.getHeaderGroups();
   $: totalHeaderHeight = headerGroups.length * HEADER_HEIGHT;
-  $: headers = headerGroups[0].headers;
-  $: firstColumnName = hasDimension
-    ? String(headers[0]?.column.columnDef.header)
-    : null;
-  $: firstColumnWidth =
-    hasDimension && firstColumnName
-      ? calculateColumnWidth(firstColumnName, timeDimension, dataRows)
-      : 0;
 
   $: rows = $table.getRowModel().rows;
   $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
@@ -229,14 +128,6 @@
       ]
     : [0, 0];
 
-  $: if (resizingMeasure && containerRefElement && measureLengths) {
-    containerRefElement.scrollTo({
-      left:
-        initScrollOnResize +
-        percentOfChangeDuringResize * (totalLength - initLengthOnResize),
-    });
-  }
-
   let customShortcuts: { description: string; shortcut: string }[] = [];
   $: if (canShowDataViewer) {
     customShortcuts = [
@@ -257,7 +148,6 @@
       const hasMoreDataThanOnePage = rows.length >= NUM_ROWS_PER_PAGE;
 
       if (isReachingPageEnd && hasMoreDataThanOnePage && canFetchMoreData) {
-        console.log("setPivotRowPage", $pivotState.rowPage + 1);
         setPivotRowPage($pivotState.rowPage + 1);
       }
     }
@@ -269,24 +159,6 @@
       handleScroll(containerRefElement);
     });
   });
-
-  function onResizeStart(e: MouseEvent) {
-    initLengthOnResize = totalLength;
-    initScrollOnResize = scrollLeft;
-
-    const offset =
-      e.clientX -
-      containerRefElement.getBoundingClientRect().left -
-      firstColumnWidth -
-      measures.reduce((rollingSum, { name }, i) => {
-        return i <= initialMeasureIndexOnResize
-          ? rollingSum + ($measureLengths.get(name) ?? 0)
-          : rollingSum;
-      }, 0) +
-      4;
-
-    percentOfChangeDuringResize = (scrollLeft + offset) / totalLength;
-  }
 
   let showTooltip = false;
   let hoverPosition: DOMRect;
@@ -338,86 +210,12 @@
 
 <div
   class="table-wrapper relative"
-  class:with-row-dimension={!isFlat && hasDimension}
-  class:with-col-dimension={hasColumnDimension}
   style:--row-height="{ROW_HEIGHT}px"
   style:--header-height="{HEADER_HEIGHT}px"
   style:--total-header-height="{totalHeaderHeight + headerGroups.length}px"
   bind:this={containerRefElement}
   on:scroll={() => handleScroll(containerRefElement)}
-  class:pointer-events-none={resizing}
 >
-  <div
-    class="w-full absolute top-0 z-50 flex pointer-events-none"
-    style:width="{totalLength + firstColumnWidth}px"
-    style:height="{totalRowSize + totalHeaderHeight + headerGroups.length}px"
-  >
-    <div
-      style:width="{firstColumnWidth}px"
-      class="sticky left-0 flex-none flex"
-    >
-      <Resizer
-        side="right"
-        direction="EW"
-        min={WIDTHS.MIN_COL_WIDTH}
-        max={WIDTHS.MAX_COL_WIDTH}
-        dimension={firstColumnWidth}
-        onUpdate={(d) => (firstColumnWidth = d)}
-        onMouseDown={(e) => {
-          resizingMeasure = false;
-          resizing = true;
-          onResizeStart(e);
-        }}
-        onMouseUp={() => {
-          resizing = false;
-          resizingMeasure = false;
-        }}
-      >
-        <div class="resize-bar" />
-      </Resizer>
-    </div>
-
-    {#each measureGroups as { subHeaders }, groupIndex (groupIndex)}
-      <div class="h-full z-50 flex" style:width="{totalMeasureWidth}px">
-        {#each subHeaders as { column: { columnDef: { name } } }, i (name)}
-          {@const length =
-            $measureLengths.get(name) ?? WIDTHS.INIT_MEASURE_WIDTH}
-          {@const last =
-            i === subHeaders.length - 1 &&
-            groupIndex === measureGroups.length - 1}
-          <div style:width="{length}px" class="h-full relative">
-            <Resizer
-              side="right"
-              direction="EW"
-              min={WIDTHS.MIN_MEASURE_WIDTH}
-              max={WIDTHS.MAX_MEASURE_WIDTH}
-              dimension={length}
-              justify={last ? "end" : "center"}
-              hang={!last}
-              onUpdate={(d) => {
-                measureLengths.update((measureLengths) => {
-                  return measureLengths.set(name, d);
-                });
-              }}
-              onMouseDown={(e) => {
-                resizingMeasure = true;
-                resizing = true;
-                initialMeasureIndexOnResize = i;
-                onResizeStart(e);
-              }}
-              onMouseUp={() => {
-                resizing = false;
-                resizingMeasure = false;
-              }}
-            >
-              <div class="resize-bar" />
-            </Resizer>
-          </div>
-        {/each}
-      </div>
-    {/each}
-  </div>
-
   {#if isFlat}
     <FlatTable
       {headerGroups}
@@ -425,7 +223,6 @@
       {virtualRows}
       {before}
       {after}
-      {measureCount}
       {canShowDataViewer}
       activeCell={$pivotState.activeCell}
       {assembled}
@@ -441,15 +238,17 @@
       {virtualRows}
       {before}
       {after}
-      {firstColumnWidth}
-      {firstColumnName}
-      {totalLength}
-      {measureCount}
-      {measureGroups}
-      measureLengths={$measureLengths}
+      {hasRowDimension}
+      {timeDimension}
+      {totalsRow}
+      {hasColumnDimension}
+      {dataRows}
+      {measures}
       {canShowDataViewer}
       activeCell={$pivotState.activeCell}
       {assembled}
+      {scrollLeft}
+      {containerRefElement}
       onCellClick={handleCellClick}
       onCellHover={handleHover}
       onCellLeave={handleLeave}
@@ -472,9 +271,5 @@
   .table-wrapper {
     @apply overflow-auto h-fit max-h-full w-fit max-w-full;
     @apply border rounded-md z-40;
-  }
-
-  .resize-bar {
-    @apply bg-primary-500 w-1 h-full;
   }
 </style>

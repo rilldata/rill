@@ -10,7 +10,6 @@
   export let virtualRows: { index: number }[];
   export let before: number;
   export let after: number;
-  export let measureCount: number;
   export let canShowDataViewer = false;
   export let activeCell: { rowId: string; columnId: string } | null | undefined;
   export let onCellClick: (cell: Cell<PivotDataRow, unknown>) => void;
@@ -85,7 +84,6 @@
             class="ui-copy-number"
             class:active-cell={isActive}
             class:interactive-cell={canShowDataViewer}
-            class:border-r={i % measureCount === 0 && i}
             on:click={() => onCellClick(cell)}
             on:mouseenter={onCellHover}
             on:mouseleave={onCellLeave}

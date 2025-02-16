@@ -513,7 +513,6 @@ export function createPivotDataStore(
                       });
                     }
                     cellData = tableCellData.data?.data || [];
-                    console.log("cellData", cellData);
                     isCellDataEmpty = cellData.length === 0;
                   }
 

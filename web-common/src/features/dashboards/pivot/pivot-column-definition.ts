@@ -168,11 +168,19 @@ function formatRowDimensionValue(
   return value;
 }
 
-export function getMeasureColumnProps(config: PivotDataStoreConfig) {
+export type MeasureColumnProps = Array<{
+  label: string;
+  formatter: ReturnType<typeof createMeasureValueFormatter<null | undefined>>;
+  name: string;
+  type: MeasureType;
+}>;
+export function getMeasureColumnProps(
+  config: PivotDataStoreConfig,
+): MeasureColumnProps {
   const { measureNames } = config;
   return measureNames.map((m) => {
     let measureName = m;
-    let label: string | undefined;
+    let label: string = "";
     let type: MeasureType = "measure";
     if (m.endsWith(COMPARISON_DELTA)) {
       label = "Δ";

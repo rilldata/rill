@@ -1,24 +1,34 @@
+<script lang="ts" context="module">
+  import { writable } from "svelte/store";
+  const measureLengths = writable(new Map<string, number>());
+</script>
+
 <script lang="ts">
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
+  import {
+    calculateColumnWidth,
+    calculateMeasureWidth,
+    COLUMN_WIDTH_CONSTANTS as WIDTHS,
+  } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-width-utils";
+  import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
   import type { Cell, HeaderGroup, Row } from "@tanstack/svelte-table";
   import { flexRender } from "@tanstack/svelte-table";
+  import type { MeasureColumnProps } from "./pivot-column-definition";
   import type { PivotDataRow } from "./types";
-
   export let headerGroups: HeaderGroup<PivotDataRow>[];
   export let rows: Row<PivotDataRow>[];
   export let virtualRows: { index: number }[];
+  export let hasRowDimension: boolean;
+  export let hasColumnDimension: boolean;
+  export let timeDimension: string;
+  export let dataRows: PivotDataRow[];
   export let before: number;
   export let after: number;
-  export let firstColumnWidth: number;
-  export let firstColumnName: string | null;
-  export let totalLength: number;
-  export let measureCount: number;
-  export let measureGroups: {
-    subHeaders: { column: { columnDef: { name: string } } }[];
-  }[];
-  export let measureLengths: Map<string, number>;
+  export let measures: MeasureColumnProps;
+  export let totalsRow: PivotDataRow | undefined;
   export let canShowDataViewer = false;
+  export let scrollLeft: number;
   export let activeCell: { rowId: string; columnId: string } | null | undefined;
   export let onCellClick: (cell: Cell<PivotDataRow, unknown>) => void;
   export let onCellHover: (
@@ -27,6 +37,75 @@
   export let onCellLeave: () => void;
   export let onCellCopy: (e: MouseEvent) => void;
   export let assembled: boolean;
+  export let containerRefElement: HTMLDivElement;
+
+  const HEADER_HEIGHT = 30;
+
+  let resizing = false;
+  let resizingMeasure = false;
+  let initialMeasureIndexOnResize = 0;
+  let initLengthOnResize = 0;
+  let initScrollOnResize = 0;
+  let percentOfChangeDuringResize = 0;
+
+  $: headers = headerGroups[0].headers;
+
+  $: firstColumnName = hasRowDimension
+    ? String(headers[0]?.column.columnDef.header)
+    : null;
+  $: firstColumnWidth =
+    hasRowDimension && firstColumnName
+      ? calculateColumnWidth(firstColumnName, timeDimension, dataRows)
+      : 0;
+
+  $: measures.forEach(({ name, label, formatter }) => {
+    if (!$measureLengths.has(name)) {
+      const estimatedWidth = calculateMeasureWidth(
+        name,
+        label,
+        formatter,
+        totalsRow,
+        dataRows,
+      );
+      measureLengths.update((measureLengths) => {
+        return measureLengths.set(name, estimatedWidth);
+      });
+    }
+  });
+
+  $: if (resizingMeasure && containerRefElement && measureLengths) {
+    containerRefElement.scrollTo({
+      left:
+        initScrollOnResize +
+        percentOfChangeDuringResize * (totalLength - initLengthOnResize),
+    });
+  }
+
+  $: measureCount = measures.length;
+
+  $: subHeaders = [
+    {
+      subHeaders: measures.map((m) => ({
+        column: { columnDef: { name: m.name } },
+      })),
+    },
+  ];
+
+  let measureGroups: {
+    subHeaders: { column: { columnDef: { name: string } } }[];
+  }[];
+  // @ts-expect-error - I have manually added the name property in pivot-column-definition.ts
+  $: measureGroups =
+    headerGroups[headerGroups.length - 2]?.headers?.slice(
+      hasRowDimension ? 1 : 0,
+    ) ?? subHeaders;
+
+  $: measureGroupsLength = measureGroups.length;
+  $: totalMeasureWidth = measures.reduce(
+    (acc, { name }) => acc + ($measureLengths.get(name) ?? 0),
+    0,
+  );
+  $: totalLength = measureGroupsLength * totalMeasureWidth;
 
   function isMeasureColumn(header, colNumber: number) {
     // Measure columns are the last columns in the header group
@@ -37,13 +116,107 @@
     } else return colNumber > 0;
   }
 
+  function onResizeStart(e: MouseEvent) {
+    initLengthOnResize = totalLength;
+    initScrollOnResize = scrollLeft;
+
+    const offset =
+      e.clientX -
+      containerRefElement.getBoundingClientRect().left -
+      firstColumnWidth -
+      measures.reduce((rollingSum, { name }, i) => {
+        return i <= initialMeasureIndexOnResize
+          ? rollingSum + ($measureLengths.get(name) ?? 0)
+          : rollingSum;
+      }, 0) +
+      4;
+
+    percentOfChangeDuringResize = (scrollLeft + offset) / totalLength;
+  }
+
+  function onResizeUpdate(name: string, dimension: number) {
+    if (name === "firstColumn") {
+      firstColumnWidth = dimension;
+    } else {
+      measureLengths.update((measureLengths) => {
+        return measureLengths.set(name, dimension);
+      });
+    }
+  }
+
   function isCellActive(cell: Cell<PivotDataRow, unknown>) {
     return (
       cell.row.id === activeCell?.rowId &&
       cell.column.id === activeCell?.columnId
     );
   }
+
+  $: totalHeaderHeight = headerGroups.length * HEADER_HEIGHT;
 </script>
+
+<div
+  class="w-full absolute top-0 z-50 flex pointer-events-none"
+  class:with-row-dimension={hasRowDimension}
+  class:with-col-dimension={hasColumnDimension}
+  style:width="{totalLength + firstColumnWidth}px"
+  style:height="{totalHeaderHeight + headerGroups.length}px"
+>
+  <div style:width="{firstColumnWidth}px" class="sticky left-0 flex-none flex">
+    <Resizer
+      side="right"
+      direction="EW"
+      min={WIDTHS.MIN_COL_WIDTH}
+      max={WIDTHS.MAX_COL_WIDTH}
+      dimension={firstColumnWidth}
+      onUpdate={(d) => onResizeUpdate("firstColumn", d)}
+      onMouseDown={(e) => {
+        resizingMeasure = false;
+        resizing = true;
+        onResizeStart(e);
+      }}
+      onMouseUp={() => {
+        resizing = false;
+        resizingMeasure = false;
+      }}
+    >
+      <div class="resize-bar" />
+    </Resizer>
+  </div>
+
+  {#each measureGroups as { subHeaders }, groupIndex (groupIndex)}
+    <div class="h-full z-50 flex" style:width="{totalMeasureWidth}px">
+      {#each subHeaders as { column: { columnDef: { name } } }, i (name)}
+        {@const length = $measureLengths.get(name) ?? WIDTHS.INIT_MEASURE_WIDTH}
+        {@const last =
+          i === subHeaders.length - 1 &&
+          groupIndex === measureGroups.length - 1}
+        <div style:width="{length}px" class="h-full relative">
+          <Resizer
+            side="right"
+            direction="EW"
+            min={WIDTHS.MIN_MEASURE_WIDTH}
+            max={WIDTHS.MAX_MEASURE_WIDTH}
+            dimension={length}
+            justify={last ? "end" : "center"}
+            hang={!last}
+            onUpdate={(d) => onResizeUpdate(name, d)}
+            onMouseDown={(e) => {
+              resizingMeasure = true;
+              resizing = true;
+              onResizeStart(e);
+            }}
+            onMouseUp={() => {
+              resizing = false;
+              resizingMeasure = false;
+            }}
+          >
+            <div class="resize-bar" />
+          </Resizer>
+        </div>
+      {/each}
+    </div>
+  {/each}
+</div>
 
 <table
   role="presentation"
@@ -60,7 +233,7 @@
 
     {#each measureGroups as { subHeaders }, i (i)}
       {#each subHeaders as { column: { columnDef: { name } } } (name)}
-        {@const length = measureLengths.get(name)}
+        {@const length = $measureLengths.get(name)}
         <col style:width="{length}px" style:max-width="{length}px" />
       {/each}
     {/each}
@@ -150,6 +323,10 @@
 <style lang="postcss">
   * {
     @apply border-slate-200;
+  }
+
+  .resize-bar {
+    @apply bg-primary-500 w-1 h-full;
   }
 
   table {
