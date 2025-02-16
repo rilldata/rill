@@ -26,15 +26,15 @@
   }
 
   const horizontalOptions = [
-    { id: "left", Icon: AlignStartVertical },
-    { id: "center", Icon: AlignCenterVertical },
-    { id: "right", Icon: AlignEndVertical },
+    { id: "left", Icon: AlignStartVertical, tooltip: "Align left" },
+    { id: "center", Icon: AlignCenterVertical, tooltip: "Align center" },
+    { id: "right", Icon: AlignEndVertical, tooltip: "Align right" },
   ];
 
   const verticalOptions = [
-    { id: "top", Icon: AlignStartHorizontal },
-    { id: "middle", Icon: AlignCenterHorizontal },
-    { id: "bottom", Icon: AlignEndHorizontal },
+    { id: "top", Icon: AlignStartHorizontal, tooltip: "Align top" },
+    { id: "middle", Icon: AlignCenterHorizontal, tooltip: "Align middle" },
+    { id: "bottom", Icon: AlignEndHorizontal, tooltip: "Align bottom" },
   ];
 
   const updatePosition = (

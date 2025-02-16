@@ -18,6 +18,8 @@ import (
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 // TestFileYAML is the structure of a test file.
