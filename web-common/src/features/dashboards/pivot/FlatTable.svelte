@@ -13,7 +13,7 @@
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-width-utils";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
-  import type { Cell, HeaderGroup, Row } from "@tanstack/svelte-table";
+  import type { Cell, Column, HeaderGroup, Row } from "@tanstack/svelte-table";
   import { flexRender } from "@tanstack/svelte-table";
   import type { PivotDataRow } from "./types";
 
@@ -53,7 +53,7 @@
     const columnId = header.column.id;
 
     if (!$columnLengths.has(columnId)) {
-      const measure = getMeasureColumn(header);
+      const measure = getMeasureColumn(header.column);
       const estimatedWidth = measure
         ? calculateMeasureWidth(
             measure.name,
@@ -77,8 +77,8 @@
     );
   }, 0);
 
-  function getMeasureColumn(header) {
-    const columnId = header.column.id;
+  function getMeasureColumn(headerColumn: Column<PivotDataRow>) {
+    const columnId = headerColumn.id;
     return measures.find((m) => m.name === columnId);
   }
 
@@ -149,7 +149,7 @@
               class="header-cell"
               class:cursor-pointer={header.column.getCanSort()}
               class:select-none={header.column.getCanSort()}
-              class:flex-row-reverse={!!getMeasureColumn(header)}
+              class:flex-row-reverse={!!getMeasureColumn(header.column)}
               on:click={header.column.getToggleSortingHandler()}
             >
               {#if !header.isPlaceholder}
@@ -186,6 +186,7 @@
             class="ui-copy-number"
             class:active-cell={isActive}
             class:interactive-cell={canShowDataViewer}
+            class:text-right={getMeasureColumn(cell.column)}
             on:click={() => onCellClick(cell)}
             on:mouseenter={onCellHover}
             on:mouseleave={onCellLeave}
@@ -258,7 +259,6 @@
   }
 
   td {
-    @apply text-right;
     @apply p-0 m-0;
   }
 
@@ -273,7 +273,7 @@
     @apply size-full p-1 px-2;
   }
 
-  tr > td:first-of-type:not(:last-of-type) {
+  tr > td {
     @apply border-r font-normal;
   }
 
@@ -284,7 +284,7 @@
   }
 
   /* The totals row header */
-  tbody > tr:nth-of-type(2) > td:first-of-type {
+  tbody > tr:nth-of-type(2) > td {
     @apply font-semibold;
   }
 
