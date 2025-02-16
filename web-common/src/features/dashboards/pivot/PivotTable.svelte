@@ -241,6 +241,7 @@
       {hasRowDimension}
       {timeDimension}
       {totalsRow}
+      {totalRowSize}
       {hasColumnDimension}
       {dataRows}
       {measures}

@@ -16,28 +16,35 @@
   import { flexRender } from "@tanstack/svelte-table";
   import type { MeasureColumnProps } from "./pivot-column-definition";
   import type { PivotDataRow } from "./types";
-  export let headerGroups: HeaderGroup<PivotDataRow>[];
-  export let rows: Row<PivotDataRow>[];
-  export let virtualRows: { index: number }[];
+
+  // State props
   export let hasRowDimension: boolean;
   export let hasColumnDimension: boolean;
   export let timeDimension: string;
+  export let assembled: boolean;
   export let dataRows: PivotDataRow[];
-  export let before: number;
-  export let after: number;
   export let measures: MeasureColumnProps;
   export let totalsRow: PivotDataRow | undefined;
   export let canShowDataViewer = false;
+
+  // Table props
+  export let headerGroups: HeaderGroup<PivotDataRow>[];
+  export let rows: Row<PivotDataRow>[];
+  export let virtualRows: { index: number }[];
+  export let after: number;
+  export let before: number;
+  export let containerRefElement: HTMLDivElement;
   export let scrollLeft: number;
+  export let totalRowSize: number;
   export let activeCell: { rowId: string; columnId: string } | null | undefined;
+
+  // Event handlers
   export let onCellClick: (cell: Cell<PivotDataRow, unknown>) => void;
   export let onCellHover: (
     e: MouseEvent & { currentTarget: EventTarget & HTMLElement },
   ) => void;
   export let onCellLeave: () => void;
   export let onCellCopy: (e: MouseEvent) => void;
-  export let assembled: boolean;
-  export let containerRefElement: HTMLDivElement;
 
   const HEADER_HEIGHT = 30;
 
@@ -134,16 +141,6 @@
     percentOfChangeDuringResize = (scrollLeft + offset) / totalLength;
   }
 
-  function onResizeUpdate(name: string, dimension: number) {
-    if (name === "firstColumn") {
-      firstColumnWidth = dimension;
-    } else {
-      measureLengths.update((measureLengths) => {
-        return measureLengths.set(name, dimension);
-      });
-    }
-  }
-
   function isCellActive(cell: Cell<PivotDataRow, unknown>) {
     return (
       cell.row.id === activeCell?.rowId &&
@@ -159,7 +156,7 @@
   class:with-row-dimension={hasRowDimension}
   class:with-col-dimension={hasColumnDimension}
   style:width="{totalLength + firstColumnWidth}px"
-  style:height="{totalHeaderHeight + headerGroups.length}px"
+  style:height="{totalRowSize + totalHeaderHeight + headerGroups.length}px"
 >
   <div style:width="{firstColumnWidth}px" class="sticky left-0 flex-none flex">
     <Resizer
@@ -168,7 +165,7 @@
       min={WIDTHS.MIN_COL_WIDTH}
       max={WIDTHS.MAX_COL_WIDTH}
       dimension={firstColumnWidth}
-      onUpdate={(d) => onResizeUpdate("firstColumn", d)}
+      onUpdate={(d) => (firstColumnWidth = d)}
       onMouseDown={(e) => {
         resizingMeasure = false;
         resizing = true;
@@ -199,7 +196,10 @@
             dimension={length}
             justify={last ? "end" : "center"}
             hang={!last}
-            onUpdate={(d) => onResizeUpdate(name, d)}
+            onUpdate={(d) =>
+              measureLengths.update((measureLengths) => {
+                return measureLengths.set(name, d);
+              })}
             onMouseDown={(e) => {
               resizingMeasure = true;
               resizing = true;
