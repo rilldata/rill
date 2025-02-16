@@ -503,7 +503,7 @@ export function createPivotDataStore(
                     if (tableCellData.isFetching) {
                       return cellSet({
                         isFetching: true,
-                        data: pivotSkeleton,
+                        data: isFlat ? lastPivotData : pivotSkeleton,
                         columnDef,
                         assembled: false,
                         totalColumns,
