@@ -68,6 +68,6 @@ func (n *noop) PurgeOrg(ctx context.Context, orgID string) (*InsertResult, error
 	return nil, nil
 }
 
-func (n *noop) PlanCacheUpdate(ctx context.Context, billingCustomerID string) (*InsertResult, error) {
+func (n *noop) PlanChanged(ctx context.Context, billingCustomerID string) (*InsertResult, error) {
 	return nil, nil
 }

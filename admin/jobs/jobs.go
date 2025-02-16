@@ -28,7 +28,7 @@ type Client interface {
 	StartOrgTrial(ctx context.Context, orgID string) (*InsertResult, error)
 	PurgeOrg(ctx context.Context, orgID string) (*InsertResult, error)
 
-	PlanCacheUpdate(ctx context.Context, billingCustomerID string) (*InsertResult, error)
+	PlanChanged(ctx context.Context, billingCustomerID string) (*InsertResult, error)
 }
 
 type InsertResult struct {

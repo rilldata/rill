@@ -331,35 +331,47 @@ func (w *PlanCacheUpdateWorker) Work(ctx context.Context, job *river.Job[PlanCac
 		return fmt.Errorf("failed to find organization of billing customer id %q: %w", job.Args.BillingCustomerID, err)
 	}
 
+	orgName := org.Name
 	// something related to plan changed, just fetch the latest plan from the biller
 	sub, err := w.admin.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
-	if err != nil {
-		if errors.Is(err, billing.ErrNotFound) {
-			return nil
-		}
-		return fmt.Errorf("failed to get subscriptions for org %q: %w", org.Name, err)
+	if err != nil && !errors.Is(err, billing.ErrNotFound) {
+		return fmt.Errorf("failed to get subscriptions for org %q: %w", orgName, err)
 	}
 
-	_, err = w.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
-		Name:                                org.Name,
-		DisplayName:                         org.DisplayName,
-		Description:                         org.Description,
-		LogoAssetID:                         org.LogoAssetID,
-		CustomDomain:                        org.CustomDomain,
-		QuotaProjects:                       org.QuotaProjects,
-		QuotaDeployments:                    org.QuotaDeployments,
-		QuotaSlotsTotal:                     org.QuotaSlotsTotal,
-		QuotaSlotsPerDeployment:             org.QuotaSlotsPerDeployment,
-		QuotaOutstandingInvites:             org.QuotaOutstandingInvites,
-		QuotaStorageLimitBytesPerDeployment: org.QuotaStorageLimitBytesPerDeployment,
-		BillingCustomerID:                   org.BillingCustomerID,
-		PaymentCustomerID:                   org.PaymentCustomerID,
-		BillingEmail:                        org.BillingEmail,
-		CreatedByUserID:                     org.CreatedByUserID,
-		CachedPlanDisplayName:               &sub.Plan.DisplayName,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to update plan cache for org %q: %w", org.Name, err)
+	var planDisplayName string
+	var planName string
+	if sub == nil {
+		planDisplayName = ""
+		planName = ""
+	} else {
+		planDisplayName = sub.Plan.DisplayName
+		planName = sub.Plan.Name
+	}
+
+	if org.BillingPlanName == nil || *org.BillingPlanName != planName {
+		_, err = w.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
+			Name:                                org.Name,
+			DisplayName:                         org.DisplayName,
+			Description:                         org.Description,
+			LogoAssetID:                         org.LogoAssetID,
+			FaviconAssetID:                      org.FaviconAssetID,
+			CustomDomain:                        org.CustomDomain,
+			QuotaProjects:                       org.QuotaProjects,
+			QuotaDeployments:                    org.QuotaDeployments,
+			QuotaSlotsTotal:                     org.QuotaSlotsTotal,
+			QuotaSlotsPerDeployment:             org.QuotaSlotsPerDeployment,
+			QuotaOutstandingInvites:             org.QuotaOutstandingInvites,
+			QuotaStorageLimitBytesPerDeployment: org.QuotaStorageLimitBytesPerDeployment,
+			BillingCustomerID:                   org.BillingCustomerID,
+			PaymentCustomerID:                   org.PaymentCustomerID,
+			BillingEmail:                        org.BillingEmail,
+			BillingPlanDisplayName:              &planDisplayName,
+			BillingPlanName:                     &planName,
+			CreatedByUserID:                     org.CreatedByUserID,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to update plan cache for org %q: %w", orgName, err)
+		}
 	}
 
 	return nil

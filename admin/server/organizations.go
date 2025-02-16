@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/publicemail"
 	"github.com/rilldata/rill/admin/server/auth"
@@ -75,33 +74,12 @@ func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizati
 		perms.ReadProjects = true
 	}
 
-	if org.CachedPlanDisplayName == nil {
-		sub, err := s.admin.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
+	// TODO: This is used to update plan name cache and can be removed a few months after Feb 2025 when plans have been cached for most orgs.
+	// after that we can return empty plan name for uncached orgs, discussion - https://github.com/rilldata/rill/pull/6338#discussion_r1952713404
+	if org.BillingPlanName == nil {
+		_, org, err = s.getSubscriptionAndUpdateOrg(ctx, org)
 		if err != nil {
-			if !errors.Is(err, billing.ErrNotFound) {
-				return nil, err
-			}
-		}
-		if sub != nil {
-			org.CachedPlanDisplayName = &sub.Plan.DisplayName
-			_, _ = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
-				Name:                                org.Name,
-				DisplayName:                         org.DisplayName,
-				Description:                         org.Description,
-				LogoAssetID:                         org.LogoAssetID,
-				CustomDomain:                        org.CustomDomain,
-				QuotaProjects:                       org.QuotaProjects,
-				QuotaDeployments:                    org.QuotaDeployments,
-				QuotaSlotsTotal:                     org.QuotaSlotsTotal,
-				QuotaSlotsPerDeployment:             org.QuotaSlotsPerDeployment,
-				QuotaOutstandingInvites:             org.QuotaOutstandingInvites,
-				QuotaStorageLimitBytesPerDeployment: org.QuotaStorageLimitBytesPerDeployment,
-				BillingCustomerID:                   org.BillingCustomerID,
-				PaymentCustomerID:                   org.PaymentCustomerID,
-				BillingEmail:                        org.BillingEmail,
-				CreatedByUserID:                     org.CreatedByUserID,
-				CachedPlanDisplayName:               org.CachedPlanDisplayName,
-			})
+			return nil, err
 		}
 	}
 
@@ -243,8 +221,9 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        valOrDefault(req.BillingEmail, org.BillingEmail),
+		BillingPlanName:                     org.BillingPlanName,
+		BillingPlanDisplayName:              org.BillingPlanDisplayName,
 		CreatedByUserID:                     org.CreatedByUserID,
-		CachedPlanDisplayName:               org.CachedPlanDisplayName,
 	})
 	if err != nil {
 		return nil, err
@@ -928,8 +907,9 @@ func (s *Server) SudoUpdateOrganizationQuotas(ctx context.Context, req *adminv1.
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
+		BillingPlanName:                     org.BillingPlanName,
+		BillingPlanDisplayName:              org.BillingPlanDisplayName,
 		CreatedByUserID:                     org.CreatedByUserID,
-		CachedPlanDisplayName:               org.CachedPlanDisplayName,
 	}
 
 	updatedOrg, err := s.admin.DB.UpdateOrganization(ctx, org.ID, opts)
@@ -974,8 +954,9 @@ func (s *Server) SudoUpdateOrganizationCustomDomain(ctx context.Context, req *ad
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
+		BillingPlanName:                     org.BillingPlanName,
+		BillingPlanDisplayName:              org.BillingPlanDisplayName,
 		CreatedByUserID:                     org.CreatedByUserID,
-		CachedPlanDisplayName:               org.CachedPlanDisplayName,
 	})
 	if err != nil {
 		return nil, err
@@ -1021,7 +1002,8 @@ func (s *Server) organizationToDTO(o *database.Organization, privileged bool) *a
 		res.BillingCustomerId = o.BillingCustomerID
 		res.PaymentCustomerId = o.PaymentCustomerID
 		res.BillingEmail = o.BillingEmail
-		res.CachedPlanDisplayName = o.CachedPlanDisplayName
+		res.BillingPlanName = o.BillingPlanName
+		res.BillingPlanDisplayName = o.BillingPlanDisplayName
 	}
 
 	return res

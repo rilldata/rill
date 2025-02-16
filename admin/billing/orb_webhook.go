@@ -17,6 +17,7 @@ import (
 	"github.com/orbcorp/orb-go"
 	"github.com/rilldata/rill/admin/jobs"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 )
 
@@ -92,21 +93,30 @@ func (o *orbWebhook) handleWebhook(w http.ResponseWriter, r *http.Request) error
 		if err != nil {
 			return httputil.Errorf(http.StatusBadRequest, "error parsing event data: %w", err)
 		}
-		o.updatePlan(se) // as of now we are just using this to update plan cache
+		err = o.updatePlan(r.Context(), se) // as of now we are just using this to update plan cache
+		if err != nil {
+			return httputil.Errorf(http.StatusInternalServerError, "error handling event: %w", err)
+		}
 	case "subscription.ended":
 		var se subscriptionEvent
 		err = json.Unmarshal(payload, &se)
 		if err != nil {
 			return httputil.Errorf(http.StatusBadRequest, "error parsing event data: %w", err)
 		}
-		o.updatePlan(se) // as of now we are just using this to update plan cache
+		err = o.updatePlan(r.Context(), se) // as of now we are just using this to update plan cache
+		if err != nil {
+			return httputil.Errorf(http.StatusInternalServerError, "error handling event: %w", err)
+		}
 	case "subscription.plan_changed":
 		var se subscriptionEvent
 		err = json.Unmarshal(payload, &se)
 		if err != nil {
 			return httputil.Errorf(http.StatusBadRequest, "error parsing event data: %w", err)
 		}
-		o.updatePlan(se) // as of now we are just using this to update plan cache
+		err = o.updatePlan(r.Context(), se) // as of now we are just using this to update plan cache
+		if err != nil {
+			return httputil.Errorf(http.StatusInternalServerError, "error handling event: %w", err)
+		}
 	default:
 		// do nothing
 	}
@@ -118,10 +128,11 @@ func (o *orbWebhook) handleWebhook(w http.ResponseWriter, r *http.Request) error
 func (o *orbWebhook) handleInvoicePaymentSucceeded(ctx context.Context, ie invoiceEvent) error {
 	res, err := o.jobs.PaymentSuccess(ctx, ie.OrbInvoice.Customer.ExternalCustomerID, ie.OrbInvoice.ID)
 	if err != nil {
+		o.orb.logger.Error("failed to insert invoice payment success job", zap.String("billing_customer_id", ie.OrbInvoice.Customer.ExternalCustomerID), zap.Error(err), observability.ZapCtx(ctx))
 		return err
 	}
 	if res.Duplicate {
-		o.orb.logger.Debug("duplicate invoice payment success event", zap.String("event_d", ie.ID))
+		o.orb.logger.Debug("duplicate invoice payment success event", zap.String("event_id", ie.ID))
 	}
 	return nil
 }
@@ -138,6 +149,7 @@ func (o *orbWebhook) handleInvoicePaymentFailed(ctx context.Context, ie invoiceE
 		ie.OrbInvoice.PaymentFailedAt,
 	)
 	if err != nil {
+		o.orb.logger.Error("failed to insert invoice payment failed job", zap.String("billing_customer_id", ie.OrbInvoice.Customer.ExternalCustomerID), zap.Error(err), observability.ZapCtx(ctx))
 		return err
 	}
 	if res.Duplicate {
@@ -146,15 +158,17 @@ func (o *orbWebhook) handleInvoicePaymentFailed(ctx context.Context, ie invoiceE
 	return nil
 }
 
-func (o *orbWebhook) updatePlan(se subscriptionEvent) {
+func (o *orbWebhook) updatePlan(ctx context.Context, se subscriptionEvent) error {
 	if se.OrbSubscription.Customer.ExternalCustomerID == "" {
-		return
+		return nil
 	}
 
-	_, err := o.jobs.PlanCacheUpdate(context.Background(), se.OrbSubscription.Customer.ExternalCustomerID)
+	_, err := o.jobs.PlanChanged(ctx, se.OrbSubscription.Customer.ExternalCustomerID)
 	if err != nil {
-		o.orb.logger.Error("error updating plan cache", zap.Error(err))
+		o.orb.logger.Error("failed to insert plan changed job", zap.String("billing_customer_id", se.OrbSubscription.Customer.ExternalCustomerID), zap.Error(err), observability.ZapCtx(ctx))
+		return err
 	}
+	return nil
 }
 
 // Validates whether or not the webhook payload was sent by Orb.

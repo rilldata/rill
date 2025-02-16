@@ -4660,7 +4660,9 @@ definitions:
         type: string
       billingEmail:
         type: string
-      cachedPlanDisplayName:
+      billingPlanName:
+        type: string
+      billingPlanDisplayName:
         type: string
       createdOn:
         type: string
