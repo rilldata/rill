@@ -26,6 +26,7 @@
   export let measures: MeasureColumnProps;
   export let totalsRow: PivotDataRow | undefined;
   export let canShowDataViewer = false;
+  export let activeCell: { rowId: string; columnId: string } | null | undefined;
 
   // Table props
   export let headerGroups: HeaderGroup<PivotDataRow>[];
@@ -36,7 +37,6 @@
   export let containerRefElement: HTMLDivElement;
   export let scrollLeft: number;
   export let totalRowSize: number;
-  export let activeCell: { rowId: string; columnId: string } | null | undefined;
 
   // Event handlers
   export let onCellClick: (cell: Cell<PivotDataRow, unknown>) => void;

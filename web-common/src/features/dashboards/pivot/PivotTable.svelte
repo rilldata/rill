@@ -221,8 +221,12 @@
       {headerGroups}
       {rows}
       {virtualRows}
+      {measures}
+      {totalsRow}
+      {dataRows}
       {before}
       {after}
+      {totalRowSize}
       {canShowDataViewer}
       activeCell={$pivotState.activeCell}
       {assembled}

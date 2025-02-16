@@ -1,30 +1,85 @@
+<script lang="ts" context="module">
+  import { writable } from "svelte/store";
+  const columnLengths = writable(new Map<string, number>());
+</script>
+
 <script lang="ts">
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
+  import type { MeasureColumnProps } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-definition";
+  import {
+    calculateColumnWidth,
+    calculateMeasureWidth,
+    COLUMN_WIDTH_CONSTANTS as WIDTHS,
+  } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-width-utils";
+  import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
   import type { Cell, HeaderGroup, Row } from "@tanstack/svelte-table";
   import { flexRender } from "@tanstack/svelte-table";
   import type { PivotDataRow } from "./types";
 
+  // State props
+  export let assembled: boolean;
+  export let measures: MeasureColumnProps;
+  export let dataRows: PivotDataRow[];
+  export let canShowDataViewer = false;
+  export let activeCell: { rowId: string; columnId: string } | null | undefined;
+
+  // Table props
   export let headerGroups: HeaderGroup<PivotDataRow>[];
   export let rows: Row<PivotDataRow>[];
   export let virtualRows: { index: number }[];
+  export let totalsRow: PivotDataRow | undefined;
   export let before: number;
   export let after: number;
-  export let canShowDataViewer = false;
-  export let activeCell: { rowId: string; columnId: string } | null | undefined;
+  export let totalRowSize: number;
+
+  // Event handlers
   export let onCellClick: (cell: Cell<PivotDataRow, unknown>) => void;
   export let onCellHover: (
     e: MouseEvent & { currentTarget: EventTarget & HTMLElement },
   ) => void;
   export let onCellLeave: () => void;
   export let onCellCopy: (e: MouseEvent) => void;
-  export let assembled: boolean;
 
-  function isMeasureColumn(header, colNumber: number) {
-    // For flat tables, measures are always at the end after dimensions
-    // We can identify them by checking if they are leaf columns (no subcolumns)
-    // and if their column definition has an accessorKey (which measures have)
-    return !header.column.columns && header.column.columnDef.accessorKey;
+  const HEADER_HEIGHT = 30;
+
+  let resizing = false;
+  let totalLength = 0;
+
+  $: headers = headerGroups[0].headers;
+
+  // Initialize column lengths if not already set
+  $: headers.forEach((header) => {
+    const columnId = header.column.id;
+
+    if (!$columnLengths.has(columnId)) {
+      const measure = getMeasureColumn(header);
+      const estimatedWidth = measure
+        ? calculateMeasureWidth(
+            measure.name,
+            measure.label,
+            measure.formatter,
+            totalsRow,
+            dataRows,
+          )
+        : calculateColumnWidth(
+            String(header.column.columnDef.header),
+            "",
+            dataRows,
+          );
+      columnLengths.update((lengths) => lengths.set(columnId, estimatedWidth));
+    }
+  });
+
+  $: totalLength = headers.reduce((acc, header) => {
+    return (
+      acc + ($columnLengths.get(header.column.id) ?? WIDTHS.INIT_MEASURE_WIDTH)
+    );
+  }, 0);
+
+  function getMeasureColumn(header) {
+    const columnId = header.column.id;
+    return measures.find((m) => m.name === columnId);
   }
 
   function isCellActive(cell: Cell<PivotDataRow, unknown>) {
@@ -35,7 +90,54 @@
   }
 </script>
 
-<table role="presentation" on:click={modified({ shift: onCellCopy })}>
+<div
+  class="w-full absolute top-0 z-50 flex pointer-events-none"
+  style:width="{totalLength}px"
+  style:height="{totalRowSize + HEADER_HEIGHT + headerGroups.length}px"
+>
+  {#each headers as header, i (header.id)}
+    {@const length =
+      $columnLengths.get(header.column.id) ?? WIDTHS.INIT_MEASURE_WIDTH}
+    {@const last = i === headers.length - 1}
+    <div style:width="{length}px" class="h-full relative">
+      <Resizer
+        side="right"
+        direction="EW"
+        min={WIDTHS.MIN_MEASURE_WIDTH}
+        max={WIDTHS.MAX_MEASURE_WIDTH}
+        dimension={length}
+        justify={last ? "end" : "center"}
+        hang={!last}
+        onUpdate={(d) =>
+          columnLengths.update((lengths) => {
+            return lengths.set(header.column.id, d);
+          })}
+        onMouseDown={() => {
+          resizing = true;
+        }}
+        onMouseUp={() => {
+          resizing = false;
+        }}
+      >
+        <div class="resize-bar" />
+      </Resizer>
+    </div>
+  {/each}
+</div>
+
+<table
+  role="presentation"
+  style:width="{totalLength}px"
+  on:click={modified({ shift: onCellCopy })}
+>
+  <colgroup>
+    {#each headers as header (header.id)}
+      {@const length =
+        $columnLengths.get(header.column.id) ?? WIDTHS.INIT_MEASURE_WIDTH}
+      <col style:width="{length}px" style:max-width="{length}px" />
+    {/each}
+  </colgroup>
+
   <thead>
     {#each headerGroups as headerGroup (headerGroup.id)}
       <tr>
@@ -47,7 +149,7 @@
               class="header-cell"
               class:cursor-pointer={header.column.getCanSort()}
               class:select-none={header.column.getCanSort()}
-              class:flex-row-reverse={isMeasureColumn(header, i)}
+              class:flex-row-reverse={!!getMeasureColumn(header)}
               on:click={header.column.getToggleSortingHandler()}
             >
               {#if !header.isPlaceholder}
@@ -118,6 +220,10 @@
 <style lang="postcss">
   * {
     @apply border-slate-200;
+  }
+
+  .resize-bar {
+    @apply bg-primary-500 w-1 h-full;
   }
 
   table {

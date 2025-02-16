@@ -117,7 +117,7 @@ export function getPivotConfig(
       );
 
       // const isFlat = dashboardStore.pivot.rowJoinType === "flat";
-      const isFlat = false;
+      const isFlat = true;
       /**
        * For flat table, internally rows have all
        * the dimensions and measures are in columns
