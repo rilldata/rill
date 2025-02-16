@@ -191,11 +191,7 @@ func (o *Orb) DeleteCustomer(ctx context.Context, customerID string) error {
 }
 
 func (o *Orb) CreateSubscription(ctx context.Context, customerID string, plan *Plan) (*Subscription, error) {
-	sub, err := o.createSubscription(ctx, customerID, plan)
-	if err != nil {
-		return nil, err
-	}
-	return sub, nil
+	return o.createSubscription(ctx, customerID, plan)
 }
 
 func (o *Orb) GetActiveSubscription(ctx context.Context, customerID string) (*Subscription, error) {

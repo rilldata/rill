@@ -93,7 +93,7 @@ func (o *orbWebhook) handleWebhook(w http.ResponseWriter, r *http.Request) error
 		if err != nil {
 			return httputil.Errorf(http.StatusBadRequest, "error parsing event data: %w", err)
 		}
-		err = o.updatePlan(r.Context(), se) // as of now we are just using this to update plan cache
+		err = o.handlePlanChange(r.Context(), se) // as of now we are just using this to update plan cache
 		if err != nil {
 			return httputil.Errorf(http.StatusInternalServerError, "error handling event: %w", err)
 		}
@@ -103,7 +103,7 @@ func (o *orbWebhook) handleWebhook(w http.ResponseWriter, r *http.Request) error
 		if err != nil {
 			return httputil.Errorf(http.StatusBadRequest, "error parsing event data: %w", err)
 		}
-		err = o.updatePlan(r.Context(), se) // as of now we are just using this to update plan cache
+		err = o.handlePlanChange(r.Context(), se) // as of now we are just using this to update plan cache
 		if err != nil {
 			return httputil.Errorf(http.StatusInternalServerError, "error handling event: %w", err)
 		}
@@ -113,7 +113,7 @@ func (o *orbWebhook) handleWebhook(w http.ResponseWriter, r *http.Request) error
 		if err != nil {
 			return httputil.Errorf(http.StatusBadRequest, "error parsing event data: %w", err)
 		}
-		err = o.updatePlan(r.Context(), se) // as of now we are just using this to update plan cache
+		err = o.handlePlanChange(r.Context(), se) // as of now we are just using this to update plan cache
 		if err != nil {
 			return httputil.Errorf(http.StatusInternalServerError, "error handling event: %w", err)
 		}
@@ -158,7 +158,7 @@ func (o *orbWebhook) handleInvoicePaymentFailed(ctx context.Context, ie invoiceE
 	return nil
 }
 
-func (o *orbWebhook) updatePlan(ctx context.Context, se subscriptionEvent) error {
+func (o *orbWebhook) handlePlanChange(ctx context.Context, se subscriptionEvent) error {
 	if se.OrbSubscription.Customer.ExternalCustomerID == "" {
 		return nil
 	}

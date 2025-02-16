@@ -81,7 +81,7 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 	river.AddWorker(workers, &PaymentFailedWorker{admin: adm, logger: billingLogger})
 	river.AddWorker(workers, &PaymentSuccessWorker{admin: adm, logger: billingLogger})
 	river.AddWorker(workers, &PaymentFailedGracePeriodCheckWorker{admin: adm, logger: billingLogger})
-	river.AddWorker(workers, &PlanCacheUpdateWorker{admin: adm})
+	river.AddWorker(workers, &PlanChangedWorker{admin: adm})
 
 	// trial checks worker
 	river.AddWorker(workers, &TrialEndingSoonWorker{admin: adm, logger: billingLogger})
@@ -375,7 +375,7 @@ func (c *Client) PurgeOrg(ctx context.Context, orgID string) (*jobs.InsertResult
 }
 
 func (c *Client) PlanChanged(ctx context.Context, billingCustomerID string) (*jobs.InsertResult, error) {
-	res, err := c.riverClient.Insert(ctx, PlanCacheUpdateArgs{
+	res, err := c.riverClient.Insert(ctx, PlanChangedArgs{
 		BillingCustomerID: billingCustomerID,
 	}, &river.InsertOpts{})
 	if err != nil {

@@ -310,18 +310,18 @@ func (w *PaymentFailedGracePeriodCheckWorker) checkFailedInvoicesForOrg(ctx cont
 	return hasOverdue, nil
 }
 
-type PlanCacheUpdateArgs struct {
+type PlanChangedArgs struct {
 	BillingCustomerID string
 }
 
-func (PlanCacheUpdateArgs) Kind() string { return "plan_cache_update" }
+func (PlanChangedArgs) Kind() string { return "plan_changed" }
 
-type PlanCacheUpdateWorker struct {
-	river.WorkerDefaults[PlanCacheUpdateArgs]
+type PlanChangedWorker struct {
+	river.WorkerDefaults[PlanChangedArgs]
 	admin *admin.Service
 }
 
-func (w *PlanCacheUpdateWorker) Work(ctx context.Context, job *river.Job[PlanCacheUpdateArgs]) error {
+func (w *PlanChangedWorker) Work(ctx context.Context, job *river.Job[PlanChangedArgs]) error {
 	org, err := w.admin.DB.FindOrganizationForBillingCustomerID(ctx, job.Args.BillingCustomerID)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
@@ -365,8 +365,8 @@ func (w *PlanCacheUpdateWorker) Work(ctx context.Context, job *river.Job[PlanCac
 			BillingCustomerID:                   org.BillingCustomerID,
 			PaymentCustomerID:                   org.PaymentCustomerID,
 			BillingEmail:                        org.BillingEmail,
-			BillingPlanDisplayName:              &planDisplayName,
 			BillingPlanName:                     &planName,
+			BillingPlanDisplayName:              &planDisplayName,
 			CreatedByUserID:                     org.CreatedByUserID,
 		})
 		if err != nil {
