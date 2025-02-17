@@ -125,11 +125,16 @@ setup.describe("global setup", () => {
     await page
       .getByPlaceholder("Enter your email address")
       .fill(process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL);
-    await page.getByPlaceholder("Enter your email address").press("Tab");
+    await page.getByRole("button", { name: "Continue" }).click();
+
+    // Check that the password input field is visible, and enter the password
+    await expect(page.locator('input[name="password"]')).toBeVisible();
+    await page.locator('input[name="password"]').click();
     await page
       .getByPlaceholder("Enter your password")
       .fill(process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_PASSWORD);
-    await page.getByRole("button", { name: "Continue with Email" }).click();
+    await page.getByRole("button", { name: "Continue" }).click();
+
     await page.waitForURL("/");
 
     // Save the admin's Rill auth cookies to file.
