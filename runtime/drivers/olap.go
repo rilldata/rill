@@ -504,7 +504,7 @@ func (d Dialect) DateDiff(grain runtimev1.TimeGrain, t1, t2 time.Time) (string, 
 	case DialectDuckDB:
 		return fmt.Sprintf("DATEDIFF('%s', TIMESTAMP '%s', TIMESTAMP '%s')", unit, t1.Format(time.RFC3339), t2.Format(time.RFC3339)), nil
 	case DialectPinot:
-		return fmt.Sprintf("CAST(DATEDIFF('%s', %s, %s) AS TIMESTAMP)", unit, t1.Format(time.RFC3339), t2.Format(time.RFC3339)), nil
+		return fmt.Sprintf("CAST(DATEDIFF('%s', '%s', '%s') AS TIMESTAMP)", unit, t1.Format(time.RFC3339), t2.Format(time.RFC3339)), nil
 	default:
 		return "", fmt.Errorf("unsupported dialect %q", d)
 	}
