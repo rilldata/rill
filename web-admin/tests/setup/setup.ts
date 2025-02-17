@@ -11,7 +11,6 @@ import { test as setup } from "./base";
 import {
   ADMIN_STORAGE_STATE,
   RILL_DEVTOOL_BACKGROUND_PROCESS_PID_FILE,
-  RILL_EMBED_TOKEN,
 } from "./constants";
 import { cliLogin } from "./fixtures/cli";
 
@@ -28,7 +27,7 @@ setup(
     // Start the cloud dependencies via Docker
     // This will block until the services are ready
     await spawnAndMatch(
-      "./rill",
+      "rill",
       ["devtool", "start", "e2e", "--reset", "--only", "deps"],
       /All services ready/,
       {
@@ -129,13 +128,6 @@ setup(
     const { stdout: orgCreateStdout } = await execAsync("rill org create e2e");
     expect(orgCreateStdout).toContain("Created organization");
 
-    const { stdout: orgCreateService } = await execAsync("rill service create e2e");
-    expect(orgCreateService).toContain("Created service");
-
-    const embedToken = orgCreateService.match(/Access token:\s+(\S+)/);
-    console.log("Embed token:", embedToken![1]);
-    writeFileEnsuringDir(RILL_EMBED_TOKEN, embedToken![1]);
-
     // Go to the organization's page
     await page.goto("/e2e");
     await expect(page.getByRole("heading", { name: "e2e" })).toBeVisible();
@@ -151,12 +143,11 @@ setup(
         "rill-openrtb-prog-ads",
         "--project",
         "openrtb",
-        "--upload",
+        "--github",
       ],
       /https?:\/\/[^\s]+/,
     );
 
-    /*
     // Navigate to the GitHub auth URL
     // (In a fresh browser, this would typically trigger a log-in to GitHub, but we've bootstrapped the Playwright browser with GitHub auth cookies.
     // See the `save-github-cookies` project in `playwright.config.ts` for details.)
@@ -168,7 +159,6 @@ setup(
     // TODO: Replace this with a better check. Maybe we could modify `spawnAndMatch` to match an array of regexes.
     await page.waitForTimeout(10000);
 
-    */
     // Expect to see the successful deployment
     await page.goto("/e2e/openrtb");
     await expect(page.getByText("Your trial expires in 30 days")).toBeVisible(); // Billing banner
