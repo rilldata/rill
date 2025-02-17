@@ -64,6 +64,9 @@
   });
 
   registerRPCMethod("setState", (state: string) => {
+    if (typeof state !== "string") {
+      return new Error("Expected state to be a string");
+    }
     const currentUrl = new URL(get(page).url);
     currentUrl.search = state;
     goto(currentUrl, { replaceState: true });
