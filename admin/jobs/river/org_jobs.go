@@ -148,7 +148,7 @@ func (w *DeleteOrgWorker) Work(ctx context.Context, job *river.Job[DeleteOrgArgs
 		return err
 	}
 
-	// cancel all subscriptions for the customer immediately but keep the customer in billing and payment system for issues invoices
+	// cancel all subscriptions for the customer immediately but keep the customer in billing and payment system for issued invoices
 	if org.BillingCustomerID != "" {
 		_, err = w.admin.Biller.CancelSubscriptionsForCustomer(ctx, org.BillingCustomerID, billing.SubscriptionCancellationOptionImmediate)
 		if err != nil {
