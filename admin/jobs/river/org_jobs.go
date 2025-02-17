@@ -137,7 +137,7 @@ type DeleteOrgWorker struct {
 	logger *zap.Logger
 }
 
-// Work This worker handles the deletion of an organization and all its associated data
+// Work This worker handles the deletion of an organization and cancels all subscriptions related to it
 func (w *DeleteOrgWorker) Work(ctx context.Context, job *river.Job[DeleteOrgArgs]) error {
 	org, err := w.admin.DB.FindOrganization(ctx, job.Args.OrgID)
 	if err != nil {
