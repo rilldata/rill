@@ -28,6 +28,16 @@ func (s *Server) QueryResolver(ctx context.Context, req *runtimev1.QueryResolver
 		return nil, status.Errorf(codes.NotFound, "no resolver found of type %q", req.Resolver)
 	}
 
+	// Validate and add limit to the properties if it exists
+	if req.Limit != 0 {
+		if req.Limit < 0 {
+			return nil, status.Error(codes.InvalidArgument, "limit must be a positive number")
+		}
+		props := req.ResolverProperties.AsMap()
+		props["limit"] = req.Limit
+		req.ResolverProperties, _ = structpb.NewStruct(props)
+	}
+
 	// Initialize the resolver
 	resolver, err := initializer(ctx, &runtime.ResolverOptions{
 		Runtime:    s.runtime,
