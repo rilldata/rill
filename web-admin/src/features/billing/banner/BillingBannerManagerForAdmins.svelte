@@ -1,13 +1,10 @@
 <script lang="ts">
-  import { onNavigate } from "$app/navigation";
-  import { errorStore } from "@rilldata/web-admin/components/errors/error-store";
   import { BillingCTAHandler } from "@rilldata/web-admin/features/billing/BillingCTAHandler";
   import {
     type BillingIssueMessage,
     useBillingIssueMessage,
   } from "@rilldata/web-admin/features/billing/issues/useBillingIssueMessage";
   import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
-  import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
   export let organization: string;

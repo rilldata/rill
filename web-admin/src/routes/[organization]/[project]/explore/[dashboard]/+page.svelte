@@ -84,11 +84,10 @@
     viewAsUserStore.set(null);
     errorStore.reset();
 
+    const changedDashboard =
+      !from || !to || from.params.dashboard !== to.params.dashboard;
     // Clear out any dashboard banners
-    if (
-      hasBanner &&
-      (!from || !to || from.params.dashboard !== to.params.dashboard)
-    ) {
+    if (hasBanner && changedDashboard) {
       eventBus.emit("banner", null);
     }
   });

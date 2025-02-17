@@ -9,8 +9,9 @@
   export let organizationPermissions: V1OrganizationPermissions;
 
   onNavigate(({ from, to }) => {
-    // Clear out any dashboard banners
-    if (!from || !to || from.params.organization !== to.params.organization) {
+    const changedOrganization =
+      !from || !to || from.params.organization !== to.params.organization;
+    if (changedOrganization) {
       eventBus.emit("banner", null);
     }
   });
