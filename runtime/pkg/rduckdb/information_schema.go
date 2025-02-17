@@ -62,14 +62,16 @@ func (d *db) Schema(ctx context.Context, like string, matchCase bool) ([]*Table,
 
 	// due to external table storage the information_schema always returns table type as view
 	// so we look at catalog to determine if it is a view or table
-	// number of tables are small so simple lookup is fine
 	// NOTE : there is a chance of inconsistency since tables can get updated between these two calls
 	tables := d.catalog.listTables()
+	catalog := make(map[string]*tableMeta)
 	for _, table := range tables {
-		for _, t := range res {
-			if t.Name == table.Name {
-				t.View = table.Type == "VIEW"
-			}
+		catalog[table.Name] = table
+	}
+	for _, t := range res {
+		table, ok := catalog[t.Name]
+		if ok {
+			t.View = table.Type == "VIEW"
 		}
 	}
 
