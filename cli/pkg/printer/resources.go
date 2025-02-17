@@ -2,16 +2,17 @@ package printer
 
 import (
 	"encoding/json"
+	"fmt"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
 
+	"github.com/lensesio/tableprinter"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/metricsview"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func (p *Printer) PrintOrgs(orgs []*adminv1.Organization, defaultOrg string) {
@@ -542,19 +543,34 @@ type billingIssue struct {
 	EventTime    string `header:"event_time,timestamp(ms|utc|human)" json:"event_time"`
 }
 
-func (p *Printer) PrintQueryResponse(rows []*structpb.Struct) {
-	if len(rows) == 0 {
+func (p *Printer) PrintQueryResponse(res *runtimev1.QueryResolverResponse) {
+	if len(res.Data) == 0 {
 		p.PrintfWarn("No data found\n")
 		return
 	}
 
-	p.PrintData(toQueryResponse(rows))
-}
+	switch p.Format {
+	// Human readable table
+	case FormatHuman:
+		columns := make([]string, len(res.Schema.Fields))
+		for i, field := range res.Schema.Fields {
+			columns[i] = field.Name
+		}
 
-func toQueryResponse(rows []*structpb.Struct) []map[string]any {
-	data := make([]map[string]any, 0, len(rows))
-	for _, row := range rows {
-		data = append(data, row.AsMap())
+		printer := tableprinter.New(p.dataOut())
+		printer.Render(columns, nil, nil, false)
+
+		for _, row := range res.Data {
+			values := make([]string, len(columns))
+			for i, col := range columns {
+				values[i] = fmt.Sprintf("%v", row.Fields[col].AsInterface())
+			}
+			printer.RenderRow(values, nil)
+		}
+	// JSON
+	case FormatJSON:
+		// Pass the data as is to the printer
+		p.PrintData(res.Data)
 	}
-	return data
+
 }

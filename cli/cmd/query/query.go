@@ -105,7 +105,7 @@ func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("failed to execute query: %w", err)
 			}
 
-			ch.PrintQueryResponse(res.Data)
+			ch.PrintQueryResponse(res)
 			return nil
 		},
 	}
