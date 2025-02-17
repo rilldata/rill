@@ -1,4 +1,2 @@
 /.svelte-kit
 build
-tests/embed.html
-tests/set/git/*
