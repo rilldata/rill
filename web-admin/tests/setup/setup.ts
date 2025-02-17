@@ -113,14 +113,14 @@ setup(
     await page
       .locator('input[name="username"]')
       .fill(process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL);
+    await page.getByRole("button", { name: "Continue" }).click();
 
-    // Select and fill in the password
+    // Check that the password input field is visible, and enter the password
+    await expect(page.locator('input[name="password"]')).toBeVisible();
     await page.locator('input[name="password"]').click();
     await page
       .locator('input[name="password"]')
       .fill(process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_PASSWORD);
-
-    // Click the continue button
     await page.getByRole("button", { name: "Continue" }).click();
 
     await page.waitForURL("/");
