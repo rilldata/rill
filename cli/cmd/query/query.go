@@ -2,7 +2,6 @@ package query
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -70,9 +69,6 @@ func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
 			if connector != "" {
 				properties["connector"] = connector
 			}
-			if limit != 0 {
-				properties["limit"] = strconv.Itoa(limit)
-			}
 
 			// Convert string maps to interface{} maps
 			propsMap := make(map[string]any, len(properties))
@@ -101,6 +97,7 @@ func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
 			res, err := rt.RuntimeServiceClient.QueryResolver(cmd.Context(), &runtimev1.QueryResolverRequest{
 				InstanceId:         instanceID,
 				Resolver:           resolver,
+				Limit:              int32(limit),
 				ResolverProperties: resolverProperties,
 				ResolverArgs:       resolverArgs,
 			})

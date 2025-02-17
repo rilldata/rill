@@ -19,7 +19,7 @@ func (s *Server) QueryResolver(ctx context.Context, req *runtimev1.QueryResolver
 	// Validate the caller has the ReadResolvers permission
 	claims := auth.GetClaims(ctx)
 	if !claims.CanInstance(req.InstanceId, auth.ReadResolvers) {
-		return nil, status.Error(codes.PermissionDenied, "only superusers and project admins can query resolvers")
+		return nil, status.Error(codes.PermissionDenied, "only project admins can query resolvers")
 	}
 
 	// Resolver should exist
@@ -38,14 +38,14 @@ func (s *Server) QueryResolver(ctx context.Context, req *runtimev1.QueryResolver
 		ForExport:  false,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	defer resolver.Close()
 
 	// Query the resolver
 	res, err := resolver.ResolveInteractive(ctx)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	defer res.Close()
 
@@ -57,7 +57,7 @@ func (s *Server) QueryResolver(ctx context.Context, req *runtimev1.QueryResolver
 			if errors.Is(err, io.EOF) {
 				break
 			}
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 		rowStruct, err := pbutil.ToStruct(row, res.Schema())
 		if err != nil {

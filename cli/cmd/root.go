@@ -134,6 +134,7 @@ func runCmd(ctx context.Context, ver cmdutil.Version) error {
 	cmdutil.AddGroup(rootCmd, "Project", false,
 		start.StartCmd(ch),
 		deploy.DeployCmd(ch),
+		query.QueryCmd(ch),
 		project.ProjectCmd(ch),
 		publicurl.PublicURLCmd(ch),
 		env.EnvCmd(ch),
@@ -168,7 +169,6 @@ func runCmd(ctx context.Context, ver cmdutil.Version) error {
 	// Additional sub-commands
 	rootCmd.AddCommand(
 		completionCmd,
-		query.QueryCmd(ch),
 		docs.DocsCmd(ch, rootCmd),
 		versioncmd.VersionCmd(),
 		upgrade.UpgradeCmd(ch),
