@@ -14,6 +14,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers/gcs"
 	"github.com/rilldata/rill/runtime/drivers/s3"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"github.com/rilldata/rill/runtime/pkg/globutil"
 )
 
 var errGCSUsesNativeCreds = errors.New("GCS uses native credentials")
@@ -53,7 +54,7 @@ func (e *objectStoreToSelfExecutor) Concurrency(desired int) (int, bool) {
 func (e *objectStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
 	// Build the model executor options with updated input properties
 	clone := *opts
-	newInputProps, err := e.modelInputProperties(opts.ModelName, opts.InputConnector, opts.InputHandle, opts.InputProperties)
+	newInputProps, err := e.modelInputProperties(ctx, opts.ModelName, opts.InputConnector, opts.InputHandle, opts.InputProperties)
 	if err != nil {
 		if errors.Is(err, errGCSUsesNativeCreds) {
 			e := &objectStoreToSelfExecutorNonNative{c: e.c}
@@ -69,7 +70,7 @@ func (e *objectStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.M
 	return executor.Execute(ctx, newOpts)
 }
 
-func (e *objectStoreToSelfExecutor) modelInputProperties(model, inputConnector string, inputHandle drivers.Handle, inputProps map[string]any) (map[string]any, error) {
+func (e *objectStoreToSelfExecutor) modelInputProperties(ctx context.Context, model, inputConnector string, inputHandle drivers.Handle, inputProps map[string]any) (map[string]any, error) {
 	parsed := &objectStoreInputProps{}
 	if err := mapstructure.WeakDecode(inputProps, parsed); err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
@@ -88,7 +89,7 @@ func (e *objectStoreToSelfExecutor) modelInputProperties(model, inputConnector s
 
 	// Generate secret SQL to access the service and set as pre_exec_query
 	var err error
-	m.PreExec, err = objectStoreSecretSQL(model, inputConnector, inputHandle, inputProps)
+	m.PreExec, err = objectStoreSecretSQL(ctx, parsed.Path, model, inputConnector, inputHandle, inputProps)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +108,7 @@ func (e *objectStoreToSelfExecutor) modelInputProperties(model, inputConnector s
 	return propsMap, nil
 }
 
-func objectStoreSecretSQL(model, inputConnector string, inputHandle drivers.Handle, inputProps map[string]any) (string, error) {
+func objectStoreSecretSQL(ctx context.Context, path, model, inputConnector string, inputHandle drivers.Handle, inputProps map[string]any) (string, error) {
 	config := inputHandle.Config()
 	// config properties can also be set as input properties
 	maps.Copy(config, inputProps)
@@ -139,6 +140,22 @@ func objectStoreSecretSQL(model, inputConnector string, inputHandle drivers.Hand
 		if s3Config.Region != "" {
 			sb.WriteString(", REGION ")
 			sb.WriteString(safeSQLString(s3Config.Region))
+		} else {
+			// duckdb is unable to resolve region as of 1.2.0 so we need to detect and set region
+			conn, ok := inputHandle.(*s3.Connection)
+			if !ok {
+				return "", fmt.Errorf("internal error: invalid input handle type")
+			}
+			url, err := globutil.ParseBucketURL(path)
+			if err != nil {
+				return "", fmt.Errorf("failed to parse path %q, %w", path, err)
+			}
+			reg, err := conn.GetBucketRegion(ctx, url.Host)
+			if err != nil {
+				return "", fmt.Errorf("failed to get bucket region: %w. Set `region` in model yaml", err)
+			}
+			sb.WriteString(", REGION ")
+			sb.WriteString(safeSQLString(reg))
 		}
 		sb.WriteRune(')')
 		return sb.String(), nil

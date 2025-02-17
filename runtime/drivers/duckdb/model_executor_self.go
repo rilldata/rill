@@ -265,7 +265,7 @@ func objectStoreRef(ctx context.Context, props *ModelInputProperties, opts *driv
 			return "", "", nil, false
 		}
 		defer release()
-		secretSQL, err := objectStoreSecretSQL(opts.ModelName, opts.InputConnector, handle, opts.InputProperties)
+		secretSQL, err := objectStoreSecretSQL(ctx, ref.Paths[0], opts.ModelName, opts.InputConnector, handle, opts.InputProperties)
 		if err != nil {
 			if errors.Is(err, errGCSUsesNativeCreds) {
 				return uri.Scheme, "", ast, true
