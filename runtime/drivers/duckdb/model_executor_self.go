@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"maps"
 	"net/url"
 	"strings"
@@ -65,69 +66,36 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 	asView := !materialize
 	tableName := outputProps.Table
 
-	// check if the SQL is ingesting data from an object store
-	if scheme, ref, ok := objectStoreRef(inputProps, opts); ok {
-		if scheme == "s3" || scheme == "azure" {
-			// for s3 and azure we can just set a duckdb secret and ingest data using duckdb's native support for s3 and azure
-			handle, release, err := opts.Env.AcquireConnector(ctx, scheme)
-			if err != nil {
-				return nil, err
-			}
-			defer release()
-			secretSQL, err := objectStoreSecretSQL(opts.ModelName, opts.InputConnector, handle, opts.InputProperties)
-			if err != nil {
-				return nil, err
-			}
+	// Backward compatibility for the old duckdb SQL:
+	// It was possible to set a duckdb SQL which ingests data from an object store without setting the object store credentials.
+	// We did rewriting for path to rewrite object store paths to paths of locally downloaded files.
+	// The handling can now be done with duckdb's native connectors by setting a SQL that creates secret to access the object store.
+	// However duckdb does not support GCS's native credentials(google_application_credentials) so we still maintain the hack for the same.
+	// We expect to remove this rewriting once all users start using GCS's s3 compatibility API support.
+	if scheme, secretSQL, ast, ok := objectStoreRef(ctx, inputProps, opts); ok {
+		if secretSQL != "" {
 			inputProps.PreExec = secretSQL
-		} else { // gcs, gs, local
-			// for gcs and gcs duckdb we need to hook into our object store connector to download the files and then ingest them into duckdb
-			// this is a rudimentary rewrite and only cover simple use cases like SELECT * FROM read_xxx(path, union_by_name=true...)
-			// and does not cover other SQL features like filter and limits
+		} else if scheme == "gcs" || scheme == "gs" {
+			// rewrite duckdb sql with locally downloaded files
 			handle, release, err := opts.Env.AcquireConnector(ctx, scheme)
 			if err != nil {
 				return nil, err
 			}
 			defer release()
-
-			clone := *opts
-			clone.InputConnector = scheme
-			clone.InputHandle = handle
-
-			props := maps.Clone(opts.InputProperties)
-			if _, ok := props["format"].(string); !ok {
-				switch ref.Function {
-				case "read_csv_auto", "read_csv":
-					props["format"] = "csv"
-				case "read_json", "read_json_auto", "read_json_objects", "read_json_objects_auto", "read_ndjson_objects", "read_ndjson", "read_ndjson_auto":
-					props["format"] = "json"
-				case "read_parquet":
-					props["format"] = "parquet"
-				}
+			rawProps := maps.Clone(opts.InputProperties)
+			rawProps["path"] = ast.GetTableRefs()[0].Paths[0]
+			rawProps["batch_size"] = -1
+			release, err = rewriteDuckDBSQL(ctx, inputProps, handle, rawProps, ast)
+			if err != nil {
+				return nil, err
 			}
-			props["duckdb"] = ref.Properties
-			if scheme == "local_file" {
-				resolved, err := fileutil.ResolveLocalPath(ref.Paths[0], opts.Env.RepoRoot, opts.Env.AllowHostAccess)
-				if err != nil {
-					return nil, err
-				}
-				props["path"] = resolved
-				clone.InputProperties = props
-				filestore, ok := handle.AsFileStore()
-				if !ok {
-					return nil, fmt.Errorf("internal error: expected file store connector")
-				}
-				executor := &localFileToSelfExecutor{
-					c:    e.c,
-					from: filestore,
-				}
-				return executor.Execute(ctx, &clone)
+			defer release()
+		} else {
+			rewrittenSQL, err := rewriteLocalPaths(ast, opts.Env.RepoRoot, opts.Env.AllowHostAccess)
+			if err != nil {
+				return nil, fmt.Errorf("invalid local path: %w", err)
 			}
-			// gcs
-			props["path"] = ref.Paths[0]
-			clone.InputProperties = props
-			// call the objectStoreToSelfExecutor which has logic to download files based on path and then call selfToSelfExecutor
-			executor := &objectStoreToSelfExecutor{c: e.c}
-			return executor.Execute(ctx, &clone)
+			inputProps.SQL = rewrittenSQL
 		}
 	}
 
@@ -263,42 +231,84 @@ func (e *selfToSelfExecutor) createFromExternalDuckDB(ctx context.Context, input
 	})
 }
 
-// Backward compatibility: It was possible to set a duckdb SQL which ingests data from an object store without setting the object store credentials.
-// We did some rewriting for path to rewrite object store paths to paths of locally downloaded files.
-// This function rewrites the source properties to use object store connector so that a model executor that ingests data from object store to duckdb can work.
-func objectStoreRef(props *ModelInputProperties, opts *drivers.ModelExecuteOptions) (string, *duckdbsql.TableRef, bool) {
+func objectStoreRef(ctx context.Context, props *ModelInputProperties, opts *drivers.ModelExecuteOptions) (string, string, *duckdbsql.AST, bool) {
 	// We take an assumption that if there is a pre_exec query, the user has already set the secret SQL.
 	if props.PreExec != "" || opts.InputConnector != "duckdb" {
-		return "", nil, false
+		return "", "", nil, false
 	}
 	// Parse AST
 	ast, err := duckdbsql.Parse(props.SQL)
 	if err != nil {
 		// If we can't parse the SQL just let duckdb run on it and give a sql parse error.
-		return "", nil, false
+		return "", "", nil, false
 	}
 
 	// If there is a single table reference check if it is an object store reference.
 	refs := ast.GetTableRefs()
 	if len(refs) != 1 {
-		return "", nil, false
+		return "", "", nil, false
 	}
 	ref := refs[0]
 	// Parse the path as a URL (also works for local paths)
 	if len(ref.Paths) == 0 {
-		return "", nil, false
+		return "", "", nil, false
 	}
 	uri, err := url.Parse(ref.Paths[0])
 	if err != nil {
-		return "", nil, false
+		return "", "", nil, false
 	}
 
 	if uri.Scheme == "s3" || uri.Scheme == "azure" || uri.Scheme == "gcs" || uri.Scheme == "gs" {
-		return uri.Scheme, ref, true
+		// for s3 and azure we can just set a duckdb secret and ingest data using duckdb's native support for s3 and azure
+		handle, release, err := opts.Env.AcquireConnector(ctx, uri.Scheme)
+		if err != nil {
+			return "", "", nil, false
+		}
+		defer release()
+		secretSQL, err := objectStoreSecretSQL(opts.ModelName, opts.InputConnector, handle, opts.InputProperties)
+		if err != nil {
+			if errors.Is(err, errGCSUsesNativeCreds) {
+				return uri.Scheme, "", ast, true
+			}
+			return "", "", nil, false
+		}
+		return uri.Scheme, secretSQL, ast, true
 	}
 	if uri.Scheme == "" && uri.Host == "" {
 		// local file reference
-		return "local_file", ref, true
+		return "local_file", "", ast, true
 	}
-	return "", nil, false
+	return "", "", nil, false
+}
+
+func rewriteDuckDBSQL(ctx context.Context, props *ModelInputProperties, inputHandle drivers.Handle, rawProps map[string]any, ast *duckdbsql.AST) (release func(), retErr error) {
+	fs, ok := inputHandle.AsObjectStore()
+	if !ok {
+		return nil, fmt.Errorf("internal error: expected object store connector")
+	}
+
+	var files []string
+	iter, err := fs.DownloadFiles(ctx, rawProps)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if retErr != nil {
+			_ = iter.Close()
+		}
+	}()
+	for {
+		localFiles, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return nil, err
+		}
+		files = append(files, localFiles...)
+	}
+
+	// Rewrite the SQL
+	props.SQL, err = rewriteSQL(ast, files)
+	return func() { _ = iter.Close() }, err
 }
