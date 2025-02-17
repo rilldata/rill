@@ -80,12 +80,15 @@
     });
   }
 
-  onNavigate(() => {
+  onNavigate(({ from, to }) => {
     viewAsUserStore.set(null);
     errorStore.reset();
 
     // Clear out any dashboard banners
-    if (hasBanner) {
+    if (
+      hasBanner &&
+      (!from || !to || from.params.dashboard !== to.params.dashboard)
+    ) {
       eventBus.emit("banner", null);
     }
   });
