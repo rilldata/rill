@@ -146,10 +146,6 @@ func (p *Parser) parseCanvas(node *Node) error {
 				return fmt.Errorf("invalid width unit %q for item %d in row %d: 'width' cannot have a unit", widthUnit, j, i)
 			}
 
-			if item.Component.IsZero() {
-				return fmt.Errorf("item %d in row %d is missing a component definition", j, i)
-			}
-
 			component, inlineComponentDef, err := p.parseCanvasItemComponent(node.Name, i, j, item.Component)
 			if err != nil {
 				return fmt.Errorf("invalid component for item %d in row %d: %w", j, i, err)
@@ -270,6 +266,10 @@ func (p *Parser) parseCanvasItemComponent(canvasName string, rowIdx, itemIdx int
 		return name, nil, nil
 	}
 
+	if n.IsZero() {
+		return "", nil, errors.New("missing component definition")
+	}
+
 	if n.Kind != yaml.MappingNode {
 		return "", nil, errors.New("expected a component name or inline declaration")
 	}
@@ -325,12 +325,12 @@ func parseItemSize(s string) (uint32, string, error) {
 
 	matches := itemSizeRegex.FindStringSubmatch(s)
 	if matches == nil {
-		return 0, "", fmt.Errorf("invalid item size %q", s)
+		return 0, "", fmt.Errorf("invalid size %q", s)
 	}
 
 	size, err := strconv.Atoi(matches[1])
 	if err != nil {
-		return 0, "", fmt.Errorf("invalid item size %q: %w", s, err)
+		return 0, "", fmt.Errorf("invalid size %q: %w", s, err)
 	}
 
 	return uint32(size), matches[2], nil
