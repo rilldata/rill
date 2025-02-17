@@ -12,7 +12,10 @@
     getTimeControlState,
     type TimeControlState,
   } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-  import { registerMethod, emit } from "@rilldata/web-common/lib/rpc";
+  import {
+    registerRPCMethod,
+    emitNotification,
+  } from "@rilldata/web-common/lib/rpc";
 
   export let instanceId: string;
 
@@ -47,7 +50,7 @@
     );
   }
 
-  registerMethod("getState", () => {
+  registerRPCMethod("getState", () => {
     return {
       state: decodeURIComponent(
         convertExploreStateToURLSearchParams(
@@ -60,7 +63,7 @@
     };
   });
 
-  registerMethod("setState", (state: string) => {
+  registerRPCMethod("setState", (state: string) => {
     const currentUrl = new URL(get(page).url);
     currentUrl.search = state;
     goto(currentUrl, { replaceState: true });
@@ -77,7 +80,7 @@
   );
 
   // Stream the state to the parent
-  $: emit("stateChange", {
+  $: emitNotification("stateChange", {
     state: stateString,
   });
 </script>
