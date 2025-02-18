@@ -119,8 +119,7 @@ setup(
       })
       .click();
 
-    // Check that the password input field is visible, and enter the password
-    await page.locator('input[name="password"]').waitFor({ state: "visible" });
+    // Fill in the password
     await page.locator('input[name="password"]').click();
     await page
       .locator('input[name="password"]')
