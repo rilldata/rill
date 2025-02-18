@@ -293,9 +293,7 @@ func rewriteDuckDBSQL(ctx context.Context, props *ModelInputProperties, inputHan
 		return nil, err
 	}
 	defer func() {
-		if retErr != nil {
-			_ = iter.Close()
-		}
+		_ = iter.Close()
 	}()
 	for {
 		localFiles, err := iter.Next()
