@@ -266,7 +266,7 @@ type DB interface {
 
 	FindAsset(ctx context.Context, id string) (*Asset, error)
 	FindUnusedAssets(ctx context.Context, limit int) ([]*Asset, error)
-	InsertAsset(ctx context.Context, id string, organizationID, path, ownerID string, cacheable bool) (*Asset, error)
+	InsertAsset(ctx context.Context, id string, organizationID, path, ownerID string, public bool) (*Asset, error)
 	DeleteAssets(ctx context.Context, ids []string) error
 
 	FindOrganizationIDsWithBilling(ctx context.Context) ([]string, error)
@@ -332,6 +332,8 @@ type Organization struct {
 	BillingCustomerID                   string    `db:"billing_customer_id"`
 	PaymentCustomerID                   string    `db:"payment_customer_id"`
 	BillingEmail                        string    `db:"billing_email"`
+	BillingPlanName                     *string   `db:"billing_plan_name"`
+	BillingPlanDisplayName              *string   `db:"billing_plan_display_name"`
 	CreatedByUserID                     *string   `db:"created_by_user_id"`
 }
 
@@ -372,6 +374,8 @@ type UpdateOrganizationOptions struct {
 	BillingCustomerID                   string
 	PaymentCustomerID                   string
 	BillingEmail                        string
+	BillingPlanName                     *string
+	BillingPlanDisplayName              *string
 	CreatedByUserID                     *string
 }
 
@@ -1006,7 +1010,7 @@ type Asset struct {
 	OrganizationID *string   `db:"org_id"`
 	Path           string    `db:"path"`
 	OwnerID        string    `db:"owner_id"`
-	Cacheable      bool      `db:"cacheable"`
+	Public         bool      `db:"public"`
 	CreatedOn      time.Time `db:"created_on"`
 }
 

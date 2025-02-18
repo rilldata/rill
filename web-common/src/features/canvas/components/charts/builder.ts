@@ -49,6 +49,7 @@ export function createXEncoding(
     title: metaData?.displayName || config.x.field,
     type: config.x.type,
     ...(metaData && "timeUnit" in metaData && { timeUnit: metaData.timeUnit }),
+    ...(config.x.sort && { sort: config.x.sort }),
     axis: {
       ...(config.x.type === "quantitative" && {
         formatType: config.x.field,
@@ -69,6 +70,11 @@ export function createYEncoding(
     field: sanitizeValueForVega(config.y.field),
     title: metaData?.displayName || config.y.field,
     type: config.y.type,
+    ...(config.y.zeroBasedOrigin !== true && {
+      scale: {
+        zero: false,
+      },
+    }),
     axis: {
       ...(config.y.type === "quantitative" && {
         formatType: config.y.field,
