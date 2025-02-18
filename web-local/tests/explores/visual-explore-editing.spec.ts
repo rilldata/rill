@@ -3,7 +3,7 @@ import { gotoNavEntry } from "../utils/waitHelpers";
 import { test } from "../setup/base";
 
 test.describe("visual explore editing", () => {
-  test.use({ project: { name: "AdBids" } });
+  test.use({ project: "AdBids" });
 
   test("visual explore editor runthrough", async ({ page }) => {
     await page.getByLabel("/dashboards").click();

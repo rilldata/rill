@@ -4,7 +4,7 @@ import { updateCodeEditor, wrapRetryAssertion } from "./utils/commonHelpers";
 import { test } from "./setup/base";
 
 test.describe("Metrics editor", () => {
-  test.use({ project: { name: "AdBids" } });
+  test.use({ project: "AdBids" });
 
   test("Can add and remove measures and dimensions", async ({ page }) => {
     await page.getByLabel("/metrics").click();

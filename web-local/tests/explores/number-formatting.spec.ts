@@ -5,7 +5,7 @@ import { gotoNavEntry } from "../utils/waitHelpers";
 import { test } from "../setup/base";
 
 test.describe("smoke tests for number formatting", () => {
-  test.use({ project: { name: "AdBids" } });
+  test.use({ project: "AdBids" });
 
   test("smoke tests for number formatting", async ({ page }) => {
     const watcher = new ResourceWatcher(page);

@@ -1,4 +1,3 @@
-import { asyncWaitUntil } from "@rilldata/web-common/lib/waitUtils";
 import type { V1ListResourcesResponse } from "@rilldata/web-common/runtime-client";
 import { spawnAndMatch } from "@rilldata/web-common/tests/utils/spawn";
 import { rmSync } from "fs";

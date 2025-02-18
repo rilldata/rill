@@ -20,7 +20,7 @@ import { test } from "../setup/base";
 import { gotoNavEntry } from "../utils/waitHelpers";
 
 test.describe("explores", () => {
-  test.use({ project: { name: "Blank" } });
+  test.use({ project: "Blank" });
 
   test("Autogenerate explore from source", async ({ page }) => {
     await createSource(page, "AdBids.csv", "/sources/AdBids.yaml");

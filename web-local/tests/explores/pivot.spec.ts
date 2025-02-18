@@ -523,7 +523,7 @@ const expectSortedDeltaCol = [
 ];
 
 test.describe("pivot run through", () => {
-  test.use({ project: { name: "AdBids" } });
+  test.use({ project: "AdBids" });
 
   test("pivot run through", async ({ page }) => {
     const watcher = new ResourceWatcher(page);

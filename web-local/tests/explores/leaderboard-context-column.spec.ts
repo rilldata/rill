@@ -6,7 +6,7 @@ import { clickMenuButton } from "../utils/commonHelpers";
 import { test } from "../setup/base";
 
 test.describe("leaderboard context column", () => {
-  test.use({ project: { name: "AdBids" } });
+  test.use({ project: "AdBids" });
 
   test("Leaderboard context column", async ({ page }) => {
     const watcher = new ResourceWatcher(page);

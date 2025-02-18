@@ -4,7 +4,7 @@ import { clickMenuButton } from "../utils/commonHelpers";
 import { test } from "../setup/base";
 
 test.describe("dimension and measure selectors", () => {
-  test.use({ project: { name: "AdBids" } });
+  test.use({ project: "AdBids" });
 
   test("dimension and measure selectors flow", async ({ page }) => {
     await page.getByLabel("/dashboards").click();

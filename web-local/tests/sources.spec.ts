@@ -14,7 +14,7 @@ import { test } from "./setup/base";
 import { fileNotPresent, waitForFileNavEntry } from "./utils/waitHelpers";
 
 test.describe("sources", () => {
-  test.use({ project: { name: "Blank" } });
+  test.use({ project: "Blank" });
 
   test("Import sources", async ({ page }) => {
     await Promise.all([

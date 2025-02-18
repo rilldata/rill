@@ -9,9 +9,8 @@ import axios from "axios";
 
 export const BASE_PROJECT_DIRECTORY = "temp/test-project";
 
-type ProjectInitArgs = { name?: string } | undefined;
 type MyFixtures = {
-  project: ProjectInitArgs;
+  project: string | undefined;
 };
 
 export const test = base.extend<MyFixtures>({
@@ -28,15 +27,11 @@ export const test = base.extend<MyFixtures>({
       mkdirSync(TEST_PROJECT_DIRECTORY, { recursive: true });
     }
 
-    if (project?.name) {
-      cpSync(
-        join(BASE_PROJECT_DIRECTORY, project.name),
-        TEST_PROJECT_DIRECTORY,
-        {
-          recursive: true,
-          force: true,
-        },
-      );
+    if (project) {
+      cpSync(join(BASE_PROJECT_DIRECTORY, project), TEST_PROJECT_DIRECTORY, {
+        recursive: true,
+        force: true,
+      });
     }
 
     const cmd = `start --no-open --port ${TEST_PORT} --port-grpc ${TEST_PORT_GRPC} ${TEST_PROJECT_DIRECTORY}`;

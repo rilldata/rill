@@ -5,7 +5,7 @@ import { gotoNavEntry } from "../utils/waitHelpers";
 import { test } from "../setup/base";
 
 test.describe("time controls settings from explore preset", () => {
-  test.use({ project: { name: "AdBids" } });
+  test.use({ project: "AdBids" });
 
   test("preset time_range", async ({ page }) => {
     const watcher = new ResourceWatcher(page);

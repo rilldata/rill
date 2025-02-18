@@ -14,7 +14,7 @@ import { test } from "./setup/base";
 import { fileNotPresent, waitForFileNavEntry } from "./utils/waitHelpers";
 
 test.describe("models", () => {
-  test.use({ project: { name: "Blank" } });
+  test.use({ project: "Blank" });
 
   test("Create and edit model", async ({ page }) => {
     await createSource(page, "AdBids.csv", "/sources/AdBids.yaml");

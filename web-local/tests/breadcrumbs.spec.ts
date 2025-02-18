@@ -3,7 +3,7 @@ import { test } from "./setup/base";
 import { uploadFile } from "./utils/sourceHelpers";
 
 test.describe("Breadcrumbs", () => {
-  test.use({ project: { name: "Blank" } });
+  test.use({ project: "Blank" });
 
   test.describe("Breadcrumb interactions", () => {
     test("breadcrumb navigation", async ({ page }) => {
