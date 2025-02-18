@@ -112,14 +112,13 @@ export const filteredSimpleMeasures = ({
  * 2. Dependent on a time dimension with a defined grain and not equal to the current selected grain.
  * 3. Window measures if includeWindowMeasures=false. Right now totals query does not support these.
  */
-export const removeSomeAdvancedMeasures = (
+export const filterSomeAdvancedMeasures = (
   exploreState: MetricsExplorerEntity,
   metricsViewSpec: V1MetricsViewSpec,
   measureNames: string[],
   includeWindowMeasures: boolean,
 ) => {
-  const measures = new Set<string>();
-  measureNames.forEach((measureName) => {
+  return measureNames.filter((measureName) => {
     const measure = metricsViewSpec.measures?.find(
       (m) => m.name === measureName,
     );
@@ -134,7 +133,7 @@ export const removeSomeAdvancedMeasures = (
       //   (!dashboard.showTimeComparison ||
       //     !dashboard.selectedComparisonTimeRange))
     )
-      return;
+      return false;
 
     let skipMeasure = false;
     measure.requiredDimensions?.forEach((reqDim) => {
@@ -147,11 +146,8 @@ export const removeSomeAdvancedMeasures = (
         return;
       }
     });
-    if (skipMeasure) return;
-
-    measures.add(measureName);
+    return !skipMeasure;
   });
-  return [...measures];
 };
 
 export const getSimpleMeasures = (measures: MetricsViewSpecMeasureV2[]) => {

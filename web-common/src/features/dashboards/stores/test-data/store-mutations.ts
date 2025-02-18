@@ -26,7 +26,6 @@ import {
   metricsExplorerStore,
   updateMetricsExplorerByName,
 } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-import { createPersistentDashboardStore } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
 import {
   AD_BIDS_BID_PRICE_MEASURE,
   AD_BIDS_DOMAIN_DIMENSION,
@@ -339,7 +338,6 @@ export function applyMutationsToDashboard(
   updateMetricsExplorerByName(name, (dashboard) => {
     const dashboardMutables = {
       dashboard,
-      persistentDashboardStore: createPersistentDashboardStore("dummy"),
     } as DashboardMutables;
     mutations.forEach((mutation) => mutation(dashboardMutables));
   });

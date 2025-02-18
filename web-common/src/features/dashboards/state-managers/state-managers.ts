@@ -3,7 +3,6 @@ import {
   type MetricsExplorerEntity,
   contextColWidthDefaults,
 } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import { createPersistentDashboardStore } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import {
@@ -153,9 +152,6 @@ export function createStateManagers({
     },
   );
 
-  const persistentDashboardStore = createPersistentDashboardStore(
-    (extraKeyPrefix || "") + exploreName,
-  );
   initLocalUserPreferenceStore(exploreName);
 
   return {
@@ -183,7 +179,6 @@ export function createStateManagers({
      */
     actions: createStateManagerActions({
       updateDashboard,
-      persistentDashboardStore,
     }),
     contextColumnWidths,
     defaultExploreState,
