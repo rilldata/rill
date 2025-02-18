@@ -132,7 +132,7 @@ setup.describe("global setup", () => {
       .click();
 
     // Check that the password input field is visible, and enter the password
-    await expect(page.locator('input[name="password"]')).toBeVisible();
+    await page.locator('input[name="password"]').waitFor({ state: "visible" });
     await page.locator('input[name="password"]').click();
     await page
       .getByPlaceholder("Enter your password")
