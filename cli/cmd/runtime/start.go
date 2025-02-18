@@ -118,6 +118,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			cfg := zap.NewProductionConfig()
 			cfg.Level.SetLevel(conf.LogLevel)
 			cfg.EncoderConfig.NameKey = zapcore.OmitKey
+			cfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 			logger, err := cfg.Build()
 			if err != nil {
 				fmt.Printf("error: failed to create logger: %s\n", err.Error())

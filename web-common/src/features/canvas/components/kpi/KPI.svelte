@@ -24,6 +24,7 @@
   } from "./selector";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
+  export let topPadding = true;
 
   const ctx = getCanvasStateManagers();
   const {
@@ -72,10 +73,12 @@
     $selectedComparisonTimeRange?.name &&
     TIME_COMPARISON[$selectedComparisonTimeRange?.name]?.label;
 
+  $: adjustForPad = topPadding ? 12 : 0;
   $: sparklineHeight = isSparkRight
     ? containerHeight
     : containerHeight -
-      (showComparison && $comparisonValue?.data != null ? 116 : 76);
+      (showComparison && $comparisonValue?.data != null ? 100 : 60) -
+      adjustForPad;
   $: sparklineWidth = isSparkRight ? containerWidth - 136 : containerWidth - 10;
 
   $: measureValueFormatter = $measure
@@ -110,7 +113,7 @@
       class="flex h-full w-full bg-white items-center {isSparkRight
         ? 'flex-row'
         : 'flex-col'}"
-      class:pt-4={!isSparkRight && showSparkline}
+      class:pt-2={topPadding && !isSparkRight && showSparkline}
       class:justify-center={!showSparkline || !sparkData.length}
     >
       <div

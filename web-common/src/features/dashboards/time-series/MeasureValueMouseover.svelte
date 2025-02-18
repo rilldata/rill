@@ -16,8 +16,8 @@
   export let numberKind: NumberKind;
   $: comparisonYAccessor = `comparison.${yAccessor}`;
 
-  $: x = point[xAccessor];
-  $: y = point[yAccessor];
+  $: x = point?.[xAccessor];
+  $: y = point?.[yAccessor];
   $: comparisonY = point?.[comparisonYAccessor];
 
   $: hasValidComparisonPoint = comparisonY !== undefined;
@@ -37,8 +37,8 @@
     lastAvailableCurrentY = y;
   }
   $: if (
-    point[comparisonYAccessor] !== undefined &&
-    point[comparisonYAccessor] !== null
+    point?.[comparisonYAccessor] !== undefined &&
+    point?.[comparisonYAccessor] !== null
   ) {
     lastAvailableComparisonY = comparisonY;
   }

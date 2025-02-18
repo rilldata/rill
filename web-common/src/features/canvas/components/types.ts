@@ -1,3 +1,4 @@
+import type { KPIGridSpec } from "@rilldata/web-common/features/canvas/components/kpi-grid";
 import type { ChartConfig, ChartType } from "./charts/types";
 import type { ImageSpec } from "./image";
 import type { KPISpec } from "./kpi";
@@ -10,6 +11,7 @@ export type ComponentSpec =
   | TableSpec
   | ImageSpec
   | KPISpec
+  | KPIGridSpec
   | MarkdownSpec;
 
 export interface ComponentCommonProperties {
@@ -44,6 +46,7 @@ export type CanvasComponentType =
   | ChartType
   | "markdown"
   | "kpi"
+  | "kpi_grid"
   | "image"
   | "table";
 

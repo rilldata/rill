@@ -238,7 +238,20 @@ func (w *watcher) runInner() error {
 }
 
 func (w *watcher) addDir(p string, replay, errIfNotExist bool) error {
-	err := w.watcher.Add(p)
+	// Check if it is an ignored path
+	// We do not watch files for ignored paths
+	relPath, err := filepath.Rel(w.root, p)
+	if err != nil {
+		// should never happen unless some bug in the code
+		return fmt.Errorf("failed to add path %q to watcher: failed to get relative path", p)
+	}
+	relPath = filepath.Join(string(filepath.Separator), relPath)
+	if drivers.IsIgnored(relPath, w.ignorePaths) {
+		w.logger.Debug("watcher: ignoring path", zap.String("path", p))
+		return nil
+	}
+
+	err = w.watcher.Add(p)
 	if err != nil {
 		// Need to check unix.ENOENT (and probably others) since fsnotify doesn't always use cross-platform syscalls.
 		if !errIfNotExist && isNotExists(err) {

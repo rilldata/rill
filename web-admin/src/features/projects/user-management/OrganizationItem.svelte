@@ -19,6 +19,13 @@
   $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
     organization,
     group.groupName,
+    undefined,
+    {
+      query: {
+        refetchOnMount: true,
+        refetchOnWindowFocus: true,
+      },
+    },
   );
 
   $: userGroupMemberUsers = $listUsergroupMemberUsers.data?.members ?? [];

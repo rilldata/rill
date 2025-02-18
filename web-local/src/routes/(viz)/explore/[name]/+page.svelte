@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onNavigate } from "$app/navigation";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
@@ -53,12 +54,28 @@
     enabled: $selectedMockUserStore?.admin,
   });
 
+  $: hasBanner = !!$exploreQuery.data?.explore?.banner;
+
+  $: if (hasBanner) {
+    eventBus.emit("banner", {
+      type: "default",
+      message: $exploreQuery.data?.explore?.banner ?? "",
+      iconType: "alert",
+    });
+  }
+
   $: dashboardFileHasParseError =
     $projectParserQuery.data?.projectParser?.state?.parseErrors?.filter(
       (error) => filePaths.includes(error.filePath as string),
     );
   $: mockUserHasNoAccess =
     $selectedMockUserStore && $exploreQuery.error?.response?.status === 404;
+
+  onNavigate(() => {
+    if (hasBanner) {
+      eventBus.emit("banner", null);
+    }
+  });
 </script>
 
 <svelte:head>

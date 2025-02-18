@@ -90,6 +90,9 @@
       }
     : undefined;
 
+  $: exploreSpec = $explore.data?.explore;
+  $: timeRanges = exploreSpec?.timeRanges ?? [];
+
   let metricsWidth = DEFAULT_TIMESERIES_WIDTH;
   let resizing = false;
 </script>
@@ -108,7 +111,7 @@
     {:else}
       {#key exploreName}
         <section class="flex relative justify-between gap-x-4 py-4 pb-6 px-4">
-          <Filters />
+          <Filters {timeRanges} {metricsViewName} />
           <div class="absolute bottom-0 flex flex-col right-0">
             <TabBar {hidePivot} {exploreName} onPivot={$showPivot} />
           </div>
