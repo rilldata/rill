@@ -221,7 +221,7 @@ func TestResetLocal(t *testing.T) {
 		MemoryLimitGB:  2,
 		CPU:            1,
 		ReadWriteRatio: 0.5,
-		InitQueries:    []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
+		DBInitQueries:  []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
 		Logger:         logger,
 	})
 	require.NoError(t, err)
@@ -284,7 +284,7 @@ func TestResetSelectiveLocal(t *testing.T) {
 		MemoryLimitGB:  2,
 		CPU:            1,
 		ReadWriteRatio: 0.5,
-		InitQueries:    []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
+		DBInitQueries:  []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
 		Logger:         logger,
 	})
 	require.NoError(t, err)
@@ -317,7 +317,7 @@ func TestResetTablesRemote(t *testing.T) {
 		MemoryLimitGB:  2,
 		CPU:            1,
 		ReadWriteRatio: 0.5,
-		InitQueries:    []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
+		DBInitQueries:  []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
 		Logger:         logger,
 	})
 	require.NoError(t, err)
@@ -364,7 +364,7 @@ func TestResetSelectiveTablesRemote(t *testing.T) {
 		MemoryLimitGB:  2,
 		CPU:            1,
 		ReadWriteRatio: 0.5,
-		InitQueries:    []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
+		DBInitQueries:  []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
 		Logger:         logger,
 	})
 	require.NoError(t, err)
@@ -488,6 +488,18 @@ func TestViews(t *testing.T) {
 	require.NoError(t, testDB.Close())
 }
 
+func TestNoConfigUpdate(t *testing.T) {
+	db, _, _ := prepareDB(t)
+	ctx := context.Background()
+	err := db.CreateTableAsSelect(ctx, "test", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{
+		BeforeCreateFn: func(ctx context.Context, conn *sqlx.Conn) error {
+			_, err := conn.ExecContext(ctx, "SET secret_directory = '/tmp'")
+			return err
+		},
+	})
+	require.Error(t, err, "the configuration has been locked")
+}
+
 func prepareDB(t *testing.T) (db DB, localDir, remoteDir string) {
 	localDir = t.TempDir()
 	ctx := context.Background()
@@ -503,7 +515,7 @@ func prepareDB(t *testing.T) (db DB, localDir, remoteDir string) {
 		MemoryLimitGB:  2,
 		CPU:            1,
 		ReadWriteRatio: 0.5,
-		InitQueries:    []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
+		DBInitQueries:  []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
 		Logger:         logger,
 	})
 	require.NoError(t, err)
