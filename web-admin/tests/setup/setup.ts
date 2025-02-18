@@ -107,16 +107,22 @@ setup(
 
     // Log in with the admin account
     await page.goto("/");
-    await page.getByRole("button", { name: "Continue with Email" }).click();
-    await page.getByPlaceholder("Enter your email address").click();
+
+    // Select and fill in the email address
+    await page.locator('input[name="username"]').click();
     await page
-      .getByPlaceholder("Enter your email address")
+      .locator('input[name="username"]')
       .fill(process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL);
-    await page.getByPlaceholder("Enter your email address").press("Tab");
+
+    // Select and fill in the password
+    await page.locator('input[name="password"]').click();
     await page
-      .getByPlaceholder("Enter your password")
+      .locator('input[name="password"]')
       .fill(process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_PASSWORD);
-    await page.getByRole("button", { name: "Continue with Email" }).click();
+
+    // Click the continue button
+    await page.getByRole("button", { name: "Continue" }).click();
+
     await page.waitForURL("/");
 
     // Save auth cookies to file
