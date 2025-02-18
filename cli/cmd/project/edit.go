@@ -12,6 +12,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	var name, description, prodVersion, prodBranch, subpath, path, provisioner string
 	var public bool
 	var prodTTL int64
+	var slots int
 
 	editCmd := &cobra.Command{
 		Use:   "edit [<project-name>]",
