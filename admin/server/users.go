@@ -167,6 +167,7 @@ func (s *Server) UpdateUserPreferences(ctx context.Context, req *adminv1.UpdateU
 func (s *Server) IssueRepresentativeAuthToken(ctx context.Context, req *adminv1.IssueRepresentativeAuthTokenRequest) (*adminv1.IssueRepresentativeAuthTokenResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.Int64("args.ttl_minutes", req.TtlMinutes),
+		attribute.String("args.email", req.Email),
 	)
 
 	claims := auth.GetClaims(ctx)
