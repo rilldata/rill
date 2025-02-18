@@ -12,7 +12,6 @@ const rillServiceToken = fs.readFileSync(
   "utf-8",
 );
 
-
 test.beforeAll(async () => {
   await generateEmbed(
     "bids_explore",
