@@ -328,7 +328,7 @@ func parseItemSize(s string) (uint32, string, error) {
 		return 0, "", fmt.Errorf("invalid size %q", s)
 	}
 
-	size, err := strconv.Atoi(matches[1])
+	size, err := strconv.ParseUint(matches[1], 10, 32)
 	if err != nil {
 		return 0, "", fmt.Errorf("invalid size %q: %w", s, err)
 	}
