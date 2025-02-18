@@ -126,7 +126,9 @@ setup.describe("global setup", () => {
       .getByPlaceholder("Enter your email address")
       .fill(process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL);
     await page
-      .locator('button[type="submit"]', { hasText: "Continue" })
+      .locator('button[type="submit"][data-action-button-primary="true"]', {
+        hasText: "Continue",
+      })
       .click();
 
     // Check that the password input field is visible, and enter the password
@@ -136,7 +138,9 @@ setup.describe("global setup", () => {
       .getByPlaceholder("Enter your password")
       .fill(process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_PASSWORD);
     await page
-      .locator('button[type="submit"]', { hasText: "Continue" })
+      .locator('button[type="submit"][data-action-button-primary="true"]', {
+        hasText: "Continue",
+      })
       .click();
 
     await page.waitForURL("/");
