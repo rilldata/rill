@@ -97,9 +97,9 @@ func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
 			res, err := rt.RuntimeServiceClient.QueryResolver(cmd.Context(), &runtimev1.QueryResolverRequest{
 				InstanceId:         instanceID,
 				Resolver:           resolver,
-				Limit:              int32(limit),
 				ResolverProperties: resolverProperties,
 				ResolverArgs:       resolverArgs,
+				Limit:              int32(limit),
 			})
 			if err != nil {
 				return fmt.Errorf("failed to execute query: %w", err)

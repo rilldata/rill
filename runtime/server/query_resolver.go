@@ -28,21 +28,19 @@ func (s *Server) QueryResolver(ctx context.Context, req *runtimev1.QueryResolver
 		return nil, status.Errorf(codes.NotFound, "no resolver found of type %q", req.Resolver)
 	}
 
-	// Validate and add limit to the properties if it exists
+	// Inject limit into the props.
+	// Note: Not all resolvers support `limit` being passed here, but it's better than nothing.
+	// In case the resolver does not apply the limit, we fall back to applying it when reading the results later in this handler.
+	props := req.ResolverProperties.AsMap()
 	if req.Limit != 0 {
-		if req.Limit < 0 {
-			return nil, status.Error(codes.InvalidArgument, "limit must be a positive number")
-		}
-		props := req.ResolverProperties.AsMap()
 		props["limit"] = req.Limit
-		req.ResolverProperties, _ = structpb.NewStruct(props)
 	}
 
 	// Initialize the resolver
 	resolver, err := initializer(ctx, &runtime.ResolverOptions{
 		Runtime:    s.runtime,
 		InstanceID: req.InstanceId,
-		Properties: req.ResolverProperties.AsMap(),
+		Properties: props,
 		Args:       req.ResolverArgs.AsMap(),
 		Claims:     claims.SecurityClaims(),
 		ForExport:  false,
@@ -60,7 +58,13 @@ func (s *Server) QueryResolver(ctx context.Context, req *runtimev1.QueryResolver
 	defer res.Close()
 
 	data := make([]*structpb.Struct, 0)
+	count := 0
 	for {
+		// Break if we've reached the limit (when limit > 0)
+		if req.Limit > 0 && count >= int(req.Limit) {
+			break
+		}
+
 		// Next returns the next row of data. It returns io.EOF when there are no more rows.
 		row, err := res.Next()
 		if err != nil {
@@ -74,6 +78,7 @@ func (s *Server) QueryResolver(ctx context.Context, req *runtimev1.QueryResolver
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 		data = append(data, rowStruct)
+		count++
 	}
 
 	// Return the response
