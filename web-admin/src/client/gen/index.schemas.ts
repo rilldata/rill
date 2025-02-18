@@ -77,6 +77,7 @@ export type AdminServiceUpdateProjectBody = {
   newName?: string;
   prodTtlSeconds?: string;
   prodVersion?: string;
+  superuserForceAccess?: boolean;
 };
 
 export type AdminServiceGetProjectParams = {
@@ -1277,6 +1278,10 @@ export interface V1DenyProjectAccessResponse {
 }
 
 export interface V1DeleteUsergroupResponse {
+  [key: string]: any;
+}
+
+export interface V1DeleteUserResponse {
   [key: string]: any;
 }
 
