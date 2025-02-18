@@ -206,12 +206,6 @@ setup(
 
     // generate a embed file
     writeFileEnsuringDir(RILL_EMBED_SERVICE_TOKEN, embedToken![1]);
-    await generateEmbed(
-      "bids_explore",
-      embedToken![1],
-      RILL_ORG_NAME,
-      RILL_PROJECT_NAME,
-    );
   },
 );
 

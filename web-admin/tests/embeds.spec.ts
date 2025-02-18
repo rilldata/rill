@@ -2,15 +2,13 @@ import { expect } from "@playwright/test";
 import { test } from "./setup/base";
 import { generateEmbed } from "./utils/generate-embed";
 import * as fs from "fs";
-import * as path from "path";
-import { RILL_ORG_NAME, RILL_PROJECT_NAME } from "./setup/constants";
-import { fileURLToPath } from "url";
+import {
+  RILL_ORG_NAME,
+  RILL_PROJECT_NAME,
+  RILL_EMBED_SERVICE_TOKEN,
+} from "./setup/constants";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const rillServiceToken = fs.readFileSync(
-  path.resolve(__dirname, "rill-service-token.txt"),
-  "utf-8",
-);
+const rillServiceToken = fs.readFileSync(RILL_EMBED_SERVICE_TOKEN, "utf-8");
 
 test.beforeAll(async () => {
   await generateEmbed(
