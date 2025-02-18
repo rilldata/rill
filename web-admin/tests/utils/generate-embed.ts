@@ -7,10 +7,12 @@ import { fileURLToPath } from "url";
 export async function generateEmbed(
   resourceId: string,
   serviceToken: string,
+  organization: string,
+  project: string,
 ): Promise<void> {
   try {
     const response: AxiosResponse<{ iframeSrc: string }> = await axios.post(
-      "http://localhost:8080/v1/organizations/e2e/projects/openrtb/iframe",
+      `http://localhost:8080/v1/${organization}/e2e/projects/${project}/iframe`,
       {
         resource: resourceId,
         navigation: true,

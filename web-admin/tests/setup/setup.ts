@@ -13,6 +13,9 @@ import {
   ADMIN_STORAGE_STATE,
   RILL_DEVTOOL_BACKGROUND_PROCESS_PID_FILE,
   RILL_EMBED_SERVICE_TOKEN,
+  RILL_ORG_NAME,
+  RILL_PROJECT_NAME,
+  RILL_SERVICE_NAME,
 } from "./constants";
 import { cliLogin } from "./fixtures/cli";
 
@@ -134,19 +137,19 @@ setup(
 
     // Create an organization named "e2e"
     await cliLogin(page);
-    const { stdout: orgCreateStdout } = await execAsync("rill org create e2e");
+    const { stdout: orgCreateStdout } = await execAsync(`rill org create ${RILL_ORG_NAME}`);
     expect(orgCreateStdout).toContain("Created organization");
 
     const { stdout: orgCreateService } = await execAsync(
-      "rill service create e2e",
+      `rill service create ${RILL_SERVICE_NAME}`,
     );
     expect(orgCreateService).toContain("Created service");
 
     const embedToken = orgCreateService.match(/Access token:\s+(\S+)/);
 
     // Go to the organization's page
-    await page.goto("/e2e");
-    await expect(page.getByRole("heading", { name: "e2e" })).toBeVisible();
+    await page.goto(`/${RILL_ORG_NAME}`);
+    await expect(page.getByRole("heading", { name: RILL_ORG_NAME })).toBeVisible();
 
     // Deploy the OpenRTB project
     const { match } = await spawnAndMatch(
@@ -158,7 +161,7 @@ setup(
         "--subpath",
         "rill-openrtb-prog-ads",
         "--project",
-        "openrtb",
+        RILL_PROJECT_NAME,
         "--github",
       ],
       /https?:\/\/[^\s]+/,
@@ -176,11 +179,11 @@ setup(
     await page.waitForTimeout(10000);
 
     // Expect to see the successful deployment
-    await page.goto("/e2e/openrtb");
+    await page.goto(`/${RILL_ORG_NAME}/${RILL_PROJECT_NAME}`);
     await expect(page.getByText("Your trial expires in 30 days")).toBeVisible(); // Billing banner
-    await expect(page.getByText("e2e")).toBeVisible(); // Organization breadcrumb
+    await expect(page.getByText(RILL_ORG_NAME)).toBeVisible(); // Organization breadcrumb
     await expect(page.getByText("Free trial")).toBeVisible(); // Billing status
-    await expect(page.getByText("openrtb")).toBeVisible(); // Project breadcrumb
+    await expect(page.getByText(RILL_PROJECT_NAME)).toBeVisible(); // Project breadcrumb
 
     // Check that the dashboards are listed
     await expect(
@@ -206,7 +209,7 @@ setup(
 
     // generate a embed file
     writeFileEnsuringDir(RILL_EMBED_SERVICE_TOKEN, embedToken![1]);
-    await generateEmbed("bids_explore", embedToken![1]);
+    await generateEmbed("bids_explore", embedToken![1], RILL_ORG_NAME, RILL_PROJECT_NAME);
   },
 );
 
