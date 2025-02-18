@@ -1,5 +1,8 @@
 import type { ChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
-import type { ChartConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
+import type {
+  ChartConfig,
+  ChartSortDirection,
+} from "@rilldata/web-common/features/canvas/components/charts/types";
 import { timeGrainToVegaTimeUnitMap } from "@rilldata/web-common/features/canvas/components/charts/util";
 import type { ComponentFilterProperties } from "@rilldata/web-common/features/canvas/components/types";
 import {
@@ -17,6 +20,7 @@ import {
   type V1MetricsViewAggregationMeasure,
   type V1MetricsViewAggregationResponse,
   type V1MetricsViewAggregationResponseDataItem,
+  type V1MetricsViewAggregationSort,
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
@@ -102,7 +106,7 @@ export function createChartDataQuery(
   ctx: StateManagers,
   config: ChartConfig & ComponentFilterProperties,
   timeAndFilterStore: Readable<TimeAndFilterStore>,
-  limit = "500",
+  limit = "5000",
   offset = "0",
 ): CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> {
   let measures: V1MetricsViewAggregationMeasure[] = [];
@@ -112,12 +116,15 @@ export function createChartDataQuery(
     measures = [{ name: config.y?.field }];
   }
 
+  let sort: V1MetricsViewAggregationSort | undefined;
+
   return derived(
     [ctx.runtime, timeAndFilterStore],
     ([runtime, $timeAndFilterStore], set) => {
       const { timeRange, where, timeGrain } = $timeAndFilterStore;
 
       if (config.x?.type === "nominal" && config.x?.field) {
+        sort = vegaSortToAggregationSort(config.x?.sort, config);
         dimensions = [{ name: config.x?.field }];
       } else if (config.x?.type === "temporal" && timeGrain) {
         dimensions = [{ name: config.x?.field, timeGrain }];
@@ -133,6 +140,7 @@ export function createChartDataQuery(
         {
           measures,
           dimensions,
+          sort: sort ? [sort] : undefined,
           where,
           timeRange,
           limit,
@@ -229,4 +237,19 @@ export function validateChartSchema(
       };
     },
   );
+}
+
+function vegaSortToAggregationSort(
+  sort: ChartSortDirection | undefined,
+  config: ChartConfig,
+): V1MetricsViewAggregationSort | undefined {
+  if (!sort) return undefined;
+  const field =
+    sort === "x" || sort === "-x" ? config.x?.field : config.y?.field;
+  if (!field) return undefined;
+
+  return {
+    name: field,
+    desc: sort === "-x" || sort === "-y",
+  };
 }
