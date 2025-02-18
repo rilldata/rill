@@ -119,8 +119,6 @@ setup(
       .locator('input[name="username"]')
       .fill(process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL);
 
-    await page.getByRole('button', { name: 'Continue', exact: true }).click();
-
     // Select and fill in the password
     await page.locator('input[name="password"]').click();
     await page
@@ -137,7 +135,9 @@ setup(
 
     // Create an organization named "e2e"
     await cliLogin(page);
-    const { stdout: orgCreateStdout } = await execAsync(`rill org create ${RILL_ORG_NAME}`);
+    const { stdout: orgCreateStdout } = await execAsync(
+      `rill org create ${RILL_ORG_NAME}`,
+    );
     expect(orgCreateStdout).toContain("Created organization");
 
     const { stdout: orgCreateService } = await execAsync(
@@ -149,7 +149,9 @@ setup(
 
     // Go to the organization's page
     await page.goto(`/${RILL_ORG_NAME}`);
-    await expect(page.getByRole("heading", { name: RILL_ORG_NAME })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: RILL_ORG_NAME }),
+    ).toBeVisible();
 
     // Deploy the OpenRTB project
     const { match } = await spawnAndMatch(
@@ -209,7 +211,12 @@ setup(
 
     // generate a embed file
     writeFileEnsuringDir(RILL_EMBED_SERVICE_TOKEN, embedToken![1]);
-    await generateEmbed("bids_explore", embedToken![1], RILL_ORG_NAME, RILL_PROJECT_NAME);
+    await generateEmbed(
+      "bids_explore",
+      embedToken![1],
+      RILL_ORG_NAME,
+      RILL_PROJECT_NAME,
+    );
   },
 );
 
