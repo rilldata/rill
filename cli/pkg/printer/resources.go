@@ -567,10 +567,8 @@ func (p *Printer) PrintQueryResponse(res *runtimev1.QueryResolverResponse) {
 			}
 			printer.RenderRow(values, nil)
 		}
-	// JSON
-	case FormatJSON:
-		// Pass the data as is to the printer
+		return
+	default:
 		p.PrintData(res.Data)
 	}
-
 }
