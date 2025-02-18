@@ -154,6 +154,13 @@ func (w *DeleteOrgWorker) Work(ctx context.Context, job *river.Job[DeleteOrgArgs
 		if err != nil {
 			w.logger.Error("failed to cancel subscriptions for customer", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.Error(err))
 		}
+
+		// try to delete the customer from billing provider, will succeed in test env or if there are no invoices meaning customer never subscribed
+		err = w.admin.Biller.DeleteCustomer(ctx, org.BillingCustomerID)
+		if err == nil && org.PaymentCustomerID != "" {
+			// delete the customer from payment provider
+			_ = w.admin.PaymentProvider.DeleteCustomer(ctx, org.PaymentCustomerID)
+		}
 	}
 
 	// delete org, billing issues will be cascade deleted
