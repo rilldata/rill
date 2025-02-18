@@ -56,10 +56,11 @@ measures:
 		Resource: &runtimev1.Resource_Model{
 			Model: &runtimev1.ModelV2{
 				Spec: &runtimev1.ModelSpec{
-					InputConnector:  "local_file",
-					OutputConnector: "duckdb",
-					InputProperties: must(structpb.NewStruct(map[string]any{"path": "data/foo.csv"})),
-					RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+					InputConnector:   "local_file",
+					OutputConnector:  "duckdb",
+					InputProperties:  must(structpb.NewStruct(map[string]any{"path": "data/foo.csv"})),
+					OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
+					RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
 				},
 				State: &runtimev1.ModelState{
 					ExecutorConnector: "duckdb",
@@ -218,10 +219,11 @@ path: data/foo.csv
 		Resource: &runtimev1.Resource_Model{
 			Model: &runtimev1.ModelV2{
 				Spec: &runtimev1.ModelSpec{
-					InputConnector:  "local_file",
-					OutputConnector: "duckdb",
-					InputProperties: must(structpb.NewStruct(map[string]any{"path": "data/foo.csv"})),
-					RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+					InputConnector:   "local_file",
+					OutputConnector:  "duckdb",
+					InputProperties:  must(structpb.NewStruct(map[string]any{"path": "data/foo.csv"})),
+					OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
+					RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
 				},
 				State: &runtimev1.ModelState{
 					ExecutorConnector: "duckdb",
@@ -289,10 +291,11 @@ path: data/foo.csv
 		Resource: &runtimev1.Resource_Model{
 			Model: &runtimev1.ModelV2{
 				Spec: &runtimev1.ModelSpec{
-					InputConnector:  "local_file",
-					OutputConnector: "duckdb",
-					InputProperties: must(structpb.NewStruct(map[string]any{"path": "data/foo.csv"})),
-					RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+					InputConnector:   "local_file",
+					OutputConnector:  "duckdb",
+					InputProperties:  must(structpb.NewStruct(map[string]any{"path": "data/foo.csv"})),
+					OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
+					RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
 				},
 				State: &runtimev1.ModelState{
 					ExecutorConnector: "duckdb",
@@ -1142,10 +1145,11 @@ measures:
 func newSource(name, path string) (*runtimev1.ModelV2, *runtimev1.Resource) {
 	source := &runtimev1.ModelV2{
 		Spec: &runtimev1.ModelSpec{
-			InputConnector:  "local_file",
-			OutputConnector: "duckdb",
-			InputProperties: must(structpb.NewStruct(map[string]any{"path": path})),
-			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+			InputConnector:   "local_file",
+			OutputConnector:  "duckdb",
+			InputProperties:  must(structpb.NewStruct(map[string]any{"path": path})),
+			OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
+			RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
 		},
 		State: &runtimev1.ModelState{
 			ExecutorConnector: "duckdb",
