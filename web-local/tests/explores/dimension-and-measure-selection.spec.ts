@@ -1,12 +1,10 @@
 import { expect } from "@playwright/test";
-import { gotoNavEntry } from "web-local/tests/utils/waitHelpers";
+import { gotoNavEntry } from "../utils/waitHelpers";
 import { clickMenuButton } from "../utils/commonHelpers";
-import { test } from "../utils/test";
+import { test } from "../setup/base";
 
 test.describe("dimension and measure selectors", () => {
-  test.use({
-    projectInit: { name: "AdBids" },
-  });
+  test.use({ project: { name: "AdBids" } });
 
   test("dimension and measure selectors flow", async ({ page }) => {
     await page.getByLabel("/dashboards").click();

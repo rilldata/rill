@@ -1,13 +1,11 @@
 import { expect } from "@playwright/test";
-import { interactWithTimeRangeMenu } from "web-local/tests/utils/metricsViewHelpers";
-import { ResourceWatcher } from "web-local/tests/utils/ResourceWatcher";
-import { gotoNavEntry } from "web-local/tests/utils/waitHelpers";
-import { test } from "../utils/test";
+import { interactWithTimeRangeMenu } from "../utils/metricsViewHelpers";
+import { ResourceWatcher } from "../utils/ResourceWatcher";
+import { gotoNavEntry } from "../utils/waitHelpers";
+import { test } from "../setup/base";
 
 test.describe("time controls settings from explore preset", () => {
-  test.use({
-    projectInit: { name: "AdBids" },
-  });
+  test.use({ project: { name: "AdBids" } });
 
   test("preset time_range", async ({ page }) => {
     const watcher = new ResourceWatcher(page);

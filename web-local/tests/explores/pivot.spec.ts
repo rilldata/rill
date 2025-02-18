@@ -1,10 +1,10 @@
 import { expect } from "@playwright/test";
-import { clickMenuButton } from "web-local/tests/utils/commonHelpers";
-import { interactWithTimeRangeMenu } from "web-local/tests/utils/metricsViewHelpers";
-import { ResourceWatcher } from "web-local/tests/utils/ResourceWatcher";
-import { validateTableContents } from "web-local/tests/utils/tableHelpers";
-import { gotoNavEntry } from "web-local/tests/utils/waitHelpers";
-import { test } from "../utils/test";
+import { clickMenuButton } from "../utils/commonHelpers";
+import { interactWithTimeRangeMenu } from "../utils/metricsViewHelpers";
+import { ResourceWatcher } from "../utils/ResourceWatcher";
+import { validateTableContents } from "../utils/tableHelpers";
+import { gotoNavEntry } from "../utils/waitHelpers";
+import { test } from "../setup/base";
 
 const pivotDashboard = `kind: metrics_view
 display_name: Ad Bids
@@ -523,9 +523,7 @@ const expectSortedDeltaCol = [
 ];
 
 test.describe("pivot run through", () => {
-  test.use({
-    projectInit: { name: "AdBids" },
-  });
+  test.use({ project: { name: "AdBids" } });
 
   test("pivot run through", async ({ page }) => {
     const watcher = new ResourceWatcher(page);

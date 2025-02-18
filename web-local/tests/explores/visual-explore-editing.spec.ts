@@ -1,11 +1,9 @@
 import { expect } from "@playwright/test";
-import { gotoNavEntry } from "web-local/tests/utils/waitHelpers";
-import { test } from "../utils/test";
+import { gotoNavEntry } from "../utils/waitHelpers";
+import { test } from "../setup/base";
 
 test.describe("visual explore editing", () => {
-  test.use({
-    projectInit: { name: "AdBids" },
-  });
+  test.use({ project: { name: "AdBids" } });
 
   test("visual explore editor runthrough", async ({ page }) => {
     await page.getByLabel("/dashboards").click();

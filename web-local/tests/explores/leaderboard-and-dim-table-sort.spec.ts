@@ -1,6 +1,6 @@
 import { expect, type Locator } from "@playwright/test";
-import { gotoNavEntry } from "web-local/tests/utils/waitHelpers";
-import { test } from "../utils/test";
+import { gotoNavEntry } from "../utils/waitHelpers";
+import { test } from "../setup/base";
 
 async function assertAAboveB(locA: Locator, locB: Locator) {
   const topA = await locA.boundingBox().then((box) => box?.y);
@@ -14,9 +14,7 @@ async function assertAAboveB(locA: Locator, locB: Locator) {
 }
 
 test.describe("leaderboard and dimension table sorting", () => {
-  test.use({
-    projectInit: { name: "AdBids" },
-  });
+  test.use({ project: { name: "AdBids" } });
 
   test("leaderboard and dimension table sorting", async ({ page }) => {
     await page.getByLabel("/dashboards").click();

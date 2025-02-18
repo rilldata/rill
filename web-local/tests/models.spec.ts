@@ -10,10 +10,12 @@ import {
 } from "./utils/commonHelpers";
 import { createModel, modelHasError } from "./utils/modelHelpers";
 import { createSource } from "./utils/sourceHelpers";
-import { test } from "./utils/test";
+import { test } from "./setup/base";
 import { fileNotPresent, waitForFileNavEntry } from "./utils/waitHelpers";
 
 test.describe("models", () => {
+  test.use({ project: { name: "Blank" } });
+
   test("Create and edit model", async ({ page }) => {
     await createSource(page, "AdBids.csv", "/sources/AdBids.yaml");
     await createSource(

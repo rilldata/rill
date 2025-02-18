@@ -1,14 +1,12 @@
 import { expect } from "@playwright/test";
-import { interactWithTimeRangeMenu } from "web-local/tests/utils/metricsViewHelpers";
-import { ResourceWatcher } from "web-local/tests/utils/ResourceWatcher";
-import { gotoNavEntry } from "web-local/tests/utils/waitHelpers";
+import { interactWithTimeRangeMenu } from "../utils/metricsViewHelpers";
+import { ResourceWatcher } from "../utils/ResourceWatcher";
+import { gotoNavEntry } from "../utils/waitHelpers";
 import { clickMenuButton } from "../utils/commonHelpers";
-import { test } from "../utils/test";
+import { test } from "../setup/base";
 
 test.describe("leaderboard context column", () => {
-  test.use({
-    projectInit: { name: "AdBids" },
-  });
+  test.use({ project: { name: "AdBids" } });
 
   test("Leaderboard context column", async ({ page }) => {
     const watcher = new ResourceWatcher(page);

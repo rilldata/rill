@@ -1,27 +1,23 @@
 import { test as base } from "@playwright/test";
-import { rmSync, writeFileSync, existsSync, mkdirSync, cpSync } from "node:fs";
+import { rmSync, existsSync, mkdirSync, cpSync } from "node:fs";
 import { spawn } from "node:child_process";
 import { join } from "node:path";
 import treeKill from "tree-kill";
-import { BASE_PROJECT_DIRECTORY } from "web-local/tests/utils/projectPaths";
-import { getOpenPort } from "./getOpenPort";
+import { getOpenPort } from "web-local/tests/utils/getOpenPort";
 import { asyncWaitUntil } from "@rilldata/web-common/lib/waitUtils";
 import axios from "axios";
 
-type ProjectInitArgs =
-  | {
-      name?: string;
-      empty?: boolean;
-    }
-  | undefined;
+export const BASE_PROJECT_DIRECTORY = "temp/test-project";
+
+type ProjectInitArgs = { name?: string } | undefined;
 type MyFixtures = {
-  projectInit: ProjectInitArgs;
+  project: ProjectInitArgs;
 };
 
 export const test = base.extend<MyFixtures>({
-  projectInit: [undefined, { option: true }],
+  project: [undefined, { option: true }],
 
-  page: async ({ page, projectInit }, use) => {
+  page: async ({ page, project }, use) => {
     const TEST_PORT = await getOpenPort();
     const TEST_PORT_GRPC = await getOpenPort();
     const TEST_PROJECT_DIRECTORY = join(BASE_PROJECT_DIRECTORY, "" + TEST_PORT);
@@ -32,19 +28,14 @@ export const test = base.extend<MyFixtures>({
       mkdirSync(TEST_PROJECT_DIRECTORY, { recursive: true });
     }
 
-    if (projectInit?.name) {
+    if (project?.name) {
       cpSync(
-        join(BASE_PROJECT_DIRECTORY, projectInit.name),
+        join(BASE_PROJECT_DIRECTORY, project.name),
         TEST_PROJECT_DIRECTORY,
         {
           recursive: true,
           force: true,
         },
-      );
-    } else if (!projectInit?.empty) {
-      writeFileSync(
-        `${TEST_PROJECT_DIRECTORY}/rill.yaml`,
-        'compiler: rill-beta\ntitle: "Test Project"',
       );
     }
 

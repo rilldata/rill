@@ -1,5 +1,5 @@
 import fs from "fs";
-import { execAsync } from "web-common/tests/utils/spawn";
+import { execAsync } from "@rilldata/web-common/tests/utils/spawn";
 import { test as teardown } from "./base";
 import { RILL_DEVTOOL_BACKGROUND_PROCESS_PID_FILE } from "./constants";
 

@@ -1,11 +1,10 @@
-import { test } from "./utils/test";
+import { test } from "./setup/base";
 import { expect } from "playwright/test";
 import { EXAMPLES } from "@rilldata/web-common/features/welcome/constants";
 
 test.describe("Example project initialization", () => {
   EXAMPLES.forEach((example) => {
     test.describe(`Example project: ${example.title}`, () => {
-      test.use({ projectInit: { empty: true } });
       test("should initialize new project", async ({ page }) => {
         await page.getByRole("link", { name: example.title }).click();
 
@@ -19,7 +18,6 @@ test.describe("Example project initialization", () => {
   });
 
   test.describe("Empty project", () => {
-    test.use({ projectInit: { empty: true } });
     test("should initialize new project", async ({ page }) => {
       await page.getByRole("link", { name: "Empty Project" }).click();
 
