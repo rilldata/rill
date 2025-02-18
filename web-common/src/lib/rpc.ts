@@ -53,9 +53,10 @@ async function handleRPCMessage(event: MessageEvent<JSONRPCRequest>) {
       sendResponse(id, result);
     }
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     sendError(id, {
       code: JSONRPC_ERRORS.INTERNAL_ERROR.code,
-      message: (error as Error).message,
+      message: errorMessage,
     });
   }
 }
@@ -76,11 +77,17 @@ function sendError(
 }
 
 export function initRPC() {
-  window.addEventListener("message", (event: MessageEvent) => {
+  const handler = (event: MessageEvent) => {
     if (event.source && event.data) {
       void handleRPCMessage(event as MessageEvent<JSONRPCRequest>);
     }
-  });
+  };
+
+  window.addEventListener("message", handler);
+
+  return () => {
+    window.removeEventListener("message", handler);
+  };
 }
 
 export function registerRPCMethod<T>(

@@ -5,7 +5,7 @@ import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
 import { writeFileEnsuringDir } from "../utils/fs";
-import { generateEmbed } from "../utils/generateEmbed";
+import { generateEmbed } from "../utils/generate-embed";
 import { execAsync, spawnAndMatch } from "../utils/spawn";
 import type { StorageState } from "../utils/storage-state";
 import { test as setup } from "./base";
@@ -116,6 +116,8 @@ setup(
       .locator('input[name="username"]')
       .fill(process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL);
 
+    await page.getByRole('button', { name: 'Continue', exact: true }).click();
+
     // Select and fill in the password
     await page.locator('input[name="password"]').click();
     await page
@@ -124,7 +126,6 @@ setup(
 
     // Click the continue button
     await page.getByRole("button", { name: "Continue" }).click();
-
     await page.waitForURL("/");
 
     // Save auth cookies to file
