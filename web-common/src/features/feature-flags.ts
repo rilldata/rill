@@ -32,6 +32,14 @@ class FeatureFlags {
   readOnly = new FeatureFlag("rill", false);
 
   ai = new FeatureFlag("user", !import.meta.env.VITE_PLAYWRIGHT_TEST);
+  /**
+   * We make some calls to cloud for fetching user related stats. But this is not needed in playwring tests.
+   * While there wont be token in CI there could be one when running on a dev's laptop.
+   */
+  disableCloud = new FeatureFlag(
+    "user",
+    !!import.meta.env.VITE_PLAYWRIGHT_TEST,
+  );
   exports = new FeatureFlag("user", true);
   cloudDataViewer = new FeatureFlag("user", false);
   canvasDashboards = new FeatureFlag("user", false);

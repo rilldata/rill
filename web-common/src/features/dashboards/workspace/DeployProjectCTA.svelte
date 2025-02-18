@@ -9,6 +9,7 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { getNeverSubscribedIssue } from "@rilldata/web-common/features/billing/issues";
   import TrialDetailsDialog from "@rilldata/web-common/features/billing/TrialDetailsDialog.svelte";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import PushToGitForDeployDialog from "@rilldata/web-common/features/project/PushToGitForDeployDialog.svelte";
   import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
@@ -29,10 +30,17 @@
   let deployConfirmOpen = false;
   let deployCTAUrl: string;
 
+  const { disableCloud } = featureFlags;
+
   $: orgsMetadata =
-    createLocalServiceListOrganizationsAndBillingMetadataRequest();
+    createLocalServiceListOrganizationsAndBillingMetadataRequest({
+      query: {
+        enabled: !$disableCloud,
+      },
+    });
   $: currentProject = createLocalServiceGetCurrentProject({
     query: {
+      enabled: !$disableCloud,
       refetchOnWindowFocus: true,
     },
   });
@@ -43,7 +51,11 @@
 
   $: allowPrimary.set(isDeployed || !hasValidDashboard);
 
-  $: user = createLocalServiceGetCurrentUser();
+  $: user = createLocalServiceGetCurrentUser({
+    query: {
+      enabled: !$disableCloud,
+    },
+  });
   $: metadata = createLocalServiceGetMetadata();
 
   $: deployPageUrl = `${$page.url.protocol}//${$page.url.host}/deploy`;
@@ -79,35 +91,37 @@
   }
 </script>
 
-{#if isDeployed}
-  <Tooltip distance={8}>
-    <Button
-      loading={$currentProject.isLoading}
-      on:click={onShowRedeploy}
-      type="secondary"
-    >
-      <CloudIcon size="16px" />
-      Update
-    </Button>
-    <TooltipContent slot="tooltip-content">
-      Push changes to Rill Cloud
-    </TooltipContent>
-  </Tooltip>
-{:else}
-  <Tooltip distance={8}>
-    <Button
-      loading={$currentProject.isLoading}
-      on:click={onShowDeploy}
-      type={hasValidDashboard ? "primary" : "secondary"}
-    >
-      <Rocket size="16px" />
+{#if !$disableCloud}
+  {#if isDeployed}
+    <Tooltip distance={8}>
+      <Button
+        loading={$currentProject.isLoading}
+        on:click={onShowRedeploy}
+        type="secondary"
+      >
+        <CloudIcon size="16px" />
+        Update
+      </Button>
+      <TooltipContent slot="tooltip-content">
+        Push changes to Rill Cloud
+      </TooltipContent>
+    </Tooltip>
+  {:else}
+    <Tooltip distance={8}>
+      <Button
+        loading={$currentProject.isLoading}
+        on:click={onShowDeploy}
+        type={hasValidDashboard ? "primary" : "secondary"}
+      >
+        <Rocket size="16px" />
 
-      Deploy
-    </Button>
-    <TooltipContent slot="tooltip-content">
-      Deploy this project to Rill Cloud
-    </TooltipContent>
-  </Tooltip>
+        Deploy
+      </Button>
+      <TooltipContent slot="tooltip-content">
+        Deploy this project to Rill Cloud
+      </TooltipContent>
+    </Tooltip>
+  {/if}
 {/if}
 
 <TrialDetailsDialog bind:open={deployConfirmOpen} {deployCTAUrl} />
