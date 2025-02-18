@@ -484,7 +484,7 @@ func (d Dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_DimensionV2, grain
 	case DialectPinot:
 		// TODO: Handle tz instead of ignoring it.
 		// TODO: Handle firstDayOfWeek and firstMonthOfYear. NOTE: We currently error when configuring these for Pinot in runtime/validate.go.
-		// adding a cast to timestamp to ge the the output type as TIMESTAMP otherwise it returns a long
+		// adding a cast to timestamp to get the the output type as TIMESTAMP otherwise it returns a long
 		if tz == "" {
 			return fmt.Sprintf("CAST(date_trunc('%s', %s, 'MILLISECONDS') AS TIMESTAMP)", specifier, expr), nil
 		}
