@@ -63,10 +63,12 @@ export class ChartComponent extends BaseCanvasComponent<ChartSpec> {
       x: {
         type: "nominal",
         field: dimension,
+        sort: "-y",
       },
       y: {
         type: "quantitative",
         field: measure,
+        zeroBasedOrigin: true,
       },
     };
   }
