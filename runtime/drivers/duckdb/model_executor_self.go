@@ -85,11 +85,11 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 			rawProps := maps.Clone(opts.InputProperties)
 			rawProps["path"] = ast.GetTableRefs()[0].Paths[0]
 			rawProps["batch_size"] = -1
-			release, err = rewriteDuckDBSQL(ctx, inputProps, handle, rawProps, ast)
+			deleteFiles, err := rewriteDuckDBSQL(ctx, inputProps, handle, rawProps, ast)
 			if err != nil {
 				return nil, err
 			}
-			defer release()
+			defer deleteFiles()
 		} else {
 			rewrittenSQL, err := rewriteLocalPaths(ast, opts.Env.RepoRoot, opts.Env.AllowHostAccess)
 			if err != nil {
