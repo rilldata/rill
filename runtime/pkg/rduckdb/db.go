@@ -59,7 +59,7 @@ type DB interface {
 	// Meta APIs
 
 	// Schema returns the schema of the database.
-	Schema(ctx context.Context, like string, matchCase bool) ([]*Table, error)
+	Schema(ctx context.Context, ilike, name string) ([]*Table, error)
 }
 
 type DBOptions struct {

@@ -26,7 +26,7 @@ func (i informationSchema) All(ctx context.Context, ilike string) ([]*drivers.Ta
 	}
 	defer func() { _ = release() }()
 
-	rows, err := db.Schema(ctx, ilike, false)
+	rows, err := db.Schema(ctx, ilike, "")
 	if err != nil {
 		return nil, i.c.checkErr(err)
 	}
@@ -47,7 +47,7 @@ func (i informationSchema) Lookup(ctx context.Context, _, _, name string) (*driv
 	}
 	defer func() { _ = release() }()
 
-	rows, err := db.Schema(ctx, name, true)
+	rows, err := db.Schema(ctx, "", name)
 	if err != nil {
 		return nil, i.c.checkErr(err)
 	}

@@ -14,7 +14,10 @@ type Table struct {
 	ColumnNullable []any  `db:"column_nullable"`
 }
 
-func (d *db) Schema(ctx context.Context, like string, matchCase bool) ([]*Table, error) {
+func (d *db) Schema(ctx context.Context, ilike, name string) ([]*Table, error) {
+	if ilike != "" && name != "" {
+		return nil, fmt.Errorf("cannot specify both `ilike` and `name`")
+	}
 	connx, release, err := d.AcquireReadConnection(ctx)
 	if err != nil {
 		return nil, err
@@ -23,16 +26,14 @@ func (d *db) Schema(ctx context.Context, like string, matchCase bool) ([]*Table,
 		_ = release()
 	}()
 
-	var likeClause, likeOp string
+	var whereClause string
 	var args []any
-	if matchCase {
-		likeOp = "like"
-	} else {
-		likeOp = "ilike"
-	}
-	if like != "" {
-		likeClause = fmt.Sprintf(" and t.table_name %s ?", likeOp)
-		args = []any{like}
+	if ilike != "" {
+		whereClause = " AND t.table_name ilike ?"
+		args = []any{ilike}
+	} else if name != "" {
+		whereClause = " AND t.table_name = ?"
+		args = []any{name}
 	}
 
 	q := fmt.Sprintf(`
@@ -52,7 +53,7 @@ func (d *db) Schema(ctx context.Context, like string, matchCase bool) ([]*Table,
 			%s
 		GROUP BY 1, 2, 3
 		ORDER BY 1, 2, 3
-	`, likeClause)
+	`, whereClause)
 
 	var res []*Table
 	err = connx.SelectContext(ctx, &res, q, args...)
