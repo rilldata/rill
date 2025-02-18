@@ -90,42 +90,41 @@
     $pivotState.columns.measure.length === 0;
 </script>
 
-<div class="overflow-y-auto h-full">
-  {#if !$schema.isValid}
-    <ComponentError error={$schema.error} />
-  {:else if pivotDataStore && $pivotDataStore && pivotConfig && $pivotConfig}
-    {#if $pivotDataStore?.error?.length}
-      <PivotError errors={$pivotDataStore.error} />
-    {:else if !$pivotDataStore?.data || $pivotDataStore?.data?.length === 0}
-      <PivotEmpty {assembled} {isFetching} {hasColumnAndNoMeasure} />
-    {:else}
-      <PivotTable
-        {pivotDataStore}
-        config={pivotConfig}
-        {pivotState}
-        setPivotExpanded={(expanded) => {
-          pivotState.update((state) => ({
-            ...state,
-            expanded,
-          }));
-        }}
-        setPivotSort={(sorting) => {
-          pivotState.update((state) => ({
-            ...state,
-            sorting,
-          }));
-        }}
-        setPivotRowPage={(page) => {
-          pivotState.update((state) => ({
-            ...state,
-            rowPage: page,
-          }));
-        }}
-      />
-    {/if}
+{#if !$schema.isValid}
+  <ComponentError error={$schema.error} />
+{:else if pivotDataStore && $pivotDataStore && pivotConfig && $pivotConfig}
+  {#if $pivotDataStore?.error?.length}
+    <PivotError errors={$pivotDataStore.error} />
+  {:else if !$pivotDataStore?.data || $pivotDataStore?.data?.length === 0}
+    <PivotEmpty {assembled} {isFetching} {hasColumnAndNoMeasure} />
   {:else}
-    <div class="flex items-center justify-center w-full h-full">
-      <Spinner status={EntityStatus.Running} />
-    </div>
+    <PivotTable
+      border={false}
+      {pivotDataStore}
+      config={pivotConfig}
+      {pivotState}
+      setPivotExpanded={(expanded) => {
+        pivotState.update((state) => ({
+          ...state,
+          expanded,
+        }));
+      }}
+      setPivotSort={(sorting) => {
+        pivotState.update((state) => ({
+          ...state,
+          sorting,
+        }));
+      }}
+      setPivotRowPage={(page) => {
+        pivotState.update((state) => ({
+          ...state,
+          rowPage: page,
+        }));
+      }}
+    />
   {/if}
-</div>
+{:else}
+  <div class="flex items-center justify-center w-full h-full">
+    <Spinner status={EntityStatus.Running} />
+  </div>
+{/if}

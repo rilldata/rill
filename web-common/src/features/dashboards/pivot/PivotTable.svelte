@@ -50,6 +50,7 @@
   export let config: Readable<PivotDataStoreConfig>;
   export let pivotState: Readable<PivotState>;
   export let canShowDataViewer = false;
+  export let border = true;
   export let setPivotExpanded: (expanded: ExpandedState) => void;
   export let setPivotSort: (sorting: SortingState) => void;
   export let setPivotRowPage: (page: number) => void;
@@ -320,6 +321,7 @@
 </script>
 
 <div
+  class:border
   class="table-wrapper relative"
   class:with-row-dimension={hasDimension}
   class:with-col-dimension={hasColumnDimension}
@@ -531,7 +533,7 @@
 
   .table-wrapper {
     @apply overflow-auto h-fit max-h-full w-fit max-w-full;
-    @apply border rounded-md z-40;
+    @apply rounded-md z-40;
   }
 
   /* Pin header */
