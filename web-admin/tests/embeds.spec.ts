@@ -20,7 +20,9 @@ test.describe("Embeds", () => {
     const waitForReadyMessage = new Promise<void>((resolve) => {
       embedPage.on("console", async (msg) => {
         if (msg.type() === "log") {
-          const args = await Promise.all(msg.args().map((arg) => arg.jsonValue()));
+          const args = await Promise.all(
+            msg.args().map((arg) => arg.jsonValue()),
+          );
           const logMessage = JSON.stringify(args);
           logMessages.push(logMessage);
           if (logMessage.includes(`{"method":"ready"}`)) {
@@ -29,7 +31,7 @@ test.describe("Embeds", () => {
         }
       });
     });
-    
+
     await waitForReadyMessage;
 
     const frame = embedPage.frameLocator("iframe");
@@ -55,7 +57,9 @@ test.describe("Embeds", () => {
     const waitForReadyMessage = new Promise<void>((resolve) => {
       embedPage.on("console", async (msg) => {
         if (msg.type() === "log") {
-          const args = await Promise.all(msg.args().map((arg) => arg.jsonValue()));
+          const args = await Promise.all(
+            msg.args().map((arg) => arg.jsonValue()),
+          );
           const logMessage = JSON.stringify(args);
           logMessages.push(logMessage);
 
@@ -105,7 +109,9 @@ test.describe("Embeds", () => {
     const waitForReadyMessage = new Promise<void>((resolve) => {
       embedPage.on("console", async (msg) => {
         if (msg.type() === "log") {
-          const args = await Promise.all(msg.args().map((arg) => arg.jsonValue()));
+          const args = await Promise.all(
+            msg.args().map((arg) => arg.jsonValue()),
+          );
           const logMessage = JSON.stringify(args);
           logMessages.push(logMessage);
 
@@ -136,9 +142,11 @@ test.describe("Embeds", () => {
     });
 
     await expect(frame.getByLabel("Timezone selector")).toHaveText("UTC");
-    await expect(frame.getByRole("row", { name: "Instacart $107.3k" })).toBeVisible();
-    expect(logMessages.some((msg) => msg.includes(`{"id":1337,"result":true}`))).toBeTruthy();
+    await expect(
+      frame.getByRole("row", { name: "Instacart $107.3k" }),
+    ).toBeVisible();
+    expect(
+      logMessages.some((msg) => msg.includes(`{"id":1337,"result":true}`)),
+    ).toBeTruthy();
   });
-
-
 });
