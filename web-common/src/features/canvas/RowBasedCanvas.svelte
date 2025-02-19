@@ -777,11 +777,7 @@
                 </button>
               </div>
               {#if item}
-                <PreviewElement
-                  i={columnIndex}
-                  selected={false}
-                  component={item}
-                />
+                <PreviewElement component={item} />
               {:else}
                 <LoadingSpinner size="36px" />
 
