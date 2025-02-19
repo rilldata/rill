@@ -55,10 +55,6 @@ jobs:
             - "web-auth/**"
             - "web-common/**"
             - "web-local/**"
-    - name: outputssss
-      run: |
-        echo ${{ steps.filter.outputs }} 
-        echo ${{ steps.filter.outputs[matrix.language] }}
 
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v3
