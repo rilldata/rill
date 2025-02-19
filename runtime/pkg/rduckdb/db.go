@@ -46,10 +46,10 @@ type DB interface {
 	// CRUD APIs
 
 	// CreateTableAsSelect creates a new table by name from the results of the given SQL query.
-	CreateTableAsSelect(ctx context.Context, name string, sql string, opts *CreateTableOptions) (*TableStats, error)
+	CreateTableAsSelect(ctx context.Context, name string, sql string, opts *CreateTableOptions) (*Result, error)
 
 	// MutateTable allows mutating a table in the database by calling the mutateFn.
-	MutateTable(ctx context.Context, name string, mutateFn func(ctx context.Context, conn *sqlx.Conn) error) (*TableStats, error)
+	MutateTable(ctx context.Context, name string, mutateFn func(ctx context.Context, conn *sqlx.Conn) error) (*Result, error)
 
 	// DropTable removes a table from the database.
 	DropTable(ctx context.Context, name string) error
@@ -157,7 +157,8 @@ type CreateTableOptions struct {
 	AfterCreateFn func(ctx context.Context, conn *sqlx.Conn) error
 }
 
-type TableStats struct {
+// Result summarizes executed CRUD operation.
+type Result struct {
 	// Size of the DB file in bytes. 0 for views.
 	// It is incremental size in case of mutations.
 	Size int64
@@ -329,7 +330,7 @@ func (d *db) AcquireReadConnection(ctx context.Context) (*sqlx.Conn, func() erro
 	return conn, release, nil
 }
 
-func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *CreateTableOptions) (stats *TableStats, createErr error) {
+func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *CreateTableOptions) (res *Result, createErr error) {
 	d.logger.Debug("create: create table", zap.String("name", name), zap.Bool("view", opts.View), observability.ZapCtx(ctx))
 	err := d.writeSem.Acquire(ctx, 1)
 	if err != nil {
@@ -432,11 +433,11 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 	}
 
 	// collect stats
-	tableStats := &TableStats{
+	res = &Result{
 		ExecTime: time.Since(t),
 	}
 	if !opts.View {
-		tableStats.Size = fileSize([]string{localDBPath})
+		res.Size = fileSize([]string{localDBPath})
 	}
 
 	// update remote data and metadata
@@ -450,15 +451,15 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 	err = d.writeTableMeta(name, newMeta)
 	if err != nil {
 		d.logger.Debug("create: error in writing table meta", zap.String("error", err.Error()), observability.ZapCtx(ctx))
-		return tableStats, nil
+		return res, nil
 	}
 
 	d.catalog.addTableVersion(name, newMeta, true)
 	d.localDirty = false
-	return tableStats, nil
+	return res, nil
 }
 
-func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx context.Context, conn *sqlx.Conn) error) (*TableStats, error) {
+func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx context.Context, conn *sqlx.Conn) error) (*Result, error) {
 	d.logger.Debug("mutate table", zap.String("name", name), observability.ZapCtx(ctx))
 	err := d.writeSem.Acquire(ctx, 1)
 	if err != nil {
@@ -506,11 +507,11 @@ func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx con
 	}
 
 	// collect stats
-	tableStats := &TableStats{
+	res := &Result{
 		ExecTime: time.Since(t),
 	}
 	if oldMeta.Type == "TABLE" {
-		tableStats.Size = fileSize([]string{d.localDBPath(name, newVersion)}) - fileSize([]string{d.localDBPath(name, oldMeta.Version)})
+		res.Size = fileSize([]string{d.localDBPath(name, newVersion)}) - fileSize([]string{d.localDBPath(name, oldMeta.Version)})
 	}
 
 	// push to remote
@@ -537,12 +538,12 @@ func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx con
 	err = d.writeTableMeta(name, meta)
 	if err != nil {
 		d.logger.Debug("mutate: error in writing table meta", zap.Error(err), observability.ZapCtx(ctx))
-		return tableStats, nil
+		return res, nil
 	}
 
 	d.catalog.addTableVersion(name, meta, true)
 	d.localDirty = false
-	return tableStats, nil
+	return res, nil
 }
 
 // DropTable implements DB.

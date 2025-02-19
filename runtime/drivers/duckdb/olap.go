@@ -242,13 +242,13 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, 
 			return err
 		}
 	}
-	stats, err := db.CreateTableAsSelect(ctx, name, sql, &rduckdb.CreateTableOptions{View: opts.View, BeforeCreateFn: beforeCreateFn, AfterCreateFn: afterCreateFn})
+	res, err := db.CreateTableAsSelect(ctx, name, sql, &rduckdb.CreateTableOptions{View: opts.View, BeforeCreateFn: beforeCreateFn, AfterCreateFn: afterCreateFn})
 	if err != nil {
 		return nil, c.checkErr(err)
 	}
 	return &drivers.TableStats{
-		Size:     stats.Size,
-		ExecTime: stats.ExecTime,
+		Size:     res.Size,
+		ExecTime: res.ExecTime,
 	}, nil
 }
 
@@ -267,7 +267,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 	}
 
 	if opts.Strategy == drivers.IncrementalStrategyAppend {
-		stats, err := db.MutateTable(ctx, name, func(ctx context.Context, conn *sqlx.Conn) error {
+		res, err := db.MutateTable(ctx, name, func(ctx context.Context, conn *sqlx.Conn) error {
 			if opts.BeforeInsert != "" {
 				_, err := conn.ExecContext(ctx, opts.BeforeInsert)
 				if err != nil {
@@ -285,13 +285,13 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 			return nil, c.checkErr(err)
 		}
 		return &drivers.TableStats{
-			Size:     stats.Size,
-			ExecTime: stats.ExecTime,
+			Size:     res.Size,
+			ExecTime: res.ExecTime,
 		}, nil
 	}
 
 	if opts.Strategy == drivers.IncrementalStrategyMerge {
-		stats, err := db.MutateTable(ctx, name, func(ctx context.Context, conn *sqlx.Conn) (mutate error) {
+		res, err := db.MutateTable(ctx, name, func(ctx context.Context, conn *sqlx.Conn) (mutate error) {
 			// Execute the pre-init SQL first
 			if opts.BeforeInsert != "" {
 				_, err := conn.ExecContext(ctx, opts.BeforeInsert)
@@ -344,8 +344,8 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 			return nil, c.checkErr(err)
 		}
 		return &drivers.TableStats{
-			Size:     stats.Size,
-			ExecTime: stats.ExecTime,
+			Size:     res.Size,
+			ExecTime: res.ExecTime,
 		}, nil
 	}
 
