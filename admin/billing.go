@@ -277,11 +277,16 @@ func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*
 		return org, sub, nil
 	}
 
+	user, err := s.DB.FindUser(ctx, *org.CreatedByUserID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get user info: %w", err)
+	}
+
 	s.Logger.Named("billing").Info("started trial for organization",
 		zap.String("org_name", org.Name),
 		zap.String("org_id", org.ID),
 		zap.String("trial_end_date", sub.TrialEndDate.String()),
-		zap.String("email", *org.CreatedByUserID),
+		zap.String("email", user.Email),
 	)
 
 	org, err = s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
