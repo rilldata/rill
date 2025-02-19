@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"net/url"
 	"path/filepath"
 	"strings"
@@ -25,7 +24,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
-	"go.uber.org/zap/exp/zapslog"
 	"gocloud.dev/blob"
 	"golang.org/x/sync/semaphore"
 )
@@ -515,9 +513,6 @@ func (c *connection) reopenDB(ctx context.Context) error {
 	connInitQueries = append(connInitQueries, "SET max_expression_depth TO 250")
 
 	// Create new DB
-	logger := slog.New(zapslog.NewHandler(c.logger.Core(), &zapslog.HandlerOptions{
-		AddSource: true,
-	}))
 	c.db, err = rduckdb.NewDB(ctx, &rduckdb.DBOptions{
 		LocalPath:       dataDir,
 		Remote:          c.remote,
@@ -528,7 +523,7 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		WriteSettings:   c.config.writeSettings(),
 		DBInitQueries:   dbInitQueries,
 		ConnInitQueries: connInitQueries,
-		Logger:          logger,
+		Logger:          c.logger,
 		OtelAttributes:  []attribute.KeyValue{attribute.String("instance_id", c.instanceID)},
 	})
 	return err
