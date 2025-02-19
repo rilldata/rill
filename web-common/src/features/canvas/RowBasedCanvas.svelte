@@ -18,6 +18,8 @@
   import DropZone from "./components/DropZone.svelte";
   import RowDropZone from "./RowDropZone.svelte";
   import RowWrapper from "./RowWrapper.svelte";
+  import DragHandle from "@rilldata/web-common/components/icons/DragHandle.svelte";
+  import { Edit } from "lucide-svelte";
 
   const initialHeights: Record<CanvasComponentType, number> = {
     line_chart: 350,
@@ -67,6 +69,7 @@
 
   export let fileArtifact: FileArtifact;
   export let editable = true;
+  export let openSidebar: () => void;
 
   let mousePosition = { x: 0, y: 0 };
   let initialMousePosition: { x: number; y: number } | null = null;
@@ -737,31 +740,43 @@
               class:pointer-events-none={resizeColumnInfo}
               class:pointer-events-auto={!resizeColumnInfo}
               class:editable
-              class="component-card w-full cursor-pointer z-10 p-0 h-full relative outline outline-[1px] outline-gray-200 bg-white overflow-hidden rounded-sm flex items-center justify-center"
-              on:mousedown={(e) => {
-                if (e.button !== 0 || !editable) return;
-
-                setSelectedComponentIndex(Number(itemIndex));
-
-                selected = new Set([id]);
-
-                if (itemIndex === null) return;
-
-                handleDragStart({
-                  name: itemIndex,
-                  row: rowIndex,
-                  order: columnIndex,
-                  type: "kpi",
-                  height: height,
-                });
-              }}
+              class="group component-card w-full flex-col cursor-pointer z-10 p-0 h-full relative outline outline-[1px] outline-gray-200 bg-white overflow-hidden rounded-sm flex"
             >
+              <div
+                class="group-hover:flex hidden hover:shadow-sm bg-white hover:bg-slate-50 border-transparent hover:border-slate-200 border-b border-l overflow-hidden absolute top-0 right-0 w-fit h-7 rounded-bl-sm z-[10000]"
+              >
+                <button
+                  on:mousedown={(e) => {
+                    if (e.button !== 0 || !editable) return;
+
+                    if (itemIndex === null) return;
+                    handleDragStart({
+                      name: itemIndex,
+                      row: rowIndex,
+                      order: columnIndex,
+                      type: "kpi",
+                      height: height,
+                    });
+                  }}
+                  class="grid place-content-center active:bg-slate-200 hover:bg-slate-100 size-full aspect-square"
+                >
+                  <DragHandle size="17px" />
+                </button>
+
+                <button
+                  on:mousedown={(e) => {
+                    if (e.button !== 0 || !editable) return;
+                    setSelectedComponentIndex(Number(itemIndex));
+                    selected = new Set([id]);
+                    openSidebar();
+                  }}
+                  class="size-full aspect-square grid place-content-center active:bg-slate-200 hover:bg-slate-100"
+                >
+                  <Edit size="13px" />
+                </button>
+              </div>
               {#if item}
-                <PreviewElement
-                  i={columnIndex}
-                  selected={false}
-                  component={item}
-                />
+                <PreviewElement component={item} />
               {:else}
                 <LoadingSpinner size="36px" />
 
