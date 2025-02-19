@@ -57,6 +57,10 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 	asView := !materialize
 	tableName := outputProps.Table
 
+	var (
+		stats *drivers.TableStats
+		err   error
+	)
 	if !opts.IncrementalRun {
 		// Prepare for ingesting into the staging view/table.
 		// NOTE: This intentionally drops the end table if not staging changes.
@@ -72,7 +76,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 			BeforeCreate: inputProps.PreExec,
 			AfterCreate:  inputProps.PostExec,
 		}
-		err := olap.CreateTableAsSelect(ctx, stagingTableName, inputProps.SQL, createTableOpts)
+		stats, err = olap.CreateTableAsSelect(ctx, stagingTableName, inputProps.SQL, createTableOpts)
 		if err != nil {
 			_ = olap.DropTable(ctx, stagingTableName)
 			return nil, fmt.Errorf("failed to create model: %w", err)
@@ -95,10 +99,16 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 			Strategy:     outputProps.IncrementalStrategy,
 			UniqueKey:    outputProps.UniqueKey,
 		}
-		err := olap.InsertTableAsSelect(ctx, tableName, inputProps.SQL, insertTableOpts)
+		stats, err = olap.InsertTableAsSelect(ctx, tableName, inputProps.SQL, insertTableOpts)
 		if err != nil {
 			return nil, fmt.Errorf("failed to incrementally insert into table: %w", err)
 		}
+		prevResult := &ModelResultProperties{}
+		err := mapstructure.Decode(opts.PreviousResult.Properties, prevResult)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse previous result properties: %w", err)
+		}
+		stats.Size += prevResult.Size
 	}
 
 	// Build result props
@@ -106,9 +116,11 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		Table:         tableName,
 		View:          asView,
 		UsedModelName: usedModelName,
+		Size:          stats.Size,
+		ExecTime:      stats.ExecTime,
 	}
 	resultPropsMap := map[string]interface{}{}
-	err := mapstructure.WeakDecode(resultProps, &resultPropsMap)
+	err = mapstructure.WeakDecode(resultProps, &resultPropsMap)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode result properties: %w", err)
 	}

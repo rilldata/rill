@@ -195,7 +195,7 @@ func (c *connection) AddTableColumn(ctx context.Context, tableName, columnName, 
 		_ = release()
 	}()
 
-	err = db.MutateTable(ctx, tableName, func(ctx context.Context, conn *sqlx.Conn) error {
+	_, err = db.MutateTable(ctx, tableName, func(ctx context.Context, conn *sqlx.Conn) error {
 		_, err := conn.ExecContext(ctx, fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", safeSQLName(tableName), safeSQLName(columnName), typ))
 		return err
 	})
@@ -212,7 +212,7 @@ func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName
 		_ = release()
 	}()
 
-	err = db.MutateTable(ctx, tableName, func(ctx context.Context, conn *sqlx.Conn) error {
+	_, err = db.MutateTable(ctx, tableName, func(ctx context.Context, conn *sqlx.Conn) error {
 		_, err := conn.ExecContext(ctx, fmt.Sprintf("ALTER TABLE %s ALTER %s TYPE %s", safeSQLName(tableName), safeSQLName(columnName), newType))
 		return err
 	})
@@ -221,10 +221,10 @@ func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName
 
 // CreateTableAsSelect implements drivers.OLAPStore.
 // We add a \n at the end of the any user query to ensure any comment at the end of model doesn't make the query incomplete.
-func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, opts *drivers.CreateTableOptions) error {
+func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, opts *drivers.CreateTableOptions) (*drivers.TableStats, error) {
 	db, release, err := c.acquireDB()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer func() {
 		_ = release()
@@ -242,15 +242,21 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, 
 			return err
 		}
 	}
-	err = db.CreateTableAsSelect(ctx, name, sql, &rduckdb.CreateTableOptions{View: opts.View, BeforeCreateFn: beforeCreateFn, AfterCreateFn: afterCreateFn})
-	return c.checkErr(err)
+	stats, err := db.CreateTableAsSelect(ctx, name, sql, &rduckdb.CreateTableOptions{View: opts.View, BeforeCreateFn: beforeCreateFn, AfterCreateFn: afterCreateFn})
+	if err != nil {
+		return nil, c.checkErr(err)
+	}
+	return &drivers.TableStats{
+		Size:     stats.Size,
+		ExecTime: stats.ExecTime,
+	}, nil
 }
 
 // InsertTableAsSelect implements drivers.OLAPStore.
-func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, opts *drivers.InsertTableOptions) error {
+func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, opts *drivers.InsertTableOptions) (*drivers.TableStats, error) {
 	db, release, err := c.acquireDB()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer func() {
 		_ = release()
@@ -261,7 +267,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 	}
 
 	if opts.Strategy == drivers.IncrementalStrategyAppend {
-		err = db.MutateTable(ctx, name, func(ctx context.Context, conn *sqlx.Conn) error {
+		stats, err := db.MutateTable(ctx, name, func(ctx context.Context, conn *sqlx.Conn) error {
 			if opts.BeforeInsert != "" {
 				_, err := conn.ExecContext(ctx, opts.BeforeInsert)
 				if err != nil {
@@ -275,11 +281,17 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 			}
 			return err
 		})
-		return c.checkErr(err)
+		if err != nil {
+			return nil, c.checkErr(err)
+		}
+		return &drivers.TableStats{
+			Size:     stats.Size,
+			ExecTime: stats.ExecTime,
+		}, nil
 	}
 
 	if opts.Strategy == drivers.IncrementalStrategyMerge {
-		err = db.MutateTable(ctx, name, func(ctx context.Context, conn *sqlx.Conn) (mutate error) {
+		stats, err := db.MutateTable(ctx, name, func(ctx context.Context, conn *sqlx.Conn) (mutate error) {
 			// Execute the pre-init SQL first
 			if opts.BeforeInsert != "" {
 				_, err := conn.ExecContext(ctx, opts.BeforeInsert)
@@ -328,10 +340,16 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 			_, err = conn.ExecContext(ctx, fmt.Sprintf("INSERT INTO %s %s SELECT * FROM %s", safeSQLName(name), byNameClause, safeSQLName(tmp)))
 			return err
 		})
-		return c.checkErr(err)
+		if err != nil {
+			return nil, c.checkErr(err)
+		}
+		return &drivers.TableStats{
+			Size:     stats.Size,
+			ExecTime: stats.ExecTime,
+		}, nil
 	}
 
-	return fmt.Errorf("incremental insert strategy %q not supported", opts.Strategy)
+	return nil, fmt.Errorf("incremental insert strategy %q not supported", opts.Strategy)
 }
 
 // DropTable implements drivers.OLAPStore.
