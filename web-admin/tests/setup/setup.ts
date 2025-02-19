@@ -163,6 +163,7 @@ setup.describe("global setup", () => {
         "--project",
         "openrtb",
         "--github",
+        "--interactive=false",
       ],
       /https?:\/\/[^\s]+/,
     );
