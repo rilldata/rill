@@ -19,8 +19,7 @@
   import RowDropZone from "./RowDropZone.svelte";
   import RowWrapper from "./RowWrapper.svelte";
   import DragHandle from "@rilldata/web-common/components/icons/DragHandle.svelte";
-  import { Edit, Pencil } from "lucide-svelte";
-  import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
+  import { Edit } from "lucide-svelte";
 
   const initialHeights: Record<CanvasComponentType, number> = {
     line_chart: 350,
