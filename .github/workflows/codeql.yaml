@@ -62,6 +62,7 @@ jobs:
 
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v3
+      if: steps.filter.outputs[matrix.language] == 'true'
       with:
         languages: ${{ matrix.language }}
         build-mode: ${{ matrix.build-mode }}
