@@ -57,7 +57,7 @@ jobs:
             - "web-local/**"
     - name: outputssss
       run: |
-        echo $(( steps.filter.outputs }} 
+        echo ${{ steps.filter.outputs }} 
         echo ${{ steps.filter.outputs[matrix.language] }}
 
     - name: Initialize CodeQL
