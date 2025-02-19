@@ -23,14 +23,13 @@ test.describe("Embeds", () => {
           const args = await Promise.all(msg.args().map((arg) => arg.jsonValue()));
           const logMessage = JSON.stringify(args);
           logMessages.push(logMessage);
-
           if (logMessage.includes(`{"method":"ready"}`)) {
             resolve();
           }
         }
       });
     });
-
+    
     await waitForReadyMessage;
 
     const frame = embedPage.frameLocator("iframe");
@@ -111,7 +110,7 @@ test.describe("Embeds", () => {
           logMessages.push(logMessage);
 
           if (logMessage.includes(`{"method":"ready"}`)) {
-            resolve(); // ✅ Resolve promise when "ready" appears
+            resolve();
           }
         }
       });

@@ -67,7 +67,6 @@ export const test = base.extend<MyFixtures>({
     const context = await browser.newContext();
     const embedPage = await context.newPage();
     await embedPage.goto(filePath);
-    await embedPage.waitForTimeout(500);
 
     await use(embedPage);
 

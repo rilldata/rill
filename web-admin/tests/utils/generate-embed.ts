@@ -52,7 +52,6 @@ export async function generateEmbed(
 
     fs.writeFileSync(outputPath, htmlContent, "utf8");
   } catch (error: unknown) {
-    console.log(error)
     if (error instanceof Error) {
       console.error("Error fetching iframe or saving file:", error.message);
     } else {

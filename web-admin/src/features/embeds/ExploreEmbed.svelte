@@ -2,7 +2,6 @@
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
-  import EmbedPublicAPI from "@rilldata/web-admin/features/embeds/EmbedPublicAPI.svelte";
   import DashboardURLStateSyncWrapper from "@rilldata/web-common/features/dashboards/url-state/DashboardURLStateSyncWrapper.svelte";
   import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
   import { errorStore } from "../../components/errors/error-store";
@@ -41,9 +40,7 @@
       <StateManagersProvider {exploreName} {metricsViewName}>
         <DashboardURLStateSyncWrapper>
           <DashboardThemeProvider>
-            <EmbedPublicAPI {instanceId}>
               <Dashboard {exploreName} {metricsViewName} isEmbedded />
-            </EmbedPublicAPI>
           </DashboardThemeProvider>
         </DashboardURLStateSyncWrapper>
       </StateManagersProvider>
