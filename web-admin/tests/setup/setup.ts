@@ -43,6 +43,7 @@ setup.describe("global setup", () => {
 
     // Check that the required environment variables are set
     // The above `rill devtool` command pulls the `.env` file with these values.
+    // Fail quickly if any of these are missing.
     if (
       !process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL ||
       !process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_PASSWORD ||
@@ -93,6 +94,7 @@ setup.describe("global setup", () => {
   });
 
   setup("should log in with the admin account", async () => {
+    // Again, check that the required environment variables are set. This is for type-safety.
     if (
       !process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL ||
       !process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_PASSWORD ||
@@ -126,8 +128,8 @@ setup.describe("global setup", () => {
     await page.getByRole("button", { name: "Continue with Email" }).click();
     await page.waitForURL("/");
 
-    // Save auth cookies to file
-    // Subsequent tests can seed their browser with these cookies, instead of going through the log-in flow again.
+    // Save the admin's Rill auth cookies to file. The resultant file will include both the GitHub and Rill auth cookies.
+    // Subsequent tests can seed their browser with this state, instead of needing to go through the log-in flow again.
     await page.context().storageState({ path: ADMIN_STORAGE_STATE });
   });
 
@@ -166,8 +168,8 @@ setup.describe("global setup", () => {
     );
 
     // Navigate to the GitHub auth URL
-    // (In a fresh browser, this would typically trigger a log-in to GitHub, but we've bootstrapped the Playwright browser with GitHub auth cookies.
-    // See the `save-github-cookies` project in `playwright.config.ts` for details.)
+    // (In a fresh browser, this would typically trigger a log-in to GitHub, but we've bootstrapped the Playwright browser with an authenticated GitHub session.
+    // See the `setup-github-session` project in `playwright.config.ts` for details.)
     const url = match[0];
     await adminPage.goto(url);
     await adminPage.waitForURL("/-/github/connect/success");
