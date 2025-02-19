@@ -76,7 +76,7 @@ func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizati
 
 	// TODO: This is used to update plan name cache and can be removed a few months after Feb 2025 when plans have been cached for most orgs.
 	// after that we can return empty plan name for uncached orgs, discussion - https://github.com/rilldata/rill/pull/6338#discussion_r1952713404
-	if org.BillingPlanName == nil {
+	if org.BillingPlanName == nil && org.BillingCustomerID != "" {
 		_, org, err = s.getSubscriptionAndUpdateOrg(ctx, org)
 		if err != nil {
 			return nil, err
