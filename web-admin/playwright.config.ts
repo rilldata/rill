@@ -37,17 +37,13 @@ const config: PlaywrightTestConfig = {
         ? undefined
         : { teardown: "teardown" }),
     },
-    ...(process.env.CI
-      ? [] // skip in CI, since the GitHub Action uses an ephemeral runner
-      : [
-          {
-            name: "teardown",
-            testMatch: "teardown.ts",
-            use: {
-              storageState: ADMIN_STORAGE_STATE,
-            },
-          },
-        ]),
+    {
+      name: "teardown",
+      testMatch: "teardown.ts",
+      use: {
+        storageState: ADMIN_STORAGE_STATE,
+      },
+    },
     {
       name: "e2e",
       dependencies: process.env.E2E_NO_SETUP_OR_TEARDOWN ? [] : ["setup"],
