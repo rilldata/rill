@@ -2,6 +2,7 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import { get } from "svelte/store";
+  import { onMount } from "svelte";
 
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
@@ -64,6 +65,7 @@
   });
 
   registerRPCMethod("setState", (state: string) => {
+    console.log(state)
     if (typeof state !== "string") {
       return new Error("Expected state to be a string");
     }
@@ -85,6 +87,10 @@
   // Stream the state to the parent
   $: emitNotification("stateChange", {
     state: stateString,
+  });
+
+  onMount(() => {
+    emitNotification("ready");
   });
 </script>
 

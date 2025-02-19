@@ -5,7 +5,6 @@ import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
 import { writeFileEnsuringDir } from "../utils/fs";
-import { generateEmbed } from "../utils/generate-embed";
 import { execAsync, spawnAndMatch } from "../utils/spawn";
 import type { StorageState } from "../utils/storage-state";
 import { test as setup } from "./base";
@@ -135,12 +134,14 @@ setup(
     );
     expect(orgCreateStdout).toContain("Created organization");
 
+    // create service and write access token to file
     const { stdout: orgCreateService } = await execAsync(
       `rill service create ${RILL_SERVICE_NAME}`,
     );
     expect(orgCreateService).toContain("Created service");
 
-    const embedToken = orgCreateService.match(/Access token:\s+(\S+)/);
+    const serviceToken = orgCreateService.match(/Access token:\s+(\S+)/);
+    writeFileEnsuringDir(RILL_EMBED_SERVICE_TOKEN, serviceToken![1]);
 
     // Go to the organization's page
     await page.goto(`/${RILL_ORG_NAME}`);
@@ -159,7 +160,7 @@ setup(
         "rill-openrtb-prog-ads",
         "--project",
         RILL_PROJECT_NAME,
-        "--github",
+        "--upload",
       ],
       /https?:\/\/[^\s]+/,
     );
@@ -167,9 +168,9 @@ setup(
     // Navigate to the GitHub auth URL
     // (In a fresh browser, this would typically trigger a log-in to GitHub, but we've bootstrapped the Playwright browser with GitHub auth cookies.
     // See the `save-github-cookies` project in `playwright.config.ts` for details.)
-    const url = match[0];
-    await page.goto(url);
-    await page.waitForURL("/-/github/connect/success");
+    //const url = match[0];
+    //await page.goto(url);
+    //await page.waitForURL("/-/github/connect/success");
 
     // Wait for the deployment to complete
     // TODO: Replace this with a better check. Maybe we could modify `spawnAndMatch` to match an array of regexes.
@@ -203,9 +204,6 @@ setup(
         { intervals: Array(24).fill(5_000), timeout: 180_000 },
       )
       .toContain("Last refreshed");
-
-    // generate a embed file
-    writeFileEnsuringDir(RILL_EMBED_SERVICE_TOKEN, embedToken![1]);
   },
 );
 

@@ -3,6 +3,9 @@ import { ADMIN_STORAGE_STATE, VIEWER_STORAGE_STATE } from "./constants";
 import { cliLogin, cliLogout } from "./fixtures/cli";
 import path from "path";
 import { fileURLToPath } from "url";
+import { RILL_EMBED_SERVICE_TOKEN, RILL_ORG_NAME, RILL_PROJECT_NAME } from "./constants";
+import fs from "fs";
+import { generateEmbed } from "../utils/generate-embed";
 
 type MyFixtures = {
   adminPage: Page;
@@ -48,8 +51,17 @@ export const test = base.extend<MyFixtures>({
     await cliLogout();
   },
 
-  embedPage: async ({ browser }, use) => {
+  embedPage: [async ({ browser }, use) => {
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    const readPath = path.join(__dirname, "..", "..", RILL_EMBED_SERVICE_TOKEN);
+    const rillServiceToken = fs.readFileSync(readPath, "utf-8");
+
+    await generateEmbed(
+      "bids_explore",
+      rillServiceToken,
+      RILL_ORG_NAME,
+      RILL_PROJECT_NAME,
+    );
     const filePath = "file://" + path.resolve(__dirname, "..", "embed.html");
 
     const context = await browser.newContext();
@@ -60,5 +72,5 @@ export const test = base.extend<MyFixtures>({
     await use(embedPage);
 
     await context.close();
-  },
+  },{ scope: 'test' }],
 });

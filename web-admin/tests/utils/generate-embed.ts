@@ -12,7 +12,7 @@ export async function generateEmbed(
 ): Promise<void> {
   try {
     const response: AxiosResponse<{ iframeSrc: string }> = await axios.post(
-      `http://localhost:8080/v1/${organization}/e2e/projects/${project}/iframe`,
+      `http://localhost:8080/v1/organizations/${organization}/projects/${project}/iframe`,
       {
         resource: resourceId,
         navigation: true,
@@ -49,9 +49,10 @@ export async function generateEmbed(
 
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
     const outputPath = path.join(__dirname, "..", "embed.html");
-    console.log(outputPath);
+
     fs.writeFileSync(outputPath, htmlContent, "utf8");
   } catch (error: unknown) {
+    console.log(error)
     if (error instanceof Error) {
       console.error("Error fetching iframe or saving file:", error.message);
     } else {

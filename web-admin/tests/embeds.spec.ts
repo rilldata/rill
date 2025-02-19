@@ -1,23 +1,5 @@
 import { expect } from "@playwright/test";
 import { test } from "./setup/base";
-import { generateEmbed } from "./utils/generate-embed";
-import * as fs from "fs";
-import {
-  RILL_ORG_NAME,
-  RILL_PROJECT_NAME,
-  RILL_EMBED_SERVICE_TOKEN,
-} from "./setup/constants";
-
-const rillServiceToken = fs.readFileSync(RILL_EMBED_SERVICE_TOKEN, "utf-8");
-
-test.beforeAll(async () => {
-  await generateEmbed(
-    "bids_explore",
-    rillServiceToken,
-    RILL_ORG_NAME,
-    RILL_PROJECT_NAME,
-  );
-});
 
 test.describe("Embeds", () => {
   test("embeds should load", async ({ embedPage }) => {
@@ -35,15 +17,21 @@ test.describe("Embeds", () => {
   test("state is emitted for embeds", async ({ embedPage }) => {
     const logMessages: string[] = [];
 
-    // Listen to console messages
-    embedPage.on("console", async (msg) => {
-      if (msg.type() === "log") {
-        const args = await Promise.all(
-          msg.args().map((arg) => arg.jsonValue()),
-        );
-        logMessages.push(JSON.stringify(args));
-      }
+    const waitForReadyMessage = new Promise<void>((resolve) => {
+      embedPage.on("console", async (msg) => {
+        if (msg.type() === "log") {
+          const args = await Promise.all(msg.args().map((arg) => arg.jsonValue()));
+          const logMessage = JSON.stringify(args);
+          logMessages.push(logMessage);
+
+          if (logMessage.includes(`{"method":"ready"}`)) {
+            resolve();
+          }
+        }
+      });
     });
+
+    await waitForReadyMessage;
 
     const frame = embedPage.frameLocator("iframe");
 
@@ -65,15 +53,21 @@ test.describe("Embeds", () => {
   test("getState returns from embed", async ({ embedPage }) => {
     const logMessages: string[] = [];
 
-    // Listen to console messages
-    embedPage.on("console", async (msg) => {
-      if (msg.type() === "log") {
-        const args = await Promise.all(
-          msg.args().map((arg) => arg.jsonValue()),
-        );
-        logMessages.push(JSON.stringify(args));
-      }
+    const waitForReadyMessage = new Promise<void>((resolve) => {
+      embedPage.on("console", async (msg) => {
+        if (msg.type() === "log") {
+          const args = await Promise.all(msg.args().map((arg) => arg.jsonValue()));
+          const logMessage = JSON.stringify(args);
+          logMessages.push(logMessage);
+
+          if (logMessage.includes(`{"method":"ready"}`)) {
+            resolve();
+          }
+        }
+      });
     });
+
+    await waitForReadyMessage;
 
     const frame = embedPage.frameLocator("iframe");
 
@@ -109,15 +103,21 @@ test.describe("Embeds", () => {
   test("setState changes embedded explore", async ({ embedPage }) => {
     const logMessages: string[] = [];
 
-    // Listen to console messages
-    embedPage.on("console", async (msg) => {
-      if (msg.type() === "log") {
-        const args = await Promise.all(
-          msg.args().map((arg) => arg.jsonValue()),
-        );
-        logMessages.push(JSON.stringify(args));
-      }
+    const waitForReadyMessage = new Promise<void>((resolve) => {
+      embedPage.on("console", async (msg) => {
+        if (msg.type() === "log") {
+          const args = await Promise.all(msg.args().map((arg) => arg.jsonValue()));
+          const logMessage = JSON.stringify(args);
+          logMessages.push(logMessage);
+
+          if (logMessage.includes(`{"method":"ready"}`)) {
+            resolve(); // ✅ Resolve promise when "ready" appears
+          }
+        }
+      });
     });
+
+    await waitForReadyMessage;
 
     const frame = embedPage.frameLocator("iframe");
 
@@ -136,14 +136,10 @@ test.describe("Embeds", () => {
       }
     });
 
-    await embedPage.waitForTimeout(500);
-
     await expect(frame.getByLabel("Timezone selector")).toHaveText("UTC");
-    await expect(
-      frame.getByRole("row", { name: "Instacart $107.3k" }),
-    ).toBeVisible();
-    expect(
-      logMessages.some((msg) => msg.includes(`{"id":1337,"result":true}`)),
-    ).toBeTruthy();
+    await expect(frame.getByRole("row", { name: "Instacart $107.3k" })).toBeVisible();
+    expect(logMessages.some((msg) => msg.includes(`{"id":1337,"result":true}`))).toBeTruthy();
   });
+
+
 });
