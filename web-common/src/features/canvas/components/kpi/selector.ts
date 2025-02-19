@@ -7,6 +7,7 @@ import {
   createQueryServiceMetricsViewAggregation,
   createQueryServiceMetricsViewTimeSeries,
   V1TimeGrain,
+  type V1MetricsViewTimeSeriesResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import { type CreateQueryResult } from "@tanstack/svelte-query";
@@ -122,7 +123,7 @@ export function useKPISparkline(
   ctx: StateManagers,
   kpiSpec: KPISpec,
   enabled: boolean,
-): CreateQueryResult<Array<Record<string, unknown>>> {
+): CreateQueryResult<V1MetricsViewTimeSeriesResponse, HTTPError> {
   const {
     canvasEntity: { createTimeAndFilterStore },
   } = ctx;
@@ -163,14 +164,14 @@ export function useKPISparkline(
         {
           query: {
             enabled: !!start && !!end && enabled,
-            select: (data) => {
-              return prepareTimeSeries(
-                data.data || [],
-                [],
-                TIME_GRAIN[defaultGrain]?.duration,
-                timeZone ?? "UTC",
-              );
-            },
+            // select: (data) => {
+            //   return prepareTimeSeries(
+            //     data.data || [],
+            //     [],
+            //     TIME_GRAIN[defaultGrain]?.duration,
+            //     timeZone ?? "UTC",
+            //   );
+            // },
             queryClient: ctx.queryClient,
           },
         },

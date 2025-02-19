@@ -36,7 +36,7 @@
   }
 
   const COLUMN_COUNT = 12;
-  const MIN_HEIGHT = 160;
+  const MIN_HEIGHT = 40;
   const MIN_WIDTH = 3;
   const baseLayoutArrays = [
     [],
@@ -313,7 +313,10 @@
   function onRowResizeStart(e: MouseEvent & { currentTarget: HTMLElement }) {
     initialMousePosition = mousePosition;
     resizeRow = Number(e.currentTarget.getAttribute("data-row"));
-    initialHeight = rowMaps[resizeRow].height;
+    initialHeight =
+      document
+        .querySelector(`#canvas-row-${resizeRow}`)
+        ?.getBoundingClientRect().height ?? rowMaps[resizeRow].height;
   }
 
   function reset() {
@@ -681,6 +684,8 @@
       <RowWrapper
         zIndex={50 - rowIndex * 2}
         {maxWidth}
+        {height}
+        rowId={rowIndex}
         gridTemplate={layout.map((el) => `${el}fr`).join(" ")}
       >
         {#each items as itemIndex, columnIndex (columnIndex)}
@@ -688,9 +693,7 @@
           {@const item = canvasItems[Number(itemIndex)]}
           <div
             style:z-index={4 - columnIndex}
-            class="p-2.5 relative pointer-events-none size-full container"
-            style:min-height="{height}px"
-            style:height="{height}px"
+            class="p-2.5 relative pointer-events-none min-h-fit size-full container"
           >
             {#if editable}
               {#if columnIndex === 0}
@@ -737,7 +740,7 @@
               class:pointer-events-none={resizeColumnInfo}
               class:pointer-events-auto={!resizeColumnInfo}
               class:editable
-              class="component-card w-full cursor-pointer z-10 p-0 h-full relative outline outline-[1px] outline-gray-200 bg-white overflow-hidden rounded-sm flex items-center justify-center"
+              class="component-card flex flex-col w-full cursor-pointer z-10 p-0 h-full min-h-fit relative outline outline-[1px] outline-gray-200 bg-white overflow-hidden rounded-sm justify-center"
               on:mousedown={(e) => {
                 if (e.button !== 0 || !editable) return;
 
@@ -757,25 +760,9 @@
               }}
             >
               {#if item}
-                <PreviewElement
-                  i={columnIndex}
-                  selected={false}
-                  component={item}
-                />
+                <PreviewElement i={columnIndex} component={item} />
               {:else}
                 <LoadingSpinner size="36px" />
-
-                <!-- <div class="element h-fit min-h-fit">
-                    {#each { length: 4 } as _, i (i)}
-                      <div
-                        class="size-full border-r border-b min-h-48 text-2xl grid place-content-center"
-                      >
-                        {Math.round(Math.random() * 1000)}
-                      </div>
-                    {/each}
-                  </div> -->
-                <!-- {:else}
-                <FileWarning size="24px" /> -->
               {/if}
             </article>
           </div>

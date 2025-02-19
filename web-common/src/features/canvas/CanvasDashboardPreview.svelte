@@ -13,7 +13,7 @@
   import { createEventDispatcher } from "svelte";
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
   import PreviewElement from "./PreviewElement.svelte";
-  import SvelteGridStack from "./SvelteGridStack.svelte";
+  // import SvelteGridStack from "./SvelteGridStack.svelte";
 
   export let items: V1CanvasItem[];
   export let activeIndex: number | null = null;
@@ -124,7 +124,7 @@
 
 <CanvasDashboardWrapper bind:contentRect height={maxBottom}>
   <div bind:this={gridContainer} use:clickOutside={[null, handleClickOutside]}>
-    <SvelteGridStack
+    <!-- <SvelteGridStack
       bind:grid
       {items}
       {spec}
@@ -142,6 +142,6 @@
         component={item}
         on:delete={handleDelete}
       />
-    </SvelteGridStack>
+    </SvelteGridStack> -->
   </div>
 </CanvasDashboardWrapper>

@@ -7,7 +7,7 @@
   import type { GridStack } from "gridstack";
   import CanvasComponent from "./CanvasComponent.svelte";
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
-  import SvelteGridStack from "./SvelteGridStack.svelte";
+  // import SvelteGridStack from "./SvelteGridStack.svelte";
 
   export let items: V1CanvasItem[];
   export let showFilterBar = true;
@@ -33,11 +33,11 @@
 
 <CanvasDashboardWrapper bind:contentRect height={maxBottom}>
   {#each items as _, i (i)}
-    <SvelteGridStack bind:grid {items} {spec} let:index let:item embed>
+    <!-- <SvelteGridStack bind:grid {items} {spec} let:index let:item embed>
       {@const componentName = item.component}
       {#if componentName}
         <CanvasComponent embed i={index} {componentName} />
       {/if}
-    </SvelteGridStack>
+    </SvelteGridStack> -->
   {/each}
 </CanvasDashboardWrapper>

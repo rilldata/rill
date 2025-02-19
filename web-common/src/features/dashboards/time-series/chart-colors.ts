@@ -21,7 +21,7 @@ export const TimeComparisonLineColor = "var(--color-muted-500)";
 /**
  * Color used for the unfocused line in time series chart,
  */
-export const LineMutedColor = "var(--color-muted-500)";
+export const LineMutedColor = "var(--color-muted-400)";
 
 /**
  * Color used for the unfocused area in time series chart,

@@ -77,14 +77,14 @@
       {error}
     </div>
   {:else}
-    <VegaLite
+    <!-- <VegaLite
       {data}
       {spec}
       {signalListeners}
       {options}
       bind:view={viewVL}
       on:onError={onError}
-    />
+    /> -->
   {/if}
 </div>
 
