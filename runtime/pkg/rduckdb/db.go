@@ -237,7 +237,7 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 			go func() {
 				err := db.removeTableVersion(bgctx, name, version)
 				if err != nil && !errors.Is(err, context.Canceled) {
-					db.logger.Error("error in removing table version", zap.String("name", name), zap.String("version", version), zap.Error(err), observability.ZapCtx(ctx))
+					db.logger.Error("error in removing table version", zap.String("name", name), zap.String("version", version), zap.Error(err))
 				}
 			}()
 		},
@@ -245,7 +245,7 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 			go func() {
 				err := db.removeSnapshot(bgctx, i)
 				if err != nil && !errors.Is(err, context.Canceled) {
-					db.logger.Error("error in removing snapshot", zap.Int("id", i), zap.Error(err), observability.ZapCtx(ctx))
+					db.logger.Error("error in removing snapshot", zap.Int("id", i), zap.Error(err))
 				}
 			}()
 		},
