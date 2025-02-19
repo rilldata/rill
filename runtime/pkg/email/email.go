@@ -535,8 +535,8 @@ func (c *Client) SendTrialStarted(opts *TrialStarted) error {
 You now have access to Rill Cloud until <b>%s</b> to explore all features including:
 <ul>
 <li>User management (RBAC)</li>
-<li>Embedded dashboards </li>
-<li> Alerts and scheduled reports</li> 
+<li>Embedded dashboards</li>
+<li>Alerts and scheduled reports</li> 
 </ul>
 `, opts.TrialEndDate.Format(dateFormat))),
 	})
