@@ -33,9 +33,7 @@ const config: PlaywrightTestConfig = {
     {
       name: "setup",
       testMatch: "setup.ts",
-      ...(process.env.E2E_NO_TEARDOWN || process.env.CI
-        ? undefined
-        : { teardown: "teardown" }),
+      ...(process.env.E2E_NO_TEARDOWN ? undefined : { teardown: "teardown" }),
     },
     {
       name: "teardown",
