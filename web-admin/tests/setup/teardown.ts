@@ -19,6 +19,14 @@ teardown.describe("global teardown", () => {
   });
 
   teardown("should stop all services", async () => {
+    // The GitHub Actions runner is ephemeral, so we don't need to explicitly stop the services.
+    // Also, in CI, one problem is that the `teardown` worker happens in a different process than the `setup` worker,
+    // so we don't even have access to the `RILL_DEVTOOL_BACKGROUND_PROCESS_PID_FILE`.
+    teardown.skip(
+      !!process.env.CI,
+      "No need to explicitly stop services in CI",
+    );
+
     // Stop the admin and runtime services:
     // 1. Get the process ID from the file
     // 2. Get the process group ID
