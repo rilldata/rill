@@ -539,9 +539,19 @@ const metricsViewReducers = {
     });
   },
 
-  setPivotRowJoinType(name: string, rowJoinType: "flat" | "nest") {
+  setPivotRowJoinType(
+    name: string,
+    rowJoinType: "flat" | "nest",
+    rows: PivotRows,
+    columns: PivotColumns,
+  ) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.pivot = { ...metricsExplorer.pivot, rowJoinType };
+      metricsExplorer.pivot = {
+        ...metricsExplorer.pivot,
+        rowJoinType,
+        rows,
+        columns,
+      };
     });
   },
 };

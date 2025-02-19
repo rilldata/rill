@@ -100,7 +100,7 @@ export function getPivotConfig(
       });
 
       // This is temporary until we have a better way to handle time grains
-      const rowDimensionNames = dashboardStore.pivot.rows.dimension.map((d) => {
+      let rowDimensionNames = dashboardStore.pivot.rows.dimension.map((d) => {
         if (d.type === PivotChipType.Time) {
           return `${time.timeDimension}_rill_${d.id}`;
         }
@@ -117,12 +117,17 @@ export function getPivotConfig(
       );
 
       // const isFlat = dashboardStore.pivot.rowJoinType === "flat";
+
       const isFlat = true;
+
       /**
        * For flat table, internally rows have all
        * the dimensions and measures are in columns
        */
-      if (isFlat) colDimensionNames = [];
+      if (isFlat) {
+        rowDimensionNames = colDimensionNames;
+        colDimensionNames = [];
+      }
 
       const config: PivotDataStoreConfig = {
         measureNames,

@@ -23,7 +23,6 @@
 
   $: expanded = $dashboardStore?.pivot?.expanded ?? {};
   $: metricsViewProto = $dashboardStore.proto;
-  $: rowJoinType = $dashboardStore?.pivot?.rowJoinType ?? "nest";
 
   // function expandVisible() {
   //   // const lowestVisibleRow = 0;
@@ -79,20 +78,6 @@
     }}
   >
     <PivotPanel size="18px" open={showPanels} />
-  </Button>
-
-  <Button
-    compact
-    type="text"
-    selected={rowJoinType === "nest"}
-    on:click={() => {
-      metricsExplorerStore.setPivotRowJoinType(
-        $exploreName,
-        rowJoinType === "nest" ? "flat" : "nest",
-      );
-    }}
-  >
-    {rowJoinType === "nest" ? "Nested" : "Flat"} Mode
   </Button>
 
   <!-- <Button
