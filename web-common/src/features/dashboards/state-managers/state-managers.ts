@@ -81,12 +81,10 @@ export function createStateManagers({
   queryClient,
   metricsViewName,
   exploreName,
-  extraKeyPrefix,
 }: {
   queryClient: QueryClient;
   metricsViewName: string;
   exploreName: string;
-  extraKeyPrefix?: string;
 }): StateManagers {
   const metricsViewNameStore = writable(metricsViewName);
   const exploreNameStore = writable(exploreName);
