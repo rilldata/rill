@@ -11,6 +11,7 @@
   import { fly } from "svelte/transition";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import Search from "@rilldata/web-common/components/search/Search.svelte";
 
   export let exploreName: string;
 
@@ -33,6 +34,8 @@
   $: metricsExplorer = $metricsExplorerStore.entities[exploreName];
 
   $: activeLeaderboardMeasure = $getMeasureByName($leaderboardMeasureName);
+
+  // TODO: support multi-select
   $: console.log("activeLeaderboardMeasure: ", activeLeaderboardMeasure);
   $: console.log("measures: ", measures);
 
@@ -61,6 +64,17 @@
   }
 
   let disabled = false;
+  let searchText = "";
+
+  function filterMeasures(searchText: string) {
+    return measures.filter((measure) =>
+      ((measure.displayName || measure.name) ?? "")
+        .toLowerCase()
+        .includes(searchText.toLowerCase()),
+    );
+  }
+
+  $: filteredMeasures = filterMeasures(searchText);
 </script>
 
 <div>
@@ -120,22 +134,46 @@
               </div>
             </Button>
 
-            <DropdownMenu.Content>
-              {#each measures as measure (measure.name)}
-                <DropdownMenu.Item class="text-[12px]">
-                  <div class="flex flex-col">
-                    <div
-                      class:font-bold={$leaderboardMeasureName === measure.name}
-                    >
-                      {measure.displayName || measure.name}
-                    </div>
+            <!-- TODO: select or deselect all -->
+            <DropdownMenu.Content
+              align="start"
+              class="flex flex-col max-h-96 w-72 overflow-hidden"
+            >
+              <div class="pb-1">
+                <Search
+                  bind:value={searchText}
+                  label="Search measures"
+                  showBorderOnFocus={false}
+                />
+              </div>
 
-                    <p class="ui-copy-muted" style:font-size="11px">
-                      {measure.description}
-                    </p>
-                  </div>
-                </DropdownMenu.Item>
-              {/each}
+              {#if filteredMeasures.length}
+                {#each filteredMeasures as measure (measure.name)}
+                  <DropdownMenu.Item
+                    class="text-[12px]"
+                    on:click={() => {
+                      if (measure.name) setLeaderboardMeasureName(measure.name);
+                    }}
+                  >
+                    <div class="flex flex-col">
+                      <div
+                        class:font-bold={$leaderboardMeasureName ===
+                          measure.name}
+                      >
+                        {measure.displayName || measure.name}
+                      </div>
+
+                      <p class="ui-copy-muted" style:font-size="11px">
+                        {measure.description}
+                      </p>
+                    </div>
+                  </DropdownMenu.Item>
+                {/each}
+              {:else}
+                <div class="ui-copy-disabled text-center p-2 w-full">
+                  no results
+                </div>
+              {/if}
             </DropdownMenu.Content>
 
             <div
