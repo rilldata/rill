@@ -104,7 +104,9 @@
   onMount(async () => {
     if (isEmbedded) {
       initEmbedPublicAPI = (
-        await import("@rilldata/web-admin/features/embeds/init-embed-public-api.ts")
+        await import(
+          "@rilldata/web-admin/features/embeds/init-embed-public-api.ts"
+        )
       ).default;
     }
     await tick();
@@ -116,8 +118,7 @@
     } catch (error) {
       console.error("Error running initEmbedPublicAPI:", error);
     }
-  };
-
+  }
 </script>
 
 <article

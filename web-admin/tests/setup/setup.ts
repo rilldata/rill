@@ -143,7 +143,9 @@ setup.describe("global setup", () => {
   setup("should create an organization and service", async ({ adminPage }) => {
     // Create an organization named "e2e"
     await cliLogin(adminPage);
-    const { stdout: orgCreateStdout } = await execAsync(`rill org create ${RILL_ORG_NAME}`);
+    const { stdout: orgCreateStdout } = await execAsync(
+      `rill org create ${RILL_ORG_NAME}`,
+    );
     expect(orgCreateStdout).toContain("Created organization");
 
     // create service and write access token to file
@@ -157,7 +159,9 @@ setup.describe("global setup", () => {
 
     // Go to the organization's page
     await adminPage.goto(`/${RILL_ORG_NAME}`);
-    await expect(adminPage.getByRole("heading", { name: RILL_ORG_NAME })).toBeVisible();
+    await expect(
+      adminPage.getByRole("heading", { name: RILL_ORG_NAME }),
+    ).toBeVisible();
   });
 
   setup("should deploy the OpenRTB project", async ({ adminPage }) => {
@@ -197,7 +201,9 @@ setup.describe("global setup", () => {
 
     // Expect to see the successful deployment
     await adminPage.goto(`/${RILL_ORG_NAME}/${RILL_PROJECT_NAME}`);
-    await expect(adminPage.getByText("Your trial expires in 30 days")).toBeVisible(); // Billing banner
+    await expect(
+      adminPage.getByText("Your trial expires in 30 days"),
+    ).toBeVisible(); // Billing banner
     await expect(adminPage.getByText(RILL_ORG_NAME)).toBeVisible(); // Organization breadcrumb
     await expect(adminPage.getByText("Free trial")).toBeVisible(); // Billing status
     await expect(adminPage.getByText(RILL_PROJECT_NAME)).toBeVisible(); // Project breadcrumb
