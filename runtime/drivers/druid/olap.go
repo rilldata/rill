@@ -10,6 +10,8 @@ import (
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/drivers/druid/druidsqldriver"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 )
 
@@ -72,7 +74,7 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
 	// Log query if enabled (usually disabled)
 	if c.config.LogQueries {
-		c.logger.Info("druid query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args))
+		c.logger.Info("druid query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
 	}
 
 	if stmt.DryRun {
@@ -87,6 +89,23 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 	var cancelFunc context.CancelFunc
 	if stmt.ExecutionTimeout != 0 {
 		ctx, cancelFunc = context.WithTimeout(ctx, stmt.ExecutionTimeout)
+	}
+
+	var queryCfg *druidsqldriver.QueryConfig
+	if stmt.UseCache != nil {
+		queryCfg = &druidsqldriver.QueryConfig{
+			UseCache: stmt.UseCache,
+		}
+	}
+	if stmt.PopulateCache != nil {
+		if queryCfg == nil {
+			queryCfg = &druidsqldriver.QueryConfig{}
+		}
+		queryCfg.PopulateCache = stmt.PopulateCache
+	}
+
+	if queryCfg != nil {
+		ctx = druidsqldriver.WithQueryConfig(ctx, queryCfg)
 	}
 
 	var rows *sqlx.Rows

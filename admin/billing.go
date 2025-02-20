@@ -59,6 +59,8 @@ func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Org
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
+		BillingPlanName:                     org.BillingPlanName,
+		BillingPlanDisplayName:              org.BillingPlanDisplayName,
 		CreatedByUserID:                     org.CreatedByUserID,
 	})
 	if err != nil {
@@ -162,6 +164,8 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
+		BillingPlanName:                     org.BillingPlanName,
+		BillingPlanDisplayName:              org.BillingPlanDisplayName,
 		CreatedByUserID:                     org.CreatedByUserID,
 	})
 	if err != nil {
@@ -221,6 +225,8 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 			BillingCustomerID:                   org.BillingCustomerID,
 			PaymentCustomerID:                   org.PaymentCustomerID,
 			BillingEmail:                        org.BillingEmail,
+			BillingPlanName:                     org.BillingPlanName,
+			BillingPlanDisplayName:              org.BillingPlanDisplayName,
 			CreatedByUserID:                     org.CreatedByUserID,
 		})
 		if err != nil {
@@ -271,11 +277,20 @@ func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*
 		return org, sub, nil
 	}
 
+	var userEmail string
+	if org.CreatedByUserID != nil {
+		user, err := s.DB.FindUser(ctx, *org.CreatedByUserID)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to get user info: %w", err)
+		}
+		userEmail = user.Email
+	}
+
 	s.Logger.Named("billing").Info("started trial for organization",
 		zap.String("org_name", org.Name),
 		zap.String("org_id", org.ID),
 		zap.String("trial_end_date", sub.TrialEndDate.String()),
-		zap.String("email", *org.CreatedByUserID),
+		zap.String("email", userEmail),
 	)
 
 	org, err = s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
@@ -294,6 +309,8 @@ func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
+		BillingPlanName:                     &plan.Name,
+		BillingPlanDisplayName:              &plan.DisplayName,
 		CreatedByUserID:                     org.CreatedByUserID,
 	})
 	if err != nil {

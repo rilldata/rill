@@ -1,4 +1,3 @@
-import type { PersistentDashboardStore } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
 import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
 import type { Expand } from "../types";
 
@@ -39,7 +38,6 @@ export type DashboardCallbackExecutor = (
  */
 export type DashboardMutables = {
   dashboard: MetricsExplorerEntity;
-  persistentDashboardStore: PersistentDashboardStore;
 };
 
 /**

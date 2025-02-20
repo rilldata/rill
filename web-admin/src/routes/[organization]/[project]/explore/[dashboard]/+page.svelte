@@ -80,12 +80,14 @@
     });
   }
 
-  onNavigate(() => {
+  onNavigate(({ from, to }) => {
     viewAsUserStore.set(null);
     errorStore.reset();
 
+    const changedDashboard =
+      !from || !to || from.params.dashboard !== to.params.dashboard;
     // Clear out any dashboard banners
-    if (hasBanner) {
+    if (hasBanner && changedDashboard) {
       eventBus.emit("banner", null);
     }
   });
