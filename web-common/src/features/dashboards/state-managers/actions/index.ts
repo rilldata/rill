@@ -1,6 +1,5 @@
 import { filterActions } from "@rilldata/web-common/features/dashboards/state-managers/actions/filters";
 import { measureFilterActions } from "@rilldata/web-common/features/dashboards/state-managers/actions/measure-filters";
-import type { PersistentDashboardStore } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
 import { sortActions } from "./sorting";
 import { contextColActions } from "./context-columns";
 import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
@@ -29,7 +28,6 @@ type DashboardConnectedMutators = {
    * Used to update the dashboard.
    */
   updateDashboard: DashboardCallbackExecutor;
-  persistentDashboardStore: PersistentDashboardStore;
 };
 
 export const createStateManagerActions = (
@@ -110,7 +108,6 @@ function dashboardMutatorToUpdater<T extends unknown[]>(
       mutator(
         {
           dashboard: dash,
-          persistentDashboardStore: connectedMutators.persistentDashboardStore,
         },
         ...x,
       );

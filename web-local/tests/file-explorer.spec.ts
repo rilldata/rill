@@ -1,7 +1,9 @@
 import { expect } from "playwright/test";
-import { test } from "./utils/test";
+import { test } from "./setup/base";
 
 test.describe("File Explorer", () => {
+  test.use({ project: "Blank" });
+
   test.describe("File CRUD Operations", () => {
     test("should create, rename, edit, copy, and delete a file", async ({
       page,
