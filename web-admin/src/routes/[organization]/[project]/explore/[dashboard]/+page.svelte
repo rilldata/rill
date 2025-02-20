@@ -126,11 +126,13 @@
     const newReconcilingForFirstTime = isDashboardReconcilingForFirstTime(
       $explore.data,
     );
-    if (
+    // reconcilingForFirstTime means the dashboard is reconciling for the 1st time in the current deployment.
+    // a new deployment could change this from false to true
+    const reconcilingForFirstTimeChanged =
       reconcilingForFirstTime !== undefined &&
       newReconcilingForFirstTime !== undefined &&
-      reconcilingForFirstTime !== newReconcilingForFirstTime
-    ) {
+      reconcilingForFirstTime !== newReconcilingForFirstTime;
+    if (reconcilingForFirstTimeChanged) {
       void invalidate(`explore:${exploreName}`);
     }
     reconcilingForFirstTime = newReconcilingForFirstTime;

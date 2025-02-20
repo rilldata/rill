@@ -174,13 +174,13 @@
   });
 
   async function handleExploreInit(isManualUrlChange: boolean) {
-    if (
+    const doNotInitYet =
+      // null checks
       !exploreSpec ||
       !metricsSpec ||
-      initializing ||
-      exploreStateFromYAMLConfig.activePage === undefined
-    )
-      return;
+      // explore yaml is not ready because it is reconciling for the 1st time
+      exploreStateFromYAMLConfig.activePage === undefined;
+    if (initializing || doNotInitYet) return;
     initializing = true;
 
     let initState: Partial<MetricsExplorerEntity> | undefined;
