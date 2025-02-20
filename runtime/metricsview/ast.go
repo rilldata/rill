@@ -700,25 +700,16 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 			return nil, errors.New("failed to apply time spine: time range has more than 1000 bins")
 		}
 
-		rangeDim := spine.TimeRange.Alias
-
 		start := spine.TimeRange.Start
 		end := spine.TimeRange.End
 		grain := spine.TimeRange.Grain
-		sel, err := a.dialect.SelectTimeRangeBins(start, end, grain.ToProto(), rangeDim)
+		sel, err := a.dialect.SelectTimeRangeBins(start, end, grain.ToProto(), spine.TimeRange.Alias)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate time spine: %w", err)
 		}
 
 		rangeSelect := &SelectNode{
 			Alias: alias,
-			DimFields: []FieldNode{
-				{
-					Name:        rangeDim,
-					DisplayName: rangeDim,
-					Expr:        rangeDim,
-				},
-			},
 			RawSelect: &ExprNode{
 				Expr: sel,
 			},
@@ -731,15 +722,16 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 
 		var newDims []FieldNode
 		for _, f := range a.dimFields {
-			if f.Name != rangeDim {
+			if f.Name != spine.TimeRange.Alias {
 				newDims = append(newDims, f)
 			}
 		}
 
+		// give alias to the outer select as range select will be moved to cross join
 		rangeSelect.Alias = a.generateIdentifier()
 
 		dimSelect := &SelectNode{
-			Alias:     a.generateIdentifier(),
+			Alias:     alias,
 			DimFields: newDims,
 			FromTable: a.underlyingTable,
 			Where:     a.underlyingWhere,
@@ -754,9 +746,9 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 
 		// now add cross join field to the dimension list
 		dimSelect.DimFields = append(dimSelect.DimFields, FieldNode{
-			Name:        rangeDim,
-			DisplayName: rangeDim,
-			Expr:        rangeDim,
+			Name:        spine.TimeRange.Alias,
+			DisplayName: spine.TimeRange.Alias,
+			Expr:        spine.TimeRange.Alias,
 		})
 
 		return dimSelect, nil

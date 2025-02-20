@@ -15,7 +15,6 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/metricsview"
 	metricssqlparser "github.com/rilldata/rill/runtime/pkg/metricssql"
-	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
 
 type MetricsViewAggregation struct {
@@ -228,7 +227,6 @@ func ResolveTimestampResult(ctx context.Context, rt *runtime.Runtime, instanceID
 
 func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metricsview.Query, error) {
 	qry := &metricsview.Query{MetricsView: q.MetricsViewName}
-	var computedTimeDims []*metricsview.Dimension
 	for _, d := range q.Dimensions {
 		res := metricsview.Dimension{Name: d.Name}
 		if d.Alias != "" {
@@ -244,7 +242,6 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 					Grain:     metricsview.TimeGrainFromProto(d.TimeGrain),
 				},
 			}
-			computedTimeDims = append(computedTimeDims, &res)
 		}
 		qry.Dimensions = append(qry.Dimensions, res)
 	}
@@ -378,37 +375,18 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 	}
 
 	// If there is only one time dimension and null fill is enabled, we set the spine to the time range
-	if q.FillMissing && len(computedTimeDims) > 0 {
+	if q.FillMissing {
 		if qry.Spine != nil {
 			// should we silently ignore instead of error ?
 			return nil, fmt.Errorf("cannot have both where and time spine")
 		}
-		if len(computedTimeDims) > 1 {
-			return nil, fmt.Errorf("cannot have multiple time spines")
-		}
-		if q.TimeRange == nil || q.TimeRange.Start == nil || q.TimeRange.End == nil {
+		if (q.TimeRange == nil) || ((q.TimeRange.Start == nil || q.TimeRange.End == nil) && (q.TimeRange.IsoDuration == "")) {
 			return nil, fmt.Errorf("time range is required for null fill")
 		}
 
-		timeDim := computedTimeDims[0]
-		if timeDim.Compute.TimeFloor.Grain == metricsview.TimeGrainUnspecified {
-			return nil, fmt.Errorf("time grain is required for null fill")
-		}
-
-		tz, err := time.LoadLocation(qry.TimeZone)
-		if err != nil {
-			return nil, fmt.Errorf("invalid time zone %q: %w", qry.TimeZone, err)
-		}
-
+		// this will be resolved later in executor_rewrite_time.go after the time range is resolved
 		qry.Spine = &metricsview.Spine{}
-		s := timeutil.TruncateTime(q.TimeRange.Start.AsTime(), timeDim.Compute.TimeFloor.Grain.ToTimeutil(), tz, 1, 1)
-		e := q.TimeRange.End.AsTime()
-		qry.Spine.TimeRange = &metricsview.TimeSpine{
-			Start: s,
-			End:   e,
-			Grain: timeDim.Compute.TimeFloor.Grain,
-			Alias: timeDim.Name,
-		}
+		qry.Spine.TimeRange = &metricsview.TimeSpine{}
 	}
 
 	qry.Having, err = metricViewExpression(q.Having, q.HavingSQL)
