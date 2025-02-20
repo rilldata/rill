@@ -39,14 +39,17 @@ func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
 			if resolver != "" && (sql != "" || connector != "") {
 				return fmt.Errorf("cannot combine --resolver with --sql or --connector")
 			}
-			if resolver == "" && (len(args) > 0 || len(properties) > 0) {
-				return fmt.Errorf("must provide --resolver when using --args or --properties")
+			if sql != "" && len(properties) > 0 {
+				return fmt.Errorf("cannot combine --sql with --properties")
 			}
 
 			// Rewrite --sql to resolver
 			if sql != "" {
 				resolver = "sql"
 				properties = map[string]string{"sql": sql}
+				if connector != "" {
+					properties["connector"] = connector
+				}
 			}
 
 			// Determine project name
@@ -111,7 +114,7 @@ func buildStruct(m map[string]string) *structpb.Struct {
 	}
 	pb, err := structpb.NewStruct(anyMap)
 	if err != nil {
-		// Acceptable to panic because there are no unknown types
+		// Acceptable to panic because there are no unknown types, so this should never happen.
 		panic(fmt.Errorf("failed to build struct: %w", err))
 	}
 	return pb
