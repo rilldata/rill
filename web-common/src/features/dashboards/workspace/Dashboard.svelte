@@ -98,7 +98,6 @@
   let resizing = false;
 
   let initEmbedPublicAPI;
-  let isReady = false;
 
   // Hacky solution to ensure that the embed public API is initialized after the dashboard is fully loaded
   onMount(async () => {
