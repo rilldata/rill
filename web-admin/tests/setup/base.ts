@@ -67,10 +67,10 @@ export const test = base.extend<MyFixtures>({
       const rillServiceToken = fs.readFileSync(readPath, "utf-8");
 
       await generateEmbed(
-        "bids_explore",
-        rillServiceToken,
         RILL_ORG_NAME,
         RILL_PROJECT_NAME,
+        "bids_explore",
+        rillServiceToken,
       );
       const filePath = "file://" + path.resolve(__dirname, "..", "embed.html");
 

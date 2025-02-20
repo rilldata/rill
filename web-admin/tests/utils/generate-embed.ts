@@ -5,16 +5,16 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 export async function generateEmbed(
-  resourceId: string,
-  serviceToken: string,
   organization: string,
   project: string,
+  resourceName: string,
+  serviceToken: string,
 ): Promise<void> {
   try {
     const response: AxiosResponse<{ iframeSrc: string }> = await axios.post(
       `http://localhost:8080/v1/organizations/${organization}/projects/${project}/iframe`,
       {
-        resource: resourceId,
+        resource: resourceName,
         navigation: true,
       },
       {

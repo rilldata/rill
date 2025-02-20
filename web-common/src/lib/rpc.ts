@@ -76,7 +76,7 @@ function sendError(
   }
 }
 
-export function initRPC() {
+export function createIframeRPCHandler() {
   const handler = (event: MessageEvent) => {
     if (event.source && event.data) {
       void handleRPCMessage(event as MessageEvent<JSONRPCRequest>);

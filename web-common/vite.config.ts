@@ -11,10 +11,6 @@ const alias: Alias[] = [
     find: "@rilldata/web-common",
     replacement: "/../web-common/src",
   },
-  {
-    find: "@rilldata/web-admin",
-    replacement: "/../web-admin/src",
-  },
 ];
 
 if (process.env["STORYBOOK_MODE"] === "true") {

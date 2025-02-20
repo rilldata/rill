@@ -104,7 +104,7 @@
   onMount(async () => {
     if (isEmbedded) {
       initEmbedPublicAPI = (
-        await import("@rilldata/web-admin/features/embeds/init-embed-publicapi.ts")
+        await import("@rilldata/web-admin/features/embeds/init-embed-public-api.ts")
       ).default;
     }
 
