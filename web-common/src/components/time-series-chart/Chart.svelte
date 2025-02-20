@@ -12,6 +12,9 @@
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import Point from "./Point.svelte";
   import RangeDisplay from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/RangeDisplay.svelte";
+  import Crosshairs from "./Crosshairs.svelte";
+
+  const SNAP_RANGE = 0.05;
 
   export let primaryData: V1TimeSeriesValue[];
   export let secondaryData: V1TimeSeriesValue[][] = [];
@@ -55,8 +58,8 @@
   $: maxes = allYExtents.map((extents) => extents[1]).filter(isNumber);
 
   $: yExtents = [Math.min(0, min(mins) ?? 0), max(maxes) ?? 0];
-
   $: yScale = yScale.domain(yExtents).range([100, 0]);
+  $: ySpan = yExtents[1] - yExtents[0];
 
   $: hoverIndex =
     offsetPosition === null
@@ -64,6 +67,23 @@
       : Math.floor((offsetPosition.x / width) * mappedData[0].length);
 
   $: hoveredPoints = getPoints(hoverIndex);
+
+  $: snappedPoint =
+    !!offsetPosition?.y &&
+    hoveredPoints[0]?.value !== null &&
+    hoveredPoints[0]?.value !== undefined &&
+    Math.abs(
+      hoveredPoints[0]?.value -
+        yScale.invert((offsetPosition?.y / height) * 100),
+    ) /
+      ySpan <
+      SNAP_RANGE &&
+    hoveredPoints[0];
+
+  $: svgCoordinateCursor = offsetPosition && {
+    x: (offsetPosition.x / width) * 1000,
+    y: (offsetPosition.y / height) * 100,
+  };
 
   function getColor(index: number) {
     return index === 0 ? MainLineColor : "rgba(0, 0, 0, 0.22)";
@@ -109,14 +129,21 @@
 <div role="presentation" class="flex flex-col size-full relative">
   {#if hoveredPoints.length > 0 && offsetPosition}
     <div
-      style:top="{offsetPosition?.y ?? 0}px"
       class="{getPos(
         offsetPosition.x,
         width,
-      )} w-fit h-fit flex gap-y-1 -translate-y-1/2 bg-slate-50 py-0.5 opacity-90 shadow-sm border rounded-sm px-2 font-medium items-end flex-col absolute pointer-events-none"
+      )} w-fit label text-[10px] bg-white border-dashed text-gray-500 border-gray-300 -translate-y-1/2 py-0.5 border rounded-sm px-1 font-medium absolute pointer-events-none"
+      style:top="{snappedPoint && snappedPoint.value
+        ? (yScale(snappedPoint.value) / 100) * height
+        : offsetPosition.y}px"
+      class:!text-primary-500={!!snappedPoint}
+      class:border-primary-400={!!snappedPoint}
+      class:!font-semibold={!!snappedPoint}
     >
       {formatterFunction(
-        yScale.invert((offsetPosition?.y / height) * 100).toFixed(1),
+        snappedPoint
+          ? snappedPoint.value
+          : yScale.invert((offsetPosition?.y / height) * 100),
       )}
     </div>
   {/if}
@@ -134,31 +161,6 @@
       offsetPosition = null;
     }}
   >
-    <g>
-      {#if offsetPosition}
-        <line
-          x1="{(offsetPosition.x / width) * 100}%"
-          x2="{(offsetPosition.x / width) * 100}%"
-          y1="0"
-          y2="100%"
-          class="stroke-slate-600/20"
-          stroke-width="1"
-          stroke-dasharray="2"
-          vector-effect="non-scaling-stroke"
-        />
-        <line
-          y1="{(offsetPosition.y / height) * 100}%"
-          y2="{(offsetPosition.y / height) * 100}%"
-          x1="0"
-          x2="100%"
-          class="stroke-slate-600/20"
-          stroke-width="1"
-          stroke-dasharray="2"
-          vector-effect="non-scaling-stroke"
-        />
-      {/if}
-    </g>
-
     {#each mappedData as mappedDataLine, i (i)}
       <Line
         data={mappedDataLine}
@@ -170,11 +172,20 @@
       />
     {/each}
 
+    <Crosshairs
+      snapped={!!snappedPoint}
+      cursor={snappedPoint
+        ? {
+            x: xScales[0](snappedPoint.interval.start.toJSDate()),
+            y: snappedPoint.value ? yScale(snappedPoint.value) : 50,
+          }
+        : svgCoordinateCursor}
+    />
+
     <g>
       {#each mappedData as mappedDataLine, i (i)}
         {#each mappedDataLine as { interval, value }, j (j)}
           {@const xScale = xScales[i]}
-
           <Point
             showPoint={hoverIndex === j ||
               (mappedDataLine[j - 1]?.value === null &&

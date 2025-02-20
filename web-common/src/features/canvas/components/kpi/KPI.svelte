@@ -18,8 +18,9 @@
   import type { KPISpec } from ".";
   import { validateKPISchema } from "./selector";
   import Chart from "@rilldata/web-common/components/time-series-chart/Chart.svelte";
-  import { Interval } from "luxon";
+  import { DateTime, Interval } from "luxon";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import RangeDisplay from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/RangeDisplay.svelte";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
 
@@ -197,6 +198,11 @@
   $: ({ data: comparisonDataResponse } = $comparisonDataQuery);
   $: comparisonData = comparisonDataResponse?.data ?? [];
 
+  $: interval = Interval.fromDateTimes(
+    DateTime.fromISO(start ?? "").setZone(timeZone),
+    DateTime.fromISO(end ?? "").setZone(timeZone),
+  );
+
   function getFormattedDiff(comparisonValue: number, currentValue: number) {
     const delta = currentValue - comparisonValue;
     return `${delta >= 0 ? "+" : ""}${measureValueFormatter(delta)}`;
@@ -209,15 +215,26 @@
       class:flex-col={!isSparkRight}
       class="flex gap-0 items-center justify-center size-full"
     >
-      <div class:!items-start={isSparkRight} class="flex flex-col items-center">
+      <div
+        class:!items-start={isSparkRight}
+        class="flex flex-col items-center w-full"
+      >
         <h2
           class:text-center={!isSparkRight}
-          class="font-medium text-sm text-gray-600"
+          class="font-medium text-sm text-gray-600 line-clamp-1 truncate"
         >
           {measure?.displayName || measureName}
         </h2>
-        <span class="text-3xl font-medium text-gray-600">
-          {measureValueFormatter(currentValue)}
+        <span class="text-3xl font-medium text-gray-600 flex gap-x-0 items-end">
+          {#if hoveredPoints?.[0]?.value !== undefined}
+            <span class="text-primary-500">
+              {measureValueFormatter(currentValue)}
+            </span><span class="text-gray-600 text-lg">
+              /{measureValueFormatter(primaryTotal)}
+            </span>
+          {:else}
+            {measureValueFormatter(primaryTotal)}
+          {/if}
         </span>
       </div>
 
@@ -275,21 +292,27 @@
         {/if}
       </div>
 
-      <div class="size-full flex items-center justify-center mt-2">
-        {#if primaryDataIsFetching}
-          <Spinner status={EntityStatus.Running} />
-        {:else if timeGrain && timeZone}
-          <Chart
-            bind:hoveredPoints
-            {primaryData}
-            secondaryData={showComparison ? [comparisonData] : []}
-            {timeGrain}
-            selectedTimeZone={timeZone}
-            yAccessor={kpiProperties.measure}
-            formatterFunction={measureValueFormatter}
-          />
-        {/if}
-      </div>
+      {#if showSparkline}
+        <div class="size-full flex items-center justify-center mt-2">
+          {#if primaryDataIsFetching}
+            <Spinner status={EntityStatus.Running} />
+          {:else if timeGrain && timeZone}
+            <Chart
+              bind:hoveredPoints
+              {primaryData}
+              secondaryData={showComparison ? [comparisonData] : []}
+              {timeGrain}
+              selectedTimeZone={timeZone}
+              yAccessor={kpiProperties.measure}
+              formatterFunction={measureValueFormatter}
+            />
+          {/if}
+        </div>
+      {:else if interval.isValid && timeGrain}
+        <span class="text-gray-500">
+          <RangeDisplay {interval} grain={timeGrain} />
+        </span>
+      {/if}
     </div>
   {:else}
     <div class="flex items-center justify-center w-full h-full">

@@ -27,7 +27,7 @@
     {#each kpis as kpi, i (i)}
       <div
         class:solo={kpis.length > 1}
-        class="kpi-wrapper border-gray-200 size-full min-h-52 p-4"
+        class="kpi-wrapper border-gray-200 size-full min-h-52 p-4 overflow-hidden"
       >
         <KPI rendererProperties={kpi} />
       </div>
