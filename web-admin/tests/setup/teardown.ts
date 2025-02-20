@@ -31,7 +31,7 @@ teardown.describe("global teardown", () => {
     const { stdout: processGroupID } = await execAsync(
       `ps -o pgid= -p ${processID}`,
     );
-    await execAsync(`kill -TERM -${processGroupID}`);
+    await execAsync(`kill -TERM -${processGroupID.trim()}`);
     await execAsync(`rm ${RILL_DEVTOOL_BACKGROUND_PROCESS_PID_FILE}`);
 
     // Stop the cloud services
