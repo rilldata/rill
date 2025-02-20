@@ -1,12 +1,15 @@
 import { expect } from "@playwright/test";
-import { test } from "../utils/test";
+import { gotoNavEntry } from "web-local/tests/utils/waitHelpers";
+import { test } from "../setup/base";
 import { ResourceWatcher } from "web-local/tests/utils/ResourceWatcher";
-import { useDashboardFlowTestSetup } from "web-local/tests/explores/dashboard-flow-test-setup";
 
 test.describe("banner in explore preview", () => {
-  useDashboardFlowTestSetup();
+  test.use({ project: "AdBids" });
 
   test("Banner should not be visible in explore preview", async ({ page }) => {
+    await page.getByLabel("/dashboards").click();
+    await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
+
     await page.getByRole("button", { name: "Preview" }).click();
     await page.waitForTimeout(1000);
 
@@ -15,11 +18,14 @@ test.describe("banner in explore preview", () => {
   });
 
   test("Banner should be visible in explore preview", async ({ page }) => {
+    await page.getByLabel("/dashboards").click();
+    await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
+
     const watcher = new ResourceWatcher(page);
 
     const exploreWithBanner = `
   type: explore
-  metrics_view: "AdBids_model_metrics"
+  metrics_view: "AdBids_metrics"
   banner: "This is a banner text"
   measures: "*"
   dimensions: "*"
