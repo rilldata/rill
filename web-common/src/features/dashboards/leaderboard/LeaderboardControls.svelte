@@ -6,6 +6,11 @@
   import { getSimpleMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { getStateManagers } from "../state-managers/state-managers";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import { fly } from "svelte/transition";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
   export let exploreName: string;
 
@@ -28,6 +33,8 @@
   $: metricsExplorer = $metricsExplorerStore.entities[exploreName];
 
   $: activeLeaderboardMeasure = $getMeasureByName($leaderboardMeasureName);
+  $: console.log("activeLeaderboardMeasure: ", activeLeaderboardMeasure);
+  $: console.log("measures: ", measures);
 
   $: validPercentOfTotal =
     activeLeaderboardMeasure?.validPercentOfTotal || false;
@@ -52,6 +59,8 @@
   function isDefined(value: string | undefined): value is string {
     return value !== undefined;
   }
+
+  let disabled = false;
 </script>
 
 <div>
@@ -74,7 +83,74 @@
         }}
       />
 
-      <Select.Root
+      <!-- TODO: move to a separate component -->
+      <DropdownMenu.Root
+        closeOnItemClick={false}
+        typeahead={false}
+        bind:open={active}
+      >
+        <DropdownMenu.Trigger asChild let:builder>
+          <Tooltip
+            activeDelay={60}
+            alignment="start"
+            distance={8}
+            location="bottom"
+            suppress={active}
+          >
+            <Button
+              builders={[builder]}
+              type="text"
+              label={activeLeaderboardMeasure.displayName ||
+                activeLeaderboardMeasure.name}
+              on:click
+            >
+              <div
+                class="flex items-center gap-x-0.5 px-1 text-gray-700 hover:text-inherit"
+              >
+                Showing <strong
+                  >{`${activeLeaderboardMeasure.displayName || activeLeaderboardMeasure.name}`}</strong
+                >
+                <span
+                  class="transition-transform"
+                  class:hidden={disabled}
+                  class:-rotate-180={active}
+                >
+                  <CaretDownIcon />
+                </span>
+              </div>
+            </Button>
+
+            <DropdownMenu.Content>
+              {#each measures as measure (measure.name)}
+                <DropdownMenu.Item class="text-[12px]">
+                  <div class="flex flex-col">
+                    <div
+                      class:font-bold={$leaderboardMeasureName === measure.name}
+                    >
+                      {measure.displayName || measure.name}
+                    </div>
+
+                    <p class="ui-copy-muted" style:font-size="11px">
+                      {measure.description}
+                    </p>
+                  </div>
+                </DropdownMenu.Item>
+              {/each}
+            </DropdownMenu.Content>
+
+            <div
+              slot="tooltip-content"
+              transition:fly={{ duration: 300, y: 4 }}
+            >
+              <TooltipContent maxWidth="400px">
+                Choose a measure to filter by
+              </TooltipContent>
+            </div>
+          </Tooltip>
+        </DropdownMenu.Trigger>
+      </DropdownMenu.Root>
+
+      <!-- <Select.Root
         bind:open={active}
         selected={{ value: activeLeaderboardMeasure.name, label: "" }}
         items={measures.map((measure) => ({
@@ -120,7 +196,7 @@
             </Select.Item>
           {/each}
         </Select.Content>
-      </Select.Root>
+      </Select.Root> -->
     </div>
   {/if}
 </div>
