@@ -18,8 +18,9 @@ import (
 )
 
 const (
-	requestMaxLimit = 500
-	requestTimeout  = 10 * time.Second
+	paginationLimit      = 100
+	eventIngestBatchSize = 500
+	requestTimeout       = 10 * time.Second
 
 	avalaraTaxProvider = "avalara"
 	taxJarTaxProvider  = "taxjar"
@@ -218,6 +219,7 @@ func (o *Orb) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string,
 	if err != nil {
 		return nil, err
 	}
+
 	return &Subscription{
 		ID:                           s.ID,
 		Customer:                     getBillingCustomerFromOrbCustomer(&s.Customer),
@@ -281,6 +283,7 @@ func (o *Orb) CancelSubscriptionsForCustomer(ctx context.Context, customerID str
 			cancelDate = sub.EndDate
 		}
 	}
+
 	return cancelDate, nil
 }
 
@@ -389,7 +392,7 @@ func (o *Orb) ReportUsage(ctx context.Context, usage []*Usage) error {
 			Properties:         orb.F[any](props),
 		})
 
-		if len(orbUsage) == requestMaxLimit {
+		if len(orbUsage) == eventIngestBatchSize {
 			err := o.pushUsage(ctx, &orbUsage)
 			if err != nil {
 				return err
@@ -490,7 +493,7 @@ func (o *Orb) getUpcomingSubscriptionsForCustomer(ctx context.Context, customerI
 
 func (o *Orb) getAllPlans(ctx context.Context) ([]*Plan, error) {
 	plans, err := o.client.Plans.List(ctx, orb.PlanListParams{
-		Limit:  orb.Int(requestMaxLimit), // TODO handle pagination, for now don't expect more than 500 plans
+		Limit:  orb.Int(paginationLimit), // TODO handle pagination, for now don't expect more than 100 plans
 		Status: orb.F(orb.PlanListParamsStatusActive),
 	})
 	if err != nil {

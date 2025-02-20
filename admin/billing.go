@@ -19,7 +19,13 @@ func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Org
 	if err != nil {
 		return nil, err
 	}
-	s.Logger.Info("created payment customer", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("payment_customer_id", pc.ID))
+	s.Logger.Info("created payment customer",
+		zap.String("org_id", org.ID),
+		zap.String("org_name", org.Name),
+		zap.String("payment_customer_id", pc.ID),
+		zap.String("user_email", org.BillingEmail),
+	)
+
 	org.PaymentCustomerID = pc.ID
 
 	// create billing customer
@@ -27,13 +33,22 @@ func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Org
 	if err != nil {
 		return nil, err
 	}
-	s.Logger.Info("created billing customer", zap.String("org", org.Name), zap.String("billing_customer_id", bc.ID))
+	s.Logger.Info("created billing customer",
+		zap.String("org", org.Name),
+		zap.String("org_id", org.ID),
+		zap.String("billing_customer_id", bc.ID),
+		zap.String("payment_customer_id", pc.ID),
+		zap.String("user_email", org.BillingEmail),
+	)
+
 	org.BillingCustomerID = bc.ID
 
 	org, err = s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 		Name:                                org.Name,
 		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
+		LogoAssetID:                         org.LogoAssetID,
+		FaviconAssetID:                      org.FaviconAssetID,
 		CustomDomain:                        org.CustomDomain,
 		QuotaProjects:                       org.QuotaProjects,
 		QuotaDeployments:                    org.QuotaDeployments,
@@ -44,6 +59,8 @@ func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Org
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
+		BillingPlanName:                     org.BillingPlanName,
+		BillingPlanDisplayName:              org.BillingPlanDisplayName,
 		CreatedByUserID:                     org.CreatedByUserID,
 	})
 	if err != nil {
@@ -89,7 +106,12 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 				if err != nil {
 					return nil, nil, fmt.Errorf("failed to create payment customer: %w", err)
 				}
-				s.Logger.Info("created payment customer", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("payment_customer_id", pc.ID))
+				s.Logger.Info("created payment customer",
+					zap.String("org_id", org.ID),
+					zap.String("org_name", org.Name),
+					zap.String("payment_customer_id", pc.ID),
+					zap.String("user_email", pc.Email),
+				)
 			} else {
 				return nil, nil, fmt.Errorf("error finding payment customer: %w", err)
 			}
@@ -109,7 +131,13 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to create billing customer: %w", err)
 		}
-		s.Logger.Info("created billing customer", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", bc.ID))
+		s.Logger.Info("created billing customer",
+			zap.String("org_id", org.ID),
+			zap.String("org_name", org.Name),
+			zap.String("billing_customer_id", bc.Email),
+			zap.String("payment_customer_id", org.PaymentCustomerID),
+			zap.String("user_email", org.BillingEmail),
+		)
 		org.BillingCustomerID = bc.ID
 	} else if bc.PaymentProviderID == "" {
 		// update payment customer id in billing system
@@ -124,6 +152,8 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 		Name:                                org.Name,
 		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
+		LogoAssetID:                         org.LogoAssetID,
+		FaviconAssetID:                      org.FaviconAssetID,
 		CustomDomain:                        org.CustomDomain,
 		QuotaProjects:                       org.QuotaProjects,
 		QuotaDeployments:                    org.QuotaDeployments,
@@ -134,6 +164,8 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
+		BillingPlanName:                     org.BillingPlanName,
+		BillingPlanDisplayName:              org.BillingPlanDisplayName,
 		CreatedByUserID:                     org.CreatedByUserID,
 	})
 	if err != nil {
@@ -181,6 +213,8 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 			Name:                                org.Name,
 			DisplayName:                         org.DisplayName,
 			Description:                         org.Description,
+			LogoAssetID:                         org.LogoAssetID,
+			FaviconAssetID:                      org.FaviconAssetID,
 			CustomDomain:                        org.CustomDomain,
 			QuotaProjects:                       biggerOfInt(sub.Plan.Quotas.NumProjects, org.QuotaProjects),
 			QuotaDeployments:                    biggerOfInt(sub.Plan.Quotas.NumDeployments, org.QuotaDeployments),
@@ -191,6 +225,8 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 			BillingCustomerID:                   org.BillingCustomerID,
 			PaymentCustomerID:                   org.PaymentCustomerID,
 			BillingEmail:                        org.BillingEmail,
+			BillingPlanName:                     org.BillingPlanName,
+			BillingPlanDisplayName:              org.BillingPlanDisplayName,
 			CreatedByUserID:                     org.CreatedByUserID,
 		})
 		if err != nil {
@@ -212,7 +248,7 @@ func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*
 	if err != nil {
 		if !errors.Is(err, billing.ErrNotFound) {
 			if errors.Is(err, billing.ErrCustomerIDRequired) {
-				return nil, nil, fmt.Errorf("org billing not initialized yet, retry")
+				return nil, nil, fmt.Errorf("org billing not initialized yet")
 			}
 			return nil, nil, fmt.Errorf("failed to get subscriptions for customer: %w", err)
 		}
@@ -241,12 +277,28 @@ func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*
 		return org, sub, nil
 	}
 
-	s.Logger.Named("billing").Info("started trial for organization", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.String("trial_end_date", sub.TrialEndDate.String()))
+	var userEmail string
+	if org.CreatedByUserID != nil {
+		user, err := s.DB.FindUser(ctx, *org.CreatedByUserID)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to get user info: %w", err)
+		}
+		userEmail = user.Email
+	}
+
+	s.Logger.Named("billing").Info("started trial for organization",
+		zap.String("org_name", org.Name),
+		zap.String("org_id", org.ID),
+		zap.String("trial_end_date", sub.TrialEndDate.String()),
+		zap.String("email", userEmail),
+	)
 
 	org, err = s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 		Name:                                org.Name,
 		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
+		LogoAssetID:                         org.LogoAssetID,
+		FaviconAssetID:                      org.FaviconAssetID,
 		CustomDomain:                        org.CustomDomain,
 		QuotaProjects:                       biggerOfInt(plan.Quotas.NumProjects, org.QuotaProjects),
 		QuotaDeployments:                    biggerOfInt(plan.Quotas.NumDeployments, org.QuotaDeployments),
@@ -257,6 +309,8 @@ func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
+		BillingPlanName:                     &plan.Name,
+		BillingPlanDisplayName:              &plan.DisplayName,
 		CreatedByUserID:                     org.CreatedByUserID,
 	})
 	if err != nil {

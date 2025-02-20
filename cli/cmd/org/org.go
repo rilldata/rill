@@ -20,8 +20,11 @@ func OrgCmd(ch *cmdutil.Helper) *cobra.Command {
 	orgCmd.AddCommand(EditCmd(ch))
 	orgCmd.AddCommand(SwitchCmd(ch))
 	orgCmd.AddCommand(ListCmd(ch))
+	orgCmd.AddCommand(ShowCmd(ch))
 	orgCmd.AddCommand(DeleteCmd(ch))
 	orgCmd.AddCommand(RenameCmd(ch))
+	orgCmd.AddCommand(UploadLogoCmd(ch))
+	orgCmd.AddCommand(UploadFaviconCmd(ch))
 
 	return orgCmd
 }
@@ -32,7 +35,9 @@ func OrgNames(ctx context.Context, ch *cmdutil.Helper) ([]string, error) {
 		return nil, err
 	}
 
-	resp, err := c.ListOrganizations(ctx, &adminv1.ListOrganizationsRequest{})
+	resp, err := c.ListOrganizations(ctx, &adminv1.ListOrganizationsRequest{
+		PageSize: 1000,
+	})
 	if err != nil {
 		return nil, err
 	}

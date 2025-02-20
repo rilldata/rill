@@ -1,9 +1,7 @@
 <script lang="ts">
-  import type { LeaderboardItemData } from "@rilldata/web-common/features/dashboards/leaderboard/leaderboard-utils";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import type {
     V1Expression,
-    V1MetricsViewSpec,
     V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -11,9 +9,9 @@
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardControls from "./LeaderboardControls.svelte";
   import {
-    calculateAndUpdateAllLeaderboardWidths,
-    columnWidths,
-    resetColumnWidths,
+    DEFAULT_COL_WIDTH,
+    deltaColumn,
+    valueColumn,
   } from "./leaderboard-widths";
 
   export let metricsViewName: string;
@@ -23,7 +21,6 @@
   export let comparisonTimeRange: V1TimeRange | undefined;
   export let timeControlsReady: boolean;
   export let activeMeasureName: string;
-  export let metricsView: V1MetricsViewSpec;
 
   const StateManagers = getStateManagers();
   const {
@@ -43,44 +40,49 @@
       dimensions: { setPrimaryDimension },
       sorting: { toggleSort },
       dimensionsFilter: { toggleDimensionValueSelection },
+      comparison: { toggleComparisonDimension },
     },
     exploreName,
   } = StateManagers;
 
   let parentElement: HTMLDivElement;
+  let suppressTooltip = false;
 
-  function estimateAndUpdateLeaderboardWidths(
-    dimensionName: string,
-    aboveTheFold: LeaderboardItemData[],
-    selectedBelowTheFold: LeaderboardItemData[],
-  ) {
-    const firstColumnWidth =
-      !comparisonTimeRange && !$isValidPercentOfTotal ? 240 : 164;
-    calculateAndUpdateAllLeaderboardWidths(
-      dimensionName,
-      firstColumnWidth,
-      aboveTheFold,
-      selectedBelowTheFold,
-      $activeMeasureFormatter,
-    );
-  }
-
-  // Reset column widths when relevant data changes
-  $: {
-    activeMeasureName;
-    !!comparisonTimeRange;
-    !!timeRange;
-    $isValidPercentOfTotal;
-    resetColumnWidths();
-  }
   $: ({ instanceId } = $runtime);
+
+  // Reset column widths when the measure changes
+  $: if (activeMeasureName) {
+    valueColumn.reset();
+    deltaColumn.reset();
+  }
+
+  $: firstColumnWidth =
+    !comparisonTimeRange && !$isValidPercentOfTotal ? 240 : 164;
+
+  $: tableWidth =
+    firstColumnWidth +
+    $valueColumn +
+    (comparisonTimeRange
+      ? $deltaColumn + DEFAULT_COL_WIDTH
+      : $isValidPercentOfTotal
+        ? DEFAULT_COL_WIDTH
+        : 0);
 </script>
 
 <div class="flex flex-col overflow-hidden size-full">
   <div class="pl-2.5 pb-3">
     <LeaderboardControls exploreName={$exploreName} />
   </div>
-  <div bind:this={parentElement} class="overflow-y-auto leaderboard-display">
+  <div
+    bind:this={parentElement}
+    class="overflow-y-auto leaderboard-display"
+    on:scroll={() => {
+      suppressTooltip = true;
+    }}
+    on:scrollend={() => {
+      suppressTooltip = false;
+    }}
+  >
     {#if parentElement}
       <div class="leaderboard-grid overflow-hidden pb-4">
         {#each $visibleDimensions as dimension (dimension.name)}
@@ -92,7 +94,9 @@
               {whereFilter}
               {dimensionThresholdFilters}
               {instanceId}
+              {tableWidth}
               {timeRange}
+              {firstColumnWidth}
               sortedAscending={$sortedAscending}
               sortType={$sortType}
               filterExcludeMode={$isFilterExcludeMode(dimension.name)}
@@ -101,16 +105,15 @@
               {dimension}
               isSummableMeasure={$isSummableMeasure}
               {parentElement}
-              {metricsView}
+              {suppressTooltip}
               {timeControlsReady}
               selectedValues={$selectedDimensionValues(dimension.name)}
               isBeingCompared={$isBeingComparedReadable(dimension.name)}
-              columnWidths={$columnWidths}
-              {estimateAndUpdateLeaderboardWidths}
               formatter={$activeMeasureFormatter}
               {setPrimaryDimension}
               {toggleSort}
               {toggleDimensionValueSelection}
+              {toggleComparisonDimension}
             />
           {/if}
         {/each}

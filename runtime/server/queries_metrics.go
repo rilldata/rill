@@ -2,15 +2,19 @@ package server
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/pkg/rilltime"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // MetricsViewAggregation implements QueryService.
@@ -297,7 +301,7 @@ func (s *Server) MetricsViewRows(ctx context.Context, req *runtimev1.MetricsView
 		Limit:              &limit,
 		Offset:             req.Offset,
 		TimeZone:           req.TimeZone,
-		MetricsView:        mv,
+		MetricsView:        mv.ValidSpec,
 		ResolvedMVSecurity: security,
 		Filter:             req.Filter,
 	}
@@ -323,22 +327,20 @@ func (s *Server) MetricsViewTimeRange(ctx context.Context, req *runtimev1.Metric
 		return nil, ErrForbidden
 	}
 
-	mv, security, err := resolveMVAndSecurity(ctx, s.runtime, req.InstanceId, req.MetricsViewName)
+	ts, err := queries.ResolveTimestampResult(ctx, s.runtime, req.InstanceId, req.MetricsViewName, auth.GetClaims(ctx).SecurityClaims(), int(req.Priority))
 	if err != nil {
 		return nil, err
 	}
 
-	q := &queries.MetricsViewTimeRange{
-		MetricsViewName:    req.MetricsViewName,
-		MetricsView:        mv,
-		ResolvedMVSecurity: security,
-	}
-	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
-	if err != nil {
-		return nil, err
-	}
-
-	return q.Result, nil
+	return &runtimev1.MetricsViewTimeRangeResponse{
+		TimeRangeSummary: &runtimev1.TimeRangeSummary{
+			// JS identifies no time present using a null check instead of `IsZero`
+			// So send null when time.IsZero
+			Min:       valOrNullTime(ts.Min),
+			Max:       valOrNullTime(ts.Max),
+			Watermark: valOrNullTime(ts.Watermark),
+		},
+	}, nil
 }
 
 func (s *Server) MetricsViewSchema(ctx context.Context, req *runtimev1.MetricsViewSchemaRequest) (*runtimev1.MetricsViewSchemaResponse, error) {
@@ -402,7 +404,64 @@ func (s *Server) MetricsViewSearch(ctx context.Context, req *runtimev1.MetricsVi
 	return q.Result, nil
 }
 
-func resolveMVAndSecurity(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string) (*runtimev1.MetricsViewSpec, *runtime.ResolvedSecurity, error) {
+func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.MetricsViewTimeRangesRequest) (*runtimev1.MetricsViewTimeRangesResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.metric_view", req.MetricsViewName),
+		attribute.StringSlice("args.expressions", req.Expressions),
+	)
+
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
+		return nil, ErrForbidden
+	}
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
+	mv, _, err := resolveMVAndSecurity(ctx, s.runtime, req.InstanceId, req.MetricsViewName)
+	if err != nil {
+		return nil, err
+	}
+
+	ts, err := queries.ResolveTimestampResult(ctx, s.runtime, req.InstanceId, req.MetricsViewName, auth.GetClaims(ctx).SecurityClaims(), int(req.Priority))
+	if err != nil {
+		return nil, err
+	}
+
+	// to keep results consistent
+	now := time.Now()
+
+	timeRanges := make([]*runtimev1.TimeRange, len(req.Expressions))
+	for i, tr := range req.Expressions {
+		rillTime, err := rilltime.Parse(tr, rilltime.ParseOptions{})
+		if err != nil {
+			return nil, fmt.Errorf("error parsing time range %s: %w", tr, err)
+		}
+
+		start, end, err := rillTime.Eval(rilltime.EvalOptions{
+			Now:        now,
+			MinTime:    ts.Min,
+			MaxTime:    ts.Max,
+			Watermark:  ts.Watermark,
+			FirstDay:   int(mv.ValidSpec.FirstDayOfWeek),
+			FirstMonth: int(mv.ValidSpec.FirstMonthOfYear),
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		timeRanges[i] = &runtimev1.TimeRange{
+			Start: timestamppb.New(start),
+			End:   timestamppb.New(end),
+			// for a reference
+			Expression: tr,
+		}
+	}
+
+	return &runtimev1.MetricsViewTimeRangesResponse{
+		TimeRanges: timeRanges,
+	}, nil
+}
+
+func resolveMVAndSecurity(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string) (*runtimev1.MetricsViewState, *runtime.ResolvedSecurity, error) {
 	res, mv, err := lookupMetricsView(ctx, rt, instanceID, metricsViewName)
 	if err != nil {
 		return nil, nil, err
@@ -419,7 +478,7 @@ func resolveMVAndSecurity(ctx context.Context, rt *runtime.Runtime, instanceID, 
 	return mv, resolvedSecurity, nil
 }
 
-func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string, claims *runtime.SecurityClaims) (*runtimev1.MetricsViewSpec, *runtime.ResolvedSecurity, error) {
+func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string, claims *runtime.SecurityClaims) (*runtimev1.MetricsViewState, *runtime.ResolvedSecurity, error) {
 	res, mv, err := lookupMetricsView(ctx, rt, instanceID, metricsViewName)
 	if err != nil {
 		return nil, nil, err
@@ -438,7 +497,7 @@ func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime
 }
 
 // returns the metrics view and the time the catalog was last updated
-func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, name string) (*runtimev1.Resource, *runtimev1.MetricsViewSpec, error) {
+func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, name string) (*runtimev1.Resource, *runtimev1.MetricsViewState, error) {
 	ctrl, err := rt.Controller(ctx, instanceID)
 	if err != nil {
 		return nil, nil, status.Error(codes.InvalidArgument, err.Error())
@@ -455,5 +514,12 @@ func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, nam
 		return nil, nil, status.Errorf(codes.InvalidArgument, "metrics view %q is invalid", name)
 	}
 
-	return res, spec, nil
+	return res, mv.State, nil
+}
+
+func valOrNullTime(v time.Time) *timestamppb.Timestamp {
+	if v.IsZero() {
+		return nil
+	}
+	return timestamppb.New(v)
 }

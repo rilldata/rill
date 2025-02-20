@@ -15,25 +15,33 @@
   import SelectAllButton from "@rilldata/web-common/features/dashboards/dimension-table/SelectAllButton.svelte";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import {
+    dimensionSearchText,
+    metricsExplorerStore,
+  } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import ComparisonSelector from "@rilldata/web-common/features/dashboards/time-controls/ComparisonSelector.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
-  import type { TimeGrain } from "@rilldata/web-common/lib/time/types";
+  import type {
+    DashboardTimeControls,
+    TimeGrain,
+  } from "@rilldata/web-common/lib/time/types";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
-  import { fly } from "svelte/transition";
-  import { featureFlags } from "../../feature-flags";
-  import { PivotChipType } from "../pivot/types";
-  import type { TDDComparison } from "./types";
-  import TimeGrainSelector from "../time-controls/TimeGrainSelector.svelte";
-  import exportTDD from "./export-tdd";
-  import ExportMenu from "../../exports/ExportMenu.svelte";
   import {
     createQueryServiceExport,
     V1ExportFormat,
+    V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
+  import { fly } from "svelte/transition";
+  import ExportMenu from "../../exports/ExportMenu.svelte";
+  import { featureFlags } from "../../feature-flags";
+  import { PivotChipType } from "../pivot/types";
+  import TimeGrainSelector from "../time-controls/TimeGrainSelector.svelte";
+  import exportTDD from "./export-tdd";
   import { getTDDExportArgs } from "./getTDDExportArgs";
-  import { dimensionSearchText } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import type { TDDComparison } from "./types";
+  import type { TimeRange } from "@rilldata/web-common/lib/time/types";
+  import { useTimeControlStore } from "../time-controls/time-control-store";
 
   export let exploreName: string;
   export let dimensionName: string;
@@ -43,6 +51,7 @@
   export let isRowsEmpty = false;
   export let expandedMeasureName: string;
   export let onToggleSearchItems: () => void;
+  export let hideStartPivotButton = false;
 
   const { adminServer, exports } = featureFlags;
   const exportDash = createQueryServiceExport();
@@ -70,13 +79,13 @@
       // Note: undefined values are filtered out above, so the
       // empty string fallback is unreachable.
       ({
-        name: m.name ?? "",
-        label: m.displayName ?? "",
+        name: m.name || "",
+        label: m.displayName || "",
       }),
     );
 
   $: selectedMeasureLabel =
-    $allMeasures.find((m) => m.name === expandedMeasureName)?.displayName ??
+    $allMeasures.find((m) => m.name === expandedMeasureName)?.displayName ||
     expandedMeasureName;
 
   $: excludeMode =
@@ -168,6 +177,48 @@
       searchText: $dimensionSearchText,
     });
   };
+
+  const timeControlsStore = useTimeControlStore(stateManagers);
+
+  $: ({ minTimeGrain, timeStart, timeEnd, selectedTimeRange } =
+    $timeControlsStore);
+
+  $: activeTimeGrain = selectedTimeRange?.interval;
+
+  $: baseTimeRange = selectedTimeRange?.start &&
+    selectedTimeRange?.end && {
+      name: selectedTimeRange?.name,
+      start: selectedTimeRange.start,
+      end: selectedTimeRange.end,
+    };
+
+  function onTimeGrainSelect(timeGrain: V1TimeGrain) {
+    if (baseTimeRange) {
+      makeTimeSeriesTimeRangeAndUpdateAppState(
+        baseTimeRange,
+        timeGrain,
+        $dashboardStore?.selectedComparisonTimeRange,
+      );
+    }
+  }
+
+  function makeTimeSeriesTimeRangeAndUpdateAppState(
+    timeRange: TimeRange,
+    timeGrain: V1TimeGrain,
+    /** we should only reset the comparison range when the user has explicitly chosen a new
+     * time range. Otherwise, the current comparison state should continue to be the
+     * source of truth.
+     */
+    comparisonTimeRange: DashboardTimeControls | undefined,
+  ) {
+    metricsExplorerStore.selectTimeRange(
+      exploreName,
+      timeRange,
+      timeGrain,
+      comparisonTimeRange,
+      $validSpecStore.data?.metricsView ?? {},
+    );
+  }
 </script>
 
 <div class="tdd-header">
@@ -185,7 +236,14 @@
         <Column size="16px" /> Columns
       </div>
       <div class="flex items-center gap-x-2">
-        <TimeGrainSelector {exploreName} tdd />
+        <TimeGrainSelector
+          tdd
+          {activeTimeGrain}
+          {onTimeGrainSelect}
+          {timeStart}
+          {timeEnd}
+          {minTimeGrain}
+        />
         <SearchableFilterChip
           label={selectedMeasureLabel}
           onSelect={switchMeasure}
@@ -204,7 +262,10 @@
   {#if comparing === "dimension"}
     <div class="flex items-center mr-4 gap-x-3" style:cursor="pointer">
       {#if !isRowsEmpty}
-        <SelectAllButton {areAllTableRowsSelected} on:toggle-all-search-items />
+        <SelectAllButton
+          {areAllTableRowsSelected}
+          on:toggle-all-search-items={onToggleSearchItems}
+        />
       {/if}
 
       {#if !searchToggle}
@@ -262,15 +323,17 @@
           {exploreName}
         />
       {/if}
-      <Button
-        compact
-        type="text"
-        on:click={() => {
-          startPivotForTDD();
-        }}
-      >
-        Start Pivot
-      </Button>
+      {#if !hideStartPivotButton}
+        <Button
+          compact
+          type="text"
+          on:click={() => {
+            startPivotForTDD();
+          }}
+        >
+          Start Pivot
+        </Button>
+      {/if}
     </div>
   {/if}
 </div>

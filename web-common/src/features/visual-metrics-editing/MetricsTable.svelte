@@ -2,9 +2,15 @@
   import Checkbox from "./Checkbox.svelte";
   import MetricsTableRow from "./MetricsTableRow.svelte";
   import { ROW_HEIGHT } from "./lib";
-  import { editingItem, YAMLDimension, YAMLMeasure } from "./lib";
+  import { editingItemData, YAMLDimension, YAMLMeasure } from "./lib";
 
-  const headers = ["Name", "Label", "SQL expression", "Format", "Description"];
+  const headers = [
+    "Name",
+    "Display name",
+    "SQL expression",
+    "Format",
+    "Description",
+  ];
   const gutterWidth = 56;
 
   export let type: "measures" | "dimensions";
@@ -106,7 +112,7 @@
   function filter(item: YAMLDimension | YAMLMeasure, searchValue: string) {
     return (
       item?.name?.toLowerCase().includes(searchValue.toLowerCase()) ||
-      item?.label?.toLowerCase().includes(searchValue.toLowerCase()) ||
+      item?.display_name?.toLowerCase().includes(searchValue.toLowerCase()) ||
       item?.expression?.toLowerCase().includes(searchValue.toLowerCase()) ||
       (item instanceof YAMLDimension &&
         item?.column?.toLowerCase().includes(searchValue.toLowerCase()))
@@ -168,7 +174,7 @@
       {#each filteredIndices as index (index)}
         <MetricsTableRow
           disableDrag={filteredIndices.length !== items.length}
-          sidebarOpen={!!$editingItem}
+          sidebarOpen={!!$editingItemData}
           i={index}
           item={items[index]}
           {type}
@@ -253,7 +259,7 @@
 
   th {
     @apply text-left;
-    @apply pl-4 text-slate-500 bg-background;
+    @apply pl-4 text-slate-500 bg-surface;
     @apply border-b text-sm font-semibold;
     @apply truncate;
   }

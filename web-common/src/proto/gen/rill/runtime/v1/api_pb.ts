@@ -5,6 +5,7 @@
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3, Struct, Timestamp } from "@bufbuild/protobuf";
+import { StructType } from "./schema_pb.js";
 import { RefreshModelTrigger, Resource, ResourceName } from "./resources_pb.js";
 
 /**
@@ -587,6 +588,18 @@ export class Connector extends Message<Connector> {
   templatedProperties: string[] = [];
 
   /**
+   * Provision settings if its a managed connector
+   *
+   * @generated from field: bool provision = 6;
+   */
+  provision = false;
+
+  /**
+   * @generated from field: google.protobuf.Struct provision_args = 7;
+   */
+  provisionArgs?: Struct;
+
+  /**
    * DEPRECATED: config_from_variables stores configs whose value is a variable. This is only set for configs obtained from `connector.yaml`
    *
    * @generated from field: map<string, string> config_from_variables = 4;
@@ -605,6 +618,8 @@ export class Connector extends Message<Connector> {
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "config", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 5, name: "templated_properties", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 6, name: "provision", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "provision_args", kind: "message", T: Struct },
     { no: 4, name: "config_from_variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
@@ -2120,31 +2135,56 @@ export class GenerateMetricsViewFileRequest extends Message<GenerateMetricsViewF
   instanceId = "";
 
   /**
+   * Model to base the metrics view on.
+   * If you set this, do NOT set connector, database, database_schema or table.
+   *
+   * @generated from field: string model = 8;
+   */
+  model = "";
+
+  /**
+   * Connector for the table.
+   * See "table" for more details.
+   *
    * @generated from field: string connector = 2;
    */
   connector = "";
 
   /**
+   * Database for the table.
+   * See "table" for more details.
+   *
    * @generated from field: string database = 6;
    */
   database = "";
 
   /**
+   * Database schema for the table.
+   * See "table" for more details.
+   *
    * @generated from field: string database_schema = 7;
    */
   databaseSchema = "";
 
   /**
+   * Table to base the metrics view on.
+   * If you set this, do NOT set model.
+   *
    * @generated from field: string table = 3;
    */
   table = "";
 
   /**
+   * Path to save the metrics view file to.
+   *
    * @generated from field: string path = 4;
    */
   path = "";
 
   /**
+   * If true, the AI will be used to generate the metrics view file.
+   * Otherwise, it falls back to a simpler heuristic approach.
+   *
    * @generated from field: bool use_ai = 5;
    */
   useAi = false;
@@ -2158,6 +2198,7 @@ export class GenerateMetricsViewFileRequest extends Message<GenerateMetricsViewF
   static readonly typeName = "rill.runtime.v1.GenerateMetricsViewFileRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -2190,6 +2231,8 @@ export class GenerateMetricsViewFileRequest extends Message<GenerateMetricsViewF
  */
 export class GenerateMetricsViewFileResponse extends Message<GenerateMetricsViewFileResponse> {
   /**
+   * Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach.
+   *
    * @generated from field: bool ai_succeeded = 1;
    */
   aiSucceeded = false;
@@ -2425,6 +2468,110 @@ export class GenerateRendererResponse extends Message<GenerateRendererResponse> 
 
   static equals(a: GenerateRendererResponse | PlainMessage<GenerateRendererResponse> | undefined, b: GenerateRendererResponse | PlainMessage<GenerateRendererResponse> | undefined): boolean {
     return proto3.util.equals(GenerateRendererResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.QueryResolverRequest
+ */
+export class QueryResolverRequest extends Message<QueryResolverRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string resolver = 2;
+   */
+  resolver = "";
+
+  /**
+   * @generated from field: google.protobuf.Struct resolver_properties = 3;
+   */
+  resolverProperties?: Struct;
+
+  /**
+   * @generated from field: google.protobuf.Struct resolver_args = 4;
+   */
+  resolverArgs?: Struct;
+
+  /**
+   * @generated from field: int32 limit = 5;
+   */
+  limit = 0;
+
+  constructor(data?: PartialMessage<QueryResolverRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.QueryResolverRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "resolver_properties", kind: "message", T: Struct },
+    { no: 4, name: "resolver_args", kind: "message", T: Struct },
+    { no: 5, name: "limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): QueryResolverRequest {
+    return new QueryResolverRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): QueryResolverRequest {
+    return new QueryResolverRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): QueryResolverRequest {
+    return new QueryResolverRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: QueryResolverRequest | PlainMessage<QueryResolverRequest> | undefined, b: QueryResolverRequest | PlainMessage<QueryResolverRequest> | undefined): boolean {
+    return proto3.util.equals(QueryResolverRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.QueryResolverResponse
+ */
+export class QueryResolverResponse extends Message<QueryResolverResponse> {
+  /**
+   * @generated from field: rill.runtime.v1.StructType schema = 1;
+   */
+  schema?: StructType;
+
+  /**
+   * @generated from field: repeated google.protobuf.Struct data = 2;
+   */
+  data: Struct[] = [];
+
+  constructor(data?: PartialMessage<QueryResolverResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.QueryResolverResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "schema", kind: "message", T: StructType },
+    { no: 2, name: "data", kind: "message", T: Struct, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): QueryResolverResponse {
+    return new QueryResolverResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): QueryResolverResponse {
+    return new QueryResolverResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): QueryResolverResponse {
+    return new QueryResolverResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: QueryResolverResponse | PlainMessage<QueryResolverResponse> | undefined, b: QueryResolverResponse | PlainMessage<QueryResolverResponse> | undefined): boolean {
+    return proto3.util.equals(QueryResolverResponse, a, b);
   }
 }
 
@@ -2759,6 +2906,13 @@ export class ListResourcesRequest extends Message<ListResourcesRequest> {
    */
   path = "";
 
+  /**
+   * Skip security checks
+   *
+   * @generated from field: bool skip_security_checks = 4;
+   */
+  skipSecurityChecks = false;
+
   constructor(data?: PartialMessage<ListResourcesRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2770,6 +2924,7 @@ export class ListResourcesRequest extends Message<ListResourcesRequest> {
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "skip_security_checks", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListResourcesRequest {
@@ -2944,6 +3099,11 @@ export class GetResourceRequest extends Message<GetResourceRequest> {
    */
   name?: ResourceName;
 
+  /**
+   * @generated from field: bool skip_security_checks = 3;
+   */
+  skipSecurityChecks = false;
+
   constructor(data?: PartialMessage<GetResourceRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2954,6 +3114,7 @@ export class GetResourceRequest extends Message<GetResourceRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "message", T: ResourceName },
+    { no: 3, name: "skip_security_checks", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetResourceRequest {
@@ -3675,6 +3836,20 @@ export class AnalyzedConnector extends Message<AnalyzedConnector> {
   envConfig: { [key: string]: string } = {};
 
   /**
+   * Provision indicates if its a managed connector
+   *
+   * @generated from field: bool provision = 10;
+   */
+  provision = false;
+
+  /**
+   * Provision args for the provisioner if provision is true
+   *
+   * @generated from field: google.protobuf.Struct provision_args = 11;
+   */
+  provisionArgs?: Struct;
+
+  /**
    * True if the connector can be accessed without credentials
    *
    * @generated from field: bool has_anonymous_access = 7;
@@ -3709,6 +3884,8 @@ export class AnalyzedConnector extends Message<AnalyzedConnector> {
     { no: 4, name: "preset_config", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 5, name: "project_config", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 6, name: "env_config", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 10, name: "provision", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 11, name: "provision_args", kind: "message", T: Struct },
     { no: 7, name: "has_anonymous_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 8, name: "used_by", kind: "message", T: ResourceName, repeated: true },
     { no: 9, name: "error_message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -3987,6 +4164,14 @@ export class IssueDevJWTRequest extends Message<IssueDevJWTRequest> {
    */
   admin = false;
 
+  /**
+   * Additional arbitrary attributes to include in the JWT.
+   * They take precedence if they collide with name, email, groups or admin.
+   *
+   * @generated from field: google.protobuf.Struct attributes = 5;
+   */
+  attributes?: Struct;
+
   constructor(data?: PartialMessage<IssueDevJWTRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3999,6 +4184,7 @@ export class IssueDevJWTRequest extends Message<IssueDevJWTRequest> {
     { no: 2, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "groups", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 4, name: "admin", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "attributes", kind: "message", T: Struct },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): IssueDevJWTRequest {

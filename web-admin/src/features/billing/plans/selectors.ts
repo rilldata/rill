@@ -58,8 +58,7 @@ export function getBillingUpgradeUrl(page: Page, organization: string) {
 export function getNextBillingCycleDate(curEndDateRaw: string): string {
   const curEndDate = DateTime.fromJSDate(new Date(curEndDateRaw));
   if (!curEndDate.isValid) return "Unknown";
-  const nextStartDate = curEndDate.plus({ day: 1 });
-  return nextStartDate.toLocaleString(DateTime.DATE_MED);
+  return curEndDate.toLocaleString(DateTime.DATE_MED);
 }
 
 export function getOrganizationUsageMetrics(

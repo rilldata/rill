@@ -40,9 +40,9 @@
   let row: HTMLTableRowElement;
   let hovered = false;
 
-  $: ({ name, label, expression, description } = item);
+  $: ({ name, display_name, expression, description } = item);
 
-  $: id = name ?? label ?? "";
+  $: id = name || display_name || "";
 
   $: finalSelected = selected && !sidebarOpen;
 
@@ -61,6 +61,7 @@
   style:transform="translateY({translate}px)"
   class="relative text-sm"
   style:height="{rowHeight}px"
+  aria-label="{type.slice(0, -1)} {display_name || name}"
   class:editing
   class:dragging
   class:ghost
@@ -93,15 +94,15 @@
       <span>{name || "-"}</span>
     {/if}
   </td>
-  <td on:click={onCellClick} aria-label="Label">
+  <td on:click={onCellClick} aria-label="Display name">
     <div class="text-[12px] pr-4">
       <Chip
         slideDuration={0}
         type={type === "dimensions" ? "dimension" : "measure"}
-        label={label || name}
+        label={display_name || name}
       >
         <div slot="body" class="font-bold">
-          {label || name}
+          {display_name || name}
         </div>
       </Chip>
     </div>
@@ -138,6 +139,8 @@
       class:selected={finalSelected}
     >
       <EditControls
+        itemType={type}
+        name={item.display_name || item.name}
         selected={finalSelected}
         first={i === 0}
         last={i === length - 1}
@@ -169,7 +172,7 @@
   }
 
   tr {
-    @apply bg-background;
+    @apply bg-surface;
   }
 
   .dragging {

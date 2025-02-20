@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { getComparisonRange } from "@rilldata/web-common/lib/time/comparisons";
   import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
@@ -6,7 +7,6 @@
     type DashboardTimeControls,
     TimeComparisonOption,
   } from "@rilldata/web-common/lib/time/types";
-  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import { DateTime, Interval } from "luxon";
   import CalendarPlusDateInput from "./CalendarPlusDateInput.svelte";
   import RangeDisplay from "./RangeDisplay.svelte";
@@ -23,7 +23,10 @@
   export let showComparison: boolean | undefined;
   export let selectedComparison: DashboardTimeControls | undefined;
   export let zone: string;
+  export let disabled: boolean;
   export let grain: string;
+  export let minDate: DateTime | undefined = undefined;
+  export let maxDate: DateTime | undefined = undefined;
   export let onSelectComparisonRange: (
     name: string,
     start: Date,
@@ -93,8 +96,10 @@
   }}
   typeahead={!showSelector}
 >
-  <DropdownMenu.Trigger asChild let:builder>
+  <DropdownMenu.Trigger asChild let:builder {disabled}>
     <button
+      {disabled}
+      aria-disabled={disabled}
       use:builder.action
       {...builder}
       aria-label="Select time comparison option"
@@ -160,8 +165,10 @@
       </div>
       {#if showSelector}
         <div class="bg-slate-50 flex flex-col w-64 px-2 py-1">
-          {#if interval?.isValid}
+          {#if !interval || interval?.isValid}
             <CalendarPlusDateInput
+              {maxDate}
+              {minDate}
               {firstVisibleMonth}
               {interval}
               {zone}

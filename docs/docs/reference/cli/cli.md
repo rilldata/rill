@@ -5,7 +5,11 @@ sidebar_position: 15
 ---
 ## rill
 
-Rill CLI
+A CLI for Rill
+
+### Synopsis
+
+Work with Rill projects directly from the command line.
 
 ### Flags
 
@@ -28,6 +32,7 @@ Rill CLI
 * [rill org](org/org.md)	 - Manage organisations
 * [rill project](project/project.md)	 - Manage projects
 * [rill public-url](public-url/public-url.md)	 - Manage public URLs
+* [rill query](query.md)	 - Query a resolver within a project
 * [rill service](service/service.md)	 - Manage service accounts
 * [rill start](start.md)	 - Build project and start web app
 * [rill uninstall](uninstall.md)	 - Uninstall the Rill binary

@@ -21,6 +21,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/archive"
 	"github.com/rilldata/rill/runtime/pkg/ctxsync"
+	"github.com/rilldata/rill/runtime/storage"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 	"golang.org/x/sync/singleflight"
@@ -60,10 +61,9 @@ type configProperties struct {
 	AccessToken string `mapstructure:"access_token"`
 	ProjectID   string `mapstructure:"project_id"`
 	Branch      string `mapstructure:"branch"`
-	TempDir     string `mapstructure:"temp_dir"`
 }
 
-func (d driver) Open(instanceID string, config map[string]any, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("admin driver can't be shared")
 	}
@@ -80,11 +80,12 @@ func (d driver) Open(instanceID string, config map[string]any, ac *activity.Clie
 	}
 
 	h := &Handle{
-		config: cfg,
-		logger: logger,
-		admin:  admin,
-		repoMu: ctxsync.NewRWMutex(),
-		repoSF: &singleflight.Group{},
+		config:  cfg,
+		logger:  logger,
+		storage: st,
+		admin:   admin,
+		repoMu:  ctxsync.NewRWMutex(),
+		repoSF:  &singleflight.Group{},
 	}
 
 	return h, nil
@@ -105,6 +106,7 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 type Handle struct {
 	config               *configProperties
 	logger               *zap.Logger
+	storage              *storage.Client
 	admin                *client.Client
 	repoMu               ctxsync.RWMutex
 	repoSF               *singleflight.Group
@@ -117,12 +119,14 @@ type Handle struct {
 	ignorePaths          []string
 
 	// git related fields
-	// These will not be set if downloadURL is set
+	// These will not be set if archiveDownloadURL is set
 	gitURL          string
 	gitURLExpiresOn time.Time
 
-	// downloadURL is set when using one-time uploads
-	downloadURL string
+	// archiveDownloadURL is set when using one-time uploads
+	archiveDownloadURL string
+	archiveID          string
+	archiveCreatedOn   time.Time
 }
 
 var _ drivers.Handle = &Handle{}
@@ -235,11 +239,6 @@ func (h *Handle) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bo
 	return nil, false
 }
 
-// AsSQLStore implements drivers.Handle.
-func (h *Handle) AsSQLStore() (drivers.SQLStore, bool) {
-	return nil, false
-}
-
 // AsNotifier implements drivers.Handle.
 func (h *Handle) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
@@ -323,7 +322,7 @@ func (h *Handle) cloneOrPull(ctx context.Context) error {
 // Unsafe for concurrent use.
 func (h *Handle) cloneOrPullInner(ctx context.Context) (err error) {
 	if h.cloned {
-		if h.downloadURL != "" {
+		if h.archiveDownloadURL != "" {
 			// in case of one-time uploads we edit instance and close handle when artifacts are updated
 			// so we just pull virtual files and return early.
 			return h.pullVirtual(ctx)
@@ -344,7 +343,7 @@ func (h *Handle) cloneOrPullInner(ctx context.Context) (err error) {
 		return fmt.Errorf("repo handshake failed: %w", err)
 	}
 
-	if h.downloadURL != "" {
+	if h.archiveDownloadURL != "" {
 		// download repo
 		if err := h.download(); err != nil {
 			return err
@@ -391,7 +390,7 @@ func (h *Handle) checkHandshake(ctx context.Context) error {
 	}
 
 	if h.repoPath == "" {
-		h.repoPath, err = os.MkdirTemp(h.config.TempDir, "admin_driver_repo")
+		h.repoPath, err = h.storage.RandomTempDir("admin_driver_repo")
 		if err != nil {
 			return err
 		}
@@ -408,9 +407,11 @@ func (h *Handle) checkHandshake(ctx context.Context) error {
 		h.projPath = filepath.Join(h.repoPath, meta.GitSubpath)
 	}
 
-	if meta.ArchiveDownloadUrl != "" {
-		h.downloadURL = meta.ArchiveDownloadUrl
-		return nil
+	h.archiveDownloadURL = meta.ArchiveDownloadUrl
+	h.archiveID = meta.ArchiveId
+	h.archiveCreatedOn = time.Time{}
+	if meta.ArchiveCreatedOn != nil {
+		h.archiveCreatedOn = meta.ArchiveCreatedOn.AsTime()
 	}
 
 	h.gitURL = meta.GitUrl
@@ -577,7 +578,11 @@ func (h *Handle) stashVirtual() error {
 		return nil
 	}
 
-	dst, err := generateTmpPath(h.config.TempDir, "admin_driver_virtual_stash", "")
+	tempPath, err := h.storage.TempDir()
+	if err != nil {
+		return fmt.Errorf("stash virtual: %w", err)
+	}
+	dst, err := generateTmpPath(tempPath, "admin_driver_virtual_stash", "")
 	if err != nil {
 		return fmt.Errorf("stash virtual: %w", err)
 	}
@@ -615,19 +620,23 @@ func (h *Handle) unstashVirtual() error {
 	return nil
 }
 
-// download repo when downloadURL is set.
+// download repo when archiveDownloadURL is set.
 // Unsafe for concurrent use.
 func (h *Handle) download() error {
 	ctx, cancel := context.WithTimeout(context.Background(), pullTimeout)
 	defer cancel()
 
 	// generate a temporary file to copy repo tar directory
-	downloadDst, err := generateTmpPath(h.config.TempDir, "admin_driver_zipped_repo", ".tar.gz")
+	tempPath, err := h.storage.TempDir()
+	if err != nil {
+		return fmt.Errorf("download: %w", err)
+	}
+	downloadDst, err := generateTmpPath(tempPath, "admin_driver_zipped_repo", ".tar.gz")
 	if err != nil {
 		return fmt.Errorf("download: %w", err)
 	}
 
-	err = archive.Download(ctx, h.downloadURL, downloadDst, h.projPath, true)
+	err = archive.Download(ctx, h.archiveDownloadURL, downloadDst, h.projPath, true, false)
 	if err != nil {
 		return err
 	}

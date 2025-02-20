@@ -1,14 +1,17 @@
 name: Build and Test docs
 on:
+  workflow_dispatch:
   pull_request:
     paths:
       - ".github/workflows/docs-check.yml"
       - "docs/**"
+      - "cli/**"
+env:
+  NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+  NETLIFY_SITE_ID: 23baf08e-2d3e-44db-8bd4-938e54467a29
+
 jobs:
   build:
-    strategy:
-      matrix:
-        name: ["docs"]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -19,11 +22,49 @@ jobs:
         with:
           node-version: 20
 
-      - name: NPM Install ${{ matrix.name }}
-        run: npm install -w ${{ matrix.name }}
+      # - name: Filter modified codepaths
+      #   uses: dorny/paths-filter@v3
+      #   id: filter
+      #   with:
+      #     filters: |
+      #       cli:
+      #         - "cli/**"
+
+      # - name: Check if new files were created
+      #   if: ${{ steps.filter.outputs.cli == 'true' }}
+      #   run: |
+      #     make docs.generate
+      #     git diff --exit-code || (echo "New files were created, please run 'make docs.generate' locally and commit the changes" && exit 0)
+
+      - name: Build docs
+        run: |-
+          npm install -w docs
+          npm run build -w docs
         # https://typicode.github.io/husky/how-to.html#ci-server-and-docker
         env:
           HUSKY: 0
 
-      - name: Build ${{ matrix.name }}
-        run: npm run build -w ${{ matrix.name }}
+      - name: Deploy Docs to Netlify docs.rilldata.com
+        uses: nwtgck/actions-netlify@v3.0
+        if: github.event_name != 'pull_request'
+        with:
+          publish-dir: ./docs/dist
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message: "Docs ${{ github.ref_name }} deployed to docs.rilldata.com"
+          production-deploy: true
+          enable-pull-request-comment: false
+          enable-commit-comment: true
+          overwrites-pull-request-comment: true
+        timeout-minutes: 1
+
+      - name: Algolia crawler creation and crawl
+        uses: algolia/algoliasearch-crawler-github-actions@v1.1.10
+        id: algolia_crawler
+        if: github.event_name != 'pull_request'
+        with:
+          crawler-name: rilldata
+          crawler-user-id: ${{ secrets.CRAWLER_USER_ID }}
+          crawler-api-key: ${{ secrets.CRAWLER_API_KEY }}
+          algolia-app-id: ${{ secrets.ALGOLIA_APP_ID }}
+          algolia-api-key: ${{ secrets.ALGOLIA_API_KEY }}
+          site-url: 'https://docs.rilldata.com'

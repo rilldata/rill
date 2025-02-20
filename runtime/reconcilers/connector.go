@@ -3,6 +3,7 @@ package reconcilers
 import (
 	"context"
 	"crypto/md5"
+	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -10,7 +11,9 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"golang.org/x/exp/maps"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func init() {
@@ -21,8 +24,8 @@ type ConnectorReconciler struct {
 	C *runtime.Controller
 }
 
-func newConnectorReconciler(c *runtime.Controller) runtime.Reconciler {
-	return &ConnectorReconciler{C: c}
+func newConnectorReconciler(ctx context.Context, c *runtime.Controller) (runtime.Reconciler, error) {
+	return &ConnectorReconciler{C: c}, nil
 }
 
 func (r *ConnectorReconciler) Close(ctx context.Context) error {
@@ -113,11 +116,25 @@ func (r *ConnectorReconciler) executionSpecHash(ctx context.Context, spec *runti
 		return "", err
 	}
 
+	err = binary.Write(hash, binary.BigEndian, spec.Provision)
+	if err != nil {
+		return "", err
+	}
+
+	if spec.ProvisionArgs != nil {
+		err = pbutil.WriteHash(structpb.NewStructValue(spec.ProvisionArgs), hash)
+		if err != nil {
+			return "", err
+		}
+	}
+
 	// write properties to hash
 	props, err := runtime.ResolveConnectorProperties(instance.Environment, vars, &runtimev1.Connector{
 		Type:                spec.Driver,
 		Config:              spec.Properties,
 		TemplatedProperties: spec.TemplatedProperties,
+		Provision:           spec.Provision,
+		ProvisionArgs:       spec.ProvisionArgs,
 		ConfigFromVariables: spec.PropertiesFromVariables,
 	})
 	if err != nil {

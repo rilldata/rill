@@ -11,7 +11,7 @@
   import Input from "../../components/forms/Input.svelte";
   import Select from "../../components/forms/Select.svelte";
   import { runtime } from "../../runtime-client/runtime-store";
-  import { makeTimeZoneOptions } from "./time-utils";
+  import { makeTimeZoneOptions, ReportFrequency } from "./time-utils";
 
   export let formId: string;
   export let data: Readable<ReportValues>;
@@ -20,11 +20,13 @@
   export let enhance;
   export let exploreName: string;
 
+  $: ({ instanceId } = $runtime);
+
   // Pull the time zone options from the dashboard's spec
-  $: exploreSpec = useExploreValidSpec($runtime.instanceId, exploreName);
+  $: exploreSpec = useExploreValidSpec(instanceId, exploreName);
   $: availableTimeZones = $exploreSpec.data?.explore?.timeZones;
   $: timeZoneOptions = makeTimeZoneOptions(availableTimeZones);
-  $: hasSlackNotifier = getHasSlackConnection($runtime.instanceId);
+  $: hasSlackNotifier = getHasSlackConnection(instanceId);
 </script>
 
 <form
@@ -47,12 +49,12 @@
       bind:value={$data["frequency"]}
       id="frequency"
       label="Frequency"
-      options={["Daily", "Weekdays", "Weekly"].map((frequency) => ({
+      options={["Daily", "Weekdays", "Weekly", "Monthly"].map((frequency) => ({
         value: frequency,
         label: frequency,
       }))}
     />
-    {#if $data["frequency"] === "Weekly"}
+    {#if $data["frequency"] === ReportFrequency.Weekly}
       <Select
         bind:value={$data["dayOfWeek"]}
         id="dayOfWeek"
@@ -69,6 +71,15 @@
           value: day,
           label: day,
         }))}
+      />
+    {/if}
+    {#if $data["frequency"] === ReportFrequency.Monthly}
+      <Select
+        value={"1"}
+        id="dayOfMonth"
+        label="Day"
+        options={[{ value: "1", label: "First day" }]}
+        disabled
       />
     {/if}
     <TimePicker bind:value={$data["timeOfDay"]} id="timeOfDay" label="Time" />

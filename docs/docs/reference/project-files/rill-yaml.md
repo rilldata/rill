@@ -9,7 +9,9 @@ The `rill.yaml` file contains metadata about your project.
 
 ## Properties
 
-**`title`** — the name of your project which will be displayed in the upper left hand corner
+**`title`** — the name of your project which will be displayed in the upper left hand corner [deprecated, use `display_name`] _(required)_.
+
+**`display_name`** - Refers to the display name for the metrics view _(required)_.
 
 **`compiler`** — the Rill project compiler version compatible with your project files (currently defaults to: `rillv1`)
 
@@ -134,7 +136,7 @@ Variables can also be set through your project's `<RILL_PROJECT_HOME>/.env` file
 variable=xyz
 ```
 
-Similar to how [connector credentials can be pushed / pulled](/build/credentials/credentials.md#pushing-and-pulling-credentials-to--from-rill-cloud) from local to cloud or vice versa, project variables set locally in Rill Developer can be pushed to Rill Cloud and/or pulled back to your local instance from your deployed project by using the `rill env push` and `rill env pull` commands respectively.
+Similar to how [connector credentials can be pushed / pulled](/build/credentials/credentials.md#pulling-credentials-and-variables-from-a-deployed-project-on-rill-cloud) from local to cloud or vice versa, project variables set locally in Rill Developer can be pushed to Rill Cloud and/or pulled back to your local instance from your deployed project by using the `rill env push` and `rill env pull` commands respectively.
 
 :::
 

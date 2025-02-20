@@ -105,7 +105,7 @@
       addDevLimit,
     );
     await goto(`/files${newModelPath}`);
-    await behaviourEvent.fireNavigationEvent(
+    await behaviourEvent?.fireNavigationEvent(
       newModelName,
       BehaviourEventMedium.Button,
       MetricsEventSpace.RightPanel,
@@ -129,6 +129,7 @@
 <WorkspaceContainer>
   <WorkspaceHeader
     {filePath}
+    {resource}
     resourceKind={ResourceKind.Source}
     slot="header"
     titleInput={fileName}
@@ -154,7 +155,7 @@
           hasUnsavedChanges={$hasUnsavedChanges}
           hasErrors={$hasErrors}
           {isLocalFileConnector}
-          on:save-source={fileArtifact.saveLocalContent}
+          on:save-source={() => fileArtifact.saveLocalContent()}
           on:refresh-source={refresh}
           on:replace-source={replaceSource}
           on:create-model={handleCreateModelFromSource}
@@ -163,7 +164,10 @@
     </svelte:fragment>
   </WorkspaceHeader>
 
-  <div slot="body" class="editor-pane size-full overflow-hidden flex flex-col">
+  <div
+    slot="body"
+    class="editor-pane size-full overflow-hidden flex flex-col gap-y-0"
+  >
     <WorkspaceEditorContainer>
       {#key assetName}
         <SourceEditor {fileArtifact} {allErrors} />

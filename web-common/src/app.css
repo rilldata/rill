@@ -3,28 +3,15 @@
 @tailwind utilities;
 
 @layer utilities {
-  .surface-bg {
-    @apply bg-gray-100 dark:bg-gray-800;
-  }
+
 
   .surface {
-    @apply bg-white dark:bg-gray-800;
+    @apply bg-white ;
   }
 
-  .surface-secondary {
-    @apply bg-gray-100 dark:bg-gray-700;
-  }
-
-  .surface-impression {
-    @apply bg-gray-100 dark:bg-gray-900;
-  }
-
-  .surface-faint {
-    @apply bg-gray-50 dark:bg-transparent;
-  }
 
   .ui-copy {
-    @apply text-gray-900 dark:text-white;
+    @apply text-gray-900 ;
   }
 
   .ui-copy-dashboard-header {
@@ -33,17 +20,17 @@
   }
 
   .ui-copy-muted {
-    @apply text-gray-600 dark:text-gray-200;
+    @apply text-gray-600;
    
   }
 
   .ui-header-primary {
-    @apply text-slate-600 dark:text-slate-100;
+    @apply text-slate-600 ;
     @apply hover:text-primary-700 group-hover:text-primary-700;
   }
 
   .ui-copy-strong {
-    @apply text-gray-900 dark:text-white font-semibold;
+    @apply text-gray-900 font-semibold;
   }
 
   .ui-copy-icon {
@@ -58,12 +45,8 @@
       "kern";
   }
 
-  .ui-copy-icon-inactive {
-    @apply text-gray-500 dark:text-gray-500;
-  }
-
   .ui-copy-inactive {
-    @apply text-gray-500 dark:text-gray-400;
+    @apply text-gray-500;
   }
 
   .ui-copy-disabled {
@@ -72,7 +55,7 @@
 
   /** a non-acccessible faint version of ui-copy-disabled used in dimension tables */
   .ui-copy-disabled-faint {
-    @apply text-gray-400 dark:text-gray-400;
+    @apply text-gray-400;
   }
 
   .ui-copy-code {
@@ -81,28 +64,17 @@
     @apply text-gray-600;
   }
 
-  .ui-divider {
-    @apply border-gray-300 dark:border-gray-600;
-  }
-
-  .ui-divider-faint {
-    @apply border-gray-200 dark:border-gray-600;
-  }
-
-  .ui-divider-strong {
-    @apply border-gray-400 dark:border-gray-500;
-  }
 
   .ui-measure-bar-included {
-    @apply bg-primary-100 dark:bg-primary-700;
+    @apply bg-primary-100;
   }
 
   .ui-measure-bar-included-selected {
-    @apply bg-primary-200 dark:bg-primary-600;
+    @apply bg-primary-200;
   }
 
   .ui-measure-bar-excluded {
-    @apply bg-gray-100 dark:bg-gray-700;
+    @apply bg-gray-100;
   }
 
   .ui-editor-text-error {
@@ -113,16 +85,16 @@
     @apply bg-red-50;
   }
 
-  .ui-editor-border-error {
-    border-color: var(--ui-editor-error-foreground);
-  }
+
 }
 
 @layer base {
   :root {
     --ui-editor-error-foreground: hsl(0, 75%, 45%);
 
-    --background: 0 0% 100%;
+    --background: 210 40% 98%;
+    --surface: 0 0% 100%;
+    
     --foreground: 222.2 84% 4.9%;
   
     --muted: 210 40% 96.1%;
@@ -187,6 +159,12 @@
     /* Used to set svg gradient */
     --color-slate-200: theme("colors.slate.200");
     --color-slate-300: theme("colors.slate.300");
+
+  }
+
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    color: white;
   }
 
   h1,
@@ -207,7 +185,7 @@ button {
 }
 
 body {
-  background-color: white;
+  @apply bg-background;
   font-family: "Inter";
   font-size: 12px;
 
@@ -250,3 +228,4 @@ a {
 .left-shift {
   @apply pl-8;
 }
+

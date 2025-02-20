@@ -1,6 +1,6 @@
 import { expect, type Locator } from "@playwright/test";
-import { useDashboardFlowTestSetup } from "web-local/tests/explores/dashboard-flow-test-setup";
-import { test } from "../utils/test";
+import { gotoNavEntry } from "../utils/waitHelpers";
+import { test } from "../setup/base";
 
 async function assertAAboveB(locA: Locator, locB: Locator) {
   const topA = await locA.boundingBox().then((box) => box?.y);
@@ -14,10 +14,13 @@ async function assertAAboveB(locA: Locator, locB: Locator) {
 }
 
 test.describe("leaderboard and dimension table sorting", () => {
-  useDashboardFlowTestSetup(false);
+  test.use({ project: "AdBids" });
 
   test("leaderboard and dimension table sorting", async ({ page }) => {
-    await page.waitForTimeout(1000);
+    await page.getByLabel("/dashboards").click();
+    await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
+    await page.getByRole("button", { name: "Preview" }).click();
+    await page.waitForURL(new RegExp("/explore/AdBids_metrics_explore"));
 
     /**
      * LEADERBOARD
@@ -53,11 +56,11 @@ test.describe("leaderboard and dimension table sorting", () => {
       page.getByRole("row", { name: "null 32.9k" }),
     );
 
-    // add time comparison and select Pct change
-    await page.getByRole("button", { name: "Comparing" }).click();
-
     await openTimeRangeMenu();
     await page.getByRole("menuitem", { name: "Last 24 Hours" }).click();
+
+    // add time comparison and select Pct change
+    await page.getByRole("button", { name: "Comparing" }).click();
 
     // need a slight delay for the time range to update
     // and the "Pct change" option to be available

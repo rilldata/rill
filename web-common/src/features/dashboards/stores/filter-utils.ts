@@ -1,7 +1,12 @@
+import { mergeDimensionAndMeasureFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
-  type V1Condition,
   V1Operation,
+  type MetricsViewSpecDimensionV2,
+  type MetricsViewSpecMeasureV2,
+  type V1Condition,
   type V1Expression,
+  type V1Subquery,
 } from "@rilldata/web-common/runtime-client";
 
 export function createLikeExpression(
@@ -183,6 +188,12 @@ export function filterExpressions(
   expr: V1Expression,
   checker: (e: V1Expression) => boolean,
 ): V1Expression | undefined {
+  if (expr.subquery) {
+    return {
+      subquery: filterSubQuery(expr.subquery, checker),
+    };
+  }
+
   if (!expr.cond?.exprs) {
     return {
       ...expr,
@@ -205,14 +216,48 @@ export function filterExpressions(
       if (newExpr.cond?.exprs?.length === 0) return undefined;
       break;
 
-    // other types will have identifier as 1st expression
     default:
-      if (!newExpr.cond?.exprs?.length || !("ident" in newExpr.cond.exprs[0]))
+      // other types should have at least 2 expressions
+      if (newExpr.cond?.exprs?.length && newExpr.cond.exprs.length <= 1)
         return undefined;
       break;
   }
 
   return newExpr;
+}
+function filterSubQuery(
+  subQuery: V1Subquery,
+  checker: (e: V1Expression) => boolean,
+) {
+  if (subQuery.having?.cond?.exprs?.length) {
+    if (checker(subQuery.having)) {
+      subQuery.having = filterExpressions(subQuery.having, checker);
+    } else {
+      subQuery.having = undefined;
+    }
+  } else if (subQuery.having) {
+    subQuery.having = {
+      ...subQuery.having,
+    };
+  }
+  if (subQuery.where?.cond?.exprs?.length) {
+    if (checker(subQuery.where)) {
+      subQuery.where = filterExpressions(subQuery.where, checker);
+    } else {
+      subQuery.where = undefined;
+    }
+  } else if (subQuery.where) {
+    subQuery.where = {
+      ...subQuery.where,
+    };
+  }
+
+  return <V1Subquery>{
+    dimension: subQuery.dimension,
+    measures: [...(subQuery.measures ?? [])],
+    where: subQuery.where,
+    having: subQuery.having,
+  };
 }
 
 export function copyFilterExpression(expr: V1Expression) {
@@ -224,6 +269,9 @@ export function filterIdentifiers(
   cb: (e: V1Expression, ident: string) => boolean,
 ) {
   return filterExpressions(expr, (e) => {
+    if (e.subquery?.dimension) {
+      return cb(e, e.subquery.dimension);
+    }
     const ident = e.cond?.exprs?.[0].ident;
     if (ident === undefined) {
       return true;
@@ -304,4 +352,72 @@ export function isExpressionIncomplete(expression: V1Expression): boolean {
 
   // If the operation is specified and a defined, non-empty val is found, the expression is complete
   return false;
+}
+
+export function isJoinerExpression(expression: V1Expression | undefined) {
+  return (
+    expression?.cond?.op &&
+    (expression.cond.op === V1Operation.OPERATION_AND ||
+      expression.cond.op === V1Operation.OPERATION_OR)
+  );
+}
+
+export function isExpressionUnsupported(expression: V1Expression) {
+  if (
+    !expression.cond ||
+    !expression.cond.exprs ||
+    expression.cond?.op !== V1Operation.OPERATION_AND
+  ) {
+    return true;
+  }
+
+  for (const expr of expression.cond.exprs) {
+    if (
+      expr.cond?.op !== V1Operation.OPERATION_IN &&
+      expr.cond?.op !== V1Operation.OPERATION_NIN
+    )
+      return true;
+
+    const subqueryExpr = expr.cond?.exprs?.[1];
+    if (
+      subqueryExpr?.subquery?.having?.cond?.exprs?.length &&
+      isJoinerExpression(subqueryExpr.subquery.having) &&
+      subqueryExpr.subquery.having.cond.exprs.length > 1
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+export function buildValidMetricsViewFilter(
+  filter: V1Expression,
+  dtf: DimensionThresholdFilter[],
+  dimensions: MetricsViewSpecDimensionV2[],
+  measures: MetricsViewSpecMeasureV2[],
+) {
+  const whereFilter =
+    filterIdentifiers(filter, (e, ident) => {
+      const dim = dimensions?.find((d) => d.name === ident);
+      // ignore if dimension is not present anymore
+      if (!dim) return false;
+      return true;
+    }) ?? createAndExpression([]);
+
+  const dimensionThresholdFilter = dtf.filter((f) => {
+    const dim = dimensions?.find((d) => d.name === f.name);
+    if (!dim) return false;
+
+    const hasValidMeasures = f.filters.every((filter) => {
+      const measure = measures?.find((m) => m.name === filter.measure);
+      return !!measure;
+    });
+    return hasValidMeasures;
+  });
+
+  return sanitiseExpression(
+    mergeDimensionAndMeasureFilter(whereFilter, dimensionThresholdFilter),
+    undefined,
+  );
 }

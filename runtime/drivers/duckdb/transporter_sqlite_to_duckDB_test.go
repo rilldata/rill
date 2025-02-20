@@ -9,6 +9,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/storage"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	_ "modernc.org/sqlite"
@@ -29,14 +30,11 @@ func Test_sqliteToDuckDB_Transfer(t *testing.T) {
 	require.NoError(t, err)
 	db.Close()
 
-	to, err := drivers.Open("duckdb", "default", map[string]any{"dsn": ":memory:"}, activity.NewNoopClient(), zap.NewNop())
+	to, err := drivers.Open("duckdb", "default", map[string]any{"dsn": ":memory:"}, storage.MustNew(tempDir, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	olap, _ := to.AsOLAP("")
 
-	tr := &duckDBToDuckDB{
-		to:     olap,
-		logger: zap.NewNop(),
-	}
+	tr := newDuckDBToDuckDB(to, to.(*connection), zap.NewNop())
 	query := fmt.Sprintf("SELECT * FROM sqlite_scan('%s', 't');", dbPath)
 	err = tr.Transfer(context.Background(), map[string]any{"sql": query}, map[string]any{"table": "test"}, &drivers.TransferOptions{})
 	require.NoError(t, err)

@@ -673,6 +673,16 @@ export class UpdateOrganizationRequest extends Message<UpdateOrganizationRequest
   displayName?: string;
 
   /**
+   * @generated from field: optional string logo_asset_id = 6;
+   */
+  logoAssetId?: string;
+
+  /**
+   * @generated from field: optional string favicon_asset_id = 7;
+   */
+  faviconAssetId?: string;
+
+  /**
    * @generated from field: optional string billing_email = 4;
    */
   billingEmail?: string;
@@ -689,6 +699,8 @@ export class UpdateOrganizationRequest extends Message<UpdateOrganizationRequest
     { no: 2, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 3, name: "new_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 5, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 6, name: "logo_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 7, name: "favicon_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 4, name: "billing_email", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
@@ -2507,6 +2519,11 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
    */
   prodVersion?: string;
 
+  /**
+   * @generated from field: bool superuser_force_access = 14;
+   */
+  superuserForceAccess = false;
+
   constructor(data?: PartialMessage<UpdateProjectRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2528,6 +2545,7 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
     { no: 9, name: "new_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 10, name: "prod_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
     { no: 11, name: "prod_version", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 14, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateProjectRequest {
@@ -2612,6 +2630,16 @@ export class CreateAssetRequest extends Message<CreateAssetRequest> {
    */
   extension = "";
 
+  /**
+   * @generated from field: bool public = 5;
+   */
+  public = false;
+
+  /**
+   * @generated from field: int64 estimated_size_bytes = 6;
+   */
+  estimatedSizeBytes = protoInt64.zero;
+
   constructor(data?: PartialMessage<CreateAssetRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2624,6 +2652,8 @@ export class CreateAssetRequest extends Message<CreateAssetRequest> {
     { no: 2, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "extension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "estimated_size_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateAssetRequest {
@@ -2706,6 +2736,11 @@ export class RedeployProjectRequest extends Message<RedeployProjectRequest> {
    */
   project = "";
 
+  /**
+   * @generated from field: bool superuser_force_access = 3;
+   */
+  superuserForceAccess = false;
+
   constructor(data?: PartialMessage<RedeployProjectRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2716,6 +2751,7 @@ export class RedeployProjectRequest extends Message<RedeployProjectRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RedeployProjectRequest {
@@ -3062,6 +3098,108 @@ export class TriggerRedeployResponse extends Message<TriggerRedeployResponse> {
 
   static equals(a: TriggerRedeployResponse | PlainMessage<TriggerRedeployResponse> | undefined, b: TriggerRedeployResponse | PlainMessage<TriggerRedeployResponse> | undefined): boolean {
     return proto3.util.equals(TriggerRedeployResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.ProvisionRequest
+ */
+export class ProvisionRequest extends Message<ProvisionRequest> {
+  /**
+   * Deployment to provision a resource for.
+   * If it's blank and the request is made with a deployment access token, the deployment is inferred from the token.
+   *
+   * @generated from field: string deployment_id = 1;
+   */
+  deploymentId = "";
+
+  /**
+   * Type of resource to provision.
+   *
+   * @generated from field: string type = 2;
+   */
+  type = "";
+
+  /**
+   * Name of the resource to provision.
+   * It forms a unique key together with deployment and type, which is used to de-duplicate provision requests.
+   *
+   * @generated from field: string name = 3;
+   */
+  name = "";
+
+  /**
+   * Arguments for the provisioner call.
+   *
+   * @generated from field: google.protobuf.Struct args = 4;
+   */
+  args?: Struct;
+
+  constructor(data?: PartialMessage<ProvisionRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ProvisionRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "args", kind: "message", T: Struct },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ProvisionRequest {
+    return new ProvisionRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ProvisionRequest {
+    return new ProvisionRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ProvisionRequest {
+    return new ProvisionRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ProvisionRequest | PlainMessage<ProvisionRequest> | undefined, b: ProvisionRequest | PlainMessage<ProvisionRequest> | undefined): boolean {
+    return proto3.util.equals(ProvisionRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.ProvisionResponse
+ */
+export class ProvisionResponse extends Message<ProvisionResponse> {
+  /**
+   * @generated from field: rill.admin.v1.ProvisionerResource resource = 1;
+   */
+  resource?: ProvisionerResource;
+
+  constructor(data?: PartialMessage<ProvisionResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ProvisionResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "resource", kind: "message", T: ProvisionerResource },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ProvisionResponse {
+    return new ProvisionResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ProvisionResponse {
+    return new ProvisionResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ProvisionResponse {
+    return new ProvisionResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ProvisionResponse | PlainMessage<ProvisionResponse> | undefined, b: ProvisionResponse | PlainMessage<ProvisionResponse> | undefined): boolean {
+    return proto3.util.equals(ProvisionResponse, a, b);
   }
 }
 
@@ -6651,6 +6789,74 @@ export class UpdateUserPreferencesResponse extends Message<UpdateUserPreferences
 }
 
 /**
+ * @generated from message rill.admin.v1.DeleteUserRequest
+ */
+export class DeleteUserRequest extends Message<DeleteUserRequest> {
+  /**
+   * @generated from field: string email = 1;
+   */
+  email = "";
+
+  constructor(data?: PartialMessage<DeleteUserRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.DeleteUserRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteUserRequest {
+    return new DeleteUserRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteUserRequest {
+    return new DeleteUserRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteUserRequest {
+    return new DeleteUserRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeleteUserRequest | PlainMessage<DeleteUserRequest> | undefined, b: DeleteUserRequest | PlainMessage<DeleteUserRequest> | undefined): boolean {
+    return proto3.util.equals(DeleteUserRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.DeleteUserResponse
+ */
+export class DeleteUserResponse extends Message<DeleteUserResponse> {
+  constructor(data?: PartialMessage<DeleteUserResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.DeleteUserResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteUserResponse {
+    return new DeleteUserResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteUserResponse {
+    return new DeleteUserResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteUserResponse {
+    return new DeleteUserResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeleteUserResponse | PlainMessage<DeleteUserResponse> | undefined, b: DeleteUserResponse | PlainMessage<DeleteUserResponse> | undefined): boolean {
+    return proto3.util.equals(DeleteUserResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.ListBookmarksRequest
  */
 export class ListBookmarksRequest extends Message<ListBookmarksRequest> {
@@ -9070,6 +9276,8 @@ export class GetRepoMetaRequest extends Message<GetRepoMetaRequest> {
  */
 export class GetRepoMetaResponse extends Message<GetRepoMetaResponse> {
   /**
+   * If the Git-related fields are set, the archive-related fields will not be set (and vice versa).
+   *
    * @generated from field: string git_url = 1;
    */
   gitUrl = "";
@@ -9085,12 +9293,19 @@ export class GetRepoMetaResponse extends Message<GetRepoMetaResponse> {
   gitSubpath = "";
 
   /**
-   * archive_download_url is set when repo is managed by Rill
-   * either archive_download_url or git related details will be set
-   *
    * @generated from field: string archive_download_url = 4;
    */
   archiveDownloadUrl = "";
+
+  /**
+   * @generated from field: string archive_id = 5;
+   */
+  archiveId = "";
+
+  /**
+   * @generated from field: google.protobuf.Timestamp archive_created_on = 6;
+   */
+  archiveCreatedOn?: Timestamp;
 
   constructor(data?: PartialMessage<GetRepoMetaResponse>) {
     super();
@@ -9104,6 +9319,8 @@ export class GetRepoMetaResponse extends Message<GetRepoMetaResponse> {
     { no: 2, name: "git_url_expires_on", kind: "message", T: Timestamp },
     { no: 3, name: "git_subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "archive_download_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "archive_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "archive_created_on", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetRepoMetaResponse {
@@ -11700,6 +11917,16 @@ export class Organization extends Message<Organization> {
   description = "";
 
   /**
+   * @generated from field: string logo_url = 12;
+   */
+  logoUrl = "";
+
+  /**
+   * @generated from field: string favicon_url = 13;
+   */
+  faviconUrl = "";
+
+  /**
    * @generated from field: string custom_domain = 10;
    */
   customDomain = "";
@@ -11725,6 +11952,16 @@ export class Organization extends Message<Organization> {
   billingEmail = "";
 
   /**
+   * @generated from field: optional string billing_plan_name = 14;
+   */
+  billingPlanName?: string;
+
+  /**
+   * @generated from field: optional string billing_plan_display_name = 15;
+   */
+  billingPlanDisplayName?: string;
+
+  /**
    * @generated from field: google.protobuf.Timestamp created_on = 5;
    */
   createdOn?: Timestamp;
@@ -11746,11 +11983,15 @@ export class Organization extends Message<Organization> {
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 12, name: "logo_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 13, name: "favicon_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "custom_domain", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "quotas", kind: "message", T: OrganizationQuotas },
     { no: 7, name: "billing_customer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "payment_customer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "billing_email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 14, name: "billing_plan_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 15, name: "billing_plan_display_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 5, name: "created_on", kind: "message", T: Timestamp },
     { no: 6, name: "updated_on", kind: "message", T: Timestamp },
   ]);
@@ -12208,6 +12449,73 @@ export class Deployment extends Message<Deployment> {
 }
 
 /**
+ * @generated from message rill.admin.v1.ProvisionerResource
+ */
+export class ProvisionerResource extends Message<ProvisionerResource> {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id = "";
+
+  /**
+   * @generated from field: string deployment_id = 2;
+   */
+  deploymentId = "";
+
+  /**
+   * @generated from field: string type = 3;
+   */
+  type = "";
+
+  /**
+   * @generated from field: string name = 4;
+   */
+  name = "";
+
+  /**
+   * @generated from field: google.protobuf.Struct args = 5;
+   */
+  args?: Struct;
+
+  /**
+   * @generated from field: google.protobuf.Struct config = 6;
+   */
+  config?: Struct;
+
+  constructor(data?: PartialMessage<ProvisionerResource>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ProvisionerResource";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "args", kind: "message", T: Struct },
+    { no: 6, name: "config", kind: "message", T: Struct },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ProvisionerResource {
+    return new ProvisionerResource().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ProvisionerResource {
+    return new ProvisionerResource().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ProvisionerResource {
+    return new ProvisionerResource().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ProvisionerResource | PlainMessage<ProvisionerResource> | undefined, b: ProvisionerResource | PlainMessage<ProvisionerResource> | undefined): boolean {
+    return proto3.util.equals(ProvisionerResource, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.OrganizationPermissions
  */
 export class OrganizationPermissions extends Message<OrganizationPermissions> {
@@ -12325,6 +12633,16 @@ export class ProjectPermissions extends Message<ProjectPermissions> {
   manageDev = false;
 
   /**
+   * @generated from field: bool read_provisioner_resources = 19;
+   */
+  readProvisionerResources = false;
+
+  /**
+   * @generated from field: bool manage_provisioner_resources = 20;
+   */
+  manageProvisionerResources = false;
+
+  /**
    * @generated from field: bool read_project_members = 9;
    */
   readProjectMembers = false;
@@ -12390,6 +12708,8 @@ export class ProjectPermissions extends Message<ProjectPermissions> {
     { no: 6, name: "read_dev", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "read_dev_status", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 8, name: "manage_dev", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 19, name: "read_provisioner_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 20, name: "manage_provisioner_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 9, name: "read_project_members", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 10, name: "manage_project_members", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 15, name: "create_magic_auth_tokens", kind: "scalar", T: 8 /* ScalarType.BOOL */ },

@@ -1,16 +1,17 @@
 import { expect } from "@playwright/test";
-import { useDashboardFlowTestSetup } from "web-local/tests/explores/dashboard-flow-test-setup";
-import { interactWithTimeRangeMenu } from "web-local/tests/utils/metricsViewHelpers";
-import { ResourceWatcher } from "web-local/tests/utils/ResourceWatcher";
-import { test } from "../utils/test";
+import { interactWithTimeRangeMenu } from "../utils/metricsViewHelpers";
+import { ResourceWatcher } from "../utils/ResourceWatcher";
+import { gotoNavEntry } from "../utils/waitHelpers";
+import { test } from "../setup/base";
 
 test.describe("time controls settings from explore preset", () => {
-  // dashboard test setup
-  useDashboardFlowTestSetup();
+  test.use({ project: "AdBids" });
 
   test("preset time_range", async ({ page }) => {
     const watcher = new ResourceWatcher(page);
 
+    await page.getByLabel("/dashboards").click();
+    await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
     await page.getByLabel("code").click();
 
     // Set a time range that is one of the supported presets
@@ -19,6 +20,8 @@ test.describe("time controls settings from explore preset", () => {
   comparison_mode: time
 `),
     );
+
+    await page.waitForTimeout(1000);
     // Preview
     await page.getByRole("button", { name: "Preview" }).click();
 
@@ -38,6 +41,7 @@ test.describe("time controls settings from explore preset", () => {
   comparison_mode: time
 `),
     );
+
     // Preview
     await page.getByRole("button", { name: "Preview" }).click();
 
@@ -82,7 +86,10 @@ test.describe("time controls settings from explore preset", () => {
   test("preset comparison_modes", async ({ page }) => {
     const watcher = new ResourceWatcher(page);
 
+    await page.getByLabel("/dashboards").click();
+    await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
     await page.getByLabel("code").click();
+
     // Set comparison to time
     await watcher.updateAndWaitForExplore(
       getDashboardYaml(`time_range: "P4W"
@@ -128,6 +135,8 @@ test.describe("time controls settings from explore preset", () => {
   test("preset time_ranges", async ({ page }) => {
     const watcher = new ResourceWatcher(page);
 
+    await page.getByLabel("/dashboards").click();
+    await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
     await page.getByLabel("code").click();
 
     await watcher.updateAndWaitForExplore(
@@ -175,7 +184,9 @@ test.describe("time controls settings from explore preset", () => {
     await expect(page.getByText("Facebook 68 -3 -4%")).toBeVisible();
 
     // Open the time comparison
-    await page.getByLabel("Select time comparison option").click();
+    await page
+      .getByLabel("Select time comparison option")
+      .click({ force: true });
     // Assert the options available
     await Promise.all(
       [
@@ -229,8 +240,8 @@ test.describe("time controls settings from explore preset", () => {
 function getDashboardYaml(defaults: string, extras = "") {
   return `
 type: explore
-title: "AdBids_model_metrics_explore"
-metrics_view: "AdBids_model_metrics"
+title: "AdBids_metrics_explore"
+metrics_view: "AdBids_metrics"
 ${extras}
 
 measures: '*'

@@ -2,6 +2,7 @@
   import { WithTween } from "@rilldata/web-common/components/data-graphic/functional-components";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
@@ -10,13 +11,12 @@
   import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
-  import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
-  import { createEventDispatcher } from "svelte";
+  import { type MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
   import {
-    type CrossfadeParams,
-    type FlyParams,
     crossfade,
     fly,
+    type CrossfadeParams,
+    type FlyParams,
   } from "svelte/transition";
   import BigNumberTooltipContent from "./BigNumberTooltipContent.svelte";
 
@@ -34,8 +34,6 @@
     comparisonValue && value !== undefined && value !== null
       ? (value - comparisonValue) / comparisonValue
       : undefined;
-
-  const dispatch = createEventDispatcher();
 
   $: measureValueFormatter = createMeasureValueFormatter<null>(
     measure,
@@ -82,6 +80,8 @@
   $: copyValue = measureValueFormatterUnabridged(value) ?? "no data";
   $: tooltipValue = measureValueFormatterTooltip(value) ?? "no data";
 
+  $: tddHref = `?${ExploreStateURLParams.WebView}=tdd&${ExploreStateURLParams.ExpandedMeasure}=${measure.name}`;
+
   function shiftClickHandler(number: string | undefined) {
     if (number === undefined) return;
 
@@ -93,9 +93,9 @@
   const handleExpandMeasure = () => {
     if (!isMeasureExpanded) {
       isMeasureExpanded = true;
-      dispatch("expand-measure");
     }
   };
+  $: useDiv = isMeasureExpanded || !withTimeseries;
 </script>
 
 <Tooltip
@@ -107,17 +107,17 @@
   <BigNumberTooltipContent
     slot="tooltip-content"
     {measure}
-    {isMeasureExpanded}
+    isMeasureExpanded={useDiv}
     value={tooltipValue}
   />
 
   <svelte:element
-    this={isMeasureExpanded ? "div" : "button"}
-    role={isMeasureExpanded ? "presentation" : "button"}
-    tabindex={isMeasureExpanded ? -1 : 0}
+    this={useDiv ? "div" : "a"}
+    role={useDiv ? "presentation" : "button"}
+    tabindex={useDiv ? -1 : 0}
     class="group big-number"
-    class:shadow-grad={!isMeasureExpanded}
-    class:cursor-pointer={!isMeasureExpanded}
+    class:shadow-grad={!useDiv}
+    class:cursor-pointer={!useDiv}
     on:click={modified({
       shift: () => shiftClickHandler(copyValue),
       click: () => {
@@ -128,6 +128,7 @@
         }, 1000);
       },
     })}
+    href={tddHref}
   >
     <h2
       class="line-clamp-2 ui-header-primary font-semibold whitespace-normal"
@@ -226,7 +227,7 @@
 
 <style lang="postcss">
   .big-number {
-    @apply h-fit w-[138px] m-0.5 rounded p-2;
+    @apply h-fit w-[138px] m-0.5 rounded p-2 font-normal;
     min-height: 85px;
     @apply items-start flex flex-col text-left;
   }

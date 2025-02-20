@@ -1,4 +1,3 @@
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
   TimeComparisonOption,
@@ -42,6 +41,7 @@ export const PreviousCompleteRangeMap: Partial<
  */
 export function mapTimeRange(
   timeControlState: TimeControlState,
+  timeZone: string,
   explore: V1ExploreSpec,
 ) {
   if (!timeControlState.selectedTimeRange?.name) return undefined;
@@ -72,6 +72,8 @@ export function mapTimeRange(
       break;
   }
 
+  timeRange.timeZone = timeZone;
+
   return timeRange;
 }
 
@@ -79,13 +81,11 @@ export function mapTimeRange(
  * Maps selectedComparisonTimeRange to V1TimeRange if time comparison is enabled.
  */
 export function mapComparisonTimeRange(
-  dashboardState: MetricsExplorerEntity,
   timeControlState: TimeControlState,
   timeRange: V1TimeRange | undefined,
 ) {
   if (
     !timeRange ||
-    dashboardState.selectedComparisonDimension ||
     !timeControlState.showTimeComparison ||
     !timeControlState.selectedComparisonTimeRange?.name
   ) {

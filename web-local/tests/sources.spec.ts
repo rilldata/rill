@@ -10,10 +10,12 @@ import {
   uploadFile,
   waitForSource,
 } from "./utils/sourceHelpers";
-import { test } from "./utils/test";
+import { test } from "./setup/base";
 import { fileNotPresent, waitForFileNavEntry } from "./utils/waitHelpers";
 
 test.describe("sources", () => {
+  test.use({ project: "Blank" });
+
   test("Import sources", async ({ page }) => {
     await Promise.all([
       waitForSource(page, "/sources/AdBids.yaml", [
@@ -79,6 +81,7 @@ path: ${TestDataPath}/non_existent_file.csv`;
     // Edit source path to an existent file
     const adImpressionsSource = `connector: local_file
 path: ${TestDataPath}/AdImpressions.tsv`;
+
     await updateCodeEditor(page, adImpressionsSource);
     await page.getByRole("button", { name: "Save" }).click();
 

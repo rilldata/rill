@@ -28,9 +28,9 @@
 
   const dispatch = createEventDispatcher();
   const queryClient = useQueryClient();
-  const { customDashboards, ai } = featureFlags;
+  const { canvasDashboards, ai } = featureFlags;
 
-  $: instanceId = $runtime.instanceId;
+  $: ({ instanceId } = $runtime);
   $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
   $: resource = $resourceQuery.data;
   $: hasErrors = fileArtifact.getHasErrors(queryClient, instanceId);
@@ -53,7 +53,7 @@
     if (!artifact) return;
     const previousScreenName = getScreenNameFromPage();
     await goto(`/files${artifact.path}`);
-    await behaviourEvent.fireNavigationEvent(
+    await behaviourEvent?.fireNavigationEvent(
       referenceModelName,
       BehaviourEventMedium.Menu,
       MetricsEventSpace.LeftPanel,
@@ -77,7 +77,7 @@
     Generate dashboard
   </NavigationMenuItem>
 {/if}
-{#if $customDashboards}
+{#if $canvasDashboards}
   <NavigationMenuItem
     on:click={() => {
       dispatch("generate-chart", {

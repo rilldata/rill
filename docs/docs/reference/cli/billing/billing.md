@@ -17,7 +17,7 @@ Billing related commands for org
 
 ### SEE ALSO
 
-* [rill](../cli.md)	 - Rill CLI
+* [rill](../cli.md)	 - A CLI for Rill
 * [rill billing list-issues](list-issues.md)	 - List billing issues for an organization
 * [rill billing plan](plan/plan.md)	 - Get billing plans
 * [rill billing subscription](subscription/subscription.md)	 - Manage organisation subscription

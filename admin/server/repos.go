@@ -2,11 +2,8 @@ package server
 
 import (
 	"context"
-	"net/url"
-	"strings"
 	"time"
 
-	"cloud.google.com/go/storage"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
@@ -46,12 +43,14 @@ func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaReques
 			return nil, err
 		}
 
-		downloadURL, err := s.generateV4GetObjectSignedURL(asset.Path)
+		downloadURL, err := s.generateSignedDownloadURL(asset)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		return &adminv1.GetRepoMetaResponse{
+			ArchiveId:          asset.ID,
 			ArchiveDownloadUrl: downloadURL,
+			ArchiveCreatedOn:   timestamppb.New(asset.CreatedOn),
 		}, nil
 	}
 
@@ -129,26 +128,6 @@ func (s *Server) PullVirtualRepo(ctx context.Context, req *adminv1.PullVirtualRe
 		Files:         dtos,
 		NextPageToken: nextToken,
 	}, nil
-}
-
-// objectpath is of form gs://<bucket>/.....
-func (s *Server) generateV4GetObjectSignedURL(objectpath string) (string, error) {
-	u, err := url.Parse(objectpath)
-	if err != nil {
-		return "", err
-	}
-
-	opts := &storage.SignedURLOptions{
-		Scheme:  storage.SigningSchemeV4,
-		Method:  "GET",
-		Expires: time.Now().Add(15 * time.Minute),
-	}
-
-	signedURL, err := s.admin.Assets.SignedURL(strings.TrimPrefix(u.Path, "/"), opts)
-	if err != nil {
-		return "", err
-	}
-	return signedURL, nil
 }
 
 func virtualFileToDTO(vf *database.VirtualFile) *adminv1.VirtualFile {

@@ -6,6 +6,7 @@ import type {
   V1MetricsViewAggregationResponseDataItem,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
+import type { QueryClient } from "@tanstack/svelte-query";
 import type {
   ColumnDef,
   ExpandedState,
@@ -36,6 +37,12 @@ export interface PivotCell {
   columnId: string;
 }
 
+export interface PivotDashboardContext {
+  metricsViewName: Readable<string>;
+  queryClient: QueryClient;
+  enabled: boolean;
+}
+
 export interface PivotState {
   active: boolean;
   columns: PivotColumns;
@@ -47,7 +54,6 @@ export interface PivotState {
   enableComparison: boolean;
   rowJoinType: PivotRowJoinType;
   activeCell: PivotCell | null;
-  whereSql?: string;
 }
 
 export type PivotRowJoinType = "flat" | "nest";
@@ -100,6 +106,7 @@ export interface PivotDataStoreConfig {
   time: PivotTimeConfig;
   enableComparison: boolean;
   comparisonTime: TimeRangeString | undefined;
+  searchText: string | undefined;
 }
 
 export interface PivotAxesData {

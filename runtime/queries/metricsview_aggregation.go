@@ -3,6 +3,7 @@ package queries
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -85,7 +86,7 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 		return fmt.Errorf("error rewriting to metrics query: %w", err)
 	}
 
-	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv, security, priority)
+	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, priority)
 	if err != nil {
 		return err
 	}
@@ -127,11 +128,23 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 		return fmt.Errorf("error rewriting to metrics query: %w", err)
 	}
 
-	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv, security, opts.Priority)
+	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, opts.Priority)
 	if err != nil {
 		return err
 	}
 	defer e.Close()
+
+	if mv.ValidSpec.TimeDimension != "" {
+		tsRes, err := ResolveTimestampResult(ctx, rt, instanceID, q.MetricsViewName, q.SecurityClaims, opts.Priority)
+		if err != nil {
+			return err
+		}
+
+		err = e.BindQuery(ctx, qry, tsRes)
+		if err != nil {
+			return err
+		}
+	}
 
 	var format drivers.FileFormat
 	switch opts.Format {
@@ -168,6 +181,49 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 	}
 
 	return nil
+}
+
+func ResolveTimestampResult(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string, security *runtime.SecurityClaims, priority int) (metricsview.TimestampsResult, error) {
+	res, err := rt.Resolve(ctx, &runtime.ResolveOptions{
+		InstanceID: instanceID,
+		Resolver:   "metrics_time_range",
+		ResolverProperties: map[string]any{
+			"metrics_view": metricsViewName,
+		},
+		Args: map[string]any{
+			"priority": priority,
+		},
+		Claims: security,
+	})
+	if err != nil {
+		return metricsview.TimestampsResult{}, err
+	}
+	defer res.Close()
+
+	row, err := res.Next()
+	if err != nil {
+		if errors.Is(err, io.EOF) {
+			return metricsview.TimestampsResult{}, errors.New("time range query returned no results")
+		}
+		return metricsview.TimestampsResult{}, err
+	}
+
+	tsRes := metricsview.TimestampsResult{}
+
+	tsRes.Min, err = anyToTime(row["min"])
+	if err != nil {
+		return tsRes, err
+	}
+	tsRes.Max, err = anyToTime(row["max"])
+	if err != nil {
+		return tsRes, err
+	}
+	tsRes.Watermark, err = anyToTime(row["watermark"])
+	if err != nil {
+		return tsRes, err
+	}
+
+	return tsRes, nil
 }
 
 func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metricsview.Query, error) {
@@ -258,9 +314,13 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 		if q.TimeRange.End != nil {
 			res.End = q.TimeRange.End.AsTime()
 		}
+		res.Expression = q.TimeRange.Expression
 		res.IsoDuration = q.TimeRange.IsoDuration
 		res.IsoOffset = q.TimeRange.IsoOffset
 		res.RoundToGrain = metricsview.TimeGrainFromProto(q.TimeRange.RoundToGrain)
+		if q.TimeRange.TimeZone != "" {
+			qry.TimeZone = q.TimeRange.TimeZone
+		}
 		qry.TimeRange = res
 	}
 
@@ -272,9 +332,16 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 		if q.ComparisonTimeRange.End != nil {
 			res.End = q.ComparisonTimeRange.End.AsTime()
 		}
+		res.Expression = q.ComparisonTimeRange.Expression
 		res.IsoDuration = q.ComparisonTimeRange.IsoDuration
 		res.IsoOffset = q.ComparisonTimeRange.IsoOffset
 		res.RoundToGrain = metricsview.TimeGrainFromProto(q.ComparisonTimeRange.RoundToGrain)
+		if q.ComparisonTimeRange.TimeZone != "" {
+			if qry.TimeZone != "" && qry.TimeZone != q.ComparisonTimeRange.TimeZone {
+				return nil, fmt.Errorf("comparison_time_range has a different time zone")
+			}
+			qry.TimeZone = q.ComparisonTimeRange.TimeZone
+		}
 		qry.ComparisonTimeRange = res
 	}
 
@@ -393,4 +460,20 @@ func metricViewExpression(expr *runtimev1.Expression, sql string) (*metricsview.
 		return metricssqlparser.ParseSQLFilter(sql)
 	}
 	return nil, nil
+}
+
+func anyToTime(tm any) (time.Time, error) {
+	if tm == nil {
+		return time.Time{}, nil
+	}
+
+	tmStr, ok := tm.(string)
+	if !ok {
+		t, ok := tm.(time.Time)
+		if !ok {
+			return time.Time{}, fmt.Errorf("unable to convert type %T to Time", tm)
+		}
+		return t, nil
+	}
+	return time.Parse(time.RFC3339Nano, tmStr)
 }

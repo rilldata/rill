@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
 	"time"
 
 	"github.com/c2h5oh/datasize"
@@ -27,20 +26,10 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	runtimeserver "github.com/rilldata/rill/runtime/server"
+	"github.com/rilldata/rill/runtime/storage"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
-	"go.uber.org/zap/buffer"
-	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
-	"gopkg.in/natefinch/lumberjack.v2"
-)
-
-type LogFormat string
-
-// Default log formats for logger
-const (
-	LogFormatConsole = "console"
-	LogFormatJSON    = "json"
 )
 
 // Default instance config on local.
@@ -156,19 +145,21 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	// if err != nil {
 	// 	return nil, fmt.Errorf("failed to create email sender: %w", err)
 	// }
-
 	rtOpts := &runtime.Options{
 		ConnectionCacheSize:          100,
 		MetastoreConnector:           "metastore",
 		QueryCacheSizeBytes:          int64(datasize.MB * 100),
 		AllowHostAccess:              true,
-		DataDir:                      dbDirPath,
 		SystemConnectors:             systemConnectors,
 		SecurityEngineCacheSize:      1000,
 		ControllerLogBufferCapacity:  10000,
 		ControllerLogBufferSizeBytes: int64(datasize.MB * 16),
 	}
-	rt, err := runtime.New(ctx, rtOpts, logger, opts.Ch.Telemetry(ctx), email.New(sender))
+	st, err := storage.New(dbDirPath, nil)
+	if err != nil {
+		return nil, err
+	}
+	rt, err := runtime.New(ctx, rtOpts, logger, st, opts.Ch.Telemetry(ctx), email.New(sender))
 	if err != nil {
 		return nil, err
 	}
@@ -194,26 +185,13 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		}
 	}
 
-	// If the OLAP is the default OLAP (DuckDB in stage.db), we make it relative to the project directory (not the working directory)
-	defaultOLAP := false
 	olapCfg := make(map[string]string)
-	if opts.OlapDriver == DefaultOLAPDriver && opts.OlapDSN == DefaultOLAPDSN {
-		defaultOLAP = true
-		val, err := isExternalStorageEnabled(vars)
-		if err != nil {
-			return nil, err
-		}
-		olapCfg["external_table_storage"] = strconv.FormatBool(val)
-	}
-
 	if opts.OlapDriver == "duckdb" {
+		if opts.OlapDSN != DefaultOLAPDSN {
+			return nil, fmt.Errorf("setting DSN for DuckDB is not supported")
+		}
 		// Set default DuckDB pool size to 4
 		olapCfg["pool_size"] = "4"
-		if !defaultOLAP {
-			// dsn is automatically computed by duckdb driver so we set only when non default dsn is passed
-			olapCfg["dsn"] = opts.OlapDSN
-			olapCfg["error_on_incompatible_version"] = "true"
-		}
 	}
 
 	// Add OLAP connector
@@ -425,6 +403,13 @@ func (a *App) PollServer(ctx context.Context, httpPort int, openOnHealthy, secur
 	uri := fmt.Sprintf("%s://localhost:%d", scheme, httpPort)
 
 	for {
+		// Wait a bit before (re)trying.
+		//
+		// We sleep before the first health check as a slightly hacky way to protect against the situation where
+		// another Rill server is already running, which will pass the health check as a false positive.
+		// By sleeping first, the ctx is in practice sure to have been cancelled with a "port taken" error at that point.
+		time.Sleep(250 * time.Millisecond)
+
 		// Check for cancellation
 		if ctx.Err() != nil {
 			return
@@ -438,14 +423,17 @@ func (a *App) PollServer(ctx context.Context, httpPort int, openOnHealthy, secur
 				break
 			}
 		}
-
-		// Wait a bit and retry
-		time.Sleep(250 * time.Millisecond)
 	}
 
 	// Health check succeeded
 	a.Logger.Infof("Serving Rill on: %s", uri)
 	if openOnHealthy {
+		// Check for cancellation again to be safe
+		if ctx.Err() != nil {
+			return
+		}
+
+		// Open the browser
 		err := browser.Open(uri)
 		if err != nil {
 			a.Logger.Debugf("could not open browser: %v", err)
@@ -491,129 +479,4 @@ func IsProjectInit(projectPath string) bool {
 		return false
 	}
 	return true
-}
-
-func ParseLogFormat(format string) (LogFormat, bool) {
-	switch format {
-	case "json":
-		return LogFormatJSON, true
-	case "console":
-		return LogFormatConsole, true
-	default:
-		return "", false
-	}
-}
-
-func initLogger(isVerbose bool, logFormat LogFormat) (logger *zap.Logger, cleanupFn func()) {
-	logLevel := zapcore.InfoLevel
-	if isVerbose {
-		logLevel = zapcore.DebugLevel
-	}
-
-	logPath, err := dotrill.ResolveFilename("rill.log", true)
-	if err != nil {
-		panic(err)
-	}
-	// lumberjack.Logger is already safe for concurrent use, so we don't need to
-	// lock it.
-	luLogger := &lumberjack.Logger{
-		Filename:   logPath,
-		MaxSize:    100, // megabytes
-		MaxBackups: 3,
-		MaxAge:     30, // days
-		Compress:   true,
-	}
-	cfg := zap.NewProductionEncoderConfig()
-	// hide logger name like `console`
-	cfg.NameKey = zapcore.OmitKey
-	fileCore := zapcore.NewCore(zapcore.NewJSONEncoder(cfg), zapcore.AddSync(luLogger), logLevel)
-
-	var consoleEncoder zapcore.Encoder
-	opts := make([]zap.Option, 0)
-	switch logFormat {
-	case LogFormatJSON:
-		cfg := zap.NewProductionEncoderConfig()
-		cfg.NameKey = zapcore.OmitKey
-		// never
-		opts = append(opts, zap.AddStacktrace(zapcore.InvalidLevel))
-		consoleEncoder = zapcore.NewJSONEncoder(cfg)
-	case LogFormatConsole:
-		encCfg := zap.NewDevelopmentEncoderConfig()
-		encCfg.NameKey = zapcore.OmitKey
-		encCfg.EncodeLevel = zapcore.CapitalColorLevelEncoder
-		encCfg.EncodeTime = zapcore.TimeEncoderOfLayout("2006-01-02T15:04:05.000")
-		consoleEncoder = zapcore.NewConsoleEncoder(encCfg)
-	}
-
-	// if it's not verbose, skip instance_id field
-	if !isVerbose {
-		consoleEncoder = skipFieldZapEncoder{
-			Encoder: consoleEncoder,
-			fields:  []string{"instance_id"},
-		}
-	}
-
-	core := zapcore.NewTee(
-		fileCore,
-		zapcore.NewCore(consoleEncoder, zapcore.Lock(os.Stdout), logLevel),
-	)
-
-	return zap.New(core, opts...), func() {
-		_ = logger.Sync()
-		luLogger.Close()
-	}
-}
-
-// skipFieldZapEncoder skips fields with the given keys. only string fields are supported.
-type skipFieldZapEncoder struct {
-	zapcore.Encoder
-	fields []string
-}
-
-func (s skipFieldZapEncoder) EncodeEntry(entry zapcore.Entry, fields []zapcore.Field) (*buffer.Buffer, error) {
-	res := make([]zapcore.Field, 0, len(fields))
-	for _, field := range fields {
-		skip := false
-		for _, skipField := range s.fields {
-			if field.Key == skipField {
-				skip = true
-				break
-			}
-		}
-		if !skip {
-			res = append(res, field)
-		}
-	}
-	return s.Encoder.EncodeEntry(entry, res)
-}
-
-func (s skipFieldZapEncoder) Clone() zapcore.Encoder {
-	return skipFieldZapEncoder{
-		Encoder: s.Encoder.Clone(),
-		fields:  s.fields,
-	}
-}
-
-func (s skipFieldZapEncoder) AddString(key, val string) {
-	skip := false
-	for _, skipField := range s.fields {
-		if key == skipField {
-			skip = true
-			break
-		}
-	}
-	if !skip {
-		s.Encoder.AddString(key, val)
-	}
-}
-
-// isExternalStorageEnabled determines if external storage can be enabled.
-func isExternalStorageEnabled(variables map[string]string) (bool, error) {
-	// check if flag explicitly passed
-	val, ok := variables["connector.duckdb.external_table_storage"]
-	if !ok {
-		// mark enabled by default
-		return true, nil
-	}
-	return strconv.ParseBool(val)
 }

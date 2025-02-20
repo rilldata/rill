@@ -21,8 +21,10 @@
 
   const { ai } = featureFlags;
 
+  $: ({ instanceId } = $runtime);
+
   $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
-    $runtime.instanceId,
+    instanceId,
     connector,
     database,
     databaseSchema,

@@ -2,13 +2,14 @@
   import { EyeIcon, EyeOffIcon } from "lucide-svelte";
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
-  import Select from "./Select.svelte";
-  import InputLabel from "./InputLabel.svelte";
   import FieldSwitcher from "./FieldSwitcher.svelte";
+  import InputLabel from "./InputLabel.svelte";
+  import Select from "./Select.svelte";
 
   const voidFunction = () => {};
 
-  export let value: string | undefined;
+  export let value: number | string | undefined;
+  export let inputType: "text" | "number" = "text";
   export let id = "";
   export let label = "";
   export let description = "";
@@ -23,6 +24,7 @@
   export let truncate = false;
   export let width: string = "100%";
   export let size: "sm" | "md" | "lg" = "lg";
+  export let labelGap = 1;
   export let selected: number = -1;
   export let full = false;
   export let multiline = false;
@@ -35,6 +37,7 @@
   export let link: string = "";
   export let lockable = false;
   export let capitalizeLabel = true;
+  export let leftPadding = 8;
   export let lockTooltip: string | undefined = undefined;
   export let disabledMessage = "No valid options";
   export let options:
@@ -53,8 +56,13 @@
       currentTarget: EventTarget & HTMLDivElement;
     },
   ) => void = voidFunction;
-  export let onEnter: () => void = voidFunction;
+  export let onEnter: (
+    e: KeyboardEvent & {
+      currentTarget: EventTarget & HTMLDivElement;
+    },
+  ) => void = voidFunction;
   export let onEscape: () => void = voidFunction;
+  export let onFieldSwitch: (i: number, value: string) => void = voidFunction;
 
   let hitEnter = false;
   let showPassword = false;
@@ -62,7 +70,9 @@
   let selectElement: HTMLButtonElement | undefined;
   let focus = false;
 
-  $: type = secret && !showPassword ? "password" : "text";
+  $: type = secret && !showPassword ? "password" : inputType;
+
+  $: hasValue = inputType === "number" ? !!value || value === 0 : !!value;
 
   onMount(() => {
     if (claimFocusOnMount) {
@@ -91,9 +101,10 @@
     },
   ) {
     if (e.key === "Enter") {
+      if (e.shiftKey) return;
       hitEnter = true;
       inputElement?.blur();
-      onEnter();
+      onEnter(e);
     } else if (e.key === "Escape") {
       e.preventDefault();
       onEscape();
@@ -102,7 +113,7 @@
 </script>
 
 <div
-  class="component-wrapper {additionalClass}"
+  class="component-wrapper gap-y-{labelGap} {additionalClass}"
   class:w-full={full}
   style:width
 >
@@ -113,6 +124,7 @@
       {id}
       {hint}
       {link}
+      small={size === "sm"}
       capitalize={capitalizeLabel}
     >
       <slot name="mode-switch" slot="mode-switch" />
@@ -120,12 +132,13 @@
   {/if}
 
   {#if fields && fields?.length > 1}
-    <FieldSwitcher {fields} {selected} />
+    <FieldSwitcher {fields} {selected} onClick={onFieldSwitch} />
   {/if}
 
   {#if !options}
     <div
       class="input-wrapper {textClass}"
+      style:padding-left="{leftPadding}px"
       style:width
       style:font-family={fontFamily}
     >
@@ -135,7 +148,7 @@
         </span>
       {/if}
 
-      {#if multiline}
+      {#if multiline && typeof value !== "number"}
         <div
           {id}
           contenteditable
@@ -153,17 +166,25 @@
         />
       {:else}
         <input
-          title={value}
+          title={label}
           {id}
           {type}
           {placeholder}
           name={id}
           class={size}
           {disabled}
-          value={value ?? ""}
+          value={value ?? (inputType === "number" ? 0 : "")}
           autocomplete={autocomplete ? "on" : "off"}
           bind:this={inputElement}
           on:input={(e) => {
+            if (inputType === "number") {
+              if (e.currentTarget.value === "") {
+                value = "";
+              } else {
+                value = e.currentTarget.valueAsNumber;
+              }
+              return;
+            }
             value = e.currentTarget.value;
             onInput(value, e);
           }}
@@ -189,7 +210,7 @@
         </button>
       {/if}
     </div>
-  {:else}
+  {:else if typeof value !== "number"}
     <Select
       {disabled}
       {enableSearch}
@@ -202,13 +223,14 @@
       bind:value
       {options}
       {onChange}
-      fontSize={14}
+      {size}
+      fontSize={size === "sm" ? 12 : 14}
       {truncate}
       placeholder={disabled ? disabledMessage : placeholder}
     />
   {/if}
 
-  {#if errors && (alwaysShowError || (!focus && value))}
+  {#if errors && (alwaysShowError || (!focus && hasValue))}
     {#if typeof errors === "string"}
       <div in:slide={{ duration: 200 }} class="error">
         {errors}
@@ -229,11 +251,12 @@
 
 <style lang="postcss">
   .component-wrapper {
-    @apply flex  flex-col gap-y-1 h-fit justify-center;
+    @apply flex  flex-col h-fit justify-center;
   }
 
   .sm {
     height: 24px;
+    font-size: 12px;
   }
 
   .md {
@@ -246,11 +269,11 @@
 
   .input-wrapper {
     @apply overflow-hidden;
-    @apply flex justify-center items-center pl-2 pr-0.5;
-    @apply bg-background justify-center;
+    @apply flex justify-center items-center pr-0.5;
+    @apply bg-surface justify-center;
     @apply border border-gray-300 rounded-[2px];
     @apply cursor-pointer;
-    @apply h-fit w-fit truncate;
+    @apply h-fit w-fit;
   }
 
   input,
@@ -260,17 +283,17 @@
     @apply outline-none border-0;
     @apply cursor-text;
     vertical-align: middle;
+  }
+
+  input {
     @apply truncate;
   }
 
   .multiline-input {
+    @apply h-fit w-full max-h-32 overflow-y-auto;
     @apply py-1;
-    line-height: 1.6;
-  }
-
-  .multiline-input {
-    @apply overflow-auto break-words;
-    @apply h-fit min-h-fit;
+    line-height: 1.58;
+    word-wrap: break-word;
   }
 
   .input-wrapper:focus-within {

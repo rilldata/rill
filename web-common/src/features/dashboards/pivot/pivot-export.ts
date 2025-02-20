@@ -14,7 +14,7 @@ import {
 import { derived, get } from "svelte/store";
 import { runtime } from "../../../runtime-client/runtime-store";
 import type { StateManagers } from "../state-managers/state-managers";
-import { getPivotConfig } from "./pivot-data-store";
+import { getPivotConfig } from "./pivot-data-config";
 import { prepareMeasureForComparison } from "./pivot-utils";
 import {
   COMPARISON_DELTA,
@@ -111,7 +111,11 @@ export function getPivotExportArgs(ctx: StateManagers) {
 
       const metricsViewSpec = validSpecStore.data?.metricsView ?? {};
       const exploreSpec = validSpecStore.data?.explore ?? {};
-      const timeRange = mapTimeRange(timeControlState, exploreSpec);
+      const timeRange = mapTimeRange(
+        timeControlState,
+        dashboardState.selectedTimezone,
+        exploreSpec,
+      );
       if (!timeRange) return undefined;
 
       return getPivotAggregationRequest(

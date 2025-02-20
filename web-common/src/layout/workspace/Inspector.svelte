@@ -1,11 +1,12 @@
 <script lang="ts">
+  import { slide } from "svelte/transition";
   import Resizer from "../Resizer.svelte";
   import { workspaces } from "./workspace-stores";
-  import { slide } from "svelte/transition";
 
   export let filePath: string;
   export let resizable = true;
   export let fixedWidth: number | undefined = undefined;
+  export let minWidth = 320;
 
   let resizing = false;
 
@@ -21,13 +22,14 @@
     class="inspector-wrapper"
     style:width="{width + 8}px"
     transition:slide={{ axis: "x", duration: 500 }}
+    aria-label="Inspector Panel"
   >
     <Resizer
       disabled={!resizable}
       absolute={false}
       direction="EW"
       side="left"
-      min={fixedWidth ?? 320}
+      min={fixedWidth ?? minWidth}
       max={fixedWidth ?? 420}
       dimension={fixedWidth ?? width}
       onUpdate={(newWidth) => {
@@ -51,7 +53,7 @@
   .inner {
     will-change: width;
     @apply h-full flex-none;
-    @apply border border-gray-200 bg-white;
+    @apply border border-gray-200 bg-surface;
     @apply overflow-y-auto overflow-x-hidden rounded-[2px];
   }
 </style>

@@ -1,18 +1,65 @@
 import { expect } from "@playwright/test";
-import { useDashboardFlowTestSetup } from "web-local/tests/explores/dashboard-flow-test-setup";
-import {
-  AD_BIDS_EXPLORE_PATH,
-  AD_BIDS_METRICS_PATH,
-} from "web-local/tests/utils/dataSpecifcHelpers";
-import { gotoNavEntry } from "web-local/tests/utils/waitHelpers";
+import { gotoNavEntry } from "./utils/waitHelpers";
 import { updateCodeEditor, wrapRetryAssertion } from "./utils/commonHelpers";
-import { test } from "./utils/test";
+import { test } from "./setup/base";
 
 test.describe("Metrics editor", () => {
-  useDashboardFlowTestSetup();
+  test.use({ project: "AdBids" });
+
+  test("Can add and remove measures and dimensions", async ({ page }) => {
+    await page.getByLabel("/metrics").click();
+    await page.getByLabel("/dashboards").click();
+    await gotoNavEntry(page, "/metrics/AdBids_metrics.yaml");
+
+    await page.getByRole("button", { name: "Add new measure" }).click();
+
+    await page.getByText("Model column").click();
+    await page.getByRole("option", { name: "bid_price" }).click();
+    await page.getByLabel("Display name (optional)").fill("New Measure");
+    await page.getByRole("button", { name: "Add measure" }).click();
+
+    await expect(page.getByText("New Measure", { exact: true })).toBeVisible();
+
+    await page.getByRole("button", { name: "Add new dimension" }).click();
+
+    await page.getByText("Column from model").click();
+    await page.getByRole("option", { name: "bid_price" }).click();
+    await page.getByLabel("Display name (optional)").fill("New Dimension");
+    await page.getByRole("button", { name: "Add dimension" }).click();
+
+    await expect(
+      page.getByText("New Dimension", { exact: true }),
+    ).toBeVisible();
+
+    // Delete measure
+    await page.getByRole("row", { name: "measure New Measure" }).hover();
+    await page
+      .getByRole("button", { name: "Delete measure New Measure" })
+      .click();
+
+    await page.getByRole("button", { name: "Yes, delete" }).click();
+
+    await expect(
+      page.getByText("New Measure", { exact: true }),
+    ).not.toBeVisible();
+
+    // Delete dimension
+    await page.getByRole("row", { name: "dimension New Dimension" }).hover();
+    await page
+      .getByRole("button", { name: "Delete dimension New Dimension" })
+      .click();
+
+    await page.getByRole("button", { name: "Yes, delete" }).click();
+
+    await expect(
+      page.getByText("New Dimension", { exact: true }),
+    ).not.toBeVisible();
+  });
 
   test("Metrics editor", async ({ page }) => {
-    await gotoNavEntry(page, AD_BIDS_METRICS_PATH);
+    await page.getByLabel("/metrics").click();
+    await page.getByLabel("/dashboards").click();
+    await gotoNavEntry(page, "/metrics/AdBids_metrics.yaml");
 
     await page.getByLabel("code").click();
 
@@ -30,11 +77,11 @@ test.describe("Metrics editor", () => {
     });
 
     // This is causing issues in the test, so we'll skip it for now.
-    // await gotoNavEntry(page, AD_BIDS_EXPLORE_PATH);
+    // await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
     // // the Preview button should be disabled
     // await expect(page.getByRole("button", { name: "Preview" })).toBeDisabled();
     // await page.waitForTimeout(3000);
-    // await gotoNavEntry(page, AD_BIDS_METRICS_PATH);
+    // await gotoNavEntry(page, "/metrics/AdBids_metrics.yaml");
 
     // the editor should show a validation error
     await expect(
@@ -65,8 +112,8 @@ test.describe("Metrics editor", () => {
     await expect(page.getByText("Table columns")).toBeVisible();
 
     // go to the dashboard and make sure the metrics and dimensions are there.
-    await gotoNavEntry(page, AD_BIDS_EXPLORE_PATH);
-    await page.waitForTimeout(3000);
+    await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
+
     await page.getByRole("button", { name: "Preview" }).click();
 
     // check to see metrics make sense.

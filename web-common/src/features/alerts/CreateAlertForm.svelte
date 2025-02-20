@@ -46,6 +46,8 @@
   } = getStateManagers();
   const timeControls = get(timeControlsState);
 
+  $: ({ instanceId } = $runtime);
+
   // Set defaults depending on UI state
   // if in TDD take active measure and comparison dimension
   // If expanded leaderboard, take first dimension and active dimensions
@@ -57,12 +59,12 @@
   }
 
   // TODO: get metrics view spec
-  const timeRange = mapTimeRange(timeControls, {});
-  const comparisonTimeRange = mapComparisonTimeRange(
-    $dashboardStore,
+  const timeRange = mapTimeRange(
     timeControls,
-    timeRange,
+    $dashboardStore.selectedTimezone,
+    {},
   );
+  const comparisonTimeRange = mapComparisonTimeRange(timeControls, timeRange);
 
   const formState = createForm<AlertFormValues>({
     initialValues: {
@@ -144,8 +146,8 @@
             },
           },
         });
-        queryClient.invalidateQueries(
-          getRuntimeServiceListResourcesQueryKey($runtime.instanceId),
+        await queryClient.invalidateQueries(
+          getRuntimeServiceListResourcesQueryKey(instanceId),
         );
         dispatch("close");
         eventBus.emit("notification", {
@@ -162,7 +164,7 @@
   });
 
   const { form } = formState;
-  $: hasSlackNotifier = getHasSlackConnection($runtime.instanceId);
+  $: hasSlackNotifier = getHasSlackConnection(instanceId);
   $: if ($hasSlackNotifier.data) {
     $form["enableSlackNotification"] = true;
   }

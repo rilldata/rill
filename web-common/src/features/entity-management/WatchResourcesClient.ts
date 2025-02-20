@@ -3,6 +3,7 @@ import { ResourceKind } from "@rilldata/web-common/features/entity-management/re
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   getConnectorServiceOLAPListTablesQueryKey,
+  getQueryServiceResolveCanvasQueryKey,
   getRuntimeServiceAnalyzeConnectorsQueryKey,
   getRuntimeServiceGetExploreQueryKey,
   getRuntimeServiceGetModelPartitionsQueryKey,
@@ -21,6 +22,8 @@ import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { WatchRequestClient } from "@rilldata/web-common/runtime-client/watch-request-client";
 import { get } from "svelte/store";
 import { connectorExplorerStore } from "../connectors/connector-explorer-store";
+import { sourceImportedPath } from "../sources/sources-store";
+import { isLeafResource } from "./dag-utils";
 
 export class WatchResourcesClient {
   public readonly client: WatchRequestClient<V1WatchResourcesResponse>;
@@ -33,7 +36,7 @@ export class WatchResourcesClient {
     this.client.on("reconnect", () => this.invalidateAllRuntimeQueries());
   }
 
-  private handleWatchResourceResponse(res: V1WatchResourcesResponse) {
+  private async handleWatchResourceResponse(res: V1WatchResourcesResponse) {
     // Log resource status to the browser console during e2e tests. Currently, our e2e tests make assertions
     // based on these logs. However, the e2e tests really should make UI-based assertions.
     if (import.meta.env.VITE_PLAYWRIGHT_TEST) {
@@ -181,6 +184,16 @@ export class WatchResourcesClient {
             // The following invalidations are only needed if the Source/Model has an active table
             if (!connectorName || !tableName) return;
 
+            // If it's a new source, show the "Source imported successfully" modal
+            const isNewSource =
+              res.name.kind === ResourceKind.Source &&
+              res.resource.meta.specVersion === "1" &&
+              (await isLeafResource(res.resource, this.instanceId)); // Protects against existing projects reconciling anew
+            if (isNewSource) {
+              const filePath = res.resource?.meta?.filePaths?.[0] as string;
+              sourceImportedPath.set(filePath);
+            }
+
             // Invalidate the model partitions query
             if ((res.name.kind as ResourceKind) === ResourceKind.Model) {
               void queryClient.invalidateQueries(
@@ -218,12 +231,23 @@ export class WatchResourcesClient {
             }
 
             queryClient
-              .invalidateQueries(
+              .refetchQueries(
                 getRuntimeServiceGetExploreQueryKey(this.instanceId, {
                   name: res.name.name,
                 }),
               )
               .catch(console.error);
+            return;
+          }
+
+          case ResourceKind.Canvas: {
+            void queryClient.refetchQueries(
+              getQueryServiceResolveCanvasQueryKey(
+                this.instanceId,
+                res.name.name,
+                {},
+              ),
+            );
             return;
           }
 

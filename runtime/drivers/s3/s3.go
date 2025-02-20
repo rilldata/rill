@@ -9,6 +9,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/storage"
 	"go.uber.org/zap"
 )
 
@@ -91,13 +92,14 @@ type ConfigProperties struct {
 	AccessKeyID     string `mapstructure:"aws_access_key_id"`
 	SecretAccessKey string `mapstructure:"aws_secret_access_key"`
 	SessionToken    string `mapstructure:"aws_access_token"`
+	Endpoint        string `mapstructure:"endpoint"`
+	Region          string `mapstructure:"region"`
 	AllowHostAccess bool   `mapstructure:"allow_host_access"`
 	RetainFiles     bool   `mapstructure:"retain_files"`
-	TempDir         string `mapstructure:"temp_dir"`
 }
 
 // Open implements drivers.Driver
-func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("s3 driver can't be shared")
 	}
@@ -109,8 +111,9 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 	}
 
 	conn := &Connection{
-		config: cfg,
-		logger: logger,
+		config:  cfg,
+		storage: st,
+		logger:  logger,
 	}
 	return conn, nil
 }
@@ -145,8 +148,9 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 
 type Connection struct {
 	// config is input configs passed to driver.Open
-	config *ConfigProperties
-	logger *zap.Logger
+	config  *ConfigProperties
+	storage *storage.Client
+	logger  *zap.Logger
 }
 
 var _ drivers.Handle = &Connection{}
@@ -243,11 +247,6 @@ func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
 
 // AsWarehouse implements drivers.Handle.
 func (c *Connection) AsWarehouse() (drivers.Warehouse, bool) {
-	return nil, false
-}
-
-// AsSQLStore implements drivers.Connection.
-func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return nil, false
 }
 

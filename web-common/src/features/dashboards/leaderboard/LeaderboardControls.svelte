@@ -1,20 +1,17 @@
 <script lang="ts">
-  import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import DashboardVisibilityDropdown from "@rilldata/web-common/components/menu/shadcn/DashboardVisibilityDropdown.svelte";
+  import * as Select from "@rilldata/web-common/components/select";
+  import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
+  import { getSimpleMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { getStateManagers } from "../state-managers/state-managers";
-  import * as Select from "@rilldata/web-common/components/select";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
 
   export let exploreName: string;
 
   const {
     selectors: {
-      measures: {
-        filteredSimpleMeasures,
-        leaderboardMeasureName,
-        getMeasureByName,
-      },
+      measures: { leaderboardMeasureName, getMeasureByName, visibleMeasures },
       dimensions: { visibleDimensions, allDimensions },
     },
     actions: {
@@ -26,7 +23,7 @@
 
   let active = false;
 
-  $: measures = $filteredSimpleMeasures();
+  $: measures = getSimpleMeasures($visibleMeasures);
 
   $: metricsExplorer = $metricsExplorerStore.entities[exploreName];
 
@@ -68,8 +65,8 @@
         tooltipText="Choose dimensions to display"
         onSelect={(name) => toggleDimensionVisibility(allDimensionNames, name)}
         selectableItems={$allDimensions.map(({ name, displayName }) => ({
-          name: name ?? "",
-          label: displayName ?? name ?? "",
+          name: name || "",
+          label: displayName || name || "",
         }))}
         selectedItems={visibleDimensionsNames}
         onToggleSelectAll={() => {
@@ -82,7 +79,7 @@
         selected={{ value: activeLeaderboardMeasure.name, label: "" }}
         items={measures.map((measure) => ({
           value: measure.name ?? "",
-          label: measure.displayName ?? measure.name,
+          label: measure.displayName || measure.name,
         }))}
         onSelectedChange={(newSelection) => {
           if (!newSelection?.value) return;
@@ -93,7 +90,7 @@
           <Button type="text" label="Select a measure to filter by">
             <span class="truncate text-gray-700 hover:text-inherit">
               Showing <b>
-                {activeLeaderboardMeasure?.displayName ??
+                {activeLeaderboardMeasure?.displayName ||
                   activeLeaderboardMeasure.name}
               </b>
             </span>
@@ -108,12 +105,12 @@
           {#each measures as measure (measure.name)}
             <Select.Item
               value={measure.name}
-              label={measure.displayName ?? measure.name}
+              label={measure.displayName || measure.name}
               class="text-[12px]"
             >
               <div class="flex flex-col">
                 <div class:font-bold={$leaderboardMeasureName === measure.name}>
-                  {measure.displayName ?? measure.name}
+                  {measure.displayName || measure.name}
                 </div>
 
                 <p class="ui-copy-muted" style:font-size="11px">

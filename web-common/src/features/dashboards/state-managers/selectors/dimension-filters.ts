@@ -3,6 +3,7 @@ import { filterItemsSortFunction } from "@rilldata/web-common/features/dashboard
 import {
   forEachIdentifier,
   getValuesInExpression,
+  isExpressionUnsupported,
   matchExpressionByName,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type {
@@ -17,6 +18,9 @@ export const selectedDimensionValues = (
   dashData: AtLeast<DashboardDataSources, "dashboard">,
 ): ((dimName: string) => string[]) => {
   return (dimName: string) => {
+    // if it is a complex filter unsupported by UI then no values are selected
+    if (isExpressionUnsupported(dashData.dashboard.whereFilter)) return [];
+
     // FIXME: it is possible for this way of accessing the filters
     // to return the same value twice, which would seem to indicate
     // a bug in the way we're setting the filters / active values.
@@ -78,6 +82,7 @@ export type DimensionFilterItem = {
   label: string;
   selectedValues: string[];
   isInclude: boolean;
+  metricsViewNames?: string[];
 };
 export function getDimensionFilterItems(
   dashData: AtLeast<DashboardDataSources, "dashboard">,

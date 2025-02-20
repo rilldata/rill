@@ -97,14 +97,14 @@ service AdminService {
   rpc GetProjectVariables(GetProjectVariablesRequest) returns (GetProjectVariablesResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/variables"};
   }
-  
+
   // UpdateProjectVariables updates variables for a project.
   rpc UpdateProjectVariables(UpdateProjectVariablesRequest) returns (UpdateProjectVariablesResponse) {
     option (google.api.http) = {
       put: "/v1/organizations/{organization}/projects/{project}/variables",
       body: "*"
     };
-  }  
+  }
 
   // CreateAsset returns a one time signed URL using which any asset can be uploaded.
   rpc CreateAsset(CreateAssetRequest) returns (CreateAssetResponse) {
@@ -149,6 +149,15 @@ service AdminService {
   rpc TriggerRedeploy(TriggerRedeployRequest) returns (TriggerRedeployResponse) {
     option (google.api.http) = {
       post: "/v1/projects/-/redeploy",
+      body: "*"
+    };
+  }
+
+  // Provision provisions a new resource for a deployment.
+  // If an existing resource matches the request, it will be returned without provisioning a new resource.
+  rpc Provision(ProvisionRequest) returns (ProvisionResponse) {
+    option (google.api.http) = {
+      post: "/v1/deployments/{deployment_id}/provision",
       body: "*"
     };
   }
@@ -331,6 +340,11 @@ service AdminService {
     option (google.api.http) = {
       get: "/v1/users/current"
     };
+  }
+
+  // DeleteUser deletes the user from the organization by email
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse) {
+    option (google.api.http) = {delete: "/v1/users/{email}"};
   }
 
   // IssueRepresentativeAuthToken returns the temporary token for given email
@@ -895,6 +909,8 @@ message UpdateOrganizationRequest {
   optional string description = 2;
   optional string new_name = 3;
   optional string display_name = 5;
+  optional string logo_asset_id = 6;
+  optional string favicon_asset_id = 7;
   optional string billing_email = 4 [(validate.rules).string.email = true];
 }
 
@@ -1162,6 +1178,7 @@ message UpdateProjectRequest {
   optional string new_name = 9;
   optional int64 prod_ttl_seconds = 10;
   optional string prod_version = 11;
+  bool superuser_force_access = 14;
 }
 
 message UpdateProjectResponse {
@@ -1170,9 +1187,11 @@ message UpdateProjectResponse {
 
 message CreateAssetRequest {
   string organization_name = 1 [(validate.rules).string.min_len = 1];
-  string type = 2 [(validate.rules).string = {in: ["deploy"]}];
+  string type = 2 [(validate.rules).string = {in: ["deploy", "image"]}];
   string name = 3 [(validate.rules).string.min_len = 1]; // Eg. "rilldata__project_name"
   string extension = 4; // Eg. ".tar.gz"
+  bool public = 5;
+  int64 estimated_size_bytes = 6;
 }
 
 message CreateAssetResponse {
@@ -1184,6 +1203,7 @@ message CreateAssetResponse {
 message RedeployProjectRequest {
   string organization = 1;
   string project = 2;
+  bool superuser_force_access = 3;
 }
 
 message RedeployProjectResponse {}
@@ -1217,6 +1237,23 @@ message TriggerRedeployRequest {
 }
 
 message TriggerRedeployResponse {}
+
+message ProvisionRequest {
+  // Deployment to provision a resource for.
+  // If it's blank and the request is made with a deployment access token, the deployment is inferred from the token.
+  string deployment_id = 1;
+  // Type of resource to provision.
+  string type = 2;
+  // Name of the resource to provision.
+  // It forms a unique key together with deployment and type, which is used to de-duplicate provision requests.
+  string name = 3;
+  // Arguments for the provisioner call.
+  google.protobuf.Struct args = 4;
+}
+
+message ProvisionResponse {
+  ProvisionerResource resource = 1;
+}
 
 message ListOrganizationMemberUsersRequest {
   string organization = 1;
@@ -1609,6 +1646,12 @@ message UpdateUserPreferencesResponse {
   UserPreferences preferences = 1;
 }
 
+message DeleteUserRequest {
+  string email = 1 [(validate.rules).string.email = true];
+}
+
+message DeleteUserResponse {}
+
 message ListBookmarksRequest {
   string project_id = 1;
   string resource_kind = 2;
@@ -1891,12 +1934,13 @@ message GetRepoMetaRequest {
 }
 
 message GetRepoMetaResponse {
-  string git_url = 1;
-  google.protobuf.Timestamp git_url_expires_on = 2;
-  string git_subpath = 3;
-  // archive_download_url is set when repo is managed by Rill
-  // either archive_download_url or git related details will be set
-  string archive_download_url = 4;
+    // If the Git-related fields are set, the archive-related fields will not be set (and vice versa).
+    string git_url = 1;
+    google.protobuf.Timestamp git_url_expires_on = 2;
+    string git_subpath = 3;
+    string archive_download_url = 4;
+    string archive_id = 5;
+    google.protobuf.Timestamp archive_created_on = 6;
 }
 
 message PullVirtualRepoRequest {
@@ -2195,11 +2239,15 @@ message Organization {
   string name = 2; // Globally unique
   string display_name = 11;
   string description = 3;
+  string logo_url = 12;
+  string favicon_url = 13;
   string custom_domain = 10;
   OrganizationQuotas quotas = 4;
   string billing_customer_id = 7;
   string payment_customer_id = 8;
   string billing_email = 9;
+  optional string billing_plan_name = 14;
+  optional string billing_plan_display_name = 15;
   google.protobuf.Timestamp created_on = 5;
   google.protobuf.Timestamp updated_on = 6;
 }
@@ -2272,6 +2320,15 @@ message Deployment {
   google.protobuf.Timestamp updated_on = 10;
 }
 
+message ProvisionerResource {
+  string id = 1;
+  string deployment_id = 2;
+  string type = 3;
+  string name = 4;
+  google.protobuf.Struct args = 5;
+  google.protobuf.Struct config = 6;
+}
+
 message OrganizationPermissions {
   bool read_org = 1;
   bool manage_org = 2;
@@ -2291,6 +2348,8 @@ message ProjectPermissions {
   bool read_dev = 6;
   bool read_dev_status = 7;
   bool manage_dev = 8;
+  bool read_provisioner_resources = 19;
+  bool manage_provisioner_resources = 20;
   bool read_project_members = 9;
   bool manage_project_members = 10;
   bool create_magic_auth_tokens = 15;

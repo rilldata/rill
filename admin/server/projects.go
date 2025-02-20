@@ -17,6 +17,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/email"
+	"github.com/rilldata/rill/runtime/pkg/env"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
@@ -121,6 +122,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		permissions.ReadProdStatus = true
 		permissions.ReadDev = true
 		permissions.ReadDevStatus = true
+		permissions.ReadProvisionerResources = true
 		permissions.ReadProjectMembers = true
 	}
 
@@ -191,6 +193,16 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 			if spec != nil {
 				condition.WriteString(fmt.Sprintf(" OR '{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", runtime.ResourceKindMetricsView, duckdbsql.EscapeStringValue(strings.ToLower(spec.MetricsView))))
 			}
+		} else if mdl.ResourceType == runtime.ResourceKindReport {
+			// adding this rule to allow report resource accessible by non admin users
+			rules = append(rules, &runtimev1.SecurityRule{
+				Rule: &runtimev1.SecurityRule_Access{
+					Access: &runtimev1.SecurityRuleAccess{
+						Condition: fmt.Sprintf("'{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", runtime.ResourceKindReport, duckdbsql.EscapeStringValue(strings.ToLower(mdl.ResourceName))),
+						Allow:     true,
+					},
+				},
+			})
 		}
 
 		attr = mdl.Attributes
@@ -244,7 +256,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		runtimeauth.ReadAPI,
 	}
 	if permissions.ManageProject {
-		instancePermissions = append(instancePermissions, runtimeauth.EditTrigger)
+		instancePermissions = append(instancePermissions, runtimeauth.EditTrigger, runtimeauth.ReadResolvers)
 	}
 
 	var systemPermissions []runtimeauth.Permission
@@ -385,7 +397,10 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	// check if org has any blocking billing errors
 	err = s.admin.CheckBlockingBillingErrors(ctx, org.ID)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, ctx.Err()) {
+			return nil, err
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	// Check projects quota
@@ -575,8 +590,9 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to delete project")
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject && !forceAccess {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage project")
 	}
 
 	if req.GithubUrl != nil && req.ArchiveAssetId != nil {
@@ -714,6 +730,16 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 	}
 	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to update project variables")
+	}
+
+	var validationErr error
+	for k := range req.Variables {
+		if err := env.ValidateName(k); err != nil {
+			validationErr = errors.Join(validationErr, err)
+		}
+	}
+	if validationErr != nil {
+		return nil, status.Error(codes.InvalidArgument, validationErr.Error())
 	}
 
 	err = s.admin.UpdateProjectVariables(ctx, proj, req.Environment, req.Variables, req.UnsetVariables, claims.OwnerID())
@@ -1045,7 +1071,7 @@ func (s *Server) GetCloneCredentials(ctx context.Context, req *adminv1.GetCloneC
 		if err != nil {
 			return nil, err
 		}
-		downloadURL, err := s.generateV4GetObjectSignedURL(asset.Path)
+		downloadURL, err := s.generateSignedDownloadURL(asset)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
@@ -1517,6 +1543,17 @@ func (s *Server) RedeployProject(ctx context.Context, req *adminv1.RedeployProje
 		attribute.String("args.project", req.Project),
 	)
 
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	forceAccess := req.SuperuserForceAccess && claims.Superuser(ctx)
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProd && !forceAccess {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage deployment")
+	}
+
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -1528,22 +1565,12 @@ func (s *Server) RedeployProject(ctx context.Context, req *adminv1.RedeployProje
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
 	var depl *database.Deployment
 	if proj.ProdDeploymentID != nil {
 		depl, err = s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
-	}
-
-	claims := auth.GetClaims(ctx)
-	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProd {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage deployment")
 	}
 
 	_, err = s.admin.RedeployProject(ctx, proj, depl)

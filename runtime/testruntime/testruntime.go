@@ -17,6 +17,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/email"
+	"github.com/rilldata/rill/runtime/storage"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
@@ -63,7 +64,6 @@ func New(t TestingT) *runtime.Runtime {
 		ControllerLogBufferCapacity:  10000,
 		ControllerLogBufferSizeBytes: int64(datasize.MB * 16),
 		AllowHostAccess:              true,
-		DataDir:                      t.TempDir(),
 	}
 
 	logger := zap.NewNop()
@@ -73,7 +73,7 @@ func New(t TestingT) *runtime.Runtime {
 		require.NoError(t, err)
 	}
 
-	rt, err := runtime.New(context.Background(), opts, logger, activity.NewNoopClient(), email.New(email.NewTestSender()))
+	rt, err := runtime.New(context.Background(), opts, logger, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), email.New(email.NewTestSender()))
 	require.NoError(t, err)
 	t.Cleanup(func() { rt.Close() })
 
@@ -108,8 +108,13 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 	vars["rill.stage_changes"] = strconv.FormatBool(opts.StageChanges)
 
 	for _, conn := range opts.TestConnectors {
-		connVars := Connectors[conn](t)
-		maps.Copy(vars, connVars)
+		acquire, ok := Connectors[conn]
+		require.True(t, ok, "unknown test connector %q", conn)
+		cfg := acquire(t)
+		for k, v := range cfg {
+			k = fmt.Sprintf("connector.%s.%s", conn, k)
+			vars[k] = v
+		}
 	}
 
 	tmpDir := t.TempDir()

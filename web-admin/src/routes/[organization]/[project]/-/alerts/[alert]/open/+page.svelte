@@ -15,12 +15,13 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
+  $: ({ instanceId } = $runtime);
   $: organization = $page.params.organization;
   $: project = $page.params.project;
   $: alertId = $page.params.alert;
   $: executionTime = $page.url.searchParams.get("execution_time");
 
-  $: alert = useAlert($runtime.instanceId, alertId);
+  $: alert = useAlert(instanceId, alertId);
   $: exploreName = getExploreName(
     $alert.data?.resource?.alert?.spec?.annotations?.web_open_path,
   );
@@ -46,16 +47,19 @@
     goto(`/${organization}/${project}/-/alerts/${alertId}`);
   }
 
-  $: if ($dashboardStateForAlert.data) {
-    void goto(
-      getExplorePageUrl(
-        $page.url,
-        organization,
-        project,
-        $dashboardStateForAlert.data.exploreName,
-        $dashboardStateForAlert.data.state,
-      ),
+  $: if ($dashboardStateForAlert?.data) {
+    void gotoExplorePage();
+  }
+
+  async function gotoExplorePage() {
+    const explorePageUrl = await getExplorePageUrl(
+      $page.url,
+      organization,
+      project,
+      $dashboardStateForAlert.data.exploreName,
+      $dashboardStateForAlert.data.exploreState,
     );
+    return goto(explorePageUrl);
   }
 </script>
 

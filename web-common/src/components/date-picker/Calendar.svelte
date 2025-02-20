@@ -3,16 +3,17 @@
   import { DateTime } from "luxon";
   import { Interval } from "luxon";
 
-  type MaybeDate = DateTime<true> | DateTime<false> | undefined;
+  type MaybeDate = DateTime | undefined;
 
-  export let selection: MaybeDate | Interval<true> = undefined;
+  export let selection: MaybeDate | Interval = undefined;
   export let minDate: MaybeDate = undefined;
+  export let maxDate: MaybeDate = DateTime.now().startOf("day");
   export let visibleMonths = 1;
   export let selectingStart = true;
   export let firstVisibleMonth: MaybeDate = isValidDateTime(selection)
     ? selection
     : isValidInterval(selection)
-      ? selection.start
+      ? (selection.start ?? DateTime.now())
       : DateTime.now();
   export let singleDaySelection = isValidDateTime(selection);
   export let onSelectDay: (date: DateTime<true>) => void;
@@ -44,7 +45,7 @@
   }
 
   function isValidInterval(
-    value: MaybeDate | Interval<true>,
+    value: MaybeDate | Interval,
   ): value is Interval<true> {
     return Boolean(value && value instanceof Interval && value?.isValid);
   }
@@ -54,6 +55,7 @@
   {#each { length: visibleMonths } as month, i (month)}
     <Month
       {minDate}
+      {maxDate}
       {singleDaySelection}
       interval={finalInterval}
       startDay={firstMonth.plus({ month: i }).set({ day: 1 }).startOf("day")}

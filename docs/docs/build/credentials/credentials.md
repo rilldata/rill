@@ -1,6 +1,6 @@
 ---
 title: Configure connector credentials
-sidebar_label: Configure Credentials
+sidebar_label: Configure Local Credentials
 sidebar_position: 00
 ---
 
@@ -8,16 +8,16 @@ Rill requires credentials to connect to remote data sources such as private buck
 
 At a high level, configuring credentials and credentials management in Rill can be broken down into three categories:
 - Setting credentials for Rill Developer
-- Setting credentials for a Rill Cloud project
-- Pushing and pulling credentials to / from Rill Cloud
+- [Setting credentials for a Rill Cloud project](/deploy/deploy-credentials)
+- [Pushing and pulling credentials to / from Rill Cloud](/manage/project-management/variables-and-credentials)
 
 ## Setting credentials for Rill Developer
 
 When reading from a source (or using a different OLAP engine), Rill will attempt to use existing credentials that have been configured on your machine.
-1. Credentials that have been configured in your local environment via the CLI (for [AWS](../../reference/connectors/s3.md#local-credentials) / [Azure](../../reference/connectors/azure.md#local-credentials) / [Google Cloud](../../reference/connectors/gcs.md#local-credentials))
+1. Credentials that have been configured in your local environment via the CLI (for [AWS](../../reference/connectors/s3.md#local-credentials) / [Azure](../../reference/connectors/azure.md#local-credentials) / [Google Cloud](../../reference/connectors/gcs#rill-developer-local-credentials))
 2. Credentials that have been passed in directly through the connection string or DSN (typically for databases - see [Source YAML](../../reference/project-files/sources.md) and [Connector YAML](../../reference/project-files/connectors.md) for more details)
 3. Credentials that have been passed in as a [variable](../../deploy/templating.md) when starting Rill Developer via `rill start --env key=value`
-4. Credentials that have been specified in your *`<RILL_PROJECT_HOME>/.env`* file
+4. Credentials that have been specified in your *`<RILL_PROJECT_HOME>/.env`* file, see  [credential naming schema](#credentials-naming-schema) for more information.
 
 For more details, please refer to the corresponding [connector](../../reference/connectors/connectors.md) or [OLAP engine](../../reference/olap-engines/olap-engines.md) page.
 
@@ -28,24 +28,50 @@ If you plan to deploy a project (to Rill Cloud), it is not recommended to pass i
 :::
 
 
-## Setting credentials for a Rill Cloud project
+## Variables
 
-When deploying a project, Rill Cloud will need appropriate credentials passed to it that can be used to read from a source (or to be used to establish a connection with the OLAP engine). This can be done either by:
-1. Using [rill env configure](../../reference/cli/env/configure.md) to pass in connector level credentials (make sure to run this CLI command from the root directory of your Rill project)
-2. Specifying all corresponding source level and OLAP engine credentials in the project's `.env` file and "pushing it" to Rill Cloud ([see below](#pushing-and-pulling-credentials-to--from-rill-cloud))
+Project variables work exactly the same way as credentials and can be defined when starting rill via `--env key=value` or set in the .env file in the project directory.
 
-For more details, please refer to the corresponding [connector](../../reference/connectors/connectors.md) or [OLAP engine](../../reference/olap-engines/olap-engines.md) page.
+```bash
+variable=xyz
+```
 
-:::tip Best practice
+This variable will then be usable and referenceable for [templating](../../deploy/templating.md) purposes in the local instance of your project. 
 
-For projects that you deploy to production, it is recommended to use service accounts when possible instead of individual user credentials.
+:::info Fun Fact
 
+Connector credentials are essentially a form of project variable, prefixed using the `connector.<connector_name>.<property>` syntax. For example, `connector.druid.dsn` and `connector.clickhouse.dsn` are both hardcoded project variables (that happen to correspond to the [Druid](/reference/olap-engines/druid.md) and [ClickHouse](/reference/olap-engines/clickhouse.md) OLAP engines respectively).
 
 :::
 
-## Pushing and pulling credentials to / from Rill Cloud
+:::tip Avoid committing sensitive information to Git
 
-If you have a project deployed to Rill Cloud, Rill provides the ability to **sync** the credentials between your local instance of Rill Developer and Rill cloud. This provides the ability to quickly reuse existing credentials, if configured, instead of having to manually input credentials each time. This can be accomplished by leveraging the `rill env push` and `rill env pull` CLI commands respectively.
+It's never a good idea to commit sensitive information to Git and goes against security best practices. Similar to credentials, if there are sensitive variables that you don't want to commit publicly to your `rill.yaml` configuration file (and thus potentially accessible by others), it's recommended to set them in your `.env` file directly and/or use `rill env set` via the CLI (and then optionally push / pull them as necessary).
+
+:::
+
+## Deploying to Rill Cloud 
+
+Please see our [deploy credentials page](/deploy/deploy-credentials#configure-environmental-variables-and-credentials-for-rill-cloud) to configure your credentials on Rill Cloud. If you have configured your credentials via the `.env` file this will be deployed with your project. If not, follow the steps to deploy then configure your credentials via the CLI running `rill env configure`.
+
+
+
+## Pulling Credentials and Variables from a Deployed Project on Rill Cloud
+
+If you are making changes to an already deployed instance from Rill Cloud, it is possible to **pull** the credentials and variables from the Rill Cloud to your local instance of Rill Developer. If you've made any changes to the credentials, don't forget to run `rill env push` to push the variable changes to the project, or manually change these in the project's setting page.
+
+### rill env pull
+
+For projects that have been deployed to Rill Cloud, an added benefit of our Rill Developer-Cloud architecture is that credentials that have been configured can be pulled locally for easier reuse (instead of having to manually reconfigure these credentials in Rill Developer). To do this, you can run `rill env pull` from your project's root directory to retrieve the latest credentials (after cloning the project's git repository to your local environment).
+
+![Pulling credentials from Rill Cloud](/img/build/credentials/rill-env-pull.png)
+
+:::info Overriding local credentials
+
+Please note when you run `rill env pull`, Rill will *automatically override any existing credentials or variables* that have been configured in your project's `.env` file if there is a match in the key name. This may result in unexpected behavior if you are using different credentials locally.
+
+:::
+
 
 ### rill env push
 
@@ -60,38 +86,42 @@ If a credential and/or variable has already been configured in Rill Cloud, Rill 
 
 :::
 
-### rill env pull
 
-For projects that have been deployed to Rill Cloud, an added benefit of our Rill Developer-Cloud architecture is that credentials that have been configured can be pulled locally for easier reuse (instead of having to manually reconfigure these credentials in Rill Developer). To do this, you can run `rill env pull` from your project's root directory to retrieve the latest credentials (after cloning the project's git repository to your local environment).
+### Credentials Naming Schema 
 
-![Pulling credentials from Rill Cloud](/img/build/credentials/rill-env-pull.png)
-
-:::info Overriding local credentials
-
-Please note when you run `rill env pull`, Rill will *automatically override any existing credentials or variables* that have been configured in your project's `.env` file if there is a match in the key name. This may result in unexpected behavior if you are using different credentials locally.
-
-:::
-
-### variables
-
-Project variables work exactly the same way as credentials and can be pushed to Cloud / pulled locally using the same `rill env push` and `rill env pull` commands specifically. To do this, if you're in Rill Developer and want to set a variable through your `<RILL_PROJECT_HOME>/.env` file (and save):
-
-```bash
-variable=xyz
-```
-
-This variable should then be usable and referenceable for [templating](../../deploy/templating.md) purposes in the local instance of your project. Then, if you want to push these variable definitions to your deployed Cloud project, you can use `rill env push`. Similarly, if these variables had already been set in Rill Cloud for your project, you can use `rill env pull` to clone these variables locally (in your `.env` file).
-
-:::info Fun Fact
-
-Connector credentials are essentially a form of project variable, prefixed using the `connector.<connector_name>.<property>` syntax. For example, `connector.druid.dsn` and `connector.clickhouse.dsn` are both hardcoded project variables (that happen to correspond to the [Druid](/reference/olap-engines/druid.md) and [ClickHouse](/reference/olap-engines/clickhouse.md) OLAP engines respectively).
-
-:::
-
-:::tip Avoid committing sensitive information to Git
-
-It's never a good idea to commit sensitive information to Git and goes against security best practices. Similar to credentials, if there are sensitive variables that you don't want to commit publicly to your `rill.yaml` configuration file (and thus potentially accessible by others), it's recommended to set them in your `.env` file directly and/or use `rill env set` via the CLI (and then optionally push / pull them as necessary).
-
-:::
+Connector credentials are essentially a form of project variable, prefixed using the `connector.<connector_name>.<property>` syntax. For example, `connector.druid.dsn` and `connector.clickhouse.dsn` are both hardcoded project variables (that happen to correspond to the [Druid](/reference/olap-engines/druid.md) and [ClickHouse](/reference/olap-engines/clickhouse.md) OLAP engines respectively). Please see below for each source and its required properties. If you have any questions or need specifics, [contact us](../../contact)! 
 
 
+<div
+    style={{
+    width: '100%',
+    margin: 'auto',
+    padding: '20px',
+    textAlign: 'center', 
+    display: 'flex', 
+    justifyContent: 'center',
+    alignItems: 'center'
+    }}
+>
+|           **Source Name**   |        Property             |      Example         |
+| :-----------------------: | :-------------------------:  | :------------------- |
+|       **GCS**                |`GOOGLE_APPLICATION_CREDENTIALS`| `connector.gcs.google_application_credentials` |
+|                          |`GCS_BUCKET_NAME`| `connector.gcs.gcs_bucket_name` |
+| **AWS S3**                  | `AWS_ACCESS_KEY_ID`         | `connector.s3.aws_access_key_id` |
+|                          | `AWS_SECRET_ACCESS_KEY`     |`connector.s3.aws_secret_access_key` |
+|       **Azure**              |`AZURE_STORAGE_ACCOUNT`|`connector.azure.azure_storage_account`|
+|                          |`AZURE_STORAGE_KEY`|`connector.azure.azure_storage_key`|
+|                          |`AZURE_CLIENT_ID`|`connector.azure.azure_client_id`|
+|                          |`AZURE_CLIENT_SECRET`|`connector.azure.azure_client_secret`|
+|                          |`AZURE_TENANT_ID`|`connector.azure.azure_tenant_id`|
+| **Big Query**               | `GOOGLE_APPLICATION_CREDENTIALS` |`connector.bigquery.google_application_credentials` |
+|     **Snowflake**            |`DSN`|`connector.snowflake.dsn`|
+|     **ClickHouse**           |`HOST`|`connector.clickhouse.host `|
+|                          |`PORT`|`connector.clickhouse.port `|
+|                          |`USERNAME`|`connector.clickhouse.username `|
+|                          |`PASSWORD`|`connector.clickhouse.password `|
+|                          |`SSL`|`connector.clickhouse.ssl `|
+|                          |`DATABASE`|`connector.clickhouse.database `|
+...
+
+</div>

@@ -38,20 +38,23 @@
   export let manageOrganization: boolean;
   export let createMagicAuthTokens: boolean;
   export let manageProjectMembers: boolean;
+  export let organizationLogoUrl: string | undefined = undefined;
 
   const user = createAdminServiceGetCurrentUser();
 
-  $: instanceId = $runtime?.instanceId;
+  $: ({ instanceId } = $runtime);
 
   // These can be undefined
   $: ({
-    organization,
-    project,
-    dashboard: dashboardParam,
-    alert,
-    report,
-    token,
-  } = $page.params);
+    params: {
+      organization,
+      project,
+      dashboard: dashboardParam,
+      alert,
+      report,
+      token,
+    },
+  } = $page);
 
   $: onProjectPage = isProjectPage($page);
   $: onAlertPage = !!alert;
@@ -72,11 +75,17 @@
     },
   );
 
-  $: projectsQuery = listProjects(organization, undefined, {
-    query: {
-      enabled: !!organization,
+  $: projectsQuery = listProjects(
+    organization,
+    {
+      pageSize: 100,
     },
-  });
+    {
+      query: {
+        enabled: !!organization,
+      },
+    },
+  );
 
   $: visualizationsQuery = useDashboardsV2(instanceId);
 
@@ -94,7 +103,9 @@
 
   $: plan = createAdminServiceGetBillingSubscription(organization, {
     query: {
-      enabled: !!organization && manageOrganization && !onPublicURLPage,
+      enabled: Boolean(
+        !!organization && manageOrganization && !onPublicURLPage,
+      ),
       select: (data) => data.subscription?.plan,
     },
   });
@@ -108,7 +119,8 @@
   );
 
   $: projectPaths = projects.reduce(
-    (map, { name }) => map.set(name.toLowerCase(), { label: name }),
+    (map, { name }) =>
+      map.set(name.toLowerCase(), { label: name, preloadData: false }),
     new Map<string, PathOption>(),
   );
 
@@ -166,7 +178,7 @@
     onPublicURLPage,
   );
   $: publicURLDashboardTitle =
-    $exploreQuery.data?.explore?.spec?.displayName ?? dashboard ?? "";
+    $exploreQuery.data?.explore?.spec?.displayName || dashboard || "";
 
   $: currentPath = [organization, project, dashboard, report || alert];
 </script>
@@ -178,9 +190,15 @@
   <!-- Left side -->
   <a
     href={rillLogoHref}
-    class="hover:bg-gray-200 grid place-content-center rounded p-2"
+    class="grid place-content-center rounded {organizationLogoUrl
+      ? 'pl-2 pr-2'
+      : 'p-2'}"
   >
-    <Rill />
+    {#if organizationLogoUrl}
+      <img src={organizationLogoUrl} alt="logo" class="h-7" />
+    {:else}
+      <Rill />
+    {/if}
   </a>
   {#if onPublicURLPage}
     <PageTitle title={publicURLDashboardTitle} />

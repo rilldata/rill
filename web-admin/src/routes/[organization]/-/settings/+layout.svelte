@@ -5,16 +5,18 @@
   import LeftNav from "@rilldata/web-admin/components/nav/LeftNav.svelte";
   import { isEnterprisePlan } from "@rilldata/web-admin/features/billing/plans/utils";
   import type { PageData } from "./$types";
+  import ContentContainer from "@rilldata/web-admin/components/layout/ContentContainer.svelte";
 
   export let data: PageData;
 
-  $: ({ subscription, neverSubscribed } = data);
+  $: ({ subscription, neverSubscribed, billingPortalUrl } = data);
 
   $: organization = $page.params.organization;
   $: basePage = `/${organization}/-/settings`;
   $: onEnterprisePlan =
     subscription?.plan && isEnterprisePlan(subscription?.plan);
-  $: hideBillingSettings = neverSubscribed || !subscription;
+  $: hideBillingSettings = neverSubscribed;
+  $: hideUsageSettings = onEnterprisePlan || !billingPortalUrl;
 
   $: navItems = [
     { label: "General", route: "" },
@@ -22,35 +24,27 @@
       ? []
       : [
           { label: "Billing", route: "/billing" },
-          ...(onEnterprisePlan ? [] : [{ label: "Usage", route: "/usage" }]),
+          ...(hideUsageSettings ? [] : [{ label: "Usage", route: "/usage" }]),
         ]),
   ];
 </script>
 
-<div class="layout-container">
-  <h3>Settings</h3>
-  <div class="container">
-    <LeftNav {basePage} baseRoute="/[organization]/-/settings" {navItems} />
-    <div class="contents-container">
+<ContentContainer title="Organization settings" maxWidth={1100}>
+  <div class="container flex-col md:flex-row">
+    <LeftNav
+      {basePage}
+      baseRoute="/[organization]/-/settings"
+      {navItems}
+      minWidth="180px"
+    />
+    <div class="flex flex-col gap-y-6 w-full">
       <slot />
     </div>
   </div>
-</div>
+</ContentContainer>
 
 <style lang="postcss">
-  .layout-container {
-    @apply px-32 py-10;
-  }
-
-  h3 {
-    @apply text-2xl font-semibold;
-  }
-
   .container {
-    @apply flex flex-row pt-6 gap-x-6;
-  }
-
-  .contents-container {
-    @apply flex flex-col w-full gap-y-5 ml-16;
+    @apply flex pt-6 gap-6 max-w-full overflow-hidden;
   }
 </style>

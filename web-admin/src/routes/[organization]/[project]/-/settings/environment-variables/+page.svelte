@@ -15,6 +15,7 @@
     EnvironmentType,
     type EnvironmentTypes,
   } from "@rilldata/web-admin/features/projects/environment-variables/types";
+  import { getEnvironmentType } from "@rilldata/web-admin/features/projects/environment-variables/utils";
 
   let open = false;
   let searchText = "";
@@ -34,7 +35,12 @@
 
   $: projectVariables = $getProjectVariables.data?.variables || [];
 
-  $: variableNames = projectVariables.map((variable) => variable.name);
+  $: variableNames = projectVariables.map((variable) => {
+    return {
+      environment: getEnvironmentType(variable.environment),
+      name: variable.name,
+    };
+  });
 
   $: searchedVariables = projectVariables.filter((variable) =>
     variable.name.toLowerCase().includes(searchText.toLowerCase()),
@@ -84,7 +90,7 @@
       : `No environment variables for ${environmentLabel}`;
 </script>
 
-<div class="flex flex-col w-full">
+<div class="flex flex-col w-full overflow-hidden">
   <div class="flex md:flex-row flex-col gap-6">
     {#if $getProjectVariables.isLoading}
       <DelayedSpinner isLoading={$getProjectVariables.isLoading} size="1rem" />
@@ -93,12 +99,12 @@
         Error loading environment variables: {$getProjectVariables.error}
       </div>
     {:else if $getProjectVariables.isSuccess}
-      <div class="flex flex-col gap-6 w-full">
+      <div class="flex flex-col gap-6 w-full overflow-hidden">
         <div class="flex flex-col">
           <RadixLarge>Environment variables</RadixLarge>
-          <p class="text-base font-normal text-slate-700">
+          <p class="text-sm text-slate-700 font-medium">
             Manage your environment variables here. <a
-              href="https://docs.rilldata.com/tutorials/administration/project/credentials-env-variable-management"
+              href="https://docs.rilldata.com/manage/variables-and-credentials"
               target="_blank"
               class="text-primary-600 hover:text-primary-700 active:text-primary-800"
             >
@@ -117,9 +123,13 @@
           />
           <DropdownMenu.Root>
             <DropdownMenu.Trigger
-              class="min-w-fit flex flex-row gap-1 items-center rounded-sm {isDropdownOpen
-                ? 'bg-slate-200'
-                : 'hover:bg-slate-100'} px-2 py-1"
+              class={`min-w-fit flex flex-row gap-1 items-center rounded-sm border border-slate-300 ${
+                isDropdownOpen ? "bg-slate-200" : "hover:bg-slate-100"
+              } px-2 py-1 ${
+                projectVariables.length === 0
+                  ? "opacity-50 cursor-not-allowed pointer-events-none"
+                  : ""
+              }`}
             >
               <span class="text-slate-600 font-medium">{environmentLabel}</span>
               {#if isDropdownOpen}
@@ -157,7 +167,7 @@
           </DropdownMenu.Root>
           <Button type="primary" large on:click={() => (open = true)}>
             <Plus size="16px" />
-            <span>Add environment variable</span>
+            <!-- <span>Add environment variable</span> -->
           </Button>
         </div>
         <EnvironmentVariablesTable

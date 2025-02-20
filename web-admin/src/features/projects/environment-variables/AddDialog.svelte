@@ -22,28 +22,31 @@
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string, array } from "yup";
-  import { EnvironmentType } from "./types";
+  import { type VariableNames } from "./types";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import { Trash2Icon, UploadIcon } from "lucide-svelte";
+  import { getCurrentEnvironment, isDuplicateKey } from "./utils";
+  import { parse as parseDotenv } from "dotenv";
 
   export let open = false;
-  export let variableNames: string[] = [];
+  export let variableNames: VariableNames = [];
 
-  let inputErrors: { [key: number]: boolean } = {};
+  let inputErrors: { [key: number]: { type: string } } = {};
   let isKeyAlreadyExists = false;
   let isDevelopment = true;
   let isProduction = true;
   let fileInput: HTMLInputElement;
+  let showEnvironmentError = false;
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
-  $: isEnvironmentSelected = isDevelopment || isProduction;
-  $: hasExistingKeys = Object.values(inputErrors).some((error) => error);
+  $: hasExistingKeys = Object.keys(inputErrors).length > 0;
   $: hasNewChanges = $form.variables.some(
     (variable) => variable.key !== "" || variable.value !== "",
   );
+  $: hasNoEnvironment = showEnvironmentError && !isDevelopment && !isProduction;
 
   const queryClient = useQueryClient();
   const updateProjectVariables = createAdminServiceUpdateProjectVariables();
@@ -61,8 +64,9 @@
           key: string()
             .optional()
             .matches(
-              /^[a-zA-Z0-9_]+$/,
-              "Key must only contain letters, numbers, and underscores.",
+              /^[a-zA-Z_][a-zA-Z0-9_.]*$/,
+              // See: https://github.com/rilldata/rill/pull/6121/files#diff-04140a6ac071a4bac716371f8b66a56c89c9d52cfbf2b05ea1e14ee8d4e301e7R12
+              "Key must start with a letter or underscore and can only contain letters, digits, underscores, and dots",
             ),
           value: string().optional(),
         }),
@@ -70,22 +74,26 @@
     }),
   );
 
-  const { form, enhance, submit, submitting, errors, allErrors, reset } =
-    superForm(defaults(initialValues, schema), {
+  const { form, enhance, submit, submitting, allErrors } = superForm(
+    defaults(initialValues, schema),
+    {
       SPA: true,
       validators: schema,
-      // See: https://superforms.rocks/concepts/nested-data
       dataType: "json",
       async onUpdate({ form }) {
         if (!form.valid) return;
         const values = form.data;
 
-        // Omit draft variables that do not have a key
+        // Check for duplicates before proceeding
+        const duplicates = checkForExistingKeys();
+        if (duplicates > 0) {
+          return;
+        }
+
         const filteredVariables = values.variables.filter(
           ({ key }) => key !== "",
         );
 
-        // Flatten the variables to match the schema
         const flatVariables = Object.fromEntries(
           filteredVariables.map(({ key, value }) => [key, value]),
         );
@@ -93,27 +101,13 @@
         try {
           await handleUpdateProjectVariables(flatVariables);
           open = false;
+          handleReset();
         } catch (error) {
           console.error(error);
         }
       },
-    });
-
-  function getCurrentEnvironment() {
-    if (isDevelopment && isProduction) {
-      return undefined;
-    }
-
-    if (isDevelopment) {
-      return EnvironmentType.DEVELOPMENT;
-    }
-
-    if (isProduction) {
-      return EnvironmentType.PRODUCTION;
-    }
-
-    return undefined;
-  }
+    },
+  );
 
   async function handleUpdateProjectVariables(
     flatVariables: AdminServiceUpdateProjectVariablesBodyVariables,
@@ -123,7 +117,7 @@
         organization,
         project,
         data: {
-          environment: getCurrentEnvironment(),
+          environment: getCurrentEnvironment(isDevelopment, isProduction),
           variables: flatVariables,
         },
       });
@@ -151,6 +145,8 @@
   function handleKeyChange(index: number, event: Event) {
     const target = event.target as HTMLInputElement;
     $form.variables[index].key = target.value;
+    delete inputErrors[index];
+    isKeyAlreadyExists = false;
   }
 
   function handleValueChange(index: number, event: Event) {
@@ -164,76 +160,132 @@
   }
 
   function handleReset() {
-    reset();
+    $form = initialValues;
     isDevelopment = true;
     isProduction = true;
     inputErrors = {};
     isKeyAlreadyExists = false;
+    showEnvironmentError = false;
   }
 
   function checkForExistingKeys() {
-    const existingKeys = $form.variables.map((variable) => variable.key);
     inputErrors = {};
     isKeyAlreadyExists = false;
+    let isDuplicateWithinForm = false;
+    let isDuplicateWithExisting = false;
 
-    existingKeys.forEach((key, index) => {
-      // Case sensitive
-      if (variableNames.some((existingKey) => existingKey === key)) {
-        inputErrors[index] = true;
-        isKeyAlreadyExists = true;
+    // First check for duplicates within the form
+    const formKeys = $form.variables
+      .filter((variable) => variable.key.trim() !== "")
+      .map((variable) => variable.key);
+
+    const formDuplicates = new Set();
+    // Check for duplicates using Set
+    if (new Set(formKeys).size !== formKeys.length) {
+      // Find indices of duplicate keys
+      formKeys.forEach((key, index) => {
+        if (formKeys.indexOf(key) !== index) {
+          // Mark both the original and duplicate entries as errors
+          formDuplicates.add(formKeys.indexOf(key));
+          formDuplicates.add(index);
+          isDuplicateWithinForm = true;
+        }
+      });
+    }
+
+    // Then check against existing variables
+    const existingDuplicates = new Set();
+    const existingKeys = $form.variables
+      .filter((variable) => variable.key.trim() !== "")
+      .map((variable) => {
+        return {
+          environment: getCurrentEnvironment(isDevelopment, isProduction),
+          name: variable.key,
+        };
+      });
+
+    existingKeys.forEach((key, _) => {
+      const variableEnvironment = key.environment;
+      const variableKey = key.name;
+
+      if (isDuplicateKey(variableEnvironment, variableKey, variableNames)) {
+        const originalIndex = $form.variables.findIndex(
+          (v) => v.key === variableKey,
+        );
+        existingDuplicates.add(originalIndex);
+        isDuplicateWithExisting = true;
       }
     });
+
+    // Combine the errors
+    formDuplicates.forEach((index: number) => {
+      inputErrors[index] = { type: "draft" };
+    });
+    existingDuplicates.forEach((index: number) => {
+      inputErrors[index] = { type: "existing" };
+    });
+
+    isKeyAlreadyExists = isDuplicateWithinForm || isDuplicateWithExisting;
+
+    return formDuplicates.size + existingDuplicates.size;
   }
 
-  function handleFileUpload(event) {
-    const file = event.target.files[0];
+  function handleFileUpload(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = (e) => {
-        const contents = e.target.result;
-        parseFile(contents);
-        checkForExistingKeys();
+      reader.onload = (e: ProgressEvent<FileReader>) => {
+        const contents = e.target?.result;
+        if (typeof contents === "string") {
+          parseFile(contents);
+          checkForExistingKeys();
+        }
       };
       reader.readAsText(file);
     }
   }
 
-  function parseFile(contents) {
-    const lines = contents.split("\n");
+  function parseFile(contents: string) {
+    const parsedVariables = parseDotenv(contents);
 
-    lines.forEach((line) => {
-      // Trim the line and check if it starts with '#'
-      const trimmedLine = line.trim();
-      if (trimmedLine.startsWith("#")) {
-        return; // Skip comment lines
-      }
+    for (const [key, value] of Object.entries(parsedVariables)) {
+      const filteredVariables = $form.variables.filter(
+        (variable) =>
+          variable.key.trim() !== "" || variable.value.trim() !== "",
+      );
 
-      const [key, value] = trimmedLine.split("=");
-      if (key && value) {
-        if (key.trim() && value.trim()) {
-          const filteredVariables = $form.variables.filter(
-            (variable) =>
-              variable.key.trim() !== "" || variable.value.trim() !== "",
-          );
-
-          $form.variables = [
-            ...filteredVariables,
-            { key: key.trim(), value: value.trim() },
-          ];
-        }
-      }
-    });
+      $form.variables = [...filteredVariables, { key, value }];
+    }
   }
 
   function getKeyFromError(error: { path: string; messages: string[] }) {
     return error.path.split("[")[1].split("]")[0];
   }
+
+  function handleEnvironmentChange() {
+    showEnvironmentError = true;
+    checkForExistingKeys();
+  }
+
+  $: isSubmitDisabled =
+    $submitting ||
+    hasExistingKeys ||
+    !hasNewChanges ||
+    hasNoEnvironment ||
+    Object.values($form.variables).every((v) => !v.key.trim());
 </script>
 
 <Dialog
   bind:open
-  onOpenChange={() => handleReset()}
-  onOutsideClick={() => handleReset()}
+  onOpenChange={(isOpen) => {
+    if (!isOpen) {
+      handleReset();
+    }
+  }}
+  onOutsideClick={() => {
+    open = false;
+    handleReset();
+  }}
 >
   <DialogTrigger asChild>
     <div class="hidden"></div>
@@ -274,18 +326,25 @@
           <div class="text-sm font-medium text-gray-800">Environment</div>
           <div class="flex flex-row gap-4 mt-1">
             <Checkbox
-              inverse
               bind:checked={isDevelopment}
               id="development"
               label="Development"
+              onCheckedChange={handleEnvironmentChange}
             />
             <Checkbox
-              inverse
               bind:checked={isProduction}
               id="production"
               label="Production"
+              onCheckedChange={handleEnvironmentChange}
             />
           </div>
+          {#if hasNoEnvironment}
+            <div class="mt-1">
+              <p class="text-xs text-red-600 font-normal">
+                You must select at least one environment
+              </p>
+            </div>
+          {/if}
         </div>
         <div class="flex flex-col items-start gap-1">
           <div class="text-sm font-medium text-gray-800">Variables</div>
@@ -302,10 +361,8 @@
                   bind:value={variable.key}
                   id={`key-${index}`}
                   label=""
-                  textClass={inputErrors[index] ||
-                  ($errors.variables &&
-                    $errors.variables[index] &&
-                    $errors.variables[index].key)
+                  textClass={inputErrors[index] &&
+                  inputErrors[index].type === "draft"
                     ? "error-input-wrapper"
                     : ""}
                   placeholder="Key"
@@ -356,7 +413,18 @@
             {#if isKeyAlreadyExists}
               <div class="mt-1">
                 <p class="text-xs text-red-600 font-normal">
-                  These keys already exist for this project.
+                  {#if Object.values(inputErrors).every((err) => err.type === "draft")}
+                    {Object.keys(inputErrors).length > 1
+                      ? "Duplicate keys are not allowed"
+                      : "This key is duplicated"}
+                  {:else if Object.values(inputErrors).every((err) => err.type === "existing")}
+                    {Object.keys(inputErrors).length > 1
+                      ? "These keys already exist for your target environment(s)"
+                      : "This key already exists for your target environment(s)"}
+                  {:else}
+                    Some keys are duplicated or already exist in target
+                    environment(s)
+                  {/if}
                 </p>
               </div>
             {/if}
@@ -371,17 +439,18 @@
         on:click={() => {
           open = false;
           handleReset();
-        }}>Cancel</Button
+        }}
       >
+        Cancel
+      </Button>
       <Button
         type="primary"
         form={formId}
-        disabled={$submitting ||
-          hasExistingKeys ||
-          !hasNewChanges ||
-          !isEnvironmentSelected}
-        submitForm>Create</Button
+        disabled={isSubmitDisabled}
+        submitForm
       >
+        Create
+      </Button>
     </DialogFooter>
   </DialogContent>
 </Dialog>

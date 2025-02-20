@@ -1,7 +1,9 @@
 import { expect } from "playwright/test";
-import { test } from "./utils/test";
+import { test } from "./setup/base";
 
 test.describe("File Explorer", () => {
+  test.use({ project: "Blank" });
+
   test.describe("File CRUD Operations", () => {
     test("should create, rename, edit, copy, and delete a file", async ({
       page,
@@ -25,7 +27,9 @@ test.describe("File Explorer", () => {
       await page.getByLabel("File name").press("Meta+a");
       await page.getByLabel("File name").fill("README.md");
       await page.getByLabel("File name").press("Enter");
-      await expect(page.getByRole("link", { name: "README.md" })).toBeVisible();
+      await expect(
+        page.getByRole("link", { name: "README.md" }).nth(1),
+      ).toBeVisible();
 
       // Edit the file
       await page.getByLabel("Auto-save").click(); // Turn off auto-save
@@ -36,7 +40,7 @@ test.describe("File Explorer", () => {
       await page.waitForTimeout(500);
       // Navigate away from the file and back to it to verify the changes
       await page.getByRole("link", { name: "rill.yaml" }).click();
-      await page.getByRole("link", { name: "README.md" }).click();
+      await page.getByRole("link", { name: "README.md" }).first().click();
       await expect(
         page.getByText("Here's a README.md file for the e2e test!"),
       ).toBeVisible();

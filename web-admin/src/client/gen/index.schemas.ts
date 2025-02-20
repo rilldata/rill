@@ -77,6 +77,7 @@ export type AdminServiceUpdateProjectBody = {
   newName?: string;
   prodTtlSeconds?: string;
   prodVersion?: string;
+  superuserForceAccess?: boolean;
 };
 
 export type AdminServiceGetProjectParams = {
@@ -111,6 +112,8 @@ export type AdminServiceCreateAssetBody = {
   type?: string;
   name?: string;
   extension?: string;
+  public?: boolean;
+  estimatedSizeBytes?: string;
 };
 
 export type AdminServiceListUsergroupMemberUsersParams = {
@@ -182,6 +185,10 @@ This will be translated to a rill.runtime.v1.SecurityRuleFieldAccess, which curr
 export type AdminServiceListMagicAuthTokensParams = {
   pageSize?: number;
   pageToken?: string;
+};
+
+export type AdminServiceRedeployProjectParams = {
+  superuserForceAccess?: boolean;
 };
 
 export type AdminServiceAddProjectMemberUserBody = {
@@ -289,6 +296,8 @@ export type AdminServiceUpdateOrganizationBody = {
   description?: string;
   newName?: string;
   displayName?: string;
+  logoAssetId?: string;
+  faviconAssetId?: string;
   billingEmail?: string;
 };
 
@@ -301,6 +310,21 @@ export type AdminServiceGetGithubRepoStatusParams = { githubUrl?: string };
 
 export type AdminServiceTriggerRefreshSourcesBody = {
   sources?: string[];
+};
+
+/**
+ * Arguments for the provisioner call.
+ */
+export type AdminServiceProvisionBodyArgs = { [key: string]: any };
+
+export type AdminServiceProvisionBody = {
+  /** Type of resource to provision. */
+  type?: string;
+  /** Name of the resource to provision.
+It forms a unique key together with deployment and type, which is used to de-duplicate provision requests. */
+  name?: string;
+  /** Arguments for the provisioner call. */
+  args?: AdminServiceProvisionBodyArgs;
 };
 
 export type AdminServiceCreateUsergroupBodyBody = {
@@ -724,6 +748,23 @@ export interface V1PullVirtualRepoResponse {
   nextPageToken?: string;
 }
 
+export type V1ProvisionerResourceConfig = { [key: string]: any };
+
+export type V1ProvisionerResourceArgs = { [key: string]: any };
+
+export interface V1ProvisionerResource {
+  id?: string;
+  deploymentId?: string;
+  type?: string;
+  name?: string;
+  args?: V1ProvisionerResourceArgs;
+  config?: V1ProvisionerResourceConfig;
+}
+
+export interface V1ProvisionResponse {
+  resource?: V1ProvisionerResource;
+}
+
 export interface V1ProjectVariable {
   /** Internal ID. */
   id?: string;
@@ -751,6 +792,8 @@ export interface V1ProjectPermissions {
   readDev?: boolean;
   readDevStatus?: boolean;
   manageDev?: boolean;
+  readProvisionerResources?: boolean;
+  manageProvisionerResources?: boolean;
   readProjectMembers?: boolean;
   manageProjectMembers?: boolean;
   createMagicAuthTokens?: boolean;
@@ -820,11 +863,15 @@ export interface V1Organization {
   name?: string;
   displayName?: string;
   description?: string;
+  logoUrl?: string;
+  faviconUrl?: string;
   customDomain?: string;
   quotas?: V1OrganizationQuotas;
   billingCustomerId?: string;
   paymentCustomerId?: string;
   billingEmail?: string;
+  billingPlanName?: string;
+  billingPlanDisplayName?: string;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -1028,10 +1075,13 @@ export interface V1GetReportMetaResponse {
 }
 
 export interface V1GetRepoMetaResponse {
+  /** If the Git-related fields are set, the archive-related fields will not be set (and vice versa). */
   gitUrl?: string;
   gitUrlExpiresOn?: string;
   gitSubpath?: string;
   archiveDownloadUrl?: string;
+  archiveId?: string;
+  archiveCreatedOn?: string;
 }
 
 /**
@@ -1172,11 +1222,6 @@ export interface V1GenerateAlertYAMLResponse {
   yaml?: string;
 }
 
-export interface V1Condition {
-  op?: V1Operation;
-  exprs?: V1Expression[];
-}
-
 export interface V1Expression {
   ident?: string;
   val?: unknown;
@@ -1235,6 +1280,10 @@ export interface V1DenyProjectAccessResponse {
 }
 
 export interface V1DeleteUsergroupResponse {
+  [key: string]: any;
+}
+
+export interface V1DeleteUserResponse {
   [key: string]: any;
 }
 
@@ -1320,6 +1369,11 @@ export interface V1CreateAlertResponse {
 
 export interface V1ConnectProjectToGithubResponse {
   [key: string]: any;
+}
+
+export interface V1Condition {
+  op?: V1Operation;
+  exprs?: V1Expression[];
 }
 
 export interface V1CompletionMessage {

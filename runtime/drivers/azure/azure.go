@@ -8,6 +8,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/storage"
 	"go.uber.org/zap"
 )
 
@@ -73,29 +74,29 @@ var spec = drivers.Spec{
 
 type driver struct{}
 
-type configProperties struct {
+type ConfigProperties struct {
 	Account          string `mapstructure:"azure_storage_account"`
 	Key              string `mapstructure:"azure_storage_key"`
 	SASToken         string `mapstructure:"azure_storage_sas_token"`
 	ConnectionString string `mapstructure:"azure_storage_connection_string"`
 	AllowHostAccess  bool   `mapstructure:"allow_host_access"`
-	TempDir          string `mapstructure:"temp_dir"`
 }
 
-func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("azure driver can't be shared")
 	}
 
-	conf := &configProperties{}
+	conf := &ConfigProperties{}
 	err := mapstructure.WeakDecode(config, conf)
 	if err != nil {
 		return nil, err
 	}
 
 	conn := &Connection{
-		config: conf,
-		logger: logger,
+		config:  conf,
+		storage: st,
+		logger:  logger,
 	}
 	return conn, nil
 }
@@ -111,7 +112,7 @@ func (d driver) HasAnonymousSourceAccess(ctx context.Context, props map[string]a
 	}
 
 	conn := &Connection{
-		config: &configProperties{},
+		config: &ConfigProperties{},
 		logger: logger,
 	}
 
@@ -129,8 +130,9 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 }
 
 type Connection struct {
-	config *configProperties
-	logger *zap.Logger
+	config  *ConfigProperties
+	storage *storage.Client
+	logger  *zap.Logger
 }
 
 var _ drivers.Handle = &Connection{}
@@ -223,11 +225,6 @@ func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
 
 // AsWarehouse implements drivers.Handle.
 func (c *Connection) AsWarehouse() (drivers.Warehouse, bool) {
-	return nil, false
-}
-
-// AsSQLStore implements drivers.Connection.
-func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return nil, false
 }
 

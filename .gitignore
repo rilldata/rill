@@ -6,11 +6,6 @@ node_modules
 /package
 .env
 .env.*
-server/__pycache__/*
-web-local/src/server/duckdb
-web-local/src/server/scratch/
-server/venv/
-tsc-tmp/
 .vscode
 /temp
 /tmp
@@ -25,7 +20,10 @@ tsc-tmp/
 !/runtime/drivers/duckdb/extensions/embed/**/.gitkeep
 /dev-project*
 /dev-cloud-state*
-/playwright-report
+/e2e-cloud-state*
+**/playwright-report
+**/playwright
+**/test-results
 
 # data files
 *.duckdb

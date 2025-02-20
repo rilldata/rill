@@ -64,7 +64,11 @@
 
   const user = createAdminServiceGetCurrentUser();
 
-  $: ({ organization, project, token } = $page.params);
+  $: ({
+    url: { pathname },
+    params: { organization, project, token },
+  } = $page);
+
   $: onProjectPage = isProjectPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
   $: if ($page.url.searchParams.has("token") && isPublicReportPage($page)) {
@@ -142,7 +146,7 @@
 
   // Load telemetry client with relevant context
   $: if (project && $user.data?.user?.id) {
-    metricsService.loadCloudFields({
+    metricsService?.loadCloudFields({
       isDev: window.location.host.startsWith("localhost"),
       projectId: project,
       organizationId: organization,
@@ -153,7 +157,12 @@
 </script>
 
 {#if onProjectPage && projectData?.prodDeployment?.status === V1DeploymentStatus.DEPLOYMENT_STATUS_OK}
-  <ProjectTabs />
+  <ProjectTabs
+    projectPermissions={projectData.projectPermissions}
+    {organization}
+    {pathname}
+    {project}
+  />
 {/if}
 
 {#if error}

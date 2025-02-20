@@ -1,8 +1,6 @@
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
-  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import Pencil from "svelte-radix/Pencil1.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import { scale } from "svelte/transition";
@@ -17,10 +15,7 @@
   export let type: "Project" | "File" = "File";
   export let size: "sm" | "md" | "lg" = "lg";
   export let showIndicator = false;
-
-  let hovering = false;
-  let editing = false;
-  let open = false;
+  export let editing = false;
 
   $: editedValue = value;
 
@@ -38,9 +33,9 @@
 
 <div
   role="presentation"
-  class="h-full w-fit font-medium flex gap-x-0 items-center"
-  on:mouseenter={() => (hovering = true)}
-  on:mouseleave={() => (hovering = false)}
+  class="h-full w-fit font-medium flex gap-x-1.5 items-center group"
+  class:w-full={editing}
+  class:truncate={!editing}
 >
   {#if editing}
     <Input
@@ -51,6 +46,7 @@
       onEnter={triggerConfirm}
       onEscape={reset}
       {textClass}
+      leftPadding={6}
       onBlur={(e) => {
         const target = e.relatedTarget;
         if (
@@ -59,7 +55,6 @@
         ) {
           return;
         }
-
         reset();
       }}
     />
@@ -74,8 +69,8 @@
       <Check size="16px" />
     </Button>
   {:else}
-    <div class="input-wrapper">
-      <h1 class:bump-down={bumpDown} class="{textClass} {size}">
+    <div class="input-wrapper truncate">
+      <h1 class:bump-down={bumpDown} class={textClass} title={value}>
         {value}
       </h1>
     </div>
@@ -88,43 +83,29 @@
     {/if}
 
     {#if editable}
-      <DropdownMenu.Root bind:open>
-        <DropdownMenu.Trigger asChild let:builder>
-          <Button
-            label="{type} title actions"
-            builders={[builder]}
-            square
-            small
-            type="ghost"
-            class={hovering ? "" : "opacity-0 pointer-events-none"}
-          >
-            <ThreeDot size="16px" />
-          </Button>
-        </DropdownMenu.Trigger>
-
-        <DropdownMenu.Content align="start">
-          <DropdownMenu.Item
-            on:click={() => {
-              editing = !editing;
-            }}
-          >
-            <Pencil size="16px" />
-            Rename
-          </DropdownMenu.Item>
-        </DropdownMenu.Content>
-      </DropdownMenu.Root>
+      <span class="group-hover:flex hidden">
+        <Button
+          label="{type} title actions"
+          square
+          small
+          type="ghost"
+          on:click={() => {
+            editing = !editing;
+          }}
+        >
+          <Pencil size="16px" />
+        </Button>
+      </span>
     {/if}
   {/if}
 </div>
 
 <style lang="postcss">
   h1 {
-    @apply flex items-center;
     @apply p-0 bg-transparent;
-    @apply size-full;
+    @apply w-full max-w-fit;
     @apply outline-none border-0;
-    @apply cursor-default min-w-fit;
-    vertical-align: middle;
+    @apply cursor-default truncate;
   }
 
   .bump-down {
@@ -133,21 +114,9 @@
 
   .input-wrapper {
     @apply overflow-hidden;
-    @apply flex justify-center items-center px-2;
-    @apply w-fit  justify-center;
+    @apply flex justify-center items-center pl-1.5;
+    @apply justify-center;
     @apply border border-transparent rounded-[2px];
     @apply h-fit;
-  }
-
-  .sm {
-    height: 24px;
-  }
-
-  .md {
-    height: 26px;
-  }
-
-  .lg {
-    height: 30px;
   }
 </style>

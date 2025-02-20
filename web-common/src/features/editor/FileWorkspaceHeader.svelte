@@ -6,19 +6,23 @@
   import { WorkspaceHeader } from "../../layout/workspace";
   import type { ResourceKind } from "../entity-management/resource-selectors";
   import { PROTECTED_FILES } from "../file-explorer/protected-paths";
+  import type { V1Resource } from "@rilldata/web-common/runtime-client";
 
   export let filePath: string;
   export let hasUnsavedChanges: boolean;
   export let resourceKind: ResourceKind | undefined;
+  export let resource: V1Resource | undefined;
 
   let fileName: string;
 
   $: [, fileName] = splitFolderAndFileName(filePath);
   $: isProtectedFile = PROTECTED_FILES.includes(filePath);
 
+  $: ({ instanceId } = $runtime);
+
   const onChangeCallback = async (newTitle: string) => {
     const route = await handleEntityRename(
-      $runtime.instanceId,
+      instanceId,
       newTitle,
       filePath,
       fileName,
@@ -35,4 +39,5 @@
   {hasUnsavedChanges}
   showInspectorToggle={false}
   titleInput={fileName}
+  {resource}
 />

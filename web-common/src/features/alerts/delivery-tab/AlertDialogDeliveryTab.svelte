@@ -12,8 +12,9 @@
   export let formState: ReturnType<typeof createForm<AlertFormValues>>;
 
   const { form, errors, handleChange } = formState;
+  $: ({ instanceId } = $runtime);
 
-  $: hasSlackNotifier = getHasSlackConnection($runtime.instanceId);
+  $: hasSlackNotifier = getHasSlackConnection(instanceId);
 </script>
 
 <div class="flex flex-col gap-y-3">

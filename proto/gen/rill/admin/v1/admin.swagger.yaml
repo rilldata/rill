@@ -68,6 +68,48 @@ paths:
             $ref: '#/definitions/rpcStatus'
       tags:
         - AdminService
+  /v1/deployments/{deploymentId}/provision:
+    post:
+      summary: |-
+        Provision provisions a new resource for a deployment.
+        If an existing resource matches the request, it will be returned without provisioning a new resource.
+      operationId: AdminService_Provision
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ProvisionResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: deploymentId
+          description: |-
+            Deployment to provision a resource for.
+            If it's blank and the request is made with a deployment access token, the deployment is inferred from the token.
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              type:
+                type: string
+                description: Type of resource to provision.
+              name:
+                type: string
+                description: |-
+                  Name of the resource to provision.
+                  It forms a unique key together with deployment and type, which is used to de-duplicate provision requests.
+              args:
+                type: object
+                description: Arguments for the provisioner call.
+      tags:
+        - AdminService
   /v1/deployments/{deploymentId}/reconcile:
     post:
       summary: |-
@@ -350,6 +392,10 @@ paths:
               newName:
                 type: string
               displayName:
+                type: string
+              logoAssetId:
+                type: string
+              faviconAssetId:
                 type: string
               billingEmail:
                 type: string
@@ -1274,6 +1320,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/reports:
@@ -2386,6 +2436,11 @@ paths:
               extension:
                 type: string
                 title: Eg. ".tar.gz"
+              public:
+                type: boolean
+              estimatedSizeBytes:
+                type: string
+                format: int64
       tags:
         - AdminService
   /v1/organizations/{organizationName}/projects:
@@ -2578,6 +2633,8 @@ paths:
                 format: int64
               prodVersion:
                 type: string
+              superuserForceAccess:
+                type: boolean
       tags:
         - AdminService
   /v1/organizations/{organizationName}/services:
@@ -3400,6 +3457,26 @@ paths:
           type: string
       tags:
         - AdminService
+  /v1/users/{email}:
+    delete:
+      summary: DeleteUser deletes the user from the organization by email
+      operationId: AdminService_DeleteUser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DeleteUserResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: email
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
   /v1/users/bookmarks:
     get:
       summary: ListBookmarks lists all the bookmarks for the user and global ones for dashboard
@@ -3989,6 +4066,8 @@ definitions:
     properties:
       service:
         $ref: '#/definitions/v1Service'
+  v1DeleteUserResponse:
+    type: object
   v1DeleteUsergroupResponse:
     type: object
   v1DenyProjectAccessResponse:
@@ -4246,6 +4325,7 @@ definitions:
     properties:
       gitUrl:
         type: string
+        description: If the Git-related fields are set, the archive-related fields will not be set (and vice versa).
       gitUrlExpiresOn:
         type: string
         format: date-time
@@ -4253,9 +4333,11 @@ definitions:
         type: string
       archiveDownloadUrl:
         type: string
-        title: |-
-          archive_download_url is set when repo is managed by Rill
-          either archive_download_url or git related details will be set
+      archiveId:
+        type: string
+      archiveCreatedOn:
+        type: string
+        format: date-time
   v1GetReportMetaResponse:
     type: object
     properties:
@@ -4588,6 +4670,10 @@ definitions:
         type: string
       description:
         type: string
+      logoUrl:
+        type: string
+      faviconUrl:
+        type: string
       customDomain:
         type: string
       quotas:
@@ -4597,6 +4683,10 @@ definitions:
       paymentCustomerId:
         type: string
       billingEmail:
+        type: string
+      billingPlanName:
+        type: string
+      billingPlanDisplayName:
         type: string
       createdOn:
         type: string
@@ -4724,6 +4814,10 @@ definitions:
         type: boolean
       manageDev:
         type: boolean
+      readProvisionerResources:
+        type: boolean
+      manageProvisionerResources:
+        type: boolean
       readProjectMembers:
         type: boolean
       manageProjectMembers:
@@ -4772,6 +4866,26 @@ definitions:
         type: string
         format: date-time
         description: Timestamp when the variable was last updated.
+  v1ProvisionResponse:
+    type: object
+    properties:
+      resource:
+        $ref: '#/definitions/v1ProvisionerResource'
+  v1ProvisionerResource:
+    type: object
+    properties:
+      id:
+        type: string
+      deploymentId:
+        type: string
+      type:
+        type: string
+      name:
+        type: string
+      args:
+        type: object
+      config:
+        type: object
   v1PullVirtualRepoResponse:
     type: object
     properties:

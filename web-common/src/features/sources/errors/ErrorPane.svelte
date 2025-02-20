@@ -7,8 +7,10 @@
   export let filePath: string;
   export let errorMessage: string;
 
+  $: ({ instanceId } = $runtime);
+
   // Parse Source YAML client-side
-  $: sourceFromYaml = useSourceFromYaml($runtime.instanceId, filePath);
+  $: sourceFromYaml = useSourceFromYaml(instanceId, filePath);
 
   // Try to extract the connector type
   $: connectorType = $sourceFromYaml.data?.type;

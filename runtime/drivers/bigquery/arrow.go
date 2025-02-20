@@ -8,10 +8,10 @@ import (
 	"time"
 
 	"cloud.google.com/go/bigquery"
-	"github.com/apache/arrow/go/v14/arrow"
-	"github.com/apache/arrow/go/v14/arrow/array"
-	"github.com/apache/arrow/go/v14/arrow/ipc"
-	"github.com/apache/arrow/go/v14/arrow/memory"
+	"github.com/apache/arrow/go/v15/arrow"
+	"github.com/apache/arrow/go/v15/arrow/array"
+	"github.com/apache/arrow/go/v15/arrow/ipc"
+	"github.com/apache/arrow/go/v15/arrow/memory"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 	"google.golang.org/api/iterator"
@@ -74,7 +74,7 @@ func (rs *arrowRecordReader) Retain() {
 // Release may be called simultaneously from multiple goroutines.
 func (rs *arrowRecordReader) Release() {
 	if rs.refCount.Load() <= 0 {
-		rs.logger.Warn("too many releases")
+		rs.logger.Warn("too many releases", observability.ZapCtx(rs.ctx))
 		return
 	}
 

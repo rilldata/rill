@@ -10,8 +10,9 @@
   $: themeFromUrl = $page.url.searchParams.get("theme");
 
   let theme: ReturnType<typeof useTheme>;
+  $: ({ instanceId } = $runtime);
   $: themeName = themeFromUrl ?? $validSpecStore.data?.explore?.theme;
-  $: if (themeName) theme = useTheme($runtime.instanceId, themeName);
+  $: if (themeName) theme = useTheme(instanceId, themeName);
 
   $: setTheme(
     $theme?.data?.theme?.spec ?? $validSpecStore?.data?.explore?.embeddedTheme,

@@ -8,10 +8,11 @@
   import KeyCell from "./KeyCell.svelte";
   import ValueCell from "./ValueCell.svelte";
   import ActionsCell from "./ActionsCell.svelte";
+  import type { VariableNames } from "./types";
 
   export let data: V1ProjectVariable[];
   export let emptyText: string = "No environment variables";
-  export let variableNames: string[] = [];
+  export let variableNames: VariableNames = [];
 
   const columns: ColumnDef<V1ProjectVariable, any>[] = [
     {
@@ -22,9 +23,6 @@
           name: row.original.name,
           environment: row.original.environment,
         }),
-      meta: {
-        widthPercent: 30,
-      },
     },
     {
       accessorKey: "value",
@@ -34,14 +32,10 @@
         flexRender(ValueCell, {
           value: row.original.value,
         }),
-      meta: {
-        widthPercent: 30,
-      },
     },
     {
       header: "Activity",
       accessorFn: (row) => row.createdOn,
-      enableSorting: false,
       cell: ({ row }) => {
         return flexRender(ActivityCell, {
           updatedOn: row.original.updatedOn,
@@ -60,11 +54,14 @@
           variableNames,
         }),
       enableSorting: false,
-      meta: {
-        widthPercent: 0,
-      },
     },
   ];
 </script>
 
-<BasicTable {data} {columns} emptyIcon={KeyIcon} {emptyText} scrollable />
+<BasicTable
+  {data}
+  {columns}
+  emptyIcon={KeyIcon}
+  {emptyText}
+  columnLayout="minmax(170px, 1.75fr) 2fr minmax(84px, 1fr) 56px"
+/>

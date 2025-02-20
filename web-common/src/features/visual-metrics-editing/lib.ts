@@ -9,12 +9,10 @@ export type ItemType = "measures" | "dimensions";
 
 export type MenuOption = { value: string; label: string; type?: string };
 
-export const editingItem = writable<{
-  item: YAMLMeasure | YAMLDimension;
+export const editingItemData = writable<{
+  index: number;
   type: ItemType;
 } | null>(null);
-
-export const editingIndex = writable<number | null>(null);
 
 export type Confirmation = {
   action: "cancel" | "delete" | "switch";
@@ -31,7 +29,7 @@ export class YAMLDimension {
   column: string;
   expression: string;
   name: string;
-  label: string;
+  display_name: string;
   description: string;
   unnest: boolean | undefined;
   resourceName: string;
@@ -43,7 +41,7 @@ export class YAMLDimension {
     this.column = item?.get("column") ?? "";
     this.expression = item?.get("expression") ?? "";
     this.name = item?.get("name") ?? "";
-    this.label = item?.get("display_name") ?? item?.get("label") ?? "";
+    this.display_name = item?.get("display_name") ?? item?.get("label") ?? "";
     this.description = item?.get("description") ?? "";
     this.unnest =
       item?.get("unnest") === undefined
@@ -56,7 +54,7 @@ export class YAMLDimension {
 export class YAMLMeasure {
   expression: string;
   name: string;
-  label: string;
+  display_name: string;
   description: string;
   valid_percent_of_total: boolean;
   format_d3: string;
@@ -65,12 +63,9 @@ export class YAMLMeasure {
   constructor(item?: YAMLMap<string, string>) {
     this.expression = item?.get("expression") ?? "";
     this.name = item?.get("name") ?? "";
-    this.label = item?.get("display_name") ?? item?.get("label") ?? "";
+    this.display_name = item?.get("display_name") ?? item?.get("label") ?? "";
     this.description = item?.get("description") ?? "";
-    this.valid_percent_of_total =
-      item?.get("valid_percent_of_total") === undefined
-        ? true
-        : Boolean(item?.get("valid_percent_of_total"));
+    this.valid_percent_of_total = Boolean(item?.get("valid_percent_of_total"));
     this.format_d3 = item?.get("format_d3") ?? "";
     this.format_preset =
       (item?.get("format_preset") as unknown as FormatPreset) ??

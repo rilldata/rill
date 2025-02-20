@@ -1,3 +1,4 @@
+import { timeGrainToVegaTimeUnitMap } from "@rilldata/web-common/features/canvas/components/charts/util";
 import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
 import {
   MainAreaColorGradientDark,
@@ -140,15 +141,3 @@ export function patchSpecForTDD(
 
   return sanitizedSpec;
 }
-
-const timeGrainToVegaTimeUnitMap = {
-  [V1TimeGrain.TIME_GRAIN_SECOND]: "yearmonthdatehoursminutesseconds",
-  [V1TimeGrain.TIME_GRAIN_MINUTE]: "yearmonthdatehoursminutes",
-  [V1TimeGrain.TIME_GRAIN_HOUR]: "yearmonthdatehours",
-  [V1TimeGrain.TIME_GRAIN_DAY]: "yearmonthdate",
-  [V1TimeGrain.TIME_GRAIN_WEEK]: "yearweek",
-  [V1TimeGrain.TIME_GRAIN_MONTH]: "yearmonth",
-  [V1TimeGrain.TIME_GRAIN_QUARTER]: "yearquarter",
-  [V1TimeGrain.TIME_GRAIN_YEAR]: "year",
-  [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: "yearmonthdate",
-};

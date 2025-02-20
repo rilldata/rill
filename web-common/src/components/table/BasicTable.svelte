@@ -18,7 +18,8 @@
   export let columns: ColumnDef<any, any>[];
   export let emptyIcon: any | null = null;
   export let emptyText = "No data available";
-  export let scrollable = false;
+  export let columnLayout = `repeat(${columns.length}, 1fr)`;
+  export let rowPadding = "py-3";
 
   let sorting: SortingState = [];
 
@@ -60,131 +61,87 @@
   });
 
   const table = createSvelteTable(options);
+
+  $: ({ getHeaderGroups, getRowModel } = $table);
+
+  $: rows = getRowModel().rows;
+  $: headers = getHeaderGroups();
 </script>
 
-<div class="overflow-x-auto" class:scroll-container={scrollable}>
-  <table class="w-full">
-    <thead class={scrollable ? "sticky top-0 z-30 bg-white" : ""}>
-      {#each $table.getHeaderGroups() as headerGroup (headerGroup.id)}
-        <tr>
-          {#each headerGroup.headers as header (header.id)}
-            {@const widthPercent = header.column.columnDef.meta?.widthPercent}
-            {@const marginLeft = header.column.columnDef.meta?.marginLeft}
-            <th
-              colSpan={header.colSpan}
-              style={`width: ${widthPercent}%;`}
-              class="px-4 py-2 text-left"
-              on:click={header.column.getToggleSortingHandler()}
-            >
-              {#if !header.isPlaceholder}
-                <div
-                  style={`margin-left: ${marginLeft};`}
-                  class:cursor-pointer={header.column.getCanSort()}
-                  class:select-none={header.column.getCanSort()}
-                  class="font-semibold text-gray-500 flex flex-row items-center gap-x-1 truncate"
-                >
-                  <svelte:component
-                    this={flexRender(
-                      header.column.columnDef.header,
-                      header.getContext(),
-                    )}
-                  />
-                  {#if header.column.getIsSorted().toString() === "asc"}
-                    <span>
-                      <ArrowDown flip size="12px" />
-                    </span>
-                  {:else if header.column.getIsSorted().toString() === "desc"}
-                    <span>
-                      <ArrowDown size="12px" />
-                    </span>
-                  {/if}
-                </div>
-              {/if}
-            </th>
-          {/each}
-        </tr>
+<div
+  class="flex flex-col border rounded-sm overflow-hidden overflow-x-auto"
+  style:--grid-template-columns={columnLayout}
+>
+  {#each headers as headerGroup (headerGroup.id)}
+    <div class="row sticky top-0 z-30 bg-surface">
+      {#each headerGroup.headers as header (header.id)}
+        <svelte:element
+          this={header.column.getCanSort() ? "button" : "div"}
+          role="columnheader"
+          tabindex="0"
+          class="pl-{header.column.columnDef.meta?.marginLeft ||
+            '4'} py-2 font-semibold text-gray-500 text-left flex flex-row items-center gap-x-1 truncate"
+          on:click={header.column.getToggleSortingHandler()}
+        >
+          {#if !header.isPlaceholder}
+            <span class="truncate">
+              <svelte:component
+                this={flexRender(
+                  header.column.columnDef.header,
+                  header.getContext(),
+                )}
+              />
+            </span>
+            {#if header.column.getIsSorted().toString() === "asc"}
+              <span>
+                <ArrowDown flip size="12px" />
+              </span>
+            {:else if header.column.getIsSorted().toString() === "desc"}
+              <span>
+                <ArrowDown size="12px" />
+              </span>
+            {/if}
+          {/if}
+        </svelte:element>
       {/each}
-    </thead>
-    <tbody>
-      {#if $table.getRowModel().rows.length === 0}
-        <tr>
-          <td colspan={columns.length} class="px-4 py-10 text-center">
-            <div class="flex flex-col items-center gap-y-1">
-              {#if emptyIcon}
-                <svelte:component this={emptyIcon} size={32} color="#CBD5E1" />
-              {/if}
-              <span class="text-gray-600 font-semibold text-sm"
-                >{emptyText}</span
-              >
-            </div>
-          </td>
-        </tr>
-      {:else}
-        {#each $table.getRowModel().rows as row (row.id)}
-          <tr>
-            {#each row.getVisibleCells() as cell (cell.id)}
-              <td class="px-4 py-2" data-label={cell.column.columnDef.header}>
-                <svelte:component
-                  this={flexRender(
-                    cell.column.columnDef.cell,
-                    cell.getContext(),
-                  )}
-                />
-              </td>
-            {/each}
-          </tr>
-        {/each}
+    </div>
+  {/each}
+
+  {#each rows as row (row.id)}
+    <div class="row {rowPadding}">
+      {#each row.getVisibleCells() as cell (cell.id)}
+        <div
+          class="pl-{cell.column.columnDef.meta?.marginLeft ||
+            '4'} pr-1 flex items-center truncate"
+        >
+          <svelte:component
+            this={flexRender(cell.column.columnDef.cell, cell.getContext())}
+          />
+        </div>
+      {/each}
+    </div>
+  {:else}
+    <div class="flex flex-col items-center gap-y-1 py-10">
+      {#if emptyIcon}
+        <svelte:component this={emptyIcon} size={32} color="#CBD5E1" />
       {/if}
-    </tbody>
-  </table>
+      <span class="text-gray-600 font-semibold text-sm">{emptyText}</span>
+    </div>
+  {/each}
 </div>
 
 <style lang="postcss">
-  table {
-    @apply border-separate border-spacing-0;
-  }
-  table th,
-  table td {
-    @apply border-b border-gray-200;
+  * {
+    @apply border-slate-200;
   }
 
-  thead tr th {
-    @apply border-t border-gray-200;
+  .row {
+    @apply w-fit min-w-full;
+    display: grid;
+    grid-template-columns: var(--grid-template-columns);
   }
-  thead tr th:first-child {
-    @apply border-l rounded-tl-sm;
-  }
-  thead tr th:last-child {
-    @apply border-r rounded-tr-sm;
-  }
-  thead tr:last-child th {
+
+  .row:not(:last-of-type) {
     @apply border-b;
-  }
-  tbody tr {
-    @apply border-t border-gray-200;
-  }
-  tbody tr:first-child {
-    @apply border-t-0;
-  }
-  tbody td {
-    @apply border-b border-gray-200;
-  }
-  tbody td:first-child {
-    @apply border-l;
-  }
-  tbody td:last-child {
-    @apply border-r;
-  }
-  tbody tr:last-child td:first-child {
-    @apply rounded-bl-sm;
-  }
-  tbody tr:last-child td:last-child {
-    @apply rounded-br-sm;
-  }
-
-  .scroll-container {
-    height: 680px;
-    width: 100%;
-    overflow-y: auto;
   }
 </style>

@@ -19,6 +19,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	rillblob "github.com/rilldata/rill/runtime/drivers/blob"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 	"gocloud.dev/blob"
 	"gocloud.dev/blob/azureblob"
@@ -115,6 +116,11 @@ func (c *Connection) DownloadFiles(ctx context.Context, props map[string]any) (d
 		}
 	}
 
+	tempDir, err := c.storage.TempDir()
+	if err != nil {
+		return nil, err
+	}
+
 	// prepare fetch configs
 	opts := rillblob.Options{
 		GlobMaxTotalSize:      conf.GlobMaxTotalSize,
@@ -125,7 +131,7 @@ func (c *Connection) DownloadFiles(ctx context.Context, props map[string]any) (d
 		ExtractPolicy:         conf.extractPolicy,
 		BatchSizeBytes:        int64(batchSize.Bytes()),
 		KeepFilesUntilClose:   conf.BatchSize == "-1",
-		TempDir:               c.config.TempDir,
+		TempDir:               tempDir,
 	}
 
 	iter, err := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
@@ -134,7 +140,7 @@ func (c *Connection) DownloadFiles(ctx context.Context, props map[string]any) (d
 		var respErr *azcore.ResponseError
 		if gcerrors.Code(err) == gcerrors.Unknown ||
 			(errors.As(err, &respErr) && respErr.RawResponse.StatusCode == http.StatusForbidden && (respErr.ErrorCode == "AuthorizationPermissionMismatch" || respErr.ErrorCode == "AuthenticationFailed")) {
-			c.logger.Debug("Azure Blob Storage account does not have permission to list blobs. Falling back to anonymous access.", zap.Error(err))
+			c.logger.Debug("Azure Blob Storage account does not have permission to list blobs. Falling back to anonymous access.", zap.Error(err), observability.ZapCtx(ctx))
 
 			client, err := c.createAnonymousClient(conf)
 			if err != nil {

@@ -10,7 +10,7 @@ sidebar_position: 00
 <img src = '/img/tutorials/102/Adding-Data.gif' class='rounded-gif' />
 <br />
 
-Rill supports a multitude of connectors to ingest data from various sources: local files, S3 or GCS buckets, download using HTTP(S), databases, data warehouses, and the list goes on. Rill can ingest `.csv`, `.tsv`, `.json`,and `.parquet` files, which may be compressed (`.gz`). This can be done either through the UI directly, when working with Rill Developer, or by pushing the logic into the [source YAML](../../reference/project-files/sources.md) definition directly (see _Using Code_ sections below).
+Rill supports a multitude of connectors to ingest data from various sources: local files, S3 or GCS buckets, download using HTTP(S), databases, data warehouses, and the list goes on. Rill supports ingestion of `.csv`, `.tsv`, `.json`, and `.parquet` files, including compressed versions (`.gz`). This can be done either through the UI directly, when working with Rill Developer, or by pushing the logic into the [source YAML](../../reference/project-files/sources.md) definition directly (see _Using Code_ sections below).
 
 To provide a non-exhaustive list, Rill supports the following connectors:
 - [Google Cloud Storage](/reference/connectors/gcs.md)
@@ -77,6 +77,18 @@ For more details about available configurations and properties, check our [Sourc
 To add a remote source using the UI, click "+" by Sources in the left hand navigation pane and select the location where your remote files are stored ("Google Cloud Storage", "Amazon S3", or "http(s)"). Enter your file's URI and click "Add Source".
 
 After import, you can reimport your data whenever you want by clicking the "refresh source" button in the Rill UI.
+
+:::note Have a firewall setup?
+You need to whitelist the following IP addresses to connect to/from Rill Cloud and your service behind the firewall.
+```
+35.196.245.100
+34.74.117.37
+35.196.153.31
+34.75.22.143
+34.148.167.51
+35.237.60.193
+```
+:::
 
 ### Using code
 When you add a source using the UI or CLI, a code definition will automatically be created as a `.yaml` file in your Rill project in the `sources` directory.

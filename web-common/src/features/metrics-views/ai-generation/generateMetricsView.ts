@@ -133,7 +133,7 @@ export function useCreateMetricsViewFromTableUIAction(
       // If we're not creating an Explore, navigate to the Metrics View file
       if (!createExplore) {
         await goto(`/files${newMetricsViewFilePath}`);
-        void behaviourEvent.fireNavigationEvent(
+        void behaviourEvent?.fireNavigationEvent(
           newMetricsViewName,
           behaviourEventMedium,
           metricsEventSpace,

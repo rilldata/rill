@@ -6,27 +6,26 @@
    * to be displayed in explore
    */
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import {
     createQueryServiceMetricsViewAggregation,
     type MetricsViewSpecDimensionV2,
     type V1Expression,
     type V1MetricsViewAggregationMeasure,
-    type V1MetricsViewSpec,
     type V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
-  import { getDimensionFilterWithSearch } from "./dimension-table-utils";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { getComparisonRequestMeasures } from "../dashboard-utils";
+  import { mergeDimensionAndMeasureFilter } from "../filters/measure-filters/measure-filter-utils";
+  import { getSort } from "../leaderboard/leaderboard-utils";
+  import { getFiltersForOtherDimensions } from "../selectors";
+  import { getMeasuresForDimensionTable } from "../state-managers/selectors/dashboard-queries";
+  import { dimensionSearchText } from "../stores/dashboard-stores";
+  import { sanitiseExpression } from "../stores/filter-utils";
+  import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
   import DimensionHeader from "./DimensionHeader.svelte";
   import DimensionTable from "./DimensionTable.svelte";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { sanitiseExpression } from "../stores/filter-utils";
-  import { mergeDimensionAndMeasureFilter } from "../filters/measure-filters/measure-filter-utils";
-  import { getFiltersForOtherDimensions } from "../selectors";
-  import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { getSort } from "../leaderboard/leaderboard-utils";
-  import { getMeasuresForDimensionTable } from "../state-managers/selectors/dashboard-queries";
-  import { getComparisonRequestMeasures } from "../dashboard-utils";
-  import { dimensionSearchText } from "../stores/dashboard-stores";
+  import { getDimensionFilterWithSearch } from "./dimension-table-utils";
 
   const queryLimit = 250;
 
@@ -36,10 +35,10 @@
   export let whereFilter: V1Expression;
   export let metricsViewName: string;
   export let dimensionThresholdFilters: DimensionThresholdFilter[];
-  export let metricsView: V1MetricsViewSpec;
   export let visibleMeasureNames: string[];
   export let timeControlsReady: boolean;
   export let dimension: MetricsViewSpecDimensionV2;
+  export let hideStartPivotButton = false;
 
   const {
     selectors: {
@@ -74,7 +73,9 @@
     instanceId,
     metricsViewName,
     {
-      measures: [{ name: activeMeasureName }],
+      measures: visibleMeasureNames.map((measureName) => ({
+        name: measureName,
+      })),
       where: sanitiseExpression(
         mergeDimensionAndMeasureFilter(
           getFiltersForOtherDimensions(whereFilter, dimensionName),
@@ -99,7 +100,6 @@
   $: measures = getMeasuresForDimensionTable(
     activeMeasureName,
     dimensionThresholdFilters,
-    metricsView,
     visibleMeasureNames,
   )
     .map(
@@ -207,6 +207,7 @@
         isFetching={$sortedQuery?.isFetching}
         bind:searchText={$dimensionSearchText}
         onToggleSearchItems={toggleAllSearchItems}
+        {hideStartPivotButton}
       />
     </div>
 

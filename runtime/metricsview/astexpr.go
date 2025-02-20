@@ -220,6 +220,7 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 		}
 		if auto {
 			// Means the DB automatically unnests, so we can treat it as a normal value
+			leftExpr = b.ast.dialect.AutoUnnest(leftExpr)
 			return b.writeBinaryConditionInner(nil, right, leftExpr, op)
 		}
 		unnestColAlias := b.ast.sqlForMember(unnestTableAlias, left.Name)

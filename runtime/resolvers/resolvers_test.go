@@ -6,6 +6,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -16,8 +17,9 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/exp/maps"
 	"gopkg.in/yaml.v3"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 // TestFileYAML is the structure of a test file.
@@ -103,8 +105,11 @@ func TestResolvers(t *testing.T) {
 			for _, connector := range tf.Connectors {
 				acquire, ok := testruntime.Connectors[connector]
 				require.True(t, ok, "unknown connector %q", connector)
-				connectorVars := acquire(t)
-				maps.Copy(vars, connectorVars)
+				cfg := acquire(t)
+				for k, v := range cfg {
+					k = fmt.Sprintf("connector.%s.%s", connector, k)
+					vars[k] = v
+				}
 			}
 
 			// Create the test runtime instance.

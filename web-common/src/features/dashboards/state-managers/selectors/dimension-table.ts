@@ -1,22 +1,21 @@
+import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
 import type {
   MetricsViewSpecDimensionV2,
   RpcStatus,
   V1MetricsViewAggregationResponse,
-  V1MetricsViewTotalsResponse,
 } from "@rilldata/web-common/runtime-client";
-import type { DashboardDataSources } from "./types";
+import type { QueryObserverResult } from "@tanstack/svelte-query";
+import { isSummableMeasure } from "../../dashboard-utils";
+import type { DimensionTableRow } from "../../dimension-table/dimension-table-types";
 import {
   prepareDimensionTableRows,
   prepareVirtualizedDimTableColumns,
 } from "../../dimension-table/dimension-table-utils";
-import { allMeasures, visibleMeasures } from "./measures";
-import type { QueryObserverResult } from "@tanstack/svelte-query";
-import { isSummableMeasure } from "../../dashboard-utils";
-import { isTimeComparisonActive } from "./time-range";
 import { activeMeasureName, isValidPercentOfTotal } from "./active-measure";
 import { selectedDimensionValues } from "./dimension-filters";
-import type { DimensionTableRow } from "../../dimension-table/dimension-table-types";
-import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
+import { allMeasures, visibleMeasures } from "./measures";
+import { isTimeComparisonActive } from "./time-range";
+import type { DashboardDataSources } from "./types";
 
 export const selectedDimensionValueNames = (
   dashData: DashboardDataSources,
@@ -39,7 +38,10 @@ export const virtualizedTableColumns =
   (
     dashData: DashboardDataSources,
   ): ((
-    totalsQuery: QueryObserverResult<V1MetricsViewTotalsResponse, RpcStatus>,
+    totalsQuery: QueryObserverResult<
+      V1MetricsViewAggregationResponse,
+      RpcStatus
+    >,
   ) => VirtualizedTableColumns[]) =>
   (totalsQuery) => {
     const dimension = primaryDimension(dashData);
@@ -55,7 +57,7 @@ export const virtualizedTableColumns =
     if (totalsQuery?.data?.data) {
       measures.map((m) => {
         if (m.name && isSummableMeasure(m)) {
-          measureTotals[m.name] = totalsQuery.data?.data?.[m.name];
+          measureTotals[m.name] = totalsQuery.data?.data?.[0]?.[m.name];
         }
       });
     }

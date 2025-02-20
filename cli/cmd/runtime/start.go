@@ -20,6 +20,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"github.com/rilldata/rill/runtime/server"
+	"github.com/rilldata/rill/runtime/storage"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -85,6 +86,9 @@ type Config struct {
 	// DataDir stores data for all instances like duckdb file, temporary downloaded file etc.
 	// The data for each instance is stored in a child directory named instance_id
 	DataDir string `split_words:"true"`
+	// DataBucket is a common GCS bucket to store data for all instances. This data is expected to be persisted across resets.
+	DataBucket                string `split_words:"true"`
+	DataBucketCredentialsJSON string `split_words:"true"`
 	// Sink type of activity client: noop (or empty string), kafka
 	ActivitySinkType string `default:"" split_words:"true"`
 	// Kafka brokers of an activity client's sink
@@ -114,6 +118,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			cfg := zap.NewProductionConfig()
 			cfg.Level.SetLevel(conf.LogLevel)
 			cfg.EncoderConfig.NameKey = zapcore.OmitKey
+			cfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 			logger, err := cfg.Build()
 			if err != nil {
 				fmt.Printf("error: failed to create logger: %s\n", err.Error())
@@ -181,6 +186,9 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					logger.Fatal("error creating kafka sink", zap.Error(err))
 				}
 				activityClient = activity.NewClient(sink, logger)
+			case "console":
+				sink := activity.NewLoggerSink(logger, zapcore.InfoLevel)
+				activityClient = activity.NewClient(sink, logger)
 			default:
 				logger.Fatal("unknown activity sink type", zap.String("type", conf.ActivitySinkType))
 			}
@@ -195,9 +203,21 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				activityClient = activityClient.WithIsDev()
 			}
 
+			// storage client
+			var bucketConfig map[string]interface{}
+			if conf.DataBucket != "" {
+				bucketConfig = map[string]interface{}{
+					"bucket":                              conf.DataBucket,
+					"google_application_credentials_json": conf.DataBucketCredentialsJSON,
+				}
+			}
+			storage, err := storage.New(conf.DataDir, bucketConfig)
+			if err != nil {
+				logger.Fatal("error: could not create storage client", zap.Error(err))
+			}
+
 			// Create ctx that cancels on termination signals
 			ctx := graceful.WithCancelOnTerminate(context.Background())
-
 			// Init runtime
 			opts := &runtime.Options{
 				ConnectionCacheSize:          conf.ConnectionCacheSize,
@@ -207,7 +227,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				ControllerLogBufferCapacity:  conf.LogBufferCapacity,
 				ControllerLogBufferSizeBytes: conf.LogBufferSizeBytes,
 				AllowHostAccess:              conf.AllowHostAccess,
-				DataDir:                      conf.DataDir,
 				SystemConnectors: []*runtimev1.Connector{
 					{
 						Type:   conf.MetastoreDriver,
@@ -216,7 +235,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					},
 				},
 			}
-			rt, err := runtime.New(ctx, opts, logger, activityClient, emailClient)
+			rt, err := runtime.New(ctx, opts, logger, storage, activityClient, emailClient)
 			if err != nil {
 				logger.Fatal("error: could not create runtime", zap.Error(err))
 			}

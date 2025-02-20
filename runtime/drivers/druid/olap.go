@@ -10,6 +10,8 @@ import (
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/drivers/druid/druidsqldriver"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 )
 
@@ -31,22 +33,22 @@ func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName
 }
 
 // CreateTableAsSelect implements drivers.OLAPStore.
-func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view bool, sql string, tableOpts map[string]any) error {
+func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, opts *drivers.CreateTableOptions) error {
 	return fmt.Errorf("druid: data transformation not yet supported")
 }
 
 // InsertTableAsSelect implements drivers.OLAPStore.
-func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, byName, inPlace bool, strategy drivers.IncrementalStrategy, uniqueKey []string) error {
+func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, opts *drivers.InsertTableOptions) error {
 	return fmt.Errorf("druid: data transformation not yet supported")
 }
 
 // DropTable implements drivers.OLAPStore.
-func (c *connection) DropTable(ctx context.Context, name string, view bool) error {
+func (c *connection) DropTable(ctx context.Context, name string) error {
 	return fmt.Errorf("druid: data transformation not yet supported")
 }
 
 // RenameTable implements drivers.OLAPStore.
-func (c *connection) RenameTable(ctx context.Context, name, newName string, view bool) error {
+func (c *connection) RenameTable(ctx context.Context, name, newName string) error {
 	return fmt.Errorf("druid: data transformation not yet supported")
 }
 
@@ -54,7 +56,7 @@ func (c *connection) Dialect() drivers.Dialect {
 	return drivers.DialectDruid
 }
 
-func (c *connection) WithConnection(ctx context.Context, priority int, longRunning, tx bool, fn drivers.WithConnectionFunc) error {
+func (c *connection) WithConnection(ctx context.Context, priority int, longRunning bool, fn drivers.WithConnectionFunc) error {
 	return fmt.Errorf("druid: WithConnection not supported")
 }
 
@@ -72,7 +74,7 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
 	// Log query if enabled (usually disabled)
 	if c.config.LogQueries {
-		c.logger.Info("druid query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args))
+		c.logger.Info("druid query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
 	}
 
 	if stmt.DryRun {
@@ -87,6 +89,23 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 	var cancelFunc context.CancelFunc
 	if stmt.ExecutionTimeout != 0 {
 		ctx, cancelFunc = context.WithTimeout(ctx, stmt.ExecutionTimeout)
+	}
+
+	var queryCfg *druidsqldriver.QueryConfig
+	if stmt.UseCache != nil {
+		queryCfg = &druidsqldriver.QueryConfig{
+			UseCache: stmt.UseCache,
+		}
+	}
+	if stmt.PopulateCache != nil {
+		if queryCfg == nil {
+			queryCfg = &druidsqldriver.QueryConfig{}
+		}
+		queryCfg.PopulateCache = stmt.PopulateCache
+	}
+
+	if queryCfg != nil {
+		ctx = druidsqldriver.WithQueryConfig(ctx, queryCfg)
 	}
 
 	var rows *sqlx.Rows

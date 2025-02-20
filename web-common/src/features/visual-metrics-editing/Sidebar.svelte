@@ -84,13 +84,13 @@
       },
       {
         optional: true,
-        label: "Label",
+        label: "Display name",
         fields: [
           {
-            key: "label",
+            key: "display_name",
             hint: "Used on dashboards and charts. Inferred from name when not provided",
 
-            label: "Label",
+            label: "Display name",
           },
         ],
         selected: 0,
@@ -171,14 +171,14 @@
         selected: 0,
       },
       {
-        label: "Label",
+        label: "Display name",
         optional: true,
         fields: [
           {
-            key: "label",
+            key: "display_name",
             hint: "Used on dashboards and charts. Inferred from name when not provided",
 
-            label: "Label",
+            label: "Display name",
           },
         ],
         selected: 0,
@@ -203,7 +203,7 @@
     ({ type }) => type && NUMERICS.has(type),
   );
 
-  $: ({ remoteContent, localContent, saveContent } = fileArtifact);
+  $: ({ editorContent, updateEditorContent } = fileArtifact);
 
   $: requiredPropertiesUnfilled = properties[type]
     .filter(({ optional, fields, selected }) => {
@@ -217,7 +217,7 @@
   );
 
   async function saveChanges() {
-    const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
+    const parsedDocument = parseDocument($editorContent ?? "");
     let sequence = parsedDocument.get(type);
 
     if (!(sequence instanceof YAMLSeq) || sequence.items.length === 0) {
@@ -230,8 +230,7 @@
     }
 
     const items = sequence.items as YAMLMap[];
-
-    const newItem = new YAMLMap();
+    const newItem = items[index] ?? new YAMLMap();
 
     properties[type].forEach(({ selected, fields }) => {
       const { key } = fields[selected];
@@ -245,7 +244,8 @@
       items.push(newItem);
     }
 
-    await saveContent(parsedDocument.toString());
+    await updateEditorContent(parsedDocument.toString(), false, true);
+
     resetEditing();
 
     eventBus.emit("notification", { message: "Item saved", type: "success" });
@@ -259,7 +259,7 @@
 />
 
 <div
-  class="h-full w-[320px] bg-background flex-none flex flex-col border select-none rounded-[2px]"
+  class="h-full w-[320px] bg-surface flex-none flex flex-col border select-none rounded-[2px]"
 >
   <h1 class="pt-6 px-5">{editing ? "Edit" : "Add"} {type.slice(0, -1)}</h1>
 
@@ -268,8 +268,9 @@
   >
     {#each properties[type] as { fields, selected, label, optional, fontFamily } (label)}
       {@const { hint, key, options, placeholder, boolean } = fields[selected]}
+
       {#if boolean}
-        <div class="flex gap-x-2 items-center h-full bg-white rounded-full">
+        <div class="flex gap-x-2 items-center h-full rounded-full">
           <Switch bind:checked={editingClone[key]} id="auto-save" medium />
           <Label class="font-medium text-sm" for="auto-save">{label}</Label>
           {#if hint}
@@ -295,6 +296,7 @@
         <Input
           id="vme-{label}"
           textClass="text-sm"
+          capitalizeLabel={false}
           {label}
           {hint}
           {options}
@@ -303,13 +305,16 @@
           {placeholder}
           multiline={key === "description"}
           enableSearch={key === "column"}
-          bind:selected
+          {selected}
           bind:value={editingClone[key]}
           fields={fields.map(({ label }) => label)}
           onChange={(e) => {
             if (!editing && key === "column" && type === "dimensions") {
               editingClone.name = e;
             }
+          }}
+          onFieldSwitch={(index) => {
+            selected = index;
           }}
           sameWidth={true}
         />
@@ -320,8 +325,6 @@
   </div>
 
   <div class="flex flex-col gap-y-3 mt-auto border-t px-5 pb-6 pt-3">
-    <!-- <h2>Preview</h2> -->
-
     <p>
       For more options,
       <button on:click={switchView} class="text-primary-600 font-medium">

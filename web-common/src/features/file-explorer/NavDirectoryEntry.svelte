@@ -35,7 +35,7 @@
   $: id = `${dir.path}-nav-entry`;
   $: expanded = $directoryState[dir.path];
   $: padding = getPaddingFromPath(dir.path);
-  $: instanceId = $runtime.instanceId;
+  $: ({ instanceId } = $runtime);
   $: topLevelFolder = getTopLevelFolder(dir.path);
   $: isProtectedDirectory = PROTECTED_DIRECTORIES.includes(topLevelFolder);
 
@@ -112,7 +112,7 @@
       </DropdownMenu.Trigger>
       <DropdownMenu.Content
         align="start"
-        class="border-none bg-gray-800 text-white min-w-60"
+        class="min-w-60"
         side="right"
         sideOffset={16}
       >

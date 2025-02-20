@@ -1,19 +1,14 @@
 import { expect } from "@playwright/test";
-import { useDashboardFlowTestSetup } from "web-local/tests/explores/dashboard-flow-test-setup";
-import { clickMenuButton } from "web-local/tests/utils/commonHelpers";
-import {
-  AD_BIDS_EXPLORE_PATH,
-  AD_BIDS_METRICS_PATH,
-} from "web-local/tests/utils/dataSpecifcHelpers";
-import { interactWithTimeRangeMenu } from "web-local/tests/utils/metricsViewHelpers";
-import { ResourceWatcher } from "web-local/tests/utils/ResourceWatcher";
-import { validateTableContents } from "web-local/tests/utils/tableHelpers";
-import { gotoNavEntry } from "web-local/tests/utils/waitHelpers";
-import { test } from "../utils/test";
+import { clickMenuButton } from "../utils/commonHelpers";
+import { interactWithTimeRangeMenu } from "../utils/metricsViewHelpers";
+import { ResourceWatcher } from "../utils/ResourceWatcher";
+import { validateTableContents } from "../utils/tableHelpers";
+import { gotoNavEntry } from "../utils/waitHelpers";
+import { test } from "../setup/base";
 
 const pivotDashboard = `kind: metrics_view
 display_name: Ad Bids
-model: AdBids_model
+table: AdBids
 timeseries: timestamp
 dimensions:
   - display_name: Publisher
@@ -528,22 +523,23 @@ const expectSortedDeltaCol = [
 ];
 
 test.describe("pivot run through", () => {
-  // dashboard test setup
-  useDashboardFlowTestSetup();
+  test.use({ project: "AdBids" });
 
   test("pivot run through", async ({ page }) => {
     const watcher = new ResourceWatcher(page);
 
-    await gotoNavEntry(page, AD_BIDS_METRICS_PATH);
-
+    await page.getByLabel("/metrics").click();
+    await page.getByLabel("/dashboards").click();
+    await gotoNavEntry(page, "/metrics/AdBids_metrics.yaml");
     await page.getByLabel("code").click();
+
     // update the code editor with the new spec
     await watcher.updateAndWaitForDashboard(pivotDashboard);
-    await gotoNavEntry(page, AD_BIDS_EXPLORE_PATH);
+    await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
     const previewButton = page.getByRole("button", { name: "Preview" });
     await previewButton.click();
 
-    const pivotButton = page.getByRole("button", {
+    const pivotButton = page.getByRole("link", {
       name: "Pivot",
       exact: true,
     });
@@ -562,7 +558,9 @@ test.describe("pivot run through", () => {
 
     // single measure
     await totalRecords.dragTo(columnZone);
-    await expect(page.getByRole("row", { name: "100.0k" })).toBeVisible();
+    await expect(
+      page.locator("td").filter({ hasText: "100.0k" }),
+    ).toBeVisible();
 
     // one measure and one dimension
     await publisher.dragTo(rowZone);
@@ -593,7 +591,8 @@ test.describe("pivot run through", () => {
     await clickMenuButton(page, "Publisher");
 
     const expandButton = page
-      .getByRole("cell", { name: "Jan" })
+      .locator("td")
+      .filter({ hasText: "Jan" })
       .getByRole("button");
     await expandButton.click();
     await expect(page.locator(".status.running")).toHaveCount(0);

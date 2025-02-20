@@ -10,6 +10,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers/slack"
+	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -95,7 +96,7 @@ func (p *Parser) parseReport(node *Node) error {
 
 	// Validate the interval duration as a standard ISO8601 duration (without Rill extensions) with only one component
 	if tmp.Intervals.Duration != "" {
-		err := validateISO8601(tmp.Intervals.Duration, true, true)
+		err := duration.ValidateISO8601(tmp.Intervals.Duration, true, true)
 		if err != nil {
 			return fmt.Errorf(`invalid value %q for property "intervals.duration"`, tmp.Intervals.Duration)
 		}
@@ -184,6 +185,9 @@ func (p *Parser) parseReport(node *Node) error {
 	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
 
 	r.ReportSpec.DisplayName = tmp.DisplayName
+	if r.ReportSpec.DisplayName == "" {
+		r.ReportSpec.DisplayName = ToDisplayName(node.Name)
+	}
 	if schedule != nil {
 		r.ReportSpec.RefreshSchedule = schedule
 	}

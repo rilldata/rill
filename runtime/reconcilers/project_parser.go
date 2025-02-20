@@ -12,8 +12,10 @@ import (
 	compilerv1 "github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/arrayutil"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 var ErrParserHasParseErrors = errors.New("encountered parse errors")
@@ -26,8 +28,8 @@ type ProjectParserReconciler struct {
 	C *runtime.Controller
 }
 
-func newProjectParser(c *runtime.Controller) runtime.Reconciler {
-	return &ProjectParserReconciler{C: c}
+func newProjectParser(ctx context.Context, c *runtime.Controller) (runtime.Reconciler, error) {
+	return &ProjectParserReconciler{C: c}, nil
 }
 
 func (r *ProjectParserReconciler) Close(ctx context.Context) error {
@@ -116,14 +118,22 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to sync repo: %w", err)}
 	}
 
-	// Update commit sha
+	// Update commit sha and timestamp
 	hash, err := repo.CommitHash(ctx)
 	if err != nil {
 		// Not worth failing the reconcile for this. On error, it'll just set CurrentCommitSha to "".
-		r.C.Logger.Error("failed to get commit hash", zap.String("error", err.Error()))
+		r.C.Logger.Error("failed to get commit hash", zap.String("error", err.Error()), observability.ZapCtx(ctx))
+	}
+	ts, err := repo.CommitTimestamp(ctx)
+	if err != nil {
+		r.C.Logger.Error("failed to get commit timestamp", zap.String("error", err.Error()), observability.ZapCtx(ctx))
 	}
 	if pp.State.CurrentCommitSha != hash {
 		pp.State.CurrentCommitSha = hash
+		pp.State.CurrentCommitOn = nil
+		if !ts.IsZero() {
+			pp.State.CurrentCommitOn = timestamppb.New(ts)
+		}
 		err = r.C.UpdateState(ctx, n, self)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
@@ -162,7 +172,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	defer func() {
 		pp.State.Watching = false
 		if err = r.C.UpdateState(ctx, n, self); err != nil {
-			r.C.Logger.Error("failed to update watch state", zap.Any("error", err))
+			r.C.Logger.Error("failed to update watch state", zap.Any("error", err), observability.ZapCtx(ctx))
 		}
 	}()
 
@@ -237,7 +247,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 
 	// If the watch failed, we return without rescheduling.
 	// TODO: Should we have some kind of retry?
-	r.C.Logger.Error("Stopped watching for file changes", zap.String("error", err.Error()))
+	r.C.Logger.Error("Stopped watching for file changes", zap.String("error", err.Error()), observability.ZapCtx(ctx))
 	return runtime.ReconcileResult{Err: err}
 }
 
@@ -263,14 +273,14 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 			if skipRillYAMLErr && e.FilePath == "/rill.yaml" {
 				continue
 			}
-			r.C.Logger.Warn("Parser error", zap.String("path", e.FilePath), zap.String("error", e.Message))
+			r.C.Logger.Warn("Parser error", zap.String("path", e.FilePath), zap.String("error", e.Message), observability.ZapCtx(ctx))
 		}
 	} else if diff.Skipped {
-		r.C.Logger.Warn("Not parsing changed paths due to missing or broken rill.yaml")
+		r.C.Logger.Warn("Not parsing changed paths due to missing or broken rill.yaml", observability.ZapCtx(ctx))
 	} else {
 		for _, e := range parser.Errors {
 			if slices.Contains(changedPaths, e.FilePath) {
-				r.C.Logger.Warn("Parser error", zap.String("path", e.FilePath), zap.String("error", e.Message))
+				r.C.Logger.Warn("Parser error", zap.String("path", e.FilePath), zap.String("error", e.Message), observability.ZapCtx(ctx))
 			}
 		}
 	}
@@ -416,13 +426,9 @@ func (r *ProjectParserReconciler) reconcileResources(ctx context.Context, inst *
 // reconcileResourcesDiff is similar to reconcileResources, but uses a diff from parser.Reparse instead of doing a full comparison of all resources.
 func (r *ProjectParserReconciler) reconcileResourcesDiff(ctx context.Context, inst *drivers.Instance, self *runtimev1.Resource, parser *compilerv1.Parser, diff *compilerv1.Diff) error {
 	// Gather resource to delete so we can check for renames.
-	deleteResources := make([]*runtimev1.Resource, 0, len(diff.Deleted))
+	deleteResources := make([]*runtimev1.ResourceName, 0, len(diff.Deleted))
 	for _, n := range diff.Deleted {
-		r, err := r.C.Get(ctx, runtime.ResourceNameFromCompiler(n), false)
-		if err != nil {
-			return err
-		}
-		deleteResources = append(deleteResources, r)
+		deleteResources = append(deleteResources, runtime.ResourceNameFromCompiler(n))
 	}
 
 	// Updates
@@ -444,13 +450,17 @@ func (r *ProjectParserReconciler) reconcileResourcesDiff(ctx context.Context, in
 
 		// Rename if possible
 		renamed := false
-		for idx, rr := range deleteResources {
-			if rr == nil {
+		for idx, rn := range deleteResources {
+			if rn == nil {
 				// Already renamed
 				continue
 			}
 
-			var err error
+			rr, err := r.C.Get(ctx, rn, false)
+			if err != nil {
+				return err
+			}
+
 			renamed, err = r.attemptRename(ctx, inst, self, def, rr)
 			if err != nil {
 				return err
@@ -472,13 +482,13 @@ func (r *ProjectParserReconciler) reconcileResourcesDiff(ctx context.Context, in
 	}
 
 	// Deletes
-	for _, rr := range deleteResources {
+	for _, rn := range deleteResources {
 		// The ones that got renamed were set to nil
-		if rr == nil {
+		if rn == nil {
 			continue
 		}
 
-		err := r.C.Delete(ctx, rr.Meta.Name)
+		err := r.C.Delete(ctx, rn)
 		if err != nil {
 			return err
 		}
@@ -565,16 +575,24 @@ func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, inst
 		return r.C.Create(ctx, n, refs, self.Meta.Name, def.Paths, false, res)
 	}
 
-	// The name may have changed to a different case (e.g. aAa -> Aaa)
+	// Handle changed name and/or path
 	if n.Kind == existing.Meta.Name.Kind && n.Name != existing.Meta.Name.Name {
+		// The name may have changed to a different case (e.g. aAa -> Aaa).
+		// Note that this also updates the paths (updating them separately with UpdateMeta would be considered a mutation of a renamed resource, which requires falling back to a less optimal reconciliation).
 		err := r.C.UpdateName(ctx, existing.Meta.Name, n, self.Meta.Name, def.Paths)
+		if err != nil {
+			return err
+		}
+	} else if !slices.Equal(existing.Meta.FilePaths, def.Paths) {
+		// The path may have been changed. Usually this case is covered in the UpdateName case above because changing a file path usually changes the name.
+		err := r.C.UpdateMeta(ctx, n, existing.Meta.Refs, self.Meta.Name, def.Paths)
 		if err != nil {
 			return err
 		}
 	}
 
-	// Update meta if refs or file paths changed
-	if !slices.Equal(existing.Meta.FilePaths, def.Paths) || !equalResourceNames(existing.Meta.Refs, refs) {
+	// Update meta if refs changed
+	if !equalResourceNames(existing.Meta.Refs, refs) {
 		err := r.C.UpdateMeta(ctx, n, refs, self.Meta.Name, def.Paths)
 		if err != nil {
 			return err

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/pkg/duration"
+	"github.com/rilldata/rill/runtime/pkg/rilltime"
 	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v3"
 
@@ -71,6 +71,11 @@ type MetricsViewYAML struct {
 		Dimension string `yaml:"dimension"`
 	} `yaml:"default_comparison"`
 	AvailableTimeRanges []ExploreTimeRangeYAML `yaml:"available_time_ranges"`
+	Cache               struct {
+		Enabled *bool  `yaml:"enabled"`
+		KeySQL  string `yaml:"key_sql"`
+		KeyTTL  string `yaml:"key_ttl"`
+	} `yaml:"cache"`
 }
 
 type MetricsViewFieldSelectorYAML struct {
@@ -491,7 +496,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	}
 
 	if tmp.DefaultTimeRange != "" {
-		err := validateISO8601(tmp.DefaultTimeRange, false, false)
+		_, err := rilltime.Parse(tmp.DefaultTimeRange, rilltime.ParseOptions{})
 		if err != nil {
 			return fmt.Errorf(`invalid "default_time_range": %w`, err)
 		}
@@ -531,6 +536,10 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			dim.DisplayName = dim.Label
 		}
 
+		if dim.DisplayName == "" {
+			dim.DisplayName = ToDisplayName(dim.Name)
+		}
+
 		if (dim.Column == "" && dim.Expression == "") || (dim.Column != "" && dim.Expression != "") {
 			return fmt.Errorf("exactly one of column or expression should be set for dimension: %q", dim.Name)
 		}
@@ -562,6 +571,10 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		// Backwards compatibility
 		if measure.Label != "" && measure.DisplayName == "" {
 			measure.DisplayName = measure.Label
+		}
+
+		if measure.DisplayName == "" {
+			measure.DisplayName = ToDisplayName(measure.Name)
 		}
 
 		lower := strings.ToLower(measure.Name)
@@ -731,22 +744,15 @@ func (p *Parser) parseMetricsView(node *Node) error {
 
 	if tmp.AvailableTimeRanges != nil {
 		for _, r := range tmp.AvailableTimeRanges {
-			err := validateISO8601(r.Range, false, false)
+			_, err := rilltime.Parse(r.Range, rilltime.ParseOptions{})
 			if err != nil {
 				return fmt.Errorf("invalid range in available_time_ranges: %w", err)
 			}
 
 			for _, o := range r.ComparisonTimeRanges {
-				err := validateISO8601(o.Offset, false, false)
+				err = rilltime.ParseCompatibility(o.Range, o.Offset)
 				if err != nil {
-					return fmt.Errorf("invalid offset in comparison_offsets: %w", err)
-				}
-
-				if o.Range != "" {
-					err := validateISO8601(o.Range, false, false)
-					if err != nil {
-						return fmt.Errorf("invalid range in comparison_offsets: %w", err)
-					}
+					return err
 				}
 			}
 		}
@@ -772,6 +778,14 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindTheme, Name: tmp.DefaultTheme})
 	}
 
+	var cacheTTLDuration time.Duration
+	if tmp.Cache.KeyTTL != "" {
+		cacheTTLDuration, err = time.ParseDuration(tmp.Cache.KeyTTL)
+		if err != nil {
+			return fmt.Errorf(`invalid "cache.key_ttl": %w`, err)
+		}
+	}
+
 	r, err := p.insertResource(ResourceKindMetricsView, node.Name, node.Paths, node.Refs...)
 	if err != nil {
 		return err
@@ -785,6 +799,9 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	spec.Table = tmp.Table
 	spec.Model = tmp.Model
 	spec.DisplayName = tmp.DisplayName
+	if spec.DisplayName == "" {
+		spec.DisplayName = ToDisplayName(node.Name)
+	}
 	spec.Description = tmp.Description
 	spec.TimeDimension = tmp.TimeDimension
 	spec.WatermarkExpression = tmp.Watermark
@@ -811,6 +828,9 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	spec.Measures = measures
 
 	spec.SecurityRules = securityRules
+	spec.CacheEnabled = tmp.Cache.Enabled
+	spec.CacheKeySql = tmp.Cache.KeySQL
+	spec.CacheKeyTtlSeconds = int64(cacheTTLDuration.Seconds())
 
 	// Backwards compatibility: When the version is 0, populate the deprecated fields and also emit an Explore resource for the metrics view.
 	if node.Version > 0 {
@@ -901,14 +921,22 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	if len(spec.DefaultMeasures) == 0 {
 		presetMeasuresSelector = &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}}
 	}
+	var tr *string
+	if spec.DefaultTimeRange != "" {
+		tr = &spec.DefaultTimeRange
+	}
+	var compareDim *string
+	if spec.DefaultComparisonDimension != "" {
+		compareDim = &spec.DefaultComparisonDimension
+	}
 	e.ExploreSpec.DefaultPreset = &runtimev1.ExplorePreset{
 		Dimensions:          spec.DefaultDimensions,
 		DimensionsSelector:  presetDimensionsSelector,
 		Measures:            spec.DefaultMeasures,
 		MeasuresSelector:    presetMeasuresSelector,
-		TimeRange:           spec.DefaultTimeRange,
+		TimeRange:           tr,
 		ComparisonMode:      exploreComparisonMode,
-		ComparisonDimension: spec.DefaultComparisonDimension,
+		ComparisonDimension: compareDim,
 	}
 
 	return nil
@@ -940,59 +968,6 @@ func parseTimeGrain(s string) (runtimev1.TimeGrain, error) {
 	default:
 		return runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, fmt.Errorf("invalid time grain %q", s)
 	}
-}
-
-// validateISO8601 is a wrapper around duration.ParseISO8601 with additional validation:
-// a) that the duration does not have seconds granularity,
-// b) if onlyStandard is true, that the duration does not use any of the Rill-specific extensions (such as year-to-date).
-// c) if onlySingular is true, that the duration does not consist of more than one component (e.g. P2Y is valid, P2Y3M is not).
-func validateISO8601(isoDuration string, onlyStandard, onlyOneComponent bool) error {
-	d, err := duration.ParseISO8601(isoDuration)
-	if err != nil {
-		return err
-	}
-
-	sd, ok := d.(duration.StandardDuration)
-	if !ok {
-		if onlyStandard {
-			return fmt.Errorf("only standard durations are allowed")
-		}
-		return nil
-	}
-
-	if sd.Second != 0 {
-		return fmt.Errorf("durations with seconds are not allowed")
-	}
-
-	if onlyOneComponent {
-		n := 0
-		if sd.Year != 0 {
-			n++
-		}
-		if sd.Month != 0 {
-			n++
-		}
-		if sd.Week != 0 {
-			n++
-		}
-		if sd.Day != 0 {
-			n++
-		}
-		if sd.Hour != 0 {
-			n++
-		}
-		if sd.Minute != 0 {
-			n++
-		}
-		if sd.Second != 0 {
-			n++
-		}
-		if n > 1 {
-			return fmt.Errorf("only one component is allowed")
-		}
-	}
-
-	return nil
 }
 
 var validationTemplateData = TemplateData{

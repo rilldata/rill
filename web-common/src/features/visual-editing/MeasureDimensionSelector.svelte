@@ -39,6 +39,7 @@
     hint="Selection of {type} from the underlying metrics view for inclusion on the dashboard"
   />
   <FieldSwitcher
+    expand
     {fields}
     {selected}
     onClick={(_, field) => {
@@ -49,7 +50,9 @@
         if (selectedProxy.size) {
           setItems(Array.from(selectedProxy), excludeProxy);
         } else {
-          setItems(items.map(({ name }) => name).filter(isString));
+          const newItems = items.map(({ name }) => name).filter(isString);
+          setItems(newItems);
+          selectedProxy = new Set(newItems);
         }
       } else if (field === "expression") {
         onSelectExpression();
@@ -71,6 +74,7 @@
       }}
     />
     <a
+      class="w-fit"
       target="_blank"
       href="https://docs.rilldata.com/reference/project-files/explore-dashboards"
     >
@@ -96,6 +100,9 @@
         selectedProxy = new Set(items);
         setItems(items, exclude);
       }}
-    />
+      let:item
+    >
+      {items.find((m) => m.name === item)?.displayName || item}
+    </SelectionDropdown>
   {/if}
 </div>

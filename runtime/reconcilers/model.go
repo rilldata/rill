@@ -19,15 +19,18 @@ import (
 	"github.com/rilldata/rill/runtime"
 	compilerv1 "github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
+	"golang.org/x/sync/semaphore"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
-	_modelDefaultTimeout = 60 * time.Minute
+	// If changing this value also update maxAcquiredConnDuration in runtime/drivers/duckdb/duckdb.go
+	_modelDefaultTimeout = 3 * time.Hour
 
 	_modelSyncPartitionsBatchSize    = 1000
 	_modelPendingPartitionsBatchSize = 1000
@@ -40,11 +43,22 @@ func init() {
 }
 
 type ModelReconciler struct {
-	C *runtime.Controller
+	C       *runtime.Controller
+	execSem *semaphore.Weighted
 }
 
-func newModelReconciler(c *runtime.Controller) runtime.Reconciler {
-	return &ModelReconciler{C: c}
+func newModelReconciler(ctx context.Context, c *runtime.Controller) (runtime.Reconciler, error) {
+	cfg, err := c.Runtime.InstanceConfig(ctx, c.InstanceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get model execution concurrency limit: %w", err)
+	}
+	if cfg.ModelConcurrentExecutionLimit <= 0 {
+		return nil, errors.New("model_concurrent_execution_limit must be greater than zero")
+	}
+	return &ModelReconciler{
+		C:       c,
+		execSem: semaphore.NewWeighted(int64(cfg.ModelConcurrentExecutionLimit)),
+	}, nil
 }
 
 func (r *ModelReconciler) Close(ctx context.Context) error {
@@ -118,6 +132,12 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	// Handle deletion
 	if self.Meta.DeletedOn != nil {
 		if prevManager != nil {
+			err := r.execSem.Acquire(ctx, 1)
+			if err != nil {
+				return runtime.ReconcileResult{Err: err}
+			}
+			defer r.execSem.Release(1)
+
 			err = prevManager.Delete(ctx, prevResult)
 			return runtime.ReconcileResult{Err: err}
 		}
@@ -133,12 +153,24 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	// Handle renames
 	if self.Meta.RenamedFrom != nil {
 		if prevManager != nil {
-			renameRes, err := prevManager.Rename(ctx, prevResult, self.Meta.Name.Name, modelEnv)
-			if err == nil {
-				err = r.updateStateWithResult(ctx, self, renameRes)
-			}
-			if err != nil {
-				r.C.Logger.Warn("failed to rename model", zap.String("model", n.Name), zap.String("renamed_from", self.Meta.RenamedFrom.Name), zap.Error(err))
+			// Using a nested scope to ensure the execSem is safely acquired and released.
+			func() {
+				err := r.execSem.Acquire(ctx, 1)
+				if err != nil {
+					return // Safe to ignore because the err can only be ctx.Err()
+				}
+				defer r.execSem.Release(1)
+
+				renameRes, err := prevManager.Rename(ctx, prevResult, self.Meta.Name.Name, modelEnv)
+				if err == nil {
+					err = r.updateStateWithResult(ctx, self, renameRes)
+				}
+				if err != nil {
+					r.C.Logger.Warn("failed to rename model", zap.String("model", n.Name), zap.String("renamed_from", self.Meta.RenamedFrom.Name), zap.Error(err), observability.ZapCtx(ctx))
+				}
+			}()
+			if ctx.Err() != nil { // Handle if the error was a ctx error
+				return runtime.ReconcileResult{Err: ctx.Err()}
 			}
 
 			// Note: Not exiting early. We may need to retrigger the model in some cases. We also need to set the correct retrigger time.
@@ -155,19 +187,25 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	if err != nil {
 		// If not staging changes, we need to drop the previous output (if any) before returning
 		if !modelEnv.StageChanges && prevManager != nil {
+			err := r.execSem.Acquire(ctx, 1)
+			if err != nil {
+				return runtime.ReconcileResult{Err: err}
+			}
+			defer r.execSem.Release(1)
+
 			err2 := prevManager.Delete(ctx, prevResult)
 			if err2 != nil {
-				r.C.Logger.Warn("failed to delete model output", zap.String("model", n.Name), zap.Error(err2))
+				r.C.Logger.Warn("failed to delete model output", zap.String("model", n.Name), zap.Error(err2), observability.ZapCtx(ctx))
 			}
 
-			err := r.clearPartitions(ctx, model)
+			err = r.clearPartitions(ctx, model)
 			if err != nil {
 				return runtime.ReconcileResult{Err: err}
 			}
 
 			err2 = r.updateStateClear(ctx, self)
 			if err2 != nil {
-				r.C.Logger.Warn("refs check: failed to update state", zap.Any("error", err2))
+				r.C.Logger.Warn("refs check: failed to update state", zap.Any("error", err2), observability.ZapCtx(ctx))
 			}
 		}
 
@@ -200,7 +238,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	if prevManager != nil {
 		exists, err = prevManager.Exists(ctx, prevResult)
 		if err != nil {
-			r.C.Logger.Warn("failed to check if model output exists", zap.String("model", n.Name), zap.Error(err))
+			r.C.Logger.Warn("failed to check if model output exists", zap.String("model", n.Name), zap.Error(err), observability.ZapCtx(ctx))
 		}
 	}
 
@@ -226,12 +264,19 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		return runtime.ReconcileResult{Retrigger: refreshOn}
 	}
 
+	// Acquire the execution semaphore for the remainder of the function.
+	err = r.execSem.Acquire(ctx, 1)
+	if err != nil {
+		return runtime.ReconcileResult{Err: err}
+	}
+	defer r.execSem.Release(1)
+
 	// If the output connector has changed, drop data in the old output connector (if any).
 	// If only the output properties have changed, the executor will handle dropping existing data (to comply with StageChanges).
 	if prevManager != nil && model.State.ResultConnector != model.Spec.OutputConnector {
 		err = prevManager.Delete(ctx, prevResult)
 		if err != nil {
-			r.C.Logger.Warn("failed to delete model output", zap.String("model", n.Name), zap.Error(err))
+			r.C.Logger.Warn("failed to delete model output", zap.String("model", n.Name), zap.Error(err), observability.ZapCtx(ctx))
 		}
 	}
 
@@ -550,7 +595,7 @@ func (r *ModelReconciler) updateTriggerFalse(ctx context.Context, n *runtimev1.R
 	r.C.Lock(ctx)
 	defer r.C.Unlock(ctx)
 
-	self, err := r.C.Get(ctx, n, false)
+	self, err := r.C.Get(ctx, n, true)
 	if err != nil {
 		return err
 	}
@@ -609,7 +654,7 @@ func (r *ModelReconciler) resolveIncrementalState(ctx context.Context, mdl *runt
 // resolveAndSyncPartitions resolves the model's partitions using its configured partitions resolver and inserts or updates them in the catalog.
 func (r *ModelReconciler) resolveAndSyncPartitions(ctx context.Context, self *runtimev1.Resource, mdl *runtimev1.ModelV2, incrementalState map[string]any) error {
 	// Log
-	r.C.Logger.Debug("Resolving model partitions", zap.String("model", self.Meta.Name.Name), zap.String("resolver", mdl.Spec.PartitionsResolver))
+	r.C.Logger.Debug("Resolving model partitions", zap.String("model", self.Meta.Name.Name), zap.String("resolver", mdl.Spec.PartitionsResolver), observability.ZapCtx(ctx))
 
 	// Ensure a model ID is set. We use it to track the model's partitions in the catalog.
 	if mdl.State.PartitionsModelId == "" {
@@ -668,7 +713,7 @@ func (r *ModelReconciler) resolveAndSyncPartitions(ctx context.Context, self *ru
 
 	// Log
 	count := batchStartIdx + len(batch)
-	defer r.C.Logger.Debug("Resolved model partitions", zap.String("model", self.Meta.Name.Name), zap.Int("partitions", count))
+	defer r.C.Logger.Info("Resolved model partitions", zap.String("model", self.Meta.Name.Name), zap.Int("partitions", count), observability.ZapCtx(ctx))
 
 	// Flush the remaining rows not handled in the loop
 	return r.syncPartitions(ctx, mdl, batchStartIdx, batch)
@@ -809,7 +854,7 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	incrementalState["incremental"] = incrementalRun // The incremental flag is hard-coded by convention
 
 	// Build log message
-	logArgs := []zap.Field{zap.String("model", self.Meta.Name.Name)}
+	logArgs := []zap.Field{zap.String("model", self.Meta.Name.Name), observability.ZapCtx(ctx)}
 	if incrementalRun {
 		logArgs = append(logArgs, zap.String("run_type", "incremental"))
 	} else {
@@ -826,7 +871,7 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	if model.Spec.StageConnector != "" {
 		logArgs = append(logArgs, zap.String("stage_connector", model.Spec.StageConnector))
 	}
-	r.C.Logger.Debug("Building model", logArgs...)
+	r.C.Logger.Info("Executing model", logArgs...)
 
 	// Apply the timeout to the ctx
 	timeout := _modelDefaultTimeout
@@ -1040,7 +1085,7 @@ func (r *ModelReconciler) executePartition(ctx context.Context, catalog drivers.
 	}
 
 	// Log
-	logArgs := []zap.Field{zap.String("model", self.Meta.Name.Name), zap.String("key", partition.Key)}
+	logArgs := []zap.Field{zap.String("model", self.Meta.Name.Name), zap.String("key", partition.Key), observability.ZapCtx(ctx)}
 	if len(partition.DataJSON) < 256 {
 		logArgs = append(logArgs, zap.Any("data", data))
 	}
@@ -1089,6 +1134,11 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 		return nil, err
 	}
 
+	tempDir, err := r.C.Runtime.TempDir(r.C.InstanceID)
+	if err != nil {
+		return nil, err
+	}
+
 	// Execute the stage step if configured
 	if executor.stage != nil {
 		// Also resolve templating in the stage props
@@ -1107,7 +1157,7 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 			IncrementalRun:       incrementalRun,
 			PartitionRun:         partition != nil,
 			PreviousResult:       prevResult,
-			TempDir:              r.C.Runtime.TempDir(r.C.InstanceID),
+			TempDir:              tempDir,
 		})
 		if err != nil {
 			return nil, err
@@ -1122,7 +1172,7 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 		defer func() {
 			err := executor.stageResultManager.Delete(ctx, stageResult)
 			if err != nil {
-				r.C.Logger.Warn("Failed to clean up staged model output", zap.String("model", self.Meta.Name.Name), zap.Error(err))
+				r.C.Logger.Warn("Failed to clean up staged model output", zap.String("model", self.Meta.Name.Name), zap.Error(err), observability.ZapCtx(ctx))
 			}
 		}()
 	}
@@ -1137,7 +1187,7 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 		IncrementalRun:       incrementalRun,
 		PartitionRun:         partition != nil,
 		PreviousResult:       prevResult,
-		TempDir:              r.C.Runtime.TempDir(r.C.InstanceID),
+		TempDir:              tempDir,
 	})
 	if err != nil {
 		return nil, err

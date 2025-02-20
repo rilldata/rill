@@ -13,6 +13,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/druid"
+	"github.com/rilldata/rill/runtime/pkg/jsonval"
 )
 
 const (
@@ -26,6 +27,7 @@ type Executor struct {
 	rt          *runtime.Runtime
 	instanceID  string
 	metricsView *runtimev1.MetricsViewSpec
+	streaming   bool
 	security    *runtime.ResolvedSecurity
 	priority    int
 
@@ -33,11 +35,18 @@ type Executor struct {
 	olapRelease func()
 	instanceCfg drivers.InstanceConfig
 
-	watermark time.Time
+	timestamps TimestampsResult
+}
+
+type TimestampsResult struct {
+	Min       time.Time
+	Max       time.Time
+	Watermark time.Time
+	Now       time.Time
 }
 
 // NewExecutor creates a new Executor for the provided metrics view.
-func NewExecutor(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, priority int) (*Executor, error) {
+func NewExecutor(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtimev1.MetricsViewSpec, streaming bool, sec *runtime.ResolvedSecurity, priority int) (*Executor, error) {
 	olap, release, err := rt.OLAP(ctx, instanceID, mv.Connector)
 	if err != nil {
 		return nil, fmt.Errorf("failed to acquire connector for metrics view: %w", err)
@@ -52,6 +61,7 @@ func NewExecutor(ctx context.Context, rt *runtime.Runtime, instanceID string, mv
 		rt:          rt,
 		instanceID:  instanceID,
 		metricsView: mv,
+		streaming:   streaming,
 		security:    sec,
 		priority:    priority,
 		olap:        olap,
@@ -65,16 +75,57 @@ func (e *Executor) Close() {
 	e.olapRelease()
 }
 
-// Cacheable returns whether the result of running the given query is cacheable.
-func (e *Executor) Cacheable(qry *Query) bool {
-	// TODO: Get from OLAP instead of hardcoding
-	return e.olap.Dialect() == drivers.DialectDuckDB
-}
+// CacheKey returns a cache key based on the executor's metrics view's cache key configuration.
+// If ok is false, caching is disabled for the metrics view.
+func (e *Executor) CacheKey(ctx context.Context) ([]byte, bool, error) {
+	spec := e.metricsView
+	// Cache is disabled for metrics views based on external table
+	if (spec.CacheEnabled != nil && !*spec.CacheEnabled) || (spec.CacheEnabled == nil && e.streaming) {
+		return nil, false, nil
+	}
 
-// ValidateMetricsView validates the dimensions and measures in the executor's metrics view.
-func (e *Executor) ValidateMetricsView(ctx context.Context) error {
-	// TODO: Implement it
-	panic("not implemented")
+	if spec.CacheKeySql == "" {
+		if !e.streaming {
+			// for metrics views on rill managed tables, we can cache forever
+			// (until the metrics view is refreshed/edited, which always leads to cache invalidations)
+			return []byte(""), true, nil
+		}
+		// watermark is the default cache key for streaming metrics views
+		ts, err := e.Timestamps(ctx)
+		if err != nil {
+			return nil, false, err
+		}
+		return []byte(ts.Watermark.Format(time.RFC3339)), true, nil
+	}
+
+	res, err := e.olap.Execute(ctx, &drivers.Statement{
+		Query:    spec.CacheKeySql,
+		Priority: e.priority,
+	})
+	if err != nil {
+		return nil, false, err
+	}
+	defer res.Close()
+	var key any
+	if res.Next() {
+		if err := res.Scan(&key); err != nil {
+			return nil, false, err
+		}
+
+		key, err = jsonval.ToValue(key, res.Schema.Fields[0].Type)
+		if err != nil {
+			return nil, false, err
+		}
+	}
+	if res.Err() != nil {
+		return nil, false, err
+	}
+
+	keyBytes, err := json.Marshal(key)
+	if err != nil {
+		return nil, false, err
+	}
+	return keyBytes, true, nil
 }
 
 // ValidateQuery validates the provided query against the executor's metrics view.
@@ -83,10 +134,33 @@ func (e *Executor) ValidateQuery(qry *Query) error {
 	panic("not implemented")
 }
 
-// Watermark returns the current watermark of the metrics view.
-// If the watermark resolves to null, it defaults to the current time.
-func (e *Executor) Watermark(ctx context.Context) (time.Time, error) {
-	return e.loadWatermark(ctx, nil)
+// Timestamps queries min, max and watermark for the metrics view
+func (e *Executor) Timestamps(ctx context.Context) (TimestampsResult, error) {
+	if !e.timestamps.Min.IsZero() {
+		return e.timestamps, nil
+	}
+
+	var err error
+	switch e.olap.Dialect() {
+	case drivers.DialectDuckDB, drivers.DialectClickHouse, drivers.DialectPinot:
+		e.timestamps, err = e.resolveDuckDBClickHouseAndPinot(ctx)
+	case drivers.DialectDruid:
+		e.timestamps, err = e.resolveDruid(ctx)
+	default:
+		return TimestampsResult{}, fmt.Errorf("not available for dialect '%s'", e.olap.Dialect())
+	}
+	if err != nil {
+		return TimestampsResult{}, err
+	}
+
+	e.timestamps.Now = time.Now()
+	return e.timestamps, nil
+}
+
+// BindQuery allows to set min, max and watermark from a cache.
+func (e *Executor) BindQuery(ctx context.Context, qry *Query, timestamps TimestampsResult) error {
+	e.timestamps = timestamps
+	return e.rewriteQueryTimeRanges(ctx, qry, nil)
 }
 
 // Schema returns a schema for the metrics view's dimensions and measures.
@@ -170,6 +244,9 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		return nil, runtime.ErrForbidden
 	}
 
+	// preserve the original limit, required in 2 phase comparison
+	ogLimit := qry.Limit
+
 	rowsCap, err := e.rewriteQueryEnforceCaps(qry)
 	if err != nil {
 		return nil, err
@@ -197,7 +274,12 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		return nil, err
 	}
 
-	e.rewriteApproxComparisons(ast)
+	ok, err := e.rewriteTwoPhaseComparisons(ctx, qry, ast, ogLimit)
+	if err != nil {
+		return nil, err
+	} // TODO if !ok then can log a warning that two phase comparison is not possible with a reason
+
+	e.rewriteApproxComparisons(ast, ok)
 
 	if err := e.rewriteLimitsIntoSubqueries(ast); err != nil {
 		return nil, err
@@ -308,7 +390,7 @@ func (e *Executor) Export(ctx context.Context, qry *Query, executionTime *time.T
 		return "", err
 	}
 
-	e.rewriteApproxComparisons(ast)
+	e.rewriteApproxComparisons(ast, false)
 
 	if err := e.rewriteLimitsIntoSubqueries(ast); err != nil {
 		return "", err

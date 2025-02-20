@@ -41,6 +41,7 @@ const (
 	AdminService_TriggerReconcile_FullMethodName                      = "/rill.admin.v1.AdminService/TriggerReconcile"
 	AdminService_TriggerRefreshSources_FullMethodName                 = "/rill.admin.v1.AdminService/TriggerRefreshSources"
 	AdminService_TriggerRedeploy_FullMethodName                       = "/rill.admin.v1.AdminService/TriggerRedeploy"
+	AdminService_Provision_FullMethodName                             = "/rill.admin.v1.AdminService/Provision"
 	AdminService_ListOrganizationMemberUsers_FullMethodName           = "/rill.admin.v1.AdminService/ListOrganizationMemberUsers"
 	AdminService_ListOrganizationInvites_FullMethodName               = "/rill.admin.v1.AdminService/ListOrganizationInvites"
 	AdminService_AddOrganizationMemberUser_FullMethodName             = "/rill.admin.v1.AdminService/AddOrganizationMemberUser"
@@ -69,6 +70,7 @@ const (
 	AdminService_ListUsergroupMemberUsers_FullMethodName              = "/rill.admin.v1.AdminService/ListUsergroupMemberUsers"
 	AdminService_RemoveUsergroupMemberUser_FullMethodName             = "/rill.admin.v1.AdminService/RemoveUsergroupMemberUser"
 	AdminService_GetCurrentUser_FullMethodName                        = "/rill.admin.v1.AdminService/GetCurrentUser"
+	AdminService_DeleteUser_FullMethodName                            = "/rill.admin.v1.AdminService/DeleteUser"
 	AdminService_IssueRepresentativeAuthToken_FullMethodName          = "/rill.admin.v1.AdminService/IssueRepresentativeAuthToken"
 	AdminService_RevokeCurrentAuthToken_FullMethodName                = "/rill.admin.v1.AdminService/RevokeCurrentAuthToken"
 	AdminService_GetGithubRepoStatus_FullMethodName                   = "/rill.admin.v1.AdminService/GetGithubRepoStatus"
@@ -202,6 +204,9 @@ type AdminServiceClient interface {
 	// TriggerRedeploy is similar to RedeployProject.
 	// DEPRECATED: Use RedeployProject instead.
 	TriggerRedeploy(ctx context.Context, in *TriggerRedeployRequest, opts ...grpc.CallOption) (*TriggerRedeployResponse, error)
+	// Provision provisions a new resource for a deployment.
+	// If an existing resource matches the request, it will be returned without provisioning a new resource.
+	Provision(ctx context.Context, in *ProvisionRequest, opts ...grpc.CallOption) (*ProvisionResponse, error)
 	// ListOrganizationMemberUsers lists all the org members
 	ListOrganizationMemberUsers(ctx context.Context, in *ListOrganizationMemberUsersRequest, opts ...grpc.CallOption) (*ListOrganizationMemberUsersResponse, error)
 	// ListOrganizationInvites lists all the org invites
@@ -258,6 +263,8 @@ type AdminServiceClient interface {
 	RemoveUsergroupMemberUser(ctx context.Context, in *RemoveUsergroupMemberUserRequest, opts ...grpc.CallOption) (*RemoveUsergroupMemberUserResponse, error)
 	// GetCurrentUser returns the currently authenticated user (if any)
 	GetCurrentUser(ctx context.Context, in *GetCurrentUserRequest, opts ...grpc.CallOption) (*GetCurrentUserResponse, error)
+	// DeleteUser deletes the user from the organization by email
+	DeleteUser(ctx context.Context, in *DeleteUserRequest, opts ...grpc.CallOption) (*DeleteUserResponse, error)
 	// IssueRepresentativeAuthToken returns the temporary token for given email
 	IssueRepresentativeAuthToken(ctx context.Context, in *IssueRepresentativeAuthTokenRequest, opts ...grpc.CallOption) (*IssueRepresentativeAuthTokenResponse, error)
 	// RevokeCurrentAuthToken revoke the current auth token
@@ -641,6 +648,16 @@ func (c *adminServiceClient) TriggerRedeploy(ctx context.Context, in *TriggerRed
 	return out, nil
 }
 
+func (c *adminServiceClient) Provision(ctx context.Context, in *ProvisionRequest, opts ...grpc.CallOption) (*ProvisionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ProvisionResponse)
+	err := c.cc.Invoke(ctx, AdminService_Provision_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) ListOrganizationMemberUsers(ctx context.Context, in *ListOrganizationMemberUsersRequest, opts ...grpc.CallOption) (*ListOrganizationMemberUsersResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListOrganizationMemberUsersResponse)
@@ -915,6 +932,16 @@ func (c *adminServiceClient) GetCurrentUser(ctx context.Context, in *GetCurrentU
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetCurrentUserResponse)
 	err := c.cc.Invoke(ctx, AdminService_GetCurrentUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) DeleteUser(ctx context.Context, in *DeleteUserRequest, opts ...grpc.CallOption) (*DeleteUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteUserResponse)
+	err := c.cc.Invoke(ctx, AdminService_DeleteUser_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1736,6 +1763,9 @@ type AdminServiceServer interface {
 	// TriggerRedeploy is similar to RedeployProject.
 	// DEPRECATED: Use RedeployProject instead.
 	TriggerRedeploy(context.Context, *TriggerRedeployRequest) (*TriggerRedeployResponse, error)
+	// Provision provisions a new resource for a deployment.
+	// If an existing resource matches the request, it will be returned without provisioning a new resource.
+	Provision(context.Context, *ProvisionRequest) (*ProvisionResponse, error)
 	// ListOrganizationMemberUsers lists all the org members
 	ListOrganizationMemberUsers(context.Context, *ListOrganizationMemberUsersRequest) (*ListOrganizationMemberUsersResponse, error)
 	// ListOrganizationInvites lists all the org invites
@@ -1792,6 +1822,8 @@ type AdminServiceServer interface {
 	RemoveUsergroupMemberUser(context.Context, *RemoveUsergroupMemberUserRequest) (*RemoveUsergroupMemberUserResponse, error)
 	// GetCurrentUser returns the currently authenticated user (if any)
 	GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error)
+	// DeleteUser deletes the user from the organization by email
+	DeleteUser(context.Context, *DeleteUserRequest) (*DeleteUserResponse, error)
 	// IssueRepresentativeAuthToken returns the temporary token for given email
 	IssueRepresentativeAuthToken(context.Context, *IssueRepresentativeAuthTokenRequest) (*IssueRepresentativeAuthTokenResponse, error)
 	// RevokeCurrentAuthToken revoke the current auth token
@@ -2021,6 +2053,9 @@ func (UnimplementedAdminServiceServer) TriggerRefreshSources(context.Context, *T
 func (UnimplementedAdminServiceServer) TriggerRedeploy(context.Context, *TriggerRedeployRequest) (*TriggerRedeployResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TriggerRedeploy not implemented")
 }
+func (UnimplementedAdminServiceServer) Provision(context.Context, *ProvisionRequest) (*ProvisionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Provision not implemented")
+}
 func (UnimplementedAdminServiceServer) ListOrganizationMemberUsers(context.Context, *ListOrganizationMemberUsersRequest) (*ListOrganizationMemberUsersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListOrganizationMemberUsers not implemented")
 }
@@ -2104,6 +2139,9 @@ func (UnimplementedAdminServiceServer) RemoveUsergroupMemberUser(context.Context
 }
 func (UnimplementedAdminServiceServer) GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetCurrentUser not implemented")
+}
+func (UnimplementedAdminServiceServer) DeleteUser(context.Context, *DeleteUserRequest) (*DeleteUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteUser not implemented")
 }
 func (UnimplementedAdminServiceServer) IssueRepresentativeAuthToken(context.Context, *IssueRepresentativeAuthTokenRequest) (*IssueRepresentativeAuthTokenResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method IssueRepresentativeAuthToken not implemented")
@@ -2750,6 +2788,24 @@ func _AdminService_TriggerRedeploy_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_Provision_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProvisionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).Provision(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_Provision_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).Provision(ctx, req.(*ProvisionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_ListOrganizationMemberUsers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListOrganizationMemberUsersRequest)
 	if err := dec(in); err != nil {
@@ -3250,6 +3306,24 @@ func _AdminService_GetCurrentUser_Handler(srv interface{}, ctx context.Context, 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).GetCurrentUser(ctx, req.(*GetCurrentUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_DeleteUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).DeleteUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_DeleteUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).DeleteUser(ctx, req.(*DeleteUserRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -4718,6 +4792,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_TriggerRedeploy_Handler,
 		},
 		{
+			MethodName: "Provision",
+			Handler:    _AdminService_Provision_Handler,
+		},
+		{
 			MethodName: "ListOrganizationMemberUsers",
 			Handler:    _AdminService_ListOrganizationMemberUsers_Handler,
 		},
@@ -4828,6 +4906,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetCurrentUser",
 			Handler:    _AdminService_GetCurrentUser_Handler,
+		},
+		{
+			MethodName: "DeleteUser",
+			Handler:    _AdminService_DeleteUser_Handler,
 		},
 		{
 			MethodName: "IssueRepresentativeAuthToken",

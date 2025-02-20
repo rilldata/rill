@@ -34,9 +34,11 @@ class FeatureFlags {
   ai = new FeatureFlag("user", !import.meta.env.VITE_PLAYWRIGHT_TEST);
   exports = new FeatureFlag("user", true);
   cloudDataViewer = new FeatureFlag("user", false);
-  customDashboards = new FeatureFlag("user", false);
+  canvasDashboards = new FeatureFlag("user", false);
   dimensionSearch = new FeatureFlag("user", false);
   clickhouseModeling = new FeatureFlag("user", false);
+  twoTieredNavigation = new FeatureFlag("user", false);
+  hidePublicUrl = new FeatureFlag("user", false);
 
   constructor() {
     const updateFlags = debounce((userFlags: V1InstanceFeatureFlags) => {

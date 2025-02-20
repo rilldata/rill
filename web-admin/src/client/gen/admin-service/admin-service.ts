@@ -18,6 +18,8 @@ import type {
   RpcStatus,
   V1GetBillingProjectCredentialsRequest,
   V1ListPublicBillingPlansResponse,
+  V1ProvisionResponse,
+  AdminServiceProvisionBody,
   V1TriggerReconcileResponse,
   AdminServiceTriggerReconcileBodyBody,
   V1TriggerRefreshSourcesResponse,
@@ -82,6 +84,7 @@ import type {
   V1RemoveProjectMemberUserResponse,
   V1SetProjectMemberUserRoleResponse,
   V1RedeployProjectResponse,
+  AdminServiceRedeployProjectParams,
   V1CreateReportResponse,
   AdminServiceCreateReportBodyBody,
   V1GenerateReportYAMLResponse,
@@ -192,6 +195,7 @@ import type {
   V1IssueRepresentativeAuthTokenRequest,
   V1GetUserResponse,
   AdminServiceGetUserParams,
+  V1DeleteUserResponse,
   V1ListBookmarksResponse,
   AdminServiceListBookmarksParams,
   V1CreateBookmarkResponse,
@@ -333,6 +337,57 @@ export const createAdminServiceListPublicBillingPlans = <
   return query;
 };
 
+/**
+ * @summary Provision provisions a new resource for a deployment.
+If an existing resource matches the request, it will be returned without provisioning a new resource.
+ */
+export const adminServiceProvision = (
+  deploymentId: string,
+  adminServiceProvisionBody: AdminServiceProvisionBody,
+) => {
+  return httpClient<V1ProvisionResponse>({
+    url: `/v1/deployments/${deploymentId}/provision`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceProvisionBody,
+  });
+};
+
+export type AdminServiceProvisionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceProvision>>
+>;
+export type AdminServiceProvisionMutationBody = AdminServiceProvisionBody;
+export type AdminServiceProvisionMutationError = RpcStatus;
+
+export const createAdminServiceProvision = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceProvision>>,
+    TError,
+    { deploymentId: string; data: AdminServiceProvisionBody },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceProvision>>,
+    { deploymentId: string; data: AdminServiceProvisionBody }
+  > = (props) => {
+    const { deploymentId, data } = props ?? {};
+
+    return adminServiceProvision(deploymentId, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceProvision>>,
+    TError,
+    { deploymentId: string; data: AdminServiceProvisionBody },
+    TContext
+  >(mutationFn, mutationOptions);
+};
 /**
  * @summary TriggerReconcile triggers reconcile for the project's prod deployment.
 DEPRECATED: Clients should call CreateTrigger directly on the deployed runtime instead.
@@ -2875,10 +2930,12 @@ This RPC can be used to redeploy a project that has been hibernated.
 export const adminServiceRedeployProject = (
   organization: string,
   project: string,
+  params?: AdminServiceRedeployProjectParams,
 ) => {
   return httpClient<V1RedeployProjectResponse>({
     url: `/v1/organizations/${organization}/projects/${project}/redeploy`,
     method: "post",
+    params,
   });
 };
 
@@ -2895,7 +2952,11 @@ export const createAdminServiceRedeployProject = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof adminServiceRedeployProject>>,
     TError,
-    { organization: string; project: string },
+    {
+      organization: string;
+      project: string;
+      params?: AdminServiceRedeployProjectParams;
+    },
     TContext
   >;
 }) => {
@@ -2903,17 +2964,25 @@ export const createAdminServiceRedeployProject = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof adminServiceRedeployProject>>,
-    { organization: string; project: string }
+    {
+      organization: string;
+      project: string;
+      params?: AdminServiceRedeployProjectParams;
+    }
   > = (props) => {
-    const { organization, project } = props ?? {};
+    const { organization, project, params } = props ?? {};
 
-    return adminServiceRedeployProject(organization, project);
+    return adminServiceRedeployProject(organization, project, params);
   };
 
   return createMutation<
     Awaited<ReturnType<typeof adminServiceRedeployProject>>,
     TError,
-    { organization: string; project: string },
+    {
+      organization: string;
+      project: string;
+      params?: AdminServiceRedeployProjectParams;
+    },
     TContext
   >(mutationFn, mutationOptions);
 };
@@ -7308,6 +7377,51 @@ export const createAdminServiceGetUser = <
   return query;
 };
 
+/**
+ * @summary DeleteUser deletes the user from the organization by email
+ */
+export const adminServiceDeleteUser = (email: string) => {
+  return httpClient<V1DeleteUserResponse>({
+    url: `/v1/users/${email}`,
+    method: "delete",
+  });
+};
+
+export type AdminServiceDeleteUserMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceDeleteUser>>
+>;
+
+export type AdminServiceDeleteUserMutationError = RpcStatus;
+
+export const createAdminServiceDeleteUser = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceDeleteUser>>,
+    TError,
+    { email: string },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceDeleteUser>>,
+    { email: string }
+  > = (props) => {
+    const { email } = props ?? {};
+
+    return adminServiceDeleteUser(email);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceDeleteUser>>,
+    TError,
+    { email: string },
+    TContext
+  >(mutationFn, mutationOptions);
+};
 /**
  * @summary ListBookmarks lists all the bookmarks for the user and global ones for dashboard
  */

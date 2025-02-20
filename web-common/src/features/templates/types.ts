@@ -3,35 +3,6 @@ interface DataProperties {
   filter?: string;
 }
 
-export interface ChartProperties {
-  x: string;
-  y: string;
-  xLabel?: string;
-  yLabel?: string;
-  color?: string;
-}
-
-interface LineChart {
-  line_chart: ChartProperties;
-}
-
-interface BarChart {
-  bar_chart: ChartProperties;
-}
-
-interface StackedBarChart {
-  stacked_bar_chart: ChartProperties;
-}
-
-export interface KPIProperties extends DataProperties {
-  measure: string;
-  time_range: string;
-  comparison_range?: string;
-}
-export interface KPITemplateT {
-  kpi: KPIProperties;
-}
-
 export interface TableProperties extends DataProperties {
   time_range: string;
   measures: string[];
@@ -83,11 +54,7 @@ export interface ImageTemplateT {
   image: ImageProperties;
 }
 
-type ChartTemplates = LineChart | BarChart | StackedBarChart;
-
 export type TemplateSpec =
-  | ChartTemplates
-  | KPITemplateT
   | TableTemplateT
   | MarkdownTemplateT
   | ImageTemplateT

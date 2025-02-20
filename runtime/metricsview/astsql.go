@@ -90,8 +90,9 @@ func (b *sqlBuilder) writeSelectWithDisplayNames(n *SelectNode) error {
 }
 
 func (b *sqlBuilder) writeSelect(n *SelectNode) error {
-	if n.InlineSelect != "" {
-		b.out.WriteString(n.InlineSelect)
+	if n.RawSelect != nil {
+		b.out.WriteString(n.RawSelect.Expr)
+		b.args = append(b.args, n.RawSelect.Args...)
 		return nil
 	}
 

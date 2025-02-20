@@ -4,7 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"strings"
 
+	"github.com/rilldata/rill/runtime/pkg/env"
 	"gopkg.in/yaml.v3"
 )
 
@@ -39,10 +42,16 @@ type VariableDef struct {
 
 // rillYAML is the raw YAML structure of rill.yaml
 type rillYAML struct {
+	// Compiler is the parser version to use. It is not consumed here because at this point a parser has already been chosen.
+	Compiler string `yaml:"compiler"`
+	// RillVersion is deprecated and not used anymore.
+	RillVersion any `yaml:"rill_version"`
 	// Title of the project
 	DisplayName string `yaml:"display_name"`
 	// Title of the project
 	Title string `yaml:"title"` // Deprecated: use display_name
+	// Title of the project
+	Name string `yaml:"name"` // Deprecated: use display_name
 	// Description of the project
 	Description string `yaml:"description"`
 	// The project's default OLAP connector to use (can be overridden in the individual resources)
@@ -81,6 +90,18 @@ type rillYAML struct {
 	Features yaml.Node `yaml:"features"`
 	// Paths to expose over HTTP (defaults to ./public)
 	PublicPaths []string `yaml:"public_paths"`
+	// Paths to ignore when watching for changes.
+	// This is ignored in this parser because it's consumed directly by the repo driver.
+	IgnorePaths []string `yaml:"ignore_paths"`
+	// A list of mock users to test against dashboard security policies.
+	// This is ignored in this parser because it's consumed directly by the local application.
+	MockUsers []struct {
+		Email      string         `yaml:"email"`
+		Name       string         `yaml:"name"`
+		Admin      bool           `yaml:"admin"`
+		Groups     []string       `yaml:"groups"`
+		Attributes map[string]any `yaml:",inline"`
+	} `yaml:"mock_users"`
 }
 
 // parseRillYAML parses rill.yaml
@@ -91,7 +112,16 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 	}
 
 	tmp := &rillYAML{}
+
 	if err := yaml.Unmarshal([]byte(data), tmp); err != nil {
+		return newYAMLError(err)
+	}
+
+	dec := yaml.NewDecoder(strings.NewReader(data))
+	dec.KnownFields(true)
+
+	err = dec.Decode(tmp)
+	if err != nil && !errors.Is(err, io.EOF) {
 		return newYAMLError(err)
 	}
 
@@ -138,15 +168,24 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 	if tmp.Title != "" && tmp.DisplayName == "" {
 		tmp.DisplayName = tmp.Title
 	}
+	if tmp.Name != "" && tmp.DisplayName == "" {
+		tmp.DisplayName = tmp.Name
+	}
 
 	// Parse environment variables from the "env:" (current) and "vars:" (deprecated) keys.
 	vars := make(map[string]string)
 	for k, v := range tmp.Vars { // Backwards compatibility
+		if err := env.ValidateName(k); err != nil {
+			return err
+		}
 		vars[k] = v
 	}
 
 	for k, v := range tmp.Env { // nolint: gocritic // Using a pointer changes parser behavior
 		if v.Kind == yaml.ScalarNode {
+			if err := env.ValidateName(k); err != nil {
+				return err
+			}
 			vars[k] = v.Value
 		}
 	}

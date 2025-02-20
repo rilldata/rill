@@ -53,7 +53,7 @@ export function getPathForNewResourceFile(
   return `${folderName}/${newName}${extension}`;
 }
 
-const ResourceKindMap: Record<
+export const ResourceKindMap: Record<
   UserFacingResourceKinds,
   {
     folderName: string;
@@ -245,22 +245,14 @@ vega_lite: |
     }
   }`;
     case ResourceKind.Canvas:
-      return `type: canvas
-title: "Canvas Dashboard"
-columns: 24
-gap: 2
+      return `# Explore YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/canvas-dashboards
 
-items:
-  - component:
-      markdown:
-        content: "First Component"
-        css:
-          font-size: "40px"
-          background-color: "#fff"
-    width: 4
-    height: 3
-    x: 2
-    y: 1
+type: canvas
+title: "Canvas Dashboard"
+defaults:
+  time_range: PT24H
+  comparison_mode: time
 `;
     case ResourceKind.Theme:
       return `# Theme YAML

@@ -109,7 +109,7 @@
           </ContextButton>
         </DropdownMenu.Trigger>
         <DropdownMenu.Content
-          class="border-none bg-gray-800 text-white min-w-60"
+          class="min-w-60"
           align="start"
           side="right"
           sideOffset={16}

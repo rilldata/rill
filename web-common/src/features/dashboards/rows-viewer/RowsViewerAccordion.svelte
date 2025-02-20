@@ -1,6 +1,6 @@
 <script lang="ts">
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import { usePivotDataStore } from "@rilldata/web-common/features/dashboards/pivot/pivot-data-store";
+  import { usePivotForExplore } from "@rilldata/web-common/features/dashboards/pivot/pivot-data-store";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -9,16 +9,16 @@
   import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
   import {
     V1ExportFormat,
-    type V1Expression,
-    type V1MetricsViewAggregationResponseDataItem,
     createQueryServiceExport,
     createQueryServiceMetricsViewAggregation,
+    type V1Expression,
+    type V1MetricsViewAggregationResponseDataItem,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { useExploreStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
+  import { useExploreState } from "web-common/src/features/dashboards/stores/dashboard-stores";
+  import ExportMenu from "../../exports/ExportMenu.svelte";
   import { featureFlags } from "../../feature-flags";
   import RowsViewer from "./RowsViewer.svelte";
-  import ExportMenu from "../../exports/ExportMenu.svelte";
   import exportMetrics from "./export-metrics";
 
   const exportDash = createQueryServiceExport();
@@ -44,9 +44,11 @@
 
   const stateManagers = getStateManagers();
 
-  $: exploreStore = useExploreStore(exploreName);
-  $: pivotDataStore = usePivotDataStore(stateManagers);
-  $: showPivot = $exploreStore.pivot.active;
+  $: ({ instanceId } = $runtime);
+
+  $: exploreState = useExploreState(exploreName);
+  $: pivotDataStore = usePivotForExplore(stateManagers);
+  $: showPivot = $exploreState.pivot.active;
   $: activeCellFilters = $pivotDataStore.activeCellFilters;
 
   let filters: V1Expression | undefined;
@@ -68,12 +70,12 @@
     if (maybeEnd) {
       timeRange.end = new Date(new Date(maybeEnd).valueOf() + 1).toISOString();
     }
-    filters = sanitiseExpression($exploreStore.whereFilter, undefined);
+    filters = sanitiseExpression($exploreState.whereFilter, undefined);
     label = DEFAULT_LABEL;
   }
 
   $: filteredTotalsQuery = createQueryServiceMetricsViewAggregation(
-    $runtime.instanceId,
+    instanceId,
     metricsViewName,
     {
       measures: [{ name: "count", builtinMeasure: "BUILTIN_MEASURE_COUNT" }],
@@ -92,13 +94,13 @@
             where: filters,
           },
         ],
-        enabled: $timeControlsStore.ready && !!$exploreStore?.whereFilter,
+        enabled: $timeControlsStore.ready && !!$exploreState?.whereFilter,
       },
     },
   );
 
   $: totalsQuery = createQueryServiceMetricsViewAggregation(
-    $runtime.instanceId,
+    instanceId,
     metricsViewName,
     {
       measures: [{ name: "count", builtinMeasure: "BUILTIN_MEASURE_COUNT" }],

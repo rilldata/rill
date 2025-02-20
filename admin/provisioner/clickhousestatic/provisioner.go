@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"os"
 	"strings"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
@@ -24,6 +25,9 @@ type Spec struct {
 	// DSN with admin permissions for a Clickhouse service.
 	// This will be used to create a new (virtual) database and access-restricted user for each provisioned resource.
 	DSN string `json:"dsn"`
+	// Path to a file that we should load the DSN from.
+	// This is an alternative to specifying the DSN directly, which can be useful for secrets management.
+	DSNPath string `json:"dsn_path"`
 }
 
 // Provisioner provisions Clickhouse resources using a static, multi-tenant Clickhouse service.
@@ -43,6 +47,14 @@ func New(specJSON []byte, _ database.DB, logger *zap.Logger) (provisioner.Provis
 		return nil, fmt.Errorf("failed to parse provisioner spec: %w", err)
 	}
 
+	if spec.DSNPath != "" {
+		dsn, err := os.ReadFile(spec.DSNPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read DSN file: %w", err)
+		}
+		spec.DSN = strings.TrimSpace(string(dsn))
+	}
+
 	opts, err := clickhouse.ParseDSN(spec.DSN)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse DSN: %w", err)
@@ -60,16 +72,15 @@ func (p *Provisioner) Type() string {
 	return "clickhouse-static"
 }
 
+func (p *Provisioner) Supports(rt provisioner.ResourceType) bool {
+	return rt == provisioner.ResourceTypeClickHouse
+}
+
 func (p *Provisioner) Close() error {
 	return p.ch.Close()
 }
 
 func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, opts *provisioner.ResourceOptions) (*provisioner.Resource, error) {
-	// Can only provision clickhouse resources
-	if r.Type != provisioner.ResourceTypeClickHouse {
-		return nil, provisioner.ErrResourceTypeNotSupported
-	}
-
 	// Parse the resource's config (in case it's an update/check)
 	cfg, err := provisioner.NewClickhouseConfig(r.Config)
 	if err != nil {
@@ -102,10 +113,18 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 		return nil, fmt.Errorf("failed to create clickhouse database: %w", err)
 	}
 
-	// Idempotently create the user
+	// Idempotently create the user.
 	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("CREATE USER IF NOT EXISTS %s IDENTIFIED WITH sha256_password BY ? DEFAULT DATABASE %s GRANTEES NONE", user, dbName), password)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create clickhouse user: %w", err)
+	}
+
+	// When creating the user, the password assignment is not idempotent (if there are two concurrent invocations, we don't know which password was used).
+	// By adding the password separately, we ensure all passwords will work.
+	// NOTE: Requires ClickHouse 24.9 or later.
+	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("ALTER USER %s ADD IDENTIFIED WITH sha256_password BY ?", user), password)
+	if err != nil {
+		return nil, fmt.Errorf("failed to add password for clickhouse user: %w", err)
 	}
 
 	// Grant privileges on the database to the user
@@ -128,6 +147,14 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 	`, dbName, user))
 	if err != nil {
 		return nil, fmt.Errorf("failed to grant privileges to clickhouse user: %w", err)
+	}
+
+	// Grant access to system.parts for reporting disk usage.
+	// NOTE 1: ClickHouse automatically adds row filters to restrict result to tables the user has access to.
+	// NOTE 2: We do not need to explicitly grant access to system.tables and system.columns because ClickHouse adds those implicitly.
+	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("GRANT SELECT ON system.parts TO %s", user))
+	if err != nil {
+		return nil, fmt.Errorf("failed to grant system privileges to clickhouse user: %w", err)
 	}
 
 	// Grant some additional global privileges to the user
@@ -224,7 +251,7 @@ func (p *Provisioner) pingWithResourceDSN(ctx context.Context, dsn string) error
 
 	_, err = db.ExecContext(ctx, "SELECT 1")
 	if err != nil {
-		return fmt.Errorf("failed to execute query on tenant: %w", err)
+		return fmt.Errorf("failed to execute query: %w", err)
 	}
 
 	return nil

@@ -2,13 +2,13 @@ package resolvers
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"strconv"
 	"time"
 
-	"github.com/mitchellh/hashstructure/v2"
+	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
@@ -20,11 +20,13 @@ func init() {
 }
 
 type metricsResolver struct {
-	runtime    *runtime.Runtime
-	instanceID string
-	executor   *metricsview.Executor
-	query      *metricsview.Query
-	args       *metricsResolverArgs
+	runtime        *runtime.Runtime
+	instanceID     string
+	executor       *metricsview.Executor
+	query          *metricsview.Query
+	args           *metricsResolverArgs
+	claims         *runtime.SecurityClaims
+	metricsHasTime bool
 }
 
 type metricsResolverArgs struct {
@@ -67,18 +69,19 @@ func newMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Res
 		return nil, runtime.ErrForbidden
 	}
 
-	executor, err := metricsview.NewExecutor(ctx, opts.Runtime, opts.InstanceID, mv, security, args.Priority)
+	executor, err := metricsview.NewExecutor(ctx, opts.Runtime, opts.InstanceID, mv, res.GetMetricsView().State.Streaming, security, args.Priority)
 	if err != nil {
 		return nil, err
 	}
-	defer executor.Close()
 
 	return &metricsResolver{
-		runtime:    opts.Runtime,
-		instanceID: opts.InstanceID,
-		executor:   executor,
-		query:      qry,
-		args:       args,
+		runtime:        opts.Runtime,
+		instanceID:     opts.InstanceID,
+		executor:       executor,
+		query:          qry,
+		args:           args,
+		claims:         opts.Claims,
+		metricsHasTime: mv.TimeDimension != "",
 	}, nil
 }
 
@@ -87,16 +90,25 @@ func (r *metricsResolver) Close() error {
 	return nil
 }
 
-func (r *metricsResolver) Cacheable() bool {
-	return r.executor.Cacheable(r.query)
-}
-
-func (r *metricsResolver) Key() string {
-	hash, err := hashstructure.Hash(r.query, hashstructure.FormatV2, nil)
+func (r *metricsResolver) CacheKey(ctx context.Context) ([]byte, bool, error) {
+	// get the underlying executor's cache key
+	key, ok, err := cacheKeyForMetricsView(ctx, r.runtime, r.instanceID, r.query.MetricsView, r.args.Priority)
 	if err != nil {
-		panic(err)
+		return nil, false, err
 	}
-	return strconv.FormatUint(hash, 16)
+	if !ok {
+		return nil, false, nil
+	}
+
+	queryMap := make(map[string]any)
+	err = mapstructure.Decode(r.query, &queryMap)
+	if err != nil {
+		return nil, false, err
+	}
+
+	queryMap["mv_cache_key"] = key
+	bytes, err := json.Marshal(queryMap)
+	return bytes, true, err
 }
 
 func (r *metricsResolver) Refs() []*runtimev1.ResourceName {
@@ -108,6 +120,18 @@ func (r *metricsResolver) Validate(ctx context.Context) error {
 }
 
 func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
+	if r.metricsHasTime {
+		tsRes, err := resolveTimestampResult(ctx, r.runtime, r.instanceID, r.query.MetricsView, r.claims, r.args.Priority)
+		if err != nil {
+			return nil, err
+		}
+
+		err = r.executor.BindQuery(ctx, r.query, tsRes)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	res, err := r.executor.Query(ctx, r.query, r.args.ExecutionTime)
 	if err != nil {
 		return nil, err

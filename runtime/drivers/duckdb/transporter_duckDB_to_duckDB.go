@@ -2,27 +2,32 @@ package duckdb
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
+	"maps"
+	"net"
 	"net/url"
-	"path/filepath"
 	"strings"
 
+	"github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"github.com/rilldata/rill/runtime/pkg/rduckdb"
 	"go.uber.org/zap"
 )
 
 type duckDBToDuckDB struct {
-	to     drivers.OLAPStore
+	from   drivers.Handle
+	to     *connection
 	logger *zap.Logger
 }
 
-func NewDuckDBToDuckDB(to drivers.OLAPStore, logger *zap.Logger) drivers.Transporter {
+func newDuckDBToDuckDB(from drivers.Handle, c *connection, logger *zap.Logger) drivers.Transporter {
 	return &duckDBToDuckDB{
-		to:     to,
+		from:   from,
+		to:     c,
 		logger: logger,
 	}
 }
@@ -30,7 +35,15 @@ func NewDuckDBToDuckDB(to drivers.OLAPStore, logger *zap.Logger) drivers.Transpo
 var _ drivers.Transporter = &duckDBToDuckDB{}
 
 func (t *duckDBToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[string]any, opts *drivers.TransferOptions) error {
-	srcCfg, err := parseDBSourceProperties(srcProps)
+	var props map[string]any
+	if t.from.Driver() != "duckdb" {
+		// ingest from external db which can also be configured separately via a connector
+		props = maps.Clone(t.from.Config())
+		maps.Copy(props, srcProps)
+	} else {
+		props = srcProps
+	}
+	srcCfg, err := parseDBSourceProperties(props)
 	if err != nil {
 		return err
 	}
@@ -43,7 +56,7 @@ func (t *duckDBToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[s
 	t.logger = t.logger.With(zap.String("source", sinkCfg.Table))
 
 	if srcCfg.Database != "" { // query to be run against an external DB
-		if !strings.HasPrefix(srcCfg.Database, "md:") {
+		if t.from.Driver() == "duckdb" {
 			srcCfg.Database, err = fileutil.ResolveLocalPath(srcCfg.Database, opts.RepoRoot, opts.AllowHostAccess)
 			if err != nil {
 				return err
@@ -112,67 +125,70 @@ func (t *duckDBToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[s
 		srcCfg.SQL = rewrittenSQL
 	}
 
-	return t.to.CreateTableAsSelect(ctx, sinkCfg.Table, false, srcCfg.SQL, nil)
+	return t.to.CreateTableAsSelect(ctx, sinkCfg.Table, srcCfg.SQL, &drivers.CreateTableOptions{})
 }
 
 func (t *duckDBToDuckDB) transferFromExternalDB(ctx context.Context, srcProps *dbSourceProperties, sinkProps *sinkProperties) error {
-	var cleanupFunc func()
-	err := t.to.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, _ *sql.Conn) error {
-		res, err := t.to.Execute(ctx, &drivers.Statement{Query: "SELECT current_database(),current_schema();"})
+	var initSQL []string
+	safeDBName := safeName(sinkProps.Table + "_external_db_")
+	safeTempTable := safeName(sinkProps.Table + "__temp__")
+	switch t.from.Driver() {
+	case "mysql":
+		dsn := rewriteMySQLDSN(srcProps.Database)
+		initSQL = append(initSQL, "INSTALL 'MYSQL'; LOAD 'MYSQL';", fmt.Sprintf("ATTACH %s AS %s (TYPE mysql, READ_ONLY)", safeSQLString(dsn), safeDBName))
+	case "postgres":
+		initSQL = append(initSQL, "INSTALL 'POSTGRES'; LOAD 'POSTGRES';", fmt.Sprintf("ATTACH %s AS %s (TYPE postgres, READ_ONLY)", safeSQLString(srcProps.Database), safeDBName))
+	case "duckdb":
+		initSQL = append(initSQL, fmt.Sprintf("ATTACH %s AS %s (READ_ONLY)", safeSQLString(srcProps.Database), safeDBName))
+	default:
+		return fmt.Errorf("internal error: unsupported external database: %s", t.from.Driver())
+	}
+	beforeCreateFn := func(ctx context.Context, conn *sqlx.Conn) error {
+		for _, sql := range initSQL {
+			_, err := conn.ExecContext(ctx, sql)
+			if err != nil {
+				return err
+			}
+		}
+
+		var localDB, localSchema string
+		err := conn.QueryRowxContext(ctx, "SELECT current_database(),current_schema();").Scan(&localDB, &localSchema)
 		if err != nil {
 			return err
 		}
 
-		var localDB, localSchema string
-		for res.Next() {
-			if err := res.Scan(&localDB, &localSchema); err != nil {
-				_ = res.Close()
-				return err
-			}
-		}
-		_ = res.Close()
-
-		// duckdb considers everything before first . as db name
-		// alternative solution can be to query `show databases()` before and after to identify db name
-		dbName, _, _ := strings.Cut(filepath.Base(srcProps.Database), ".")
-		if dbName == "main" {
-			return fmt.Errorf("`main` is a reserved db name")
-		}
-
-		if err = t.to.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("ATTACH %s AS %s", safeSQLString(srcProps.Database), safeSQLName(dbName))}); err != nil {
-			return fmt.Errorf("failed to attach db %q: %w", srcProps.Database, err)
-		}
-
-		cleanupFunc = func() {
-			// we don't want to run any detach db without `tx` lock
-			// tx=true will reopen duckdb handle(except in case of in-memory duckdb handle) which will detach the attached external db as well
-			err := t.to.WithConnection(context.Background(), 100, false, true, func(wrappedCtx, ensuredCtx context.Context, conn *sql.Conn) error {
-				return nil
-			})
-			if err != nil {
-				t.logger.Debug("failed to detach db", zap.Error(err))
-			}
-		}
-
-		if err := t.to.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("USE %s;", safeName(dbName))}); err != nil {
+		_, err = conn.ExecContext(ctx, fmt.Sprintf("USE %s;", safeDBName))
+		if err != nil {
 			return err
 		}
 
-		defer func() { // revert back to localdb
-			if err = t.to.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("USE %s.%s;", safeName(localDB), safeName(localSchema))}); err != nil {
-				t.logger.Error("failed to switch to local database", zap.Error(err))
-			}
-		}()
-
 		userQuery := strings.TrimSpace(srcProps.SQL)
 		userQuery, _ = strings.CutSuffix(userQuery, ";") // trim trailing semi colon
-		query := fmt.Sprintf("CREATE OR REPLACE TABLE %s.%s.%s AS (%s\n);", safeName(localDB), safeName(localSchema), safeName(sinkProps.Table), userQuery)
-		return t.to.Exec(ctx, &drivers.Statement{Query: query})
-	})
-	if cleanupFunc != nil {
-		cleanupFunc()
+		query := fmt.Sprintf("CREATE OR REPLACE TABLE %s.%s.%s AS (%s\n);", safeName(localDB), safeName(localSchema), safeTempTable, userQuery)
+		_, err = conn.ExecContext(ctx, query)
+		// first revert back to localdb
+		if err != nil {
+			return err
+		}
+		// revert to localdb and schema before returning
+		_, err = conn.ExecContext(ctx, fmt.Sprintf("USE %s.%s;", safeName(localDB), safeName(localSchema)))
+		return err
 	}
-	return err
+	afterCreateFn := func(ctx context.Context, conn *sqlx.Conn) error {
+		_, err := conn.ExecContext(ctx, fmt.Sprintf("DROP TABLE IF EXISTS %s", safeTempTable))
+		return err
+	}
+	db, release, err := t.to.acquireDB()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = release()
+	}()
+	return db.CreateTableAsSelect(ctx, sinkProps.Table, fmt.Sprintf("SELECT * FROM %s", safeTempTable), &rduckdb.CreateTableOptions{
+		BeforeCreateFn: beforeCreateFn,
+		AfterCreateFn:  afterCreateFn,
+	})
 }
 
 // rewriteLocalPaths rewrites a DuckDB SQL statement such that relative paths become absolute paths relative to the basePath,
@@ -204,4 +220,45 @@ func rewriteLocalPaths(ast *duckdbsql.AST, basePath string, allowHostAccess bool
 	}
 
 	return ast.Format()
+}
+
+// rewriteMySQLDSN rewrites a MySQL DSN to a format that DuckDB expects.
+// DuckDB does not support the URI based DSN format yet. It expects the DSN to be in the form of key=value pairs.
+// This function parses the MySQL URI based DSN and converts it to the key=value format. It only converts the common parameters.
+// For more advanced parameters like SSL configs, the user should manually convert the DSN to the key=value format.
+// If there is an error parsing the DSN, it returns the DSN as is.
+func rewriteMySQLDSN(dsn string) string {
+	cfg, err := mysql.ParseDSN(dsn)
+	if err != nil {
+		// If we can't parse the DSN, just return it as is. May be it is already in the form duckdb expects.
+		return dsn
+	}
+
+	var sb strings.Builder
+
+	if cfg.User != "" {
+		sb.WriteString(fmt.Sprintf("user=%s ", cfg.User))
+	}
+	if cfg.Passwd != "" {
+		sb.WriteString(fmt.Sprintf("password=%s ", cfg.Passwd))
+	}
+	if cfg.DBName != "" {
+		sb.WriteString(fmt.Sprintf("database=%s ", cfg.DBName))
+	}
+	switch cfg.Net {
+	case "unix":
+		sb.WriteString(fmt.Sprintf("socket=%s ", cfg.Addr))
+	case "tcp", "tcp6":
+		host, port, err := net.SplitHostPort(cfg.Addr)
+		if err != nil {
+			return dsn
+		}
+		sb.WriteString(fmt.Sprintf("host=%s ", host))
+		if port != "" {
+			sb.WriteString(fmt.Sprintf("port=%s ", port))
+		}
+	default:
+		return dsn
+	}
+	return sb.String()
 }

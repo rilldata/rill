@@ -18,7 +18,9 @@ export function getComparisonTransform(
 ): RelativeTimeTransformation {
   if (
     comparison === TimeComparisonOption.CONTIGUOUS ||
-    comparison === TimeComparisonOption.CUSTOM
+    comparison === TimeComparisonOption.CUSTOM ||
+    // @ts-expect-error Hack for `comparison` not being the correct type
+    comparison === TimeRangePreset.CUSTOM
   ) {
     /** for custom & otherwise-contiguous comparisons,
      * we will calculate the width of the time range
@@ -107,7 +109,7 @@ export function isRangeLargerThanDuration(
   end: Date,
   duration: string,
 ) {
-  if (duration === TimeComparisonOption.CONTIGUOUS) {
+  if (duration === TimeComparisonOption.CONTIGUOUS.toString()) {
     return false;
   }
 

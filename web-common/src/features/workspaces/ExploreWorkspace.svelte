@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
@@ -9,18 +10,18 @@
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import ExploreEditor from "@rilldata/web-common/features/explores/ExploreEditor.svelte";
+  import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
+  import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import PreviewButton from "../explores/PreviewButton.svelte";
-  import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
-  import ViewSelector from "@rilldata/web-common/features/visual-editing/ViewSelector.svelte";
-  import VisualExploreEditing from "./VisualExploreEditing.svelte";
   import DashboardWithProviders from "../dashboards/workspace/DashboardWithProviders.svelte";
-  import MetricsEditorContainer from "../metrics-views/editor/MetricsEditorContainer.svelte";
+  import Spinner from "../entity-management/Spinner.svelte";
+  import PreviewButton from "../explores/PreviewButton.svelte";
   import { mapParseErrorsToLines } from "../metrics-views/errors";
-  import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
+  import VisualExploreEditing from "./VisualExploreEditing.svelte";
 
   export let fileArtifact: FileArtifact;
 
@@ -31,33 +32,31 @@
     path: filePath,
     resourceName,
     fileName,
-    getResource,
     getAllErrors,
     remoteContent,
   } = fileArtifact);
 
   $: exploreName = $resourceName?.name ?? getNameFromFile(filePath);
 
+  $: query = createRuntimeServiceGetExplore(instanceId, { name: exploreName });
+
+  $: ({ data: resources } = $query);
+
   $: initLocalUserPreferenceStore(exploreName);
 
-  $: resourceQuery = getResource(queryClient, instanceId);
-
-  $: ({ data } = $resourceQuery);
+  $: exploreResource = resources?.explore;
+  $: metricsViewResource = resources?.metricsView;
 
   $: allErrorsQuery = getAllErrors(queryClient, instanceId);
   $: allErrors = $allErrorsQuery;
-  $: resourceIsReconciling = resourceIsLoading(data);
+  $: resourceIsReconciling = resourceIsLoading(exploreResource);
 
   $: workspace = workspaces.get(filePath);
   $: selectedViewStore = workspace.view;
 
   $: selectedView = $selectedViewStore ?? "code";
 
-  $: exploreResource = data?.explore;
-
-  $: metricsViewName = data?.meta?.refs?.find(
-    (ref) => ref.kind === ResourceKind.MetricsView,
-  )?.name;
+  $: metricsViewName = metricsViewResource?.meta?.name?.name;
 
   $: lineBasedRuntimeErrors = mapParseErrorsToLines(
     allErrors,
@@ -79,11 +78,13 @@
 
 <WorkspaceContainer>
   <WorkspaceHeader
+    resource={exploreResource}
     hasUnsavedChanges={$hasUnsavedChanges}
     onTitleChange={onChangeCallback}
     slot="header"
     titleInput={fileName}
     {filePath}
+    codeToggle
     resourceKind={ResourceKind.Explore}
   >
     <div class="flex gap-x-2" slot="cta">
@@ -92,12 +93,10 @@
         disabled={allErrors.length > 0 || resourceIsReconciling}
         reconciling={resourceIsReconciling}
       />
-
-      <ViewSelector allowSplit={false} bind:selectedView={$selectedViewStore} />
     </div>
   </WorkspaceHeader>
 
-  <MetricsEditorContainer
+  <WorkspaceEditorContainer
     slot="body"
     error={mainError}
     showError={!!$remoteContent && selectedView === "code"}
@@ -117,15 +116,18 @@
           header="Unable to load dashboard preview"
           statusCode={404}
         />
-      {:else if metricsViewName && exploreName}
+      {:else if exploreName && metricsViewName}
         <DashboardWithProviders {exploreName} {metricsViewName} />
+      {:else}
+        <Spinner status={1} size="48px" />
       {/if}
     {/if}
-  </MetricsEditorContainer>
+  </WorkspaceEditorContainer>
 
   <VisualExploreEditing
+    autoSave={selectedView === "viz" || $autoSave}
     slot="inspector"
-    {exploreResource}
+    exploreResource={exploreResource?.explore}
     {metricsViewName}
     {exploreName}
     {fileArtifact}

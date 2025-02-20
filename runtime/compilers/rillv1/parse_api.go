@@ -10,8 +10,10 @@ import (
 
 // APIYAML is the raw structure of a API resource defined in YAML (does not include common fields)
 type APIYAML struct {
-	DataYAML `yaml:",inline" mapstructure:",squash"`
-	OpenAPI  *OpenAPIYAML `yaml:"openapi"`
+	DataYAML           `yaml:",inline" mapstructure:",squash"`
+	OpenAPI            *OpenAPIYAML        `yaml:"openapi"`
+	Security           *SecurityPolicyYAML `yaml:"security"`
+	SkipNestedSecurity bool                `yaml:"skip_nested_security"`
 }
 
 type OpenAPIYAML struct {
@@ -71,11 +73,21 @@ func (p *Parser) parseAPI(node *Node) error {
 	}
 
 	// Parse the resolver and its properties from the DataYAML
-	resolver, resolverProps, resolverRefs, err := p.parseDataYAML(&tmp.DataYAML)
+	resolver, resolverProps, resolverRefs, err := p.parseDataYAML(&tmp.DataYAML, node.Connector)
 	if err != nil {
 		return err
 	}
 	node.Refs = append(node.Refs, resolverRefs...)
+
+	securityRules, err := tmp.Security.Proto()
+	if err != nil {
+		return fmt.Errorf("failed to parse security rules: %w", err)
+	}
+	for _, rule := range securityRules {
+		if rule.GetAccess() == nil {
+			return fmt.Errorf("the 'api' resource type only supports 'access' security rules")
+		}
+	}
 
 	r, err := p.insertResource(ResourceKindAPI, node.Name, node.Paths, node.Refs...)
 	if err != nil {
@@ -88,6 +100,8 @@ func (p *Parser) parseAPI(node *Node) error {
 	r.APISpec.OpenapiSummary = openapiSummary
 	r.APISpec.OpenapiParameters = openapiParams
 	r.APISpec.OpenapiResponseSchema = openapiSchema
+	r.APISpec.SecurityRules = securityRules
+	r.APISpec.SkipNestedSecurity = tmp.SkipNestedSecurity
 
 	return nil
 }
@@ -105,8 +119,9 @@ type DataYAML struct {
 }
 
 // parseDataYAML parses a data resolver and its properties from a DataYAML.
+// The contextualConnector argument is optional; if provided and the resolver supports a connector, it becomes the default connector for the resolver.
 // It returns the resolver name, its properties, and refs found in the resolver props.
-func (p *Parser) parseDataYAML(raw *DataYAML) (string, *structpb.Struct, []ResourceName, error) {
+func (p *Parser) parseDataYAML(raw *DataYAML, contextualConnector string) (string, *structpb.Struct, []ResourceName, error) {
 	// Parse the resolver and its properties
 	var count int
 	var resolver string
@@ -120,6 +135,8 @@ func (p *Parser) parseDataYAML(raw *DataYAML) (string, *structpb.Struct, []Resou
 		resolverProps["sql"] = raw.SQL
 		if raw.Connector != "" {
 			resolverProps["connector"] = raw.Connector
+		} else if contextualConnector != "" {
+			resolverProps["connector"] = contextualConnector
 		}
 	}
 

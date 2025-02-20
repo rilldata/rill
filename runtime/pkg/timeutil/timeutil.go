@@ -81,6 +81,13 @@ func TruncateTime(start time.Time, tg TimeGrain, tz *time.Location, firstDay, fi
 		start = start.AddDate(0, -monthsToSubtract, 0)
 		return start.In(time.UTC)
 	case TimeGrainYear:
+		if firstMonth < 1 {
+			firstMonth = 1
+		}
+		if firstMonth > 12 {
+			firstMonth = 12
+		}
+
 		start = start.In(tz)
 		year := start.Year()
 		if int(start.Month()) < firstMonth {
@@ -92,6 +99,36 @@ func TruncateTime(start time.Time, tg TimeGrain, tz *time.Location, firstDay, fi
 	}
 
 	return start
+}
+
+func CeilTime(start time.Time, tg TimeGrain, tz *time.Location, firstDay, firstMonth int) time.Time {
+	truncated := TruncateTime(start, tg, tz, firstDay, firstMonth)
+	if start.Equal(truncated) {
+		return start
+	}
+
+	switch tg {
+	case TimeGrainUnspecified, TimeGrainMillisecond:
+		return start
+	case TimeGrainSecond:
+		start = start.Add(time.Second)
+	case TimeGrainMinute:
+		start = start.Add(time.Minute)
+	case TimeGrainHour:
+		start = start.Add(time.Hour)
+	case TimeGrainDay:
+		start = start.AddDate(0, 0, 1)
+	case TimeGrainWeek:
+		start = start.AddDate(0, 0, 7)
+	case TimeGrainMonth:
+		start = start.AddDate(0, 1, 0)
+	case TimeGrainQuarter:
+		start = start.AddDate(0, 3, 0)
+	case TimeGrainYear:
+		start = start.AddDate(1, 0, 0)
+	}
+
+	return TruncateTime(start, tg, tz, firstDay, firstMonth)
 }
 
 func ApproximateBins(start, end time.Time, tg TimeGrain) int {

@@ -76,7 +76,7 @@ For any larger changes, we would strongly suggest developing locally to see the 
 
 ## Deploying Rill
 
-Now that your dashboards should be fully synced to GitHub, version controlled, and available to be edited by others. To make the dashboard fully cloud-enabled, you can return to your terminal and run ```rill project connect-github```. With everything synced, you should now be able to create a [new organization](/manage/project-management#organization) within Rill Cloud and push your dashboard to the cloud for shared collaboration. Any future changes should automatically be present in your deployed dashboards on [Rill Cloud](https://ui.rilldata.com) once committed and new dashboards will appear automatically as well (no deploy command needed). More details on [deployment here](../deploy-dashboard/).
+Now that your dashboards should be fully synced to GitHub, version controlled, and available to be edited by others. To make the dashboard fully cloud-enabled, you can return to your terminal and run ```rill project connect-github```. With everything synced, you should now be able to create a [new organization](/manage/organization-management#organization) within Rill Cloud and push your dashboard to the cloud for shared collaboration. Any future changes should automatically be present in your deployed dashboards on [Rill Cloud](https://ui.rilldata.com) once committed and new dashboards will appear automatically as well (no deploy command needed). More details on [deployment here](../deploy-dashboard/).
 
 :::info Have further questions? We'd love to hear from you!
 

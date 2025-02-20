@@ -16,6 +16,7 @@ import (
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/cmd/project"
 	"github.com/rilldata/rill/cli/cmd/publicurl"
+	"github.com/rilldata/rill/cli/cmd/query"
 	"github.com/rilldata/rill/cli/cmd/runtime"
 	"github.com/rilldata/rill/cli/cmd/service"
 	"github.com/rilldata/rill/cli/cmd/start"
@@ -40,8 +41,9 @@ func init() {
 
 // rootCmd represents the base command when called without any subcommands.
 var rootCmd = &cobra.Command{
-	Use:   "rill <command>",
-	Short: "Rill CLI",
+	Use:   "rill <command> [flags]",
+	Short: "A CLI for Rill",
+	Long:  `Work with Rill projects directly from the command line.`,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -126,31 +128,51 @@ func runCmd(ctx context.Context, ver cmdutil.Version) error {
 	rootCmd.PersistentFlags().StringVar(&ch.AdminTokenOverride, "api-token", "", "Token for authenticating with the cloud API")
 	rootCmd.Flags().BoolP("version", "v", false, "Show rill version") // Adds option to get version by passing --version or -v
 
-	// Add sub-commands
-	rootCmd.AddCommand(
+	// Command Groups
+
+	// Project commands
+	cmdutil.AddGroup(rootCmd, "Project", false,
 		start.StartCmd(ch),
 		deploy.DeployCmd(ch),
+		project.ProjectCmd(ch),
+		query.QueryCmd(ch),
+		publicurl.PublicURLCmd(ch),
 		env.EnvCmd(ch),
+	)
+
+	// Organization commands
+	cmdutil.AddGroup(rootCmd, "Organization", false,
+		org.OrgCmd(ch),
 		user.UserCmd(ch),
 		usergroup.UsergroupCmd(ch),
-		org.OrgCmd(ch),
-		project.ProjectCmd(ch),
-		publicurl.PublicURLCmd(ch),
 		service.ServiceCmd(ch),
+		billing.BillingCmd(ch),
+	)
+
+	// Auth commands
+	cmdutil.AddGroup(rootCmd, "Auth", false,
 		auth.LoginCmd(ch),
 		auth.LogoutCmd(ch),
 		whoami.WhoamiCmd(ch),
-		docs.DocsCmd(ch, rootCmd),
+	)
+
+	// Internal commands
+	cmdutil.AddGroup(rootCmd, "Internal", !ch.IsDev(),
+		// These commands are hidden from the help menu
+		admin.AdminCmd(ch),
+		runtime.RuntimeCmd(ch),
+		devtool.DevtoolCmd(ch),
+		sudo.SudoCmd(ch),
+		verifyInstallCmd(ch),
+	)
+
+	// Additional sub-commands
+	rootCmd.AddCommand(
 		completionCmd,
+		docs.DocsCmd(ch, rootCmd),
 		versioncmd.VersionCmd(),
 		upgrade.UpgradeCmd(ch),
 		uninstall.UninstallCmd(ch),
-		sudo.SudoCmd(ch),
-		devtool.DevtoolCmd(ch),
-		admin.AdminCmd(ch),
-		runtime.RuntimeCmd(ch),
-		verifyInstallCmd(ch),
-		billing.BillingCmd(ch),
 	)
 
 	return rootCmd.ExecuteContext(ctx)
