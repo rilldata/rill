@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/pkg/timeutil"
 	// Load IANA time zone data
 	_ "time/tzdata"
 )
@@ -190,10 +191,6 @@ func (d Dialect) String() string {
 	default:
 		panic("not implemented")
 	}
-}
-
-func (d Dialect) ContextKeyArgPrefix() string {
-	return fmt.Sprintf("%s_context__", d.String())
 }
 
 func (d Dialect) CanPivot() bool {
@@ -478,15 +475,15 @@ func (d Dialect) DateDiff(grain runtimev1.TimeGrain, t1, t2 time.Time) (string, 
 	}
 }
 
-/*func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain metricsview.TimeGrain, alias string) (string, error) {
+func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeGrain, alias string) (string, error) {
 	switch d {
 	case DialectDuckDB:
-		return fmt.Sprintf("SELECT range AS %s FROM range('%s'::TIMESTAMP, '%s'::TIMESTAMP, INTERVAL '1 %s')", d.EscapeIdentifier(alias), start.Format(time.RFC3339), end.Format(time.RFC3339), grain), nil
+		return fmt.Sprintf("SELECT range AS %s FROM range('%s'::TIMESTAMP, '%s'::TIMESTAMP, INTERVAL '1 %s')", d.EscapeIdentifier(alias), start.Format(time.RFC3339), end.Format(time.RFC3339), d.ConvertToDateTruncSpecifier(grain)), nil
 	case DialectClickHouse:
 		// generate select like - SELECT '2021-01-01T00:00:00.000'::DATETIME64 AS "time" UNION ALL SELECT '2021-01-01T01:00:00.000'::DATETIME64 AS "time" ...
 		var sb strings.Builder
 		sb.WriteString("SELECT ")
-		for t := start; t.Before(end); t = timeutil.AddTime(t, grain.ToTimeutil(), 1) {
+		for t := start; t.Before(end); t = timeutil.AddTimeProto(t, grain, 1) {
 			if t != start {
 				sb.WriteString(" UNION ALL ")
 			}
@@ -501,7 +498,7 @@ func (d Dialect) DateDiff(grain runtimev1.TimeGrain, t1, t2 time.Time) (string, 
 		//) t (time)
 		var sb strings.Builder
 		sb.WriteString("SELECT * FROM (VALUES ")
-		for t := start; t.Before(end); t = timeutil.AddTime(t, grain.ToTimeutil(), 1) {
+		for t := start; t.Before(end); t = timeutil.AddTimeProto(t, grain, 1) {
 			if t != start {
 				sb.WriteString(", ")
 			}
@@ -512,7 +509,7 @@ func (d Dialect) DateDiff(grain runtimev1.TimeGrain, t1, t2 time.Time) (string, 
 	default:
 		return "", fmt.Errorf("unsupported dialect %q", d)
 	}
-}*/
+}
 
 func druidTimeFloorSpecifier(grain runtimev1.TimeGrain) string {
 	switch grain {

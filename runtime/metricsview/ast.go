@@ -49,6 +49,7 @@ type SelectNode struct {
 	FromSelect           *SelectNode      // Sub-select to select from (if set, FromTable must not be set)
 	SpineSelect          *SelectNode      // Sub-select that returns a spine of dimensions. Currently it will be right-joined onto FromSelect.
 	LeftJoinSelects      []*SelectNode    // Sub-selects to left join onto FromSelect, to enable "per-dimension" measures
+	CrossJoinSelects     []*SelectNode    // sub-selects to cross join onto FromSelect
 	JoinComparisonSelect *SelectNode      // Sub-select to join onto FromSelect for comparison measures
 	JoinComparisonType   JoinType         // Type of join to use for JoinComparisonSelect
 	Unnests              []string         // Unnest expressions to add in the FROM clause
@@ -59,8 +60,6 @@ type SelectNode struct {
 	OrderBy              []OrderFieldNode // Fields to order by
 	Limit                *int64           // Limit for the query
 	Offset               *int64           // Offset for the query
-	FromCrossSelect      *SelectNode      // sub-select containing cross join to select from (only one of FromTable, FromSelect, FromCrossSelect can be set)
-	CrossJoinSelects     []*SelectNode    // sub-selects containing cross joins of FromCrossSelect
 }
 
 // FieldNode represents a column in a SELECT clause. It also carries metadata related to the dimension/measure it was derived from.
@@ -113,6 +112,7 @@ const (
 	JoinTypeFull        JoinType = "FULL OUTER"
 	JoinTypeLeft        JoinType = "LEFT OUTER"
 	JoinTypeRight       JoinType = "RIGHT OUTER"
+	JoinTypeCross       JoinType = "CROSS"
 )
 
 // NewAST builds a new SQL AST based on a metrics query.
@@ -160,39 +160,39 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 		}
 	}
 
-	// If there is only one time dimension and null fill is enabled, we set the spine to the time range
-	if qry.FillMissing && len(computedTimeDims) > 0 {
-		if qry.Spine != nil {
-			// should we silently ignore instead of error ?
-			return nil, fmt.Errorf("cannot have both where and time spine")
-		}
-		if len(computedTimeDims) > 1 {
-			return nil, fmt.Errorf("cannot have multiple time spines")
-		}
-		if q.TimeRange == nil || q.TimeRange.Start == nil || q.TimeRange.End == nil {
-			return nil, fmt.Errorf("time range is required for null fill")
-		}
+	/*	// If there is only one time dimension and null fill is enabled, we set the spine to the time range
+		if qry.FillMissing && len(computedTimeDims) > 0 {
+			if qry.Spine != nil {
+				// should we silently ignore instead of error ?
+				return nil, fmt.Errorf("cannot have both where and time spine")
+			}
+			if len(computedTimeDims) > 1 {
+				return nil, fmt.Errorf("cannot have multiple time spines")
+			}
+			if q.TimeRange == nil || q.TimeRange.Start == nil || q.TimeRange.End == nil {
+				return nil, fmt.Errorf("time range is required for null fill")
+			}
 
-		timeDim := computedTimeDims[0]
-		if timeDim.Compute.TimeFloor.Grain == metricsview.TimeGrainUnspecified {
-			return nil, fmt.Errorf("time grain is required for null fill")
-		}
+			timeDim := computedTimeDims[0]
+			if timeDim.Compute.TimeFloor.Grain == metricsview.TimeGrainUnspecified {
+				return nil, fmt.Errorf("time grain is required for null fill")
+			}
 
-		tz, err := time.LoadLocation(qry.TimeZone)
-		if err != nil {
-			return nil, fmt.Errorf("invalid time zone %q: %w", qry.TimeZone, err)
-		}
+			tz, err := time.LoadLocation(qry.TimeZone)
+			if err != nil {
+				return nil, fmt.Errorf("invalid time zone %q: %w", qry.TimeZone, err)
+			}
 
-		qry.Spine = &metricsview.Spine{}
-		s := timeutil.TruncateTime(q.TimeRange.Start.AsTime(), timeDim.Compute.TimeFloor.Grain.ToTimeutil(), tz, 1, 1)
-		e := q.TimeRange.End.AsTime()
-		qry.Spine.TimeRange = &metricsview.TimeSpine{
-			Start: s,
-			End:   e,
-			Grain: timeDim.Compute.TimeFloor.Grain,
-			Alias: timeDim.Name,
-		}
-	}
+			qry.Spine = &metricsview.Spine{}
+			s := timeutil.TruncateTime(q.TimeRange.Start.AsTime(), timeDim.Compute.TimeFloor.Grain.ToTimeutil(), tz, 1, 1)
+			e := q.TimeRange.End.AsTime()
+			qry.Spine.TimeRange = &metricsview.TimeSpine{
+				Start: s,
+				End:   e,
+				Grain: timeDim.Compute.TimeFloor.Grain,
+				Alias: timeDim.Name,
+			}
+		}*/
 
 	// Build dimensions to apply against the underlying SELECT.
 	// We cache these in the AST type because when resolving expressions and adding new JOINs, we need the ability to reference these.
@@ -736,43 +736,12 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 
 		rangeDim := spine.TimeRange.Alias
 
-		sel := ""
 		start := spine.TimeRange.Start
 		end := spine.TimeRange.End
 		grain := spine.TimeRange.Grain
-		d := a.dialect
-		switch d {
-		case drivers.DialectDuckDB:
-			sel = fmt.Sprintf("SELECT range AS %s FROM range('%s'::TIMESTAMP, '%s'::TIMESTAMP, INTERVAL '1 %s')", rangeDim, start.Format(time.RFC3339), end.Format(time.RFC3339), grain)
-		case drivers.DialectClickHouse:
-			// generate select like - SELECT '2021-01-01T00:00:00.000'::DATETIME64 AS "time" UNION ALL SELECT '2021-01-01T01:00:00.000'::DATETIME64 AS "time" ...
-			var sb strings.Builder
-			sb.WriteString("SELECT ")
-			for t := start; t.Before(end); t = timeutil.AddTime(t, grain.ToTimeutil(), 1) {
-				if t != start {
-					sb.WriteString(" UNION ALL ")
-				}
-				sb.WriteString(fmt.Sprintf("'%s'::DATETIME64 as %s", t.Format("2006-01-02T15:04:05.000"), d.EscapeIdentifier(spine.TimeRange.Alias)))
-			}
-			sel = sb.String()
-		case drivers.DialectDruid:
-			// generate select like - SELECT * FROM (
-			//  VALUES
-			//  (CAST('2006-01-02T15:04:05Z' AS TIMESTAMP)),
-			//  (CAST('2006-01-02T15:04:05Z' AS TIMESTAMP))
-			//) t (time)
-			var sb strings.Builder
-			sb.WriteString("SELECT * FROM (VALUES ")
-			for t := start; t.Before(end); t = timeutil.AddTime(t, grain.ToTimeutil(), 1) {
-				if t != start {
-					sb.WriteString(", ")
-				}
-				sb.WriteString(fmt.Sprintf("(CAST('%s' AS TIMESTAMP))", t.Format(time.RFC3339)))
-			}
-			sb.WriteString(fmt.Sprintf(") t (%s)", d.EscapeIdentifier(spine.TimeRange.Alias)))
-			sel = sb.String()
-		default:
-			return nil, fmt.Errorf("unsupported dialect %q", d)
+		sel, err := a.dialect.SelectTimeRangeBins(start, end, grain.ToProto(), rangeDim)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate time spine: %w", err)
 		}
 
 		rangeSelect := &SelectNode{
@@ -811,15 +780,26 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 
 		a.addTimeRange(dimSelect, tr)
 
-		// there are other dimensions in the query, so cross join the spine time range with the other dimensions
+		a.wrapSelect(dimSelect, a.generateIdentifier())
+
+		dimSelect.CrossJoinSelects = []*SelectNode{rangeSelect}
+
+		// now add cross join field to the dimension list
+		dimSelect.DimFields = append(dimSelect.DimFields, FieldNode{
+			Name:        rangeDim,
+			DisplayName: rangeDim,
+			Expr:        rangeDim,
+		})
+
+		/*// there are other dimensions in the query, so cross join the spine time range with the other dimensions
 		crossSelect := &SelectNode{
 			Alias:            alias,
 			CrossJoinSelects: []*SelectNode{dimSelect, rangeSelect},
 		}
 
-		a.wrapSelect(crossSelect, "")
+		a.wrapSelect(crossSelect, "")*/
 
-		return crossSelect, nil
+		return dimSelect, nil
 	}
 
 	return nil, errors.New("unhandled spine type")
@@ -1143,11 +1123,12 @@ func (a *AST) wrapSelect(s *SelectNode, innerAlias string) {
 	}
 
 	s.FromTable = nil
-	if len(cpy.CrossJoinSelects) > 0 {
-		s.FromCrossSelect = &cpy
-	} else {
-		s.FromSelect = &cpy
-	}
+	s.FromSelect = &cpy
+	//if len(cpy.CrossJoinSelects) > 0 {
+	//	s.FromCrossSelect = &cpy
+	//} else {
+	//	s.FromSelect = &cpy
+	//}
 	s.SpineSelect = nil
 	s.LeftJoinSelects = nil
 	s.JoinComparisonSelect = nil
