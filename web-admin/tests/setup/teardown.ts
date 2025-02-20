@@ -51,7 +51,6 @@ async function isOrgDeleted(orgName: string): Promise<boolean> {
     // If it doesn't throw, the org still exists.
     return false;
   } catch (error: any) {
-    // Check for the expected error code.
-    return error.code === 1;
+    return error.stdout.includes("Org not found.");
   }
 }
