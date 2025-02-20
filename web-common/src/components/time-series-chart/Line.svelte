@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { line, curveLinear, area, curveStepAfter } from "d3-shape";
+  import { line, curveLinear, area } from "d3-shape";
   import type { ScaleTime, ScaleLinear } from "d3-scale";
   import { MainLineColor } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
   import {
@@ -15,26 +15,13 @@
   };
 
   export let data: DataPoint[];
-
   export let xScale: ScaleTime<number, number>;
   export let yScale: ScaleLinear<number, number>;
   export let color = MainLineColor;
-  export let strokeWidth = 1;
+  export let strokeWidth = 4;
   export let fill: boolean | undefined;
 
-  $: curveFunction = false ? curveStepAfter : curveLinear;
-
-  function isDefined(d: DataPoint) {
-    return d.value !== null && d.value !== undefined;
-  }
-
-  function dateAccessor(d: DataPoint) {
-    return xScale(d.interval.start.toJSDate());
-  }
-
-  function valueAccessor(d: DataPoint) {
-    return yScale(d.value);
-  }
+  $: curveFunction = curveLinear;
 
   $: lineFunction = line<DataPoint>()
     .defined(isDefined)
@@ -52,6 +39,18 @@
   $: areaPath = areaFunction(data);
 
   $: path = lineFunction(data);
+
+  function isDefined(d: DataPoint) {
+    return d.value !== null && d.value !== undefined;
+  }
+
+  function dateAccessor(d: DataPoint) {
+    return xScale(d.interval.start.toJSDate());
+  }
+
+  function valueAccessor(d: DataPoint) {
+    return d?.value !== null && d?.value !== undefined ? yScale(d.value) : null;
+  }
 </script>
 
 {#if fill}
@@ -67,7 +66,7 @@
       <stop
         offset="95%"
         stop-color={MainAreaColorGradientLight}
-        stop-opacity={0.3}
+        stop-opacity={0.15}
       />
     </linearGradient>
   </defs>

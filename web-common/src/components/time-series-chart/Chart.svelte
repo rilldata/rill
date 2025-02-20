@@ -2,11 +2,7 @@
   import { min, max, extent } from "d3-array";
   import Line from "./Line.svelte";
   import { scaleLinear, scaleTime } from "d3-scale";
-  import {
-    LineMutedColor,
-    MainLineColor,
-  } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
-
+  import { MainLineColor } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
   import {
     V1TimeGrain,
     type V1TimeSeriesValue,
@@ -14,31 +10,73 @@
   import { DateTime, Interval } from "luxon";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
-  import { writable } from "svelte/store";
   import Point from "./Point.svelte";
+  import RangeDisplay from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/RangeDisplay.svelte";
 
-  export let data: V1TimeSeriesValue[][];
+  export let primaryData: V1TimeSeriesValue[];
+  export let secondaryData: V1TimeSeriesValue[][] = [];
   export let timeGrain: V1TimeGrain;
   export let selectedTimeZone: string;
   export let yAccessor: string;
   export let formatterFunction: ReturnType<typeof createMeasureValueFormatter>;
-
-  export let showAxis = true;
-  export let yMaxPadding = 0.2;
-
-  export const hoverIndexStore = (() => {
-    const { subscribe, set } = writable<number | null>(null);
-    return {
-      subscribe,
-      set,
-      reset: () => set(null),
-    };
-  })();
+  export let hoveredPoints: MappedPoint[] = [];
 
   type MappedPoint = {
     interval: Interval<true>;
     value: number | null | undefined;
   };
+
+  let offsetPosition: { x: number; y: number } | null = null;
+  let contentRect = new DOMRectReadOnly(0, 0, 0, 0);
+  let yScale = scaleLinear();
+
+  $: ({ width, height } = contentRect);
+
+  $: data = [primaryData, ...secondaryData];
+
+  $: mappedData = data
+    .map((line) => line.map(mapData))
+    .filter((line) => line.length > 0);
+
+  $: xExtents = mappedData.map((line) => [
+    line?.[0]?.interval.start.toJSDate(),
+    line[line.length - 1].interval.start.toJSDate(),
+  ]);
+
+  $: xScales = xExtents.map((extents) =>
+    scaleTime().domain(extents).range([0, 1000]),
+  );
+
+  $: allYExtents = mappedData.map((line) =>
+    extent(line, (datum) => datum?.value as number),
+  );
+
+  $: mins = allYExtents.map((extents) => extents[0]).filter(isNumber);
+  $: maxes = allYExtents.map((extents) => extents[1]).filter(isNumber);
+
+  $: yExtents = [Math.min(0, min(mins) ?? 0), max(maxes) ?? 0];
+
+  $: yScale = yScale.domain(yExtents).range([100, 0]);
+
+  $: hoverIndex =
+    offsetPosition === null
+      ? null
+      : Math.floor((offsetPosition.x / width) * mappedData[0].length);
+
+  $: hoveredPoints = getPoints(hoverIndex);
+
+  function getColor(index: number) {
+    return index === 0 ? MainLineColor : "rgba(0, 0, 0, 0.22)";
+  }
+
+  function isNumber(value: unknown): value is number {
+    return value !== undefined && value !== null;
+  }
+
+  function getPoints(index: number | null) {
+    if (index === null) return [];
+    return mappedData.map((line) => line?.[index] || null).filter((x) => x);
+  }
 
   function mapData(point: V1TimeSeriesValue): MappedPoint {
     if (!point.ts)
@@ -57,108 +95,75 @@
     } as MappedPoint;
   }
 
-  $: mappedData = data
-    .map((line) => line.map(mapData))
-    .filter((line) => line.length > 0);
+  function getPos(pos: number, width: number) {
+    const percentage = pos / width;
 
-  $: console.log(mappedData);
+    if (percentage < 0.1) return "-right-2";
+    if (percentage > 0.9) return "-left-2";
 
-  let yScale = scaleLinear();
-
-  $: grainWidth = 1020 / mappedData[0].length;
-
-  $: xExtents = mappedData.map((line) => [
-    line?.[0]?.interval.start.toJSDate(),
-    line[line.length - 1].interval.start.toJSDate(),
-  ]);
-
-  $: xScales = xExtents.map((extents) =>
-    scaleTime().domain(extents).range([0, 1000]),
-  );
-
-  $: allYExtents = mappedData.map((line) =>
-    extent(line, (datum) => datum?.value as number),
-  );
-
-  $: mins = allYExtents.map((extents) => extents[0]).filter(isNumber);
-  $: maxes = allYExtents.map((extents) => extents[1]).filter(isNumber);
-
-  function isNumber(value: unknown): value is number {
-    return value !== undefined && value !== null;
+    if (percentage <= 0.5) return "-left-2";
+    return "-right-2";
   }
-
-  $: yExtents = [Math.min(0, min(mins) ?? 0), max(maxes) ?? 0];
-
-  $: yScale = yScale
-    .domain([yExtents[0], yExtents[1] * (1 + yMaxPadding)])
-    .range([1, 0]);
-
-  $: yTicks = yScale.ticks(2);
-
-  $: hoverIndex = $hoverIndexStore;
-
-  $: console.log({ mappedData });
 </script>
 
-<div class="flex flex-col size-full overflow-hidden">
-  <!-- {#if hoverIndex !== null}
-    {@const point = mappedData[hoverIndex]}
+<div role="presentation" class="flex flex-col size-full relative">
+  {#if hoveredPoints.length > 0 && offsetPosition}
+    <div
+      style:top="{offsetPosition?.y ?? 0}px"
+      class="{getPos(
+        offsetPosition.x,
+        width,
+      )} w-fit h-fit flex gap-y-1 -translate-y-1/2 bg-slate-50 py-0.5 opacity-90 shadow-sm border rounded-sm px-2 font-medium items-end flex-col absolute pointer-events-none"
+    >
+      {formatterFunction(
+        yScale.invert((offsetPosition?.y / height) * 100).toFixed(1),
+      )}
+    </div>
+  {/if}
 
-    <span class="absolute top-2 pointer-events-none">
-      {point.value}
-    </span>
-
-    <span class="absolute pointer-events-none">
-      {point.interval
-        .set({
-          end: point.interval.end.minus({ millisecond: 1 }),
-        })
-        .toLocaleString(DateTime.DATE_MED)}
-    </span>
-  {/if} -->
-
-  <!-- {#if showAxis}
-      <div>
-        <svg class="w-full h-8 overflow-visible">
-          {#each xScale.ticks(3) as tick, i (i)}
-            <text
-              x="{((tick.getTime() / DIVISOR - numberXExtents[0]) / dateWidth) *
-                100}%"
-              y="50%"
-              text-anchor="middle"
-              dominant-baseline="middle"
-              font-size="0.65rem"
-              fill="#6B7280"
-            >
-              {DateTime.fromJSDate(tick).toLocaleString({
-                // month: "short",
-                // day: "numeric",
-                hour: "numeric",
-              })}
-            </text>
-          {/each}
-        </svg>
-      </div>
-    {/if} -->
   <svg
+    bind:contentRect
     role="presentation"
-    class="cursor-pointer size-full overflow-hidden bg-red-50"
+    class="cursor-default size-full overflow-visible"
     preserveAspectRatio="none"
-    viewBox="{-10} {0} {1020} {1}"
+    viewBox="0 0 1000 100"
+    on:mousemove={(e) => {
+      offsetPosition = { x: e.offsetX, y: e.offsetY };
+    }}
     on:mouseleave={() => {
-      hoverIndexStore.reset();
-      // grabbing = false;
+      offsetPosition = null;
     }}
   >
-    <!-- {#if showGrid}
-      <Grid {xScale} {yScale} timeZone={selectedTimeZone} />
-    {/if} -->
+    <g>
+      {#if offsetPosition}
+        <line
+          x1="{(offsetPosition.x / width) * 100}%"
+          x2="{(offsetPosition.x / width) * 100}%"
+          y1="0"
+          y2="100%"
+          class="stroke-slate-600/20"
+          stroke-width="1"
+          stroke-dasharray="2"
+          vector-effect="non-scaling-stroke"
+        />
+        <line
+          y1="{(offsetPosition.y / height) * 100}%"
+          y2="{(offsetPosition.y / height) * 100}%"
+          x1="0"
+          x2="100%"
+          class="stroke-slate-600/20"
+          stroke-width="1"
+          stroke-dasharray="2"
+          vector-effect="non-scaling-stroke"
+        />
+      {/if}
+    </g>
 
     {#each mappedData as mappedDataLine, i (i)}
       <Line
         data={mappedDataLine}
         xScale={xScales[i]}
-        color={i === 0 ? MainLineColor : LineMutedColor}
+        color={getColor(i)}
         {yScale}
         fill={i === 0}
         strokeWidth={1}
@@ -170,57 +175,47 @@
         {#each mappedDataLine as { interval, value }, j (j)}
           {@const xScale = xScales[i]}
 
-          {#if i === 0}
-            <rect
-              x={xScale(interval.start.toJSDate()) - grainWidth / 2}
-              y={0}
-              width={grainWidth}
-              height="100%"
-              role="presentation"
-              class="opacity-0 fill-primary-50"
-              on:mouseenter={() => {
-                console.log(j);
-                hoverIndexStore.set(j);
-              }}
-            />
-          {/if}
-
           <Point
             showPoint={hoverIndex === j ||
               (mappedDataLine[j - 1]?.value === null &&
-                mappedDataLine[j + 1]?.value === null)}
-            showLabel={false}
-            flipLabel={false}
+                mappedDataLine[j + 1]?.value === null &&
+                mappedDataLine[j]?.value !== null)}
             x={xScale(interval.start.toJSDate())}
             y={value == null ? null : yScale(value)}
-            color="blue"
+            color={getColor(i)}
           />
         {/each}
       {/each}
     </g>
   </svg>
-</div>
 
-{#if showAxis}
-  <svg class="w-8 h-full overflow-visible">
-    {#each yTicks as tick, i (i)}
-      <text
-        x="0"
-        y={yScale(tick)}
-        font-size="0.65rem"
-        dominant-baseline="middle"
-        fill="#6B7280"
+  <div class="w-full h-fit flex justify-between text-gray-500 mt-0.5 relative">
+    {#if hoveredPoints.length > 0}
+      <span
+        class="relative"
+        style:transform="translateX(-{xScales[0](
+          hoveredPoints[0].interval.start.toJSDate(),
+        ) / 10}%)"
+        style:left="{xScales[0](hoveredPoints[0].interval.start.toJSDate()) /
+          10}%"
       >
-        {formatterFunction(tick)}
-      </text>
-    {/each}
-  </svg>
-{/if}
-
-<!-- </div> -->
-
-<style lang="postcss">
-  .wrapper {
-    @apply size-full relative flex-1 flex gap-2;
-  }
-</style>
+        <RangeDisplay interval={hoveredPoints[0].interval} grain={timeGrain} />
+      </span>
+    {:else}
+      <span>
+        {mappedData[0][0].interval.start.toLocaleString({
+          month: "short",
+          day: "numeric",
+        })}
+      </span>
+      <span>
+        {mappedData[0][mappedData[0].length - 1].interval.end
+          .minus({ millisecond: 1 })
+          .toLocaleString({
+            month: "short",
+            day: "numeric",
+          })}
+      </span>
+    {/if}
+  </div>
+</div>

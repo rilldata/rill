@@ -6,14 +6,9 @@
     isChartComponentType,
   } from "@rilldata/web-common/features/canvas/components/util";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-  import { builderActions, getAttrs, type Builder } from "bits-ui";
 </script>
 
 <script lang="ts">
-  export let i: number;
-
-  export let embed = false;
-  // export let selected = false;
   export let componentName: string;
 
   const {
@@ -21,8 +16,6 @@
       spec: { getComponentResourceFromName },
     },
   } = getCanvasStateManagers();
-
-  // let isHovered = false;
 
   $: component = getComponentResourceFromName(componentName);
   $: ({ renderer, rendererProperties } = $component ?? {});
@@ -34,15 +27,9 @@
   $: componentFilters = getComponentFilterProperties(rendererProperties);
 </script>
 
-<!-- <div class="size-full relative">
-  <div class="size-full overflow-hidden flex flex-col flex-none">
-    <div class="size-full overflow-hidden flex flex-col flex-none relative"> -->
 {#if !isChartType}
   <ComponentHeader {title} {description} filters={componentFilters} />
 {/if}
 {#if renderer && rendererProperties}
   <ComponentRenderer {renderer} {componentName} />
 {/if}
-<!-- </div>
-  </div>
-</div> -->
