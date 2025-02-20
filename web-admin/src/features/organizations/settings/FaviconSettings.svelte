@@ -47,6 +47,7 @@
   <div slot="body" class="flex flex-col gap-y-2">
     <div>
       Click to upload your favicon and customize Rill for your organization.
+      Upload a square icon to get the best results.
     </div>
     <UploadImagePopover
       imageUrl={organizationFaviconUrl}
