@@ -26,7 +26,7 @@ import { error, redirect, type Page } from "@sveltejs/kit";
 import { isAxiosError } from "axios";
 
 export const load = async ({ params, url, route, depends }) => {
-  depends("root");
+  depends("app:root");
   // Route params
   const { organization, project, token: routeToken } = params;
   const pageState = {
