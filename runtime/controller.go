@@ -32,6 +32,22 @@ var errCyclicDependency = errors.New("cannot be reconciled due to cyclic depende
 // errControllerClosed is returned from controller functions that require the controller to be running
 var errControllerClosed = errors.New("controller is closed")
 
+// DependencyError is returned when a resource can not be reconciled due to a dependency error.
+type DependencyError struct {
+	err error
+}
+
+func NewDependencyError(err error) error {
+	if err == nil {
+		return nil
+	}
+	return &DependencyError{err: err}
+}
+
+func (d *DependencyError) Error() string {
+	return fmt.Sprintf("dependency error: %v", d.err)
+}
+
 // Reconciler implements reconciliation logic for all resources of a specific kind.
 // Reconcilers are managed and invoked by a Controller.
 type Reconciler interface {
@@ -1347,8 +1363,14 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 		logArgs = append(logArgs, zap.Bool("cancelled", true))
 	}
 	errorLevel := false
-	if inv.result.Err != nil && !errors.Is(inv.result.Err, context.Canceled) {
-		logArgs = append(logArgs, zap.Any("error", inv.result.Err))
+	if inv.result.Err != nil {
+		if !errors.Is(inv.result.Err, context.Canceled) {
+			logArgs = append(logArgs, zap.Any("error", inv.result.Err))
+		}
+		var err *DependencyError
+		if errors.As(inv.result.Err, &err) {
+			logArgs = append(logArgs, zap.Bool("dependency_error", true))
+		}
 		errorLevel = true
 	}
 	if errorLevel {
