@@ -20,9 +20,6 @@
     sparkline: kpiGridProperties.sparkline,
     comparison: kpiGridProperties.comparison,
   }));
-
-  // Calculate individual KPI width based on container width and number of KPIs
-  // $: kpiWidth = containerWidth ? Math.floor(containerWidth / kpis.length) : 0;
 </script>
 
 {#if schema.isValid}
@@ -32,7 +29,7 @@
         class:solo={kpis.length > 1}
         class="kpi-wrapper border-gray-200 size-full min-h-52 p-4"
       >
-        <KPI rendererProperties={kpi} topPadding={false} />
+        <KPI rendererProperties={kpi} />
       </div>
     {/each}
   </div>
@@ -41,8 +38,6 @@
 {/if}
 
 <style lang="postcss">
-  /* Add any custom styles here if needed */
-
   .element {
     @apply size-full grid;
     @apply px-0;
@@ -67,7 +62,6 @@
       grid-template-columns: repeat(min(2, var(--item-count)), 1fr);
     }
 
-    /* remove border for second item */
     .kpi-wrapper:nth-child(2) {
       border-right-width: 0;
       border-bottom-width: 1px;

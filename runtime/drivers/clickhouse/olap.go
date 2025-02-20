@@ -57,7 +57,7 @@ func (c *connection) WithConnection(ctx context.Context, priority int, longRunni
 func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 	// Log query if enabled (usually disabled)
 	if c.config.LogQueries {
-		c.logger.Info("clickhouse query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args))
+		c.logger.Info("clickhouse query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
 	}
 
 	// We use the meta conn for dry run queries
@@ -282,7 +282,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 				Priority: 1,
 			})
 			if err != nil {
-				c.logger.Warn("clickhouse: failed to drop temp table", zap.String("name", tempName), zap.Error(err))
+				c.logger.Warn("clickhouse: failed to drop temp table", zap.String("name", tempName), zap.Error(err), observability.ZapCtx(ctx))
 			}
 		}()
 		err = c.Exec(ctx, &drivers.Statement{
@@ -517,7 +517,7 @@ func (c *connection) renameView(ctx context.Context, oldName, newName, onCluster
 		Priority: 100,
 	})
 	if err != nil {
-		c.logger.Error("clickhouse: failed to drop old view", zap.String("name", oldName), zap.Error(err))
+		c.logger.Error("clickhouse: failed to drop old view", zap.String("name", oldName), zap.Error(err), observability.ZapCtx(ctx))
 	}
 	return nil
 }

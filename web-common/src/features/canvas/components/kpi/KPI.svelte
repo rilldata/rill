@@ -222,7 +222,7 @@
       </div>
 
       <div class="flex flex-col items-center">
-        {#if showComparison && comparisonVal != null}
+        {#if showComparison}
           <div class="flex items-baseline gap-x-2 text-sm -mb-[3px]">
             {#if comparisonOptions?.includes("previous")}
               <span class="comparison-value">
@@ -233,13 +233,14 @@
             {#if comparisonOptions?.includes("delta")}
               <span
                 class="comparison-value"
-                class:text-red-500={primaryTotal &&
+                class:text-red-500={primaryTotal !== null &&
+                  comparisonVal !== null &&
                   primaryTotal - comparisonVal < 0}
                 class:ui-copy-disabled-faint={comparisonVal === null}
                 class:italic={comparisonVal === null}
                 class:text-sm={comparisonVal === null}
               >
-                {#if comparisonVal != null}
+                {#if comparisonVal != null && currentValue != null}
                   {getFormattedDiff(comparisonVal, currentValue)}
                 {:else}
                   no change
@@ -300,13 +301,6 @@
 {/if}
 
 <style lang="postcss">
-  .measure-label {
-    @apply font-medium text-sm whitespace-normal;
-    @apply pr-2 text-gray-700;
-  }
-  .measure-value {
-    @apply text-3xl font-medium text-gray-700 pb-1;
-  }
   .comparison-range {
     @apply text-sm text-gray-400;
   }

@@ -4,15 +4,11 @@
 </script>
 
 <script lang="ts">
-  export let i: number;
   export let component: V1CanvasItem;
 
   $: componentName = component?.component;
-  $: inlineComponent = component?.definedInCanvas;
 </script>
 
-{#if componentName && !inlineComponent}
-  <CanvasComponent {i} {componentName} on:change on:contextmenu />
-{:else if componentName}
-  <CanvasComponent {i} {componentName} on:change on:contextmenu />
+{#if componentName}
+  <CanvasComponent {componentName} on:change on:contextmenu />
 {/if}
