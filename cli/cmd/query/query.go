@@ -32,22 +32,21 @@ func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
 		Short: "Query a resolver within a project",
 		Long:  long,
 		RunE: func(cmd *cobra.Command, cmdArgs []string) error {
-			// Validate all inputs
-			if err := validateQueryFlags(resolver, sql, properties, args); err != nil {
-				return err
+			// Validate the inputs
+			if resolver == "" && sql == "" {
+				return fmt.Errorf("must provide --sql or --resolver")
+			}
+			if resolver != "" && (sql != "" || connector != "") {
+				return fmt.Errorf("cannot combine --resolver with --sql or --connector")
+			}
+			if resolver == "" && (len(args) > 0 || len(properties) > 0) {
+				return fmt.Errorf("must provide --resolver when using --args or --properties")
 			}
 
-			// Default resolver to "sql" if not provided
-			if resolver == "" {
+			// Rewrite --sql to resolver
+			if sql != "" {
 				resolver = "sql"
-			}
-
-			// Initialize maps if nil
-			if properties == nil {
-				properties = make(map[string]string)
-			}
-			if args == nil {
-				args = make(map[string]string)
+				properties = map[string]string{"sql": sql}
 			}
 
 			// Determine project name
@@ -62,30 +61,6 @@ func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			// Build resolver properties
-			if sql != "" {
-				properties["sql"] = sql
-			}
-			if connector != "" {
-				properties["connector"] = connector
-			}
-
-			// Convert string maps to interface{} maps
-			propsMap := make(map[string]any, len(properties))
-			for k, v := range properties {
-				propsMap[k] = v
-			}
-			argsMap := make(map[string]any, len(args))
-			for k, v := range args {
-				argsMap[k] = v
-			}
-
-			// Build the properties and args structs
-			resolverProperties, resolverArgs, err := buildStructs(propsMap, argsMap)
-			if err != nil {
-				return fmt.Errorf("failed to build resolver properties and args: %w", err)
-			}
-
 			// Connect to the runtime
 			rt, instanceID, err := ch.OpenRuntimeClient(cmd.Context(), ch.Org, project, local)
 			if err != nil {
@@ -97,8 +72,8 @@ func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
 			res, err := rt.RuntimeServiceClient.QueryResolver(cmd.Context(), &runtimev1.QueryResolverRequest{
 				InstanceId:         instanceID,
 				Resolver:           resolver,
-				ResolverProperties: resolverProperties,
-				ResolverArgs:       resolverArgs,
+				ResolverProperties: buildStruct(properties),
+				ResolverArgs:       buildStruct(args),
 				Limit:              int32(limit),
 			})
 			if err != nil {
@@ -126,37 +101,18 @@ func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
 	return queryCmd
 }
 
-func validateQueryFlags(resolver, sql string, properties, args map[string]string) error {
-	if resolver != "" && sql != "" {
-		return fmt.Errorf("cannot combine --resolver and --sql")
-	}
-
-	if (len(args) > 0 || len(properties) > 0) && resolver == "" {
-		return fmt.Errorf("must provide --resolver when using --args or --properties")
-	}
-
-	return nil
-}
-
-func buildStruct(m map[string]any) (*structpb.Struct, error) {
+func buildStruct(m map[string]string) *structpb.Struct {
 	if m == nil {
-		return nil, nil
+		return nil
 	}
-
-	return structpb.NewStruct(m)
-}
-
-// buildStructs converts the properties and args maps into protobuf Struct types
-func buildStructs(properties, args map[string]any) (*structpb.Struct, *structpb.Struct, error) {
-	propertiesStruct, err := buildStruct(properties)
+	anyMap := make(map[string]any, len(m))
+	for k, v := range m {
+		anyMap[k] = v
+	}
+	pb, err := structpb.NewStruct(anyMap)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to build properties struct: %w", err)
+		// Acceptable to panic because there are no unknown types
+		panic(fmt.Errorf("failed to build struct: %w", err))
 	}
-
-	argsStruct, err := buildStruct(args)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to build args struct: %w", err)
-	}
-
-	return propertiesStruct, argsStruct, nil
+	return pb
 }
