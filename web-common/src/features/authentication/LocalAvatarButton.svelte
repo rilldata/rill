@@ -4,7 +4,6 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import NoUser from "@rilldata/web-common/components/icons/NoUser.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { initPylonChat } from "@rilldata/web-common/features/help/initPylonChat";
   import {
     createLocalServiceGetCurrentUser,
@@ -12,13 +11,10 @@
   } from "@rilldata/web-common/runtime-client/local-service";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
 
-  const { disableCloud } = featureFlags;
-
   $: user = createLocalServiceGetCurrentUser({
     query: {
       // refetch in case user does a login/logout from outside of rill developer UI
       refetchOnWindowFocus: true,
-      enabled: !$disableCloud,
     },
   });
   $: metadata = createLocalServiceGetMetadata();
@@ -52,7 +48,7 @@
   let photoUrlErrored = false;
 </script>
 
-{#if ($user.isLoading || $metadata.isLoading) && !$user.error && !$metadata.error && !$disableCloud}
+{#if ($user.isLoading || $metadata.isLoading) && !$user.error && !$metadata.error}
   <div class="flex flex-row items-center h-7 mx-1.5">
     <Spinner size="16px" status={EntityStatus.Running} />
   </div>
