@@ -2,7 +2,7 @@ import { SortType } from "../../proto-state/derived-types";
 import { toggleSort, sortActions } from "./sorting";
 import { LeaderboardContextColumn } from "../../leaderboard-context-column";
 import { setContextColumn } from "./context-columns";
-import { setLeaderboardMeasureName } from "./core-actions";
+import { setLeaderboardMeasureNames } from "./core-actions";
 import type { DashboardMutables } from "./types";
 
 export const handleMeasureColumnHeaderClick = (
@@ -23,7 +23,7 @@ export const handleMeasureColumnHeaderClick = (
   } else if (measureName === names[0]) {
     toggleSort(generalArgs, SortType.VALUE);
   } else {
-    setLeaderboardMeasureName(generalArgs, measureName);
+    setLeaderboardMeasureNames(generalArgs, [measureName]);
     toggleSort(generalArgs, SortType.VALUE);
     sortActions.setSortDescending(generalArgs);
   }

@@ -155,12 +155,12 @@ describe("dashboard-stores", () => {
     const mock = createValidSpecQueryMock();
     const { stateManagers } = initStateManagers();
     const {
-      actions: { setLeaderboardMeasureName },
+      actions: { setLeaderboardMeasureNames },
     } = stateManagers;
     assertMetricsView(AD_BIDS_EXPLORE_NAME);
 
     // select a different leaderboard measure
-    setLeaderboardMeasureName(AD_BIDS_BID_PRICE_MEASURE);
+    setLeaderboardMeasureNames([AD_BIDS_BID_PRICE_MEASURE]);
     assertMetricsView(
       AD_BIDS_EXPLORE_NAME,
       undefined,
@@ -330,9 +330,9 @@ describe("dashboard-stores", () => {
       const mock = createValidSpecQueryMock();
       const { stateManagers } = initStateManagers();
       const {
-        actions: { setLeaderboardMeasureName },
+        actions: { setLeaderboardMeasureNames },
       } = stateManagers;
-      setLeaderboardMeasureName(AD_BIDS_BID_PRICE_MEASURE);
+      setLeaderboardMeasureNames([AD_BIDS_BID_PRICE_MEASURE]);
 
       // create a mirror from state
       createAdBidsMirrorInStore(get(mock).data!);
