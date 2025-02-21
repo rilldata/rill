@@ -130,7 +130,7 @@
     );
   }
 
-  const scheduledReportsQueryArgs = getDimensionTableExportArgs(stateManagers);
+  const exportQueryArgs = getDimensionTableExportArgs(stateManagers);
 
   onDestroy(() => {
     searchText = "";
@@ -203,7 +203,7 @@
         includeScheduledReport={$adminServer}
         exploreName={$exploreName}
         query={{
-          metricsViewAggregationRequest: $scheduledReportsQueryArgs,
+          metricsViewAggregationRequest: $exportQueryArgs,
         }}
         {metricsViewProto}
       />

@@ -49,7 +49,7 @@
   //   metricsExplorerStore.setPivotExpanded($exploreName, expanded);
   // }
 
-  const scheduledReportsQueryArgs = getPivotExportArgs(stateManagers);
+  const exportQueryArgs = getPivotExportArgs(stateManagers);
 </script>
 
 <div class="flex items-center gap-x-4 select-none pointer-events-none">
@@ -96,7 +96,7 @@
       includeScheduledReport={$adminServer}
       exploreName={$exploreName}
       query={{
-        metricsViewAggregationRequest: $scheduledReportsQueryArgs,
+        metricsViewAggregationRequest: $exportQueryArgs,
       }}
       {metricsViewProto}
     />

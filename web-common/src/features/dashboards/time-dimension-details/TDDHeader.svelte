@@ -63,7 +63,7 @@
     validSpecStore,
   } = stateManagers;
 
-  const scheduledReportsQueryArgs = getTDDExportArgs(stateManagers);
+  const exportQueryArgs = getTDDExportArgs(stateManagers);
 
   $: metricsViewProto = $dashboardStore.proto;
 
@@ -302,7 +302,7 @@
           label="Export table data"
           includeScheduledReport={$adminServer}
           query={{
-            metricsViewAggregationRequest: $scheduledReportsQueryArgs,
+            metricsViewAggregationRequest: $exportQueryArgs,
           }}
           {metricsViewProto}
           {exploreName}
