@@ -1,6 +1,5 @@
 <script>
   export let size = "1em";
-  export let color = "";
   export let className = "";
 </script>
 
