@@ -20,8 +20,9 @@
   $: neverSubscribed = $categorisedIssues.data?.neverSubscribed;
   $: onTrial = !!$categorisedIssues.data?.trial;
   $: onEnterprisePlan =
-    subscription?.plan && isEnterprisePlan(subscription.plan);
-  $: onManagedPlan = subscription?.plan && isManagedPlan(subscription.plan);
+    subscription?.plan && isEnterprisePlan(subscription.plan.planType);
+  $: onManagedPlan =
+    subscription?.plan && isManagedPlan(subscription.plan.planType);
   $: hidePaymentModule =
     neverSubscribed || onTrial || onEnterprisePlan || onManagedPlan;
 

@@ -37,6 +37,10 @@ func (n noop) GetPlanByName(ctx context.Context, name string) (*Plan, error) {
 	return nil, nil
 }
 
+func (n noop) GetPlanTypeForExternalId(externalID string) PlanType {
+	return TrailPlanType
+}
+
 func (n noop) GetPublicPlans(ctx context.Context) ([]*Plan, error) {
 	return nil, nil
 }

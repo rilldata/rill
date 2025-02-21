@@ -80,6 +80,7 @@ export const load = async ({ params, url, route, depends }) => {
   let organizationPermissions: V1OrganizationPermissions = {};
   let organizationLogoUrl: string | undefined = undefined;
   let organizationFaviconUrl: string | undefined = undefined;
+  let planDisplayName: string | undefined = undefined;
   if (organization && !token) {
     try {
       const organizationResp = await queryClient.fetchQuery(
@@ -88,6 +89,7 @@ export const load = async ({ params, url, route, depends }) => {
       organizationPermissions = organizationResp.permissions ?? {};
       organizationLogoUrl = organizationResp.organization?.logoUrl;
       organizationFaviconUrl = organizationResp.organization?.faviconUrl;
+      planDisplayName = organizationResp.organization?.billingPlanDisplayName;
     } catch (e: unknown) {
       if (!isAxiosError<RpcStatus>(e) || !e.response) {
         throw error(500, "Error fetching organization");
@@ -110,6 +112,7 @@ export const load = async ({ params, url, route, depends }) => {
       organizationPermissions,
       organizationLogoUrl,
       organizationFaviconUrl,
+      planDisplayName,
       projectPermissions: <V1ProjectPermissions>{},
     };
   }
@@ -134,6 +137,7 @@ export const load = async ({ params, url, route, depends }) => {
       organizationPermissions,
       organizationLogoUrl,
       organizationFaviconUrl,
+      planDisplayName,
       projectPermissions,
       project: proj,
       runtime: runtimeData,

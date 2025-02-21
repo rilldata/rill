@@ -11,7 +11,6 @@
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
-    createAdminServiceGetBillingSubscription,
     createAdminServiceGetCurrentUser,
     createAdminServiceListOrganizations as listOrgs,
     createAdminServiceListProjectsForOrganization as listProjects,
@@ -35,10 +34,10 @@
     isPublicURLPage,
   } from "./nav-utils";
 
-  export let manageOrganization: boolean;
   export let createMagicAuthTokens: boolean;
   export let manageProjectMembers: boolean;
   export let organizationLogoUrl: string | undefined = undefined;
+  export let planDisplayName: string | undefined;
 
   const user = createAdminServiceGetCurrentUser();
 
@@ -101,19 +100,11 @@
   $: alerts = $alertsQuery.data?.resources ?? [];
   $: reports = $reportsQuery.data?.resources ?? [];
 
-  $: plan = createAdminServiceGetBillingSubscription(organization, {
-    query: {
-      enabled: Boolean(
-        !!organization && manageOrganization && !onPublicURLPage,
-      ),
-      select: (data) => data.subscription?.plan,
-    },
-  });
   $: organizationPaths = organizations.reduce(
     (map, { name, displayName }) =>
       map.set(name.toLowerCase(), {
         label: displayName || name,
-        pill: $plan?.data?.displayName,
+        pill: planDisplayName,
       }),
     new Map<string, PathOption>(),
   );
