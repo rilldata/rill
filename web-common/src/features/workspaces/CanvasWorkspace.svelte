@@ -127,7 +127,10 @@
                 statusCode={404}
               />
             {:else if canvasResource}
-              <RowBasedCanvas {fileArtifact} />
+              <RowBasedCanvas
+                openSidebar={workspace.inspector.open}
+                {fileArtifact}
+              />
             {/if}
           {/if}
         </WorkspaceEditorContainer>

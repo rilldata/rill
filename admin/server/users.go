@@ -185,6 +185,10 @@ func (s *Server) IssueRepresentativeAuthToken(ctx context.Context, req *adminv1.
 		return nil, err
 	}
 
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.user_id", u.ID),
+	)
+
 	ttl := time.Duration(req.TtlMinutes) * time.Minute
 	displayName := fmt.Sprintf("Support for %s", u.Email)
 
