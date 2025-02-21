@@ -37,14 +37,12 @@ measures:
 type: canvas
 rows:
 - items:
-  - component:
-      kpi:
-        metrics_view: mv1
-  - component:
-      kpi:
-        metrics_view: mv1
-        foo: "{{ .args.foo }}"
-        bar: "{{ .env.bar }}"
+  - kpi:
+      metrics_view: mv1
+  - kpi:
+      metrics_view: mv1
+      foo: "{{ .args.foo }}"
+      bar: "{{ .env.bar }}"
 `,
 		},
 		Variables: map[string]string{
