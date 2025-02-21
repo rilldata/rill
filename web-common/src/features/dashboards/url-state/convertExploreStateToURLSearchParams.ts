@@ -292,16 +292,6 @@ function toExploreUrl(
     );
   }
 
-  if (
-    shouldSetParam(preset.exploreSortBy, exploreState.leaderboardMeasureName)
-  ) {
-    // TODO: make it work with multiple measures
-    searchParams.set(
-      ExploreStateURLParams.SortBy,
-      exploreState.leaderboardMeasureName,
-    );
-  }
-
   const sortType = FromLegacySortTypeMap[exploreState.dashboardSortType];
   if (shouldSetParam(preset.exploreSortType, sortType)) {
     searchParams.set(

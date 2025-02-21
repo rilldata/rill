@@ -157,6 +157,23 @@ export function convertURLToExplorePreset(
     }
   }
 
+  if (searchParams.has(ExploreStateURLParams.SortBy)) {
+    const sortByMeasures = (
+      searchParams.get(ExploreStateURLParams.SortBy) as string
+    ).split(",");
+    const validMeasures = sortByMeasures.filter((measure) =>
+      measures.has(measure),
+    );
+
+    if (validMeasures.length > 0) {
+      preset.exploreSortBy = validMeasures.join(",");
+    } else {
+      errors.push(
+        getSingleFieldError("sort by measures", sortByMeasures.join(",")),
+      );
+    }
+  }
+
   return { preset, errors };
 }
 
@@ -408,20 +425,19 @@ function fromExploreUrlParams(
   }
 
   if (searchParams.has(ExploreStateURLParams.SortBy)) {
-    const sortBy = searchParams.get(ExploreStateURLParams.SortBy) as string;
-    if (measures.has(sortBy)) {
-      if (
-        (preset.measures && preset.measures.includes(sortBy)) ||
-        !preset.measures
-      ) {
-        preset.exploreSortBy = sortBy;
-      } else {
-        errors.push(
-          getSingleFieldError("sort by measure", sortBy, "It is hidden."),
-        );
-      }
+    const sortByMeasures = (
+      searchParams.get(ExploreStateURLParams.SortBy) as string
+    ).split(",");
+    const validMeasures = sortByMeasures.filter((measure) =>
+      measures.has(measure),
+    );
+
+    if (validMeasures.length > 0) {
+      preset.exploreSortBy = validMeasures.join(",");
     } else {
-      errors.push(getSingleFieldError("sort by measure", sortBy));
+      errors.push(
+        getSingleFieldError("sort by measures", sortByMeasures.join(",")),
+      );
     }
   }
 

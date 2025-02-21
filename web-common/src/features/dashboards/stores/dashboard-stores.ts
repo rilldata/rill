@@ -90,7 +90,9 @@ function syncMeasures(
     explore.measures?.length &&
     !measuresSet.has(metricsExplorer.leaderboardMeasureName)
   ) {
-    metricsExplorer.leaderboardMeasureName = explore.measures[0];
+    const defaultMeasure = explore.measures[0];
+    metricsExplorer.leaderboardMeasureName = defaultMeasure;
+    metricsExplorer.leaderboardMeasureNames = [defaultMeasure];
   }
 
   if (

@@ -1,14 +1,12 @@
 import { resetAllContextColumnWidths } from "./context-columns";
 import type { DashboardMutables } from "./types";
 
-// TODO: to be removed
 export const setLeaderboardMeasureName = (
   { dashboard }: DashboardMutables,
   name: string,
 ) => {
   dashboard.leaderboardMeasureName = name;
-
-  // reset column widths when changing the leaderboard measure
+  dashboard.leaderboardMeasureNames = [name];
   resetAllContextColumnWidths(dashboard.contextColumnWidths);
 };
 
@@ -17,7 +15,7 @@ export const setLeaderboardMeasureNames = (
   names: string[],
 ) => {
   dashboard.leaderboardMeasureNames = names;
-
-  // reset column widths when changing the leaderboard measure
+  // First measure is used as the leaderboard measure for sorting
+  dashboard.leaderboardMeasureName = names[0];
   resetAllContextColumnWidths(dashboard.contextColumnWidths);
 };
