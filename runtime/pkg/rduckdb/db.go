@@ -56,6 +56,11 @@ type DB interface {
 
 	// RenameTable renames a table in the database.
 	RenameTable(ctx context.Context, oldName, newName string) error
+
+	// Meta APIs
+
+	// Schema returns the schema of the database.
+	Schema(ctx context.Context, ilike, name string) ([]*Table, error)
 }
 
 type DBOptions struct {
