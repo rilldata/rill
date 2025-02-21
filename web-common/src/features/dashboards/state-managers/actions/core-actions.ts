@@ -5,7 +5,7 @@ export const setLeaderboardMeasureName = (
   { dashboard }: DashboardMutables,
   name: string,
 ) => {
-  dashboard.leaderboardMeasureName = name;
+  // dashboard.leaderboardMeasureName = name;
   dashboard.leaderboardMeasureNames = [name];
   resetAllContextColumnWidths(dashboard.contextColumnWidths);
 };
@@ -16,6 +16,6 @@ export const setLeaderboardMeasureNames = (
 ) => {
   dashboard.leaderboardMeasureNames = names;
   // First measure is used as the leaderboard measure for sorting
-  dashboard.leaderboardMeasureName = names[0];
+  // dashboard.leaderboardMeasureName = names[0];
   resetAllContextColumnWidths(dashboard.contextColumnWidths);
 };

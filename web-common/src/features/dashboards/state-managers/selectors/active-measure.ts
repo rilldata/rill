@@ -16,7 +16,7 @@ export const activeMeasure = (
 };
 
 export const activeMeasureName = (dashData: DashboardDataSources): string => {
-  return dashData.dashboard.leaderboardMeasureName;
+  return dashData.dashboard.leaderboardMeasureNames[0];
 };
 
 export const selectedMeasureNames = (
