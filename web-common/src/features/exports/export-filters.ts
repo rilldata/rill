@@ -2,7 +2,7 @@ import type { V1Expression } from "@rilldata/web-admin/client/gen/index.schemas"
 import { getDimensionFilterWithSearch } from "../dashboards/dimension-table/dimension-table-utils";
 import { mergeDimensionAndMeasureFilters } from "../dashboards/filters/measure-filters/measure-filter-utils";
 import { sanitiseExpression } from "../dashboards/stores/filter-utils";
-import type { MetricsExplorerEntity } from "../dashboards/stores/metrics-explorer-entity";
+import type { DimensionThresholdFilter } from "../dashboards/stores/metrics-explorer-entity";
 
 /**
  * Builds the where param for dimension table and TDD exports.
@@ -11,24 +11,25 @@ import type { MetricsExplorerEntity } from "../dashboards/stores/metrics-explore
  * Otherwise, use the dashboard's current where filter.
  */
 export function buildWhereParamForDimensionTableAndTDDExports(
-  dashboard: MetricsExplorerEntity,
+  whereFilter: V1Expression,
+  dimensionThresholdFilters: DimensionThresholdFilter[],
   dimensionName: string,
   searchText: string,
 ) {
   let dimensionFilter: V1Expression | undefined;
   if (searchText) {
     dimensionFilter = getDimensionFilterWithSearch(
-      dashboard?.whereFilter,
+      whereFilter,
       searchText,
       dimensionName,
     );
   } else {
-    dimensionFilter = dashboard?.whereFilter;
+    dimensionFilter = whereFilter;
   }
 
   const where = mergeDimensionAndMeasureFilters(
     dimensionFilter,
-    dashboard.dimensionThresholdFilters,
+    dimensionThresholdFilters,
   );
   const sanitisedWhere = sanitiseExpression(where, undefined);
   return sanitisedWhere;

@@ -102,7 +102,8 @@ export function getDimensionTableAggregationRequestForTime(
   }
 
   const where = buildWhereParamForDimensionTableAndTDDExports(
-    dashboardState,
+    dashboardState.whereFilter,
+    dashboardState.dimensionThresholdFilters,
     dashboardState.selectedDimensionName!,
     dimensionSearchText,
   );

@@ -117,7 +117,8 @@ export function getTDDAggregationRequest(
       },
     ],
     where: buildWhereParamForDimensionTableAndTDDExports(
-      dashboardState,
+      dashboardState.whereFilter,
+      dashboardState.dimensionThresholdFilters,
       dimensionName,
       dimensionSearchText,
     ),
