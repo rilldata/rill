@@ -11,10 +11,12 @@
   $: positionClasses = getPositionClasses(markdownProperties.alignment);
 </script>
 
-<div class="{positionClasses} markdown size-full p-2 flex flex-col bg-white">
-  {#await marked(markdownProperties.content) then content}
-    {@html DOMPurify.sanitize(content)}
-  {/await}
+<div class="size-full p-2 bg-white overflow-y-auto">
+  <div class="markdown {positionClasses} h-full flex flex-col min-h-min">
+    {#await marked(markdownProperties.content) then content}
+      {@html DOMPurify.sanitize(content)}
+    {/await}
+  </div>
 </div>
 
 <style lang="postcss">
@@ -39,5 +41,20 @@
   }
   :global(.markdown p) {
     font-size: 14px;
+  }
+  :global(.markdown table) {
+    @apply w-full border-collapse my-4;
+  }
+  :global(.markdown th) {
+    @apply bg-gray-50 border border-gray-200 px-4 py-2 text-left text-sm font-medium;
+  }
+  :global(.markdown td) {
+    @apply border border-gray-200 px-4 py-2 text-sm;
+  }
+  :global(.markdown tr:nth-child(even)) {
+    @apply bg-gray-50;
+  }
+  :global(.markdown tr:hover) {
+    @apply bg-gray-100;
   }
 </style>
