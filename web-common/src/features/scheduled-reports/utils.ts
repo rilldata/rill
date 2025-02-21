@@ -14,8 +14,31 @@ import { getLocalIANA } from "@rilldata/web-common/lib/time/timezone";
 import {
   V1ExportFormat,
   type V1Notifier,
+  type V1Query,
   type V1ReportSpec,
 } from "@rilldata/web-common/runtime-client";
+
+export type ReportValues = ReturnType<typeof getInitialValues>;
+
+export function getQueryNameFromQuery(query: V1Query) {
+  if (query.metricsViewAggregationRequest) {
+    return "MetricsViewAggregation";
+  } else if (query.metricsViewRowsRequest) {
+    return "MetricsViewRows";
+  } else {
+    throw new Error("Unsupported query type");
+  }
+}
+
+export function getQueryArgsFromQuery(query: V1Query) {
+  if (query.metricsViewAggregationRequest) {
+    return query.metricsViewAggregationRequest;
+  } else if (query.metricsViewRowsRequest) {
+    return query.metricsViewRowsRequest;
+  } else {
+    throw new Error("Unsupported query type");
+  }
+}
 
 export function getInitialValues(
   reportSpec: V1ReportSpec | undefined,
@@ -55,8 +78,6 @@ export function getInitialValues(
     ...extractNotificationV2(reportSpec?.notifiers, userEmail, !!reportSpec),
   };
 }
-
-export type ReportValues = ReturnType<typeof getInitialValues>;
 
 export function getDashboardNameFromReport(
   reportSpec: V1ReportSpec | undefined,
