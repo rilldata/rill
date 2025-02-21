@@ -258,13 +258,13 @@ function fromExploreUrlParams(
 
   // TODO: REVISIT
   // Uncomment to disable error about multiple active measures
-  if (preset.exploreSortBy) {
-    if (measures.has(preset.exploreSortBy)) {
-      partialExploreState.leaderboardMeasureNames = [preset.exploreSortBy];
-    } else {
-      errors.push(getSingleFieldError("sort by measure", preset.exploreSortBy));
-    }
-  }
+  // if (preset.exploreSortBy) {
+  //   if (measures.has(preset.exploreSortBy)) {
+  //     partialExploreState.leaderboardMeasureNames = [preset.exploreSortBy];
+  //   } else {
+  //     errors.push(getSingleFieldError("sort by measure", preset.exploreSortBy));
+  //   }
+  // }
 
   if (preset.exploreSortAsc !== undefined) {
     partialExploreState.sortDirection = preset.exploreSortAsc

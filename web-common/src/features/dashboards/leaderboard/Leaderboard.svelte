@@ -147,6 +147,9 @@
     !!comparisonTimeRange,
   );
 
+  $: console.log("Leaderboard activeMeasureName", activeMeasureName);
+  $: console.log("Leaderboard sort", sort);
+
   $: sortedQuery = createQueryServiceMetricsViewAggregation(
     instanceId,
     metricsViewName,
