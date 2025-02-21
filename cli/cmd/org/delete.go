@@ -27,7 +27,7 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 				name = args[0]
 			}
 
-			if len(args) == 0 && ch.Interactive {
+			if len(args) == 0 && ch.Interactive && !cmd.Flags().Changed("org") {
 				err = cmdutil.SetFlagsByInputPrompts(*cmd, "org")
 				if err != nil {
 					return err

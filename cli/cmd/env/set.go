@@ -31,7 +31,7 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 				projectName, variables = args[0], map[string]string{args[1]: args[2]}
 			}
 
-			if projectName == "" {
+			if projectName == "" && !cmd.Flags().Changed("project") {
 				projectName, err = ch.InferProjectName(ctx, ch.Org, projectPath)
 				if err != nil {
 					return fmt.Errorf("unable to infer project name (use `--project` to explicitly specify the name): %w", err)

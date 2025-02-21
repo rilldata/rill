@@ -24,9 +24,11 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				name = args[0]
 			}
 
-			err = cmdutil.StringPromptIfEmpty(&description, "Enter description")
-			if err != nil {
-				return err
+			if !cmd.Flags().Changed("description") {
+				err = cmdutil.StringPromptIfEmpty(&description, "Enter description")
+				if err != nil {
+					return err
+				}
 			}
 
 			_, err = client.EditUsergroup(cmd.Context(), &adminv1.EditUsergroupRequest{
