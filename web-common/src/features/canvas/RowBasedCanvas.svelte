@@ -38,7 +38,7 @@
   }
 
   const COLUMN_COUNT = 12;
-  const MIN_HEIGHT = 160;
+  const MIN_HEIGHT = 40;
   const MIN_WIDTH = 3;
   const baseLayoutArrays = [
     [],
@@ -58,8 +58,6 @@
       spec: { canvasSpec },
     },
   } = ctx;
-
-  // const { canvasEntity } = getCanvasStateManagers();
 
   let spec: V1CanvasSpec = {
     items: [],
@@ -316,7 +314,10 @@
   function onRowResizeStart(e: MouseEvent & { currentTarget: HTMLElement }) {
     initialMousePosition = mousePosition;
     resizeRow = Number(e.currentTarget.getAttribute("data-row"));
-    initialHeight = rowMaps[resizeRow].height;
+    initialHeight =
+      document
+        .querySelector(`#canvas-row-${resizeRow}`)
+        ?.getBoundingClientRect().height ?? rowMaps[resizeRow].height;
   }
 
   function reset() {
@@ -684,6 +685,8 @@
       <RowWrapper
         zIndex={50 - rowIndex * 2}
         {maxWidth}
+        {height}
+        rowId={rowIndex}
         gridTemplate={layout.map((el) => `${el}fr`).join(" ")}
       >
         {#each items as itemIndex, columnIndex (columnIndex)}
@@ -691,9 +694,7 @@
           {@const item = canvasItems[Number(itemIndex)]}
           <div
             style:z-index={4 - columnIndex}
-            class="p-2.5 relative pointer-events-none size-full container"
-            style:min-height="{height}px"
-            style:height="{height}px"
+            class="p-2.5 relative pointer-events-none min-h-fit size-full container"
           >
             {#if editable}
               {#if columnIndex === 0}
@@ -740,7 +741,7 @@
               class:pointer-events-none={resizeColumnInfo}
               class:pointer-events-auto={!resizeColumnInfo}
               class:editable
-              class="group component-card w-full flex-col cursor-pointer z-10 p-0 h-full relative outline outline-[1px] outline-gray-200 bg-white overflow-hidden rounded-sm flex"
+              class="group component-card w-full flex-col min-h-fit cursor-pointer z-10 p-0 h-full relative outline outline-[1px] outline-gray-200 bg-white overflow-hidden rounded-sm flex"
             >
               <div
                 class="group-hover:flex hidden hover:shadow-sm bg-white hover:bg-slate-50 border-transparent hover:border-slate-200 border-b border-l overflow-hidden absolute top-0 right-0 w-fit h-7 rounded-bl-sm z-[10000]"
@@ -779,18 +780,6 @@
                 <PreviewElement component={item} />
               {:else}
                 <LoadingSpinner size="36px" />
-
-                <!-- <div class="element h-fit min-h-fit">
-                    {#each { length: 4 } as _, i (i)}
-                      <div
-                        class="size-full border-r border-b min-h-48 text-2xl grid place-content-center"
-                      >
-                        {Math.round(Math.random() * 1000)}
-                      </div>
-                    {/each}
-                  </div> -->
-                <!-- {:else}
-                <FileWarning size="24px" /> -->
               {/if}
             </article>
           </div>
