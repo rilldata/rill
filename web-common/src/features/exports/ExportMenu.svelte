@@ -14,7 +14,7 @@
   import { onMount } from "svelte";
   import { get } from "svelte/store";
   import { runtime } from "../../runtime-client/runtime-store";
-  import type ScheduledReportDialog from "../scheduled-reports/ScheduledReportDialog.svelte";
+  import type TScheduledReportDialog from "../scheduled-reports/ScheduledReportDialog.svelte";
 
   export let disabled: boolean = false;
   export let workspace = false;
@@ -43,12 +43,12 @@
 
   // Only import the Scheduled Report dialog if in the Cloud context.
   // This ensures Rill Developer doesn't try and fail to import the admin-client.
-  let CreateScheduledReportDialog: typeof ScheduledReportDialog;
+  let ScheduledReportDialog: typeof TScheduledReportDialog;
   onMount(async () => {
     if (includeScheduledReport) {
-      CreateScheduledReportDialog = (
-        await import("../scheduled-reports/ScheduledReportDialog.svelte")
-      ).default;
+      ({ default: ScheduledReportDialog } = await import(
+        "../scheduled-reports/ScheduledReportDialog.svelte"
+      ));
     }
   });
 </script>
@@ -103,9 +103,9 @@
   </DropdownMenu.Content>
 </DropdownMenu.Root>
 
-{#if includeScheduledReport && CreateScheduledReportDialog && showScheduledReportDialog && query}
+{#if includeScheduledReport && ScheduledReportDialog && showScheduledReportDialog && query}
   <svelte:component
-    this={CreateScheduledReportDialog}
+    this={ScheduledReportDialog}
     {query}
     {metricsViewProto}
     {exploreName}
