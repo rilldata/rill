@@ -30,6 +30,14 @@ type FeatureFlagKey = keyof Omit<FeatureFlags, "set">;
 class FeatureFlags {
   adminServer = new FeatureFlag("rill", false);
   readOnly = new FeatureFlag("rill", false);
+  /**
+   * We make some calls to cloud for fetching user related stats. But this is not needed in playwring tests.
+   * While there wont be token in CI there could be one when running on a dev's laptop.
+   */
+  rillDevCloudFeatures = new FeatureFlag(
+    "rill",
+    !import.meta.env.VITE_PLAYWRIGHT_TEST,
+  );
 
   ai = new FeatureFlag("user", !import.meta.env.VITE_PLAYWRIGHT_TEST);
   exports = new FeatureFlag("user", true);
