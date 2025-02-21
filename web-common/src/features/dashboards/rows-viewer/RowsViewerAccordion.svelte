@@ -8,20 +8,17 @@
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
   import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
   import {
-    V1ExportFormat,
-    createQueryServiceExport,
     createQueryServiceMetricsViewAggregation,
     type V1Expression,
     type V1MetricsViewAggregationResponseDataItem,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { get } from "svelte/store";
   import { useExploreState } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import ExportMenu from "../../exports/ExportMenu.svelte";
   import { featureFlags } from "../../feature-flags";
+  import { mergeMeasureFilters } from "../filters/measure-filters/measure-filter-utils";
   import RowsViewer from "./RowsViewer.svelte";
-  import exportMetrics from "./export-metrics";
-
-  const exportDash = createQueryServiceExport();
 
   const { exports } = featureFlags;
   const timeControlsStore = useTimeControlStore(getStateManagers());
@@ -132,14 +129,6 @@
     manualClose = true;
     isOpen = !isOpen;
   }
-
-  const handleExportMetrics = async (format: V1ExportFormat) => {
-    await exportMetrics({
-      ctx: stateManagers,
-      query: exportDash,
-      format,
-    });
-  };
 </script>
 
 <div
@@ -168,7 +157,21 @@
     </button>
     {#if $exports}
       <div class="ml-auto">
-        <ExportMenu onExport={handleExportMetrics} label="Export model data" />
+        <ExportMenu
+          query={{
+            metricsViewRowsRequest: {
+              instanceId: get(runtime).instanceId,
+              metricsViewName,
+              timeStart: timeRange.start,
+              timeEnd: timeRange.end,
+              where: sanitiseExpression(
+                mergeMeasureFilters($exploreState),
+                undefined,
+              ),
+            },
+          }}
+          label="Export model data"
+        />
       </div>
     {/if}
   </div>

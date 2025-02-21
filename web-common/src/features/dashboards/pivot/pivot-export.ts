@@ -5,8 +5,6 @@ import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/ti
 import { mapTimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
 import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import {
-  createQueryServiceExport,
-  V1ExportFormat,
   type V1MetricsViewAggregationRequest,
   V1TimeGrain,
   type V1TimeRange,
@@ -24,63 +22,6 @@ import {
   type PivotRows,
   type PivotState,
 } from "./types";
-
-export default async function exportPivot({
-  ctx,
-  query,
-  format,
-  timeDimension,
-}: {
-  ctx: StateManagers;
-  query: ReturnType<typeof createQueryServiceExport>;
-  format: V1ExportFormat;
-  timeDimension: string | undefined;
-}) {
-  const instanceId = get(runtime).instanceId;
-  const metricsViewName = get(ctx.metricsViewName);
-  const dashboard = get(ctx.dashboardStore);
-  const selectedTimeRange = get(
-    ctx.selectors.timeRangeSelectors.selectedTimeRangeState,
-  );
-  const rows = get(ctx.selectors.pivot.rows);
-  const columns = get(ctx.selectors.pivot.columns);
-
-  const configStore = getPivotConfig(ctx);
-  const enableComparison = get(configStore).enableComparison;
-  const comparisonTime = get(configStore).comparisonTime;
-  const pivotState = get(configStore).pivot;
-
-  const timeRange = {
-    start: selectedTimeRange?.start.toISOString(),
-    end: selectedTimeRange?.end.toISOString(),
-  };
-
-  const pivotAggregationRequest = getPivotAggregationRequest(
-    metricsViewName,
-    timeDimension ?? "",
-    dashboard,
-    timeRange,
-    rows,
-    columns,
-    enableComparison,
-    comparisonTime,
-    pivotState,
-  );
-
-  const result = await get(query).mutateAsync({
-    instanceId,
-    data: {
-      format,
-      query: {
-        metricsViewAggregationRequest: pivotAggregationRequest,
-      },
-    },
-  });
-
-  const downloadUrl = `${get(runtime).host}${result.downloadUrlPath}`;
-
-  window.open(downloadUrl, "_self");
-}
 
 export function getPivotExportArgs(ctx: StateManagers) {
   return derived(

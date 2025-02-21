@@ -25,23 +25,18 @@
   import type {
     DashboardTimeControls,
     TimeGrain,
+    TimeRange,
   } from "@rilldata/web-common/lib/time/types";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
-  import {
-    createQueryServiceExport,
-    V1ExportFormat,
-    V1TimeGrain,
-  } from "@rilldata/web-common/runtime-client";
+  import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { fly } from "svelte/transition";
   import ExportMenu from "../../exports/ExportMenu.svelte";
   import { featureFlags } from "../../feature-flags";
   import { PivotChipType } from "../pivot/types";
+  import { useTimeControlStore } from "../time-controls/time-control-store";
   import TimeGrainSelector from "../time-controls/TimeGrainSelector.svelte";
-  import exportTDD from "./export-tdd";
   import { getTDDExportArgs } from "./getTDDExportArgs";
   import type { TDDComparison } from "./types";
-  import type { TimeRange } from "@rilldata/web-common/lib/time/types";
-  import { useTimeControlStore } from "../time-controls/time-control-store";
 
   export let exploreName: string;
   export let dimensionName: string;
@@ -54,7 +49,6 @@
   export let hideStartPivotButton = false;
 
   const { adminServer, exports } = featureFlags;
-  const exportDash = createQueryServiceExport();
   const stateManagers = getStateManagers();
 
   const {
@@ -167,16 +161,6 @@
       },
     );
   }
-
-  const handleExportTDD = async (format: V1ExportFormat) => {
-    await exportTDD({
-      ctx: stateManagers,
-      query: exportDash,
-      format,
-      timeDimension: $validSpecStore.data?.metricsView?.timeDimension as string,
-      searchText: $dimensionSearchText,
-    });
-  };
 
   const timeControlsStore = useTimeControlStore(stateManagers);
 
@@ -316,9 +300,10 @@
       {#if $exports}
         <ExportMenu
           label="Export table data"
-          onExport={handleExportTDD}
           includeScheduledReport={$adminServer}
-          queryArgs={$scheduledReportsQueryArgs}
+          query={{
+            metricsViewAggregationRequest: $scheduledReportsQueryArgs,
+          }}
           {metricsViewProto}
           {exploreName}
         />
