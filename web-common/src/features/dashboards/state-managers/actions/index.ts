@@ -3,10 +3,7 @@ import { measureFilterActions } from "@rilldata/web-common/features/dashboards/s
 import { sortActions } from "./sorting";
 import { contextColActions } from "./context-columns";
 import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
-import {
-  setLeaderboardMeasureName,
-  setLeaderboardMeasureNames,
-} from "./core-actions";
+import { setLeaderboardMeasureNames } from "./core-actions";
 import { dimensionTableActions } from "./dimension-table";
 import type {
   DashboardCallbackExecutor,
@@ -84,16 +81,6 @@ export const createStateManagerActions = (
      * Actions related to measure filters
      */
     measuresFilter: createDashboardUpdaters(actionArgs, measureFilterActions),
-
-    // Note: for now, some core actions are kept in the root of the
-    // actions object. Can revisit that later if we want to move them.
-    /**
-     * sets the main measure name for the dashboard.
-     */
-    setLeaderboardMeasureName: dashboardMutatorToUpdater(
-      actionArgs,
-      setLeaderboardMeasureName,
-    ),
 
     /**
      * Sets the leaderboard measure names for the dashboard.
