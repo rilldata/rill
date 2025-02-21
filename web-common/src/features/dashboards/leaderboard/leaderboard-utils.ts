@@ -116,6 +116,7 @@ function getApiSortName(activeMeasureName: string, sortType: SortType) {
   }
 }
 
+// TODO: support multiple measures
 export function getSort(
   ascending: boolean,
   type: SortType,
