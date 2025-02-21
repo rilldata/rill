@@ -242,7 +242,6 @@ setup.describe("global setup", () => {
         { intervals: Array(24).fill(5_000), timeout: 180_000 },
       )
       .toContain("Last refreshed");
-         
   });
 });
 
