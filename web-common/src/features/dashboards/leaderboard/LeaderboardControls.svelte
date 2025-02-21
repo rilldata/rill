@@ -10,23 +10,16 @@
 
   const {
     selectors: {
-      measures: {
-        leaderboardMeasureName,
-        leaderboardMeasureNames,
-        getMeasureByName,
-        visibleMeasures,
-      },
+      measures: { leaderboardMeasureNames, getMeasureByName, visibleMeasures },
       dimensions: { visibleDimensions, allDimensions },
     },
     actions: {
       dimensions: { toggleDimensionVisibility },
       contextCol: { setContextColumn },
-      setLeaderboardMeasureName,
       setLeaderboardMeasureNames,
     },
   } = getStateManagers();
 
-  $: console.log("leaderboardMeasureName: ", $leaderboardMeasureName);
   $: console.log("leaderboardMeasureNames: ", $leaderboardMeasureNames);
 
   $: measures = getSimpleMeasures($visibleMeasures);
@@ -34,7 +27,8 @@
   $: metricsExplorer = $metricsExplorerStore.entities[exploreName];
 
   // TODO: support multiple active measures
-  $: activeLeaderboardMeasure = $getMeasureByName($leaderboardMeasureName);
+  // First measure is used as the active measure
+  $: activeLeaderboardMeasure = $getMeasureByName($leaderboardMeasureNames[0]);
   $: console.log("activeLeaderboardMeasure: ", activeLeaderboardMeasure);
 
   $: validPercentOfTotal =
@@ -89,9 +83,6 @@
         selectedMeasureNames={$leaderboardMeasureNames}
         onSelect={(names) => {
           setLeaderboardMeasureNames(names);
-
-          // TODO: to see how the url state changes when leaderboardMeasureName is set
-          // setLeaderboardMeasureName(names[0]);
         }}
       />
     </div>

@@ -248,7 +248,7 @@ export function prepareVirtualizedDimTableColumns(
   const sortDirection = dash.sortDirection;
 
   const measureNames = allMeasures.map((m) => m.name);
-  const leaderboardMeasureName = dash.leaderboardMeasureName;
+  const leaderboardMeasureName = dash.leaderboardMeasureNames[0];
   const selectedMeasure = allMeasures.find(
     (m) => m.name === leaderboardMeasureName,
   );

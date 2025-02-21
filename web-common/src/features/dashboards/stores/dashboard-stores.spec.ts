@@ -344,7 +344,7 @@ describe("dashboard-stores", () => {
       // assert that the selected measure is reset to the 1st available one
       expect(
         get(metricsExplorerStore).entities[AD_BIDS_MIRROR_NAME]
-          .leaderboardMeasureName,
+          .leaderboardMeasureNames[0],
       ).toBe(AD_BIDS_IMPRESSIONS_MEASURE);
     });
 
