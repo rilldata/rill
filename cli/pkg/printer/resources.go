@@ -544,6 +544,7 @@ type billingIssue struct {
 	EventTime    string `header:"event_time,timestamp(ms|utc|human)" json:"event_time"`
 }
 
+// PrintQueryResponse prints the query response in the desired format (human, json, csv)
 func (p *Printer) PrintQueryResponse(res *runtimev1.QueryResolverResponse) {
 	if len(res.Data) == 0 {
 		p.PrintfWarn("No data found\n")
@@ -551,6 +552,7 @@ func (p *Printer) PrintQueryResponse(res *runtimev1.QueryResolverResponse) {
 	}
 
 	switch p.Format {
+	// Interceptor for human format
 	case FormatHuman:
 		headers := extractQueryHeaders(res.Schema)
 		rows := make([][]string, len(res.Data))
@@ -569,6 +571,7 @@ func (p *Printer) PrintQueryResponse(res *runtimev1.QueryResolverResponse) {
 		tableprinter.New(p.dataOut()).Render(headers, rows, nil, false)
 		return
 
+	// Interceptor for CSV format
 	case FormatCSV:
 		headers := extractQueryHeaders(res.Schema)
 		w := csv.NewWriter(p.dataOut())
