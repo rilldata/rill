@@ -2372,7 +2372,7 @@ export interface V1CanvasState {
 export interface V1CanvasRow {
   /** Height of the row. The unit is given in height_unit. */
   height?: number;
-  /** Unit of the height. Currently it's always "px". */
+  /** Unit of the height. Current possible values: "px", empty string. */
   heightUnit?: string;
   /** Items to render in the row. */
   items?: V1CanvasItem[];
@@ -2427,7 +2427,7 @@ export interface V1CanvasItem {
   definedInCanvas?: boolean;
   /** Width of the item. The unit is given in width_unit. */
   width?: number;
-  /** Unit of the width. Currently it's always empty, indicating relative units. */
+  /** Unit of the width. Current possible values: empty string. */
   widthUnit?: string;
 }
 

@@ -35,9 +35,9 @@ type CanvasYAML struct {
 	} `yaml:"defaults"`
 	Variables []*ComponentVariableYAML `yaml:"variables"`
 	Rows      []*struct {
-		Height string `yaml:"height"`
+		Height *string `yaml:"height"`
 		Items  []*struct {
-			Width     string    `yaml:"width"`
+			Width     *string   `yaml:"width"`
 			Component yaml.Node `yaml:"component"` // Can be a name (string) or inline component definition (map)
 		} `yaml:"items"`
 	}
@@ -124,12 +124,18 @@ func (p *Parser) parseCanvas(node *Node) error {
 			return fmt.Errorf("row at index %d is empty", i)
 		}
 
-		height, heightUnit, err := parseItemSize(row.Height)
-		if err != nil {
-			return fmt.Errorf("invalid height for row %d: %w", i, err)
-		}
-		if height != 0 && heightUnit != "px" {
-			return fmt.Errorf("invalid height unit %q for row %d: unit must be 'px'", heightUnit, i)
+		var height *uint32
+		var heightUnit string
+		if row.Height != nil {
+			v, u, err := parseItemSize(*row.Height)
+			if err != nil {
+				return fmt.Errorf("invalid height for row %d: %w", i, err)
+			}
+			if v != 0 && u != "px" {
+				return fmt.Errorf("invalid height unit %q for row %d: unit must be 'px'", u, i)
+			}
+			height = &v
+			heightUnit = u
 		}
 
 		var items []*runtimev1.CanvasItem
@@ -138,12 +144,18 @@ func (p *Parser) parseCanvas(node *Node) error {
 				return fmt.Errorf("item %d in row %d is empty", j, i)
 			}
 
-			width, widthUnit, err := parseItemSize(item.Width)
-			if err != nil {
-				return fmt.Errorf("invalid width for item %d in row %d: %w", j, i, err)
-			}
-			if widthUnit != "" {
-				return fmt.Errorf("invalid width unit %q for item %d in row %d: 'width' cannot have a unit", widthUnit, j, i)
+			var width *uint32
+			var widthUnit string
+			if item.Width != nil {
+				v, u, err := parseItemSize(*item.Width)
+				if err != nil {
+					return fmt.Errorf("invalid width for item %d in row %d: %w", j, i, err)
+				}
+				if u != "" {
+					return fmt.Errorf("invalid width unit %q for item %d in row %d: 'width' cannot have a unit", u, j, i)
+				}
+				width = &v
+				widthUnit = u
 			}
 
 			component, inlineComponentDef, err := p.parseCanvasItemComponent(node.Name, i, j, item.Component)

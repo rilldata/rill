@@ -4685,12 +4685,12 @@ export class CanvasRow extends Message<CanvasRow> {
   /**
    * Height of the row. The unit is given in height_unit.
    *
-   * @generated from field: uint32 height = 1;
+   * @generated from field: optional uint32 height = 1;
    */
-  height = 0;
+  height?: number;
 
   /**
-   * Unit of the height. Currently it's always "px".
+   * Unit of the height. Current possible values: "px", empty string.
    *
    * @generated from field: string height_unit = 2;
    */
@@ -4711,7 +4711,7 @@ export class CanvasRow extends Message<CanvasRow> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.CanvasRow";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "height", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 1, name: "height", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
     { no: 2, name: "height_unit", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "items", kind: "message", T: CanvasItem, repeated: true },
   ]);
@@ -4754,12 +4754,12 @@ export class CanvasItem extends Message<CanvasItem> {
   /**
    * Width of the item. The unit is given in width_unit.
    *
-   * @generated from field: uint32 width = 9;
+   * @generated from field: optional uint32 width = 9;
    */
-  width = 0;
+  width?: number;
 
   /**
-   * Unit of the width. Currently it's always empty, indicating relative units.
+   * Unit of the width. Current possible values: empty string.
    *
    * @generated from field: string width_unit = 10;
    */
@@ -4775,7 +4775,7 @@ export class CanvasItem extends Message<CanvasItem> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "component", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "defined_in_canvas", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 9, name: "width", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 9, name: "width", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
     { no: 10, name: "width_unit", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 

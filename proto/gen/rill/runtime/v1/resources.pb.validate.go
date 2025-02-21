@@ -10722,8 +10722,6 @@ func (m *CanvasRow) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Height
-
 	// no validation rules for HeightUnit
 
 	for idx, item := range m.GetItems() {
@@ -10758,6 +10756,10 @@ func (m *CanvasRow) validate(all bool) error {
 			}
 		}
 
+	}
+
+	if m.Height != nil {
+		// no validation rules for Height
 	}
 
 	if len(errors) > 0 {
@@ -10863,9 +10865,11 @@ func (m *CanvasItem) validate(all bool) error {
 
 	// no validation rules for DefinedInCanvas
 
-	// no validation rules for Width
-
 	// no validation rules for WidthUnit
+
+	if m.Width != nil {
+		// no validation rules for Width
+	}
 
 	if len(errors) > 0 {
 		return CanvasItemMultiError(errors)

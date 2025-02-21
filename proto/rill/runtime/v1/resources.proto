@@ -744,8 +744,8 @@ message CanvasState {
 
 message CanvasRow {
   // Height of the row. The unit is given in height_unit.
-  uint32 height = 1;
-  // Unit of the height. Currently it's always "px".
+  optional uint32 height = 1;
+  // Unit of the height. Current possible values: "px", empty string.
   string height_unit = 2;
   // Items to render in the row.
   repeated CanvasItem items = 3;
@@ -757,8 +757,8 @@ message CanvasItem {
   // Indicates if the component was defined inline as part of the canvas YAML.
   bool defined_in_canvas = 8;
   // Width of the item. The unit is given in width_unit.
-  uint32 width = 9;
-  // Unit of the width. Currently it's always empty, indicating relative units.
+  optional uint32 width = 9;
+  // Unit of the width. Current possible values: empty string.
   string width_unit = 10;
 }
 

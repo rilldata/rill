@@ -1794,11 +1794,11 @@ rows:
 						},
 					},
 					{
-						Height:     100,
+						Height:     asPtr(uint32(100)),
 						HeightUnit: "px",
 						Items: []*runtimev1.CanvasItem{
 							{Component: "c2"},
-							{Component: "d1--component-1-1", DefinedInCanvas: true, Width: 2},
+							{Component: "d1--component-1-1", DefinedInCanvas: true, Width: asPtr(uint32(2))},
 						},
 					},
 				},
