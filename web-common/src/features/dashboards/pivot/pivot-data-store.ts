@@ -89,7 +89,7 @@ export function createTableCellQuery(
   if (!isFlat && rowDimensionValues.length === 0 && rowPage > 1)
     return readable(null);
 
-  let allDimensions: string[] = [];
+  let allDimensions = colDimensionNames;
 
   if (isFlat) {
     allDimensions = colDimensionNames.concat(rowDimensionNames);
