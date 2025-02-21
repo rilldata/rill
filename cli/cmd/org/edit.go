@@ -57,9 +57,14 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				Name: org.Name,
 			}
 
+			flagsSet := cmd.Flags().Changed("display-name") || cmd.Flags().Changed("description") || cmd.Flags().Changed("billing-email")
+			if !flagsSet && !ch.Interactive {
+				return fmt.Errorf("at least one flag must be set")
+			}
+
 			if cmd.Flags().Changed("display-name") {
 				req.DisplayName = &displayName
-			} else if ch.Interactive {
+			} else if ch.Interactive && !flagsSet {
 				ok, err := cmdutil.ConfirmPrompt("Do you want to update the display name", "", false)
 				if err != nil {
 					return err
@@ -75,7 +80,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			if cmd.Flags().Changed("description") {
 				req.Description = &description
-			} else if ch.Interactive {
+			} else if ch.Interactive && !flagsSet {
 				ok, err := cmdutil.ConfirmPrompt("Do you want to update the description", "", false)
 				if err != nil {
 					return err
@@ -91,7 +96,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			if cmd.Flags().Changed("billing-email") {
 				req.BillingEmail = &billingEmail
-			} else if ch.Interactive {
+			} else if ch.Interactive && !flagsSet {
 				ok, err := cmdutil.ConfirmPrompt("Do you want to update the billing email", "", false)
 				if err != nil {
 					return err

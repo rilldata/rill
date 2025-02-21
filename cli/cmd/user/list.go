@@ -18,6 +18,13 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 		Use:   "list",
 		Short: "List users",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Skip interactive prompts if any flags are explicitly set
+			if cmd.Flags().Changed("org") || cmd.Flags().Changed("project") ||
+				cmd.Flags().Changed("group") || cmd.Flags().Changed("page-size") ||
+				cmd.Flags().Changed("page-token") {
+				ch.Interactive = false
+			}
+
 			if groupName != "" {
 				err := listUsergroupMembers(cmd, ch, ch.Org, groupName, pageToken, pageSize)
 				if err != nil {

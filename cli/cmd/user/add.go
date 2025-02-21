@@ -19,16 +19,18 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 		Use:   "add",
 		Short: "Add user to a project, organization or group",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if group == "" {
+			if group == "" && !cmd.Flags().Changed("role") {
 				err := cmdutil.SelectPromptIfEmpty(&role, "Select role", userRoles, "")
 				if err != nil {
 					return err
 				}
 			}
 
-			err := cmdutil.StringPromptIfEmpty(&email, "Enter email")
-			if err != nil {
-				return err
+			if !cmd.Flags().Changed("email") {
+				err := cmdutil.StringPromptIfEmpty(&email, "Enter email")
+				if err != nil {
+					return err
+				}
 			}
 
 			client, err := ch.Client()

@@ -60,7 +60,7 @@ func AssumeCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// Select org for new user
-			err = auth.SelectOrgFlow(ctx, ch, true)
+			err = auth.SelectOrgFlow(ctx, ch, true, "")
 			if err != nil {
 				return err
 			}

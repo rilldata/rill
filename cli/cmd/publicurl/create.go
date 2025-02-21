@@ -33,7 +33,7 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 			if len(args) == 2 {
 				project = args[0]
 			}
-			if !cmd.Flags().Changed("project") && len(args) == 0 && ch.Interactive {
+			if !cmd.Flags().Changed("project") && len(args) == 0 && ch.Interactive && !cmd.Flags().Changed("path") {
 				var err error
 				project, err = ch.InferProjectName(cmd.Context(), ch.Org, path)
 				if err != nil {

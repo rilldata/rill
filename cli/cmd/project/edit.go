@@ -12,6 +12,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	var name, description, prodVersion, prodBranch, subpath, path, provisioner string
 	var public bool
 	var prodTTL int64
+	var slots int
 
 	editCmd := &cobra.Command{
 		Use:   "edit [<project-name>]",
@@ -49,38 +50,47 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				OrganizationName: ch.Org,
 				Name:             name,
 			}
-			promptFlagValues := ch.Interactive
+
+			// Check if any project-related flags were explicitly set
+			anyFlagsChanged := cmd.Flags().Changed("prod-slots") ||
+				cmd.Flags().Changed("provisioner") ||
+				cmd.Flags().Changed("description") ||
+				cmd.Flags().Changed("prod-version") ||
+				cmd.Flags().Changed("prod-branch") ||
+				cmd.Flags().Changed("subpath") ||
+				cmd.Flags().Changed("public") ||
+				cmd.Flags().Changed("prod-ttl-seconds")
+
+			// Set values from flags if they were changed
+			if cmd.Flags().Changed("prod-slots") {
+				prodSlots := int64(slots)
+				req.ProdSlots = &prodSlots
+			}
 			if cmd.Flags().Changed("provisioner") {
-				promptFlagValues = false
 				req.Provisioner = &provisioner
 			}
 			if cmd.Flags().Changed("description") {
-				promptFlagValues = false
 				req.Description = &description
 			}
 			if cmd.Flags().Changed("prod-version") {
-				promptFlagValues = false
 				req.ProdVersion = &prodVersion
 			}
 			if cmd.Flags().Changed("prod-branch") {
-				promptFlagValues = false
 				req.ProdBranch = &prodBranch
 			}
 			if cmd.Flags().Changed("subpath") {
-				promptFlagValues = false
 				req.Subpath = &subpath
 			}
 			if cmd.Flags().Changed("public") {
-				promptFlagValues = false
 				req.Public = &public
 			}
 
 			if cmd.Flags().Changed("prod-ttl-seconds") {
-				promptFlagValues = false
 				req.ProdTtlSeconds = &prodTTL
 			}
 
-			if promptFlagValues {
+			// Only prompt interactively if no flags were explicitly set
+			if ch.Interactive && !anyFlagsChanged {
 				resp, err := client.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: ch.Org, Name: name})
 				if err != nil {
 					return err

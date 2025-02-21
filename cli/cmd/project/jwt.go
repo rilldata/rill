@@ -36,6 +36,9 @@ func JwtCmd(ch *cmdutil.Helper) *cobra.Command {
 				if err != nil {
 					return err
 				}
+			} else if cmd.Flags().Changed("project") {
+				// Use the flag value directly when provided
+				name = cmd.Flag("project").Value.String()
 			}
 
 			res, err := client.GetProject(cmd.Context(), &adminv1.GetProjectRequest{

@@ -36,15 +36,24 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				ch.PrintSubscriptions([]*adminv1.Subscription{subResp.Subscription})
 			}
 
-			ch.PrintfWarn("\nEditing plan for organization %q. Plan change will take place immediately.\n", ch.Org)
-			ch.PrintfWarn("\nTo renew a cancelled subscription, please use `rill billing subscription renew` command.\n")
-			ok, err := cmdutil.ConfirmPrompt("Do you want to continue?", "", false)
-			if err != nil {
-				return err
-			}
-			if !ok {
-				ch.PrintfWarn("Aborted\n")
-				return nil
+			// Skip confirmation and prompts if plan is provided via flag
+			if plan == "" {
+				ch.PrintfWarn("\nEditing plan for organization %q. Plan change will take place immediately.\n", ch.Org)
+				ch.PrintfWarn("\nTo renew a cancelled subscription, please use `rill billing subscription renew` command.\n")
+				ok, err := cmdutil.ConfirmPrompt("Do you want to continue?", "", false)
+				if err != nil {
+					return err
+				}
+				if !ok {
+					ch.PrintfWarn("Aborted\n")
+					return nil
+				}
+
+				// Prompt for plan if not provided via flag
+				plan, err = cmdutil.SelectPrompt("Select plan:", []string{"starter", "pro", "enterprise"}, "")
+				if err != nil {
+					return err
+				}
 			}
 
 			resp, err := client.UpdateBillingSubscription(cmd.Context(), &adminv1.UpdateBillingSubscriptionRequest{

@@ -27,7 +27,8 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 				name = args[0]
 			}
 
-			if len(args) == 0 && ch.Interactive {
+			// Only prompt interactively if no name is provided via args or flags
+			if len(args) == 0 && name == "" && ch.Interactive {
 				err = cmdutil.SetFlagsByInputPrompts(*cmd, "name")
 				if err != nil {
 					return err
