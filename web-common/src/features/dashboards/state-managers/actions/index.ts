@@ -5,7 +5,7 @@ import { contextColActions } from "./context-columns";
 import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
 import {
   setLeaderboardMeasureName,
-  setSelectedMeasureNames,
+  setLeaderboardMeasureNames,
 } from "./core-actions";
 import { dimensionTableActions } from "./dimension-table";
 import type {
@@ -96,11 +96,11 @@ export const createStateManagerActions = (
     ),
 
     /**
-     * Sets the selected measure names for the dashboard.
+     * Sets the leaderboard measure names for the dashboard.
      */
-    setSelectedMeasureNames: dashboardMutatorToUpdater(
+    setLeaderboardMeasureNames: dashboardMutatorToUpdater(
       actionArgs,
-      setSelectedMeasureNames,
+      setLeaderboardMeasureNames,
     ),
   };
 };
