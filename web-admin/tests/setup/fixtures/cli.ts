@@ -3,13 +3,13 @@ import {
   execAsync,
   spawnAndMatch,
   type SpawnAndMatchResult,
-} from "../../utils/spawn";
+} from "@rilldata/web-common/tests/utils/spawn";
 
 export async function cliLogin(page: Page) {
   // Run the login command and capture the verification URL
   const { process, match }: SpawnAndMatchResult = await spawnAndMatch(
     "rill",
-    ["login"],
+    ["login", "--interactive=false"],
     /Open this URL in your browser to confirm the login: (.*)\n/,
   );
 

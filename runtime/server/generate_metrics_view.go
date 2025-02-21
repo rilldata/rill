@@ -142,7 +142,7 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 		start := time.Now()
 		res, err := s.generateMetricsViewYAMLWithAI(ctx, req.InstanceId, olap.Dialect().String(), req.Connector, tbl, isDefaultConnector, modelFound)
 		if err != nil {
-			s.logger.Warn("failed to generate metrics view YAML using AI", zap.Error(err))
+			s.logger.Warn("failed to generate metrics view YAML using AI", zap.Error(err), observability.ZapCtx(ctx))
 		} else {
 			data = res.data
 			aiSucceeded = true
