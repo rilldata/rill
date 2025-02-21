@@ -1426,6 +1426,9 @@ export interface V1MetricsViewState {
   /** Streaming is true if the underlying data may change without the metrics view's spec/state version changing.
 It's set to true if the metrics view is based on an externally managed table. */
   streaming?: boolean;
+  /** The last time the metrics view's underlying model was refreshed.
+This may be empty if the metrics view is based on an externally managed table. */
+  modelRefreshedOn?: string;
 }
 
 export interface V1MetricsViewSort {
