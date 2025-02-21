@@ -62,11 +62,11 @@
 
 {#if $schema.isValid}
   {#if $data.isFetching}
-    <div class="flex items-center h-full w-full">
-      <Spinner status={EntityStatus.Running} size="16px" />
+    <div class="flex items-center justify-center h-full w-full">
+      <Spinner status={EntityStatus.Running} size="20px" />
     </div>
   {:else if $data.error}
-    <div class="text-red-500">{$data.error.message}</div>
+    <ComponentError error={$data.error.message} />
   {:else}
     <ComponentHeader
       faint={!chartConfig?.title}
