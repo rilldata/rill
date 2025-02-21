@@ -52,6 +52,7 @@ export interface MetricsExplorerEntity {
    */
   allDimensionsVisible: boolean;
 
+  // TODO: to be removed
   /**
    * This is the name of the primary active measure in the dashboard.
    * This is the measure that will be shown in leaderboards, and
@@ -59,11 +60,12 @@ export interface MetricsExplorerEntity {
    * This "name" is the internal name of the measure from the YAML,
    * not the human readable name.
    */
-  leaderboardMeasureName: string;
+  // leaderboardMeasureName: string;
 
   /**
-   * Array of selected measure names for multi-select support.
-   * The first item in this array matches leaderboardMeasureName.
+   * Array of active measures in the dashboard. These measures are used
+   * in the leaderboards and dimension detail table. This "name" is the
+   * internal name of the measure from the YAML, not the human readable name.
    */
   leaderboardMeasureNames: string[];
 
