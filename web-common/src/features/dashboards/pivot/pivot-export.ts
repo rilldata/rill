@@ -1,4 +1,4 @@
-import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -146,7 +146,13 @@ export function getPivotAggregationRequest(
       ? prepareMeasureForComparison(measures)
       : measures,
     dimensions: allDimensions,
-    where: sanitiseExpression(mergeMeasureFilters(dashboardState), undefined),
+    where: sanitiseExpression(
+      mergeDimensionAndMeasureFilters(
+        dashboardState.whereFilter,
+        dashboardState.dimensionThresholdFilters,
+      ),
+      undefined,
+    ),
     pivotOn,
     sort,
     offset: "0",

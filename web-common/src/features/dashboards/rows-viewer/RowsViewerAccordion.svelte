@@ -17,7 +17,7 @@
   import { useExploreState } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import ExportMenu from "../../exports/ExportMenu.svelte";
   import { featureFlags } from "../../feature-flags";
-  import { mergeMeasureFilters } from "../filters/measure-filters/measure-filter-utils";
+  import { mergeDimensionAndMeasureFilters } from "../filters/measure-filters/measure-filter-utils";
   import RowsViewer from "./RowsViewer.svelte";
 
   const { exports } = featureFlags;
@@ -165,7 +165,10 @@
               timeStart: timeRange.start,
               timeEnd: timeRange.end,
               where: sanitiseExpression(
-                mergeMeasureFilters($exploreState),
+                mergeDimensionAndMeasureFilters(
+                  $exploreState.whereFilter,
+                  $exploreState.dimensionThresholdFilters,
+                ),
                 undefined,
               ),
             },

@@ -5,7 +5,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
 import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import {
-  mergeDimensionAndMeasureFilter,
+  mergeDimensionAndMeasureFilters,
   splitWhereFilter,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import type { DimensionFilterItem } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
@@ -312,7 +312,7 @@ export class Filters {
       ([$whereFilter, $dtf]) => {
         const mergedFilters =
           sanitiseExpression(
-            mergeDimensionAndMeasureFilter(
+            mergeDimensionAndMeasureFilters(
               $whereFilter ?? createAndExpression([]),
               $dtf,
             ),

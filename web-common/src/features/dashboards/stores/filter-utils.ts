@@ -1,4 +1,4 @@
-import { mergeDimensionAndMeasureFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
   V1Operation,
@@ -417,7 +417,7 @@ export function buildValidMetricsViewFilter(
   });
 
   return sanitiseExpression(
-    mergeDimensionAndMeasureFilter(whereFilter, dimensionThresholdFilter),
+    mergeDimensionAndMeasureFilters(whereFilter, dimensionThresholdFilter),
     undefined,
   );
 }
