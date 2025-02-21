@@ -128,20 +128,13 @@
       bind:grid
       {items}
       {spec}
-      let:index
       let:item
       on:select={handleSelect}
       on:deselect={handleDeselect}
       on:resizestop={handleResizeStop}
       on:dragstop={handleDragStop}
     >
-      {@const selected = index === activeIndex}
-      <PreviewElement
-        i={index}
-        {selected}
-        component={item}
-        on:delete={handleDelete}
-      />
+      <PreviewElement component={item} on:delete={handleDelete} />
     </SvelteGridStack>
   </div>
 </CanvasDashboardWrapper>
