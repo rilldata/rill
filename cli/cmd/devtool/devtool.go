@@ -19,7 +19,7 @@ func DevtoolCmd(ch *cmdutil.Helper) *cobra.Command {
   rill devtool start local --reset
   rill devtool switch-env stage
   rill devtool dotenv upload cloud`,
-		Hidden:  true,
+		Hidden:  !ch.IsDev(),
 		GroupID: internalGroupID,
 	}
 

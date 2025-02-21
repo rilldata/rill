@@ -1,14 +1,15 @@
 <script lang="ts">
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
+  import { getLocalComparison } from "@rilldata/web-common/features/canvas/components/kpi/util";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
-  import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
   import {
     createQueryServiceMetricsViewAggregation,
     createQueryServiceMetricsViewTimeSeries,
@@ -21,8 +22,10 @@
   import { DateTime, Interval } from "luxon";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import RangeDisplay from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/RangeDisplay.svelte";
+  import type { Readable } from "svelte/motion";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
+  export let timeAndFilterStore: Readable<TimeAndFilterStore>;
 
   const ctx = getCanvasStateManagers();
   const {
@@ -43,9 +46,12 @@
     metrics_view: metricsViewName,
     measure: measureName,
     sparkline,
+    time_filters: timeFilters,
     comparison: comparisonOptions,
-    comparison_range: comparisonTimeRange,
   } = kpiProperties);
+
+  $: ({ showLocalTimeComparison, localComparisonTimeRange } =
+    getLocalComparison(timeFilters));
 
   $: schema = validateKPISchema(ctx, kpiProperties);
 
@@ -63,23 +69,21 @@
 
   $: ({ isValid } = $schema);
 
-  $: timeAndFilterStore = ctx.canvasEntity.createTimeAndFilterStore(
-    metricsViewName,
-    {
-      componentFilter: kpiProperties.dimension_filters,
-      componentComparisonRange: comparisonTimeRange,
-    },
-  );
-
   $: ({
     timeGrain,
     timeRange: { timeZone, start, end },
     where,
-    comparisonRange: { start: comparisonStart, end: comparisonEnd },
+    comparisonTimeRange,
   } = $timeAndFilterStore);
 
   $: showComparison =
-    ($showTimeComparison || !!comparisonTimeRange) && !!comparisonOptions;
+    ($showTimeComparison || showLocalTimeComparison) && !!comparisonOptions;
+
+  $: comparisonLabel =
+    (localComparisonTimeRange?.name &&
+      TIME_COMPARISON[localComparisonTimeRange.name]?.label) ||
+    ($selectedComparisonTimeRange?.name &&
+      TIME_COMPARISON[$selectedComparisonTimeRange.name]?.label);
 
   // BIG NUMBER QUERIES
   $: kpiTotalsQuery = createQueryServiceMetricsViewAggregation(
@@ -106,16 +110,13 @@
     metricsViewName,
     {
       measures: [{ name: measureName }],
-      timeRange: {
-        start: comparisonStart,
-        end: comparisonEnd,
-        timeZone,
-      },
+      timeRange: comparisonTimeRange,
       where,
     },
     {
       query: {
-        enabled: showComparison && isValid && !!start && !!end,
+        enabled:
+          comparisonTimeRange && showComparison && isValid && !!start && !!end,
       },
     },
   );
@@ -145,10 +146,6 @@
       ? (currentValue - comparisonVal) / comparisonVal
       : undefined;
 
-  $: globalComparisonLabel =
-    $selectedComparisonTimeRange?.name &&
-    TIME_COMPARISON[$selectedComparisonTimeRange?.name]?.label;
-
   // TIME SERIES QUERIES
   $: sparklineDataQuery = createQueryServiceMetricsViewTimeSeries(
     instanceId,
@@ -173,8 +170,8 @@
     metricsViewName,
     {
       measureNames: [measureName],
-      timeStart: comparisonStart,
-      timeEnd: comparisonEnd,
+      timeStart: comparisonTimeRange?.start,
+      timeEnd: comparisonTimeRange?.end,
       timeGranularity: timeGrain || V1TimeGrain.TIME_GRAIN_HOUR,
       timeZone,
       where,
@@ -182,11 +179,7 @@
     {
       query: {
         enabled:
-          !!comparisonStart &&
-          !!comparisonEnd &&
-          isValid &&
-          showSparkline &&
-          showComparison,
+          comparisonTimeRange && isValid && showSparkline && showComparison,
       },
     },
   );
@@ -282,11 +275,9 @@
             {/if}
           </div>
 
-          {#if comparisonTimeRange || globalComparisonLabel}
+          {#if comparisonLabel}
             <div class="comparison-range">
-              vs {comparisonTimeRange
-                ? `last ${humaniseISODuration(comparisonTimeRange?.toUpperCase(), false)}`
-                : globalComparisonLabel?.toLowerCase()}
+              vs {comparisonLabel?.toLowerCase()}
             </div>
           {/if}
         {/if}

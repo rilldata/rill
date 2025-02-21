@@ -1,12 +1,15 @@
 <script lang="ts">
-  import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
+  import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
   import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
+  import type { Readable } from "svelte/store";
   import type { KPIGridSpec } from ".";
+  import ComponentError from "../ComponentError.svelte";
   import type { KPISpec } from "../kpi";
   import KPI from "../kpi/KPI.svelte";
   import { validateKPIGridSchema } from "./selector";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
+  export let timeAndFilterStore: Readable<TimeAndFilterStore>;
 
   let kpis: KPISpec[];
 
@@ -19,6 +22,8 @@
     measure,
     sparkline: kpiGridProperties.sparkline,
     comparison: kpiGridProperties.comparison,
+    dimension_filters: kpiGridProperties.dimension_filters,
+    time_filters: kpiGridProperties.time_filters,
   }));
 </script>
 
@@ -29,7 +34,7 @@
         class:solo={kpis.length > 1}
         class="kpi-wrapper border-gray-200 size-full min-h-52 p-4 overflow-hidden"
       >
-        <KPI rendererProperties={kpi} />
+        <KPI rendererProperties={kpi} {timeAndFilterStore} />
       </div>
     {/each}
   </div>

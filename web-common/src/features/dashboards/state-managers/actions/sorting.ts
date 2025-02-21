@@ -3,7 +3,7 @@ import { SortDirection, SortType } from "../../proto-state/derived-types";
 import type { DashboardMutables } from "./types";
 
 export const toggleSort = (
-  { dashboard, persistentDashboardStore }: DashboardMutables,
+  { dashboard }: DashboardMutables,
   sortType: SortType,
 ) => {
   // if sortType is not provided,  or if it is provided
@@ -19,10 +19,8 @@ export const toggleSort = (
     //  then update the sort type and set the sort direction
     // to descending
     dashboard.dashboardSortType = sortType;
-    persistentDashboardStore.updateDashboardSortType(sortType);
     dashboard.sortDirection = SortDirection.DESCENDING;
   }
-  persistentDashboardStore.updateSortDirection(dashboard.sortDirection);
 };
 
 const contextColumnToSortType = {
@@ -37,12 +35,8 @@ export const toggleSortByActiveContextColumn = (args: DashboardMutables) => {
   toggleSort(args, contextColumnSortType);
 };
 
-export const setSortDescending = ({
-  dashboard,
-  persistentDashboardStore,
-}: DashboardMutables) => {
+export const setSortDescending = ({ dashboard }: DashboardMutables) => {
   dashboard.sortDirection = SortDirection.DESCENDING;
-  persistentDashboardStore.updateSortDirection(dashboard.sortDirection);
 };
 
 export const sortActions = {
