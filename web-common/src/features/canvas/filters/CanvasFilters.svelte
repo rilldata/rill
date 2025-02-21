@@ -28,7 +28,7 @@
   } from "@rilldata/web-common/lib/time/types";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { DateTime, Interval } from "luxon";
-  import { onDestroy } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
   import CanvasComparisonPill from "./CanvasComparisonPill.svelte";
@@ -68,6 +68,7 @@
         setTimeZone,
         displayTimeComparison,
         setSelectedComparisonRange,
+        setInitialState,
         destroy,
       },
     },
@@ -263,6 +264,11 @@
     localUserPreferences.set({ timeZone });
   }
 
+  onMount(() => {
+    if (!$timeRangeStateStore) {
+      setInitialState();
+    }
+  });
   onDestroy(destroy);
 </script>
 

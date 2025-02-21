@@ -69,6 +69,7 @@ export class TimeControls {
   private componentName: string | undefined;
   private isInitialStateSet: boolean = false;
   private initialStateSubscriber: Unsubscriber | undefined;
+  private specStore: CanvasSpecResponseStore;
 
   constructor(specStore: CanvasSpecResponseStore, componentName?: string) {
     this.allTimeRange = this.combinedTimeRangeSummaryStore(runtime, specStore);
@@ -77,6 +78,8 @@ export class TimeControls {
     this.showTimeComparison = writable(false);
     this.selectedTimezone = writable("UTC");
     this.componentName = componentName;
+
+    this.specStore = specStore;
 
     this.minTimeGrain = derived(specStore, (spec) => {
       let metricsViews = spec?.data?.metricsViews || {};
@@ -232,12 +235,12 @@ export class TimeControls {
       },
     );
 
-    this.setInitialState(specStore);
+    this.setInitialState();
   }
 
-  setInitialState = (specStore: CanvasSpecResponseStore) => {
+  setInitialState = () => {
     const defaultStore = derived(
-      [this.allTimeRange, specStore],
+      [this.allTimeRange, this.specStore],
       ([allTimeRange, spec]) => {
         if (!spec?.data || allTimeRange.isFetching || this.isInitialStateSet) {
           return;

@@ -52,7 +52,12 @@ export class CanvasEntity {
 
   constructor(name: string) {
     this.specStore = derived(runtime, (r, set) =>
-      useCanvas(r.instanceId, name, { queryClient }).subscribe(set),
+      useCanvas(r.instanceId, name, {
+        retry: 3,
+        retryDelay: (attemptIndex) =>
+          Math.min(1000 + 1000 * attemptIndex, 5000),
+        queryClient,
+      }).subscribe(set),
     );
 
     this.name = name;
