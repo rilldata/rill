@@ -4343,6 +4343,8 @@ definitions:
         type: string
       pivotSortAsc:
         type: boolean
+      pivotRowJoinType:
+        type: string
   v1ExploreSortType:
     type: string
     enum:

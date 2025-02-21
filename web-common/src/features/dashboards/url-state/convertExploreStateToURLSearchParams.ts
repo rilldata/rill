@@ -287,6 +287,14 @@ function toExploreUrl(
     );
   }
 
+  const rowJoinType = exploreState.pivot?.rowJoinType;
+  if (shouldSetParam(preset.pivotRowJoinType, rowJoinType)) {
+    searchParams.set(
+      ExploreStateURLParams.PivotRowJoinType,
+      rowJoinType ?? "nest",
+    );
+  }
+
   return searchParams;
 }
 
@@ -393,6 +401,14 @@ function toPivotUrlParams(
     searchParams.set(
       ExploreStateURLParams.SortDirection,
       sort?.desc ? "DESC" : "ASC",
+    );
+  }
+
+  const rowJoinType = exploreState.pivot?.rowJoinType;
+  if (shouldSetParam(preset.pivotRowJoinType, rowJoinType)) {
+    searchParams.set(
+      ExploreStateURLParams.PivotRowJoinType,
+      rowJoinType ?? "nest",
     );
   }
 

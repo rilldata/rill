@@ -5055,6 +5055,10 @@ func (m *ExplorePreset) validate(all bool) error {
 		// no validation rules for PivotSortAsc
 	}
 
+	if m.PivotRowJoinType != nil {
+		// no validation rules for PivotRowJoinType
+	}
+
 	if len(errors) > 0 {
 		return ExplorePresetMultiError(errors)
 	}

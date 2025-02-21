@@ -48,7 +48,6 @@
 
   const HEADER_HEIGHT = 30;
 
-  let resizing = false;
   let resizingMeasure = false;
   let initialMeasureIndexOnResize = 0;
   let initLengthOnResize = 0;
@@ -168,11 +167,9 @@
       onUpdate={(d) => (firstColumnWidth = d)}
       onMouseDown={(e) => {
         resizingMeasure = false;
-        resizing = true;
         onResizeStart(e);
       }}
       onMouseUp={() => {
-        resizing = false;
         resizingMeasure = false;
       }}
     >
@@ -202,11 +199,9 @@
               })}
             onMouseDown={(e) => {
               resizingMeasure = true;
-              resizing = true;
               onResizeStart(e);
             }}
             onMouseUp={() => {
-              resizing = false;
               resizingMeasure = false;
             }}
           >

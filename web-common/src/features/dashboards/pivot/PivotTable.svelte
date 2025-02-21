@@ -47,8 +47,6 @@
     | ((rowId: string, columnId: string) => void)
     | undefined = undefined;
 
-  $: console.log($pivotDataStore);
-
   const options: Readable<TableOptions<PivotDataRow>> = derived(
     [pivotDataStore, pivotState],
     ([pivotData, state]) => {

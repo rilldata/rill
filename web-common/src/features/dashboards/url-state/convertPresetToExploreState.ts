@@ -2,6 +2,7 @@ import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filte
 import {
   type PivotChipData,
   PivotChipType,
+  type PivotRowJoinType,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
@@ -476,6 +477,13 @@ function fromPivotUrlParams(
     });
   }
 
+  let rowJoinType = "nest";
+  console.log("pivotRowJoinType", preset.pivotRowJoinType);
+
+  if (preset.pivotRowJoinType) {
+    rowJoinType = preset.pivotRowJoinType;
+  }
+
   return {
     partialExploreState: {
       pivot: {
@@ -494,7 +502,7 @@ function fromPivotUrlParams(
         rowPage: 1,
         enableComparison: true,
         activeCell: null,
-        rowJoinType: "nest",
+        rowJoinType: rowJoinType as PivotRowJoinType,
       },
     },
     errors,

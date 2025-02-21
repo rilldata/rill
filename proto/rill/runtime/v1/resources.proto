@@ -427,6 +427,7 @@ message ExplorePreset {
   repeated string pivot_cols = 25;
   optional string pivot_sort_by = 26;
   optional bool pivot_sort_asc = 27;
+  optional string pivot_row_join_type = 28;
 }
 
 enum ExploreComparisonMode {
