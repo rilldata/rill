@@ -38,7 +38,8 @@ export function useDimensionSearch(
   );
 
   return derived(queries, ($queries) => {
-    if ($queries.some((q) => q.isFetching)) {
+    const someQueryFetching = $queries.some((q) => q.isFetching);
+    if (someQueryFetching) {
       return {
         data: undefined,
         error: undefined,
@@ -50,7 +51,7 @@ export function useDimensionSearch(
       return {
         data: undefined,
         // TODO: merge multiple errors
-        error: errors[0],
+        error: errors[0]?.response?.data.message,
         isFetching: false,
       };
     }

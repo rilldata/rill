@@ -135,7 +135,7 @@
         </div>
       {:else if error}
         <div class="min-h-9 p-3 text-center text-red-600 text-xs">
-          {error.response?.data?.message}
+          {error}
         </div>
       {:else if data}
         <DropdownMenu.Group class="px-1">
