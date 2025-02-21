@@ -43,7 +43,6 @@
 
   const HEADER_HEIGHT = 30;
 
-  let resizing = false;
   let totalLength = 0;
 
   $: headers = headerGroups[0].headers;
@@ -112,12 +111,6 @@
           columnLengths.update((lengths) => {
             return lengths.set(header.column.id, d);
           })}
-        onMouseDown={() => {
-          resizing = true;
-        }}
-        onMouseUp={() => {
-          resizing = false;
-        }}
       >
         <div class="resize-bar" />
       </Resizer>

@@ -116,9 +116,9 @@ export function getPivotConfig(
         },
       );
 
-      // const isFlat = dashboardStore.pivot.rowJoinType === "flat";
+      const isFlat = dashboardStore.pivot.rowJoinType === "flat";
 
-      const isFlat = true;
+      // const isFlat = true;
 
       /**
        * For flat table, internally rows have all

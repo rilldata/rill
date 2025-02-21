@@ -197,7 +197,8 @@ export function createPivotDataStore(
    */
 
   return derived(configStore, (config, configSet) => {
-    const { rowDimensionNames, colDimensionNames, measureNames } = config;
+    const { rowDimensionNames, colDimensionNames, measureNames, isFlat } =
+      config;
 
     if (
       (!rowDimensionNames.length && !measureNames.length) ||
@@ -217,9 +218,6 @@ export function createPivotDataStore(
     }
 
     const measureBody = measureNames.map((m) => ({ name: m }));
-    const isFlat = config.isFlat;
-
-    console.log(rowDimensionNames, colDimensionNames, isFlat);
 
     const columnDimensionAxesQuery = getAxisForDimensions(
       ctx,
