@@ -26,7 +26,6 @@
     },
   } = getStateManagers();
 
-  $: console.log("activeLeaderboardMeasure: ", activeLeaderboardMeasure);
   $: console.log("leaderboardMeasureName: ", $leaderboardMeasureName);
   $: console.log("leaderboardMeasureNames: ", $leaderboardMeasureNames);
 
@@ -34,7 +33,9 @@
 
   $: metricsExplorer = $metricsExplorerStore.entities[exploreName];
 
+  // TODO: support multiple active measures
   $: activeLeaderboardMeasure = $getMeasureByName($leaderboardMeasureName);
+  $: console.log("activeLeaderboardMeasure: ", activeLeaderboardMeasure);
 
   $: validPercentOfTotal =
     activeLeaderboardMeasure?.validPercentOfTotal || false;
@@ -90,7 +91,7 @@
           setLeaderboardMeasureNames(names);
 
           // TODO: to see how the url state changes when leaderboardMeasureName is set
-          setLeaderboardMeasureName(names[0]);
+          // setLeaderboardMeasureName(names[0]);
         }}
       />
     </div>

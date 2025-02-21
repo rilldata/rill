@@ -126,6 +126,18 @@ export function convertExploreStateToURLSearchParams(
       break;
   }
 
+  if (
+    shouldSetParam(
+      preset.exploreSortBy,
+      exploreState.leaderboardMeasureNames?.join(","),
+    )
+  ) {
+    searchParams.set(
+      ExploreStateURLParams.SortBy,
+      exploreState.leaderboardMeasureNames?.join(",") ?? "",
+    );
+  }
+
   return searchParams.toString();
 }
 
@@ -259,16 +271,6 @@ function toExploreUrl(
     searchParams.set(
       ExploreStateURLParams.ExpandedDimension,
       exploreState.selectedDimensionName ?? "",
-    );
-  }
-
-  if (
-    shouldSetParam(preset.exploreSortBy, exploreState.leaderboardMeasureName)
-  ) {
-    // TODO: make it work with multiple measures
-    searchParams.set(
-      ExploreStateURLParams.SortBy,
-      exploreState.leaderboardMeasureName,
     );
   }
 
