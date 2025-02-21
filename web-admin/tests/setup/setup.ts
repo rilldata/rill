@@ -14,7 +14,7 @@ import { test as setup } from "./base";
 import {
   ADMIN_STORAGE_STATE,
   RILL_DEVTOOL_BACKGROUND_PROCESS_PID_FILE,
-  RILL_EMBED_SERVICE_TOKEN,
+  RILL_EMBED_SERVICE_TOKEN_FILE,
   RILL_ORG_NAME,
   RILL_PROJECT_NAME,
   RILL_SERVICE_NAME,
@@ -155,7 +155,7 @@ setup.describe("global setup", () => {
     expect(orgCreateService).toContain("Created service");
 
     const serviceToken = orgCreateService.match(/Access token:\s+(\S+)/);
-    writeFileEnsuringDir(RILL_EMBED_SERVICE_TOKEN, serviceToken![1]);
+    writeFileEnsuringDir(RILL_EMBED_SERVICE_TOKEN_FILE, serviceToken![1]);
 
     // Go to the organization's page
     await adminPage.goto(`/${RILL_ORG_NAME}`);

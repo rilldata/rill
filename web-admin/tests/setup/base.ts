@@ -4,7 +4,7 @@ import { cliLogin, cliLogout } from "./fixtures/cli";
 import path from "path";
 import { fileURLToPath } from "url";
 import {
-  RILL_EMBED_SERVICE_TOKEN,
+  RILL_EMBED_SERVICE_TOKEN_FILE,
   RILL_ORG_NAME,
   RILL_PROJECT_NAME,
 } from "./constants";
@@ -62,7 +62,7 @@ export const test = base.extend<MyFixtures>({
         __dirname,
         "..",
         "..",
-        RILL_EMBED_SERVICE_TOKEN,
+        RILL_EMBED_SERVICE_TOKEN_FILE,
       );
       const rillServiceToken = fs.readFileSync(readPath, "utf-8");
 
