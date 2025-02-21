@@ -48,6 +48,7 @@
   const slice = 7;
   const gutterWidth = 24;
   const queryLimit = 8;
+  const belowTheFoldLimit = 7;
 
   export let dimension: MetricsViewSpecDimensionV2;
   export let timeRange: V1TimeRange;
@@ -221,6 +222,7 @@
       timeRange,
       comparisonTimeRange,
       measures,
+      limit: belowTheFoldLimit.toString(),
     },
     {
       query: {
