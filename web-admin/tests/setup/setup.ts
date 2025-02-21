@@ -229,6 +229,20 @@ setup.describe("global setup", () => {
         { intervals: Array(24).fill(5_000), timeout: 180_000 },
       )
       .toContain("Last refreshed");
+
+    await expect
+      .poll(
+        async () => {
+          await adminPage.reload();
+          const listing = adminPage.getByRole("link", {
+            name: "Programmatic Ads Bids bids_explore",
+          });
+          return listing.textContent();
+        },
+        { intervals: Array(24).fill(5_000), timeout: 180_000 },
+      )
+      .toContain("Last refreshed");
+         
   });
 });
 
