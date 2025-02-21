@@ -26,13 +26,14 @@
 
   $: metricsExplorer = $metricsExplorerStore.entities[exploreName];
 
-  // TODO: support multiple active measures
-  // First measure is used as the active measure
-  $: activeLeaderboardMeasure = $getMeasureByName($leaderboardMeasureNames[0]);
-  $: console.log("activeLeaderboardMeasure: ", activeLeaderboardMeasure);
+  $: activeLeaderboardMeasures = $leaderboardMeasureNames.map((name) =>
+    $getMeasureByName(name),
+  );
+  // $: console.log("activeLeaderboardMeasures: ", activeLeaderboardMeasures);
 
-  $: validPercentOfTotal =
-    activeLeaderboardMeasure?.validPercentOfTotal || false;
+  // First measure is used for sorting and validation
+  $: firstMeasure = activeLeaderboardMeasures[0];
+  $: validPercentOfTotal = firstMeasure?.validPercentOfTotal || false;
 
   $: visibleDimensionsNames = $visibleDimensions
     .map(({ name }) => name)
@@ -57,7 +58,7 @@
 </script>
 
 <div>
-  {#if measures.length && activeLeaderboardMeasure}
+  {#if measures.length && firstMeasure}
     <div
       class="flex flex-row items-center ui-copy-muted gap-x-1"
       style:max-width="450px"
@@ -78,7 +79,7 @@
 
       <MetricsDropdown
         {measures}
-        activeMeasure={activeLeaderboardMeasure}
+        {firstMeasure}
         tooltipText="Choose measures to filter by"
         selectedMeasureNames={$leaderboardMeasureNames}
         onSelect={(names) => {
