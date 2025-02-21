@@ -14,9 +14,9 @@ import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
   V1ExploreComparisonMode,
   V1ExploreSortType,
+  V1ExploreWebView,
   type V1ExplorePreset,
   type V1ExploreSpec,
-  V1ExploreWebView,
   type V1MetricsViewTimeRangeResponse,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
@@ -53,6 +53,7 @@ export function getDefaultExplorePreset(
     pivotRows: [],
     pivotSortBy: "",
     pivotSortAsc: false,
+    pivotRowJoinType: "nest",
 
     ...(explore.defaultPreset ?? {}),
   };

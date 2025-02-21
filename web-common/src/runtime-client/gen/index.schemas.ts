@@ -2031,6 +2031,7 @@ If not found in `time_ranges`, it should be added to the list. */
   pivotCols?: string[];
   pivotSortBy?: string;
   pivotSortAsc?: boolean;
+  pivotRowJoinType?: string;
 }
 
 export interface V1Explore {

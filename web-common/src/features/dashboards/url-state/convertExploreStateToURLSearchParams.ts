@@ -396,6 +396,14 @@ function toPivotUrlParams(
     );
   }
 
+  const rowJoinType = exploreState.pivot?.rowJoinType;
+  if (shouldSetParam(preset.pivotRowJoinType, rowJoinType)) {
+    searchParams.set(
+      ExploreStateURLParams.PivotRowJoinType,
+      rowJoinType ?? "nest",
+    );
+  }
+
   // TODO: other fields like expanded state and pin are not supported right now
   return searchParams;
 }

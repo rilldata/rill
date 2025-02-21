@@ -51,6 +51,7 @@ import {
   isTimeDimension,
 } from "./pivot-utils";
 import {
+  type PivotAxesData,
   type PivotDashboardContext,
   type PivotDataRow,
   type PivotDataStore,
@@ -68,20 +69,34 @@ import {
 export function createTableCellQuery(
   ctx: PivotDashboardContext,
   config: PivotDataStoreConfig,
-  anchorDimension: string | undefined,
   columnDimensionAxesData: Record<string, string[]> | undefined,
   totalsRow: PivotDataRow,
   rowDimensionValues: string[],
+  limit = "5000",
+  offset = "0",
 ) {
-  const rowPage = config.pivot.rowPage;
-  if (rowDimensionValues.length === 0 && rowPage > 1) return readable(null);
+  const {
+    rowDimensionNames,
+    colDimensionNames,
+    measureNames,
+    isFlat,
+    time,
+    whereFilter,
+  } = config;
+  const anchorDimension: string | undefined = rowDimensionNames?.[0];
 
-  let allDimensions = config.colDimensionNames;
-  if (anchorDimension) {
-    allDimensions = config.colDimensionNames.concat([anchorDimension]);
+  const rowPage = config.pivot.rowPage;
+  if (!isFlat && rowDimensionValues.length === 0 && rowPage > 1)
+    return readable(null);
+
+  let allDimensions = colDimensionNames;
+
+  if (isFlat) {
+    allDimensions = colDimensionNames.concat(rowDimensionNames);
+  } else if (anchorDimension) {
+    allDimensions = colDimensionNames.concat([anchorDimension]);
   }
 
-  const { time } = config;
   const dimensionBody = allDimensions.map((dimension) => {
     if (isTimeDimension(dimension, time.timeDimension)) {
       return {
@@ -92,7 +107,7 @@ export function createTableCellQuery(
       };
     } else return { name: dimension };
   });
-  const measureBody = config.measureNames.map((m) => ({ name: m }));
+  const measureBody = measureNames.map((m) => ({ name: m }));
 
   const { filters: filterForInitialTable, timeFilters } =
     getFilterForPivotTable(
@@ -103,18 +118,18 @@ export function createTableCellQuery(
       anchorDimension,
     );
 
-  const timeRange: TimeRangeString = getTimeForQuery(config.time, timeFilters);
+  const timeRange: TimeRangeString = getTimeForQuery(time, timeFilters);
 
   const mergedFilter =
-    mergeFilters(filterForInitialTable, config.whereFilter) ??
-    createAndExpression([]);
+    mergeFilters(filterForInitialTable, whereFilter) ?? createAndExpression([]);
 
   const sortBy = [
     {
-      desc: false,
-      name: anchorDimension || config.measureNames[0],
+      desc: isFlat ? true : false,
+      name: isFlat ? measureNames[0] : anchorDimension || measureNames[0],
     },
   ];
+
   return createPivotAggregationRowQuery(
     ctx,
     config,
@@ -122,8 +137,8 @@ export function createTableCellQuery(
     dimensionBody,
     mergedFilter,
     sortBy,
-    "5000",
-    "0",
+    limit,
+    offset,
     timeRange,
   );
 }
@@ -182,7 +197,9 @@ export function createPivotDataStore(
    */
 
   return derived(configStore, (config, configSet) => {
-    const { rowDimensionNames, colDimensionNames, measureNames } = config;
+    const { rowDimensionNames, colDimensionNames, measureNames, isFlat } =
+      config;
+
     if (
       (!rowDimensionNames.length && !measureNames.length) ||
       (colDimensionNames.length && !measureNames.length)
@@ -199,6 +216,7 @@ export function createPivotDataStore(
         totalColumns: 0,
       });
     }
+
     const measureBody = measureNames.map((m) => ({ name: m }));
 
     const columnDimensionAxesQuery = getAxisForDimensions(
@@ -252,18 +270,23 @@ export function createPivotDataStore(
             ) || config.whereFilter;
         }
 
-        // Get sort order for the anchor dimension
-        const rowDimensionAxisQuery = getAxisForDimensions(
-          ctx,
-          config,
-          rowDimensionNames.slice(0, 1),
-          sortFilteredMeasureBody,
-          whereFilter,
-          sortPivotBy,
-          timeRange,
-          NUM_ROWS_PER_PAGE.toString(),
-          rowOffset.toString(),
-        );
+        let rowDimensionAxisQuery: Readable<PivotAxesData | null> =
+          readable(null);
+
+        if (!isFlat) {
+          // Get sort order for the anchor dimension
+          rowDimensionAxisQuery = getAxisForDimensions(
+            ctx,
+            config,
+            rowDimensionNames.slice(0, 1),
+            sortFilteredMeasureBody,
+            whereFilter,
+            sortPivotBy,
+            timeRange,
+            NUM_ROWS_PER_PAGE.toString(),
+            rowOffset.toString(),
+          );
+        }
 
         let globalTotalsQuery:
           | Readable<null>
@@ -290,7 +313,8 @@ export function createPivotDataStore(
         );
         if (
           (rowDimensionNames.length || colDimensionNames.length) &&
-          measureNames.length
+          measureNames.length &&
+          !isFlat
         ) {
           totalsRowQuery = getTotalsRowQuery(
             ctx,
@@ -386,13 +410,17 @@ export function createPivotDataStore(
               timeRange,
             );
 
-            let initialTableCellQuery:
+            let tableCellQuery:
               | Readable<null>
               | CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> =
               readable(null);
 
             let columnDef: ColumnDef<PivotDataRow>[] = [];
-            if (colDimensionNames.length || !rowDimensionNames.length) {
+            if (
+              isFlat ||
+              colDimensionNames.length ||
+              !rowDimensionNames.length
+            ) {
               const slicedAxesDataForDef = sliceColumnAxesDataForDef(
                 config,
                 columnDimensionAxes?.data,
@@ -405,13 +433,14 @@ export function createPivotDataStore(
                 totalsRowData,
               );
 
-              initialTableCellQuery = createTableCellQuery(
+              tableCellQuery = createTableCellQuery(
                 ctx,
                 config,
-                rowDimensionNames[0],
                 columnDimensionAxes?.data,
                 totalsRowData,
                 rowDimensionValues,
+                isFlat ? NUM_ROWS_PER_PAGE.toString() : "5000",
+                isFlat ? rowOffset.toString() : "0",
               );
             } else {
               columnDef = getColumnDefForPivot(
@@ -421,11 +450,11 @@ export function createPivotDataStore(
               );
             }
             /**
-             * Derive a store from initial table cell data query
+             * Derive a store from table cell data query
              */
             return derived(
-              [rowAxesQueryForMeasureTotals, initialTableCellQuery],
-              ([rowMeasureTotalsAxesQuery, initialTableCellData], cellSet) => {
+              [rowAxesQueryForMeasureTotals, tableCellQuery],
+              ([rowMeasureTotalsAxesQuery, tableCellData], cellSet) => {
                 if (rowMeasureTotalsAxesQuery?.isFetching) {
                   return cellSet({
                     isFetching: true,
@@ -438,7 +467,7 @@ export function createPivotDataStore(
                 }
 
                 const tableCellQueryError = getErrorFromResponses([
-                  initialTableCellData,
+                  tableCellData,
                 ]);
 
                 if (
@@ -459,22 +488,23 @@ export function createPivotDataStore(
                 );
 
                 let pivotSkeleton = mergedRowTotals;
-                if (rowPage > 1) {
+                if (!isFlat && rowPage > 1) {
                   pivotSkeleton = [...lastPivotData, ...mergedRowTotals];
                 }
 
                 let pivotData: PivotDataRow[] = [];
                 let cellData: V1MetricsViewAggregationResponseDataItem[] = [];
+                let isCellDataEmpty = false;
                 if (getPivotConfigKey(config) in expandedTableMap) {
                   pivotData = expandedTableMap[getPivotConfigKey(config)];
                 } else {
-                  if (initialTableCellData === null) {
+                  if (tableCellData === null) {
                     cellData = pivotSkeleton;
                   } else {
-                    if (initialTableCellData.isFetching) {
+                    if (tableCellData.isFetching) {
                       return cellSet({
                         isFetching: true,
-                        data: pivotSkeleton,
+                        data: isFlat ? lastPivotData : pivotSkeleton,
                         columnDef,
                         assembled: false,
                         totalColumns,
@@ -483,16 +513,27 @@ export function createPivotDataStore(
                           : undefined,
                       });
                     }
-                    cellData = initialTableCellData.data?.data || [];
+                    cellData = tableCellData.data?.data || [];
+                    isCellDataEmpty = cellData.length === 0;
                   }
-                  const tableDataWithCells = reduceTableCellDataIntoRows(
-                    config,
-                    anchorDimension,
-                    rowDimensionValues || [],
-                    columnDimensionAxes?.data || {},
-                    pivotSkeleton,
-                    cellData,
-                  );
+
+                  let tableDataWithCells: PivotDataRow[] = [];
+                  if (isFlat) {
+                    if (rowPage > 1) {
+                      tableDataWithCells = [...lastPivotData, ...cellData];
+                    } else {
+                      tableDataWithCells = cellData;
+                    }
+                  } else {
+                    tableDataWithCells = reduceTableCellDataIntoRows(
+                      config,
+                      anchorDimension,
+                      rowDimensionValues || [],
+                      columnDimensionAxes?.data || {},
+                      pivotSkeleton,
+                      cellData,
+                    );
+                  }
                   pivotData = structuredClone(tableDataWithCells);
                 }
 
@@ -548,7 +589,9 @@ export function createPivotDataStore(
                     lastTotalColumns = totalColumns;
 
                     const reachedEndForRowData =
-                      rowDimensionValues.length === 0 && rowPage > 1;
+                      (isFlat
+                        ? isCellDataEmpty
+                        : rowDimensionValues.length === 0) && rowPage > 1;
                     return {
                       isFetching: false,
                       data: tableDataExpanded,

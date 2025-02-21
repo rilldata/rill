@@ -1,12 +1,14 @@
 import { filteredSimpleMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
-import type { DashboardDataSources } from "./types";
 import { PivotChipType } from "../../pivot/types";
 import { allDimensions } from "./dimensions";
+import type { DashboardDataSources } from "./types";
 
 export const pivotSelectors = {
   showPivot: ({ dashboard }: DashboardDataSources) => dashboard.pivot.active,
   rows: ({ dashboard }: DashboardDataSources) => dashboard.pivot.rows,
   columns: ({ dashboard }: DashboardDataSources) => dashboard.pivot.columns,
+  isFlat: ({ dashboard }: DashboardDataSources) =>
+    dashboard.pivot.rowJoinType === "flat",
   measures: (dashData: DashboardDataSources) => {
     const measures = filteredSimpleMeasures(dashData)();
     const columns = dashData.dashboard.pivot.columns;

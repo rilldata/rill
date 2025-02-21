@@ -107,6 +107,7 @@ export interface PivotDataStoreConfig {
   enableComparison: boolean;
   comparisonTime: TimeRangeString | undefined;
   searchText: string | undefined;
+  isFlat: boolean;
 }
 
 export interface PivotAxesData {

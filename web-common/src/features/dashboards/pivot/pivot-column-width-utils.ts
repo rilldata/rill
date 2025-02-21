@@ -13,24 +13,24 @@ export const COLUMN_WIDTH_CONSTANTS = {
   MEASURE_PADDING: 24,
 };
 
-export function calculateFirstColumnWidth(
-  firstColumnName: string,
+export function calculateColumnWidth(
+  columnName: string,
   timeDimension: string,
   dataRows: PivotDataRow[],
 ) {
   // Dates are displayed as shorter values
-  if (isTimeDimension(firstColumnName, timeDimension))
+  if (isTimeDimension(columnName, timeDimension))
     return COLUMN_WIDTH_CONSTANTS.MIN_COL_WIDTH;
 
-  const samples = extractSamples(
-    dataRows.map((row) => row[firstColumnName]),
-  ).filter((v): v is string => typeof v === "string");
+  const samples = extractSamples(dataRows.map((row) => row[columnName])).filter(
+    (v): v is string => typeof v === "string",
+  );
 
   const maxValueLength = samples.reduce((max, value) => {
     return Math.max(max, value.length);
   }, 0);
 
-  const finalBasis = Math.max(firstColumnName.length, maxValueLength);
+  const finalBasis = Math.max(columnName.length, maxValueLength);
   const pixelLength = finalBasis * 7;
   const final = clamp(
     COLUMN_WIDTH_CONSTANTS.MIN_COL_WIDTH,

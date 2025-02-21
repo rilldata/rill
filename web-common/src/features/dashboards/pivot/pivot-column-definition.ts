@@ -168,11 +168,19 @@ function formatRowDimensionValue(
   return value;
 }
 
-export function getMeasureColumnProps(config: PivotDataStoreConfig) {
+export type MeasureColumnProps = Array<{
+  label: string;
+  formatter: ReturnType<typeof createMeasureValueFormatter<null | undefined>>;
+  name: string;
+  type: MeasureType;
+}>;
+export function getMeasureColumnProps(
+  config: PivotDataStoreConfig,
+): MeasureColumnProps {
   const { measureNames } = config;
   return measureNames.map((m) => {
     let measureName = m;
-    let label: string | undefined;
+    let label: string = "";
     let type: MeasureType = "measure";
     if (m.endsWith(COMPARISON_DELTA)) {
       label = "Δ";
@@ -230,8 +238,7 @@ export function getColumnDefForPivot(
   columnDimensionAxes: Record<string, string[]> | undefined,
   totals: PivotDataRow,
 ) {
-  const IsNested = true;
-
+  const isFlat = config.isFlat;
   const { rowDimensionNames, colDimensionNames } = config;
 
   const measures = getMeasureColumnProps(config);
@@ -240,7 +247,9 @@ export function getColumnDefForPivot(
 
   let rowDimensionsForColumnDef = rowDimensions;
   let nestedLabel: string;
-  if (IsNested) {
+  if (isFlat) {
+    rowDimensionsForColumnDef = rowDimensions;
+  } else {
     rowDimensionsForColumnDef = rowDimensions.slice(0, 1);
     nestedLabel = rowDimensions.map((d) => d.label || d.name).join(" > ");
   }
@@ -249,17 +258,19 @@ export function getColumnDefForPivot(
       return {
         id: d.name,
         accessorFn: (row) => row[d.name],
-        header: nestedLabel,
+        header: isFlat ? d.label || d.name : nestedLabel,
         cell: ({ row, getValue }) =>
-          cellComponent(PivotExpandableCell, {
-            value: formatRowDimensionValue(
-              getValue() as string,
-              row.depth,
-              config.time,
-              rowDimensionNames,
-            ),
-            row,
-          }),
+          isFlat
+            ? getValue()
+            : cellComponent(PivotExpandableCell, {
+                value: formatRowDimensionValue(
+                  getValue() as string,
+                  row.depth,
+                  config.time,
+                  rowDimensionNames,
+                ),
+                row,
+              }),
       };
     });
 
@@ -288,6 +299,10 @@ export function getColumnDefForPivot(
         },
       };
     });
+
+  if (config.isFlat) {
+    return [...rowDefinitions, ...leafColumns];
+  }
 
   const groupedColDef = createColumnDefinitionForDimensions(
     config,

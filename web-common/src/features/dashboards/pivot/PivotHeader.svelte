@@ -1,16 +1,28 @@
+<script context="module" lang="ts">
+  export const lastNestState = writable<PivotRows | null>(null);
+</script>
+
 <script lang="ts">
+  import { IconButton } from "@rilldata/web-common/components/button";
   import Column from "@rilldata/web-common/components/icons/Column.svelte";
   import Row from "@rilldata/web-common/components/icons/Row.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { ArrowUpDownIcon } from "lucide-svelte";
+  import { writable } from "svelte/store";
+  import { slide } from "svelte/transition";
   import { metricsExplorerStore } from "../stores/dashboard-stores";
   import DragList from "./DragList.svelte";
-  import { PivotChipType, type PivotChipData } from "./types";
-  import { slide } from "svelte/transition";
+  import {
+    PivotChipType,
+    type PivotChipData,
+    type PivotColumns,
+    type PivotRows,
+  } from "./types";
 
   const stateManagers = getStateManagers();
   const {
     selectors: {
-      pivot: { rows, columns },
+      pivot: { rows, columns, isFlat },
     },
     exploreName,
   } = stateManagers;
@@ -28,22 +40,75 @@
     );
     metricsExplorerStore.setPivotRows($exploreName, filtered);
   }
+
+  /**
+   * This method stores the previous nest state and passes it to
+   * dashboard store when toggling back from `flat` to `nest`
+   */
+  function togglePivotType(newJoinState: "flat" | "nest") {
+    let updatedRows: PivotRows = { dimension: [] };
+    let updatedColumns: PivotColumns = { measure: [], dimension: [] };
+
+    if (newJoinState === "flat") {
+      lastNestState.set($rows);
+      const colDimensions = $rows.dimension.concat($columns.dimension);
+
+      updatedColumns = {
+        measure: $columns.measure,
+        dimension: colDimensions,
+      };
+    } else if (newJoinState === "nest" && $lastNestState) {
+      updatedRows = $lastNestState;
+      const rowDimensionIds = updatedRows.dimension.map((d) => d.id);
+      const colDimensions = $columns.dimension.filter(
+        (d) => rowDimensionIds.indexOf(d.id) === -1,
+      );
+
+      updatedColumns = {
+        measure: $columns.measure,
+        dimension: colDimensions,
+      };
+    } else {
+      updatedRows = { dimension: $columns.dimension };
+      updatedColumns = { dimension: [], measure: $columns.measure };
+    }
+    metricsExplorerStore.setPivotRowJoinType(
+      $exploreName,
+      newJoinState,
+      updatedRows,
+      updatedColumns,
+    );
+  }
 </script>
 
 <div class="header" transition:slide>
+  {#if !$isFlat}
+    <div class="header-row">
+      <span class="row-label">
+        <Row size="16px" /> Rows
+      </span>
+      <DragList
+        zone="rows"
+        placeholder="Drag dimensions here"
+        items={rowsDimensions}
+        on:update={updateRows}
+      />
+    </div>
+  {/if}
   <div class="header-row">
-    <span class="row-label">
-      <Row size="16px" /> Rows
-    </span>
-    <DragList
-      zone="rows"
-      placeholder="Drag dimensions here"
-      items={rowsDimensions}
-      on:update={updateRows}
-    />
-  </div>
-  <div class="header-row">
-    <span class="row-label"> <Column size="16px" /> Columns</span>
+    <div class="row-label">
+      <Column size="16px" /> Columns
+
+      <IconButton
+        marginClasses="ml-1"
+        rounded
+        on:click={() => togglePivotType($isFlat ? "nest" : "flat")}
+      >
+        <span slot="tooltip-content">{$isFlat ? "Nest" : "Flatten"} table</span>
+        <ArrowUpDownIcon size="16px" />
+      </IconButton>
+    </div>
+
     <DragList
       zone="columns"
       items={columnsDimensions.concat(columnsMeasures)}
@@ -68,6 +133,7 @@
     @apply flex items-center gap-x-2 px-2;
   }
   .row-label {
-    @apply flex items-center gap-x-1 w-20 flex-shrink-0;
+    @apply flex items-center gap-x-1 flex-shrink-0;
+    width: 104px;
   }
 </style>

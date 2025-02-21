@@ -538,6 +538,22 @@ const metricsViewReducers = {
       return state;
     });
   },
+
+  setPivotRowJoinType(
+    name: string,
+    rowJoinType: "flat" | "nest",
+    rows: PivotRows,
+    columns: PivotColumns,
+  ) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pivot = {
+        ...metricsExplorer.pivot,
+        rowJoinType,
+        rows,
+        columns,
+      };
+    });
+  },
 };
 
 export const metricsExplorerStore: Readable<MetricsExplorerStoreType> &
