@@ -1,13 +1,10 @@
 import { getComparisonRequestMeasures } from "@rilldata/web-common/features/dashboards/dashboard-utils";
-import { getDimensionFilterWithSearch } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-utils";
 import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaRelativeSuffix,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
-import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
@@ -16,12 +13,17 @@ import {
 } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
 import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
+  V1Expression,
   V1MetricsViewAggregationMeasure,
   V1MetricsViewAggregationRequest,
   V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { derived, get, type Readable } from "svelte/store";
+import { mergeMeasureFilters } from "../filters/measure-filters/measure-filter-utils";
+import { dimensionSearchText } from "../stores/dashboard-stores";
+import { sanitiseExpression } from "../stores/filter-utils";
+import { getDimensionFilterWithSearch } from "./dimension-table-utils";
 
 export function getDimensionTableExportArgs(
   ctx: StateManagers,
@@ -32,8 +34,15 @@ export function getDimensionTableExportArgs(
       ctx.dashboardStore,
       useTimeControlStore(ctx),
       ctx.validSpecStore,
+      dimensionSearchText,
     ],
-    ([metricsViewName, dashboardState, timeControlState, validSpecStore]) => {
+    ([
+      metricsViewName,
+      dashboardState,
+      timeControlState,
+      validSpecStore,
+      dimensionSearchText,
+    ]) => {
       if (!validSpecStore.data?.explore || !timeControlState.ready)
         return undefined;
 
@@ -54,6 +63,7 @@ export function getDimensionTableExportArgs(
         dashboardState,
         timeRange,
         comparisonTimeRange,
+        dimensionSearchText,
       );
     },
   );
@@ -64,7 +74,7 @@ export function getDimensionTableAggregationRequestForTime(
   dashboardState: MetricsExplorerEntity,
   timeRange: V1TimeRange,
   comparisonTimeRange: V1TimeRange | undefined,
-  searchText = "",
+  dimensionSearchText: string,
 ): V1MetricsViewAggregationRequest {
   const measures: V1MetricsViewAggregationMeasure[] = [
     ...dashboardState.visibleMeasureKeys,
@@ -94,16 +104,10 @@ export function getDimensionTableAggregationRequestForTime(
     }
   }
 
-  const where = sanitiseExpression(
-    mergeMeasureFilters(
-      dashboardState,
-      getDimensionFilterWithSearch(
-        dashboardState?.whereFilter,
-        searchText,
-        dashboardState.selectedDimensionName!,
-      ),
-    ),
-    undefined,
+  const where = buildWhereParam(
+    dashboardState,
+    dashboardState.selectedDimensionName!,
+    dimensionSearchText,
   );
 
   return {
@@ -126,4 +130,24 @@ export function getDimensionTableAggregationRequestForTime(
     where,
     offset: "0",
   };
+}
+
+export function buildWhereParam(
+  dashboard: MetricsExplorerEntity,
+  dimensionName: string,
+  searchText: string,
+) {
+  let dimensionFilter: V1Expression | undefined;
+  if (searchText) {
+    dimensionFilter = getDimensionFilterWithSearch(
+      dashboard?.whereFilter,
+      searchText,
+      dimensionName,
+    );
+  } else {
+    dimensionFilter = dashboard?.whereFilter;
+  }
+  const where = mergeMeasureFilters(dashboard, dimensionFilter);
+  const sanitisedWhere = sanitiseExpression(where, undefined);
+  return sanitisedWhere;
 }

@@ -1,8 +1,6 @@
 import { getComparisonRequestMeasures } from "@rilldata/web-common/features/dashboards/dashboard-utils";
-import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
   type TimeControlState,
@@ -20,6 +18,8 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { derived, get, type Readable } from "svelte/store";
+import { buildWhereParam } from "../dimension-table/dimension-table-export-utils";
+import { dimensionSearchText } from "../stores/dashboard-stores";
 
 export function getTDDExportArgs(
   ctx: StateManagers,
@@ -30,14 +30,22 @@ export function getTDDExportArgs(
       ctx.dashboardStore,
       useTimeControlStore(ctx),
       ctx.validSpecStore,
+      dimensionSearchText,
     ],
-    ([metricsViewName, dashboardState, timeControlState, validSpec]) =>
+    ([
+      metricsViewName,
+      dashboardState,
+      timeControlState,
+      validSpec,
+      dimensionSearchText,
+    ]) =>
       getTDDAggregationRequest(
         metricsViewName,
         dashboardState,
         timeControlState,
         validSpec.data?.metricsView,
         validSpec.data?.explore,
+        dimensionSearchText,
       ),
   );
 }
@@ -48,6 +56,7 @@ export function getTDDAggregationRequest(
   timeControlState: TimeControlState,
   metricsView: V1MetricsViewSpec | undefined,
   explore: V1ExploreSpec | undefined,
+  dimensionSearchText: string,
 ): undefined | V1MetricsViewAggregationRequest {
   if (
     !metricsView ||
@@ -107,7 +116,7 @@ export function getTDDAggregationRequest(
         desc: dashboardState.sortDirection === SortDirection.DESCENDING,
       },
     ],
-    where: sanitiseExpression(mergeMeasureFilters(dashboardState), undefined),
+    where: buildWhereParam(dashboardState, dimensionName, dimensionSearchText),
     offset: "0",
   };
 }
