@@ -12,7 +12,7 @@
   export let disabled = false;
   export let searchText = "";
   export let measures: MetricsViewSpecMeasureV2[];
-  export let activeMeasure: MetricsViewSpecMeasureV2;
+  export let firstMeasure: MetricsViewSpecMeasureV2;
   export let selectedMeasureNames: string[] = [];
   export let onSelect: (names: string[]) => void;
 
@@ -71,7 +71,7 @@
       <Button
         builders={[builder]}
         type="text"
-        label={activeMeasure.displayName || activeMeasure.name}
+        label={firstMeasure.displayName || firstMeasure.name}
         on:click
       >
         <div
