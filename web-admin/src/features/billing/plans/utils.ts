@@ -1,7 +1,4 @@
-import {
-  type V1BillingPlan,
-  V1BillingPlanType,
-} from "@rilldata/web-admin/client";
+import { V1BillingPlanType } from "@rilldata/web-admin/client";
 import { formatMemorySize } from "@rilldata/web-common/lib/number-formatting/memory-size";
 import { DateTime } from "luxon";
 import { writable } from "svelte/store";
@@ -21,20 +18,22 @@ export function formatUsageVsQuota(
   return `${formattedUsage} of ${formattedQuota} (${percent}%)`;
 }
 
-export function isTrialPlan(plan: V1BillingPlan) {
-  return plan.planType === V1BillingPlanType.BILLING_PLAN_TYPE_TRIAL;
+export function isTrialPlan(planType: V1BillingPlanType) {
+  return planType === V1BillingPlanType.BILLING_PLAN_TYPE_TRIAL;
 }
 
-export function isTeamPlan(plan: V1BillingPlan) {
-  return plan.planType === V1BillingPlanType.BILLING_PLAN_TYPE_TEAM;
+export function isTeamPlan(planType: V1BillingPlanType) {
+  return planType === V1BillingPlanType.BILLING_PLAN_TYPE_TEAM;
 }
 
-export function isManagedPlan(plan: V1BillingPlan) {
-  return plan.planType === V1BillingPlanType.BILLING_PLAN_TYPE_MANAGED;
+export function isManagedPlan(planType: V1BillingPlanType) {
+  return planType === V1BillingPlanType.BILLING_PLAN_TYPE_MANAGED;
 }
 
-export function isEnterprisePlan(plan: V1BillingPlan) {
-  return !isTrialPlan(plan) && !isTeamPlan(plan) && !isManagedPlan(plan);
+export function isEnterprisePlan(planType: V1BillingPlanType) {
+  return (
+    !isTrialPlan(planType) && !isTeamPlan(planType) && !isManagedPlan(planType)
+  );
 }
 
 export function getSubscriptionResumedText(endDate: string) {

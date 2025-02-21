@@ -1002,7 +1002,10 @@ func (s *Server) organizationToDTO(o *database.Organization, privileged bool) *a
 		res.BillingCustomerId = o.BillingCustomerID
 		res.PaymentCustomerId = o.PaymentCustomerID
 		res.BillingEmail = o.BillingEmail
-		res.BillingPlanName = o.BillingPlanName
+		if o.BillingPlanName != nil {
+			planType := planTypeToDTO(s.admin.Biller.GetPlanTypeForExternalId(*o.BillingPlanName))
+			res.BillingPlanType = &planType
+		}
 		res.BillingPlanDisplayName = o.BillingPlanDisplayName
 	}
 

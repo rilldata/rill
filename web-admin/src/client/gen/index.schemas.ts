@@ -870,7 +870,7 @@ export interface V1Organization {
   billingCustomerId?: string;
   paymentCustomerId?: string;
   billingEmail?: string;
-  billingPlanName?: string;
+  billingPlanType?: V1BillingPlanType;
   billingPlanDisplayName?: string;
   createdOn?: string;
   updatedOn?: string;

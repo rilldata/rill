@@ -110,6 +110,19 @@ func (o *Orb) GetPlanByName(ctx context.Context, name string) (*Plan, error) {
 	return nil, ErrNotFound
 }
 
+func (o *Orb) GetPlanTypeForExternalId(externalID string) PlanType {
+	switch externalID {
+	case "free_trial":
+		return TrailPlanType
+	case "team":
+		return TeamPlanType
+	case "managed":
+		return ManagedPlanType
+	default:
+		return EnterprisePlanType
+	}
+}
+
 func (o *Orb) CreateCustomer(ctx context.Context, organization *database.Organization, provider PaymentProvider) (*Customer, error) {
 	var paymentProviderType orb.CustomerNewParamsPaymentProvider
 	switch provider {
@@ -568,7 +581,7 @@ func (o *Orb) getBillingPlanFromOrbPlan(ctx context.Context, p *orb.Plan) (*Plan
 	billingPlan := &Plan{
 		ID:              p.ID,
 		Name:            p.ExternalPlanID,
-		PlanType:        getPlanType(p.ExternalPlanID),
+		PlanType:        o.GetPlanTypeForExternalId(p.ExternalPlanID),
 		DisplayName:     getPlanDisplayName(p.ExternalPlanID),
 		Description:     p.Description,
 		TrialPeriodDays: trialPeriodDays,
@@ -619,19 +632,6 @@ func getBillingInvoiceFromOrbInvoice(i *orb.Invoice) *Invoice {
 		CreatedAt:      i.CreatedAt,
 		SubscriptionID: i.Subscription.ID,
 		Metadata:       map[string]interface{}{"issued_at": i.IssuedAt, "voided_at": i.VoidedAt, "paid_at": i.PaidAt, "payment_failed_at": i.PaymentFailedAt},
-	}
-}
-
-func getPlanType(externalID string) PlanType {
-	switch externalID {
-	case "free_trial":
-		return TrailPlanType
-	case "team":
-		return TeamPlanType
-	case "managed":
-		return ManagedPlanType
-	default:
-		return EnterprisePlanType
 	}
 }
 

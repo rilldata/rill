@@ -11952,9 +11952,9 @@ export class Organization extends Message<Organization> {
   billingEmail = "";
 
   /**
-   * @generated from field: optional string billing_plan_name = 14;
+   * @generated from field: optional rill.admin.v1.BillingPlanType billing_plan_type = 14;
    */
-  billingPlanName?: string;
+  billingPlanType?: BillingPlanType;
 
   /**
    * @generated from field: optional string billing_plan_display_name = 15;
@@ -11990,7 +11990,7 @@ export class Organization extends Message<Organization> {
     { no: 7, name: "billing_customer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "payment_customer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "billing_email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 14, name: "billing_plan_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 14, name: "billing_plan_type", kind: "enum", T: proto3.getEnumType(BillingPlanType), opt: true },
     { no: 15, name: "billing_plan_display_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 5, name: "created_on", kind: "message", T: Timestamp },
     { no: 6, name: "updated_on", kind: "message", T: Timestamp },

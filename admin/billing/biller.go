@@ -27,6 +27,7 @@ type Biller interface {
 	GetPlan(ctx context.Context, id string) (*Plan, error)
 	// GetPlanByName returns the plan with the given Rill plan name.
 	GetPlanByName(ctx context.Context, name string) (*Plan, error)
+	GetPlanTypeForExternalId(externalID string) PlanType
 
 	// CreateCustomer creates a customer for the given organization in the billing system and returns the external customer ID.
 	CreateCustomer(ctx context.Context, organization *database.Organization, provider PaymentProvider) (*Customer, error)
