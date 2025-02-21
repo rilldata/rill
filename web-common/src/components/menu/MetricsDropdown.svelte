@@ -7,14 +7,15 @@
   import Search from "@rilldata/web-common/components/search/Search.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
+  import DropdownMenuCheckboxItem from "@rilldata/web-common/components/dropdown-menu/DropdownMenuCheckboxItem.svelte";
 
   export let tooltipText: string;
   export let disabled = false;
   export let searchText = "";
   export let measures: MetricsViewSpecMeasureV2[];
   export let activeMeasure: MetricsViewSpecMeasureV2;
-  export let leaderboardMeasureName: string;
-  export let onSelect: (name: string) => void;
+  export let selectedMeasureNames: string[] = [];
+  export let onSelect: (names: string[]) => void;
 
   let active = false;
 
@@ -24,6 +25,19 @@
         .toLowerCase()
         .includes(searchText.toLowerCase()),
     );
+  }
+
+  function toggleMeasure(name: string) {
+    if (!name) return;
+    const currentSelection = selectedMeasureNames || [];
+    const newSelection = currentSelection.includes(name)
+      ? currentSelection.filter((n) => n !== name)
+      : [...currentSelection, name];
+
+    // Ensure at least one measure is selected
+    if (newSelection.length > 0) {
+      onSelect(newSelection);
+    }
   }
 
   $: filteredMeasures = filterMeasures(searchText);
@@ -83,14 +97,18 @@
         <!-- TODO: checkbox -->
         {#if filteredMeasures.length}
           {#each filteredMeasures as measure (measure.name)}
-            <DropdownMenu.Item
+            <DropdownMenu.CheckboxItem
               class="text-[12px]"
-              on:click={() => {
-                if (measure.name) onSelect(measure.name);
+              checked={measure.name
+                ? selectedMeasureNames.includes(measure.name)
+                : false}
+              onCheckedChange={() => {
+                if (measure.name) toggleMeasure(measure.name);
               }}
             >
               <div class="flex flex-col">
-                <div class:font-bold={leaderboardMeasureName === measure.name}>
+                <!-- <div class:font-bold={leaderboardMeasureName === measure.name}> -->
+                <div>
                   {measure.displayName || measure.name}
                 </div>
 
@@ -98,7 +116,7 @@
                   {measure.description}
                 </p>
               </div>
-            </DropdownMenu.Item>
+            </DropdownMenu.CheckboxItem>
           {/each}
         {:else}
           <div class="ui-copy-disabled text-center p-2 w-full">no results</div>

@@ -62,6 +62,12 @@ export interface MetricsExplorerEntity {
   leaderboardMeasureName: string;
 
   /**
+   * Array of selected measure names for multi-select support.
+   * The first item in this array matches leaderboardMeasureName.
+   */
+  selectedMeasureNames?: string[];
+
+  /**
    * This is the sort type that will be used for the leaderboard
    * and dimension detail table. See SortType for more details.
    */

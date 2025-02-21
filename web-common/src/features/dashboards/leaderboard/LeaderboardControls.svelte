@@ -10,15 +10,24 @@
 
   const {
     selectors: {
-      measures: { leaderboardMeasureName, getMeasureByName, visibleMeasures },
+      measures: {
+        leaderboardMeasureName,
+        selectedMeasureNames,
+        getMeasureByName,
+        visibleMeasures,
+      },
       dimensions: { visibleDimensions, allDimensions },
     },
     actions: {
       dimensions: { toggleDimensionVisibility },
       contextCol: { setContextColumn },
       setLeaderboardMeasureName,
+      setSelectedMeasureNames,
     },
   } = getStateManagers();
+
+  $: console.log("leaderboardMeasureName: ", $leaderboardMeasureName);
+  $: console.log("selectedMeasureNames: ", $selectedMeasureNames);
 
   $: measures = getSimpleMeasures($visibleMeasures);
 
@@ -27,8 +36,8 @@
   $: activeLeaderboardMeasure = $getMeasureByName($leaderboardMeasureName);
 
   // TODO: support multi-select
-  $: console.log("activeLeaderboardMeasure: ", activeLeaderboardMeasure);
-  $: console.log("measures: ", measures);
+  // $: console.log("activeLeaderboardMeasure: ", activeLeaderboardMeasure);
+  // $: console.log("measures: ", measures);
 
   $: validPercentOfTotal =
     activeLeaderboardMeasure?.validPercentOfTotal || false;
@@ -53,8 +62,6 @@
   function isDefined(value: string | undefined): value is string {
     return value !== undefined;
   }
-
-  $: console.log("$leaderboardMeasureName: ", $leaderboardMeasureName);
 </script>
 
 <div>
@@ -80,9 +87,14 @@
       <MetricsDropdown
         {measures}
         activeMeasure={activeLeaderboardMeasure}
-        leaderboardMeasureName={$leaderboardMeasureName}
-        tooltipText="Choose a measure to filter by"
-        onSelect={(name) => setLeaderboardMeasureName(name)}
+        tooltipText="Choose measures to filter by"
+        selectedMeasureNames={$selectedMeasureNames}
+        onSelect={(names) => {
+          setSelectedMeasureNames(names);
+
+          // TODO: to see how the url state changes when leaderboardMeasureName is set
+          // setLeaderboardMeasureName(names[0]);
+        }}
       />
     </div>
   {/if}
