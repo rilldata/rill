@@ -12,7 +12,7 @@
     selectors: {
       measures: {
         leaderboardMeasureName,
-        selectedMeasureNames,
+        leaderboardMeasureNames,
         getMeasureByName,
         visibleMeasures,
       },
@@ -22,22 +22,19 @@
       dimensions: { toggleDimensionVisibility },
       contextCol: { setContextColumn },
       setLeaderboardMeasureName,
-      setSelectedMeasureNames,
+      setLeaderboardMeasureNames,
     },
   } = getStateManagers();
 
+  $: console.log("activeLeaderboardMeasure: ", activeLeaderboardMeasure);
   $: console.log("leaderboardMeasureName: ", $leaderboardMeasureName);
-  $: console.log("selectedMeasureNames: ", $selectedMeasureNames);
+  $: console.log("leaderboardMeasureNames: ", $leaderboardMeasureNames);
 
   $: measures = getSimpleMeasures($visibleMeasures);
 
   $: metricsExplorer = $metricsExplorerStore.entities[exploreName];
 
   $: activeLeaderboardMeasure = $getMeasureByName($leaderboardMeasureName);
-
-  // TODO: support multi-select
-  // $: console.log("activeLeaderboardMeasure: ", activeLeaderboardMeasure);
-  // $: console.log("measures: ", measures);
 
   $: validPercentOfTotal =
     activeLeaderboardMeasure?.validPercentOfTotal || false;
@@ -88,12 +85,12 @@
         {measures}
         activeMeasure={activeLeaderboardMeasure}
         tooltipText="Choose measures to filter by"
-        selectedMeasureNames={$selectedMeasureNames}
+        selectedMeasureNames={$leaderboardMeasureNames}
         onSelect={(names) => {
-          setSelectedMeasureNames(names);
+          setLeaderboardMeasureNames(names);
 
           // TODO: to see how the url state changes when leaderboardMeasureName is set
-          // setLeaderboardMeasureName(names[0]);
+          setLeaderboardMeasureName(names[0]);
         }}
       />
     </div>
