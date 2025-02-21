@@ -142,13 +142,28 @@ export function convertExploreStateToURLSearchParams(
       break;
   }
 
-  if (disableCompression || !shouldCompressParams(urlCopy))
+  if (
+    shouldSetParam(
+      preset.exploreSortBy,
+      exploreState.leaderboardMeasureNames?.join(","),
+    )
+  ) {
+    urlCopy.searchParams.set(
+      ExploreStateURLParams.SortBy,
+      exploreState.leaderboardMeasureNames?.join(",") ?? "",
+    );
+  }
+
+  if (disableCompression || !shouldCompressParams(urlCopy)) {
     return urlCopy.searchParams.toString();
+  }
+
   const compressedUrlParams = new URLSearchParams();
   compressedUrlParams.set(
     ExploreStateURLParams.GzippedParams,
     compressUrlParams(urlCopy.search),
   );
+
   return compressedUrlParams.toString();
 }
 
@@ -282,16 +297,6 @@ function toExploreUrl(
     searchParams.set(
       ExploreStateURLParams.ExpandedDimension,
       exploreState.selectedDimensionName ?? "",
-    );
-  }
-
-  if (
-    shouldSetParam(preset.exploreSortBy, exploreState.leaderboardMeasureName)
-  ) {
-    // TODO: make it work with multiple measures
-    searchParams.set(
-      ExploreStateURLParams.SortBy,
-      exploreState.leaderboardMeasureName,
     );
   }
 
