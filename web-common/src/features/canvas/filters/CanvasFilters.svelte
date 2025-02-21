@@ -66,6 +66,8 @@
         minTimeGrain,
         selectTimeRange,
         setTimeZone,
+        displayTimeComparison,
+        setSelectedComparisonRange,
         setInitialState,
         destroy,
       },
@@ -176,7 +178,6 @@
      */
     comparisonTimeRange: DashboardTimeControls | undefined,
   ) {
-    console.log("timeRange", timeRange);
     selectTimeRange(timeRange, timeGrain, comparisonTimeRange);
   }
 
@@ -304,6 +305,11 @@
       allTimeRange={$allTimeRange}
       {selectedTimeRange}
       {selectedComparisonTimeRange}
+      showTimeComparison={$comparisonRangeStateStore?.showTimeComparison ??
+        false}
+      activeTimeZone={$selectedTimezone}
+      onDisplayTimeComparison={displayTimeComparison}
+      onSetSelectedComparisonRange={setSelectedComparisonRange}
     />
   </div>
   <div class="relative flex flex-row gap-x-2 gap-y-2 items-start ml-2">
