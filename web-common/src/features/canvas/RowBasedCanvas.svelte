@@ -1,31 +1,32 @@
 <script lang="ts">
-  import { parseDocument, YAMLMap, YAMLSeq } from "yaml";
+  import DragHandle from "@rilldata/web-common/components/icons/DragHandle.svelte";
+  import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
   import { clamp } from "@rilldata/web-common/lib/clamp";
-  import ElementDivider from "./ElementDivider.svelte";
-  import { dropZone, activeDivider } from "./stores/ui-stores";
-  import AddComponentDropdown from "./AddComponentDropdown.svelte";
-  import type { FileArtifact } from "../entity-management/file-artifact";
-  import { getCanvasStateManagers } from "./state-managers/state-managers";
   import type { V1CanvasSpec } from "@rilldata/web-common/runtime-client";
-  import PreviewElement from "./PreviewElement.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { Edit } from "lucide-svelte";
+  import { parseDocument, YAMLMap, YAMLSeq } from "yaml";
+  import type { FileArtifact } from "../entity-management/file-artifact";
+  import AddComponentDropdown from "./AddComponentDropdown.svelte";
+  import DropZone from "./components/DropZone.svelte";
   import type { CanvasComponentType } from "./components/types";
   import { getComponentRegistry } from "./components/util";
-  import { findNextAvailablePosition } from "./util";
-  import { useDefaultMetrics } from "./selector";
-  import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
+  import ElementDivider from "./ElementDivider.svelte";
   import CanvasFilters from "./filters/CanvasFilters.svelte";
-  import DropZone from "./components/DropZone.svelte";
+  import PreviewElement from "./PreviewElement.svelte";
   import RowDropZone from "./RowDropZone.svelte";
   import RowWrapper from "./RowWrapper.svelte";
-  import DragHandle from "@rilldata/web-common/components/icons/DragHandle.svelte";
-  import { Edit } from "lucide-svelte";
+  import { useDefaultMetrics } from "./selector";
+  import { getCanvasStateManagers } from "./state-managers/state-managers";
+  import { activeDivider, dropZone } from "./stores/ui-stores";
+  import { findNextAvailablePosition } from "./util";
 
   const initialHeights: Record<CanvasComponentType, number> = {
     line_chart: 350,
     bar_chart: 400,
     area_chart: 400,
     stacked_bar: 400,
+    stacked_bar_normalized: 400,
     markdown: 160,
     kpi: 200,
     kpi_grid: 200,

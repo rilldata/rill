@@ -60,6 +60,7 @@ const CHART_TYPES = [
   "line_chart",
   "bar_chart",
   "stacked_bar",
+  "stacked_bar_normalized",
   "area_chart",
 ] as const;
 const NON_CHART_TYPES = [
@@ -92,6 +93,7 @@ const DISPLAY_MAP: Record<CanvasComponentType, string> = {
   bar_chart: "Chart",
   line_chart: "Chart",
   stacked_bar: "Chart",
+  stacked_bar_normalized: "Chart",
   area_chart: "Chart",
 } as const;
 
