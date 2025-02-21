@@ -67,9 +67,9 @@ export class AdvancedMeasureCorrector {
 
   private correctLeaderboards() {
     if (
-      this.dashboard.leaderboardMeasureName &&
+      this.dashboard.leaderboardMeasureNames &&
       !this.measureIsValidForComponent(
-        this.dashboard.leaderboardMeasureName,
+        this.dashboard.leaderboardMeasureNames[0],
         true,
         false,
       )
@@ -77,10 +77,10 @@ export class AdvancedMeasureCorrector {
       return;
     }
 
-    this.dashboard.leaderboardMeasureName = "";
+    this.dashboard.leaderboardMeasureNames = [""];
     for (const measure of this.metricsViewSpec.measures ?? []) {
       if (!this.measureIsValidForComponent(measure.name ?? "", true, false)) {
-        this.dashboard.leaderboardMeasureName = measure.name ?? "";
+        this.dashboard.leaderboardMeasureNames[0] = measure.name ?? "";
         break;
       }
     }
