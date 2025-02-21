@@ -7,7 +7,6 @@
   import Search from "@rilldata/web-common/components/search/Search.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
-  import DropdownMenuCheckboxItem from "@rilldata/web-common/components/dropdown-menu/DropdownMenuCheckboxItem.svelte";
 
   export let tooltipText: string;
   export let disabled = false;
@@ -40,7 +39,17 @@
     }
   }
 
+  function getMeasureDisplayText(measureName: string) {
+    const measure = measures.find((m) => m.name === measureName);
+    return measure?.displayName || measure?.name || measureName;
+  }
+
   $: filteredMeasures = filterMeasures(searchText);
+
+  $: showingMeasuresText =
+    selectedMeasureNames.length > 1
+      ? `${selectedMeasureNames.length} measures`
+      : getMeasureDisplayText(selectedMeasureNames[0]);
 </script>
 
 <DropdownMenu.Root
@@ -68,9 +77,7 @@
         <div
           class="flex items-center gap-x-0.5 px-1 text-gray-700 hover:text-inherit"
         >
-          Showing <strong
-            >{`${activeMeasure.displayName || activeMeasure.name}`}</strong
-          >
+          Showing <strong>{showingMeasuresText}</strong>
           <span
             class="transition-transform"
             class:hidden={disabled}
