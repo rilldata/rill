@@ -1,3 +1,4 @@
+import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
 import {
   createInExpression,
   createLikeExpression,
@@ -13,7 +14,7 @@ export function useDimensionSearch(
   timeStart?: string,
   timeEnd?: string,
   enabled?: boolean,
-) {
+): CompoundQueryResult<string[]> {
   const addNull = searchText.length !== 0 && "null".includes(searchText);
 
   const queries = metricsViewNames.map((mvName) =>
@@ -37,15 +38,36 @@ export function useDimensionSearch(
   );
 
   return derived(queries, ($queries) => {
+    if ($queries.some((q) => q.isFetching)) {
+      return {
+        data: undefined,
+        error: undefined,
+        isFetching: true,
+      };
+    }
+    const errors = $queries.filter((q) => q.isError).map((q) => q.error);
+    if (errors.length > 0) {
+      return {
+        data: undefined,
+        // TODO: merge multiple errors
+        error: errors[0],
+        isFetching: false,
+      };
+    }
+
     const items = $queries.flatMap((query) => query.data?.data || []);
     const values = items.map((item) => item[dimensionName] as string);
     const seen = new Set();
-    return values.filter((value) => {
-      if (seen.has(value)) {
-        return false;
-      }
-      seen.add(value);
-      return true;
-    });
+    return {
+      data: values.filter((value) => {
+        if (seen.has(value)) {
+          return false;
+        }
+        seen.add(value);
+        return true;
+      }),
+      error: undefined,
+      isFetching: false,
+    };
   });
 }
