@@ -24,12 +24,12 @@ func DotenvCmd(ch *cmdutil.Helper) *cobra.Command {
 
 func DotenvRefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "refresh {cloud}",
+		Use:   "refresh {cloud|e2e}",
 		Short: "Refresh .env file from shared storage",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			preset := args[0]
-			if preset != "cloud" {
+			if preset != "cloud" && preset != "e2e" {
 				return fmt.Errorf(".env not used for preset %q", preset)
 			}
 
@@ -52,12 +52,12 @@ func DotenvRefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 
 func DotenvUploadCmd(ch *cmdutil.Helper) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "upload {cloud}",
+		Use:   "upload {cloud|e2e}",
 		Short: "Distribute your current .env file to the team",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			preset := args[0]
-			if preset != "cloud" {
+			if preset != "cloud" && preset != "e2e" {
 				return fmt.Errorf(".env not used for preset %q", preset)
 			}
 
