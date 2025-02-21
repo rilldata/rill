@@ -434,7 +434,7 @@ func TestServer_Timeseries_timezone_dst_forward(t *testing.T) {
 		Sql:        "select current_setting('TimeZone') as value",
 	})
 	require.NoError(t, err)
-	require.Equal(t, "UTC", resp.Data[0].Fields["value"].GetStringValue())
+	require.Equal(t, "Etc/UTC", resp.Data[0].Fields["value"].GetStringValue())
 
 	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
 		InstanceId:          instanceID,
