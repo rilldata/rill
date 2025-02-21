@@ -101,7 +101,6 @@
           />
         </div>
 
-        <!-- TODO: checkbox -->
         {#if filteredMeasures.length}
           {#each filteredMeasures as measure (measure.name)}
             <DropdownMenu.CheckboxItem
@@ -114,7 +113,6 @@
               }}
             >
               <div class="flex flex-col">
-                <!-- <div class:font-bold={leaderboardMeasureName === measure.name}> -->
                 <div>
                   {measure.displayName || measure.name}
                 </div>
