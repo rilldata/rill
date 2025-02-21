@@ -477,11 +477,19 @@ function fromPivotUrlParams(
     });
   }
 
-  let rowJoinType = "nest";
-  console.log("pivotRowJoinType", preset.pivotRowJoinType);
+  let rowJoinType: PivotRowJoinType = "nest";
 
   if (preset.pivotRowJoinType) {
-    rowJoinType = preset.pivotRowJoinType;
+    if (
+      preset.pivotRowJoinType === "nest" ||
+      preset.pivotRowJoinType === "flat"
+    ) {
+      rowJoinType = preset.pivotRowJoinType;
+    } else {
+      errors.push(
+        getSingleFieldError("pivot row join type", preset.pivotRowJoinType),
+      );
+    }
   }
 
   return {
@@ -502,7 +510,7 @@ function fromPivotUrlParams(
         rowPage: 1,
         enableComparison: true,
         activeCell: null,
-        rowJoinType: rowJoinType as PivotRowJoinType,
+        rowJoinType: rowJoinType,
       },
     },
     errors,

@@ -287,14 +287,6 @@ function toExploreUrl(
     );
   }
 
-  const rowJoinType = exploreState.pivot?.rowJoinType;
-  if (shouldSetParam(preset.pivotRowJoinType, rowJoinType)) {
-    searchParams.set(
-      ExploreStateURLParams.PivotRowJoinType,
-      rowJoinType ?? "nest",
-    );
-  }
-
   return searchParams;
 }
 
