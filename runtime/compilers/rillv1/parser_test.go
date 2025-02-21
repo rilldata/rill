@@ -1714,9 +1714,8 @@ rows:
   items:
   - component: c2
   - width: 2
-    component:
-      markdown:
-        content: "Foo"
+    markdown:
+      content: "Foo"
 `,
 	})
 

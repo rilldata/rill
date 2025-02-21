@@ -37,8 +37,9 @@ type CanvasYAML struct {
 	Rows      []*struct {
 		Height *string `yaml:"height"`
 		Items  []*struct {
-			Width     *string   `yaml:"width"`
-			Component yaml.Node `yaml:"component"` // Can be a name (string) or inline component definition (map)
+			Width           *string              `yaml:"width"`
+			Component       string               `yaml:"component"` // Name of an externally defined component
+			InlineComponent map[string]yaml.Node `yaml:",inline"`   // Any other properties are considered an inline component definition
 		} `yaml:"items"`
 	}
 	Security *SecurityPolicyYAML `yaml:"security"`
@@ -118,7 +119,7 @@ func (p *Parser) parseCanvas(node *Node) error {
 	// Parse rows and items.
 	// Items have position and size, and either reference an externally defined component by name or define a component inline.
 	var rows []*runtimev1.CanvasRow
-	var inlineComponentDefs []*componentDef
+	var inlineComponentDefs []*componentDef // Track inline component definitions so we can insert them after we have validated all components
 	for i, row := range tmp.Rows {
 		if row == nil {
 			return fmt.Errorf("row at index %d is empty", i)
@@ -158,24 +159,35 @@ func (p *Parser) parseCanvas(node *Node) error {
 				widthUnit = u
 			}
 
-			component, inlineComponentDef, err := p.parseCanvasItemComponent(node.Name, i, j, item.Component)
-			if err != nil {
-				return fmt.Errorf("invalid component for item %d in row %d: %w", j, i, err)
+			// Validate that exactly one of Component and InlineComponent are set
+			if item.Component == "" && len(item.InlineComponent) == 0 {
+				return fmt.Errorf("item %d in row %d is missing a component definition", j, i)
+			}
+			if item.Component != "" && len(item.InlineComponent) > 0 {
+				return fmt.Errorf("item %d in row %d has properties incompatible with 'component'", j, i)
 			}
 
-			// Track inline component definitions so we can insert them after we have validated all components
-			if inlineComponentDef != nil {
-				inlineComponentDefs = append(inlineComponentDefs, inlineComponentDef)
+			// Parse inline component definition if present and assign into item.Component
+			var definedInCanvs bool
+			if len(item.InlineComponent) > 0 {
+				name, def, err := p.parseCanvasInlineComponent(node.Name, i, j, item.InlineComponent)
+				if err != nil {
+					return fmt.Errorf("invalid component for item %d in row %d: %w", j, i, err)
+				}
+
+				item.Component = name
+				inlineComponentDefs = append(inlineComponentDefs, def)
+				definedInCanvs = true
 			}
 
 			items = append(items, &runtimev1.CanvasItem{
-				Component:       component,
-				DefinedInCanvas: inlineComponentDef != nil,
+				Component:       item.Component,
+				DefinedInCanvas: definedInCanvs,
 				Width:           width,
 				WidthUnit:       widthUnit,
 			})
 
-			node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindComponent, Name: component})
+			node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindComponent, Name: item.Component})
 		}
 
 		rows = append(rows, &runtimev1.CanvasRow{
@@ -266,28 +278,16 @@ func (p *Parser) parseCanvas(node *Node) error {
 	return nil
 }
 
-// parseCanvasItemComponent parses a canvas item's "component" property.
-// It may be a string (name of an externally defined component) or an inline component definition.
-func (p *Parser) parseCanvasItemComponent(canvasName string, rowIdx, itemIdx int, n yaml.Node) (string, *componentDef, error) {
-	if n.Kind == yaml.ScalarNode {
-		var name string
-		err := n.Decode(&name)
-		if err != nil {
-			return "", nil, err
-		}
-		return name, nil, nil
-	}
-
-	if n.IsZero() {
-		return "", nil, errors.New("missing component definition")
-	}
-
-	if n.Kind != yaml.MappingNode {
-		return "", nil, errors.New("expected a component name or inline declaration")
+// parseCanvasInlineComponent parses an inline component definition in a canvas item.
+func (p *Parser) parseCanvasInlineComponent(canvasName string, rowIdx, itemIdx int, props map[string]yaml.Node) (string, *componentDef, error) {
+	var n yaml.Node
+	err := n.Encode(props)
+	if err != nil {
+		return "", nil, fmt.Errorf("invalid component for item %d in row %d: %w", itemIdx, rowIdx, err)
 	}
 
 	tmp := &ComponentYAML{}
-	err := n.Decode(tmp)
+	err = n.Decode(tmp)
 	if err != nil {
 		return "", nil, err
 	}
