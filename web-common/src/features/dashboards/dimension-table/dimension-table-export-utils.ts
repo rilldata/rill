@@ -13,17 +13,14 @@ import {
 } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
 import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
-  V1Expression,
   V1MetricsViewAggregationMeasure,
   V1MetricsViewAggregationRequest,
   V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { derived, get, type Readable } from "svelte/store";
-import { mergeMeasureFilters } from "../filters/measure-filters/measure-filter-utils";
+import { buildWhereParamForDimensionTableAndTDDExports } from "../../exports/export-filters";
 import { dimensionSearchText } from "../stores/dashboard-stores";
-import { sanitiseExpression } from "../stores/filter-utils";
-import { getDimensionFilterWithSearch } from "./dimension-table-utils";
 
 export function getDimensionTableExportArgs(
   ctx: StateManagers,
@@ -104,7 +101,7 @@ export function getDimensionTableAggregationRequestForTime(
     }
   }
 
-  const where = buildWhereParam(
+  const where = buildWhereParamForDimensionTableAndTDDExports(
     dashboardState,
     dashboardState.selectedDimensionName!,
     dimensionSearchText,
@@ -130,24 +127,4 @@ export function getDimensionTableAggregationRequestForTime(
     where,
     offset: "0",
   };
-}
-
-export function buildWhereParam(
-  dashboard: MetricsExplorerEntity,
-  dimensionName: string,
-  searchText: string,
-) {
-  let dimensionFilter: V1Expression | undefined;
-  if (searchText) {
-    dimensionFilter = getDimensionFilterWithSearch(
-      dashboard?.whereFilter,
-      searchText,
-      dimensionName,
-    );
-  } else {
-    dimensionFilter = dashboard?.whereFilter;
-  }
-  const where = mergeMeasureFilters(dashboard, dimensionFilter);
-  const sanitisedWhere = sanitiseExpression(where, undefined);
-  return sanitisedWhere;
 }

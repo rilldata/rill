@@ -18,7 +18,7 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { derived, get, type Readable } from "svelte/store";
-import { buildWhereParam } from "../dimension-table/dimension-table-export-utils";
+import { buildWhereParamForDimensionTableAndTDDExports } from "../../exports/export-filters";
 import { dimensionSearchText } from "../stores/dashboard-stores";
 
 export function getTDDExportArgs(
@@ -116,7 +116,11 @@ export function getTDDAggregationRequest(
         desc: dashboardState.sortDirection === SortDirection.DESCENDING,
       },
     ],
-    where: buildWhereParam(dashboardState, dimensionName, dimensionSearchText),
+    where: buildWhereParamForDimensionTableAndTDDExports(
+      dashboardState,
+      dimensionName,
+      dimensionSearchText,
+    ),
     offset: "0",
   };
 }
