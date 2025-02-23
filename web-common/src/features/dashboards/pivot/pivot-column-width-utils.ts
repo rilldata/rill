@@ -1,10 +1,13 @@
 import { extractSamples } from "@rilldata/web-common/components/virtualized-table/init-widths";
 import { isTimeDimension } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
-import type { PivotDataRow } from "@rilldata/web-common/features/dashboards/pivot/types";
+import {
+  COMPARISON_PERCENT,
+  type PivotDataRow,
+} from "@rilldata/web-common/features/dashboards/pivot/types";
 import { clamp } from "@rilldata/web-common/lib/clamp";
 
 export const COLUMN_WIDTH_CONSTANTS = {
-  MIN_COL_WIDTH: 150,
+  MIN_COL_WIDTH: 100,
   MAX_COL_WIDTH: 600,
   MAX_INIT_COL_WIDTH: 400,
   MIN_MEASURE_WIDTH: 70,
@@ -58,11 +61,16 @@ export function calculateMeasureWidth(
 ) {
   let maxValueLength: number;
   if (totalsRow) {
-    const value = totalsRow[measureName];
-    if (typeof value === "string" || typeof value === "number") {
-      maxValueLength = String(formatter(value)).length;
+    const isPercent = measureName.endsWith(COMPARISON_PERCENT);
+    if (isPercent) {
+      maxValueLength = 6;
     } else {
-      maxValueLength = 0;
+      const value = totalsRow[measureName];
+      if (typeof value === "string" || typeof value === "number") {
+        maxValueLength = String(formatter(value)).length;
+      } else {
+        maxValueLength = 0;
+      }
     }
   } else {
     const samples = extractSamples(
