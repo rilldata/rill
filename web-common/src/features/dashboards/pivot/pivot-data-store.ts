@@ -8,6 +8,7 @@ import type {
   V1Expression,
   V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationResponseDataItem,
+  V1MetricsViewAggregationSort,
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
@@ -123,12 +124,33 @@ export function createTableCellQuery(
   const mergedFilter =
     mergeFilters(filterForInitialTable, whereFilter) ?? createAndExpression([]);
 
-  const sortBy = [
-    {
-      desc: isFlat ? true : false,
-      name: isFlat ? measureNames[0] : anchorDimension || measureNames[0],
-    },
-  ];
+  let sortBy: V1MetricsViewAggregationSort[] = [];
+  if (isFlat) {
+    const sortConfig = config.pivot.sorting?.[0];
+    if (sortConfig) {
+      sortBy = [
+        {
+          desc: sortConfig.desc,
+          name: sortConfig.id, // For flat tables, sort ID is directly the measure or dimension name
+        },
+      ];
+    } else {
+      // Default sort if no sort config provided
+      sortBy = [
+        {
+          desc: measureNames[0] ? true : false,
+          name: measureNames[0] || allDimensions[0],
+        },
+      ];
+    }
+  } else {
+    sortBy = [
+      {
+        desc: false,
+        name: anchorDimension || measureNames[0],
+      },
+    ];
+  }
 
   return createPivotAggregationRowQuery(
     ctx,
@@ -244,19 +266,6 @@ export function createPivotDataStore(
         }
         const anchorDimension = rowDimensionNames[0];
 
-        const {
-          where: measureWhere,
-          sortPivotBy,
-          timeRange,
-        } = getSortForAccessor(
-          anchorDimension,
-          config,
-          columnDimensionAxes?.data,
-        );
-
-        const { sortFilteredMeasureBody, isMeasureSortAccessor, sortAccessor } =
-          getSortFilteredMeasureBody(measureBody, sortPivotBy, measureWhere);
-
         const rowPage = config.pivot.rowPage;
         const rowOffset = (rowPage - 1) * NUM_ROWS_PER_PAGE;
 
@@ -269,6 +278,19 @@ export function createPivotDataStore(
               anchorDimension,
             ) || config.whereFilter;
         }
+
+        const {
+          where: measureWhere,
+          sortPivotBy,
+          timeRange,
+        } = getSortForAccessor(
+          anchorDimension,
+          config,
+          columnDimensionAxes?.data,
+        );
+
+        const { sortFilteredMeasureBody, isMeasureSortAccessor, sortAccessor } =
+          getSortFilteredMeasureBody(measureBody, sortPivotBy, measureWhere);
 
         let rowDimensionAxisQuery: Readable<PivotAxesData | null> =
           readable(null);

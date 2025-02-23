@@ -300,12 +300,19 @@ const metricsViewReducers = {
         }
       });
 
-      // Reset sorting if the sorting field is not in the pivot columns
       if (metricsExplorer.pivot.sorting.length) {
         const accessor = metricsExplorer.pivot.sorting[0].id;
-        const anchorDimension = metricsExplorer.pivot.rows.dimension?.[0].id;
-        if (accessor !== anchorDimension) {
-          metricsExplorer.pivot.sorting = [];
+
+        if (metricsExplorer.pivot.rowJoinType === "flat") {
+          const validAccessors = value.map((d) => d.id);
+          if (!validAccessors.includes(accessor)) {
+            metricsExplorer.pivot.sorting = [];
+          }
+        } else {
+          const anchorDimension = metricsExplorer.pivot.rows.dimension?.[0]?.id;
+          if (accessor !== anchorDimension) {
+            metricsExplorer.pivot.sorting = [];
+          }
         }
       }
       metricsExplorer.pivot.columns = {

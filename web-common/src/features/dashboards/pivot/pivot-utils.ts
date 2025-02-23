@@ -377,8 +377,8 @@ export function getSortForAccessor(
     end: config.time.timeEnd,
   };
 
-  // Return un-changed filter if no sorting is applied
-  if (config.pivot?.sorting?.length === 0) {
+  // Return un-changed filter if no sorting is applied or in flat mode
+  if (config.pivot?.sorting?.length === 0 || config.isFlat) {
     return {
       sortPivotBy,
       timeRange: defaultTimeRange,
