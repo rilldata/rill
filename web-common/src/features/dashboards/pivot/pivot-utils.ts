@@ -515,6 +515,30 @@ export function getSortFilteredMeasureBody(
   return { sortFilteredMeasureBody, isMeasureSortAccessor, sortAccessor };
 }
 
+function getValuesForFlatTable(
+  tableData: PivotDataRow[],
+  rowDimensions: string[],
+  rowId: string,
+  hasTotalsRow: boolean,
+): string[] {
+  let index = parseInt(rowId, 10);
+  const dimensionValues: string[] = [];
+
+  if (hasTotalsRow) index = index - 1;
+
+  const row = tableData?.[index];
+  if (!row) return dimensionValues;
+
+  // For flat tables, collect all dimension values in order
+  rowDimensions.forEach((dim) => {
+    if (dim in row) {
+      dimensionValues.push(row[dim] as string);
+    }
+  });
+
+  return dimensionValues;
+}
+
 export function getFiltersForCell(
   config: PivotDataStoreConfig,
   rowId: string,
@@ -522,18 +546,30 @@ export function getFiltersForCell(
   colDimensionAxes: Record<string, string[]> = {},
   tableData: PivotDataRow[],
 ): PivotFilter {
-  const { rowDimensionNames, measureNames } = config;
+  const { rowDimensionNames, measureNames, isFlat } = config;
   const defaultTimeRange = {
     start: config.time.timeStart,
     end: config.time.timeEnd,
   };
 
-  const values = getValuesForExpandedKey(
-    tableData,
-    rowDimensionNames,
-    rowId,
-    measureNames.length > 0,
-  );
+  let values: string[];
+
+  if (isFlat) {
+    // TODO: Update this when columns can be mixed with measures
+    values = getValuesForFlatTable(
+      tableData,
+      rowDimensionNames,
+      rowId,
+      measureNames.length > 0,
+    );
+  } else {
+    values = getValuesForExpandedKey(
+      tableData,
+      rowDimensionNames,
+      rowId,
+      measureNames.length > 0,
+    );
+  }
 
   const rowNestTimeFilters: TimeFilters[] = [];
   const rowNestFilters = values
@@ -568,7 +604,7 @@ export function getFiltersForCell(
   let columnFilters: V1Expression | undefined;
   let timeRangeCol: TimeRangeString;
   const firstDimension = rowDimensionNames?.[0];
-  if (firstDimension === colId || measureNames.includes(colId)) {
+  if (firstDimension === colId || measureNames.includes(colId) || isFlat) {
     columnFilters = undefined;
     timeRangeCol = defaultTimeRange;
   } else {
