@@ -49,7 +49,7 @@
         { dimension: [] },
         {
           measure: $columns.measure,
-          dimension: [...$rows.dimension, ...$columns.dimension],
+          dimension: [...$columns.dimension, ...$rows.dimension],
         },
       );
       return;
