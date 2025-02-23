@@ -12,12 +12,7 @@
   import { slide } from "svelte/transition";
   import { metricsExplorerStore } from "../stores/dashboard-stores";
   import DragList from "./DragList.svelte";
-  import {
-    PivotChipType,
-    type PivotChipData,
-    type PivotColumns,
-    type PivotRows,
-  } from "./types";
+  import { PivotChipType, type PivotChipData, type PivotRows } from "./types";
 
   const stateManagers = getStateManagers();
   const {
@@ -46,37 +41,34 @@
    * dashboard store when toggling back from `flat` to `nest`
    */
   function togglePivotType(newJoinState: "flat" | "nest") {
-    let updatedRows: PivotRows = { dimension: [] };
-    let updatedColumns: PivotColumns = { measure: [], dimension: [] };
-
     if (newJoinState === "flat") {
       lastNestState.set($rows);
-      const colDimensions = $rows.dimension.concat($columns.dimension);
-
-      updatedColumns = {
-        measure: $columns.measure,
-        dimension: colDimensions,
-      };
-    } else if (newJoinState === "nest" && $lastNestState) {
-      updatedRows = $lastNestState;
-      const rowDimensionIds = updatedRows.dimension.map((d) => d.id);
-      const colDimensions = $columns.dimension.filter(
-        (d) => rowDimensionIds.indexOf(d.id) === -1,
+      metricsExplorerStore.setPivotRowJoinType(
+        $exploreName,
+        "flat",
+        { dimension: [] },
+        {
+          measure: $columns.measure,
+          dimension: [...$rows.dimension, ...$columns.dimension],
+        },
       );
-
-      updatedColumns = {
-        measure: $columns.measure,
-        dimension: colDimensions,
-      };
-    } else {
-      updatedRows = { dimension: $columns.dimension };
-      updatedColumns = { dimension: [], measure: $columns.measure };
+      return;
     }
+
+    // Handle nest state
+    const updatedRows = $lastNestState ?? { dimension: $columns.dimension };
+    const rowDimensionIds = new Set(updatedRows.dimension.map((d) => d.id));
+
     metricsExplorerStore.setPivotRowJoinType(
       $exploreName,
-      newJoinState,
+      "nest",
       updatedRows,
-      updatedColumns,
+      {
+        measure: $columns.measure,
+        dimension: $lastNestState
+          ? $columns.dimension.filter((d) => !rowDimensionIds.has(d.id))
+          : [],
+      },
     );
   }
 </script>

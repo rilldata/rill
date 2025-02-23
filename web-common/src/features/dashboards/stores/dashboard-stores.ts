@@ -558,6 +558,9 @@ const metricsViewReducers = {
         rowJoinType,
         rows,
         columns,
+        sorting: [],
+        expanded: {},
+        activeCell: null,
       };
     });
   },
