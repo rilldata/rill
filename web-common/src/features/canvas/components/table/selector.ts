@@ -54,6 +54,7 @@ export function getTableConfig(
         allDimensions: metricsView?.dimensions || [],
         whereFilter: where ?? createAndExpression([]),
         searchText: "",
+        isFlat: false,
         pivot: pivotState,
         enableComparison,
         comparisonTime: {

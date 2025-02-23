@@ -103,7 +103,11 @@
         on:click={() => togglePivotType($isFlat ? "nest" : "flat")}
       >
         <span slot="tooltip-content">{$isFlat ? "Nest" : "Flatten"} table</span>
-        <ArrowUpDownIcon size="16px" />
+        <ArrowUpDownIcon
+          size="16px"
+          class="stroke-gray-500"
+          strokeWidth={1.8}
+        />
       </IconButton>
     </div>
 
