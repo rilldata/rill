@@ -8,6 +8,7 @@ import {
   createQueryServiceExport,
   V1ExportFormat,
   type V1MetricsViewAggregationRequest,
+  type V1MetricsViewAggregationSort,
   V1TimeGrain,
   type V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
@@ -46,6 +47,7 @@ export default async function exportPivot({
   const columns = get(ctx.selectors.pivot.columns);
 
   const configStore = getPivotConfig(ctx);
+  const isFlat = get(configStore).isFlat;
   const enableComparison = get(configStore).enableComparison;
   const comparisonTime = get(configStore).comparisonTime;
   const pivotState = get(configStore).pivot;
@@ -64,6 +66,7 @@ export default async function exportPivot({
     columns,
     enableComparison,
     comparisonTime,
+    isFlat,
     pivotState,
   );
 
@@ -107,6 +110,7 @@ export function getPivotExportArgs(ctx: StateManagers) {
 
       const enableComparison = configStore.enableComparison;
       const comparisonTime = configStore.comparisonTime;
+      const isFlat = configStore.isFlat;
       const pivotState = configStore.pivot;
 
       const metricsViewSpec = validSpecStore.data?.metricsView ?? {};
@@ -127,6 +131,7 @@ export function getPivotExportArgs(ctx: StateManagers) {
         columns,
         enableComparison,
         comparisonTime,
+        isFlat,
         pivotState,
       );
     },
@@ -142,6 +147,7 @@ export function getPivotAggregationRequest(
   columns: PivotColumns,
   enableComparison: boolean,
   comparisonTime: TimeRangeString | undefined,
+  isFlat: boolean,
   pivotState: PivotState,
 ): undefined | V1MetricsViewAggregationRequest {
   const measures = columns.measure.flatMap((m) => {
@@ -171,9 +177,11 @@ export function getPivotAggregationRequest(
         },
   );
 
-  const pivotOn = columns.dimension.map((d) =>
-    d.type === PivotChipType.Time ? `Time ${d.title}` : d.id,
-  );
+  const pivotOn = isFlat
+    ? undefined
+    : columns.dimension.map((d) =>
+        d.type === PivotChipType.Time ? `Time ${d.title}` : d.id,
+      );
 
   const rowDimensions = [...rows.dimension].map((d) =>
     d.type === PivotChipType.Time
@@ -188,13 +196,33 @@ export function getPivotAggregationRequest(
         },
   );
 
-  // Sort by the dimensions in the pivot's rows
-  const sort = rowDimensions.map((d) => {
-    return {
-      name: d.alias ? d.alias : d.name,
-      desc: pivotState.sorting.find((s) => s.id === d.name)?.desc ?? false,
-    };
-  });
+  let sort: V1MetricsViewAggregationSort[] = [];
+
+  if (isFlat) {
+    if (pivotState.sorting.length > 0) {
+      sort = [
+        {
+          name: pivotState.sorting[0].id,
+          desc: pivotState.sorting[0].desc,
+        },
+      ];
+    } else {
+      sort = [
+        {
+          desc: measures?.[0] ? true : false,
+          name: measures?.[0]?.name || allDimensions?.[0]?.name,
+        },
+      ];
+    }
+  } else {
+    // Sort by the dimensions in the pivot's rows
+    sort = rowDimensions.map((d) => {
+      return {
+        name: d.alias ? d.alias : d.name,
+        desc: pivotState.sorting.find((s) => s.id === d.name)?.desc ?? false,
+      };
+    });
+  }
 
   return {
     instanceId: get(runtime).instanceId,
