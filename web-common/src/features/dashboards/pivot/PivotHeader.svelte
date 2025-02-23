@@ -75,7 +75,13 @@
 
 <div class="header" transition:slide>
   {#if !$isFlat}
-    <div class="header-row">
+    <div
+      class="header-row"
+      transition:slide={{
+        duration: 200,
+        axis: "y",
+      }}
+    >
       <span class="row-label">
         <Row size="16px" /> Rows
       </span>
