@@ -134,7 +134,7 @@
   <thead>
     {#each headerGroups as headerGroup (headerGroup.id)}
       <tr>
-        {#each headerGroup.headers as header, i (header.id)}
+        {#each headerGroup.headers as header (header.id)}
           {@const sortDirection = header.column.getIsSorted()}
 
           <th>
@@ -169,7 +169,7 @@
     {#each virtualRows as row (row.index)}
       {@const cells = rows[row.index].getVisibleCells()}
       <tr>
-        {#each cells as cell, i (cell.id)}
+        {#each cells as cell (cell.id)}
           {@const result =
             typeof cell.column.columnDef.cell === "function"
               ? cell.column.columnDef.cell(cell.getContext())
