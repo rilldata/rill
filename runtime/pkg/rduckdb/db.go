@@ -56,6 +56,11 @@ type DB interface {
 
 	// RenameTable renames a table in the database.
 	RenameTable(ctx context.Context, oldName, newName string) error
+
+	// Meta APIs
+
+	// Schema returns the schema of the database.
+	Schema(ctx context.Context, ilike, name string) ([]*Table, error)
 }
 
 type DBOptions struct {
@@ -74,8 +79,10 @@ type DBOptions struct {
 	ReadSettings map[string]string
 	// WriteSettings are settings applied the write duckDB handle.
 	WriteSettings map[string]string
-	// InitQueries are the queries to run when the database is first created.
-	InitQueries []string
+	// DBInitQueries are run when the database is first created. These are typically global duckdb configurations.
+	DBInitQueries []string
+	// ConnInitQueries are run when a new connection is created. These are typically local duckdb configurations.
+	ConnInitQueries []string
 
 	Logger         *zap.Logger
 	OtelAttributes []attribute.KeyValue
@@ -740,7 +747,7 @@ func (d *db) acquireWriteConn(ctx context.Context, dsn, table string, attachExis
 	}, nil
 }
 
-func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, read bool) (*sqlx.DB, error) {
+func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, read bool) (db *sqlx.DB, dbErr error) {
 	d.logger.Debug("open db", zap.Bool("read", read), zap.String("uri", uri), observability.ZapCtx(ctx))
 	// open the db
 	var settings map[string]string
@@ -760,7 +767,7 @@ func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, read 
 	// Rebuild DuckDB DSN (which should be "path?key=val&...")
 	// this is required since spaces and other special characters are valid in db file path but invalid and hence encoded in URL
 	connector, err := duckdb.NewConnector(generateDSN(dsn.Path, query.Encode()), func(execer driver.ExecerContext) error {
-		for _, qry := range d.opts.InitQueries {
+		for _, qry := range d.opts.ConnInitQueries {
 			_, err := execer.ExecContext(ctx, qry, nil)
 			if err != nil && strings.Contains(err.Error(), "Failed to download extension") {
 				// Retry using another mirror. Based on: https://github.com/duckdb/duckdb/issues/9378
@@ -776,7 +783,27 @@ func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, read 
 		return nil, err
 	}
 
-	db := sqlx.NewDb(otelsql.OpenDB(connector), "duckdb")
+	db = sqlx.NewDb(otelsql.OpenDB(connector), "duckdb")
+	defer func() {
+		if dbErr != nil {
+			_ = db.Close()
+		}
+	}()
+
+	for _, qry := range d.opts.DBInitQueries {
+		_, err := db.ExecContext(ctx, qry)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if !read {
+		// at the end disable any more configuration changes on the write handle via pre_exec sql
+		_, err = db.ExecContext(ctx, "SET lock_configuration TO true", nil)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	err = otelsql.RegisterDBStatsMetrics(db.DB, otelsql.WithAttributes(d.opts.OtelAttributes...))
 	if err != nil {
 		return nil, fmt.Errorf("registering db stats metrics: %w", err)
@@ -784,7 +811,6 @@ func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, read 
 
 	conn, err := db.Connx(ctx)
 	if err != nil {
-		db.Close()
 		return nil, err
 	}
 
@@ -792,7 +818,6 @@ func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, read 
 	err = d.attachTables(ctx, conn, tables, ignoreTable)
 	if err != nil {
 		conn.Close()
-		db.Close()
 		return nil, err
 	}
 	if err := conn.Close(); err != nil {
@@ -817,7 +842,6 @@ func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, read 
 		order by 1, 2, 3, 4
 	`)
 	if err != nil {
-		db.Close()
 		return nil, err
 	}
 

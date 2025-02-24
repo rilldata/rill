@@ -193,8 +193,8 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		zap.String("user_id", user.ID),
 		zap.String("email", user.Email),
 		zap.String("name", user.DisplayName),
-		zap.String("org", strings.Join(addedToOrgNames, ",")),
-		zap.String("project", strings.Join(addedToProjectNames, ",")),
+		zap.String("orgs", strings.Join(addedToOrgNames, ",")),
+		zap.String("projects", strings.Join(addedToProjectNames, ",")),
 	)
 
 	return user, nil
@@ -246,7 +246,7 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, email, 
 		return nil, err
 	}
 
-	s.Logger.Info("created org", zap.String("name", orgName), zap.String("user_id", userID))
+	s.Logger.Info("created org", zap.String("name", orgName), zap.String("user_id", userID), zap.String("user_email", email))
 
 	// raise never subscribed billing issue in sync to prevent race condition where first project is deployed before issue is raised and thus start trial job not submitted
 	if s.Biller.Name() != "noop" {

@@ -35,6 +35,7 @@
       "@rilldata/web-admin/*": ["web-admin/src/*"],
       "@rilldata/web-auth/*": ["web-auth/src/*"],
       "@rilldata/web-common/*": ["web-common/src/*"],
+      "@rilldata/web-common/tests/*": ["web-common/tests/*"],
       "@rilldata/web-local/lib/*": ["web-local/src/lib/*"]
     },
     "outDir": "dist"

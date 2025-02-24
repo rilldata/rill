@@ -2113,6 +2113,14 @@ export class MetricsViewState extends Message<MetricsViewState> {
    */
   streaming = false;
 
+  /**
+   * The last time the metrics view's underlying model was refreshed.
+   * This may be empty if the metrics view is based on an externally managed table.
+   *
+   * @generated from field: google.protobuf.Timestamp model_refreshed_on = 3;
+   */
+  modelRefreshedOn?: Timestamp;
+
   constructor(data?: PartialMessage<MetricsViewState>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2123,6 +2131,7 @@ export class MetricsViewState extends Message<MetricsViewState> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "valid_spec", kind: "message", T: MetricsViewSpec },
     { no: 2, name: "streaming", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "model_refreshed_on", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewState {

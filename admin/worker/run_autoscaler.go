@@ -34,26 +34,26 @@ func (w *Worker) runAutoscaler(ctx context.Context) error {
 	}
 
 	for _, rec := range recs {
-		// if UpdatedOn is too old, the recommendation is stale and may not be trusted.
-		if time.Since(rec.UpdatedOn) >= legacyRecommendTime {
-			w.logger.Debug("skipping autoscaler: the recommendation is stale", zap.String("project_id", rec.ProjectID), zap.Time("recommendation_updated_on", rec.UpdatedOn))
-			continue
-		}
-
-		if rec.RecommendedSlots <= 0 {
-			w.logger.Debug("skipping autoscaler: the recommend slot is <= 0", zap.String("project_id", rec.ProjectID), zap.Int("recommended_slots", rec.RecommendedSlots))
-			continue
-		}
-
 		targetProject, err := w.admin.DB.FindProject(ctx, rec.ProjectID)
 		if err != nil {
-			w.logger.Debug("failed to find project", zap.String("project_id", rec.ProjectID), zap.Error(err))
+			w.logger.Debug("failed to find project", zap.String("project_name", targetProject.Name), zap.Error(err))
 			continue
 		}
 
 		projectOrg, err := w.admin.DB.FindOrganization(ctx, targetProject.OrganizationID)
 		if err != nil {
-			w.logger.Error("failed to autoscale: unable to find org for the project", zap.String("org_id", targetProject.OrganizationID), zap.String("project_name", targetProject.Name), zap.Error(err))
+			w.logger.Error("failed to autoscale: unable to find org for the project", zap.String("organization_name", projectOrg.Name), zap.String("project_name", targetProject.Name), zap.Error(err))
+			continue
+		}
+
+		// if UpdatedOn is too old, the recommendation is stale and may not be trusted.
+		if time.Since(rec.UpdatedOn) >= legacyRecommendTime {
+			w.logger.Debug("skipping autoscaler: the recommendation is stale", zap.String("project_name", targetProject.Name), zap.Time("recommendation_updated_on", rec.UpdatedOn))
+			continue
+		}
+
+		if rec.RecommendedSlots <= 0 {
+			w.logger.Debug("skipping autoscaler: the recommend slot is <= 0", zap.String("project_name", targetProject.Name), zap.Int("recommended_slots", rec.RecommendedSlots))
 			continue
 		}
 
@@ -72,7 +72,7 @@ func (w *Worker) runAutoscaler(ctx context.Context) error {
 			// If the recommendation would exceed a quota, change it to scale to the limit of the quota.
 			if overshoot > 0 {
 				if rec.RecommendedSlots-overshoot < targetProject.ProdSlots {
-					w.logger.Debug("skipping autoscaler: already scaled to or beyond the quota", zap.String("org_id", targetProject.OrganizationID), zap.String("project_name", targetProject.Name), zap.Int("recommended_slots", rec.RecommendedSlots))
+					w.logger.Debug("skipping autoscaler: already scaled to or beyond the quota", zap.String("organization_name", projectOrg.Name), zap.String("project_name", targetProject.Name), zap.Int("recommended_slots", rec.RecommendedSlots))
 					continue
 				}
 
@@ -84,7 +84,7 @@ func (w *Worker) runAutoscaler(ctx context.Context) error {
 			logMessage := "skipping autoscaler: " + reason
 
 			logFields := []zap.Field{
-				zap.String("org_id", targetProject.OrganizationID),
+				zap.String("organization_name", projectOrg.Name),
 				zap.String("project_name", targetProject.Name),
 				zap.Int("current_slots", targetProject.ProdSlots),
 				zap.Int("recommended_slots", rec.RecommendedSlots),

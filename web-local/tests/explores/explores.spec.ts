@@ -2,12 +2,12 @@ import { expect } from "@playwright/test";
 import {
   createExploreFromModel,
   createExploreFromSource,
-} from "web-local/tests/utils/exploreHelpers";
+} from "../utils/exploreHelpers";
 import {
   assertLeaderboards,
   interactWithTimeRangeMenu,
-} from "web-local/tests/utils/metricsViewHelpers";
-import { ResourceWatcher } from "web-local/tests/utils/ResourceWatcher";
+} from "../utils/metricsViewHelpers";
+import { ResourceWatcher } from "../utils/ResourceWatcher";
 import { updateCodeEditor, wrapRetryAssertion } from "../utils/commonHelpers";
 import {
   AD_BIDS_EXPLORE_PATH,
@@ -16,10 +16,12 @@ import {
   createAdBidsModel,
 } from "../utils/dataSpecifcHelpers";
 import { createSource } from "../utils/sourceHelpers";
-import { test } from "../utils/test";
+import { test } from "../setup/base";
 import { gotoNavEntry } from "../utils/waitHelpers";
 
 test.describe("explores", () => {
+  test.use({ project: "Blank" });
+
   test("Autogenerate explore from source", async ({ page }) => {
     await createSource(page, "AdBids.csv", "/sources/AdBids.yaml");
     await createExploreFromSource(page);

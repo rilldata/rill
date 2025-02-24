@@ -10,6 +10,7 @@ import {
   validateMeasures,
 } from "@rilldata/web-common/features/canvas/components/validators";
 import type { StateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import {
   createQueryServiceMetricsViewAggregation,
@@ -48,8 +49,9 @@ export interface TimeDimensionDefinition {
 export function getChartData(
   ctx: StateManagers,
   config: ChartConfig,
+  timeAndFilterStore: Readable<TimeAndFilterStore>,
 ): Readable<ChartDataResult> {
-  const chartDataQuery = createChartDataQuery(ctx, config);
+  const chartDataQuery = createChartDataQuery(ctx, config, timeAndFilterStore);
   const { spec } = ctx.canvasEntity;
 
   const fields: { name: string; type: "measure" | "dimension" | "time" }[] = [];
@@ -70,7 +72,7 @@ export function getChartData(
     } else if (field.type === "dimension") {
       return spec.getDimensionForMetricView(field.name, config.metrics_view);
     } else {
-      return getTimeDimensionDefinition(ctx, field.name);
+      return getTimeDimensionDefinition(field.name, timeAndFilterStore);
     }
   });
 
@@ -103,19 +105,10 @@ export function getChartData(
 export function createChartDataQuery(
   ctx: StateManagers,
   config: ChartConfig & ComponentFilterProperties,
+  timeAndFilterStore: Readable<TimeAndFilterStore>,
   limit = "5000",
   offset = "0",
 ): CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> {
-  const { canvasEntity } = ctx;
-
-  const timeAndFilterStore = canvasEntity.createTimeAndFilterStore(
-    config.metrics_view,
-    {
-      componentTimeRange: config.time_range,
-      componentFilter: config.dimension_filters,
-    },
-  );
-
   let measures: V1MetricsViewAggregationMeasure[] = [];
   let dimensions: V1MetricsViewAggregationDimension[] = [];
 
@@ -155,8 +148,7 @@ export function createChartDataQuery(
         },
         {
           query: {
-            enabled:
-              !!config.time_range || (!!timeRange?.start && !!timeRange?.end),
+            enabled: !!timeRange?.start && !!timeRange?.end,
             queryClient: ctx.queryClient,
             keepPreviousData: true,
           },
@@ -167,14 +159,11 @@ export function createChartDataQuery(
 }
 
 export function getTimeDimensionDefinition(
-  ctx: StateManagers,
   field: string,
+  timeAndFilterStore: Readable<TimeAndFilterStore>,
 ): Readable<TimeDimensionDefinition> {
-  const {
-    timeControls: { selectedTimeRange },
-  } = ctx.canvasEntity;
-  return derived([selectedTimeRange], ([$selectedTimeRange]) => {
-    const grain = $selectedTimeRange?.interval;
+  return derived(timeAndFilterStore, ($timeAndFilterStore) => {
+    const grain = $timeAndFilterStore?.timeGrain;
     const displayName = "Time";
 
     if (grain) {

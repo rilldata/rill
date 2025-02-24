@@ -306,6 +306,11 @@ func (s *Server) checkRateLimit(ctx context.Context) (context.Context, error) {
 		return ctx, fmt.Errorf("server context does not have a method")
 	}
 
+	// Don't rate limit superusers. This is useful for scripting.
+	if auth.GetClaims(ctx).Superuser(ctx) {
+		return ctx, nil
+	}
+
 	var limitKey string
 	if auth.GetClaims(ctx).OwnerType() == auth.OwnerTypeAnon {
 		limitKey = ratelimit.AnonLimitKey(method, observability.GrpcPeer(ctx))

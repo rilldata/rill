@@ -1,24 +1,25 @@
 import { test as base } from "@playwright/test";
-import { rmSync, writeFileSync, existsSync, mkdirSync } from "fs";
+import { rmSync, existsSync, mkdirSync, cpSync } from "node:fs";
 import { spawn } from "node:child_process";
+import { join } from "node:path";
 import treeKill from "tree-kill";
-import { getOpenPort } from "./getOpenPort";
+import { getOpenPort } from "web-local/tests/utils/getOpenPort";
 import { asyncWaitUntil } from "@rilldata/web-common/lib/waitUtils";
 import axios from "axios";
 
+export const BASE_PROJECT_DIRECTORY = "temp/test-project";
+
 type MyFixtures = {
-  includeRillYaml: boolean;
+  project: string | undefined;
 };
 
-const BASE_PROJECT_DIRECTORY = "temp/test-project";
-
 export const test = base.extend<MyFixtures>({
-  includeRillYaml: [true, { option: true }],
+  project: [undefined, { option: true }],
 
-  page: async ({ page, includeRillYaml }, use) => {
+  page: async ({ page, project }, use) => {
     const TEST_PORT = await getOpenPort();
     const TEST_PORT_GRPC = await getOpenPort();
-    const TEST_PROJECT_DIRECTORY = `${BASE_PROJECT_DIRECTORY}-${TEST_PORT}`;
+    const TEST_PROJECT_DIRECTORY = join(BASE_PROJECT_DIRECTORY, "" + TEST_PORT);
 
     rmSync(TEST_PROJECT_DIRECTORY, { force: true, recursive: true });
 
@@ -26,12 +27,11 @@ export const test = base.extend<MyFixtures>({
       mkdirSync(TEST_PROJECT_DIRECTORY, { recursive: true });
     }
 
-    // Conditionally write the file
-    if (includeRillYaml) {
-      writeFileSync(
-        `${TEST_PROJECT_DIRECTORY}/rill.yaml`,
-        'compiler: rill-beta\ntitle: "Test Project"',
-      );
+    if (project) {
+      cpSync(join(BASE_PROJECT_DIRECTORY, project), TEST_PROJECT_DIRECTORY, {
+        recursive: true,
+        force: true,
+      });
     }
 
     const cmd = `start --no-open --port ${TEST_PORT} --port-grpc ${TEST_PORT_GRPC} ${TEST_PROJECT_DIRECTORY}`;
