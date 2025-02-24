@@ -167,10 +167,6 @@ type Diff struct {
 	Deleted        []ResourceName
 }
 
-// DotEnvMap is a map of environment variables for a specific path.
-// The key is the path, and the value is a map of environment variable names to values.
-type DotEnvMap map[string]map[string]string
-
 // Parser parses a Rill project directory into a set of resources.
 // After the initial parse, the parser can be used to incrementally reparse a subset of files.
 // Parser is not concurrency safe.
@@ -183,7 +179,7 @@ type Parser struct {
 
 	// Output
 	RillYAML  *RillYAML
-	DotEnv    DotEnvMap
+	DotEnv    map[string]map[string]string // Map of .env file paths to their key-value pairs
 	Resources map[ResourceName]*Resource
 	Errors    []*runtimev1.ParseError
 
@@ -389,7 +385,6 @@ func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Di
 		}
 	}
 	seenPaths := make(map[string]bool) // Paths already visited by the loop
-	modifiedDotEnv := false            // whether .env file was modified
 	for i := 0; i < len(checkPaths); i++ {
 		// Don't check the same path twice
 		path := normalizePath(checkPaths[i])
@@ -414,6 +409,7 @@ func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Di
 			continue
 		}
 
+		// Check if the path is (SQL, YAML, or .env)
 		isSQL := pathIsSQL(path)
 		isYAML := pathIsYAML(path)
 		isDotEnv := pathIsDotEnv(path)
@@ -421,22 +417,9 @@ func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Di
 			continue
 		}
 
-		// Check if path is .env and clear it (so we can re-parse it)
-		// Watcher sends multiple events for a single edit. We want to only restart the controller when .env actually changes.
-		// So we check the new .env contents against the contents stored in parser state.
+		// If path is .env, check if it was modified against the stored version in the map
 		if isDotEnv {
-			oldDotEnv := p.DotEnv
-			err := p.parseDotEnv(ctx, checkPaths[i])
-			if err == nil {
-				modifiedDotEnv = !reflect.DeepEqual(p.DotEnv, oldDotEnv)
-			} else {
-				// any error means .env is under change
-				modifiedDotEnv = true
-			}
-			if !modifiedDotEnv {
-				continue
-			}
-			p.DotEnv = nil
+			p.parseAndMergeEnvironmentVariables(ctx, path)
 		}
 
 		// If a file exists at path, add it to the parse list
@@ -529,9 +512,7 @@ func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Di
 	}
 
 	// Phase 3: Build the diff using p.insertedResources, p.updatedResources and p.deletedResources
-	diff := &Diff{
-		ModifiedDotEnv: modifiedDotEnv,
-	}
+	diff := &Diff{}
 	for _, resource := range p.insertedResources {
 		addedBack := false
 		for _, deleted := range p.deletedResources {
@@ -578,23 +559,6 @@ func (p *Parser) parsePaths(ctx context.Context, paths []string) error {
 			return 1
 		}
 
-		// Sort .env files by path depth with always root first. This ensures that .env files are parsed in order from root to deepest nested
-		aIsDotEnv := pathIsDotEnv(a)
-		bIsDotEnv := pathIsDotEnv(b)
-		if aIsDotEnv && !bIsDotEnv {
-			return -1
-		}
-		if !aIsDotEnv && bIsDotEnv {
-			return 1
-		}
-		if aIsDotEnv && bIsDotEnv {
-			aDepth := strings.Count(a, "/")
-			bDepth := strings.Count(b, "/")
-			if aDepth != bDepth {
-				return aDepth - bDepth
-			}
-		}
-
 		return strings.Compare(a, b)
 	})
 
@@ -612,7 +576,7 @@ func (p *Parser) parsePaths(ctx context.Context, paths []string) error {
 			i++
 			continue
 		} else if pathIsDotEnv(path) {
-			err := p.parseDotEnv(ctx, path)
+			err := p.parseAndMergeEnvironmentVariables(ctx, path)
 			if err != nil {
 				p.addParseError(path, err, false)
 			}

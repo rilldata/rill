@@ -21,7 +21,5 @@ func ParseDotenv(ctx context.Context, projectPath string) (map[string]string, er
 		return nil, fmt.Errorf("not a valid Rill project (missing a rill.yaml file)")
 	}
 
-	env := parser.GetDotEnv()
-
-	return env, nil
+	return parser.GetDotEnv(), nil
 }
