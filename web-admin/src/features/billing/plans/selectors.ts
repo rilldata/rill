@@ -21,7 +21,7 @@ export async function fetchTeamPlan() {
     queryFn: () => adminServiceListPublicBillingPlans(),
   });
 
-  return plansResp.plans?.find((p) => isTeamPlan(p.name));
+  return plansResp.plans?.find((p) => isTeamPlan(p.name ?? ""));
 }
 
 /**
