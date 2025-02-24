@@ -37,6 +37,7 @@
     cleanUpComparisonValue,
     compareLeaderboardValues,
     getSort,
+    getMultipleSort,
     prepareLeaderboardItemData,
   } from "./leaderboard-utils";
   import {
@@ -57,6 +58,7 @@
   export let whereFilter: V1Expression;
   export let dimensionThresholdFilters: DimensionThresholdFilter[];
   export let activeMeasureName: string;
+  export let activeMeasureNames: string[];
   export let metricsViewName: string;
   export let sortType: SortType;
   export let tableWidth: number;
@@ -136,16 +138,15 @@
     )
     .concat(uri ? [getURIRequestMeasure(dimensionName)] : []);
 
-  $: sort = getSort(
+  $: sort = getMultipleSort(
     sortedAscending,
     sortType,
-    activeMeasureName,
+    activeMeasureNames,
     dimensionName,
     !!comparisonTimeRange,
   );
 
-  $: console.log("Leaderboard activeMeasureName", activeMeasureName);
-  $: console.log("Leaderboard sort", sort);
+  $: console.log("Leaderboard getSort", sort);
 
   $: sortedQuery = createQueryServiceMetricsViewAggregation(
     instanceId,
