@@ -124,7 +124,8 @@
         undefined,
       );
 
-  $: measures = additionalMeasures(activeMeasureName, dimensionThresholdFilters)
+  $: measures = activeMeasureNames
+    .flatMap((name) => additionalMeasures(name, dimensionThresholdFilters))
     .map(
       (n) =>
         ({
@@ -133,10 +134,17 @@
     )
     .concat(
       ...(comparisonTimeRange
-        ? getComparisonRequestMeasures(activeMeasureName)
+        ? activeMeasureNames.flatMap((name) =>
+            getComparisonRequestMeasures(name),
+          )
         : []),
     )
     .concat(uri ? [getURIRequestMeasure(dimensionName)] : []);
+
+  $: allMeasures = [
+    ...measures,
+    ...activeMeasureNames.map((name) => ({ name })),
+  ];
 
   $: sort = getMultipleSort(
     sortedAscending,
@@ -153,7 +161,7 @@
     metricsViewName,
     {
       dimensions: [{ name: dimensionName }],
-      measures,
+      measures: allMeasures,
       timeRange,
       comparisonTimeRange,
       sort,
@@ -172,7 +180,7 @@
     instanceId,
     metricsViewName,
     {
-      measures: [{ name: activeMeasureName }],
+      measures: activeMeasureNames.map((name) => ({ name })),
       where,
       timeStart: timeRange.start,
       timeEnd: timeRange.end,
@@ -195,7 +203,7 @@
     prepareLeaderboardItemData(
       sortedData?.data,
       dimensionName,
-      activeMeasureName,
+      activeMeasureNames[0],
       slice,
       selectedValues,
       leaderboardTotal,
@@ -239,14 +247,14 @@
     ? data?.data
     : belowTheFoldValues.map((value) => ({
         [dimensionName]: value,
-        [activeMeasureName]: null,
+        ...Object.fromEntries(activeMeasureNames.map((name) => [name, null])),
       }));
 
   $: belowTheFoldRows = belowTheFoldData.map((item) =>
     cleanUpComparisonValue(
       item,
       dimensionName,
-      activeMeasureName,
+      activeMeasureNames[0],
       leaderboardTotal,
       selectedValues.findIndex((value) =>
         compareLeaderboardValues(value, item[dimensionName]),
