@@ -159,12 +159,11 @@ func (k ResourceKind) String() string {
 
 // Diff shows changes to Parser.Resources following an incremental reparse.
 type Diff struct {
-	Reloaded       bool
-	Skipped        bool
-	Added          []ResourceName
-	Modified       []ResourceName
-	ModifiedDotEnv bool
-	Deleted        []ResourceName
+	Reloaded bool
+	Skipped  bool
+	Added    []ResourceName
+	Modified []ResourceName
+	Deleted  []ResourceName
 }
 
 // Parser parses a Rill project directory into a set of resources.
