@@ -20,7 +20,7 @@
   export let workspace = false;
   export let label: string;
   export let includeScheduledReport = false;
-  export let query: V1Query;
+  export let getQuery: (isScheduled: boolean) => V1Query | undefined; // In the future, `V1Query` should not change depending on whether the query is scheduled or not
   export let exploreName: string | undefined = undefined;
   export let metricsViewProto: string | undefined = undefined;
 
@@ -33,7 +33,7 @@
     const result = await $exportDash.mutateAsync({
       instanceId: get(runtime).instanceId,
       data: {
-        query,
+        query: getQuery(false),
         format,
       },
     });
@@ -95,7 +95,7 @@
       Export as XLSX
     </DropdownMenu.Item>
 
-    {#if includeScheduledReport && query}
+    {#if includeScheduledReport}
       <DropdownMenu.Item on:click={() => (showScheduledReportDialog = true)}>
         Create scheduled report...
       </DropdownMenu.Item>
@@ -103,10 +103,10 @@
   </DropdownMenu.Content>
 </DropdownMenu.Root>
 
-{#if includeScheduledReport && ScheduledReportDialog && showScheduledReportDialog && query}
+{#if includeScheduledReport && ScheduledReportDialog && showScheduledReportDialog}
   <svelte:component
     this={ScheduledReportDialog}
-    {query}
+    query={getQuery(true)}
     {metricsViewProto}
     {exploreName}
     bind:open={showScheduledReportDialog}

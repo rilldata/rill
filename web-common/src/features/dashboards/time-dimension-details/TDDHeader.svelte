@@ -35,7 +35,7 @@
   import { PivotChipType } from "../pivot/types";
   import { useTimeControlStore } from "../time-controls/time-control-store";
   import TimeGrainSelector from "../time-controls/TimeGrainSelector.svelte";
-  import { getTDDExportArgs } from "./tdd-export";
+  import { getTDDExportQuery } from "./tdd-export";
   import type { TDDComparison } from "./types";
 
   export let exploreName: string;
@@ -62,8 +62,6 @@
     dashboardStore,
     validSpecStore,
   } = stateManagers;
-
-  const exportQueryArgs = getTDDExportArgs(stateManagers);
 
   $: metricsViewProto = $dashboardStore.proto;
 
@@ -301,9 +299,8 @@
         <ExportMenu
           label="Export table data"
           includeScheduledReport={$adminServer}
-          query={{
-            metricsViewAggregationRequest: $exportQueryArgs,
-          }}
+          getQuery={(isScheduled) =>
+            getTDDExportQuery(stateManagers, isScheduled)}
           {exploreName}
           {metricsViewProto}
         />

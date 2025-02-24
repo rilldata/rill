@@ -1,4 +1,3 @@
-import { getComparisonRequestMeasures } from "@rilldata/web-common/features/dashboards/dashboard-utils";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
@@ -6,48 +5,43 @@ import {
   type TimeControlState,
   useTimeControlStore,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import {
-  mapComparisonTimeRange,
-  mapSelectedTimeRangeToV1TimeRange,
-} from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
+import { mapSelectedTimeRangeToV1TimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
 import type {
   V1ExploreSpec,
   V1MetricsViewAggregationMeasure,
   V1MetricsViewAggregationRequest,
   V1MetricsViewSpec,
+  V1Query,
+  V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { derived, get, type Readable } from "svelte/store";
+import { get } from "svelte/store";
 import { buildWhereParamForDimensionTableAndTDDExports } from "../../exports/export-filters";
-import { dimensionSearchText } from "../stores/dashboard-stores";
+import { dimensionSearchText as dimensionSearchTextStore } from "../stores/dashboard-stores";
 
-export function getTDDExportArgs(
+export function getTDDExportQuery(
   ctx: StateManagers,
-): Readable<V1MetricsViewAggregationRequest | undefined> {
-  return derived(
-    [
-      ctx.metricsViewName,
-      ctx.dashboardStore,
-      useTimeControlStore(ctx),
-      ctx.validSpecStore,
-      dimensionSearchText,
-    ],
-    ([
+  isScheduled: boolean,
+): V1Query {
+  const metricsViewName = get(ctx.metricsViewName);
+  const dashboardState = get(ctx.dashboardStore);
+  const timeControlState = get(useTimeControlStore(ctx));
+  const validSpec = get(ctx.validSpecStore);
+  const dimensionSearchText = get(dimensionSearchTextStore);
+
+  const query: V1Query = {
+    metricsViewAggregationRequest: getTDDAggregationRequest(
       metricsViewName,
       dashboardState,
       timeControlState,
-      validSpec,
+      validSpec.data?.metricsView,
+      validSpec.data?.explore,
       dimensionSearchText,
-    ]) =>
-      getTDDAggregationRequest(
-        metricsViewName,
-        dashboardState,
-        timeControlState,
-        validSpec.data?.metricsView,
-        validSpec.data?.explore,
-        dimensionSearchText,
-      ),
-  );
+      isScheduled,
+    ),
+  };
+
+  return query;
 }
 
 function getTDDAggregationRequest(
@@ -57,6 +51,7 @@ function getTDDAggregationRequest(
   metricsView: V1MetricsViewSpec | undefined,
   explore: V1ExploreSpec | undefined,
   dimensionSearchText: string,
+  isScheduled: boolean,
 ): undefined | V1MetricsViewAggregationRequest {
   if (
     !metricsView ||
@@ -66,30 +61,26 @@ function getTDDAggregationRequest(
   )
     return undefined;
 
-  const timeRange = mapSelectedTimeRangeToV1TimeRange(
-    timeControlState,
-    dashboardState.selectedTimezone,
-    explore,
-  );
+  let timeRange: V1TimeRange | undefined;
+  if (isScheduled) {
+    timeRange = mapSelectedTimeRangeToV1TimeRange(
+      timeControlState,
+      dashboardState.selectedTimezone,
+      explore,
+    );
+  } else {
+    // NOTE: This is currently needed to ensure the on-demand exports have the same time range as seen on-screen. Currently,
+    // the client-side interpretation of time ranges is not the same as the server-side interpretation.
+    timeRange = {
+      start: timeControlState.timeStart,
+      end: timeControlState.timeEnd,
+    };
+  }
   if (!timeRange) return undefined;
-
-  const comparisonTimeRange = mapComparisonTimeRange(
-    timeControlState,
-    timeRange,
-  );
 
   const measures: V1MetricsViewAggregationMeasure[] = [
     { name: dashboardState.tdd.expandedMeasureName },
   ];
-  if (
-    !!comparisonTimeRange?.start &&
-    !!comparisonTimeRange?.end &&
-    !!timeControlState.selectedComparisonTimeRange
-  ) {
-    measures.push(
-      ...getComparisonRequestMeasures(dashboardState.tdd.expandedMeasureName),
-    );
-  }
 
   // CAST SAFETY: exports are only available in TDD when a comparison dimension is selected
   const dimensionName = dashboardState.selectedComparisonDimension as string;
@@ -108,7 +99,6 @@ function getTDDAggregationRequest(
     ],
     measures,
     timeRange,
-    ...(comparisonTimeRange ? { comparisonTimeRange } : {}),
     pivotOn: [timeDimension],
     sort: [
       {

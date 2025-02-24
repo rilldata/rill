@@ -21,7 +21,7 @@
   import { SortType } from "../proto-state/derived-types";
   import { getStateManagers } from "../state-managers/state-managers";
   import SelectAllButton from "./SelectAllButton.svelte";
-  import { getDimensionTableExportArgs } from "./dimension-table-export-utils";
+  import { getDimensionTableExportQuery } from "./dimension-table-export";
 
   export let dimensionName: string;
   export let isFetching: boolean;
@@ -130,8 +130,6 @@
     );
   }
 
-  const exportQueryArgs = getDimensionTableExportArgs(stateManagers);
-
   onDestroy(() => {
     searchText = "";
   });
@@ -201,9 +199,8 @@
       <ExportMenu
         label="Export dimension table data"
         includeScheduledReport={$adminServer}
-        query={{
-          metricsViewAggregationRequest: $exportQueryArgs,
-        }}
+        getQuery={(isScheduled) =>
+          getDimensionTableExportQuery(stateManagers, isScheduled)}
         exploreName={$exploreName}
         {metricsViewProto}
       />

@@ -7,7 +7,7 @@
   import ExportMenu from "../../exports/ExportMenu.svelte";
   import { featureFlags } from "../../feature-flags";
   import { getStateManagers } from "../state-managers/state-managers";
-  import { getPivotExportArgs } from "./pivot-export";
+  import { getPivotExportQuery } from "./pivot-export";
 
   export let showPanels = true;
   export let isFetching = false;
@@ -48,8 +48,6 @@
 
   //   metricsExplorerStore.setPivotExpanded($exploreName, expanded);
   // }
-
-  const exportQueryArgs = getPivotExportArgs(stateManagers);
 </script>
 
 <div class="flex items-center gap-x-4 select-none pointer-events-none">
@@ -94,9 +92,8 @@
     <ExportMenu
       label="Export pivot data"
       includeScheduledReport={$adminServer}
-      query={{
-        metricsViewAggregationRequest: $exportQueryArgs,
-      }}
+      getQuery={(isScheduled) =>
+        getPivotExportQuery(stateManagers, isScheduled)}
       exploreName={$exploreName}
       {metricsViewProto}
     />

@@ -6,10 +6,11 @@ import { mapSelectedTimeRangeToV1TimeRange } from "@rilldata/web-common/features
 import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import {
   type V1MetricsViewAggregationRequest,
+  type V1Query,
   V1TimeGrain,
   type V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
-import { derived, get } from "svelte/store";
+import { get } from "svelte/store";
 import { runtime } from "../../../runtime-client/runtime-store";
 import type { StateManagers } from "../state-managers/state-managers";
 import { getPivotConfig } from "./pivot-data-config";
@@ -23,55 +24,57 @@ import {
   type PivotState,
 } from "./types";
 
-export function getPivotExportArgs(ctx: StateManagers) {
-  return derived(
-    [
-      ctx.metricsViewName,
-      ctx.validSpecStore,
-      useTimeControlStore(ctx),
-      ctx.dashboardStore,
-      getPivotConfig(ctx),
-      ctx.selectors.pivot.rows,
-      ctx.selectors.pivot.columns,
-    ],
-    ([
-      metricsViewName,
-      validSpecStore,
+export function getPivotExportQuery(ctx: StateManagers, isScheduled: boolean) {
+  const metricsViewName = get(ctx.metricsViewName);
+  const validSpecStore = get(ctx.validSpecStore);
+  const timeControlState = get(useTimeControlStore(ctx));
+  const dashboardState = get(ctx.dashboardStore);
+  const configStore = get(getPivotConfig(ctx));
+  const rows = get(ctx.selectors.pivot.rows);
+  const columns = get(ctx.selectors.pivot.columns);
+
+  if (!validSpecStore.data?.explore || !timeControlState.ready)
+    return undefined;
+
+  const enableComparison = configStore.enableComparison;
+  const comparisonTime = configStore.comparisonTime;
+  const pivotState = configStore.pivot;
+
+  const metricsViewSpec = validSpecStore.data?.metricsView ?? {};
+  const exploreSpec = validSpecStore.data?.explore ?? {};
+
+  let timeRange: V1TimeRange | undefined;
+  if (isScheduled) {
+    timeRange = mapSelectedTimeRangeToV1TimeRange(
       timeControlState,
+      dashboardState.selectedTimezone,
+      exploreSpec,
+    );
+  } else {
+    // NOTE: This is currently needed to ensure the on-demand exports have the same time range as seen on-screen. Currently,
+    // the client-side interpretation of time ranges is not the same as the server-side interpretation.
+    timeRange = {
+      start: timeControlState.timeStart,
+      end: timeControlState.timeEnd,
+    };
+  }
+  if (!timeRange) return undefined;
+
+  const query: V1Query = {
+    metricsViewAggregationRequest: getPivotAggregationRequest(
+      metricsViewName,
+      metricsViewSpec.timeDimension ?? "",
       dashboardState,
-      configStore,
+      timeRange,
       rows,
       columns,
-    ]) => {
-      if (!validSpecStore.data?.explore || !timeControlState.ready)
-        return undefined;
+      enableComparison,
+      comparisonTime,
+      pivotState,
+    ),
+  };
 
-      const enableComparison = configStore.enableComparison;
-      const comparisonTime = configStore.comparisonTime;
-      const pivotState = configStore.pivot;
-
-      const metricsViewSpec = validSpecStore.data?.metricsView ?? {};
-      const exploreSpec = validSpecStore.data?.explore ?? {};
-      const timeRange = mapSelectedTimeRangeToV1TimeRange(
-        timeControlState,
-        dashboardState.selectedTimezone,
-        exploreSpec,
-      );
-      if (!timeRange) return undefined;
-
-      return getPivotAggregationRequest(
-        metricsViewName,
-        metricsViewSpec.timeDimension ?? "",
-        dashboardState,
-        timeRange,
-        rows,
-        columns,
-        enableComparison,
-        comparisonTime,
-        pivotState,
-      );
-    },
-  );
+  return query;
 }
 
 function getPivotAggregationRequest(
