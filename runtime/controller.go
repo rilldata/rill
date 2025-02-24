@@ -1366,7 +1366,7 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 	if inv.result.Err != nil && !errors.Is(inv.result.Err, context.Canceled) {
 		logArgs = append(logArgs, zap.Any("error", inv.result.Err))
 		errorLevel = true
-		var err *dependencyError
+		var err dependencyError
 		if errors.As(inv.result.Err, &err) {
 			logArgs = append(logArgs, zap.Bool("dependency_error", true))
 			errorLevel = false
