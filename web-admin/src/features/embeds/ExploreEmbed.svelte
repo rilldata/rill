@@ -14,6 +14,7 @@
   });
   $: ({ isSuccess, isError, error, data } = $explore);
   $: isExploreNotFound = isError && error?.response?.status === 404;
+
   // We check for explore.state.validSpec instead of meta.reconcileError. validSpec persists
   // from previous valid explores, allowing display even when the current explore spec is invalid
   // and a meta.reconcileError exists.

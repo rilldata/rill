@@ -31,5 +31,5 @@
   <ComponentHeader {title} {description} filters={componentFilters} />
 {/if}
 {#if renderer && rendererProperties}
-  <ComponentRenderer {renderer} {componentName} />
+  <ComponentRenderer {renderer} {rendererProperties} {componentName} />
 {/if}
