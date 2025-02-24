@@ -541,7 +541,8 @@ func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeG
 			if t != start {
 				sb.WriteString(", ")
 			}
-			sb.WriteString(fmt.Sprintf("(CAST('%s' AS TIMESTAMP))", t.Format(time.RFC3339)))
+			sb.WriteString("(CAST(? AS TIMESTAMP))")
+			args = append(args, t)
 		}
 		sb.WriteString(fmt.Sprintf(") t (%s)", d.EscapeIdentifier(alias)))
 		return sb.String(), args, nil
