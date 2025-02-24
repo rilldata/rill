@@ -54,11 +54,13 @@
   label="Export model data"
   disabled={modelHasError || !isModelIdle}
   workspace
-  query={{
-    tableRowsRequest: {
-      instanceId,
-      tableName: modelName,
-    },
+  getQuery={() => {
+    return {
+      tableRowsRequest: {
+        instanceId,
+        tableName: modelName,
+      },
+    };
   }}
 />
 

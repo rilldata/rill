@@ -159,20 +159,22 @@
       <div class="ml-auto">
         <ExportMenu
           label="Export model data"
-          query={{
-            metricsViewRowsRequest: {
-              instanceId: get(runtime).instanceId,
-              metricsViewName,
-              timeStart: timeRange.start,
-              timeEnd: timeRange.end,
-              where: sanitiseExpression(
-                mergeDimensionAndMeasureFilters(
-                  $exploreState.whereFilter,
-                  $exploreState.dimensionThresholdFilters,
+          getQuery={() => {
+            return {
+              metricsViewRowsRequest: {
+                instanceId: get(runtime).instanceId,
+                metricsViewName,
+                timeStart: timeRange.start,
+                timeEnd: timeRange.end,
+                where: sanitiseExpression(
+                  mergeDimensionAndMeasureFilters(
+                    $exploreState.whereFilter,
+                    $exploreState.dimensionThresholdFilters,
+                  ),
+                  undefined,
                 ),
-                undefined,
-              ),
-            },
+              },
+            };
           }}
         />
       </div>
