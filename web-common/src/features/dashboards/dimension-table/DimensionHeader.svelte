@@ -201,10 +201,10 @@
       <ExportMenu
         label="Export dimension table data"
         includeScheduledReport={$adminServer}
-        exploreName={$exploreName}
         query={{
           metricsViewAggregationRequest: $exportQueryArgs,
         }}
+        exploreName={$exploreName}
         {metricsViewProto}
       />
     {/if}

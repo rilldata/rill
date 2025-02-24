@@ -2,7 +2,7 @@ import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/d
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { mapTimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
+import { mapSelectedTimeRangeToV1TimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
 import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import {
   type V1MetricsViewAggregationRequest,
@@ -52,7 +52,7 @@ export function getPivotExportArgs(ctx: StateManagers) {
 
       const metricsViewSpec = validSpecStore.data?.metricsView ?? {};
       const exploreSpec = validSpecStore.data?.explore ?? {};
-      const timeRange = mapTimeRange(
+      const timeRange = mapSelectedTimeRangeToV1TimeRange(
         timeControlState,
         dashboardState.selectedTimezone,
         exploreSpec,
@@ -74,7 +74,7 @@ export function getPivotExportArgs(ctx: StateManagers) {
   );
 }
 
-export function getPivotAggregationRequest(
+function getPivotAggregationRequest(
   metricsView: string,
   timeDimension: string,
   dashboardState: MetricsExplorerEntity,

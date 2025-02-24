@@ -94,10 +94,10 @@
     <ExportMenu
       label="Export pivot data"
       includeScheduledReport={$adminServer}
-      exploreName={$exploreName}
       query={{
         metricsViewAggregationRequest: $exportQueryArgs,
       }}
+      exploreName={$exploreName}
       {metricsViewProto}
     />
   {/if}

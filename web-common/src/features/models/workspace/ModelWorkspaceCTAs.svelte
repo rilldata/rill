@@ -53,13 +53,13 @@
 <ExportMenu
   label="Export model data"
   disabled={modelHasError || !isModelIdle}
+  workspace
   query={{
     tableRowsRequest: {
       instanceId,
       tableName: modelName,
     },
   }}
-  workspace
 />
 
 {#if availableMetricsViews?.length === 0}

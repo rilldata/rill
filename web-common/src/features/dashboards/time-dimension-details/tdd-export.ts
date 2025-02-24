@@ -8,7 +8,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
   mapComparisonTimeRange,
-  mapTimeRange,
+  mapSelectedTimeRangeToV1TimeRange,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
 import type {
   V1ExploreSpec,
@@ -50,7 +50,7 @@ export function getTDDExportArgs(
   );
 }
 
-export function getTDDAggregationRequest(
+function getTDDAggregationRequest(
   metricsViewName: string,
   dashboardState: MetricsExplorerEntity,
   timeControlState: TimeControlState,
@@ -66,7 +66,7 @@ export function getTDDAggregationRequest(
   )
     return undefined;
 
-  const timeRange = mapTimeRange(
+  const timeRange = mapSelectedTimeRangeToV1TimeRange(
     timeControlState,
     dashboardState.selectedTimezone,
     explore,

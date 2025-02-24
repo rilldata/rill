@@ -9,7 +9,7 @@ import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashbo
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
   mapComparisonTimeRange,
-  mapTimeRange,
+  mapSelectedTimeRangeToV1TimeRange,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
 import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
@@ -43,7 +43,7 @@ export function getDimensionTableExportArgs(
       if (!validSpecStore.data?.explore || !timeControlState.ready)
         return undefined;
 
-      const timeRange = mapTimeRange(
+      const timeRange = mapSelectedTimeRangeToV1TimeRange(
         timeControlState,
         dashboardState.selectedTimezone,
         validSpecStore.data.explore,
@@ -104,7 +104,7 @@ export function getDimensionTableAggregationRequestForTime(
   const where = buildWhereParamForDimensionTableAndTDDExports(
     dashboardState.whereFilter,
     dashboardState.dimensionThresholdFilters,
-    dashboardState.selectedDimensionName!,
+    dashboardState.selectedDimensionName!, // must exist when viewing a dimension table
     dimensionSearchText,
   );
 

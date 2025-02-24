@@ -23,20 +23,20 @@ export type ReportValues = ReturnType<typeof getInitialValues>;
 export function getQueryNameFromQuery(query: V1Query) {
   if (query.metricsViewAggregationRequest) {
     return "MetricsViewAggregation";
-  } else if (query.metricsViewRowsRequest) {
-    return "MetricsViewRows";
   } else {
-    throw new Error("Unsupported query type");
+    throw new Error(
+      "Currently, only `MetricsViewAggregation` queries can be scheduled through the UI",
+    );
   }
 }
 
 export function getQueryArgsFromQuery(query: V1Query) {
   if (query.metricsViewAggregationRequest) {
     return query.metricsViewAggregationRequest;
-  } else if (query.metricsViewRowsRequest) {
-    return query.metricsViewRowsRequest;
   } else {
-    throw new Error("Unsupported query type");
+    throw new Error(
+      "Currently, only `MetricsViewAggregation` queries can be scheduled through the UI",
+    );
   }
 }
 

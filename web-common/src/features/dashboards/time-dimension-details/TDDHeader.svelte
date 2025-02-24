@@ -35,7 +35,7 @@
   import { PivotChipType } from "../pivot/types";
   import { useTimeControlStore } from "../time-controls/time-control-store";
   import TimeGrainSelector from "../time-controls/TimeGrainSelector.svelte";
-  import { getTDDExportArgs } from "./getTDDExportArgs";
+  import { getTDDExportArgs } from "./tdd-export";
   import type { TDDComparison } from "./types";
 
   export let exploreName: string;
@@ -304,8 +304,8 @@
           query={{
             metricsViewAggregationRequest: $exportQueryArgs,
           }}
-          {metricsViewProto}
           {exploreName}
+          {metricsViewProto}
         />
       {/if}
       {#if !hideStartPivotButton}

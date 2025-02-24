@@ -158,6 +158,7 @@
     {#if $exports}
       <div class="ml-auto">
         <ExportMenu
+          label="Export model data"
           query={{
             metricsViewRowsRequest: {
               instanceId: get(runtime).instanceId,
@@ -173,7 +174,6 @@
               ),
             },
           }}
-          label="Export model data"
         />
       </div>
     {/if}

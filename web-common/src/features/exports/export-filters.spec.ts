@@ -6,60 +6,67 @@ import {
 } from "../dashboards/stores/filter-utils";
 import { buildWhereParamForDimensionTableAndTDDExports } from "./export-filters";
 
-// Test cases:
-// 1. No filters
-// 2. Filters
-// 3. Filters and search text
 describe("buildWhereParamForDimensionTableAndTDDExports", () => {
-  it("should be undefined if there are no filters and no search text", () => {
-    const whereFilter = createAndExpression([]);
-    const measureFilters = [];
-    const dimensionName = "dummyDimension";
-    const searchText = "";
+  const DIMENSION_NAME = "Customer";
 
-    const whereParam = buildWhereParamForDimensionTableAndTDDExports(
-      whereFilter,
-      measureFilters,
-      dimensionName,
-      searchText,
-    );
-    expect(whereParam).toBeUndefined();
+  // Common test setup
+  const createTestParams = (
+    whereFilter = createAndExpression([]),
+    searchText = "",
+    measureFilters = [],
+  ) => ({
+    whereFilter,
+    measureFilters,
+    dimensionName: DIMENSION_NAME,
+    searchText,
   });
 
-  it("should be the `whereFilter` if there are filters and no search text", () => {
-    const whereFilter = createAndExpression([
-      createInExpression("Customer", ["Facebook"]),
-    ]);
-    const measureFilters = [];
-    const dimensionName = "Customer";
-    const searchText = "";
+  it("should return undefined when no filters or search text exist", () => {
+    const params = createTestParams();
 
-    const whereParam = buildWhereParamForDimensionTableAndTDDExports(
-      whereFilter,
-      measureFilters,
-      dimensionName,
-      searchText,
+    const result = buildWhereParamForDimensionTableAndTDDExports(
+      params.whereFilter,
+      params.measureFilters,
+      params.dimensionName,
+      params.searchText,
     );
-    expect(whereParam).toEqual(whereFilter);
+
+    expect(result).toBeUndefined();
   });
 
-  it("should use the search text if there is search text", () => {
+  it("should return whereFilter when only filters exist", () => {
     const whereFilter = createAndExpression([
-      createInExpression("Customer", ["Facebook"]),
+      createInExpression(DIMENSION_NAME, ["Facebook"]),
     ]);
-    const measureFilters = [];
-    const dimensionName = "Customer";
-    const searchText = "Facebook";
+    const params = createTestParams(whereFilter);
 
-    const whereParam = buildWhereParamForDimensionTableAndTDDExports(
-      whereFilter,
-      measureFilters,
-      dimensionName,
-      searchText,
+    const result = buildWhereParamForDimensionTableAndTDDExports(
+      params.whereFilter,
+      params.measureFilters,
+      params.dimensionName,
+      params.searchText,
     );
 
-    expect(whereParam).toEqual(
-      createAndExpression([createLikeExpression("Customer", "%Facebook%")]),
+    expect(result).toEqual(whereFilter);
+  });
+
+  it("should prioritize search text over filters when both exist", () => {
+    const whereFilter = createAndExpression([
+      createInExpression(DIMENSION_NAME, ["Facebook"]),
+    ]);
+    const searchText = "Face";
+    const params = createTestParams(whereFilter, searchText);
+
+    const result = buildWhereParamForDimensionTableAndTDDExports(
+      params.whereFilter,
+      params.measureFilters,
+      params.dimensionName,
+      params.searchText,
     );
+
+    const expectedFilter = createAndExpression([
+      createLikeExpression(DIMENSION_NAME, `%${searchText}%`),
+    ]);
+    expect(result).toEqual(expectedFilter);
   });
 });

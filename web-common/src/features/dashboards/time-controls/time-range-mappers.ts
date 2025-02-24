@@ -39,11 +39,11 @@ export const PreviousCompleteRangeMap: Partial<
 /**
  * Maps selectedTimeRange to V1TimeRange.
  */
-export function mapTimeRange(
+export function mapSelectedTimeRangeToV1TimeRange(
   timeControlState: TimeControlState,
   timeZone: string,
   explore: V1ExploreSpec,
-) {
+): V1TimeRange | undefined {
   if (!timeControlState.selectedTimeRange?.name) return undefined;
 
   const timeRange: V1TimeRange = {};
