@@ -221,7 +221,7 @@ func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName
 
 // CreateTableAsSelect implements drivers.OLAPStore.
 // We add a \n at the end of the any user query to ensure any comment at the end of model doesn't make the query incomplete.
-func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, opts *drivers.CreateTableOptions) (*drivers.TableStats, error) {
+func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, opts *drivers.CreateTableOptions) (*drivers.Stats, error) {
 	db, release, err := c.acquireDB()
 	if err != nil {
 		return nil, err
@@ -246,14 +246,13 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, 
 	if err != nil {
 		return nil, c.checkErr(err)
 	}
-	return &drivers.TableStats{
-		Size:     res.Size,
-		ExecTime: res.ExecTime,
+	return &drivers.Stats{
+		ExecDuration: res.ExecutionDuration,
 	}, nil
 }
 
 // InsertTableAsSelect implements drivers.OLAPStore.
-func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, opts *drivers.InsertTableOptions) (*drivers.TableStats, error) {
+func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, opts *drivers.InsertTableOptions) (*drivers.Stats, error) {
 	db, release, err := c.acquireDB()
 	if err != nil {
 		return nil, err
@@ -284,9 +283,8 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		if err != nil {
 			return nil, c.checkErr(err)
 		}
-		return &drivers.TableStats{
-			Size:     res.Size,
-			ExecTime: res.ExecTime,
+		return &drivers.Stats{
+			ExecDuration: res.ExecutionDuration,
 		}, nil
 	}
 
@@ -343,9 +341,8 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		if err != nil {
 			return nil, c.checkErr(err)
 		}
-		return &drivers.TableStats{
-			Size:     res.Size,
-			ExecTime: res.ExecTime,
+		return &drivers.Stats{
+			ExecDuration: res.ExecutionDuration,
 		}, nil
 	}
 

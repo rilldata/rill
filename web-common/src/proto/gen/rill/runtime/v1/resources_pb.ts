@@ -1082,6 +1082,22 @@ export class ModelState extends Message<ModelState> {
    */
   partitionsHaveErrors = false;
 
+  /**
+   * total_execution_duration is the time in seconds user queries took to execute while refreshing the model.
+   * In case of incremental models it is the sum of all successful executions so far.
+   * This is not the time it took to refresh the model which also includes other stuff like taking a write lock.
+   *
+   * @generated from field: int64 total_execution_duration = 12;
+   */
+  totalExecutionDuration = protoInt64.zero;
+
+  /**
+   * latest_execution_duration is the time in seconds user queries took to execute in the last successful refresh.
+   *
+   * @generated from field: int64 latest_execution_duration = 13;
+   */
+  latestExecutionDuration = protoInt64.zero;
+
   constructor(data?: PartialMessage<ModelState>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1101,6 +1117,8 @@ export class ModelState extends Message<ModelState> {
     { no: 8, name: "incremental_state_schema", kind: "message", T: StructType },
     { no: 10, name: "partitions_model_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "partitions_have_errors", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 12, name: "total_execution_duration", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 13, name: "latest_execution_duration", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelState {

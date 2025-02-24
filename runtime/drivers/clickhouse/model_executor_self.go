@@ -57,6 +57,10 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		inputProps.SQL = inputProps.SQL + " SETTINGS " + outputProps.QuerySettings
 	}
 
+	var (
+		stats *drivers.Stats
+		err   error
+	)
 	if !opts.IncrementalRun {
 		stagingTableName := tableName
 		if opts.Env.StageChanges {
@@ -72,7 +76,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 			View:      asView,
 			TableOpts: mustToMap(outputProps),
 		}
-		err := e.c.CreateTableAsSelect(ctx, stagingTableName, inputProps.SQL, opts)
+		stats, err = e.c.CreateTableAsSelect(ctx, stagingTableName, inputProps.SQL, opts)
 		if err != nil {
 			_ = e.c.DropTable(ctx, stagingTableName)
 			return nil, fmt.Errorf("failed to create model: %w", err)
@@ -93,7 +97,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 			Strategy:  outputProps.IncrementalStrategy,
 			UniqueKey: outputProps.UniqueKey,
 		}
-		err := e.c.InsertTableAsSelect(ctx, tableName, inputProps.SQL, opts)
+		stats, err = e.c.InsertTableAsSelect(ctx, tableName, inputProps.SQL, opts)
 		if err != nil {
 			return nil, fmt.Errorf("failed to incrementally insert into table: %w", err)
 		}
@@ -106,16 +110,17 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		UsedModelName: usedModelName,
 	}
 	resultPropsMap := map[string]interface{}{}
-	err := mapstructure.WeakDecode(resultProps, &resultPropsMap)
+	err = mapstructure.WeakDecode(resultProps, &resultPropsMap)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode result properties: %w", err)
 	}
 
 	// Done
 	return &drivers.ModelResult{
-		Connector:  opts.OutputConnector,
-		Properties: resultPropsMap,
-		Table:      tableName,
+		Connector:    opts.OutputConnector,
+		Properties:   resultPropsMap,
+		Table:        tableName,
+		ExecDuration: stats.ExecDuration,
 	}, nil
 }
 

@@ -119,8 +119,9 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 
 	// Done
 	return &drivers.ModelResult{
-		Connector:  opts.OutputConnector,
-		Properties: resultPropsMap,
-		Table:      tableName,
+		Connector:    opts.OutputConnector,
+		Properties:   resultPropsMap,
+		Table:        tableName,
+		ExecDuration: stats.ExecDuration,
 	}, nil
 }

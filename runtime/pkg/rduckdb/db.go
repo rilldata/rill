@@ -159,11 +159,8 @@ type CreateTableOptions struct {
 
 // Result summarizes executed CRUD operation.
 type Result struct {
-	// Size of the DB file in bytes. 0 for views.
-	// It is incremental size in case of mutations.
-	Size int64
-	// ExecTime records the time taken to execute all user queries.
-	ExecTime time.Duration
+	// ExecutionDuration records the time taken to execute all user queries.
+	ExecutionDuration time.Duration
 }
 
 // NewDB creates a new DB instance.
@@ -425,19 +422,12 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 	if err != nil {
 		return nil, err
 	}
+	duration := time.Since(t)
 
 	// close write handle before syncing local so that temp files or wal files are removed
 	err = release()
 	if err != nil {
 		return nil, err
-	}
-
-	// collect stats
-	res = &Result{
-		ExecTime: time.Since(t),
-	}
-	if !opts.View {
-		res.Size = fileSize([]string{localDBPath})
 	}
 
 	// update remote data and metadata
@@ -451,12 +441,12 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 	err = d.writeTableMeta(name, newMeta)
 	if err != nil {
 		d.logger.Debug("create: error in writing table meta", zap.String("error", err.Error()), observability.ZapCtx(ctx))
-		return res, nil
+		return &Result{ExecutionDuration: duration}, nil
 	}
 
 	d.catalog.addTableVersion(name, newMeta, true)
 	d.localDirty = false
-	return res, nil
+	return &Result{ExecutionDuration: duration}, nil
 }
 
 func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx context.Context, conn *sqlx.Conn) error) (*Result, error) {
@@ -506,13 +496,7 @@ func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx con
 		return nil, fmt.Errorf("mutate: mutate failed: %w", err)
 	}
 
-	// collect stats
-	res := &Result{
-		ExecTime: time.Since(t),
-	}
-	if oldMeta.Type == "TABLE" {
-		res.Size = fileSize([]string{d.localDBPath(name, newVersion)}) - fileSize([]string{d.localDBPath(name, oldMeta.Version)})
-	}
+	duration := time.Since(t)
 
 	// push to remote
 	err = release()
@@ -538,12 +522,12 @@ func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx con
 	err = d.writeTableMeta(name, meta)
 	if err != nil {
 		d.logger.Debug("mutate: error in writing table meta", zap.Error(err), observability.ZapCtx(ctx))
-		return res, nil
+		return &Result{ExecutionDuration: duration}, nil
 	}
 
 	d.catalog.addTableVersion(name, meta, true)
 	d.localDirty = false
-	return res, nil
+	return &Result{ExecutionDuration: duration}, nil
 }
 
 // DropTable implements DB.

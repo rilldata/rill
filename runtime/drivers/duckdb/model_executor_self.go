@@ -3,6 +3,7 @@ package duckdb
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -57,10 +58,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 	asView := !materialize
 	tableName := outputProps.Table
 
-	var (
-		stats *drivers.TableStats
-		err   error
-	)
+	var duration time.Duration
 	if !opts.IncrementalRun {
 		// Prepare for ingesting into the staging view/table.
 		// NOTE: This intentionally drops the end table if not staging changes.
@@ -76,11 +74,12 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 			BeforeCreate: inputProps.PreExec,
 			AfterCreate:  inputProps.PostExec,
 		}
-		stats, err = olap.CreateTableAsSelect(ctx, stagingTableName, inputProps.SQL, createTableOpts)
+		res, err := olap.CreateTableAsSelect(ctx, stagingTableName, inputProps.SQL, createTableOpts)
 		if err != nil {
 			_ = olap.DropTable(ctx, stagingTableName)
 			return nil, fmt.Errorf("failed to create model: %w", err)
 		}
+		duration = res.ExecDuration
 
 		// Rename the staging table to the final table name
 		if stagingTableName != tableName {
@@ -99,16 +98,17 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 			Strategy:     outputProps.IncrementalStrategy,
 			UniqueKey:    outputProps.UniqueKey,
 		}
-		stats, err = olap.InsertTableAsSelect(ctx, tableName, inputProps.SQL, insertTableOpts)
+		res, err := olap.InsertTableAsSelect(ctx, tableName, inputProps.SQL, insertTableOpts)
 		if err != nil {
 			return nil, fmt.Errorf("failed to incrementally insert into table: %w", err)
 		}
+		duration = res.ExecDuration
+
 		prevResult := &ModelResultProperties{}
-		err := mapstructure.Decode(opts.PreviousResult.Properties, prevResult)
+		err = mapstructure.Decode(opts.PreviousResult.Properties, prevResult)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse previous result properties: %w", err)
 		}
-		stats.Size += prevResult.Size
 	}
 
 	// Build result props
@@ -116,19 +116,18 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		Table:         tableName,
 		View:          asView,
 		UsedModelName: usedModelName,
-		Size:          stats.Size,
-		ExecTime:      stats.ExecTime,
 	}
 	resultPropsMap := map[string]interface{}{}
-	err = mapstructure.WeakDecode(resultProps, &resultPropsMap)
+	err := mapstructure.WeakDecode(resultProps, &resultPropsMap)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode result properties: %w", err)
 	}
 
 	// Done
 	return &drivers.ModelResult{
-		Connector:  opts.OutputConnector,
-		Properties: resultPropsMap,
-		Table:      tableName,
+		Connector:    opts.OutputConnector,
+		Properties:   resultPropsMap,
+		Table:        tableName,
+		ExecDuration: duration,
 	}, nil
 }

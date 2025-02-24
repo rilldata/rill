@@ -151,6 +151,12 @@ message ModelState {
   string partitions_model_id = 10;
   // partitions_have_errors is true if one or more partitions failed to execute.
   bool partitions_have_errors = 11;
+  // total_execution_duration is the time in seconds user queries took to execute while refreshing the model.
+  // In case of incremental models it is the sum of all successful executions so far.
+  // This is not the time it took to refresh the model which also includes other stuff like taking a write lock.
+  int64 total_execution_duration = 12;
+  // latest_execution_duration is the time in seconds user queries took to execute in the last successful refresh.
+  int64 latest_execution_duration = 13;
 }
 
 message MetricsViewV2 {

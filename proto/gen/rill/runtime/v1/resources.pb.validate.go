@@ -2808,6 +2808,10 @@ func (m *ModelState) validate(all bool) error {
 
 	// no validation rules for PartitionsHaveErrors
 
+	// no validation rules for TotalExecutionDuration
+
+	// no validation rules for LatestExecutionDuration
+
 	if len(errors) > 0 {
 		return ModelStateMultiError(errors)
 	}

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -71,9 +70,6 @@ type ModelResultProperties struct {
 	Table         string `mapstructure:"table"`
 	View          bool   `mapstructure:"view"`
 	UsedModelName bool   `mapstructure:"used_model_name"`
-	// Size of the table in bytes
-	Size     int64         `mapstructure:"size"`
-	ExecTime time.Duration `mapstructure:"exec_time"`
 }
 
 func (c *connection) Rename(ctx context.Context, res *drivers.ModelResult, newName string, env *drivers.ModelEnv) (*drivers.ModelResult, error) {

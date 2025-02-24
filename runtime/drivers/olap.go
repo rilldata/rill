@@ -37,9 +37,8 @@ type CreateTableOptions struct {
 	TableOpts    map[string]any
 }
 
-type TableStats struct {
-	Size     int64
-	ExecTime time.Duration
+type Stats struct {
+	ExecDuration time.Duration
 }
 
 type InsertTableOptions struct {
@@ -60,8 +59,8 @@ type OLAPStore interface {
 	Execute(ctx context.Context, stmt *Statement) (*Result, error)
 	InformationSchema() InformationSchema
 
-	CreateTableAsSelect(ctx context.Context, name, sql string, opts *CreateTableOptions) (*TableStats, error)
-	InsertTableAsSelect(ctx context.Context, name, sql string, opts *InsertTableOptions) (*TableStats, error)
+	CreateTableAsSelect(ctx context.Context, name, sql string, opts *CreateTableOptions) (*Stats, error)
+	InsertTableAsSelect(ctx context.Context, name, sql string, opts *InsertTableOptions) (*Stats, error)
 	DropTable(ctx context.Context, name string) error
 	RenameTable(ctx context.Context, name, newName string) error
 	AddTableColumn(ctx context.Context, tableName, columnName string, typ string) error
