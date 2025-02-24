@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/mitchellh/mapstructure"
@@ -47,6 +48,8 @@ func newSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolve
 	if err := mapstructure.Decode(opts.Properties, props); err != nil {
 		return nil, err
 	}
+	// trim semicolon
+	props.SQL = strings.TrimSuffix(strings.TrimSpace(props.SQL), ";")
 
 	args := &sqlArgs{}
 	if err := mapstructure.Decode(opts.Args, args); err != nil {
