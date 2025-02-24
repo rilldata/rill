@@ -79,7 +79,7 @@ export abstract class BaseCanvasComponent<T> {
     parsedDocument.setIn(this.pathInYAML, newSpec);
 
     // Save the updated document
-    updateEditorContent(parsedDocument.toString(), true);
+    updateEditorContent(parsedDocument.toString(), false);
     await saveLocalContent();
   }
 

@@ -18,6 +18,7 @@
   } from "@rilldata/web-common/lib/time/types";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { DateTime, Interval } from "luxon";
+  import { tick } from "svelte";
 
   export let selectedComponentName: string;
   export let id: string;
@@ -73,7 +74,7 @@
       )
     : Interval.fromDateTimes($allTimeRange.start, $allTimeRange.end);
 
-  function makeTimeSeriesTimeRangeAndUpdateAppState(
+  async function makeTimeSeriesTimeRangeAndUpdateAppState(
     timeRange: TimeRange,
     timeGrain: V1TimeGrain,
     /** we should only reset the comparison range when the user has explicitly chosen a new
@@ -83,6 +84,10 @@
     comparisonTimeRange: DashboardTimeControls | undefined,
   ) {
     selectTimeRange(timeRange, timeGrain, comparisonTimeRange);
+
+    await tick();
+
+    onChange($timeRangeText);
   }
 
   function selectRange(range: TimeRange) {
@@ -148,10 +153,6 @@
       );
     }
   }
-
-  $: if (timeFilter && timeFilter !== $timeRangeText) {
-    onChange($timeRangeText);
-  }
 </script>
 
 <div class="flex flex-col gap-y-1 pt-1">
@@ -215,8 +216,20 @@
           showTimeComparison={$comparisonRangeStateStore?.showTimeComparison ??
             false}
           activeTimeZone={$selectedTimezone}
-          onDisplayTimeComparison={displayTimeComparison}
-          onSetSelectedComparisonRange={setSelectedComparisonRange}
+          onDisplayTimeComparison={async (show) => {
+            displayTimeComparison(show);
+
+            await tick();
+
+            onChange($timeRangeText);
+          }}
+          onSetSelectedComparisonRange={async (range) => {
+            setSelectedComparisonRange(range);
+
+            await tick();
+
+            onChange($timeRangeText);
+          }}
         />
       {/if}
     </div>

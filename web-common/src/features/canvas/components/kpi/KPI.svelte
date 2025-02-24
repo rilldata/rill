@@ -46,12 +46,12 @@
     metrics_view: metricsViewName,
     measure: measureName,
     sparkline,
-    time_filters: timeFilters,
+    time_filters: localTimeFilters,
     comparison: comparisonOptions,
   } = kpiProperties);
 
   $: ({ showLocalTimeComparison, localComparisonTimeRange } =
-    getLocalComparison(timeFilters));
+    getLocalComparison(localTimeFilters));
 
   $: schema = validateKPISchema(ctx, kpiProperties);
 
@@ -77,7 +77,8 @@
   } = $timeAndFilterStore);
 
   $: showComparison =
-    ($showTimeComparison || showLocalTimeComparison) && !!comparisonOptions;
+    (!!comparisonOptions && localTimeFilters && showLocalTimeComparison) ||
+    (!localTimeFilters && $showTimeComparison);
 
   $: comparisonLabel =
     (localComparisonTimeRange?.name &&
@@ -216,14 +217,20 @@
           class:text-center={!isSparkRight}
           class="font-medium text-sm text-gray-600 line-clamp-1 truncate"
         >
+          {showComparison}
+
           {measure?.displayName || measureName}
         </h2>
-        <span class="text-3xl font-medium text-gray-600 flex gap-x-0 items-end">
+        <span
+          class="text-3xl font-medium text-gray-600 flex gap-x-0.5 items-end"
+        >
           {#if hoveredPoints?.[0]?.value !== undefined}
             <span class="text-primary-500">
               {measureValueFormatter(currentValue)}
-            </span><span class="text-gray-600 text-lg">
-              /{measureValueFormatter(primaryTotal)}
+            </span>
+            <span class="text-lg">/</span>
+            <span class="text-gray-600 text-lg">
+              {measureValueFormatter(primaryTotal)}
             </span>
           {:else}
             {measureValueFormatter(primaryTotal)}

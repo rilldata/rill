@@ -184,17 +184,15 @@
 
     <g>
       {#each mappedData as mappedDataLine, i (i)}
-        {#each mappedDataLine as { interval, value }, j (j)}
+        {#each mappedDataLine as { interval, value }, pointIndex (pointIndex)}
           {@const xScale = xScales[i]}
-          <Point
-            showPoint={hoverIndex === j ||
-              (mappedDataLine[j - 1]?.value === null &&
-                mappedDataLine[j + 1]?.value === null &&
-                mappedDataLine[j]?.value !== null)}
-            x={xScale(interval.start.toJSDate())}
-            y={value == null ? null : yScale(value)}
-            color={getColor(i)}
-          />
+          {#if value !== null && value !== undefined && (hoverIndex === pointIndex || (mappedDataLine[pointIndex - 1]?.value === null && mappedDataLine[pointIndex + 1]?.value === null))}
+            <Point
+              x={xScale(interval.start.toJSDate())}
+              y={yScale(value)}
+              color={getColor(i)}
+            />
+          {/if}
         {/each}
       {/each}
     </g>
