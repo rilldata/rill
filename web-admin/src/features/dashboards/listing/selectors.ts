@@ -83,38 +83,6 @@ export function useDashboardsV2(
   });
 }
 
-// This iteration of `useDashboard` returns the above `DashboardResource` type, which includes `refreshedOn`
-export function useDashboardV2(
-  instanceId: string,
-  name: string,
-): CreateQueryResult<DashboardResource> {
-  return createRuntimeServiceListResources(instanceId, undefined, {
-    query: {
-      enabled: !!instanceId && !!name,
-      select: (data) => {
-        if (!name) return;
-
-        const resource = data.resources.find(
-          (res) => res.meta.name.name.toLowerCase() === name.toLowerCase(),
-        );
-        // create a map since we are potentially looking up twice per explore
-        const allResources = getMapFromArray(
-          data.resources,
-          (r) => `${r.meta.name.kind}_${r.meta.name.name}`,
-        );
-
-        if (resource.canvas) {
-          const refreshedOn = getCanvasRefreshedOn(resource, allResources);
-          return { resource, refreshedOn };
-        }
-
-        const refreshedOn = getExploreRefreshedOn(resource, allResources);
-        return { resource, refreshedOn };
-      },
-    },
-  });
-}
-
 function getCanvasRefreshedOn(
   dashboard: V1Resource,
   allResources: Map<string, V1Resource>,
