@@ -58,15 +58,9 @@ export function useDimensionSearch(
 
     const items = $queries.flatMap((query) => query.data?.data || []);
     const values = items.map((item) => item[dimensionName] as string);
-    const seen = new Set();
+    const dedupedValues = new Set(values);
     return {
-      data: values.filter((value) => {
-        if (seen.has(value)) {
-          return false;
-        }
-        seen.add(value);
-        return true;
-      }),
+      data: [...dedupedValues],
       error: undefined,
       isFetching: false,
     };

@@ -198,6 +198,7 @@
       leaderboardTotal,
     ));
 
+  $: belowTheFoldDataLimit = maxValuesToShow - aboveTheFold.length;
   $: belowTheFoldDataQuery = createQueryServiceMetricsViewAggregation(
     instanceId,
     metricsViewName,
@@ -222,11 +223,15 @@
       timeRange,
       comparisonTimeRange,
       measures,
-      limit: (maxValuesToShow - aboveTheFold.length).toString(),
+      limit: belowTheFoldDataLimit.toString(),
     },
     {
       query: {
-        enabled: !!belowTheFoldValues.length && timeControlsReady && visible,
+        enabled:
+          !!belowTheFoldValues.length &&
+          timeControlsReady &&
+          visible &&
+          belowTheFoldDataLimit > 0,
       },
     },
   );
