@@ -4,7 +4,7 @@
   import { getSimpleMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { getStateManagers } from "../state-managers/state-managers";
-  import MetricsDropdown from "@rilldata/web-common/components/menu/MetricsDropdown.svelte";
+  import LeaderboardActiveMeasureNamesDropdown from "@rilldata/web-common/components/menu/LeaderboardActiveMeasureNamesDropdown.svelte";
 
   export let exploreName: string;
 
@@ -20,7 +20,7 @@
     },
   } = getStateManagers();
 
-  $: console.log("leaderboardMeasureNames: ", $leaderboardMeasureNames);
+  // $: console.log("leaderboardMeasureNames: ", $leaderboardMeasureNames);
 
   $: measures = getSimpleMeasures($visibleMeasures);
 
@@ -77,7 +77,7 @@
         }}
       />
 
-      <MetricsDropdown
+      <LeaderboardActiveMeasureNamesDropdown
         {measures}
         {firstMeasure}
         tooltipText="Choose measures to filter by"
