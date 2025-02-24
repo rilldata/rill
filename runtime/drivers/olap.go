@@ -511,21 +511,24 @@ func (d Dialect) DateDiff(grain runtimev1.TimeGrain, t1, t2 time.Time) (string, 
 	}
 }
 
-func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeGrain, alias string) (string, error) {
+func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeGrain, alias string) (string, []any, error) {
+	var args []any
 	switch d {
 	case DialectDuckDB:
-		return fmt.Sprintf("SELECT range AS %s FROM range('%s'::TIMESTAMP, '%s'::TIMESTAMP, INTERVAL '1 %s')", d.EscapeIdentifier(alias), start.Format(time.RFC3339), end.Format(time.RFC3339), d.ConvertToDateTruncSpecifier(grain)), nil
+		return fmt.Sprintf("SELECT range AS %s FROM range('%s'::TIMESTAMP, '%s'::TIMESTAMP, INTERVAL '1 %s')", d.EscapeIdentifier(alias), start.Format(time.RFC3339), end.Format(time.RFC3339), d.ConvertToDateTruncSpecifier(grain)), nil, nil
 	case DialectClickHouse:
-		// generate select like - SELECT '2021-01-01T00:00:00.000'::DATETIME64 AS "time" UNION ALL SELECT '2021-01-01T01:00:00.000'::DATETIME64 AS "time" ...
+		// format - SELECT c1 AS "alias" FROM VALUES(toDateTime('2021-01-01 00:00:00'), toDateTime('2021-01-01 00:00:00'),...)
 		var sb strings.Builder
-		sb.WriteString("SELECT ")
+		sb.WriteString(fmt.Sprintf("SELECT c1 AS %s FROM VALUES(", d.EscapeIdentifier(alias)))
 		for t := start; t.Before(end); t = timeutil.AddTimeProto(t, grain, 1) {
 			if t != start {
-				sb.WriteString(" UNION ALL ")
+				sb.WriteString(", ")
 			}
-			sb.WriteString(fmt.Sprintf("'%s'::DATETIME64 as %s", t.Format("2006-01-02T15:04:05.000"), d.EscapeIdentifier(alias)))
+			sb.WriteString("?")
+			args = append(args, t)
 		}
-		return sb.String(), nil
+		sb.WriteString(")")
+		return sb.String(), args, nil
 	case DialectDruid:
 		// generate select like - SELECT * FROM (
 		//  VALUES
@@ -541,9 +544,9 @@ func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeG
 			sb.WriteString(fmt.Sprintf("(CAST('%s' AS TIMESTAMP))", t.Format(time.RFC3339)))
 		}
 		sb.WriteString(fmt.Sprintf(") t (%s)", d.EscapeIdentifier(alias)))
-		return sb.String(), nil
+		return sb.String(), args, nil
 	default:
-		return "", fmt.Errorf("unsupported dialect %q", d)
+		return "", nil, fmt.Errorf("unsupported dialect %q", d)
 	}
 }
 

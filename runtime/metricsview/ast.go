@@ -703,7 +703,7 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 		start := spine.TimeRange.Start
 		end := spine.TimeRange.End
 		grain := spine.TimeRange.Grain
-		sel, err := a.dialect.SelectTimeRangeBins(start, end, grain.ToProto(), spine.TimeRange.Alias)
+		sel, args, err := a.dialect.SelectTimeRangeBins(start, end, grain.ToProto(), spine.TimeRange.Alias)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate time spine: %w", err)
 		}
@@ -712,6 +712,7 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 			Alias: alias,
 			RawSelect: &ExprNode{
 				Expr: sel,
+				Args: args,
 			},
 		}
 
