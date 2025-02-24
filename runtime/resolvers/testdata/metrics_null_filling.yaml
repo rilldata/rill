@@ -1,0 +1,223 @@
+connectors:
+  - clickhouse
+  - druid
+project_files:
+  clickhouse_data.yaml:
+    type: model
+    connector: clickhouse
+    sql: |
+      select parseDateTimeBestEffort('2024-01-01T00:00:00Z') as time, 'DK' as country, 1 as val union all
+      select parseDateTimeBestEffort('2024-01-02T00:00:00Z') as time, 'US' as country, 2 as val union all
+      select parseDateTimeBestEffort('2024-01-04T00:00:00Z') as time, 'US' as country, 4 as val union all
+      select parseDateTimeBestEffort('2024-01-05T00:00:00Z') as time, 'DK' as country, 5 as val
+  clickhouse_metrics.yaml:
+    type: metrics_view
+    model: clickhouse_data
+    timeseries: time
+    dimensions:
+      - column: country
+    measures:
+      - name: count
+        expression: count(*)
+      - name: sum
+        expression: sum(val)
+        treat_nulls_as: 123
+  druid_metrics.yaml:
+    type: metrics_view
+    connector: druid
+    model: AdBids
+    timeseries: __time
+    dimensions:
+      - column: publisher
+      - column: domain
+    measures:
+      - name: count
+        expression: count(*)
+  duckdb_data.yaml:
+    type: model
+    connector: duckdb
+    sql: |
+      select '2024-01-02T00:00:00Z'::TIMESTAMP as time, 'US' as country, 2 as val union all
+      select '2024-01-03T00:00:00Z'::TIMESTAMP as time, 'US' as country, 3 as val union all
+      select '2024-01-05T00:00:00Z'::TIMESTAMP as time, 'DK' as country, 5 as val
+  duckdb_metrics.yaml:
+    type: metrics_view
+    model: duckdb_data
+    timeseries: time
+    dimensions:
+      - column: country
+    measures:
+      - name: count
+        expression: count(*)
+      - name: sum
+        expression: sum(val)
+        treat_nulls_as: -1
+tests:
+  - name: time_as_dimension_clickhouse
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics
+      dimensions:
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: sum
+      time_range:
+        end: 2024-01-05T00:00:00Z
+        start: 2024-01-03T00:00:00Z
+      sort:
+        - name: time__day
+      spine:
+        time:
+          start:
+          end:
+          grain:
+          alias:
+    result:
+      - sum: 123
+        time__day: "2024-01-03T00:00:00Z"
+      - sum: 4
+        time__day: "2024-01-04T00:00:00Z"
+  - name: time_as_dimension_druid
+    resolver: metrics
+    properties:
+      metrics_view: druid_metrics
+      dimensions:
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: __time
+              grain: day
+      measures:
+        - name: count
+        - name: count_prev
+          compute:
+            comparison_value:
+              measure: count
+      time_range:
+        end: 2022-01-05T00:00:00Z
+        start: 2022-01-03T00:00:00Z
+      comparison_time_range:
+        end: 2022-01-03T00:00:00Z
+        start: 2022-01-01T00:00:00Z
+      sort:
+        - name: time__day
+    result:
+      - count: 1126
+        count_prev: 1116
+        time__day: "2022-01-03T00:00:00Z"
+      - count: 1120
+        count_prev: 1126
+        time__day: "2022-01-04T00:00:00Z"
+  - name: time_as_dimension_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics
+      dimensions:
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: sum
+        - name: sum_prev
+          compute:
+            comparison_value:
+              measure: sum
+      time_range:
+        end: 2024-01-05T00:00:00Z
+        start: 2024-01-03T00:00:00Z
+      comparison_time_range:
+        end: 2024-01-03T00:00:00Z
+        start: 2024-01-01T00:00:00Z
+      sort:
+        - name: time__day
+      spine:
+        time:
+          start:
+          end:
+          grain:
+          alias:
+    result:
+      - sum: 3
+        sum_prev: -1
+        time__day: "2024-01-03T00:00:00Z"
+      - sum: -1
+        sum_prev: 2
+        time__day: "2024-01-04T00:00:00Z"
+  - name: iso_ranges_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics
+      dimensions:
+        - name: country
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: sum
+        - name: sum_prev
+          compute:
+            comparison_value:
+              measure: sum
+      time_range:
+        iso_duration: P2D
+      comparison_time_range:
+        iso_duration: P2D
+        iso_offset: P2D
+      sort:
+        - name: sum
+      spine:
+        time:
+          start:
+          end:
+          grain:
+          alias:
+    result:
+      - sum: -1
+        sum_prev: 2
+        country: "US"
+        time__day: "2024-01-04T00:00:00Z"
+      - sum: 3
+        sum_prev: -1
+        country: "US"
+        time__day: "2024-01-03T00:00:00Z"
+  - name: iso_ranges_clickhouse
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics
+      dimensions:
+        - name: country
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: sum
+      time_range:
+        iso_duration: P3D
+      sort:
+        - name: sum
+      spine:
+        time:
+          start:
+          end:
+          grain:
+          alias:
+    result:
+      - sum: 2
+        country: "US"
+        time__day: "2024-01-02T00:00:00Z"
+      - sum: 4
+        country: "US"
+        time__day: "2024-01-04T00:00:00Z"
+      - sum: 123
+        country: "US"
+        time__day: "2024-01-03T00:00:00Z"
