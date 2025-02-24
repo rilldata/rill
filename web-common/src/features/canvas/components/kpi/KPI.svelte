@@ -217,8 +217,6 @@
           class:text-center={!isSparkRight}
           class="font-medium text-sm text-gray-600 line-clamp-1 truncate"
         >
-          {showComparison}
-
           {measure?.displayName || measureName}
         </h2>
         <span
