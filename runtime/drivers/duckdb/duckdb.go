@@ -487,9 +487,9 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		"LOAD 'httpfs'",
 		"INSTALL 'sqlite'",
 		"LOAD 'sqlite'",
-		"SET timezone='UTC'",
-		"SET old_implicit_casting = true",        // Implicit Cast to VARCHAR
-		"SET allow_community_extensions = false", // This locks the configuration, so it can't later be enabled.
+		"SET GLOBAL timezone='UTC'",
+		"SET GLOBAL old_implicit_casting = true", // Implicit Cast to VARCHAR
+		"SET GLOBAL allow_community_extensions = false", // This locks the configuration, so it can't later be enabled.
 	)
 
 	dataDir, err := c.storage.DataDir()
@@ -501,8 +501,8 @@ func (c *connection) reopenDB(ctx context.Context) error {
 	// Hack: Using AllowHostAccess as a proxy indicator for a hosted environment.
 	if !c.config.AllowHostAccess {
 		dbInitQueries = append(dbInitQueries,
-			"SET preserve_insertion_order TO false",
-			fmt.Sprintf("SET secret_directory = %s", safeSQLString(filepath.Join(dataDir, ".duckdb", "secrets"))),
+			"SET GLOBAL preserve_insertion_order TO false",
+			fmt.Sprintf("SET GLOBAL secret_directory = %s", safeSQLString(filepath.Join(dataDir, ".duckdb", "secrets"))),
 		)
 	}
 
