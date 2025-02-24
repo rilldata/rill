@@ -58,7 +58,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			flagsSet := cmd.Flags().Changed("display-name") || cmd.Flags().Changed("description") || cmd.Flags().Changed("billing-email")
-			if !flagsSet && !ch.Interactive {
+			if !flagsSet {
 				return fmt.Errorf("at least one flag must be set")
 			}
 

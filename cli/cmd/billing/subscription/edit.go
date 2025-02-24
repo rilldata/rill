@@ -1,6 +1,9 @@
 package subscription
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -36,24 +39,35 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				ch.PrintSubscriptions([]*adminv1.Subscription{subResp.Subscription})
 			}
 
-			// Skip confirmation and prompts if plan is provided via flag
-			if plan == "" {
-				ch.PrintfWarn("\nEditing plan for organization %q. Plan change will take place immediately.\n", ch.Org)
-				ch.PrintfWarn("\nTo renew a cancelled subscription, please use `rill billing subscription renew` command.\n")
-				ok, err := cmdutil.ConfirmPrompt("Do you want to continue?", "", false)
-				if err != nil {
-					return err
-				}
-				if !ok {
-					ch.PrintfWarn("Aborted\n")
-					return nil
-				}
+			ch.PrintfWarn("\nEditing plan for organization %q. Plan change will take place immediately.\n", ch.Org)
+			ch.PrintfWarn("\nTo renew a cancelled subscription, please use `rill billing subscription renew` command.\n")
+			ok, err := cmdutil.ConfirmPrompt("Do you want to continue?", "", false)
+			if err != nil {
+				return err
+			}
+			if !ok {
+				ch.PrintfWarn("Aborted\n")
+				return nil
+			}
 
+			// If plan flag is set, validate it
+			if cmd.Flags().Changed("plan") {
+				valid := IsValidPlan(plan)
+				if !valid {
+					return fmt.Errorf("invalid plan %q, must be one of: %s", plan, strings.Join(AllPlans, ", "))
+				}
+			} else {
+				// Only show plan selection prompt if in interactive mode
+				if !ch.Interactive {
+					return fmt.Errorf("--plan flag is required when running in non-interactive mode. Valid plans: %s",
+						strings.Join(AllPlans, ", "))
+				}
 				// Prompt for plan if not provided via flag
-				plan, err = cmdutil.SelectPrompt("Select plan:", []string{"starter", "pro", "enterprise"}, "")
+				selectedPlan, err := cmdutil.SelectPrompt("Select plan:", AllPlans, "")
 				if err != nil {
 					return err
 				}
+				plan = selectedPlan
 			}
 
 			resp, err := client.UpdateBillingSubscription(cmd.Context(), &adminv1.UpdateBillingSubscriptionRequest{

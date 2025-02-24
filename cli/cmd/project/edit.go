@@ -12,7 +12,6 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	var name, description, prodVersion, prodBranch, subpath, path, provisioner string
 	var public bool
 	var prodTTL int64
-	var slots int
 
 	editCmd := &cobra.Command{
 		Use:   "edit [<project-name>]",
@@ -20,28 +19,15 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 		Short: "Edit the project details",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-
 			client, err := ch.Client()
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to initialize client: %w", err)
 			}
 
 			if len(args) > 0 {
 				name = args[0]
 			}
 
-			if !cmd.Flags().Changed("project") && len(args) == 0 && ch.Interactive {
-				names, err := projectNames(ctx, ch)
-				if err != nil {
-					return err
-				}
-
-				// prompt for name from user
-				name, err = cmdutil.SelectPrompt("Select project", names, "")
-				if err != nil {
-					return err
-				}
-			}
 			if name == "" {
 				return fmt.Errorf("pass project name as argument or with --project flag")
 			}
@@ -51,20 +37,9 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				Name:             name,
 			}
 
-			// Check if any project-related flags were explicitly set
-			anyFlagsChanged := cmd.Flags().Changed("prod-slots") ||
-				cmd.Flags().Changed("provisioner") ||
-				cmd.Flags().Changed("description") ||
-				cmd.Flags().Changed("prod-version") ||
-				cmd.Flags().Changed("prod-branch") ||
-				cmd.Flags().Changed("subpath") ||
-				cmd.Flags().Changed("public") ||
-				cmd.Flags().Changed("prod-ttl-seconds")
-
 			// Set values from flags if they were changed
-			if cmd.Flags().Changed("prod-slots") {
-				prodSlots := int64(slots)
-				req.ProdSlots = &prodSlots
+			if cmd.Flags().Changed("prod-ttl-seconds") && prodTTL < 0 {
+				return fmt.Errorf("prod-ttl-seconds must be non-negative")
 			}
 			if cmd.Flags().Changed("provisioner") {
 				req.Provisioner = &provisioner
@@ -84,41 +59,13 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			if cmd.Flags().Changed("public") {
 				req.Public = &public
 			}
-
 			if cmd.Flags().Changed("prod-ttl-seconds") {
 				req.ProdTtlSeconds = &prodTTL
 			}
 
-			// Only prompt interactively if no flags were explicitly set
-			if ch.Interactive && !anyFlagsChanged {
-				resp, err := client.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: ch.Org, Name: name})
-				if err != nil {
-					return err
-				}
-				proj := resp.Project
-
-				description, err = cmdutil.InputPrompt("Enter the description", proj.Description)
-				if err != nil {
-					return err
-				}
-				req.Description = &description
-
-				prodBranch, err = cmdutil.InputPrompt("Enter the production branch", proj.ProdBranch)
-				if err != nil {
-					return err
-				}
-				req.ProdBranch = &prodBranch
-
-				public, err = cmdutil.ConfirmPrompt("Make project public", "", proj.Public)
-				if err != nil {
-					return err
-				}
-				req.Public = &public
-			}
-
 			updatedProj, err := client.UpdateProject(ctx, req)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to update project: %w", err)
 			}
 
 			ch.PrintfSuccess("Updated project\n")

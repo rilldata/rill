@@ -21,7 +21,7 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 				var err error
 				projectPath, err = normalizeProjectPath(projectPath)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to normalize project path: %w", err)
 				}
 			}
 
@@ -32,7 +32,7 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Parse and verify the project directory
 			repo, instanceID, err := cmdutil.RepoForProjectPath(projectPath)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to get repo for project path: %w", err)
 			}
 			parser, err := rillv1.Parse(cmd.Context(), repo, instanceID, "prod", "duckdb")
 			if err != nil {
@@ -53,7 +53,7 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Fetch the project variables from the cloud
 			client, err := ch.Client()
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to create client: %w", err)
 			}
 			res, err := client.GetProjectVariables(cmd.Context(), &adminv1.GetProjectVariablesRequest{
 				Organization: ch.Org,
@@ -61,7 +61,7 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 				Environment:  environment,
 			})
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to get project variables: %w", err)
 			}
 
 			// Merge the current .env file with the cloud variables
@@ -86,34 +86,36 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 				return nil
 			}
 
-			// Prompt for confirmation if any existing variables have changed
-			if changed != 0 {
-				// Skip interactive prompt if flags were explicitly provided
-				if cmd.Flags().Changed("project") || cmd.Flags().Changed("path") {
-					ch.Printf("Found %d variable(s) in your local .env file that will overwrite existing variables in the cloud env for project %q.\n", changed, projectName)
-				} else {
-					ch.Printf("Found %d variable(s) in your local .env file that will overwrite existing variables in the cloud env for project %q.\n", changed, projectName)
-					ok, err := cmdutil.ConfirmPrompt("Do you want to continue?", "", true)
-					if err != nil {
-						return err
-					}
-					if !ok {
-						return nil
-					}
+			// Always prompt for confirmation when there are changes
+			message := fmt.Sprintf("Found %d new and %d changed variable(s) to push to project %q:\n", added, changed, projectName)
+			ch.Print(message)
+
+			// Add details about the changes
+			for k, v := range parser.DotEnv {
+				if _, ok := vars[k]; !ok {
+					ch.Printf("  + %s: will be added\n", k)
+				} else if vars[k] != v {
+					ch.Printf("  ~ %s: will be updated\n", k)
 				}
 			}
 
+			ok, err := cmdutil.ConfirmPrompt("Do you want to continue?", "", true)
+			if err != nil {
+				return fmt.Errorf("failed to prompt for confirmation: %w", err)
+			}
+			if !ok {
+				return nil
+			}
+
 			// Write the merged variables back to the cloud project
-			if added+changed != 0 {
-				_, err = client.UpdateProjectVariables(cmd.Context(), &adminv1.UpdateProjectVariablesRequest{
-					Organization: ch.Org,
-					Project:      projectName,
-					Environment:  environment,
-					Variables:    vars,
-				})
-				if err != nil {
-					return err
-				}
+			_, err = client.UpdateProjectVariables(cmd.Context(), &adminv1.UpdateProjectVariablesRequest{
+				Organization: ch.Org,
+				Project:      projectName,
+				Environment:  environment,
+				Variables:    vars,
+			})
+			if err != nil {
+				return fmt.Errorf("failed to update project variables: %w", err)
 			}
 
 			ch.Printf("Updated cloud env for project %q with variables from %q.\n", projectName, filepath.Join(projectPath, ".env"))

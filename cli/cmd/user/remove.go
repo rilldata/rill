@@ -16,12 +16,9 @@ func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 		Use:   "remove",
 		Short: "Remove a user",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Only prompt if email flag wasn't explicitly set
-			if email == "" {
-				err := cmdutil.StringPromptIfEmpty(&email, "Enter email")
-				if err != nil {
-					return err
-				}
+			err := cmdutil.StringPromptIfEmpty(&email, "Enter email")
+			if err != nil {
+				return err
 			}
 
 			client, err := ch.Client()

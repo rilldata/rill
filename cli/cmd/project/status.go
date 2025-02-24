@@ -29,7 +29,7 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 				name = args[0]
 			}
 
-			if !cmd.Flags().Changed("project") && !cmd.Flags().Changed("path") && len(args) == 0 && ch.Interactive {
+			if !cmd.Flags().Changed("project") && len(args) == 0 && ch.Interactive {
 				name, err = ch.InferProjectName(cmd.Context(), ch.Org, path)
 				if err != nil {
 					return fmt.Errorf("unable to infer project name (use `--project` to explicitly specify the name): %w", err)

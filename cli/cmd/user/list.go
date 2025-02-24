@@ -8,6 +8,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	UserTokenPrefix   = "usr" // User token prefix
+	InviteTokenPrefix = "inv" // Invite token prefix
+	DefaultPageSize   = 50    // Default page size
+)
+
 func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 	var projectName string
 	var groupName string
@@ -18,26 +24,19 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 		Use:   "list",
 		Short: "List users",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Skip interactive prompts if any flags are explicitly set
-			if cmd.Flags().Changed("org") || cmd.Flags().Changed("project") ||
-				cmd.Flags().Changed("group") || cmd.Flags().Changed("page-size") ||
-				cmd.Flags().Changed("page-token") {
-				ch.Interactive = false
-			}
-
 			if groupName != "" {
 				err := listUsergroupMembers(cmd, ch, ch.Org, groupName, pageToken, pageSize)
 				if err != nil {
 					return err
 				}
 			} else if projectName != "" {
-				if strings.HasPrefix(pageToken, "usr") {
-					err := listProjectMembers(cmd, ch, ch.Org, projectName, strings.TrimPrefix(pageToken, "usr"), pageSize)
+				if strings.HasPrefix(pageToken, UserTokenPrefix) {
+					err := listProjectMembers(cmd, ch, ch.Org, projectName, strings.TrimPrefix(pageToken, UserTokenPrefix), pageSize)
 					if err != nil {
 						return err
 					}
-				} else if strings.HasPrefix(pageToken, "inv") {
-					err := listProjectInvites(cmd, ch, ch.Org, projectName, strings.TrimPrefix(pageToken, "inv"), pageSize)
+				} else if strings.HasPrefix(pageToken, InviteTokenPrefix) {
+					err := listProjectInvites(cmd, ch, ch.Org, projectName, strings.TrimPrefix(pageToken, InviteTokenPrefix), pageSize)
 					if err != nil {
 						return err
 					}
@@ -53,13 +52,13 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 					}
 				}
 			} else {
-				if strings.HasPrefix(pageToken, "usr") {
-					err := listOrgMembers(cmd, ch, ch.Org, strings.TrimPrefix(pageToken, "usr"), pageSize)
+				if strings.HasPrefix(pageToken, UserTokenPrefix) {
+					err := listOrgMembers(cmd, ch, ch.Org, strings.TrimPrefix(pageToken, UserTokenPrefix), pageSize)
 					if err != nil {
 						return err
 					}
-				} else if strings.HasPrefix(pageToken, "inv") {
-					err := listOrgInvites(cmd, ch, ch.Org, strings.TrimPrefix(pageToken, "inv"), pageSize)
+				} else if strings.HasPrefix(pageToken, InviteTokenPrefix) {
+					err := listOrgInvites(cmd, ch, ch.Org, strings.TrimPrefix(pageToken, InviteTokenPrefix), pageSize)
 					if err != nil {
 						return err
 					}
@@ -85,7 +84,7 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 	listCmd.Flags().StringVar(&ch.Org, "org", ch.Org, "Organization")
 	listCmd.Flags().StringVar(&projectName, "project", "", "Project")
 	listCmd.Flags().StringVar(&groupName, "group", "", "User group")
-	listCmd.Flags().Uint32Var(&pageSize, "page-size", 50, "Number of users to return per page")
+	listCmd.Flags().Uint32Var(&pageSize, "page-size", DefaultPageSize, "Number of users to return per page")
 	listCmd.Flags().StringVar(&pageToken, "page-token", "", "Pagination token")
 
 	return listCmd

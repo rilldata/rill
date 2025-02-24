@@ -1,6 +1,9 @@
 package subscription
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -33,19 +36,35 @@ func RenewCmd(ch *cmdutil.Helper) *cobra.Command {
 				ch.PrintfBold("Organization %q has the following subscription\n", ch.Org)
 				ch.PrintSubscriptions([]*adminv1.Subscription{subResp.Subscription})
 
-				// Skip confirmation if plan is explicitly specified
-				if plan == "" {
-					ch.PrintfWarn("\nSubscription renewal for %q will take place immediately.\n", ch.Org)
-					ch.PrintfWarn("\nTo edit the plan of non-cancelled subscription, run `rill billing subscription edit`.\n")
-					ok, err := cmdutil.ConfirmPrompt("Do you want to continue?", "", false)
-					if err != nil {
-						return err
-					}
-					if !ok {
-						ch.PrintfWarn("Aborted\n")
-						return nil
-					}
+				ch.PrintfWarn("\nSubscription renewal for %q will take place immediately.\n", ch.Org)
+				ch.PrintfWarn("\nTo edit the plan of non-cancelled subscription, run `rill billing subscription edit`.\n")
+				ok, err := cmdutil.ConfirmPrompt("Do you want to continue?", "", false)
+				if err != nil {
+					return err
 				}
+				if !ok {
+					ch.PrintfWarn("Aborted\n")
+					return nil
+				}
+			}
+
+			if cmd.Flags().Changed("plan") {
+				valid := IsValidPlan(plan)
+				if !valid {
+					return fmt.Errorf("invalid plan %q, must be one of: %s", plan, strings.Join(AllPlans, ", "))
+				}
+			} else {
+				// Only show plan selection prompt if in interactive mode
+				if !ch.Interactive {
+					return fmt.Errorf("--plan flag is required when running in non-interactive mode. Valid plans: %s",
+						strings.Join(AllPlans, ", "))
+				}
+				// Prompt for plan if not provided via flag
+				selectedPlan, err := cmdutil.SelectPrompt("Select plan:", AllPlans, "")
+				if err != nil {
+					return err
+				}
+				plan = selectedPlan
 			}
 
 			resp, err := client.RenewBillingSubscription(cmd.Context(), &adminv1.RenewBillingSubscriptionRequest{

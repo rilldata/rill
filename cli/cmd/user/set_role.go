@@ -18,18 +18,14 @@ func SetRoleCmd(ch *cmdutil.Helper) *cobra.Command {
 		Use:   "set-role",
 		Short: "Change a user's role",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if role == "" {
-				err := cmdutil.SelectPromptIfEmpty(&role, "Select role", userRoles, "")
-				if err != nil {
-					return err
-				}
+			err := cmdutil.SelectPromptIfEmpty(&role, "Select role", userRoles, "")
+			if err != nil {
+				return err
 			}
 
-			if email == "" {
-				err := cmdutil.StringPromptIfEmpty(&email, "Enter email")
-				if err != nil {
-					return err
-				}
+			err = cmdutil.StringPromptIfEmpty(&email, "Enter email")
+			if err != nil {
+				return err
 			}
 
 			client, err := ch.Client()

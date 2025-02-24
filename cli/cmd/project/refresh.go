@@ -26,7 +26,10 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 			if len(args) > 0 {
 				project = args[0]
 			}
-			if !local && !cmd.Flags().Changed("project") && len(args) == 0 && ch.Interactive && cmd.Flags().NFlag() == 0 {
+			if !local && project == "" {
+				if !ch.Interactive {
+					return fmt.Errorf("project not specified and could not be inferred from context")
+				}
 				var err error
 				project, err = ch.InferProjectName(cmd.Context(), ch.Org, path)
 				if err != nil {
@@ -111,6 +114,13 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Return an error for ineffective use of --full
 			if full && !all && len(models) == 0 {
 				return fmt.Errorf("the --full flag can only be used with --all or --model")
+			}
+
+			// Return an error for ineffective use of --partition
+			if len(modelPartitions) > 0 {
+				if !cmd.Flags().Changed("model") {
+					return fmt.Errorf("--partition requires --model to be explicitly set")
+				}
 			}
 
 			// Send request

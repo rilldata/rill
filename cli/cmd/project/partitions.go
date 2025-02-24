@@ -26,8 +26,7 @@ func PartitionsCmd(ch *cmdutil.Helper) *cobra.Command {
 				model = args[1]
 			}
 
-			if !local && !cmd.Flags().Changed("project") && !cmd.Flags().Changed("model") &&
-				len(args) <= 1 && ch.Interactive {
+			if !local && !cmd.Flags().Changed("project") && len(args) <= 1 && ch.Interactive {
 				var err error
 				project, err = ch.InferProjectName(cmd.Context(), ch.Org, path)
 				if err != nil {

@@ -27,13 +27,17 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			if !cmd.Flags().Changed("org") && ch.Interactive && !force {
+			if !cmd.Flags().Changed("new-name") && !cmd.Flags().Changed("display-name") {
+				return fmt.Errorf("at least one of --new-name or --display-name must be provided")
+			}
+
+			if !cmd.Flags().Changed("org") && len(args) == 0 && ch.Interactive {
 				orgNames, err := OrgNames(ctx, ch)
 				if err != nil {
 					return err
 				}
 
-				name, err = cmdutil.SelectPrompt("Select org to rename", orgNames, "")
+				name, err = cmdutil.SelectPrompt("Select org to edit", orgNames, ch.Org)
 				if err != nil {
 					return err
 				}
@@ -41,74 +45,61 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			resp, err := client.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: name})
 			if err != nil {
-				if st, ok := status.FromError(err); ok {
-					if st.Code() != codes.NotFound {
-						return err
-					}
+				if st, ok := status.FromError(err); ok && st.Code() == codes.NotFound {
+					return fmt.Errorf("org %q doesn't exist, run 'rill org list' to see available orgs", name)
 				}
-				fmt.Printf("Org name %q doesn't exist, please run `rill org list` to list available orgs\n", name)
-				return nil
+				return err
+			}
+			org := resp.Organization
+
+			// Require at least one change
+			if !cmd.Flags().Changed("new-name") && !cmd.Flags().Changed("display-name") {
+				return fmt.Errorf("at least one of --new-name or --display-name must be provided")
 			}
 
-			org := resp.Organization
+			// Build update request
 			req := &adminv1.UpdateOrganizationRequest{
 				Name: org.Name,
 			}
 
-			ch.PrintfWarn("\nWarn: Renaming an org would invalidate dashboard URLs.\n")
-			hasDisplayName := org.DisplayName != ""
-
-			if cmd.Flags().Changed("display-name") {
-				req.DisplayName = &displayName
-			} else if ch.Interactive && !force && hasDisplayName {
-				displayName, err = cmdutil.InputPrompt("Enter the display name", org.DisplayName)
-				if err != nil {
-					return err
-				}
-				req.DisplayName = &displayName
-			}
-
 			if cmd.Flags().Changed("new-name") {
-				req.NewName = &newName
-				if !cmd.Flags().Changed("display-name") && org.DisplayName != "" {
-					ch.PrintfWarn("Warn: Changing org name without updating display name. Consider using --display-name to keep names consistent.\n")
-				}
-			} else if ch.Interactive && !force {
-				ok, err := confirmFieldChange("Org name", force)
-				if err != nil {
-					return err
-				}
-				if ok {
-					newName, err = cmdutil.InputPrompt("Enter new org name", org.Name)
+				ch.PrintfWarn("\nWarn: Changing org name will invalidate dashboard URLs.\n")
+				if !force {
+					ok, err := cmdutil.ConfirmPrompt("Do you want to continue?", "", false)
 					if err != nil {
 						return err
 					}
-					req.NewName = &newName
+					if !ok {
+						return fmt.Errorf("operation cancelled")
+					}
 				}
+				req.NewName = &newName
 			}
 
-			if !cmd.Flags().Changed("new-name") && !cmd.Flags().Changed("display-name") {
-				return fmt.Errorf("at least one of --new-name or --display-name flags must be provided")
+			if cmd.Flags().Changed("display-name") {
+				req.DisplayName = &displayName
 			}
 
+			// Update org
 			updatedOrg, err := client.UpdateOrganization(ctx, req)
 			if err != nil {
 				return err
 			}
 
-			ch.PrintfSuccess("Renamed organization\n")
-			if req.NewName != nil && *req.NewName != name {
+			// Print results
+			ch.PrintfSuccess("Updated organization\n")
+			if req.NewName != nil {
 				ch.Printf("Updated name: %s to %s\n", name, updatedOrg.Organization.Name)
 			}
-			if req.DisplayName != nil && *req.DisplayName != org.DisplayName {
+			if req.DisplayName != nil {
 				ch.Printf("Updated display name: %s to %s\n", org.DisplayName, updatedOrg.Organization.DisplayName)
 			}
 
 			ch.PrintOrgs([]*adminv1.Organization{updatedOrg.Organization}, "")
 
-			if newName != "" {
-				err = dotrill.SetDefaultOrg(newName)
-				if err != nil {
+			// Update default org if name changed
+			if req.NewName != nil {
+				if err := dotrill.SetDefaultOrg(*req.NewName); err != nil {
 					return err
 				}
 			}
@@ -116,18 +107,12 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 			return nil
 		},
 	}
+
 	renameCmd.Flags().SortFlags = false
-	renameCmd.Flags().StringVar(&name, "org", ch.Org, "Current Org Name")
-	renameCmd.Flags().StringVar(&newName, "new-name", "", "New Org Name")
-	renameCmd.Flags().StringVar(&displayName, "display-name", "", "Org Display Name")
-	renameCmd.Flags().BoolVar(&force, "force", false, "Force rename org without confirmation prompt")
+	renameCmd.Flags().StringVar(&name, "org", ch.Org, "Current org name")
+	renameCmd.Flags().StringVar(&newName, "new-name", "", "New org name")
+	renameCmd.Flags().StringVar(&displayName, "display-name", "", "New display name")
+	renameCmd.Flags().BoolVar(&force, "force", false, "Skip confirmation prompts")
 
 	return renameCmd
-}
-
-func confirmFieldChange(field string, force bool) (bool, error) {
-	if force {
-		return true, nil
-	}
-	return cmdutil.ConfirmPrompt(fmt.Sprintf("Do you want to update the %s", field), "", false)
 }
