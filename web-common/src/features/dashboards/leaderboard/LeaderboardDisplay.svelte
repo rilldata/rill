@@ -21,6 +21,9 @@
   export let comparisonTimeRange: V1TimeRange | undefined;
   export let timeControlsReady: boolean;
   export let activeMeasureName: string;
+  export let activeMeasureNames: string[];
+
+  $: console.log("LeaderboardDisplay activeMeasureNames: ", activeMeasureNames);
 
   const StateManagers = getStateManagers();
   const {
@@ -91,6 +94,7 @@
               isValidPercentOfTotal={$isValidPercentOfTotal}
               {metricsViewName}
               {activeMeasureName}
+              {activeMeasureNames}
               {whereFilter}
               {dimensionThresholdFilters}
               {instanceId}
