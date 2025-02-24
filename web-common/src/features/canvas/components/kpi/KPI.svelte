@@ -29,9 +29,11 @@
 
   const ctx = getCanvasStateManagers();
   const {
-    spec,
-    timeControls: { showTimeComparison, selectedComparisonTimeRange },
-  } = ctx.canvasEntity;
+    canvasEntity: {
+      spec,
+      timeControls: { showTimeComparison, selectedComparisonTimeRange },
+    },
+  } = ctx;
 
   let hoveredPoints: {
     interval: Interval<true>;
