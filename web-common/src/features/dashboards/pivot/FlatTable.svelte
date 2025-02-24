@@ -121,6 +121,7 @@
 <table
   role="presentation"
   style:width="{totalLength}px"
+  class:with-measure={measures.length > 0}
   on:click={modified({ shift: onCellCopy })}
 >
   <colgroup>
@@ -271,13 +272,13 @@
   }
 
   /* The totals row */
-  tbody > tr:nth-of-type(2) {
+  :global(.with-measure) tbody > tr:nth-of-type(2) {
     @apply bg-slate-50 sticky z-20 font-semibold;
     top: var(--total-header-height);
   }
 
   /* The totals row header */
-  tbody > tr:nth-of-type(2) > td {
+  :global(.with-measure) tbody > tr:nth-of-type(2) > td {
     @apply font-semibold;
   }
 
