@@ -26,6 +26,8 @@
   $: ({ dimension: rowsDimensions } = $rows);
 
   function updateColumn(e: CustomEvent<PivotChipData[]>) {
+    // Reset lastNestState when columns are updated
+    lastNestState.set(null);
     metricsExplorerStore.setPivotColumns($exploreName, e.detail);
   }
 
