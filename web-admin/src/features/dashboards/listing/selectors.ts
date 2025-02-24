@@ -83,16 +83,20 @@ export function useDashboardsV2(
   });
 }
 
+// Super naive heuristic for now.
 function getCanvasRefreshedOn(
   dashboard: V1Resource,
   allResources: Map<string, V1Resource>,
 ): string | undefined {
   if (!dashboard) return undefined;
 
+  // First, get the first referenced resource for the canvas
   const refResourceName = dashboard.meta.refs[0];
   const refResource = allResources.get(
     `${refResourceName?.kind}_${refResourceName?.name}`,
   );
+
+  // Second, get the refreshedOn from the referenced resource
   return (
     refResource?.model?.state.refreshedOn ||
     refResource?.source?.state.refreshedOn
@@ -105,12 +109,13 @@ function getExploreRefreshedOn(
 ): string | undefined {
   if (!explore) return undefined;
 
-  // 1st get the metrics view for the explore
+  // First, get the metrics view for the explore
   const exploreRefName = explore.meta.refs[0];
   const metricsView = allResources.get(
     `${exploreRefName?.kind}_${exploreRefName?.name}`,
   );
   if (!metricsView) return undefined;
 
+  // Second, get the refreshedOn from the metrics view
   return metricsView?.metricsView?.state?.modelRefreshedOn;
 }
