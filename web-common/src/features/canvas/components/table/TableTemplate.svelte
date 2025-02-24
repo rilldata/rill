@@ -2,6 +2,7 @@
   import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
   import type { TableSpec } from "@rilldata/web-common/features/canvas/components/table";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
   import { createPivotDataStore } from "@rilldata/web-common/features/dashboards/pivot/pivot-data-store";
   import PivotEmpty from "@rilldata/web-common/features/dashboards/pivot/PivotEmpty.svelte";
   import PivotError from "@rilldata/web-common/features/dashboards/pivot/PivotError.svelte";
@@ -15,10 +16,11 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
-  import { readable, writable } from "svelte/store";
+  import { readable, writable, type Readable } from "svelte/store";
   import { getTableConfig, validateTableSchema } from "./selector";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
+  export let timeAndFilterStore: Readable<TimeAndFilterStore>;
 
   const ctx = getCanvasStateManagers();
   let pivotDataStore: PivotDataStore;
@@ -67,7 +69,12 @@
     activeCell: null,
   });
 
-  $: pivotConfig = getTableConfig(ctx, tableSpec, $pivotState);
+  $: pivotConfig = getTableConfig(
+    ctx,
+    tableSpec,
+    $pivotState,
+    timeAndFilterStore,
+  );
 
   $: if ($schema.isValid && tableSpec.metrics_view) {
     const cacheKey = tableSpec.metrics_view;

@@ -212,6 +212,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 			s.logger.Named("billing").Info("upgraded to team plan",
 				zap.String("org_id", org.ID),
 				zap.String("org_name", org.Name),
+				zap.String("user_email", org.BillingEmail),
 				zap.String("plan_id", sub.Plan.ID),
 				zap.String("plan_name", sub.Plan.Name),
 			)
@@ -430,6 +431,14 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 			PlanName:         sub.Plan.DisplayName,
 			BillingStartDate: sub.CurrentBillingCycleEndDate,
 		})
+
+		s.logger.Named("billing").Info("upgraded to team plan",
+			zap.String("org_id", org.ID),
+			zap.String("org_name", org.Name),
+			zap.String("user_email", org.BillingEmail),
+			zap.String("plan_id", sub.Plan.ID),
+			zap.String("plan_name", sub.Plan.Name),
+		)
 	} else {
 		err = s.admin.Email.SendSubscriptionRenewed(&email.SubscriptionRenewed{
 			ToEmail:  org.BillingEmail,

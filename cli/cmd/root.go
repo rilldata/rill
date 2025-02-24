@@ -159,20 +159,20 @@ func runCmd(ctx context.Context, ver cmdutil.Version) error {
 	// Internal commands
 	cmdutil.AddGroup(rootCmd, "Internal", !ch.IsDev(),
 		// These commands are hidden from the help menu
+		sudo.SudoCmd(ch),
+		devtool.DevtoolCmd(ch),
+		verifyInstallCmd(ch),
 		admin.AdminCmd(ch),
 		runtime.RuntimeCmd(ch),
-		devtool.DevtoolCmd(ch),
-		sudo.SudoCmd(ch),
-		verifyInstallCmd(ch),
 	)
 
 	// Additional sub-commands
 	rootCmd.AddCommand(
-		completionCmd,
-		docs.DocsCmd(ch, rootCmd),
 		versioncmd.VersionCmd(),
 		upgrade.UpgradeCmd(ch),
 		uninstall.UninstallCmd(ch),
+		docs.DocsCmd(ch, rootCmd),
+		completionCmd(ch),
 	)
 
 	return rootCmd.ExecuteContext(ctx)

@@ -3,7 +3,7 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
-  import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
+  import SettingsSlider from "@rilldata/web-common/components/icons/SettingsSlider.svelte";
   import type {
     ChartSortDirection,
     FieldConfig,
@@ -29,7 +29,7 @@
 <DropdownMenu.Root bind:open={isDropdownOpen}>
   <DropdownMenu.Trigger class="flex-none">
     <IconButton rounded active={isDropdownOpen}>
-      <ThreeDot size="16px" />
+      <SettingsSlider size="14px" />
     </IconButton>
   </DropdownMenu.Trigger>
   <DropdownMenu.Content align="start" class="w-[280px] p-0">
