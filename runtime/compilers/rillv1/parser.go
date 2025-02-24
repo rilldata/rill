@@ -419,7 +419,10 @@ func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Di
 
 		// If path is .env, check if it was modified against the stored version in the map
 		if isDotEnv {
-			p.parseAndMergeEnvironmentVariables(ctx, path)
+			err := p.parseAndMergeEnvironmentVariables(ctx, path)
+			if err != nil {
+				p.addParseError(path, err, false)
+			}
 		}
 
 		// If a file exists at path, add it to the parse list
