@@ -150,9 +150,10 @@ export function getMultipleSort(
 
   return [
     ...measureNames.map((name) => ({
-      desc: !ascending,
+      desc: !ascending, // Same direction for all measures
       name: timeComparison ? getApiSortName(name, type) : name,
     })),
+    // Dimension name is always sorted in ascending order
     {
       desc: false,
       name: dimensionName,
