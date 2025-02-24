@@ -51,6 +51,6 @@ timezone_modifier => "{" _ [^}]:+ _ "}" {% ([, , tz]) => tz.join("") %}
 
 sign => [+-] {% id %}
 
-num => [0-9]:+ {% (args) => Number(args.join("")) %}
+num => [0-9]:+ {% ([args]) => Number(args.join("")) %}
 
 grain => [sSmhHdDwWqQMyY] {% id %}

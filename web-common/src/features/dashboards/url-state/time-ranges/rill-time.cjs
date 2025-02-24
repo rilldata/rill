@@ -79,7 +79,7 @@ let ParserRules = [
     {"name": "sign", "symbols": [/[+-]/], "postprocess": id},
     {"name": "num$ebnf$1", "symbols": [/[0-9]/]},
     {"name": "num$ebnf$1", "symbols": ["num$ebnf$1", /[0-9]/], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
-    {"name": "num", "symbols": ["num$ebnf$1"], "postprocess": (args) => Number(args.join(""))},
+    {"name": "num", "symbols": ["num$ebnf$1"], "postprocess": ([args]) => Number(args.join(""))},
     {"name": "grain", "symbols": [/[sSmhHdDwWqQMyY]/], "postprocess": id}
 ];
 let ParserStart = "rill_time";

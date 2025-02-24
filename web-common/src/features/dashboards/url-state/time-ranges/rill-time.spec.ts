@@ -169,6 +169,13 @@ describe("rill time", () => {
         V1TimeGrain.TIME_GRAIN_WEEK,
         V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
       ],
+
+      [
+        "-24h",
+        "Last 24 hours, incomplete",
+        V1TimeGrain.TIME_GRAIN_HOUR,
+        V1TimeGrain.TIME_GRAIN_HOUR,
+      ],
     ];
 
     const compiledGrammar = nearley.Grammar.fromCompiled(grammar);

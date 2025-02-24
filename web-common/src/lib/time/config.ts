@@ -391,7 +391,7 @@ export const PREVIOUS_COMPLETE_DATE_RANGES: TimeRangeMetaSet = {
   },
   [TimeRangePreset.PREVIOUS_MONTH_COMPLETE]: {
     label: "Previous month",
-    rillSyntax: "-1M, OM",
+    rillSyntax: "-1M, 0M",
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.CONTIGUOUS,
     start: {
@@ -419,7 +419,7 @@ export const PREVIOUS_COMPLETE_DATE_RANGES: TimeRangeMetaSet = {
   },
   [TimeRangePreset.PREVIOUS_QUARTER_COMPLETE]: {
     label: "Previous quarter",
-    rillSyntax: "-1Q, OQ",
+    rillSyntax: "-1Q, 0Q",
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.CONTIGUOUS,
     start: {
@@ -447,7 +447,7 @@ export const PREVIOUS_COMPLETE_DATE_RANGES: TimeRangeMetaSet = {
   },
   [TimeRangePreset.PREVIOUS_YEAR_COMPLETE]: {
     label: "Previous year",
-    rillSyntax: "-1Y, OY",
+    rillSyntax: "-1Y, 0Y",
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.CONTIGUOUS,
     start: {
