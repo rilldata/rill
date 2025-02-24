@@ -27,8 +27,8 @@
   $: isTrial = !!$categorisedIssues.data?.trial;
   // ended subscription will have a cancelled issue associated with it
   $: subHasEnded = !!$categorisedIssues.data?.cancelled;
-  $: subIsTeamPlan = plan && isTeamPlan(plan.planType);
-  $: subIsManagedPlan = plan && isManagedPlan(plan.planType);
+  $: subIsTeamPlan = plan && isTeamPlan(plan.name);
+  $: subIsManagedPlan = plan && isManagedPlan(plan.name);
   $: subIsEnterprisePlan =
     plan && !isTrial && !subIsTeamPlan && !subIsManagedPlan;
 </script>

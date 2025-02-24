@@ -4684,8 +4684,8 @@ definitions:
         type: string
       billingEmail:
         type: string
-      billingPlanType:
-        $ref: '#/definitions/v1BillingPlanType'
+      billingPlanName:
+        type: string
       billingPlanDisplayName:
         type: string
       createdOn:

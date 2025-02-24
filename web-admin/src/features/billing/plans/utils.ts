@@ -1,4 +1,3 @@
-import { V1BillingPlanType } from "@rilldata/web-admin/client";
 import { formatMemorySize } from "@rilldata/web-common/lib/number-formatting/memory-size";
 import { DateTime } from "luxon";
 import { writable } from "svelte/store";
@@ -18,21 +17,25 @@ export function formatUsageVsQuota(
   return `${formattedUsage} of ${formattedQuota} (${percent}%)`;
 }
 
-export function isTrialPlan(planType: V1BillingPlanType) {
-  return planType === V1BillingPlanType.BILLING_PLAN_TYPE_TRIAL;
+// Mapping of externalID/planName to a type.
+// Used in deciding banner message and to show different billing module in frontend.
+// Make sure to update admin/billing/orb.go::getPlanType if this is updated
+
+export function isTrialPlan(planName: string) {
+  return planName === "free_trial";
 }
 
-export function isTeamPlan(planType: V1BillingPlanType) {
-  return planType === V1BillingPlanType.BILLING_PLAN_TYPE_TEAM;
+export function isTeamPlan(planName: string) {
+  return planName === "team";
 }
 
-export function isManagedPlan(planType: V1BillingPlanType) {
-  return planType === V1BillingPlanType.BILLING_PLAN_TYPE_MANAGED;
+export function isManagedPlan(planName: string) {
+  return planName === "managed";
 }
 
-export function isEnterprisePlan(planType: V1BillingPlanType) {
+export function isEnterprisePlan(planName: string) {
   return (
-    !isTrialPlan(planType) && !isTeamPlan(planType) && !isManagedPlan(planType)
+    !isTrialPlan(planName) && !isTeamPlan(planName) && !isManagedPlan(planName)
   );
 }
 

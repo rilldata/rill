@@ -10,7 +10,7 @@ export const load: PageLoad = async ({ params: { organization }, parent }) => {
   }
 
   // Orgs on an Enterprise Plan should not see this page
-  if (subscription?.plan && isEnterprisePlan(subscription.plan.planType)) {
+  if (subscription?.plan && isEnterprisePlan(subscription.plan.name)) {
     throw error(404, "Page not found");
   }
 };

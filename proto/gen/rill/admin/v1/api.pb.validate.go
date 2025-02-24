@@ -33270,8 +33270,8 @@ func (m *Organization) validate(all bool) error {
 		}
 	}
 
-	if m.BillingPlanType != nil {
-		// no validation rules for BillingPlanType
+	if m.BillingPlanName != nil {
+		// no validation rules for BillingPlanName
 	}
 
 	if m.BillingPlanDisplayName != nil {

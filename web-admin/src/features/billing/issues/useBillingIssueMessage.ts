@@ -1,7 +1,4 @@
-import {
-  createAdminServiceGetBillingSubscription,
-  createAdminServiceGetOrganization,
-} from "@rilldata/web-admin/client";
+import { createAdminServiceGetOrganization } from "@rilldata/web-admin/client";
 import { getMessageForPaymentIssues } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
 import { getMessageForCancelledIssue } from "@rilldata/web-admin/features/billing/issues/getMessageForCancelledIssue";
 import { getMessageForTrialPlan } from "@rilldata/web-admin/features/billing/issues/getMessageForTrialPlan";
@@ -82,10 +79,10 @@ export function useBillingIssueMessage(
 
       if (
         categorisedIssuesResp.data?.payment.length &&
-        orgResp.data?.organization?.billingPlanType
+        orgResp.data?.organization?.billingPlanName
       ) {
         const paymentIssue = getMessageForPaymentIssues(
-          !isTeamPlan(orgResp.data.organization.billingPlanType),
+          !isTeamPlan(orgResp.data.organization.billingPlanName),
           categorisedIssuesResp.data.payment,
         );
         // if we do not have any payment related message to show, skip it
