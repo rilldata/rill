@@ -41,10 +41,10 @@ func NewDependencyError(err error) error {
 	if err == nil {
 		return nil
 	}
-	return &dependencyError{err: err}
+	return dependencyError{err: err}
 }
 
-func (d *dependencyError) Error() string {
+func (d dependencyError) Error() string {
 	return fmt.Sprintf("dependency error: %v", d.err)
 }
 
