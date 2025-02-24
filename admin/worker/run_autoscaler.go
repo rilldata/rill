@@ -35,7 +35,16 @@ func (w *Worker) runAutoscaler(ctx context.Context) error {
 
 	for _, rec := range recs {
 		targetProject, err := w.admin.DB.FindProject(ctx, rec.ProjectID)
+		if err != nil {
+			w.logger.Debug("failed to find project", zap.String("project_name", targetProject.Name), zap.Error(err))
+			continue
+		}
+
 		projectOrg, err := w.admin.DB.FindOrganization(ctx, targetProject.OrganizationID)
+		if err != nil {
+			w.logger.Error("failed to autoscale: unable to find org for the project", zap.String("organization_name", projectOrg.Name), zap.String("project_name", targetProject.Name), zap.Error(err))
+			continue
+		}
 
 		// if UpdatedOn is too old, the recommendation is stale and may not be trusted.
 		if time.Since(rec.UpdatedOn) >= legacyRecommendTime {
@@ -45,16 +54,6 @@ func (w *Worker) runAutoscaler(ctx context.Context) error {
 
 		if rec.RecommendedSlots <= 0 {
 			w.logger.Debug("skipping autoscaler: the recommend slot is <= 0", zap.String("project_name", targetProject.Name), zap.Int("recommended_slots", rec.RecommendedSlots))
-			continue
-		}
-
-		if err != nil {
-			w.logger.Debug("failed to find project", zap.String("project_name", targetProject.Name), zap.Error(err))
-			continue
-		}
-
-		if err != nil {
-			w.logger.Error("failed to autoscale: unable to find org for the project", zap.String("organization_name", projectOrg.Name), zap.String("project_name", targetProject.Name), zap.Error(err))
 			continue
 		}
 
