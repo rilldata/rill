@@ -26,9 +26,6 @@
   export let toggleComparisonDimension: (
     dimensionName: string | undefined,
   ) => void;
-
-  $: console.log("isTimeComparisonActive: ", isTimeComparisonActive);
-  $: console.log("isValidPercentOfTotal: ", isValidPercentOfTotal);
 </script>
 
 <thead>
