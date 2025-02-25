@@ -77,7 +77,7 @@
       {#if hasUnsavedChanges}
         Save your changes to refresh
       {:else}
-        Refresh source
+        Refresh model
       {/if}
     </TooltipContent>
   </Tooltip>
