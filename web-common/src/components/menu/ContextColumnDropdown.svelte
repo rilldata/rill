@@ -21,8 +21,6 @@
   // TODO: look into the relationship between context column and all measures
   // TODO: will we have context columns synced with the url state?
 
-  // TODO: icons
-  // LeaderboardHeader
   $: options = [
     ...(isTimeComparisonActive
       ? [
@@ -47,6 +45,10 @@
       : []),
   ];
 
+  function getLabelFromValue(value: LeaderboardContextColumn) {
+    return options.find((option) => option.value === value)?.label;
+  }
+
   function toggleContextColumn(name: string) {
     if (!name) return;
     onContextColumnChange(name as LeaderboardContextColumn);
@@ -54,7 +56,7 @@
 
   $: withText =
     selectedSortType !== LeaderboardContextColumn.HIDDEN
-      ? selectedSortType
+      ? getLabelFromValue(selectedSortType)
       : "no context columns";
 </script>
 
@@ -93,13 +95,18 @@
               onCheckedChange={() => toggleContextColumn(option.value)}
             >
               <div class="flex items-center gap-x-1">
-                {#if option.value === LeaderboardContextColumn.DELTA_ABSOLUTE}
-                  <Delta />
-                {:else if option.value === LeaderboardContextColumn.DELTA_PERCENT}
-                  <Delta /> %
-                {:else if option.value === LeaderboardContextColumn.PERCENT}
-                  <PieChart /> %
-                {/if}
+                <div class="flex items-center justify-start">
+                  {#if option.value === LeaderboardContextColumn.DELTA_ABSOLUTE}
+                    <Delta />
+                    <div class="w-4" />
+                  {:else if option.value === LeaderboardContextColumn.DELTA_PERCENT}
+                    <Delta />
+                    <div class="w-4">%</div>
+                  {:else if option.value === LeaderboardContextColumn.PERCENT}
+                    <PieChart />
+                    <div class="w-4">%</div>
+                  {/if}
+                </div>
                 {option.label}
                 {#if option.description}
                   <span class="ui-copy-muted text-[11px] ml-1">
