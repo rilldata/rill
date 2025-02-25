@@ -10,17 +10,16 @@
 
   export let tooltipText: string;
   export let searchText = "";
-  export let measures: MetricsViewSpecMeasureV2[];
-  export let firstMeasure: MetricsViewSpecMeasureV2;
+  export let options: MetricsViewSpecMeasureV2[];
   export let selectedMeasureNames: string[] = [];
   export let onToggle: (name: string) => void;
-  export let onSelectAll: () => void;
+  // export let onSelectAll: () => void;
 
   let active = false;
   let disabled = false;
 
   function filterMeasures(searchText: string) {
-    return measures.filter((item) =>
+    return options.filter((item) =>
       ((item.displayName || item.name) ?? "")
         .toLowerCase()
         .includes(searchText.toLowerCase()),
@@ -33,7 +32,7 @@
   }
 
   function getMeasureDisplayText(measureName: string) {
-    const measure = measures.find((m) => m.name === measureName);
+    const measure = options.find((m) => m.name === measureName);
     return measure?.displayName || measure?.name || measureName;
   }
 
@@ -44,7 +43,7 @@
       ? `${selectedMeasureNames.length} context columns`
       : getMeasureDisplayText(selectedMeasureNames[0]);
 
-  $: allSelected = selectedMeasureNames.length === measures.length;
+  $: allSelected = selectedMeasureNames.length === options.length;
 </script>
 
 <DropdownMenu.Root
@@ -63,12 +62,7 @@
       location="bottom"
       suppress={active}
     >
-      <Button
-        builders={[builder]}
-        type="text"
-        label={firstMeasure.displayName || firstMeasure.name}
-        on:click
-      >
+      <Button builders={[builder]} type="text" on:click>
         <div
           class="flex items-center gap-x-0.5 px-1 text-gray-700 hover:text-inherit"
         >
