@@ -8,3 +8,15 @@ export const setLeaderboardMeasureNames = (
   dashboard.leaderboardMeasureNames = names;
   resetAllContextColumnWidths(dashboard.contextColumnWidths);
 };
+
+export const toggleLeaderboardMeasureNames = (
+  { dashboard }: DashboardMutables,
+  allMeasureNames: string[],
+) => {
+  const allSelected =
+    allMeasureNames.length === dashboard.leaderboardMeasureNames.length;
+  dashboard.leaderboardMeasureNames = allSelected
+    ? [allMeasureNames[0]]
+    : allMeasureNames;
+  resetAllContextColumnWidths(dashboard.contextColumnWidths);
+};
