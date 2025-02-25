@@ -129,6 +129,24 @@
     manualClose = true;
     isOpen = !isOpen;
   }
+
+  function getExportQuery() {
+    return {
+      metricsViewRowsRequest: {
+        instanceId: get(runtime).instanceId,
+        metricsViewName,
+        timeStart: timeRange.start,
+        timeEnd: timeRange.end,
+        where: sanitiseExpression(
+          mergeDimensionAndMeasureFilters(
+            $exploreState.whereFilter,
+            $exploreState.dimensionThresholdFilters,
+          ),
+          undefined,
+        ),
+      },
+    };
+  }
 </script>
 
 <div
@@ -157,26 +175,7 @@
     </button>
     {#if $exports}
       <div class="ml-auto">
-        <ExportMenu
-          label="Export model data"
-          getQuery={() => {
-            return {
-              metricsViewRowsRequest: {
-                instanceId: get(runtime).instanceId,
-                metricsViewName,
-                timeStart: timeRange.start,
-                timeEnd: timeRange.end,
-                where: sanitiseExpression(
-                  mergeDimensionAndMeasureFilters(
-                    $exploreState.whereFilter,
-                    $exploreState.dimensionThresholdFilters,
-                  ),
-                  undefined,
-                ),
-              },
-            };
-          }}
-        />
+        <ExportMenu label="Export model data" getQuery={getExportQuery} />
       </div>
     {/if}
   </div>

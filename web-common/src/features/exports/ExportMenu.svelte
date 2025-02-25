@@ -20,7 +20,7 @@
   export let workspace = false;
   export let label: string;
   export let includeScheduledReport = false;
-  export let getQuery: (isScheduled: boolean) => V1Query | undefined; // In the future, `V1Query` should not change depending on whether the query is scheduled or not
+  export let getQuery: (isScheduled: boolean) => V1Query | undefined;
   export let exploreName: string | undefined = undefined;
   export let metricsViewProto: string | undefined = undefined;
 

@@ -5,8 +5,6 @@ import { sanitiseExpression } from "../dashboards/stores/filter-utils";
 import type { DimensionThresholdFilter } from "../dashboards/stores/metrics-explorer-entity";
 
 /**
- * Builds the where param for dimension table and TDD exports.
- *
  * If there's input in the search field, then all search results will be included in the export.
  * Otherwise, use the dashboard's current where filter.
  */

@@ -36,9 +36,6 @@ export const PreviousCompleteRangeMap: Partial<
   },
 };
 
-/**
- * Maps selectedTimeRange to V1TimeRange.
- */
 export function mapSelectedTimeRangeToV1TimeRange(
   timeControlState: TimeControlState,
   timeZone: string,
@@ -77,9 +74,6 @@ export function mapSelectedTimeRangeToV1TimeRange(
   return timeRange;
 }
 
-/**
- * Maps selectedComparisonTimeRange to V1TimeRange if time comparison is enabled.
- */
 export function mapSelectedComparisonTimeRangeToV1TimeRange(
   timeControlState: TimeControlState,
   timeRange: V1TimeRange | undefined,
