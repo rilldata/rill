@@ -54,7 +54,6 @@ import type {
   V1AddOrganizationMemberUserResponse,
   AdminServiceAddOrganizationMemberUserBody,
   V1RemoveOrganizationMemberUserResponse,
-  AdminServiceRemoveOrganizationMemberUserParams,
   V1SetOrganizationMemberUserRoleResponse,
   AdminServiceSetOrganizationMemberUserRoleBodyBody,
   V1LeaveOrganizationResponse,
@@ -1638,12 +1637,10 @@ export const createAdminServiceAddOrganizationMemberUser = <
 export const adminServiceRemoveOrganizationMemberUser = (
   organization: string,
   email: string,
-  params?: AdminServiceRemoveOrganizationMemberUserParams,
 ) => {
   return httpClient<V1RemoveOrganizationMemberUserResponse>({
     url: `/v1/organizations/${organization}/members/${email}`,
     method: "delete",
-    params,
   });
 };
 
@@ -1661,11 +1658,7 @@ export const createAdminServiceRemoveOrganizationMemberUser = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof adminServiceRemoveOrganizationMemberUser>>,
     TError,
-    {
-      organization: string;
-      email: string;
-      params?: AdminServiceRemoveOrganizationMemberUserParams;
-    },
+    { organization: string; email: string },
     TContext
   >;
 }) => {
@@ -1673,29 +1666,17 @@ export const createAdminServiceRemoveOrganizationMemberUser = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof adminServiceRemoveOrganizationMemberUser>>,
-    {
-      organization: string;
-      email: string;
-      params?: AdminServiceRemoveOrganizationMemberUserParams;
-    }
+    { organization: string; email: string }
   > = (props) => {
-    const { organization, email, params } = props ?? {};
+    const { organization, email } = props ?? {};
 
-    return adminServiceRemoveOrganizationMemberUser(
-      organization,
-      email,
-      params,
-    );
+    return adminServiceRemoveOrganizationMemberUser(organization, email);
   };
 
   return createMutation<
     Awaited<ReturnType<typeof adminServiceRemoveOrganizationMemberUser>>,
     TError,
-    {
-      organization: string;
-      email: string;
-      params?: AdminServiceRemoveOrganizationMemberUserParams;
-    },
+    { organization: string; email: string },
     TContext
   >(mutationFn, mutationOptions);
 };

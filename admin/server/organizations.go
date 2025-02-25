@@ -481,7 +481,6 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 func (s *Server) RemoveOrganizationMemberUser(ctx context.Context, req *adminv1.RemoveOrganizationMemberUserRequest) (*adminv1.RemoveOrganizationMemberUserResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
-		attribute.Bool("args.keep_project_roles", req.KeepProjectRoles),
 	)
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
@@ -558,12 +557,10 @@ func (s *Server) RemoveOrganizationMemberUser(ctx context.Context, req *adminv1.
 		return nil, err
 	}
 
-	// delete from projects if KeepProjectRoles flag is set
-	if !req.KeepProjectRoles {
-		err = s.admin.DB.DeleteAllProjectMemberUserForOrganization(ctx, org.ID, user.ID)
-		if err != nil {
-			return nil, err
-		}
+	// delete from all projects in the org
+	err = s.admin.DB.DeleteAllProjectMemberUserForOrganization(ctx, org.ID, user.ID)
+	if err != nil {
+		return nil, err
 	}
 
 	err = tx.Commit()
