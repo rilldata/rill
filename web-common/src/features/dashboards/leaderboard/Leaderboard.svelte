@@ -36,7 +36,6 @@
   import {
     cleanUpComparisonValue,
     compareLeaderboardValues,
-    getSort,
     getMultipleSort,
     prepareLeaderboardItemData,
   } from "./leaderboard-utils";
@@ -154,8 +153,6 @@
     dimensionName,
     !!comparisonTimeRange,
   );
-
-  // $: console.log("Leaderboard getSort", sort);
 
   $: sortedQuery = createQueryServiceMetricsViewAggregation(
     instanceId,
