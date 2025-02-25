@@ -333,6 +333,7 @@ export type QueryServiceMetricsViewAggregationBody = {
   priority?: number;
   filter?: V1MetricsViewFilter;
   exact?: boolean;
+  fillMissing?: boolean;
 };
 
 export type QueryServiceExportBody = {
@@ -1599,6 +1600,7 @@ export interface V1MetricsViewAggregationRequest {
   priority?: number;
   filter?: V1MetricsViewFilter;
   exact?: boolean;
+  fillMissing?: boolean;
 }
 
 export interface V1MetricsViewAggregationMeasureComputeURI {
@@ -2759,6 +2761,7 @@ export interface MetricsViewSpecMeasureV2 {
   formatD3?: string;
   formatD3Locale?: MetricsViewSpecMeasureV2FormatD3Locale;
   validPercentOfTotal?: boolean;
+  treatNullsAs?: string;
 }
 
 /**
