@@ -290,7 +290,7 @@ func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*
 		zap.String("org_name", org.Name),
 		zap.String("org_id", org.ID),
 		zap.String("trial_end_date", sub.TrialEndDate.String()),
-		zap.String("email", userEmail),
+		zap.String("user_email", userEmail),
 	)
 
 	org, err = s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{

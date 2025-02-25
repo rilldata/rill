@@ -434,24 +434,26 @@ func (s *Service) IssueRuntimeManagementToken(aud string) (string, error) {
 
 func (s *Service) NewDeploymentAnnotations(org *database.Organization, proj *database.Project) DeploymentAnnotations {
 	return DeploymentAnnotations{
-		orgID:           org.ID,
-		orgName:         org.Name,
-		projID:          proj.ID,
-		projName:        proj.Name,
-		projProdSlots:   fmt.Sprint(proj.ProdSlots),
-		projProvisioner: proj.Provisioner,
-		projAnnotations: proj.Annotations,
+		orgID:              org.ID,
+		orgName:            org.Name,
+		orgBillingPlanName: *org.BillingPlanName,
+		projID:             proj.ID,
+		projName:           proj.Name,
+		projProdSlots:      fmt.Sprint(proj.ProdSlots),
+		projProvisioner:    proj.Provisioner,
+		projAnnotations:    proj.Annotations,
 	}
 }
 
 type DeploymentAnnotations struct {
-	orgID           string
-	orgName         string
-	projID          string
-	projName        string
-	projProdSlots   string
-	projProvisioner string
-	projAnnotations map[string]string
+	orgID              string
+	orgName            string
+	orgBillingPlanName string
+	projID             string
+	projName           string
+	projProdSlots      string
+	projProvisioner    string
+	projAnnotations    map[string]string
 }
 
 func (da *DeploymentAnnotations) ToMap() map[string]string {
@@ -461,6 +463,7 @@ func (da *DeploymentAnnotations) ToMap() map[string]string {
 	}
 	res["organization_id"] = da.orgID
 	res["organization_name"] = da.orgName
+	res["organization_plan"] = da.orgBillingPlanName
 	res["project_id"] = da.projID
 	res["project_name"] = da.projName
 	res["project_prod_slots"] = da.projProdSlots
