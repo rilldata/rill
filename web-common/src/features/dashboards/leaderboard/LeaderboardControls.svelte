@@ -21,7 +21,6 @@
     actions: {
       dimensions: { toggleDimensionVisibility },
       contextCol: { setContextColumn },
-      setLeaderboardMeasureNames,
       toggleLeaderboardMeasureNames,
     },
   } = getStateManagers();
