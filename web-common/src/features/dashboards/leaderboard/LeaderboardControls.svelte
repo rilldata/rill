@@ -10,7 +10,12 @@
 
   const {
     selectors: {
-      measures: { leaderboardMeasureNames, getMeasureByName, visibleMeasures },
+      measures: {
+        leaderboardMeasureNames,
+        getMeasureByName,
+        visibleMeasures,
+        allMeasures,
+      },
       dimensions: { visibleDimensions, allDimensions },
     },
     actions: {
@@ -19,8 +24,6 @@
       setLeaderboardMeasureNames,
     },
   } = getStateManagers();
-
-  // $: console.log("leaderboardMeasureNames: ", $leaderboardMeasureNames);
 
   $: measures = getSimpleMeasures($visibleMeasures);
 
@@ -41,6 +44,7 @@
   $: allDimensionNames = $allDimensions
     .map(({ name }) => name)
     .filter(isDefined);
+  $: allMeasureNames = $allMeasures.map(({ name }) => name).filter(isDefined);
 
   // if the percent of total is currently being shown,
   // but it is not valid for this measure, then turn it off
@@ -54,6 +58,14 @@
 
   function isDefined(value: string | undefined): value is string {
     return value !== undefined;
+  }
+
+  function toggleLeaderboardMeasureNames() {
+    const allSelected =
+      allMeasureNames.length === $leaderboardMeasureNames.length;
+    setLeaderboardMeasureNames(
+      allSelected ? [allMeasureNames[0]] : allMeasureNames,
+    );
   }
 </script>
 
@@ -84,6 +96,9 @@
         selectedMeasureNames={$leaderboardMeasureNames}
         onSelect={(names) => {
           setLeaderboardMeasureNames(names);
+        }}
+        onToggleSelectAll={() => {
+          toggleLeaderboardMeasureNames();
         }}
       />
     </div>

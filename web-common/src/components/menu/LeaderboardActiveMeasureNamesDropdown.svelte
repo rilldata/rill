@@ -15,6 +15,7 @@
   export let firstMeasure: MetricsViewSpecMeasureV2;
   export let selectedMeasureNames: string[] = [];
   export let onSelect: (names: string[]) => void;
+  export let onToggleSelectAll: () => void;
 
   let active = false;
 
@@ -50,6 +51,8 @@
     selectedMeasureNames.length > 1
       ? `${selectedMeasureNames.length} measures`
       : getMeasureDisplayText(selectedMeasureNames[0]);
+
+  $: allSelected = selectedMeasureNames.length === measures.length;
 </script>
 
 <DropdownMenu.Root
@@ -88,12 +91,11 @@
         </div>
       </Button>
 
-      <!-- TODO: select or deselect all when internal state supports multi-select -->
       <DropdownMenu.Content
         align="start"
-        class="flex flex-col max-h-96 w-72 overflow-hidden"
+        class="flex flex-col max-h-96 w-72 overflow-hidden p-0"
       >
-        <div class="pb-1">
+        <div class="px-3 pt-3 pb-1">
           <Search
             bind:value={searchText}
             label="Search measures"
@@ -101,31 +103,45 @@
           />
         </div>
 
-        {#if filteredMeasures.length}
-          {#each filteredMeasures as measure (measure.name)}
-            <DropdownMenu.CheckboxItem
-              class="text-[12px]"
-              checked={measure.name
-                ? selectedMeasureNames.includes(measure.name)
-                : false}
-              onCheckedChange={() => {
-                if (measure.name) toggleMeasure(measure.name);
-              }}
-            >
-              <div class="flex flex-col">
-                <div>
-                  {measure.displayName || measure.name}
-                </div>
+        <div class="px-1 pb-1">
+          {#if filteredMeasures.length}
+            {#each filteredMeasures as measure (measure.name)}
+              <DropdownMenu.CheckboxItem
+                class="text-[12px]"
+                checked={measure.name
+                  ? selectedMeasureNames.includes(measure.name)
+                  : false}
+                onCheckedChange={() => {
+                  if (measure.name) toggleMeasure(measure.name);
+                }}
+              >
+                <div class="flex flex-col">
+                  <div>
+                    {measure.displayName || measure.name}
+                  </div>
 
-                <p class="ui-copy-muted" style:font-size="11px">
-                  {measure.description}
-                </p>
-              </div>
-            </DropdownMenu.CheckboxItem>
-          {/each}
-        {:else}
-          <div class="ui-copy-disabled text-center p-2 w-full">no results</div>
-        {/if}
+                  <p class="ui-copy-muted" style:font-size="11px">
+                    {measure.description}
+                  </p>
+                </div>
+              </DropdownMenu.CheckboxItem>
+            {/each}
+          {:else}
+            <div class="ui-copy-disabled text-center p-2 w-full">
+              no results
+            </div>
+          {/if}
+        </div>
+
+        <footer>
+          <Button on:click={onToggleSelectAll} type="plain">
+            {#if allSelected}
+              Deselect all
+            {:else}
+              Select all
+            {/if}
+          </Button>
+        </footer>
       </DropdownMenu.Content>
 
       <div slot="tooltip-content" transition:fly={{ duration: 300, y: 4 }}>
@@ -136,3 +152,18 @@
     </Tooltip>
   </DropdownMenu.Trigger>
 </DropdownMenu.Root>
+
+<style lang="postcss">
+  footer {
+    height: 42px;
+    @apply border-t border-slate-300;
+    @apply bg-slate-100;
+    @apply flex flex-row flex-none items-center justify-end;
+    @apply gap-x-2 p-2 px-3.5;
+  }
+
+  footer:is(.dark) {
+    @apply bg-gray-800;
+    @apply border-gray-700;
+  }
+</style>
