@@ -46,10 +46,10 @@ type DB interface {
 	// CRUD APIs
 
 	// CreateTableAsSelect creates a new table by name from the results of the given SQL query.
-	CreateTableAsSelect(ctx context.Context, name string, sql string, opts *CreateTableOptions) (*Result, error)
+	CreateTableAsSelect(ctx context.Context, name string, sql string, opts *CreateTableOptions) (*TableWriteMetrics, error)
 
 	// MutateTable allows mutating a table in the database by calling the mutateFn.
-	MutateTable(ctx context.Context, name string, mutateFn func(ctx context.Context, conn *sqlx.Conn) error) (*Result, error)
+	MutateTable(ctx context.Context, name string, mutateFn func(ctx context.Context, conn *sqlx.Conn) error) (*TableWriteMetrics, error)
 
 	// DropTable removes a table from the database.
 	DropTable(ctx context.Context, name string) error
@@ -164,10 +164,10 @@ type CreateTableOptions struct {
 	AfterCreateFn func(ctx context.Context, conn *sqlx.Conn) error
 }
 
-// Result summarizes executed CRUD operation.
-type Result struct {
-	// ExecutionDuration records the time taken to execute all user queries.
-	ExecutionDuration time.Duration
+// TableWriteMetrics summarizes executed CRUD operation.
+type TableWriteMetrics struct {
+	// Duration records the time taken to execute all user queries.
+	Duration time.Duration
 }
 
 // NewDB creates a new DB instance.
@@ -334,7 +334,7 @@ func (d *db) AcquireReadConnection(ctx context.Context) (*sqlx.Conn, func() erro
 	return conn, release, nil
 }
 
-func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *CreateTableOptions) (res *Result, createErr error) {
+func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *CreateTableOptions) (res *TableWriteMetrics, createErr error) {
 	d.logger.Debug("create: create table", zap.String("name", name), zap.Bool("view", opts.View), observability.ZapCtx(ctx))
 	err := d.writeSem.Acquire(ctx, 1)
 	if err != nil {
@@ -361,10 +361,7 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 		Version:        newVersion,
 		CreatedVersion: newVersion,
 	}
-	var (
-		dsn         string
-		localDBPath string
-	)
+	var dsn string
 	if opts.View {
 		dsn = ""
 		newMeta.SQL = query
@@ -377,8 +374,7 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 		if err != nil {
 			return nil, fmt.Errorf("create: unable to create dir %q: %w", name, err)
 		}
-		localDBPath = d.localDBPath(name, newVersion)
-		dsn = localDBPath
+		dsn = d.localDBPath(name, newVersion)
 		defer func() {
 			if createErr != nil {
 				_ = d.deleteLocalTableFiles(name, newVersion)
@@ -448,15 +444,15 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 	err = d.writeTableMeta(name, newMeta)
 	if err != nil {
 		d.logger.Debug("create: error in writing table meta", zap.String("error", err.Error()), observability.ZapCtx(ctx))
-		return &Result{ExecutionDuration: duration}, nil
+		return &TableWriteMetrics{Duration: duration}, nil
 	}
 
 	d.catalog.addTableVersion(name, newMeta, true)
 	d.localDirty = false
-	return &Result{ExecutionDuration: duration}, nil
+	return &TableWriteMetrics{Duration: duration}, nil
 }
 
-func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx context.Context, conn *sqlx.Conn) error) (*Result, error) {
+func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx context.Context, conn *sqlx.Conn) error) (*TableWriteMetrics, error) {
 	d.logger.Debug("mutate table", zap.String("name", name), observability.ZapCtx(ctx))
 	err := d.writeSem.Acquire(ctx, 1)
 	if err != nil {
@@ -529,12 +525,12 @@ func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx con
 	err = d.writeTableMeta(name, meta)
 	if err != nil {
 		d.logger.Debug("mutate: error in writing table meta", zap.Error(err), observability.ZapCtx(ctx))
-		return &Result{ExecutionDuration: duration}, nil
+		return &TableWriteMetrics{Duration: duration}, nil
 	}
 
 	d.catalog.addTableVersion(name, meta, true)
 	d.localDirty = false
-	return &Result{ExecutionDuration: duration}, nil
+	return &TableWriteMetrics{Duration: duration}, nil
 }
 
 // DropTable implements DB.

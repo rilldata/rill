@@ -303,7 +303,6 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 				c.logger.Warn("clickhouse: failed to drop temp table", zap.String("name", tempName), zap.Error(err), observability.ZapCtx(ctx))
 			}
 		}()
-		t := time.Now()
 		err = c.Exec(ctx, &drivers.Statement{
 			Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %s %s AS %s", safeSQLName(tempName), onClusterClause, name),
 			Priority: 1,
@@ -312,6 +311,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 			return nil, err
 		}
 		// insert into temp table
+		t := time.Now()
 		err = c.Exec(ctx, &drivers.Statement{
 			Query:       fmt.Sprintf("INSERT INTO %s %s", safeSQLName(tempName), sql),
 			Priority:    1,

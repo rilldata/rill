@@ -247,7 +247,7 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, 
 		return nil, c.checkErr(err)
 	}
 	return &drivers.TableWriteMetrics{
-		Duration: res.ExecutionDuration,
+		Duration: res.Duration,
 	}, nil
 }
 
@@ -284,7 +284,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 			return nil, c.checkErr(err)
 		}
 		return &drivers.TableWriteMetrics{
-			Duration: res.ExecutionDuration,
+			Duration: res.Duration,
 		}, nil
 	}
 
@@ -342,7 +342,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 			return nil, c.checkErr(err)
 		}
 		return &drivers.TableWriteMetrics{
-			Duration: res.ExecutionDuration,
+			Duration: res.Duration,
 		}, nil
 	}
 

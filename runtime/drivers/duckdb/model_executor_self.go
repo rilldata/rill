@@ -103,12 +103,6 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 			return nil, fmt.Errorf("failed to incrementally insert into table: %w", err)
 		}
 		duration = res.Duration
-
-		prevResult := &ModelResultProperties{}
-		err = mapstructure.Decode(opts.PreviousResult.Properties, prevResult)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse previous result properties: %w", err)
-		}
 	}
 
 	// Build result props

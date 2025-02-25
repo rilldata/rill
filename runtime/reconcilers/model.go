@@ -281,7 +281,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	}
 
 	// Build the model
-	executorConnector, execRes, incremental, execErr := r.executeAll(ctx, self, model, modelEnv, triggerReset, prevResult)
+	executorConnector, execRes, firstRunIncremental, execErr := r.executeAll(ctx, self, model, modelEnv, triggerReset, prevResult)
 
 	// After the model has executed successfully, we re-evaluate the model's incremental state (not to be confused with the resource state)
 	var newIncrementalState *structpb.Struct
@@ -315,7 +315,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		model.State.IncrementalStateSchema = newIncrementalStateSchema
 		model.State.PartitionsHaveErrors = partitionsHaveErrors
 		model.State.LatestExecutionDurationMs = execRes.ExecDuration.Milliseconds()
-		if incremental {
+		if firstRunIncremental {
 			model.State.TotalExecutionDurationMs += model.State.LatestExecutionDurationMs
 		} else {
 			model.State.TotalExecutionDurationMs = model.State.LatestExecutionDurationMs
