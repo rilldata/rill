@@ -43,22 +43,16 @@ export function getPivotExportQuery(ctx: StateManagers, isScheduled: boolean) {
   const metricsViewSpec = validSpecStore.data?.metricsView ?? {};
   const exploreSpec = validSpecStore.data?.explore ?? {};
 
-  let timeRange: V1TimeRange | undefined;
-  if (isScheduled) {
-    timeRange = mapSelectedTimeRangeToV1TimeRange(
-      timeControlState,
-      dashboardState.selectedTimezone,
-      exploreSpec,
-    );
-  } else {
-    // NOTE: This is currently needed to ensure the on-demand exports have the same time range as seen on-screen. Currently,
-    // the client-side interpretation of time ranges is not the same as the server-side interpretation.
-    timeRange = {
-      start: timeControlState.timeStart,
-      end: timeControlState.timeEnd,
-    };
-  }
+  const timeRange = mapSelectedTimeRangeToV1TimeRange(
+    timeControlState,
+    dashboardState.selectedTimezone,
+    exploreSpec,
+  );
   if (!timeRange) return undefined;
+  if (!isScheduled) {
+    // To match the UI's time range, we must explicitly specify `timeEnd` for on-demand exports
+    timeRange.end = timeControlState.timeEnd;
+  }
 
   const query: V1Query = {
     metricsViewAggregationRequest: getPivotAggregationRequest(

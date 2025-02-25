@@ -36,31 +36,23 @@ export function getDimensionTableExportQuery(
   if (!validSpecStore.data?.explore || !timeControlState.ready)
     return undefined;
 
-  let timeRange: V1TimeRange | undefined;
-  let comparisonTimeRange: V1TimeRange | undefined;
-  if (isScheduled) {
-    timeRange = mapSelectedTimeRangeToV1TimeRange(
-      timeControlState,
-      dashboardState.selectedTimezone,
-      validSpecStore.data.explore,
-    );
-    comparisonTimeRange = mapSelectedComparisonTimeRangeToV1TimeRange(
-      timeControlState,
-      timeRange,
-    );
-  } else {
-    // NOTE: This is currently needed to ensure the on-demand exports have the same time range as seen on-screen. Currently,
-    // the client-side interpretation of time ranges is not the same as the server-side interpretation.
-    timeRange = {
-      start: timeControlState.timeStart,
-      end: timeControlState.timeEnd,
-    };
-    comparisonTimeRange = {
-      start: timeControlState.comparisonTimeStart,
-      end: timeControlState.comparisonTimeEnd,
-    };
-  }
+  const timeRange = mapSelectedTimeRangeToV1TimeRange(
+    timeControlState,
+    dashboardState.selectedTimezone,
+    validSpecStore.data.explore,
+  );
+  const comparisonTimeRange = mapSelectedComparisonTimeRangeToV1TimeRange(
+    timeControlState,
+    timeRange,
+  );
   if (!timeRange) return undefined;
+  if (!isScheduled) {
+    // To match the UI's time range, we must explicitly specify `timeEnd` for on-demand exports
+    timeRange.end = timeControlState.timeEnd;
+    if (comparisonTimeRange) {
+      comparisonTimeRange.end = timeControlState.timeEnd;
+    }
+  }
 
   const query: V1Query = {
     metricsViewAggregationRequest: getDimensionTableAggregationRequestForTime(

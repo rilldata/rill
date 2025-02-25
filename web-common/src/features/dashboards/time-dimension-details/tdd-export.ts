@@ -12,7 +12,6 @@ import type {
   V1MetricsViewAggregationRequest,
   V1MetricsViewSpec,
   V1Query,
-  V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { get } from "svelte/store";
@@ -61,22 +60,16 @@ function getTDDAggregationRequest(
   )
     return undefined;
 
-  let timeRange: V1TimeRange | undefined;
-  if (isScheduled) {
-    timeRange = mapSelectedTimeRangeToV1TimeRange(
-      timeControlState,
-      dashboardState.selectedTimezone,
-      explore,
-    );
-  } else {
-    // NOTE: This is currently needed to ensure the on-demand exports have the same time range as seen on-screen. Currently,
-    // the client-side interpretation of time ranges is not the same as the server-side interpretation.
-    timeRange = {
-      start: timeControlState.timeStart,
-      end: timeControlState.timeEnd,
-    };
-  }
+  const timeRange = mapSelectedTimeRangeToV1TimeRange(
+    timeControlState,
+    dashboardState.selectedTimezone,
+    explore,
+  );
   if (!timeRange) return undefined;
+  if (!isScheduled) {
+    // To match the UI's time range, we must explicitly specify `timeEnd` for on-demand exports
+    timeRange.end = timeControlState.timeEnd;
+  }
 
   const measures: V1MetricsViewAggregationMeasure[] = [
     { name: dashboardState.tdd.expandedMeasureName },
