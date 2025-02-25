@@ -700,10 +700,20 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 			return nil, errors.New("failed to apply time spine: time range has more than 1000 bins")
 		}
 
+		var newDims []FieldNode
+		var timeAlias string
+		for _, f := range a.dimFields {
+			if strings.HasPrefix(f.Name, a.metricsView.TimeDimension) && strings.HasSuffix(strings.ToLower(f.Name), strings.ToLower(string(spine.TimeRange.Grain))) {
+				timeAlias = f.Name
+				continue
+			}
+			newDims = append(newDims, f)
+		}
+
 		start := spine.TimeRange.Start
 		end := spine.TimeRange.End
 		grain := spine.TimeRange.Grain
-		sel, args, err := a.dialect.SelectTimeRangeBins(start, end, grain.ToProto(), spine.TimeRange.Alias)
+		sel, args, err := a.dialect.SelectTimeRangeBins(start, end, grain.ToProto(), timeAlias)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate time spine: %w", err)
 		}
@@ -719,13 +729,6 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 		// if there is only one dimension in the query, then we can directly join the spine time range with the dimension
 		if len(a.dimFields) == 1 {
 			return rangeSelect, nil
-		}
-
-		var newDims []FieldNode
-		for _, f := range a.dimFields {
-			if f.Name != spine.TimeRange.Alias {
-				newDims = append(newDims, f)
-			}
 		}
 
 		// give alias to the outer select as range select will be moved to cross join
@@ -747,9 +750,9 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 
 		// now add cross join field to the dimension list
 		dimSelect.DimFields = append(dimSelect.DimFields, FieldNode{
-			Name:        spine.TimeRange.Alias,
-			DisplayName: spine.TimeRange.Alias,
-			Expr:        spine.TimeRange.Alias,
+			Name:        timeAlias,
+			DisplayName: timeAlias,
+			Expr:        timeAlias,
 		})
 
 		return dimSelect, nil

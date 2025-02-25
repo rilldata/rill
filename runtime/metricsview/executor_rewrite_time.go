@@ -52,7 +52,6 @@ func (e *Executor) rewriteQueryTimeRanges(ctx context.Context, qry *Query, execu
 		qry.Spine.TimeRange.Start = timeutil.TruncateTime(qry.TimeRange.Start, computedTimeDims[0].Compute.TimeFloor.Grain.ToTimeutil(), tz, 1, 1)
 		qry.Spine.TimeRange.End = qry.TimeRange.End
 		qry.Spine.TimeRange.Grain = computedTimeDims[0].Compute.TimeFloor.Grain
-		qry.Spine.TimeRange.Alias = computedTimeDims[0].Name
 	}
 
 	return nil

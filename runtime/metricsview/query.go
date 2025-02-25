@@ -124,7 +124,6 @@ type TimeSpine struct {
 	Start time.Time `mapstructure:"start"`
 	End   time.Time `mapstructure:"end"`
 	Grain TimeGrain `mapstructure:"grain"`
-	Alias string    `mapstructure:"alias"`
 }
 
 type Sort struct {
