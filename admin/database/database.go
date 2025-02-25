@@ -60,7 +60,6 @@ type DB interface {
 	FindOrganization(ctx context.Context, id string) (*Organization, error)
 	FindOrganizationByName(ctx context.Context, name string) (*Organization, error)
 	FindOrganizationByCustomDomain(ctx context.Context, domain string) (*Organization, error)
-	CheckOrganizationHasOutsideUser(ctx context.Context, orgID, userID string) (bool, error)
 	CheckOrganizationHasPublicProjects(ctx context.Context, orgID string) (bool, error)
 	InsertOrganization(ctx context.Context, opts *InsertOrganizationOptions) (*Organization, error)
 	DeleteOrganization(ctx context.Context, name string) error
@@ -206,6 +205,7 @@ type DB interface {
 	FindOrganizationMemberUsers(ctx context.Context, orgID, afterEmail string, limit int) ([]*MemberUser, error)
 	FindOrganizationMemberUsersByRole(ctx context.Context, orgID, roleID string) ([]*User, error)
 	InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string) error
+	InsertOrganizationMemberUserIfNotExists(ctx context.Context, orgID, userID, roleID string) error
 	DeleteOrganizationMemberUser(ctx context.Context, orgID, userID string) error
 	UpdateOrganizationMemberUserRole(ctx context.Context, orgID, userID, roleID string) error
 	CountSingleuserOrganizationsForMemberUser(ctx context.Context, userID string) (int, error)
@@ -775,6 +775,7 @@ const (
 	OrganizationRoleNameAdmin        = "admin"
 	OrganizationRoleNameCollaborator = "collaborator"
 	OrganizationRoleNameViewer       = "viewer"
+	OrganizationRoleNameGuest        = "guest"
 	ProjectRoleNameAdmin             = "admin"
 	ProjectRoleNameCollaborator      = "collaborator"
 	ProjectRoleNameViewer            = "viewer"
@@ -784,6 +785,7 @@ const (
 type OrganizationRole struct {
 	ID               string
 	Name             string
+	Guest            bool `db:"guest"`
 	ReadOrg          bool `db:"read_org"`
 	ManageOrg        bool `db:"manage_org"`
 	ReadProjects     bool `db:"read_projects"`

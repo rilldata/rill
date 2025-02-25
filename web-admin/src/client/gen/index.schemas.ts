@@ -270,10 +270,6 @@ export type AdminServiceListProjectMemberUsergroupsParams = {
   pageToken?: string;
 };
 
-export type AdminServiceRemoveOrganizationMemberUserParams = {
-  keepProjectRoles?: boolean;
-};
-
 export type AdminServiceAddOrganizationMemberUserBody = {
   email?: string;
   role?: string;

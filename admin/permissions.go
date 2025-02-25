@@ -31,18 +31,6 @@ func (s *Service) OrganizationPermissionsForUser(ctx context.Context, orgID, use
 		}
 	}
 
-	// If the user is an outside member of one of the org's projects, they get read access to org as well.
-	if !composite.ReadOrg {
-		ok, err := s.DB.CheckOrganizationHasOutsideUser(ctx, orgID, userID)
-		if err != nil {
-			return nil, err
-		}
-		if ok {
-			composite.ReadOrg = true
-			composite.ReadProjects = true
-		}
-	}
-
 	return composite, nil
 }
 

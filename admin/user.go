@@ -142,11 +142,20 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		addedToOrgNames = append(addedToOrgNames, org.Name)
 	}
 
+	guestRole, err := s.DB.FindOrganizationRole(ctx, database.OrganizationRoleNameGuest)
+	if err != nil {
+		return nil, err
+	}
+
 	// handle project invites
 	addedToProjectIDs := make(map[string]bool)
 	addedToProjectNames := make([]string, 0)
 	for _, invite := range projectInvites {
 		project, err := s.DB.FindProject(ctx, invite.ProjectID)
+		if err != nil {
+			return nil, err
+		}
+		err = s.DB.InsertOrganizationMemberUserIfNotExists(ctx, project.OrganizationID, user.ID, guestRole.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -173,6 +182,10 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 			continue
 		}
 		project, err := s.DB.FindProject(ctx, whitelist.ProjectID)
+		if err != nil {
+			return nil, err
+		}
+		err = s.DB.InsertOrganizationMemberUserIfNotExists(ctx, project.OrganizationID, user.ID, guestRole.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -288,7 +301,10 @@ func (s *Service) prepareOrganization(ctx context.Context, orgID, userID string)
 
 	role, err := s.DB.FindOrganizationRole(ctx, database.OrganizationRoleNameAdmin)
 	if err != nil {
-		panic(err)
+		if errors.Is(err, ctx.Err()) {
+			return nil, err
+		}
+		return nil, fmt.Errorf("failed to find admin role when preparing org: %s", err.Error())
 	}
 
 	// Add user to created org with org admin role

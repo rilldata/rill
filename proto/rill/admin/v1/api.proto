@@ -1291,7 +1291,6 @@ message AddOrganizationMemberUserResponse {
 message RemoveOrganizationMemberUserRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string email = 2 [(validate.rules).string.email = true];
-  bool keep_project_roles = 3;
 }
 
 message RemoveOrganizationMemberUserResponse {}
