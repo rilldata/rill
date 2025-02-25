@@ -5,6 +5,7 @@
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { getStateManagers } from "../state-managers/state-managers";
   import LeaderboardActiveMeasureNamesDropdown from "@rilldata/web-common/components/menu/LeaderboardActiveMeasureNamesDropdown.svelte";
+  import ContextColumnDropdown from "@rilldata/web-common/components/menu/ContextColumnDropdown.svelte";
 
   export let exploreName: string;
 
@@ -85,6 +86,20 @@
         {measures}
         {firstMeasure}
         tooltipText="Choose measures to filter by"
+        selectedMeasureNames={$leaderboardMeasureNames}
+        onToggle={(name) => {
+          toggleLeaderboardMeasureNames(allMeasureNames, name);
+        }}
+        onSelectAll={() => {
+          toggleLeaderboardMeasureNames(allMeasureNames);
+        }}
+      />
+
+      <!-- TODO: only show based on comparison -->
+      <ContextColumnDropdown
+        {measures}
+        {firstMeasure}
+        tooltipText="Choose context columns to display"
         selectedMeasureNames={$leaderboardMeasureNames}
         onToggle={(name) => {
           toggleLeaderboardMeasureNames(allMeasureNames, name);
