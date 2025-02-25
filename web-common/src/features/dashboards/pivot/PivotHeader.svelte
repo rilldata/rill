@@ -102,6 +102,7 @@
       <IconButton
         marginClasses="ml-1"
         rounded
+        ariaLabel={$isFlat ? "Nest" : "Flatten"}
         on:click={() => togglePivotType($isFlat ? "nest" : "flat")}
       >
         <span slot="tooltip-content">{$isFlat ? "Nest" : "Flatten"} table</span>
