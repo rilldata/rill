@@ -22,6 +22,7 @@
       dimensions: { toggleDimensionVisibility },
       contextCol: { setContextColumn },
       setLeaderboardMeasureNames,
+      toggleLeaderboardMeasureNames,
     },
   } = getStateManagers();
 
@@ -59,14 +60,6 @@
   function isDefined(value: string | undefined): value is string {
     return value !== undefined;
   }
-
-  function toggleLeaderboardMeasureNames() {
-    const allSelected =
-      allMeasureNames.length === $leaderboardMeasureNames.length;
-    setLeaderboardMeasureNames(
-      allSelected ? [allMeasureNames[0]] : allMeasureNames,
-    );
-  }
 </script>
 
 <div>
@@ -98,7 +91,7 @@
           setLeaderboardMeasureNames(names);
         }}
         onToggleSelectAll={() => {
-          toggleLeaderboardMeasureNames();
+          toggleLeaderboardMeasureNames(allMeasureNames);
         }}
       />
     </div>
