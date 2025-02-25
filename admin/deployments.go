@@ -433,10 +433,14 @@ func (s *Service) IssueRuntimeManagementToken(aud string) (string, error) {
 }
 
 func (s *Service) NewDeploymentAnnotations(org *database.Organization, proj *database.Project) DeploymentAnnotations {
+	var orgBillingPlanName string
+	if org.BillingPlanName != nil {
+		orgBillingPlanName = *org.BillingPlanName
+	}
 	return DeploymentAnnotations{
 		orgID:              org.ID,
 		orgName:            org.Name,
-		orgBillingPlanName: *org.BillingPlanName,
+		orgBillingPlanName: orgBillingPlanName,
 		projID:             proj.ID,
 		projName:           proj.Name,
 		projProdSlots:      fmt.Sprint(proj.ProdSlots),
@@ -457,7 +461,7 @@ type DeploymentAnnotations struct {
 }
 
 func (da *DeploymentAnnotations) ToMap() map[string]string {
-	res := make(map[string]string, len(da.projAnnotations)+4)
+	res := make(map[string]string, len(da.projAnnotations)+7)
 	for k, v := range da.projAnnotations {
 		res[k] = v
 	}
