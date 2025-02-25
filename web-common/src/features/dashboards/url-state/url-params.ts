@@ -25,4 +25,5 @@ export enum ExploreStateURLParams {
 
   PivotRows = "rows",
   PivotColumns = "cols",
+  PivotRowJoinType = "table_type",
 }

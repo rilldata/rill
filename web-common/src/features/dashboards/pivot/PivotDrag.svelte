@@ -1,7 +1,11 @@
 <script context="module" lang="ts">
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import DragList from "./DragList.svelte";
-  import type { PivotSidebarSection, PivotChipData } from "./types";
+  import type {
+    PivotChipData,
+    PivotRowJoinType,
+    PivotSidebarSection,
+  } from "./types";
 </script>
 
 <script lang="ts">
@@ -11,6 +15,7 @@
   export let chipsPerSection: number;
   export let extraSpace: boolean;
   export let otherChipCounts: number[];
+  export let rowJoinType: PivotRowJoinType = "nest";
 
   $: fit =
     extraSpace ||
@@ -39,7 +44,7 @@
   <div class="w-full h-fit overflow-y-auto overflow-x-hidden px-[2px] pb-2">
     {#if !collapsed}
       {#if items.length}
-        <DragList {items} zone={title} />
+        <DragList {items} zone={title} {rowJoinType} />
       {:else}
         <p class="text-gray-500 my-1">No available fields</p>
       {/if}

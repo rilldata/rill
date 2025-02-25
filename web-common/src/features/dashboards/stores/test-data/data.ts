@@ -258,6 +258,7 @@ export const AD_BIDS_PIVOT_PRESET: V1ExplorePreset = {
   pivotRows: ["publisher", "time.hour"],
   pivotCols: ["domain", "time.day", "impressions"],
   pivotSortBy: "time.day",
+  pivotRowJoinType: "nest",
   pivotSortAsc: true,
 };
 

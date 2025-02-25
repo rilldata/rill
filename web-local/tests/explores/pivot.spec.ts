@@ -1,10 +1,10 @@
 import { expect } from "@playwright/test";
+import { test } from "../setup/base";
 import { clickMenuButton } from "../utils/commonHelpers";
 import { interactWithTimeRangeMenu } from "../utils/metricsViewHelpers";
 import { ResourceWatcher } from "../utils/ResourceWatcher";
 import { validateTableContents } from "../utils/tableHelpers";
 import { gotoNavEntry } from "../utils/waitHelpers";
-import { test } from "../setup/base";
 
 const pivotDashboard = `kind: metrics_view
 display_name: Ad Bids
@@ -522,6 +522,26 @@ const expectSortedDeltaCol = [
   [],
 ];
 
+const expectedFlatTable = [
+  [],
+  ["", "", "100.0k", "300.6k"],
+  ["facebook.com", "Facebook", "10.5k", "32.9k"],
+  ["msn.com", "Microsoft", "10.4k", "32.5k"],
+  ["google.com", "Google", "10.1k", "31.3k"],
+  ["news.yahoo.com", "Yahoo", "10.0k", "30.6k"],
+  ["instagram.com", "Facebook", "8.8k", "25.0k"],
+  ["news.google.com", "Google", "8.6k", "24.7k"],
+  ["sports.yahoo.com", "Yahoo", "8.6k", "24.9k"],
+  ["msn.com", "", "5.1k", "16.0k"],
+  ["facebook.com", "", "5.1k", "15.9k"],
+  ["google.com", "", "5.0k", "15.5k"],
+  ["news.yahoo.com", "", "4.9k", "15.1k"],
+  ["instagram.com", "", "4.3k", "12.1k"],
+  ["sports.yahoo.com", "", "4.3k", "12.1k"],
+  ["news.google.com", "", "4.2k", "12.1k"],
+  [],
+];
+
 test.describe("pivot run through", () => {
   test.use({ project: "AdBids" });
 
@@ -576,6 +596,15 @@ test.describe("pivot run through", () => {
     await clickMenuButton(page, "Sum of Bid Price");
     await expect(page.locator(".status.running")).toHaveCount(0);
     await validateTableContents(page, "table", expectedTwoMeasureRowDimColDim);
+
+    // Flatten the table
+    await page.getByRole("button", { name: "Flatten" }).click();
+    await expect(page.locator(".status.running")).toHaveCount(0);
+    await validateTableContents(page, "table", expectedFlatTable);
+
+    // Nest the table
+    await page.getByRole("button", { name: "Nest" }).click();
+    await expect(page.locator(".status.running")).toHaveCount(0);
 
     // Remove the row dimension and second measure
     await page.getByRole("button", { name: "Remove" }).nth(3).click();

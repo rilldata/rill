@@ -2601,6 +2601,11 @@ export class ExplorePreset extends Message<ExplorePreset> {
    */
   pivotSortAsc?: boolean;
 
+  /**
+   * @generated from field: optional string pivot_row_join_type = 28;
+   */
+  pivotRowJoinType?: string;
+
   constructor(data?: PartialMessage<ExplorePreset>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2633,6 +2638,7 @@ export class ExplorePreset extends Message<ExplorePreset> {
     { no: 25, name: "pivot_cols", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 26, name: "pivot_sort_by", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 27, name: "pivot_sort_asc", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 28, name: "pivot_row_join_type", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExplorePreset {
