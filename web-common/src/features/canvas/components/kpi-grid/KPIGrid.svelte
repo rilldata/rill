@@ -31,7 +31,6 @@
   <div class="element h-fit" style:--item-count={kpis.length}>
     {#each kpis as kpi, i (i)}
       <div
-        class:solo={kpis.length > 1}
         class="kpi-wrapper border-gray-200 size-full min-h-52 p-4 overflow-hidden"
       >
         <KPI rendererProperties={kpi} {timeAndFilterStore} />
@@ -51,13 +50,18 @@
 
   .kpi-wrapper {
     @apply w-full;
+    @apply border-r border-b;
   }
 
-  .kpi-wrapper:not(:last-of-type) {
-    @apply border-r;
+  .kpi-wrapper:last-of-type {
+    border-right-width: 0px;
   }
 
-  .element {
+  .kpi-wrapper {
+    border-bottom-width: 0px;
+  }
+
+  :global(.element) {
     container-type: inline-size;
     container-name: container;
   }
@@ -67,13 +71,17 @@
       grid-template-columns: repeat(min(2, var(--item-count)), 1fr);
     }
 
-    .kpi-wrapper:nth-child(2) {
-      border-right-width: 0;
+    .kpi-wrapper {
       border-bottom-width: 1px;
     }
 
-    .kpi-wrapper.solo:nth-child(1) {
-      border-bottom-width: 1px;
+    .kpi-wrapper:last-of-type,
+    .kpi-wrapper:nth-last-of-type(2):not(:nth-of-type(2)) {
+      border-bottom-width: 0px;
+    }
+
+    .kpi-wrapper:nth-child(2n) {
+      border-right-width: 0px;
     }
 
     .kpi-wrapper:nth-child(3) {
@@ -87,11 +95,11 @@
     }
 
     .kpi-wrapper {
-      border-right-width: 0 !important;
+      border-right-width: 0px !important;
     }
 
     .kpi-wrapper:not(:last-of-type) {
-      border-bottom-width: 1px;
+      border-bottom-width: 1px !important;
     }
   }
 </style>

@@ -1,16 +1,18 @@
 <script lang="ts">
-  import DragHandle from "@rilldata/web-common/components/icons/DragHandle.svelte";
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
   import { clamp } from "@rilldata/web-common/lib/clamp";
-  import type { V1CanvasSpec } from "@rilldata/web-common/runtime-client";
+  import {
+    type V1CanvasItem,
+    type V1CanvasRow as APIV1CanvasRow,
+    type V1CanvasSpec,
+    createQueryServiceResolveCanvas,
+  } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { Edit } from "lucide-svelte";
-  import { parseDocument, YAMLMap, YAMLSeq } from "yaml";
+  import { parseDocument } from "yaml";
   import type { FileArtifact } from "../entity-management/file-artifact";
   import AddComponentDropdown from "./AddComponentDropdown.svelte";
   import DropZone from "./components/DropZone.svelte";
   import type { CanvasComponentType } from "./components/types";
-  import { getComponentRegistry } from "./components/util";
   import ElementDivider from "./ElementDivider.svelte";
   import CanvasFilters from "./filters/CanvasFilters.svelte";
   import PreviewElement from "./PreviewElement.svelte";
@@ -19,24 +21,13 @@
   import { useDefaultMetrics } from "./selector";
   import { getCanvasStateManagers } from "./state-managers/state-managers";
   import { activeDivider, dropZone } from "./stores/ui-stores";
-  import { findNextAvailablePosition } from "./util";
+  import { rowsGuard, mapGuard, moveToRow } from "./layout-util";
+  import type { DragItem } from "./layout-util";
+  import { portal } from "@rilldata/web-common/lib/actions/portal";
 
-  const initialHeights: Record<CanvasComponentType, number> = {
-    line_chart: 350,
-    bar_chart: 400,
-    area_chart: 400,
-    stacked_bar: 400,
-    stacked_bar_normalized: 400,
-    markdown: 160,
-    kpi: 200,
-    kpi_grid: 200,
-    image: 420,
-    table: 400,
+  type V1CanvasRow = Omit<APIV1CanvasRow, "items"> & {
+    items: (V1CanvasItem | null)[];
   };
-
-  function getInitalHeight(id: string | undefined) {
-    return initialHeights[id as CanvasComponentType] ?? MIN_HEIGHT;
-  }
 
   const COLUMN_COUNT = 12;
   const MIN_HEIGHT = 40;
@@ -51,17 +42,16 @@
 
   const ctx = getCanvasStateManagers();
 
-  const componentRegistry = getComponentRegistry();
-
   const {
     canvasEntity: {
-      setSelectedComponentIndex,
+      setSelectedComponent,
       spec: { canvasSpec },
+      name: canvasName,
     },
   } = ctx;
 
   let spec: V1CanvasSpec = {
-    items: [],
+    rows: [],
     filtersEnabled: true,
     maxWidth: 1200,
   };
@@ -74,7 +64,6 @@
   let initialMousePosition: { x: number; y: number } | null = null;
   let clientWidth: number;
   let selected: Set<string> = new Set();
-  let clone: HTMLElement;
   let offset = { x: 0, y: 0 };
   let resizeRow = -1;
   let initialHeight = 0;
@@ -86,53 +75,27 @@
     maxWidth: number;
     nextElementWidth: number;
   } | null = null;
-
-  type DragItem = {
-    name: string | number;
-    row: number;
-    order: number;
-    height?: number;
-    type?: CanvasComponentType;
-  };
-
-  type Row = {
-    items: (string | number | null)[];
-    height: number;
-    layout: number[];
-  };
-
-  type YAMLRow = {
-    items: string;
-    height: string;
-    layout: string;
-  };
+  let timeout: ReturnType<typeof setTimeout> | null = null;
+  let dragTimeout: ReturnType<typeof setTimeout> | null = null;
 
   $: ({ instanceId } = $runtime);
 
-  $: spec = structuredClone($canvasSpec ?? spec);
-
-  $: ({
-    items: canvasItems = [],
-    filtersEnabled,
-    maxWidth: canvasMaxWidth,
-  } = spec);
-
-  $: maxWidth = canvasMaxWidth || 1200;
-
-  $: ({ editorContent, updateEditorContent } = fileArtifact);
-
-  $: fileContent = parseDocument($editorContent ?? "");
-
   $: metricsViewQuery = useDefaultMetrics(instanceId);
 
-  $: contents = fileContent.get("layout") as YAMLMap;
-  $: rawYamlItems = fileContent.get("items") as YAMLSeq;
+  $: ({ editorContent, updateEditorContent } = fileArtifact);
+  $: contents = parseDocument($editorContent ?? "");
 
-  $: yamlRows = rowsGuard(contents?.get("rows"));
+  $: spec = structuredClone($canvasSpec ?? spec);
 
-  $: rowMaps = mapGuard(yamlRows.items);
+  $: ({ rows = [], filtersEnabled, maxWidth: canvasMaxWidth } = spec);
 
-  $: components = rawYamlItems?.items ?? [];
+  // API returns this as 0 when not set
+  $: maxWidth = canvasMaxWidth || 1200;
+
+  $: specCanvasRows = structuredClone(rows) as V1CanvasRow[];
+
+  $: rawYamlRows = rowsGuard(contents?.get("rows"));
+  $: yamlCanvasRows = mapGuard(rawYamlRows);
 
   $: columnWidth = clientWidth / 12;
 
@@ -142,60 +105,43 @@
 
   $: dropZone.setMouseDelta(mouseDelta);
 
-  $: if (resizeRow !== -1 && initialMousePosition) {
+  $: resizeRowData = structuredClone(specCanvasRows?.[resizeRow]);
+
+  $: resizeColumnData =
+    resizeColumnInfo &&
+    structuredClone(specCanvasRows?.[resizeColumnInfo.row]?.items);
+
+  $: if (resizeRowData && initialMousePosition) {
     const diff = mousePosition.y - initialMousePosition.y;
 
-    rowMaps[resizeRow].height = Math.max(
+    resizeRowData.height = Math.max(
       MIN_HEIGHT,
       Math.floor(diff + initialHeight),
     );
+
+    specCanvasRows[resizeRow] = resizeRowData;
   }
 
-  function rowsGuard(value: unknown): YAMLSeq {
-    if (!value || !(value instanceof YAMLSeq)) {
-      return new YAMLSeq();
-    } else {
-      return value as YAMLSeq;
-    }
-  }
+  $: defaultMetrics = $metricsViewQuery?.data;
 
-  function mapGuard(value: unknown[]): Array<Row> {
-    return value.map((el) => {
-      if (el instanceof YAMLMap) {
-        const jsonObject = el.toJSON() as Partial<YAMLRow>;
+  $: canvasResolverQuery = createQueryServiceResolveCanvas(
+    instanceId,
+    canvasName,
+    {},
+  );
 
-        return {
-          items:
-            jsonObject?.items
-              ?.toString()
-              .split(",")
-              ?.map((el) => Number(el.trim())) ?? [],
-          height: jsonObject?.height ? Number(jsonObject?.height) : MIN_HEIGHT,
-          layout:
-            jsonObject?.layout
-              ?.toString()
-              .split(",")
-              ?.map((el) => Number(el.trim())) ?? [],
-        };
-      } else {
-        return {
-          items: [],
-          height: MIN_HEIGHT,
-          layout: [],
-        };
-      }
-    });
-  }
+  $: canvasData = $canvasResolverQuery.data;
 
   function onColumResizeStart(e: MouseEvent & { currentTarget: HTMLElement }) {
     initialMousePosition = mousePosition;
     const row = Number(e.currentTarget.getAttribute("data-row"));
     const column = Number(e.currentTarget.getAttribute("data-column"));
+    const rowWidths =
+      specCanvasRows[row]?.items?.map((el) => el?.width ?? 0) ?? [];
 
-    const currentLayout = rowMaps[row].layout;
-    const nextElementWidth = currentLayout[column + 1];
+    const nextElementWidth = rowWidths[column + 1];
 
-    const maxWidth = currentLayout.reduce((acc, el, i) => {
+    const maxWidth = rowWidths.reduce((acc, el, i) => {
       if (i === column) {
         return acc;
       } else if (i === column + 1) {
@@ -220,10 +166,11 @@
   }
 
   function onColumnResize(e: MouseEvent) {
-    if (!resizeColumnInfo) return;
+    if (!resizeColumnInfo || !resizeColumnData) return;
 
     const { row, column, width, maxWidth, nextElementWidth } = resizeColumnInfo;
-    const layoutRow = [...rowMaps[row].layout];
+
+    const layoutRow = resizeColumnData.map((el) => el?.width ?? 0) ?? [];
 
     const delta = e.clientX - (initialMousePosition?.x ?? 0);
     const columnDelta = Math.round(delta / columnWidth);
@@ -236,26 +183,35 @@
 
     layoutRow[column + 1] = nextElementWidth - clampedDelta;
 
-    rowMaps[row].layout = layoutRow;
+    layoutRow.forEach((el, i) => {
+      if (!resizeColumnData[i]) return;
+
+      resizeColumnData[i].width = el;
+    });
+
+    if (!specCanvasRows[row]) return;
+
+    specCanvasRows[row].items = resizeColumnData;
   }
 
   function onColumnResizeEnd() {
     window.removeEventListener("mousemove", onColumnResize);
     window.removeEventListener("mouseup", onColumnResizeEnd);
 
-    if (!resizeColumnInfo) return;
-    contents.setIn(
-      ["rows", resizeColumnInfo.row, "layout"],
-      rowMaps[resizeColumnInfo.row].layout.join(", "),
-    );
+    if (!resizeColumnInfo || !resizeColumnData) return;
+    const rowIndex = resizeColumnInfo.row;
+    resizeColumnData.forEach((el, i) => {
+      if (!el) return;
+      contents.setIn(["rows", rowIndex, "items", i, "width"], el.width);
+    });
 
     updateContents();
     resizeColumnInfo = null;
     document.body.style.cursor = "";
   }
 
-  function getId(row: number, column: number) {
-    return `component-${row}-${column}`;
+  function getId(row: number | undefined, column: number | undefined) {
+    return `component-${row ?? 0}-${column ?? 0}`;
   }
 
   function calculateMouseDelta(
@@ -270,45 +226,34 @@
 
     initialMousePosition = mousePosition;
 
-    const id = getId(metadata.row, metadata.order);
+    const id = getId(metadata.position?.row, metadata.position?.column);
     const element = document.querySelector("#" + id);
     if (!element) return;
-
-    // duplicate element
-    clone = element.cloneNode(true) as HTMLElement;
 
     const width = element.clientWidth;
     const height = element.clientHeight;
 
     const top = element.getBoundingClientRect().top;
     const left = element.getBoundingClientRect().left;
+    dragItemDimensions = { width, height };
 
     offset = {
       x: left - mousePosition.x,
       y: top - mousePosition.y,
     };
-
-    document.body.appendChild(clone);
-
-    clone.style.position = "absolute";
-    clone.style.top = top + "px";
-    clone.style.left = left + "px";
-    clone.style.width = width + "px";
-    clone.style.height = height + "px";
-    clone.classList.add("outline", "outline-primary-300");
-    clone.style.opacity = "0.6";
-    clone.style.pointerEvents = "none";
-    clone.style.zIndex = "1000";
-    clone.classList.add("shadow-md");
   }
 
+  let dragItemPosition = { top: 0, left: 0 };
+  let dragItemDimensions = { width: 0, height: 0 };
+
   $: if (dragItemInfo) {
-    clone.style.top = mousePosition.y + offset.y + "px";
-    clone.style.left = mousePosition.x + offset.x + "px";
+    dragItemPosition = {
+      top: mousePosition.y + offset.y,
+      left: mousePosition.x + offset.x,
+    };
   }
 
   function onDragEnd() {
-    clone.remove();
     dragItemInfo = null;
   }
 
@@ -318,10 +263,14 @@
     initialHeight =
       document
         .querySelector(`#canvas-row-${resizeRow}`)
-        ?.getBoundingClientRect().height ?? rowMaps[resizeRow].height;
+        ?.getBoundingClientRect().height ??
+      Number(specCanvasRows[resizeRow]?.height ?? MIN_HEIGHT);
   }
 
   function reset() {
+    if (dragTimeout) {
+      clearTimeout(dragTimeout);
+    }
     if (resizeRow !== -1) {
       onRowResizeEnd();
     }
@@ -335,10 +284,12 @@
   }
 
   function onRowResizeEnd() {
-    const height = rowMaps[resizeRow]?.height;
+    const height = specCanvasRows[resizeRow]?.height;
+
+    if (!height) return;
 
     try {
-      fileContent.setIn(["layout", "rows", resizeRow, "height"], height);
+      contents.setIn(["rows", resizeRow, "height"], height + "px");
     } catch (e) {
       console.error(e);
     }
@@ -351,275 +302,129 @@
   }
 
   function spreadEvenly(index: number) {
-    contents.setIn(
-      ["rows", index, "layout"],
-      baseLayoutArrays[rowMaps[index].items.length].join(", "),
-    );
+    const specRow = structuredClone(specCanvasRows[index]);
+    const yamlRow = structuredClone(yamlCanvasRows[index]);
+    if (!specRow?.items || !yamlRow?.items) return;
+
+    const baseLayoutArray = baseLayoutArrays[specRow.items.length];
+
+    baseLayoutArray.forEach((width, i) => {
+      if (!specRow.items[i] || !yamlRow.items[i]) return;
+      specRow.items[i].width = width;
+      yamlRow.items[i].width = width;
+    });
+
+    contents.setIn(["rows", index], yamlRow);
+
+    specCanvasRows[index] = specRow;
+
     updateContents();
   }
 
   function dropItemsInExistingRow(
     items: DragItem[],
-    rowIndex: number,
+    row: number,
     column: number,
   ) {
-    if (!contents) {
-      contents = new YAMLMap();
-      fileContent.set("layout", contents);
-    }
-    const rowsClone = structuredClone(rowMaps) as (Row | null)[];
-    const destinationRow = rowsClone[rowIndex];
-    const touchedRows = new Set(items.map((el) => el.row));
+    const newYamlRows = moveToRow(yamlCanvasRows, items, { row, column });
+    const newSpecRows = moveToRow(specCanvasRows, items, { row, column });
 
-    if (!destinationRow) return;
-
-    items.forEach((item) => {
-      const row = rowsClone[item.row];
-      if (!row) return;
-      row.items[item.order] = null;
-    });
-
-    destinationRow.items.splice(column, 0, ...items.map((el) => el.name));
-    if (destinationRow.items.filter(itemExists).length > 4) {
-      return;
-    }
-    destinationRow.layout = baseLayoutArrays[destinationRow.items.length];
-
-    touchedRows.forEach((rowIndex) => {
-      const row = rowsClone[rowIndex];
-      if (!row) return;
-      const validItemsLeft = row.items.filter(itemExists);
-
-      if (!validItemsLeft.length) {
-        rowsClone[rowIndex] = null;
-      } else {
-        row.items = validItemsLeft;
-        row.layout = baseLayoutArrays[validItemsLeft.length];
-      }
-    });
-
-    const filtered = rowsClone.filter((row) => row !== null);
-
-    const yamlSequence = new YAMLSeq();
-
-    filtered.forEach((row) => {
-      const map = new YAMLMap();
-      map.set("items", row.items.join(", "));
-      map.set("layout", row.layout.join(", "));
-      map.set("height", row.height);
-
-      return yamlSequence.add(map);
-    });
+    specCanvasRows = newSpecRows;
 
     selected = new Set();
+    setSelectedComponent(null);
 
-    fileContent.setIn(["layout", "rows"], yamlSequence);
+    contents.setIn(["rows"], newYamlRows);
+    updateContents();
+  }
+
+  function moveToNewRow(items: DragItem[], row: number) {
+    const newSpecRows = moveToRow(specCanvasRows, items, { row });
+    const newYamlRows = moveToRow(yamlCanvasRows, items, { row });
+
+    selected = new Set();
+    setSelectedComponent(null);
+
+    contents.setIn(["rows"], newYamlRows);
+    specCanvasRows = newSpecRows;
 
     updateContents();
   }
 
-  function initializeRow(
-    row: number,
-    items: {
-      name: string | number;
-      type: CanvasComponentType;
-    }[],
-  ) {
-    const newComponents: Array<ReturnType<typeof createComponent>> = [];
-    const componentsClone = [...components];
-    const newRow: (string | number)[] = [];
-
-    let newHeight = MIN_HEIGHT;
-
-    items.forEach((item, i) => {
-      newComponents.push(createComponent(item.type));
-      newRow.push(canvasItems.length + i);
-      newHeight = Math.max(newHeight, getInitalHeight(item.type));
-    });
-
-    const newLayout = baseLayoutArrays[newRow.length];
-
-    const newYamlRow = new YAMLMap();
-    newYamlRow.set("items", newRow.join(", "));
-    newYamlRow.set("layout", newLayout.join(", "));
-    newYamlRow.set("height", newHeight);
-
-    const yamlItems = [...yamlRows.items];
-    yamlItems.splice(row, 0, newYamlRow);
-
-    fileContent.setIn(["layout", "rows"], yamlItems);
-    fileContent.set("items", [...componentsClone, ...newComponents]);
-
-    updateContents();
-  }
-
-  function moveToNewRow(items: DragItem[], rowIndex: number) {
-    if (!contents) {
-      contents = new YAMLMap();
-      fileContent.set("layout", contents);
-    }
-    const rowsClone = structuredClone(rowMaps) as (Row | null)[];
-    const newRowItems: (string | number)[] = [];
-    const touchedRows = new Set(items.map((el) => el.row));
-
-    let newHeight = MIN_HEIGHT;
-
-    items.forEach((item) => {
-      newRowItems.push(item.name);
-      const row = rowsClone[item.row];
-      if (!row) return;
-      row.items[item.order] = null;
-      newHeight = Math.max(
-        newHeight,
-        item?.height ?? getInitalHeight(item.type),
-      );
-    });
-
-    const newLayout = baseLayoutArrays[newRowItems.length];
-
-    touchedRows.forEach((rowIndex) => {
-      const row = rowsClone[rowIndex];
-      if (!row) return;
-      const validItemsLeft = row.items.filter(itemExists);
-
-      if (!validItemsLeft.length) {
-        rowsClone[rowIndex] = null;
-      } else {
-        row.items = validItemsLeft;
-        row.layout = baseLayoutArrays[validItemsLeft.length];
-      }
-    });
-
-    rowsClone.splice(rowIndex, 0, {
-      items: newRowItems,
-      height: newHeight,
-      layout: newLayout,
-    });
-
-    const filtered = rowsClone.filter((row) => row !== null);
-
-    const yamlSequence = new YAMLSeq();
-
-    filtered.forEach((row) => {
-      const map = new YAMLMap();
-      map.set("items", row.items.join(", "));
-      map.set("layout", row.layout.join(", "));
-      map.set("height", row.height);
-
-      return yamlSequence.add(map);
-    });
+  function removeItems(items: { position: { row: number; column: number } }[]) {
+    const newSpecRows = moveToRow(specCanvasRows, items);
+    const newYamlRows = moveToRow(yamlCanvasRows, items);
 
     selected = new Set();
+    setSelectedComponent(null);
 
-    fileContent.setIn(["layout", "rows"], yamlSequence);
-
-    updateContents();
-  }
-
-  function itemExists(name: string | number) {
-    return name !== undefined && name !== "" && name !== null;
-  }
-
-  function removeItems(items: { row: number; order: number }[]) {
-    selected = new Set();
-    const rowsClone = structuredClone(rowMaps);
-    const touchedRows = new Set(items.map((el) => el.row));
-    const deletedRows: number[] = [];
-
-    items.forEach((item) => {
-      rowsClone[item.row].items[item.order] = null;
-    });
-
-    touchedRows.forEach((row) => {
-      const filtered = rowsClone[row].items.filter(itemExists);
-      if (!filtered.length) {
-        deletedRows.push(row);
-      } else {
-        contents.setIn(["rows", row, "items"], filtered.join(", "));
-        contents.setIn(
-          ["rows", row, "layout"],
-          baseLayoutArrays[filtered.length].join(", "),
-        );
-      }
-    });
-
-    deletedRows.forEach((row) => {
-      contents.deleteIn(["rows", row]);
-    });
+    specCanvasRows = newSpecRows;
+    contents.setIn(["rows"], newYamlRows);
 
     updateContents();
   }
 
   function addItems(
-    items: {
-      type: CanvasComponentType;
-      position: { row: number; order: number };
-    }[],
+    position: { row: number; column: number },
+    items: CanvasComponentType[],
   ) {
-    const rowsClone = structuredClone(rowMaps);
-    const newComponents: Array<ReturnType<typeof createComponent>> = [];
-    const componentsClone = [...components];
-    const touchedRows = new Set(items.map((el) => el.position.row));
+    if (!defaultMetrics) return;
+    const newYamlRows = moveToRow(
+      yamlCanvasRows,
+      items.map((type) => ({ type })),
+      position,
 
-    items.forEach((item, i) => {
-      newComponents.push(createComponent(item.type));
+      defaultMetrics,
+    );
 
-      rowsClone[item.position.row].items.splice(
-        item.position.order,
-        0,
-        canvasItems.length + i,
-      );
-    });
+    const newSpecRows = moveToRow(
+      specCanvasRows,
+      items.map((type) => ({ type })),
+      position,
+    );
 
-    touchedRows.forEach((rowIndex) => {
-      const newRowArray = rowsClone[rowIndex].items;
-      const newLayoutArray = baseLayoutArrays[newRowArray.length];
+    specCanvasRows = newSpecRows;
 
-      contents.setIn(["rows", rowIndex, "items"], newRowArray.join(", "));
-      contents.setIn(["rows", rowIndex, "layout"], newLayoutArray.join(", "));
-    });
-
-    fileContent.set("items", [...componentsClone, ...newComponents]);
+    contents.setIn(["rows"], newYamlRows);
 
     updateContents();
   }
 
   function updateContents() {
-    updateEditorContent(fileContent.toString(), false, true);
+    updateEditorContent(contents.toString(), false, true);
   }
 
-  function createComponent(componentType: CanvasComponentType) {
-    const defaultMetrics = $metricsViewQuery?.data;
+  // Very basic normalization
+  // Will add something more comprehensive later - bgh
+  function normalizeSizeArray(array: (number | null)[]): number[] {
+    const zeroed = array.map((el) => el ?? 0);
+    const sum = zeroed.reduce((acc, val) => acc + (val || 0), 0);
+    const count = array.length;
+
+    if (sum !== 12) {
+      return baseLayoutArrays[count];
+    }
+
+    return zeroed;
+  }
+
+  function initializeRow(row: number, type: CanvasComponentType) {
     if (!defaultMetrics) return;
 
-    const newSpec = componentRegistry[componentType].newComponentSpec(
-      defaultMetrics.metricsView,
-      defaultMetrics.measure,
-      defaultMetrics.dimension,
+    const newYamlRows = moveToRow(
+      yamlCanvasRows,
+      [{ type }],
+      { row },
+      defaultMetrics,
     );
+    const newSpecRows = moveToRow(specCanvasRows, [{ type }], { row });
 
-    const { width, height } = componentRegistry[componentType].defaultSize;
+    specCanvasRows = newSpecRows;
 
-    const itemsToPosition =
-      spec?.items?.map((item) => ({
-        x: item.x ?? 0,
-        y: item.y ?? 0,
-        width: item.width ?? 0,
-        height: item.height ?? 0,
-      })) ?? [];
+    contents.setIn(["rows"], newYamlRows);
 
-    const [x, y] = findNextAvailablePosition(itemsToPosition, width, height);
-
-    return {
-      component: { [componentType]: newSpec },
-      height,
-      width,
-      x,
-      y,
-    };
+    updateContents();
   }
-
-  let timeout: ReturnType<typeof setTimeout> | null = null;
 
   function onDrop(row: number, column: number | null) {
     if (!$dropZone) return;
@@ -635,9 +440,10 @@
   }
 
   function resetSelection() {
-    setSelectedComponentIndex(null);
+    setSelectedComponent(null);
     selected = new Set();
   }
+  const hideBorder = new Set<string | undefined>(["markdown", "image"]);
 </script>
 
 <svelte:window
@@ -650,8 +456,8 @@
       if (e.target === document.body) {
         removeItems(
           Array.from(selected).map((id) => {
-            const [row, order] = id.split("-").slice(1).map(Number);
-            return { row, order };
+            const [row, column] = id.split("-").slice(1).map(Number);
+            return { position: { row, column } };
           }),
         );
       }
@@ -680,22 +486,35 @@
     style:max-width={maxWidth + "px"}
     bind:clientWidth
   >
-    {#each rowMaps as { items, height, layout }, rowIndex (rowIndex)}
-      {@const isSpreadEvenly =
-        layout.join(", ") === baseLayoutArrays[layout.length].join(", ")}
+    {#each specCanvasRows as { items = [], height = MIN_HEIGHT, heightUnit = "px" }, rowIndex (rowIndex)}
+      {@const widths = normalizeSizeArray(items?.map((el) => el?.width ?? 0))}
+      {@const isSpreadEvenly = items?.every(
+        (el) => el?.width === items?.[0]?.width,
+      )}
+      {@const stringHeight = `${height}${heightUnit}`}
+      {@const types = items?.map(
+        (item) =>
+          canvasData?.resolvedComponents?.[item?.component ?? ""]?.component
+            ?.spec?.renderer,
+      )}
+
       <RowWrapper
         zIndex={50 - rowIndex * 2}
         {maxWidth}
-        {height}
+        height={stringHeight}
         rowId={rowIndex}
-        gridTemplate={layout.map((el) => `${el}fr`).join(" ")}
+        gridTemplate={widths.map((el) => el + "fr").join(" ")}
       >
-        {#each items as itemIndex, columnIndex (columnIndex)}
+        {#each items as item, columnIndex (columnIndex)}
+          {@const width = widths[columnIndex]}
           {@const id = getId(rowIndex, columnIndex)}
-          {@const item = canvasItems[Number(itemIndex)]}
+          {@const type = types[columnIndex]}
           <div
             style:z-index={4 - columnIndex}
-            class="p-2.5 relative pointer-events-none min-h-fit size-full container"
+            style:max-height={type === "kpi_grid" || type === "markdown"
+              ? undefined
+              : stringHeight}
+            class="p-2.5 relative pointer-events-none size-full container min-h-full"
           >
             {#if editable}
               {#if columnIndex === 0}
@@ -714,7 +533,7 @@
               <ElementDivider
                 {isSpreadEvenly}
                 onMouseDown={onColumResizeStart}
-                columnWidth={layout[columnIndex]}
+                columnWidth={width}
                 {rowIndex}
                 dragging={!!dragItemInfo}
                 resizeIndex={columnIndex}
@@ -737,50 +556,37 @@
               role="presentation"
               {id}
               class:selected={selected.has(id)}
-              class:opacity-20={dragItemInfo?.row === rowIndex &&
-                dragItemInfo.order === columnIndex}
+              class:opacity-20={dragItemInfo?.position?.row === rowIndex &&
+                dragItemInfo?.position?.column === columnIndex}
               class:pointer-events-none={resizeColumnInfo}
               class:pointer-events-auto={!resizeColumnInfo}
               class:editable
-              class="group component-card w-full flex-col min-h-fit cursor-pointer z-10 p-0 h-full relative outline outline-[1px] outline-gray-200 bg-white overflow-hidden rounded-sm flex"
+              class:outline={!hideBorder.has(type)}
+              class:shadow-sm={!hideBorder.has(type)}
+              on:mousedown={(e) => {
+                if (e.button !== 0 || !editable) return;
+
+                setSelectedComponent({ column: columnIndex, row: rowIndex });
+                selected = new Set([id]);
+                openSidebar();
+
+                if (dragTimeout) clearTimeout(dragTimeout);
+
+                dragTimeout = setTimeout(() => {
+                  handleDragStart({
+                    position: { row: rowIndex, column: columnIndex },
+                    type: "line_chart",
+                  });
+                }, 100);
+              }}
+              class="group component-card w-full flex flex-col cursor-pointer z-10 p-0 h-full relative outline-[1px] outline-gray-200 bg-white overflow-hidden rounded-sm"
             >
-              <div
-                class="group-hover:flex hidden hover:shadow-sm bg-white hover:bg-slate-50 border-transparent hover:border-slate-200 border-b border-l overflow-hidden absolute top-0 right-0 w-fit h-7 rounded-bl-sm z-[10000]"
-              >
-                <button
-                  on:mousedown={(e) => {
-                    if (e.button !== 0 || !editable) return;
-
-                    if (itemIndex === null) return;
-                    handleDragStart({
-                      name: itemIndex,
-                      row: rowIndex,
-                      order: columnIndex,
-                      type: "kpi",
-                      height: height,
-                    });
-                  }}
-                  class="grid place-content-center active:bg-slate-200 hover:bg-slate-100 size-full aspect-square"
-                >
-                  <DragHandle size="17px" />
-                </button>
-
-                <button
-                  on:mousedown={(e) => {
-                    if (e.button !== 0 || !editable) return;
-                    setSelectedComponentIndex(Number(itemIndex));
-                    selected = new Set([id]);
-                    openSidebar();
-                  }}
-                  class="size-full aspect-square grid place-content-center active:bg-slate-200 hover:bg-slate-100"
-                >
-                  <Edit size="13px" />
-                </button>
-              </div>
-              {#if item}
+              {#if item?.component}
                 <PreviewElement component={item} />
               {:else}
-                <LoadingSpinner size="36px" />
+                <div class="size-full grid place-content-center">
+                  <LoadingSpinner size="36px" />
+                </div>
               {/if}
             </article>
           </div>
@@ -794,12 +600,7 @@
             {onRowResizeStart}
             {onDrop}
             addItem={(type) => {
-              initializeRow(rowIndex + 1, [
-                {
-                  name: canvasItems.length,
-                  type,
-                },
-              ]);
+              initializeRow(rowIndex + 1, type);
             }}
           />
 
@@ -810,12 +611,7 @@
               {onRowResizeStart}
               {onDrop}
               addItem={(type) => {
-                initializeRow(rowIndex, [
-                  {
-                    name: canvasItems.length,
-                    type,
-                  },
-                ]);
+                initializeRow(rowIndex, type);
               }}
             />
           {/if}
@@ -829,12 +625,7 @@
             if (timeout) clearTimeout(timeout);
           }}
           onItemClick={(type) => {
-            initializeRow(0, [
-              {
-                name: canvasItems.length,
-                type,
-              },
-            ]);
+            initializeRow(0, type);
           }}
         />
       {:else}
@@ -846,13 +637,29 @@
   </div>
 </div>
 
-<style lang="postcss">
-  .component-card {
-    @apply shadow-sm;
-  }
+{#if dragItemInfo && dragItemInfo.position}
+  {@const item =
+    specCanvasRows[dragItemInfo.position.row]?.items?.[
+      dragItemInfo.position.column
+    ]}
+  {#if item}
+    <div
+      class="group opacity-50 container pointer-events-none shadow-lg component-card flex-col cursor-pointer p-0 absolute outline outline-primary-300 bg-white overflow-hidden rounded-sm flex"
+      use:portal
+      style:z-index="1000"
+      style:top="{dragItemPosition.top}px"
+      style:left="{dragItemPosition.left}px"
+      style:width="{dragItemDimensions.width}px"
+      style:height="{dragItemDimensions.height}px"
+    >
+      <PreviewElement component={item} />
+    </div>
+  {/if}
+{/if}
 
+<style lang="postcss">
   .component-card.editable:hover {
-    @apply shadow-md;
+    @apply shadow-md outline;
   }
 
   .component-card:has(.component-error) {

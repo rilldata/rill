@@ -2,7 +2,7 @@
   export let zIndex = 50;
   export let maxWidth: number;
   export let gridTemplate: string;
-  export let height: number;
+  export let height: string;
   export let rowId: number;
 </script>
 
@@ -12,7 +12,7 @@
   class="w-full grid canvas-row relative min-h-fit"
   style:z-index={zIndex}
   style:max-width="{maxWidth}px"
-  style:height="{height}px"
+  style:height
   style:grid-template-columns={gridTemplate}
 >
   <slot />

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { act } from "@testing-library/svelte";
   import AddComponentDropdown from "./AddComponentDropdown.svelte";
   import type { CanvasComponentType } from "./components/types";
   import { dropZone, hoveredDivider, activeDivider } from "./stores/ui-stores";
@@ -9,6 +10,8 @@
   export let onDrop: (row: number, column: number | null) => void;
   export let onRowResizeStart: (e: MouseEvent) => void;
   export let addItem: (type: CanvasComponentType) => void;
+
+  let open = false;
 
   $: dividerId = `row:${resizeIndex}::column:null`;
   $: dropId = `row:${dropIndex}::column:null`;
@@ -21,6 +24,10 @@
 
   $: showAddComponent = isHoveredDivider && !isActiveDivider;
   $: notResizable = resizeIndex === -1;
+
+  $: if (!showAddComponent) {
+    open = false;
+  }
 
   function focus() {
     activeDivider.set(dividerId);
@@ -62,7 +69,9 @@
       focus();
     }}
     on:mouseenter={hover}
-    on:mouseleave={hoveredDivider.reset}
+    on:mouseleave={() => {
+      if (!open) hoveredDivider.reset();
+    }}
   >
     <span
       class:bg-primary-300={isActiveDivider || isHoveredDivider || isDropZone}
@@ -73,11 +82,14 @@
   {#if showAddComponent}
     <span
       role="presentation"
-      on:mouseleave={hoveredDivider.reset}
       class:shift-down={notResizable}
       class="flex shadow-sm pointer-events-auto absolute left-1/2 w-fit z-50 bg-white -translate-x-1/2 border rounded-sm"
+      on:mouseleave={() => {
+        if (!open) hoveredDivider.reset();
+      }}
     >
       <AddComponentDropdown
+        bind:open
         onMouseEnter={hover}
         onItemClick={(type) => {
           hoveredDivider.reset();

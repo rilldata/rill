@@ -27,9 +27,11 @@
   $: componentFilters = getComponentFilterProperties(rendererProperties);
 </script>
 
-{#if !isChartType}
-  <ComponentHeader {title} {description} filters={componentFilters} />
-{/if}
-{#if renderer && rendererProperties}
-  <ComponentRenderer {renderer} {rendererProperties} {componentName} />
-{/if}
+<div class="size-full flex flex-col">
+  {#if !isChartType}
+    <ComponentHeader {title} {description} filters={componentFilters} />
+  {/if}
+  {#if renderer && rendererProperties}
+    <ComponentRenderer {renderer} {rendererProperties} {componentName} />
+  {/if}
+</div>
