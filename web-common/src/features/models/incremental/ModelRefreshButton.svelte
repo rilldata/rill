@@ -2,14 +2,14 @@
   import { Button } from "@rilldata/web-common/components/button";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import {
     V1ReconcileStatus,
     type V1Resource,
     createRuntimeServiceCreateTrigger,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
   export let resource: V1Resource | undefined;
   export let hasUnsavedChanges: boolean;
@@ -48,7 +48,7 @@
           {#if hasUnsavedChanges}
             Save your changes to refresh
           {:else}
-            Refresh source
+            Refresh model
           {/if}
         </TooltipContent>
       </Tooltip>
