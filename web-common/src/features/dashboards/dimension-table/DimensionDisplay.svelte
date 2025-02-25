@@ -17,7 +17,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { getComparisonRequestMeasures } from "../dashboard-utils";
   import { mergeDimensionAndMeasureFilter } from "../filters/measure-filters/measure-filter-utils";
-  import { getSort } from "../leaderboard/leaderboard-utils";
+  import { getMultipleSort } from "../leaderboard/leaderboard-utils";
   import { getFiltersForOtherDimensions } from "../selectors";
   import { getMeasuresForDimensionTable } from "../state-managers/selectors/dashboard-queries";
   import { dimensionSearchText } from "../stores/dashboard-stores";
@@ -29,7 +29,7 @@
 
   const queryLimit = 250;
 
-  export let activeMeasureName: string;
+  export let activeMeasureNames: string[];
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
   export let whereFilter: V1Expression;
@@ -93,12 +93,13 @@
     },
   );
 
-  $: unfilteredTotal = $totalsQuery?.data?.data?.[0]?.[activeMeasureName] ?? 0;
+  $: unfilteredTotal =
+    $totalsQuery?.data?.data?.[0]?.[activeMeasureNames[0]] ?? 0;
 
   $: columns = $virtualizedTableColumns($totalsQuery);
 
   $: measures = getMeasuresForDimensionTable(
-    activeMeasureName,
+    activeMeasureNames[0],
     dimensionThresholdFilters,
     visibleMeasureNames,
   )
@@ -110,9 +111,24 @@
     )
     .concat(
       ...(comparisonTimeRange
-        ? getComparisonRequestMeasures(activeMeasureName)
+        ? activeMeasureNames.flatMap((name) =>
+            getComparisonRequestMeasures(name),
+          )
         : []),
     );
+
+  $: sort = getMultipleSort(
+    $sortedAscending,
+    $sortType,
+    activeMeasureNames,
+    dimensionName,
+    !!comparisonTimeRange,
+  );
+
+  $: where = sanitiseExpression(
+    mergeDimensionAndMeasureFilter(filterSet, dimensionThresholdFilters),
+    undefined,
+  );
 
   $: sortedQuery = createQueryServiceMetricsViewAggregation(
     instanceId,
@@ -122,17 +138,8 @@
       measures,
       timeRange,
       comparisonTimeRange,
-      sort: getSort(
-        $sortedAscending,
-        $sortType,
-        activeMeasureName,
-        dimensionName,
-        !!comparisonTimeRange,
-      ),
-      where: sanitiseExpression(
-        mergeDimensionAndMeasureFilter(filterSet, dimensionThresholdFilters),
-        undefined,
-      ),
+      sort,
+      where,
       limit: queryLimit.toString(),
       offset: "0",
     },
