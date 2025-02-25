@@ -1,18 +1,17 @@
-import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { mapTimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
+import { mapSelectedTimeRangeToV1TimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
 import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import {
-  createQueryServiceExport,
-  V1ExportFormat,
   type V1MetricsViewAggregationRequest,
   type V1MetricsViewAggregationSort,
+  type V1Query,
   V1TimeGrain,
   type V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
-import { derived, get } from "svelte/store";
+import { get } from "svelte/store";
 import { runtime } from "../../../runtime-client/runtime-store";
 import type { StateManagers } from "../state-managers/state-managers";
 import { getPivotConfig } from "./pivot-data-config";
@@ -26,119 +25,56 @@ import {
   type PivotState,
 } from "./types";
 
-export default async function exportPivot({
-  ctx,
-  query,
-  format,
-  timeDimension,
-}: {
-  ctx: StateManagers;
-  query: ReturnType<typeof createQueryServiceExport>;
-  format: V1ExportFormat;
-  timeDimension: string | undefined;
-}) {
-  const instanceId = get(runtime).instanceId;
+export function getPivotExportQuery(ctx: StateManagers, isScheduled: boolean) {
   const metricsViewName = get(ctx.metricsViewName);
-  const dashboard = get(ctx.dashboardStore);
-  const selectedTimeRange = get(
-    ctx.selectors.timeRangeSelectors.selectedTimeRangeState,
-  );
+  const validSpecStore = get(ctx.validSpecStore);
+  const timeControlState = get(useTimeControlStore(ctx));
+  const dashboardState = get(ctx.dashboardStore);
+  const configStore = get(getPivotConfig(ctx));
   const rows = get(ctx.selectors.pivot.rows);
   const columns = get(ctx.selectors.pivot.columns);
 
-  const configStore = getPivotConfig(ctx);
-  const isFlat = get(configStore).isFlat;
-  const enableComparison = get(configStore).enableComparison;
-  const comparisonTime = get(configStore).comparisonTime;
-  const pivotState = get(configStore).pivot;
+  if (!validSpecStore.data?.explore || !timeControlState.ready)
+    return undefined;
 
-  const timeRange = {
-    start: selectedTimeRange?.start.toISOString(),
-    end: selectedTimeRange?.end.toISOString(),
-  };
+  const enableComparison = configStore.enableComparison;
+  const isFlat = configStore.isFlat;
+  const comparisonTime = configStore.comparisonTime;
+  const pivotState = configStore.pivot;
 
-  const pivotAggregationRequest = getPivotAggregationRequest(
-    metricsViewName,
-    timeDimension ?? "",
-    dashboard,
-    timeRange,
-    rows,
-    columns,
-    enableComparison,
-    comparisonTime,
-    isFlat,
-    pivotState,
+  const metricsViewSpec = validSpecStore.data?.metricsView ?? {};
+  const exploreSpec = validSpecStore.data?.explore ?? {};
+
+  const timeRange = mapSelectedTimeRangeToV1TimeRange(
+    timeControlState,
+    dashboardState.selectedTimezone,
+    exploreSpec,
   );
+  if (!timeRange) return undefined;
+  if (!isScheduled) {
+    // To match the UI's time range, we must explicitly specify `timeEnd` for on-demand exports
+    timeRange.end = timeControlState.timeEnd;
+  }
 
-  const result = await get(query).mutateAsync({
-    instanceId,
-    data: {
-      format,
-      query: {
-        metricsViewAggregationRequest: pivotAggregationRequest,
-      },
-    },
-  });
-
-  const downloadUrl = `${get(runtime).host}${result.downloadUrlPath}`;
-
-  window.open(downloadUrl, "_self");
-}
-
-export function getPivotExportArgs(ctx: StateManagers) {
-  return derived(
-    [
-      ctx.metricsViewName,
-      ctx.validSpecStore,
-      useTimeControlStore(ctx),
-      ctx.dashboardStore,
-      getPivotConfig(ctx),
-      ctx.selectors.pivot.rows,
-      ctx.selectors.pivot.columns,
-    ],
-    ([
+  const query: V1Query = {
+    metricsViewAggregationRequest: getPivotAggregationRequest(
       metricsViewName,
-      validSpecStore,
-      timeControlState,
+      metricsViewSpec.timeDimension ?? "",
       dashboardState,
-      configStore,
+      timeRange,
       rows,
       columns,
-    ]) => {
-      if (!validSpecStore.data?.explore || !timeControlState.ready)
-        return undefined;
+      enableComparison,
+      comparisonTime,
+      isFlat,
+      pivotState,
+    ),
+  };
 
-      const enableComparison = configStore.enableComparison;
-      const comparisonTime = configStore.comparisonTime;
-      const isFlat = configStore.isFlat;
-      const pivotState = configStore.pivot;
-
-      const metricsViewSpec = validSpecStore.data?.metricsView ?? {};
-      const exploreSpec = validSpecStore.data?.explore ?? {};
-      const timeRange = mapTimeRange(
-        timeControlState,
-        dashboardState.selectedTimezone,
-        exploreSpec,
-      );
-      if (!timeRange) return undefined;
-
-      return getPivotAggregationRequest(
-        metricsViewName,
-        metricsViewSpec.timeDimension ?? "",
-        dashboardState,
-        timeRange,
-        rows,
-        columns,
-        enableComparison,
-        comparisonTime,
-        isFlat,
-        pivotState,
-      );
-    },
-  );
+  return query;
 }
 
-export function getPivotAggregationRequest(
+function getPivotAggregationRequest(
   metricsView: string,
   timeDimension: string,
   dashboardState: MetricsExplorerEntity,
@@ -233,7 +169,13 @@ export function getPivotAggregationRequest(
       ? prepareMeasureForComparison(measures)
       : measures,
     dimensions: allDimensions,
-    where: sanitiseExpression(mergeMeasureFilters(dashboardState), undefined),
+    where: sanitiseExpression(
+      mergeDimensionAndMeasureFilters(
+        dashboardState.whereFilter,
+        dashboardState.dimensionThresholdFilters,
+      ),
+      undefined,
+    ),
     pivotOn,
     sort,
     offset: "0",

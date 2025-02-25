@@ -4,14 +4,10 @@
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import {
-    V1ExportFormat,
-    createQueryServiceExport,
-  } from "../../../runtime-client";
   import ExportMenu from "../../exports/ExportMenu.svelte";
   import { featureFlags } from "../../feature-flags";
   import { getStateManagers } from "../state-managers/state-managers";
-  import exportPivot, { getPivotExportArgs } from "./pivot-export";
+  import { getPivotExportQuery } from "./pivot-export";
 
   export let showPanels = true;
   export let isFetching = false;
@@ -19,7 +15,7 @@
   const { adminServer, exports } = featureFlags;
 
   const stateManagers = getStateManagers();
-  const { exploreName, dashboardStore, validSpecStore } = stateManagers;
+  const { exploreName, dashboardStore } = stateManagers;
 
   $: expanded = $dashboardStore?.pivot?.expanded ?? {};
   $: metricsViewProto = $dashboardStore.proto;
@@ -52,19 +48,6 @@
 
   //   metricsExplorerStore.setPivotExpanded($exploreName, expanded);
   // }
-
-  const scheduledReportsQueryArgs = getPivotExportArgs(stateManagers);
-
-  const exportDash = createQueryServiceExport();
-
-  async function handleExportPivot(format: V1ExportFormat) {
-    await exportPivot({
-      ctx: stateManagers,
-      query: exportDash,
-      format,
-      timeDimension: $validSpecStore.data?.metricsView?.timeDimension,
-    });
-  }
 </script>
 
 <div class="flex items-center gap-x-4 select-none pointer-events-none">
@@ -108,9 +91,9 @@
   {#if $exports}
     <ExportMenu
       label="Export pivot data"
-      onExport={handleExportPivot}
       includeScheduledReport={$adminServer}
-      queryArgs={$scheduledReportsQueryArgs}
+      getQuery={(isScheduled) =>
+        getPivotExportQuery(stateManagers, isScheduled)}
       exploreName={$exploreName}
       {metricsViewProto}
     />
