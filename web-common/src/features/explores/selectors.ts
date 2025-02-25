@@ -7,6 +7,7 @@ import {
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import { getExploreStateFromSessionStorage } from "@rilldata/web-common/features/dashboards/url-state/getExploreStateFromSessionStorage";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import { asyncWait, waitUntil } from "@rilldata/web-common/lib/waitUtils";
 import {
   createRuntimeServiceGetExplore,
   getQueryServiceMetricsViewTimeRangeQueryKey,
@@ -23,7 +24,9 @@ import {
   queryServiceMetricsViewSchema,
 } from "@rilldata/web-common/runtime-client";
 import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { error } from "@sveltejs/kit";
+import { get } from "svelte/store";
 
 export function useExplore(
   instanceId: string,
@@ -85,6 +88,8 @@ export async function fetchExploreSpec(
   instanceId: string,
   exploreName: string,
 ) {
+  await waitUntil(() => get(runtime).instanceId === instanceId, 5_000, 50);
+
   const queryParams = {
     name: exploreName,
   };
@@ -97,6 +102,7 @@ export async function fetchExploreSpec(
     queryFn: queryFunction,
     queryKey,
     staleTime: Infinity,
+    cacheTime: Infinity,
   });
 
   const exploreResource = response.explore;
@@ -112,6 +118,11 @@ export async function fetchExploreSpec(
   const metricsViewSpec =
     metricsViewResource.metricsView.state?.validSpec ?? {};
   const exploreSpec = exploreResource.explore.state?.validSpec ?? {};
+
+  const schema = await fetchMetricsViewSchema(
+    instanceId,
+    exploreSpec.metricsView ?? "",
+  );
 
   let fullTimeRange: V1MetricsViewTimeRangeResponse | undefined = undefined;
   const metricsViewName = exploreSpec.metricsView;
@@ -145,6 +156,7 @@ export async function fetchExploreSpec(
     metricsView: metricsViewResource,
     defaultExplorePreset,
     exploreStateFromYAMLConfig,
+    schema,
     errors,
   };
 }
@@ -158,7 +170,10 @@ export async function fetchMetricsViewSchema(
       instanceId,
       metricsViewName,
     ),
-    queryFn: () => queryServiceMetricsViewSchema(instanceId, metricsViewName),
+    queryFn: async () => {
+      await asyncWait(10_000);
+      return queryServiceMetricsViewSchema(instanceId, metricsViewName);
+    },
   });
   return schemaResp.schema ?? {};
 }

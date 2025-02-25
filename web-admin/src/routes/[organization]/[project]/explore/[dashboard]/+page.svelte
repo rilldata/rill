@@ -20,26 +20,29 @@
 
   export let data: PageData;
   $: ({
-    defaultExplorePreset,
-    homeBookmarkExploreState,
-    exploreStateFromYAMLConfig,
-    partialExploreStateFromUrl,
-    exploreStateFromSessionStorage,
-    errors,
+    exploreSpecPromise,
+    exploreStatePromise,
+    homeBookmarkExploreStatePromise,
     exploreName,
   } = data);
 
-  $: if (errors?.length) {
-    const _errs = errors;
-    setTimeout(() => {
-      eventBus.emit("notification", {
-        type: "error",
-        message: _errs[0].message,
-        options: { persisted: true },
-      });
-    }, 100);
-  }
+  // TODO
+  // $: if (errors?.length) {
+  //   const _errs = errors;
+  //   setTimeout(() => {
+  //     eventBus.emit("notification", {
+  //       type: "error",
+  //       message: _errs[0].message,
+  //       options: { persisted: true },
+  //     });
+  //   }, 100);
+  // }
 
+  $: allDataPromise = Promise.all([
+    exploreSpecPromise,
+    exploreStatePromise,
+    homeBookmarkExploreStatePromise,
+  ]);
   $: ({ instanceId } = $runtime);
   $: ({ organization: orgName, project: projectName } = $page.params);
 
@@ -142,22 +145,27 @@
     <DashboardErrored organization={orgName} project={projectName} />
   {:else if metricsViewName}
     {#key exploreName}
-      <StateManagersProvider {metricsViewName} {exploreName}>
-        <DashboardURLStateSync
-          {metricsViewName}
-          {exploreName}
-          extraKeyPrefix={`${orgName}__${projectName}__`}
-          {defaultExplorePreset}
-          initExploreState={homeBookmarkExploreState}
-          {exploreStateFromYAMLConfig}
-          {partialExploreStateFromUrl}
-          {exploreStateFromSessionStorage}
-        >
-          <DashboardThemeProvider>
-            <Dashboard {metricsViewName} {exploreName} />
-          </DashboardThemeProvider>
-        </DashboardURLStateSync>
-      </StateManagersProvider>
+      {#await allDataPromise}
+        Loading...
+      {:then values}
+        <StateManagersProvider {metricsViewName} {exploreName}>
+          <DashboardURLStateSync
+            {metricsViewName}
+            {exploreName}
+            extraKeyPrefix={`${orgName}__${projectName}__`}
+            defaultExplorePreset={values[0].defaultExplorePreset}
+            initExploreState={values[2]}
+            exploreStateFromYAMLConfig={values[0].exploreStateFromYAMLConfig}
+            partialExploreStateFromUrl={values[1].partialExploreStateFromUrl}
+            exploreStateFromSessionStorage={values[1]
+              .exploreStateFromSessionStorage}
+          >
+            <DashboardThemeProvider>
+              <Dashboard {metricsViewName} {exploreName} />
+            </DashboardThemeProvider>
+          </DashboardURLStateSync>
+        </StateManagersProvider>
+      {/await}
     {/key}
   {/if}
 {/if}
