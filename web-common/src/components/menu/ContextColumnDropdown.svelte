@@ -6,6 +6,8 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
+  import Delta from "@rilldata/web-common/components/icons/Delta.svelte";
+  import PieChart from "@rilldata/web-common/components/icons/PieChart.svelte";
 
   export let isValidPercentOfTotal = false;
   export let isTimeComparisonActive = false;
@@ -90,7 +92,21 @@
               checked={selectedSortType === option.value}
               onCheckedChange={() => toggleContextColumn(option.value)}
             >
-              {option.label}
+              <div class="flex items-center gap-x-1">
+                {#if option.value === LeaderboardContextColumn.DELTA_ABSOLUTE}
+                  <Delta />
+                {:else if option.value === LeaderboardContextColumn.DELTA_PERCENT}
+                  <Delta /> %
+                {:else if option.value === LeaderboardContextColumn.PERCENT}
+                  <PieChart /> %
+                {/if}
+                {option.label}
+                {#if option.description}
+                  <span class="ui-copy-muted text-[11px] ml-1">
+                    ({option.description})
+                  </span>
+                {/if}
+              </div>
             </DropdownMenu.CheckboxItem>
           {/each}
         </div>
