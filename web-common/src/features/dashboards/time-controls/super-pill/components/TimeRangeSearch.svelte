@@ -13,7 +13,7 @@
     "-45M",
     "-32D",
     "-1Y",
-    "-2Q, latest/Q",
+    "-2Q to latest/Q",
   ]);
 
   export function updateSearch(value: string) {
