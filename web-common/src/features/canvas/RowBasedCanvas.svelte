@@ -21,24 +21,22 @@
   import { useDefaultMetrics } from "./selector";
   import { getCanvasStateManagers } from "./state-managers/state-managers";
   import { activeDivider, dropZone } from "./stores/ui-stores";
-  import { rowsGuard, mapGuard, moveToRow } from "./layout-util";
-  import type { DragItem } from "./layout-util";
+  import {
+    rowsGuard,
+    mapGuard,
+    moveToRow,
+    MIN_HEIGHT,
+    MIN_WIDTH,
+    COLUMN_COUNT,
+  } from "./layout-util";
+  import type { DragItem, YAMLRow } from "./layout-util";
   import { portal } from "@rilldata/web-common/lib/actions/portal";
 
   type V1CanvasRow = Omit<APIV1CanvasRow, "items"> & {
     items: (V1CanvasItem | null)[];
   };
 
-  const COLUMN_COUNT = 12;
-  const MIN_HEIGHT = 40;
-  const MIN_WIDTH = 3;
-  const baseLayoutArrays = [
-    [],
-    [COLUMN_COUNT],
-    [6, 6],
-    [4, 4, 4],
-    [3, 3, 3, 3],
-  ];
+  const hideBorder = new Set<string | undefined>(["markdown", "image"]);
 
   const ctx = getCanvasStateManagers();
 
@@ -77,6 +75,8 @@
   } | null = null;
   let timeout: ReturnType<typeof setTimeout> | null = null;
   let dragTimeout: ReturnType<typeof setTimeout> | null = null;
+  let dragItemPosition = { top: 0, left: 0 };
+  let dragItemDimensions = { width: 0, height: 0 };
 
   $: ({ instanceId } = $runtime);
 
@@ -243,9 +243,6 @@
     };
   }
 
-  let dragItemPosition = { top: 0, left: 0 };
-  let dragItemDimensions = { width: 0, height: 0 };
-
   $: if (dragItemInfo) {
     dragItemPosition = {
       top: mousePosition.y + offset.y,
@@ -306,17 +303,30 @@
     const yamlRow = structuredClone(yamlCanvasRows[index]);
     if (!specRow?.items || !yamlRow?.items) return;
 
-    const baseLayoutArray = baseLayoutArrays[specRow.items.length];
+    const baseSize = COLUMN_COUNT / specRow.items.length;
 
-    baseLayoutArray.forEach((width, i) => {
+    yamlRow.items.forEach((_, i) => {
       if (!specRow.items[i] || !yamlRow.items[i]) return;
-      specRow.items[i].width = width;
-      yamlRow.items[i].width = width;
+      specRow.items[i].width = baseSize;
+      yamlRow.items[i].width = baseSize;
     });
 
-    contents.setIn(["rows", index], yamlRow);
+    updateAssets(specCanvasRows, yamlCanvasRows);
+  }
 
-    specCanvasRows[index] = specRow;
+  function updateAssets(
+    specRows: V1CanvasRow[],
+    yamlRows: YAMLRow[],
+    clearSelection = true,
+  ) {
+    if (clearSelection) {
+      selected = new Set();
+      setSelectedComponent(null);
+    }
+
+    specCanvasRows = specRows;
+
+    contents.setIn(["rows"], yamlRows);
 
     updateContents();
   }
@@ -329,39 +339,21 @@
     const newYamlRows = moveToRow(yamlCanvasRows, items, { row, column });
     const newSpecRows = moveToRow(specCanvasRows, items, { row, column });
 
-    specCanvasRows = newSpecRows;
-
-    selected = new Set();
-    setSelectedComponent(null);
-
-    contents.setIn(["rows"], newYamlRows);
-    updateContents();
+    updateAssets(newSpecRows, newYamlRows);
   }
 
   function moveToNewRow(items: DragItem[], row: number) {
     const newSpecRows = moveToRow(specCanvasRows, items, { row });
     const newYamlRows = moveToRow(yamlCanvasRows, items, { row });
 
-    selected = new Set();
-    setSelectedComponent(null);
-
-    contents.setIn(["rows"], newYamlRows);
-    specCanvasRows = newSpecRows;
-
-    updateContents();
+    updateAssets(newSpecRows, newYamlRows);
   }
 
   function removeItems(items: { position: { row: number; column: number } }[]) {
     const newSpecRows = moveToRow(specCanvasRows, items);
     const newYamlRows = moveToRow(yamlCanvasRows, items);
 
-    selected = new Set();
-    setSelectedComponent(null);
-
-    specCanvasRows = newSpecRows;
-    contents.setIn(["rows"], newYamlRows);
-
-    updateContents();
+    updateAssets(newSpecRows, newYamlRows);
   }
 
   function addItems(
@@ -383,11 +375,7 @@
       position,
     );
 
-    specCanvasRows = newSpecRows;
-
-    contents.setIn(["rows"], newYamlRows);
-
-    updateContents();
+    updateAssets(newSpecRows, newYamlRows);
   }
 
   function updateContents() {
@@ -402,7 +390,7 @@
     const count = array.length;
 
     if (sum !== 12) {
-      return baseLayoutArrays[count];
+      return Array.from({ length: count }, () => 12 / count);
     }
 
     return zeroed;
@@ -419,11 +407,7 @@
     );
     const newSpecRows = moveToRow(specCanvasRows, [{ type }], { row });
 
-    specCanvasRows = newSpecRows;
-
-    contents.setIn(["rows"], newYamlRows);
-
-    updateContents();
+    updateAssets(newSpecRows, newYamlRows);
   }
 
   function onDrop(row: number, column: number | null) {
@@ -443,7 +427,6 @@
     setSelectedComponent(null);
     selected = new Set();
   }
-  const hideBorder = new Set<string | undefined>(["markdown", "image"]);
 </script>
 
 <svelte:window
@@ -686,12 +669,6 @@
       /* grid-auto-rows: max-content; */
     }
   }
-
-  /* 
-  .element {
-    @apply size-full grid;
-    grid-template-columns: repeat(4, 1fr);
-  } */
 
   @container container (inline-size < 600px) {
     .element {

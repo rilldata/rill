@@ -21,14 +21,15 @@ const initialHeights: Record<CanvasComponentType, number> = {
 
 const componentRegistry = getComponentRegistry();
 
-const MIN_HEIGHT = 40;
-const COLUMN_COUNT = 12;
+export const MIN_HEIGHT = 40;
+export const MIN_WIDTH = 3;
+export const COLUMN_COUNT = 12;
 
 type YAMLItem = Record<string, unknown> & {
   width?: number;
 };
 
-type YAMLRow = {
+export type YAMLRow = {
   items: (YAMLItem | null)[];
   height?: string;
 };
