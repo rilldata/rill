@@ -1,62 +1,70 @@
 import { getComparisonRequestMeasures } from "@rilldata/web-common/features/dashboards/dashboard-utils";
-import { getDimensionFilterWithSearch } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-utils";
 import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaRelativeSuffix,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
-import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
-  mapComparisonTimeRange,
-  mapTimeRange,
+  mapSelectedComparisonTimeRangeToV1TimeRange,
+  mapSelectedTimeRangeToV1TimeRange,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
 import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
   V1MetricsViewAggregationMeasure,
   V1MetricsViewAggregationRequest,
+  V1Query,
   V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { derived, get, type Readable } from "svelte/store";
+import { get } from "svelte/store";
+import { buildWhereParamForDimensionTableAndTDDExports } from "../../exports/export-filters";
+import { dimensionSearchText as dimensionSearchTextStore } from "../stores/dashboard-stores";
 
-export function getDimensionTableExportArgs(
+export function getDimensionTableExportQuery(
   ctx: StateManagers,
-): Readable<V1MetricsViewAggregationRequest | undefined> {
-  return derived(
-    [
-      ctx.metricsViewName,
-      ctx.dashboardStore,
-      useTimeControlStore(ctx),
-      ctx.validSpecStore,
-    ],
-    ([metricsViewName, dashboardState, timeControlState, validSpecStore]) => {
-      if (!validSpecStore.data?.explore || !timeControlState.ready)
-        return undefined;
+  isScheduled: boolean,
+): V1Query | undefined {
+  const metricsViewName = get(ctx.metricsViewName);
+  const dashboardState = get(ctx.dashboardStore);
+  const timeControlState = get(useTimeControlStore(ctx));
+  const validSpecStore = get(ctx.validSpecStore);
+  const dimensionSearchText = get(dimensionSearchTextStore);
 
-      const timeRange = mapTimeRange(
-        timeControlState,
-        dashboardState.selectedTimezone,
-        validSpecStore.data.explore,
-      );
-      if (!timeRange) return undefined;
+  if (!validSpecStore.data?.explore || !timeControlState.ready)
+    return undefined;
 
-      const comparisonTimeRange = mapComparisonTimeRange(
-        timeControlState,
-        timeRange,
-      );
-
-      return getDimensionTableAggregationRequestForTime(
-        metricsViewName,
-        dashboardState,
-        timeRange,
-        comparisonTimeRange,
-      );
-    },
+  const timeRange = mapSelectedTimeRangeToV1TimeRange(
+    timeControlState,
+    dashboardState.selectedTimezone,
+    validSpecStore.data.explore,
   );
+  const comparisonTimeRange = mapSelectedComparisonTimeRangeToV1TimeRange(
+    timeControlState,
+    timeRange,
+  );
+  if (!timeRange) return undefined;
+  if (!isScheduled) {
+    // To match the UI's time range, we must explicitly specify `timeEnd` for on-demand exports
+    timeRange.end = timeControlState.timeEnd;
+    if (comparisonTimeRange) {
+      comparisonTimeRange.end = timeControlState.timeEnd;
+    }
+  }
+
+  const query: V1Query = {
+    metricsViewAggregationRequest: getDimensionTableAggregationRequestForTime(
+      metricsViewName,
+      dashboardState,
+      timeRange,
+      comparisonTimeRange,
+      dimensionSearchText,
+    ),
+  };
+
+  return query;
 }
 
 export function getDimensionTableAggregationRequestForTime(
@@ -64,7 +72,7 @@ export function getDimensionTableAggregationRequestForTime(
   dashboardState: MetricsExplorerEntity,
   timeRange: V1TimeRange,
   comparisonTimeRange: V1TimeRange | undefined,
-  searchText = "",
+  dimensionSearchText: string,
 ): V1MetricsViewAggregationRequest {
   const measures: V1MetricsViewAggregationMeasure[] = [
     ...dashboardState.visibleMeasureKeys,
@@ -94,16 +102,11 @@ export function getDimensionTableAggregationRequestForTime(
     }
   }
 
-  const where = sanitiseExpression(
-    mergeMeasureFilters(
-      dashboardState,
-      getDimensionFilterWithSearch(
-        dashboardState?.whereFilter,
-        searchText,
-        dashboardState.selectedDimensionName!,
-      ),
-    ),
-    undefined,
+  const where = buildWhereParamForDimensionTableAndTDDExports(
+    dashboardState.whereFilter,
+    dashboardState.dimensionThresholdFilters,
+    dashboardState.selectedDimensionName!, // must exist when viewing a dimension table
+    dimensionSearchText,
   );
 
   return {
