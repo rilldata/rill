@@ -87,10 +87,10 @@
         {firstMeasure}
         tooltipText="Choose measures to filter by"
         selectedMeasureNames={$leaderboardMeasureNames}
-        onSelect={(names) => {
-          setLeaderboardMeasureNames(names);
+        onToggle={(name) => {
+          toggleLeaderboardMeasureNames(allMeasureNames, name);
         }}
-        onToggleSelectAll={() => {
+        onSelectAll={() => {
           toggleLeaderboardMeasureNames(allMeasureNames);
         }}
       />
