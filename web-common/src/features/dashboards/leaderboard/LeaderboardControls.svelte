@@ -6,9 +6,11 @@
   import { getStateManagers } from "../state-managers/state-managers";
   import LeaderboardActiveMeasureNamesDropdown from "@rilldata/web-common/components/menu/LeaderboardActiveMeasureNamesDropdown.svelte";
   import ContextColumnDropdown from "@rilldata/web-common/components/menu/ContextColumnDropdown.svelte";
+  import { useTimeControlStore } from "../time-controls/time-control-store";
 
   export let exploreName: string;
 
+  const StateManagers = getStateManagers();
   const {
     selectors: {
       measures: {
@@ -24,7 +26,10 @@
       contextCol: { setContextColumn },
       toggleLeaderboardMeasureNames,
     },
-  } = getStateManagers();
+  } = StateManagers;
+  const timeControlsStore = useTimeControlStore(StateManagers);
+
+  $: ({ showTimeComparison } = $timeControlsStore);
 
   $: measures = getSimpleMeasures($visibleMeasures);
 
@@ -95,19 +100,20 @@
         }}
       />
 
-      <!-- TODO: only show based on comparison -->
-      <ContextColumnDropdown
-        {measures}
-        {firstMeasure}
-        tooltipText="Choose context columns to display"
-        selectedMeasureNames={$leaderboardMeasureNames}
-        onToggle={(name) => {
-          toggleLeaderboardMeasureNames(allMeasureNames, name);
-        }}
-        onSelectAll={() => {
-          toggleLeaderboardMeasureNames(allMeasureNames);
-        }}
-      />
+      {#if Boolean(showTimeComparison)}
+        <ContextColumnDropdown
+          {measures}
+          {firstMeasure}
+          tooltipText="Choose context columns to display"
+          selectedMeasureNames={$leaderboardMeasureNames}
+          onToggle={(name) => {
+            toggleLeaderboardMeasureNames(allMeasureNames, name);
+          }}
+          onSelectAll={() => {
+            toggleLeaderboardMeasureNames(allMeasureNames);
+          }}
+        />
+      {/if}
     </div>
   {/if}
 </div>
