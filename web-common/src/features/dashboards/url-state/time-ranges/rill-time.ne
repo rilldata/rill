@@ -13,7 +13,7 @@
 rill_time => time_anchor_part                     {% ([{ start, end }]) => new RillTime(start, end) %}
            | time_anchor_part _ grain_and_at_part {% ([{ start, end }, , { grain, modifier }]) => new RillTime(start, end, grain, modifier) %}
 
-time_anchor_part => time_anchor _ "," _ time_anchor {% ([start, , , , end]) => ({ start, end }) %}
+time_anchor_part => time_anchor _ "to"i _ time_anchor {% ([start, , , , end]) => ({ start, end }) %}
                   | time_anchor                     {% ([start]) => ({ start }) %}
 
 time_anchor => time_anchor_offset _ "/" _ grain_modifier _ time_anchor_offset {% ([mod, , , , truncate, , offset]) => mod.withOffset(offset).withTruncate(truncate) %}
@@ -28,9 +28,9 @@ time_anchor_offset => "now"          {% () => RillTimeAnchor.now() %}
                     | abs_time       {% ([absTime]) => RillTimeAnchor.absolute(absTime) %}
                     | grain_modifier {% ([grain]) => RillTimeAnchor.relative(grain) %}
 
-grain_and_at_part => ":" _ range_grain_modifier _ "@" _ at_modifiers {% ([, , grain, , , , modifier]) => ({ grain, modifier }) %}
-                   | ":" _ range_grain_modifier                      {% ([, , grain]) => ({ grain }) %}
-                   | "@" _ at_modifiers                              {% ([, , modifier]) => ({ modifier }) %}
+grain_and_at_part => "by"i _ range_grain_modifier _ "@" _ at_modifiers {% ([, , grain, , , , modifier]) => ({ grain, modifier }) %}
+                   | "by"i _ range_grain_modifier                      {% ([, , grain]) => ({ grain }) %}
+                   | "@" _ at_modifiers                                {% ([, , modifier]) => ({ modifier }) %}
 
 range_grain_modifier => grain             {% ([grain]) => ({ grain, isComplete: false }) %}
                       | "|" _ grain _ "|" {% ([, ,grain]) => ({ grain, isComplete: true }) %}

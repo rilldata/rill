@@ -31,27 +31,29 @@ var (
 		{"Number", `\d+`},
 		// needed for misc. direct character references used
 		{"Punct", `[-[!@#$%^&*()+_={}\|:;"'<,>.?/]|]`},
+		{"To", `[tT][oO]`},
+		{"By", `[bB][yY]`},
 		{"Whitespace", `[ \t\n\r]+`},
 	})
 	daxNotations = map[string]string{
 		// Mapping for our old rill-<DAX> syntax
-		"TD":  "0d,latest",
-		"WTD": "0W,latest",
-		"MTD": "0M,latest",
-		"QTD": "0Q,latest",
-		"YTD": "0Y,latest",
-		"PDC": "-1d,0d",
-		"PWC": "-1W,0W",
-		"PMC": "-1M,0M",
-		"PQC": "-1Q,0Q",
-		"PYC": "-1Y,0Y",
+		"TD":  "0d to latest",
+		"WTD": "0W to latest",
+		"MTD": "0M to latest",
+		"QTD": "0Q to latest",
+		"YTD": "0Y to latest",
+		"PDC": "-1d to 0d",
+		"PWC": "-1W to 0W",
+		"PMC": "-1M to 0M",
+		"PQC": "-1Q to 0Q",
+		"PYC": "-1Y to 0Y",
 		// TODO: previous period is contextual. should be handled in UI
 		"PP": "",
-		"PD": "-1d,0d",
-		"PW": "-1W,0W",
-		"PM": "-1M,0M",
-		"PQ": "-1Q,0Q",
-		"PY": "-1Y,0Y",
+		"PD": "-1d to 0d",
+		"PW": "-1W to 0W",
+		"PM": "-1M to 0M",
+		"PQ": "-1Q to 0Q",
+		"PY": "-1Y to 0Y",
 	}
 	rillTimeParser = participle.MustBuild[Expression](
 		participle.Lexer(rillTimeLexer),
@@ -77,8 +79,8 @@ var (
 
 type Expression struct {
 	Start         *TimeAnchor  `parser:"  @@"`
-	End           *TimeAnchor  `parser:"(',' @@)?"`
-	Modifiers     *Modifiers   `parser:"(':' @@)?"`
+	End           *TimeAnchor  `parser:"(To @@)?"`
+	Modifiers     *Modifiers   `parser:"(By @@)?"`
 	AtModifiers   *AtModifiers `parser:"('@' @@)?"`
 	isNewFormat   bool
 	grain         *Grain
