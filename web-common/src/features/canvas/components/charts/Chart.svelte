@@ -63,39 +63,41 @@
   $: description = chartConfig?.description;
 </script>
 
-{#if $schema.isValid}
-  {#if $data.isFetching}
-    <div class="flex items-center justify-center h-full w-full">
-      <Spinner status={EntityStatus.Running} size="20px" />
-    </div>
-  {:else if $data.error}
-    <ComponentError error={$data.error.message} />
-  {:else}
-    <ComponentHeader
-      faint={!chartConfig?.title}
-      {title}
-      {description}
-      filters={componentFilters}
-    />
-    {#if hasNoData}
-      <div
-        class="flex w-full h-full p-2 text-xl ui-copy-disabled items-center justify-center"
-      >
-        No Data to Display
+<div class="size-full flex flex-col overflow-hidden">
+  {#if $schema.isValid}
+    {#if $data.isFetching}
+      <div class="flex items-center justify-center h-full w-full">
+        <Spinner status={EntityStatus.Running} size="20px" />
       </div>
+    {:else if $data.error}
+      <ComponentError error={$data.error.message} />
     {:else}
-      <VegaLiteRenderer
-        bind:viewVL
-        canvasDashboard
-        data={{ "metrics-view": $data.data }}
-        {spec}
-        expressionFunctions={{
-          [measureName]: { fn: (val) => measureFormatter(val) },
-        }}
-        {config}
+      <ComponentHeader
+        faint={!chartConfig?.title}
+        {title}
+        {description}
+        filters={componentFilters}
       />
+      {#if hasNoData}
+        <div
+          class="flex w-full h-full p-2 text-xl ui-copy-disabled items-center justify-center"
+        >
+          No Data to Display
+        </div>
+      {:else}
+        <VegaLiteRenderer
+          bind:viewVL
+          canvasDashboard
+          data={{ "metrics-view": $data.data }}
+          {spec}
+          expressionFunctions={{
+            [measureName]: { fn: (val) => measureFormatter(val) },
+          }}
+          {config}
+        />
+      {/if}
     {/if}
+  {:else}
+    <ComponentError error={$schema.error} />
   {/if}
-{:else}
-  <ComponentError error={$schema.error} />
-{/if}
+</div>
