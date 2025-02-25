@@ -46,10 +46,10 @@ type DB interface {
 	// CRUD APIs
 
 	// CreateTableAsSelect creates a new table by name from the results of the given SQL query.
-	CreateTableAsSelect(ctx context.Context, name string, sql string, opts *CreateTableOptions) error
+	CreateTableAsSelect(ctx context.Context, name string, sql string, opts *CreateTableOptions) (*TableWriteMetrics, error)
 
 	// MutateTable allows mutating a table in the database by calling the mutateFn.
-	MutateTable(ctx context.Context, name string, mutateFn func(ctx context.Context, conn *sqlx.Conn) error) error
+	MutateTable(ctx context.Context, name string, mutateFn func(ctx context.Context, conn *sqlx.Conn) error) (*TableWriteMetrics, error)
 
 	// DropTable removes a table from the database.
 	DropTable(ctx context.Context, name string) error
@@ -162,6 +162,12 @@ type CreateTableOptions struct {
 	// If AfterCreateFn is set, it will be executed after the create query is executed.
 	// This will execute even if the create query fails.
 	AfterCreateFn func(ctx context.Context, conn *sqlx.Conn) error
+}
+
+// TableWriteMetrics summarizes executed CRUD operation.
+type TableWriteMetrics struct {
+	// Duration records the time taken to execute all user queries.
+	Duration time.Duration
 }
 
 // NewDB creates a new DB instance.
@@ -328,18 +334,18 @@ func (d *db) AcquireReadConnection(ctx context.Context) (*sqlx.Conn, func() erro
 	return conn, release, nil
 }
 
-func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *CreateTableOptions) (createErr error) {
+func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *CreateTableOptions) (res *TableWriteMetrics, createErr error) {
 	d.logger.Debug("create: create table", zap.String("name", name), zap.Bool("view", opts.View), observability.ZapCtx(ctx))
 	err := d.writeSem.Acquire(ctx, 1)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer d.writeSem.Release(1)
 
 	// pull latest changes from remote
 	err = d.pullFromRemote(ctx, true)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// check if some older version exists
@@ -361,12 +367,12 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 		newMeta.SQL = query
 		err = d.initLocalTable(name, "")
 		if err != nil {
-			return fmt.Errorf("create: unable to create dir %q: %w", name, err)
+			return nil, fmt.Errorf("create: unable to create dir %q: %w", name, err)
 		}
 	} else {
 		err = d.initLocalTable(name, newVersion)
 		if err != nil {
-			return fmt.Errorf("create: unable to create dir %q: %w", name, err)
+			return nil, fmt.Errorf("create: unable to create dir %q: %w", name, err)
 		}
 		dsn = d.localDBPath(name, newVersion)
 		defer func() {
@@ -379,12 +385,13 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 	// need to attach existing table so that any views dependent on this table are correctly attached
 	conn, release, err := d.acquireWriteConn(ctx, dsn, name, true)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer func() {
 		_ = release()
 	}()
 
+	t := time.Now()
 	safeName := safeSQLName(name)
 	var typ string
 	if opts.View {
@@ -396,7 +403,7 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 	if opts.BeforeCreateFn != nil {
 		err = opts.BeforeCreateFn(ctx, conn)
 		if err != nil {
-			return fmt.Errorf("create: BeforeCreateFn returned error: %w", err)
+			return nil, fmt.Errorf("create: BeforeCreateFn returned error: %w", err)
 		}
 	}
 	execAfterCreate := func() error {
@@ -412,22 +419,23 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 	// ingest data
 	_, err = conn.ExecContext(ctx, fmt.Sprintf("CREATE OR REPLACE %s %s AS (%s\n)", typ, safeName, query), nil)
 	if err != nil {
-		return errors.Join(fmt.Errorf("create: create %s %q failed: %w", typ, name, err), execAfterCreate())
+		return nil, errors.Join(fmt.Errorf("create: create %s %q failed: %w", typ, name, err), execAfterCreate())
 	}
 	err = execAfterCreate()
 	if err != nil {
-		return err
+		return nil, err
 	}
+	duration := time.Since(t)
 
 	// close write handle before syncing local so that temp files or wal files are removed
 	err = release()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// update remote data and metadata
 	if err := d.pushToRemote(ctx, name, oldMeta, newMeta); err != nil {
-		return fmt.Errorf("create: replicate failed: %w", err)
+		return nil, fmt.Errorf("create: replicate failed: %w", err)
 	}
 	d.logger.Debug("create: remote table updated", observability.ZapCtx(ctx))
 	// no errors after this point since background goroutine will eventually sync the local db
@@ -436,34 +444,34 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 	err = d.writeTableMeta(name, newMeta)
 	if err != nil {
 		d.logger.Debug("create: error in writing table meta", zap.String("error", err.Error()), observability.ZapCtx(ctx))
-		return nil
+		return &TableWriteMetrics{Duration: duration}, nil
 	}
 
 	d.catalog.addTableVersion(name, newMeta, true)
 	d.localDirty = false
-	return nil
+	return &TableWriteMetrics{Duration: duration}, nil
 }
 
-func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx context.Context, conn *sqlx.Conn) error) error {
+func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx context.Context, conn *sqlx.Conn) error) (*TableWriteMetrics, error) {
 	d.logger.Debug("mutate table", zap.String("name", name), observability.ZapCtx(ctx))
 	err := d.writeSem.Acquire(ctx, 1)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer d.writeSem.Release(1)
 
 	// pull latest changes from remote
 	err = d.pullFromRemote(ctx, true)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	oldMeta, err := d.catalog.tableMeta(name)
 	if err != nil {
 		if errors.Is(err, errNotFound) {
-			return fmt.Errorf("mutate: Table %q not found", name)
+			return nil, fmt.Errorf("mutate: Table %q not found", name)
 		}
-		return fmt.Errorf("mutate: unable to get table meta: %w", err)
+		return nil, fmt.Errorf("mutate: unable to get table meta: %w", err)
 	}
 
 	// create new version directory
@@ -472,7 +480,7 @@ func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx con
 	err = copyDir(newDir, d.localTableDir(name, oldMeta.Version))
 	if err != nil {
 		_ = os.RemoveAll(newDir)
-		return fmt.Errorf("mutate: copy table failed: %w", err)
+		return nil, fmt.Errorf("mutate: copy table failed: %w", err)
 	}
 
 	// acquire write connection
@@ -480,21 +488,24 @@ func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx con
 	conn, release, err := d.acquireWriteConn(ctx, d.localDBPath(name, newVersion), name, false)
 	if err != nil {
 		_ = os.RemoveAll(newDir)
-		return err
+		return nil, err
 	}
 
+	t := time.Now()
 	err = mutateFn(ctx, conn)
 	if err != nil {
 		_ = os.RemoveAll(newDir)
 		_ = release()
-		return fmt.Errorf("mutate: mutate failed: %w", err)
+		return nil, fmt.Errorf("mutate: mutate failed: %w", err)
 	}
+
+	duration := time.Since(t)
 
 	// push to remote
 	err = release()
 	if err != nil {
 		_ = os.RemoveAll(newDir)
-		return fmt.Errorf("mutate: failed to close connection: %w", err)
+		return nil, fmt.Errorf("mutate: failed to close connection: %w", err)
 	}
 	meta := &tableMeta{
 		Name:           name,
@@ -506,7 +517,7 @@ func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx con
 	err = d.pushToRemote(ctx, name, oldMeta, meta)
 	if err != nil {
 		_ = os.RemoveAll(newDir)
-		return fmt.Errorf("mutate: replicate failed: %w", err)
+		return nil, fmt.Errorf("mutate: replicate failed: %w", err)
 	}
 	// no errors after this point since background goroutine will eventually sync the local db
 
@@ -514,12 +525,12 @@ func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx con
 	err = d.writeTableMeta(name, meta)
 	if err != nil {
 		d.logger.Debug("mutate: error in writing table meta", zap.Error(err), observability.ZapCtx(ctx))
-		return nil
+		return &TableWriteMetrics{Duration: duration}, nil
 	}
 
 	d.catalog.addTableVersion(name, meta, true)
 	d.localDirty = false
-	return nil
+	return &TableWriteMetrics{Duration: duration}, nil
 }
 
 // DropTable implements DB.
