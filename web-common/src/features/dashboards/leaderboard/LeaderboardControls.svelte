@@ -21,6 +21,7 @@
         allMeasures,
       },
       dimensions: { visibleDimensions, allDimensions },
+      contextColumn: { contextColumn },
     },
     actions: {
       dimensions: { toggleDimensionVisibility },
@@ -100,12 +101,11 @@
 
       {#if Boolean(comparisonTimeRange)}
         <ContextColumnDropdown
-          options={measures}
           tooltipText="Choose context columns to display"
-          selectedMeasureNames={$leaderboardMeasureNames}
-          onToggle={(name) => {
-            toggleLeaderboardMeasureNames(allMeasureNames, name);
-          }}
+          isValidPercentOfTotal={validPercentOfTotal}
+          isTimeComparisonActive={Boolean(comparisonTimeRange)}
+          selectedSortType={$contextColumn}
+          onContextColumnChange={setContextColumn}
         />
       {/if}
     </div>
