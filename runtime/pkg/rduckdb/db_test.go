@@ -3,14 +3,13 @@ package rduckdb
 import (
 	"context"
 	"fmt"
-	"io"
-	"log/slog"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 	"gocloud.dev/blob/fileblob"
 )
 
@@ -210,9 +209,7 @@ func TestResetLocal(t *testing.T) {
 	require.NoError(t, db.Close())
 	require.NoError(t, os.RemoveAll(localDir))
 
-	logger := slog.New(slog.NewTextHandler(io.Discard, &slog.HandlerOptions{
-		Level: slog.LevelDebug,
-	}))
+	logger := zap.NewNop()
 	bucket, err := fileblob.OpenBucket(remoteDir, nil)
 	require.NoError(t, err)
 	db, err = NewDB(ctx, &DBOptions{
@@ -221,7 +218,7 @@ func TestResetLocal(t *testing.T) {
 		MemoryLimitGB:  2,
 		CPU:            1,
 		ReadWriteRatio: 0.5,
-		InitQueries:    []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
+		DBInitQueries:  []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
 		Logger:         logger,
 	})
 	require.NoError(t, err)
@@ -273,9 +270,7 @@ func TestResetSelectiveLocal(t *testing.T) {
 	require.NoError(t, os.RemoveAll(filepath.Join(localDir, "test2")))
 	require.NoError(t, os.RemoveAll(filepath.Join(localDir, "test_view2")))
 
-	logger := slog.New(slog.NewTextHandler(io.Discard, &slog.HandlerOptions{
-		Level: slog.LevelDebug,
-	}))
+	logger := zap.NewNop()
 	bucket, err := fileblob.OpenBucket(remoteDir, nil)
 	require.NoError(t, err)
 	db, err = NewDB(ctx, &DBOptions{
@@ -284,7 +279,7 @@ func TestResetSelectiveLocal(t *testing.T) {
 		MemoryLimitGB:  2,
 		CPU:            1,
 		ReadWriteRatio: 0.5,
-		InitQueries:    []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
+		DBInitQueries:  []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
 		Logger:         logger,
 	})
 	require.NoError(t, err)
@@ -306,9 +301,7 @@ func TestResetTablesRemote(t *testing.T) {
 	// remove remote data
 	require.NoError(t, os.RemoveAll(remoteDir))
 
-	logger := slog.New(slog.NewTextHandler(io.Discard, &slog.HandlerOptions{
-		Level: slog.LevelDebug,
-	}))
+	logger := zap.NewNop()
 	bucket, err := fileblob.OpenBucket(remoteDir, &fileblob.Options{CreateDir: true})
 	require.NoError(t, err)
 	db, err = NewDB(ctx, &DBOptions{
@@ -317,7 +310,7 @@ func TestResetTablesRemote(t *testing.T) {
 		MemoryLimitGB:  2,
 		CPU:            1,
 		ReadWriteRatio: 0.5,
-		InitQueries:    []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
+		DBInitQueries:  []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
 		Logger:         logger,
 	})
 	require.NoError(t, err)
@@ -353,9 +346,7 @@ func TestResetSelectiveTablesRemote(t *testing.T) {
 	require.NoError(t, os.RemoveAll(filepath.Join(remoteDir, "test2")))
 	require.NoError(t, os.RemoveAll(filepath.Join(remoteDir, "test_view2")))
 
-	logger := slog.New(slog.NewTextHandler(io.Discard, &slog.HandlerOptions{
-		Level: slog.LevelDebug,
-	}))
+	logger := zap.NewNop()
 	bucket, err := fileblob.OpenBucket(remoteDir, nil)
 	require.NoError(t, err)
 	db, err = NewDB(ctx, &DBOptions{
@@ -364,7 +355,7 @@ func TestResetSelectiveTablesRemote(t *testing.T) {
 		MemoryLimitGB:  2,
 		CPU:            1,
 		ReadWriteRatio: 0.5,
-		InitQueries:    []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
+		DBInitQueries:  []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
 		Logger:         logger,
 	})
 	require.NoError(t, err)
@@ -488,12 +479,21 @@ func TestViews(t *testing.T) {
 	require.NoError(t, testDB.Close())
 }
 
+func TestNoConfigUpdate(t *testing.T) {
+	db, _, _ := prepareDB(t)
+	ctx := context.Background()
+	err := db.CreateTableAsSelect(ctx, "test", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{
+		BeforeCreateFn: func(ctx context.Context, conn *sqlx.Conn) error {
+			_, err := conn.ExecContext(ctx, "SET secret_directory = '/tmp'")
+			return err
+		},
+	})
+	require.Error(t, err, "the configuration has been locked")
+}
+
 func prepareDB(t *testing.T) (db DB, localDir, remoteDir string) {
 	localDir = t.TempDir()
 	ctx := context.Background()
-	logger := slog.New(slog.NewTextHandler(io.Discard, &slog.HandlerOptions{
-		Level: slog.LevelDebug,
-	}))
 	remoteDir = t.TempDir()
 	bucket, err := fileblob.OpenBucket(remoteDir, nil)
 	require.NoError(t, err)
@@ -503,8 +503,8 @@ func prepareDB(t *testing.T) (db DB, localDir, remoteDir string) {
 		MemoryLimitGB:  2,
 		CPU:            1,
 		ReadWriteRatio: 0.5,
-		InitQueries:    []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
-		Logger:         logger,
+		DBInitQueries:  []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
+		Logger:         zap.NewNop(),
 	})
 	require.NoError(t, err)
 	return

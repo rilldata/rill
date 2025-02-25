@@ -6066,6 +6066,8 @@ func (m *UpdateProjectRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	// no validation rules for SuperuserForceAccess
+
 	if m.Description != nil {
 		// no validation rules for Description
 	}
@@ -33494,6 +33496,14 @@ func (m *Organization) validate(all bool) error {
 				cause:  err,
 			}
 		}
+	}
+
+	if m.BillingPlanName != nil {
+		// no validation rules for BillingPlanName
+	}
+
+	if m.BillingPlanDisplayName != nil {
+		// no validation rules for BillingPlanDisplayName
 	}
 
 	if len(errors) > 0 {

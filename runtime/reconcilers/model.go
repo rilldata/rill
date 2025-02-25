@@ -19,6 +19,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	compilerv1 "github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
@@ -165,7 +166,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 					err = r.updateStateWithResult(ctx, self, renameRes)
 				}
 				if err != nil {
-					r.C.Logger.Warn("failed to rename model", zap.String("model", n.Name), zap.String("renamed_from", self.Meta.RenamedFrom.Name), zap.Error(err))
+					r.C.Logger.Warn("failed to rename model", zap.String("model", n.Name), zap.String("renamed_from", self.Meta.RenamedFrom.Name), zap.Error(err), observability.ZapCtx(ctx))
 				}
 			}()
 			if ctx.Err() != nil { // Handle if the error was a ctx error
@@ -194,7 +195,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 
 			err2 := prevManager.Delete(ctx, prevResult)
 			if err2 != nil {
-				r.C.Logger.Warn("failed to delete model output", zap.String("model", n.Name), zap.Error(err2))
+				r.C.Logger.Warn("failed to delete model output", zap.String("model", n.Name), zap.Error(err2), observability.ZapCtx(ctx))
 			}
 
 			err = r.clearPartitions(ctx, model)
@@ -204,7 +205,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 
 			err2 = r.updateStateClear(ctx, self)
 			if err2 != nil {
-				r.C.Logger.Warn("refs check: failed to update state", zap.Any("error", err2))
+				r.C.Logger.Warn("refs check: failed to update state", zap.Any("error", err2), observability.ZapCtx(ctx))
 			}
 		}
 
@@ -237,7 +238,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	if prevManager != nil {
 		exists, err = prevManager.Exists(ctx, prevResult)
 		if err != nil {
-			r.C.Logger.Warn("failed to check if model output exists", zap.String("model", n.Name), zap.Error(err))
+			r.C.Logger.Warn("failed to check if model output exists", zap.String("model", n.Name), zap.Error(err), observability.ZapCtx(ctx))
 		}
 	}
 
@@ -275,7 +276,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	if prevManager != nil && model.State.ResultConnector != model.Spec.OutputConnector {
 		err = prevManager.Delete(ctx, prevResult)
 		if err != nil {
-			r.C.Logger.Warn("failed to delete model output", zap.String("model", n.Name), zap.Error(err))
+			r.C.Logger.Warn("failed to delete model output", zap.String("model", n.Name), zap.Error(err), observability.ZapCtx(ctx))
 		}
 	}
 
@@ -653,7 +654,7 @@ func (r *ModelReconciler) resolveIncrementalState(ctx context.Context, mdl *runt
 // resolveAndSyncPartitions resolves the model's partitions using its configured partitions resolver and inserts or updates them in the catalog.
 func (r *ModelReconciler) resolveAndSyncPartitions(ctx context.Context, self *runtimev1.Resource, mdl *runtimev1.ModelV2, incrementalState map[string]any) error {
 	// Log
-	r.C.Logger.Debug("Resolving model partitions", zap.String("model", self.Meta.Name.Name), zap.String("resolver", mdl.Spec.PartitionsResolver))
+	r.C.Logger.Debug("Resolving model partitions", zap.String("model", self.Meta.Name.Name), zap.String("resolver", mdl.Spec.PartitionsResolver), observability.ZapCtx(ctx))
 
 	// Ensure a model ID is set. We use it to track the model's partitions in the catalog.
 	if mdl.State.PartitionsModelId == "" {
@@ -712,7 +713,7 @@ func (r *ModelReconciler) resolveAndSyncPartitions(ctx context.Context, self *ru
 
 	// Log
 	count := batchStartIdx + len(batch)
-	defer r.C.Logger.Debug("Resolved model partitions", zap.String("model", self.Meta.Name.Name), zap.Int("partitions", count))
+	defer r.C.Logger.Info("Resolved model partitions", zap.String("model", self.Meta.Name.Name), zap.Int("partitions", count), observability.ZapCtx(ctx))
 
 	// Flush the remaining rows not handled in the loop
 	return r.syncPartitions(ctx, mdl, batchStartIdx, batch)
@@ -853,7 +854,7 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	incrementalState["incremental"] = incrementalRun // The incremental flag is hard-coded by convention
 
 	// Build log message
-	logArgs := []zap.Field{zap.String("model", self.Meta.Name.Name)}
+	logArgs := []zap.Field{zap.String("model", self.Meta.Name.Name), observability.ZapCtx(ctx)}
 	if incrementalRun {
 		logArgs = append(logArgs, zap.String("run_type", "incremental"))
 	} else {
@@ -870,7 +871,7 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	if model.Spec.StageConnector != "" {
 		logArgs = append(logArgs, zap.String("stage_connector", model.Spec.StageConnector))
 	}
-	r.C.Logger.Debug("Building model", logArgs...)
+	r.C.Logger.Info("Executing model", logArgs...)
 
 	// Apply the timeout to the ctx
 	timeout := _modelDefaultTimeout
@@ -1084,7 +1085,7 @@ func (r *ModelReconciler) executePartition(ctx context.Context, catalog drivers.
 	}
 
 	// Log
-	logArgs := []zap.Field{zap.String("model", self.Meta.Name.Name), zap.String("key", partition.Key)}
+	logArgs := []zap.Field{zap.String("model", self.Meta.Name.Name), zap.String("key", partition.Key), observability.ZapCtx(ctx)}
 	if len(partition.DataJSON) < 256 {
 		logArgs = append(logArgs, zap.Any("data", data))
 	}
@@ -1171,7 +1172,7 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 		defer func() {
 			err := executor.stageResultManager.Delete(ctx, stageResult)
 			if err != nil {
-				r.C.Logger.Warn("Failed to clean up staged model output", zap.String("model", self.Meta.Name.Name), zap.Error(err))
+				r.C.Logger.Warn("Failed to clean up staged model output", zap.String("model", self.Meta.Name.Name), zap.Error(err), observability.ZapCtx(ctx))
 			}
 		}()
 	}

@@ -80,6 +80,7 @@ export type AdminServiceUpdateProjectBody = {
   newName?: string;
   prodTtlSeconds?: string;
   prodVersion?: string;
+  superuserForceAccess?: boolean;
 };
 
 export type AdminServiceGetProjectParams = {
@@ -888,6 +889,8 @@ export interface V1Organization {
   billingCustomerId?: string;
   paymentCustomerId?: string;
   billingEmail?: string;
+  billingPlanName?: string;
+  billingPlanDisplayName?: string;
   createdOn?: string;
   updatedOn?: string;
 }

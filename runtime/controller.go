@@ -32,6 +32,22 @@ var errCyclicDependency = errors.New("cannot be reconciled due to cyclic depende
 // errControllerClosed is returned from controller functions that require the controller to be running
 var errControllerClosed = errors.New("controller is closed")
 
+// dependencyError is returned when a resource can not be reconciled due to a dependency error.
+type dependencyError struct {
+	err error
+}
+
+func NewDependencyError(err error) error {
+	if err == nil {
+		return nil
+	}
+	return dependencyError{err: err}
+}
+
+func (d dependencyError) Error() string {
+	return fmt.Sprintf("dependency error: %v", d.err)
+}
+
 // Reconciler implements reconciliation logic for all resources of a specific kind.
 // Reconcilers are managed and invoked by a Controller.
 type Reconciler interface {
@@ -1264,16 +1280,14 @@ func (c *Controller) invoke(r *runtimev1.Resource) error {
 	c.invocations[nameStr(n)] = inv
 
 	// Log invocation
-	if !inv.isHidden {
-		logArgs := []zap.Field{zap.String("name", n.Name), zap.String("type", PrettifyResourceKind(n.Kind))}
-		if inv.isDelete {
-			logArgs = append(logArgs, zap.Bool("deleted", inv.isDelete))
-		}
-		if inv.isRename {
-			logArgs = append(logArgs, zap.String("renamed_from", r.Meta.RenamedFrom.Name))
-		}
-		c.Logger.Info("Reconciling resource", logArgs...)
+	logArgs := []zap.Field{zap.String("name", n.Name), zap.String("type", PrettifyResourceKind(n.Kind))}
+	if inv.isDelete {
+		logArgs = append(logArgs, zap.Bool("deleted", inv.isDelete))
 	}
+	if inv.isRename {
+		logArgs = append(logArgs, zap.String("renamed_from", r.Meta.RenamedFrom.Name))
+	}
+	c.Logger.Info("Reconciling resource", logArgs...)
 
 	// Start reconcile in background
 	ctx = contextWithInvocation(ctx, inv)
@@ -1343,17 +1357,24 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 	if !inv.result.Retrigger.IsZero() {
 		logArgs = append(logArgs, zap.String("retrigger_on", inv.result.Retrigger.Format(time.RFC3339)))
 	}
-	if !inv.cancelledOn.IsZero() {
+	if inv.deletedSelf {
+		logArgs = append(logArgs, zap.Bool("deleted", true))
+	} else if !inv.cancelledOn.IsZero() {
 		logArgs = append(logArgs, zap.Bool("cancelled", true))
 	}
 	errorLevel := false
 	if inv.result.Err != nil && !errors.Is(inv.result.Err, context.Canceled) {
 		logArgs = append(logArgs, zap.Any("error", inv.result.Err))
 		errorLevel = true
+		var err dependencyError
+		if errors.As(inv.result.Err, &err) {
+			logArgs = append(logArgs, zap.Bool("dependency_error", true))
+			errorLevel = false
+		}
 	}
 	if errorLevel {
 		c.Logger.Warn("Reconcile failed", logArgs...)
-	} else if !inv.isHidden {
+	} else {
 		c.Logger.Info("Reconciled resource", logArgs...)
 	}
 
@@ -1370,7 +1391,7 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 		commonDims = append(commonDims, attribute.String("reconcile_operation", "normal"))
 	}
 
-	if !inv.cancelledOn.IsZero() {
+	if !inv.cancelledOn.IsZero() && !inv.deletedSelf {
 		commonDims = append(commonDims, attribute.String("reconcile_result", "canceled"))
 	} else if inv.result.Err != nil {
 		if errors.Is(inv.result.Err, context.Canceled) {

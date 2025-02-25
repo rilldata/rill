@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/mitchellh/mapstructure"
@@ -32,6 +33,7 @@ type sqlResolver struct {
 type sqlProps struct {
 	Connector string `mapstructure:"connector"`
 	SQL       string `mapstructure:"sql"`
+	Limit     int64  `mapstructure:"limit"`
 }
 
 type sqlArgs struct {
@@ -46,6 +48,8 @@ func newSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolve
 	if err := mapstructure.Decode(opts.Properties, props); err != nil {
 		return nil, err
 	}
+	// trim semicolon
+	props.SQL = strings.TrimSuffix(strings.TrimSpace(props.SQL), ";")
 
 	args := &sqlArgs{}
 	if err := mapstructure.Decode(opts.Args, args); err != nil {
@@ -60,6 +64,11 @@ func newSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolve
 	cfg, err := inst.Config()
 	if err != nil {
 		return nil, err
+	}
+
+	interactiveRowLimit := cfg.InteractiveSQLRowLimit
+	if props.Limit != 0 {
+		interactiveRowLimit = props.Limit
 	}
 
 	olap, release, err := opts.Runtime.OLAP(ctx, opts.InstanceID, props.Connector)
@@ -77,7 +86,7 @@ func newSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolve
 		refs:                refs,
 		olap:                olap,
 		olapRelease:         release,
-		interactiveRowLimit: cfg.InteractiveSQLRowLimit,
+		interactiveRowLimit: interactiveRowLimit,
 		priority:            args.Priority,
 	}, nil
 }
@@ -109,7 +118,7 @@ func (r *sqlResolver) Validate(ctx context.Context) error {
 func (r *sqlResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
 	// Wrap the SQL with an outer SELECT to limit the number of rows returned in interactive mode.
 	// Adding +1 to the limit so we can return a nice error message if the limit is exceeded.
-	sql := fmt.Sprintf("SELECT * FROM (%s) LIMIT %d", r.sql, r.interactiveRowLimit+1)
+	sql := fmt.Sprintf("SELECT * FROM (%s\n) LIMIT %d", r.sql, r.interactiveRowLimit+1)
 
 	res, err := r.olap.Execute(ctx, &drivers.Statement{
 		Query:    sql,

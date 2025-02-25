@@ -1,10 +1,10 @@
 <script lang="ts">
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
-  import DashboardURLStateSyncWrapper from "@rilldata/web-common/features/dashboards/url-state/DashboardURLStateSyncWrapper.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
+  import DashboardURLStateSyncWrapper from "@rilldata/web-common/features/dashboards/url-state/DashboardURLStateSyncWrapper.svelte";
   import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
-  import { errorStore } from "../errors/error-store";
+  import { errorStore } from "../../components/errors/error-store";
 
   export let instanceId: string;
   export let exploreName: string;
@@ -14,6 +14,7 @@
   });
   $: ({ isSuccess, isError, error, data } = $explore);
   $: isExploreNotFound = isError && error?.response?.status === 404;
+
   // We check for explore.state.validSpec instead of meta.reconcileError. validSpec persists
   // from previous valid explores, allowing display even when the current explore spec is invalid
   // and a meta.reconcileError exists.

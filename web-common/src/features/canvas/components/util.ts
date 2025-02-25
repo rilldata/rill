@@ -1,11 +1,16 @@
+import type { QueryObserverResult } from "@rilldata/svelte-query";
 import { KPIGridComponent } from "@rilldata/web-common/features/canvas/components/kpi-grid";
 import type {
   ComponentInputParam,
   FilterInputParam,
   FilterInputTypes,
 } from "@rilldata/web-common/features/canvas/inspector/types";
+import type { CanvasResponse } from "@rilldata/web-common/features/canvas/selector";
 import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
-import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
+import type {
+  RpcStatus,
+  V1ComponentSpecRendererProperties,
+} from "@rilldata/web-common/runtime-client";
 import { ChartComponent } from "./charts";
 import { ImageComponent } from "./image";
 import { KPIComponent } from "./kpi";
@@ -21,31 +26,32 @@ export const commonOptions: Record<
   keyof ComponentCommonProperties,
   ComponentInputParam
 > = {
-  title: { type: "text", optional: true, showInUI: true, label: "Title" },
+  title: {
+    type: "text",
+    optional: true,
+    showInUI: true,
+    label: "Title",
+    meta: { placeholder: "Add a title to describe this component" },
+  },
   description: {
     type: "text",
     optional: true,
     showInUI: true,
-    label: "Caption",
+    label: "Description",
+    meta: {
+      placeholder: "Add additional context for this component",
+    },
   },
 };
 
 export function getFilterOptions(
-  includeComparisonRange = true,
+  hasComparison = true,
+  hasGrain = true,
 ): Partial<Record<FilterInputTypes, FilterInputParam>> {
   return {
-    time_range: { type: "time_range", label: "Time Range" },
-    ...(includeComparisonRange
-      ? {
-          comparison_range: {
-            type: "comparison_range",
-            label: "Comparison Range",
-          },
-        }
-      : {}),
+    time_filters: { type: "time_filters", meta: { hasComparison, hasGrain } },
     dimension_filters: {
       type: "dimension_filters",
-      label: "Filters",
     },
   };
 }
@@ -54,6 +60,7 @@ const CHART_TYPES = [
   "line_chart",
   "bar_chart",
   "stacked_bar",
+  "stacked_bar_normalized",
   "area_chart",
 ] as const;
 const NON_CHART_TYPES = [
@@ -86,6 +93,7 @@ const DISPLAY_MAP: Record<CanvasComponentType, string> = {
   bar_chart: "Chart",
   line_chart: "Chart",
   stacked_bar: "Chart",
+  stacked_bar_normalized: "Chart",
   area_chart: "Chart",
 } as const;
 
@@ -126,10 +134,7 @@ export function getComponentFilterProperties(
     dimension_filters: rendererProperties?.dimension_filters as
       | string
       | undefined,
-    time_range: rendererProperties?.time_range as string | undefined,
-    comparison_range: rendererProperties?.comparison_range as
-      | string
-      | undefined,
+    time_filters: rendererProperties?.time_filters as string | undefined,
   };
 }
 
@@ -151,4 +156,19 @@ export function getHeaderForComponent(
 ) {
   if (!componentType) return "Component";
   return DISPLAY_MAP[componentType] || "Component";
+}
+
+export function getComponentMetricsViewFromSpec(
+  componentName: string | undefined,
+  spec: QueryObserverResult<CanvasResponse, RpcStatus>,
+): string | undefined {
+  if (!componentName) return undefined;
+  const resource = spec.data?.components?.[componentName]?.component;
+
+  if (resource) {
+    return resource?.state?.validSpec?.rendererProperties?.metrics_view as
+      | string
+      | undefined;
+  }
+  return undefined;
 }
