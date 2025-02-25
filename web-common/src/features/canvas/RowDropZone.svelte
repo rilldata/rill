@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { act } from "@testing-library/svelte";
   import AddComponentDropdown from "./AddComponentDropdown.svelte";
   import type { CanvasComponentType } from "./components/types";
   import { dropZone, hoveredDivider, activeDivider } from "./stores/ui-stores";
