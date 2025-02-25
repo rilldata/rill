@@ -9,6 +9,7 @@
     getTimeControlState,
     type TimeControlState,
   } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import { compressUrlParams } from "@rilldata/web-common/features/dashboards/url-state/compression";
   import {
     convertExploreStateToURLSearchParams,
     getUpdatedUrlForExploreState,
@@ -250,7 +251,7 @@
     });
   }
 
-  function gotoNewState() {
+  async function gotoNewState() {
     if (!exploreSpec) return;
 
     const u = new URL(
@@ -262,6 +263,8 @@
       timeControlsState,
       defaultExplorePreset,
     );
+    // TODO: add safeguard that latest data is used for goto
+    u.search = await compressUrlParams(u);
     const newUrl = u.toString();
     if (!prevUrl || prevUrl === newUrl) return;
 
