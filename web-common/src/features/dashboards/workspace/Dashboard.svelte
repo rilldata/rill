@@ -39,10 +39,10 @@
   } = StateManagers;
 
   // $: console.log("Dashboard $activeMeasure: ", $activeMeasure);
-  $: console.log(
-    "Dashboard TO BE REFACTORED $activeMeasureName: ",
-    $activeMeasureName,
-  );
+  // $: console.log(
+  //   "Dashboard TO BE REFACTORED $activeMeasureName: ",
+  //   $activeMeasureName,
+  // );
 
   const timeControlsStore = useTimeControlStore(StateManagers);
 
@@ -207,6 +207,7 @@
         </div>
         <div class="pt-2 pl-1 overflow-auto w-full">
           {#if selectedDimension}
+            <div>DimensionDisplay</div>
             <DimensionDisplay
               dimension={selectedDimension}
               {metricsViewName}
@@ -214,7 +215,7 @@
               {dimensionThresholdFilters}
               {timeRange}
               {comparisonTimeRange}
-              activeMeasureName={$activeMeasureName}
+              activeMeasureNames={$leaderboardMeasureNames}
               {timeControlsReady}
               visibleMeasureNames={$visibleMeasures.map(
                 ({ name }) => name ?? "",
@@ -222,6 +223,7 @@
               hideStartPivotButton={hidePivot}
             />
           {:else}
+            <div>LeaderboardDisplay</div>
             <LeaderboardDisplay
               {metricsViewName}
               activeMeasureName={$activeMeasureName}
