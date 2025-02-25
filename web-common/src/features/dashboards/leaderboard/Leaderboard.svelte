@@ -157,7 +157,7 @@
     !!comparisonTimeRange,
   );
 
-  $: console.log("Leaderboard getSort", sort);
+  // $: console.log("Leaderboard getSort", sort);
 
   $: sortedQuery = createQueryServiceMetricsViewAggregation(
     instanceId,

@@ -24,7 +24,7 @@
   export let activeMeasureName: string;
   export let activeMeasureNames: string[];
 
-  $: console.log("LeaderboardDisplay activeMeasureNames: ", activeMeasureNames);
+  // $: console.log("LeaderboardDisplay activeMeasureNames: ", activeMeasureNames);
 
   const StateManagers = getStateManagers();
   const {

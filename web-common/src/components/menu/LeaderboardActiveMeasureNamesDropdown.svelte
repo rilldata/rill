@@ -9,15 +9,17 @@
   import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
 
   export let tooltipText: string;
-  export let disabled = false;
   export let searchText = "";
   export let measures: MetricsViewSpecMeasureV2[];
   export let firstMeasure: MetricsViewSpecMeasureV2;
   export let selectedMeasureNames: string[] = [];
-  export let onSelect: (names: string[]) => void;
-  export let onToggleSelectAll: () => void;
+  export let onToggle: (name: string) => void;
+  export let onSelectAll: () => void;
+
+  // $: console.log("selectedMeasureNames: ", selectedMeasureNames);
 
   let active = false;
+  let disabled = false;
 
   function filterMeasures(searchText: string) {
     return measures.filter((item) =>
@@ -29,15 +31,7 @@
 
   function toggleMeasure(name: string) {
     if (!name) return;
-    const currentSelection = selectedMeasureNames || [];
-    const newSelection = currentSelection.includes(name)
-      ? currentSelection.filter((n) => n !== name)
-      : [...currentSelection, name];
-
-    // Ensure at least one measure is selected
-    if (newSelection.length > 0) {
-      onSelect(newSelection);
-    }
+    onToggle(name);
   }
 
   function getMeasureDisplayText(measureName: string) {
@@ -134,7 +128,7 @@
         </div>
 
         <footer>
-          <Button on:click={onToggleSelectAll} type="plain">
+          <Button on:click={onSelectAll} type="plain">
             {#if allSelected}
               Deselect all
             {:else}
