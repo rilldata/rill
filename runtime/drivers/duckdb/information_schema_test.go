@@ -19,7 +19,7 @@ func TestInformationSchemaAll(t *testing.T) {
 	_, err := olap.CreateTableAsSelect(context.Background(), "model", "select 1, 2, 3", opts)
 	require.NoError(t, err)
 
-	err = olap.CreateTableAsSelect(context.Background(), "source", "select 4, 5, 6", &drivers.CreateTableOptions{})
+	_, err = olap.CreateTableAsSelect(context.Background(), "source", "select 4, 5, 6", &drivers.CreateTableOptions{})
 	require.NoError(t, err)
 
 	tables, err := olap.InformationSchema().All(context.Background(), "")

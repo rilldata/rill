@@ -79,7 +79,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 			_ = olap.DropTable(ctx, stagingTableName)
 			return nil, fmt.Errorf("failed to create model: %w", err)
 		}
-		duration = res.ExecDuration
+		duration = res.Duration
 
 		// Rename the staging table to the final table name
 		if stagingTableName != tableName {
@@ -102,7 +102,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		if err != nil {
 			return nil, fmt.Errorf("failed to incrementally insert into table: %w", err)
 		}
-		duration = res.ExecDuration
+		duration = res.Duration
 
 		prevResult := &ModelResultProperties{}
 		err = mapstructure.Decode(opts.PreviousResult.Properties, prevResult)

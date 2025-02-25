@@ -314,11 +314,12 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		model.State.IncrementalState = newIncrementalState
 		model.State.IncrementalStateSchema = newIncrementalStateSchema
 		model.State.PartitionsHaveErrors = partitionsHaveErrors
-		model.State.LatestExecutionDuration = int64(execRes.ExecDuration.Seconds())
+		model.State.LatestExecutionDurationMs = execRes.ExecDuration.Milliseconds()
 		if incremental {
-			model.State.TotalExecutionDuration += model.State.LatestExecutionDuration
+			model.State.TotalExecutionDurationMs += model.State.LatestExecutionDurationMs
+		} else {
+			model.State.TotalExecutionDurationMs = model.State.LatestExecutionDurationMs
 		}
-		model.State.TotalExecutionDuration += model.State.LatestExecutionDuration
 		err := r.updateStateWithResult(ctx, self, execRes)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
@@ -1020,6 +1021,7 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 		// Start the worker goroutines
 		grp, ctx := errgroup.WithContext(ctx)
 		counter := &atomic.Int64{}
+		duration := &atomic.Int64{}
 		for workerID := 0; workerID < workers; workerID++ {
 			workerID := workerID
 			grp.Go(func() error {
@@ -1042,6 +1044,7 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 						return err
 					}
 					if ok {
+						duration.Add(int64(res.ExecDuration))
 						results[workerID] = res
 					}
 				}
@@ -1059,7 +1062,6 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 			if r == nil {
 				continue
 			}
-			totalExecDuration += r.ExecDuration
 			if prevResult == nil {
 				prevResult = r
 				continue
@@ -1070,6 +1072,7 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 				return "", nil, false, fmt.Errorf("failed to merge partition task results: %w", err)
 			}
 		}
+		totalExecDuration += time.Duration(duration.Load())
 
 		// If we got fewer partitions than the batch size, we've processed all pending partitions and can stop.
 		if len(partitions) < _modelPendingPartitionsBatchSize {
@@ -1083,7 +1086,6 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	}
 
 	prevResult.ExecDuration = totalExecDuration
-	prevResult.Incremental = firstRunIsIncremental
 	// We have continuously updated prevResult with new partition results, so we return it here
 	return executor.finalConnector, prevResult, firstRunIsIncremental, nil
 }

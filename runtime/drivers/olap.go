@@ -37,8 +37,10 @@ type CreateTableOptions struct {
 	TableOpts    map[string]any
 }
 
-type Stats struct {
-	ExecDuration time.Duration
+// TableWriteMetrics reports metrics for an execution that mutates table data.
+type TableWriteMetrics struct {
+	// Duration is the time taken to run user queries only.
+	Duration time.Duration
 }
 
 type InsertTableOptions struct {
@@ -59,8 +61,8 @@ type OLAPStore interface {
 	Execute(ctx context.Context, stmt *Statement) (*Result, error)
 	InformationSchema() InformationSchema
 
-	CreateTableAsSelect(ctx context.Context, name, sql string, opts *CreateTableOptions) (*Stats, error)
-	InsertTableAsSelect(ctx context.Context, name, sql string, opts *InsertTableOptions) (*Stats, error)
+	CreateTableAsSelect(ctx context.Context, name, sql string, opts *CreateTableOptions) (*TableWriteMetrics, error)
+	InsertTableAsSelect(ctx context.Context, name, sql string, opts *InsertTableOptions) (*TableWriteMetrics, error)
 	DropTable(ctx context.Context, name string) error
 	RenameTable(ctx context.Context, name, newName string) error
 	AddTableColumn(ctx context.Context, tableName, columnName string, typ string) error

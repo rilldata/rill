@@ -58,8 +58,8 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 	}
 
 	var (
-		stats *drivers.Stats
-		err   error
+		metrics *drivers.TableWriteMetrics
+		err     error
 	)
 	if !opts.IncrementalRun {
 		stagingTableName := tableName
@@ -76,7 +76,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 			View:      asView,
 			TableOpts: mustToMap(outputProps),
 		}
-		stats, err = e.c.CreateTableAsSelect(ctx, stagingTableName, inputProps.SQL, opts)
+		metrics, err = e.c.CreateTableAsSelect(ctx, stagingTableName, inputProps.SQL, opts)
 		if err != nil {
 			_ = e.c.DropTable(ctx, stagingTableName)
 			return nil, fmt.Errorf("failed to create model: %w", err)
@@ -97,7 +97,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 			Strategy:  outputProps.IncrementalStrategy,
 			UniqueKey: outputProps.UniqueKey,
 		}
-		stats, err = e.c.InsertTableAsSelect(ctx, tableName, inputProps.SQL, opts)
+		metrics, err = e.c.InsertTableAsSelect(ctx, tableName, inputProps.SQL, opts)
 		if err != nil {
 			return nil, fmt.Errorf("failed to incrementally insert into table: %w", err)
 		}
@@ -120,7 +120,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		Connector:    opts.OutputConnector,
 		Properties:   resultPropsMap,
 		Table:        tableName,
-		ExecDuration: stats.ExecDuration,
+		ExecDuration: metrics.Duration,
 	}, nil
 }
 

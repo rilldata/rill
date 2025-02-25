@@ -33,12 +33,12 @@ func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName
 }
 
 // CreateTableAsSelect implements drivers.OLAPStore.
-func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, opts *drivers.CreateTableOptions) (*drivers.Stats, error) {
+func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, opts *drivers.CreateTableOptions) (*drivers.TableWriteMetrics, error) {
 	return nil, fmt.Errorf("druid: data transformation not yet supported")
 }
 
 // InsertTableAsSelect implements drivers.OLAPStore.
-func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, opts *drivers.InsertTableOptions) (*drivers.Stats, error) {
+func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, opts *drivers.InsertTableOptions) (*drivers.TableWriteMetrics, error) {
 	return nil, fmt.Errorf("druid: data transformation not yet supported")
 }
 

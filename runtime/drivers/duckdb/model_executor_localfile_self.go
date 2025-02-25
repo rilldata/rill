@@ -91,7 +91,7 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 	}
 
 	// create the table
-	stats, err := e.c.CreateTableAsSelect(ctx, stagingTableName, "SELECT * FROM "+from, &drivers.CreateTableOptions{View: asView})
+	metrics, err := e.c.CreateTableAsSelect(ctx, stagingTableName, "SELECT * FROM "+from, &drivers.CreateTableOptions{View: asView})
 	if err != nil {
 		_ = e.c.DropTable(ctx, stagingTableName)
 		return nil, fmt.Errorf("failed to create model: %w", err)
@@ -122,6 +122,6 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 		Connector:    opts.OutputConnector,
 		Properties:   resultPropsMap,
 		Table:        tableName,
-		ExecDuration: stats.ExecDuration,
+		ExecDuration: metrics.Duration,
 	}, nil
 }

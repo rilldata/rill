@@ -482,7 +482,7 @@ func TestViews(t *testing.T) {
 func TestNoConfigUpdate(t *testing.T) {
 	db, _, _ := prepareDB(t)
 	ctx := context.Background()
-	err := db.CreateTableAsSelect(ctx, "test", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{
+	_, err := db.CreateTableAsSelect(ctx, "test", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{
 		BeforeCreateFn: func(ctx context.Context, conn *sqlx.Conn) error {
 			_, err := conn.ExecContext(ctx, "SET secret_directory = '/tmp'")
 			return err

@@ -206,7 +206,7 @@ func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName
 }
 
 // CreateTableAsSelect implements drivers.OLAPStore.
-func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, opts *drivers.CreateTableOptions) (*drivers.Stats, error) {
+func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, opts *drivers.CreateTableOptions) (*drivers.TableWriteMetrics, error) {
 	outputProps := &ModelOutputProperties{}
 	if err := mapstructure.WeakDecode(opts.TableOpts, outputProps); err != nil {
 		return nil, fmt.Errorf("failed to parse output properties: %w", err)
@@ -225,14 +225,13 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, 
 		if err != nil {
 			return nil, err
 		}
-		return &drivers.Stats{ExecDuration: time.Since(t)}, nil
-
+		return &drivers.TableWriteMetrics{Duration: time.Since(t)}, nil
 	} else if outputProps.Typ == "DICTIONARY" {
 		err := c.createDictionary(ctx, name, sql, outputProps)
 		if err != nil {
 			return nil, err
 		}
-		return &drivers.Stats{ExecDuration: time.Since(t)}, nil
+		return &drivers.TableWriteMetrics{Duration: time.Since(t)}, nil
 	}
 	// on replicated databases `create table t as select * from ...` is prohibited
 	// so we need to create a table first and then insert data into it
@@ -247,11 +246,11 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, 
 	if err != nil {
 		return nil, err
 	}
-	return &drivers.Stats{ExecDuration: time.Since(t)}, nil
+	return &drivers.TableWriteMetrics{Duration: time.Since(t)}, nil
 }
 
 // InsertTableAsSelect implements drivers.OLAPStore.
-func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, opts *drivers.InsertTableOptions) (*drivers.Stats, error) {
+func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, opts *drivers.InsertTableOptions) (*drivers.TableWriteMetrics, error) {
 	if !opts.InPlace {
 		return nil, fmt.Errorf("clickhouse: inserts does not support inPlace=false")
 	}
@@ -265,7 +264,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		if err != nil {
 			return nil, err
 		}
-		return &drivers.Stats{ExecDuration: time.Since(t)}, nil
+		return &drivers.TableWriteMetrics{Duration: time.Since(t)}, nil
 	}
 
 	if opts.Strategy == drivers.IncrementalStrategyPartitionOverwrite {
@@ -321,7 +320,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		if err != nil {
 			return nil, err
 		}
-		stats := &drivers.Stats{ExecDuration: time.Since(t)}
+		metrics := &drivers.TableWriteMetrics{Duration: time.Since(t)}
 		// list partitions from the temp table
 		partitions, err := c.getTablePartitions(ctx, tempName)
 		if err != nil {
@@ -339,7 +338,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 				return nil, err
 			}
 		}
-		return stats, nil
+		return metrics, nil
 	}
 
 	if opts.Strategy == drivers.IncrementalStrategyMerge {
@@ -370,7 +369,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		if err != nil {
 			return nil, err
 		}
-		return &drivers.Stats{ExecDuration: time.Since(t)}, nil
+		return &drivers.TableWriteMetrics{Duration: time.Since(t)}, nil
 	}
 	return nil, fmt.Errorf("incremental insert strategy %q not supported", opts.Strategy)
 }

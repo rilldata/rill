@@ -136,11 +136,11 @@ func (e *warehouseToSelfExecutor) queryAndInsert(ctx context.Context, opts *driv
 				Strategy:  outputProps.IncrementalStrategy,
 				UniqueKey: outputProps.UniqueKey,
 			}
-			stats, err := olap.InsertTableAsSelect(ctx, outputTable, qry, insertOpts)
+			metrics, err := olap.InsertTableAsSelect(ctx, outputTable, qry, insertOpts)
 			if err != nil {
 				return fmt.Errorf("failed to incrementally insert into table: %w", err)
 			}
-			execDuration += stats.ExecDuration
+			execDuration += metrics.Duration
 			continue
 		}
 
@@ -150,19 +150,19 @@ func (e *warehouseToSelfExecutor) queryAndInsert(ctx context.Context, opts *driv
 				InPlace:  true,
 				Strategy: drivers.IncrementalStrategyAppend,
 			}
-			stats, err := olap.InsertTableAsSelect(ctx, outputTable, qry, insertOpts)
+			metrics, err := olap.InsertTableAsSelect(ctx, outputTable, qry, insertOpts)
 			if err != nil {
 				return fmt.Errorf("failed to insert into table: %w", err)
 			}
-			execDuration += stats.ExecDuration
+			execDuration += metrics.Duration
 			continue
 		}
 
-		stats, err := olap.CreateTableAsSelect(ctx, outputTable, qry, &drivers.CreateTableOptions{})
+		metrics, err := olap.CreateTableAsSelect(ctx, outputTable, qry, &drivers.CreateTableOptions{})
 		if err != nil {
 			return fmt.Errorf("failed to create table: %w", err)
 		}
-		execDuration += stats.ExecDuration
+		execDuration += metrics.Duration
 
 		create = false
 	}
