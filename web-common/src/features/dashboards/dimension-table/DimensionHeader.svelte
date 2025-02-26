@@ -23,6 +23,8 @@
   import { getStateManagers } from "../state-managers/state-managers";
   import SelectAllButton from "./SelectAllButton.svelte";
   import { getDimensionTableExportQuery } from "./dimension-table-export";
+  import ContextColumnDropdown from "@rilldata/web-common/components/menu/ContextColumnDropdown.svelte";
+  import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
 
   export let dimensionName: string;
   export let isFetching: boolean;
@@ -31,20 +33,22 @@
   export let searchText: string;
   export let onToggleSearchItems: () => void;
   export let hideStartPivotButton = false;
+  export let comparisonTimeRange: V1TimeRange | undefined;
 
   const stateManagers = getStateManagers();
   const {
     selectors: {
       sorting: { sortedByDimensionValue },
       dimensions: { getDimensionDisplayName },
-
       dimensionFilters: { isFilterExcludeMode },
-      measures: { visibleMeasures },
+      measures: { visibleMeasures, leaderboardMeasureNames, getMeasureByName },
+      contextColumn: { contextColumnFilters },
     },
     actions: {
       sorting: { toggleSort },
       dimensions: { setPrimaryDimension },
       dimensionsFilter: { toggleDimensionFilterMode },
+      contextColumn: { setContextColumnFilters },
     },
     timeRangeSummaryStore,
     dashboardStore,
@@ -58,6 +62,16 @@
 
   $: filterKey = excludeMode ? "exclude" : "include";
   $: otherFilterKey = excludeMode ? "include" : "exclude";
+
+  $: metricsViewProto = $dashboardStore.proto;
+
+  $: activeLeaderboardMeasures = $leaderboardMeasureNames.map((name) =>
+    $getMeasureByName(name),
+  );
+
+  // First measure is used for sorting and validation
+  $: firstMeasure = activeLeaderboardMeasures[0];
+  $: validPercentOfTotal = firstMeasure?.validPercentOfTotal || false;
 
   let searchBarOpen = false;
 
@@ -145,6 +159,13 @@
 
   <!-- We fix the height to avoid a layout shift when the Search component is expanded. -->
   <div class="flex items-center gap-x-1 cursor-pointer h-9">
+    <ContextColumnDropdown
+      tooltipText="Choose context columns to display"
+      isValidPercentOfTotal={validPercentOfTotal}
+      isTimeComparisonActive={Boolean(comparisonTimeRange)}
+      selectedFilters={$contextColumnFilters}
+      onContextColumnChange={setContextColumnFilters}
+    />
     {#if !isRowsEmpty}
       <SelectAllButton
         {areAllTableRowsSelected}
