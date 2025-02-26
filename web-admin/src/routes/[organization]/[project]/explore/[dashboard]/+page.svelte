@@ -8,10 +8,14 @@
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
+  import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
   import DashboardURLStateSync from "@rilldata/web-common/features/dashboards/url-state/DashboardURLStateSync.svelte";
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import type { V1GetExploreResponse } from "@rilldata/web-common/runtime-client";
+  import type {
+    V1ExplorePreset,
+    V1GetExploreResponse,
+  } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { PageData } from "./$types";
 
@@ -26,6 +30,31 @@
     exploreName,
   } = data);
 
+  let defaultExplorePreset: V1ExplorePreset = {};
+  let exploreStateFromYAMLConfig: Partial<MetricsExplorerEntity> = {};
+  async function awaitExploreSpec() {
+    ({ defaultExplorePreset, exploreStateFromYAMLConfig } =
+      await exploreSpecPromise);
+  }
+  $: if (exploreSpecPromise) void awaitExploreSpec();
+
+  let partialExploreStateFromUrl: Partial<MetricsExplorerEntity> | undefined =
+    undefined;
+  let exploreStateFromSessionStorage:
+    | Partial<MetricsExplorerEntity>
+    | undefined;
+  async function awaitExploreState() {
+    ({ partialExploreStateFromUrl, exploreStateFromSessionStorage } =
+      await exploreStatePromise);
+  }
+  $: if (exploreStatePromise) void awaitExploreState();
+  $: console.log(partialExploreStateFromUrl);
+
+  let initExploreState: Partial<MetricsExplorerEntity> | undefined = undefined;
+  // $: (async function () {
+  //   initExploreState = await homeBookmarkExploreStatePromise;
+  // })();
+
   // TODO
   // $: if (errors?.length) {
   //   const _errs = errors;
@@ -38,11 +67,6 @@
   //   }, 100);
   // }
 
-  $: allDataPromise = Promise.all([
-    exploreSpecPromise,
-    exploreStatePromise,
-    homeBookmarkExploreStatePromise,
-  ]);
   $: ({ instanceId } = $runtime);
   $: ({ organization: orgName, project: projectName } = $page.params);
 
@@ -143,29 +167,24 @@
     <DashboardBuilding />
   {:else if isExploreErrored($explore.data)}
     <DashboardErrored organization={orgName} project={projectName} />
-  {:else if metricsViewName}
+  {:else if metricsViewName && partialExploreStateFromUrl}
     {#key exploreName}
-      {#await allDataPromise}
-        Loading...
-      {:then values}
-        <StateManagersProvider {metricsViewName} {exploreName}>
-          <DashboardURLStateSync
-            {metricsViewName}
-            {exploreName}
-            extraKeyPrefix={`${orgName}__${projectName}__`}
-            defaultExplorePreset={values[0].defaultExplorePreset}
-            initExploreState={values[2]}
-            exploreStateFromYAMLConfig={values[0].exploreStateFromYAMLConfig}
-            partialExploreStateFromUrl={values[1].partialExploreStateFromUrl}
-            exploreStateFromSessionStorage={values[1]
-              .exploreStateFromSessionStorage}
-          >
-            <DashboardThemeProvider>
-              <Dashboard {metricsViewName} {exploreName} />
-            </DashboardThemeProvider>
-          </DashboardURLStateSync>
-        </StateManagersProvider>
-      {/await}
+      <StateManagersProvider {metricsViewName} {exploreName}>
+        <DashboardURLStateSync
+          {metricsViewName}
+          {exploreName}
+          extraKeyPrefix={`${orgName}__${projectName}__`}
+          {defaultExplorePreset}
+          {initExploreState}
+          {exploreStateFromYAMLConfig}
+          {partialExploreStateFromUrl}
+          {exploreStateFromSessionStorage}
+        >
+          <DashboardThemeProvider>
+            <Dashboard {metricsViewName} {exploreName} />
+          </DashboardThemeProvider>
+        </DashboardURLStateSync>
+      </StateManagersProvider>
     {/key}
   {/if}
 {/if}

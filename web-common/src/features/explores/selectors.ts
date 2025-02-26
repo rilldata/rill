@@ -88,6 +88,7 @@ export async function fetchExploreSpec(
   instanceId: string,
   exploreName: string,
 ) {
+  console.log("fetchExploreSpec");
   await waitUntil(() => get(runtime).instanceId === instanceId, 5_000, 50);
 
   const queryParams = {
@@ -171,7 +172,7 @@ export async function fetchMetricsViewSchema(
       metricsViewName,
     ),
     queryFn: async () => {
-      await asyncWait(10_000);
+      await asyncWait(1_000);
       return queryServiceMetricsViewSchema(instanceId, metricsViewName);
     },
   });
