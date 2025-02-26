@@ -65,7 +65,7 @@
   export let tableWidth: number;
   export let sortedAscending: boolean;
   export let isValidPercentOfTotal: boolean;
-  export let contextColumnFilters: LeaderboardContextColumn[];
+  export let contextColumnFilters: LeaderboardContextColumn[] = [];
   export let timeControlsReady: boolean;
   export let firstColumnWidth: number;
   export let isSummableMeasure: boolean;
@@ -270,6 +270,14 @@
   );
 
   $: columnCount = comparisonTimeRange ? 3 : isValidPercentOfTotal ? 2 : 1;
+
+  $: showDeltaAbsolute =
+    !!comparisonTimeRange &&
+    contextColumnFilters.includes(LeaderboardContextColumn.DELTA_ABSOLUTE);
+
+  $: showDeltaPercent =
+    !!comparisonTimeRange &&
+    contextColumnFilters.includes(LeaderboardContextColumn.DELTA_PERCENT);
 </script>
 
 <div
@@ -285,10 +293,11 @@
       <col style:width="{gutterWidth}px" />
       <col style:width="{firstColumnWidth}px" />
       <col style:width="{$valueColumn}px" />
-      {#if !!comparisonTimeRange}
+      {#if showDeltaAbsolute}
         <col style:width="{$deltaColumn}px" />
-        <col style:width="{DEFAULT_COL_WIDTH}px" />
-      {:else if isValidPercentOfTotal}
+        <!-- TODO: is this needed? -->
+        <!-- <col style:width="{DEFAULT_COL_WIDTH}px" /> -->
+      {:else if showDeltaPercent}
         <col style:width="{DEFAULT_COL_WIDTH}px" />
       {/if}
     </colgroup>

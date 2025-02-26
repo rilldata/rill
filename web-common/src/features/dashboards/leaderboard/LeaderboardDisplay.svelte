@@ -44,15 +44,6 @@
     dashboardStore,
   } = StateManagers;
 
-  // $: console.log(
-  //   "LeaderboardDisplay contextColumnFilters: ",
-  //   $contextColumnFilters,
-  // );
-  // $: console.log(
-  //   "LeaderboardDisplay $isValidPercentOfTotal: ",
-  //   $isValidPercentOfTotal,
-  // );
-
   let parentElement: HTMLDivElement;
   let suppressTooltip = false;
 
