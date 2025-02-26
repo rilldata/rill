@@ -453,12 +453,7 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 		if !errors.Is(err, database.ErrNotUnique) {
 			return nil, err
 		}
-
-		// The user is already in the org. Instead of erroring, we update their role and fallthrough to send the email again.
-		err = s.admin.DB.UpdateOrganizationMemberUserRole(ctx, org.ID, user.ID, role.ID)
-		if err != nil {
-			return nil, err
-		}
+		return nil, status.Error(codes.AlreadyExists, "user is already a member of the organization")
 	}
 
 	err = s.admin.Email.SendOrganizationAddition(&email.OrganizationAddition{

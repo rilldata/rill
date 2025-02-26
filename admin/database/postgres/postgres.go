@@ -67,8 +67,9 @@ func (c *connection) FindOrganizations(ctx context.Context, afterName string, li
 func (c *connection) FindOrganizationsForUser(ctx context.Context, userID, afterName string, limit int) ([]*database.Organization, error) {
 	var res []*database.Organization
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT o.* FROM orgs o JOIN users_orgs_roles uor ON o.id = uor.org_id
-		WHERE lower(u.name) > lower($2) ORDER BY lower(u.name) LIMIT $3
+		SELECT o.* FROM orgs o
+		WHERE o.id IN (SELECT uor.org_id FROM users_orgs_roles uor WHERE uor.user_id = $1)
+		AND lower(o.name) > lower($2) ORDER BY lower(o.name) LIMIT $3
 	`, userID, afterName, limit)
 	if err != nil {
 		return nil, parseErr("orgs", err)
