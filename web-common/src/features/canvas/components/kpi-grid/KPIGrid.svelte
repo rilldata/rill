@@ -28,7 +28,7 @@
 </script>
 
 {#if schema.isValid}
-  <div class="element h-fit" style:--item-count={kpis.length}>
+  <div class="grid-wrapper h-fit" style:--item-count={kpis.length}>
     {#each kpis as kpi, i (i)}
       <div
         class="kpi-wrapper border-gray-200 size-full min-h-52 p-4 overflow-hidden"
@@ -42,7 +42,7 @@
 {/if}
 
 <style lang="postcss">
-  .element {
+  .grid-wrapper {
     @apply size-full grid;
     @apply px-0;
     grid-template-columns: repeat(var(--item-count), 1fr);
@@ -61,13 +61,8 @@
     border-bottom-width: 0px;
   }
 
-  :global(.element) {
-    container-type: inline-size;
-    container-name: container;
-  }
-
-  @container container (inline-size < 600px) {
-    .element {
+  @container component-container (inline-size < 600px) {
+    .grid-wrapper {
       grid-template-columns: repeat(min(2, var(--item-count)), 1fr);
     }
 
@@ -89,8 +84,8 @@
     }
   }
 
-  @container container (inline-size < 300px) {
-    .element {
+  @container component-container (inline-size < 440px) {
+    .grid-wrapper {
       grid-template-columns: repeat(1, 1fr);
     }
 

@@ -1,10 +1,8 @@
 <script lang="ts">
-  import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
   import { clamp } from "@rilldata/web-common/lib/clamp";
   import {
     type V1CanvasItem,
     type V1CanvasRow as APIV1CanvasRow,
-    type V1CanvasSpec,
     createQueryServiceResolveCanvas,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -14,8 +12,6 @@
   import DropZone from "./components/DropZone.svelte";
   import type { CanvasComponentType } from "./components/types";
   import ElementDivider from "./ElementDivider.svelte";
-  import CanvasFilters from "./filters/CanvasFilters.svelte";
-  import PreviewElement from "./PreviewElement.svelte";
   import RowDropZone from "./RowDropZone.svelte";
   import RowWrapper from "./RowWrapper.svelte";
   import { useDefaultMetrics } from "./selector";
@@ -28,15 +24,22 @@
     MIN_HEIGHT,
     MIN_WIDTH,
     COLUMN_COUNT,
+    normalizeSizeArray,
+    getInitialHeight,
+    DEFAULT_DASHBOARD_WIDTH,
   } from "./layout-util";
   import type { DragItem, YAMLRow } from "./layout-util";
   import { portal } from "@rilldata/web-common/lib/actions/portal";
+  import CanvasComponent from "./CanvasComponent.svelte";
+  import ItemWrapper from "./ItemWrapper.svelte";
+  import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
+  import { get, writable } from "svelte/store";
+
+  const activelyEditing = writable(false);
 
   type V1CanvasRow = Omit<APIV1CanvasRow, "items"> & {
     items: (V1CanvasItem | null)[];
   };
-
-  const hideBorder = new Set<string | undefined>(["markdown", "image"]);
 
   const ctx = getCanvasStateManagers();
 
@@ -48,14 +51,7 @@
     },
   } = ctx;
 
-  let spec: V1CanvasSpec = {
-    rows: [],
-    filtersEnabled: true,
-    maxWidth: 1200,
-  };
-
   export let fileArtifact: FileArtifact;
-  export let editable = true;
   export let openSidebar: () => void;
 
   let mousePosition = { x: 0, y: 0 };
@@ -64,6 +60,7 @@
   let selected: Set<string> = new Set();
   let offset = { x: 0, y: 0 };
   let resizeRow = -1;
+  let resizeRowMinimum = MIN_HEIGHT;
   let initialHeight = 0;
   let dragItemInfo: DragItem | null = null;
   let resizeColumnInfo: {
@@ -77,6 +74,11 @@
   let dragTimeout: ReturnType<typeof setTimeout> | null = null;
   let dragItemPosition = { top: 0, left: 0 };
   let dragItemDimensions = { width: 0, height: 0 };
+  let spec = $canvasSpec ?? {
+    rows: [],
+    filtersEnabled: false,
+    maxWidth: DEFAULT_DASHBOARD_WIDTH,
+  };
 
   $: ({ instanceId } = $runtime);
 
@@ -85,12 +87,19 @@
   $: ({ editorContent, updateEditorContent } = fileArtifact);
   $: contents = parseDocument($editorContent ?? "");
 
-  $: spec = structuredClone($canvasSpec ?? spec);
+  $: if ($canvasSpec) {
+    if (!get(activelyEditing)) {
+      spec = structuredClone($canvasSpec ?? spec);
+    }
+  }
+
+  $: activelyEditing.set(
+    resizeRow !== -1 || !!dragItemInfo || !!resizeColumnInfo,
+  );
 
   $: ({ rows = [], filtersEnabled, maxWidth: canvasMaxWidth } = spec);
 
-  // API returns this as 0 when not set
-  $: maxWidth = canvasMaxWidth || 1200;
+  $: maxWidth = canvasMaxWidth || DEFAULT_DASHBOARD_WIDTH;
 
   $: specCanvasRows = structuredClone(rows) as V1CanvasRow[];
 
@@ -115,7 +124,7 @@
     const diff = mousePosition.y - initialMousePosition.y;
 
     resizeRowData.height = Math.max(
-      MIN_HEIGHT,
+      resizeRowMinimum,
       Math.floor(diff + initialHeight),
     );
 
@@ -254,14 +263,22 @@
     dragItemInfo = null;
   }
 
-  function onRowResizeStart(e: MouseEvent & { currentTarget: HTMLElement }) {
+  function onRowResizeStart(
+    rowIndex: number,
+
+    types: (string | undefined)[],
+  ) {
     initialMousePosition = mousePosition;
-    resizeRow = Number(e.currentTarget.getAttribute("data-row"));
+    resizeRow = rowIndex;
     initialHeight =
       document
         .querySelector(`#canvas-row-${resizeRow}`)
         ?.getBoundingClientRect().height ??
       Number(specCanvasRows[resizeRow]?.height ?? MIN_HEIGHT);
+    resizeRowMinimum =
+      types.reduce((acc, type) => {
+        return Math.max(acc, getInitialHeight(type) ?? MIN_HEIGHT);
+      }, 0) ?? MIN_HEIGHT;
   }
 
   function reset() {
@@ -286,7 +303,10 @@
     if (!height) return;
 
     try {
-      contents.setIn(["rows", resizeRow, "height"], height + "px");
+      contents.setIn(
+        ["rows", resizeRow, "height"],
+        Math.max(resizeRowMinimum, height) + "px",
+      );
     } catch (e) {
       console.error(e);
     }
@@ -382,20 +402,6 @@
     updateEditorContent(contents.toString(), false, true);
   }
 
-  // Very basic normalization
-  // Will add something more comprehensive later - bgh
-  function normalizeSizeArray(array: (number | null)[]): number[] {
-    const zeroed = array.map((el) => el ?? 0);
-    const sum = zeroed.reduce((acc, val) => acc + (val || 0), 0);
-    const count = array.length;
-
-    if (sum !== 12) {
-      return Array.from({ length: count }, () => 12 / count);
-    }
-
-    return zeroed;
-  }
-
   function initializeRow(row: number, type: CanvasComponentType) {
     if (!defaultMetrics) return;
 
@@ -415,6 +421,13 @@
     dropZone.clear();
 
     if (dragItemInfo) {
+      if (
+        row === dragItemInfo.position?.row &&
+        (column === dragItemInfo.position.column ||
+          column === dragItemInfo.position?.column + 1)
+      ) {
+        return;
+      }
       if (column === null) {
         moveToNewRow([dragItemInfo], row);
       } else {
@@ -448,177 +461,133 @@
   }}
 />
 
-{#if filtersEnabled}
-  <header
-    role="presentation"
-    class="bg-background border-b py-4 px-2 w-full select-none"
-    on:click|self={resetSelection}
-  >
-    <CanvasFilters />
-  </header>
-{/if}
-
-<div
-  role="presentation"
-  class:!cursor-grabbing={dragItemInfo}
-  class="size-full overflow-hidden overflow-y-auto p-2 pb-48 flex flex-col items-center bg-white select-none"
-  on:click|self={resetSelection}
+<CanvasDashboardWrapper
+  {maxWidth}
+  {filtersEnabled}
+  onClick={resetSelection}
+  showGrabCursor={!!dragItemInfo}
+  bind:clientWidth
 >
-  <div
-    class="w-full h-fit flex flex-col items-center row-container relative pointer-events-none"
-    style:max-width={maxWidth + "px"}
-    bind:clientWidth
-  >
-    {#each specCanvasRows as { items = [], height = MIN_HEIGHT, heightUnit = "px" }, rowIndex (rowIndex)}
-      {@const widths = normalizeSizeArray(items?.map((el) => el?.width ?? 0))}
-      {@const isSpreadEvenly = items?.every(
-        (el) => el?.width === items?.[0]?.width,
-      )}
-      {@const stringHeight = `${height}${heightUnit}`}
-      {@const types = items?.map(
-        (item) =>
-          canvasData?.resolvedComponents?.[item?.component ?? ""]?.component
-            ?.spec?.renderer,
-      )}
-
-      <RowWrapper
-        zIndex={50 - rowIndex * 2}
-        {maxWidth}
-        height={stringHeight}
-        rowId={rowIndex}
-        gridTemplate={widths.map((el) => el + "fr").join(" ")}
-      >
-        {#each items as item, columnIndex (columnIndex)}
-          {@const width = widths[columnIndex]}
-          {@const id = getId(rowIndex, columnIndex)}
-          {@const type = types[columnIndex]}
-          <div
-            style:z-index={4 - columnIndex}
-            style:max-height={type === "kpi_grid" || type === "markdown"
-              ? undefined
-              : stringHeight}
-            class="p-2.5 relative pointer-events-none size-full container min-h-full"
-          >
-            {#if editable}
-              {#if columnIndex === 0}
-                <ElementDivider
-                  {rowIndex}
-                  resizeIndex={-1}
-                  addIndex={columnIndex}
-                  rowLength={items.length}
-                  dragging={!!dragItemInfo}
-                  {isSpreadEvenly}
-                  {spreadEvenly}
-                  {addItems}
-                />
-              {/if}
-
-              <ElementDivider
-                {isSpreadEvenly}
-                onMouseDown={onColumResizeStart}
-                columnWidth={width}
-                {rowIndex}
-                dragging={!!dragItemInfo}
-                resizeIndex={columnIndex}
-                addIndex={columnIndex + 1}
-                rowLength={items.length}
-                {spreadEvenly}
-                {addItems}
-              />
-
-              <DropZone
-                column={columnIndex}
-                row={rowIndex}
-                maxColumns={items.length}
-                allowDrop={!!dragItemInfo}
-                {onDrop}
-              />
-            {/if}
-
-            <article
-              role="presentation"
-              {id}
-              class:selected={selected.has(id)}
-              class:opacity-20={dragItemInfo?.position?.row === rowIndex &&
-                dragItemInfo?.position?.column === columnIndex}
-              class:pointer-events-none={resizeColumnInfo}
-              class:pointer-events-auto={!resizeColumnInfo}
-              class:editable
-              class:outline={!hideBorder.has(type)}
-              class:shadow-sm={!hideBorder.has(type)}
-              on:mousedown={(e) => {
-                if (e.button !== 0 || !editable) return;
-
-                setSelectedComponent({ column: columnIndex, row: rowIndex });
-                selected = new Set([id]);
-                openSidebar();
-
-                if (dragTimeout) clearTimeout(dragTimeout);
-
-                dragTimeout = setTimeout(() => {
-                  handleDragStart({
-                    position: { row: rowIndex, column: columnIndex },
-                    type: "line_chart",
-                  });
-                }, 100);
-              }}
-              class="group component-card w-full flex flex-col cursor-pointer z-10 p-0 h-full relative outline-[1px] outline-gray-200 bg-white overflow-hidden rounded-sm"
-            >
-              {#if item?.component}
-                <PreviewElement component={item} />
-              {:else}
-                <div class="size-full grid place-content-center">
-                  <LoadingSpinner size="36px" />
-                </div>
-              {/if}
-            </article>
-          </div>
-        {/each}
-
-        {#if editable}
-          <RowDropZone
-            allowDrop={!!dragItemInfo}
-            resizeIndex={rowIndex}
-            dropIndex={rowIndex + 1}
-            {onRowResizeStart}
-            {onDrop}
-            addItem={(type) => {
-              initializeRow(rowIndex + 1, type);
-            }}
-          />
-
-          {#if rowIndex === 0}
-            <RowDropZone
-              allowDrop={!!dragItemInfo}
-              dropIndex={0}
-              {onRowResizeStart}
-              {onDrop}
-              addItem={(type) => {
-                initializeRow(rowIndex, type);
-              }}
+  {#each specCanvasRows as { items = [], height = MIN_HEIGHT, heightUnit = "px" }, rowIndex (rowIndex)}
+    {@const widths = normalizeSizeArray(items?.map((el) => el?.width ?? 0))}
+    {@const isSpreadEvenly = items?.every(
+      (el) => el?.width === items?.[0]?.width,
+    )}
+    {@const types = items?.map(
+      (item) =>
+        canvasData?.resolvedComponents?.[item?.component ?? ""]?.component?.spec
+          ?.renderer,
+    )}
+    <RowWrapper
+      {maxWidth}
+      {rowIndex}
+      zIndex={50 - rowIndex * 2}
+      height="{height}{heightUnit}"
+      gridTemplate={widths.map((w) => `${w}fr`).join(" ")}
+    >
+      {#each items as item, columnIndex (columnIndex)}
+        {@const width = widths[columnIndex]}
+        {@const id = getId(rowIndex, columnIndex)}
+        {@const type = types[columnIndex]}
+        <ItemWrapper {type} zIndex={4 - columnIndex}>
+          {#if columnIndex === 0}
+            <ElementDivider
+              {rowIndex}
+              resizeIndex={-1}
+              addIndex={columnIndex}
+              rowLength={items.length}
+              dragging={!!dragItemInfo}
+              {isSpreadEvenly}
+              {spreadEvenly}
+              {addItems}
             />
           {/if}
-        {/if}
-      </RowWrapper>
-    {:else}
-      {#if editable}
-        <AddComponentDropdown
-          componentForm
-          onMouseEnter={() => {
-            if (timeout) clearTimeout(timeout);
-          }}
-          onItemClick={(type) => {
-            initializeRow(0, type);
+
+          <ElementDivider
+            {isSpreadEvenly}
+            onMouseDown={onColumResizeStart}
+            columnWidth={width}
+            {rowIndex}
+            dragging={!!dragItemInfo}
+            resizeIndex={columnIndex}
+            addIndex={columnIndex + 1}
+            rowLength={items.length}
+            {spreadEvenly}
+            {addItems}
+          />
+
+          <DropZone
+            column={columnIndex}
+            row={rowIndex}
+            maxColumns={items.length}
+            allowDrop={!!dragItemInfo}
+            {onDrop}
+          />
+
+          <CanvasComponent
+            canvasItem={item}
+            {id}
+            editable
+            ghost={dragItemInfo?.position?.row === rowIndex &&
+              dragItemInfo?.position?.column === columnIndex}
+            selected={selected.has(id)}
+            allowPointerEvents={!resizeColumnInfo && resizeRow === -1}
+            onMouseDown={(e) => {
+              if (e.button !== 0) return;
+
+              setSelectedComponent({ column: columnIndex, row: rowIndex });
+              selected = new Set([id]);
+              openSidebar();
+
+              if (dragTimeout) clearTimeout(dragTimeout);
+
+              dragTimeout = setTimeout(() => {
+                handleDragStart({
+                  position: { row: rowIndex, column: columnIndex },
+                  type: type ?? "line_chart",
+                });
+              }, 100);
+            }}
+          />
+        </ItemWrapper>
+      {/each}
+
+      <RowDropZone
+        allowDrop={!!dragItemInfo}
+        resizeIndex={rowIndex}
+        dropIndex={rowIndex + 1}
+        onRowResizeStart={() => {
+          onRowResizeStart(rowIndex, types);
+        }}
+        {onDrop}
+        addItem={(type) => {
+          initializeRow(rowIndex + 1, type);
+        }}
+      />
+
+      {#if rowIndex === 0}
+        <RowDropZone
+          allowDrop={!!dragItemInfo}
+          dropIndex={0}
+          {onDrop}
+          addItem={(type) => {
+            initializeRow(rowIndex, type);
           }}
         />
-      {:else}
-        <div class="size-full flex items-center justify-center">
-          <p class="text-lg text-gray-500">No components added</p>
-        </div>
       {/if}
-    {/each}
-  </div>
-</div>
+    </RowWrapper>
+  {:else}
+    <AddComponentDropdown
+      componentForm
+      onMouseEnter={() => {
+        if (timeout) clearTimeout(timeout);
+      }}
+      onItemClick={(type) => {
+        initializeRow(0, type);
+      }}
+    />
+  {/each}
+</CanvasDashboardWrapper>
 
 {#if dragItemInfo && dragItemInfo.position}
   {@const item =
@@ -627,59 +596,28 @@
     ]}
   {#if item}
     <div
-      class="group opacity-50 container pointer-events-none shadow-lg component-card flex-col cursor-pointer p-0 absolute outline outline-primary-300 bg-white overflow-hidden rounded-sm flex"
       use:portal
+      class="absolute pointer-events-none drag-container"
       style:z-index="1000"
       style:top="{dragItemPosition.top}px"
       style:left="{dragItemPosition.left}px"
       style:width="{dragItemDimensions.width}px"
       style:height="{dragItemDimensions.height}px"
     >
-      <PreviewElement component={item} />
+      <CanvasComponent
+        id="canvas-drag-item"
+        canvasItem={item}
+        allowPointerEvents={false}
+        ghost
+        selected
+      />
     </div>
   {/if}
 {/if}
 
 <style lang="postcss">
-  .component-card.editable:hover {
-    @apply shadow-md outline;
-  }
-
-  .component-card:has(.component-error) {
-    @apply outline-red-200;
-  }
-
-  .container {
+  .drag-container {
     container-type: inline-size;
-    container-name: container;
-  }
-
-  .selected {
-    @apply outline-2 outline-primary-300;
-    outline-style: solid !important;
-  }
-
-  .row-container {
-    container-type: inline-size;
-    container-name: row-container;
-  }
-
-  @container row-container (inline-size < 600px) {
-    :global(.canvas-row) {
-      grid-template-columns: repeat(1, 1fr) !important;
-      /* grid-auto-rows: max-content; */
-    }
-  }
-
-  @container container (inline-size < 600px) {
-    .element {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-
-  @container container (inline-size < 400px) {
-    .element {
-      grid-template-columns: repeat(1, 1fr);
-    }
+    container-name: component-container;
   }
 </style>

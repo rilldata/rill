@@ -12,12 +12,7 @@
 
   $: canvasQuery = useResource(instanceId, canvasName, ResourceKind.Canvas);
 
-  $: canvas = $canvasQuery.data?.canvas.spec;
-
-  $: ({ items = [], filtersEnabled } = canvas || {
-    items: [],
-    filtersEnabled: true,
-  });
+  $: canvasResource = $canvasQuery.data;
 </script>
 
-<CanvasDashboardEmbed {items} showFilterBar={filtersEnabled} spec={canvas} />
+<CanvasDashboardEmbed resource={canvasResource} />

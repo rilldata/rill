@@ -7,7 +7,7 @@
   export let resizeIndex = -1;
   export let dropIndex: number;
   export let onDrop: (row: number, column: number | null) => void;
-  export let onRowResizeStart: (e: MouseEvent) => void;
+  export let onRowResizeStart: (e: MouseEvent) => void = () => {};
   export let addItem: (type: CanvasComponentType) => void;
 
   let open = false;

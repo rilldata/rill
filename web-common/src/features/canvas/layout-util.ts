@@ -6,17 +6,17 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import { getComponentRegistry } from "./components/util";
 
-const initialHeights: Record<CanvasComponentType, number> = {
-  line_chart: 350,
-  bar_chart: 400,
-  area_chart: 400,
-  stacked_bar: 400,
-  stacked_bar_normalized: 400,
-  markdown: 160,
+export const initialHeights: Record<CanvasComponentType, number> = {
+  line_chart: 320,
+  bar_chart: 320,
+  area_chart: 320,
+  stacked_bar: 320,
+  stacked_bar_normalized: 320,
+  markdown: 80,
   kpi: 200,
   kpi_grid: 200,
-  image: 420,
-  table: 400,
+  image: 300,
+  table: 300,
 };
 
 const componentRegistry = getComponentRegistry();
@@ -24,6 +24,7 @@ const componentRegistry = getComponentRegistry();
 export const MIN_HEIGHT = 40;
 export const MIN_WIDTH = 3;
 export const COLUMN_COUNT = 12;
+export const DEFAULT_DASHBOARD_WIDTH = 1200;
 
 type YAMLItem = Record<string, unknown> & {
   width?: number;
@@ -41,8 +42,7 @@ type V1CanvasRow = Omit<APIV1CanvasRow, "items"> & {
 
 export type DragItem = {
   position?: { row: number; column: number };
-
-  type?: CanvasComponentType;
+  type?: string;
 };
 
 export function rowsGuard(value: unknown): unknown[] {
@@ -122,7 +122,10 @@ export function moveToRow<T extends YAMLRow | V1CanvasRow>(
       movedComponents.push(
         defaultMetrics
           ? {
-              ...createComponent(item.type, defaultMetrics),
+              ...createComponent(
+                item.type as CanvasComponentType,
+                defaultMetrics,
+              ),
               width: 0,
             }
           : {
@@ -142,7 +145,7 @@ export function moveToRow<T extends YAMLRow | V1CanvasRow>(
       row.items[item.position.column] = null;
     }
 
-    height = Math.max(existingNumericHeight, getInitalHeight(item.type));
+    height = Math.max(existingNumericHeight, getInitialHeight(item.type));
   });
 
   if (dropPosition) {
@@ -204,7 +207,7 @@ function itemExists<T>(item: T | null | undefined): item is T {
   return item !== undefined && item !== null;
 }
 
-function getInitalHeight(id: string | undefined) {
+export function getInitialHeight(id: string | undefined) {
   return initialHeights[id as CanvasComponentType] ?? MIN_HEIGHT;
 }
 
@@ -227,3 +230,19 @@ function createComponent(
     width: 0,
   };
 }
+
+// Very basic normalization
+// Will add something more comprehensive later - bgh
+export function normalizeSizeArray(array: (number | null)[]): number[] {
+  const zeroed = array.map((el) => el ?? 0);
+  const sum = zeroed.reduce((acc, val) => acc + (val || 0), 0);
+  const count = array.length;
+
+  if (sum !== 12) {
+    return Array.from({ length: count }, () => 12 / count);
+  }
+
+  return zeroed;
+}
+
+export const hideBorder = new Set<string | undefined>(["markdown", "image"]);
