@@ -12,8 +12,10 @@
   export let isValidPercentOfTotal = false;
   export let isTimeComparisonActive = false;
   export let tooltipText: string;
-  export let selected: LeaderboardContextColumn;
-  export let onContextColumnChange: (column: LeaderboardContextColumn) => void;
+  export let selectedFilters: LeaderboardContextColumn[] = [];
+  export let onContextColumnChange: (
+    column: LeaderboardContextColumn[],
+  ) => void;
 
   let active = false;
 
@@ -51,13 +53,19 @@
 
   function toggleContextColumn(name: string) {
     if (!name) return;
-    onContextColumnChange(name as LeaderboardContextColumn);
+    const column = name as LeaderboardContextColumn;
+    const newFilters = selectedFilters.includes(column)
+      ? selectedFilters.filter((f) => f !== column)
+      : [...selectedFilters, column];
+    onContextColumnChange(newFilters);
   }
 
   $: withText =
-    selected !== LeaderboardContextColumn.HIDDEN
-      ? getLabelFromValue(selected)
-      : "no context columns";
+    selectedFilters && selectedFilters.length > 1
+      ? `${selectedFilters.length} context columns`
+      : selectedFilters.length === 1
+        ? getLabelFromValue(selectedFilters[0])
+        : "no context columns";
 </script>
 
 <DropdownMenu.Root
@@ -91,7 +99,7 @@
         <div class="px-1 pb-1 pt-1">
           {#each options as option}
             <DropdownMenu.CheckboxItem
-              checked={selected === option.value}
+              checked={selectedFilters.includes(option.value)}
               onCheckedChange={() => toggleContextColumn(option.value)}
             >
               <div class="flex items-center gap-x-1">
@@ -127,6 +135,3 @@
     </Tooltip>
   </DropdownMenu.Trigger>
 </DropdownMenu.Root>
-
-<style lang="postcss">
-</style>
