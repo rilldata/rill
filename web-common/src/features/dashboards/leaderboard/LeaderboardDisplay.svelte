@@ -35,6 +35,7 @@
       dimensions: { visibleDimensions },
       comparison: { isBeingCompared: isBeingComparedReadable },
       sorting: { sortedAscending, sortType },
+      contextColumn: { contextColumnFilters },
     },
     actions: {
       dimensions: { setPrimaryDimension },
@@ -44,6 +45,15 @@
     },
     exploreName,
   } = StateManagers;
+
+  // $: console.log(
+  //   "LeaderboardDisplay contextColumnFilters: ",
+  //   $contextColumnFilters,
+  // );
+  // $: console.log(
+  //   "LeaderboardDisplay $isValidPercentOfTotal: ",
+  //   $isValidPercentOfTotal,
+  // );
 
   let parentElement: HTMLDivElement;
   let suppressTooltip = false;
@@ -89,6 +99,7 @@
           {#if dimension.name}
             <Leaderboard
               isValidPercentOfTotal={$isValidPercentOfTotal}
+              contextColumnFilters={$contextColumnFilters}
               {metricsViewName}
               {activeMeasureNames}
               {whereFilter}

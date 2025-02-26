@@ -10,7 +10,7 @@
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import DimensionCompareMenu from "./DimensionCompareMenu.svelte";
-
+  import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   export let dimensionName: string;
   export let isFetching: boolean;
   export let isTimeComparisonActive: boolean;
@@ -21,11 +21,25 @@
   export let displayName: string;
   export let hovered: boolean;
   export let sortType: SortType;
+  export let contextColumnFilters: LeaderboardContextColumn[] = [];
   export let toggleSort: (sortType: SortType) => void;
   export let setPrimaryDimension: (dimensionName: string) => void;
   export let toggleComparisonDimension: (
     dimensionName: string | undefined,
   ) => void;
+
+  $: showDeltaAbsolute =
+    isTimeComparisonActive &&
+    contextColumnFilters.includes(LeaderboardContextColumn.DELTA_ABSOLUTE);
+
+  $: showDeltaPercent =
+    isTimeComparisonActive &&
+    contextColumnFilters.includes(LeaderboardContextColumn.DELTA_PERCENT);
+
+  $: showPercentOfTotal =
+    !isTimeComparisonActive &&
+    isValidPercentOfTotal &&
+    contextColumnFilters.includes(LeaderboardContextColumn.PERCENT);
 </script>
 
 <thead>
@@ -79,13 +93,13 @@
         aria-label="Toggle sort leaderboards by value"
         on:click={() => toggleSort(SortType.VALUE)}
       >
-        #{#if sortType === SortType.VALUE}
+        {#if sortType === SortType.VALUE}
           <ArrowDown flip={sortedAscending} />
         {/if}
       </button>
     </th>
 
-    {#if isTimeComparisonActive}
+    {#if showDeltaAbsolute}
       <th>
         <button
           aria-label="Toggle sort leaderboards by absolute change"
@@ -97,7 +111,9 @@
           {/if}
         </button>
       </th>
+    {/if}
 
+    {#if showDeltaPercent}
       <th>
         <button
           aria-label="Toggle sort leaderboards by percent change"
@@ -109,7 +125,9 @@
           {/if}
         </button>
       </th>
-    {:else if isValidPercentOfTotal}
+    {/if}
+
+    {#if showPercentOfTotal}
       <th>
         <button
           aria-label="Toggle sort leaderboards by percent of total"
