@@ -34,6 +34,7 @@ export type YAMLRow = {
   height?: string;
 };
 
+// Items are nulled out when removed from the canvas
 type V1CanvasRow = Omit<APIV1CanvasRow, "items"> & {
   items: (V1CanvasItem | null)[];
 };
