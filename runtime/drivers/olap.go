@@ -160,7 +160,7 @@ func (r *Result) Close() error {
 // InformationSchema contains information about existing tables in an OLAP driver.
 // Table lookups should be case insensitive.
 type InformationSchema interface {
-	All(ctx context.Context, like string) ([]*Table, error)
+	All(ctx context.Context, like string, includeSize bool) ([]*Table, error)
 	Lookup(ctx context.Context, db, schema, name string) (*Table, error)
 }
 
@@ -174,6 +174,7 @@ type Table struct {
 	View                    bool
 	Schema                  *runtimev1.StructType
 	UnsupportedCols         map[string]string
+	BytesOnDisk             int64
 }
 
 // IngestionSummary is details about ingestion

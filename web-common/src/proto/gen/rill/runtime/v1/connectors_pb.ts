@@ -852,6 +852,11 @@ export class OLAPListTablesRequest extends Message<OLAPListTablesRequest> {
    */
   searchPattern = "";
 
+  /**
+   * @generated from field: bool include_size = 4;
+   */
+  includeSize = false;
+
   constructor(data?: PartialMessage<OLAPListTablesRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -863,6 +868,7 @@ export class OLAPListTablesRequest extends Message<OLAPListTablesRequest> {
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "search_pattern", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "include_size", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): OLAPListTablesRequest {
@@ -955,6 +961,13 @@ export class TableInfo extends Message<TableInfo> {
    */
   hasUnsupportedDataTypes = false;
 
+  /**
+   * bytes_on_disk is the size of the table in bytes on disk. Set to -1 if the size is unknown or cannot be determined.
+   *
+   * @generated from field: int64 bytes_on_disk = 7;
+   */
+  bytesOnDisk = protoInt64.zero;
+
   constructor(data?: PartialMessage<TableInfo>) {
     super();
     proto3.util.initPartial(data, this);
@@ -969,6 +982,7 @@ export class TableInfo extends Message<TableInfo> {
     { no: 6, name: "is_default_database_schema", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "has_unsupported_data_types", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "bytes_on_disk", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TableInfo {

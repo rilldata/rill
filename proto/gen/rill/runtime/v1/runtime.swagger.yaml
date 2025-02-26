@@ -2786,6 +2786,10 @@ paths:
           in: query
           required: false
           type: string
+        - name: includeSize
+          in: query
+          required: false
+          type: boolean
       tags:
         - ConnectorService
   /v1/ping:
@@ -6473,6 +6477,10 @@ definitions:
       hasUnsupportedDataTypes:
         type: boolean
         title: has_unsupported_data_types indicates if the underlying table has any column with an unsupported OLAP engine datatype
+      bytesOnDisk:
+        type: string
+        format: int64
+        description: bytes_on_disk is the size of the table in bytes on disk. Set to -1 if the size is unknown or cannot be determined.
   v1TableRowsRequest:
     type: object
     properties:

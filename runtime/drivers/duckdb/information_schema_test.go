@@ -22,7 +22,7 @@ func TestInformationSchemaAll(t *testing.T) {
 	err = olap.CreateTableAsSelect(context.Background(), "source", "select 4, 5, 6", &drivers.CreateTableOptions{})
 	require.NoError(t, err)
 
-	tables, err := olap.InformationSchema().All(context.Background(), "")
+	tables, err := olap.InformationSchema().All(context.Background(), "", true)
 	require.NoError(t, err)
 	require.Equal(t, 4, len(tables))
 
@@ -38,6 +38,8 @@ func TestInformationSchemaAll(t *testing.T) {
 
 	require.Equal(t, true, tables[2].View)
 	require.Equal(t, false, tables[3].View)
+	require.Equal(t, int64(0), tables[2].BytesOnDisk)
+	require.Greater(t, tables[3].BytesOnDisk, int64(0))
 }
 
 func TestInformationSchemaAllLike(t *testing.T) {
@@ -48,12 +50,12 @@ func TestInformationSchemaAllLike(t *testing.T) {
 	err := olap.CreateTableAsSelect(context.Background(), "model", "select 1, 2, 3", opts)
 	require.NoError(t, err)
 
-	tables, err := olap.InformationSchema().All(context.Background(), "%odel")
+	tables, err := olap.InformationSchema().All(context.Background(), "%odel", false)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tables))
 	require.Equal(t, "model", tables[0].Name)
 
-	tables, err = olap.InformationSchema().All(context.Background(), "%model%")
+	tables, err = olap.InformationSchema().All(context.Background(), "%model%", false)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tables))
 	require.Equal(t, "model", tables[0].Name)

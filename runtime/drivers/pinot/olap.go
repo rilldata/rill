@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/c2h5oh/datasize"
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -125,7 +126,7 @@ func (c *connection) InformationSchema() drivers.InformationSchema {
 	return informationSchema{c: c}
 }
 
-func (i informationSchema) All(ctx context.Context, like string) ([]*drivers.Table, error) {
+func (i informationSchema) All(ctx context.Context, like string, includeSize bool) ([]*drivers.Table, error) {
 	// query /tables endpoint, for each table name, query /tables/{tableName}/schema
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, i.c.schemaURL+"/tables", http.NoBody)
 	for k, v := range i.c.headers {
@@ -159,8 +160,8 @@ func (i informationSchema) All(ctx context.Context, like string) ([]*drivers.Tab
 
 	tables := make([]*drivers.Table, 0, len(tablesResp.Tables))
 	// fetch table schemas in parallel with concurrency of 5
-	g, ctx := errgroup.WithContext(ctx)
-	sem := make(chan struct{}, 5)
+	g, gctx := errgroup.WithContext(ctx)
+	g.SetLimit(5)
 	for _, tableName := range tablesResp.Tables {
 		if likeRegexp != nil && !likeRegexp.MatchString(tableName) {
 			continue
@@ -168,10 +169,7 @@ func (i informationSchema) All(ctx context.Context, like string) ([]*drivers.Tab
 
 		tableName := tableName
 		g.Go(func() error {
-			sem <- struct{}{}
-			defer func() { <-sem }()
-
-			table, err := i.Lookup(ctx, "", "", tableName)
+			table, err := i.Lookup(gctx, "", "", tableName)
 			if err != nil {
 				fmt.Printf("Error fetching schema for table %s: %v\n", tableName, err)
 				return nil
@@ -184,6 +182,25 @@ func (i informationSchema) All(ctx context.Context, like string) ([]*drivers.Tab
 		return nil, err
 	}
 
+	g, gctx = errgroup.WithContext(ctx)
+	g.SetLimit(5)
+	if includeSize {
+		for j := range tables {
+			g.Go(func() error {
+				table := tables[j]
+				size, err := i.TableSize(gctx, table.Name)
+				if err != nil {
+					fmt.Printf("Error fetching size for table %s: %v\n", table.Name, err)
+					return nil
+				}
+				table.BytesOnDisk = size
+				return nil
+			})
+		}
+	}
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
 	return tables, nil
 }
 
@@ -250,9 +267,50 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 		View:            false,
 		Schema:          &runtimev1.StructType{Fields: schemaFields},
 		UnsupportedCols: unsupportedCols,
+		BytesOnDisk:     -1,
 	}
 
 	return table, nil
+}
+
+func (i informationSchema) TableSize(ctx context.Context, name string) (int64, error) {
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, i.c.schemaURL+"/debug/tables/"+name+"?type=OFFLINE", http.NoBody)
+	for k, v := range i.c.headers {
+		req.Header.Set(k, v)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return 0, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return 0, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	var data []struct {
+		TableSize struct {
+			ReportedSize string `json:"reportedSize"`
+		} `json:"tableSize"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+		return 0, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	var size int64
+	for _, d := range data {
+		if d.TableSize.ReportedSize != "" && d.TableSize.ReportedSize != "-1" {
+			// Reported size is in bytes
+			sz, err := datasize.ParseString(d.TableSize.ReportedSize)
+			if err != nil {
+				return 0, err
+			}
+			size += int64(sz.Bytes())
+		}
+	}
+	return size, nil
 }
 
 func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {

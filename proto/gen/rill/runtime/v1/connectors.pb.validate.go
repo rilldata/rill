@@ -1982,6 +1982,8 @@ func (m *OLAPListTablesRequest) validate(all bool) error {
 
 	// no validation rules for SearchPattern
 
+	// no validation rules for IncludeSize
+
 	if len(errors) > 0 {
 		return OLAPListTablesRequestMultiError(errors)
 	}
@@ -2231,6 +2233,8 @@ func (m *TableInfo) validate(all bool) error {
 	// no validation rules for Name
 
 	// no validation rules for HasUnsupportedDataTypes
+
+	// no validation rules for BytesOnDisk
 
 	if len(errors) > 0 {
 		return TableInfoMultiError(errors)

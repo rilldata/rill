@@ -12,6 +12,7 @@ type Table struct {
 	ColumnNames    []any  `db:"column_names"`
 	ColumnTypes    []any  `db:"column_types"`
 	ColumnNullable []any  `db:"column_nullable"`
+	SizeBytes      int64  `db:"-"`
 }
 
 func (d *db) Schema(ctx context.Context, ilike, name string) ([]*Table, error) {
@@ -74,6 +75,10 @@ func (d *db) Schema(ctx context.Context, ilike, name string) ([]*Table, error) {
 		if ok {
 			t.View = table.Type == "VIEW"
 		}
+		if !t.View {
+			t.SizeBytes = fileSize([]string{d.localDBPath(t.Name, table.Version)})
+		}
+
 	}
 
 	return res, nil

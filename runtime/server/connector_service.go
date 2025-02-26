@@ -141,7 +141,7 @@ func (s *Server) OLAPListTables(ctx context.Context, req *runtimev1.OLAPListTabl
 	}
 	defer release()
 
-	tables, err := olap.InformationSchema().All(ctx, req.SearchPattern)
+	tables, err := olap.InformationSchema().All(ctx, req.SearchPattern, req.IncludeSize)
 	if err != nil {
 		return nil, err
 	}
@@ -155,6 +155,7 @@ func (s *Server) OLAPListTables(ctx context.Context, req *runtimev1.OLAPListTabl
 			IsDefaultDatabaseSchema: table.IsDefaultDatabaseSchema,
 			Name:                    table.Name,
 			HasUnsupportedDataTypes: len(table.UnsupportedCols) != 0,
+			BytesOnDisk:             table.BytesOnDisk,
 		}
 	}
 	return &runtimev1.OLAPListTablesResponse{

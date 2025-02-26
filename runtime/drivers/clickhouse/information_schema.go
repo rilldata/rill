@@ -9,6 +9,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"go.uber.org/zap"
 )
 
 type informationSchema struct {
@@ -19,7 +20,7 @@ func (c *connection) InformationSchema() drivers.InformationSchema {
 	return informationSchema{c: c}
 }
 
-func (i informationSchema) All(ctx context.Context, like string) ([]*drivers.Table, error) {
+func (i informationSchema) All(ctx context.Context, like string, includeSize bool) ([]*drivers.Table, error) {
 	conn, release, err := i.c.acquireMetaConn(ctx)
 	if err != nil {
 		return nil, err
@@ -56,13 +57,21 @@ func (i informationSchema) All(ctx context.Context, like string) ([]*drivers.Tab
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	tables, err := i.scanTables(rows)
 	if err != nil {
+		rows.Close()
 		return nil, err
 	}
+	rows.Close()
 
+	if includeSize {
+		// the table size query can fail due to issues like no access to query system.parts table so we do not return error if this fails
+		err = i.populateTableSize(ctx, tables, conn)
+		if err != nil {
+			i.c.logger.Warn("failed to populate table size", zap.Error(err))
+		}
+	}
 	return tables, nil
 }
 
@@ -146,6 +155,9 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 				View:                    tableType == "VIEW",
 				Schema:                  &runtimev1.StructType{},
 			}
+			if !t.View {
+				t.BytesOnDisk = -1
+			}
 			res = append(res, t)
 		}
 
@@ -215,4 +227,51 @@ func (i informationSchema) entityType(ctx context.Context, db, name string) (typ
 		return "", false, err
 	}
 	return typ, onCluster, nil
+}
+
+func (informationSchema) populateTableSize(ctx context.Context, tables []*drivers.Table, conn *sqlx.Conn) error {
+	q := `SELECT 
+				database,
+				table, 
+				sum(bytes_on_disk) AS size
+			FROM system.parts
+			WHERE lower(database) NOT IN ('information_schema', 'system') AND active = 1 
+			GROUP BY database, table`
+
+	rows, err := conn.QueryxContext(ctx, q)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	res := make(map[string]map[string]uint64, 0)
+	var (
+		name, schema string
+		size         uint64
+	)
+	for rows.Next() {
+		if err := rows.Scan(&schema, &name, &size); err != nil {
+			return err
+		}
+		schemaTables, ok := res[schema]
+		if !ok {
+			schemaTables = make(map[string]uint64)
+			res[schema] = schemaTables
+		}
+		schemaTables[name] = size
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+
+	for _, t := range tables {
+		schemaTables, ok := res[t.DatabaseSchema]
+		if !ok {
+			continue
+		}
+		if size, ok := schemaTables[t.Name]; ok {
+			t.BytesOnDisk = int64(size)
+		}
+	}
+	return err
 }
