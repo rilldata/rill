@@ -19,29 +19,25 @@
 
   let active = false;
 
-  // TODO: look into the relationship between context column and all measures
-  // TODO: will we have context columns synced with the url state?
-
   $: options = [
-    ...(isTimeComparisonActive
-      ? [
-          {
-            value: LeaderboardContextColumn.DELTA_ABSOLUTE,
-            label: "Absolute change",
-          },
-          {
-            value: LeaderboardContextColumn.DELTA_PERCENT,
-            label: "Percent change",
-          },
-        ]
-      : []),
-    // TODO: consider using isSummableMeasure
     ...(isValidPercentOfTotal
       ? [
           {
             value: LeaderboardContextColumn.PERCENT,
             label: "Percent of total",
             description: "Summable metrics only",
+          },
+        ]
+      : []),
+    ...(isTimeComparisonActive
+      ? [
+          {
+            value: LeaderboardContextColumn.DELTA_ABSOLUTE,
+            label: "Change",
+          },
+          {
+            value: LeaderboardContextColumn.DELTA_PERCENT,
+            label: "Percent change",
           },
         ]
       : []),
@@ -102,24 +98,32 @@
               checked={selectedFilters.includes(option.value)}
               onCheckedChange={() => toggleContextColumn(option.value)}
             >
-              <div class="flex items-center gap-x-1">
-                <div class="flex items-center justify-start">
-                  {#if option.value === LeaderboardContextColumn.DELTA_ABSOLUTE}
+              <div class="flex items-center">
+                {#if option.value === LeaderboardContextColumn.DELTA_ABSOLUTE}
+                  <div class="flex items-center justify-start">
                     <Delta />
                     <div class="w-4" />
-                  {:else if option.value === LeaderboardContextColumn.DELTA_PERCENT}
+                  </div>
+                  <span>{option.label}</span>
+                {:else if option.value === LeaderboardContextColumn.DELTA_PERCENT}
+                  <div class="flex items-center justify-start">
                     <Delta />
                     <div class="w-4">%</div>
-                  {:else if option.value === LeaderboardContextColumn.PERCENT}
-                    <PieChart />
-                    <div class="w-4">%</div>
-                  {/if}
-                </div>
-                {option.label}
-                {#if option.description}
-                  <span class="ui-copy-muted text-[11px] ml-1">
-                    ({option.description})
-                  </span>
+                  </div>
+                  <span>{option.label}</span>
+                {:else if option.value === LeaderboardContextColumn.PERCENT}
+                  <div class="flex flex-col">
+                    <div class="flex flex-row">
+                      <div class="flex items-center justify-start">
+                        <PieChart />
+                        <div class="w-4">%</div>
+                      </div>
+                      <span>{option.label}</span>
+                    </div>
+                    <span class="ui-copy-muted text-[11px]">
+                      {option.description}
+                    </span>
+                  </div>
                 {/if}
               </div>
             </DropdownMenu.CheckboxItem>
