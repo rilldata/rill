@@ -78,7 +78,7 @@
     dispatch("click-column");
   }}
   onShiftClick={() => {
-    copyToClipboard(name, `copied column name "${name}" to clipboard`);
+    copyToClipboard(name, `Copied column name "${name}" to clipboard`);
   }}
 >
   <div
