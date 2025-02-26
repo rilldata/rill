@@ -36,6 +36,7 @@
           },
         ]
       : []),
+    // TODO: consider using isSummableMeasure
     ...(isValidPercentOfTotal
       ? [
           {
