@@ -38,6 +38,7 @@ import { getFiltersForOtherDimensions } from "../selectors";
 import type { MetricsExplorerEntity } from "../stores/metrics-explorer-entity";
 import type { DimensionTableRow } from "./dimension-table-types";
 import type { DimensionTableConfig } from "./DimensionTableConfig";
+import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 
 /** Returns an updated filter set for a given dimension on search */
 export function updateFilterOnSearch(
@@ -114,29 +115,33 @@ export function computePercentOfTotal(
 export function getComparisonProperties(
   measureName: string,
   selectedMeasure: MetricsViewSpecMeasureV2,
+  contextColumnFilters: LeaderboardContextColumn[] = [],
 ): {
-  /**
-   * "component" in this context is a Svelte component that will be
-   * used to render the column header.
-   */
   component: typeof SvelteComponent<any>;
   type: string;
   format: string;
   description: string;
+  visible: boolean;
 } {
-  if (measureName.includes("_delta_perc"))
+  if (measureName.includes("_delta_perc")) {
     return {
       component: DeltaChangePercentage,
       type: "RILL_PERCENTAGE_CHANGE",
       format: FormatPreset.PERCENTAGE,
-      description: "Perc. change over comparison period",
+      description: "Percentage change over comparison period",
+      visible: contextColumnFilters.includes(
+        LeaderboardContextColumn.DELTA_PERCENT,
+      ),
     };
-  else if (measureName.includes("_delta")) {
+  } else if (measureName.includes("_delta")) {
     return {
       component: DeltaChange,
       type: "RILL_CHANGE",
       format: selectedMeasure.formatPreset ?? FormatPreset.HUMANIZE,
       description: "Change over comparison period",
+      visible: contextColumnFilters.includes(
+        LeaderboardContextColumn.DELTA_ABSOLUTE,
+      ),
     };
   } else if (measureName.includes("_percent_of_total")) {
     return {
@@ -144,6 +149,7 @@ export function getComparisonProperties(
       type: "RILL_PERCENTAGE_CHANGE",
       format: FormatPreset.PERCENTAGE,
       description: "Percent of total",
+      visible: contextColumnFilters.includes(LeaderboardContextColumn.PERCENT),
     };
   }
   throw new Error(
@@ -246,6 +252,7 @@ export function prepareVirtualizedDimTableColumns(
 ): VirtualizedTableColumns[] {
   const sortType = dash.dashboardSortType;
   const sortDirection = dash.sortDirection;
+  const contextColumnFilters = dash.leaderboardContextColumnFilters;
 
   const measureNames = allMeasures.map((m) => m.name);
   const leaderboardMeasureName = dash.leaderboardMeasureNames[0];
@@ -332,17 +339,23 @@ export function prepareVirtualizedDimTableColumns(
         };
       } else if (selectedMeasure !== undefined) {
         // Handle delta, delta_perc, and percent_of_total columns
-        const comparison = getComparisonProperties(name, selectedMeasure);
-        columnOut = {
+        const comparison = getComparisonProperties(
           name,
-          type: comparison.type,
-          label: comparison.component,
-          description: comparison.description,
-          enableResize: false,
-          format: comparison.format,
-          highlight,
-          sorted,
-        };
+          selectedMeasure,
+          contextColumnFilters,
+        );
+        if (comparison.visible) {
+          columnOut = {
+            name,
+            type: comparison.type,
+            label: comparison.component,
+            description: comparison.description,
+            enableResize: false,
+            format: comparison.format,
+            highlight,
+            sorted,
+          };
+        }
       }
       return columnOut;
     })

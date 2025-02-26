@@ -79,7 +79,7 @@
     >
       <Button builders={[builder]} type="text" on:click>
         <div
-          class="flex items-center gap-x-0.5 px-1 text-gray-700 hover:text-inherit font-normal"
+          class="flex items-center gap-x-1 px-1 text-gray-700 hover:text-inherit font-normal"
         >
           with <strong>{withText}</strong>
           <span class="transition-transform" class:-rotate-180={active}>
