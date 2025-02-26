@@ -64,11 +64,6 @@
   function isDefined(value: string | undefined): value is string {
     return value !== undefined;
   }
-
-  // $: console.log(
-  //   "LeaderboardControls contextColumnFilters: ",
-  //   $contextColumnFilters,
-  // );
 </script>
 
 <div>
