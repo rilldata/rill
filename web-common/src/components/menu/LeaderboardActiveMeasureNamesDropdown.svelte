@@ -70,7 +70,7 @@
         on:click
       >
         <div
-          class="flex items-center gap-x-0.5 px-1 text-gray-700 hover:text-inherit"
+          class="flex items-center gap-x-0.5 px-1 text-gray-700 hover:text-inherit font-normal"
         >
           Showing <strong>{showingMeasuresText}</strong>
           <span
@@ -95,7 +95,7 @@
           />
         </div>
 
-        <div class="px-1 pb-1">
+        <div class="px-1 pb-1 overflow-y-auto">
           {#if filteredMeasures.length}
             {#each filteredMeasures as measure (measure.name)}
               <DropdownMenu.CheckboxItem
@@ -107,12 +107,16 @@
                   if (measure.name) toggleMeasure(measure.name);
                 }}
               >
-                <div class="flex flex-col">
+                <div class="flex flex-col max-w-full">
                   <div>
                     {measure.displayName || measure.name}
                   </div>
 
-                  <p class="ui-copy-muted" style:font-size="11px">
+                  <p
+                    class="ui-copy-muted truncate"
+                    title={measure.description}
+                    style:font-size="11px"
+                  >
                     {measure.description}
                   </p>
                 </div>
