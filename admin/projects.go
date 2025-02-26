@@ -19,20 +19,15 @@ import (
 // TODO: The functions in this file are not truly fault tolerant. They should be refactored to run as idempotent, retryable background tasks.
 
 // CreateProject creates a new project and provisions and reconciles a prod deployment for it.
-func (s *Service) CreateProject(ctx context.Context, org *database.Organization, opts *database.InsertProjectOptions) (*database.Project, error) {
-	isGitInfoEmpty := opts.GithubURL == nil || opts.GithubInstallationID == nil || opts.ProdBranch == ""
-	if (opts.ArchiveAssetID == nil) == isGitInfoEmpty {
-		return nil, fmt.Errorf("either github info or archive_asset_id must be set")
-	}
-
+func (s *Service) CreateProject(ctx context.Context, org *database.Organization, opts *database.InsertProjectOptions, deploy bool) (*database.Project, error) {
 	// Get roles for initial setup
 	adminRole, err := s.DB.FindProjectRole(ctx, database.ProjectRoleNameAdmin)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	viewerRole, err := s.DB.FindProjectRole(ctx, database.ProjectRoleNameViewer)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	// Create the project and add initial members using a transaction.
@@ -65,6 +60,29 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 	err = tx.Commit()
 	if err != nil {
 		return nil, err
+	}
+
+	var createdByID, createdByEmail string
+	if opts.CreatedByUserID != nil {
+		user, err := s.DB.FindUser(ctx, *proj.CreatedByUserID)
+		if err == nil {
+			createdByID = user.ID
+			createdByEmail = user.Email
+		}
+	}
+
+	s.Logger.Info("created project", zap.String("id", proj.ID), zap.String("name", proj.Name), zap.String("org", org.Name), zap.String("user_id", createdByID), zap.String("user_email", createdByEmail))
+
+	// Exit early if not deploying
+	if !deploy {
+		return proj, nil
+	}
+
+	// Check if the project has an archive or git info
+	hasArchive := opts.ArchiveAssetID != nil
+	hasGitInfo := opts.GithubURL != nil && opts.GithubInstallationID != nil && opts.ProdBranch != ""
+	if !hasArchive && !hasGitInfo {
+		return nil, fmt.Errorf("failed to deploy project: either an archive or git info must be provided")
 	}
 
 	// Provision prod deployment.
@@ -104,17 +122,6 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 	if err != nil {
 		return nil, err
 	}
-
-	var createdByID, createdByEmail string
-	if opts.CreatedByUserID != nil {
-		user, err := s.DB.FindUser(ctx, *proj.CreatedByUserID)
-		if err == nil {
-			createdByID = user.ID
-			createdByEmail = user.Email
-		}
-	}
-
-	s.Logger.Info("created project", zap.String("id", proj.ID), zap.String("name", proj.Name), zap.String("org", org.Name), zap.String("user_id", createdByID), zap.String("user_email", createdByEmail))
 
 	return res, nil
 }

@@ -101,6 +101,7 @@ Either github_url or archive_asset_id should be set. */
   /** archive_asset_id is set for projects whose project files are not stored in github but are managed by rill. */
   archiveAssetId?: string;
   prodVersion?: string;
+  skipDeploy?: boolean;
 };
 
 export type AdminServiceListProjectsForOrganizationParams = {

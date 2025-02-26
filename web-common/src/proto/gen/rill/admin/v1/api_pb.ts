@@ -2293,6 +2293,11 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
    */
   prodVersion = "";
 
+  /**
+   * @generated from field: bool skip_deploy = 15;
+   */
+  skipDeploy = false;
+
   constructor(data?: PartialMessage<CreateProjectRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2314,6 +2319,7 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
     { no: 10, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 14, name: "archive_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "prod_version", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 15, name: "skip_deploy", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateProjectRequest {

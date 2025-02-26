@@ -5601,6 +5601,8 @@ func (m *CreateProjectRequest) validate(all bool) error {
 
 	// no validation rules for ProdVersion
 
+	// no validation rules for SkipDeploy
+
 	if len(errors) > 0 {
 		return CreateProjectRequestMultiError(errors)
 	}

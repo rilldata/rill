@@ -380,6 +380,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		attribute.String("args.prod_branch", req.ProdBranch),
 		attribute.String("args.github_url", req.GithubUrl),
 		attribute.String("args.archive_asset_id", req.ArchiveAssetId),
+		attribute.Bool("args.skip_deploy", req.SkipDeploy),
 	)
 
 	// Find parent org
@@ -440,6 +441,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		userID = &tmp
 	}
 
+	// Prepare the project options
 	opts := &database.InsertProjectOptions{
 		OrganizationID:       org.ID,
 		Name:                 req.Name,
@@ -459,7 +461,11 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		ProdTTLSeconds:       prodTTL,
 	}
 
-	if req.GithubUrl != "" {
+	// Check and validate the project file source.
+	// NOTE: It is allowed to create a project without a source. It will then error later when creating the deployment (which can be skipped by passing skip_deploy).
+	if req.GithubUrl != "" && req.ArchiveAssetId != "" {
+		return nil, status.Error(codes.InvalidArgument, "cannot set both github_url and archive_asset_id")
+	} else if req.GithubUrl != "" {
 		// Github projects must be configured by a user so we can ensure that they're allowed to access the repo.
 		if userID == nil {
 			return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
@@ -474,10 +480,8 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		opts.GithubURL = &req.GithubUrl
 		opts.ProdBranch = req.ProdBranch
 		opts.Subpath = req.Subpath
-	} else {
-		if req.ArchiveAssetId == "" {
-			return nil, status.Error(codes.InvalidArgument, "either github_url or archive_asset_id must be set")
-		}
+	} else if req.ArchiveAssetId != "" {
+		// Check access to the archive asset
 		if !s.hasAssetUsagePermission(ctx, req.ArchiveAssetId, org.ID, claims.OwnerID()) {
 			return nil, status.Error(codes.PermissionDenied, "archive_asset_id is not accessible to this org")
 		}
@@ -508,7 +512,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	}
 
 	// Create the project
-	proj, err := s.admin.CreateProject(ctx, org, opts)
+	proj, err := s.admin.CreateProject(ctx, org, opts, !req.SkipDeploy)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

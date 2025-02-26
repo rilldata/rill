@@ -6,7 +6,7 @@ INSERT INTO org_roles (name, guest, read_org, manage_org, read_projects, create_
 VALUES ('guest', true, true, false, true, false, false, false, false);
 
 -- Add all project-level members who are not already org-level members as org-level members with the 'guest' role.
-INSERT INTO users_orgs_roles (user_id, org_id, role_id)
+INSERT INTO users_orgs_roles (user_id, org_id, org_role_id)
 SELECT
     upr.user_id AS user_id,
     p.org_id AS org_id,
