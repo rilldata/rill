@@ -25,7 +25,7 @@
     },
     actions: {
       dimensions: { toggleDimensionVisibility },
-      contextCol: { setContextColumn },
+      contextColumn: { setContextColumn },
       toggleLeaderboardMeasureNames,
     },
   } = StateManagers;
@@ -104,7 +104,7 @@
           tooltipText="Choose context columns to display"
           isValidPercentOfTotal={validPercentOfTotal}
           isTimeComparisonActive={Boolean(comparisonTimeRange)}
-          selectedSortType={$contextColumn}
+          selected={$contextColumn}
           onContextColumnChange={setContextColumn}
         />
       {/if}
