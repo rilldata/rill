@@ -29,11 +29,9 @@
 
   const ctx = getCanvasStateManagers();
   const {
-    canvasEntity: {
-      spec,
-      timeControls: { showTimeComparison, selectedComparisonTimeRange },
-    },
-  } = ctx;
+    spec,
+    timeControls: { showTimeComparison, selectedComparisonTimeRange },
+  } = ctx.canvasEntity;
 
   let hoveredPoints: {
     interval: Interval<true>;
@@ -79,8 +77,9 @@
   } = $timeAndFilterStore);
 
   $: showComparison =
-    (!!comparisonOptions && localTimeFilters && showLocalTimeComparison) ||
-    (!localTimeFilters && $showTimeComparison);
+    !!comparisonOptions?.length &&
+    ((localTimeFilters && showLocalTimeComparison) ||
+      (!localTimeFilters && $showTimeComparison));
 
   $: comparisonLabel =
     (localComparisonTimeRange?.name &&

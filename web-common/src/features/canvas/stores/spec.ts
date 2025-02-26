@@ -214,18 +214,23 @@ export class CanvasResolvedSpec {
     };
   }
 
-  getComponentNameFromIndex = (index: number): Readable<string | undefined> => {
+  getComponentNameFromPos = (pos: {
+    row: number;
+    column: number;
+  }): Readable<string | undefined> => {
     return derived(this.canvasSpec, (canvasSpec) => {
-      const componentName = canvasSpec?.items?.[index]?.component;
+      const componentName =
+        canvasSpec?.rows?.[pos.row]?.items?.[pos.column]?.component;
       if (!componentName) return undefined;
       return componentName;
     });
   };
 
-  getComponentFromIndex = (
-    index: number,
-  ): Readable<V1ComponentSpec | undefined> => {
-    const componentName = this.getComponentNameFromIndex(index);
+  getComponentFromIndex = (pos: {
+    row: number;
+    column: number;
+  }): Readable<V1ComponentSpec | undefined> => {
+    const componentName = this.getComponentNameFromPos(pos);
     return derived(
       [componentName, this.components],
       ([componentName, components]) => {
