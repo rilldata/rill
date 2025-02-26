@@ -17,7 +17,7 @@
     getComparisonRequestMeasures,
     getURIRequestMeasure,
   } from "../dashboard-utils";
-  import { mergeDimensionAndMeasureFilter } from "../filters/measure-filters/measure-filter-utils";
+  import { mergeDimensionAndMeasureFilters } from "../filters/measure-filters/measure-filter-utils";
   import { SortType } from "../proto-state/derived-types";
   import {
     additionalMeasures,
@@ -48,6 +48,7 @@
   const slice = 7;
   const gutterWidth = 24;
   const queryLimit = 8;
+  const maxValuesToShow = 15;
 
   export let dimension: MetricsViewSpecDimensionV2;
   export let timeRange: V1TimeRange;
@@ -115,7 +116,7 @@
   $: where = isComplexFilter
     ? whereFilter
     : sanitiseExpression(
-        mergeDimensionAndMeasureFilter(
+        mergeDimensionAndMeasureFilters(
           getFiltersForOtherDimensions(whereFilter, dimensionName),
           dimensionThresholdFilters,
         ),
@@ -197,6 +198,7 @@
       leaderboardTotal,
     ));
 
+  $: belowTheFoldDataLimit = maxValuesToShow - aboveTheFold.length;
   $: belowTheFoldDataQuery = createQueryServiceMetricsViewAggregation(
     instanceId,
     metricsViewName,
@@ -221,10 +223,15 @@
       timeRange,
       comparisonTimeRange,
       measures,
+      limit: belowTheFoldDataLimit.toString(),
     },
     {
       query: {
-        enabled: !!belowTheFoldValues.length && timeControlsReady && visible,
+        enabled:
+          !!belowTheFoldValues.length &&
+          timeControlsReady &&
+          visible &&
+          belowTheFoldDataLimit > 0,
       },
     },
   );

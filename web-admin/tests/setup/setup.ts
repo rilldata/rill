@@ -14,6 +14,10 @@ import { test as setup } from "./base";
 import {
   ADMIN_STORAGE_STATE,
   RILL_DEVTOOL_BACKGROUND_PROCESS_PID_FILE,
+  RILL_EMBED_SERVICE_TOKEN_FILE,
+  RILL_ORG_NAME,
+  RILL_PROJECT_NAME,
+  RILL_SERVICE_NAME,
 } from "./constants";
 import { cliLogin } from "./fixtures/cli";
 
@@ -136,15 +140,28 @@ setup.describe("global setup", () => {
     await page.context().storageState({ path: ADMIN_STORAGE_STATE });
   });
 
-  setup("should create an organization", async ({ adminPage }) => {
+  setup("should create an organization and service", async ({ adminPage }) => {
     // Create an organization named "e2e"
     await cliLogin(adminPage);
-    const { stdout: orgCreateStdout } = await execAsync("rill org create e2e");
+    const { stdout: orgCreateStdout } = await execAsync(
+      `rill org create ${RILL_ORG_NAME}`,
+    );
     expect(orgCreateStdout).toContain("Created organization");
 
+    // create service and write access token to file
+    const { stdout: orgCreateService } = await execAsync(
+      `rill service create ${RILL_SERVICE_NAME}`,
+    );
+    expect(orgCreateService).toContain("Created service");
+
+    const serviceToken = orgCreateService.match(/Access token:\s+(\S+)/);
+    writeFileEnsuringDir(RILL_EMBED_SERVICE_TOKEN_FILE, serviceToken![1]);
+
     // Go to the organization's page
-    await adminPage.goto("/e2e");
-    await expect(adminPage.getByRole("heading", { name: "e2e" })).toBeVisible();
+    await adminPage.goto(`/${RILL_ORG_NAME}`);
+    await expect(
+      adminPage.getByRole("heading", { name: RILL_ORG_NAME }),
+    ).toBeVisible();
   });
 
   setup("should deploy the OpenRTB project", async ({ adminPage }) => {
@@ -164,7 +181,7 @@ setup.describe("global setup", () => {
         "--subpath",
         "rill-openrtb-prog-ads",
         "--project",
-        "openrtb",
+        RILL_PROJECT_NAME,
         "--github",
         "--interactive=false",
       ],
@@ -183,13 +200,13 @@ setup.describe("global setup", () => {
     await adminPage.waitForTimeout(10000);
 
     // Expect to see the successful deployment
-    await adminPage.goto("/e2e/openrtb");
+    await adminPage.goto(`/${RILL_ORG_NAME}/${RILL_PROJECT_NAME}`);
     await expect(
       adminPage.getByText("Your trial expires in 30 days"),
     ).toBeVisible(); // Billing banner
-    await expect(adminPage.getByText("e2e")).toBeVisible(); // Organization breadcrumb
+    await expect(adminPage.getByText(RILL_ORG_NAME)).toBeVisible(); // Organization breadcrumb
     await expect(adminPage.getByText("Free trial")).toBeVisible(); // Billing status
-    await expect(adminPage.getByText("openrtb")).toBeVisible(); // Project breadcrumb
+    await expect(adminPage.getByText(RILL_PROJECT_NAME)).toBeVisible(); // Project breadcrumb
 
     // Check that the dashboards are listed
     await expect(
@@ -206,6 +223,19 @@ setup.describe("global setup", () => {
           await adminPage.reload();
           const listing = adminPage.getByRole("link", {
             name: "Programmatic Ads Auction auction_explore",
+          });
+          return listing.textContent();
+        },
+        { intervals: Array(24).fill(5_000), timeout: 180_000 },
+      )
+      .toContain("Last refreshed");
+
+    await expect
+      .poll(
+        async () => {
+          await adminPage.reload();
+          const listing = adminPage.getByRole("link", {
+            name: "Programmatic Ads Bids bids_explore",
           });
           return listing.textContent();
         },
