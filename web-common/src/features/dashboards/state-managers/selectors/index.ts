@@ -10,7 +10,7 @@ import { derived, type Readable } from "svelte/store";
 import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
 import { activeMeasureSelectors } from "./active-measure";
 import { comparisonSelectors } from "./comparisons";
-import { contextColSelectors } from "./context-column";
+import { contextColumnSelectors } from "./context-column";
 import { formattingSelectors } from "./data-formatting";
 import { dimensionFilterSelectors } from "./dimension-filters";
 import { dimensionTableSelectors } from "./dimension-table";
@@ -60,7 +60,7 @@ export const createStateManagerReadables = (
      * Readables related to the dashboard context column.
      */
     contextColumn: createReadablesFromSelectors(
-      contextColSelectors,
+      contextColumnSelectors,
       dashboardDataReadables,
     ),
 
