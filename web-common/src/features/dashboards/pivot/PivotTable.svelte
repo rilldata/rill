@@ -80,7 +80,7 @@
     },
   );
 
-  $: table = createSvelteTable(options);
+  const table = createSvelteTable(options);
 
   let containerRefElement: HTMLDivElement;
   let stickyRows = [0];
