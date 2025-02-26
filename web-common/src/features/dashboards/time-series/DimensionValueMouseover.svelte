@@ -116,7 +116,7 @@
         yOverrideLabel: "no current data",
         yOverrideStyleClass: `fill-gray-600 italic`,
         key: dimension.name === null ? "null" : String(dimension.name),
-        label: hovered ? truncate(dimension.name || "null") : "",
+        label: hovered ? truncate(dimension.name ?? "null") : "",
         pointColor: dimension.color,
         pointOpacity: dimension.isTimeComparison ? 0.6 : 1,
         valueStyleClass: dimension.isTimeComparison
