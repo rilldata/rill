@@ -656,6 +656,7 @@
 
   .selected {
     @apply outline-2 outline-primary-300;
+    outline-style: solid !important;
   }
 
   .row-container {
