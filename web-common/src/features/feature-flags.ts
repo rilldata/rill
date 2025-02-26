@@ -5,6 +5,7 @@ import {
   createRuntimeServiceGetInstance,
   type V1InstanceFeatureFlags,
 } from "../runtime-client";
+import { shouldRetryConnectionError } from "../runtime-client/retries";
 import { runtime } from "../runtime-client/runtime-store";
 
 class FeatureFlag {
@@ -65,6 +66,7 @@ class FeatureFlags {
         query: {
           select: (data) => data?.instance?.featureFlags,
           queryClient,
+          retry: shouldRetryConnectionError,
         },
       }).subscribe((features) => {
         if (features.data) updateFlags(features.data);

@@ -3,6 +3,7 @@ import { useValidExplores } from "@rilldata/web-common/features/dashboards/selec
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
 import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
+import { shouldRetryConnectionError } from "@rilldata/web-common/runtime-client/retries";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 
@@ -79,6 +80,7 @@ export function useDashboardsV2(
         );
         return allDashboards;
       },
+      retry: shouldRetryConnectionError,
     },
   });
 }

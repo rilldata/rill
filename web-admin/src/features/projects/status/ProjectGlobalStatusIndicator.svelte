@@ -5,6 +5,7 @@
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
   import { useProjectParser } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
+  import { shouldRetryConnectionError } from "@rilldata/web-common/runtime-client/retries";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { useProjectDeployment } from "./selectors";
@@ -34,6 +35,7 @@
         },
         refetchOnMount: true,
         refetchOnWindowFocus: true,
+        retry: shouldRetryConnectionError,
       },
     },
   );
@@ -46,6 +48,7 @@
   $: projectParserQuery = useProjectParser(queryClient, instanceId, {
     refetchOnMount: true,
     refetchOnWindowFocus: true,
+    retry: shouldRetryConnectionError,
   });
   $: ({
     data: projectParserData,
