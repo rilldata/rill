@@ -20,10 +20,7 @@
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
   export let timeControlsReady: boolean;
-  export let activeMeasureName: string;
   export let activeMeasureNames: string[];
-
-  // $: console.log("LeaderboardDisplay activeMeasureNames: ", activeMeasureNames);
 
   const StateManagers = getStateManagers();
   const {
@@ -54,7 +51,7 @@
   $: ({ instanceId } = $runtime);
 
   // Reset column widths when the measure changes
-  $: if (activeMeasureName) {
+  $: if (activeMeasureNames) {
     valueColumn.reset();
     deltaColumn.reset();
   }
@@ -93,7 +90,6 @@
             <Leaderboard
               isValidPercentOfTotal={$isValidPercentOfTotal}
               {metricsViewName}
-              {activeMeasureName}
               {activeMeasureNames}
               {whereFilter}
               {dimensionThresholdFilters}
