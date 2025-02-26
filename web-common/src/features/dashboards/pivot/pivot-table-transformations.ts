@@ -187,7 +187,7 @@ export function mergeRowTotalsInOrder(
       const unsortedRowIndex = unsortedRowValuesMap.get(rowValue);
       if (unsortedRowIndex === undefined) {
         /**
-         * Exclude null values when sorting by deltas to ensure only dimension values
+         * Exclude missing values when sorting by deltas to ensure only dimension values
          * present in both time ranges are returned.
          *
          * This prevents discrepancies between the unsorted and sorted table row sets.
