@@ -21,11 +21,11 @@
         allMeasures,
       },
       dimensions: { visibleDimensions, allDimensions },
-      contextColumn: { contextColumn },
+      contextColumn: { contextColumnFilters },
     },
     actions: {
       dimensions: { toggleDimensionVisibility },
-      contextColumn: { setContextColumn },
+      contextColumn: { setContextColumn, setContextColumnFilters },
       toggleLeaderboardMeasureNames,
     },
   } = StateManagers;
@@ -64,6 +64,11 @@
   function isDefined(value: string | undefined): value is string {
     return value !== undefined;
   }
+
+  $: console.log(
+    "LeaderboardControls contextColumnFilters: ",
+    $contextColumnFilters,
+  );
 </script>
 
 <div>
@@ -104,8 +109,8 @@
           tooltipText="Choose context columns to display"
           isValidPercentOfTotal={validPercentOfTotal}
           isTimeComparisonActive={Boolean(comparisonTimeRange)}
-          selected={$contextColumn}
-          onContextColumnChange={setContextColumn}
+          selectedFilters={$contextColumnFilters}
+          onContextColumnChange={setContextColumnFilters}
         />
       {/if}
     </div>

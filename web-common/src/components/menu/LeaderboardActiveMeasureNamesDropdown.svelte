@@ -16,8 +16,6 @@
   export let onToggle: (name: string) => void;
   export let onSelectAll: () => void;
 
-  // $: console.log("selectedMeasureNames: ", selectedMeasureNames);
-
   let active = false;
   let disabled = false;
 

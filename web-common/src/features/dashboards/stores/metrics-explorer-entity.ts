@@ -136,7 +136,13 @@ export interface MetricsExplorerEntity {
   /**
    * state of context column in the leaderboard
    */
+  // FIXME: rename to leaderboardContextColumnSortType, now that we have filters
   leaderboardContextColumn: LeaderboardContextColumn;
+
+  /**
+   * Array of context columns to be shown in the leaderboard when comparison is enabled
+   */
+  leaderboardContextColumnFilters: LeaderboardContextColumn[];
 
   /**
    * Width of each context column. Needs to be reset to default
