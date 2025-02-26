@@ -65,10 +65,10 @@
     return value !== undefined;
   }
 
-  $: console.log(
-    "LeaderboardControls contextColumnFilters: ",
-    $contextColumnFilters,
-  );
+  // $: console.log(
+  //   "LeaderboardControls contextColumnFilters: ",
+  //   $contextColumnFilters,
+  // );
 </script>
 
 <div>

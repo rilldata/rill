@@ -18,6 +18,7 @@
     valueColumn,
   } from "./leaderboard-widths";
   import FloatingElement from "@rilldata/web-common/components/floating-element/FloatingElement.svelte";
+  import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 
   export let itemData: LeaderboardItemData;
   export let dimensionName: string;
@@ -30,6 +31,7 @@
   export let atLeastOneActive: boolean;
   export let isValidPercentOfTotal: boolean;
   export let isTimeComparisonActive: boolean;
+  export let contextColumnFilters: LeaderboardContextColumn[] = [];
   export let toggleDimensionValueSelection: (
     dimensionName: string,
     dimensionValue: string,
@@ -132,6 +134,16 @@
     ${fourthCellBarLength}px, transparent ${fourthCellBarLength}px)`
     : undefined;
 
+  $: showDeltaAbsolute =
+    (isTimeComparisonActive || isValidPercentOfTotal) &&
+    contextColumnFilters.includes(LeaderboardContextColumn.DELTA_ABSOLUTE);
+
+  $: showDeltaPercent =
+    isTimeComparisonActive &&
+    contextColumnFilters.includes(LeaderboardContextColumn.DELTA_PERCENT);
+
+  $: showTooltip = hovered && !suppressTooltip;
+
   function shiftClickHandler(label: string) {
     let truncatedLabel = label?.toString();
     if (truncatedLabel?.length > TOOLTIP_STRING_LIMIT) {
@@ -217,7 +229,7 @@
     {/if}
   </td>
 
-  {#if isTimeComparisonActive || isValidPercentOfTotal}
+  {#if showDeltaAbsolute}
     <td
       style:background={thirdCellGradient}
       on:click={modified({
@@ -241,7 +253,7 @@
     </td>
   {/if}
 
-  {#if isTimeComparisonActive}
+  {#if showDeltaPercent}
     <td
       style:background={fourthCellGradient}
       on:click={modified({
@@ -256,7 +268,7 @@
   {/if}
 </tr>
 
-{#if hovered && !suppressTooltip}
+{#if showTooltip}
   {#await new Promise((r) => setTimeout(r, 600)) then}
     <FloatingElement
       target={parent}

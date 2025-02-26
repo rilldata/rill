@@ -45,6 +45,7 @@
     deltaColumn,
     valueColumn,
   } from "./leaderboard-widths";
+  import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 
   const slice = 7;
   const gutterWidth = 24;
@@ -64,6 +65,7 @@
   export let tableWidth: number;
   export let sortedAscending: boolean;
   export let isValidPercentOfTotal: boolean;
+  export let contextColumnFilters: LeaderboardContextColumn[];
   export let timeControlsReady: boolean;
   export let firstColumnWidth: number;
   export let isSummableMeasure: boolean;
@@ -302,6 +304,7 @@
       {isValidPercentOfTotal}
       {sortedAscending}
       isTimeComparisonActive={!!comparisonTimeRange}
+      {contextColumnFilters}
       {toggleSort}
       {setPrimaryDimension}
       {toggleComparisonDimension}
@@ -323,6 +326,7 @@
             {dimensionName}
             {itemData}
             {isValidPercentOfTotal}
+            {contextColumnFilters}
             isTimeComparisonActive={!!comparisonTimeRange}
             {toggleDimensionValueSelection}
             {formatter}

@@ -19,7 +19,6 @@
 
   let active = false;
 
-  // TODO: support multi select
   // TODO: look into the relationship between context column and all measures
   // TODO: will we have context columns synced with the url state?
 
