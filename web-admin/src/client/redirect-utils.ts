@@ -2,9 +2,10 @@ import {
   ADMIN_URL,
   CANONICAL_ADMIN_URL,
 } from "@rilldata/web-admin/client/http-client";
+import { redirect } from "@sveltejs/kit";
 
 export function redirectToLogin() {
-  window.location.href = buildLoginUrl();
+  throw redirect(307, buildLoginUrl());
 }
 
 export function redirectToLogout() {
