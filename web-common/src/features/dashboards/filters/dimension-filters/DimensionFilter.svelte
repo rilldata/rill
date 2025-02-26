@@ -10,7 +10,10 @@
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { fly } from "svelte/transition";
-  import { useDimensionSearch } from "./dimensionFilterValues";
+  import {
+    useBulkSearchResults,
+    useDimensionSearch,
+  } from "./dimensionFilterValues";
 
   export let name: string;
   export let metricsViewNames: string[];
@@ -25,6 +28,7 @@
   export let smallChip = false;
   export let onRemove: () => void;
   export let onSelect: (value: string) => void;
+  export let onSearch: (searchText: string) => void = () => {};
   export let onToggleFilterMode: () => void;
 
   let open = openOnMount && !selectedValues.length;
@@ -32,6 +36,14 @@
 
   $: ({ instanceId } = $runtime);
 
+  enum SearchMode {
+    Select,
+    Bulk,
+    Search,
+  }
+  let mode: SearchMode = SearchMode.Select;
+
+  let searchedBulkValues: string[] = [];
   $: searchValues = useDimensionSearch(
     instanceId,
     metricsViewNames,
@@ -39,13 +51,51 @@
     searchText,
     timeStart,
     timeEnd,
-    Boolean(timeControlsReady && open),
+    Boolean(timeControlsReady && open) &&
+      (mode === SearchMode.Select || mode === SearchMode.Search),
   );
-  $: ({ data, error, isFetching } = $searchValues);
+  $: ({
+    data: dataFromSearch,
+    error: errorFromSearch,
+    isFetching: isFetchingFromSearch,
+  } = $searchValues);
+  $: bulkValues = useBulkSearchResults(
+    instanceId,
+    metricsViewNames,
+    name,
+    searchedBulkValues,
+    timeStart,
+    timeEnd,
+    Boolean(timeControlsReady && open) && mode === SearchMode.Bulk,
+  );
+  $: ({
+    data: dataFromBulk,
+    error: errorFromBulk,
+    isFetching: isFetchingFromBulk,
+  } = $bulkValues);
+
+  $: data = dataFromSearch ?? dataFromBulk;
+  $: error = errorFromSearch ?? errorFromBulk;
+  $: isFetching = isFetchingFromSearch ?? isFetchingFromBulk;
+
+  $: if (searchText.length > 0) {
+    const values = searchText.split(/\s*,\s*/);
+    if (values.length > 1) {
+      searchedBulkValues = values;
+      mode = SearchMode.Bulk;
+    } else {
+      searchedBulkValues = [];
+      mode = SearchMode.Search;
+    }
+  } else {
+    mode = SearchMode.Select;
+  }
 
   $: allSelected = Boolean(
     selectedValues.length && data?.length === selectedValues.length,
   );
+  $: effectiveSelectedValues =
+    mode === SearchMode.Select ? selectedValues : (data ?? []);
 
   function onToggleSelectAll() {
     data?.forEach((dimensionValue) => {
@@ -120,12 +170,19 @@
     align="start"
     class="flex flex-col max-h-96 w-72 overflow-hidden p-0"
   >
-    <div class="px-3 pt-3 pb-1">
+    <div class="flex flex-col px-3 pt-3 pb-1">
       <Search
         bind:value={searchText}
         label="Search list"
         showBorderOnFocus={false}
       />
+      <div>
+        {#if mode === SearchMode.Bulk}
+          Match List
+        {:else if mode === SearchMode.Search}
+          Search
+        {/if}
+      </div>
     </div>
 
     <div class="flex flex-col flex-1 overflow-y-auto w-full h-fit pb-1">
@@ -140,7 +197,8 @@
       {:else if data}
         <DropdownMenu.Group class="px-1">
           {#each data as name (name)}
-            {@const selected = selectedValues.includes(name)}
+            {@const selected = effectiveSelectedValues.includes(name)}
+            {@const label = name ?? "null"}
 
             <DropdownMenu.CheckboxItem
               class="text-xs cursor-pointer"
@@ -150,10 +208,10 @@
               on:click={() => onSelect(name)}
             >
               <span>
-                {#if name.length > 240}
-                  {name.slice(0, 240)}...
+                {#if label.length > 240}
+                  {label.slice(0, 240)}...
                 {:else}
-                  {name}
+                  {label}
                 {/if}
               </span>
             </DropdownMenu.CheckboxItem>
