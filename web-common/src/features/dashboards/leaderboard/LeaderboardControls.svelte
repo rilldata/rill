@@ -37,7 +37,6 @@
   $: activeLeaderboardMeasures = $leaderboardMeasureNames.map((name) =>
     $getMeasureByName(name),
   );
-  // $: console.log("activeLeaderboardMeasures: ", activeLeaderboardMeasures);
 
   // First measure is used for sorting and validation
   $: firstMeasure = activeLeaderboardMeasures[0];

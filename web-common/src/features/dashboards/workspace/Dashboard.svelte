@@ -200,7 +200,6 @@
         </div>
         <div class="pt-2 pl-1 overflow-auto w-full">
           {#if selectedDimension}
-            <div>DimensionDisplay</div>
             <DimensionDisplay
               dimension={selectedDimension}
               {metricsViewName}
@@ -216,7 +215,6 @@
               hideStartPivotButton={hidePivot}
             />
           {:else}
-            <div>LeaderboardDisplay</div>
             <LeaderboardDisplay
               {metricsViewName}
               activeMeasureNames={$leaderboardMeasureNames}
