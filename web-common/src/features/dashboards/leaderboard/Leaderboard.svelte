@@ -58,7 +58,6 @@
   export let instanceId: string;
   export let whereFilter: V1Expression;
   export let dimensionThresholdFilters: DimensionThresholdFilter[];
-  export let activeMeasureName: string;
   export let activeMeasureNames: string[];
   export let metricsViewName: string;
   export let sortType: SortType;
@@ -195,7 +194,7 @@
   $: ({ data: sortedData, isFetching } = $sortedQuery);
   $: ({ data: totalsData } = $totalsQuery);
 
-  $: leaderboardTotal = totalsData?.data?.[0]?.[activeMeasureName] as
+  $: leaderboardTotal = totalsData?.data?.[0]?.[activeMeasureNames[0]] as
     | number
     | null;
 

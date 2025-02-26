@@ -31,18 +31,11 @@
   const {
     selectors: {
       measures: { visibleMeasures, leaderboardMeasureNames },
-      activeMeasure: { activeMeasure, activeMeasureName },
       dimensions: { getDimensionByName },
       pivot: { showPivot },
     },
     dashboardStore,
   } = StateManagers;
-
-  // $: console.log("Dashboard $activeMeasure: ", $activeMeasure);
-  // $: console.log(
-  //   "Dashboard TO BE REFACTORED $activeMeasureName: ",
-  //   $activeMeasureName,
-  // );
 
   const timeControlsStore = useTimeControlStore(StateManagers);
 
@@ -226,7 +219,6 @@
             <div>LeaderboardDisplay</div>
             <LeaderboardDisplay
               {metricsViewName}
-              activeMeasureName={$activeMeasureName}
               activeMeasureNames={$leaderboardMeasureNames}
               {whereFilter}
               {dimensionThresholdFilters}
