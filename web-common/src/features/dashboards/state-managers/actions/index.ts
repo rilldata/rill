@@ -47,7 +47,7 @@ export const createStateManagerActions = (
     /**
      * Actions related to the dashboard context columns.
      */
-    contextCol: createDashboardUpdaters(actionArgs, contextColActions),
+    contextColumn: createDashboardUpdaters(actionArgs, contextColActions),
 
     /**
      * Actions related to dimensions.
@@ -82,6 +82,7 @@ export const createStateManagerActions = (
      */
     measuresFilter: createDashboardUpdaters(actionArgs, measureFilterActions),
 
+    // FIXME: can consider moving this to a new leaderboard actions object
     /**
      * Toggles the leaderboard measure names for the dashboard.
      */

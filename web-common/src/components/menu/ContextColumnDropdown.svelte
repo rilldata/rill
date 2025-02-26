@@ -12,7 +12,7 @@
   export let isValidPercentOfTotal = false;
   export let isTimeComparisonActive = false;
   export let tooltipText: string;
-  export let selectedSortType: LeaderboardContextColumn;
+  export let selected: LeaderboardContextColumn;
   export let onContextColumnChange: (column: LeaderboardContextColumn) => void;
 
   let active = false;
@@ -55,8 +55,8 @@
   }
 
   $: withText =
-    selectedSortType !== LeaderboardContextColumn.HIDDEN
-      ? getLabelFromValue(selectedSortType)
+    selected !== LeaderboardContextColumn.HIDDEN
+      ? getLabelFromValue(selected)
       : "no context columns";
 </script>
 
@@ -91,7 +91,7 @@
         <div class="px-1 pb-1 pt-1">
           {#each options as option}
             <DropdownMenu.CheckboxItem
-              checked={selectedSortType === option.value}
+              checked={selected === option.value}
               onCheckedChange={() => toggleContextColumn(option.value)}
             >
               <div class="flex items-center gap-x-1">

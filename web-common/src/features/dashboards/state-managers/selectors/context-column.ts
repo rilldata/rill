@@ -10,7 +10,7 @@ const contextColumnWidth = ({ dashboard }: DashboardDataSources): string => {
   return "0px";
 };
 
-export const contextColSelectors = {
+export const contextColumnSelectors = {
   /**
    * Gets the active context column type for the dashboard.
    */
