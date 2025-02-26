@@ -770,7 +770,9 @@ func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, read 
 
 	db = sqlx.NewDb(otelsql.OpenDB(connector), "duckdb")
 	defer func() {
-		if dbErr != nil {
+		// there are too many error paths after this so closing the db in a defer seems better
+		// but the dbErr can be non nil even before function reaches this point so need to check for db is non nil
+		if dbErr != nil && db != nil {
 			_ = db.Close()
 		}
 	}()
