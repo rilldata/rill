@@ -109,7 +109,6 @@ export class CanvasEntity {
     const componentSpecStore = spec.getComponentResourceFromName(componentName);
 
     return derived(componentSpecStore, (componentSpec, set) => {
-      console.log(componentSpec);
       const metricsViewName = componentSpec?.rendererProperties
         ?.metrics_view as string;
 
