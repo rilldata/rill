@@ -615,11 +615,7 @@ func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, report
 		TTL:             &ttl,
 	}
 
-	res := make([]database.ResourceName, len(resources)+1)
-	res = append(res, database.ResourceName{
-		Type: runtime.ResourceKindReport,
-		Name: reportName,
-	})
+	var res []database.ResourceName
 	for _, r := range resources {
 		res = append(res, database.ResourceName{
 			Type: r.Type,
