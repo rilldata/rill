@@ -19,15 +19,15 @@ func checkRefs(ctx context.Context, c *runtime.Controller, refs []*runtimev1.Res
 		res, err := c.Get(ctx, ref, false)
 		if err != nil {
 			if errors.Is(err, drivers.ErrResourceNotFound) {
-				return fmt.Errorf("dependency error: resource %q (%s) not found", ref.Name, ref.Kind)
+				return runtime.NewDependencyError(fmt.Errorf("resource %q (%s) not found", ref.Name, ref.Kind))
 			}
-			return fmt.Errorf("dependency error: failed to get resource %q (%s): %w", ref.Name, ref.Kind, err)
+			return runtime.NewDependencyError(fmt.Errorf("failed to get resource %q (%s): %w", ref.Name, ref.Kind, err))
 		}
 		if res.Meta.ReconcileStatus != runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE {
-			return fmt.Errorf("dependency error: resource %q (%s) is not idle", ref.Name, ref.Kind)
+			return runtime.NewDependencyError(fmt.Errorf("resource %q (%s) is not idle", ref.Name, ref.Kind))
 		}
 		if res.Meta.ReconcileError != "" {
-			return fmt.Errorf("dependency error: resource %q (%s) has an error", ref.Name, ref.Kind)
+			return runtime.NewDependencyError(fmt.Errorf("resource %q (%s) has an error", ref.Name, ref.Kind))
 		}
 	}
 	return nil

@@ -28,7 +28,7 @@
   } from "@rilldata/web-common/lib/time/types";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { DateTime, Interval } from "luxon";
-  import { onDestroy } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
   import CanvasComparisonPill from "./CanvasComparisonPill.svelte";
@@ -66,6 +66,9 @@
         minTimeGrain,
         selectTimeRange,
         setTimeZone,
+        displayTimeComparison,
+        setSelectedComparisonRange,
+        setInitialState,
         destroy,
       },
     },
@@ -175,7 +178,6 @@
      */
     comparisonTimeRange: DashboardTimeControls | undefined,
   ) {
-    console.log("timeRange", timeRange);
     selectTimeRange(timeRange, timeGrain, comparisonTimeRange);
   }
 
@@ -262,6 +264,11 @@
     localUserPreferences.set({ timeZone });
   }
 
+  onMount(() => {
+    if (!$timeRangeStateStore) {
+      setInitialState();
+    }
+  });
   onDestroy(destroy);
 </script>
 
@@ -298,6 +305,11 @@
       allTimeRange={$allTimeRange}
       {selectedTimeRange}
       {selectedComparisonTimeRange}
+      showTimeComparison={$comparisonRangeStateStore?.showTimeComparison ??
+        false}
+      activeTimeZone={$selectedTimezone}
+      onDisplayTimeComparison={displayTimeComparison}
+      onSetSelectedComparisonRange={setSelectedComparisonRange}
     />
   </div>
   <div class="relative flex flex-row gap-x-2 gap-y-2 items-start ml-2">

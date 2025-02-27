@@ -1,15 +1,16 @@
 <script lang="ts">
-  import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
+  import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
   import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
+  import type { Readable } from "svelte/store";
   import type { KPIGridSpec } from ".";
+  import ComponentError from "../ComponentError.svelte";
   import type { KPISpec } from "../kpi";
   import KPI from "../kpi/KPI.svelte";
   import { validateKPIGridSchema } from "./selector";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
+  export let timeAndFilterStore: Readable<TimeAndFilterStore>;
 
-  let containerWidth: number;
-  let containerHeight: number;
   let kpis: KPISpec[];
 
   $: kpiGridProperties = rendererProperties as KPIGridSpec;
@@ -21,25 +22,19 @@
     measure,
     sparkline: kpiGridProperties.sparkline,
     comparison: kpiGridProperties.comparison,
+    dimension_filters: kpiGridProperties.dimension_filters,
+    time_filters: kpiGridProperties.time_filters,
   }));
-
-  // Calculate individual KPI width based on container width and number of KPIs
-  $: kpiWidth = containerWidth ? Math.floor(containerWidth / kpis.length) : 0;
 </script>
 
 {#if schema.isValid}
-  <div
-    bind:clientWidth={containerWidth}
-    bind:clientHeight={containerHeight}
-    class="flex flex-row w-full h-full bg-white py-4"
-  >
-    {#each kpis as kpi, i}
+  <div class="element h-fit" style:--item-count={kpis.length}>
+    {#each kpis as kpi, i (i)}
       <div
-        style="width: {kpiWidth}px;"
-        class="border-r border-gray-200"
-        class:border-r-0={i === kpis.length - 1}
+        class:solo={kpis.length > 1}
+        class="kpi-wrapper border-gray-200 size-full min-h-52 p-4 overflow-hidden"
       >
-        <KPI rendererProperties={kpi} topPadding={false} />
+        <KPI rendererProperties={kpi} {timeAndFilterStore} />
       </div>
     {/each}
   </div>
@@ -48,5 +43,55 @@
 {/if}
 
 <style lang="postcss">
-  /* Add any custom styles here if needed */
+  .element {
+    @apply size-full grid;
+    @apply px-0;
+    grid-template-columns: repeat(var(--item-count), 1fr);
+  }
+
+  .kpi-wrapper {
+    @apply w-full;
+  }
+
+  .kpi-wrapper:not(:last-of-type) {
+    @apply border-r;
+  }
+
+  .element {
+    container-type: inline-size;
+    container-name: container;
+  }
+
+  @container container (inline-size < 600px) {
+    .element {
+      grid-template-columns: repeat(min(2, var(--item-count)), 1fr);
+    }
+
+    .kpi-wrapper:nth-child(2) {
+      border-right-width: 0;
+      border-bottom-width: 1px;
+    }
+
+    .kpi-wrapper.solo:nth-child(1) {
+      border-bottom-width: 1px;
+    }
+
+    .kpi-wrapper:nth-child(3) {
+      border-right-width: 1px;
+    }
+  }
+
+  @container container (inline-size < 300px) {
+    .element {
+      grid-template-columns: repeat(1, 1fr);
+    }
+
+    .kpi-wrapper {
+      border-right-width: 0 !important;
+    }
+
+    .kpi-wrapper:not(:last-of-type) {
+      border-bottom-width: 1px;
+    }
+  }
 </style>

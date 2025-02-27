@@ -1,13 +1,16 @@
 package printer
 
 import (
+	"encoding/csv"
 	"encoding/json"
+	"fmt"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
 
+	"github.com/lensesio/tableprinter"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/metricsview"
@@ -539,4 +542,73 @@ type billingIssue struct {
 	Level        string `header:"level" json:"level"`
 	Metadata     string `header:"metadata" json:"metadata"`
 	EventTime    string `header:"event_time,timestamp(ms|utc|human)" json:"event_time"`
+}
+
+// PrintQueryResponse prints the query response in the desired format (human, json, csv)
+func (p *Printer) PrintQueryResponse(res *runtimev1.QueryResolverResponse) {
+	if len(res.Data) == 0 {
+		p.PrintfWarn("No data found\n")
+		return
+	}
+
+	switch p.Format {
+	// Interceptor for human format
+	case FormatHuman:
+		headers := extractQueryHeaders(res.Schema)
+		rows := make([][]string, len(res.Data))
+
+		for i, row := range res.Data {
+			rows[i] = make([]string, len(headers))
+			for j, field := range headers {
+				if val, ok := row.GetFields()[field]; ok {
+					rows[i][j] = fmt.Sprintf("%v", val.AsInterface())
+				} else {
+					rows[i][j] = "null"
+				}
+			}
+		}
+
+		tableprinter.New(p.dataOut()).Render(headers, rows, nil, false)
+		return
+
+	// Interceptor for CSV format
+	case FormatCSV:
+		headers := extractQueryHeaders(res.Schema)
+		w := csv.NewWriter(p.dataOut())
+
+		if err := w.Write(headers); err != nil {
+			panic(fmt.Errorf("failed to write CSV headers: %w", err))
+		}
+
+		for _, row := range res.Data {
+			record := make([]string, len(headers))
+			for i, field := range headers {
+				if val, ok := row.GetFields()[field]; ok {
+					record[i] = fmt.Sprintf("%v", val.AsInterface())
+				} else {
+					record[i] = ""
+				}
+			}
+			if err := w.Write(record); err != nil {
+				panic(fmt.Errorf("failed to write CSV row: %w", err))
+			}
+		}
+
+		w.Flush()
+		if err := w.Error(); err != nil {
+			panic(fmt.Errorf("failed to flush CSV writer: %w", err))
+		}
+
+		return
+	default:
+		p.PrintData(res.Data)
+	}
+}
+
+func extractQueryHeaders(schema *runtimev1.StructType) []string {
+	headers := make([]string, len(schema.Fields))
+	for i, field := range schema.Fields {
+		headers[i] = field.Name
+	}
+	return headers
 }
