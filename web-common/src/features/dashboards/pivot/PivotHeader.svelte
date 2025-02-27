@@ -17,7 +17,7 @@
   const stateManagers = getStateManagers();
   const {
     selectors: {
-      pivot: { rows, columns, isFlat },
+      pivot: { rows, columns, isFlat, originalColumns },
     },
     exploreName,
   } = stateManagers;
@@ -112,7 +112,10 @@
 
     <DragList
       zone="columns"
-      items={columnsDimensions.concat(columnsMeasures)}
+      rowJoinType={$isFlat ? "flat" : "nest"}
+      items={$isFlat
+        ? $originalColumns
+        : columnsDimensions.concat(columnsMeasures)}
       placeholder="Drag dimensions or measures here"
       on:update={updateColumn}
     />

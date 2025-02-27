@@ -21,6 +21,7 @@ import {
 import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
+  PivotChipType,
   type MeasureType,
   type PivotDataRow,
   type PivotDataStoreConfig,
@@ -245,45 +246,162 @@ export function getColumnDefForPivot(
   columnDimensionAxes: Record<string, string[]> | undefined,
   totals: PivotDataRow,
 ) {
-  const isFlat = config.isFlat;
-  const { rowDimensionNames, colDimensionNames } = config;
+  const { rowDimensionNames, colDimensionNames, isFlat } = config;
 
   const measures = getMeasureColumnProps(config);
   const rowDimensions = getDimensionColumnProps(rowDimensionNames, config);
   const colDimensions = getDimensionColumnProps(colDimensionNames, config);
 
-  let rowDimensionsForColumnDef = rowDimensions;
-  let nestedLabel: string;
-  if (isFlat) {
-    rowDimensionsForColumnDef = rowDimensions;
-  } else {
-    rowDimensionsForColumnDef = rowDimensions.slice(0, 1);
-    nestedLabel = rowDimensions.map((d) => d.label || d.name).join(" > ");
-  }
-  const rowDefinitions: ColumnDef<PivotDataRow>[] =
-    rowDimensionsForColumnDef.map((d, i) => {
+  return isFlat
+    ? getFlatColumnDef(config, measures, rowDimensions, rowDimensionNames)
+    : getNestedColumnDef(
+        config,
+        measures,
+        rowDimensions,
+        colDimensions,
+        columnDimensionAxes,
+        totals,
+        rowDimensionNames,
+      );
+}
+
+function getFlatColumnDef(
+  config: PivotDataStoreConfig,
+  measures: MeasureColumnProps,
+  rowDimensions: Array<{ label: string; name: string }>,
+  rowDimensionNames: string[],
+): ColumnDef<PivotDataRow>[] {
+  const rowDefinitions: ColumnDef<PivotDataRow>[] = rowDimensions.map(
+    (d, i) => {
       return {
         id: d.name,
         accessorFn: (row) => row[d.name],
-        header: isFlat ? d.label || d.name : nestedLabel,
+        header: d.label || d.name,
+        cell: ({ getValue }) => {
+          return formatDimensionValue(
+            getValue() as string,
+            i,
+            config.time,
+            rowDimensionNames,
+          );
+        },
+      };
+    },
+  );
+
+  const leafColumns: ColumnDef<PivotDataRow>[] = measures.map((m) => {
+    return {
+      accessorKey: m.name,
+      header: m.label || m.name,
+      name: m.name,
+      cell: (info) => {
+        const measureValue = info.getValue() as number | null | undefined;
+        if (m.type === "comparison_percent") {
+          return cellComponent(PercentageChange, {
+            isNull: measureValue == null,
+            value:
+              measureValue !== null && measureValue !== undefined
+                ? formatMeasurePercentageDifference(measureValue)
+                : null,
+            inTable: true,
+          });
+        }
+        const value = m.formatter(measureValue);
+
+        if (value == null) return cellComponent(PivotMeasureCell, {});
+        return value;
+      },
+    };
+  });
+
+  const columns = config.pivot.columns;
+
+  const measureDefMap = new Map<string, ColumnDef<PivotDataRow>>();
+  const dimensionDefMap = new Map<string, ColumnDef<PivotDataRow>>();
+
+  measures.forEach((m, i) => {
+    measureDefMap.set(m.name, leafColumns[i]);
+  });
+
+  rowDimensions.forEach((d, i) => {
+    dimensionDefMap.set(d.name, rowDefinitions[i]);
+  });
+
+  // Final column definitions in the order they should appear
+  const orderedColumnDefs: ColumnDef<PivotDataRow>[] = [];
+
+  // Process columns in the original order
+  columns.forEach((column) => {
+    const id = column.id;
+    const type = column.type;
+
+    if (type === PivotChipType.Measure) {
+      // Add the main measure
+      const measureDef = measureDefMap.get(id);
+      if (measureDef) {
+        orderedColumnDefs.push(measureDef);
+
+        // Add any associated comparison measures right after
+        const deltaMeasureName = `${id}${COMPARISON_DELTA}`;
+        const deltaMeasureDef = measureDefMap.get(deltaMeasureName);
+        if (deltaMeasureDef) {
+          orderedColumnDefs.push(deltaMeasureDef);
+        }
+
+        const percentMeasureName = `${id}${COMPARISON_PERCENT}`;
+        const percentMeasureDef = measureDefMap.get(percentMeasureName);
+        if (percentMeasureDef) {
+          orderedColumnDefs.push(percentMeasureDef);
+        }
+      }
+    } else {
+      const dimensionDef = dimensionDefMap.get(id);
+      if (dimensionDef) {
+        orderedColumnDefs.push(dimensionDef);
+      }
+    }
+  });
+
+  return orderedColumnDefs;
+}
+
+function getNestedColumnDef(
+  config: PivotDataStoreConfig,
+  measures: MeasureColumnProps,
+  rowDimensions: Array<{ label: string; name: string }>,
+  colDimensions: Array<{ label: string; name: string }>,
+  columnDimensionAxes: Record<string, string[]> | undefined,
+  totals: PivotDataRow,
+  rowDimensionNames: string[],
+): ColumnDef<PivotDataRow>[] {
+  // For nested tables, we only use the first row dimension in the column definition
+  const rowDimensionsForColumnDef = rowDimensions.slice(0, 1);
+  const nestedLabel = rowDimensions.map((d) => d.label || d.name).join(" > ");
+
+  // Create row dimension columns
+  const rowDefinitions: ColumnDef<PivotDataRow>[] =
+    rowDimensionsForColumnDef.map((d) => {
+      return {
+        id: d.name,
+        accessorFn: (row) => row[d.name],
+        header: nestedLabel,
         cell: ({ row, getValue }) => {
           const formattedDimensionValue = formatDimensionValue(
             getValue() as string,
-            isFlat ? i : row.depth,
+            row.depth,
             config.time,
             rowDimensionNames,
           );
 
-          return isFlat
-            ? formattedDimensionValue
-            : cellComponent(PivotExpandableCell, {
-                value: formattedDimensionValue,
-                row,
-              });
+          return cellComponent(PivotExpandableCell, {
+            value: formattedDimensionValue,
+            row,
+          });
         },
       };
     });
 
+  // Create measure columns
   const leafColumns: (ColumnDef<PivotDataRow> & { name: string })[] =
     measures.map((m) => {
       return {
@@ -310,10 +428,7 @@ export function getColumnDefForPivot(
       };
     });
 
-  if (config.isFlat) {
-    return [...rowDefinitions, ...leafColumns];
-  }
-
+  // Create grouped column definitions
   const groupedColDef = createColumnDefinitionForDimensions(
     config,
     colDimensions,

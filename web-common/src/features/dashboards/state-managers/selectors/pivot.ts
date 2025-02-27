@@ -7,6 +7,8 @@ import type { DashboardDataSources } from "./types";
 export const pivotSelectors = {
   showPivot: ({ dashboard }: DashboardDataSources) => dashboard.pivot.active,
   rows: ({ dashboard }: DashboardDataSources) => dashboard.pivot.rows,
+  originalColumns: ({ dashboard }: DashboardDataSources) =>
+    dashboard.pivot.columns,
   columns: ({ dashboard }: DashboardDataSources) =>
     splitPivotChips(dashboard.pivot.columns),
   isFlat: ({ dashboard }: DashboardDataSources) =>
