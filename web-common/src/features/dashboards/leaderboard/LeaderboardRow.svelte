@@ -67,7 +67,6 @@
     ? formatMeasurePercentageDifference(deltaRel)
     : null;
   $: formattedDelta = deltaAbs ? formatter(deltaAbs) : null;
-
   $: deltaElementWidth = deltaRect.width;
   $: valueElementWith = valueRect.width;
 
@@ -107,13 +106,20 @@
     : isValidPercentOfTotal
       ? clamp(0, barLength - firstColumnWidth - $valueColumn, DEFAULT_COL_WIDTH)
       : 0;
-  $: fourthCellBarLength = isTimeComparisonActive
-    ? clamp(
-        0,
-        barLength - firstColumnWidth - $valueColumn - $deltaColumn,
-        DEFAULT_COL_WIDTH,
-      )
-    : 0;
+  $: fourthCellBarLength = clamp(
+    0,
+    barLength - firstColumnWidth - $valueColumn - (thirdCellBarLength || 0),
+    DEFAULT_COL_WIDTH,
+  );
+  $: fifthCellBarLength = clamp(
+    0,
+    barLength -
+      firstColumnWidth -
+      $valueColumn -
+      (thirdCellBarLength || 0) -
+      (fourthCellBarLength || 0),
+    DEFAULT_COL_WIDTH,
+  );
 
   // Update the gradients
   $: firstCellGradient = `linear-gradient(to right, ${barColor}
@@ -134,13 +140,23 @@
     ${fourthCellBarLength}px, transparent ${fourthCellBarLength}px)`
     : undefined;
 
+  $: fifthCellGradient = fifthCellBarLength
+    ? `linear-gradient(to right, ${barColor}
+    ${fifthCellBarLength}px, transparent ${fifthCellBarLength}px)`
+    : undefined;
+
   $: showDeltaAbsolute =
     (isTimeComparisonActive || isValidPercentOfTotal) &&
     contextColumnFilters.includes(LeaderboardContextColumn.DELTA_ABSOLUTE);
 
-  $: showDeltaPercent =
+  $: showDeltaPercent = contextColumnFilters.includes(
+    LeaderboardContextColumn.DELTA_PERCENT,
+  );
+
+  $: showPercentOfTotal =
     isTimeComparisonActive &&
-    contextColumnFilters.includes(LeaderboardContextColumn.DELTA_PERCENT);
+    isValidPercentOfTotal &&
+    contextColumnFilters.includes(LeaderboardContextColumn.PERCENT);
 
   $: showTooltip = hovered && !suppressTooltip;
 
@@ -261,6 +277,20 @@
       })}
     >
       <PercentageChange value={formattedDeltaRel} />
+      {#if showZigZag}
+        <LongBarZigZag />
+      {/if}
+    </td>
+  {/if}
+
+  {#if showPercentOfTotal}
+    <td
+      style:background={fifthCellGradient}
+      on:click={modified({
+        shift: () => shiftClickHandler(pctOfTotal?.toString() || ""),
+      })}
+    >
+      <PercentageChange value={pctOfTotal} />
       {#if showZigZag}
         <LongBarZigZag />
       {/if}
