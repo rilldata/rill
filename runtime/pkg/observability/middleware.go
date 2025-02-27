@@ -57,11 +57,10 @@ func LoggingUnaryServerInterceptor(logger *zap.Logger) grpc.UnaryServerIntercept
 
 		start := time.Now()
 
-		// Add trace ID to response headers
-		span := trace.SpanFromContext(ctx)
-		sctx := span.SpanContext()
-		if sctx.IsValid() {
-			header := metadata.Pairs("dd-trace-id", convertToDatadogID(sctx.TraceID().String()))
+		// Add datadog trace ID to response headers
+		traceID := DatadogTraceID(ctx)
+		if traceID != "" {
+			header := metadata.Pairs("dd-trace-id", traceID)
 			_ = grpc.SetHeader(ctx, header)
 		}
 
@@ -123,11 +122,10 @@ func LoggingStreamServerInterceptor(logger *zap.Logger) grpc.StreamServerInterce
 
 		start := time.Now()
 
-		// Add data dog trace ID to response headers
-		span := trace.SpanFromContext(ss.Context())
-		sctx := span.SpanContext()
-		if sctx.IsValid() {
-			header := metadata.Pairs("dd-trace-id", convertToDatadogID(sctx.TraceID().String()))
+		// Add datadog trace ID to response headers
+		traceID := DatadogTraceID(ss.Context())
+		if traceID != "" {
+			header := metadata.Pairs("dd-trace-id", traceID)
 			_ = grpc.SetHeader(ss.Context(), header)
 		}
 
@@ -229,10 +227,9 @@ func LoggingMiddleware(logger *zap.Logger, next http.Handler) http.Handler {
 		start := time.Now()
 
 		// Set datadog trace ID header in response headers
-		span := trace.SpanFromContext(r.Context())
-		sctx := span.SpanContext()
-		if sctx.IsValid() {
-			w.Header().Set("dd-trace-id", convertToDatadogID(sctx.TraceID().String()))
+		traceID := DatadogTraceID(r.Context())
+		if traceID != "" {
+			w.Header().Set("dd-trace-id", traceID)
 		}
 
 		wrapped := wrappedResponseWriter{ResponseWriter: w}
