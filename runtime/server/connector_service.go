@@ -192,6 +192,7 @@ func (s *Server) OLAPGetTable(ctx context.Context, req *runtimev1.OLAPGetTableRe
 		Schema:             table.Schema,
 		UnsupportedColumns: table.UnsupportedCols,
 		View:               table.View,
+		BytesOnDisk:        table.BytesOnDisk,
 	}, nil
 }
 

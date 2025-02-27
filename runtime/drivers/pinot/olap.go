@@ -161,7 +161,7 @@ func (i informationSchema) All(ctx context.Context, like string) ([]*drivers.Tab
 
 	tables := make([]*drivers.Table, 0, len(tablesResp.Tables))
 	// fetch table schemas in parallel with concurrency of 5
-	g, gctx := errgroup.WithContext(ctx)
+	g, ctx := errgroup.WithContext(ctx)
 	g.SetLimit(5)
 	for _, tableName := range tablesResp.Tables {
 		if likeRegexp != nil && !likeRegexp.MatchString(tableName) {
@@ -170,7 +170,7 @@ func (i informationSchema) All(ctx context.Context, like string) ([]*drivers.Tab
 
 		tableName := tableName
 		g.Go(func() error {
-			table, err := i.Lookup(gctx, "", "", tableName)
+			table, err := i.Lookup(ctx, "", "", tableName)
 			if err != nil {
 				fmt.Printf("Error fetching schema for table %s: %v\n", tableName, err)
 				return nil
