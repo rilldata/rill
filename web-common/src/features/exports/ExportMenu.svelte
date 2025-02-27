@@ -1,38 +1,54 @@
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import Export from "@rilldata/web-common/components/icons/Export.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import Export from "@rilldata/web-common/components/icons/Export.svelte";
   import {
+    createQueryServiceExport,
     V1ExportFormat,
-    type V1MetricsViewAggregationRequest,
+    type V1Query,
   } from "@rilldata/web-common/runtime-client";
-  import { onMount } from "svelte";
-  import type ScheduledReportDialog from "../scheduled-reports/ScheduledReportDialog.svelte";
   import { builderActions, getAttrs } from "bits-ui";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import { onMount } from "svelte";
+  import { get } from "svelte/store";
+  import { runtime } from "../../runtime-client/runtime-store";
+  import type TScheduledReportDialog from "../scheduled-reports/ScheduledReportDialog.svelte";
 
   export let disabled: boolean = false;
   export let workspace = false;
   export let label: string;
   export let includeScheduledReport = false;
-  export let queryArgs: V1MetricsViewAggregationRequest | undefined = undefined;
+  export let getQuery: (isScheduled: boolean) => V1Query | undefined;
   export let exploreName: string | undefined = undefined;
   export let metricsViewProto: string | undefined = undefined;
-  export let onExport: (format: V1ExportFormat) => void;
 
   let showScheduledReportDialog = false;
   let open = false;
 
+  const exportDash = createQueryServiceExport();
+
+  async function handleExport(format: V1ExportFormat) {
+    const result = await $exportDash.mutateAsync({
+      instanceId: get(runtime).instanceId,
+      data: {
+        query: getQuery(false),
+        format,
+      },
+    });
+    const downloadUrl = `${get(runtime).host}${result.downloadUrlPath}`;
+    window.open(downloadUrl, "_self");
+  }
+
   // Only import the Scheduled Report dialog if in the Cloud context.
   // This ensures Rill Developer doesn't try and fail to import the admin-client.
-  let CreateScheduledReportDialog: typeof ScheduledReportDialog;
+  let ScheduledReportDialog: typeof TScheduledReportDialog;
   onMount(async () => {
     if (includeScheduledReport) {
-      CreateScheduledReportDialog = (
-        await import("../scheduled-reports/ScheduledReportDialog.svelte")
-      ).default;
+      ({ default: ScheduledReportDialog } = await import(
+        "../scheduled-reports/ScheduledReportDialog.svelte"
+      ));
     }
   });
 </script>
@@ -63,23 +79,23 @@
 
   <DropdownMenu.Content align="start">
     <DropdownMenu.Item
-      on:click={() => onExport(V1ExportFormat.EXPORT_FORMAT_CSV)}
+      on:click={() => handleExport(V1ExportFormat.EXPORT_FORMAT_CSV)}
     >
       Export as CSV
     </DropdownMenu.Item>
     <DropdownMenu.Item
-      on:click={() => onExport(V1ExportFormat.EXPORT_FORMAT_PARQUET)}
+      on:click={() => handleExport(V1ExportFormat.EXPORT_FORMAT_PARQUET)}
     >
       Export as Parquet
     </DropdownMenu.Item>
 
     <DropdownMenu.Item
-      on:click={() => onExport(V1ExportFormat.EXPORT_FORMAT_XLSX)}
+      on:click={() => handleExport(V1ExportFormat.EXPORT_FORMAT_XLSX)}
     >
       Export as XLSX
     </DropdownMenu.Item>
 
-    {#if includeScheduledReport && queryArgs}
+    {#if includeScheduledReport}
       <DropdownMenu.Item on:click={() => (showScheduledReportDialog = true)}>
         Create scheduled report...
       </DropdownMenu.Item>
@@ -87,10 +103,10 @@
   </DropdownMenu.Content>
 </DropdownMenu.Root>
 
-{#if includeScheduledReport && CreateScheduledReportDialog && showScheduledReportDialog && queryArgs}
+{#if includeScheduledReport && ScheduledReportDialog && showScheduledReportDialog}
   <svelte:component
-    this={CreateScheduledReportDialog}
-    {queryArgs}
+    this={ScheduledReportDialog}
+    query={getQuery(true)}
     {metricsViewProto}
     {exploreName}
     bind:open={showScheduledReportDialog}

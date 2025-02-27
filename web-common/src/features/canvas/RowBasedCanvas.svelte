@@ -1,29 +1,32 @@
 <script lang="ts">
-  import { parseDocument, YAMLMap, YAMLSeq } from "yaml";
+  import DragHandle from "@rilldata/web-common/components/icons/DragHandle.svelte";
+  import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
   import { clamp } from "@rilldata/web-common/lib/clamp";
-  import ElementDivider from "./ElementDivider.svelte";
-  import { dropZone, activeDivider } from "./stores/ui-stores";
-  import AddComponentDropdown from "./AddComponentDropdown.svelte";
-  import type { FileArtifact } from "../entity-management/file-artifact";
-  import { getCanvasStateManagers } from "./state-managers/state-managers";
   import type { V1CanvasSpec } from "@rilldata/web-common/runtime-client";
-  import PreviewElement from "./PreviewElement.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { Edit } from "lucide-svelte";
+  import { parseDocument, YAMLMap, YAMLSeq } from "yaml";
+  import type { FileArtifact } from "../entity-management/file-artifact";
+  import AddComponentDropdown from "./AddComponentDropdown.svelte";
+  import DropZone from "./components/DropZone.svelte";
   import type { CanvasComponentType } from "./components/types";
   import { getComponentRegistry } from "./components/util";
-  import { findNextAvailablePosition } from "./util";
-  import { useDefaultMetrics } from "./selector";
-  import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
+  import ElementDivider from "./ElementDivider.svelte";
   import CanvasFilters from "./filters/CanvasFilters.svelte";
-  import DropZone from "./components/DropZone.svelte";
+  import PreviewElement from "./PreviewElement.svelte";
   import RowDropZone from "./RowDropZone.svelte";
   import RowWrapper from "./RowWrapper.svelte";
+  import { useDefaultMetrics } from "./selector";
+  import { getCanvasStateManagers } from "./state-managers/state-managers";
+  import { activeDivider, dropZone } from "./stores/ui-stores";
+  import { findNextAvailablePosition } from "./util";
 
   const initialHeights: Record<CanvasComponentType, number> = {
     line_chart: 350,
     bar_chart: 400,
     area_chart: 400,
     stacked_bar: 400,
+    stacked_bar_normalized: 400,
     markdown: 160,
     kpi: 200,
     kpi_grid: 200,
@@ -36,7 +39,7 @@
   }
 
   const COLUMN_COUNT = 12;
-  const MIN_HEIGHT = 160;
+  const MIN_HEIGHT = 40;
   const MIN_WIDTH = 3;
   const baseLayoutArrays = [
     [],
@@ -57,8 +60,6 @@
     },
   } = ctx;
 
-  // const { canvasEntity } = getCanvasStateManagers();
-
   let spec: V1CanvasSpec = {
     items: [],
     filtersEnabled: true,
@@ -67,6 +68,7 @@
 
   export let fileArtifact: FileArtifact;
   export let editable = true;
+  export let openSidebar: () => void;
 
   let mousePosition = { x: 0, y: 0 };
   let initialMousePosition: { x: number; y: number } | null = null;
@@ -313,7 +315,10 @@
   function onRowResizeStart(e: MouseEvent & { currentTarget: HTMLElement }) {
     initialMousePosition = mousePosition;
     resizeRow = Number(e.currentTarget.getAttribute("data-row"));
-    initialHeight = rowMaps[resizeRow].height;
+    initialHeight =
+      document
+        .querySelector(`#canvas-row-${resizeRow}`)
+        ?.getBoundingClientRect().height ?? rowMaps[resizeRow].height;
   }
 
   function reset() {
@@ -681,6 +686,8 @@
       <RowWrapper
         zIndex={50 - rowIndex * 2}
         {maxWidth}
+        {height}
+        rowId={rowIndex}
         gridTemplate={layout.map((el) => `${el}fr`).join(" ")}
       >
         {#each items as itemIndex, columnIndex (columnIndex)}
@@ -688,9 +695,7 @@
           {@const item = canvasItems[Number(itemIndex)]}
           <div
             style:z-index={4 - columnIndex}
-            class="p-2.5 relative pointer-events-none size-full container"
-            style:min-height="{height}px"
-            style:height="{height}px"
+            class="p-2.5 relative pointer-events-none min-h-fit size-full container"
           >
             {#if editable}
               {#if columnIndex === 0}
@@ -737,45 +742,45 @@
               class:pointer-events-none={resizeColumnInfo}
               class:pointer-events-auto={!resizeColumnInfo}
               class:editable
-              class="component-card w-full cursor-pointer z-10 p-0 h-full relative outline outline-[1px] outline-gray-200 bg-white overflow-hidden rounded-sm flex items-center justify-center"
-              on:mousedown={(e) => {
-                if (e.button !== 0 || !editable) return;
-
-                setSelectedComponentIndex(Number(itemIndex));
-
-                selected = new Set([id]);
-
-                if (itemIndex === null) return;
-
-                handleDragStart({
-                  name: itemIndex,
-                  row: rowIndex,
-                  order: columnIndex,
-                  type: "kpi",
-                  height: height,
-                });
-              }}
+              class="group component-card w-full flex-col min-h-fit cursor-pointer z-10 p-0 h-full relative outline outline-[1px] outline-gray-200 bg-white overflow-hidden rounded-sm flex"
             >
+              <div
+                class="group-hover:flex hidden hover:shadow-sm bg-white hover:bg-slate-50 border-transparent hover:border-slate-200 border-b border-l overflow-hidden absolute top-0 right-0 w-fit h-7 rounded-bl-sm z-[10000]"
+              >
+                <button
+                  on:mousedown={(e) => {
+                    if (e.button !== 0 || !editable) return;
+
+                    if (itemIndex === null) return;
+                    handleDragStart({
+                      name: itemIndex,
+                      row: rowIndex,
+                      order: columnIndex,
+                      type: "kpi",
+                      height: height,
+                    });
+                  }}
+                  class="grid place-content-center active:bg-slate-200 hover:bg-slate-100 size-full aspect-square"
+                >
+                  <DragHandle size="17px" />
+                </button>
+
+                <button
+                  on:mousedown={(e) => {
+                    if (e.button !== 0 || !editable) return;
+                    setSelectedComponentIndex(Number(itemIndex));
+                    selected = new Set([id]);
+                    openSidebar();
+                  }}
+                  class="size-full aspect-square grid place-content-center active:bg-slate-200 hover:bg-slate-100"
+                >
+                  <Edit size="13px" />
+                </button>
+              </div>
               {#if item}
-                <PreviewElement
-                  i={columnIndex}
-                  selected={false}
-                  component={item}
-                />
+                <PreviewElement component={item} />
               {:else}
                 <LoadingSpinner size="36px" />
-
-                <!-- <div class="element h-fit min-h-fit">
-                    {#each { length: 4 } as _, i (i)}
-                      <div
-                        class="size-full border-r border-b min-h-48 text-2xl grid place-content-center"
-                      >
-                        {Math.round(Math.random() * 1000)}
-                      </div>
-                    {/each}
-                  </div> -->
-                <!-- {:else}
-                <FileWarning size="24px" /> -->
               {/if}
             </article>
           </div>
