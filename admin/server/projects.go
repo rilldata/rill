@@ -931,20 +931,8 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 		}, nil
 	}
 
-	// All project-level members must also be org members.
-	// So if the user is not already a member of the organization, add them as a guest.
-	// This is not done using a transaction because its idempotent and never in an inconsistent state.
-	guestRole, err := s.admin.DB.FindOrganizationRole(ctx, database.OrganizationRoleNameGuest)
-	if err != nil {
-		return nil, err
-	}
-	err = s.admin.DB.InsertOrganizationMemberUserIfNotExists(ctx, proj.OrganizationID, user.ID, guestRole.ID)
-	if err != nil {
-		return nil, err
-	}
-
 	// Add the user to the project.
-	err = s.admin.DB.InsertProjectMemberUser(ctx, proj.ID, user.ID, role.ID)
+	err = s.admin.InsertProjectMemberUser(ctx, proj.OrganizationID, proj.ID, user.ID, role.ID)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotUnique) {
 			return nil, err
@@ -1248,18 +1236,8 @@ func (s *Server) ApproveProjectAccess(ctx context.Context, req *adminv1.ApproveP
 		return nil, err
 	}
 
-	// Ensure the user is an org member.
-	guestRole, err := s.admin.DB.FindOrganizationRole(ctx, database.OrganizationRoleNameGuest)
-	if err != nil {
-		return nil, err
-	}
-	err = s.admin.DB.InsertOrganizationMemberUserIfNotExists(ctx, proj.OrganizationID, user.ID, guestRole.ID)
-	if err != nil {
-		return nil, err
-	}
-
 	// Add the user as a project member.
-	err = s.admin.DB.InsertProjectMemberUser(ctx, proj.ID, user.ID, role.ID)
+	err = s.admin.InsertProjectMemberUser(ctx, proj.OrganizationID, proj.ID, user.ID, role.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -1454,11 +1432,6 @@ func (s *Server) CreateProjectWhitelistedDomain(ctx context.Context, req *adminv
 		return nil, err
 	}
 
-	guestRole, err := s.admin.DB.FindOrganizationRole(ctx, database.OrganizationRoleNameGuest)
-	if err != nil {
-		return nil, err
-	}
-
 	// find existing users belonging to the whitelisted domain to the project
 	users, err := s.admin.DB.FindUsersByEmailPattern(ctx, "%@"+req.Domain, "", math.MaxInt)
 	if err != nil {
@@ -1478,7 +1451,7 @@ func (s *Server) CreateProjectWhitelistedDomain(ctx context.Context, req *adminv
 		}
 	}
 
-	ctx, tx, err := s.admin.DB.NewTx(ctx)
+	ctx, tx, err := s.admin.DB.NewTx(ctx, false)
 	if err != nil {
 		return nil, err
 	}
@@ -1494,15 +1467,8 @@ func (s *Server) CreateProjectWhitelistedDomain(ctx context.Context, req *adminv
 	}
 
 	for _, user := range newUsers {
-		// All project-level members must also be org members.
-		// So if the user is not already a member of the organization, add them as a guest.
-		err = s.admin.DB.InsertOrganizationMemberUserIfNotExists(ctx, proj.OrganizationID, user.ID, guestRole.ID)
-		if err != nil {
-			return nil, err
-		}
-
 		// Add the user to the project.
-		err = s.admin.DB.InsertProjectMemberUser(ctx, proj.ID, user.ID, role.ID)
+		err = s.admin.InsertProjectMemberUser(ctx, proj.OrganizationID, proj.ID, user.ID, role.ID)
 		if err != nil {
 			return nil, err
 		}

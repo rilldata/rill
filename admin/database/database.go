@@ -50,7 +50,7 @@ type Driver interface {
 // DB is the interface for a database connection.
 type DB interface {
 	Close() error
-	NewTx(ctx context.Context) (context.Context, Tx, error)
+	NewTx(ctx context.Context, allowNested bool) (context.Context, Tx, error)
 
 	Migrate(ctx context.Context) error
 	FindMigrationVersion(ctx context.Context) (int, error)
@@ -132,17 +132,20 @@ type DB interface {
 	GetCurrentTrialOrgCount(ctx context.Context, userID string) (int, error)
 	IncrementCurrentTrialOrgCount(ctx context.Context, userID string) error
 
+	FindUsergroupByName(ctx context.Context, orgName, name string) (*Usergroup, error)
+	CheckUsergroupExists(ctx context.Context, groupID string) (bool, error)
 	InsertUsergroup(ctx context.Context, opts *InsertUsergroupOptions) (*Usergroup, error)
 	UpdateUsergroupName(ctx context.Context, name, groupID string) (*Usergroup, error)
 	UpdateUsergroupDescription(ctx context.Context, description, groupID string) (*Usergroup, error)
 	DeleteUsergroup(ctx context.Context, groupID string) error
-	FindUsergroupByName(ctx context.Context, orgName, name string) (*Usergroup, error)
+
 	FindUsergroupsForUser(ctx context.Context, userID, orgID string) ([]*Usergroup, error)
-	InsertUsergroupMemberUser(ctx context.Context, groupID, userID string) error
 	FindUsergroupMemberUsers(ctx context.Context, groupID, afterEmail string, limit int) ([]*MemberUser, error)
+	InsertUsergroupMemberUser(ctx context.Context, groupID, userID string) error
 	DeleteUsergroupMemberUser(ctx context.Context, groupID, userID string) error
 	DeleteUsergroupsMemberUser(ctx context.Context, orgID, userID string) error
-	CheckUsergroupExists(ctx context.Context, groupID string) (bool, error)
+	InsertAutogroupsMemberUser(ctx context.Context, orgID, userID, roleID string) error
+	DeleteAutogroupsMemberUser(ctx context.Context, orgID, userID string) error
 
 	FindUserAuthTokens(ctx context.Context, userID string) ([]*UserAuthToken, error)
 	FindUserAuthToken(ctx context.Context, id string) (*UserAuthToken, error)
@@ -204,8 +207,7 @@ type DB interface {
 
 	FindOrganizationMemberUsers(ctx context.Context, orgID, afterEmail string, limit int) ([]*MemberUser, error)
 	FindOrganizationMemberUsersByRole(ctx context.Context, orgID, roleID string) ([]*User, error)
-	InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string) error
-	InsertOrganizationMemberUserIfNotExists(ctx context.Context, orgID, userID, roleID string) error
+	InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string, ifNotExists bool) (bool, error)
 	DeleteOrganizationMemberUser(ctx context.Context, orgID, userID string) error
 	UpdateOrganizationMemberUserRole(ctx context.Context, orgID, userID, roleID string) error
 	CountSingleuserOrganizationsForMemberUser(ctx context.Context, userID string) (int, error)
@@ -302,6 +304,8 @@ type DB interface {
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
 // Actual database calls should be made by passing the ctx returned from DB.NewTx to functions on the DB.
+//
+// If the Tx was acquired with allowNested=true, it may be a no-op that defers commit/rollback to the parent transaction.
 type Tx interface {
 	// Commit commits the transaction
 	Commit() error

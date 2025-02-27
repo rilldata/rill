@@ -638,7 +638,7 @@ func (s *Server) reconcileMagicTokensForExternalEmails(ctx context.Context, orgI
 	}
 
 	// issue magic tokens for new external emails
-	cctx, tx, err := s.admin.DB.NewTx(ctx)
+	cctx, tx, err := s.admin.DB.NewTx(ctx, false)
 	if err != nil {
 		return nil, fmt.Errorf("failed to start transaction: %w", err)
 	}

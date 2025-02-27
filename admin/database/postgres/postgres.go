@@ -754,6 +754,27 @@ func (c *connection) IncrementCurrentTrialOrgCount(ctx context.Context, userID s
 	return nil
 }
 
+func (c *connection) FindUsergroupByName(ctx context.Context, orgName, name string) (*database.Usergroup, error) {
+	res := &database.Usergroup{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		SELECT ug.* FROM usergroups ug JOIN orgs o ON ug.org_id = o.id
+		WHERE lower(ug.name)=lower($1) AND lower(o.name)=lower($2)
+	`, name, orgName).StructScan(res)
+	if err != nil {
+		return nil, parseErr("usergroup", err)
+	}
+	return res, nil
+}
+
+func (c *connection) CheckUsergroupExists(ctx context.Context, groupID string) (bool, error) {
+	var res bool
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT EXISTS (SELECT 1 FROM usergroups WHERE id=$1)", groupID).Scan(&res)
+	if err != nil {
+		return false, parseErr("check", err)
+	}
+	return res, nil
+}
+
 func (c *connection) InsertUsergroup(ctx context.Context, opts *database.InsertUsergroupOptions) (*database.Usergroup, error) {
 	if err := database.Validate(opts); err != nil {
 		return nil, err
@@ -792,18 +813,6 @@ func (c *connection) DeleteUsergroup(ctx context.Context, groupID string) error 
 	return checkDeleteRow("usergroup", res, err)
 }
 
-func (c *connection) FindUsergroupByName(ctx context.Context, orgName, name string) (*database.Usergroup, error) {
-	res := &database.Usergroup{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		SELECT ug.* FROM usergroups ug JOIN orgs o ON ug.org_id = o.id
-		WHERE lower(ug.name)=lower($1) AND lower(o.name)=lower($2)
-	`, name, orgName).StructScan(res)
-	if err != nil {
-		return nil, parseErr("usergroup", err)
-	}
-	return res, nil
-}
-
 func (c *connection) FindUsergroupsForUser(ctx context.Context, userID, orgID string) ([]*database.Usergroup, error) {
 	var res []*database.Usergroup
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
@@ -814,14 +823,6 @@ func (c *connection) FindUsergroupsForUser(ctx context.Context, userID, orgID st
 		return nil, parseErr("usergroup", err)
 	}
 	return res, nil
-}
-
-func (c *connection) InsertUsergroupMemberUser(ctx context.Context, groupID, userID string) error {
-	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO usergroups_users (user_id, usergroup_id) VALUES ($1, $2)", userID, groupID)
-	if err != nil {
-		return parseErr("usergroup member", err)
-	}
-	return nil
 }
 
 func (c *connection) FindUsergroupMemberUsers(ctx context.Context, groupID, afterEmail string, limit int) ([]*database.MemberUser, error) {
@@ -838,18 +839,17 @@ func (c *connection) FindUsergroupMemberUsers(ctx context.Context, groupID, afte
 	return res, nil
 }
 
+func (c *connection) InsertUsergroupMemberUser(ctx context.Context, groupID, userID string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO usergroups_users (user_id, usergroup_id) VALUES ($1, $2)", userID, groupID)
+	if err != nil {
+		return parseErr("usergroup member", err)
+	}
+	return nil
+}
+
 func (c *connection) DeleteUsergroupMemberUser(ctx context.Context, groupID, userID string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM usergroups_users WHERE user_id = $1 AND usergroup_id = $2", userID, groupID)
 	return checkDeleteRow("usergroup member", res, err)
-}
-
-func (c *connection) CheckUsergroupExists(ctx context.Context, groupID string) (bool, error) {
-	var res bool
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT EXISTS (SELECT 1 FROM usergroups WHERE id=$1)", groupID).Scan(&res)
-	if err != nil {
-		return false, parseErr("check", err)
-	}
-	return res, nil
 }
 
 func (c *connection) DeleteUsergroupsMemberUser(ctx context.Context, orgID, userID string) error {
@@ -858,6 +858,30 @@ func (c *connection) DeleteUsergroupsMemberUser(ctx context.Context, orgID, user
 	`, userID, orgID)
 	if err != nil {
 		return parseErr("usergroup member", err)
+	}
+	return nil
+}
+
+func (c *connection) InsertAutogroupsMemberUser(ctx context.Context, orgID, userID, roleID string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, `
+		INSERT INTO usergroups_users (user_id, usergroup_id)
+		SELECT $1, ug.id FROM usergroups ug WHERE ug.org_id = $2 AND ug.name = 'all-users'
+	`, userID, orgID) // userID, orgID, roleID)
+	// -- UNION ALL SELECT $1, ug.id FROM usergroups ug WHERE ug.org_id = $2 AND ug.name = 'all-guests' AND EXISTS (SELECT 1 FROM org_roles ors WHERE ors.id = $3 AND ors.guest)
+	if err != nil {
+		return parseErr("autogroup member", err)
+	}
+	return nil
+}
+
+func (c *connection) DeleteAutogroupsMemberUser(ctx context.Context, orgID, userID string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, `
+		DELETE FROM usergroups_users WHERE user_id = $1 AND usergroup_id IN (
+			SELECT ug.id FROM usergroups ug WHERE ug.org_id = $2 AND ug.name IN ('all-users', 'all-guests')
+		)
+	`, userID, orgID)
+	if err != nil {
+		return parseErr("autogroup member", err)
 	}
 	return nil
 }
@@ -1402,38 +1426,38 @@ func (c *connection) FindOrganizationMemberUsersByRole(ctx context.Context, orgI
 	return res, nil
 }
 
-func (c *connection) InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string) error {
-	res, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO users_orgs_roles (user_id, org_id, org_role_id) VALUES ($1, $2, $3)", userID, orgID, roleID)
-	if err != nil {
-		return parseErr("org member", err)
+func (c *connection) InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string, ifNotExists bool) (bool, error) {
+	if !ifNotExists {
+		res, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO users_orgs_roles (user_id, org_id, org_role_id) VALUES ($1, $2, $3)", userID, orgID, roleID)
+		if err != nil {
+			return false, parseErr("org member", err)
+		}
+		rows, err := res.RowsAffected()
+		if err != nil {
+			return false, err
+		}
+		if rows == 0 {
+			return false, fmt.Errorf("no rows affected when adding user to organization")
+		}
+		return true, nil
 	}
-	rows, err := res.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if rows == 0 {
-		return fmt.Errorf("no rows affected when adding user to organization")
-	}
-	return nil
-}
 
-func (c *connection) InsertOrganizationMemberUserIfNotExists(ctx context.Context, orgID, userID, roleID string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, `
 		INSERT INTO users_orgs_roles (user_id, org_id, org_role_id)
 		VAlUES ($1, $2, $3)
 		ON CONFLICT (user_id, org_id) DO NOTHING
 	`, userID, orgID, roleID)
 	if err != nil {
-		return parseErr("org member", err)
+		return false, parseErr("org member", err)
 	}
 	rows, err := res.RowsAffected()
 	if err != nil {
-		return err
+		return false, err
 	}
 	if rows > 1 {
 		panic(fmt.Errorf("expected to update 0 or 1 row, but updated %d", rows))
 	}
-	return nil
+	return rows != 0, nil
 }
 
 func (c *connection) DeleteOrganizationMemberUser(ctx context.Context, orgID, userID string) error {

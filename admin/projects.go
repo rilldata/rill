@@ -32,7 +32,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 
 	// Create the project and add initial members using a transaction.
 	// The transaction is not used for provisioning and deployments, since they involve external services.
-	txCtx, tx, err := s.DB.NewTx(ctx)
+	txCtx, tx, err := s.DB.NewTx(ctx, false)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +45,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 
 	// The creating user becomes project admin
 	if opts.CreatedByUserID != nil {
-		err = s.DB.InsertProjectMemberUser(txCtx, proj.ID, *opts.CreatedByUserID, adminRole.ID)
+		err = s.InsertProjectMemberUser(txCtx, org.ID, proj.ID, *opts.CreatedByUserID, adminRole.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -222,7 +222,7 @@ func (s *Service) UpdateProjectVariables(ctx context.Context, project *database.
 	if len(vars) == 0 && len(unsetVars) == 0 {
 		return nil
 	}
-	txCtx, tx, err := s.DB.NewTx(ctx)
+	txCtx, tx, err := s.DB.NewTx(ctx, false)
 	if err != nil {
 		return err
 	}

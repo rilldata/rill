@@ -11,6 +11,123 @@ import (
 	"go.uber.org/zap"
 )
 
+// InsertOrganizationMemberUser inserts a user as a member of an organization.
+// If ifNotExists is true, it acts as a no-op if the user is already a member of the org.
+//
+// The function transactionally also adds the user to the relevant autogroups in the org.
+// It may be called with or without holding an existing transaction.
+func (s *Service) InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string, ifNotExists bool) error {
+	ctx, tx, err := s.DB.NewTx(ctx, true)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	inserted, err := s.DB.InsertOrganizationMemberUser(ctx, orgID, userID, roleID, ifNotExists)
+	if err != nil {
+		return err
+	}
+
+	if inserted {
+		err = s.DB.InsertAutogroupsMemberUser(ctx, orgID, userID, roleID)
+		if err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
+}
+
+// InsertProjectMemberUser inserts a user as a member of a project.
+// If the user is not already a member of the project's organization, it transactionally adds them as a guest of the org as well.
+// It may be called with or without holding an existing transaction.
+func (s *Service) InsertProjectMemberUser(ctx context.Context, orgID, projectID, userID, roleID string) error {
+	guestRole, err := s.DB.FindOrganizationRole(ctx, database.OrganizationRoleNameGuest)
+	if err != nil {
+		return err
+	}
+
+	ctx, tx, err := s.DB.NewTx(ctx, true)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	// Insert the user as a member of the project.
+	err = s.DB.InsertProjectMemberUser(ctx, projectID, userID, roleID)
+	if err != nil {
+		return err
+	}
+
+	// All project-level members must also be org members.
+	// So if the user is not already a member of the organization, add them as a guest.
+	err = s.InsertOrganizationMemberUser(ctx, orgID, userID, guestRole.ID, true)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+// DeleteOrganizationMemberUser deletes a user as a member of an organization.
+// It transactionally also removes the user from all user groups in the org and all projects in the org.
+// It may be called with or without holding an existing transaction.
+func (s *Service) DeleteOrganizationMemberUser(ctx context.Context, orgID, userID string) error {
+	ctx, tx, err := s.DB.NewTx(ctx, true)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	err = s.DB.DeleteOrganizationMemberUser(ctx, orgID, userID)
+	if err != nil {
+		return err
+	}
+
+	// delete from all user groups of the org
+	err = s.DB.DeleteUsergroupsMemberUser(ctx, orgID, userID)
+	if err != nil {
+		return err
+	}
+
+	// delete from all projects in the org
+	err = s.DB.DeleteAllProjectMemberUserForOrganization(ctx, orgID, userID)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+// UpdateOrganizationMemberUserRole updates the role of a user in an organization.
+// It transactionally also updates the user's membership of relevant autogroups in the org.
+func (s *Service) UpdateOrganizationMemberUserRole(ctx context.Context, orgID, userID, roleID string) error {
+	ctx, tx, err := s.DB.NewTx(ctx, true)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	err = s.DB.UpdateOrganizationMemberUserRole(ctx, orgID, userID, roleID)
+	if err != nil {
+		return err
+	}
+
+	err = s.DB.DeleteAutogroupsMemberUser(ctx, orgID, userID)
+	if err != nil {
+		return err
+	}
+
+	err = s.DB.InsertAutogroupsMemberUser(ctx, orgID, userID, roleID)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+// CreateOrUpdateUser creates or updates a user with the given email, name, and photo URL.
+// If the user doesn't exist, it creates a new user and simultaneously adds them to any orgs and projects they have been invited to.
 func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL string) (*database.User, error) {
 	// Validate email address
 	_, err := mail.ParseAddress(email)
@@ -46,7 +163,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		return nil, err
 	}
 
-	ctx, tx, err := s.DB.NewTx(ctx)
+	ctx, tx, err := s.DB.NewTx(ctx, false)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +197,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		if err != nil {
 			return nil, err
 		}
-		err = s.DB.InsertOrganizationMemberUser(ctx, invite.OrgID, user.ID, invite.OrgRoleID)
+		err = s.InsertOrganizationMemberUser(ctx, invite.OrgID, user.ID, invite.OrgRoleID, false)
 		if err != nil {
 			return nil, err
 		}
@@ -103,15 +220,12 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 			}
 		}
 
-		err = s.DB.InsertUsergroupMemberUser(ctx, *org.AllUsergroupID, user.ID)
-		if err != nil {
-			return nil, err
-		}
 		err = s.DB.DeleteOrganizationInvite(ctx, invite.ID)
 		if err != nil {
 			return nil, err
 		}
-		addedToOrgIDs[org.ID] = true
+
+		addedToOrgIDs[invite.OrgID] = true
 		addedToOrgNames = append(addedToOrgNames, org.Name)
 	}
 
@@ -130,21 +244,12 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		if err != nil {
 			return nil, err
 		}
-		err = s.DB.InsertOrganizationMemberUser(ctx, whitelist.OrgID, user.ID, whitelist.OrgRoleID)
-		if err != nil {
-			return nil, err
-		}
-		err = s.DB.InsertUsergroupMemberUser(ctx, *org.AllUsergroupID, user.ID)
+		err = s.InsertOrganizationMemberUser(ctx, whitelist.OrgID, user.ID, whitelist.OrgRoleID, false)
 		if err != nil {
 			return nil, err
 		}
 		addedToOrgIDs[org.ID] = true
 		addedToOrgNames = append(addedToOrgNames, org.Name)
-	}
-
-	guestRole, err := s.DB.FindOrganizationRole(ctx, database.OrganizationRoleNameGuest)
-	if err != nil {
-		return nil, err
 	}
 
 	// handle project invites
@@ -155,11 +260,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		if err != nil {
 			return nil, err
 		}
-		err = s.DB.InsertOrganizationMemberUserIfNotExists(ctx, project.OrganizationID, user.ID, guestRole.ID)
-		if err != nil {
-			return nil, err
-		}
-		err = s.DB.InsertProjectMemberUser(ctx, invite.ProjectID, user.ID, invite.ProjectRoleID)
+		err = s.InsertProjectMemberUser(ctx, project.OrganizationID, invite.ProjectID, user.ID, invite.ProjectRoleID)
 		if err != nil {
 			return nil, err
 		}
@@ -185,11 +286,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		if err != nil {
 			return nil, err
 		}
-		err = s.DB.InsertOrganizationMemberUserIfNotExists(ctx, project.OrganizationID, user.ID, guestRole.ID)
-		if err != nil {
-			return nil, err
-		}
-		err = s.DB.InsertProjectMemberUser(ctx, whitelist.ProjectID, user.ID, whitelist.ProjectRoleID)
+		err = s.InsertProjectMemberUser(ctx, project.OrganizationID, whitelist.ProjectID, user.ID, whitelist.ProjectRoleID)
 		if err != nil {
 			return nil, err
 		}
@@ -213,8 +310,9 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 	return user, nil
 }
 
+// CreateOrganizationForUser creates a new organization with the given name and description, and adds the user as an admin.
 func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, email, orgName, description string) (*database.Organization, error) {
-	txCtx, tx, err := s.DB.NewTx(ctx)
+	txCtx, tx, err := s.DB.NewTx(ctx, false)
 	if err != nil {
 		return nil, err
 	}
@@ -301,16 +399,13 @@ func (s *Service) prepareOrganization(ctx context.Context, orgID, userID string)
 		return nil, fmt.Errorf("failed to find admin role when preparing org: %s", err.Error())
 	}
 
-	// Add user to created org with org admin role
-	err = s.DB.InsertOrganizationMemberUser(ctx, orgID, userID, role.ID)
+	// Add user to created org with org admin role.
+	// This also takes care of adding them to the all-users group.
+	err = s.InsertOrganizationMemberUser(ctx, orgID, userID, role.ID, false)
 	if err != nil {
 		return nil, err
 	}
-	// Add user to all user group
-	err = s.DB.InsertUsergroupMemberUser(ctx, userGroup.ID, userID)
-	if err != nil {
-		return nil, err
-	}
+
 	return org, nil
 }
 

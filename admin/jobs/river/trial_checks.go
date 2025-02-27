@@ -141,7 +141,7 @@ func (w *TrialEndCheckWorker) trialEndCheck(ctx context.Context) error {
 
 		w.logger.Warn("trial period has ended", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
 
-		cctx, tx, err := w.admin.DB.NewTx(ctx)
+		cctx, tx, err := w.admin.DB.NewTx(ctx, false)
 		if err != nil {
 			return fmt.Errorf("failed to start transaction: %w", err)
 		}

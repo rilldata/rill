@@ -108,13 +108,15 @@ func testOrgsWithPagination(t *testing.T, db database.DB) {
 	org, err := db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "alpha"})
 	require.NoError(t, err)
 	require.Equal(t, "alpha", org.Name)
-	require.NoError(t, db.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID))
+	_, err = db.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID, false)
+	require.NoError(t, err)
 
 	// add org and give user permission
 	org, err = db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "beta"})
 	require.NoError(t, err)
 	require.Equal(t, "beta", org.Name)
-	require.NoError(t, db.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID))
+	_, err = db.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID, false)
+	require.NoError(t, err)
 
 	// add org only
 	org, err = db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "gamma"})
@@ -373,8 +375,10 @@ func testOrgsMembersPagination(t *testing.T, db database.DB) {
 	// add org and give user permission
 	org, err := db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "alpha"})
 	require.NoError(t, err)
-	require.NoError(t, db.InsertOrganizationMemberUser(ctx, org.ID, adminUser.ID, admin.ID))
-	require.NoError(t, db.InsertOrganizationMemberUser(ctx, org.ID, viewerUser.ID, viewer.ID))
+	_, err = db.InsertOrganizationMemberUser(ctx, org.ID, adminUser.ID, admin.ID, false)
+	require.NoError(t, err)
+	_, err = db.InsertOrganizationMemberUser(ctx, org.ID, viewerUser.ID, viewer.ID, false)
+	require.NoError(t, err)
 	require.NoError(t, db.InsertOrganizationInvite(ctx, &database.InsertOrganizationInviteOptions{Email: "test3@rilldata.com", InviterID: adminUser.ID, OrgID: org.ID, RoleID: viewer.ID}))
 
 	// fetch members without name filter
@@ -480,7 +484,8 @@ func seed(t *testing.T, db database.DB) (orgID, projectID, userID string) {
 	// add org and give user permission
 	org, err := db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "alpha"})
 	require.NoError(t, err)
-	require.NoError(t, db.InsertOrganizationMemberUser(ctx, org.ID, adminUser.ID, admin.ID))
+	_, err = db.InsertOrganizationMemberUser(ctx, org.ID, adminUser.ID, admin.ID, false)
+	require.NoError(t, err)
 
 	proj, err := db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org.ID, Name: "alpha", Public: true})
 	require.NoError(t, err)
