@@ -35,6 +35,7 @@ func TracingMiddleware(next http.Handler, serviceName string) http.Handler {
 
 // LoggingUnaryServerInterceptor is a gRPC unary interceptor that logs requests.
 // It also recovers from panics and returns them as internal errors.
+// Also sends the trace ID in response headers to correlate with logs.
 func LoggingUnaryServerInterceptor(logger *zap.Logger) grpc.UnaryServerInterceptor {
 	logger = logger.WithOptions(zap.AddStacktrace(zapcore.InvalidLevel)) // Disable stacktraces for error logs in this interceptor
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
@@ -55,6 +56,15 @@ func LoggingUnaryServerInterceptor(logger *zap.Logger) grpc.UnaryServerIntercept
 		}
 
 		start := time.Now()
+
+		// Add trace ID to response headers
+		span := trace.SpanFromContext(ctx)
+		sctx := span.SpanContext()
+		if sctx.IsValid() {
+			header := metadata.Pairs("dd-trace-id", convertToDatadogID(sctx.TraceID().String()))
+			_ = grpc.SetHeader(ctx, header)
+		}
+
 		defer func() {
 			// Recover panics and handle as internal errors
 			if rerr := recover(); rerr != nil {
@@ -98,6 +108,7 @@ func LoggingUnaryServerInterceptor(logger *zap.Logger) grpc.UnaryServerIntercept
 
 // LoggingStreamServerInterceptor is a gRPC streaming interceptor that logs requests.
 // It also recovers from panics and returns them as internal errors.
+// Also sends the trace ID in response headers to correlate with logs.
 func LoggingStreamServerInterceptor(logger *zap.Logger) grpc.StreamServerInterceptor {
 	logger = logger.WithOptions(zap.AddStacktrace(zapcore.InvalidLevel)) // Disable stacktraces for error logs in this interceptor
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) (err error) {
@@ -111,6 +122,15 @@ func LoggingStreamServerInterceptor(logger *zap.Logger) grpc.StreamServerInterce
 		}
 
 		start := time.Now()
+
+		// Add data dog trace ID to response headers
+		span := trace.SpanFromContext(ss.Context())
+		sctx := span.SpanContext()
+		if sctx.IsValid() {
+			header := metadata.Pairs("dd-trace-id", convertToDatadogID(sctx.TraceID().String()))
+			_ = grpc.SetHeader(ss.Context(), header)
+		}
+
 		defer func() {
 			// Recover panics and handle as internal errors
 			if rerr := recover(); rerr != nil {
@@ -194,6 +214,7 @@ func GrpcPeer(ctx context.Context) string {
 
 // LoggingMiddleware is a HTTP request logging middleware.
 // Note: It also recovers from panics and handles them as internal errors.
+// Also sends the trace ID in response headers to correlate with logs.
 func LoggingMiddleware(logger *zap.Logger, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fields := []zap.Field{
@@ -206,6 +227,14 @@ func LoggingMiddleware(logger *zap.Logger, next http.Handler) http.Handler {
 		}
 
 		start := time.Now()
+
+		// Set datadog trace ID header in response headers
+		span := trace.SpanFromContext(r.Context())
+		sctx := span.SpanContext()
+		if sctx.IsValid() {
+			w.Header().Set("dd-trace-id", convertToDatadogID(sctx.TraceID().String()))
+		}
+
 		wrapped := wrappedResponseWriter{ResponseWriter: w}
 
 		defer func() {
