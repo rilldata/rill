@@ -949,10 +949,9 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 		return "", nil, false, fmt.Errorf("failed to sync partitions: %w", err)
 	}
 
-	var (
-		totalExecDuration     time.Duration
-		firstRunIsIncremental = incrementalRun
-	)
+	// Track execution metadata
+	var totalExecDuration time.Duration
+	firstRunIsIncremental := incrementalRun
 
 	// We run the first partition without concurrency to ensure that only incremental runs are executed concurrently.
 	// This enables the first partition to create the initial result (such as a table) that the other partitions incrementally build upon.
@@ -1085,8 +1084,8 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 		return "", nil, false, fmt.Errorf("partition execution succeeded but did not produce a non-nil result")
 	}
 
+	// We have continuously updated prevResult with new partition results, so we complete and return it here
 	prevResult.ExecDuration = totalExecDuration
-	// We have continuously updated prevResult with new partition results, so we return it here
 	return executor.finalConnector, prevResult, firstRunIsIncremental, nil
 }
 
@@ -1155,8 +1154,8 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 		return nil, err
 	}
 
-	var stageDuration time.Duration
 	// Execute the stage step if configured
+	var stageDuration time.Duration
 	if executor.stage != nil {
 		// Also resolve templating in the stage props
 		stageProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, partition, mdl.Spec.StageConnector, mdl.Spec.StageProperties.AsMap())
