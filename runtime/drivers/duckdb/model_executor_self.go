@@ -8,6 +8,7 @@ import (
 	"maps"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/mitchellh/mapstructure"
@@ -99,6 +100,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		}
 	}
 
+	var duration time.Duration
 	if !opts.IncrementalRun {
 		// Prepare for ingesting into the staging view/table.
 		// NOTE: This intentionally drops the end table if not staging changes.
@@ -117,22 +119,24 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 			if err != nil {
 				return nil, err
 			}
-			err = e.createFromExternalDuckDB(ctx, inputProps, stagingTableName)
+			res, err := e.createFromExternalDuckDB(ctx, inputProps, stagingTableName)
 			if err != nil {
 				_ = olap.DropTable(ctx, stagingTableName)
 				return nil, fmt.Errorf("failed to create model: %w", err)
 			}
+			duration = res.Duration
 		} else {
 			createTableOpts := &drivers.CreateTableOptions{
 				View:         asView,
 				BeforeCreate: inputProps.PreExec,
 				AfterCreate:  inputProps.PostExec,
 			}
-			err := olap.CreateTableAsSelect(ctx, stagingTableName, inputProps.SQL, createTableOpts)
+			res, err := olap.CreateTableAsSelect(ctx, stagingTableName, inputProps.SQL, createTableOpts)
 			if err != nil {
 				_ = olap.DropTable(ctx, stagingTableName)
 				return nil, fmt.Errorf("failed to create model: %w", err)
 			}
+			duration = res.Duration
 		}
 
 		// Rename the staging table to the final table name
@@ -152,10 +156,11 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 			Strategy:     outputProps.IncrementalStrategy,
 			UniqueKey:    outputProps.UniqueKey,
 		}
-		err := olap.InsertTableAsSelect(ctx, tableName, inputProps.SQL, insertTableOpts)
+		res, err := olap.InsertTableAsSelect(ctx, tableName, inputProps.SQL, insertTableOpts)
 		if err != nil {
 			return nil, fmt.Errorf("failed to incrementally insert into table: %w", err)
 		}
+		duration = res.Duration
 	}
 
 	// Build result props
@@ -172,13 +177,14 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 
 	// Done
 	return &drivers.ModelResult{
-		Connector:  opts.OutputConnector,
-		Properties: resultPropsMap,
-		Table:      tableName,
+		Connector:    opts.OutputConnector,
+		Properties:   resultPropsMap,
+		Table:        tableName,
+		ExecDuration: duration,
 	}, nil
 }
 
-func (e *selfToSelfExecutor) createFromExternalDuckDB(ctx context.Context, inputProps *ModelInputProperties, tbl string) error {
+func (e *selfToSelfExecutor) createFromExternalDuckDB(ctx context.Context, inputProps *ModelInputProperties, tbl string) (*rduckdb.TableWriteMetrics, error) {
 	safeDBName := safeName(tbl + "_external_db_")
 	safeTempTable := safeName(tbl + "__temp__")
 	beforeCreateFn := func(ctx context.Context, conn *sqlx.Conn) error {
@@ -220,7 +226,7 @@ func (e *selfToSelfExecutor) createFromExternalDuckDB(ctx context.Context, input
 	}
 	db, release, err := e.c.acquireDB()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer func() {
 		_ = release()
