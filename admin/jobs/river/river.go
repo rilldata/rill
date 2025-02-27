@@ -97,6 +97,7 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 	river.AddWorker(workers, &StartTrialWorker{admin: adm, logger: billingLogger})
 	river.AddWorker(workers, &DeleteOrgWorker{admin: adm, logger: billingLogger})
 	river.AddWorker(workers, &LogInactiveOrgsWorker{admin: adm, logger: billingLogger})
+	river.AddWorker(workers, &DeleteInactiveOrgsWorker{admin: adm, logger: billingLogger}) // Manual trigger
 
 	periodicJobs := []*river.PeriodicJob{
 		// NOTE: Add new periodic jobs here

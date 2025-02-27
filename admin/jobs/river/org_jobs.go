@@ -206,7 +206,9 @@ func (w *LogInactiveOrgsWorker) Work(ctx context.Context, job *river.Job[LogInac
 	return nil
 }
 
-type DeleteInactiveOrgsArgs struct{}
+type DeleteInactiveOrgsArgs struct {
+	OrgID string
+}
 
 func (DeleteInactiveOrgsArgs) Kind() string { return "delete_inactive_orgs" }
 
@@ -217,5 +219,26 @@ type DeleteInactiveOrgsWorker struct {
 }
 
 func (w *DeleteInactiveOrgsWorker) Work(ctx context.Context, job *river.Job[DeleteInactiveOrgsArgs]) error {
+	res, err := w.admin.DB.FindProjectsForOrganization(ctx, job.Args.OrgID, "", 100)
+	if err != nil {
+		return fmt.Errorf("failed to find projects for organization %s: %w", job.Args.OrgID, err)
+	}
+
+	if len(res) > 0 {
+		w.logger.Warn("inactive organization has projects", zap.String("org_id", job.Args.OrgID), zap.Int("connected_projects", len(res)))
+		for _, proj := range res {
+			err := w.admin.DB.DeleteProject(ctx, proj.ID)
+			if err != nil {
+				return fmt.Errorf("failed to delete project %s: %w", proj.ID, err)
+			}
+		}
+		w.logger.Warn("deleted projects for inactive organization", zap.String("org_id", job.Args.OrgID), zap.Int("connected_projects", len(res)))
+	}
+
+	err = w.admin.DB.DeleteOrganization(ctx, job.Args.OrgID)
+	if err != nil {
+		return fmt.Errorf("failed to delete organization %s: %w", job.Args.OrgID, err)
+	}
+
 	return nil
 }
