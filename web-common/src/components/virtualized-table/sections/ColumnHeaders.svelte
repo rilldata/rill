@@ -22,7 +22,10 @@
     const name = column.label || column.name;
     const isEnableResizeDefined = "enableResize" in column;
     const enableResize = isEnableResizeDefined ? column.enableResize : true;
-    const enableSorting = column.highlight && config.table === "DimensionTable";
+    const enableSorting =
+      "enableSorting" in column
+        ? column.enableResize
+        : config.table === "DimensionTable";
     return {
       name,
       enableResize,
