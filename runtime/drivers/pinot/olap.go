@@ -307,6 +307,7 @@ func (i informationSchema) SizeOnDisk(ctx context.Context, tables []*drivers.Tab
 					size += int64(sz.Bytes())
 				}
 			}
+			table.BytesOnDisk = size
 			return nil
 		})
 	}
