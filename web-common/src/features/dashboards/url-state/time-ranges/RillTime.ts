@@ -77,11 +77,11 @@ export class RillTime {
   public toString() {
     let rillTime = this.start.toString();
     if (this.end) {
-      rillTime += "," + this.end.toString();
+      rillTime += " to " + this.end.toString();
     }
 
     if (this.timeRangeGrain) {
-      rillTime += ":" + rangeGrainToString(this.timeRangeGrain);
+      rillTime += " by " + rangeGrainToString(this.timeRangeGrain);
     }
 
     if (this.modifier) {

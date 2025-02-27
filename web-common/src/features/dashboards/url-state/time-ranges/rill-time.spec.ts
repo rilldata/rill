@@ -13,49 +13,49 @@ describe("rill time", () => {
       bucketGrain: V1TimeGrain,
     ][] = [
       [
-        "m : |s|",
+        "m by |s|",
         "Minute to date, incomplete",
         V1TimeGrain.TIME_GRAIN_MINUTE,
         V1TimeGrain.TIME_GRAIN_SECOND,
       ],
       [
-        "-5m : |m|",
+        "-5m by |m|",
         "Last 5 minutes, incomplete",
         V1TimeGrain.TIME_GRAIN_MINUTE,
         V1TimeGrain.TIME_GRAIN_MINUTE,
       ],
       [
-        "-5m, 0m : |m|",
+        "-5m to 0m by |m|",
         "Last 5 minutes",
         V1TimeGrain.TIME_GRAIN_MINUTE,
         V1TimeGrain.TIME_GRAIN_MINUTE,
       ],
       [
-        "-7d, 0d : |h|",
+        "-7d to 0d by |h|",
         "Last 7 days",
         V1TimeGrain.TIME_GRAIN_DAY,
         V1TimeGrain.TIME_GRAIN_HOUR,
       ],
       [
-        "-7d, now/d : |h|",
+        "-7d to now/d by |h|",
         "Last 7 days",
         V1TimeGrain.TIME_GRAIN_DAY,
         V1TimeGrain.TIME_GRAIN_HOUR,
       ],
       [
-        "-6d, now : |h|",
+        "-6d to now by |h|",
         "Last 6 days, incomplete",
         V1TimeGrain.TIME_GRAIN_DAY,
         V1TimeGrain.TIME_GRAIN_HOUR,
       ],
       [
-        "-6d, now : h",
+        "-6d to now by h",
         "Last 6 days, incomplete",
         V1TimeGrain.TIME_GRAIN_DAY,
         V1TimeGrain.TIME_GRAIN_HOUR,
       ],
       [
-        "d : h",
+        "d by h",
         "Today, incomplete",
         V1TimeGrain.TIME_GRAIN_DAY,
         V1TimeGrain.TIME_GRAIN_HOUR,
@@ -63,72 +63,72 @@ describe("rill time", () => {
 
       // TODO: correct label for the below
       [
-        "-7d, -5d : h",
-        "-7d, -5d : h",
+        "-7d to -5d by h",
+        "-7d to -5d by h",
         V1TimeGrain.TIME_GRAIN_DAY,
         V1TimeGrain.TIME_GRAIN_HOUR,
       ],
       [
-        "-2d, now/d : h @ -5d",
-        "-2d, now/d : h @ -5d",
+        "-2d to now/d by h @ -5d",
+        "-2d to now/d by h @ -5d",
         V1TimeGrain.TIME_GRAIN_DAY,
         V1TimeGrain.TIME_GRAIN_HOUR,
       ],
       [
-        "-2d, now/d @ -5d",
-        "-2d, now/d @ -5d",
+        "-2d to now/d @ -5d",
+        "-2d to now/d @ -5d",
         V1TimeGrain.TIME_GRAIN_DAY,
         V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
       ],
 
       [
-        "-7d, now/d : h @ {Asia/Kathmandu}",
-        "-7d, now/d : h @ {Asia/Kathmandu}",
+        "-7d to now/d by h @ {Asia/Kathmandu}",
+        "-7d to now/d by h @ {Asia/Kathmandu}",
         V1TimeGrain.TIME_GRAIN_DAY,
         V1TimeGrain.TIME_GRAIN_HOUR,
       ],
       [
-        "-7d, now/d : |h| @ {Asia/Kathmandu}",
-        "-7d, now/d : |h| @ {Asia/Kathmandu}",
+        "-7d to now/d by |h| @ {Asia/Kathmandu}",
+        "-7d to now/d by |h| @ {Asia/Kathmandu}",
         V1TimeGrain.TIME_GRAIN_DAY,
         V1TimeGrain.TIME_GRAIN_HOUR,
       ],
       [
-        "-7d, now/d : |h| @ -5d {Asia/Kathmandu}",
-        "-7d, now/d : |h| @ -5d {Asia/Kathmandu}",
+        "-7d to now/d by |h| @ -5d {Asia/Kathmandu}",
+        "-7d to now/d by |h| @ -5d {Asia/Kathmandu}",
         V1TimeGrain.TIME_GRAIN_DAY,
         V1TimeGrain.TIME_GRAIN_HOUR,
       ],
 
       // TODO: should these be something different when end is latest vs now?
       [
-        "-7d, latest/d : |h|",
+        "-7d to latest/d by |h|",
         "Last 7 days",
         V1TimeGrain.TIME_GRAIN_DAY,
         V1TimeGrain.TIME_GRAIN_HOUR,
       ],
       [
-        "-6d, latest : |h|",
+        "-6d to latest by |h|",
         "Last 6 days, incomplete",
         V1TimeGrain.TIME_GRAIN_DAY,
         V1TimeGrain.TIME_GRAIN_HOUR,
       ],
       [
-        "-6d, latest : h",
+        "-6d to latest by h",
         "Last 6 days, incomplete",
         V1TimeGrain.TIME_GRAIN_DAY,
         V1TimeGrain.TIME_GRAIN_HOUR,
       ],
 
       [
-        "2024-01-01, 2024-03-31",
-        "2024-01-01, 2024-03-31",
+        "2024-01-01 to 2024-03-31",
+        "2024-01-01 to 2024-03-31",
         V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
         V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
       ],
       [
-        "2024-01-01 10:00, 2024-03-31 18:00",
-        "2024-01-01 10:00, 2024-03-31 18:00",
+        "2024-01-01 10:00 to 2024-03-31 18:00",
+        "2024-01-01 10:00 to 2024-03-31 18:00",
         V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
         V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
       ],
@@ -140,14 +140,14 @@ describe("rill time", () => {
         V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
       ],
       [
-        "-7W,latest+2d",
-        "-7W,latest+2d",
+        "-7W to latest+2d",
+        "-7W to latest+2d",
         V1TimeGrain.TIME_GRAIN_DAY,
         V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
       ],
       [
-        "-7W,-7W+2d",
-        "-7W,-7W+2d",
+        "-7W to -7W+2d",
+        "-7W to -7W+2d",
         V1TimeGrain.TIME_GRAIN_DAY,
         V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
       ],
@@ -164,8 +164,8 @@ describe("rill time", () => {
         V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
       ],
       [
-        "2024-01-01-1W,2024-01-01",
-        "2024-01-01-1W,2024-01-01",
+        "2024-01-01-1W to 2024-01-01",
+        "2024-01-01-1W to 2024-01-01",
         V1TimeGrain.TIME_GRAIN_WEEK,
         V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
       ],
@@ -174,7 +174,7 @@ describe("rill time", () => {
         "-24h",
         "Last 24 hours, incomplete",
         V1TimeGrain.TIME_GRAIN_HOUR,
-        V1TimeGrain.TIME_GRAIN_HOUR,
+        V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
       ],
     ];
 
@@ -200,10 +200,14 @@ describe("rill time", () => {
 
   describe("Update timezone", () => {
     const Cases: [rillTime: string, timezone: string, replaced: string][] = [
-      ["-6d, latest : |h|", "UTC", "-6d,latest:|h|@{UTC}"],
-      ["-6d, latest : |h| @ {IST}", "UTC", "-6d,latest:|h|@{UTC}"],
-      ["-6d, latest : |h| @ now", "UTC", "-6d,latest:|h|@now {UTC}"],
-      ["-6d, latest : |h| @ now {IST}", "UTC", "-6d,latest:|h|@now {UTC}"],
+      ["-6d to latest by |h|", "UTC", "-6d to latest by |h|@{UTC}"],
+      ["-6d to latest by |h| @ {IST}", "UTC", "-6d to latest by |h|@{UTC}"],
+      ["-6d to latest by |h| @ now", "UTC", "-6d to latest by |h|@now {UTC}"],
+      [
+        "-6d to latest by |h| @ now {IST}",
+        "UTC",
+        "-6d to latest by |h|@now {UTC}",
+      ],
     ];
 
     for (const [rillTime, timezone, replaced] of Cases) {
