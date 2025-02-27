@@ -1454,11 +1454,6 @@ export interface V1MetricsViewSchemaResponse {
 
 export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
 
-export interface V1MetricsViewRowsResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1MetricsViewRowsResponseDataItem[];
-}
-
 export interface V1MetricsViewFilter {
   include?: MetricsViewFilterCond[];
   exclude?: MetricsViewFilterCond[];
@@ -1572,6 +1567,11 @@ export interface V1MetricsViewColumn {
   nullable?: boolean;
 }
 
+export interface V1MetricsViewRowsResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewRowsResponseDataItem[];
+}
+
 export interface V1MetricsViewAggregationSort {
   name?: string;
   desc?: boolean;
@@ -1582,31 +1582,6 @@ export type V1MetricsViewAggregationResponseDataItem = { [key: string]: any };
 export interface V1MetricsViewAggregationResponse {
   schema?: V1StructType;
   data?: V1MetricsViewAggregationResponseDataItem[];
-}
-
-export interface V1MetricsViewAggregationRequest {
-  instanceId?: string;
-  metricsView?: string;
-  dimensions?: V1MetricsViewAggregationDimension[];
-  measures?: V1MetricsViewAggregationMeasure[];
-  sort?: V1MetricsViewAggregationSort[];
-  timeRange?: V1TimeRange;
-  comparisonTimeRange?: V1TimeRange;
-  timeStart?: string;
-  timeEnd?: string;
-  pivotOn?: string[];
-  aliases?: V1MetricsViewComparisonMeasureAlias[];
-  where?: V1Expression;
-  /** Optional. If both where and where_sql are set, both will be applied with an AND between them. */
-  whereSql?: string;
-  having?: V1Expression;
-  /** Optional. If both having and having_sql are set, both will be applied with an AND between them. */
-  havingSql?: string;
-  limit?: string;
-  offset?: string;
-  priority?: number;
-  filter?: V1MetricsViewFilter;
-  exact?: boolean;
 }
 
 export interface V1MetricsViewAggregationMeasureComputeURI {
@@ -1656,6 +1631,31 @@ export interface V1MetricsViewAggregationDimension {
   timeGrain?: V1TimeGrain;
   timeZone?: string;
   alias?: string;
+}
+
+export interface V1MetricsViewAggregationRequest {
+  instanceId?: string;
+  metricsView?: string;
+  dimensions?: V1MetricsViewAggregationDimension[];
+  measures?: V1MetricsViewAggregationMeasure[];
+  sort?: V1MetricsViewAggregationSort[];
+  timeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
+  timeStart?: string;
+  timeEnd?: string;
+  pivotOn?: string[];
+  aliases?: V1MetricsViewComparisonMeasureAlias[];
+  where?: V1Expression;
+  /** Optional. If both where and where_sql are set, both will be applied with an AND between them. */
+  whereSql?: string;
+  having?: V1Expression;
+  /** Optional. If both having and having_sql are set, both will be applied with an AND between them. */
+  havingSql?: string;
+  limit?: string;
+  offset?: string;
+  priority?: number;
+  filter?: V1MetricsViewFilter;
+  exact?: boolean;
 }
 
 export interface V1MapType {
@@ -2110,17 +2110,6 @@ export interface V1ConnectorState {
   specHash?: string;
 }
 
-export interface V1ConnectorSpec {
-  driver?: string;
-  properties?: V1ConnectorSpecProperties;
-  templatedProperties?: string[];
-  provision?: boolean;
-  provisionArgs?: V1ConnectorSpecProvisionArgs;
-  /** DEPRECATED: properties_from_variables stores properties whose value is a variable.
-NOTE : properties_from_variables and properties both should be used to get all properties. */
-  propertiesFromVariables?: V1ConnectorSpecPropertiesFromVariables;
-}
-
 export interface V1ConnectorV2 {
   spec?: V1ConnectorSpec;
   state?: V1ConnectorState;
@@ -2135,6 +2124,17 @@ export type V1ConnectorSpecPropertiesFromVariables = { [key: string]: string };
 export type V1ConnectorSpecProvisionArgs = { [key: string]: any };
 
 export type V1ConnectorSpecProperties = { [key: string]: string };
+
+export interface V1ConnectorSpec {
+  driver?: string;
+  properties?: V1ConnectorSpecProperties;
+  templatedProperties?: string[];
+  provision?: boolean;
+  provisionArgs?: V1ConnectorSpecProvisionArgs;
+  /** DEPRECATED: properties_from_variables stores properties whose value is a variable.
+NOTE : properties_from_variables and properties both should be used to get all properties. */
+  propertiesFromVariables?: V1ConnectorSpecPropertiesFromVariables;
+}
 
 /**
  * ConnectorDriver represents a connector driver available in the runtime.
@@ -2373,6 +2373,19 @@ export interface V1CategoricalSummary {
   cardinality?: number;
 }
 
+export interface V1CanvasState {
+  validSpec?: V1CanvasSpec;
+}
+
+export interface V1CanvasRow {
+  /** Height of the row. The unit is given in height_unit. */
+  height?: number;
+  /** Unit of the height. Current possible values: "px", empty string. */
+  heightUnit?: string;
+  /** Items to render in the row. */
+  items?: V1CanvasItem[];
+}
+
 export interface V1CanvasPreset {
   /** Time range for the explore.
 It corresponds to the `range` property of the explore's `time_ranges`.
@@ -2383,18 +2396,11 @@ If not found in `time_ranges`, it should be added to the list. */
   comparisonDimension?: string;
 }
 
-export interface V1CanvasItem {
-  component?: string;
-  definedInCanvas?: boolean;
-  x?: number;
-  y?: number;
-  width?: number;
-  height?: number;
-}
-
 export interface V1CanvasSpec {
   /** Display name for the canvas. */
   displayName?: string;
+  /** Banner text that can be displayed in Rill Cloud. */
+  banner?: string;
   /** Max width in pixels of the canvas. */
   maxWidth?: number;
   /** Horizontal gap in pixels of the canvas. */
@@ -2417,17 +2423,20 @@ The values should be valid IANA location identifiers. */
   defaultPreset?: V1CanvasPreset;
   /** Variables that can be used in the canvas. */
   variables?: V1ComponentVariable[];
-  items?: V1CanvasItem[];
-  /** Layout is an untyped object pending a formal definition. */
-  layout?: unknown;
+  rows?: V1CanvasRow[];
   /** Security rules to apply for access to the canvas. */
   securityRules?: V1SecurityRule[];
-  /** Banner text that can be displayed in Rill Cloud. */
-  banner?: string;
 }
 
-export interface V1CanvasState {
-  validSpec?: V1CanvasSpec;
+export interface V1CanvasItem {
+  /** Name of the component to render. */
+  component?: string;
+  /** Indicates if the component was defined inline as part of the canvas YAML. */
+  definedInCanvas?: boolean;
+  /** Width of the item. The unit is given in width_unit. */
+  width?: number;
+  /** Unit of the width. Current possible values: empty string. */
+  widthUnit?: string;
 }
 
 export interface V1Canvas {

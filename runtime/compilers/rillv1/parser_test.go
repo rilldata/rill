@@ -1601,18 +1601,15 @@ filters:
 defaults:
   time_range: P4W
 
-items:
-- component: c1
-- component: c2
-  width: 1
-  height: 2
-- component:
+rows:
+- items:
+  - component: c1
+- height: 100px
+  items:
+  - component: c2
+  - width: 2
     markdown:
-      content: "Hello world!"
-
-layout:
-- 1, 2, 3
-- 4, 5, 6
+      content: "Foo"
 `,
 	})
 
@@ -1646,11 +1643,11 @@ layout:
 			},
 		},
 		{
-			Name:  ResourceName{Kind: ResourceKindComponent, Name: "d1--component-2"},
+			Name:  ResourceName{Kind: ResourceKindComponent, Name: "d1--component-1-1"},
 			Paths: []string{"/canvases/d1.yaml"},
 			ComponentSpec: &runtimev1.ComponentSpec{
 				Renderer:           "markdown",
-				RendererProperties: must(structpb.NewStruct(map[string]any{"content": "Hello world!"})),
+				RendererProperties: must(structpb.NewStruct(map[string]any{"content": "Foo"})),
 				DefinedInCanvas:    true,
 			},
 		},
@@ -1660,7 +1657,7 @@ layout:
 			Refs: []ResourceName{
 				{Kind: ResourceKindComponent, Name: "c1"},
 				{Kind: ResourceKindComponent, Name: "c2"},
-				{Kind: ResourceKindComponent, Name: "d1--component-2"},
+				{Kind: ResourceKindComponent, Name: "d1--component-1-1"},
 			},
 			CanvasSpec: &runtimev1.CanvasSpec{
 				DisplayName: "D1",
@@ -1683,12 +1680,21 @@ layout:
 					TimeRange:      asPtr("P4W"),
 					ComparisonMode: runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_NONE,
 				},
-				Items: []*runtimev1.CanvasItem{
-					{Component: "c1"},
-					{Component: "c2", Width: asPtr(uint32(1)), Height: asPtr(uint32(2))},
-					{Component: "d1--component-2", DefinedInCanvas: true},
+				Rows: []*runtimev1.CanvasRow{
+					{
+						Items: []*runtimev1.CanvasItem{
+							{Component: "c1"},
+						},
+					},
+					{
+						Height:     asPtr(uint32(100)),
+						HeightUnit: "px",
+						Items: []*runtimev1.CanvasItem{
+							{Component: "c2"},
+							{Component: "d1--component-1-1", DefinedInCanvas: true, Width: asPtr(uint32(2))},
+						},
+					},
 				},
-				Layout: must(structpb.NewValue([]any{"1, 2, 3", "4, 5, 6"})),
 			},
 		},
 	}

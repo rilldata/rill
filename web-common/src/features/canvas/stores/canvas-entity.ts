@@ -46,7 +46,7 @@ export class CanvasEntity {
   /**
    * Index of the component higlighted or selected in the canvas
    */
-  selectedComponentIndex: Writable<number | null>;
+  selectedComponent: Writable<{ row: number; column: number } | null>;
 
   private specStore: CanvasSpecResponseStore;
 
@@ -63,14 +63,16 @@ export class CanvasEntity {
     this.name = name;
 
     this.components = new Map();
-    this.selectedComponentIndex = writable(null);
+    this.selectedComponent = writable<{ row: number; column: number } | null>(
+      null,
+    );
     this.spec = new CanvasResolvedSpec(this.specStore);
     this.timeControls = new TimeControls(this.specStore);
     this.filters = new Filters(this.spec);
   }
 
-  setSelectedComponentIndex = (index: number | null) => {
-    this.selectedComponentIndex.set(index);
+  setSelectedComponent = (pos: { row: number; column: number } | null) => {
+    this.selectedComponent.set(pos);
   };
 
   useComponent = (componentName: string): CanvasComponentState => {
@@ -110,9 +112,9 @@ export class CanvasEntity {
       const metricsViewName = componentSpec?.rendererProperties
         ?.metrics_view as string;
 
-      if (!metricsViewName) {
-        throw new Error("Metrics view name is not set for component");
-      }
+      // if (!metricsViewName) {
+      //   throw new Error("Metrics view name is not set for component");
+      // }
 
       const component = useComponent(componentName);
       const dimensionsStore = spec.getDimensionsForMetricView(metricsViewName);
