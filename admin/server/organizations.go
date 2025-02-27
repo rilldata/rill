@@ -70,6 +70,7 @@ func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizati
 			return nil, status.Error(codes.PermissionDenied, "not allowed to read org")
 		}
 
+		perms.Guest = true
 		perms.ReadOrg = true
 		perms.ReadProjects = true
 	}

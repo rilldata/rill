@@ -2330,6 +2330,7 @@ message ProvisionerResource {
 }
 
 message OrganizationPermissions {
+  bool guest = 8;
   bool read_org = 1;
   bool manage_org = 2;
   bool read_projects = 3;

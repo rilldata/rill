@@ -12520,6 +12520,11 @@ export class ProvisionerResource extends Message<ProvisionerResource> {
  */
 export class OrganizationPermissions extends Message<OrganizationPermissions> {
   /**
+   * @generated from field: bool guest = 8;
+   */
+  guest = false;
+
+  /**
    * @generated from field: bool read_org = 1;
    */
   readOrg = false;
@@ -12562,6 +12567,7 @@ export class OrganizationPermissions extends Message<OrganizationPermissions> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.OrganizationPermissions";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 8, name: "guest", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 1, name: "read_org", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 2, name: "manage_org", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 3, name: "read_projects", kind: "scalar", T: 8 /* ScalarType.BOOL */ },

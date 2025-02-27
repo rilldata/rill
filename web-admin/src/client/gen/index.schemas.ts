@@ -846,6 +846,7 @@ export interface V1OrganizationQuotas {
 }
 
 export interface V1OrganizationPermissions {
+  guest?: boolean;
   readOrg?: boolean;
   manageOrg?: boolean;
   readProjects?: boolean;

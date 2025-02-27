@@ -4695,6 +4695,8 @@ definitions:
   v1OrganizationPermissions:
     type: object
     properties:
+      guest:
+        type: boolean
       readOrg:
         type: boolean
       manageOrg:

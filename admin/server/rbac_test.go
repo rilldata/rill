@@ -131,6 +131,8 @@ func TestRBAC(t *testing.T) {
 		require.Error(t, err)
 	})
 
+	// Public projects
+
 	// Correct tracking of members in all-users, all-guests, all-members
 
 	// Ability to invite non-existing users to orgs/projects + accept invite

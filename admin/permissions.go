@@ -26,6 +26,7 @@ func (s *Service) OrganizationPermissionsForUser(ctx context.Context, orgID, use
 			return nil, err
 		}
 		if ok {
+			composite.Guest = true
 			composite.ReadOrg = true
 			composite.ReadProjects = true
 		}
@@ -45,6 +46,7 @@ func (s *Service) OrganizationPermissionsForService(ctx context.Context, orgID, 
 	// Services get full permissions on the org they belong to
 	if orgID == service.OrgID {
 		return &adminv1.OrganizationPermissions{
+			Guest:            false,
 			ReadOrg:          true,
 			ManageOrg:        true,
 			ReadProjects:     true,
@@ -74,6 +76,7 @@ func (s *Service) OrganizationPermissionsForMagicAuthToken(ctx context.Context, 
 
 	if orgID == proj.OrganizationID {
 		return &adminv1.OrganizationPermissions{
+			Guest:            true,
 			ReadOrg:          true,
 			ManageOrg:        false,
 			ReadProjects:     false,
@@ -230,6 +233,7 @@ func (s *Service) ProjectPermissionsForMagicAuthToken(ctx context.Context, proje
 
 func unionOrgRoles(a *adminv1.OrganizationPermissions, b *database.OrganizationRole) *adminv1.OrganizationPermissions {
 	return &adminv1.OrganizationPermissions{
+		Guest:            a.Guest || b.Guest,
 		ReadOrg:          a.ReadOrg || b.ReadOrg,
 		ManageOrg:        a.ManageOrg || b.ManageOrg,
 		ReadProjects:     a.ReadProjects || b.ReadProjects,
