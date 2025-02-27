@@ -118,8 +118,6 @@
     );
   }
 
-  $: console.log("measures: ", measures);
-
   $: sort = getSort(
     $sortedAscending,
     $sortType,

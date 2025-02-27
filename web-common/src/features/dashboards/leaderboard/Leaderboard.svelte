@@ -52,6 +52,13 @@
   const queryLimit = 8;
   const maxValuesToShow = 15;
 
+  $: comparisonIconWidth =
+    contextColumnFilters.length === 0
+      ? 36
+      : contextColumnFilters.length === 1
+        ? 28.67
+        : 24;
+
   export let dimension: MetricsViewSpecDimensionV2;
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
@@ -387,14 +394,18 @@
         class="transition-color ui-copy-muted table-message"
         on:click={() => setPrimaryDimension(dimensionName)}
       >
-        (Expand Table)
+        <div style:width="{comparisonIconWidth}px" />
+        <div>(Expand Table)</div>
       </button>
       <TooltipContent slot="tooltip-content">
         Expand dimension to see more values
       </TooltipContent>
     </Tooltip>
   {:else if noAvailableValues && !isFetching}
-    <div class="table-message ui-copy-muted">(No available values)</div>
+    <div class="table-message ui-copy-muted">
+      <div style:width="{comparisonIconWidth}px" />
+      <div>(No available values)</div>
+    </div>
   {/if}
 </div>
 
@@ -406,6 +417,6 @@
   }
 
   .table-message {
-    @apply h-[22px] p-1 flex-row w-full text-left pl-7;
+    @apply h-[22px] flex items-center w-fit;
   }
 </style>
