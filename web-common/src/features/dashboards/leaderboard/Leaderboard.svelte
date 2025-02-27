@@ -272,7 +272,12 @@
     ),
   );
 
-  $: columnCount = comparisonTimeRange ? 3 : isValidPercentOfTotal ? 2 : 1;
+  $: columnCount =
+    1 + // Base column (dimension)
+    1 + // Value column
+    (showDeltaAbsolute ? 1 : 0) + // Delta absolute column
+    (showDeltaPercent ? 1 : 0) + // Delta percent column
+    (showPercentOfTotal ? 1 : 0); // Percent of total column
 
   $: showDeltaAbsolute =
     !!comparisonTimeRange &&
@@ -302,7 +307,9 @@
       <col style:width="{$valueColumn}px" />
       {#if showDeltaAbsolute}
         <col style:width="{$deltaColumn}px" />
-        <col style:width="{DEFAULT_COL_WIDTH}px" />
+        {#if showDeltaPercent}
+          <col style:width="{DEFAULT_COL_WIDTH}px" />
+        {/if}
       {:else if showDeltaPercent}
         <col style:width="{DEFAULT_COL_WIDTH}px" />
       {/if}
