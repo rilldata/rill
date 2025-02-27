@@ -69,7 +69,7 @@
   {#if measures.length && firstMeasure}
     <div
       class="flex flex-row items-center ui-copy-muted gap-x-1"
-      style:max-width="450px"
+      style:max-width="640px"
     >
       <DashboardVisibilityDropdown
         category="Dimensions"
@@ -88,7 +88,7 @@
       <LeaderboardActiveMeasureNamesDropdown
         {measures}
         {firstMeasure}
-        tooltipText="Choose measures to display"
+        tooltipText="Choose measures to filter by"
         selectedMeasureNames={$leaderboardMeasureNames}
         onToggle={(name) => {
           toggleLeaderboardMeasureNames(allMeasureNames, name);
@@ -97,6 +97,11 @@
           toggleLeaderboardMeasureNames(allMeasureNames);
         }}
       />
+
+      <!-- TODO: should we have another dropdown for sorting? -->
+      <div class="ui-copy-muted truncate">
+        Sort by <strong>{firstMeasure.displayName || firstMeasure.name}</strong>
+      </div>
 
       {#if Boolean(comparisonTimeRange)}
         <ContextColumnDropdown
