@@ -45,7 +45,7 @@ import {
   type TestDashboardMutation,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
+import { convertExploreStateToURLSearchParamsWithCompression } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
 import { convertURLToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
@@ -339,7 +339,7 @@ describe("Human readable URL state variations", () => {
 
   describe("Should update url state and restore default state on empty params", () => {
     for (const { title, mutations, preset, expectedUrl } of TestCases) {
-      it(title, () => {
+      it(title, async () => {
         const explore: V1ExploreSpec = {
           ...AD_BIDS_EXPLORE_INIT,
           ...(preset ? { defaultPreset: preset } : {}),
@@ -363,7 +363,7 @@ describe("Human readable URL state variations", () => {
 
         // load url params with updated metrics state
         const url = new URL("http://localhost");
-        url.search = convertExploreStateToURLSearchParams(
+        url.search = await convertExploreStateToURLSearchParamsWithCompression(
           get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
           explore,
           getTimeControlState(
@@ -373,12 +373,13 @@ describe("Human readable URL state variations", () => {
             get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
           ),
           defaultExplorePreset,
+          url,
         );
         expect(url.toString()).to.eq(expectedUrl);
 
         // load empty url into metrics
         const defaultUrl = new URL("http://localhost");
-        const errors = applyURLToExploreState(
+        const errors = await applyURLToExploreState(
           defaultUrl,
           explore,
           defaultExplorePreset,
@@ -394,7 +395,7 @@ describe("Human readable URL state variations", () => {
   describe("Should set correct state for legacy protobuf state and restore default state on empty params", () => {
     for (const { title, mutations, preset, legacyNotSupported } of TestCases) {
       if (legacyNotSupported) continue;
-      it(title, () => {
+      it(title, async () => {
         const explore: V1ExploreSpec = {
           ...AD_BIDS_EXPLORE_INIT,
           ...(preset ? { defaultPreset: preset } : {}),
@@ -421,18 +422,19 @@ describe("Human readable URL state variations", () => {
         // load url with legacy protobuf state
         url.searchParams.set("state", getProtoFromDashboardState(curState));
         // get back the entity from url params
-        const { partialExploreState: entityFromUrl } = convertURLToExploreState(
-          url.searchParams,
-          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-          explore,
-          defaultExplorePreset,
-        );
+        const { partialExploreState: entityFromUrl } =
+          await convertURLToExploreState(
+            url.searchParams,
+            AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+            explore,
+            defaultExplorePreset,
+          );
         expect(entityFromUrl).toEqual(curState);
 
         // go back to default url
         const defaultUrl = new URL("http://localhost");
         const { partialExploreState: entityFromDefaultUrl } =
-          convertURLToExploreState(
+          await convertURLToExploreState(
             defaultUrl.searchParams,
             AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
             explore,
@@ -446,13 +448,13 @@ describe("Human readable URL state variations", () => {
   });
 });
 
-export function applyURLToExploreState(
+export async function applyURLToExploreState(
   url: URL,
   exploreSpec: V1ExploreSpec,
   defaultExplorePreset: V1ExplorePreset,
 ) {
   const { partialExploreState: partialExploreStateDefaultUrl, errors } =
-    convertURLToExploreState(
+    await convertURLToExploreState(
       url.searchParams,
       AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
       exploreSpec,

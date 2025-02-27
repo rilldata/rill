@@ -4,6 +4,7 @@ import {
   createAndExpression,
   filterIdentifiers,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { decompressUrlParams } from "@rilldata/web-common/features/dashboards/url-state/compression";
 import { convertLegacyStateToExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/convertLegacyStateToExplorePreset";
 import { CustomTimeRangeRegex } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import {
@@ -41,7 +42,7 @@ import {
   V1Operation,
 } from "@rilldata/web-common/runtime-client";
 
-export function convertURLToExplorePreset(
+export async function convertURLToExplorePreset(
   searchParams: URLSearchParams,
   metricsView: V1MetricsViewSpec,
   explore: V1ExploreSpec,
@@ -63,6 +64,8 @@ export function convertURLToExplorePreset(
     ) ?? [],
     (d) => d.name!,
   );
+
+  searchParams = await decompressUrlParams(searchParams);
 
   // Support legacy dashboard param.
   // This will be applied 1st so that any newer params added can be applied as well.

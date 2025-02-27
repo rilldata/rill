@@ -6,6 +6,7 @@ import {
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+import { compressUrlParams } from "@rilldata/web-common/features/dashboards/url-state/compression";
 import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
 import { FromLegacySortTypeMap } from "@rilldata/web-common/features/dashboards/url-state/legacyMappers";
 import {
@@ -38,22 +39,23 @@ import {
  * Sometimes data is loaded from sources other than the url.
  * In that case update the URL to make sure the state matches the current url.
  */
-export function getUpdatedUrlForExploreState(
+export async function getUpdatedUrlForExploreState(
   exploreSpec: V1ExploreSpec,
   timeControlsState: TimeControlState | undefined,
   defaultExplorePreset: V1ExplorePreset,
   partialExploreState: Partial<MetricsExplorerEntity>,
-  curSearchParams: URLSearchParams,
+  url: URL,
 ) {
   const newUrlSearchParams = new URLSearchParams(
-    convertExploreStateToURLSearchParams(
+    await convertExploreStateToURLSearchParamsWithCompression(
       partialExploreState as MetricsExplorerEntity,
       exploreSpec,
       timeControlsState,
       defaultExplorePreset,
+      url,
     ),
   );
-  curSearchParams.forEach((value, key) => {
+  url.searchParams.forEach((value, key) => {
     if (
       key === ExploreStateURLParams.WebView &&
       FromURLParamViewMap[value] === defaultExplorePreset.view
@@ -65,6 +67,26 @@ export function getUpdatedUrlForExploreState(
     newUrlSearchParams.set(key, value);
   });
   return newUrlSearchParams.toString();
+}
+
+export async function convertExploreStateToURLSearchParamsWithCompression(
+  exploreState: MetricsExplorerEntity,
+  exploreSpec: V1ExploreSpec,
+  // We have quite a bit of logic in TimeControlState to validate selections and update them
+  // Eg: if a selected grain is not applicable for the current grain then we change it
+  // But it is only available in TimeControlState and not MetricsExplorerEntity
+  timeControlsState: TimeControlState | undefined,
+  preset: V1ExplorePreset,
+  // Used to decide whether to compress or not based on the full url length
+  url: URL,
+) {
+  url.search = convertExploreStateToURLSearchParams(
+    exploreState,
+    exploreSpec,
+    timeControlsState,
+    preset,
+  );
+  return compressUrlParams(url);
 }
 
 export function convertExploreStateToURLSearchParams(

@@ -1,4 +1,3 @@
-import { decompressUrlParams } from "@rilldata/web-common/features/dashboards/url-state/compression";
 import { getExploreStates } from "@rilldata/web-common/features/explores/selectors";
 
 export const load = async ({ url, parent, params }) => {
@@ -7,17 +6,15 @@ export const load = async ({ url, parent, params }) => {
   const metricsViewSpec = metricsView.metricsView?.state?.validSpec;
   const exploreSpec = explore.explore?.state?.validSpec;
 
-  const searchParams = await decompressUrlParams(url.searchParams);
-
   return {
     exploreName,
-    ...getExploreStates(
+    ...(await getExploreStates(
       exploreName,
       `${organization}__${project}__`,
-      searchParams,
+      url.searchParams,
       metricsViewSpec,
       exploreSpec,
       defaultExplorePreset,
-    ),
+    )),
   };
 };

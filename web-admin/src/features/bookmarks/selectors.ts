@@ -12,7 +12,7 @@ import {
   getTimeControlState,
   timeControlStateSelector,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
+import { convertExploreStateToURLSearchParamsWithCompression } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -58,7 +58,7 @@ export function isHomeBookmark(bookmark: V1Bookmark) {
   return Boolean(bookmark.default);
 }
 
-export function categorizeBookmarks(
+export async function categorizeBookmarks(
   bookmarkResp: V1Bookmark[],
   metricsSpec: V1MetricsViewSpec | undefined,
   exploreSpec: V1ExploreSpec | undefined,
@@ -72,25 +72,30 @@ export function categorizeBookmarks(
     personal: [],
     shared: [],
   };
-  if (!exploreState) return bookmarks;
-  bookmarkResp?.forEach((bookmarkResource) => {
-    const bookmark = parseBookmark(
-      bookmarkResource,
-      metricsSpec ?? {},
-      exploreSpec ?? {},
-      schema ?? {},
-      exploreState,
-      defaultExplorePreset,
-      timeRangeSummary,
-    );
-    if (isHomeBookmark(bookmarkResource)) {
+  if (!exploreState || !bookmarkResp) return bookmarks;
+  const bookmarkEntries = await Promise.all(
+    bookmarkResp.map((bookmarkResource) =>
+      parseBookmark(
+        bookmarkResource,
+        metricsSpec ?? {},
+        exploreSpec ?? {},
+        schema ?? {},
+        exploreState,
+        defaultExplorePreset,
+        timeRangeSummary,
+      ),
+    ),
+  );
+  bookmarkEntries.forEach((bookmark) => {
+    if (isHomeBookmark(bookmark.resource)) {
       bookmarks.home = bookmark;
-    } else if (bookmarkResource.shared) {
+    } else if (bookmark.resource.shared) {
       bookmarks.shared.push(bookmark);
     } else {
       bookmarks.personal.push(bookmark);
     }
   });
+
   return bookmarks;
 }
 
@@ -142,7 +147,7 @@ export function getPrettySelectedTimeRange(
   );
 }
 
-function parseBookmark(
+async function parseBookmark(
   bookmarkResource: V1Bookmark,
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
@@ -150,7 +155,7 @@ function parseBookmark(
   exploreState: MetricsExplorerEntity,
   defaultExplorePreset: V1ExplorePreset,
   timeRangeSummary: V1TimeRangeSummary | undefined,
-): BookmarkEntry {
+) {
   const exploreStateFromBookmark = getDashboardStateFromUrl(
     bookmarkResource.data ?? "",
     metricsViewSpec,
@@ -163,7 +168,7 @@ function parseBookmark(
   } as MetricsExplorerEntity;
 
   const url = new URL(get(page).url);
-  url.search = convertExploreStateToURLSearchParams(
+  url.search = await convertExploreStateToURLSearchParamsWithCompression(
     finalExploreState,
     exploreSpec,
     getTimeControlState(
@@ -173,8 +178,9 @@ function parseBookmark(
       finalExploreState,
     ),
     defaultExplorePreset,
+    url,
   );
-  return {
+  return <BookmarkEntry>{
     resource: bookmarkResource,
     absoluteTimeRange:
       exploreStateFromBookmark.selectedTimeRange?.name ===

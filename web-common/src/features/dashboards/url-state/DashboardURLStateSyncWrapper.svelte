@@ -3,7 +3,6 @@
   import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-  import { decompressUrlParams } from "@rilldata/web-common/features/dashboards/url-state/compression";
   import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
   import DashboardURLStateSync from "@rilldata/web-common/features/dashboards/url-state/DashboardURLStateSync.svelte";
   import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
@@ -47,12 +46,11 @@
     | Partial<MetricsExplorerEntity>
     | undefined = undefined;
   async function parseUrl(url: URL, defaultExplorePreset: V1ExplorePreset) {
-    const searchParams = await decompressUrlParams(url.searchParams);
     ({ partialExploreStateFromUrl, exploreStateFromSessionStorage } =
-      getExploreStates(
+      await getExploreStates(
         $exploreName,
         storeKeyPrefix,
-        searchParams,
+        url.searchParams,
         metricsViewSpec,
         exploreSpec,
         defaultExplorePreset,

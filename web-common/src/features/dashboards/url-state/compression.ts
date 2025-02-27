@@ -20,12 +20,12 @@ export async function compressUrlParams(url: URL) {
   const resp = new Response(gzippedParams);
   const compressed = new Uint8Array(await resp.arrayBuffer());
 
-  const newUrl = new URL("http://localhost");
-  newUrl.searchParams.set(
+  const newSearchParams = new URLSearchParams();
+  newSearchParams.set(
     ExploreStateURLParams.GzippedParams,
     protoBase64.enc(compressed).replaceAll("+", "-").replaceAll("/", "_"),
   );
-  return newUrl.searchParams;
+  return newSearchParams.toString();
 }
 
 export async function decompressUrlParams(searchParams: URLSearchParams) {
@@ -46,7 +46,5 @@ export async function decompressUrlParams(searchParams: URLSearchParams) {
   );
   const resp = new Response(decompressedParams);
 
-  const newUrl = new URL("http://localhost");
-  newUrl.search = await resp.text();
-  return newUrl.searchParams;
+  return new URLSearchParams(await resp.text());
 }

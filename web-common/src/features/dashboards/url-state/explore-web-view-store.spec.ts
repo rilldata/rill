@@ -29,7 +29,7 @@ import {
   type TestDashboardMutation,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
+import { convertExploreStateToURLSearchParamsWithCompression } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
 import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import {
   clearExploreSessionStore,
@@ -228,7 +228,7 @@ describe.skip("ExploreWebViewStore", () => {
   });
 
   for (const { title, initView, view } of TestCases) {
-    it(title, () => {
+    it(title, async () => {
       metricsExplorerStore.init(
         AD_BIDS_EXPLORE_NAME,
         getInitExploreStateForTest(
@@ -260,8 +260,8 @@ describe.skip("ExploreWebViewStore", () => {
       ]);
 
       // simulate going to the init view's url
-      applyURLToExploreState(
-        getUrlForWebView(
+      await applyURLToExploreState(
+        await getUrlForWebView(
           initView.view,
           defaultExplorePreset,
           initView.additionalParams,
@@ -274,8 +274,8 @@ describe.skip("ExploreWebViewStore", () => {
       const initState = getCleanMetricsExploreForAssertion();
 
       // simulate going to the view's url
-      applyURLToExploreState(
-        getUrlForWebView(
+      await applyURLToExploreState(
+        await getUrlForWebView(
           view.view,
           defaultExplorePreset,
           view.additionalParams,
@@ -286,18 +286,21 @@ describe.skip("ExploreWebViewStore", () => {
       // apply any mutations in the view
       applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, view.mutations);
 
-      const backToInitUrl = getUrlForWebView(
+      const backToInitUrl = await getUrlForWebView(
         initView.view,
         defaultExplorePreset,
       );
       expect(backToInitUrl.toString()).toEqual(initView.expectedUrl);
-      applyURLToExploreState(
+      await applyURLToExploreState(
         backToInitUrl,
         AD_BIDS_EXPLORE_INIT,
         defaultExplorePreset,
       );
 
-      const backToViewUrl = getUrlForWebView(view.view, defaultExplorePreset);
+      const backToViewUrl = await getUrlForWebView(
+        view.view,
+        defaultExplorePreset,
+      );
       expect(backToViewUrl.toString()).toEqual(view.expectedUrl);
       const currentState = getCleanMetricsExploreForAssertion();
       expect(initState).toEqual(currentState);
@@ -305,7 +308,7 @@ describe.skip("ExploreWebViewStore", () => {
   }
 });
 
-function getUrlForWebView(
+async function getUrlForWebView(
   view: V1ExploreWebView,
   defaultExplorePreset: V1ExplorePreset,
   additionalParams: string | undefined = undefined,
@@ -329,7 +332,7 @@ function getUrlForWebView(
 
   const exploreState = partialExploreState as MetricsExplorerEntity;
   newUrl.search =
-    convertExploreStateToURLSearchParams(
+    (await convertExploreStateToURLSearchParamsWithCompression(
       exploreState,
       AD_BIDS_EXPLORE_INIT,
       getTimeControlState(
@@ -339,6 +342,7 @@ function getUrlForWebView(
         exploreState,
       ),
       defaultExplorePreset,
-    ) + (additionalParams ?? "");
+      newUrl,
+    )) + (additionalParams ?? "");
   return newUrl;
 }

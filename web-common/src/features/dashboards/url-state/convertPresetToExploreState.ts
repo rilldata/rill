@@ -43,14 +43,14 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { SortingState } from "@tanstack/svelte-table";
 
-export function convertURLToExploreState(
+export async function convertURLToExploreState(
   searchParams: URLSearchParams,
   metricsView: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
   defaultExplorePreset: V1ExplorePreset,
 ) {
   const errors: Error[] = [];
-  const { preset, errors: errorsFromPreset } = convertURLToExplorePreset(
+  const { preset, errors: errorsFromPreset } = await convertURLToExplorePreset(
     searchParams,
     metricsView,
     exploreSpec,
