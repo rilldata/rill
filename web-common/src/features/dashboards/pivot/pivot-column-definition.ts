@@ -315,6 +315,7 @@ function getFlatColumnDef(
   });
 
   const columns = config.pivot.columns;
+  const timeDimension = config.time?.timeDimension;
 
   const measureDefMap = new Map<string, ColumnDef<PivotDataRow>>();
   const dimensionDefMap = new Map<string, ColumnDef<PivotDataRow>>();
@@ -355,7 +356,12 @@ function getFlatColumnDef(
         }
       }
     } else {
-      const dimensionDef = dimensionDefMap.get(id);
+      let dimensionId = id;
+      if (type === PivotChipType.Time) {
+        dimensionId = `${timeDimension}_rill_${id}`;
+      }
+
+      const dimensionDef = dimensionDefMap.get(dimensionId);
       if (dimensionDef) {
         orderedColumnDefs.push(dimensionDef);
       }
