@@ -6,8 +6,9 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
-  import Delta from "@rilldata/web-common/components/icons/Delta.svelte";
-  import PieChart from "@rilldata/web-common/components/icons/PieChart.svelte";
+  import DeltaChange from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChange.svelte";
+  import DeltaChangePercentage from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChangePercentage.svelte";
+  import PercentOfTotal from "@rilldata/web-common/features/dashboards/dimension-table/PercentOfTotal.svelte";
 
   export let isValidPercentOfTotal = false;
   export let isTimeComparisonActive = false;
@@ -26,6 +27,7 @@
             value: LeaderboardContextColumn.PERCENT,
             label: "Percent of total",
             description: "Summable metrics only",
+            icon: PercentOfTotal,
           },
         ]
       : []),
@@ -34,10 +36,12 @@
           {
             value: LeaderboardContextColumn.DELTA_ABSOLUTE,
             label: "Change",
+            icon: DeltaChange,
           },
           {
             value: LeaderboardContextColumn.DELTA_PERCENT,
             label: "Percent change",
+            icon: DeltaChangePercentage,
           },
         ]
       : []),
@@ -100,24 +104,19 @@
             >
               <div class="flex items-center">
                 {#if option.value === LeaderboardContextColumn.DELTA_ABSOLUTE}
-                  <div class="flex items-center justify-start">
-                    <Delta />
-                    <div class="w-4" />
+                  <div class="flex items-center justify-start w-[26px]">
+                    <svelte:component this={option.icon} />
                   </div>
                   <span>{option.label}</span>
                 {:else if option.value === LeaderboardContextColumn.DELTA_PERCENT}
-                  <div class="flex items-center justify-start">
-                    <Delta />
-                    <div class="w-4">%</div>
+                  <div class="flex items-center justify-start w-[26px]">
+                    <svelte:component this={option.icon} />
                   </div>
                   <span>{option.label}</span>
                 {:else if option.value === LeaderboardContextColumn.PERCENT}
                   <div class="flex flex-col">
-                    <div class="flex flex-row">
-                      <div class="flex items-center justify-start">
-                        <PieChart />
-                        <div class="w-4">%</div>
-                      </div>
+                    <div class="flex flex-row gap-x-1">
+                      <svelte:component this={option.icon} />
                       <span>{option.label}</span>
                     </div>
                     <span class="ui-copy-muted text-[11px]">

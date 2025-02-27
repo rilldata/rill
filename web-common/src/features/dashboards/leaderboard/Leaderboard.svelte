@@ -300,6 +300,8 @@
       {:else if showDeltaPercent}
         <col style:width="{DEFAULT_COL_WIDTH}px" />
       {/if}
+
+      <!-- TODO: support new measure columns -->
     </colgroup>
 
     <LeaderboardHeader

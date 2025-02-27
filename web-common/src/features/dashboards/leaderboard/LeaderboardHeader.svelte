@@ -3,14 +3,15 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { SortType } from "../proto-state/derived-types";
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
-  import Delta from "@rilldata/web-common/components/icons/Delta.svelte";
-  import PieChart from "@rilldata/web-common/components/icons/PieChart.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import DimensionCompareMenu from "./DimensionCompareMenu.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
+  import DeltaChangePercentage from "../dimension-table/DeltaChangePercentage.svelte";
+  import DeltaChange from "../dimension-table/DeltaChange.svelte";
+  import PercentOfTotal from "../dimension-table/PercentOfTotal.svelte";
   export let dimensionName: string;
   export let isFetching: boolean;
   export let isTimeComparisonActive: boolean;
@@ -105,7 +106,7 @@
           aria-label="Toggle sort leaderboards by absolute change"
           on:click={() => toggleSort(SortType.DELTA_ABSOLUTE)}
         >
-          <Delta />
+          <DeltaChange />
           {#if sortType === SortType.DELTA_ABSOLUTE}
             <ArrowDown flip={sortedAscending} />
           {/if}
@@ -119,7 +120,7 @@
           aria-label="Toggle sort leaderboards by percent change"
           on:click={() => toggleSort(SortType.DELTA_PERCENT)}
         >
-          <Delta /> %
+          <DeltaChangePercentage />
           {#if sortType === SortType.DELTA_PERCENT}
             <ArrowDown flip={sortedAscending} />
           {/if}
@@ -133,13 +134,15 @@
           aria-label="Toggle sort leaderboards by percent of total"
           on:click={() => toggleSort(SortType.PERCENT)}
         >
-          <PieChart /> %
+          <PercentOfTotal />
           {#if sortType === SortType.PERCENT}
             <ArrowDown flip={sortedAscending} />
           {/if}
         </button>
       </th>
     {/if}
+
+    <!-- TODO: support new measure columns -->
   </tr>
 </thead>
 
