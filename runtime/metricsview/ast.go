@@ -703,7 +703,7 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 		var newDims []FieldNode
 		var timeAlias string
 		for _, f := range a.dimFields {
-			if strings.HasPrefix(f.Name, a.metricsView.TimeDimension) && strings.HasSuffix(strings.ToLower(f.Name), strings.ToLower(string(spine.TimeRange.Grain))) {
+			if strings.Contains(f.Expr, a.metricsView.TimeDimension) && strings.Contains(strings.ToLower(f.Expr), strings.ToLower(string(spine.TimeRange.Grain))) {
 				timeAlias = f.Name
 				continue
 			}

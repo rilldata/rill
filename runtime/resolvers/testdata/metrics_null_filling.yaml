@@ -33,6 +33,7 @@ project_files:
     measures:
       - name: count
         expression: count(*)
+        treat_nulls_as: -123
   duckdb_data.yaml:
     type: model
     connector: duckdb
@@ -75,7 +76,6 @@ tests:
           start:
           end:
           grain:
-          alias:
     result:
       - sum: 123
         time__day: "2024-01-03T00:00:00Z"
@@ -98,20 +98,25 @@ tests:
             comparison_value:
               measure: count
       time_range:
-        end: 2022-01-05T00:00:00Z
-        start: 2022-01-03T00:00:00Z
+        end: 2022-01-04T00:00:00Z
+        start: 2022-01-02T00:00:00Z
       comparison_time_range:
-        end: 2022-01-03T00:00:00Z
-        start: 2022-01-01T00:00:00Z
+        end: 2022-01-02T00:00:00Z
+        start: 2021-12-31T00:00:00Z
       sort:
         - name: time__day
+      spine:
+        time:
+          start:
+          end:
+          grain:
     result:
+      - count: 1126
+        count_prev: -123
+        time__day: "2022-01-02T00:00:00Z"
       - count: 1126
         count_prev: 1116
         time__day: "2022-01-03T00:00:00Z"
-      - count: 1120
-        count_prev: 1126
-        time__day: "2022-01-04T00:00:00Z"
   - name: time_as_dimension_duckdb
     resolver: metrics
     properties:
@@ -141,7 +146,6 @@ tests:
           start:
           end:
           grain:
-          alias:
     result:
       - sum: 3
         sum_prev: -1
@@ -178,7 +182,6 @@ tests:
           start:
           end:
           grain:
-          alias:
     result:
       - sum: -1
         sum_prev: 2
@@ -210,7 +213,6 @@ tests:
           start:
           end:
           grain:
-          alias:
     result:
       - sum: 2
         country: "US"
