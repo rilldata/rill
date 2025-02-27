@@ -125,22 +125,25 @@
         undefined,
       );
 
-  $: measures = activeMeasureNames
-    .flatMap((name) => additionalMeasures(name, dimensionThresholdFilters))
-    .map(
-      (n) =>
-        ({
-          name: n,
-        }) as V1MetricsViewAggregationMeasure,
-    )
-    .concat(
-      ...(comparisonTimeRange
-        ? activeMeasureNames.flatMap((name) =>
-            getComparisonRequestMeasures(name),
-          )
-        : []),
-    )
-    .concat(uri ? [getURIRequestMeasure(dimensionName)] : []);
+  $: measures = [
+    // Get additional measures for each active measure
+    ...activeMeasureNames
+      .flatMap((name) => additionalMeasures(name, dimensionThresholdFilters))
+      .map(
+        (name) =>
+          ({
+            name,
+          }) as V1MetricsViewAggregationMeasure,
+      ),
+
+    // Add comparison measures if there's a comparison time range
+    ...(comparisonTimeRange
+      ? activeMeasureNames.flatMap((name) => getComparisonRequestMeasures(name))
+      : []),
+
+    // Add URI measure if URI is present
+    ...(uri ? [getURIRequestMeasure(dimensionName)] : []),
+  ];
 
   $: allMeasures = [
     ...measures,
@@ -276,6 +279,10 @@
   $: showDeltaPercent =
     !!comparisonTimeRange &&
     contextColumnFilters.includes(LeaderboardContextColumn.DELTA_PERCENT);
+
+  $: showPercentOfTotal =
+    !!comparisonTimeRange &&
+    contextColumnFilters.includes(LeaderboardContextColumn.PERCENT);
 </script>
 
 <div
@@ -293,13 +300,13 @@
       <col style:width="{$valueColumn}px" />
       {#if showDeltaAbsolute}
         <col style:width="{$deltaColumn}px" />
-        <!-- TODO: is this needed? -->
-        <!-- <col style:width="{DEFAULT_COL_WIDTH}px" /> -->
+        <col style:width="{DEFAULT_COL_WIDTH}px" />
       {:else if showDeltaPercent}
         <col style:width="{DEFAULT_COL_WIDTH}px" />
       {/if}
-
-      <!-- TODO: support new measure columns -->
+      {#if showPercentOfTotal}
+        <col style:width="{DEFAULT_COL_WIDTH}px" />
+      {/if}
     </colgroup>
 
     <LeaderboardHeader
