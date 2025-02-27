@@ -38,9 +38,9 @@ project_files:
     type: model
     connector: duckdb
     sql: |
-      select '2024-01-02T00:00:00Z'::TIMESTAMP as time, 'US' as country, 2 as val union all
-      select '2024-01-03T00:00:00Z'::TIMESTAMP as time, 'US' as country, 3 as val union all
-      select '2024-01-05T00:00:00Z'::TIMESTAMP as time, 'DK' as country, 5 as val
+      select '2024-01-02T00:00:00Z'::TIMESTAMP as time, 'US' as country, 1 as val union all
+      select '2024-01-03T00:00:00Z'::TIMESTAMP as time, 'US' as country, 10 as val union all
+      select '2024-01-05T00:00:00Z'::TIMESTAMP as time, 'DK' as country, 100 as val
   duckdb_metrics.yaml:
     type: metrics_view
     model: duckdb_data
@@ -52,7 +52,22 @@ project_files:
         expression: count(*)
       - name: sum
         expression: sum(val)
+        treat_nulls_as: 0
+      - name: base_sum
+        expression: sum(val)
+      - name: sum_1day_rolling_avg
+        expression: AVG(base_sum)
+        requires: [base_sum]
         treat_nulls_as: -1
+        window:
+          order: time
+          frame: RANGE BETWEEN INTERVAL 2 DAY PRECEDING AND CURRENT ROW
+      - name: sum_not_null_1day_rolling_avg
+        expression: AVG(sum)
+        requires: [sum]
+        window:
+          order: time
+          frame: RANGE BETWEEN INTERVAL 2 DAY PRECEDING AND CURRENT ROW
 tests:
   - name: time_as_dimension_clickhouse
     resolver: metrics
@@ -93,14 +108,7 @@ tests:
               grain: day
       measures:
         - name: count
-        - name: count_prev
-          compute:
-            comparison_value:
-              measure: count
       time_range:
-        end: 2022-01-04T00:00:00Z
-        start: 2022-01-02T00:00:00Z
-      comparison_time_range:
         end: 2022-01-02T00:00:00Z
         start: 2021-12-31T00:00:00Z
       sort:
@@ -111,12 +119,10 @@ tests:
           end:
           grain:
     result:
-      - count: 1126
-        count_prev: -123
-        time__day: "2022-01-02T00:00:00Z"
-      - count: 1126
-        count_prev: 1116
-        time__day: "2022-01-03T00:00:00Z"
+      - count: -123
+        time__day: "2021-12-31T00:00:00Z"
+      - count: 1116
+        time__day: "2022-01-01T00:00:00Z"
   - name: time_as_dimension_duckdb
     resolver: metrics
     properties:
@@ -147,12 +153,82 @@ tests:
           end:
           grain:
     result:
-      - sum: 3
-        sum_prev: -1
+      - sum: 10
+        sum_prev: null
         time__day: "2024-01-03T00:00:00Z"
-      - sum: -1
-        sum_prev: 2
+      - sum: 0
+        sum_prev: 1
         time__day: "2024-01-04T00:00:00Z"
+  - name: time_as_dimension_adv_measure_not_null_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics
+      dimensions:
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: sum_1day_rolling_avg
+      time_range:
+        end: 2024-01-06T00:00:00Z
+        start: 2023-12-31T00:00:00Z
+      sort:
+        - name: time__day
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - sum_1day_rolling_avg: -1
+        time__day: "2023-12-31T00:00:00Z"
+      - sum_1day_rolling_avg: -1
+        time__day: "2024-01-01T00:00:00Z"
+      - sum_1day_rolling_avg: 1
+        time__day: "2024-01-02T00:00:00Z"
+      - sum_1day_rolling_avg: 5.5
+        time__day: "2024-01-03T00:00:00Z"
+      - sum_1day_rolling_avg: 5.5
+        time__day: "2024-01-04T00:00:00Z"
+      - sum_1day_rolling_avg: 55
+        time__day: "2024-01-05T00:00:00Z"
+  - name: time_as_dimension_adv_measure_base_not_null_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics
+      dimensions:
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: sum_not_null_1day_rolling_avg
+      time_range:
+        end: 2024-01-06T00:00:00Z
+        start: 2023-12-31T00:00:00Z
+      sort:
+        - name: time__day
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - sum_not_null_1day_rolling_avg: 0
+        time__day: "2023-12-31T00:00:00Z"
+      - sum_not_null_1day_rolling_avg: 0
+        time__day: "2024-01-01T00:00:00Z"
+      - sum_not_null_1day_rolling_avg: 0.3333333333333333
+        time__day: "2024-01-02T00:00:00Z"
+      - sum_not_null_1day_rolling_avg: 3.6666666666666665
+        time__day: "2024-01-03T00:00:00Z"
+      - sum_not_null_1day_rolling_avg: 3.6666666666666665
+        time__day: "2024-01-04T00:00:00Z"
+      - sum_not_null_1day_rolling_avg: 36.666666666666664
+        time__day: "2024-01-05T00:00:00Z"
   - name: iso_ranges_duckdb
     resolver: metrics
     properties:
@@ -183,13 +259,13 @@ tests:
           end:
           grain:
     result:
-      - sum: -1
-        sum_prev: 2
-        country: "US"
+      - country: US
+        sum: 0
+        sum_prev: 1
         time__day: "2024-01-04T00:00:00Z"
-      - sum: 3
-        sum_prev: -1
-        country: "US"
+      - country: US
+        sum: 10
+        sum_prev: null
         time__day: "2024-01-03T00:00:00Z"
   - name: iso_ranges_clickhouse
     resolver: metrics
@@ -214,12 +290,12 @@ tests:
           end:
           grain:
     result:
-      - sum: 2
-        country: "US"
+      - country: US
+        sum: 2
         time__day: "2024-01-02T00:00:00Z"
-      - sum: 4
-        country: "US"
+      - country: US
+        sum: 4
         time__day: "2024-01-04T00:00:00Z"
-      - sum: 123
-        country: "US"
+      - country: US
+        sum: 123
         time__day: "2024-01-03T00:00:00Z"

@@ -648,7 +648,7 @@ func (a *AST) buildBaseSelect(alias string, comparison bool) (*SelectNode, error
 	// If there is a spine, we wrap the base SELECT in a new SELECT that we add the spine to.
 	// We do not join the spine directly to the FromTable because the join would be evaluated before the GROUP BY,
 	// which would impact the measure aggregations (e.g. counts per group would be wrong).
-	if a.query.Spine != nil {
+	if a.query.Spine != nil && !(a.query.Spine.TimeRange != nil && comparison) {
 		sn, err := a.buildSpineSelect(a.generateIdentifier(), a.query.Spine, tr)
 		if err != nil {
 			return nil, err
