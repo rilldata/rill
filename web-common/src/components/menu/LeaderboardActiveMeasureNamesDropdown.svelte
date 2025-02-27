@@ -72,7 +72,7 @@
         <div
           class="flex items-center gap-x-1 px-1 text-gray-700 hover:text-inherit font-normal"
         >
-          Showing <strong>{showingMeasuresText}</strong>
+          Filter by <strong>{showingMeasuresText}</strong>
           <span
             class="transition-transform"
             class:hidden={disabled}
