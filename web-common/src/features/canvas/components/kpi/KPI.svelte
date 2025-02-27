@@ -224,7 +224,7 @@
         <span
           class="text-3xl font-medium text-gray-600 flex gap-x-0.5 items-end"
         >
-          {#if hoveredPoints?.[0]?.value !== undefined}
+          {#if hoveredPoints?.[0]?.value != null}
             <span class="text-primary-500">
               {measureValueFormatter(currentValue)}
             </span>
