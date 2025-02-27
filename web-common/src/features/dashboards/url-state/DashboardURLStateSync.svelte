@@ -10,7 +10,7 @@
     type TimeControlState,
   } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
-    convertExploreStateToURLSearchParamsWithCompression,
+    convertExploreStateToURLSearchParams,
     getUpdatedUrlForExploreState,
   } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
   import {
@@ -259,7 +259,7 @@
     if (!exploreSpec) return;
 
     const u = new URL($page.url);
-    u.search = await convertExploreStateToURLSearchParamsWithCompression(
+    u.search = await convertExploreStateToURLSearchParams(
       $dashboardStore,
       exploreSpec,
       timeControlsState,

@@ -1,12 +1,12 @@
 import { protoBase64 } from "@bufbuild/protobuf";
-import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 
 const URL_SIZE_THRESHOLD = 2000;
 
-export async function compressUrlParams(url: URL) {
-  const params = url.searchParams.toString();
-  if (url.toString().length <= URL_SIZE_THRESHOLD) return params;
+export function shouldCompressParams(url: URL) {
+  return url.toString().length > URL_SIZE_THRESHOLD;
+}
 
+export async function compressUrlParams(params: string) {
   const paramsAsUint8Array = new TextEncoder().encode(params);
   const paramsAsReadableStream = new ReadableStream({
     start: (controller) => {
@@ -20,24 +20,14 @@ export async function compressUrlParams(url: URL) {
   const resp = new Response(gzippedParams);
   const compressed = new Uint8Array(await resp.arrayBuffer());
 
-  const newSearchParams = new URLSearchParams();
-  newSearchParams.set(
-    ExploreStateURLParams.GzippedParams,
-    protoBase64.enc(compressed).replaceAll("+", "-").replaceAll("/", "_"),
-  );
-  return newSearchParams.toString();
+  return protoBase64.enc(compressed).replaceAll("+", "-").replaceAll("/", "_");
 }
 
-export async function decompressUrlParams(searchParams: URLSearchParams) {
-  if (!searchParams.has(ExploreStateURLParams.GzippedParams))
-    return searchParams;
-
-  const compressedParam = protoBase64.dec(
-    searchParams.get(ExploreStateURLParams.GzippedParams)!,
-  );
+export async function decompressUrlParams(compressedParam: string) {
+  const compressedParamAsUint8Array = protoBase64.dec(compressedParam);
   const compressedParamAsReadableStream = new ReadableStream({
     start: (controller) => {
-      controller.enqueue(compressedParam);
+      controller.enqueue(compressedParamAsUint8Array);
       controller.close();
     },
   });
@@ -46,5 +36,5 @@ export async function decompressUrlParams(searchParams: URLSearchParams) {
   );
   const resp = new Response(decompressedParams);
 
-  return new URLSearchParams(await resp.text());
+  return resp.text();
 }

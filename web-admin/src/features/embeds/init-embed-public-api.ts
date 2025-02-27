@@ -37,12 +37,15 @@ export default function initEmbedPublicAPI(instanceId: string): () => void {
       timeRangeSummaryStore,
       metricsViewTimeRange,
     ],
-    ([
-      $validSpecStore,
-      $dashboardStore,
-      $timeRangeSummaryStore,
-      $metricsViewTimeRange,
-    ]) => {
+    (
+      [
+        $validSpecStore,
+        $dashboardStore,
+        $timeRangeSummaryStore,
+        $metricsViewTimeRange,
+      ],
+      set,
+    ) => {
       const exploreSpec = $validSpecStore.data?.explore ?? {};
       const metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
 
@@ -61,14 +64,14 @@ export default function initEmbedPublicAPI(instanceId: string): () => void {
         );
       }
 
-      return decodeURIComponent(
-        convertExploreStateToURLSearchParams(
-          $dashboardStore,
-          exploreSpec,
-          timeControlsState,
-          defaultExplorePreset,
-        ),
-      );
+      void convertExploreStateToURLSearchParams(
+        $dashboardStore,
+        exploreSpec,
+        timeControlsState,
+        defaultExplorePreset,
+        get(page).url,
+        true,
+      ).then(set);
     },
   );
 
@@ -76,7 +79,7 @@ export default function initEmbedPublicAPI(instanceId: string): () => void {
     emitNotification("stateChange", { state: stateString });
   });
 
-  registerRPCMethod("getState", () => {
+  registerRPCMethod("getState", async () => {
     const validSpec = get(validSpecStore);
     const dashboard = get(dashboardStore);
     const timeSummary = get(timeRangeSummaryStore).data;
@@ -100,11 +103,13 @@ export default function initEmbedPublicAPI(instanceId: string): () => void {
       );
     }
     const stateString = decodeURIComponent(
-      convertExploreStateToURLSearchParams(
+      await convertExploreStateToURLSearchParams(
         dashboard,
         exploreSpec,
         timeControlsState,
         defaultExplorePreset,
+        get(page).url,
+        true,
       ),
     );
     return { state: stateString };

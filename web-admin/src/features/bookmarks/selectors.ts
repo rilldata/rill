@@ -12,7 +12,7 @@ import {
   getTimeControlState,
   timeControlStateSelector,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { convertExploreStateToURLSearchParamsWithCompression } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
+import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -168,7 +168,7 @@ async function parseBookmark(
   } as MetricsExplorerEntity;
 
   const url = new URL(get(page).url);
-  url.search = await convertExploreStateToURLSearchParamsWithCompression(
+  url.search = await convertExploreStateToURLSearchParams(
     finalExploreState,
     exploreSpec,
     getTimeControlState(

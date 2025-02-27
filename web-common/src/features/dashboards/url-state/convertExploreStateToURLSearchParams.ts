@@ -6,7 +6,10 @@ import {
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { compressUrlParams } from "@rilldata/web-common/features/dashboards/url-state/compression";
+import {
+  compressUrlParams,
+  shouldCompressParams,
+} from "@rilldata/web-common/features/dashboards/url-state/compression";
 import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
 import { FromLegacySortTypeMap } from "@rilldata/web-common/features/dashboards/url-state/legacyMappers";
 import {
@@ -47,7 +50,7 @@ export async function getUpdatedUrlForExploreState(
   url: URL,
 ) {
   const newUrlSearchParams = new URLSearchParams(
-    await convertExploreStateToURLSearchParamsWithCompression(
+    await convertExploreStateToURLSearchParams(
       partialExploreState as MetricsExplorerEntity,
       exploreSpec,
       timeControlsState,
@@ -69,7 +72,7 @@ export async function getUpdatedUrlForExploreState(
   return newUrlSearchParams.toString();
 }
 
-export async function convertExploreStateToURLSearchParamsWithCompression(
+export async function convertExploreStateToURLSearchParams(
   exploreState: MetricsExplorerEntity,
   exploreSpec: V1ExploreSpec,
   // We have quite a bit of logic in TimeControlState to validate selections and update them
@@ -79,32 +82,17 @@ export async function convertExploreStateToURLSearchParamsWithCompression(
   preset: V1ExplorePreset,
   // Used to decide whether to compress or not based on the full url length
   url: URL,
+  disableCompression = false,
 ) {
-  url.search = convertExploreStateToURLSearchParams(
-    exploreState,
-    exploreSpec,
-    timeControlsState,
-    preset,
-  );
-  return compressUrlParams(url);
-}
+  const urlCopy = new URL(url);
+  // clear any existing search params
+  urlCopy.search = "";
 
-export function convertExploreStateToURLSearchParams(
-  exploreState: MetricsExplorerEntity,
-  exploreSpec: V1ExploreSpec,
-  // We have quite a bit of logic in TimeControlState to validate selections and update them
-  // Eg: if a selected grain is not applicable for the current grain then we change it
-  // But it is only available in TimeControlState and not MetricsExplorerEntity
-  timeControlsState: TimeControlState | undefined,
-  preset: V1ExplorePreset,
-) {
-  const searchParams = new URLSearchParams();
-
-  if (!exploreState) return searchParams.toString();
+  if (!exploreState) return urlCopy.searchParams.toString();
 
   const currentView = FromActivePageMap[exploreState.activePage];
   if (shouldSetParam(preset.view, currentView)) {
-    searchParams.set(
+    urlCopy.searchParams.set(
       ExploreStateURLParams.WebView,
       ToURLParamViewMap[currentView] as string,
     );
@@ -114,7 +102,7 @@ export function convertExploreStateToURLSearchParams(
   if (timeControlsState) {
     mergeSearchParams(
       toTimeRangesUrl(exploreState, exploreSpec, timeControlsState, preset),
-      searchParams,
+      urlCopy.searchParams,
     );
   }
 
@@ -123,7 +111,7 @@ export function convertExploreStateToURLSearchParams(
     exploreState.dimensionThresholdFilters,
   );
   if (expr && expr?.cond?.exprs?.length) {
-    searchParams.set(
+    urlCopy.searchParams.set(
       ExploreStateURLParams.Filters,
       convertExpressionToFilterParam(expr),
     );
@@ -135,23 +123,33 @@ export function convertExploreStateToURLSearchParams(
     case DashboardState_ActivePage.DIMENSION_TABLE:
       mergeSearchParams(
         toExploreUrl(exploreState, exploreSpec, preset),
-        searchParams,
+        urlCopy.searchParams,
       );
       break;
 
     case DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL:
       mergeSearchParams(
         toTimeDimensionUrlParams(exploreState, preset),
-        searchParams,
+        urlCopy.searchParams,
       );
       break;
 
     case DashboardState_ActivePage.PIVOT:
-      mergeSearchParams(toPivotUrlParams(exploreState, preset), searchParams);
+      mergeSearchParams(
+        toPivotUrlParams(exploreState, preset),
+        urlCopy.searchParams,
+      );
       break;
   }
 
-  return searchParams.toString();
+  if (disableCompression || !shouldCompressParams(urlCopy))
+    return urlCopy.searchParams.toString();
+  const compressedUrlParams = new URLSearchParams();
+  compressedUrlParams.set(
+    ExploreStateURLParams.GzippedParams,
+    await compressUrlParams(urlCopy.search),
+  );
+  return compressedUrlParams.toString();
 }
 
 function toTimeRangesUrl(

@@ -29,7 +29,7 @@ import {
   type TestDashboardMutation,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { convertExploreStateToURLSearchParamsWithCompression } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
+import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
 import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import {
   clearExploreSessionStore,
@@ -332,7 +332,7 @@ async function getUrlForWebView(
 
   const exploreState = partialExploreState as MetricsExplorerEntity;
   newUrl.search =
-    (await convertExploreStateToURLSearchParamsWithCompression(
+    (await convertExploreStateToURLSearchParams(
       exploreState,
       AD_BIDS_EXPLORE_INIT,
       getTimeControlState(

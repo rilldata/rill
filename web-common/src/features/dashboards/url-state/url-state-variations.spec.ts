@@ -47,8 +47,9 @@ import {
   type TestDashboardMutation,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { convertExploreStateToURLSearchParamsWithCompression } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
-import { convertURLToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
+import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
+
+import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import {
@@ -369,7 +370,7 @@ describe("Human readable URL state variations", () => {
 
         // load url params with updated metrics state
         const url = new URL("http://localhost");
-        url.search = await convertExploreStateToURLSearchParamsWithCompression(
+        url.search = await convertExploreStateToURLSearchParams(
           get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
           explore,
           getTimeControlState(
@@ -429,7 +430,7 @@ describe("Human readable URL state variations", () => {
         url.searchParams.set("state", getProtoFromDashboardState(curState));
         // get back the entity from url params
         const { partialExploreState: entityFromUrl } =
-          await convertURLToExploreState(
+          await convertURLSearchParamsToExploreState(
             url.searchParams,
             AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
             explore,
@@ -440,7 +441,7 @@ describe("Human readable URL state variations", () => {
         // go back to default url
         const defaultUrl = new URL("http://localhost");
         const { partialExploreState: entityFromDefaultUrl } =
-          await convertURLToExploreState(
+          await convertURLSearchParamsToExploreState(
             defaultUrl.searchParams,
             AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
             explore,
@@ -476,7 +477,7 @@ describe("Human readable URL state variations", () => {
 
     // load url params with updated metrics state
     const url = new URL("http://localhost");
-    url.search = await convertExploreStateToURLSearchParamsWithCompression(
+    url.search = await convertExploreStateToURLSearchParams(
       get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
       AD_BIDS_EXPLORE_INIT,
       getTimeControlState(
@@ -519,7 +520,7 @@ export async function applyURLToExploreState(
   defaultExplorePreset: V1ExplorePreset,
 ) {
   const { partialExploreState: partialExploreStateDefaultUrl, errors } =
-    await convertURLToExploreState(
+    await convertURLSearchParamsToExploreState(
       url.searchParams,
       AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
       exploreSpec,

@@ -2,7 +2,7 @@ import { createInExpression } from "@rilldata/web-common/features/dashboards/sto
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { PreviousCompleteRangeMap } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
-import { convertExploreStateToURLSearchParamsWithCompression } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
+import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
@@ -205,7 +205,7 @@ export async function getExplorePageUrl(
     });
   }
 
-  url.search = await convertExploreStateToURLSearchParamsWithCompression(
+  url.search = await convertExploreStateToURLSearchParams(
     exploreState,
     exploreSpec,
     getTimeControlState(

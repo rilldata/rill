@@ -65,7 +65,13 @@ export async function convertURLToExplorePreset(
     (d) => d.name!,
   );
 
-  searchParams = await decompressUrlParams(searchParams);
+  if (searchParams.has(ExploreStateURLParams.GzippedParams)) {
+    searchParams = new URLSearchParams(
+      await decompressUrlParams(
+        searchParams.get(ExploreStateURLParams.GzippedParams)!,
+      ),
+    );
+  }
 
   // Support legacy dashboard param.
   // This will be applied 1st so that any newer params added can be applied as well.
