@@ -4,6 +4,7 @@
   import { Clock } from "lucide-svelte";
 
   export let context: string;
+  export let width: number;
   export let onSelectRange: (range: string, isSearch: boolean) => void;
 
   let searchValue = "";
@@ -13,7 +14,7 @@
     "-45M",
     "-32D",
     "-1Y",
-    "-2Q, latest/Q",
+    "-2Q to latest/Q",
   ]);
 
   export function updateSearch(value: string) {
@@ -23,7 +24,8 @@
 </script>
 
 <div
-  class="border-b h-fit pt-2.5 py-0 flex p-3 flex-col w-full overflow-y-auto"
+  style:width="{width}px"
+  class="border-b h-fit pt-2.5 py-0 flex p-3 flex-col overflow-y-auto"
 >
   <form
     class="mb-2.5"

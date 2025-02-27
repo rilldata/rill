@@ -6,6 +6,7 @@
 
   export let date: DateTime<true> = DateTime.now();
   export let zone: string;
+  export let showDate = true;
 
   $: zonedDate = date.setZone(zone);
   $: isoString = zonedDate.toISO();
@@ -33,16 +34,25 @@
       if (isoString) copyToClipboard(isoString);
     }}
   >
-    {formattedString}
+    {#if showDate}
+      {formattedString}
+    {:else}
+      {humanReadableTimeOffset} ago
+    {/if}
   </button>
 
   <TooltipContent slot="tooltip-content">
     <div class="flex flex-col gap-y-1 items-center">
-      {#if humanReadableTimeOffset.length}
-        <span>
-          {humanReadableTimeOffset} ago
-        </span>
-      {/if}
+      <span>
+        {#if showDate}
+          {#if humanReadableTimeOffset.length}
+            {humanReadableTimeOffset} ago
+          {/if}
+        {:else}
+          {formattedString}
+        {/if}
+      </span>
+
       <span>
         {isoString}
       </span>

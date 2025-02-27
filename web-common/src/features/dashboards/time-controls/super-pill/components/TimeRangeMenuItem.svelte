@@ -22,7 +22,7 @@
   }}
   class="group h-7"
 >
-  <div class="size-full flex justify-between items-center" title={range.range}>
+  <div class="size-full flex justify-between items-center">
     <span class:font-bold={selected} class="truncate">
       {#if label.endsWith(", complete")}
         {label.replace(", complete", "")}

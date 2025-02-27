@@ -94,7 +94,7 @@
         <DropdownMenu.Separator />
         <div class="flex justify-between px-2 py-1">
           <label for="complete" class="select-none cursor-pointer">
-            Complete periods
+            Complete periods only
           </label>
           <Switch id="complete" checked={complete} on:click={toggleComplete} />
         </div>

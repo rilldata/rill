@@ -1,6 +1,5 @@
 <script context="module" lang="ts">
   import { Interval } from "luxon";
-  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import Calendar from "@rilldata/web-common/components/date-picker/Calendar.svelte";
   import { DateTime } from "luxon";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
@@ -61,8 +60,8 @@
   }}
 />
 
-<div class="flex flex-col bg-slate-50">
-  <div class="p-4 pt-3 pb-2 border-b">
+<div class="flex flex-col bg-slate-50 w-full">
+  <div class="p-3 border-b">
     <Calendar
       {maxDate}
       {minDate}
@@ -73,7 +72,7 @@
     />
   </div>
 
-  <div class="flex flex-col gap-y-2 px-4 py-3">
+  <div class="flex flex-col gap-y-2 p-3">
     <DateInput
       bind:selectingStart
       date={calendarInterval?.start ?? DateTime.now()}
@@ -96,7 +95,7 @@
       {onValidDateInput}
     />
   </div>
-  <div class="flex justify-end w-full py-1 px-2">
+  <div class="flex justify-end w-full px-2">
     <Button
       fit
       compact

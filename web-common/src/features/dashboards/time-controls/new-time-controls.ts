@@ -413,6 +413,7 @@ export function getRangeLabel(range: string): string {
 
   try {
     const rt = parseRillTime(range);
+
     const label = rt.getLabel();
     if (label.endsWith(", incomplete")) {
       return label.replace(", incomplete", "");

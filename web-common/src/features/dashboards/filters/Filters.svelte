@@ -40,6 +40,7 @@
   import { initLocalUserPreferenceStore } from "../user-preferences";
   import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
   import { getValidComparisonOption } from "../time-controls/time-range-store";
+  import Timestamp from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/Timestamp.svelte";
 
   export let readOnly = false;
   export let timeRanges: V1ExploreTimeRange[];
@@ -343,6 +344,16 @@
           showTimeComparison={!!showTimeComparison}
           {selectedComparisonTimeRange}
         />
+      {/if}
+
+      {#if interval.end?.isValid}
+        <span class="text-gray-600">
+          as of <Timestamp
+            showDate={false}
+            date={interval.end}
+            zone={activeTimeZone}
+          />
+        </span>
       {/if}
     </div>
   {/if}

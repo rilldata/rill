@@ -73,7 +73,7 @@
 <style lang="postcss">
   .day {
     @apply font-medium;
-    @apply w-full aspect-square;
+    @apply w-full aspect-[10/9];
     @apply p-0.5 bg-transparent;
     @apply flex items-center justify-center;
     @apply border border-transparent border-l-0 border-r-0;
@@ -84,9 +84,8 @@
   }
 
   .day:hover {
-    @apply bg-primary-600;
-    @apply border-primary-600;
-    color: white !important;
+    @apply bg-primary-100 border-l border-r;
+    @apply border-primary-300 font-semibold;
   }
 
   .end-cap:hover {
@@ -97,12 +96,8 @@
     @apply rounded-l-md;
   }
 
-  .is-end {
-    @apply rounded-r-md border border-l-0;
-  }
-
   .in-range {
-    @apply bg-primary-100 border-primary-200;
+    @apply bg-primary-50 border-primary-300;
   }
 
   :not(.in-range).in-potential-range {
@@ -110,13 +105,14 @@
   }
 
   .is-end {
-    @apply bg-primary-600 border-primary-700 text-white;
+    @apply bg-primary-200;
+    @apply rounded-r-md border border-l;
   }
 
   .is-start {
-    @apply bg-primary-600 border-primary-600 text-white;
-    @apply rounded-l-md;
-    @apply border-l border-r-0;
+    @apply bg-primary-200;
+    @apply rounded-l-md border-r;
+    @apply border-l;
   }
 
   .single-day-selection {

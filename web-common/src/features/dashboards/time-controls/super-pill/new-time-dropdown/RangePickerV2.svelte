@@ -10,19 +10,24 @@
   } from "../../new-time-controls";
   import CalendarPlusDateInput from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/CalendarPlusDateInput.svelte";
   import RangeDisplay from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/RangeDisplay.svelte";
-  import SyntaxElement from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/SyntaxElement.svelte";
   import { type V1ExploreTimeRange } from "@rilldata/web-common/runtime-client";
   import { bucketTimeRanges } from "../../time-range-store";
   import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
   import TimeRangeMenuItem from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/TimeRangeMenuItem.svelte";
-  import Switch from "@rilldata/web-common/components/button/Switch.svelte";
+  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
+
   import {
     LATEST_WINDOW_TIME_RANGES,
     PERIOD_TO_DATE_RANGES,
     PREVIOUS_COMPLETE_DATE_RANGES,
   } from "@rilldata/web-common/lib/time/config";
-  import Timestamp from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/Timestamp.svelte";
   import TimeRangeSearch from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/TimeRangeSearch.svelte";
+  import { InfoIcon } from "lucide-svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { parseRillTime } from "../../../url-state/time-ranges/parser";
+  import RillTheme from "@rilldata/web-common/layout/RillTheme.svelte";
+  import type { RillTime } from "../../../url-state/time-ranges/RillTime";
 
   export let timeRanges: V1ExploreTimeRange[];
   export let selected: string | undefined;
@@ -41,14 +46,25 @@
   let open = false;
   let allTimeAllowed = true;
   let searchComponent: TimeRangeSearch;
+  let showPanel = false;
 
   $: rangeBuckets = bucketTimeRanges(timeRanges, "rill-TD");
 
   $: colloquialGrain = getColloquialGrain(selected);
 
-  $: grainPhrase = getGrainPhrase(colloquialGrain);
+  // $: includesCurrentPeriod = interval.end.diff(maxDate).milliseconds > 0;
 
-  $: includesCurrentPeriod = interval.end.diff(maxDate).milliseconds > 0;
+  let parsedTime: RillTime | undefined = undefined;
+
+  $: isComplete = parsedTime?.isComplete ?? false;
+
+  $: if (selected) {
+    try {
+      parsedTime = parseRillTime(selected);
+    } catch {
+      // no op
+    }
+  }
 
   $: selectedMeta = selected?.startsWith("P")
     ? LATEST_WINDOW_TIME_RANGES[selected]
@@ -67,32 +83,11 @@
     open = false;
   }
 
-  // All of the below is hacky for the sake of development
-
   function getColloquialGrain(range: string | undefined) {
     // find the first character that matches H M D W Q Y in upper or lower case
     const grain = range?.match(/[HMDWQY]/i)?.[0];
     if (range === "CUSTOM") return undefined;
     return grain;
-  }
-
-  function getGrainPhrase(grain: string | undefined) {
-    switch (grain?.toUpperCase()) {
-      case "H":
-        return "this hour";
-      case "M":
-        return "this month";
-      case "D":
-        return "today";
-      case "W":
-        return "this week";
-      case "Q":
-        return "this quarter";
-      case "Y":
-        return "this year";
-      default:
-        return "current period";
-    }
   }
 </script>
 
@@ -127,8 +122,12 @@
     </button>
   </DropdownMenu.Trigger>
 
-  <DropdownMenu.Content align="start" class="p-0 overflow-hidden w-[480px]">
+  <DropdownMenu.Content
+    align="start"
+    class="p-0 w-fit overflow-hidden flex flex-col"
+  >
     <TimeRangeSearch
+      width={showPanel ? 500 : 240}
       bind:this={searchComponent}
       {context}
       onSelectRange={(range, syntax) => {
@@ -137,11 +136,11 @@
       }}
     />
 
-    <div class="flex">
-      <div class="flex flex-col w-[216px] flex-none">
-        <div
-          class="flex-flex-col max-h-[600px] overflow-y-auto overflow-x-hidden p-1"
-        >
+    <div class="flex w-fit max-h-fit" style:height="600px">
+      <div
+        class="flex flex-col w-60 overflow-y-auto overflow-x-hidden flex-none pt-1"
+      >
+        <div class="overflow-x-hidden">
           {#if showDefaultItem && defaultTimeRange}
             <DropdownMenu.Item
               on:click={() => {
@@ -172,7 +171,7 @@
             {#each ranges as range, i (i)}
               <TimeRangeMenuItem
                 {range}
-                selected={selected === range.range}
+                selected={selected === range.meta?.rillSyntax}
                 onClick={handleRangeSelect}
               />
             {/each}
@@ -196,111 +195,90 @@
 
         <DropdownMenu.Separator />
 
-        <!-- <DropdownMenu.Item
-          on:click={() => (showSelector = !showSelector)}
-          data-range="custom"
+        <DropdownMenu.Item
+          on:click={() => {
+            showPanel = !showPanel;
+          }}
         >
-          <span class:font-bold={selected === "CUSTOM"}> Calendar </span>
-        </DropdownMenu.Item> -->
+          <span class:font-bold={selected === "Custom"}> Custom...</span>
+        </DropdownMenu.Item>
 
-        <!-- <DropdownMenu.Separator /> -->
+        {#if parsedTime}
+          <DropdownMenu.Separator />
+          <div class="flex justify-between items-center py-2 px-3">
+            <span class="flex gap-x-1 items-center">
+              <span>Include latest partial period</span>
+              <Tooltip distance={8}>
+                <InfoIcon size="12px" class="text-gray-500" />
+                <TooltipContent slot="tooltip-content">
+                  <div class="flex flex-col gap-y-1 items-center">
+                    <span>
+                      Show all available data, even if the period is not
+                      complete.
+                    </span>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </span>
 
-        <div class="flex justify-between items-center py-2 px-3">
-          <span>Include {grainPhrase}</span>
-          <Switch
-            id="Show comparison"
-            checked={includesCurrentPeriod}
-            on:click={() => {
-              if (includesCurrentPeriod) {
-                const updatedString = `${selectedMeta.rillSyntax}, latest/${colloquialGrain}`;
-                console.log({ updatedString });
-                onSelectRange(updatedString, true);
-              } else {
-                onSelectRange(selectedMeta.rillSyntax, true);
-              }
-            }}
-          />
-        </div>
-      </div>
-
-      <div class="bg-slate-50 border-l flex flex-col w-full gap-y-2">
-        <!-- <div class="size-full flex-col gap-y-5 flex"> -->
-        <CalendarPlusDateInput
-          {firstVisibleMonth}
-          {interval}
-          {zone}
-          {maxDate}
-          {minDate}
-          applyRange={applyCustomRange}
-          closeMenu={() => (open = false)}
-        />
-        <!-- <div class="flex flex-col gap-y-3">
-              <span class="text-gray-500 text-xs">Example searches</span>
-              <div class="flex gap-x-2 flex-wrap gap-y-1">
-                {#each exampleSearches as search, i (i)}
-                  <SyntaxElement range={search} onClick={updateSearch} />
-                {/each}
-              </div>
-            </div> -->
-
-        <!-- <div class="flex flex-col gap-y-3">
-              <span class="text-gray-500 text-xs">Custom ranges</span>
-              <div class="flex gap-x-2 flex-wrap gap-y-1">
-                {#each rangeBuckets.customTimeRanges as range, i (i)}
-                  <SyntaxElement range={range.range} onClick={updateSearch} />
-                {:else}
-                  <span class="text-gray-500"> No ranges available </span>
-                {/each}
-              </div>
-            </div> -->
-
-        <div class="flex flex-col gap-y-3 border-t p-3 mt-auto">
-          <span class="text-gray-500 text-xs">Timeframe</span>
-
-          <div class="flex flex-col gap-y-1">
-            {#if minDate}
-              <div class="flex justify-between items-center">
-                <SyntaxElement
-                  range="earliest"
-                  onClick={searchComponent?.updateSearch}
-                />
-                <Timestamp date={minDate} {zone} />
-              </div>
-            {/if}
-
-            {#if maxDate}
-              <div class="flex justify-between items-center">
-                <SyntaxElement
-                  range="latest"
-                  onClick={searchComponent?.updateSearch}
-                />
-                <Timestamp date={maxDate} {zone} />
-              </div>
-            {/if}
-
-            <div class="flex justify-between items-center">
-              <SyntaxElement
-                range="now"
-                onClick={searchComponent?.updateSearch}
-              />
-              <Timestamp {zone} />
-            </div>
+            <Switch
+              id="Show comparison"
+              checked={!isComplete}
+              small
+              on:click={() => {
+                if (!isComplete) {
+                  if (selectedMeta) return;
+                  const updatedString = `${selected}, latest/${colloquialGrain}`;
+                  console.log({ updatedString });
+                  onSelectRange(updatedString, true);
+                } else if (selected) {
+                  console.log({ selected });
+                  onSelectRange(selected?.split(",")[0], true);
+                }
+              }}
+            />
           </div>
-        </div>
-
-        <div class="h-7">
-          <a href="https://www.rilldata.com" class="mt-auto">
-            Syntax documentation
-          </a>
-        </div>
-
-        <!-- </div> -->
+        {/if}
       </div>
+
+      {#if showPanel}
+        <div
+          class="bg-slate-50 border-l w-[260px] h-full flex flex-col justify-between"
+        >
+          <CalendarPlusDateInput
+            {firstVisibleMonth}
+            {interval}
+            {zone}
+            {maxDate}
+            {minDate}
+            applyRange={applyCustomRange}
+            closeMenu={() => (open = false)}
+          />
+
+          <!-- </div> -->
+        </div>
+      {/if}
     </div>
   </DropdownMenu.Content>
 </DropdownMenu.Root>
 
-<style lang="postcss">
-  button {
+<style>
+  /* The wrapper shrinks to the width of its content */
+  .wrapper {
+    display: inline-grid;
+    grid-template-columns: 1fr; /* single column that both items share */
+  }
+
+  /* Vertical scroll container has an explicit width */
+  .vertical-scroll {
+    overflow-y: auto;
+  }
+
+  /* Horizontal container becomes a grid item and stretches to fill the column */
+  .horizontal-scroll {
+    overflow-x: auto;
+    white-space: nowrap;
+
+    /* No explicit width is set here */
   }
 </style>
