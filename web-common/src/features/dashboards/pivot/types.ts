@@ -45,8 +45,8 @@ export interface PivotDashboardContext {
 
 export interface PivotState {
   active: boolean;
-  columns: PivotColumns;
-  rows: PivotRows;
+  columns: PivotChipData[];
+  rows: PivotChipData[];
   expanded: ExpandedState;
   sorting: SortingState;
   columnPage: number;
@@ -57,15 +57,6 @@ export interface PivotState {
 }
 
 export type PivotRowJoinType = "flat" | "nest";
-
-export type PivotColumns = {
-  measure: PivotChipData[];
-  dimension: PivotChipData[];
-};
-
-export type PivotRows = {
-  dimension: PivotChipData[];
-};
 
 export interface PivotDataRow {
   subRows?: PivotDataRow[];

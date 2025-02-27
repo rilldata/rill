@@ -9,7 +9,11 @@ import {
 import { timeControlStateSelector } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import { type Readable, derived } from "svelte/store";
-import { canEnablePivotComparison, getPivotConfigKey } from "./pivot-utils";
+import {
+  canEnablePivotComparison,
+  getPivotConfigKey,
+  splitPivotChips,
+} from "./pivot-utils";
 import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
@@ -86,7 +90,10 @@ export function getPivotConfig(
         };
       }
 
-      const measureNames = dashboardStore.pivot.columns.measure.flatMap((m) => {
+      const { dimension: colDimensions, measure: colMeasures } =
+        splitPivotChips(dashboardStore.pivot.columns);
+
+      const measureNames = colMeasures.flatMap((m) => {
         const measureName = m.id;
         const group = [measureName];
 
@@ -100,21 +107,19 @@ export function getPivotConfig(
       });
 
       // This is temporary until we have a better way to handle time grains
-      let rowDimensionNames = dashboardStore.pivot.rows.dimension.map((d) => {
+      let rowDimensionNames = dashboardStore.pivot.rows.map((d) => {
         if (d.type === PivotChipType.Time) {
           return `${time.timeDimension}_rill_${d.id}`;
         }
         return d.id;
       });
 
-      let colDimensionNames = dashboardStore.pivot.columns.dimension.map(
-        (d) => {
-          if (d.type === PivotChipType.Time) {
-            return `${time.timeDimension}_rill_${d.id}`;
-          }
-          return d.id;
-        },
-      );
+      let colDimensionNames = colDimensions.map((d) => {
+        if (d.type === PivotChipType.Time) {
+          return `${time.timeDimension}_rill_${d.id}`;
+        }
+        return d.id;
+      });
 
       const isFlat = dashboardStore.pivot.rowJoinType === "flat";
 

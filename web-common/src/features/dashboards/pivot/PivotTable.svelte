@@ -3,7 +3,10 @@
   import FlatTable from "@rilldata/web-common/features/dashboards/pivot/FlatTable.svelte";
   import { getMeasureColumnProps } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-definition";
   import { NUM_ROWS_PER_PAGE } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
-  import { isElement } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
+  import {
+    isElement,
+    splitPivotChips,
+  } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import {
     type Cell,
@@ -88,8 +91,9 @@
   let scrollLeft = 0;
 
   $: timeDimension = $config.time.timeDimension;
-  $: hasRowDimension = $pivotState.rows.dimension.length > 0;
-  $: hasColumnDimension = $pivotState.columns.dimension.length > 0;
+  $: hasRowDimension = $pivotState.rows.length > 0;
+  $: hasColumnDimension =
+    splitPivotChips($pivotState.columns).dimension.length > 0;
   $: reachedEndForRows = !!$pivotDataStore?.reachedEndForRowData;
   $: assembled = $pivotDataStore.assembled;
   $: dataRows = $pivotDataStore.data;

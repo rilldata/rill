@@ -40,7 +40,7 @@
 
   $: usedTimeGrains = $columns.dimension
     .filter((m) => m.type === PivotChipType.Time)
-    .concat($rows.dimension.filter((d) => d.type === PivotChipType.Time));
+    .concat($rows.filter((d) => d.type === PivotChipType.Time));
 
   $: timeGrainOptions = allTimeGrains
     .filter((tgo) => !usedTimeGrains.some((utg) => utg.id === tgo.id))

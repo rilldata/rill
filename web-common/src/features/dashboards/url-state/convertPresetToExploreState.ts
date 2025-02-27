@@ -423,17 +423,12 @@ function fromPivotUrlParams(
     hasSomePivotFields = true;
   }
 
-  const colMeasures: PivotChipData[] = [];
-  const colDimensions: PivotChipData[] = [];
+  const colChips: PivotChipData[] = [];
   if (preset.pivotCols) {
     preset.pivotCols.forEach((pivotRow) => {
       const chip = mapPivotEntry(pivotRow);
       if (!chip) return;
-      if (chip.type === PivotChipType.Measure) {
-        colMeasures.push(chip);
-      } else {
-        colDimensions.push(chip);
-      }
+      colChips.push(chip);
     });
     hasSomePivotFields = true;
   }
@@ -445,13 +440,8 @@ function fromPivotUrlParams(
       partialExploreState: {
         pivot: {
           active: false,
-          rows: {
-            dimension: [],
-          },
-          columns: {
-            measure: [],
-            dimension: [],
-          },
+          rows: [],
+          columns: [],
           sorting: [],
           expanded: {},
           columnPage: 1,
@@ -496,13 +486,8 @@ function fromPivotUrlParams(
     partialExploreState: {
       pivot: {
         active: pivotIsActive,
-        rows: {
-          dimension: rowDimensions,
-        },
-        columns: {
-          measure: colMeasures,
-          dimension: colDimensions,
-        },
+        rows: rowDimensions,
+        columns: colChips,
         sorting,
         // TODO: other fields are not supported right now
         expanded: {},

@@ -171,11 +171,8 @@ function getPivotFields(exploreState: Partial<MetricsExplorerEntity>) {
     return data.id;
   };
 
-  preset.pivotRows = exploreState.pivot.rows.dimension.map(mapPivotEntry);
-  preset.pivotCols = [
-    ...exploreState.pivot.columns.dimension.map(mapPivotEntry),
-    ...exploreState.pivot.columns.measure.map(mapPivotEntry),
-  ];
+  preset.pivotRows = exploreState.pivot.rows.map(mapPivotEntry);
+  preset.pivotCols = exploreState.pivot.columns.map(mapPivotEntry);
   const sort = exploreState.pivot.sorting?.[0];
   if (sort) {
     preset.pivotSortBy = sort.id;

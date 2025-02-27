@@ -1,5 +1,5 @@
 <script context="module" lang="ts">
-  export const lastNestState = writable<PivotRows | null>(null);
+  export const lastNestState = writable<PivotChipData[] | null>(null);
 </script>
 
 <script lang="ts">
@@ -12,7 +12,7 @@
   import { slide } from "svelte/transition";
   import { metricsExplorerStore } from "../stores/dashboard-stores";
   import DragList from "./DragList.svelte";
-  import { PivotChipType, type PivotChipData, type PivotRows } from "./types";
+  import { PivotChipType, type PivotChipData } from "./types";
 
   const stateManagers = getStateManagers();
   const {
@@ -23,7 +23,6 @@
   } = stateManagers;
 
   $: ({ dimension: columnsDimensions, measure: columnsMeasures } = $columns);
-  $: ({ dimension: rowsDimensions } = $rows);
 
   function updateColumn(e: CustomEvent<PivotChipData[]>) {
     // Reset lastNestState when columns are updated
@@ -48,29 +47,26 @@
       metricsExplorerStore.setPivotRowJoinType(
         $exploreName,
         "flat",
-        { dimension: [] },
-        {
-          measure: $columns.measure,
-          dimension: [...$columns.dimension, ...$rows.dimension],
-        },
+        [],
+        [...$columns.dimension, ...$rows, ...$columns.measure],
       );
       return;
     }
 
     // Handle nest state
-    const updatedRows = $lastNestState ?? { dimension: $columns.dimension };
-    const rowDimensionIds = new Set(updatedRows.dimension.map((d) => d.id));
+    const updatedRows = $lastNestState ?? $columns.dimension;
+    const rowDimensionIds = new Set(updatedRows.map((d) => d.id));
 
     metricsExplorerStore.setPivotRowJoinType(
       $exploreName,
       "nest",
       updatedRows,
-      {
-        measure: $columns.measure,
-        dimension: $lastNestState
+      [
+        ...($lastNestState
           ? $columns.dimension.filter((d) => !rowDimensionIds.has(d.id))
-          : [],
-      },
+          : []),
+        ...$columns.measure,
+      ],
     );
   }
 </script>
@@ -90,7 +86,7 @@
       <DragList
         zone="rows"
         placeholder="Drag dimensions here"
-        items={rowsDimensions}
+        items={$rows}
         on:update={updateRows}
       />
     </div>

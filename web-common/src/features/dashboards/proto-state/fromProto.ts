@@ -1,7 +1,7 @@
 import { protoBase64, type Timestamp } from "@bufbuild/protobuf";
 import {
-  type MeasureFilterEntry,
   mapExprToMeasureFilter,
+  type MeasureFilterEntry,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import {
@@ -408,13 +408,11 @@ function fromPivotProto(
 
   return {
     active: dashboard.pivotIsActive ?? false,
-    rows: {
-      dimension: rowDimensions,
-    },
-    columns: {
-      dimension: colDimensions,
-      measure: dashboard.pivotColumnMeasures.map(mapMeasure),
-    },
+    rows: rowDimensions,
+    columns: [
+      ...colDimensions,
+      ...dashboard.pivotColumnMeasures.map(mapMeasure),
+    ],
     expanded: dashboard.pivotExpanded,
     sorting: dashboard.pivotSort ?? [],
     columnPage: dashboard.pivotColumnPage ?? 1,
