@@ -140,10 +140,10 @@ function createColumnDefinitionForDimensions(
 }
 
 /**
- * Get formatted value for row dimension values. Format
+ * Get formatted value for dimension values. Format
  * time dimension values if present.
  */
-function formatRowDimensionValue(
+function formatDimensionValue(
   value: string,
   depth: number,
   timeConfig: PivotTimeConfig,
@@ -151,7 +151,14 @@ function formatRowDimensionValue(
 ) {
   const dimension = rowDimensionNames?.[depth];
   if (isTimeDimension(dimension, timeConfig?.timeDimension)) {
-    if (value === "Total" || value === "LOADING_CELL") return value;
+    if (
+      value === "Total" ||
+      value === "LOADING_CELL" ||
+      value === undefined ||
+      value === null
+    )
+      return value;
+
     const timeGrain = getTimeGrainFromDimension(dimension);
     const duration = timeGrainToDuration(timeGrain);
     const dt = addZoneOffset(
@@ -254,23 +261,26 @@ export function getColumnDefForPivot(
     nestedLabel = rowDimensions.map((d) => d.label || d.name).join(" > ");
   }
   const rowDefinitions: ColumnDef<PivotDataRow>[] =
-    rowDimensionsForColumnDef.map((d) => {
+    rowDimensionsForColumnDef.map((d, i) => {
       return {
         id: d.name,
         accessorFn: (row) => row[d.name],
         header: isFlat ? d.label || d.name : nestedLabel,
-        cell: ({ row, getValue }) =>
-          isFlat
-            ? getValue()
+        cell: ({ row, getValue }) => {
+          const formattedDimensionValue = formatDimensionValue(
+            getValue() as string,
+            isFlat ? i : row.depth,
+            config.time,
+            rowDimensionNames,
+          );
+
+          return isFlat
+            ? formattedDimensionValue
             : cellComponent(PivotExpandableCell, {
-                value: formatRowDimensionValue(
-                  getValue() as string,
-                  row.depth,
-                  config.time,
-                  rowDimensionNames,
-                ),
+                value: formattedDimensionValue,
                 row,
-              }),
+              });
+        },
       };
     });
 
