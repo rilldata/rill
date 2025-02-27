@@ -74,12 +74,10 @@ func (d *db) Schema(ctx context.Context, ilike, name string) ([]*Table, error) {
 		table, ok := catalog[t.Name]
 		if ok {
 			t.View = table.Type == "VIEW"
+			if !t.View {
+				t.SizeBytes = fileSize([]string{d.localDBPath(t.Name, table.Version)})
+			}
 		}
-		if !t.View {
-			t.SizeBytes = fileSize([]string{d.localDBPath(t.Name, table.Version)})
-		}
-
 	}
-
 	return res, nil
 }

@@ -74,7 +74,7 @@ export function useDatabases(instanceId: string, connector: string) {
           // Get the unique databases
           return (
             data.tables
-              ?.map((tableInfo: TableInfo) => tableInfo.database)
+              ?.map((tableInfo: V1TableInfo) => tableInfo.database)
               .filter((value, index, self) => self.indexOf(value) === index) ??
             []
           );
