@@ -13,8 +13,8 @@
     MetricsViewSpecMeasureV2,
     V1ComponentSpecRendererProperties,
   } from "@rilldata/web-common/runtime-client";
-  import type { View } from "svelte-vega";
   import type { Readable } from "svelte/store";
+  import type { View } from "vega-typings";
   import { getChartData, validateChartSchema } from "./selector";
   import type { ChartType } from "./types";
   import { generateSpec, getChartTitle, mergedVlConfig } from "./util";
