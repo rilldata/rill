@@ -37,7 +37,7 @@
   import {
     cleanUpComparisonValue,
     compareLeaderboardValues,
-    getMultipleSort,
+    getSort,
     prepareLeaderboardItemData,
   } from "./leaderboard-utils";
   import {
@@ -149,10 +149,10 @@
     ...activeMeasureNames.map((name) => ({ name })),
   ];
 
-  $: sort = getMultipleSort(
+  $: sort = getSort(
     sortedAscending,
     sortType,
-    activeMeasureNames,
+    activeMeasureNames[0],
     dimensionName,
     !!comparisonTimeRange,
   );

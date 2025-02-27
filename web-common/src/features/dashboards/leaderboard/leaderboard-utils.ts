@@ -116,7 +116,6 @@ function getApiSortName(activeMeasureName: string, sortType: SortType) {
   }
 }
 
-// TODO: to be removed
 export function getSort(
   ascending: boolean,
   type: SortType,
@@ -133,30 +132,6 @@ export function getSort(
           : timeComparison
             ? getApiSortName(activeMeasureName, type)
             : activeMeasureName || dimensionName,
-    },
-  ];
-}
-
-export function getMultipleSort(
-  ascending: boolean,
-  type: SortType,
-  measureNames: string[],
-  dimensionName: string,
-  timeComparison: boolean,
-) {
-  if (type === SortType.DIMENSION || !measureNames.length) {
-    return [{ desc: !ascending, name: dimensionName }];
-  }
-
-  return [
-    ...measureNames.map((name) => ({
-      desc: !ascending, // Same direction for all measures
-      name: timeComparison ? getApiSortName(name, type) : name,
-    })),
-    // Dimension name is always sorted in ascending order
-    {
-      desc: false,
-      name: dimensionName,
     },
   ];
 }

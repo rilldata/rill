@@ -19,7 +19,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { getComparisonRequestMeasures } from "../dashboard-utils";
   import { mergeDimensionAndMeasureFilters } from "../filters/measure-filters/measure-filter-utils";
-  import { getMultipleSort } from "../leaderboard/leaderboard-utils";
+  import { getSort } from "../leaderboard/leaderboard-utils";
   import { getFiltersForOtherDimensions } from "../selectors";
   import { getMeasuresForDimensionTable } from "../state-managers/selectors/dashboard-queries";
   import { dimensionSearchText } from "../stores/dashboard-stores";
@@ -105,25 +105,25 @@
     activeMeasureNames[0],
     dimensionThresholdFilters,
     visibleMeasureNames,
-  )
-    .map(
-      (n) =>
-        ({
-          name: n,
-        }) as V1MetricsViewAggregationMeasure,
-    )
-    .concat(
-      ...(comparisonTimeRange
-        ? activeMeasureNames.flatMap((name) =>
-            getComparisonRequestMeasures(name),
-          )
-        : []),
-    );
+  ).map(
+    (measureName) =>
+      ({
+        name: measureName,
+      }) as V1MetricsViewAggregationMeasure,
+  );
 
-  $: sort = getMultipleSort(
+  $: if (comparisonTimeRange) {
+    measures = measures.concat(
+      activeMeasureNames.flatMap((name) => getComparisonRequestMeasures(name)),
+    );
+  }
+
+  $: console.log("measures: ", measures);
+
+  $: sort = getSort(
     $sortedAscending,
     $sortType,
-    activeMeasureNames,
+    activeMeasureNames[0],
     dimensionName,
     !!comparisonTimeRange,
   );
