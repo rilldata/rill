@@ -38,7 +38,7 @@
     contextColumnFilters.includes(LeaderboardContextColumn.DELTA_PERCENT);
 
   $: showPercentOfTotal =
-    !isTimeComparisonActive &&
+    isTimeComparisonActive &&
     isValidPercentOfTotal &&
     contextColumnFilters.includes(LeaderboardContextColumn.PERCENT);
 </script>
@@ -141,8 +141,6 @@
         </button>
       </th>
     {/if}
-
-    <!-- TODO: support new measure columns -->
   </tr>
 </thead>
 
