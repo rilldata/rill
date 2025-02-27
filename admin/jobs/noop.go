@@ -71,3 +71,11 @@ func (n *noop) DeleteOrg(ctx context.Context, orgID string) (*InsertResult, erro
 func (n *noop) PlanChanged(ctx context.Context, billingCustomerID string) (*InsertResult, error) {
 	return nil, nil
 }
+
+func (n *noop) LogInactiveOrgs(ctx context.Context) (*InsertResult, error) {
+	return nil, nil
+}
+
+func (n *noop) DeleteInactiveOrgs(ctx context.Context) (*InsertResult, error) {
+	return nil, nil
+}

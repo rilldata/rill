@@ -27,6 +27,8 @@ type Client interface {
 	RepairOrgBilling(ctx context.Context, orgID string) (*InsertResult, error) // biller is just used for deduplication
 	StartOrgTrial(ctx context.Context, orgID string) (*InsertResult, error)
 	DeleteOrg(ctx context.Context, orgID string) (*InsertResult, error)
+	LogInactiveOrgs(ctx context.Context) (*InsertResult, error)
+	DeleteInactiveOrgs(ctx context.Context) (*InsertResult, error)
 
 	PlanChanged(ctx context.Context, billingCustomerID string) (*InsertResult, error)
 }

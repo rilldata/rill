@@ -230,6 +230,21 @@ func (c *connection) DeleteOrganizationWhitelistedDomain(ctx context.Context, id
 	return checkDeleteRow("org whitelist domain", res, err)
 }
 
+func (c *connection) FindInactiveOrganizations(ctx context.Context) ([]*database.Organization, error) {
+	// TODO: This definition may change, but for now, we are considering an organization as inactive if it has no users
+	res := []*database.Organization{}
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT o.* FROM orgs o
+		WHERE o.updated_on < now() - interval '30 days' AND NOT EXISTS (
+			SELECT 1 FROM users_orgs_roles uor WHERE uor.org_id = o.id
+		)
+	`)
+	if err != nil {
+		return nil, parseErr("orgs", err)
+	}
+	return res, nil
+}
+
 func (c *connection) FindProjects(ctx context.Context, afterName string, limit int) ([]*database.Project, error) {
 	var res []*projectDTO
 	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p WHERE lower(name) > lower($1) ORDER BY lower(p.name) LIMIT $2", afterName, limit)

@@ -173,3 +173,49 @@ func (w *DeleteOrgWorker) Work(ctx context.Context, job *river.Job[DeleteOrgArgs
 
 	return nil
 }
+
+type LogInactiveOrgsArgs struct{}
+
+func (LogInactiveOrgsArgs) Kind() string { return "log_inactive_orgs" }
+
+type LogInactiveOrgsWorker struct {
+	river.WorkerDefaults[LogInactiveOrgsArgs]
+	admin  *admin.Service
+	logger *zap.Logger
+}
+
+func (w *LogInactiveOrgsWorker) Work(ctx context.Context, job *river.Job[LogInactiveOrgsArgs]) error {
+	// find all inactive organizations
+	orgs, err := w.admin.DB.FindInactiveOrganizations(ctx)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil
+		}
+		return fmt.Errorf("failed to find inactive organizations: %w", err)
+	}
+
+	for _, org := range orgs {
+		// For each inactive organization, check if it has any projects
+		projects, err := w.admin.DB.FindProjectsForOrganization(ctx, org.ID, "", 100)
+		if err != nil {
+			return fmt.Errorf("failed to find projects for organization %s: %w", org.Name, err)
+		}
+		w.logger.Warn("inactive organization", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.Time("last_updated_at", org.UpdatedOn), zap.Int("connected_projects", len(projects)))
+	}
+
+	return nil
+}
+
+type DeleteInactiveOrgsArgs struct{}
+
+func (DeleteInactiveOrgsArgs) Kind() string { return "delete_inactive_orgs" }
+
+type DeleteInactiveOrgsWorker struct {
+	river.WorkerDefaults[DeleteInactiveOrgsArgs]
+	admin  *admin.Service
+	logger *zap.Logger
+}
+
+func (w *DeleteInactiveOrgsWorker) Work(ctx context.Context, job *river.Job[DeleteInactiveOrgsArgs]) error {
+	return nil
+}
