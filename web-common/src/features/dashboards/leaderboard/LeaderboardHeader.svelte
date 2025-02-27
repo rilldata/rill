@@ -93,7 +93,7 @@
         aria-label="Toggle sort leaderboards by value"
         on:click={() => toggleSort(SortType.VALUE)}
       >
-        {#if sortType === SortType.VALUE}
+        # {#if sortType === SortType.VALUE}
           <ArrowDown flip={sortedAscending} />
         {/if}
       </button>
