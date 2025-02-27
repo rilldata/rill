@@ -146,12 +146,12 @@
     : undefined;
 
   $: showDeltaAbsolute =
-    (isTimeComparisonActive || isValidPercentOfTotal) &&
+    isTimeComparisonActive &&
     contextColumnFilters.includes(LeaderboardContextColumn.DELTA_ABSOLUTE);
 
-  $: showDeltaPercent = contextColumnFilters.includes(
-    LeaderboardContextColumn.DELTA_PERCENT,
-  );
+  $: showDeltaPercent =
+    isTimeComparisonActive &&
+    contextColumnFilters.includes(LeaderboardContextColumn.DELTA_PERCENT);
 
   $: showPercentOfTotal =
     isTimeComparisonActive &&
