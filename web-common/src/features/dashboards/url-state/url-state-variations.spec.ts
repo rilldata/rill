@@ -13,9 +13,11 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import { getInitExploreStateForTest } from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
 import {
+  AD_BIDS_APPLY_LARGE_FILTERS,
   AD_BIDS_CLOSE_DIMENSION_TABLE,
   AD_BIDS_CLOSE_TDD,
   AD_BIDS_DISABLE_COMPARE_TIME_RANGE_FILTER,
+  AD_BIDS_LARGE_FILTER,
   AD_BIDS_OPEN_DOM_DIMENSION_TABLE,
   AD_BIDS_OPEN_DOMAIN_BID_PRICE_PIVOT,
   AD_BIDS_OPEN_IMP_TDD,
@@ -49,7 +51,11 @@ import { convertExploreStateToURLSearchParamsWithCompression } from "@rilldata/w
 import { convertURLToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
-import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
+import {
+  type DashboardTimeControls,
+  TimeComparisonOption,
+  TimeRangePreset,
+} from "@rilldata/web-common/lib/time/types";
 import {
   type V1ExplorePreset,
   type V1ExploreSpec,
@@ -445,6 +451,65 @@ describe("Human readable URL state variations", () => {
         expect(entityFromDefaultUrl).toEqual(initState);
       });
     }
+  });
+
+  it("Large state gets compressed", async () => {
+    metricsExplorerStore.init(
+      AD_BIDS_EXPLORE_NAME,
+      getInitExploreStateForTest(
+        AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+        AD_BIDS_EXPLORE_INIT,
+        AD_BIDS_TIME_RANGE_SUMMARY,
+      ),
+    );
+    const defaultExplorePreset = getDefaultExplorePreset(
+      AD_BIDS_EXPLORE_INIT,
+      AD_BIDS_TIME_RANGE_SUMMARY,
+    );
+
+    applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, [
+      AD_BIDS_APPLY_LARGE_FILTERS,
+      AD_BIDS_SET_P4W_TIME_RANGE_FILTER,
+      AD_BIDS_SET_PREVIOUS_PERIOD_COMPARE_TIME_RANGE_FILTER,
+      AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS,
+    ]);
+
+    // load url params with updated metrics state
+    const url = new URL("http://localhost");
+    url.search = await convertExploreStateToURLSearchParamsWithCompression(
+      get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
+      AD_BIDS_EXPLORE_INIT,
+      getTimeControlState(
+        AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+        AD_BIDS_EXPLORE_INIT,
+        AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
+        get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
+      ),
+      defaultExplorePreset,
+      url,
+    );
+
+    // reset the explore state
+    await applyURLToExploreState(
+      new URL("http://localhost"),
+      AD_BIDS_EXPLORE_INIT,
+      defaultExplorePreset,
+    );
+    // reapply the compressed url
+    await applyURLToExploreState(
+      url,
+      AD_BIDS_EXPLORE_INIT,
+      defaultExplorePreset,
+    );
+
+    const currentState = getCleanMetricsExploreForAssertion();
+    expect(currentState.selectedTimeRange?.name).toEqual(
+      TimeRangePreset.LAST_4_WEEKS,
+    );
+    expect(currentState.selectedComparisonTimeRange?.name).toEqual(
+      TimeComparisonOption.CONTIGUOUS,
+    );
+    expect(currentState.whereFilter).toEqual(AD_BIDS_LARGE_FILTER);
   });
 });
 
