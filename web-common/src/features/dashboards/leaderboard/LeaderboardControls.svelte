@@ -69,7 +69,7 @@
   {#if measures.length && firstMeasure}
     <div
       class="flex flex-row items-center ui-copy-muted gap-x-1"
-      style:max-width="640px"
+      style:max-width="768px"
     >
       <DashboardVisibilityDropdown
         category="Dimensions"
