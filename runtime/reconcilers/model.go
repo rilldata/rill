@@ -950,7 +950,7 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	}
 
 	// Track execution metadata
-	var totalExecDuration time.Duration
+	var totalExecDuration atomic.Int64
 	firstRunIsIncremental := incrementalRun
 
 	// We run the first partition without concurrency to ensure that only incremental runs are executed concurrently.
@@ -982,7 +982,7 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 		// Update the state so the next invocations will be incremental
 		prevResult = res
 		incrementalRun = true
-		totalExecDuration = res.ExecDuration
+		totalExecDuration.Add(int64(res.ExecDuration))
 	}
 
 	// Repeatedly load a batch of pending partitions and execute it with a pool of worker goroutines.
@@ -1020,7 +1020,6 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 		// Start the worker goroutines
 		grp, ctx := errgroup.WithContext(ctx)
 		counter := &atomic.Int64{}
-		duration := &atomic.Int64{}
 		for workerID := 0; workerID < workers; workerID++ {
 			workerID := workerID
 			grp.Go(func() error {
@@ -1043,7 +1042,7 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 						return err
 					}
 					if ok {
-						duration.Add(int64(res.ExecDuration))
+						totalExecDuration.Add(int64(res.ExecDuration))
 						results[workerID] = res
 					}
 				}
@@ -1071,7 +1070,6 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 				return "", nil, false, fmt.Errorf("failed to merge partition task results: %w", err)
 			}
 		}
-		totalExecDuration += time.Duration(duration.Load())
 
 		// If we got fewer partitions than the batch size, we've processed all pending partitions and can stop.
 		if len(partitions) < _modelPendingPartitionsBatchSize {
@@ -1085,7 +1083,7 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	}
 
 	// We have continuously updated prevResult with new partition results, so we complete and return it here
-	prevResult.ExecDuration = totalExecDuration
+	prevResult.ExecDuration = time.Duration(totalExecDuration.Load())
 	return executor.finalConnector, prevResult, firstRunIsIncremental, nil
 }
 
