@@ -172,6 +172,9 @@
 
   function handleCellClick(cell: Cell<PivotDataRow, unknown>) {
     if (!canShowDataViewer || !setPivotActiveCell) return;
+
+    const value = cell.getValue();
+    if (value === undefined) return;
     setPivotActiveCell(cell.row.id, cell.column.id);
   }
 

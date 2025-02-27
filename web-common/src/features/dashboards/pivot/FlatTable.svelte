@@ -179,7 +179,8 @@
           <td
             class="ui-copy-number"
             class:active-cell={isActive}
-            class:interactive-cell={canShowDataViewer}
+            class:interactive-cell={canShowDataViewer &&
+              cell.getValue() !== undefined}
             class:text-right={getMeasureColumn(cell.column)}
             on:click={() => onCellClick(cell)}
             on:mouseenter={onCellHover}
