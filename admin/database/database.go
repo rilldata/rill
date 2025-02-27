@@ -915,17 +915,6 @@ type ProjectWhitelistedDomainWithJoinedRoleNames struct {
 	RoleName string `db:"name"`
 }
 
-const (
-	DefaultQuotaProjects                       = 1
-	DefaultQuotaDeployments                    = 2
-	DefaultQuotaSlotsTotal                     = 4
-	DefaultQuotaSlotsPerDeployment             = 2
-	DefaultQuotaOutstandingInvites             = 200
-	DefaultQuotaSingleuserOrgs                 = 100
-	DefaultQuotaTrialOrgs                      = 2
-	DefaultQuotaStorageLimitBytesPerDeployment = int64(10737418240) // 10GB
-)
-
 type InsertOrganizationInviteOptions struct {
 	Email     string `validate:"email"`
 	InviterID string

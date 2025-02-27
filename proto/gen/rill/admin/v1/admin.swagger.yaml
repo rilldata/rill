@@ -4046,6 +4046,9 @@ definitions:
         $ref: '#/definitions/v1Service'
   v1CreateUsergroupResponse:
     type: object
+    properties:
+      usergroup:
+        $ref: '#/definitions/v1Usergroup'
   v1CreateWhitelistedDomainResponse:
     type: object
   v1DeleteAlertResponse:

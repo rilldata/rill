@@ -1482,7 +1482,9 @@ message CreateUsergroupRequest {
   string name = 2 [(validate.rules).string.min_len = 1];
 }
 
-message CreateUsergroupResponse {}
+message CreateUsergroupResponse {
+  Usergroup usergroup = 1;
+}
 
 message GetUsergroupRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];

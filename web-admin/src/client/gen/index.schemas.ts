@@ -1310,7 +1310,7 @@ export interface V1CreateWhitelistedDomainResponse {
 }
 
 export interface V1CreateUsergroupResponse {
-  [key: string]: any;
+  usergroup?: V1Usergroup;
 }
 
 export interface V1CreateServiceResponse {

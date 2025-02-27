@@ -5236,6 +5236,11 @@ export class CreateUsergroupRequest extends Message<CreateUsergroupRequest> {
  * @generated from message rill.admin.v1.CreateUsergroupResponse
  */
 export class CreateUsergroupResponse extends Message<CreateUsergroupResponse> {
+  /**
+   * @generated from field: rill.admin.v1.Usergroup usergroup = 1;
+   */
+  usergroup?: Usergroup;
+
   constructor(data?: PartialMessage<CreateUsergroupResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5244,6 +5249,7 @@ export class CreateUsergroupResponse extends Message<CreateUsergroupResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.CreateUsergroupResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "usergroup", kind: "message", T: Usergroup },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateUsergroupResponse {

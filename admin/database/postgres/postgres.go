@@ -1430,8 +1430,8 @@ func (c *connection) InsertOrganizationMemberUserIfNotExists(ctx context.Context
 	if err != nil {
 		return err
 	}
-	if rows == 0 {
-		return fmt.Errorf("no rows affected when adding user to organization")
+	if rows > 1 {
+		panic(fmt.Errorf("expected to update 0 or 1 row, but updated %d", rows))
 	}
 	return nil
 }

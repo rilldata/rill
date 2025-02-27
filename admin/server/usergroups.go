@@ -31,7 +31,7 @@ func (s *Server) CreateUsergroup(ctx context.Context, req *adminv1.CreateUsergro
 		return nil, status.Error(codes.PermissionDenied, "not allowed to add org user group")
 	}
 
-	_, err = s.admin.DB.InsertUsergroup(ctx, &database.InsertUsergroupOptions{
+	grp, err := s.admin.DB.InsertUsergroup(ctx, &database.InsertUsergroupOptions{
 		Name:  req.Name,
 		OrgID: org.ID,
 	})
@@ -39,7 +39,9 @@ func (s *Server) CreateUsergroup(ctx context.Context, req *adminv1.CreateUsergro
 		return nil, err
 	}
 
-	return &adminv1.CreateUsergroupResponse{}, nil
+	return &adminv1.CreateUsergroupResponse{
+		Usergroup: usergroupToPB(grp),
+	}, nil
 }
 
 func (s *Server) GetUsergroup(ctx context.Context, req *adminv1.GetUsergroupRequest) (*adminv1.GetUsergroupResponse, error) {

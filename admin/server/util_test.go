@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"strings"
 	"testing"
 
 	"github.com/google/go-github/v50/github"
@@ -26,14 +27,21 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// newTestUser creates a new user with the given email using a server created with newTestServer.
-func newTestUser(t *testing.T, svr *Server, domain string) (*database.User, *client.Client) {
-	if domain == "" {
-		domain = "newTestUser.com"
-	}
+// newTestUser creates a new user using a server created with newTestServer.
+func newTestUser(t *testing.T, svr *Server) (*database.User, *client.Client) {
+	return newTestUserWithDomain(t, svr, "test-user.com")
+}
+
+// newTestUserWithDomain creates a new user with a random email with the given email domain using a server created with newTestServer.
+func newTestUserWithDomain(t *testing.T, svr *Server, domain string) (*database.User, *client.Client) {
 	rand := randomBytes(16)
 	email := fmt.Sprintf("test-%x@%s", rand, domain)
-	name := fmt.Sprintf("Test %x", rand)
+	return newTestUserWithEmail(t, svr, email)
+}
+
+// newTestUserWithEmail creates a new user with the given email using a server created with newTestServer.
+func newTestUserWithEmail(t *testing.T, svr *Server, email string) (*database.User, *client.Client) {
+	name := fmt.Sprintf("Test %s", strings.Split(email, "@")[0])
 
 	u, err := svr.admin.CreateOrUpdateUser(context.Background(), email, name, "")
 	require.NoError(t, err)

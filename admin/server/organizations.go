@@ -692,6 +692,12 @@ func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrgani
 		return nil, err
 	}
 
+	// delete from all projects in the org
+	err = s.admin.DB.DeleteAllProjectMemberUserForOrganization(ctx, org.ID, claims.OwnerID())
+	if err != nil {
+		return nil, err
+	}
+
 	err = tx.Commit()
 	if err != nil {
 		return nil, err

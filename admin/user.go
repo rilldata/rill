@@ -61,8 +61,8 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		Email:               email,
 		DisplayName:         name,
 		PhotoURL:            photoURL,
-		QuotaSingleuserOrgs: database.DefaultQuotaSingleuserOrgs,
-		QuotaTrialOrgs:      database.DefaultQuotaTrialOrgs,
+		QuotaSingleuserOrgs: deref(s.Biller.DefaultUserQuotas().SingleuserOrgs, -1),
+		QuotaTrialOrgs:      deref(s.Biller.DefaultUserQuotas().TrialOrgs, -1),
 		Superuser:           isFirstUser,
 	}
 
@@ -220,13 +220,7 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, email, 
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	quotaProjects := database.DefaultQuotaProjects
-	quotaDeployments := database.DefaultQuotaDeployments
-	quotaSlotsTotal := database.DefaultQuotaSlotsTotal
-	quotaSlotsPerDeployment := database.DefaultQuotaSlotsPerDeployment
-	quotaOutstandingInvites := database.DefaultQuotaOutstandingInvites
-	quotaStorageLimitBytesPerDeployment := database.DefaultQuotaStorageLimitBytesPerDeployment
-
+	defaultQuotas := s.Biller.DefaultQuotas()
 	org, err := s.DB.InsertOrganization(txCtx, &database.InsertOrganizationOptions{
 		Name:                                orgName,
 		DisplayName:                         orgName,
@@ -234,12 +228,12 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, email, 
 		LogoAssetID:                         nil,
 		FaviconAssetID:                      nil,
 		CustomDomain:                        "",
-		QuotaProjects:                       quotaProjects,
-		QuotaDeployments:                    quotaDeployments,
-		QuotaSlotsTotal:                     quotaSlotsTotal,
-		QuotaSlotsPerDeployment:             quotaSlotsPerDeployment,
-		QuotaOutstandingInvites:             quotaOutstandingInvites,
-		QuotaStorageLimitBytesPerDeployment: quotaStorageLimitBytesPerDeployment,
+		QuotaProjects:                       deref(defaultQuotas.NumProjects, -1),
+		QuotaDeployments:                    deref(defaultQuotas.NumDeployments, -1),
+		QuotaSlotsTotal:                     deref(defaultQuotas.NumSlotsTotal, -1),
+		QuotaSlotsPerDeployment:             deref(defaultQuotas.NumSlotsPerDeployment, -1),
+		QuotaOutstandingInvites:             deref(defaultQuotas.NumOutstandingInvites, -1),
+		QuotaStorageLimitBytesPerDeployment: deref(defaultQuotas.StorageLimitBytesPerDeployment, -1),
 		BillingEmail:                        email,
 		BillingCustomerID:                   "", // Populated later
 		PaymentCustomerID:                   "", // Populated later
@@ -318,4 +312,11 @@ func (s *Service) prepareOrganization(ctx context.Context, orgID, userID string)
 		return nil, err
 	}
 	return org, nil
+}
+
+func deref[T any](v *T, def T) T {
+	if v == nil {
+		return def
+	}
+	return *v
 }
