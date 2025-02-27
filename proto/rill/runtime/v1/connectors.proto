@@ -173,7 +173,6 @@ message OLAPListTablesRequest {
   // Has the same syntax and behavior as ILIKE in SQL.
   // If the connector supports schema/database names, it searches against both the plain table name and the fully qualified table name.
   string search_pattern = 3;
-  bool include_size = 4;
 }
 
 message OLAPListTablesResponse {
@@ -188,7 +187,7 @@ message TableInfo {
   string name = 2;
   // has_unsupported_data_types indicates if the underlying table has any column with an unsupported OLAP engine datatype
   bool has_unsupported_data_types = 3;
-  // bytes_on_disk is the size of the table in bytes on disk. Set to -1 if the size is unknown or cannot be determined.
+  // bytes_on_disk is the size of the table in bytes on disk. Set to -1 if the size cannot be determined.
   int64 bytes_on_disk = 7;
 }
 
@@ -205,6 +204,8 @@ message OLAPGetTableResponse {
   // unsupported_columns are columns having datatypes which are not supported by Rill
   map<string, string> unsupported_columns = 3;
   bool view = 2;
+  // bytes_on_disk is the size of the table in bytes on disk. Set to -1 if the size cannot be determined.
+  int64 bytes_on_disk = 4;
 }
 
 message BigQueryListDatasetsRequest {

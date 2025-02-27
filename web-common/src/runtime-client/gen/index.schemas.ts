@@ -36,7 +36,6 @@ export type ConnectorServiceOLAPListTablesParams = {
   instanceId?: string;
   connector?: string;
   searchPattern?: string;
-  includeSize?: boolean;
 };
 
 export type RuntimeServiceCreateTriggerBody = {
@@ -710,7 +709,7 @@ export interface V1TableInfo {
   isDefaultDatabaseSchema?: boolean;
   name?: string;
   hasUnsupportedDataTypes?: boolean;
-  /** bytes_on_disk is the size of the table in bytes on disk. Set to -1 if the size is unknown or cannot be determined. */
+  /** bytes_on_disk is the size of the table in bytes on disk. Set to -1 if the size cannot be determined. */
   bytesOnDisk?: string;
 }
 
@@ -1164,6 +1163,8 @@ export interface V1OLAPGetTableResponse {
   schema?: V1StructType;
   unsupportedColumns?: V1OLAPGetTableResponseUnsupportedColumns;
   view?: boolean;
+  /** bytes_on_disk is the size of the table in bytes on disk. Set to -1 if the size cannot be determined. */
+  bytesOnDisk?: string;
 }
 
 export interface V1NumericStatistics {

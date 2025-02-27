@@ -2786,10 +2786,6 @@ paths:
           in: query
           required: false
           type: string
-        - name: includeSize
-          in: query
-          required: false
-          type: boolean
       tags:
         - ConnectorService
   /v1/ping:
@@ -5769,6 +5765,10 @@ definitions:
         title: unsupported_columns are columns having datatypes which are not supported by Rill
       view:
         type: boolean
+      bytesOnDisk:
+        type: string
+        format: int64
+        description: bytes_on_disk is the size of the table in bytes on disk. Set to -1 if the size cannot be determined.
   v1OLAPListTablesResponse:
     type: object
     properties:
@@ -6480,7 +6480,7 @@ definitions:
       bytesOnDisk:
         type: string
         format: int64
-        description: bytes_on_disk is the size of the table in bytes on disk. Set to -1 if the size is unknown or cannot be determined.
+        description: bytes_on_disk is the size of the table in bytes on disk. Set to -1 if the size cannot be determined.
   v1TableRowsRequest:
     type: object
     properties:

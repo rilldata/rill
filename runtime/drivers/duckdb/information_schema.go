@@ -18,7 +18,7 @@ func (c *connection) InformationSchema() drivers.InformationSchema {
 	return &informationSchema{c: c}
 }
 
-func (i informationSchema) All(ctx context.Context, ilike string, includeSize bool) ([]*drivers.Table, error) {
+func (i informationSchema) All(ctx context.Context, ilike string) ([]*drivers.Table, error) {
 	// TODO: this bypasses the acquireMetaConn call in the original implementation. Fix this.
 	db, release, err := i.c.acquireDB()
 	if err != nil {
@@ -62,6 +62,11 @@ func (i informationSchema) Lookup(ctx context.Context, _, _, name string) (*driv
 	}
 
 	return tables[0], nil
+}
+
+func (i informationSchema) SizeOnDisk(ctx context.Context, tables []*drivers.Table) error {
+	// already populated in All and Lookup calls
+	return nil
 }
 
 func (i informationSchema) scanTables(rows []*rduckdb.Table) ([]*drivers.Table, error) {

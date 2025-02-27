@@ -160,8 +160,11 @@ func (r *Result) Close() error {
 // InformationSchema contains information about existing tables in an OLAP driver.
 // Table lookups should be case insensitive.
 type InformationSchema interface {
-	All(ctx context.Context, like string, includeSize bool) ([]*Table, error)
+	All(ctx context.Context, like string) ([]*Table, error)
 	Lookup(ctx context.Context, db, schema, name string) (*Table, error)
+	// SizeOnDisk populates the BytesOnDisk field of the tables.
+	// It should be called after All or Lookup and not on manually created tables.
+	SizeOnDisk(ctx context.Context, tables []*Table) error
 }
 
 // Table represents a table in an information schema.
@@ -175,11 +178,6 @@ type Table struct {
 	Schema                  *runtimev1.StructType
 	UnsupportedCols         map[string]string
 	BytesOnDisk             int64
-}
-
-// IngestionSummary is details about ingestion
-type IngestionSummary struct {
-	BytesIngested int64
 }
 
 // IncrementalStrategy is a strategy to use for incrementally inserting data into a SQL table.

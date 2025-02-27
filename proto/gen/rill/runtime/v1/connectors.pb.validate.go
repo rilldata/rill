@@ -1982,8 +1982,6 @@ func (m *OLAPListTablesRequest) validate(all bool) error {
 
 	// no validation rules for SearchPattern
 
-	// no validation rules for IncludeSize
-
 	if len(errors) > 0 {
 		return OLAPListTablesRequestMultiError(errors)
 	}
@@ -2479,6 +2477,8 @@ func (m *OLAPGetTableResponse) validate(all bool) error {
 	// no validation rules for UnsupportedColumns
 
 	// no validation rules for View
+
+	// no validation rules for BytesOnDisk
 
 	if len(errors) > 0 {
 		return OLAPGetTableResponseMultiError(errors)

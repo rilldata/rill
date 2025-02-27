@@ -53,9 +53,12 @@ func testInformationSchemaAll(t *testing.T, conn drivers.Handle) {
 	})
 	require.NoError(t, err)
 
-	tables, err := olap.InformationSchema().All(context.Background(), "", true)
+	tables, err := olap.InformationSchema().All(context.Background(), "")
 	require.NoError(t, err)
 	require.Equal(t, 5, len(tables))
+
+	err = olap.InformationSchema().SizeOnDisk(context.Background(), tables)
+	require.NoError(t, err)
 
 	require.Equal(t, "bar", tables[0].Name)
 	require.Equal(t, "foo", tables[1].Name)
@@ -90,12 +93,12 @@ func testInformationSchemaAllLike(t *testing.T, conn drivers.Handle) {
 	})
 	require.NoError(t, err)
 
-	tables, err := olap.InformationSchema().All(context.Background(), "%odel", false)
+	tables, err := olap.InformationSchema().All(context.Background(), "%odel")
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tables))
 	require.Equal(t, "model", tables[0].Name)
 
-	tables, err = olap.InformationSchema().All(context.Background(), "other.%ar", false)
+	tables, err = olap.InformationSchema().All(context.Background(), "other.%ar")
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tables))
 	require.Equal(t, "bar", tables[0].Name)

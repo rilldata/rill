@@ -189,7 +189,7 @@ func (c *connection) InformationSchema() drivers.InformationSchema {
 	return informationSchema{c: c}
 }
 
-func (i informationSchema) All(ctx context.Context, like string, includeSize bool) ([]*drivers.Table, error) {
+func (i informationSchema) All(ctx context.Context, like string) ([]*drivers.Table, error) {
 	var likeClause string
 	var args []any
 	if like != "" {
@@ -216,59 +216,13 @@ func (i informationSchema) All(ctx context.Context, like string, includeSize boo
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	tables, err := i.scanTables(rows)
 	if err != nil {
-		rows.Close()
 		return nil, err
 	}
-	rows.Close()
-
-	if includeSize {
-		err = i.populateTableSize(ctx, tables)
-		if err != nil {
-			// sys.segments query can fail due to access issues
-			// so we do not return error
-			i.c.logger.Warn("failed to populate table size", zap.Error(err))
-		}
-	}
-
 	return tables, nil
-}
-
-func (i informationSchema) populateTableSize(ctx context.Context, tables []*drivers.Table) error {
-	q := `SELECT
-    		datasource,
-    		SUM("size") AS total_size
-		FROM sys.segments
-		WHERE is_active = 1
-		GROUP BY 1`
-	rows, err := i.c.db.QueryxContext(ctx, q)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-	res := make(map[string]uint64, len(tables))
-	var (
-		name string
-		size uint64
-	)
-	for rows.Next() {
-		if err := rows.Scan(&name, &size); err != nil {
-			return err
-		}
-		res[name] = size
-	}
-	if err := rows.Err(); err != nil {
-		return err
-	}
-
-	for _, t := range tables {
-		if size, ok := res[t.Name]; ok {
-			t.BytesOnDisk = int64(size)
-		}
-	}
-	return nil
 }
 
 func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) (*drivers.Table, error) {
@@ -319,6 +273,41 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 	}
 
 	return tables[0], nil
+}
+
+func (i informationSchema) SizeOnDisk(ctx context.Context, tables []*drivers.Table) error {
+	q := `SELECT
+    		datasource,
+    		SUM("size") AS total_size
+		FROM sys.segments
+		WHERE is_active = 1
+		GROUP BY 1`
+	rows, err := i.c.db.QueryxContext(ctx, q)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	res := make(map[string]uint64, len(tables))
+	var (
+		name string
+		size uint64
+	)
+	for rows.Next() {
+		if err := rows.Scan(&name, &size); err != nil {
+			return err
+		}
+		res[name] = size
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+
+	for _, t := range tables {
+		if size, ok := res[t.Name]; ok {
+			t.BytesOnDisk = int64(size)
+		}
+	}
+	return nil
 }
 
 func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error) {
