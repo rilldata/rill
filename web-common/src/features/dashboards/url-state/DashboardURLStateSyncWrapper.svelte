@@ -3,6 +3,7 @@
   import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+  import { decompressUrlParams } from "@rilldata/web-common/features/dashboards/url-state/compression";
   import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
   import DashboardURLStateSync from "@rilldata/web-common/features/dashboards/url-state/DashboardURLStateSync.svelte";
   import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
@@ -45,12 +46,13 @@
   let exploreStateFromSessionStorage:
     | Partial<MetricsExplorerEntity>
     | undefined = undefined;
-  function parseUrl(url: URL, defaultExplorePreset: V1ExplorePreset) {
+  async function parseUrl(url: URL, defaultExplorePreset: V1ExplorePreset) {
+    const searchParams = await decompressUrlParams(url.searchParams);
     ({ partialExploreStateFromUrl, exploreStateFromSessionStorage } =
       getExploreStates(
         $exploreName,
         storeKeyPrefix,
-        url.searchParams,
+        searchParams,
         metricsViewSpec,
         exploreSpec,
         defaultExplorePreset,
@@ -58,7 +60,7 @@
   }
 
   // only reactive to url and defaultExplorePreset
-  $: parseUrl($page.url, defaultExplorePreset);
+  $: void parseUrl($page.url, defaultExplorePreset);
 
   $: validSpec = $validSpecStore.data;
 </script>
