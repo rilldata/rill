@@ -9,14 +9,18 @@
   import DeltaChange from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChange.svelte";
   import DeltaChangePercentage from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChangePercentage.svelte";
   import PercentOfTotal from "@rilldata/web-common/features/dashboards/dimension-table/PercentOfTotal.svelte";
+  import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
 
   export let isValidPercentOfTotal = false;
   export let isTimeComparisonActive = false;
   export let tooltipText: string;
+  export let measures: MetricsViewSpecMeasureV2[];
   export let selectedFilters: LeaderboardContextColumn[] = [];
+  export let selectedMeasureNames: string[] = [];
   export let onContextColumnChange: (
     column: LeaderboardContextColumn[],
   ) => void;
+  export let onSelectAll: () => void;
 
   let active = false;
 
@@ -59,6 +63,8 @@
       : [...selectedFilters, column];
     onContextColumnChange(newFilters);
   }
+
+  $: allSelected = selectedMeasureNames.length === measures.length;
 
   $: withText =
     selectedFilters && selectedFilters.length > 1
@@ -128,6 +134,16 @@
             </DropdownMenu.CheckboxItem>
           {/each}
         </div>
+
+        <footer>
+          <Button on:click={onSelectAll} type="plain">
+            {#if allSelected}
+              Deselect all
+            {:else}
+              Select all
+            {/if}
+          </Button>
+        </footer>
       </DropdownMenu.Content>
 
       <div slot="tooltip-content" transition:fly={{ duration: 300, y: 4 }}>
@@ -138,3 +154,18 @@
     </Tooltip>
   </DropdownMenu.Trigger>
 </DropdownMenu.Root>
+
+<style lang="postcss">
+  footer {
+    height: 42px;
+    @apply border-t border-slate-300;
+    @apply bg-slate-100;
+    @apply flex flex-row flex-none items-center justify-end;
+    @apply gap-x-2 p-2 px-3.5;
+  }
+
+  footer:is(.dark) {
+    @apply bg-gray-800;
+    @apply border-gray-700;
+  }
+</style>
