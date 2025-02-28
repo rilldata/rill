@@ -12,6 +12,7 @@
   import DeltaChangePercentage from "../dimension-table/DeltaChangePercentage.svelte";
   import DeltaChange from "../dimension-table/DeltaChange.svelte";
   import PercentOfTotal from "../dimension-table/PercentOfTotal.svelte";
+
   export let dimensionName: string;
   export let isFetching: boolean;
   export let isTimeComparisonActive: boolean;
@@ -92,66 +93,65 @@
       </Tooltip>
     </th>
 
-    <!-- TODO -->
-    <!-- This is a grouped column -->
-    <!-- measure, delta, percent -->
-    <th>
-      <button
-        aria-label="Toggle sort leaderboards by value"
-        on:click={() => toggleSort(SortType.VALUE)}
-      >
-        {#if hasMoreThanOneMeasure}
-          {activeMeasureNames[0]}
-        {:else}
-          #
-        {/if}
-        {#if sortType === SortType.VALUE}
-          <ArrowDown flip={sortedAscending} />
-        {/if}
-      </button>
-    </th>
-
-    {#if showDeltaAbsolute}
+    {#each activeMeasureNames as measureName, index}
       <th>
         <button
-          aria-label="Toggle sort leaderboards by absolute change"
-          on:click={() => toggleSort(SortType.DELTA_ABSOLUTE)}
+          aria-label="Toggle sort leaderboards by value"
+          on:click={() => toggleSort(SortType.VALUE)}
         >
-          <DeltaChange />
-          {#if sortType === SortType.DELTA_ABSOLUTE}
+          {#if hasMoreThanOneMeasure}
+            {measureName}
+          {:else}
+            #
+          {/if}
+          {#if sortType === SortType.VALUE && index === 0}
             <ArrowDown flip={sortedAscending} />
           {/if}
         </button>
       </th>
-    {/if}
 
-    {#if showDeltaPercent}
-      <th>
-        <button
-          aria-label="Toggle sort leaderboards by percent change"
-          on:click={() => toggleSort(SortType.DELTA_PERCENT)}
-        >
-          <DeltaChangePercentage />
-          {#if sortType === SortType.DELTA_PERCENT}
-            <ArrowDown flip={sortedAscending} />
-          {/if}
-        </button>
-      </th>
-    {/if}
+      {#if showDeltaAbsolute}
+        <th>
+          <button
+            aria-label="Toggle sort leaderboards by absolute change"
+            on:click={() => toggleSort(SortType.DELTA_ABSOLUTE)}
+          >
+            <DeltaChange />
+            {#if sortType === SortType.DELTA_ABSOLUTE}
+              <ArrowDown flip={sortedAscending} />
+            {/if}
+          </button>
+        </th>
+      {/if}
 
-    {#if showPercentOfTotal}
-      <th>
-        <button
-          aria-label="Toggle sort leaderboards by percent of total"
-          on:click={() => toggleSort(SortType.PERCENT)}
-        >
-          <PercentOfTotal />
-          {#if sortType === SortType.PERCENT}
-            <ArrowDown flip={sortedAscending} />
-          {/if}
-        </button>
-      </th>
-    {/if}
+      {#if showDeltaPercent}
+        <th>
+          <button
+            aria-label="Toggle sort leaderboards by percent change"
+            on:click={() => toggleSort(SortType.DELTA_PERCENT)}
+          >
+            <DeltaChangePercentage />
+            {#if sortType === SortType.DELTA_PERCENT}
+              <ArrowDown flip={sortedAscending} />
+            {/if}
+          </button>
+        </th>
+      {/if}
+
+      {#if showPercentOfTotal}
+        <th>
+          <button
+            aria-label="Toggle sort leaderboards by percent of total"
+            on:click={() => toggleSort(SortType.PERCENT)}
+          >
+            <PercentOfTotal />
+            {#if sortType === SortType.PERCENT}
+              <ArrowDown flip={sortedAscending} />
+            {/if}
+          </button>
+        </th>
+      {/if}
+    {/each}
   </tr>
 </thead>
 
