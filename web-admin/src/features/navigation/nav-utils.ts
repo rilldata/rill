@@ -80,6 +80,10 @@ export function isPublicReportPage(page: Page): boolean {
   );
 }
 
+export function isPublicReportResourcePage(page: Page): boolean {
+  return isPublicURLPage(page) && page.url.searchParams.has("resource");
+}
+
 export function isProjectRequestAccessPage(page: Page): boolean {
   return !!page.route.id?.startsWith(
     "/[organization]/[project]/-/request-access",

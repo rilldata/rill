@@ -32,6 +32,7 @@
     isMetricsExplorerPage,
     isOrganizationPage,
     isProjectPage,
+    isPublicReportResourcePage,
     isPublicURLPage,
   } from "./nav-utils";
 
@@ -55,12 +56,14 @@
       token,
     },
   } = $page);
+  $: resource = $page.url.searchParams.get("resource");
 
   $: onProjectPage = isProjectPage($page);
   $: onAlertPage = !!alert;
   $: onReportPage = !!report;
   $: onMetricsExplorerPage = isMetricsExplorerPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
+  $: onPublicReportResourcePage = isPublicReportResourcePage($page);
   $: onOrgPage = isOrganizationPage($page);
 
   $: loggedIn = !!$user.data?.user;
@@ -166,19 +169,28 @@
   $: isDashboardValid = !!exploreSpec;
 
   // Public URLs do not have the resource name in the URL. However, the magic token's metadata includes the resource name.
-  $: tokenQuery = createAdminServiceGetMagicAuthToken(token);
-  $: dashboard = onPublicURLPage
-    ? $tokenQuery?.data?.token?.resourceName
-    : dashboardParam;
+  $: tokenQuery = createAdminServiceGetMagicAuthToken(token, {
+    query: {
+      enabled: onPublicURLPage && !onPublicReportResourcePage,
+    },
+  });
+  $: dashboard =
+    onPublicURLPage && !onPublicReportResourcePage
+      ? $tokenQuery?.data?.token?.resourceName
+      : dashboardParam;
 
   // If on a Public URL, get the dashboard title
   $: exploreQuery = usePublicURLExplore(
     instanceId,
-    $tokenQuery?.data?.token?.resourceName,
+    onPublicReportResourcePage
+      ? resource
+      : $tokenQuery?.data?.token?.resourceName,
     onPublicURLPage,
   );
   $: publicURLDashboardTitle =
-    $exploreQuery.data?.explore?.spec?.displayName || dashboard || "";
+    $exploreQuery.data?.explore?.state?.validSpec?.displayName ||
+    dashboard ||
+    "";
 
   $: currentPath = [organization, project, dashboard, report || alert];
 </script>
