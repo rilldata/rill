@@ -2,37 +2,35 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import { mapQueryToDashboard } from "@rilldata/web-admin/features/dashboards/query-mappers/mapQueryToDashboard";
-  import {
-    getExploreName,
-    getExplorePageUrl,
-  } from "@rilldata/web-admin/features/dashboards/query-mappers/utils";
-  import { useReport } from "@rilldata/web-admin/features/scheduled-reports/selectors";
+  import { getExplorePageUrlSearchParams } from "@rilldata/web-admin/features/dashboards/query-mappers/utils";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { mergeParamsWithOverwrite } from "@rilldata/web-common/lib/url-utils";
+  import type { PageData } from "./$types";
 
-  $: ({ instanceId } = $runtime);
-  $: organization = $page.params.organization;
-  $: project = $page.params.project;
-  $: reportId = $page.params.report;
-  $: executionTime = $page.url.searchParams.get("execution_time");
+  export let data: PageData;
 
-  $: report = useReport(instanceId, reportId);
-  $: exploreName = getExploreName(
-    $report?.data?.resource?.report?.spec?.annotations?.web_open_path,
-  );
+  $: ({
+    report: reportResource,
+    organization,
+    project,
+    reportId,
+    executionTime,
+    token,
+    exploreName,
+  } = data);
 
   let dashboardStateForReport: ReturnType<typeof mapQueryToDashboard>;
   $: dashboardStateForReport = mapQueryToDashboard(
     exploreName,
-    $report?.data?.resource?.report?.spec?.queryName,
-    $report?.data?.resource?.report?.spec?.queryArgsJson,
+    reportResource?.report?.spec?.queryName,
+    reportResource?.report?.spec?.queryArgsJson,
     executionTime,
-    $report?.data?.resource?.report?.spec?.annotations ?? {},
+    reportResource?.report?.spec?.annotations ?? {},
   );
 
   $: if ($dashboardStateForReport?.data) {
@@ -40,14 +38,27 @@
   }
 
   async function gotoExplorePage() {
-    const explorePageUrl = await getExplorePageUrl(
-      $page.url,
-      organization,
-      project,
+    const url = new URL(`${$page.url.protocol}//${$page.url.host}`);
+    let urlSearchParams = new URLSearchParams();
+    if (token) {
+      url.pathname = `/${organization}/${project}/-/share/${token}`;
+      urlSearchParams.set("resource", exploreName);
+      urlSearchParams.set("type", "explore");
+    } else {
+      url.pathname = `/${organization}/${project}/explore/${exploreName}`;
+    }
+
+    const exploreStateParams = await getExplorePageUrlSearchParams(
       $dashboardStateForReport.data.exploreName,
       $dashboardStateForReport.data.exploreState,
     );
-    return goto(explorePageUrl);
+
+    url.search = mergeParamsWithOverwrite(
+      urlSearchParams,
+      exploreStateParams,
+    ).toString();
+
+    return goto(url.toString());
   }
 
   // TODO: error handling
