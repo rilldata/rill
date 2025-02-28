@@ -2,31 +2,32 @@
   import { page } from "$app/stores";
   import {
     createAdminServiceCreateReport,
-    createAdminServiceGetCurrentUser,
     createAdminServiceEditReport,
+    createAdminServiceGetCurrentUser,
+    ReportOptionsOpenMode,
   } from "@rilldata/web-admin/client";
+  import * as Dialog from "@rilldata/web-common/components/dialog-v2";
   import {
     getDashboardNameFromReport,
     getInitialValues,
     type ReportValues,
   } from "@rilldata/web-common/features/scheduled-reports/utils";
-  import { defaults, superForm } from "sveltekit-superforms";
-  import { array, object, string } from "yup";
-  import { type ValidationAdapter, yup } from "sveltekit-superforms/adapters";
-  import { Button } from "../../components/button";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { defaults, superForm } from "sveltekit-superforms";
+  import { type ValidationAdapter, yup } from "sveltekit-superforms/adapters";
+  import { array, object, string } from "yup";
+  import { Button } from "../../components/button";
   import {
+    getRuntimeServiceGetResourceQueryKey,
     getRuntimeServiceListResourcesQueryKey,
     type V1ReportSpec,
-    getRuntimeServiceGetResourceQueryKey,
     type V1ReportSpecAnnotations,
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
+  import { ResourceKind } from "../entity-management/resource-selectors";
   import BaseScheduledReportForm from "./BaseScheduledReportForm.svelte";
   import { convertFormValuesToCronExpression } from "./time-utils";
-  import * as Dialog from "@rilldata/web-common/components/dialog-v2";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { ResourceKind } from "../entity-management/resource-selectors";
 
   export let open: boolean;
   export let queryArgs: any | undefined = undefined;
@@ -79,6 +80,7 @@
             displayName: values.title,
             refreshCron: refreshCron, // for testing: "* * * * *"
             refreshTimeZone: values.timeZone,
+            explore: exploreName,
             queryName: reportSpec?.queryName ?? "MetricsViewAggregation",
             queryArgsJson: JSON.stringify(
               reportSpec?.queryArgsJson
@@ -97,9 +99,15 @@
             webOpenState: reportSpec
               ? (reportSpec.annotations as V1ReportSpecAnnotations)[
                   "web_open_state"
-                ]
-              : metricsViewProto,
+                ] // backwards compatibility
+              : undefined, // Now, we map the `queryName` and `queryArgsJson` to a dashboard view
             webOpenPath: exploreName ? `/explore/${exploreName}` : undefined,
+            webOpenMode: isEdit
+              ? (((reportSpec?.annotations as V1ReportSpecAnnotations)[
+                  "web_open_mode"
+                ] as ReportOptionsOpenMode) ??
+                ReportOptionsOpenMode.OPEN_MODE_LEGACY) // Backwards compatibility
+              : ReportOptionsOpenMode.OPEN_MODE_CREATOR,
           },
         },
       });
