@@ -27,7 +27,10 @@ import {
   type TimeRange,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
-import { mergeSearchParams } from "@rilldata/web-common/lib/url-utils";
+import {
+  copyParamsToTarget,
+  mergeParamsWithOverwrite,
+} from "@rilldata/web-common/lib/url-utils";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   type V1ExplorePreset,
@@ -44,27 +47,33 @@ export function getUpdatedUrlForExploreState(
   defaultExplorePreset: V1ExplorePreset,
   partialExploreState: Partial<MetricsExplorerEntity>,
   curSearchParams: URLSearchParams,
-) {
-  const newUrlSearchParams = new URLSearchParams(
-    convertExploreStateToURLSearchParams(
-      partialExploreState as MetricsExplorerEntity,
-      exploreSpec,
-      timeControlsState,
-      defaultExplorePreset,
-    ),
+): string {
+  // Create params from the explore state
+  const stateParams = convertExploreStateToURLSearchParams(
+    partialExploreState as MetricsExplorerEntity,
+    exploreSpec,
+    timeControlsState,
+    defaultExplorePreset,
   );
+
+  // Filter out the default view parameter if needed
+  const filteredCurrentParams = new URLSearchParams();
   curSearchParams.forEach((value, key) => {
     if (
       key === ExploreStateURLParams.WebView &&
       FromURLParamViewMap[value] === defaultExplorePreset.view
     ) {
-      // ignore default view.
-      // since we do not add params equal to default this will append to the end of the URL breaking the param order.
-      return;
+      return; // Skip this parameter
     }
-    newUrlSearchParams.set(key, value);
+    filteredCurrentParams.set(key, value);
   });
-  return newUrlSearchParams.toString();
+
+  // Merge with current params overwriting the state params
+  const mergedParams = mergeParamsWithOverwrite(
+    filteredCurrentParams,
+    stateParams,
+  );
+  return mergedParams.toString();
 }
 
 export function convertExploreStateToURLSearchParams(
@@ -75,10 +84,10 @@ export function convertExploreStateToURLSearchParams(
   // But it is only available in TimeControlState and not MetricsExplorerEntity
   timeControlsState: TimeControlState | undefined,
   preset: V1ExplorePreset,
-) {
+): URLSearchParams {
   const searchParams = new URLSearchParams();
 
-  if (!exploreState) return searchParams.toString();
+  if (!exploreState) return searchParams;
 
   const currentView = FromActivePageMap[exploreState.activePage];
   if (shouldSetParam(preset.view, currentView)) {
@@ -90,7 +99,7 @@ export function convertExploreStateToURLSearchParams(
 
   // timeControlsState will be undefined for dashboards without timeseries
   if (timeControlsState) {
-    mergeSearchParams(
+    copyParamsToTarget(
       toTimeRangesUrl(exploreState, exploreSpec, timeControlsState, preset),
       searchParams,
     );
@@ -108,25 +117,25 @@ export function convertExploreStateToURLSearchParams(
     case DashboardState_ActivePage.UNSPECIFIED:
     case DashboardState_ActivePage.DEFAULT:
     case DashboardState_ActivePage.DIMENSION_TABLE:
-      mergeSearchParams(
+      copyParamsToTarget(
         toExploreUrl(exploreState, exploreSpec, preset),
         searchParams,
       );
       break;
 
     case DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL:
-      mergeSearchParams(
+      copyParamsToTarget(
         toTimeDimensionUrlParams(exploreState, preset),
         searchParams,
       );
       break;
 
     case DashboardState_ActivePage.PIVOT:
-      mergeSearchParams(toPivotUrlParams(exploreState, preset), searchParams);
+      copyParamsToTarget(toPivotUrlParams(exploreState, preset), searchParams);
       break;
   }
 
-  return searchParams.toString();
+  return searchParams;
 }
 
 function toTimeRangesUrl(

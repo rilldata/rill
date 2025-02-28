@@ -1,19 +1,19 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
-import { get, derived, type Readable } from "svelte/store";
+import { derived, get, type Readable } from "svelte/store";
 
+import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
 import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
-import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
 
 import {
   getTimeControlState,
   type TimeControlState,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
-  registerRPCMethod,
   emitNotification,
+  registerRPCMethod,
 } from "@rilldata/web-common/lib/rpc";
 
 export default function initEmbedPublicAPI(instanceId: string): () => void {
@@ -67,7 +67,7 @@ export default function initEmbedPublicAPI(instanceId: string): () => void {
           exploreSpec,
           timeControlsState,
           defaultExplorePreset,
-        ),
+        ).toString(),
       );
     },
   );
@@ -105,7 +105,7 @@ export default function initEmbedPublicAPI(instanceId: string): () => void {
         exploreSpec,
         timeControlsState,
         defaultExplorePreset,
-      ),
+      ).toString(),
     );
     return { state: stateString };
   });
