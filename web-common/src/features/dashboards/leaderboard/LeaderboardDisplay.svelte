@@ -13,6 +13,7 @@
     deltaColumn,
     valueColumn,
   } from "./leaderboard-widths";
+  import { cn } from "@rilldata/web-common/lib/shadcn";
 
   export let metricsViewName: string;
   export let whereFilter: V1Expression;
@@ -68,6 +69,8 @@
       : $isValidPercentOfTotal
         ? DEFAULT_COL_WIDTH
         : 0);
+
+  $: hasMoreThanOneMeasure = activeMeasureNames.length > 1;
 </script>
 
 <div class="flex flex-col overflow-hidden size-full" aria-label="Leaderboards">
@@ -85,8 +88,12 @@
     }}
   >
     {#if parentElement}
-      <!-- TODO: rework the grid with multiple measures -->
-      <div class="leaderboard-grid overflow-hidden pb-4">
+      <div
+        class={cn(
+          "flex flex-wrap gap-4 overflow-hidden pb-4",
+          hasMoreThanOneMeasure ? "flex-col" : "flex-row",
+        )}
+      >
         {#each $visibleDimensions as dimension (dimension.name)}
           {#if dimension.name}
             <Leaderboard
@@ -124,9 +131,3 @@
     {/if}
   </div>
 </div>
-
-<style lang="postcss">
-  .leaderboard-grid {
-    @apply flex flex-row flex-wrap gap-4;
-  }
-</style>
