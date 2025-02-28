@@ -23,6 +23,7 @@
   export let hovered: boolean;
   export let sortType: SortType;
   export let contextColumnFilters: LeaderboardContextColumn[] = [];
+  export let activeMeasureNames: string[] = [];
   export let toggleSort: (sortType: SortType) => void;
   export let setPrimaryDimension: (dimensionName: string) => void;
   export let toggleComparisonDimension: (
@@ -41,6 +42,8 @@
     isTimeComparisonActive &&
     isValidPercentOfTotal &&
     contextColumnFilters.includes(LeaderboardContextColumn.PERCENT);
+
+  $: hasMoreThanOneMeasure = activeMeasureNames.length > 1;
 </script>
 
 <thead>
@@ -89,12 +92,20 @@
       </Tooltip>
     </th>
 
+    <!-- TODO -->
+    <!-- This is a grouped column -->
+    <!-- measure, delta, percent -->
     <th>
       <button
         aria-label="Toggle sort leaderboards by value"
         on:click={() => toggleSort(SortType.VALUE)}
       >
-        # {#if sortType === SortType.VALUE}
+        {#if hasMoreThanOneMeasure}
+          {activeMeasureNames[0]}
+        {:else}
+          #
+        {/if}
+        {#if sortType === SortType.VALUE}
           <ArrowDown flip={sortedAscending} />
         {/if}
       </button>
