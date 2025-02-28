@@ -99,7 +99,7 @@
     {extraSpace}
     {chipsPerSection}
     items={timeGrainOptions}
-    rowJoinType={$isFlat ? "flat" : "nest"}
+    tableMode={$isFlat ? "flat" : "nest"}
     otherChipCounts={[filteredDimensions.length, filteredMeasures.length]}
   />
 
@@ -116,7 +116,7 @@
     {extraSpace}
     {chipsPerSection}
     items={filteredDimensions}
-    rowJoinType={$isFlat ? "flat" : "nest"}
+    tableMode={$isFlat ? "flat" : "nest"}
     otherChipCounts={[timeGrainOptions.length, filteredDimensions.length]}
   />
 </div>

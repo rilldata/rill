@@ -65,7 +65,7 @@
     columnPage: 1,
     rowPage: 1,
     enableComparison: false,
-    rowJoinType: "nest",
+    tableMode: "nest",
     activeCell: null,
   });
 
@@ -97,41 +97,43 @@
     $pivotState.columns.measure.length === 0;
 </script>
 
-{#if !$schema.isValid}
-  <ComponentError error={$schema.error} />
-{:else if pivotDataStore && $pivotDataStore && pivotConfig && $pivotConfig}
-  {#if $pivotDataStore?.error?.length}
-    <PivotError errors={$pivotDataStore.error} />
-  {:else if !$pivotDataStore?.data || $pivotDataStore?.data?.length === 0}
-    <PivotEmpty {assembled} {isFetching} {hasColumnAndNoMeasure} />
+<div class="size-full overflow-hidden" style:max-height="inherit">
+  {#if !$schema.isValid}
+    <ComponentError error={$schema.error} />
+  {:else if pivotDataStore && $pivotDataStore && pivotConfig && $pivotConfig}
+    {#if $pivotDataStore?.error?.length}
+      <PivotError errors={$pivotDataStore.error} />
+    {:else if !$pivotDataStore?.data || $pivotDataStore?.data?.length === 0}
+      <PivotEmpty {assembled} {isFetching} {hasColumnAndNoMeasure} />
+    {:else}
+      <PivotTable
+        border={false}
+        {pivotDataStore}
+        config={pivotConfig}
+        {pivotState}
+        setPivotExpanded={(expanded) => {
+          pivotState.update((state) => ({
+            ...state,
+            expanded,
+          }));
+        }}
+        setPivotSort={(sorting) => {
+          pivotState.update((state) => ({
+            ...state,
+            sorting,
+          }));
+        }}
+        setPivotRowPage={(page) => {
+          pivotState.update((state) => ({
+            ...state,
+            rowPage: page,
+          }));
+        }}
+      />
+    {/if}
   {:else}
-    <PivotTable
-      border={false}
-      {pivotDataStore}
-      config={pivotConfig}
-      {pivotState}
-      setPivotExpanded={(expanded) => {
-        pivotState.update((state) => ({
-          ...state,
-          expanded,
-        }));
-      }}
-      setPivotSort={(sorting) => {
-        pivotState.update((state) => ({
-          ...state,
-          sorting,
-        }));
-      }}
-      setPivotRowPage={(page) => {
-        pivotState.update((state) => ({
-          ...state,
-          rowPage: page,
-        }));
-      }}
-    />
+    <div class="flex items-center justify-center w-full h-full">
+      <Spinner status={EntityStatus.Running} />
+    </div>
   {/if}
-{:else}
-  <div class="flex items-center justify-center w-full h-full">
-    <Spinner status={EntityStatus.Running} />
-  </div>
-{/if}
+</div>

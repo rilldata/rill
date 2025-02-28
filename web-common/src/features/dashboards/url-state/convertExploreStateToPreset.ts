@@ -182,7 +182,7 @@ function getPivotFields(exploreState: Partial<MetricsExplorerEntity>) {
     preset.pivotSortAsc = !sort.desc;
   }
 
-  preset.pivotRowJoinType = exploreState.pivot.rowJoinType;
+  preset.pivotTableMode = exploreState.pivot.tableMode;
 
   // TODO: other fields like expanded state and pin are not supported right now
   return preset;

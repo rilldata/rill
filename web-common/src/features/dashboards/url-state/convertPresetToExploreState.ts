@@ -2,7 +2,7 @@ import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filte
 import {
   type PivotChipData,
   PivotChipType,
-  type PivotRowJoinType,
+  type PivotTableMode,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
@@ -458,7 +458,7 @@ function fromPivotUrlParams(
           rowPage: 1,
           enableComparison: true,
           activeCell: null,
-          rowJoinType: "nest",
+          tableMode: "nest",
         },
       },
       errors,
@@ -477,17 +477,14 @@ function fromPivotUrlParams(
     });
   }
 
-  let rowJoinType: PivotRowJoinType = "nest";
+  let tableMode: PivotTableMode = "nest";
 
-  if (preset.pivotRowJoinType) {
-    if (
-      preset.pivotRowJoinType === "nest" ||
-      preset.pivotRowJoinType === "flat"
-    ) {
-      rowJoinType = preset.pivotRowJoinType;
+  if (preset.pivotTableMode) {
+    if (preset.pivotTableMode === "nest" || preset.pivotTableMode === "flat") {
+      tableMode = preset.pivotTableMode;
     } else {
       errors.push(
-        getSingleFieldError("pivot row join type", preset.pivotRowJoinType),
+        getSingleFieldError("pivot table mode", preset.pivotTableMode),
       );
     }
   }
@@ -510,7 +507,7 @@ function fromPivotUrlParams(
         rowPage: 1,
         enableComparison: true,
         activeCell: null,
-        rowJoinType: rowJoinType,
+        tableMode,
       },
     },
     errors,

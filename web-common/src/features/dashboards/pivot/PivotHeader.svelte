@@ -45,7 +45,7 @@
   function togglePivotType(newJoinState: "flat" | "nest") {
     if (newJoinState === "flat") {
       lastNestState.set($rows);
-      metricsExplorerStore.setPivotRowJoinType(
+      metricsExplorerStore.setPivotTableMode(
         $exploreName,
         "flat",
         { dimension: [] },
@@ -61,17 +61,12 @@
     const updatedRows = $lastNestState ?? { dimension: $columns.dimension };
     const rowDimensionIds = new Set(updatedRows.dimension.map((d) => d.id));
 
-    metricsExplorerStore.setPivotRowJoinType(
-      $exploreName,
-      "nest",
-      updatedRows,
-      {
-        measure: $columns.measure,
-        dimension: $lastNestState
-          ? $columns.dimension.filter((d) => !rowDimensionIds.has(d.id))
-          : [],
-      },
-    );
+    metricsExplorerStore.setPivotTableMode($exploreName, "nest", updatedRows, {
+      measure: $columns.measure,
+      dimension: $lastNestState
+        ? $columns.dimension.filter((d) => !rowDimensionIds.has(d.id))
+        : [],
+    });
   }
 </script>
 

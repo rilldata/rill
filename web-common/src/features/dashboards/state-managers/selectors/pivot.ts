@@ -8,7 +8,7 @@ export const pivotSelectors = {
   rows: ({ dashboard }: DashboardDataSources) => dashboard.pivot.rows,
   columns: ({ dashboard }: DashboardDataSources) => dashboard.pivot.columns,
   isFlat: ({ dashboard }: DashboardDataSources) =>
-    dashboard.pivot.rowJoinType === "flat",
+    dashboard.pivot.tableMode === "flat",
   measures: (dashData: DashboardDataSources) => {
     const measures = filteredSimpleMeasures(dashData)();
     const columns = dashData.dashboard.pivot.columns;
