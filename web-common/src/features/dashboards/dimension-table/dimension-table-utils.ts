@@ -254,10 +254,12 @@ export function prepareVirtualizedDimTableColumns(
   const sortDirection = dash.sortDirection;
   const contextColumnFilters = dash.leaderboardContextColumnFilters;
 
-  const measureNames = allMeasures.map((m) => m.name);
-  const leaderboardMeasureName = dash.leaderboardMeasureNames[0];
-  const selectedMeasure = allMeasures.find(
-    (m) => m.name === leaderboardMeasureName,
+  const measureNames = allMeasures
+    .map((m) => m.name)
+    .filter((name): name is string => name !== undefined);
+  const leaderboardMeasureNames = dash.leaderboardMeasureNames;
+  const selectedMeasures = allMeasures.filter(
+    (m) => m.name && leaderboardMeasureNames.includes(m.name),
   );
 
   const dimensionColumn = dimension.name ?? "";
@@ -268,13 +270,15 @@ export function prepareVirtualizedDimTableColumns(
   );
 
   // don't add context columns if sorting by dimension
-  if (selectedMeasure && sortType !== SortType.DIMENSION) {
-    addContextColumnNames(
-      columnNames,
-      timeComparison,
-      validPercentOfTotal,
-      selectedMeasure,
-    );
+  if (selectedMeasures.length > 0 && sortType !== SortType.DIMENSION) {
+    for (const selectedMeasure of selectedMeasures) {
+      addContextColumnNames(
+        columnNames,
+        timeComparison,
+        validPercentOfTotal,
+        selectedMeasure,
+      );
+    }
   }
   // Make dimension the first column
   columnNames.unshift(dimensionColumn);
@@ -286,7 +290,7 @@ export function prepareVirtualizedDimTableColumns(
         highlight = name === dimensionColumn;
       } else {
         highlight =
-          name === selectedMeasure?.name ||
+          selectedMeasures.some((m) => m.name === name) ||
           name.endsWith("_delta") ||
           name.endsWith("_delta_perc") ||
           name.endsWith("_percent_of_total");
@@ -306,7 +310,7 @@ export function prepareVirtualizedDimTableColumns(
       ) {
         sorted = sortDirection;
       } else if (
-        name === selectedMeasure?.name &&
+        selectedMeasures.some((m) => m.name === name) &&
         sortType === SortType.VALUE
       ) {
         sorted = sortDirection;
@@ -337,24 +341,35 @@ export function prepareVirtualizedDimTableColumns(
           highlight,
           sorted,
         };
-      } else if (selectedMeasure !== undefined) {
-        // Handle delta, delta_perc, and percent_of_total columns
-        const comparison = getComparisonProperties(
-          name,
-          selectedMeasure,
-          contextColumnFilters,
+      } else if (selectedMeasures.length > 0) {
+        // Find which measure this context column belongs to
+        const baseMeasureName = name.replace(
+          /_delta(_perc)?|_percent_of_total$/,
+          "",
         );
-        if (comparison.visible) {
-          columnOut = {
+        const selectedMeasure = selectedMeasures.find(
+          (m) => m.name === baseMeasureName,
+        );
+
+        if (selectedMeasure) {
+          // Handle delta, delta_perc, and percent_of_total columns
+          const comparison = getComparisonProperties(
             name,
-            type: comparison.type,
-            label: comparison.component,
-            description: comparison.description,
-            enableResize: false,
-            format: comparison.format,
-            highlight,
-            sorted,
-          };
+            selectedMeasure,
+            contextColumnFilters,
+          );
+          if (comparison.visible) {
+            columnOut = {
+              name,
+              type: comparison.type,
+              label: comparison.component,
+              description: comparison.description,
+              enableResize: false,
+              format: comparison.format,
+              highlight,
+              sorted,
+            };
+          }
         }
       }
       return columnOut;
@@ -425,7 +440,7 @@ export function prepareDimensionTableRows(
   // all of the measures defined for this metrics spec,
   // including those that are not visible
   allMeasuresForSpec: MetricsViewSpecMeasureV2[],
-  activeMeasureName: string,
+  activeMeasureNames: string[],
   dimensionColumn: string,
   addDeltas: boolean,
   addPercentOfTotal: boolean,
@@ -439,10 +454,8 @@ export function prepareDimensionTableRows(
     );
 
   const tableRows: DimensionTableRow[] = queryRows
-    .filter((row) => row[activeMeasureName] !== undefined)
+    .filter((row) => activeMeasureNames.some((name) => row[name] !== undefined))
     .map((row) => {
-      const measureValue = row[activeMeasureName];
-
       // cast is safe since we filtered out rows without measureValues
       const rawVals: [string, number | null][] = allMeasuresForSpec
         .filter((m) => m.name! in row)
@@ -463,42 +476,49 @@ export function prepareDimensionTableRows(
       ]);
 
       if (addDeltas) {
-        const deltaAbs = row[activeMeasureName + ComparisonDeltaAbsoluteSuffix];
-        rowOut[`${activeMeasureName}_delta`] =
-          castUnknownToNumberOrNull(deltaAbs);
+        for (const activeMeasureName of activeMeasureNames) {
+          const deltaAbs =
+            row[activeMeasureName + ComparisonDeltaAbsoluteSuffix];
+          rowOut[`${activeMeasureName}_delta`] =
+            castUnknownToNumberOrNull(deltaAbs);
 
-        rowOut[`__formatted_${activeMeasureName}_delta`] = deltaAbs
-          ? formattersForMeasures[activeMeasureName](deltaAbs as number)
-          : PERC_DIFF.PREV_VALUE_NO_DATA;
+          rowOut[`__formatted_${activeMeasureName}_delta`] = deltaAbs
+            ? formattersForMeasures[activeMeasureName](deltaAbs as number)
+            : PERC_DIFF.PREV_VALUE_NO_DATA;
 
-        const deltaRel = row[activeMeasureName + ComparisonDeltaRelativeSuffix];
-        rowOut[`${activeMeasureName}_delta_perc`] =
-          castUnknownToNumberOrNull(deltaRel);
+          const deltaRel =
+            row[activeMeasureName + ComparisonDeltaRelativeSuffix];
+          rowOut[`${activeMeasureName}_delta_perc`] =
+            castUnknownToNumberOrNull(deltaRel);
 
-        rowOut[`__formatted_${activeMeasureName}_delta_perc`] = deltaRel
-          ? formatMeasurePercentageDifference(deltaRel as number)
-          : PERC_DIFF.PREV_VALUE_NO_DATA;
+          rowOut[`__formatted_${activeMeasureName}_delta_perc`] = deltaRel
+            ? formatMeasurePercentageDifference(deltaRel as number)
+            : PERC_DIFF.PREV_VALUE_NO_DATA;
+        }
       }
 
       if (addPercentOfTotal) {
-        const value = castUnknownToNumberOrNull(measureValue);
+        for (const activeMeasureName of activeMeasureNames) {
+          const value = castUnknownToNumberOrNull(row[activeMeasureName]);
 
-        if (value === null || unfilteredTotal === 0 || !unfilteredTotal) {
-          rowOut[activeMeasureName + "_percent_of_total"] =
-            PERC_DIFF.CURRENT_VALUE_NO_DATA;
+          if (value === null || unfilteredTotal === 0 || !unfilteredTotal) {
+            rowOut[activeMeasureName + "_percent_of_total"] =
+              PERC_DIFF.CURRENT_VALUE_NO_DATA;
 
-          rowOut[`__formatted_${activeMeasureName}_percent_of_total`] =
-            PERC_DIFF.CURRENT_VALUE_NO_DATA;
-        } else {
-          rowOut[activeMeasureName + "_percent_of_total"] =
-            value / unfilteredTotal;
+            rowOut[`__formatted_${activeMeasureName}_percent_of_total`] =
+              PERC_DIFF.CURRENT_VALUE_NO_DATA;
+          } else {
+            rowOut[activeMeasureName + "_percent_of_total"] =
+              value / unfilteredTotal;
 
-          rowOut[`__formatted_${activeMeasureName}_percent_of_total`] =
-            formatMeasurePercentageDifference(value / unfilteredTotal);
+            rowOut[`__formatted_${activeMeasureName}_percent_of_total`] =
+              formatMeasurePercentageDifference(value / unfilteredTotal);
+          }
         }
       }
 
       return rowOut;
     });
+
   return tableRows;
 }
