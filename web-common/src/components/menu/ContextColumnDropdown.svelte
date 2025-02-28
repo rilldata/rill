@@ -10,6 +10,7 @@
   import DeltaChangePercentage from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChangePercentage.svelte";
   import PercentOfTotal from "@rilldata/web-common/features/dashboards/dimension-table/PercentOfTotal.svelte";
   import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
+  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
 
   export let isValidPercentOfTotal = false;
   export let isTimeComparisonActive = false;
@@ -136,13 +137,10 @@
         </div>
 
         <footer>
-          <Button on:click={onSelectAll} type="plain">
-            {#if allSelected}
-              Deselect all
-            {:else}
-              Select all
-            {/if}
-          </Button>
+          <div class="w-full">
+            <p class="text-xs">Show for all measures</p>
+          </div>
+          <Switch small bind:checked={allSelected} on:click={onSelectAll} />
         </footer>
       </DropdownMenu.Content>
 
@@ -159,13 +157,7 @@
   footer {
     height: 42px;
     @apply border-t border-slate-300;
-    @apply bg-slate-100;
-    @apply flex flex-row flex-none items-center justify-end;
-    @apply gap-x-2 p-2 px-3.5;
-  }
-
-  footer:is(.dark) {
-    @apply bg-gray-800;
-    @apply border-gray-700;
+    @apply bg-white px-3.5 py-2;
+    @apply flex flex-row flex-none items-center gap-x-2;
   }
 </style>
