@@ -52,6 +52,7 @@
   const queryLimit = 8;
   const maxValuesToShow = 15;
 
+  // TODO: hoist to const
   $: comparisonIconWidth =
     contextColumnFilters.length === 0
       ? 36
@@ -337,6 +338,7 @@
       {sortedAscending}
       isTimeComparisonActive={!!comparisonTimeRange}
       {contextColumnFilters}
+      {activeMeasureNames}
       {toggleSort}
       {setPrimaryDimension}
       {toggleComparisonDimension}

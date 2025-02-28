@@ -88,7 +88,7 @@
       <LeaderboardActiveMeasureNamesDropdown
         {measures}
         {firstMeasure}
-        tooltipText="Choose measures to filter by"
+        tooltipText="Choose measures to display"
         selectedMeasureNames={$leaderboardMeasureNames}
         onToggle={(name) => {
           toggleLeaderboardMeasureNames(allMeasureNames, name);
