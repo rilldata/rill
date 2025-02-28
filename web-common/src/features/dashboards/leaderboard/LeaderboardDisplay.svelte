@@ -85,6 +85,7 @@
     }}
   >
     {#if parentElement}
+      <!-- TODO: rework the grid with multiple measures -->
       <div class="leaderboard-grid overflow-hidden pb-4">
         {#each $visibleDimensions as dimension (dimension.name)}
           {#if dimension.name}
