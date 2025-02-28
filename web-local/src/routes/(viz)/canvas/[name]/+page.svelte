@@ -11,10 +11,6 @@
 
 <StateManagersProvider {canvasName}>
   <CanvasThemeProvider>
-    <CanvasDashboardEmbed
-      showFilterBar={data.dashboard.spec?.filtersEnabled}
-      items={data.dashboard.spec?.items || []}
-      spec={data.dashboard.spec || {}}
-    />
+    <CanvasDashboardEmbed resource={data.dashboard} />
   </CanvasThemeProvider>
 </StateManagersProvider>

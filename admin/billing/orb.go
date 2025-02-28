@@ -640,6 +640,9 @@ func getBillingInvoiceFromOrbInvoice(i *orb.Invoice) *Invoice {
 	}
 }
 
+// Mapping of externalID/planName to a type.
+// Used in deciding email body in backend.
+// Make sure to update web-admin/src/features/billing/plans/utils.ts if this is updated
 func getPlanType(externalID string) PlanType {
 	switch externalID {
 	case "free_trial":

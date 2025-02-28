@@ -139,7 +139,18 @@ func (w *TrialEndCheckWorker) trialEndCheck(ctx context.Context) error {
 			continue
 		}
 
-		w.logger.Warn("trial period has ended", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
+		// number of projects for the org
+		projects, err := w.admin.DB.CountProjectsForOrganization(ctx, org.ID)
+		if err != nil {
+			return fmt.Errorf("failed to count projects for org %q: %w", org.Name, err)
+		}
+
+		w.logger.Warn("trial period has ended",
+			zap.String("org_id", org.ID),
+			zap.String("org_name", org.Name),
+			zap.String("user_email", org.BillingEmail),
+			zap.Int("count_of_projects", projects),
+		)
 
 		cctx, tx, err := w.admin.DB.NewTx(ctx, false)
 		if err != nil {

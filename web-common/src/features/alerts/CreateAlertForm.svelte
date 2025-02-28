@@ -14,9 +14,10 @@
   import { getEmptyMeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import {
-    mapComparisonTimeRange,
-    mapTimeRange,
+    mapSelectedComparisonTimeRangeToV1TimeRange,
+    mapSelectedTimeRangeToV1TimeRange,
   } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import {
     V1Operation,
     getRuntimeServiceListResourcesQueryKey,
@@ -25,7 +26,6 @@
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
   import { get } from "svelte/store";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { runtime } from "../../runtime-client/runtime-store";
   import BaseAlertForm from "./BaseAlertForm.svelte";
 
@@ -59,12 +59,15 @@
   }
 
   // TODO: get metrics view spec
-  const timeRange = mapTimeRange(
+  const timeRange = mapSelectedTimeRangeToV1TimeRange(
     timeControls,
     $dashboardStore.selectedTimezone,
     {},
   );
-  const comparisonTimeRange = mapComparisonTimeRange(timeControls, timeRange);
+  const comparisonTimeRange = mapSelectedComparisonTimeRangeToV1TimeRange(
+    timeControls,
+    timeRange,
+  );
 
   const formState = createForm<AlertFormValues>({
     initialValues: {
