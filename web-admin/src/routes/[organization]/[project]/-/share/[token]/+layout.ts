@@ -1,3 +1,4 @@
+import type { V1GetCurrentMagicAuthTokenResponse } from "@rilldata/web-admin/client/index.js";
 import { fetchMagicAuthToken } from "@rilldata/web-admin/features/projects/selectors";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
@@ -7,18 +8,29 @@ import {
 } from "@rilldata/web-common/features/explores/selectors";
 import { error } from "@sveltejs/kit";
 
-export const load = async ({ params: { token }, parent }) => {
+export const load = async ({ params: { token }, parent, url }) => {
   const { runtime } = await parent();
 
-  try {
+  let exploreName: string | undefined;
+  let tokenData: V1GetCurrentMagicAuthTokenResponse | undefined;
+
+  // Get the Explore name
+  const isReport = url.searchParams.has("resource"); // Reports specify the resource in the URL
+  if (isReport) {
+    exploreName = url.searchParams.get("resource");
+    // When we support reports for non-Explore resources, we'll also want to get the resource kind here
+  } else {
+    // Public URLs specify the resource in the token's metadata
     const tokenData = await fetchMagicAuthToken(token);
 
     if (!tokenData.token?.resourceName) {
       throw new Error("Token does not have an associated resource name");
     }
+    exploreName = tokenData.token?.resourceName;
+  }
 
-    const exploreName = tokenData.token?.resourceName;
-
+  try {
+    // Get the Explore resource
     const {
       explore,
       metricsView,
@@ -28,15 +40,16 @@ export const load = async ({ params: { token }, parent }) => {
     const metricsViewSpec = metricsView.metricsView?.state?.validSpec ?? {};
     const exploreSpec = explore.explore?.state?.validSpec ?? {};
 
+    // Get the initial state from the token
     let tokenExploreState: Partial<MetricsExplorerEntity> | undefined =
       undefined;
-    if (tokenData.token?.state) {
+    if (tokenData?.token?.state) {
       const schema = await fetchMetricsViewSchema(
         runtime.instanceId,
         exploreSpec.metricsView ?? "",
       );
       tokenExploreState = getDashboardStateFromUrl(
-        tokenData.token?.state,
+        tokenData.token.state,
         metricsViewSpec,
         exploreSpec,
         schema,

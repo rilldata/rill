@@ -4,8 +4,8 @@
   import { createAdminServiceGetProject } from "@rilldata/web-admin/client";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
-  import DashboardURLStateSync from "@rilldata/web-common/features/dashboards/url-state/DashboardURLStateSync.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
+  import DashboardURLStateSync from "@rilldata/web-common/features/dashboards/url-state/DashboardURLStateSync.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -16,12 +16,12 @@
   $: ({ instanceId } = $runtime);
 
   $: ({
+    resourceName,
     defaultExplorePreset,
     tokenExploreState,
     exploreStateFromYAMLConfig,
     partialExploreStateFromUrl,
     exploreStateFromSessionStorage,
-    token: { resourceName, id: tokenId },
   } = data);
   $: ({ organization, project } = $page.params);
 
@@ -63,7 +63,7 @@
       <DashboardURLStateSync
         metricsViewName={explore.metricsView.meta.name.name}
         exploreName={resourceName}
-        extraKeyPrefix={`${tokenId}__`}
+        extraKeyPrefix={undefined}
         {defaultExplorePreset}
         initExploreState={tokenExploreState}
         {exploreStateFromYAMLConfig}
