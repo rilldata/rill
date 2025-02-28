@@ -110,6 +110,11 @@
           isTimeComparisonActive={Boolean(comparisonTimeRange)}
           selectedFilters={$contextColumnFilters}
           onContextColumnChange={setContextColumnFilters}
+          {measures}
+          selectedMeasureNames={$leaderboardMeasureNames}
+          onSelectAll={() => {
+            toggleLeaderboardMeasureNames(allMeasureNames);
+          }}
         />
       {/if}
     </div>

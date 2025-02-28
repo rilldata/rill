@@ -25,6 +25,7 @@
   import { getDimensionTableExportQuery } from "./dimension-table-export";
   import ContextColumnDropdown from "@rilldata/web-common/components/menu/ContextColumnDropdown.svelte";
   import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
+  import { getSimpleMeasures } from "../state-managers/selectors/measures";
 
   export let dimensionName: string;
   export let isFetching: boolean;
@@ -41,7 +42,12 @@
       sorting: { sortedByDimensionValue },
       dimensions: { getDimensionDisplayName },
       dimensionFilters: { isFilterExcludeMode },
-      measures: { visibleMeasures, leaderboardMeasureNames, getMeasureByName },
+      measures: {
+        visibleMeasures,
+        leaderboardMeasureNames,
+        getMeasureByName,
+        allMeasures,
+      },
       contextColumn: { contextColumnFilters },
     },
     actions: {
@@ -49,6 +55,7 @@
       dimensions: { setPrimaryDimension },
       dimensionsFilter: { toggleDimensionFilterMode },
       contextColumn: { setContextColumnFilters },
+      toggleLeaderboardMeasureNames,
     },
     timeRangeSummaryStore,
     dashboardStore,
@@ -58,6 +65,8 @@
   const { adminServer, exports } = featureFlags;
 
   $: exploreHasTimeDimension = !!$timeRangeSummaryStore.data;
+  $: measures = getSimpleMeasures($visibleMeasures);
+
   $: excludeMode = $isFilterExcludeMode(dimensionName);
 
   $: filterKey = excludeMode ? "exclude" : "include";
@@ -72,8 +81,13 @@
   // First measure is used for sorting and validation
   $: firstMeasure = activeLeaderboardMeasures[0];
   $: validPercentOfTotal = firstMeasure?.validPercentOfTotal || false;
+  $: allMeasureNames = $allMeasures.map(({ name }) => name).filter(isDefined);
 
   let searchBarOpen = false;
+
+  function isDefined(value: string | undefined): value is string {
+    return value !== undefined;
+  }
 
   function closeSearchBar() {
     searchText = "";
@@ -168,6 +182,11 @@
       isTimeComparisonActive={Boolean(comparisonTimeRange)}
       selectedFilters={$contextColumnFilters}
       onContextColumnChange={setContextColumnFilters}
+      {measures}
+      selectedMeasureNames={$leaderboardMeasureNames}
+      onSelectAll={() => {
+        toggleLeaderboardMeasureNames(allMeasureNames);
+      }}
     />
     {#if !isRowsEmpty}
       <SelectAllButton
