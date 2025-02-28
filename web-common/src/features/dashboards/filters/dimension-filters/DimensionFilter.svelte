@@ -11,6 +11,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { fly } from "svelte/transition";
   import {
+    useBulkSearchMatchedCount,
     useBulkSearchResults,
     useDimensionSearch,
   } from "./dimensionFilterValues";
@@ -20,6 +21,7 @@
   export let label: string;
   export let selectedValues: string[];
   export let searchText: string | undefined;
+  export let isMatchList: boolean | undefined;
   export let excludeMode: boolean;
   export let openOnMount: boolean = true;
   export let readOnly: boolean = false;
@@ -28,12 +30,13 @@
   export let timeControlsReady: boolean | undefined;
   export let smallChip = false;
   export let onRemove: () => void;
+  export let onBulkSelect: (values: string[]) => void;
   export let onSelect: (value: string) => void;
   export let onSearch: (searchText: string) => void = () => {};
   export let onToggleFilterMode: () => void;
 
   let open = openOnMount && !selectedValues.length && !searchText;
-  let curSearchText = "";
+  let curSearchText = isMatchList ? selectedValues.join(",") : "";
   $: sanitisedSearchText = searchText?.replace(/^%/, "").replace(/%$/, "");
 
   $: ({ instanceId } = $runtime);
@@ -42,9 +45,20 @@
     Search,
     Bulk,
   }
-  let mode: SearchMode = SearchMode.Search;
+  let mode: SearchMode = isMatchList ? SearchMode.Bulk : SearchMode.Search;
 
-  let searchedBulkValues: string[] = [];
+  function updateBasedOnMatchList(isMatchList: boolean | undefined) {
+    if (isMatchList) {
+      mode = SearchMode.Bulk;
+      curSearchText = selectedValues.join(",");
+    } else {
+      mode = SearchMode.Search;
+      curSearchText = "";
+    }
+  }
+  $: updateBasedOnMatchList(isMatchList);
+
+  let searchedBulkValues: string[] = isMatchList ? selectedValues : [];
   $: searchValues = useDimensionSearch(
     instanceId,
     metricsViewNames,
@@ -73,10 +87,27 @@
     error: errorFromBulk,
     isFetching: isFetchingFromBulk,
   } = $bulkValues);
+  $: bulkMatchedCount = useBulkSearchMatchedCount(
+    instanceId,
+    metricsViewNames,
+    name,
+    searchedBulkValues,
+    timeStart,
+    timeEnd,
+    Boolean(timeControlsReady) && mode === SearchMode.Bulk,
+  );
+  $: ({
+    data: dataFromBulkMatchedCount,
+    error: errorFromBulkMatchedCount,
+    isFetching: isFetchingFromBulkMatchedCount,
+  } = $bulkMatchedCount);
 
-  $: data = dataFromSearch ?? dataFromBulk;
-  $: error = errorFromSearch ?? errorFromBulk;
-  $: isFetching = isFetchingFromSearch ?? isFetchingFromBulk;
+  $: data = mode === SearchMode.Search ? dataFromSearch : dataFromBulk;
+  $: error = errorFromSearch ?? errorFromBulk ?? errorFromBulkMatchedCount;
+  $: isFetching =
+    isFetchingFromSearch ??
+    isFetchingFromBulk ??
+    isFetchingFromBulkMatchedCount;
 
   $: if (curSearchText.length > 0) {
     const values = curSearchText.split(/\s*,\s*/);
@@ -105,6 +136,12 @@
     });
   }
 
+  function onApplyBulkSearch() {
+    onBulkSelect(dataFromBulk ?? []);
+    isMatchList = true;
+    open = false;
+  }
+
   function onApplySearch() {
     onSearch(curSearchText);
     searchText = curSearchText;
@@ -118,7 +155,9 @@
   closeOnItemClick={false}
   onOpenChange={(open) => {
     if (open) {
-      curSearchText = searchText ? sanitisedSearchText : "";
+      curSearchText = isMatchList
+        ? selectedValues.join(",")
+        : (sanitisedSearchText ?? "");
     } else {
       if (selectedValues.length === 0 && !searchText) {
         onRemove();
@@ -156,7 +195,11 @@
           label={excludeMode ? `Exclude ${label}` : label}
           show={1}
           {smallChip}
-          values={selectedValues}
+          values={mode === SearchMode.Bulk
+            ? searchedBulkValues
+            : effectiveSelectedValues}
+          matchedCount={dataFromBulkMatchedCount}
+          loading={isFetchingFromBulkMatchedCount}
           search={sanitisedSearchText}
         />
       </Chip>
@@ -232,17 +275,19 @@
     </div>
 
     <footer>
-      <Button on:click={onToggleSelectAll} type="plain">
-        {#if allSelected}
-          Deselect all
-        {:else}
-          Select all
-        {/if}
-      </Button>
       {#if mode === SearchMode.Search}
+        <Button on:click={onToggleSelectAll} type="plain">
+          {#if allSelected}
+            Deselect all
+          {:else}
+            Select all
+          {/if}
+        </Button>
         <Button on:click={onApplySearch} type="plain" disabled={!curSearchText}>
           Apply Search
         </Button>
+      {:else}
+        <Button on:click={onApplyBulkSearch} type="plain">Apply</Button>
       {/if}
       <Button on:click={onToggleFilterMode} type="secondary">
         {#if excludeMode}

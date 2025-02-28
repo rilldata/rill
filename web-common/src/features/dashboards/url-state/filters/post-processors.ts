@@ -26,8 +26,24 @@ BinaryOperationReverseMap[V1Operation.OPERATION_NLIKE] = "not like";
 export const binaryPostprocessor = ([left, _1, op, _2, right]) =>
   createBinaryExpression(left, BinaryOperationMap[op.toLowerCase()], right);
 
-export const inPostprocessor = ([column, _1, op, _2, _3, values]) =>
-  createInExpression(column, values, op === "NIN");
+export const inPostprocessor = ([column, _1, op, _2, _3, values]: [
+  string,
+  unknown,
+  string,
+  unknown,
+  unknown,
+  any[],
+]) => {
+  const lowerCaseOperator = op.toLowerCase();
+  const isInclude = lowerCaseOperator === "in" || lowerCaseOperator === "match";
+  const expr = createInExpression(column, values, !isInclude);
+  const isMatchList =
+    lowerCaseOperator === "match" || lowerCaseOperator === "not match";
+  if (isMatchList) {
+    (expr as any).isMatchList = isMatchList;
+  }
+  return expr;
+};
 
 export const havingPostprocessor = ([column, _1, _2, _3, _4, expr]) =>
   createSubQueryExpression(column, getAllIdentifiers(expr), expr);

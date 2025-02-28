@@ -53,6 +53,8 @@ export function toggleDimensionValueSelection(
     return;
   }
 
+  delete (expr as any).isMatchList;
+
   const inIdx = getValueIndexInExpression(expr, dimensionValue) as number;
   if (inIdx === -1) {
     if (isExclusiveFilter) {
@@ -75,6 +77,28 @@ export function toggleDimensionValueSelection(
         dashboard.temporaryFilterName = dimensionName;
       }
     }
+  }
+}
+
+export function applyDimensionBulkSearch(
+  { dashboard }: DashboardMutables,
+  dimensionName: string,
+  values: string[],
+) {
+  if (dashboard.temporaryFilterName !== null) {
+    dashboard.temporaryFilterName = null;
+  }
+
+  if (!dashboard.whereFilter.cond?.exprs) return;
+
+  const isInclude = !dashboard.dimensionFilterExcludeMode.get(dimensionName);
+  const expr = createInExpression(dimensionName, values, !isInclude);
+  (expr as any).isMatchList = true;
+  const exprIdx = getWhereFilterExpressionIndex({ dashboard })(dimensionName);
+  if (exprIdx === undefined || exprIdx === -1) {
+    dashboard.whereFilter.cond.exprs.push(expr);
+  } else {
+    dashboard.whereFilter.cond.exprs[exprIdx] = expr;
   }
 }
 
@@ -217,6 +241,7 @@ export const dimensionFilterActions = {
    * the include/exclude mode is a toggle for the entire dimension.
    */
   toggleDimensionValueSelection,
+  applyDimensionBulkSearch,
   applyDimensionSearch,
   toggleDimensionFilterMode,
   removeDimensionFilter,

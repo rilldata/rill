@@ -37,18 +37,20 @@ boolean_expr => "(" expr ")"                               {% ([_, expr]) => exp
 simple_expr => column {% id %}
              | value  {% id %}
 
-in_operator     => "IN"i       {% id %}
-                 | "NIN"i      {% id %}
-                 | "NOT IN"i   {% () => "NIN" %}
-binary_operator => "eq"i       {% id %}
-                 | "neq"i      {% id %}
-                 | "gt"i       {% id %}
-                 | "gte"i      {% id %}
-                 | "lt"i       {% id %}
-                 | "lte"i      {% id %}
-                 | "like"i     {% id %}
-                 | "nlike"i    {% id %}
-                 | "not like"i {% id %}
+in_operator     => "IN"i        {% id %}
+                 | "NIN"i       {% id %}
+                 | "NOT IN"i    {% id %}
+                 | "MATCH"i     {% id %}
+                 | "NOT MATCH"i {% id %}
+binary_operator => "EQ"i        {% id %}
+                 | "NEQ"i       {% id %}
+                 | "GT"i        {% id %}
+                 | "GTE"i       {% id %}
+                 | "LT"i        {% id %}
+                 | "LTE"i       {% id %}
+                 | "LIKE"i      {% id %}
+                 | "NLIKE"i     {% id %}
+                 | "NOT LIKE"i  {% id %}
 
 column     => dqstring                {% id %}
             | [a-zA-Z] [a-zA-Z0-9_]:* {% ([fst, rest]) => [fst, ...rest].join("") %}

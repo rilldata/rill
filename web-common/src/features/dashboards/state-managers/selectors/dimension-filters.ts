@@ -84,6 +84,7 @@ export type DimensionFilterItem = {
   label: string;
   selectedValues: string[];
   searchText?: string;
+  isMatchList?: boolean;
   isInclude: boolean;
   metricsViewNames?: string[];
 };
@@ -116,6 +117,7 @@ export function getDimensionFilters(
         name: ident,
         label: getDimensionDisplayName(dim),
         selectedValues: getValuesInExpression(e),
+        isMatchList: (e as any).isMatchList,
         isInclude: e.cond?.op === V1Operation.OPERATION_IN,
       });
     } else if (
