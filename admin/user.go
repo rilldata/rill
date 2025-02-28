@@ -14,7 +14,7 @@ import (
 // InsertOrganizationMemberUser inserts a user as a member of an organization.
 // If ifNotExists is true, it acts as a no-op if the user is already a member of the org.
 //
-// The function transactionally also adds the user to the relevant autogroups in the org.
+// The function transactionally also adds the user to the relevant managed usergroups in the org.
 // It may be called with or without holding an existing transaction.
 func (s *Service) InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string, ifNotExists bool) error {
 	ctx, tx, err := s.DB.NewTx(ctx, true)
@@ -29,7 +29,7 @@ func (s *Service) InsertOrganizationMemberUser(ctx context.Context, orgID, userI
 	}
 
 	if inserted {
-		err = s.DB.InsertAutogroupsMemberUser(ctx, orgID, userID, roleID)
+		err = s.DB.InsertManagedUsergroupsMemberUser(ctx, orgID, userID, roleID)
 		if err != nil {
 			return err
 		}
@@ -100,7 +100,7 @@ func (s *Service) DeleteOrganizationMemberUser(ctx context.Context, orgID, userI
 }
 
 // UpdateOrganizationMemberUserRole updates the role of a user in an organization.
-// It transactionally also updates the user's membership of relevant autogroups in the org.
+// It transactionally also updates the user's membership of relevant managed usergroups in the org.
 func (s *Service) UpdateOrganizationMemberUserRole(ctx context.Context, orgID, userID, roleID string) error {
 	ctx, tx, err := s.DB.NewTx(ctx, true)
 	if err != nil {
@@ -113,12 +113,12 @@ func (s *Service) UpdateOrganizationMemberUserRole(ctx context.Context, orgID, u
 		return err
 	}
 
-	err = s.DB.DeleteAutogroupsMemberUser(ctx, orgID, userID)
+	err = s.DB.DeleteManagedUsergroupsMemberUser(ctx, orgID, userID)
 	if err != nil {
 		return err
 	}
 
-	err = s.DB.InsertAutogroupsMemberUser(ctx, orgID, userID, roleID)
+	err = s.DB.InsertManagedUsergroupsMemberUser(ctx, orgID, userID, roleID)
 	if err != nil {
 		return err
 	}

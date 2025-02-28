@@ -862,26 +862,26 @@ func (c *connection) DeleteUsergroupsMemberUser(ctx context.Context, orgID, user
 	return nil
 }
 
-func (c *connection) InsertAutogroupsMemberUser(ctx context.Context, orgID, userID, roleID string) error {
+func (c *connection) InsertManagedUsergroupsMemberUser(ctx context.Context, orgID, userID, roleID string) error {
 	_, err := c.getDB(ctx).ExecContext(ctx, `
 		INSERT INTO usergroups_users (user_id, usergroup_id)
 		SELECT $1, ug.id FROM usergroups ug WHERE ug.org_id = $2 AND ug.name = 'all-users'
 	`, userID, orgID) // userID, orgID, roleID)
 	// -- UNION ALL SELECT $1, ug.id FROM usergroups ug WHERE ug.org_id = $2 AND ug.name = 'all-guests' AND EXISTS (SELECT 1 FROM org_roles ors WHERE ors.id = $3 AND ors.guest)
 	if err != nil {
-		return parseErr("autogroup member", err)
+		return parseErr("managed usergroup member", err)
 	}
 	return nil
 }
 
-func (c *connection) DeleteAutogroupsMemberUser(ctx context.Context, orgID, userID string) error {
+func (c *connection) DeleteManagedUsergroupsMemberUser(ctx context.Context, orgID, userID string) error {
 	_, err := c.getDB(ctx).ExecContext(ctx, `
 		DELETE FROM usergroups_users WHERE user_id = $1 AND usergroup_id IN (
 			SELECT ug.id FROM usergroups ug WHERE ug.org_id = $2 AND ug.name IN ('all-users', 'all-guests')
 		)
 	`, userID, orgID)
 	if err != nil {
-		return parseErr("autogroup member", err)
+		return parseErr("managed usergroup member", err)
 	}
 	return nil
 }

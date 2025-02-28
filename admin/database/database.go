@@ -144,8 +144,8 @@ type DB interface {
 	InsertUsergroupMemberUser(ctx context.Context, groupID, userID string) error
 	DeleteUsergroupMemberUser(ctx context.Context, groupID, userID string) error
 	DeleteUsergroupsMemberUser(ctx context.Context, orgID, userID string) error
-	InsertAutogroupsMemberUser(ctx context.Context, orgID, userID, roleID string) error
-	DeleteAutogroupsMemberUser(ctx context.Context, orgID, userID string) error
+	InsertManagedUsergroupsMemberUser(ctx context.Context, orgID, userID, roleID string) error
+	DeleteManagedUsergroupsMemberUser(ctx context.Context, orgID, userID string) error
 
 	FindUserAuthTokens(ctx context.Context, userID string) ([]*UserAuthToken, error)
 	FindUserAuthToken(ctx context.Context, id string) (*UserAuthToken, error)
