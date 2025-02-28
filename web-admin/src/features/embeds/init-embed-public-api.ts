@@ -71,7 +71,7 @@ export default function initEmbedPublicAPI(instanceId: string): () => void {
         defaultExplorePreset,
         get(page).url,
         true,
-      ).then(set);
+      ).then((params) => set(decodeURIComponent(params)));
     },
   );
 
