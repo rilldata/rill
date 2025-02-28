@@ -207,18 +207,28 @@
   $: ({ data: sortedData, isFetching } = $sortedQuery);
   $: ({ data: totalsData } = $totalsQuery);
 
-  $: leaderboardTotal = totalsData?.data?.[0]?.[activeMeasureNames[0]] as
-    | number
-    | null;
+  $: leaderboardTotals = totalsData?.data?.[0]
+    ? Object.fromEntries(
+        activeMeasureNames.map((name) => [
+          name,
+          (totalsData?.data?.[0]?.[name] as number) ?? null,
+        ]),
+      )
+    : {};
 
   $: ({ aboveTheFold, belowTheFoldValues, noAvailableValues, showExpandTable } =
     prepareLeaderboardItemData(
       sortedData?.data,
       dimensionName,
-      activeMeasureNames[0],
+      activeMeasureNames,
       slice,
+<<<<<<< HEAD
       $selectedValues.data ?? [],
       leaderboardTotal,
+=======
+      selectedValues,
+      leaderboardTotals,
+>>>>>>> 3f73fe2c8 (multiple measure in not expanded leaderboard display, grid tweaks to col)
     ));
 
   $: belowTheFoldDataLimit = maxValuesToShow - aboveTheFold.length;
@@ -272,9 +282,9 @@
     cleanUpComparisonValue(
       item,
       dimensionName,
-      activeMeasureNames[0],
-      leaderboardTotal,
-      $selectedValues.data?.findIndex((value) =>
+      activeMeasureNames,
+      leaderboardTotals,
+      selectedValues.findIndex((value) =>
         compareLeaderboardValues(value, item[dimensionName]),
       ) ?? -1,
     ),
@@ -282,10 +292,11 @@
 
   $: columnCount =
     1 + // Base column (dimension)
-    1 + // Value column
-    (showDeltaAbsolute ? 1 : 0) + // Delta absolute column
-    (showDeltaPercent ? 1 : 0) + // Delta percent column
-    (showPercentOfTotal ? 1 : 0); // Percent of total column
+    activeMeasureNames.length *
+      (1 + // Value column for each measure
+        (showDeltaAbsolute ? 1 : 0) + // Delta absolute column for each measure
+        (showDeltaPercent ? 1 : 0) + // Delta percent column for each measure
+        (showPercentOfTotal ? 1 : 0)); // Percent of total column for each measure
 
   $: showDeltaAbsolute =
     !!comparisonTimeRange &&
@@ -312,18 +323,20 @@
     <colgroup>
       <col style:width="{gutterWidth}px" />
       <col style:width="{firstColumnWidth}px" />
-      <col style:width="{$valueColumn}px" />
-      {#if showDeltaAbsolute}
-        <col style:width="{$deltaColumn}px" />
-        {#if showDeltaPercent}
+      {#each activeMeasureNames as _}
+        <col style:width="{$valueColumn}px" />
+        {#if showDeltaAbsolute}
+          <col style:width="{$deltaColumn}px" />
+          {#if showDeltaPercent}
+            <col style:width="{DEFAULT_COL_WIDTH}px" />
+          {/if}
+        {:else if showDeltaPercent}
           <col style:width="{DEFAULT_COL_WIDTH}px" />
         {/if}
-      {:else if showDeltaPercent}
-        <col style:width="{DEFAULT_COL_WIDTH}px" />
-      {/if}
-      {#if showPercentOfTotal}
-        <col style:width="{DEFAULT_COL_WIDTH}px" />
-      {/if}
+        {#if showPercentOfTotal}
+          <col style:width="{DEFAULT_COL_WIDTH}px" />
+        {/if}
+      {/each}
     </colgroup>
 
     <LeaderboardHeader
@@ -361,6 +374,7 @@
             {itemData}
             {isValidPercentOfTotal}
             {contextColumnFilters}
+            {activeMeasureNames}
             isTimeComparisonActive={!!comparisonTimeRange}
             {toggleDimensionValueSelection}
             {formatter}
