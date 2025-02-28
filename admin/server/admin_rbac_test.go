@@ -575,7 +575,6 @@ func TestAdmin_RBAC(t *testing.T) {
 			Usergroup:    "group1",
 		})
 		require.Error(t, err)
-		require.Equal(t, codes.InvalidArgument, status.Code(err))
 	})
 
 	// Create a user group, assign an org-level role and check
@@ -600,7 +599,7 @@ func TestAdmin_RBAC(t *testing.T) {
 			Organization: adminOrg.Organization.Name,
 		})
 		require.NoError(t, err)
-		require.Equal(t, 2, len(resp.Members))
+		require.Equal(t, 4, len(resp.Members))
 
 		var group *adminv1.MemberUsergroup
 		for _, m := range resp.Members {

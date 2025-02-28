@@ -623,7 +623,69 @@ func TestRBAC(t *testing.T) {
 	})
 
 	t.Run("Managed usergroup memberships", func(t *testing.T) {
+		// Create an admin user and an org
+		u1, c1 := newTestUser(t, svr)
+		org1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
+		require.NoError(t, err)
 
+		// Util function to check usergroup members
+		checkGroupMember := func(group, email string, totalMembers int) {
+			groupMembers, err := c1.ListUsergroupMemberUsers(ctx, &adminv1.ListUsergroupMemberUsersRequest{
+				Organization: org1.Organization.Name,
+				Usergroup:    group,
+			})
+			require.NoError(t, err)
+			require.Len(t, groupMembers.Members, totalMembers)
+
+			if email == "" {
+				return
+			}
+			found := false
+			for _, m := range groupMembers.Members {
+				if m.UserEmail == email {
+					found = true
+				}
+			}
+			require.True(t, found)
+		}
+
+		// Check that the user is in the right managed groups
+		checkGroupMember(database.ManagedUsergroupNameAllUsers, u1.Email, 1)
+		checkGroupMember(database.ManagedUsergroupNameAllMembers, u1.Email, 1)
+		checkGroupMember(database.ManagedUsergroupNameAllGuests, "", 0)
+
+		// Create another user, add them to the org, and check memberships
+		u2, _ := newTestUser(t, svr)
+		_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
+			Organization: org1.Organization.Name,
+			Email:        u2.Email,
+			Role:         database.OrganizationRoleNameGuest,
+		})
+		require.NoError(t, err)
+		checkGroupMember(database.ManagedUsergroupNameAllUsers, u2.Email, 2)
+		checkGroupMember(database.ManagedUsergroupNameAllMembers, "", 1)
+		checkGroupMember(database.ManagedUsergroupNameAllGuests, u2.Email, 1)
+
+		// Change the user to be a non-guest member and check memberships
+		_, err = c1.SetOrganizationMemberUserRole(ctx, &adminv1.SetOrganizationMemberUserRoleRequest{
+			Organization: org1.Organization.Name,
+			Email:        u2.Email,
+			Role:         database.OrganizationRoleNameViewer,
+		})
+		require.NoError(t, err)
+		checkGroupMember(database.ManagedUsergroupNameAllUsers, u2.Email, 2)
+		checkGroupMember(database.ManagedUsergroupNameAllMembers, u2.Email, 2)
+		checkGroupMember(database.ManagedUsergroupNameAllGuests, "", 0)
+
+		// Remove the user from the org and check memberships
+		_, err = c1.RemoveOrganizationMemberUser(ctx, &adminv1.RemoveOrganizationMemberUserRequest{
+			Organization: org1.Organization.Name,
+			Email:        u2.Email,
+		})
+		require.NoError(t, err)
+		checkGroupMember(database.ManagedUsergroupNameAllUsers, u1.Email, 1)
+		checkGroupMember(database.ManagedUsergroupNameAllMembers, u1.Email, 1)
+		checkGroupMember(database.ManagedUsergroupNameAllGuests, "", 0)
 	})
 }
 
