@@ -35,7 +35,7 @@ const ExploreViewKeys: Record<V1ExploreWebView, (keyof V1ExplorePreset)[]> = {
     "pivotRows",
     "pivotSortAsc",
     "pivotSortBy",
-    "pivotRowJoinType",
+    "pivotTableMode",
   ],
   [V1ExploreWebView.EXPLORE_WEB_VIEW_CANVAS]: [],
 };

@@ -1,14 +1,16 @@
 import { chromium, expect } from "@playwright/test";
-import axios from "axios";
-import { spawn } from "child_process";
-import dotenv from "dotenv";
-import path from "path";
-import { fileURLToPath } from "url";
-import { writeFileEnsuringDir } from "../utils/fs";
 import {
   execAsync,
   spawnAndMatch,
 } from "@rilldata/web-common/tests/utils/spawn";
+import axios from "axios";
+import { spawn } from "child_process";
+import dotenv from "dotenv";
+import { openSync } from "fs";
+import { mkdir } from "fs/promises";
+import path from "path";
+import { fileURLToPath } from "url";
+import { writeFileEnsuringDir } from "../utils/fs";
 import type { StorageState } from "../utils/storage-state";
 import { test as setup } from "./base";
 import {
@@ -61,6 +63,11 @@ setup.describe("global setup", () => {
       );
     }
 
+    // Setup a log file to capture the output of the admin and runtime services
+    await mkdir("playwright/logs", { recursive: true });
+    const logPath = path.resolve("playwright/logs/admin-runtime.log");
+    const logFd = openSync(logPath, "w");
+
     // Start the admin and runtime services in a detached background process.
     // A detached process ensures they are not cleaned up when this setup project completes.
     // However, we need to be sure to clean-up the processes manually in the teardown project.
@@ -69,10 +76,12 @@ setup.describe("global setup", () => {
       ["devtool", "start", "e2e", "--only", "admin,runtime"],
       {
         detached: true,
-        stdio: "ignore",
+        stdio: ["ignore", logFd, logFd],
         cwd: repoRoot,
       },
     );
+    child.unref();
+
     // Write the pid to a file, so I can kill it later
     if (child.pid) {
       writeFileEnsuringDir(

@@ -52,11 +52,11 @@ export interface PivotState {
   columnPage: number;
   rowPage: number;
   enableComparison: boolean;
-  rowJoinType: PivotRowJoinType;
+  tableMode: PivotTableMode;
   activeCell: PivotCell | null;
 }
 
-export type PivotRowJoinType = "flat" | "nest";
+export type PivotTableMode = "flat" | "nest";
 
 export type PivotColumns = {
   measure: PivotChipData[];
@@ -145,7 +145,6 @@ export type PivotColumnSet = {
 export type PivotConfig = {
   rowDims: PivotDimension[];
   colSets: PivotColumnSet[];
-  rowJoinType: "flat" | "nest";
   sort: any; // TBD
   expanded: any[];
 };

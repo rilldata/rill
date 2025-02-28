@@ -509,11 +509,11 @@ function fromPivotUrlParams(
       "ASC";
   }
 
-  if (searchParams.has(ExploreStateURLParams.PivotRowJoinType)) {
-    const rowJoinType = searchParams.get(
-      ExploreStateURLParams.PivotRowJoinType,
+  if (searchParams.has(ExploreStateURLParams.PivotTableMode)) {
+    const tableMode = searchParams.get(
+      ExploreStateURLParams.PivotTableMode,
     ) as string;
-    preset.pivotRowJoinType = rowJoinType;
+    preset.pivotTableMode = tableMode;
   }
 
   // TODO: other fields like expanded state and pin are not supported right now

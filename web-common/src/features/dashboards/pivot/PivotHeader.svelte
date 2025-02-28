@@ -12,7 +12,12 @@
   import { slide } from "svelte/transition";
   import { metricsExplorerStore } from "../stores/dashboard-stores";
   import DragList from "./DragList.svelte";
-  import { PivotChipType, type PivotChipData, type PivotRows } from "./types";
+  import {
+    PivotChipType,
+    type PivotChipData,
+    type PivotRows,
+    type PivotTableMode,
+  } from "./types";
 
   const stateManagers = getStateManagers();
   const {
@@ -42,10 +47,10 @@
    * This method stores the previous nest state and passes it to
    * dashboard store when toggling back from `flat` to `nest`
    */
-  function togglePivotType(newJoinState: "flat" | "nest") {
+  function togglePivotType(newJoinState: PivotTableMode) {
     if (newJoinState === "flat") {
       lastNestState.set($rows);
-      metricsExplorerStore.setPivotRowJoinType(
+      metricsExplorerStore.setPivotTableMode(
         $exploreName,
         "flat",
         { dimension: [] },
@@ -61,17 +66,12 @@
     const updatedRows = $lastNestState ?? { dimension: $columns.dimension };
     const rowDimensionIds = new Set(updatedRows.dimension.map((d) => d.id));
 
-    metricsExplorerStore.setPivotRowJoinType(
-      $exploreName,
-      "nest",
-      updatedRows,
-      {
-        measure: $columns.measure,
-        dimension: $lastNestState
-          ? $columns.dimension.filter((d) => !rowDimensionIds.has(d.id))
-          : [],
-      },
-    );
+    metricsExplorerStore.setPivotTableMode($exploreName, "nest", updatedRows, {
+      measure: $columns.measure,
+      dimension: $lastNestState
+        ? $columns.dimension.filter((d) => !rowDimensionIds.has(d.id))
+        : [],
+    });
   }
 </script>
 

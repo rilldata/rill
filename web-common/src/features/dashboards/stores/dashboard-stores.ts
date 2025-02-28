@@ -31,7 +31,7 @@ import {
 import type { ExpandedState, SortingState } from "@tanstack/svelte-table";
 import { derived, writable, type Readable } from "svelte/store";
 import { SortType } from "web-common/src/features/dashboards/proto-state/derived-types";
-import type { PivotColumns, PivotRows } from "../pivot/types";
+import type { PivotColumns, PivotRows, PivotTableMode } from "../pivot/types";
 import { PivotChipType, type PivotChipData } from "../pivot/types";
 
 export interface MetricsExplorerStoreType {
@@ -303,7 +303,7 @@ const metricsViewReducers = {
       if (metricsExplorer.pivot.sorting.length) {
         const accessor = metricsExplorer.pivot.sorting[0].id;
 
-        if (metricsExplorer.pivot.rowJoinType === "flat") {
+        if (metricsExplorer.pivot.tableMode === "flat") {
           const validAccessors = value.map((d) => d.id);
           if (!validAccessors.includes(accessor)) {
             metricsExplorer.pivot.sorting = [];
@@ -546,16 +546,16 @@ const metricsViewReducers = {
     });
   },
 
-  setPivotRowJoinType(
+  setPivotTableMode(
     name: string,
-    rowJoinType: "flat" | "nest",
+    tableMode: PivotTableMode,
     rows: PivotRows,
     columns: PivotColumns,
   ) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.pivot = {
         ...metricsExplorer.pivot,
-        rowJoinType,
+        tableMode,
         rows,
         columns,
         sorting: [],

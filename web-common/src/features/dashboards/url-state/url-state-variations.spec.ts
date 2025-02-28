@@ -307,7 +307,7 @@ const TestCases: {
       AD_BIDS_TOGGLE_PIVOT_ROW_JOIN_TYPE,
     ],
     expectedUrl:
-      "http://localhost/?view=pivot&cols=domain%2Ctime.day%2Cimpressions&table_type=flat",
+      "http://localhost/?view=pivot&cols=domain%2Ctime.day%2Cimpressions&table_mode=flat",
     legacyNotSupported: true,
   },
   {

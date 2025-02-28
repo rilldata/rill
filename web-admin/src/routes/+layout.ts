@@ -15,6 +15,7 @@ import {
   type V1ProjectPermissions,
   type V1User,
 } from "@rilldata/web-admin/client";
+import { redirectToLogin } from "@rilldata/web-admin/client/redirect-utils";
 import { redirectToLoginOrRequestAccess } from "@rilldata/web-admin/features/authentication/checkUserAccess";
 import { getFetchOrganizationQueryOptions } from "@rilldata/web-admin/features/organizations/selectors";
 import { fetchProjectDeploymentDetails } from "@rilldata/web-admin/features/projects/selectors";
@@ -63,8 +64,11 @@ export const load = async ({ params, url, route, depends }) => {
       queryFn: () => adminServiceGetCurrentUser(),
     });
     user = userQuery.user;
-  } catch {
-    // no-op
+  } catch (e) {
+    // If the user's auth token has expired, we automatically redirect to the login page
+    if (isAxiosError<RpcStatus>(e) && e.response?.status === 401) {
+      redirectToLogin();
+    }
   }
 
   // If no organization or project, return empty permissions

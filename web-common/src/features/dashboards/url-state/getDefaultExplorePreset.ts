@@ -53,7 +53,7 @@ export function getDefaultExplorePreset(
     pivotRows: [],
     pivotSortBy: "",
     pivotSortAsc: false,
-    pivotRowJoinType: "nest",
+    pivotTableMode: "nest",
 
     ...(explore.defaultPreset ?? {}),
   };
