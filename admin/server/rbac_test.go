@@ -281,13 +281,25 @@ func TestRBAC(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, projInvites.Invites, 0)
 
-		// Check that the user was added to the all-users group
+		// Check that the user was added to the managed groups
 		allUsers, err := c1.ListUsergroupMemberUsers(ctx, &adminv1.ListUsergroupMemberUsersRequest{
 			Organization: org1.Organization.Name,
-			Usergroup:    "all-users",
+			Usergroup:    database.ManagedUsergroupNameAllUsers,
 		})
 		require.NoError(t, err)
 		require.Len(t, allUsers.Members, 2)
+		allGuests, err := c1.ListUsergroupMemberUsers(ctx, &adminv1.ListUsergroupMemberUsersRequest{
+			Organization: org1.Organization.Name,
+			Usergroup:    database.ManagedUsergroupNameAllGuests,
+		})
+		require.NoError(t, err)
+		require.Len(t, allGuests.Members, 0)
+		allMembers, err := c1.ListUsergroupMemberUsers(ctx, &adminv1.ListUsergroupMemberUsersRequest{
+			Organization: org1.Organization.Name,
+			Usergroup:    database.ManagedUsergroupNameAllMembers,
+		})
+		require.NoError(t, err)
+		require.Len(t, allMembers.Members, 2)
 	})
 
 	t.Run("Inviting project users who haven't signed up yet become org guests", func(t *testing.T) {
@@ -331,20 +343,288 @@ func TestRBAC(t *testing.T) {
 		// Check that the user is in the all-users group
 		allUsers, err := c1.ListUsergroupMemberUsers(ctx, &adminv1.ListUsergroupMemberUsersRequest{
 			Organization: org1.Organization.Name,
-			Usergroup:    "all-users",
+			Usergroup:    database.ManagedUsergroupNameAllUsers,
 		})
 		require.NoError(t, err)
 		require.Len(t, allUsers.Members, 2)
 	})
 
-	// Correct tracking of members in all-users, all-guests, all-members
+	t.Run("Whitelisting domains on orgs", func(t *testing.T) {
+		// Create admin user with four orgs
+		u1, c1 := newTestUserWithDomain(t, svr, "whitelist-orgs.test")
+		adminEmail := u1.Email
+		org1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
+		require.NoError(t, err)
+		org2, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
+		require.NoError(t, err)
+		org3, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
+		require.NoError(t, err)
+		org4, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
+		require.NoError(t, err)
 
-	// Ability to whitelist a domain on org
-	// Ability to whitelist a domain on project
+		// Create a user matching a domain BEFORE whitelisting
+		userEmail := randomName() + "@whitelist-orgs.test"
+		_, _ = newTestUserWithEmail(t, svr, userEmail)
 
-	// Ability to create, list, delete usergroups
-	// Ability to assign roles to usergroups
-	// Usergroup roles being followed
+		// Whitelist one domain on org1 and org2, another on org3, and none on org4
+		_, err = c1.CreateWhitelistedDomain(ctx, &adminv1.CreateWhitelistedDomainRequest{
+			Organization: org1.Organization.Name,
+			Domain:       "whitelist-orgs.test",
+			Role:         database.OrganizationRoleNameViewer,
+		})
+		require.NoError(t, err)
+		_, err = c1.CreateWhitelistedDomain(ctx, &adminv1.CreateWhitelistedDomainRequest{
+			Organization: org2.Organization.Name,
+			Domain:       "whitelist-orgs.test",
+			Role:         database.OrganizationRoleNameGuest,
+		})
+		require.NoError(t, err)
+		_, err = c1.CreateWhitelistedDomain(ctx, &adminv1.CreateWhitelistedDomainRequest{
+			Organization: org3.Organization.Name,
+			Domain:       "whitelist-orgs2.test",
+			Role:         database.OrganizationRoleNameAdmin,
+		})
+		require.NoError(t, err)
+
+		// Check we can't whitelist the same domain on the same org again
+		_, err = c1.CreateWhitelistedDomain(ctx, &adminv1.CreateWhitelistedDomainRequest{
+			Organization: org1.Organization.Name,
+			Domain:       "whitelist-orgs.test",
+			Role:         database.OrganizationRoleNameAdmin,
+		})
+		require.Error(t, err)
+
+		// Check that the domains are whitelisted
+		org1Domains, err := c1.ListWhitelistedDomains(ctx, &adminv1.ListWhitelistedDomainsRequest{Organization: org1.Organization.Name})
+		require.NoError(t, err)
+		require.Len(t, org1Domains.Domains, 1)
+		require.Equal(t, "whitelist-orgs.test", org1Domains.Domains[0].Domain)
+		org4Domains, err := c1.ListWhitelistedDomains(ctx, &adminv1.ListWhitelistedDomainsRequest{Organization: org4.Organization.Name})
+		require.NoError(t, err)
+		require.Len(t, org4Domains.Domains, 0)
+
+		// Create a user matching a domain AFTER whitelisting
+		userEmail2 := randomName() + "@whitelist-orgs.test"
+		_, _ = newTestUserWithEmail(t, svr, userEmail2)
+
+		// Utils for checking org and group members
+		checkOrgMember := func(email string, orgName string, role string, totalMembers int) {
+			// Get the org members
+			orgMembers, err := c1.ListOrganizationMemberUsers(ctx, &adminv1.ListOrganizationMemberUsersRequest{Organization: orgName})
+			require.NoError(t, err)
+			require.Len(t, orgMembers.Members, totalMembers)
+
+			// Check the user is in the org members
+			found := false
+			for _, m := range orgMembers.Members {
+				if m.UserEmail == email && m.RoleName == role {
+					found = true
+				}
+			}
+			require.True(t, found)
+		}
+		checkGroupMember := func(email string, orgName string, groupName string, totalMembers int) {
+			// Get the group members
+			groupMembers, err := c1.ListUsergroupMemberUsers(ctx, &adminv1.ListUsergroupMemberUsersRequest{
+				Organization: orgName,
+				Usergroup:    groupName,
+			})
+			require.NoError(t, err)
+			require.Len(t, groupMembers.Members, totalMembers)
+
+			// Check the user is in the group members
+			found := false
+			for _, m := range groupMembers.Members {
+				if m.UserEmail == email {
+					found = true
+				}
+			}
+			require.True(t, found)
+		}
+
+		// Check that the users are in the orgs that match their domain and groups that match their roles
+		checkOrgMember(adminEmail, org1.Organization.Name, database.OrganizationRoleNameAdmin, 3)
+		checkOrgMember(adminEmail, org2.Organization.Name, database.OrganizationRoleNameAdmin, 3)
+		checkOrgMember(adminEmail, org3.Organization.Name, database.OrganizationRoleNameAdmin, 1)
+		checkOrgMember(adminEmail, org4.Organization.Name, database.OrganizationRoleNameAdmin, 1)
+
+		checkOrgMember(userEmail, org1.Organization.Name, database.OrganizationRoleNameViewer, 3)
+		checkGroupMember(userEmail, org1.Organization.Name, database.ManagedUsergroupNameAllUsers, 3)
+		checkGroupMember(userEmail, org1.Organization.Name, database.ManagedUsergroupNameAllMembers, 3)
+		checkOrgMember(userEmail2, org1.Organization.Name, database.OrganizationRoleNameViewer, 3)
+		checkGroupMember(userEmail2, org1.Organization.Name, database.ManagedUsergroupNameAllUsers, 3)
+		checkGroupMember(userEmail2, org1.Organization.Name, database.ManagedUsergroupNameAllMembers, 3)
+
+		checkOrgMember(userEmail, org2.Organization.Name, database.OrganizationRoleNameGuest, 3)
+		checkGroupMember(userEmail, org2.Organization.Name, database.ManagedUsergroupNameAllUsers, 3)
+		checkGroupMember(userEmail, org2.Organization.Name, database.ManagedUsergroupNameAllGuests, 2)
+		checkOrgMember(userEmail2, org2.Organization.Name, database.OrganizationRoleNameGuest, 3)
+		checkGroupMember(userEmail2, org2.Organization.Name, database.ManagedUsergroupNameAllUsers, 3)
+		checkGroupMember(userEmail2, org2.Organization.Name, database.ManagedUsergroupNameAllGuests, 2)
+	})
+
+	t.Run("Whitelisting domains on projects", func(t *testing.T) {
+		// Create an admin user and two orgs with a project each
+		u1, c1 := newTestUserWithDomain(t, svr, "whitelist-projs.test")
+		adminEmail := u1.Email
+		org1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
+		require.NoError(t, err)
+		proj1, err := c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
+			OrganizationName: org1.Organization.Name,
+			Name:             "proj1",
+			ProdSlots:        1,
+			SkipDeploy:       true,
+		})
+		require.NoError(t, err)
+		org2, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
+		require.NoError(t, err)
+		proj2, err := c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
+			OrganizationName: org2.Organization.Name,
+			Name:             "proj2",
+			ProdSlots:        1,
+			SkipDeploy:       true,
+		})
+		require.NoError(t, err)
+
+		// Create two users before adding the whitelist
+		userEmail1 := randomName() + "@whitelist-projs.test"
+		_, _ = newTestUserWithEmail(t, svr, userEmail1)
+		userEmail2 := randomName() + "@whitelist-projs.test"
+		_, _ = newTestUserWithEmail(t, svr, userEmail2)
+
+		// Add one of the users to the org
+		_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
+			Organization: org1.Organization.Name,
+			Email:        userEmail1,
+			Role:         database.OrganizationRoleNameViewer,
+		})
+		require.NoError(t, err)
+
+		// Add the whitelist to the project
+		_, err = c1.CreateProjectWhitelistedDomain(ctx, &adminv1.CreateProjectWhitelistedDomainRequest{
+			Organization: org1.Organization.Name,
+			Project:      proj1.Project.Name,
+			Domain:       "whitelist-projs.test",
+			Role:         database.ProjectRoleNameAdmin,
+		})
+
+		// Check we can't whitelist the same domain on the same project again
+		_, err = c1.CreateProjectWhitelistedDomain(ctx, &adminv1.CreateProjectWhitelistedDomainRequest{
+			Organization: org1.Organization.Name,
+			Project:      proj1.Project.Name,
+			Domain:       "whitelist-projs.test",
+			Role:         database.ProjectRoleNameAdmin,
+		})
+		require.Error(t, err)
+
+		// Check that the domain is whitelisted
+		proj1Domains, err := c1.ListProjectWhitelistedDomains(ctx, &adminv1.ListProjectWhitelistedDomainsRequest{
+			Organization: org1.Organization.Name,
+			Project:      proj1.Project.Name,
+		})
+		require.NoError(t, err)
+		require.Len(t, proj1Domains.Domains, 1)
+		require.Equal(t, "whitelist-projs.test", proj1Domains.Domains[0].Domain)
+
+		// Invite a non-existing user to the org and project
+		userEmail3 := randomName() + "@whitelist-projs.test"
+		_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
+			Organization: org1.Organization.Name,
+			Email:        userEmail3,
+			Role:         database.OrganizationRoleNameViewer,
+		})
+		require.NoError(t, err)
+		_, err = c1.AddProjectMemberUser(ctx, &adminv1.AddProjectMemberUserRequest{
+			Organization: org1.Organization.Name,
+			Project:      proj1.Project.Name,
+			Email:        userEmail3,
+			Role:         database.OrganizationRoleNameViewer,
+		})
+		require.NoError(t, err)
+
+		// Create two users matching the domain, one of whom matches the org-level invite
+		_, _ = newTestUserWithEmail(t, svr, userEmail3)
+		userEmail4 := randomName() + "@whitelist-projs.test"
+		_, _ = newTestUserWithEmail(t, svr, userEmail4)
+
+		// Utils for checking org, group and project members
+		checkOrgMember := func(email string, orgName string, role string, totalMembers int) {
+			// Get the org members
+			orgMembers, err := c1.ListOrganizationMemberUsers(ctx, &adminv1.ListOrganizationMemberUsersRequest{Organization: orgName})
+			require.NoError(t, err)
+			require.Len(t, orgMembers.Members, totalMembers)
+
+			// Check the user is in the org members
+			found := false
+			for _, m := range orgMembers.Members {
+				if m.UserEmail == email && m.RoleName == role {
+					found = true
+				}
+			}
+			require.True(t, found)
+		}
+		checkGroupMember := func(email string, orgName string, groupName string, totalMembers int) {
+			// Get the group members
+			groupMembers, err := c1.ListUsergroupMemberUsers(ctx, &adminv1.ListUsergroupMemberUsersRequest{
+				Organization: orgName,
+				Usergroup:    groupName,
+			})
+			require.NoError(t, err)
+			require.Len(t, groupMembers.Members, totalMembers)
+
+			// Check the user is in the group members
+			found := false
+			for _, m := range groupMembers.Members {
+				if m.UserEmail == email {
+					found = true
+				}
+			}
+			require.True(t, found)
+		}
+		checkProjMember := func(email string, orgName string, projName string, role string, totalMembers int) {
+			// Get the project members
+			projMembers, err := c1.ListProjectMemberUsers(ctx, &adminv1.ListProjectMemberUsersRequest{
+				Organization: orgName,
+				Project:      projName,
+			})
+			require.NoError(t, err)
+			require.Len(t, projMembers.Members, totalMembers)
+
+			// Check the user is in the project members
+			found := false
+			for _, m := range projMembers.Members {
+				if m.UserEmail == email && m.RoleName == role {
+					found = true
+				}
+			}
+			require.True(t, found)
+		}
+
+		// Check that org-level and group memberships match expectations
+		checkOrgMember(adminEmail, org1.Organization.Name, database.OrganizationRoleNameAdmin, 5)
+		checkOrgMember(userEmail1, org1.Organization.Name, database.OrganizationRoleNameViewer, 5)
+		checkOrgMember(userEmail2, org1.Organization.Name, database.OrganizationRoleNameGuest, 5)
+		checkOrgMember(userEmail3, org1.Organization.Name, database.OrganizationRoleNameViewer, 5)
+		checkOrgMember(userEmail4, org1.Organization.Name, database.OrganizationRoleNameGuest, 5)
+		checkGroupMember(adminEmail, org1.Organization.Name, database.ManagedUsergroupNameAllUsers, 5)
+		checkGroupMember(adminEmail, org1.Organization.Name, database.ManagedUsergroupNameAllMembers, 3)
+		checkGroupMember(userEmail1, org1.Organization.Name, database.ManagedUsergroupNameAllMembers, 3)
+		checkGroupMember(userEmail2, org1.Organization.Name, database.ManagedUsergroupNameAllGuests, 2)
+		checkGroupMember(userEmail3, org1.Organization.Name, database.ManagedUsergroupNameAllMembers, 3)
+		checkGroupMember(userEmail4, org1.Organization.Name, database.ManagedUsergroupNameAllGuests, 2)
+
+		// Check that project-level memberships match expectations
+		checkProjMember(adminEmail, org1.Organization.Name, proj1.Project.Name, database.ProjectRoleNameAdmin, 5)
+		checkProjMember(adminEmail, org2.Organization.Name, proj2.Project.Name, database.ProjectRoleNameAdmin, 1)
+		checkProjMember(userEmail1, org1.Organization.Name, proj1.Project.Name, database.ProjectRoleNameAdmin, 5)
+		checkProjMember(userEmail2, org1.Organization.Name, proj1.Project.Name, database.ProjectRoleNameAdmin, 5)
+		checkProjMember(userEmail3, org1.Organization.Name, proj1.Project.Name, database.ProjectRoleNameViewer, 5) // Because explicit invite role takes precedence over domain whitelist role
+		checkProjMember(userEmail4, org1.Organization.Name, proj1.Project.Name, database.ProjectRoleNameAdmin, 5)
+	})
+
+	t.Run("Managed usergroup memberships", func(t *testing.T) {
+
+	})
 }
 
 func randomName() string {

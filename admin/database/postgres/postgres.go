@@ -877,9 +877,10 @@ func (c *connection) DeleteUsergroupsMemberUser(ctx context.Context, orgID, user
 func (c *connection) InsertManagedUsergroupsMemberUser(ctx context.Context, orgID, userID, roleID string) error {
 	_, err := c.getDB(ctx).ExecContext(ctx, `
 		INSERT INTO usergroups_users (user_id, usergroup_id)
-		SELECT $1, ug.id FROM usergroups ug WHERE ug.org_id = $2 AND ug.name = 'all-users'
-	`, userID, orgID) // userID, orgID, roleID)
-	// -- UNION ALL SELECT $1, ug.id FROM usergroups ug WHERE ug.org_id = $2 AND ug.name = 'all-guests' AND EXISTS (SELECT 1 FROM org_roles ors WHERE ors.id = $3 AND ors.guest)
+		SELECT $1::UUID, ug.id FROM usergroups ug WHERE ug.org_id = $2 AND ug.name = $4
+		UNION ALL SELECT $1::UUID, ug.id FROM usergroups ug WHERE ug.org_id = $2 AND ug.name = $5 AND EXISTS (SELECT 1 FROM org_roles ors WHERE ors.id = $3 AND NOT ors.guest)
+		UNION ALL SELECT $1::UUID, ug.id FROM usergroups ug WHERE ug.org_id = $2 AND ug.name = $6 AND EXISTS (SELECT 1 FROM org_roles ors WHERE ors.id = $3 AND ors.guest)
+	`, userID, orgID, roleID, database.ManagedUsergroupNameAllUsers, database.ManagedUsergroupNameAllMembers, database.ManagedUsergroupNameAllGuests)
 	if err != nil {
 		return parseErr("managed usergroup member", err)
 	}
