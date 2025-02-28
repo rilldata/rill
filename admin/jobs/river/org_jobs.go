@@ -185,7 +185,6 @@ type LogInactiveOrgsWorker struct {
 }
 
 func (w *LogInactiveOrgsWorker) Work(ctx context.Context, job *river.Job[LogInactiveOrgsArgs]) error {
-	// find all inactive organizations
 	orgs, err := w.admin.DB.FindInactiveOrganizations(ctx)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
@@ -195,10 +194,16 @@ func (w *LogInactiveOrgsWorker) Work(ctx context.Context, job *river.Job[LogInac
 	}
 
 	for _, org := range orgs {
-		// For each inactive organization, check if it has any projects
 		projects, err := w.admin.DB.FindProjectsForOrganization(ctx, org.ID, "", 100)
 		if err != nil {
 			return fmt.Errorf("failed to find projects for organization %s: %w", org.Name, err)
+		}
+		for _, proj := range projects {
+			p, err := w.admin.HibernateProject(ctx, proj)
+			if err != nil {
+				return fmt.Errorf("failed to hibernate project %s: %w", proj.ID, err)
+			}
+			w.logger.Warn("hibernated project", zap.String("project_id", p.ID), zap.String("project_name", p.Name), zap.String("org_id", org.ID), zap.String("org_name", org.Name))
 		}
 		w.logger.Warn("inactive organization", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.Time("last_updated_at", org.UpdatedOn), zap.Int("connected_projects", len(projects)))
 	}
