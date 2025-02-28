@@ -2,6 +2,7 @@ import {
   createAndExpression,
   createBinaryExpression,
   createInExpression,
+  createLikeExpression,
   createOrExpression,
   createSubQueryExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
@@ -102,6 +103,12 @@ describe("expression", () => {
         expectedExprObject: createInExpression("country", [
           { US: ["SF", "LA"], IN: ["BLR", "DLH"], UK: "London" },
         ]),
+      },
+
+      {
+        expr: "country like '%oo%'",
+        expectedExprString: "country like '%oo%'",
+        expectedExprObject: createLikeExpression("country", "%oo%"),
       },
     ];
 

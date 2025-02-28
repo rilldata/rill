@@ -105,6 +105,7 @@ export function convertExploreStateToURLSearchParams(
       ExploreStateURLParams.Filters,
       convertExpressionToFilterParam(expr),
     );
+    console.log(expr, convertExpressionToFilterParam(expr));
   }
 
   switch (exploreState.activePage) {

@@ -19,6 +19,7 @@
   export let metricsViewNames: string[];
   export let label: string;
   export let selectedValues: string[];
+  export let searchText: string | undefined;
   export let excludeMode: boolean;
   export let openOnMount: boolean = true;
   export let readOnly: boolean = false;
@@ -31,28 +32,27 @@
   export let onSearch: (searchText: string) => void = () => {};
   export let onToggleFilterMode: () => void;
 
-  let open = openOnMount && !selectedValues.length;
-  let searchText = "";
+  let open = openOnMount && !selectedValues.length && !searchText;
+  let curSearchText = "";
+  $: sanitisedSearchText = searchText?.replace(/^%/, "").replace(/%$/, "");
 
   $: ({ instanceId } = $runtime);
 
   enum SearchMode {
-    Select,
-    Bulk,
     Search,
+    Bulk,
   }
-  let mode: SearchMode = SearchMode.Select;
+  let mode: SearchMode = SearchMode.Search;
 
   let searchedBulkValues: string[] = [];
   $: searchValues = useDimensionSearch(
     instanceId,
     metricsViewNames,
     name,
-    searchText,
+    curSearchText,
     timeStart,
     timeEnd,
-    Boolean(timeControlsReady && open) &&
-      (mode === SearchMode.Select || mode === SearchMode.Search),
+    Boolean(timeControlsReady && open) && mode === SearchMode.Search,
   );
   $: ({
     data: dataFromSearch,
@@ -78,8 +78,8 @@
   $: error = errorFromSearch ?? errorFromBulk;
   $: isFetching = isFetchingFromSearch ?? isFetchingFromBulk;
 
-  $: if (searchText.length > 0) {
-    const values = searchText.split(/\s*,\s*/);
+  $: if (curSearchText.length > 0) {
+    const values = curSearchText.split(/\s*,\s*/);
     if (values.length > 1) {
       searchedBulkValues = values;
       mode = SearchMode.Bulk;
@@ -88,14 +88,14 @@
       mode = SearchMode.Search;
     }
   } else {
-    mode = SearchMode.Select;
+    mode = SearchMode.Search;
   }
 
   $: allSelected = Boolean(
     selectedValues.length && data?.length === selectedValues.length,
   );
   $: effectiveSelectedValues =
-    mode === SearchMode.Select ? selectedValues : (data ?? []);
+    mode !== SearchMode.Bulk ? selectedValues : (data ?? []);
 
   function onToggleSelectAll() {
     data?.forEach((dimensionValue) => {
@@ -103,6 +103,12 @@
 
       onSelect(dimensionValue);
     });
+  }
+
+  function onApplySearch() {
+    onSearch(curSearchText);
+    searchText = curSearchText;
+    open = false;
   }
 </script>
 
@@ -112,9 +118,9 @@
   closeOnItemClick={false}
   onOpenChange={(open) => {
     if (open) {
-      searchText = "";
+      curSearchText = searchText ? sanitisedSearchText : "";
     } else {
-      if (selectedValues.length === 0) {
+      if (selectedValues.length === 0 && !searchText) {
         onRemove();
       }
     }
@@ -151,6 +157,7 @@
           show={1}
           {smallChip}
           values={selectedValues}
+          search={sanitisedSearchText}
         />
       </Chip>
       <div slot="tooltip-content" transition:fly={{ duration: 100, y: 4 }}>
@@ -172,7 +179,7 @@
   >
     <div class="flex flex-col px-3 pt-3 pb-1">
       <Search
-        bind:value={searchText}
+        bind:value={curSearchText}
         label="Search list"
         showBorderOnFocus={false}
       />
@@ -232,6 +239,11 @@
           Select all
         {/if}
       </Button>
+      {#if mode === SearchMode.Search}
+        <Button on:click={onApplySearch} type="plain" disabled={!curSearchText}>
+          Apply Search
+        </Button>
+      {/if}
       <Button on:click={onToggleFilterMode} type="secondary">
         {#if excludeMode}
           Include

@@ -32,20 +32,23 @@ non_or_expr  => boolean_expr                              {% id %}
 boolean_expr => "(" expr ")"                               {% ([_, expr]) => expr %}
               | column __ in_operator _ "(" value_list ")" {% inPostprocessor %}
               | column __ "HAVING"i _ "(" expr ")"         {% havingPostprocessor %}
-              | simple_expr _ compare_operator _ value     {% binaryPostprocessor %}
+              | simple_expr _ binary_operator _ value      {% binaryPostprocessor %}
 
 simple_expr => column {% id %}
              | value  {% id %}
 
-in_operator      => "IN"i     {% id %}
-                  | "NIN"i    {% id %}
-                  | "NOT IN"i {% () => "NIN" %}
-compare_operator => "eq"i     {% id %}
-                  | "neq"i    {% id %}
-                  | "gt"i     {% id %}
-                  | "gte"i    {% id %}
-                  | "lt"i     {% id %}
-                  | "lte"i    {% id %}
+in_operator     => "IN"i       {% id %}
+                 | "NIN"i      {% id %}
+                 | "NOT IN"i   {% () => "NIN" %}
+binary_operator => "eq"i       {% id %}
+                 | "neq"i      {% id %}
+                 | "gt"i       {% id %}
+                 | "gte"i      {% id %}
+                 | "lt"i       {% id %}
+                 | "lte"i      {% id %}
+                 | "like"i     {% id %}
+                 | "nlike"i    {% id %}
+                 | "not like"i {% id %}
 
 column     => dqstring                {% id %}
             | [a-zA-Z] [a-zA-Z0-9_]:* {% ([fst, rest]) => [fst, ...rest].join("") %}

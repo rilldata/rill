@@ -1,11 +1,15 @@
 import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import {
   createInExpression,
+  createLikeExpression,
   getValueIndexInExpression,
   getValuesInExpression,
   negateExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type { V1Expression } from "@rilldata/web-common/runtime-client";
+import {
+  type V1Expression,
+  V1Operation,
+} from "@rilldata/web-common/runtime-client";
 import { getWhereFilterExpressionIndex } from "../selectors/dimension-filters";
 import type { DashboardMutables } from "./types";
 
@@ -37,6 +41,17 @@ export function toggleDimensionValueSelection(
     // should never happen since getWhereFilterExpressionIndex runs a find
     return;
   }
+  if (
+    expr.cond?.op === V1Operation.OPERATION_LIKE ||
+    expr.cond?.op === V1Operation.OPERATION_NLIKE
+  ) {
+    dashboard.whereFilter.cond!.exprs![exprIdx] = createInExpression(
+      dimensionName,
+      [dimensionValue],
+      !isInclude,
+    );
+    return;
+  }
 
   const inIdx = getValueIndexInExpression(expr, dimensionValue) as number;
   if (inIdx === -1) {
@@ -60,6 +75,31 @@ export function toggleDimensionValueSelection(
         dashboard.temporaryFilterName = dimensionName;
       }
     }
+  }
+}
+
+export function applyDimensionSearch(
+  { dashboard }: DashboardMutables,
+  dimensionName: string,
+  searchText: string,
+) {
+  if (dashboard.temporaryFilterName !== null) {
+    dashboard.temporaryFilterName = null;
+  }
+
+  if (!dashboard.whereFilter.cond?.exprs) return;
+
+  const isInclude = !dashboard.dimensionFilterExcludeMode.get(dimensionName);
+  const expr = createLikeExpression(
+    dimensionName,
+    `%${searchText}%`,
+    !isInclude,
+  );
+  const exprIdx = getWhereFilterExpressionIndex({ dashboard })(dimensionName);
+  if (exprIdx === undefined || exprIdx === -1) {
+    dashboard.whereFilter.cond.exprs.push(expr);
+  } else {
+    dashboard.whereFilter.cond.exprs[exprIdx] = expr;
   }
 }
 
@@ -177,6 +217,7 @@ export const dimensionFilterActions = {
    * the include/exclude mode is a toggle for the entire dimension.
    */
   toggleDimensionValueSelection,
+  applyDimensionSearch,
   toggleDimensionFilterMode,
   removeDimensionFilter,
   selectItemsInFilter,

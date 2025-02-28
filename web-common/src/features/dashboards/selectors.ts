@@ -9,13 +9,14 @@ import {
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import type {
-  RpcStatus,
-  V1Expression,
-  V1GetResourceResponse,
-  V1MetricsViewSpec,
-  V1MetricsViewTimeRangeResponse,
-  V1Resource,
+import {
+  type RpcStatus,
+  type V1Expression,
+  type V1GetResourceResponse,
+  type V1MetricsViewSpec,
+  type V1MetricsViewTimeRangeResponse,
+  V1Operation,
+  type V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import {
   createQueryServiceMetricsViewTimeRange,
@@ -136,8 +137,11 @@ export function getFiltersForOtherDimensions(
   whereFilter: V1Expression,
   dimName: string,
 ) {
-  const exprIdx = whereFilter?.cond?.exprs?.findIndex((e) =>
-    matchExpressionByName(e, dimName),
+  const exprIdx = whereFilter?.cond?.exprs?.findIndex(
+    (e) =>
+      matchExpressionByName(e, dimName) &&
+      (e.cond?.op === V1Operation.OPERATION_IN ||
+        e.cond?.op === V1Operation.OPERATION_NIN),
   );
   if (exprIdx === undefined || exprIdx === -1) return whereFilter;
 

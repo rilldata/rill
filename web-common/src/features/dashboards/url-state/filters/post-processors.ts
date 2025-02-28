@@ -16,8 +16,12 @@ const BinaryOperationMap: Record<string, V1Operation> = {
   gte: V1Operation.OPERATION_GTE,
   lt: V1Operation.OPERATION_LT,
   lte: V1Operation.OPERATION_LTE,
+  like: V1Operation.OPERATION_LIKE,
+  nlike: V1Operation.OPERATION_NLIKE,
+  "not like": V1Operation.OPERATION_NLIKE,
 };
 export const BinaryOperationReverseMap = reverseMap(BinaryOperationMap);
+BinaryOperationReverseMap[V1Operation.OPERATION_NLIKE] = "not like";
 
 export const binaryPostprocessor = ([left, _1, op, _2, right]) =>
   createBinaryExpression(left, BinaryOperationMap[op.toLowerCase()], right);
