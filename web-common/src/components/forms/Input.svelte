@@ -140,6 +140,7 @@
       class="input-wrapper {textClass}"
       style:padding-left="{leftPadding}px"
       style:width
+      class:error-input-wrapper={!!errors?.length}
       style:font-family={fontFamily}
     >
       {#if $$slots.icon}

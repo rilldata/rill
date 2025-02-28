@@ -17,7 +17,7 @@
     getComparisonRequestMeasures,
     getURIRequestMeasure,
   } from "../dashboard-utils";
-  import { mergeDimensionAndMeasureFilter } from "../filters/measure-filters/measure-filter-utils";
+  import { mergeDimensionAndMeasureFilters } from "../filters/measure-filters/measure-filter-utils";
   import { SortType } from "../proto-state/derived-types";
   import {
     additionalMeasures,
@@ -116,7 +116,7 @@
   $: where = isComplexFilter
     ? whereFilter
     : sanitiseExpression(
-        mergeDimensionAndMeasureFilter(
+        mergeDimensionAndMeasureFilters(
           getFiltersForOtherDimensions(whereFilter, dimensionName),
           dimensionThresholdFilters,
         ),
