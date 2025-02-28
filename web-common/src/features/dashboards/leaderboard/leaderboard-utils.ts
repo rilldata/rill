@@ -13,45 +13,45 @@ import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/g
 
 export type LeaderboardItemData = {
   /**
-   *The dimension value label to be shown in the leaderboard
+   * The dimension value label to be shown in the leaderboard
    */
   dimensionValue: string;
 
   uri: string | null;
 
   /**
-   *  main value to be shown in the leaderboard
+   * Map of measure name to its main value to be shown in the leaderboard
    */
-  value: number | null;
+  values: Record<string, number | null>;
 
   /**
-   * Percent of total for summable measures; null if not summable.
-   * Note that this value will be between 0 and 1, not 0 and 100.
+   * Map of measure name to its percent of total for summable measures; null if not summable.
+   * Note that these values will be between 0 and 1, not 0 and 100.
    */
-  pctOfTotal: number | null;
+  pctOfTotals: Record<string, number | null>;
 
   /**
-   *  The value from the comparison period.
-   * Techinally this might not be a "previous value" but
+   * Map of measure name to its value from the comparison period.
+   * Technically this might not be a "previous value" but
    * we use that name as a shorthand, since it's the most
    * common use case.
    */
-  prevValue: number | null;
+  prevValues: Record<string, number | null>;
+
   /**
-   *
-   * the relative change from the previous value
-   * note that this needs to be multiplied by 100 to get
+   * Map of measure name to its relative change from the previous value
+   * note that these need to be multiplied by 100 to get
    * the percentage change
    */
-  deltaRel: number | null;
+  deltaRels: Record<string, number | null>;
 
   /**
-   *  the absolute change from the previous value
+   * Map of measure name to its absolute change from the previous value
    */
-  deltaAbs: number | null;
+  deltaAbs: Record<string, number | null>;
 
   /**
-   *  This tracks the order in which an item was selected,
+   * This tracks the order in which an item was selected,
    * which is used to maintain a mapping between the color
    * of the line in the charts and the icon in the
    * leaderboard/dimension detail table.
@@ -69,30 +69,48 @@ const finiteOrNull = (v: unknown): number | null =>
 export function cleanUpComparisonValue(
   v: V1MetricsViewAggregationResponseDataItem,
   dimensionName: string,
-  measureName: string,
-  total: number | null,
+  measureNames: string[],
+  totals: Record<string, number | null>,
   selectedIndex: number,
 ): LeaderboardItemData {
-  const measureValue = v[measureName];
-  if (!(Number.isFinite(measureValue) || measureValue === null)) {
-    console.warn(
-      `Leaderboards only implemented for numeric baseValues or missing data (null). Got: ${JSON.stringify(
-        v,
-      )}`,
-    );
-  }
-  const value = finiteOrNull(measureValue);
-
-  return {
+  const cleanValue: LeaderboardItemData = {
     dimensionValue: v[dimensionName],
     uri: v[dimensionName + URI_DIMENSION_SUFFIX] || null,
-    value,
-    pctOfTotal: total !== null && value !== null ? value / total : null,
-    prevValue: finiteOrNull(v[measureName + ComparisonDeltaPreviousSuffix]),
-    deltaRel: finiteOrNull(v[measureName + ComparisonDeltaRelativeSuffix]),
-    deltaAbs: finiteOrNull(v[measureName + ComparisonDeltaAbsoluteSuffix]),
+    values: {},
+    pctOfTotals: {},
+    prevValues: {},
+    deltaRels: {},
+    deltaAbs: {},
     selectedIndex,
   };
+
+  for (const measureName of measureNames) {
+    const measureValue = v[measureName];
+    if (!(Number.isFinite(measureValue) || measureValue === null)) {
+      console.warn(
+        `Leaderboards only implemented for numeric baseValues or missing data (null). Got: ${JSON.stringify(
+          v,
+        )}`,
+      );
+    }
+    const value = finiteOrNull(measureValue);
+    const total = totals[measureName];
+
+    cleanValue.values[measureName] = value;
+    cleanValue.pctOfTotals[measureName] =
+      total !== null && value !== null ? value / total : null;
+    cleanValue.prevValues[measureName] = finiteOrNull(
+      v[measureName + ComparisonDeltaPreviousSuffix],
+    );
+    cleanValue.deltaRels[measureName] = finiteOrNull(
+      v[measureName + ComparisonDeltaRelativeSuffix],
+    );
+    cleanValue.deltaAbs[measureName] = finiteOrNull(
+      v[measureName + ComparisonDeltaAbsoluteSuffix],
+    );
+  }
+
+  return cleanValue;
 }
 
 /**
@@ -139,12 +157,12 @@ export function getSort(
 export function prepareLeaderboardItemData(
   values: V1MetricsViewAggregationResponseDataItem[] | undefined,
   dimensionName: string,
-  measureName: string,
+  measureNames: string[],
   numberAboveTheFold: number,
   selectedValues: string[],
-  // The total of the measure for the current period,
+  // The totals of the measures for the current period,
   // or null if the measure is not valid_percent_of_total
-  total: number | null,
+  totals: Record<string, number | null>,
 ) {
   if (values?.length === 0 || !values) {
     return {
@@ -169,13 +187,34 @@ export function prepareLeaderboardItemData(
       compareLeaderboardValues(value, dimensionValue),
     );
 
-    const cleanValue = cleanUpComparisonValue(
-      value,
-      dimensionName,
-      measureName,
-      total,
+    const cleanValue: LeaderboardItemData = {
+      dimensionValue,
+      uri: value[dimensionName + URI_DIMENSION_SUFFIX] || null,
+      values: {},
+      pctOfTotals: {},
+      prevValues: {},
+      deltaRels: {},
+      deltaAbs: {},
       selectedIndex,
-    );
+    };
+
+    for (const measureName of measureNames) {
+      const measureValue = finiteOrNull(value[measureName]);
+      const total = totals[measureName];
+
+      cleanValue.values[measureName] = measureValue;
+      cleanValue.pctOfTotals[measureName] =
+        total !== null && measureValue !== null ? measureValue / total : null;
+      cleanValue.prevValues[measureName] = finiteOrNull(
+        value[measureName + ComparisonDeltaPreviousSuffix],
+      );
+      cleanValue.deltaRels[measureName] = finiteOrNull(
+        value[measureName + ComparisonDeltaRelativeSuffix],
+      );
+      cleanValue.deltaAbs[measureName] = finiteOrNull(
+        value[measureName + ComparisonDeltaAbsoluteSuffix],
+      );
+    }
 
     aboveTheFold.push(cleanValue);
   }
