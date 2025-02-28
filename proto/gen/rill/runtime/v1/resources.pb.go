@@ -1607,11 +1607,11 @@ type ModelState struct {
 	PartitionsModelId string `protobuf:"bytes,10,opt,name=partitions_model_id,json=partitionsModelId,proto3" json:"partitions_model_id,omitempty"`
 	// partitions_have_errors is true if one or more partitions failed to execute.
 	PartitionsHaveErrors bool `protobuf:"varint,11,opt,name=partitions_have_errors,json=partitionsHaveErrors,proto3" json:"partitions_have_errors,omitempty"`
-	// total_execution_duration is the time user queries took to execute while refreshing the model.
+	// total_execution_duration_ms is the time user queries took to execute while refreshing the model.
 	// In case of incremental models it is the sum of all successful executions so far.
 	// This is not the time it took to refresh the model which also includes other stuff like taking a write lock.
 	TotalExecutionDurationMs int64 `protobuf:"varint,12,opt,name=total_execution_duration_ms,json=totalExecutionDurationMs,proto3" json:"total_execution_duration_ms,omitempty"`
-	// latest_execution_duration is the time user queries took to execute in the last successful refresh.
+	// latest_execution_duration_ms is the time user queries took to execute in the last successful refresh.
 	LatestExecutionDurationMs int64 `protobuf:"varint,13,opt,name=latest_execution_duration_ms,json=latestExecutionDurationMs,proto3" json:"latest_execution_duration_ms,omitempty"`
 }
 

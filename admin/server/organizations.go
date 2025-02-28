@@ -430,7 +430,7 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 		}, nil
 	}
 
-	// Insert the user in the org and AllUsergroup transactionally.
+	// Insert the user in the org and its managed usergroups transactionally.
 	err = s.admin.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID, false)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotUnique) {

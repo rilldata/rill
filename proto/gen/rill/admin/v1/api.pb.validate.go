@@ -36334,6 +36334,8 @@ func (m *Usergroup) validate(all bool) error {
 
 	// no validation rules for GroupDescription
 
+	// no validation rules for Managed
+
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {
 		case interface{ ValidateAll() error }:

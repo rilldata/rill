@@ -2504,6 +2504,7 @@ message Usergroup {
   string group_id = 1;
   string group_name = 2;
   string group_description = 3;
+  bool managed = 6;
   google.protobuf.Timestamp created_on = 4;
   google.protobuf.Timestamp updated_on = 5;
 }

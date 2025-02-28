@@ -158,15 +158,6 @@ func (c *connection) UpdateOrganization(ctx context.Context, id string, opts *da
 	return res, nil
 }
 
-func (c *connection) UpdateOrganizationAllUsergroup(ctx context.Context, orgID, groupID string) (*database.Organization, error) {
-	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `UPDATE orgs SET all_usergroup_id = $1 WHERE id = $2 RETURNING *`, groupID, orgID).StructScan(res)
-	if err != nil {
-		return nil, parseErr("org", err)
-	}
-	return res, nil
-}
-
 func (c *connection) FindOrganizationWhitelistedDomainForOrganizationWithJoinedRoleNames(ctx context.Context, orgID string) ([]*database.OrganizationWhitelistedDomainWithJoinedRoleNames, error) {
 	var res []*database.OrganizationWhitelistedDomainWithJoinedRoleNames
 	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT oad.domain, r.name FROM orgs_autoinvite_domains oad JOIN org_roles r ON r.id = oad.org_role_id WHERE oad.org_id=$1", orgID)
@@ -782,8 +773,8 @@ func (c *connection) InsertUsergroup(ctx context.Context, opts *database.InsertU
 
 	res := &database.Usergroup{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO usergroups (org_id, name) VALUES ($1, $2) RETURNING *
-	`, opts.OrgID, opts.Name).StructScan(res)
+		INSERT INTO usergroups (org_id, name, managed) VALUES ($1, $2, $3) RETURNING *
+	`, opts.OrgID, opts.Name, opts.Managed).StructScan(res)
 	if err != nil {
 		return nil, parseErr("usergroup", err)
 	}

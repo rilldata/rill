@@ -13672,6 +13672,11 @@ export class Usergroup extends Message<Usergroup> {
   groupDescription = "";
 
   /**
+   * @generated from field: bool managed = 6;
+   */
+  managed = false;
+
+  /**
    * @generated from field: google.protobuf.Timestamp created_on = 4;
    */
   createdOn?: Timestamp;
@@ -13692,6 +13697,7 @@ export class Usergroup extends Message<Usergroup> {
     { no: 1, name: "group_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "group_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "group_description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "managed", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 4, name: "created_on", kind: "message", T: Timestamp },
     { no: 5, name: "updated_on", kind: "message", T: Timestamp },
   ]);

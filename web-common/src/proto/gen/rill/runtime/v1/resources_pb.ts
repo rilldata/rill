@@ -1083,7 +1083,7 @@ export class ModelState extends Message<ModelState> {
   partitionsHaveErrors = false;
 
   /**
-   * total_execution_duration is the time user queries took to execute while refreshing the model.
+   * total_execution_duration_ms is the time user queries took to execute while refreshing the model.
    * In case of incremental models it is the sum of all successful executions so far.
    * This is not the time it took to refresh the model which also includes other stuff like taking a write lock.
    *
@@ -1092,7 +1092,7 @@ export class ModelState extends Message<ModelState> {
   totalExecutionDurationMs = protoInt64.zero;
 
   /**
-   * latest_execution_duration is the time user queries took to execute in the last successful refresh.
+   * latest_execution_duration_ms is the time user queries took to execute in the last successful refresh.
    *
    * @generated from field: int64 latest_execution_duration_ms = 13;
    */

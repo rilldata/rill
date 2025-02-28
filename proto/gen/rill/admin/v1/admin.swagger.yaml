@@ -5379,6 +5379,8 @@ definitions:
         type: string
       groupDescription:
         type: string
+      managed:
+        type: boolean
       createdOn:
         type: string
         format: date-time

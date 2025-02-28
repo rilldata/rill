@@ -64,7 +64,6 @@ type DB interface {
 	InsertOrganization(ctx context.Context, opts *InsertOrganizationOptions) (*Organization, error)
 	DeleteOrganization(ctx context.Context, name string) error
 	UpdateOrganization(ctx context.Context, id string, opts *UpdateOrganizationOptions) (*Organization, error)
-	UpdateOrganizationAllUsergroup(ctx context.Context, orgID, groupID string) (*Organization, error)
 
 	FindOrganizationWhitelistedDomain(ctx context.Context, orgID string, domain string) (*OrganizationWhitelistedDomain, error)
 	FindOrganizationWhitelistedDomainForOrganizationWithJoinedRoleNames(ctx context.Context, orgID string) ([]*OrganizationWhitelistedDomainWithJoinedRoleNames, error)
@@ -324,7 +323,6 @@ type Organization struct {
 	LogoAssetID                         *string   `db:"logo_asset_id"`
 	FaviconAssetID                      *string   `db:"favicon_asset_id"`
 	CustomDomain                        string    `db:"custom_domain"`
-	AllUsergroupID                      *string   `db:"all_usergroup_id"`
 	CreatedOn                           time.Time `db:"created_on"`
 	UpdatedOn                           time.Time `db:"updated_on"`
 	QuotaProjects                       int       `db:"quota_projects"`
@@ -584,6 +582,7 @@ type Usergroup struct {
 	ID          string    `db:"id"`
 	OrgID       string    `db:"org_id"`
 	Name        string    `db:"name" validate:"slug"`
+	Managed     bool      `db:"managed"`
 	Description string    `db:"description"`
 	CreatedOn   time.Time `db:"created_on"`
 	UpdatedOn   time.Time `db:"updated_on"`
@@ -591,9 +590,19 @@ type Usergroup struct {
 
 // InsertUsergroupOptions defines options for inserting a new usergroup
 type InsertUsergroupOptions struct {
-	OrgID string
-	Name  string `validate:"slug"`
+	OrgID   string
+	Name    string `validate:"slug"`
+	Managed bool
 }
+
+// Hard-coded managed usergroup names.
+// These are created and managed automatically by the system.
+// They will have managed==true and should not be editable by users.
+const (
+	ManagedUsergroupNameAllUsers   = "all-users"   // Everyone in the org
+	ManagedUsergroupNameAllMembers = "all-members" // Everyone in the org who is not a guest
+	ManagedUsergroupNameAllGuests  = "all-guests"  // Everyone in the org who is a guest
+)
 
 // UserAuthToken is a persistent API token for a user.
 type UserAuthToken struct {

@@ -368,6 +368,7 @@ export interface V1Usergroup {
   groupId?: string;
   groupName?: string;
   groupDescription?: string;
+  managed?: boolean;
   createdOn?: string;
   updatedOn?: string;
 }

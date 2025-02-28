@@ -30,6 +30,12 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		return nil, err
 	}
 
+	// Get the all-members group
+	allMembers, err := s.DB.FindUsergroupByName(ctx, org.Name, database.ManagedUsergroupNameAllMembers)
+	if err != nil {
+		return nil, err
+	}
+
 	// Create the project and add initial members using a transaction.
 	// The transaction is not used for provisioning and deployments, since they involve external services.
 	txCtx, tx, err := s.DB.NewTx(ctx, false)
@@ -52,7 +58,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 	}
 
 	// All org members as a group get viewer role
-	err = s.DB.InsertProjectMemberUsergroup(txCtx, *org.AllUsergroupID, proj.ID, viewerRole.ID)
+	err = s.DB.InsertProjectMemberUsergroup(txCtx, allMembers.ID, proj.ID, viewerRole.ID)
 	if err != nil {
 		return nil, err
 	}

@@ -341,7 +341,7 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, email, 
 		return nil, err
 	}
 
-	org, err = s.prepareOrganization(txCtx, org.ID, userID)
+	err = s.prepareOrganization(txCtx, org.ID, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -376,37 +376,45 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, email, 
 	return org, nil
 }
 
-func (s *Service) prepareOrganization(ctx context.Context, orgID, userID string) (*database.Organization, error) {
-	// create all user group for this org
-	userGroup, err := s.DB.InsertUsergroup(ctx, &database.InsertUsergroupOptions{
-		OrgID: orgID,
-		Name:  "all-users",
+func (s *Service) prepareOrganization(ctx context.Context, orgID, userID string) error {
+	// Create the system-managed usergroups for the org
+	_, err := s.DB.InsertUsergroup(ctx, &database.InsertUsergroupOptions{
+		OrgID:   orgID,
+		Name:    database.ManagedUsergroupNameAllUsers,
+		Managed: true,
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
-	// update org with all user group
-	org, err := s.DB.UpdateOrganizationAllUsergroup(ctx, orgID, userGroup.ID)
+	_, err = s.DB.InsertUsergroup(ctx, &database.InsertUsergroupOptions{
+		OrgID:   orgID,
+		Name:    database.ManagedUsergroupNameAllMembers,
+		Managed: true,
+	})
 	if err != nil {
-		return nil, err
+		return err
+	}
+	_, err = s.DB.InsertUsergroup(ctx, &database.InsertUsergroupOptions{
+		OrgID:   orgID,
+		Name:    database.ManagedUsergroupNameAllGuests,
+		Managed: true,
+	})
+	if err != nil {
+		return err
 	}
 
+	// Add the user to the org as an admin.
+	// This also takes care of adding them to the managed groups.
 	role, err := s.DB.FindOrganizationRole(ctx, database.OrganizationRoleNameAdmin)
 	if err != nil {
-		if errors.Is(err, ctx.Err()) {
-			return nil, err
-		}
-		return nil, fmt.Errorf("failed to find admin role when preparing org: %s", err.Error())
+		return fmt.Errorf("failed to find admin role when preparing org: %w", err)
 	}
-
-	// Add user to created org with org admin role.
-	// This also takes care of adding them to the all-users group.
 	err = s.InsertOrganizationMemberUser(ctx, orgID, userID, role.ID, false)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return org, nil
+	return nil
 }
 
 func deref[T any](v *T, def T) T {
