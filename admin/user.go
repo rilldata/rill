@@ -378,27 +378,7 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, email, 
 
 func (s *Service) prepareOrganization(ctx context.Context, orgID, userID string) error {
 	// Create the system-managed usergroups for the org
-	_, err := s.DB.InsertUsergroup(ctx, &database.InsertUsergroupOptions{
-		OrgID:   orgID,
-		Name:    database.ManagedUsergroupNameAllUsers,
-		Managed: true,
-	})
-	if err != nil {
-		return err
-	}
-	_, err = s.DB.InsertUsergroup(ctx, &database.InsertUsergroupOptions{
-		OrgID:   orgID,
-		Name:    database.ManagedUsergroupNameAllMembers,
-		Managed: true,
-	})
-	if err != nil {
-		return err
-	}
-	_, err = s.DB.InsertUsergroup(ctx, &database.InsertUsergroupOptions{
-		OrgID:   orgID,
-		Name:    database.ManagedUsergroupNameAllGuests,
-		Managed: true,
-	})
+	err := s.DB.InsertManagedUsergroups(ctx, orgID)
 	if err != nil {
 		return err
 	}

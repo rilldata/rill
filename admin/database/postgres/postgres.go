@@ -766,6 +766,27 @@ func (c *connection) CheckUsergroupExists(ctx context.Context, groupID string) (
 	return res, nil
 }
 
+func (c *connection) InsertManagedUsergroups(ctx context.Context, orgID string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, `
+		INSERT INTO usergroups (org_id, name, managed) VALUES
+		($1, $2, true),
+		($1, $3, true),
+		($1, $4, true)
+	`, orgID, database.ManagedUsergroupNameAllUsers, database.ManagedUsergroupNameAllMembers, database.ManagedUsergroupNameAllGuests)
+	if err != nil {
+		return parseErr("managed usergroup", err)
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows != 3 {
+		// This should never happen.
+		panic(fmt.Sprintf("expected 3 rows to be inserted, got %d", rows))
+	}
+	return nil
+}
+
 func (c *connection) InsertUsergroup(ctx context.Context, opts *database.InsertUsergroupOptions) (*database.Usergroup, error) {
 	if err := database.Validate(opts); err != nil {
 		return nil, err

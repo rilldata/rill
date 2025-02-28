@@ -133,6 +133,7 @@ type DB interface {
 
 	FindUsergroupByName(ctx context.Context, orgName, name string) (*Usergroup, error)
 	CheckUsergroupExists(ctx context.Context, groupID string) (bool, error)
+	InsertManagedUsergroups(ctx context.Context, orgID string) error
 	InsertUsergroup(ctx context.Context, opts *InsertUsergroupOptions) (*Usergroup, error)
 	UpdateUsergroupName(ctx context.Context, name, groupID string) (*Usergroup, error)
 	UpdateUsergroupDescription(ctx context.Context, description, groupID string) (*Usergroup, error)
