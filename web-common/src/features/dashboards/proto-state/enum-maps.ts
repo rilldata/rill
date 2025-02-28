@@ -59,5 +59,5 @@ export const FromProtoPivotTableModeMap = {} as Record<
   PivotTableMode
 >;
 for (const op in ToProtoPivotTableModeMap) {
-  ToProtoPivotTableModeMap[ToProtoPivotTableModeMap[op]] = op;
+  FromProtoPivotTableModeMap[ToProtoPivotTableModeMap[op]] = op;
 }
