@@ -32,7 +32,7 @@ UPDATE usergroups SET name = 'all-members' WHERE name = 'all-users';
 
 -- Create a new managed group `all-users` and add all org-level members to it, including guests.
 INSERT INTO usergroups (org_id, name, managed)
-SELECT org_id, 'all-users' AS name, true AS managed FROM orgs;
+SELECT id as org_id, 'all-users' AS name, true AS managed FROM orgs;
 
 INSERT INTO usergroups_users (usergroup_id, user_id)
 SELECT
@@ -44,7 +44,7 @@ WHERE ug.name = 'all-users';
 
 -- Create a new managed group `all-guests` and add all guest org-level members to it.
 INSERT INTO usergroups (org_id, name, managed)
-SELECT org_id, 'all-guests' AS name, true AS managed FROM orgs;
+SELECT id as org_id, 'all-guests' AS name, true AS managed FROM orgs;
 
 INSERT INTO usergroups_users (usergroup_id, user_id)
 SELECT
