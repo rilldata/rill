@@ -88,7 +88,7 @@
     {#if parentElement}
       <div
         class={cn(
-          "flex flex-wrap gap-4 overflow-hidden pb-4",
+          "flex flex-wrap gap-4 overflow-x-auto pb-4",
           hasMoreThanOneMeasure ? "flex-col" : "flex-row",
         )}
       >
