@@ -51,6 +51,7 @@
         prepareDimTableRows,
       },
       sorting: { sortedAscending, sortType },
+      measures: { leaderboardMeasureNames, getMeasureByName },
     },
     actions: {
       dimensionsFilter: {
@@ -157,6 +158,8 @@
     $selectedDimensionValueNames.includes(row[dimensionName] as string),
   );
 
+  $: firstMeasure = $getMeasureByName($leaderboardMeasureNames[0]);
+
   function onSelectItem(event) {
     const label = tableRows[event.detail.index][dimensionName] as string;
     toggleDimensionValueSelection(
@@ -239,6 +242,7 @@
             timeRange.start,
             timeRange.end,
           )}
+          {firstMeasure}
           rows={tableRows}
         />
       </div>

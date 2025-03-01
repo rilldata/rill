@@ -20,6 +20,7 @@ TableCells – the cell contents.
 
   import { getStateManagers } from "../state-managers/state-managers";
   import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
+  import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
 
   const dispatch = createEventDispatcher();
 
@@ -27,6 +28,7 @@ TableCells – the cell contents.
   export let columns: VirtualizedTableColumns[];
   export let selectedValues: CompoundQueryResult<string[]>;
   export let dimensionName: string;
+  export let firstMeasure: MetricsViewSpecMeasureV2;
   export let isFetching: boolean;
 
   const {
@@ -221,6 +223,7 @@ TableCells – the cell contents.
           noPin={true}
           selectedColumn={$sortMeasure}
           columns={measureColumns}
+          {firstMeasure}
           on:click-column={handleColumnHeaderClick}
         />
         <!-- dimension value and gutter column -->
