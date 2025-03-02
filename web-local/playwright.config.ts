@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
+
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
@@ -32,9 +33,19 @@ export default defineConfig({
       testMatch: "setup.ts",
     },
     {
-      name: "e2e",
+      name: "e2e-chrome",
       dependencies: ["setup"],
       use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "e2e-safari",
+      dependencies: ["setup"],
+      use: { ...devices["Desktop Safari"] },
+    },
+    {
+      name: "e2e-firefox",
+      dependencies: ["setup"],
+      use: { ...devices["Desktop Firefox"] },
     },
   ],
 });
