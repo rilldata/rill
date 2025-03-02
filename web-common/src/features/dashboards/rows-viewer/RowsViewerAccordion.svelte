@@ -161,7 +161,7 @@
     <div class="bar flex items-center gap-2">
       <span class="font-bold">Model Data</span>
       <span class="text-gray-500 font-medium">
-        Not yet supported for measure-based dimension filters.
+        Not yet supported for measure-based filters.
       </span>
     </div>
   {:else}
