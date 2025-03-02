@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"strings"
 	"time"
 
@@ -888,14 +889,16 @@ func (c *connection) InsertManagedUsergroupsMemberUser(ctx context.Context, orgI
 }
 
 func (c *connection) DeleteManagedUsergroupsMemberUser(ctx context.Context, orgID, userID string) error {
-	_, err := c.getDB(ctx).ExecContext(ctx, `
+	res, err := c.getDB(ctx).ExecContext(ctx, `
 		DELETE FROM usergroups_users WHERE user_id = $1 AND usergroup_id IN (
-			SELECT ug.id FROM usergroups ug WHERE ug.org_id = $2 AND ug.name IN ('all-users', 'all-guests')
+			SELECT ug.id FROM usergroups ug WHERE ug.org_id = $2 AND ug.managed
 		)
 	`, userID, orgID)
 	if err != nil {
 		return parseErr("managed usergroup member", err)
 	}
+	rows, _ := res.RowsAffected()
+	log.Printf("Deleted %d managed usergroup members", rows)
 	return nil
 }
 

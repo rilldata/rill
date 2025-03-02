@@ -379,7 +379,15 @@ func TestRBAC(t *testing.T) {
 			Role:         database.OrganizationRoleNameGuest,
 		})
 		require.NoError(t, err)
-		_, err = c1.CreateWhitelistedDomain(ctx, &adminv1.CreateWhitelistedDomainRequest{
+		// Since normal admins can only whitelist their own domain, we need to create and add a separate user on the other domain to whitelist it.
+		uTemp, cTemp := newTestUserWithDomain(t, svr, "whitelist-orgs2.test")
+		_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
+			Organization: org3.Organization.Name,
+			Email:        uTemp.Email,
+			Role:         database.OrganizationRoleNameAdmin,
+		})
+		require.NoError(t, err)
+		_, err = cTemp.CreateWhitelistedDomain(ctx, &adminv1.CreateWhitelistedDomainRequest{
 			Organization: org3.Organization.Name,
 			Domain:       "whitelist-orgs2.test",
 			Role:         database.OrganizationRoleNameAdmin,
@@ -445,7 +453,7 @@ func TestRBAC(t *testing.T) {
 		// Check that the users are in the orgs that match their domain and groups that match their roles
 		checkOrgMember(adminEmail, org1.Organization.Name, database.OrganizationRoleNameAdmin, 3)
 		checkOrgMember(adminEmail, org2.Organization.Name, database.OrganizationRoleNameAdmin, 3)
-		checkOrgMember(adminEmail, org3.Organization.Name, database.OrganizationRoleNameAdmin, 1)
+		checkOrgMember(adminEmail, org3.Organization.Name, database.OrganizationRoleNameAdmin, 2)
 		checkOrgMember(adminEmail, org4.Organization.Name, database.OrganizationRoleNameAdmin, 1)
 
 		checkOrgMember(userEmail, org1.Organization.Name, database.OrganizationRoleNameViewer, 3)
