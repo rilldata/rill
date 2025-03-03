@@ -12,7 +12,7 @@ export const pivotSelectors = {
   columns: ({ dashboard }: DashboardDataSources) =>
     splitPivotChips(dashboard.pivot.columns),
   isFlat: ({ dashboard }: DashboardDataSources) =>
-    dashboard.pivot.rowJoinType === "flat",
+    dashboard.pivot.tableMode === "flat",
   measures: (dashData: DashboardDataSources) => {
     const measures = filteredSimpleMeasures(dashData)();
     const columnMeasures = splitPivotChips(

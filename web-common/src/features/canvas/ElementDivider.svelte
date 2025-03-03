@@ -12,10 +12,8 @@
   export let isSpreadEvenly: boolean;
   export let dragging: boolean;
   export let addItems: (
-    item: {
-      position: { row: number; order: number };
-      type: CanvasComponentType;
-    }[],
+    position: { row: number; column: number },
+    item: CanvasComponentType[],
   ) => void;
   export let onMouseDown: ((e: MouseEvent) => void) | undefined = undefined;
   export let spreadEvenly: (rowIndex: number) => void;
@@ -51,7 +49,7 @@
     activeDivider.reset();
 
     if (type) {
-      addItems([{ position: { row: rowIndex, order: addIndex }, type }]);
+      addItems({ row: rowIndex, column: addIndex }, [type]);
     }
   }
 

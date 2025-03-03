@@ -396,12 +396,9 @@ function toPivotUrlParams(
     );
   }
 
-  const rowJoinType = exploreState.pivot?.rowJoinType;
-  if (shouldSetParam(preset.pivotRowJoinType, rowJoinType)) {
-    searchParams.set(
-      ExploreStateURLParams.PivotRowJoinType,
-      rowJoinType ?? "nest",
-    );
+  const tableMode = exploreState.pivot?.tableMode;
+  if (shouldSetParam(preset.pivotTableMode, tableMode)) {
+    searchParams.set(ExploreStateURLParams.PivotTableMode, tableMode ?? "nest");
   }
 
   // TODO: other fields like expanded state and pin are not supported right now

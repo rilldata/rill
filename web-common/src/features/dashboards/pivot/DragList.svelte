@@ -15,7 +15,7 @@
   import {
     type PivotChipData,
     PivotChipType,
-    type PivotRowJoinType,
+    type PivotTableMode,
   } from "./types";
 
   export type Zone = "rows" | "columns" | "Time" | "Measures" | "Dimensions";
@@ -35,7 +35,7 @@
   export let items: PivotChipData[] = [];
   export let placeholder: string | null = null;
   export let zone: Zone;
-  export let rowJoinType: PivotRowJoinType = "nest";
+  export let tableMode: PivotTableMode = "nest";
 
   const isDropLocation = zone === "columns" || zone === "rows";
 
@@ -215,7 +215,7 @@
       />
 
       <div class="icons">
-        {#if (zone === "Time" || zone === "Dimensions") && rowJoinType === "nest"}
+        {#if (zone === "Time" || zone === "Dimensions") && tableMode === "nest"}
           <Tooltip distance={8} location="top" alignment="start">
             <button
               class="icon-wrapper"

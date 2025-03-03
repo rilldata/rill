@@ -1,31 +1,46 @@
 <script lang="ts">
-  import * as defaults from "./constants";
-  export let height: number;
-  export let contentRect = new DOMRectReadOnly(0, 0, 0, 0);
-  export let bgColor = "bg-white";
+  import CanvasFilters from "./filters/CanvasFilters.svelte";
+
+  export let maxWidth: number;
+  export let clientWidth = 0;
+  export let showGrabCursor = false;
+  export let filtersEnabled: boolean | undefined;
+  export let onClick: () => void = () => {};
+
+  let contentRect = new DOMRectReadOnly(0, 0, 0, 0);
+
+  $: ({ width: clientWidth } = contentRect);
 </script>
 
+{#if filtersEnabled}
+  <header
+    role="presentation"
+    on:click|self={onClick}
+    class="bg-background border-b py-4 px-2 w-full select-none"
+  >
+    <CanvasFilters />
+  </header>
+{/if}
+
 <div
-  class="dashboard-theme-boundary size-full bg-gray-100 flex justify-center overflow-y-auto"
-  on:scroll
+  role="presentation"
+  class="size-full overflow-hidden overflow-y-auto p-2 pb-48 flex flex-col items-center bg-white select-none"
+  class:!cursor-grabbing={showGrabCursor}
+  on:click|self={onClick}
 >
   <div
+    class="w-full h-fit flex dashboard-theme-boundary flex-col items-center row-container relative"
+    style:max-width={maxWidth + "px"}
+    style:min-width="420px"
     bind:contentRect
-    class="canvas {bgColor} min-h-full"
-    style:height="{height}px"
-    style:max-width="{defaults.DEFAULT_DASHBOARD_WIDTH}px"
   >
     <slot />
   </div>
 </div>
 
-<style lang="postcss">
-  .canvas {
-    width: 100%;
-    height: 100%;
-    position: relative;
-    user-select: none;
-    margin: 0;
-    pointer-events: auto;
+<style>
+  div {
+    container-type: inline-size;
+    container-name: canvas-container;
   }
 </style>

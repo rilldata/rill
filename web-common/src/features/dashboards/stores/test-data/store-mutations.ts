@@ -270,7 +270,7 @@ export const AD_BIDS_SORT_PIVOT_BY_IMPRESSIONS_DESC: TestDashboardMutation =
     ]);
 
 export const AD_BIDS_TOGGLE_PIVOT_ROW_JOIN_TYPE: TestDashboardMutation = () =>
-  metricsExplorerStore.setPivotRowJoinType(
+  metricsExplorerStore.setPivotTableMode(
     AD_BIDS_EXPLORE_NAME,
     "flat",
     [],
