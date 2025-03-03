@@ -125,6 +125,8 @@ message ModelSpec {
   google.protobuf.Struct output_properties = 12;
   bool trigger = 9;
   bool trigger_full = 22;
+  // generated_from_source is true if the model was generated from a source.
+  bool generated_from_source = 23;
   reserved 2, 3, 6, 7, 8;
 }
 
