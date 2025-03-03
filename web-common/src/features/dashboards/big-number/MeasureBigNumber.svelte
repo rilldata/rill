@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import { WithTween } from "@rilldata/web-common/components/data-graphic/functional-components";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -80,7 +81,14 @@
   $: copyValue = measureValueFormatterUnabridged(value) ?? "no data";
   $: tooltipValue = measureValueFormatterTooltip(value) ?? "no data";
 
-  $: tddHref = `?${ExploreStateURLParams.WebView}=tdd&${ExploreStateURLParams.ExpandedMeasure}=${measure.name}`;
+  $: tddHref = makeTddHref(measure, $page.url);
+
+  function makeTddHref(measure: MetricsViewSpecMeasureV2, pageUrl: URL) {
+    const currentUrlParams = new URLSearchParams(pageUrl.search);
+    currentUrlParams.set(ExploreStateURLParams.WebView, "tdd");
+    currentUrlParams.set(ExploreStateURLParams.ExpandedMeasure, measure.name!);
+    return `?${currentUrlParams.toString()}`;
+  }
 
   function shiftClickHandler(number: string | undefined) {
     if (number === undefined) return;

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import Chart from "@rilldata/web-common/components/icons/Chart.svelte";
   import Pivot from "@rilldata/web-common/components/icons/Pivot.svelte";
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
@@ -50,6 +51,12 @@
       tab,
     );
   }
+
+  function makeTabHref(pageUrl: URL, tab: MetricsEventScreenName) {
+    const currentUrlParams = new URLSearchParams(pageUrl.search);
+    currentUrlParams.set(ExploreStateURLParams.WebView, tab);
+    return `?${currentUrlParams.toString()}`;
+  }
 </script>
 
 <div class="mr-4">
@@ -59,7 +66,7 @@
         {@const selected = tab === currentTab}
         <Tab
           {selected}
-          href="?{ExploreStateURLParams.WebView}={tab}"
+          href={makeTabHref($page.url, tab)}
           on:click={() => handleTabChange(tab)}
         >
           <Icon />
