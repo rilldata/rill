@@ -3,7 +3,7 @@
  * modifying the target object directly. Any existing parameters in the target with the same keys
  * will be overwritten.
  *
- * Note: Unlike mergeParamsWithOverwrite, this function modifies the target object directly
+ * Note: Unlike mergeAndRetainParams, this function modifies the target object directly
  * instead of creating a new URLSearchParams object.
  *
  * @param fromSearchParams - The source URLSearchParams object
@@ -18,30 +18,27 @@ export function copyParamsToTarget(
   });
 }
 
-/**
- * Merges two URLSearchParams objects, where parameters from sourceParamsB overwrite
- * any matching parameters in sourceParamsA, while preserving parameters in sourceParamsA
- * that don't exist in sourceParamsB.
- *
- * @param sourceParamsA - The base URLSearchParams object
- * @param sourceParamsB - The URLSearchParams object with parameters that will overwrite matching ones in sourceParamsA
- * @returns A new URLSearchParams object with the merged parameters
- */
-export function mergeParamsWithOverwrite(
-  sourceParamsA: URLSearchParams,
-  sourceParamsB: URLSearchParams,
+const RETAINED_PARAMS = ["resource", "type"];
+
+export function mergeAndRetainParams(
+  baseParams: URLSearchParams,
+  newParams: URLSearchParams,
+  retainedParamKeys: string[] = RETAINED_PARAMS,
 ): URLSearchParams {
   // Create a new URLSearchParams object to avoid modifying the originals
   const mergedParams = new URLSearchParams();
 
-  // First, copy all parameters from sourceParamsA
-  sourceParamsA.forEach((value, key) => {
+  // First, copy all parameters from newParams
+  newParams.forEach((value, key) => {
     mergedParams.set(key, value);
   });
 
-  // Then, overwrite with parameters from sourceParamsB
-  sourceParamsB.forEach((value, key) => {
-    mergedParams.set(key, value);
+  // Then, ensure we retain specific parameters from baseParams
+  // even if they weren't in newParams
+  baseParams.forEach((value, key) => {
+    if (retainedParamKeys.includes(key) && !newParams.has(key)) {
+      mergedParams.set(key, value);
+    }
   });
 
   return mergedParams;

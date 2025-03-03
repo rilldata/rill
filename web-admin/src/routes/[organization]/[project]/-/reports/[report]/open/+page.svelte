@@ -9,7 +9,7 @@
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import { mergeParamsWithOverwrite } from "@rilldata/web-common/lib/url-utils";
+  import { mergeAndRetainParams } from "@rilldata/web-common/lib/url-utils";
   import type { PageData } from "./$types";
 
   export let data: PageData;
@@ -53,7 +53,7 @@
       $dashboardStateForReport.data.exploreState,
     );
 
-    url.search = mergeParamsWithOverwrite(
+    url.search = mergeAndRetainParams(
       urlSearchParams,
       exploreStateParams,
     ).toString();

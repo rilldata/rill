@@ -29,7 +29,7 @@ import {
 } from "@rilldata/web-common/lib/time/types";
 import {
   copyParamsToTarget,
-  mergeParamsWithOverwrite,
+  mergeAndRetainParams,
 } from "@rilldata/web-common/lib/url-utils";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
@@ -69,10 +69,7 @@ export function getUpdatedUrlForExploreState(
   });
 
   // Merge with current params overwriting the state params
-  const mergedParams = mergeParamsWithOverwrite(
-    filteredCurrentParams,
-    stateParams,
-  );
+  const mergedParams = mergeAndRetainParams(filteredCurrentParams, stateParams);
   return mergedParams.toString();
 }
 

@@ -27,7 +27,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { onMount } from "svelte";
   import { get } from "svelte/store";
-  import { mergeParamsWithOverwrite } from "../../../lib/url-utils";
+  import { mergeAndRetainParams } from "../../../lib/url-utils";
 
   export let metricsViewName: string;
   export let exploreName: string;
@@ -267,7 +267,7 @@
       defaultExplorePreset,
     );
     // merge current url params with explore state params
-    const newUrlParams = mergeParamsWithOverwrite(
+    const newUrlParams = mergeAndRetainParams(
       currentUrlParams,
       exploreStateParams,
     );
