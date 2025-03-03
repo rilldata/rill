@@ -12,6 +12,7 @@ import (
 
 func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	var orgName, displayName, description, billingEmail string
+	var flagsSet bool
 
 	editCmd := &cobra.Command{
 		Use:   "edit [<org-name>]",
@@ -28,17 +29,6 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			if len(args) > 0 {
 				orgName = args[0]
 			}
-			if !cmd.Flags().Changed("org") && len(args) == 0 && ch.Interactive {
-				orgNames, err := OrgNames(ctx, ch)
-				if err != nil {
-					return err
-				}
-
-				orgName, err = cmdutil.SelectPrompt("Select org to edit", orgNames, ch.Org)
-				if err != nil {
-					return err
-				}
-			}
 
 			resp, err := client.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: orgName})
 			if err != nil {
@@ -47,7 +37,6 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 						return err
 					}
 				}
-
 				fmt.Printf("Org name %q doesn't exist, please run `rill org list` to list available orgs\n", orgName)
 				return nil
 			}
@@ -57,57 +46,23 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				Name: org.Name,
 			}
 
-			flagsSet := cmd.Flags().Changed("display-name") || cmd.Flags().Changed("description") || cmd.Flags().Changed("billing-email")
-			if !flagsSet {
-				return fmt.Errorf("at least one flag must be set")
-			}
-
 			if cmd.Flags().Changed("display-name") {
+				flagsSet = true
 				req.DisplayName = &displayName
-			} else if ch.Interactive && !flagsSet {
-				ok, err := cmdutil.ConfirmPrompt("Do you want to update the display name", "", false)
-				if err != nil {
-					return err
-				}
-				if ok {
-					displayName, err = cmdutil.InputPrompt("Enter the display name", org.DisplayName)
-					if err != nil {
-						return err
-					}
-					req.DisplayName = &displayName
-				}
 			}
 
 			if cmd.Flags().Changed("description") {
+				flagsSet = true
 				req.Description = &description
-			} else if ch.Interactive && !flagsSet {
-				ok, err := cmdutil.ConfirmPrompt("Do you want to update the description", "", false)
-				if err != nil {
-					return err
-				}
-				if ok {
-					description, err = cmdutil.InputPrompt("Enter the description", org.Description)
-					if err != nil {
-						return err
-					}
-					req.Description = &description
-				}
 			}
 
 			if cmd.Flags().Changed("billing-email") {
+				flagsSet = true
 				req.BillingEmail = &billingEmail
-			} else if ch.Interactive && !flagsSet {
-				ok, err := cmdutil.ConfirmPrompt("Do you want to update the billing email", "", false)
-				if err != nil {
-					return err
-				}
-				if ok {
-					billingEmail, err = cmdutil.InputPrompt("Enter the billing email", org.BillingEmail)
-					if err != nil {
-						return err
-					}
-					req.BillingEmail = &billingEmail
-				}
+			}
+
+			if !flagsSet {
+				return fmt.Errorf("at least one flag must be set")
 			}
 
 			updatedOrg, err := client.UpdateOrganization(ctx, req)

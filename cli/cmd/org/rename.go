@@ -1,8 +1,6 @@
 package org
 
 import (
-	"fmt"
-
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -13,7 +11,7 @@ import (
 
 func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 	var name, newName, displayName string
-	var force bool
+	var flagSet bool
 
 	renameCmd := &cobra.Command{
 		Use:   "rename",
@@ -27,57 +25,32 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			if !cmd.Flags().Changed("new-name") && !cmd.Flags().Changed("display-name") {
-				return fmt.Errorf("at least one of --new-name or --display-name must be provided")
-			}
-
-			if !cmd.Flags().Changed("org") && len(args) == 0 && ch.Interactive {
-				orgNames, err := OrgNames(ctx, ch)
-				if err != nil {
-					return err
-				}
-
-				name, err = cmdutil.SelectPrompt("Select org to edit", orgNames, ch.Org)
-				if err != nil {
-					return err
-				}
-			}
-
 			resp, err := client.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: name})
 			if err != nil {
 				if st, ok := status.FromError(err); ok && st.Code() == codes.NotFound {
-					return fmt.Errorf("org %q doesn't exist, run 'rill org list' to see available orgs", name)
+					ch.PrintfError("org %q doesn't exist, run 'rill org list' to see available orgs", name)
+					return nil
 				}
 				return err
 			}
 			org := resp.Organization
 
-			// Require at least one change
-			if !cmd.Flags().Changed("new-name") && !cmd.Flags().Changed("display-name") {
-				return fmt.Errorf("at least one of --new-name or --display-name must be provided")
-			}
-
 			// Build update request
-			req := &adminv1.UpdateOrganizationRequest{
-				Name: org.Name,
-			}
+			req := &adminv1.UpdateOrganizationRequest{Name: org.Name}
 
 			if cmd.Flags().Changed("new-name") {
-				ch.PrintfWarn("\nWarn: Changing org name will invalidate dashboard URLs.\n")
-				if !force {
-					ok, err := cmdutil.ConfirmPrompt("Do you want to continue?", "", false)
-					if err != nil {
-						return err
-					}
-					if !ok {
-						return fmt.Errorf("operation cancelled")
-					}
-				}
+				flagSet = true
 				req.NewName = &newName
 			}
 
 			if cmd.Flags().Changed("display-name") {
+				flagSet = true
 				req.DisplayName = &displayName
+			}
+
+			if !flagSet {
+				ch.PrintfError("no changes requested please specify --new-name or --display-name")
+				return nil
 			}
 
 			// Update org
@@ -112,7 +85,6 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 	renameCmd.Flags().StringVar(&name, "org", ch.Org, "Current org name")
 	renameCmd.Flags().StringVar(&newName, "new-name", "", "New org name")
 	renameCmd.Flags().StringVar(&displayName, "display-name", "", "New display name")
-	renameCmd.Flags().BoolVar(&force, "force", false, "Skip confirmation prompts")
 
 	return renameCmd
 }

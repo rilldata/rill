@@ -1,7 +1,6 @@
 package org
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -44,7 +43,7 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 					return err
 				}
 
-				fmt.Printf("Org name %q already exists\n", name)
+				ch.Printf("Org name %q already exists\n", name)
 				return nil
 			}
 

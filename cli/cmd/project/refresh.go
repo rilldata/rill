@@ -117,10 +117,8 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// Return an error for ineffective use of --partition
-			if len(modelPartitions) > 0 {
-				if !cmd.Flags().Changed("model") {
-					return fmt.Errorf("--partition requires --model to be explicitly set")
-				}
+			if !cmd.Flags().Changed("model") {
+				return fmt.Errorf("--partition requires --model to be explicitly set")
 			}
 
 			// Send request

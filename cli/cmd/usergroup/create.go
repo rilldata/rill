@@ -23,11 +23,9 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 				name = args[0]
 			}
 
-			if name == "" {
-				err = cmdutil.StringPromptIfEmpty(&name, "Enter user group name")
-				if err != nil {
-					return err
-				}
+			err = cmdutil.StringPromptIfEmpty(&name, "Enter user group name")
+			if err != nil {
+				return err
 			}
 
 			_, err = client.CreateUsergroup(cmd.Context(), &adminv1.CreateUsergroupRequest{

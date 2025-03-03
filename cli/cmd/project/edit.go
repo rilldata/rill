@@ -10,7 +10,7 @@ import (
 
 func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	var name, description, prodVersion, prodBranch, subpath, path, provisioner string
-	var public bool
+	var flagSet, public bool
 	var prodTTL int64
 
 	editCmd := &cobra.Command{
@@ -42,25 +42,36 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("prod-ttl-seconds must be non-negative")
 			}
 			if cmd.Flags().Changed("provisioner") {
+				flagSet = true
 				req.Provisioner = &provisioner
 			}
 			if cmd.Flags().Changed("description") {
+				flagSet = true
 				req.Description = &description
 			}
 			if cmd.Flags().Changed("prod-version") {
+				flagSet = true
 				req.ProdVersion = &prodVersion
 			}
 			if cmd.Flags().Changed("prod-branch") {
+				flagSet = true
 				req.ProdBranch = &prodBranch
 			}
 			if cmd.Flags().Changed("subpath") {
+				flagSet = true
 				req.Subpath = &subpath
 			}
 			if cmd.Flags().Changed("public") {
+				flagSet = true
 				req.Public = &public
 			}
 			if cmd.Flags().Changed("prod-ttl-seconds") {
+				flagSet = true
 				req.ProdTtlSeconds = &prodTTL
+			}
+
+			if !flagSet {
+				return fmt.Errorf("must specify at least one update flag")
 			}
 
 			updatedProj, err := client.UpdateProject(ctx, req)
@@ -83,8 +94,8 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	editCmd.Flags().StringVar(&path, "path", ".", "Project directory")
 	editCmd.Flags().StringVar(&subpath, "subpath", "", "Relative path to project in the repository (for monorepos)")
 	editCmd.Flags().StringVar(&provisioner, "provisioner", "", "Project provisioner (default: current provisioner)")
-	editCmd.Flags().Int64Var(&prodTTL, "prod-ttl-seconds", 0, "Prod deployment TTL in seconds")
-	editCmd.Flags().StringVar(&prodVersion, "prod-version", "", "Rill version (default: current version)")
+	editCmd.Flags().Int64Var(&prodTTL, "prod-ttl-seconds", 0, "Time-to-live in seconds for production deployment (0 means no expiration)")
+	editCmd.Flags().StringVar(&prodVersion, "prod-version", "", "Specify the Rill version for production deployment (default: current version)")
 
 	return editCmd
 }

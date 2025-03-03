@@ -9,9 +9,8 @@ import (
 )
 
 const (
-	UserTokenPrefix   = "usr" // User token prefix
-	InviteTokenPrefix = "inv" // Invite token prefix
-	DefaultPageSize   = 50    // Default page size
+	userTokenPrefix   = "usr" // User token prefix
+	inviteTokenPrefix = "inv" // Invite token prefix
 )
 
 func ListCmd(ch *cmdutil.Helper) *cobra.Command {
@@ -30,13 +29,13 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 					return err
 				}
 			} else if projectName != "" {
-				if strings.HasPrefix(pageToken, UserTokenPrefix) {
-					err := listProjectMembers(cmd, ch, ch.Org, projectName, strings.TrimPrefix(pageToken, UserTokenPrefix), pageSize)
+				if strings.HasPrefix(pageToken, userTokenPrefix) {
+					err := listProjectMembers(cmd, ch, ch.Org, projectName, strings.TrimPrefix(pageToken, userTokenPrefix), pageSize)
 					if err != nil {
 						return err
 					}
-				} else if strings.HasPrefix(pageToken, InviteTokenPrefix) {
-					err := listProjectInvites(cmd, ch, ch.Org, projectName, strings.TrimPrefix(pageToken, InviteTokenPrefix), pageSize)
+				} else if strings.HasPrefix(pageToken, inviteTokenPrefix) {
+					err := listProjectInvites(cmd, ch, ch.Org, projectName, strings.TrimPrefix(pageToken, inviteTokenPrefix), pageSize)
 					if err != nil {
 						return err
 					}
@@ -52,13 +51,13 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 					}
 				}
 			} else {
-				if strings.HasPrefix(pageToken, UserTokenPrefix) {
-					err := listOrgMembers(cmd, ch, ch.Org, strings.TrimPrefix(pageToken, UserTokenPrefix), pageSize)
+				if strings.HasPrefix(pageToken, userTokenPrefix) {
+					err := listOrgMembers(cmd, ch, ch.Org, strings.TrimPrefix(pageToken, userTokenPrefix), pageSize)
 					if err != nil {
 						return err
 					}
-				} else if strings.HasPrefix(pageToken, InviteTokenPrefix) {
-					err := listOrgInvites(cmd, ch, ch.Org, strings.TrimPrefix(pageToken, InviteTokenPrefix), pageSize)
+				} else if strings.HasPrefix(pageToken, inviteTokenPrefix) {
+					err := listOrgInvites(cmd, ch, ch.Org, strings.TrimPrefix(pageToken, inviteTokenPrefix), pageSize)
 					if err != nil {
 						return err
 					}
@@ -84,7 +83,7 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 	listCmd.Flags().StringVar(&ch.Org, "org", ch.Org, "Organization")
 	listCmd.Flags().StringVar(&projectName, "project", "", "Project")
 	listCmd.Flags().StringVar(&groupName, "group", "", "User group")
-	listCmd.Flags().Uint32Var(&pageSize, "page-size", DefaultPageSize, "Number of users to return per page")
+	listCmd.Flags().Uint32Var(&pageSize, "page-size", 50, "Number of users to return per page")
 	listCmd.Flags().StringVar(&pageToken, "page-token", "", "Pagination token")
 
 	return listCmd
