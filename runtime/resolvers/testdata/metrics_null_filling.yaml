@@ -391,6 +391,34 @@ tests:
         time__day: "2024-01-03T00:00:00Z"
       - sum: 100
         time__day: "2024-01-05T00:00:00Z"
+  - name: coalesce_compare_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics_null
+      dimensions:
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: sum
+        - name: sum_prev
+          compute:
+            comparison_value:
+              measure: sum
+      time_range:
+        end: 2024-01-06T00:00:00Z
+        start: 2024-01-05T00:00:00Z
+      comparison_time_range:
+        end: 2024-01-04T00:00:00Z
+        start: 2024-01-03T00:00:00Z
+      sort:
+        - name: time__day
+    result:
+      - sum: 100
+        sum_prev: -1 # for "2024-01-03T00:00:00Z"
+        time__day: "2024-01-05T00:00:00Z"
   - name: null_filling_coalesce_iso_ranges_clickhouse
     resolver: metrics
     properties:
