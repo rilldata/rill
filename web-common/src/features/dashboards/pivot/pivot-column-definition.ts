@@ -386,7 +386,7 @@ function getNestedColumnDef(
 
   // Create row dimension columns
   const rowDefinitions: ColumnDef<PivotDataRow>[] =
-    rowDimensionsForColumnDef.map((d) => {
+    rowDimensionsForColumnDef.map((d, i) => {
       return {
         id: d.name,
         accessorFn: (row) => row[d.name],
