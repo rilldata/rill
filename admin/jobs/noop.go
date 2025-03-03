@@ -75,7 +75,3 @@ func (n *noop) PlanChanged(ctx context.Context, billingCustomerID string) (*Inse
 func (n *noop) LogInactiveOrgs(ctx context.Context) (*InsertResult, error) {
 	return nil, nil
 }
-
-func (n *noop) DeleteInactiveOrgs(ctx context.Context) (*InsertResult, error) {
-	return nil, nil
-}

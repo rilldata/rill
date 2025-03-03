@@ -96,8 +96,7 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 	river.AddWorker(workers, &RepairOrgBillingWorker{admin: adm, logger: billingLogger})
 	river.AddWorker(workers, &StartTrialWorker{admin: adm, logger: billingLogger})
 	river.AddWorker(workers, &DeleteOrgWorker{admin: adm, logger: billingLogger})
-	river.AddWorker(workers, &LogInactiveOrgsWorker{admin: adm, logger: billingLogger})
-	river.AddWorker(workers, &DeleteInactiveOrgsWorker{admin: adm, logger: billingLogger}) // Manual trigger
+	river.AddWorker(workers, &HibernateInactiveOrgsWorker{admin: adm, logger: billingLogger})
 
 	periodicJobs := []*river.PeriodicJob{
 		// NOTE: Add new periodic jobs here
@@ -107,7 +106,7 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 		newPeriodicJob(&TrialEndCheckArgs{}, "10 1 * * *", true),                 // daily at 1:10am UTC
 		newPeriodicJob(&TrialGracePeriodCheckArgs{}, "15 1 * * *", true),         // daily at 1:15am UTC
 		newPeriodicJob(&SubscriptionCancellationCheckArgs{}, "20 1 * * *", true), // daily at 1:20am UTC
-		newPeriodicJob(&LogInactiveOrgsArgs{}, "0 1 * * 0", true),                // weekly at 1am UTC on Sunday
+		newPeriodicJob(&HibernateInactiveOrgsArgs{}, "0 1 * * 0", true),          // weekly at 1am UTC on Sunday
 	}
 
 	// Wire our zap logger to a slog logger for the river client
@@ -392,18 +391,7 @@ func (c *Client) PlanChanged(ctx context.Context, billingCustomerID string) (*jo
 }
 
 func (c *Client) LogInactiveOrgs(ctx context.Context) (*jobs.InsertResult, error) {
-	res, err := c.riverClient.Insert(ctx, LogInactiveOrgsArgs{}, nil)
-	if err != nil {
-		return nil, err
-	}
-	return &jobs.InsertResult{
-		ID:        res.Job.ID,
-		Duplicate: res.UniqueSkippedAsDuplicate,
-	}, nil
-}
-
-func (c *Client) DeleteInactiveOrgs(ctx context.Context) (*jobs.InsertResult, error) {
-	res, err := c.riverClient.Insert(ctx, DeleteInactiveOrgsArgs{}, nil)
+	res, err := c.riverClient.Insert(ctx, HibernateInactiveOrgsArgs{}, nil)
 	if err != nil {
 		return nil, err
 	}

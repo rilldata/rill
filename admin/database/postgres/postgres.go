@@ -234,7 +234,9 @@ func (c *connection) FindInactiveOrganizations(ctx context.Context) ([]*database
 	// TODO: This definition may change, but for now, we are considering an organization as inactive if it has no users
 	res := []*database.Organization{}
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT o.* FROM orgs o WHERE NOT EXISTS ( SELECT 1 FROM users_orgs_roles uor WHERE uor.org_id = o.id )
+		SELECT o.* FROM orgs o
+		WHERE now() - o.updated_on > INTERVAL '1 DAY'
+		AND NOT EXISTS ( SELECT 1 FROM users_orgs_roles uor WHERE uor.org_id = o.id )
 	`)
 	if err != nil {
 		return nil, parseErr("orgs", err)

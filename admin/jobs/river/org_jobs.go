@@ -163,67 +163,6 @@ func (w *DeleteOrgWorker) Work(ctx context.Context, job *river.Job[DeleteOrgArgs
 		}
 	}
 
-	// delete org, billing issues will be cascade deleted
-	err = w.admin.DB.DeleteOrganization(ctx, org.Name)
-	if err != nil {
-		return err
-	}
-
-	w.logger.Warn("organization deleted", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
-
-	return nil
-}
-
-type LogInactiveOrgsArgs struct{}
-
-func (LogInactiveOrgsArgs) Kind() string { return "log_inactive_orgs" }
-
-type LogInactiveOrgsWorker struct {
-	river.WorkerDefaults[LogInactiveOrgsArgs]
-	admin  *admin.Service
-	logger *zap.Logger
-}
-
-func (w *LogInactiveOrgsWorker) Work(ctx context.Context, job *river.Job[LogInactiveOrgsArgs]) error {
-	orgs, err := w.admin.DB.FindInactiveOrganizations(ctx)
-	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil
-		}
-		return fmt.Errorf("failed to find inactive organizations: %w", err)
-	}
-
-	for _, org := range orgs {
-		projects, err := w.admin.DB.FindProjectsForOrganization(ctx, org.ID, "", 100)
-		if err != nil {
-			return fmt.Errorf("failed to find projects for organization %s: %w", org.Name, err)
-		}
-		for _, proj := range projects {
-			p, err := w.admin.HibernateProject(ctx, proj)
-			if err != nil {
-				return fmt.Errorf("failed to hibernate project %s: %w", proj.ID, err)
-			}
-			w.logger.Warn("hibernated project", zap.String("project_id", p.ID), zap.String("project_name", p.Name), zap.String("org_id", org.ID), zap.String("org_name", org.Name))
-		}
-		w.logger.Warn("inactive organization", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.Time("last_updated_at", org.UpdatedOn), zap.Int("connected_projects", len(projects)))
-	}
-
-	return nil
-}
-
-type DeleteInactiveOrgsArgs struct {
-	OrgID string
-}
-
-func (DeleteInactiveOrgsArgs) Kind() string { return "delete_inactive_orgs" }
-
-type DeleteInactiveOrgsWorker struct {
-	river.WorkerDefaults[DeleteInactiveOrgsArgs]
-	admin  *admin.Service
-	logger *zap.Logger
-}
-
-func (w *DeleteInactiveOrgsWorker) Work(ctx context.Context, job *river.Job[DeleteInactiveOrgsArgs]) error {
 	res, err := w.admin.DB.FindProjectsForOrganization(ctx, job.Args.OrgID, "", 100)
 	if err != nil {
 		return fmt.Errorf("failed to find projects for organization %s: %w", job.Args.OrgID, err)
@@ -240,9 +179,50 @@ func (w *DeleteInactiveOrgsWorker) Work(ctx context.Context, job *river.Job[Dele
 		w.logger.Warn("deleted projects for inactive organization", zap.String("org_id", job.Args.OrgID), zap.Int("connected_projects", len(res)))
 	}
 
-	err = w.admin.DB.DeleteOrganization(ctx, job.Args.OrgID)
+	// delete org, billing issues will be cascade deleted
+	err = w.admin.DB.DeleteOrganization(ctx, org.Name)
 	if err != nil {
-		return fmt.Errorf("failed to delete organization %s: %w", job.Args.OrgID, err)
+		return err
+	}
+
+	w.logger.Warn("organization deleted", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
+
+	return nil
+}
+
+type HibernateInactiveOrgsArgs struct{}
+
+func (HibernateInactiveOrgsArgs) Kind() string { return "log_inactive_orgs" }
+
+type HibernateInactiveOrgsWorker struct {
+	river.WorkerDefaults[HibernateInactiveOrgsArgs]
+	admin  *admin.Service
+	logger *zap.Logger
+}
+
+func (w *HibernateInactiveOrgsWorker) Work(ctx context.Context, job *river.Job[HibernateInactiveOrgsArgs]) error {
+	orgs, err := w.admin.DB.FindInactiveOrganizations(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to find inactive organizations: %w", err)
+	}
+
+	for _, org := range orgs {
+		projects, err := w.admin.DB.FindProjectsForOrganization(ctx, org.ID, "", 100)
+		if err != nil {
+			return fmt.Errorf("failed to find projects for organization %s: %w", org.Name, err)
+		}
+		for _, proj := range projects {
+			if proj.ProdDeploymentID == nil {
+				continue
+			}
+
+			p, err := w.admin.HibernateProject(ctx, proj)
+			if err != nil {
+				return fmt.Errorf("failed to hibernate project %s: %w", proj.ID, err)
+			}
+			w.logger.Warn("hibernated project", zap.String("project_id", p.ID), zap.String("project_name", p.Name), zap.String("org_id", org.ID), zap.String("org_name", org.Name))
+		}
+		w.logger.Warn("inactive organization", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.Time("last_updated_at", org.UpdatedOn), zap.Int("connected_projects", len(projects)))
 	}
 
 	return nil
