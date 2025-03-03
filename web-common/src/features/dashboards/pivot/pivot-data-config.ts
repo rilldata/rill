@@ -132,17 +132,6 @@ export function getPivotConfig(
         colDimensionNames = [];
       }
 
-      const isFlat = dashboardStore.pivot.tableMode === "flat";
-
-      /**
-       * For flat table, internally rows have all
-       * the dimensions and measures are in columns
-       */
-      if (isFlat) {
-        rowDimensionNames = colDimensionNames;
-        colDimensionNames = [];
-      }
-
       const config: PivotDataStoreConfig = {
         measureNames,
         rowDimensionNames,
