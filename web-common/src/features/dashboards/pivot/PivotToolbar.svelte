@@ -18,7 +18,6 @@
   const { exploreName, dashboardStore } = stateManagers;
 
   $: expanded = $dashboardStore?.pivot?.expanded ?? {};
-  $: metricsViewProto = $dashboardStore.proto;
 
   // function expandVisible() {
   //   // const lowestVisibleRow = 0;
@@ -95,7 +94,6 @@
       getQuery={(isScheduled) =>
         getPivotExportQuery(stateManagers, isScheduled)}
       exploreName={$exploreName}
-      {metricsViewProto}
     />
   {/if}
 </div>

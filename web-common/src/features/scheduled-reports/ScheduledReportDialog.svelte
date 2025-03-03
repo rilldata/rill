@@ -4,6 +4,7 @@
     createAdminServiceCreateReport,
     createAdminServiceEditReport,
     createAdminServiceGetCurrentUser,
+    ReportOptionsOpenMode,
   } from "@rilldata/web-admin/client";
   import * as Dialog from "@rilldata/web-common/components/dialog-v2";
   import {
@@ -33,7 +34,6 @@
 
   export let open: boolean;
   export let query: V1Query | undefined = undefined;
-  export let metricsViewProto: string | undefined = undefined;
   export let exploreName: string | undefined = undefined;
   export let reportSpec: V1ReportSpec | undefined = undefined;
 
@@ -84,6 +84,7 @@
             displayName: values.title,
             refreshCron: refreshCron, // for testing: "* * * * *"
             refreshTimeZone: values.timeZone,
+            explore: exploreName,
             queryName: reportSpec?.queryName ?? queryName,
             queryArgsJson: JSON.stringify(
               reportSpec?.queryArgsJson
@@ -102,9 +103,15 @@
             webOpenState: reportSpec
               ? (reportSpec.annotations as V1ReportSpecAnnotations)[
                   "web_open_state"
-                ]
-              : metricsViewProto,
+                ] // backwards compatibility
+              : undefined, // Now, we map `queryName` and `queryArgsJson` to a dashboard view in `[report]/open/+page.svelte`
             webOpenPath: exploreName ? `/explore/${exploreName}` : undefined,
+            webOpenMode: isEdit
+              ? (((reportSpec?.annotations as V1ReportSpecAnnotations)[
+                  "web_open_mode"
+                ] as ReportOptionsOpenMode) ??
+                ReportOptionsOpenMode.OPEN_MODE_LEGACY) // Backwards compatibility
+              : ReportOptionsOpenMode.OPEN_MODE_CREATOR,
           },
         },
       });

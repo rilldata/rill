@@ -56,8 +56,6 @@
   $: filterKey = excludeMode ? "exclude" : "include";
   $: otherFilterKey = excludeMode ? "include" : "exclude";
 
-  $: metricsViewProto = $dashboardStore.proto;
-
   let searchBarOpen = false;
 
   function closeSearchBar() {
@@ -202,7 +200,6 @@
         getQuery={(isScheduled) =>
           getDimensionTableExportQuery(stateManagers, isScheduled)}
         exploreName={$exploreName}
-        {metricsViewProto}
       />
     {/if}
     {#if !hideStartPivotButton}

@@ -373,7 +373,7 @@ describe("Human readable URL state variations", () => {
             get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
           ),
           defaultExplorePreset,
-        );
+        ).toString();
         expect(url.toString()).to.eq(expectedUrl);
 
         // load empty url into metrics

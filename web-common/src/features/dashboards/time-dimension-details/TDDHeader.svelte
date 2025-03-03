@@ -63,8 +63,6 @@
     validSpecStore,
   } = stateManagers;
 
-  $: metricsViewProto = $dashboardStore.proto;
-
   $: selectableMeasures = $allMeasures
     .filter((m) => m.name !== undefined || m.displayName !== undefined)
     .map((m) =>
@@ -302,7 +300,6 @@
           getQuery={(isScheduled) =>
             getTDDExportQuery(stateManagers, isScheduled)}
           {exploreName}
-          {metricsViewProto}
         />
       {/if}
       {#if !hideStartPivotButton}

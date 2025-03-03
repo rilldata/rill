@@ -5,7 +5,7 @@
   import { mapQueryToDashboard } from "@rilldata/web-admin/features/dashboards/query-mappers/mapQueryToDashboard";
   import {
     getExploreName,
-    getExplorePageUrl,
+    getExplorePageUrlSearchParams,
   } from "@rilldata/web-admin/features/dashboards/query-mappers/utils.js";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
@@ -52,14 +52,13 @@
   }
 
   async function gotoExplorePage() {
-    const explorePageUrl = await getExplorePageUrl(
-      $page.url,
-      organization,
-      project,
+    const url = new URL(`${$page.url.protocol}//${$page.url.host}`);
+    url.pathname = `/${organization}/${project}/explore/${exploreName}`;
+    url.search = await getExplorePageUrlSearchParams(
       $dashboardStateForAlert.data.exploreName,
       $dashboardStateForAlert.data.exploreState,
-    );
-    return goto(explorePageUrl);
+    ).toString();
+    return goto(url.toString());
   }
 </script>
 
