@@ -21,7 +21,10 @@ export const load = async ({ params: { token }, parent, url }) => {
     // When we support reports for non-Explore resources, we'll also want to get the resource kind here
   } else {
     // Public URLs specify the resource in the token's metadata
-    const tokenData = await fetchMagicAuthToken(token);
+    const tokenData = await fetchMagicAuthToken(token).catch((e) => {
+      console.error(e);
+      throw error(404, "Unable to find token");
+    });
 
     if (!tokenData.token?.resourceName) {
       throw new Error("Token does not have an associated resource name");
