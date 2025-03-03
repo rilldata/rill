@@ -2,7 +2,6 @@
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import Chart from "@rilldata/web-common/components/time-series-chart/Chart.svelte";
   import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
-  import { getLocalComparison } from "@rilldata/web-common/features/canvas/components/kpi/util";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
   import RangeDisplay from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/RangeDisplay.svelte";
@@ -28,10 +27,7 @@
   export let timeAndFilterStore: Readable<TimeAndFilterStore>;
 
   const ctx = getCanvasStateManagers();
-  const {
-    spec,
-    timeControls: { showTimeComparison, selectedComparisonTimeRange },
-  } = ctx.canvasEntity;
+  const { spec } = ctx.canvasEntity;
 
   let hoveredPoints: {
     interval: Interval<true>;
@@ -46,12 +42,17 @@
     metrics_view: metricsViewName,
     measure: measureName,
     sparkline,
-    time_filters: localTimeFilters,
     comparison: comparisonOptions,
   } = kpiProperties);
 
-  $: ({ showLocalTimeComparison, localComparisonTimeRange } =
-    getLocalComparison(localTimeFilters));
+  $: ({
+    timeGrain,
+    timeRange: { timeZone, start, end },
+    where,
+    comparisonTimeRange,
+    showTimeComparison,
+    comparisonTimeRangeState,
+  } = $timeAndFilterStore);
 
   $: schema = validateKPISchema(ctx, kpiProperties);
 
@@ -69,23 +70,12 @@
 
   $: ({ isValid } = $schema);
 
-  $: ({
-    timeGrain,
-    timeRange: { timeZone, start, end },
-    where,
-    comparisonTimeRange,
-  } = $timeAndFilterStore);
-
-  $: showComparison =
-    !!comparisonOptions?.length &&
-    ((localTimeFilters && showLocalTimeComparison) ||
-      (!localTimeFilters && $showTimeComparison));
+  $: showComparison = !!comparisonOptions?.length && showTimeComparison;
 
   $: comparisonLabel =
-    (localComparisonTimeRange?.name &&
-      TIME_COMPARISON[localComparisonTimeRange.name]?.label) ||
-    ($selectedComparisonTimeRange?.name &&
-      TIME_COMPARISON[$selectedComparisonTimeRange.name]?.label);
+    comparisonTimeRangeState?.selectedComparisonTimeRange?.name &&
+    TIME_COMPARISON[comparisonTimeRangeState?.selectedComparisonTimeRange.name]
+      ?.label;
 
   // BIG NUMBER QUERIES
   $: kpiTotalsQuery = createQueryServiceMetricsViewAggregation(
