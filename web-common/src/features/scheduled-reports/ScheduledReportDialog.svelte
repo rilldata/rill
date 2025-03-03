@@ -31,7 +31,6 @@
 
   export let open: boolean;
   export let queryArgs: any | undefined = undefined;
-  export let metricsViewProto: string | undefined = undefined;
   export let exploreName: string | undefined = undefined;
   export let reportSpec: V1ReportSpec | undefined = undefined;
 
@@ -100,7 +99,7 @@
               ? (reportSpec.annotations as V1ReportSpecAnnotations)[
                   "web_open_state"
                 ] // backwards compatibility
-              : undefined, // Now, we map the `queryName` and `queryArgsJson` to a dashboard view
+              : undefined, // Now, we map `queryName` and `queryArgsJson` to a dashboard view in `[report]/open/+page.svelte`
             webOpenPath: exploreName ? `/explore/${exploreName}` : undefined,
             webOpenMode: isEdit
               ? (((reportSpec?.annotations as V1ReportSpecAnnotations)[

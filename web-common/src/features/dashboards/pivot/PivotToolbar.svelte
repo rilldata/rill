@@ -4,13 +4,13 @@
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import { featureFlags } from "../../feature-flags";
-  import { getStateManagers } from "../state-managers/state-managers";
-  import ExportMenu from "../../exports/ExportMenu.svelte";
   import {
     V1ExportFormat,
     createQueryServiceExport,
   } from "../../../runtime-client";
+  import ExportMenu from "../../exports/ExportMenu.svelte";
+  import { featureFlags } from "../../feature-flags";
+  import { getStateManagers } from "../state-managers/state-managers";
   import exportPivot, { getPivotExportArgs } from "./pivot-export";
 
   export let showPanels = true;
@@ -22,7 +22,6 @@
   const { exploreName, dashboardStore, validSpecStore } = stateManagers;
 
   $: expanded = $dashboardStore?.pivot?.expanded ?? {};
-  $: metricsViewProto = $dashboardStore.proto;
 
   // function expandVisible() {
   //   // const lowestVisibleRow = 0;
@@ -112,7 +111,6 @@
       includeScheduledReport={$adminServer}
       queryArgs={$scheduledReportsQueryArgs}
       exploreName={$exploreName}
-      {metricsViewProto}
     />
   {/if}
 </div>

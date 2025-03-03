@@ -1,17 +1,17 @@
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import Export from "@rilldata/web-common/components/icons/Export.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import Export from "@rilldata/web-common/components/icons/Export.svelte";
   import {
     V1ExportFormat,
     type V1MetricsViewAggregationRequest,
   } from "@rilldata/web-common/runtime-client";
+  import { builderActions, getAttrs } from "bits-ui";
   import { onMount } from "svelte";
   import type ScheduledReportDialog from "../scheduled-reports/ScheduledReportDialog.svelte";
-  import { builderActions, getAttrs } from "bits-ui";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
 
   export let disabled: boolean = false;
   export let workspace = false;
@@ -19,7 +19,6 @@
   export let includeScheduledReport = false;
   export let queryArgs: V1MetricsViewAggregationRequest | undefined = undefined;
   export let exploreName: string | undefined = undefined;
-  export let metricsViewProto: string | undefined = undefined;
   export let onExport: (format: V1ExportFormat) => void;
 
   let showScheduledReportDialog = false;
@@ -91,7 +90,6 @@
   <svelte:component
     this={CreateScheduledReportDialog}
     {queryArgs}
-    {metricsViewProto}
     {exploreName}
     bind:open={showScheduledReportDialog}
   />

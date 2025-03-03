@@ -25,6 +25,7 @@
   import type {
     DashboardTimeControls,
     TimeGrain,
+    TimeRange,
   } from "@rilldata/web-common/lib/time/types";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
   import {
@@ -36,12 +37,11 @@
   import ExportMenu from "../../exports/ExportMenu.svelte";
   import { featureFlags } from "../../feature-flags";
   import { PivotChipType } from "../pivot/types";
+  import { useTimeControlStore } from "../time-controls/time-control-store";
   import TimeGrainSelector from "../time-controls/TimeGrainSelector.svelte";
   import exportTDD from "./export-tdd";
   import { getTDDExportArgs } from "./getTDDExportArgs";
   import type { TDDComparison } from "./types";
-  import type { TimeRange } from "@rilldata/web-common/lib/time/types";
-  import { useTimeControlStore } from "../time-controls/time-control-store";
 
   export let exploreName: string;
   export let dimensionName: string;
@@ -70,8 +70,6 @@
   } = stateManagers;
 
   const scheduledReportsQueryArgs = getTDDExportArgs(stateManagers);
-
-  $: metricsViewProto = $dashboardStore.proto;
 
   $: selectableMeasures = $allMeasures
     .filter((m) => m.name !== undefined || m.displayName !== undefined)
@@ -319,7 +317,6 @@
           onExport={handleExportTDD}
           includeScheduledReport={$adminServer}
           queryArgs={$scheduledReportsQueryArgs}
-          {metricsViewProto}
           {exploreName}
         />
       {/if}
