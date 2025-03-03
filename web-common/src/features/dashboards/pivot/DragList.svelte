@@ -54,7 +54,7 @@
   $: dragChip = dragData?.chip;
   $: ghostWidth = dragData?.width;
   $: initialIndex = dragData?.initialIndex ?? -1;
-  $: canMixTypes = zone === "columns" && rowJoinType === "flat";
+  $: canMixTypes = zone === "columns" && tableMode === "flat";
   $: zoneStartedDrag = source === zone;
   $: lastDimensionIndex = items.findLastIndex(
     (i) => i.type !== PivotChipType.Measure,
