@@ -269,7 +269,7 @@ export const AD_BIDS_SORT_PIVOT_BY_IMPRESSIONS_DESC: TestDashboardMutation =
       { id: AD_BIDS_IMPRESSIONS_MEASURE, desc: true },
     ]);
 
-export const AD_BIDS_TOGGLE_PIVOT_ROW_JOIN_TYPE: TestDashboardMutation = () =>
+export const AD_BIDS_TOGGLE_PIVOT_TABLE_MODE: TestDashboardMutation = () =>
   metricsExplorerStore.setPivotTableMode(
     AD_BIDS_EXPLORE_NAME,
     "flat",
@@ -285,7 +285,6 @@ export const AD_BIDS_TOGGLE_PIVOT_ROW_JOIN_TYPE: TestDashboardMutation = () =>
         title: "day",
         type: PivotChipType.Time,
       },
-
       {
         id: AD_BIDS_IMPRESSIONS_MEASURE,
         title: AD_BIDS_IMPRESSIONS_MEASURE,
