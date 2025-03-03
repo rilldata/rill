@@ -233,11 +233,12 @@ schema: default
 			Name:  ResourceName{Kind: ResourceKindModel, Name: "s1"},
 			Paths: []string{"/sources/s1.yaml"},
 			ModelSpec: &runtimev1.ModelSpec{
-				InputConnector:   "s3",
-				OutputConnector:  "duckdb",
-				InputProperties:  must(structpb.NewStruct(map[string]any{"path": "hello"})),
-				OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
-				RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
+				InputConnector:      "s3",
+				OutputConnector:     "duckdb",
+				InputProperties:     must(structpb.NewStruct(map[string]any{"path": "hello"})),
+				OutputProperties:    must(structpb.NewStruct(map[string]any{"materialize": true})),
+				RefreshSchedule:     &runtimev1.Schedule{RefUpdate: true},
+				GeneratedFromSource: true,
 			},
 		},
 		// source s2
@@ -245,11 +246,12 @@ schema: default
 			Name:  ResourceName{Kind: ResourceKindModel, Name: "s2"},
 			Paths: []string{"/sources/s2.sql"},
 			ModelSpec: &runtimev1.ModelSpec{
-				InputConnector:   "postgres",
-				OutputConnector:  "duckdb",
-				InputProperties:  must(structpb.NewStruct(map[string]any{"sql": strings.TrimSpace(files["sources/s2.sql"])})),
-				OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
-				RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true, Cron: "0 0 * * *"},
+				InputConnector:      "postgres",
+				OutputConnector:     "duckdb",
+				InputProperties:     must(structpb.NewStruct(map[string]any{"sql": strings.TrimSpace(files["sources/s2.sql"])})),
+				OutputProperties:    must(structpb.NewStruct(map[string]any{"materialize": true})),
+				RefreshSchedule:     &runtimev1.Schedule{RefUpdate: true, Cron: "0 0 * * *"},
+				GeneratedFromSource: true,
 			},
 		},
 		// model m1
@@ -448,11 +450,12 @@ path: hello
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "s1"},
 		Paths: []string{"/sources/s1.yaml"},
 		ModelSpec: &runtimev1.ModelSpec{
-			InputConnector:   "s3",
-			OutputConnector:  "duckdb",
-			InputProperties:  must(structpb.NewStruct(map[string]any{"path": "hello"})),
-			OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
-			RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
+			InputConnector:      "s3",
+			OutputConnector:     "duckdb",
+			InputProperties:     must(structpb.NewStruct(map[string]any{"path": "hello"})),
+			OutputProperties:    must(structpb.NewStruct(map[string]any{"materialize": true})),
+			RefreshSchedule:     &runtimev1.Schedule{RefUpdate: true},
+			GeneratedFromSource: true,
 		},
 	}
 	diff, err := p.Reparse(ctx, s1.Paths)
@@ -1045,11 +1048,12 @@ dev:
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "s1"},
 		Paths: []string{"/sources/s1.yaml"},
 		ModelSpec: &runtimev1.ModelSpec{
-			InputConnector:   "s3",
-			OutputConnector:  "duckdb",
-			InputProperties:  must(structpb.NewStruct(map[string]any{"path": "hello", "sql": "SELECT 10"})),
-			OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
-			RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
+			InputConnector:      "s3",
+			OutputConnector:     "duckdb",
+			InputProperties:     must(structpb.NewStruct(map[string]any{"path": "hello", "sql": "SELECT 10"})),
+			OutputProperties:    must(structpb.NewStruct(map[string]any{"materialize": true})),
+			RefreshSchedule:     &runtimev1.Schedule{RefUpdate: true},
+			GeneratedFromSource: true,
 		},
 	}
 
@@ -1057,11 +1061,12 @@ dev:
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "s1"},
 		Paths: []string{"/sources/s1.yaml"},
 		ModelSpec: &runtimev1.ModelSpec{
-			InputConnector:   "s3",
-			OutputConnector:  "duckdb",
-			InputProperties:  must(structpb.NewStruct(map[string]any{"path": "world", "limit": 10000, "sql": "SELECT 20"})),
-			OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
-			RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true, Cron: "0 0 * * *"},
+			InputConnector:      "s3",
+			OutputConnector:     "duckdb",
+			InputProperties:     must(structpb.NewStruct(map[string]any{"path": "world", "limit": 10000, "sql": "SELECT 20"})),
+			OutputProperties:    must(structpb.NewStruct(map[string]any{"materialize": true})),
+			RefreshSchedule:     &runtimev1.Schedule{RefUpdate: true, Cron: "0 0 * * *"},
+			GeneratedFromSource: true,
 		},
 	}
 
@@ -1856,11 +1861,12 @@ select 3
 			Name:  ResourceName{Kind: ResourceKindModel, Name: "s1"},
 			Paths: []string{"/sources/s1.yaml"},
 			ModelSpec: &runtimev1.ModelSpec{
-				InputConnector:   "s3",
-				OutputConnector:  "duckdb",
-				InputProperties:  must(structpb.NewStruct(map[string]any{})),
-				OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
-				RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
+				InputConnector:      "s3",
+				OutputConnector:     "duckdb",
+				InputProperties:     must(structpb.NewStruct(map[string]any{})),
+				OutputProperties:    must(structpb.NewStruct(map[string]any{"materialize": true})),
+				RefreshSchedule:     &runtimev1.Schedule{RefUpdate: true},
+				GeneratedFromSource: true,
 			},
 		},
 		// a1
