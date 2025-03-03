@@ -68,7 +68,7 @@
         ? DEFAULT_COL_WIDTH
         : 0);
 
-  $: hasMoreThanOneMeasure = activeMeasureNames.length > 1;
+  $: shouldDisplayLeaderboardsInColumn = activeMeasureNames.length > 2;
 </script>
 
 <div class="flex flex-col overflow-hidden size-full" aria-label="Leaderboards">
@@ -89,7 +89,7 @@
       <div
         class={cn(
           "flex flex-wrap gap-4 overflow-x-auto pb-4",
-          hasMoreThanOneMeasure ? "flex-col" : "flex-row",
+          shouldDisplayLeaderboardsInColumn ? "flex-col" : "flex-row",
         )}
       >
         {#each $visibleDimensions as dimension (dimension.name)}
