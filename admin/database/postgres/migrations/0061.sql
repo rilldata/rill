@@ -8,6 +8,10 @@ ALTER TABLE orgs DROP COLUMN all_usergroup_id;
 -- Migrate the `all-users` group to be a managed group.
 UPDATE usergroups SET managed = true WHERE name = 'all-users';
 
+-- Migrate the "collaborator" role to be called "editor".
+UPDATE org_roles SET name = 'editor' WHERE name = 'collaborator';
+UPDATE project_roles SET name = 'editor' WHERE name = 'collaborator';
+
 -- Add a flag to indicate if an org role is considered a guest role.
 ALTER TABLE org_roles ADD guest BOOLEAN NOT NULL DEFAULT false;
 

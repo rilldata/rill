@@ -306,7 +306,7 @@ func testProjectsForUserWithPagination(t *testing.T, db database.DB) {
 	require.Equal(t, "test@rilldata.com", user.Email)
 
 	// fetch role
-	role, err := db.FindProjectRole(ctx, database.ProjectRoleNameCollaborator)
+	role, err := db.FindProjectRole(ctx, database.ProjectRoleNameEditor)
 	require.NoError(t, err)
 
 	// add org

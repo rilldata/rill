@@ -786,13 +786,13 @@ type AuthorizationCode struct {
 
 // Constants for known role names (created in migrations).
 const (
-	OrganizationRoleNameAdmin        = "admin"
-	OrganizationRoleNameCollaborator = "collaborator"
-	OrganizationRoleNameViewer       = "viewer"
-	OrganizationRoleNameGuest        = "guest"
-	ProjectRoleNameAdmin             = "admin"
-	ProjectRoleNameCollaborator      = "collaborator"
-	ProjectRoleNameViewer            = "viewer"
+	OrganizationRoleNameAdmin  = "admin"
+	OrganizationRoleNameEditor = "editor"
+	OrganizationRoleNameViewer = "viewer"
+	OrganizationRoleNameGuest  = "guest"
+	ProjectRoleNameAdmin       = "admin"
+	ProjectRoleNameEditor      = "editor"
+	ProjectRoleNameViewer      = "viewer"
 )
 
 // OrganizationRole represents roles for orgs.
