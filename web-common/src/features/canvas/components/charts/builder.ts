@@ -3,6 +3,7 @@ import type {
   ChartConfig,
   TooltipValue,
 } from "@rilldata/web-common/features/canvas/components/charts/types";
+import { sanitizeFieldName } from "@rilldata/web-common/features/canvas/components/charts/util";
 import { sanitizeValueForVega } from "@rilldata/web-common/features/templates/charts/utils";
 import type { VisualizationSpec } from "svelte-vega";
 import type {
@@ -53,7 +54,7 @@ export function createXEncoding(
       config.x.type !== "temporal" && { sort: config.x.sort }),
     axis: {
       ...(config.x.type === "quantitative" && {
-        formatType: config.x.field,
+        formatType: sanitizeFieldName(config.x.field),
       }),
       ...(metaData && "format" in metaData && { format: metaData.format }),
       ...(!config.x.showAxisTitle && { title: null }),
@@ -78,7 +79,7 @@ export function createYEncoding(
     }),
     axis: {
       ...(config.y.type === "quantitative" && {
-        formatType: config.y.field,
+        formatType: sanitizeFieldName(config.y.field),
       }),
       ...(!config.y.showAxisTitle && { title: null }),
       ...(metaData && "format" in metaData && { format: metaData.format }),
@@ -148,7 +149,7 @@ export function createDefaultTooltipEncoding(
       title: data.fields[config.x.field]?.displayName || config.x.field,
       type: config.x.type,
       ...(config.x.type === "quantitative" && {
-        formatType: config.x.field,
+        formatType: sanitizeFieldName(config.x.field),
       }),
       ...(config.x.type === "temporal" && { format: "%b %d, %Y %H:%M" }),
     });
@@ -159,7 +160,7 @@ export function createDefaultTooltipEncoding(
       title: data.fields[config.y.field]?.displayName || config.y.field,
       type: config.y.type,
       ...(config.y.type === "quantitative" && {
-        formatType: config.y.field,
+        formatType: sanitizeFieldName(config.y.field),
       }),
       ...(config.y.type === "temporal" && { format: "%b %d, %Y %H:%M" }),
     });
