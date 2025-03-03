@@ -1,9 +1,11 @@
 <script lang="ts">
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
+  import Chart from "@rilldata/web-common/components/time-series-chart/Chart.svelte";
   import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
   import { getLocalComparison } from "@rilldata/web-common/features/canvas/components/kpi/util";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
+  import RangeDisplay from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/RangeDisplay.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
@@ -16,13 +18,11 @@
     V1TimeGrain,
     type V1ComponentSpecRendererProperties,
   } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { DateTime, Interval } from "luxon";
+  import type { Readable } from "svelte/motion";
   import type { KPISpec } from ".";
   import { validateKPISchema } from "./selector";
-  import Chart from "@rilldata/web-common/components/time-series-chart/Chart.svelte";
-  import { DateTime, Interval } from "luxon";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import RangeDisplay from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/RangeDisplay.svelte";
-  import type { Readable } from "svelte/motion";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
   export let timeAndFilterStore: Readable<TimeAndFilterStore>;
@@ -144,9 +144,9 @@
       : comparisonTotal;
 
   $: comparisonPercChange =
-    currentValue != null && comparisonVal != null
+    currentValue != null && comparisonVal
       ? (currentValue - comparisonVal) / comparisonVal
-      : undefined;
+      : null;
 
   // TIME SERIES QUERIES
   $: sparklineDataQuery = createQueryServiceMetricsViewTimeSeries(
