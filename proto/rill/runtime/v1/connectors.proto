@@ -187,7 +187,7 @@ message TableInfo {
   string name = 2;
   // has_unsupported_data_types indicates if the underlying table has any column with an unsupported OLAP engine datatype
   bool has_unsupported_data_types = 3;
-  // disk_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
+  // physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
   int64 physical_size_bytes = 7;
 }
 

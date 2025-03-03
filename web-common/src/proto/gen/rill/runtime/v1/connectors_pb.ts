@@ -956,7 +956,7 @@ export class TableInfo extends Message<TableInfo> {
   hasUnsupportedDataTypes = false;
 
   /**
-   * disk_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
+   * physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
    *
    * @generated from field: int64 physical_size_bytes = 7;
    */

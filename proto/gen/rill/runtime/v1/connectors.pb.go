@@ -1205,7 +1205,7 @@ type TableInfo struct {
 	Name                    string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	// has_unsupported_data_types indicates if the underlying table has any column with an unsupported OLAP engine datatype
 	HasUnsupportedDataTypes bool `protobuf:"varint,3,opt,name=has_unsupported_data_types,json=hasUnsupportedDataTypes,proto3" json:"has_unsupported_data_types,omitempty"`
-	// disk_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
+	// physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
 	PhysicalSizeBytes int64 `protobuf:"varint,7,opt,name=physical_size_bytes,json=physicalSizeBytes,proto3" json:"physical_size_bytes,omitempty"`
 }
 

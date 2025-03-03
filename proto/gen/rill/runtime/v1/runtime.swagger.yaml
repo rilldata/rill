@@ -6480,7 +6480,7 @@ definitions:
       physicalSizeBytes:
         type: string
         format: int64
-        description: disk_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
+        description: physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
   v1TableRowsRequest:
     type: object
     properties:

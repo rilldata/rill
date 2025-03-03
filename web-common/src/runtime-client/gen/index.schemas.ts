@@ -709,7 +709,7 @@ export interface V1TableInfo {
   isDefaultDatabaseSchema?: boolean;
   name?: string;
   hasUnsupportedDataTypes?: boolean;
-  /** disk_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined. */
+  /** physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined. */
   physicalSizeBytes?: string;
 }
 
