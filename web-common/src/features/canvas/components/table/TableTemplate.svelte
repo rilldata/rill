@@ -65,7 +65,7 @@
     columnPage: 1,
     rowPage: 1,
     enableComparison: false,
-    rowJoinType: "nest",
+    tableMode: "nest",
     activeCell: null,
   });
 

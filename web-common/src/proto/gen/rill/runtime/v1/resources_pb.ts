@@ -1083,7 +1083,7 @@ export class ModelState extends Message<ModelState> {
   partitionsHaveErrors = false;
 
   /**
-   * total_execution_duration is the time user queries took to execute while refreshing the model.
+   * total_execution_duration_ms is the time user queries took to execute while refreshing the model.
    * In case of incremental models it is the sum of all successful executions so far.
    * This is not the time it took to refresh the model which also includes other stuff like taking a write lock.
    *
@@ -1092,7 +1092,7 @@ export class ModelState extends Message<ModelState> {
   totalExecutionDurationMs = protoInt64.zero;
 
   /**
-   * latest_execution_duration is the time user queries took to execute in the last successful refresh.
+   * latest_execution_duration_ms is the time user queries took to execute in the last successful refresh.
    *
    * @generated from field: int64 latest_execution_duration_ms = 13;
    */
@@ -2619,6 +2619,11 @@ export class ExplorePreset extends Message<ExplorePreset> {
    */
   pivotSortAsc?: boolean;
 
+  /**
+   * @generated from field: optional string pivot_table_mode = 28;
+   */
+  pivotTableMode?: string;
+
   constructor(data?: PartialMessage<ExplorePreset>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2651,6 +2656,7 @@ export class ExplorePreset extends Message<ExplorePreset> {
     { no: 25, name: "pivot_cols", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 26, name: "pivot_sort_by", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 27, name: "pivot_sort_asc", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 28, name: "pivot_table_mode", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExplorePreset {
