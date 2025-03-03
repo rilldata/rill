@@ -1,6 +1,8 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
   import { Chip } from "@rilldata/web-common/components/chip";
+  import Label from "@rilldata/web-common/components/forms/Label.svelte";
+  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import RemovableListBody from "@rilldata/web-common/components/chip/removable-list-chip/RemovableListBody.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
@@ -42,17 +44,18 @@
   $: ({ instanceId } = $runtime);
 
   enum SearchMode {
+    Select,
     Search,
     Bulk,
   }
-  let mode: SearchMode = isMatchList ? SearchMode.Bulk : SearchMode.Search;
+  let mode: SearchMode = isMatchList ? SearchMode.Bulk : SearchMode.Select;
 
   function updateBasedOnMatchList(isMatchList: boolean | undefined) {
     if (isMatchList) {
       mode = SearchMode.Bulk;
       curSearchText = selectedValues.join(",");
     } else {
-      mode = SearchMode.Search;
+      mode = SearchMode.Select;
       curSearchText = "";
     }
   }
@@ -66,7 +69,7 @@
     curSearchText,
     timeStart,
     timeEnd,
-    Boolean(timeControlsReady && open) && mode === SearchMode.Search,
+    Boolean(timeControlsReady && open) && mode !== SearchMode.Bulk,
   );
   $: ({
     data: dataFromSearch,
@@ -102,24 +105,27 @@
     isFetching: isFetchingFromBulkMatchedCount,
   } = $bulkMatchedCount);
 
-  $: data = mode === SearchMode.Search ? dataFromSearch : dataFromBulk;
+  $: data = mode === SearchMode.Bulk ? dataFromBulk : dataFromSearch;
   $: error = errorFromSearch ?? errorFromBulk ?? errorFromBulkMatchedCount;
   $: isFetching =
     isFetchingFromSearch ??
     isFetchingFromBulk ??
     isFetchingFromBulkMatchedCount;
 
+  $: showExtraInfo = mode !== SearchMode.Select || curSearchText.length > 0;
+
   $: if (curSearchText.length > 0) {
     const values = curSearchText.split(/\s*,\s*/);
     if (values.length > 1) {
       searchedBulkValues = values;
       mode = SearchMode.Bulk;
-    } else {
+    } else if (mode === SearchMode.Bulk) {
       searchedBulkValues = [];
-      mode = SearchMode.Search;
+      mode = SearchMode.Select;
     }
-  } else {
-    mode = SearchMode.Search;
+  } else if (mode === SearchMode.Bulk) {
+    searchedBulkValues = [];
+    mode = SearchMode.Select;
   }
 
   $: allSelected = Boolean(
@@ -136,16 +142,16 @@
     });
   }
 
-  function onApplyBulkSearch() {
-    onBulkSelect(dataFromBulk ?? []);
-    isMatchList = true;
-    open = false;
-  }
-
-  function onApplySearch() {
-    onSearch(curSearchText);
-    searchText = curSearchText;
-    open = false;
+  function onApply() {
+    if (mode === SearchMode.Bulk) {
+      onBulkSelect(dataFromBulk ?? []);
+      isMatchList = true;
+      open = false;
+    } else {
+      onSearch(curSearchText);
+      searchText = curSearchText;
+      open = false;
+    }
   }
 </script>
 
@@ -218,21 +224,43 @@
   <!-- There will be some custom controls for this. Until we have the full design have a custom dropdown here. -->
   <DropdownMenu.Content
     align="start"
-    class="flex flex-col max-h-96 w-72 overflow-hidden p-0"
+    class="flex flex-col max-h-96 w-[400px] overflow-hidden p-0"
   >
     <div class="flex flex-col px-3 pt-3 pb-1">
       <Search
         bind:value={curSearchText}
         label="Search list"
         showBorderOnFocus={false}
+        placeholder="Enter search term or paste list of values"
       />
-      <div>
-        {#if mode === SearchMode.Bulk}
-          Match List
-        {:else if mode === SearchMode.Search}
-          Search
-        {/if}
-      </div>
+      {#if showExtraInfo}
+        <div class="flex flex-row items-center justify-between pt-3">
+          {#if mode === SearchMode.Bulk}
+            <Chip removable on:remove={() => (mode = SearchMode.Select)}>
+              <svelte:fragment slot="body">Match list</svelte:fragment>
+            </Chip>
+          {:else if mode === SearchMode.Search}
+            <Chip removable on:remove={() => (mode = SearchMode.Select)}>
+              <svelte:fragment slot="body">Search</svelte:fragment>
+            </Chip>
+          {:else if curSearchText.length}
+            <Button
+              type="subtle"
+              small
+              on:click={() => (mode = SearchMode.Search)}
+            >
+              Convert to search filter
+            </Button>
+          {/if}
+          <a
+            href="https://docs.rilldata.com/"
+            target="_blank"
+            class="text-primary-600 font-medium justify-end"
+          >
+            Learn more
+          </a>
+        </div>
+      {/if}
     </div>
 
     <div class="flex flex-col flex-1 overflow-y-auto w-full h-fit pb-1">
@@ -275,27 +303,28 @@
     </div>
 
     <footer>
-      {#if mode === SearchMode.Search}
-        <Button on:click={onToggleSelectAll} type="plain">
+      <div class="flex items-center gap-x-1.5">
+        <Switch
+          checked={excludeMode}
+          id="include-exclude"
+          small
+          on:click={onToggleFilterMode}
+        />
+        <Label class="font-normal text-xs" for="include-exclude">Exclude</Label>
+      </div>
+      {#if mode === SearchMode.Select}
+        <Button on:click={onToggleSelectAll} type="plain" class="justify-end">
           {#if allSelected}
             Deselect all
           {:else}
             Select all
           {/if}
         </Button>
-        <Button on:click={onApplySearch} type="plain" disabled={!curSearchText}>
-          Apply Search
-        </Button>
       {:else}
-        <Button on:click={onApplyBulkSearch} type="plain">Apply</Button>
+        <Button on:click={onApply} type="plain" class="justify-end">
+          Apply
+        </Button>
       {/if}
-      <Button on:click={onToggleFilterMode} type="secondary">
-        {#if excludeMode}
-          Include
-        {:else}
-          Exclude
-        {/if}
-      </Button>
     </footer>
   </DropdownMenu.Content>
 </DropdownMenu.Root>
@@ -305,7 +334,7 @@
     height: 42px;
     @apply border-t border-slate-300;
     @apply bg-slate-100;
-    @apply flex flex-row flex-none items-center justify-end;
+    @apply flex flex-row flex-none items-center justify-between;
     @apply gap-x-2 p-2 px-3.5;
   }
 

@@ -31,7 +31,7 @@
     {#if loading}
       <Spinner status={EntityStatus.Running} size="10px" />
     {:else}
-      <span class="italic">{matchedCount}/{values.length}</span>
+      <span class="italic">{matchedCount} of {values.length}</span>
     {/if}
   {:else}
     {#if !smallChip}
