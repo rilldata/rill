@@ -47,9 +47,7 @@
 
   $: textAlignment = isDimensionColumn ? "text-left pl-1" : "text-right pr-1";
 
-  $: columnFontWeight = isSelected
-    ? "font-bold"
-    : config.columnHeaderFontWeightClass;
+  $: columnFontWeight = isSelected ? "" : config.columnHeaderFontWeightClass;
 
   const handleResize = (event: ResizeEvent) => {
     dispatch("resize-column", {
@@ -61,9 +59,7 @@
 
 <StickyHeader
   {enableResize}
-  bgClass={highlight
-    ? config.headerBgColorHighlightClass
-    : config.headerBgColorClass}
+  bgClass={highlight ? "" : config.headerBgColorClass}
   on:reset-column-width={() => {
     dispatch("reset-column-width", { name });
   }}
