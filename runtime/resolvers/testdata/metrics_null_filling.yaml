@@ -81,6 +81,23 @@ project_files:
         expression: sum_nullable_2day_rolling_avg_nullable + sum_nullable
         requires: [ sum_nullable_2day_rolling_avg_nullable, sum_nullable ]
         treat_nulls_as: -7
+  duckdb_data_null.yaml:
+    type: model
+    connector: duckdb
+    sql: |
+      select '2024-01-02T00:00:00Z'::TIMESTAMP as time, 'US' as country, 1 as val union all
+      select '2024-01-03T00:00:00Z'::TIMESTAMP as time, 'US' as country, null as val union all
+      select '2024-01-05T00:00:00Z'::TIMESTAMP as time, 'DK' as country, 100 as val
+  duckdb_metrics_null.yaml:
+    type: metrics_view
+    model: duckdb_data_null
+    timeseries: time
+    dimensions:
+      - column: country
+    measures:
+      - name: sum
+        expression: sum(val)
+        treat_nulls_as: -1
 tests:
   - name: null_filling_coalesce_clickhouse
     resolver: metrics
@@ -350,6 +367,30 @@ tests:
         sum: 10
         sum_prev: null
         time__day: "2024-01-03T00:00:00Z"
+  - name: coalesce_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics_null
+      dimensions:
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: sum
+      time_range:
+        end: 2024-01-06T00:00:00Z
+        start: 2024-01-02T00:00:00Z
+      sort:
+        - name: time__day
+    result:
+      - sum: 1
+        time__day: "2024-01-02T00:00:00Z"
+      - sum: -1
+        time__day: "2024-01-03T00:00:00Z"
+      - sum: 100
+        time__day: "2024-01-05T00:00:00Z"
   - name: null_filling_coalesce_iso_ranges_clickhouse
     resolver: metrics
     properties:
