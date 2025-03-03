@@ -21,8 +21,8 @@ export function generateVLLineChartSpec(
 
   const colorField =
     typeof config.color === "object" ? config.color.field : undefined;
-  const xField = config.x?.field;
-  const yField = config.y?.field;
+  const xField = sanitizeValueForVega(config.x?.field);
+  const yField = sanitizeValueForVega(config.y?.field);
 
   const defaultTooltipChannel = createDefaultTooltipEncoding(config, data);
   let multiValueTooltipChannel: TooltipValue[] | undefined;
@@ -35,7 +35,7 @@ export function generateVLLineChartSpec(
     }));
 
     multiValueTooltipChannel.unshift({
-      field: sanitizeValueForVega(config.x.field),
+      field: xField,
       title: data.fields[config.x.field]?.displayName || config.x.field,
       type: config.x?.type,
       ...(config.x.type === "temporal" && { format: "%b %d, %Y %H:%M" }),
@@ -82,6 +82,24 @@ export function generateVLLineChartSpec(
         clip: true,
       },
       encoding: {
+        x: {
+          field: xField,
+          ...(yField && config.x?.sort === "y"
+            ? {
+                sort: {
+                  field: yField,
+                  order: "ascending",
+                },
+              }
+            : yField && config.x?.sort === "-y"
+              ? {
+                  sort: {
+                    field: yField,
+                    order: "descending",
+                  },
+                }
+              : {}),
+        },
         color: {
           condition: [
             {
@@ -92,7 +110,6 @@ export function generateVLLineChartSpec(
           ],
           value: "transparent",
         },
-        y: { value: -400 },
         tooltip: multiValueTooltipChannel?.length
           ? multiValueTooltipChannel
           : defaultTooltipChannel,

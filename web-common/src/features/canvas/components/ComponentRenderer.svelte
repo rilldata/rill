@@ -33,9 +33,10 @@
     ["image", Image],
   ]);
 
+  let timeAndFilterStore: Readable<TimeAndFilterStore> | undefined;
+
   $: isFilterable = filterableComponents.has(renderer);
 
-  let timeAndFilterStore: Readable<TimeAndFilterStore> | undefined;
   $: if (
     (isChartComponentType(renderer) || isFilterable) &&
     rendererProperties?.metrics_view

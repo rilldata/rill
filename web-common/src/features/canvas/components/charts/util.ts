@@ -4,6 +4,7 @@ import StackedArea from "@rilldata/web-common/components/icons/StackedArea.svelt
 import StackedBar from "@rilldata/web-common/components/icons/StackedBar.svelte";
 import StackedBarFull from "@rilldata/web-common/components/icons/StackedBarFull.svelte";
 import { getRillTheme } from "@rilldata/web-common/components/vega/vega-config";
+import { sanitizeValueForVega } from "@rilldata/web-common/features/templates/charts/utils";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import merge from "deepmerge";
 import type { Config } from "vega-lite";
@@ -97,3 +98,8 @@ export const timeGrainToVegaTimeUnitMap: Record<V1TimeGrain, string> = {
   [V1TimeGrain.TIME_GRAIN_YEAR]: "year",
   [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: "yearmonthdate",
 };
+
+export function sanitizeFieldName(fieldName: string) {
+  const specialCharactersRemoved = sanitizeValueForVega(fieldName);
+  return specialCharactersRemoved.replace(" ", "__");
+}
