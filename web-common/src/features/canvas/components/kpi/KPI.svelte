@@ -55,9 +55,9 @@
   } = $timeAndFilterStore);
 
   $: schema = validateKPISchema(ctx, kpiProperties);
+  $: ({ isValid } = $schema);
 
   $: measureStore = spec.getMeasureForMetricView(measureName, metricsViewName);
-
   $: measure = $measureStore;
   $: measureIsPercentage = measure?.formatPreset === FormatPreset.PERCENTAGE;
 
@@ -67,8 +67,6 @@
 
   $: showSparkline = sparkline !== "none";
   $: isSparkRight = sparkline === "right";
-
-  $: ({ isValid } = $schema);
 
   $: showComparison = !!comparisonOptions?.length && showTimeComparison;
 
