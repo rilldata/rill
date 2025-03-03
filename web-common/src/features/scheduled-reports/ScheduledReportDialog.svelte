@@ -10,6 +10,8 @@
   import {
     getDashboardNameFromReport,
     getInitialValues,
+    getQueryArgsFromQuery,
+    getQueryNameFromQuery,
     type ReportValues,
   } from "@rilldata/web-common/features/scheduled-reports/utils";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
@@ -21,6 +23,7 @@
   import {
     getRuntimeServiceGetResourceQueryKey,
     getRuntimeServiceListResourcesQueryKey,
+    type V1Query,
     type V1ReportSpec,
     type V1ReportSpecAnnotations,
   } from "../../runtime-client";
@@ -30,8 +33,7 @@
   import { convertFormValuesToCronExpression } from "./time-utils";
 
   export let open: boolean;
-  export let queryArgs: any | undefined = undefined;
-  export let exploreName: string | undefined = undefined;
+  export let query: V1Query | undefined = undefined;
   export let reportSpec: V1ReportSpec | undefined = undefined;
 
   $: ({ instanceId } = $runtime);
@@ -41,9 +43,11 @@
   const user = createAdminServiceGetCurrentUser();
 
   $: if (!exploreName) {
-    exploreName =
-      getDashboardNameFromReport(reportSpec) ?? queryArgs.metricsViewName;
+    exploreName = getDashboardNameFromReport(reportSpec) ?? "";
   }
+
+  $: queryName = query ? getQueryNameFromQuery(query) : undefined;
+  $: queryArgs = query ? getQueryArgsFromQuery(query) : undefined;
 
   $: ({ organization, project, report: reportName } = $page.params);
 
@@ -80,7 +84,7 @@
             refreshCron: refreshCron, // for testing: "* * * * *"
             refreshTimeZone: values.timeZone,
             explore: exploreName,
-            queryName: reportSpec?.queryName ?? "MetricsViewAggregation",
+            queryName: reportSpec?.queryName ?? queryName,
             queryArgsJson: JSON.stringify(
               reportSpec?.queryArgsJson
                 ? JSON.parse(reportSpec.queryArgsJson)

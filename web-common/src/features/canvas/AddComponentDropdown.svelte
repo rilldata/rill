@@ -24,10 +24,9 @@
 
   export let disabled = false;
   export let componentForm = false;
+  export let open = false;
   export let onItemClick: (type: CanvasComponentType) => void;
   export let onMouseEnter: () => void;
-
-  let open = false;
 </script>
 
 <DropdownMenu.Root bind:open>

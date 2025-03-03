@@ -179,16 +179,24 @@ export function mergeRowTotalsInOrder(
     return sortedRowTotals;
   }
 
+  const NOT_AVAILABLE = Symbol("NOT_AVAILABLE");
   const unsortedRowValuesMap = createIndexMap(unsortedRowValues);
 
-  const orderedRowTotals = rowValues.map((rowValue) => {
-    const unsortedRowIndex = unsortedRowValuesMap.get(rowValue);
-    if (unsortedRowIndex === undefined) {
-      console.error("Row value not found in unsorted row values", rowValue);
-    }
-    const rowTotal = unsortedRowTotals[unsortedRowIndex as number];
-    return rowTotal;
-  });
+  const orderedRowTotals = rowValues
+    .map((rowValue) => {
+      const unsortedRowIndex = unsortedRowValuesMap.get(rowValue);
+      if (unsortedRowIndex === undefined) {
+        /**
+         * Exclude missing values when sorting by deltas to ensure only dimension values
+         * present in both time ranges are returned.
+         *
+         * This prevents discrepancies between the unsorted and sorted table row sets.
+         */
+        return NOT_AVAILABLE;
+      }
+      return unsortedRowTotals[unsortedRowIndex];
+    })
+    .filter((rowTotal) => rowTotal !== NOT_AVAILABLE);
 
   return orderedRowTotals;
 }

@@ -47,6 +47,7 @@
   }
 
   function onSelectItem(e: MouseEvent) {
+    if (e.shiftKey) return;
     dispatch("select-item", { index: row.index, meta: e.ctrlKey || e.metaKey });
   }
 

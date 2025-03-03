@@ -1,6 +1,9 @@
 package drivers
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 // ModelExecutor executes models.
 // A ModelExecutor may either be the a model's input or output connector.
@@ -87,9 +90,10 @@ type ModelEnv struct {
 
 // ModelResult contains metadata about the result of a model execution.
 type ModelResult struct {
-	Connector  string
-	Properties map[string]any
-	Table      string
+	Connector    string
+	Properties   map[string]any
+	Table        string
+	ExecDuration time.Duration
 }
 
 type FileFormat string
