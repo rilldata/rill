@@ -240,10 +240,6 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 		if err != nil {
 			return nil, fmt.Errorf("can't query measure %q: %w", qm.Name, err)
 		}
-
-		/*if m.TreatNullsAs != "" {
-			ast.Root.MeasureFields[len(n.MeasureFields)-1].TreatNullAs = m.TreatNullsAs
-		}*/
 	}
 
 	// Handle Having. If the root node is grouped, we add it as a HAVING clause, otherwise wrap it in a SELECT and add it as a WHERE clause.
