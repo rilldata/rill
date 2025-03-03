@@ -34,6 +34,7 @@
 
   export let open: boolean;
   export let query: V1Query | undefined = undefined;
+  export let exploreName: string | undefined = undefined;
   export let reportSpec: V1ReportSpec | undefined = undefined;
 
   $: ({ instanceId } = $runtime);

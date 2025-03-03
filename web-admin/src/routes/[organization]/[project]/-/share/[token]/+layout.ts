@@ -27,9 +27,10 @@ export const load = async ({ params: { token }, parent, url }) => {
     });
 
     if (!tokenData.token?.resourceName) {
-      throw new Error("Token does not have an associated resource name");
+      console.error("Token does not have an associated resource name");
+      throw error(404, "Unable to find resource");
     }
-    exploreName = tokenData.token?.resourceName;
+    exploreName = tokenData.token.resourceName;
   }
 
   try {
@@ -39,7 +40,7 @@ export const load = async ({ params: { token }, parent, url }) => {
       metricsView,
       defaultExplorePreset,
       exploreStateFromYAMLConfig,
-    } = await fetchExploreSpec(runtime.instanceId, exploreName);
+    } = await fetchExploreSpec(runtime.instanceId, exploreName!);
     const metricsViewSpec = metricsView.metricsView?.state?.validSpec ?? {};
     const exploreSpec = explore.explore?.state?.validSpec ?? {};
 
@@ -69,6 +70,6 @@ export const load = async ({ params: { token }, parent, url }) => {
     };
   } catch (e) {
     console.error(e);
-    throw error(404, "Unable to find token");
+    throw error(404, "Unable to find dashboard");
   }
 };
