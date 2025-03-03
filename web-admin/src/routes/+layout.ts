@@ -15,6 +15,7 @@ import {
   type V1ProjectPermissions,
   type V1User,
 } from "@rilldata/web-admin/client";
+import { redirectToLogin } from "@rilldata/web-admin/client/redirect-utils";
 import { redirectToLoginOrRequestAccess } from "@rilldata/web-admin/features/authentication/checkUserAccess";
 import { getFetchOrganizationQueryOptions } from "@rilldata/web-admin/features/organizations/selectors";
 import { fetchProjectDeploymentDetails } from "@rilldata/web-admin/features/projects/selectors";
@@ -26,7 +27,7 @@ import { error, redirect, type Page } from "@sveltejs/kit";
 import { isAxiosError } from "axios";
 
 export const load = async ({ params, url, route, depends }) => {
-  depends("root");
+  depends("app:root");
   // Route params
   const { organization, project, token: routeToken } = params;
   const pageState = {
@@ -63,8 +64,11 @@ export const load = async ({ params, url, route, depends }) => {
       queryFn: () => adminServiceGetCurrentUser(),
     });
     user = userQuery.user;
-  } catch {
-    // no-op
+  } catch (e) {
+    // If the user's auth token has expired, we automatically redirect to the login page
+    if (isAxiosError<RpcStatus>(e) && e.response?.status === 401) {
+      redirectToLogin();
+    }
   }
 
   // If no organization or project, return empty permissions
@@ -80,6 +84,7 @@ export const load = async ({ params, url, route, depends }) => {
   let organizationPermissions: V1OrganizationPermissions = {};
   let organizationLogoUrl: string | undefined = undefined;
   let organizationFaviconUrl: string | undefined = undefined;
+  let planDisplayName: string | undefined = undefined;
   if (organization && !token) {
     try {
       const organizationResp = await queryClient.fetchQuery(
@@ -88,6 +93,7 @@ export const load = async ({ params, url, route, depends }) => {
       organizationPermissions = organizationResp.permissions ?? {};
       organizationLogoUrl = organizationResp.organization?.logoUrl;
       organizationFaviconUrl = organizationResp.organization?.faviconUrl;
+      planDisplayName = organizationResp.organization?.billingPlanDisplayName;
     } catch (e: unknown) {
       if (!isAxiosError<RpcStatus>(e) || !e.response) {
         throw error(500, "Error fetching organization");
@@ -110,6 +116,7 @@ export const load = async ({ params, url, route, depends }) => {
       organizationPermissions,
       organizationLogoUrl,
       organizationFaviconUrl,
+      planDisplayName,
       projectPermissions: <V1ProjectPermissions>{},
     };
   }
@@ -134,6 +141,7 @@ export const load = async ({ params, url, route, depends }) => {
       organizationPermissions,
       organizationLogoUrl,
       organizationFaviconUrl,
+      planDisplayName,
       projectPermissions,
       project: proj,
       runtime: runtimeData,

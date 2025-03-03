@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"net/url"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -24,7 +24,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
-	"go.uber.org/zap/exp/zapslog"
 	"gocloud.dev/blob"
 	"golang.org/x/sync/semaphore"
 )
@@ -468,16 +467,16 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		c.db = nil
 	}
 
-	// Queries to run when a new DuckDB connection is opened.
-	var bootQueries []string
+	var (
+		dbInitQueries   []string
+		connInitQueries []string
+	)
 
 	// Add custom boot queries before any other (e.g. to override the extensions repository)
 	if c.config.BootQueries != "" {
-		bootQueries = append(bootQueries, c.config.BootQueries)
+		dbInitQueries = append(dbInitQueries, c.config.BootQueries)
 	}
-
-	// Add required boot queries
-	bootQueries = append(bootQueries,
+	dbInitQueries = append(dbInitQueries,
 		"INSTALL 'json'",
 		"LOAD 'json'",
 		"INSTALL 'icu'",
@@ -488,10 +487,9 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		"LOAD 'httpfs'",
 		"INSTALL 'sqlite'",
 		"LOAD 'sqlite'",
-		"SET max_expression_depth TO 250",
-		"SET timezone='UTC'",
-		"SET old_implicit_casting = true",        // Implicit Cast to VARCHAR
-		"SET allow_community_extensions = false", // This locks the configuration, so it can't later be enabled.
+		"SET GLOBAL timezone='UTC'",
+		"SET GLOBAL old_implicit_casting = true", // Implicit Cast to VARCHAR
+		"SET GLOBAL allow_community_extensions = false", // This locks the configuration, so it can't later be enabled.
 	)
 
 	dataDir, err := c.storage.DataDir()
@@ -502,29 +500,31 @@ func (c *connection) reopenDB(ctx context.Context) error {
 	// We want to set preserve_insertion_order=false in hosted environments only (where source data is never viewed directly). Setting it reduces batch data ingestion time by ~40%.
 	// Hack: Using AllowHostAccess as a proxy indicator for a hosted environment.
 	if !c.config.AllowHostAccess {
-		bootQueries = append(bootQueries, "SET preserve_insertion_order TO false")
+		dbInitQueries = append(dbInitQueries,
+			"SET GLOBAL preserve_insertion_order TO false",
+			fmt.Sprintf("SET GLOBAL secret_directory = %s", safeSQLString(filepath.Join(dataDir, ".duckdb", "secrets"))),
+		)
 	}
 
 	// Add init SQL if provided
 	if c.config.InitSQL != "" {
-		bootQueries = append(bootQueries, c.config.InitSQL)
+		connInitQueries = append(connInitQueries, c.config.InitSQL)
 	}
+	connInitQueries = append(connInitQueries, "SET max_expression_depth TO 250")
 
 	// Create new DB
-	logger := slog.New(zapslog.NewHandler(c.logger.Core(), &zapslog.HandlerOptions{
-		AddSource: true,
-	}))
 	c.db, err = rduckdb.NewDB(ctx, &rduckdb.DBOptions{
-		LocalPath:      dataDir,
-		Remote:         c.remote,
-		CPU:            c.config.CPU,
-		MemoryLimitGB:  c.config.MemoryLimitGB,
-		ReadWriteRatio: c.config.ReadWriteRatio,
-		ReadSettings:   c.config.readSettings(),
-		WriteSettings:  c.config.writeSettings(),
-		InitQueries:    bootQueries,
-		Logger:         logger,
-		OtelAttributes: []attribute.KeyValue{attribute.String("instance_id", c.instanceID)},
+		LocalPath:       dataDir,
+		Remote:          c.remote,
+		CPU:             c.config.CPU,
+		MemoryLimitGB:   c.config.MemoryLimitGB,
+		ReadWriteRatio:  c.config.ReadWriteRatio,
+		ReadSettings:    c.config.readSettings(),
+		WriteSettings:   c.config.writeSettings(),
+		DBInitQueries:   dbInitQueries,
+		ConnInitQueries: connInitQueries,
+		Logger:          c.logger,
+		OtelAttributes:  []attribute.KeyValue{attribute.String("instance_id", c.instanceID)},
 	})
 	return err
 }

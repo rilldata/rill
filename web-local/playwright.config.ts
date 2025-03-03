@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
+
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
@@ -17,8 +18,8 @@ export default defineConfig({
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
     baseURL: "http://localhost:8083",
-    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-    trace: "on-first-retry",
+    /* Collect trace when tests fail. See https://playwright.dev/docs/trace-viewer */
+    trace: "retain-on-failure",
     video: "retain-on-failure",
     launchOptions: {
       slowMo: parseInt(process.env.PLAYWRIGHT_SLOW_MO || "0"),
@@ -28,8 +29,23 @@ export default defineConfig({
   /* Configure projects for major browsers */
   projects: [
     {
-      name: "chromium",
+      name: "setup",
+      testMatch: "setup.ts",
+    },
+    {
+      name: "e2e-chrome",
+      dependencies: ["setup"],
       use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "e2e-safari",
+      dependencies: ["setup"],
+      use: { ...devices["Desktop Safari"] },
+    },
+    {
+      name: "e2e-firefox",
+      dependencies: ["setup"],
+      use: { ...devices["Desktop Firefox"] },
     },
   ],
 });

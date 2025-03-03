@@ -19,7 +19,7 @@ func SudoCmd(ch *cmdutil.Helper) *cobra.Command {
 	sudoCmd := &cobra.Command{
 		Use:     "sudo",
 		Short:   "sudo commands for superusers",
-		Hidden:  true,
+		Hidden:  !ch.IsDev(),
 		GroupID: internalGroupID,
 	}
 	sudoCmd.AddCommand(lookupCmd(ch))

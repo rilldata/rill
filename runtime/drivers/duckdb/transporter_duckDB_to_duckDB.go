@@ -125,7 +125,8 @@ func (t *duckDBToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[s
 		srcCfg.SQL = rewrittenSQL
 	}
 
-	return t.to.CreateTableAsSelect(ctx, sinkCfg.Table, srcCfg.SQL, &drivers.CreateTableOptions{})
+	_, err = t.to.CreateTableAsSelect(ctx, sinkCfg.Table, srcCfg.SQL, &drivers.CreateTableOptions{})
+	return err
 }
 
 func (t *duckDBToDuckDB) transferFromExternalDB(ctx context.Context, srcProps *dbSourceProperties, sinkProps *sinkProperties) error {
@@ -185,10 +186,11 @@ func (t *duckDBToDuckDB) transferFromExternalDB(ctx context.Context, srcProps *d
 	defer func() {
 		_ = release()
 	}()
-	return db.CreateTableAsSelect(ctx, sinkProps.Table, fmt.Sprintf("SELECT * FROM %s", safeTempTable), &rduckdb.CreateTableOptions{
+	_, err = db.CreateTableAsSelect(ctx, sinkProps.Table, fmt.Sprintf("SELECT * FROM %s", safeTempTable), &rduckdb.CreateTableOptions{
 		BeforeCreateFn: beforeCreateFn,
 		AfterCreateFn:  afterCreateFn,
 	})
+	return err
 }
 
 // rewriteLocalPaths rewrites a DuckDB SQL statement such that relative paths become absolute paths relative to the basePath,

@@ -1,8 +1,9 @@
+import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { updateEnvVariable } from "../utils/dotenv";
-import { execAsync } from "../utils/spawn";
+import { execAsync } from "@rilldata/web-common/tests/utils/spawn";
 import { test as setup } from "./base";
 import { GITHUB_STORAGE_STATE } from "./constants";
 
@@ -10,6 +11,7 @@ const githubEnvVarName = "RILL_DEVTOOL_E2E_GITHUB_STORAGE_STATE_JSON";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const envFilePath = path.resolve(__dirname, "../../../.env");
+dotenv.config({ path: envFilePath });
 
 setup(
   "should authenticate to GitHub and save the session",
