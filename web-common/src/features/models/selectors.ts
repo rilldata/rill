@@ -15,7 +15,9 @@ export function useModels(instanceId: string) {
   return useClientFilteredResources(
     instanceId,
     ResourceKind.Model,
-    (res) => res.meta?.name?.name === res.model?.state?.resultTable && !res.model?.spec?.generatedFromSource,
+    (res) =>
+      res.meta?.name?.name === res.model?.state?.resultTable &&
+      !res.model?.spec?.generatedFromSource,
   );
 }
 

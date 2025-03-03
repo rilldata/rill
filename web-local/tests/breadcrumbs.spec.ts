@@ -34,9 +34,7 @@ test.describe("Breadcrumbs", () => {
 
       await page.getByText("Create explore dashboard").click();
 
-      await page.waitForURL(
-        "**/files/dashboards/AdBids_metrics_explore.yaml",
-      );
+      await page.waitForURL("**/files/dashboards/AdBids_metrics_explore.yaml");
 
       link = page.getByRole("link", {
         name: "AdBids_metrics_explore",
@@ -101,9 +99,7 @@ test.describe("Breadcrumbs", () => {
         })
         .click();
 
-      await page.waitForURL(
-        "**/files/dashboards/AdBids_metrics_explore.yaml",
-      );
+      await page.waitForURL("**/files/dashboards/AdBids_metrics_explore.yaml");
     });
   });
 });

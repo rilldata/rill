@@ -1,8 +1,5 @@
 import {
-  clickMenuButton,
   deleteFile,
-  goToFile,
-  openFileNavEntryContextMenu,
   renameFileUsingMenu,
   updateCodeEditor,
   waitForProfiling,
