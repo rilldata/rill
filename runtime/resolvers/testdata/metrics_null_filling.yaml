@@ -53,23 +53,36 @@ project_files:
       - name: sum
         expression: sum(val)
         treat_nulls_as: 0
-      - name: base_sum
+      - name: sum_nullable
         expression: sum(val)
-      - name: sum_1day_rolling_avg
-        expression: AVG(base_sum)
-        requires: [base_sum]
+      - name: sum_nullable_2day_rolling_avg_nullable
+        expression: AVG(sum_nullable)
+        requires: [ sum_nullable ]
+        window:
+          order: time
+          frame: RANGE BETWEEN INTERVAL 2 DAY PRECEDING AND CURRENT ROW
+      - name: sum_nullable_2day_rolling_avg
+        expression: AVG(sum_nullable)
+        requires: [ sum_nullable ]
         treat_nulls_as: -1
         window:
           order: time
           frame: RANGE BETWEEN INTERVAL 2 DAY PRECEDING AND CURRENT ROW
-      - name: sum_not_null_1day_rolling_avg
+      - name: sum_2day_rolling_avg_nullable
         expression: AVG(sum)
         requires: [sum]
         window:
           order: time
           frame: RANGE BETWEEN INTERVAL 2 DAY PRECEDING AND CURRENT ROW
+      - name: recursive_measure
+        expression: sum_nullable_2day_rolling_avg + sum
+        requires: [ sum_nullable_2day_rolling_avg, sum ]
+      - name: recursive_measure_1
+        expression: sum_nullable_2day_rolling_avg_nullable + sum_nullable
+        requires: [ sum_nullable_2day_rolling_avg_nullable, sum_nullable ]
+        treat_nulls_as: -7
 tests:
-  - name: time_as_dimension_clickhouse
+  - name: null_filling_coalesce_clickhouse
     resolver: metrics
     properties:
       metrics_view: clickhouse_metrics
@@ -96,7 +109,7 @@ tests:
         time__day: "2024-01-03T00:00:00Z"
       - sum: 4
         time__day: "2024-01-04T00:00:00Z"
-  - name: time_as_dimension_druid
+  - name: null_filling_coalesce_druid
     resolver: metrics
     properties:
       metrics_view: druid_metrics
@@ -123,7 +136,7 @@ tests:
         time__day: "2021-12-31T00:00:00Z"
       - count: 1116
         time__day: "2022-01-01T00:00:00Z"
-  - name: time_as_dimension_duckdb
+  - name: null_filling_coalesce_duckdb
     resolver: metrics
     properties:
       metrics_view: duckdb_metrics
@@ -159,7 +172,7 @@ tests:
       - sum: 0
         sum_prev: 1
         time__day: "2024-01-04T00:00:00Z"
-  - name: time_as_dimension_adv_measure_not_null_duckdb
+  - name: null_filling_coalesce_adv_measure_duckdb
     resolver: metrics
     properties:
       metrics_view: duckdb_metrics
@@ -170,7 +183,7 @@ tests:
               dimension: time
               grain: day
       measures:
-        - name: sum_1day_rolling_avg
+        - name: sum_nullable_2day_rolling_avg
       time_range:
         end: 2024-01-06T00:00:00Z
         start: 2023-12-31T00:00:00Z
@@ -182,19 +195,19 @@ tests:
           end:
           grain:
     result:
-      - sum_1day_rolling_avg: -1
+      - sum_nullable_2day_rolling_avg: -1
         time__day: "2023-12-31T00:00:00Z"
-      - sum_1day_rolling_avg: -1
+      - sum_nullable_2day_rolling_avg: -1
         time__day: "2024-01-01T00:00:00Z"
-      - sum_1day_rolling_avg: 1
+      - sum_nullable_2day_rolling_avg: 1
         time__day: "2024-01-02T00:00:00Z"
-      - sum_1day_rolling_avg: 5.5
+      - sum_nullable_2day_rolling_avg: 5.5
         time__day: "2024-01-03T00:00:00Z"
-      - sum_1day_rolling_avg: 5.5
+      - sum_nullable_2day_rolling_avg: 5.5
         time__day: "2024-01-04T00:00:00Z"
-      - sum_1day_rolling_avg: 55
+      - sum_nullable_2day_rolling_avg: 55
         time__day: "2024-01-05T00:00:00Z"
-  - name: time_as_dimension_adv_measure_base_not_null_duckdb
+  - name: null_filling_coalesce_adv_measure_base_not_null_duckdb
     resolver: metrics
     properties:
       metrics_view: duckdb_metrics
@@ -205,7 +218,7 @@ tests:
               dimension: time
               grain: day
       measures:
-        - name: sum_not_null_1day_rolling_avg
+        - name: sum_2day_rolling_avg_nullable
       time_range:
         end: 2024-01-06T00:00:00Z
         start: 2023-12-31T00:00:00Z
@@ -217,19 +230,89 @@ tests:
           end:
           grain:
     result:
-      - sum_not_null_1day_rolling_avg: 0
+      - sum_2day_rolling_avg_nullable: 0
         time__day: "2023-12-31T00:00:00Z"
-      - sum_not_null_1day_rolling_avg: 0
+      - sum_2day_rolling_avg_nullable: 0
         time__day: "2024-01-01T00:00:00Z"
-      - sum_not_null_1day_rolling_avg: 0.3333333333333333
+      - sum_2day_rolling_avg_nullable: 0.3333333333333333
         time__day: "2024-01-02T00:00:00Z"
-      - sum_not_null_1day_rolling_avg: 3.6666666666666665
+      - sum_2day_rolling_avg_nullable: 3.6666666666666665
         time__day: "2024-01-03T00:00:00Z"
-      - sum_not_null_1day_rolling_avg: 3.6666666666666665
+      - sum_2day_rolling_avg_nullable: 3.6666666666666665
         time__day: "2024-01-04T00:00:00Z"
-      - sum_not_null_1day_rolling_avg: 36.666666666666664
+      - sum_2day_rolling_avg_nullable: 36.666666666666664
         time__day: "2024-01-05T00:00:00Z"
-  - name: iso_ranges_duckdb
+  - name: null_filling_coalesce_recursive_adv_measure_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics
+      dimensions:
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: recursive_measure
+      time_range:
+        end: 2024-01-06T00:00:00Z
+        start: 2023-12-31T00:00:00Z
+      sort:
+        - name: time__day
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - recursive_measure: -1
+        time__day: "2023-12-31T00:00:00Z"
+      - recursive_measure: -1
+        time__day: "2024-01-01T00:00:00Z"
+      - recursive_measure: 2
+        time__day: "2024-01-02T00:00:00Z"
+      - recursive_measure: 15.5
+        time__day: "2024-01-03T00:00:00Z"
+      - recursive_measure: 5.5
+        time__day: "2024-01-04T00:00:00Z"
+      - recursive_measure: 155
+        time__day: "2024-01-05T00:00:00Z"
+  - name: null_filling_coalesce_recursive_adv_measure_1_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics
+      dimensions:
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: recursive_measure_1
+      time_range:
+        end: 2024-01-06T00:00:00Z
+        start: 2023-12-31T00:00:00Z
+      sort:
+        - name: time__day
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - recursive_measure_1: -7
+        time__day: "2023-12-31T00:00:00Z"
+      - recursive_measure_1: -7
+        time__day: "2024-01-01T00:00:00Z"
+      - recursive_measure_1: 2
+        time__day: "2024-01-02T00:00:00Z"
+      - recursive_measure_1: 15.5
+        time__day: "2024-01-03T00:00:00Z"
+      - recursive_measure_1: -7
+        time__day: "2024-01-04T00:00:00Z"
+      - recursive_measure_1: 155
+        time__day: "2024-01-05T00:00:00Z"
+  - name: null_filling_coalesce_iso_ranges_duckdb
     resolver: metrics
     properties:
       metrics_view: duckdb_metrics
@@ -267,7 +350,7 @@ tests:
         sum: 10
         sum_prev: null
         time__day: "2024-01-03T00:00:00Z"
-  - name: iso_ranges_clickhouse
+  - name: null_filling_coalesce_iso_ranges_clickhouse
     resolver: metrics
     properties:
       metrics_view: clickhouse_metrics
