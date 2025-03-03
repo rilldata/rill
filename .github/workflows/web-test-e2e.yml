@@ -137,7 +137,7 @@ jobs:
         run: |-
           # For pull requests, always use chrome
           if [ "${{ github.event_name }}" == "pull_request" ]; then
-            npm run test:safari -w web-local
+            npm run test:chrome -w web-local
           # For manual workflow runs, use the selected browser
           elif [ "${{ github.event.inputs.browser }}" == "all" ]; then
             npm run test:all -w web-local
