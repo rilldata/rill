@@ -243,19 +243,19 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 	}
 
 	table := &drivers.Table{
-		Database:        "",
-		DatabaseSchema:  "",
-		Name:            name,
-		View:            false,
-		Schema:          &runtimev1.StructType{Fields: schemaFields},
-		UnsupportedCols: unsupportedCols,
-		BytesOnDisk:     -1,
+		Database:          "",
+		DatabaseSchema:    "",
+		Name:              name,
+		View:              false,
+		Schema:            &runtimev1.StructType{Fields: schemaFields},
+		UnsupportedCols:   unsupportedCols,
+		PhysicalSizeBytes: -1,
 	}
 
 	return table, nil
 }
 
-func (i informationSchema) SizeOnDisk(ctx context.Context, tables []*drivers.Table) error {
+func (i informationSchema) LoadPhysicalSize(ctx context.Context, tables []*drivers.Table) error {
 	if len(tables) == 0 {
 		return nil
 	}
@@ -307,7 +307,7 @@ func (i informationSchema) SizeOnDisk(ctx context.Context, tables []*drivers.Tab
 					size += int64(sz.Bytes())
 				}
 			}
-			table.BytesOnDisk = size
+			table.PhysicalSizeBytes = size
 			return nil
 		})
 	}

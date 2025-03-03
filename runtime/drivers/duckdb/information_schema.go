@@ -64,7 +64,7 @@ func (i informationSchema) Lookup(ctx context.Context, _, _, name string) (*driv
 	return tables[0], nil
 }
 
-func (i informationSchema) SizeOnDisk(ctx context.Context, tables []*drivers.Table) error {
+func (i informationSchema) LoadPhysicalSize(ctx context.Context, tables []*drivers.Table) error {
 	// already populated in All and Lookup calls
 	return nil
 }
@@ -84,7 +84,7 @@ func (i informationSchema) scanTables(rows []*rduckdb.Table) ([]*drivers.Table, 
 			Name:                    row.Name,
 			View:                    row.View,
 			Schema:                  &runtimev1.StructType{},
-			BytesOnDisk:             row.SizeBytes,
+			PhysicalSizeBytes:       row.SizeBytes,
 		}
 
 		// should NEVER happen, but just to be safe

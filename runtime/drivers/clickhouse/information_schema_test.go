@@ -57,7 +57,7 @@ func testInformationSchemaAll(t *testing.T, conn drivers.Handle) {
 	require.NoError(t, err)
 	require.Equal(t, 5, len(tables))
 
-	err = olap.InformationSchema().SizeOnDisk(context.Background(), tables)
+	err = olap.InformationSchema().LoadPhysicalSize(context.Background(), tables)
 	require.NoError(t, err)
 
 	require.Equal(t, "bar", tables[0].Name)
@@ -81,9 +81,9 @@ func testInformationSchemaAll(t *testing.T, conn drivers.Handle) {
 	require.Equal(t, runtimev1.Type_CODE_INT32, tables[1].Schema.Fields[1].Type.Code)
 
 	require.Equal(t, true, tables[2].View)
-	require.Equal(t, int64(0), tables[2].BytesOnDisk)
-	require.Greater(t, tables[0].BytesOnDisk, int64(0))
-	require.Greater(t, tables[1].BytesOnDisk, int64(0))
+	require.Equal(t, int64(0), tables[2].PhysicalSizeBytes)
+	require.Greater(t, tables[0].PhysicalSizeBytes, int64(0))
+	require.Greater(t, tables[1].PhysicalSizeBytes, int64(0))
 }
 
 func testInformationSchemaAllLike(t *testing.T, conn drivers.Handle) {

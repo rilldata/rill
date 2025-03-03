@@ -187,8 +187,8 @@ message TableInfo {
   string name = 2;
   // has_unsupported_data_types indicates if the underlying table has any column with an unsupported OLAP engine datatype
   bool has_unsupported_data_types = 3;
-  // bytes_on_disk is the size of the table in bytes on disk. Set to -1 if the size cannot be determined.
-  int64 bytes_on_disk = 7;
+  // disk_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
+  int64 physical_size_bytes = 7;
 }
 
 message OLAPGetTableRequest {
@@ -204,8 +204,8 @@ message OLAPGetTableResponse {
   // unsupported_columns are columns having datatypes which are not supported by Rill
   map<string, string> unsupported_columns = 3;
   bool view = 2;
-  // bytes_on_disk is the size of the table in bytes on disk. Set to -1 if the size cannot be determined.
-  int64 bytes_on_disk = 4;
+  // physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
+  int64 physical_size_bytes = 4;
 }
 
 message BigQueryListDatasetsRequest {

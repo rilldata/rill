@@ -5765,10 +5765,10 @@ definitions:
         title: unsupported_columns are columns having datatypes which are not supported by Rill
       view:
         type: boolean
-      bytesOnDisk:
+      physicalSizeBytes:
         type: string
         format: int64
-        description: bytes_on_disk is the size of the table in bytes on disk. Set to -1 if the size cannot be determined.
+        description: physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
   v1OLAPListTablesResponse:
     type: object
     properties:
@@ -6477,10 +6477,10 @@ definitions:
       hasUnsupportedDataTypes:
         type: boolean
         title: has_unsupported_data_types indicates if the underlying table has any column with an unsupported OLAP engine datatype
-      bytesOnDisk:
+      physicalSizeBytes:
         type: string
         format: int64
-        description: bytes_on_disk is the size of the table in bytes on disk. Set to -1 if the size cannot be determined.
+        description: disk_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
   v1TableRowsRequest:
     type: object
     properties:

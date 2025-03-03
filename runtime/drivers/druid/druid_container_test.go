@@ -185,11 +185,11 @@ func testTimeFloor(t *testing.T, olap drivers.OLAPStore) {
 func testSchemaAll(t *testing.T, olap drivers.OLAPStore) {
 	tables, err := olap.InformationSchema().All(context.Background(), "")
 	require.NoError(t, err)
-	require.NoError(t, olap.InformationSchema().SizeOnDisk(context.Background(), tables))
+	require.NoError(t, olap.InformationSchema().LoadPhysicalSize(context.Background(), tables))
 
 	require.Equal(t, 1, len(tables))
 	require.Equal(t, testTable, tables[0].Name)
-	require.Greater(t, tables[0].BytesOnDisk, int64(0))
+	require.Greater(t, tables[0].PhysicalSizeBytes, int64(0))
 
 	require.Equal(t, 5, len(tables[0].Schema.Fields))
 

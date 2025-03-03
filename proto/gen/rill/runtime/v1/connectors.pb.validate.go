@@ -2232,7 +2232,7 @@ func (m *TableInfo) validate(all bool) error {
 
 	// no validation rules for HasUnsupportedDataTypes
 
-	// no validation rules for BytesOnDisk
+	// no validation rules for PhysicalSizeBytes
 
 	if len(errors) > 0 {
 		return TableInfoMultiError(errors)
@@ -2478,7 +2478,7 @@ func (m *OLAPGetTableResponse) validate(all bool) error {
 
 	// no validation rules for View
 
-	// no validation rules for BytesOnDisk
+	// no validation rules for PhysicalSizeBytes
 
 	if len(errors) > 0 {
 		return OLAPGetTableResponseMultiError(errors)

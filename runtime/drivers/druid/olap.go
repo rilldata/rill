@@ -275,7 +275,7 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 	return tables[0], nil
 }
 
-func (i informationSchema) SizeOnDisk(ctx context.Context, tables []*drivers.Table) error {
+func (i informationSchema) LoadPhysicalSize(ctx context.Context, tables []*drivers.Table) error {
 	q := `SELECT
     		datasource,
     		SUM("size") AS total_size
@@ -304,7 +304,7 @@ func (i informationSchema) SizeOnDisk(ctx context.Context, tables []*drivers.Tab
 
 	for _, t := range tables {
 		if size, ok := res[t.Name]; ok {
-			t.BytesOnDisk = int64(size)
+			t.PhysicalSizeBytes = int64(size)
 		}
 	}
 	return nil
@@ -340,7 +340,7 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 				IsDefaultDatabaseSchema: true,
 				Name:                    name,
 				Schema:                  &runtimev1.StructType{},
-				BytesOnDisk:             -1,
+				PhysicalSizeBytes:       -1,
 			}
 			res = append(res, t)
 		}

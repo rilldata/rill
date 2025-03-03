@@ -709,8 +709,8 @@ export interface V1TableInfo {
   isDefaultDatabaseSchema?: boolean;
   name?: string;
   hasUnsupportedDataTypes?: boolean;
-  /** bytes_on_disk is the size of the table in bytes on disk. Set to -1 if the size cannot be determined. */
-  bytesOnDisk?: string;
+  /** disk_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined. */
+  physicalSizeBytes?: string;
 }
 
 export type V1TableColumnsResponseUnsupportedColumns = {
@@ -1163,8 +1163,8 @@ export interface V1OLAPGetTableResponse {
   schema?: V1StructType;
   unsupportedColumns?: V1OLAPGetTableResponseUnsupportedColumns;
   view?: boolean;
-  /** bytes_on_disk is the size of the table in bytes on disk. Set to -1 if the size cannot be determined. */
-  bytesOnDisk?: string;
+  /** physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined. */
+  physicalSizeBytes?: string;
 }
 
 export interface V1NumericStatistics {

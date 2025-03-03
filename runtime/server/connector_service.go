@@ -148,7 +148,7 @@ func (s *Server) OLAPListTables(ctx context.Context, req *runtimev1.OLAPListTabl
 	if err != nil {
 		return nil, err
 	}
-	err = i.SizeOnDisk(ctx, tables)
+	err = i.LoadPhysicalSize(ctx, tables)
 	if err != nil {
 		// the size queries can fail due to permission erros so we log them and continue
 		s.logger.Warn("failed to populate table sizes", zap.Error(err))
@@ -163,7 +163,7 @@ func (s *Server) OLAPListTables(ctx context.Context, req *runtimev1.OLAPListTabl
 			IsDefaultDatabaseSchema: table.IsDefaultDatabaseSchema,
 			Name:                    table.Name,
 			HasUnsupportedDataTypes: len(table.UnsupportedCols) != 0,
-			BytesOnDisk:             table.BytesOnDisk,
+			PhysicalSizeBytes:       table.PhysicalSizeBytes,
 		}
 	}
 	return &runtimev1.OLAPListTablesResponse{
@@ -182,7 +182,7 @@ func (s *Server) OLAPGetTable(ctx context.Context, req *runtimev1.OLAPGetTableRe
 	if err != nil {
 		return nil, err
 	}
-	err = olap.InformationSchema().SizeOnDisk(ctx, []*drivers.Table{table})
+	err = olap.InformationSchema().LoadPhysicalSize(ctx, []*drivers.Table{table})
 	if err != nil {
 		// the size queries can fail due to permission erros so we log them and continue
 		s.logger.Warn("failed to populate table sizes", zap.Error(err))
@@ -192,7 +192,7 @@ func (s *Server) OLAPGetTable(ctx context.Context, req *runtimev1.OLAPGetTableRe
 		Schema:             table.Schema,
 		UnsupportedColumns: table.UnsupportedCols,
 		View:               table.View,
-		BytesOnDisk:        table.BytesOnDisk,
+		PhysicalSizeBytes:  table.PhysicalSizeBytes,
 	}, nil
 }
 

@@ -956,11 +956,11 @@ export class TableInfo extends Message<TableInfo> {
   hasUnsupportedDataTypes = false;
 
   /**
-   * bytes_on_disk is the size of the table in bytes on disk. Set to -1 if the size cannot be determined.
+   * disk_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
    *
-   * @generated from field: int64 bytes_on_disk = 7;
+   * @generated from field: int64 physical_size_bytes = 7;
    */
-  bytesOnDisk = protoInt64.zero;
+  physicalSizeBytes = protoInt64.zero;
 
   constructor(data?: PartialMessage<TableInfo>) {
     super();
@@ -976,7 +976,7 @@ export class TableInfo extends Message<TableInfo> {
     { no: 6, name: "is_default_database_schema", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "has_unsupported_data_types", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 7, name: "bytes_on_disk", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 7, name: "physical_size_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TableInfo {
@@ -1079,11 +1079,11 @@ export class OLAPGetTableResponse extends Message<OLAPGetTableResponse> {
   view = false;
 
   /**
-   * bytes_on_disk is the size of the table in bytes on disk. Set to -1 if the size cannot be determined.
+   * physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
    *
-   * @generated from field: int64 bytes_on_disk = 4;
+   * @generated from field: int64 physical_size_bytes = 4;
    */
-  bytesOnDisk = protoInt64.zero;
+  physicalSizeBytes = protoInt64.zero;
 
   constructor(data?: PartialMessage<OLAPGetTableResponse>) {
     super();
@@ -1096,7 +1096,7 @@ export class OLAPGetTableResponse extends Message<OLAPGetTableResponse> {
     { no: 1, name: "schema", kind: "message", T: StructType },
     { no: 3, name: "unsupported_columns", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 2, name: "view", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 4, name: "bytes_on_disk", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 4, name: "physical_size_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): OLAPGetTableResponse {
