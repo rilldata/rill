@@ -51,7 +51,7 @@ This operation cannot be undone. Use --force to skip confirmation.`,
 			}
 
 			if !force {
-				fmt.Printf("Warn: Deleting the org %q will remove all metadata associated with the org\n", name)
+				ch.Printf("Warn: Deleting the org %q will remove all metadata associated with the org\n", name)
 				msg := fmt.Sprintf("Type %q to confirm deletion", name)
 				org, err := cmdutil.InputPrompt(msg, "")
 				if err != nil {

@@ -49,7 +49,7 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if !flagSet {
-				ch.PrintfError("no changes requested please specify --new-name or --display-name")
+				ch.PrintfError("no changes requested please specify --new-name or --display-name\n")
 				return nil
 			}
 
