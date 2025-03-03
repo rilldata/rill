@@ -67,7 +67,7 @@
     } else if (rowActive && !cellActive) {
       activityStatus = "bg-gray-100 ";
     } else if (colSelected) {
-      activityStatus = "bg-gray-50";
+      activityStatus = "surface";
     } else {
       activityStatus = "surface";
     }

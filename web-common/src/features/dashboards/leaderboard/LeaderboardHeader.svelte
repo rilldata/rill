@@ -98,6 +98,7 @@
         <button
           aria-label="Toggle sort leaderboards by value"
           on:click={() => toggleSort(SortType.VALUE)}
+          class="font-normal"
         >
           {#if hasMoreThanOneMeasure}
             {measureName}
