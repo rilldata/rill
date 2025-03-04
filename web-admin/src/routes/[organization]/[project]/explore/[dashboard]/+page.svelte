@@ -8,10 +8,14 @@
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
+  import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
   import DashboardURLStateSync from "@rilldata/web-common/features/dashboards/url-state/DashboardURLStateSync.svelte";
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import type { V1GetExploreResponse } from "@rilldata/web-common/runtime-client";
+  import type {
+    V1ExplorePreset,
+    V1GetExploreResponse,
+  } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { PageData } from "./$types";
 
@@ -20,25 +24,48 @@
 
   export let data: PageData;
   $: ({
-    defaultExplorePreset,
-    homeBookmarkExploreState,
-    exploreStateFromYAMLConfig,
-    partialExploreStateFromUrl,
-    exploreStateFromSessionStorage,
-    errors,
+    exploreSpecPromise,
+    exploreStatePromise,
+    homeBookmarkExploreStatePromise,
     exploreName,
   } = data);
 
-  $: if (errors?.length) {
-    const _errs = errors;
-    setTimeout(() => {
-      eventBus.emit("notification", {
-        type: "error",
-        message: _errs[0].message,
-        options: { persisted: true },
-      });
-    }, 100);
+  let defaultExplorePreset: V1ExplorePreset = {};
+  let exploreStateFromYAMLConfig: Partial<MetricsExplorerEntity> = {};
+  async function awaitExploreSpec() {
+    ({ defaultExplorePreset, exploreStateFromYAMLConfig } =
+      await exploreSpecPromise);
   }
+  $: if (exploreSpecPromise) void awaitExploreSpec();
+
+  let partialExploreStateFromUrl: Partial<MetricsExplorerEntity> | undefined =
+    undefined;
+  let exploreStateFromSessionStorage:
+    | Partial<MetricsExplorerEntity>
+    | undefined;
+  async function awaitExploreState() {
+    ({ partialExploreStateFromUrl, exploreStateFromSessionStorage } =
+      await exploreStatePromise);
+  }
+  $: if (exploreStatePromise) void awaitExploreState();
+  $: console.log(partialExploreStateFromUrl);
+
+  let initExploreState: Partial<MetricsExplorerEntity> | undefined = undefined;
+  // $: (async function () {
+  //   initExploreState = await homeBookmarkExploreStatePromise;
+  // })();
+
+  // TODO
+  // $: if (errors?.length) {
+  //   const _errs = errors;
+  //   setTimeout(() => {
+  //     eventBus.emit("notification", {
+  //       type: "error",
+  //       message: _errs[0].message,
+  //       options: { persisted: true },
+  //     });
+  //   }, 100);
+  // }
 
   $: ({ instanceId } = $runtime);
   $: ({ organization: orgName, project: projectName } = $page.params);
@@ -140,7 +167,7 @@
     <DashboardBuilding />
   {:else if isExploreErrored($explore.data)}
     <DashboardErrored organization={orgName} project={projectName} />
-  {:else if metricsViewName}
+  {:else if metricsViewName && partialExploreStateFromUrl}
     {#key exploreName}
       <StateManagersProvider {metricsViewName} {exploreName}>
         <DashboardURLStateSync
@@ -148,7 +175,7 @@
           {exploreName}
           extraKeyPrefix={`${orgName}__${projectName}__`}
           {defaultExplorePreset}
-          initExploreState={homeBookmarkExploreState}
+          {initExploreState}
           {exploreStateFromYAMLConfig}
           {partialExploreStateFromUrl}
           {exploreStateFromSessionStorage}
