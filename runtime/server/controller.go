@@ -224,16 +224,16 @@ func (s *Server) GetExplore(ctx context.Context, req *runtimev1.GetExploreReques
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	e, access, err := s.applySecurityPolicy(ctx, req.InstanceId, e)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-	if !access {
-		return nil, status.Error(codes.NotFound, "resource not found")
-	}
-
 	validSpec := e.GetExplore().State.ValidSpec
 	if validSpec == nil {
+		// If no validSpec, just apply security to explore and return
+		e, access, err := s.applySecurityPolicy(ctx, req.InstanceId, e)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+		if !access {
+			return nil, status.Error(codes.NotFound, "resource not found")
+		}
 		return &runtimev1.GetExploreResponse{
 			Explore: e,
 		}, nil
@@ -248,12 +248,20 @@ func (s *Server) GetExplore(ctx context.Context, req *runtimev1.GetExploreReques
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	m, access, err = s.applySecurityPolicy(ctx, req.InstanceId, m)
+	m, access, err := s.applySecurityPolicy(ctx, req.InstanceId, m)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	if !access {
 		return nil, status.Error(codes.NotFound, "metrics view not found")
+	}
+
+	e, access, err = s.applySecurityPolicy(ctx, req.InstanceId, e)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	if !access {
+		return nil, status.Error(codes.NotFound, "resource not found")
 	}
 
 	return &runtimev1.GetExploreResponse{
