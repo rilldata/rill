@@ -1,3 +1,5 @@
+import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
+import { useDimensionSearch } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimensionFilterValues";
 import { getDimensionDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
 import { filterItemsSortFunction } from "@rilldata/web-common/features/dashboards/state-managers/selectors/filters";
 import {
@@ -11,6 +13,7 @@ import type {
   V1Expression,
 } from "@rilldata/web-common/runtime-client";
 import { V1Operation } from "@rilldata/web-common/runtime-client";
+import { readable } from "svelte/store";
 import type { AtLeast } from "../types";
 import type { DashboardDataSources } from "./types";
 
@@ -21,20 +24,81 @@ export const selectedDimensionValues = (
     // if it is a complex filter unsupported by UI then no values are selected
     if (isExpressionUnsupported(dashData.dashboard.whereFilter)) return [];
 
+    const dimExpr = getWhereFilterExpression(dashData)(dimName);
+    if (
+      dimExpr?.cond?.op &&
+      (dimExpr.cond.op === V1Operation.OPERATION_LIKE ||
+        dimExpr.cond.op === V1Operation.OPERATION_NLIKE)
+    )
+      return [];
+
     // FIXME: it is possible for this way of accessing the filters
     // to return the same value twice, which would seem to indicate
     // a bug in the way we're setting the filters / active values.
     // Need to investigate further to determine whether this is a
     // problem with the runtime or the client, but for now wrapping
     // it in a set dedupes the values.
-    return [
-      ...new Set(
-        getValuesInExpression(
-          getWhereFilterExpression(dashData)(dimName),
-        ) as string[],
-      ),
-    ];
+    return [...new Set(getValuesInExpression(dimExpr) as string[])];
   };
+};
+
+export const selectedDimensionValuesV2 = (
+  instanceId: string,
+  metricsViewNames: string[],
+  whereFilter: V1Expression | undefined,
+  dimensionName: string,
+  timeStart?: string,
+  timeEnd?: string,
+): CompoundQueryResult<string[]> => {
+  // if it is a complex filter unsupported by UI then no values are selected
+  if (!whereFilter || isExpressionUnsupported(whereFilter))
+    return readable({
+      isFetching: false,
+      error: undefined,
+      data: [],
+    });
+
+  const dimExpr = whereFilter.cond?.exprs?.find((e) =>
+    matchExpressionByName(e, dimensionName),
+  );
+  if (!dimExpr?.cond?.op)
+    return readable({
+      isFetching: false,
+      error: undefined,
+      data: [],
+    });
+
+  if (
+    dimExpr.cond.op === V1Operation.OPERATION_IN ||
+    dimExpr.cond.op === V1Operation.OPERATION_NIN
+  ) {
+    return readable({
+      isFetching: false,
+      error: undefined,
+      data: [...new Set(getValuesInExpression(dimExpr) as string[])],
+    });
+  }
+
+  if (
+    dimExpr.cond.op === V1Operation.OPERATION_LIKE ||
+    dimExpr.cond.op === V1Operation.OPERATION_NLIKE
+  ) {
+    return useDimensionSearch(
+      instanceId,
+      metricsViewNames,
+      dimensionName,
+      (dimExpr.cond?.exprs?.[1]?.val as string) ?? "",
+      timeStart,
+      timeEnd,
+      true,
+    );
+  }
+
+  return readable({
+    isFetching: false,
+    error: undefined,
+    data: [],
+  });
 };
 
 export const atLeastOneSelection = (
@@ -81,6 +145,8 @@ export type DimensionFilterItem = {
   name: string;
   label: string;
   selectedValues: string[];
+  searchText?: string;
+  isMatchList?: boolean;
   isInclude: boolean;
   metricsViewNames?: string[];
 };
@@ -106,12 +172,28 @@ export function getDimensionFilters(
       return;
     }
     addedDimension.add(ident);
-    filteredDimensions.push({
-      name: ident,
-      label: getDimensionDisplayName(dim),
-      selectedValues: getValuesInExpression(e),
-      isInclude: e.cond?.op === V1Operation.OPERATION_IN,
-    });
+
+    const op = e.cond?.op;
+    if (op === V1Operation.OPERATION_IN || op === V1Operation.OPERATION_NIN) {
+      filteredDimensions.push({
+        name: ident,
+        label: getDimensionDisplayName(dim),
+        selectedValues: getValuesInExpression(e),
+        isMatchList: (e as any).isMatchList,
+        isInclude: e.cond?.op === V1Operation.OPERATION_IN,
+      });
+    } else if (
+      op === V1Operation.OPERATION_LIKE ||
+      op === V1Operation.OPERATION_NLIKE
+    ) {
+      filteredDimensions.push({
+        name: ident,
+        label: getDimensionDisplayName(dim),
+        selectedValues: [],
+        searchText: e.cond?.exprs?.[1]?.val,
+        isInclude: e.cond?.op === V1Operation.OPERATION_IN,
+      });
+    }
   });
 
   // sort based on name to make sure toggling include/exclude is not jarring

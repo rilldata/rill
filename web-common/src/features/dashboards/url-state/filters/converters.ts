@@ -67,7 +67,11 @@ function convertJoinerExpressionToFilterParam(
 
 function convertInExpressionToFilterParam(expr: V1Expression, depth: number) {
   if (!expr.cond?.exprs?.length) return "";
-  const joiner = expr.cond?.op === V1Operation.OPERATION_IN ? "IN" : "NIN";
+  let joiner = expr.cond?.op === V1Operation.OPERATION_IN ? "IN" : "NIN";
+  const isMatchList = !!(expr as any).isMatchList;
+  if (isMatchList) {
+    joiner = expr.cond?.op === V1Operation.OPERATION_IN ? "MATCH" : "NOT MATCH";
+  }
 
   const column = expr.cond.exprs[0]?.ident;
   if (!column) return "";
@@ -104,7 +108,7 @@ function convertBinaryExpressionToFilterParam(
   const right = convertExpressionToFilterParam(expr.cond.exprs[1], depth + 1);
   if (!left || !right) return "";
 
-  return `${left} ${op} ${right}`;
+  return `${left} ${op?.toUpperCase()} ${right}`;
 }
 
 function escapeColumnName(columnName: string) {

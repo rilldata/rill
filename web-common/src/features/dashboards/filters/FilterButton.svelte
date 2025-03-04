@@ -23,16 +23,6 @@
 
   $: selectableGroups = [
     <SearchableFilterSelectableGroup>{
-      name: "MEASURES",
-      items:
-        filteredSimpleMeasures
-          ?.map((m) => ({
-            name: m.name as string,
-            label: getMeasureDisplayName(m),
-          }))
-          .filter((m) => !measureHasFilter(m.name)) ?? [],
-    },
-    <SearchableFilterSelectableGroup>{
       name: "DIMENSIONS",
       items:
         allDimensions
@@ -41,6 +31,16 @@
             label: getDimensionDisplayName(d),
           }))
           .filter((d) => !dimensionHasFilter(d.name)) ?? [],
+    },
+    <SearchableFilterSelectableGroup>{
+      name: "MEASURES",
+      items:
+        filteredSimpleMeasures
+          ?.map((m) => ({
+            name: m.name as string,
+            label: getMeasureDisplayName(m),
+          }))
+          .filter((m) => !measureHasFilter(m.name)) ?? [],
     },
   ];
 </script>
