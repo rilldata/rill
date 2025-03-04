@@ -74,6 +74,7 @@
   export let isBeingCompared: boolean;
   export let parentElement: HTMLElement;
   export let suppressTooltip = false;
+  export let measureLabel: (measureName: string) => string;
   export let toggleDimensionValueSelection: (
     dimensionName: string,
     dimensionValue: string,
@@ -368,6 +369,7 @@
       {setPrimaryDimension}
       {toggleComparisonDimension}
       {sortMeasure}
+      {measureLabel}
     />
 
     <tbody>
