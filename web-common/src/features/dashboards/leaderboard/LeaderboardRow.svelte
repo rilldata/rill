@@ -288,7 +288,7 @@
     {/if}
   </td>
 
-  {#each Object.keys(values) as measureName, index}
+  {#each Object.keys(values) as measureName}
     <td
       style:background={secondCellGradients[measureName]}
       on:click={modified({
