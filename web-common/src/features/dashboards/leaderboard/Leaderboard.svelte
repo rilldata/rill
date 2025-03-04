@@ -44,6 +44,7 @@
     DEFAULT_COL_WIDTH,
     deltaColumn,
     valueColumn,
+    DEFAULT_CONTEXT_COLUMN_WIDTH,
   } from "./leaderboard-widths";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 
@@ -325,9 +326,9 @@
     firstColumnWidth +
     $valueColumn +
     (comparisonTimeRange
-      ? $deltaColumn + DEFAULT_COL_WIDTH
+      ? $deltaColumn + DEFAULT_CONTEXT_COLUMN_WIDTH
       : isValidPercentOfTotal
-        ? DEFAULT_COL_WIDTH
+        ? DEFAULT_CONTEXT_COLUMN_WIDTH
         : 0);
 </script>
 
@@ -348,13 +349,13 @@
         {#if showDeltaAbsolute}
           <col style:width="{$deltaColumn}px" />
           {#if showDeltaPercent}
-            <col style:width="{DEFAULT_COL_WIDTH}px" />
+            <col style:width="{DEFAULT_CONTEXT_COLUMN_WIDTH}px" />
           {/if}
         {:else if showDeltaPercent}
-          <col style:width="{DEFAULT_COL_WIDTH}px" />
+          <col style:width="{DEFAULT_CONTEXT_COLUMN_WIDTH}px" />
         {/if}
         {#if showPercentOfTotal}
-          <col style:width="{DEFAULT_COL_WIDTH}px" />
+          <col style:width="{DEFAULT_CONTEXT_COLUMN_WIDTH}px" />
         {/if}
       {/each}
     </colgroup>

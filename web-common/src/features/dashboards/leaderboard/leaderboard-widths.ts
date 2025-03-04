@@ -1,15 +1,24 @@
 import { clamp } from "@rilldata/web-common/lib/clamp";
-import { get, writable } from "svelte/store";
+import { get, writable, type Writable } from "svelte/store";
 
 export const DEFAULT_COL_WIDTH = 80;
+export const DEFAULT_CONTEXT_COLUMN_WIDTH = 60;
+
 const MIN_COL_WIDTH = 56;
 const MAX_COL_WIDTH = 164;
 const PADDING = 16;
 
 class ColumnStore {
-  value = writable(DEFAULT_COL_WIDTH);
+  private value: Writable<number>;
+  private defaultWidth: number;
 
-  subscribe = this.value.subscribe;
+  subscribe: (this: void, run: (value: number) => void) => () => void;
+
+  constructor(defaultWidth: number = DEFAULT_COL_WIDTH) {
+    this.defaultWidth = defaultWidth;
+    this.value = writable(defaultWidth);
+    this.subscribe = this.value.subscribe;
+  }
 
   update = (newValue: number) => {
     newValue = clamp(
@@ -25,9 +34,9 @@ class ColumnStore {
   };
 
   reset() {
-    this.value.set(DEFAULT_COL_WIDTH);
+    this.value.set(this.defaultWidth);
   }
 }
 
-export const valueColumn = new ColumnStore();
-export const deltaColumn = new ColumnStore();
+export const valueColumn = new ColumnStore(DEFAULT_COL_WIDTH);
+export const deltaColumn = new ColumnStore(DEFAULT_CONTEXT_COLUMN_WIDTH);
