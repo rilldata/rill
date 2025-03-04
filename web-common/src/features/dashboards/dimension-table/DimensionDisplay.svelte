@@ -50,7 +50,7 @@
         selectedDimensionValueNames,
         prepareDimTableRows,
       },
-      sorting: { sortedAscending, sortType },
+      sorting: { sortedAscending, sortType, sortMeasure },
       measures: { leaderboardMeasureNames, getMeasureByName },
     },
     actions: {
@@ -125,10 +125,11 @@
     activeMeasureNames[0],
     dimensionName,
     !!comparisonTimeRange,
+    $sortMeasure,
   );
 
   $: where = sanitiseExpression(
-    mergeDimensionAndMeasureFilter(filterSet, dimensionThresholdFilters),
+    mergeDimensionAndMeasureFilters(filterSet, dimensionThresholdFilters),
     undefined,
   );
 
