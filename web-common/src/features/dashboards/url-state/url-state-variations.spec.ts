@@ -465,7 +465,7 @@ describe("Human readable URL state variations", () => {
     }
   });
 
-  it("Large state gets compressed", async () => {
+  it("Large state gets compressed", () => {
     metricsExplorerStore.init(
       AD_BIDS_EXPLORE_NAME,
       getInitExploreStateForTest(

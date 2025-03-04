@@ -149,7 +149,7 @@ describe("Invalid Human readable URL State", () => {
   });
 
   for (const { title, url, errors, entity } of TestCases) {
-    it(title, async () => {
+    it(title, () => {
       metricsExplorerStore.init(
         AD_BIDS_EXPLORE_NAME,
         getInitExploreStateForTest(
@@ -164,7 +164,7 @@ describe("Invalid Human readable URL State", () => {
         AD_BIDS_TIME_RANGE_SUMMARY,
       );
 
-      const errorsFromUrl = await applyURLToExploreState(
+      const errorsFromUrl = applyURLToExploreState(
         new URL(url),
         AD_BIDS_EXPLORE_INIT,
         defaultExplorePreset,

@@ -58,7 +58,7 @@ export function isHomeBookmark(bookmark: V1Bookmark) {
   return Boolean(bookmark.default);
 }
 
-export async function categorizeBookmarks(
+export function categorizeBookmarks(
   bookmarkResp: V1Bookmark[],
   metricsSpec: V1MetricsViewSpec | undefined,
   exploreSpec: V1ExploreSpec | undefined,
@@ -72,24 +72,20 @@ export async function categorizeBookmarks(
     personal: [],
     shared: [],
   };
-  if (!exploreState || !bookmarkResp) return bookmarks;
-  const bookmarkEntries = await Promise.all(
-    bookmarkResp.map((bookmarkResource) =>
-      parseBookmark(
-        bookmarkResource,
-        metricsSpec ?? {},
-        exploreSpec ?? {},
-        schema ?? {},
-        exploreState,
-        defaultExplorePreset,
-        timeRangeSummary,
-      ),
-    ),
-  );
-  bookmarkEntries.forEach((bookmark) => {
-    if (isHomeBookmark(bookmark.resource)) {
+  if (!exploreState) return bookmarks;
+  bookmarkResp?.forEach((bookmarkResource) => {
+    const bookmark = parseBookmark(
+      bookmarkResource,
+      metricsSpec ?? {},
+      exploreSpec ?? {},
+      schema ?? {},
+      exploreState,
+      defaultExplorePreset,
+      timeRangeSummary,
+    );
+    if (isHomeBookmark(bookmarkResource)) {
       bookmarks.home = bookmark;
-    } else if (bookmark.resource.shared) {
+    } else if (bookmarkResource.shared) {
       bookmarks.shared.push(bookmark);
     } else {
       bookmarks.personal.push(bookmark);
@@ -147,7 +143,7 @@ export function getPrettySelectedTimeRange(
   );
 }
 
-async function parseBookmark(
+function parseBookmark(
   bookmarkResource: V1Bookmark,
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
@@ -155,7 +151,7 @@ async function parseBookmark(
   exploreState: MetricsExplorerEntity,
   defaultExplorePreset: V1ExplorePreset,
   timeRangeSummary: V1TimeRangeSummary | undefined,
-) {
+): BookmarkEntry {
   const exploreStateFromBookmark = getDashboardStateFromUrl(
     bookmarkResource.data ?? "",
     metricsViewSpec,
@@ -180,7 +176,7 @@ async function parseBookmark(
     defaultExplorePreset,
     url,
   );
-  return <BookmarkEntry>{
+  return {
     resource: bookmarkResource,
     absoluteTimeRange:
       exploreStateFromBookmark.selectedTimeRange?.name ===

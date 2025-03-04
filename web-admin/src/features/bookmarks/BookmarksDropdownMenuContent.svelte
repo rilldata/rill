@@ -7,7 +7,6 @@
   import BookmarkItem from "@rilldata/web-admin/features/bookmarks/BookmarksDropdownMenuItem.svelte";
   import {
     type BookmarkEntry,
-    type Bookmarks,
     categorizeBookmarks,
     searchBookmarks,
   } from "@rilldata/web-admin/features/bookmarks/selectors";
@@ -78,12 +77,7 @@
   );
 
   let searchText: string;
-  let categorizedBookmarks: Bookmarks = {
-    home: undefined,
-    personal: [],
-    shared: [],
-  };
-  $: void categorizeBookmarks(
+  $: categorizedBookmarks = categorizeBookmarks(
     $bookamrksResp.data?.bookmarks ?? [],
     metricsViewSpec,
     exploreSpec,
@@ -91,7 +85,7 @@
     $exploreState,
     defaultExplorePreset,
     $metricsViewTimeRange.data?.timeRangeSummary,
-  ).then((bookmarks) => (categorizedBookmarks = bookmarks)); // TODO: error handling
+  );
   $: filteredBookmarks = searchBookmarks(categorizedBookmarks, searchText);
 
   $: projectPermissions = getProjectPermissions(organization, project);
