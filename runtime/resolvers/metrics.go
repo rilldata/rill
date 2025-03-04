@@ -1,7 +1,9 @@
 package resolvers
 
 import (
+	"bytes"
 	"context"
+	"encoding/gob"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -107,8 +109,44 @@ func (r *metricsResolver) CacheKey(ctx context.Context) ([]byte, bool, error) {
 	}
 
 	queryMap["mv_cache_key"] = key
-	bytes, err := json.Marshal(queryMap)
-	return bytes, true, err
+	if r.query.TimeRange != nil {
+		var buf bytes.Buffer
+		enc := gob.NewEncoder(&buf)
+		err = enc.Encode(r.query.TimeRange)
+		if err != nil {
+			return nil, false, err
+		}
+		queryMap["time_range"] = buf.Bytes()
+	}
+	if r.query.ComparisonTimeRange != nil {
+		var buf bytes.Buffer
+		enc := gob.NewEncoder(&buf)
+		err = enc.Encode(r.query.ComparisonTimeRange)
+		if err != nil {
+			return nil, false, err
+		}
+		queryMap["comparison_time_range"] = buf.Bytes()
+	}
+	if r.query.Where != nil {
+		var buf bytes.Buffer
+		enc := gob.NewEncoder(&buf)
+		err = enc.Encode(r.query.Where)
+		if err != nil {
+			return nil, false, err
+		}
+		queryMap["where"] = buf.Bytes()
+	}
+	if r.query.Having != nil {
+		var buf bytes.Buffer
+		enc := gob.NewEncoder(&buf)
+		err = enc.Encode(r.query.Having)
+		if err != nil {
+			return nil, false, err
+		}
+		queryMap["having"] = buf.Bytes()
+	}
+	b, err := json.Marshal(queryMap)
+	return b, true, err
 }
 
 func (r *metricsResolver) Refs() []*runtimev1.ResourceName {
