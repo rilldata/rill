@@ -36,7 +36,6 @@
       description: column.description || "",
       pinned: pinnedColumns.some((pinCol) => pinCol.name === column.name),
       isSelected: selectedColumn === column.name,
-      highlight: column.highlight,
       sorted: column.sorted,
     };
   };
