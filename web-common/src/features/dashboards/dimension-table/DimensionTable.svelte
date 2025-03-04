@@ -28,7 +28,7 @@ TableCells – the cell contents.
   export let columns: VirtualizedTableColumns[];
   export let selectedValues: CompoundQueryResult<string[]>;
   export let dimensionName: string;
-  export let firstMeasure: MetricsViewSpecMeasureV2;
+  export let firstMeasure: MetricsViewSpecMeasureV2 | undefined;
   export let isFetching: boolean;
 
   const {
