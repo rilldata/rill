@@ -12,8 +12,7 @@
   import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
 
-  export let isValidPercentOfTotal = false;
-  export let isTimeComparisonActive = false;
+  export let isValidPercentOfTotal: boolean;
   export let tooltipText: string;
   export let measures: MetricsViewSpecMeasureV2[];
   export let selectedFilters: LeaderboardContextColumn[] = [];
@@ -36,20 +35,16 @@
           },
         ]
       : []),
-    ...(isTimeComparisonActive
-      ? [
-          {
-            value: LeaderboardContextColumn.DELTA_ABSOLUTE,
-            label: "Change",
-            icon: DeltaChange,
-          },
-          {
-            value: LeaderboardContextColumn.DELTA_PERCENT,
-            label: "Percent change",
-            icon: DeltaChangePercentage,
-          },
-        ]
-      : []),
+    {
+      value: LeaderboardContextColumn.DELTA_ABSOLUTE,
+      label: "Change",
+      icon: DeltaChange,
+    },
+    {
+      value: LeaderboardContextColumn.DELTA_PERCENT,
+      label: "Percent change",
+      icon: DeltaChangePercentage,
+    },
   ];
 
   function getLabelFromValue(value: LeaderboardContextColumn) {
