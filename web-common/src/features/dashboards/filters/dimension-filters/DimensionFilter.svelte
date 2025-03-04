@@ -234,7 +234,7 @@
     align="start"
     class="flex flex-col max-h-96 w-[400px] overflow-hidden p-0"
   >
-    <div class="flex flex-col px-3 pt-3 pb-1">
+    <div class="flex flex-col px-3 pt-3">
       <Search
         bind:value={curSearchText}
         label="Search list"
@@ -242,7 +242,7 @@
         placeholder="Enter search term or paste list of values"
       />
       {#if showExtraInfo}
-        <div class="flex flex-row items-center justify-between pt-3">
+        <div class="flex flex-row items-center justify-between pt-2 pb-1">
           {#if mode === SearchMode.Bulk}
             <Tag noSpan>
               <span>Match list</span>
@@ -285,6 +285,10 @@
       {/if}
     </div>
 
+    {#if showExtraInfo}
+      <DropdownMenu.Separator class="bg-slate-200" />
+    {/if}
+
     <div class="flex flex-col flex-1 overflow-y-auto w-full h-fit pb-1">
       {#if isFetching}
         <div class="min-h-9 flex flex-row items-center mx-auto">
@@ -296,15 +300,32 @@
         </div>
       {:else if data}
         <DropdownMenu.Group class="px-1">
+          {#if mode === SearchMode.Search}
+            <DropdownMenu.Label
+              class="pb-0 uppercase text-[10px] text-gray-500"
+            >
+              {dataFromSearch?.length ?? 0} results
+            </DropdownMenu.Label>
+          {:else if mode === SearchMode.Bulk}
+            <DropdownMenu.Label
+              class="pb-0 uppercase text-[10px] text-gray-500"
+            >
+              {searchedBulkValues.length} of {dataFromBulkMatchedCount} matched
+            </DropdownMenu.Label>
+          {/if}
+
           {#each data as name (name)}
             {@const selected = effectiveSelectedValues.includes(name)}
             {@const label = name ?? "null"}
 
             <DropdownMenu.CheckboxItem
-              class="text-xs cursor-pointer"
+              class="text-xs cursor-pointer {mode !== SearchMode.Select
+                ? 'pl-3'
+                : ''}"
               role="menuitem"
-              checked={selected}
+              checked={mode === SearchMode.Select && selected}
               showXForSelected={excludeMode}
+              disabled={mode !== SearchMode.Select}
               on:click={() => onSelect(name)}
             >
               <span>

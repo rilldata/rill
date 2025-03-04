@@ -24,7 +24,7 @@
   </span>
 
   {#if search}
-    <span>MATCH</span>
+    <span>SEARCH</span>
     <span class="italic">{search}</span>
   {:else if matchedCount !== undefined}
     <span>MATCH LIST</span>
