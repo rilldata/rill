@@ -3,6 +3,7 @@ import { get, writable, type Writable } from "svelte/store";
 
 export const DEFAULT_COL_WIDTH = 80;
 export const DEFAULT_CONTEXT_COLUMN_WIDTH = 60;
+export const MEASURE_SPACING_WIDTH = 16;
 
 const MIN_COL_WIDTH = 56;
 const MAX_COL_WIDTH = 164;

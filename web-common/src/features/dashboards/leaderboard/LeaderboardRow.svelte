@@ -257,6 +257,7 @@
     />
   </td>
   <td
+    data-first-cell
     style:background={firstCellGradient}
     class:ui-copy={!atLeastOneActive}
     class:ui-copy-disabled={excluded}
@@ -292,6 +293,7 @@
 
   {#each Object.keys(values) as measureName}
     <td
+      data-second-cell
       style:background={secondCellGradients[measureName]}
       on:click={modified({
         shift: () => shiftClickHandler(values[measureName]?.toString() || ""),
@@ -311,6 +313,7 @@
 
     {#if showDeltaAbsolute}
       <td
+        data-third-cell
         style:background={thirdCellGradients[measureName]}
         on:click={modified({
           shift: () =>
@@ -341,6 +344,7 @@
 
     {#if showDeltaPercent}
       <td
+        data-fourth-cell
         style:background={fourthCellGradients[measureName]}
         on:click={modified({
           shift: () =>
@@ -360,6 +364,7 @@
 
     {#if showPercentOfTotal}
       <td
+        data-fifth-cell
         style:background={fifthCellGradients[measureName]}
         on:click={modified({
           shift: () =>
