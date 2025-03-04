@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/pkg/timeutil"
 
 	// Load IANA time zone data
 	_ "time/tzdata"
@@ -513,6 +514,46 @@ func (d Dialect) DateDiff(grain runtimev1.TimeGrain, t1, t2 time.Time) (string, 
 		return fmt.Sprintf("CAST(DATEDIFF('%s', %d, %d) AS TIMESTAMP)", unit, t1.UnixMilli(), t2.UnixMilli()), nil
 	default:
 		return "", fmt.Errorf("unsupported dialect %q", d)
+	}
+}
+
+func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeGrain, alias string) (string, []any, error) {
+	var args []any
+	switch d {
+	case DialectDuckDB:
+		return fmt.Sprintf("SELECT range AS %s FROM range('%s'::TIMESTAMP, '%s'::TIMESTAMP, INTERVAL '1 %s')", d.EscapeIdentifier(alias), start.Format(time.RFC3339), end.Format(time.RFC3339), d.ConvertToDateTruncSpecifier(grain)), nil, nil
+	case DialectClickHouse:
+		// format - SELECT c1 AS "alias" FROM VALUES(toDateTime('2021-01-01 00:00:00'), toDateTime('2021-01-01 00:00:00'),...)
+		var sb strings.Builder
+		sb.WriteString(fmt.Sprintf("SELECT c1 AS %s FROM VALUES(", d.EscapeIdentifier(alias)))
+		for t := start; t.Before(end); t = timeutil.AddTimeProto(t, grain, 1) {
+			if t != start {
+				sb.WriteString(", ")
+			}
+			sb.WriteString("?")
+			args = append(args, t)
+		}
+		sb.WriteString(")")
+		return sb.String(), args, nil
+	case DialectDruid:
+		// generate select like - SELECT * FROM (
+		//  VALUES
+		//  (CAST('2006-01-02T15:04:05Z' AS TIMESTAMP)),
+		//  (CAST('2006-01-02T15:04:05Z' AS TIMESTAMP))
+		// ) t (time)
+		var sb strings.Builder
+		sb.WriteString("SELECT * FROM (VALUES ")
+		for t := start; t.Before(end); t = timeutil.AddTimeProto(t, grain, 1) {
+			if t != start {
+				sb.WriteString(", ")
+			}
+			sb.WriteString("(CAST(? AS TIMESTAMP))")
+			args = append(args, t)
+		}
+		sb.WriteString(fmt.Sprintf(") t (%s)", d.EscapeIdentifier(alias)))
+		return sb.String(), args, nil
+	default:
+		return "", nil, fmt.Errorf("unsupported dialect %q", d)
 	}
 }
 
