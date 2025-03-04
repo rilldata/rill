@@ -4,6 +4,7 @@ import {
   createAndExpression,
   filterIdentifiers,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { decompressUrlParams } from "@rilldata/web-common/features/dashboards/url-state/compression";
 import { convertLegacyStateToExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/convertLegacyStateToExplorePreset";
 import { CustomTimeRangeRegex } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import {
@@ -63,6 +64,14 @@ export function convertURLToExplorePreset(
     ) ?? [],
     (d) => d.name!,
   );
+
+  if (searchParams.has(ExploreStateURLParams.GzippedParams)) {
+    searchParams = new URLSearchParams(
+      decompressUrlParams(
+        searchParams.get(ExploreStateURLParams.GzippedParams)!,
+      ),
+    );
+  }
 
   // Support legacy dashboard param.
   // This will be applied 1st so that any newer params added can be applied as well.

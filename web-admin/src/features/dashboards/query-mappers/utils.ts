@@ -215,6 +215,7 @@ export async function getExplorePageUrl(
       exploreState,
     ),
     getDefaultExplorePreset(exploreSpec, fullTimeRange),
+    url,
   );
   return url.toString();
 }
