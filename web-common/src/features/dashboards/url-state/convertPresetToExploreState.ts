@@ -122,6 +122,12 @@ export function convertPresetToExploreState(
   Object.assign(partialExploreState, pivotPartialState);
   errors.push(...pivotErrors);
 
+  if (preset.exploreSortBy) {
+    const measures = preset.exploreSortBy.split(",");
+    partialExploreState.leaderboardMeasureNames = measures;
+    // partialExploreState.leaderboardMeasureName = measures[0];
+  }
+
   return { partialExploreState, errors };
 }
 
@@ -267,13 +273,15 @@ function fromExploreUrlParams(
     partialExploreState.visibleDimensionKeys = new Set(selectedDimensions);
   }
 
-  if (preset.exploreSortBy) {
-    if (measures.has(preset.exploreSortBy)) {
-      partialExploreState.leaderboardMeasureName = preset.exploreSortBy;
-    } else {
-      errors.push(getSingleFieldError("sort by measure", preset.exploreSortBy));
-    }
-  }
+  // TODO: REVISIT
+  // Uncomment to disable error about multiple active measures
+  // if (preset.exploreSortBy) {
+  //   if (measures.has(preset.exploreSortBy)) {
+  //     partialExploreState.leaderboardMeasureNames = [preset.exploreSortBy];
+  //   } else {
+  //     errors.push(getSingleFieldError("sort by measure", preset.exploreSortBy));
+  //   }
+  // }
 
   if (preset.exploreSortAsc !== undefined) {
     partialExploreState.sortDirection = preset.exploreSortAsc

@@ -23,6 +23,9 @@
   import { getStateManagers } from "../state-managers/state-managers";
   import SelectAllButton from "./SelectAllButton.svelte";
   import { getDimensionTableExportQuery } from "./dimension-table-export";
+  import ContextColumnDropdown from "@rilldata/web-common/components/menu/ContextColumnDropdown.svelte";
+  import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
+  import { getSimpleMeasures } from "../state-managers/selectors/measures";
 
   export let dimensionName: string;
   export let isFetching: boolean;
@@ -31,26 +34,36 @@
   export let searchText: string;
   export let onToggleSearchItems: () => void;
   export let hideStartPivotButton = false;
+  export let comparisonTimeRange: V1TimeRange | undefined;
 
   const stateManagers = getStateManagers();
   const {
     selectors: {
       sorting: { sortedByDimensionValue },
       dimensions: { getDimensionDisplayName },
-
       dimensionFilters: { isFilterExcludeMode },
-      measures: { visibleMeasures },
+      measures: {
+        visibleMeasures,
+        leaderboardMeasureNames,
+        getMeasureByName,
+        allMeasures,
+      },
+      contextColumn: { contextColumnFilters },
     },
     actions: {
       sorting: { toggleSort },
       dimensions: { setPrimaryDimension },
       dimensionsFilter: { toggleDimensionFilterMode },
+      contextColumn: { setContextColumnFilters },
+      toggleLeaderboardMeasureNames,
     },
     dashboardStore,
     exploreName,
   } = stateManagers;
 
   const { adminServer, exports } = featureFlags;
+
+  $: measures = getSimpleMeasures($visibleMeasures);
 
   $: excludeMode = $isFilterExcludeMode(dimensionName);
 
@@ -59,7 +72,20 @@
 
   $: metricsViewProto = $dashboardStore.proto;
 
+  $: activeLeaderboardMeasures = $leaderboardMeasureNames.map((name) =>
+    $getMeasureByName(name),
+  );
+
+  // First measure is used for sorting and validation
+  $: firstMeasure = activeLeaderboardMeasures[0];
+  $: validPercentOfTotal = firstMeasure?.validPercentOfTotal || false;
+  $: allMeasureNames = $allMeasures.map(({ name }) => name).filter(isDefined);
+
   let searchBarOpen = false;
+
+  function isDefined(value: string | undefined): value is string {
+    return value !== undefined;
+  }
 
   function closeSearchBar() {
     searchText = "";
@@ -136,7 +162,7 @@
     {#if isFetching}
       <DelayedSpinner isLoading={isFetching} size="16px" />
     {:else}
-      <Button type="link" forcedStyle="padding: 0; gap: 0px;">
+      <Button type="link" forcedStyle="padding: 0; gap: 4px;">
         <Back size="16px" />
         <span>All Dimensions</span>
       </Button>
@@ -145,6 +171,18 @@
 
   <!-- We fix the height to avoid a layout shift when the Search component is expanded. -->
   <div class="flex items-center gap-x-1 cursor-pointer h-9">
+    <ContextColumnDropdown
+      tooltipText="Choose context columns to display"
+      isValidPercentOfTotal={validPercentOfTotal}
+      isTimeComparisonActive={Boolean(comparisonTimeRange)}
+      selectedFilters={$contextColumnFilters}
+      onContextColumnChange={setContextColumnFilters}
+      {measures}
+      selectedMeasureNames={$leaderboardMeasureNames}
+      onSelectAll={() => {
+        toggleLeaderboardMeasureNames(allMeasureNames);
+      }}
+    />
     {#if !isRowsEmpty}
       <SelectAllButton
         {areAllTableRowsSelected}

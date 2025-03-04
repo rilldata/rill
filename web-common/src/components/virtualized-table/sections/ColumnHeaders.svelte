@@ -5,6 +5,7 @@
     VirtualizedTableColumns,
     VirtualizedTableConfig,
   } from "../types";
+  import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
 
   const dispatch = createEventDispatcher();
 
@@ -13,6 +14,7 @@
   export let virtualColumnItems;
   export let noPin = false;
   export let showDataIcon = false;
+  export let firstMeasure: MetricsViewSpecMeasureV2 | undefined;
   export let selectedColumn: string | null = null;
 
   const config: VirtualizedTableConfig = getContext("config");
@@ -34,13 +36,12 @@
       description: column.description || "",
       pinned: pinnedColumns.some((pinCol) => pinCol.name === column.name),
       isSelected: selectedColumn === column.name,
-      highlight: column.highlight,
       sorted: column.sorted,
     };
   };
 </script>
 
-<div class="w-full sticky relative top-0 z-10">
+<div class="w-full sticky top-0 z-10">
   {#each virtualColumnItems as header (header.key)}
     {@const props = getColumnHeaderProps(header)}
     <ColumnHeader
@@ -50,6 +51,7 @@
       {header}
       {noPin}
       {showDataIcon}
+      {firstMeasure}
       on:pin={() => {
         dispatch("pin", columns[header.index]);
       }}

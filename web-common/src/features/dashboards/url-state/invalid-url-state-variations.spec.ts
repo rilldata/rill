@@ -119,7 +119,7 @@ Unexpected " ".`,
     errors: [`Selected sort by measure: "bp" is not valid.`],
     entity: {
       // defaults to 1st measure
-      leaderboardMeasureName: "impressions",
+      leaderboardMeasureNames: ["impressions"],
     },
   },
   {

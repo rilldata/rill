@@ -13,6 +13,7 @@
     deltaColumn,
     valueColumn,
   } from "./leaderboard-widths";
+  import { cn } from "@rilldata/web-common/lib/shadcn";
 
   export let metricsViewName: string;
   export let whereFilter: V1Expression;
@@ -20,7 +21,7 @@
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
   export let timeControlsReady: boolean;
-  export let activeMeasureName: string;
+  export let activeMeasureNames: string[];
 
   const StateManagers = getStateManagers();
   const {
@@ -34,7 +35,9 @@
       },
       dimensions: { visibleDimensions },
       comparison: { isBeingCompared: isBeingComparedReadable },
-      sorting: { sortedAscending, sortType },
+      sorting: { sortedAscending, sortType, sortMeasure },
+      contextColumn: { contextColumnFilters },
+      measures: { measureLabel },
     },
     actions: {
       dimensions: { setPrimaryDimension },
@@ -51,7 +54,7 @@
   $: ({ instanceId } = $runtime);
 
   // Reset column widths when the measure changes
-  $: if (activeMeasureName) {
+  $: if (activeMeasureNames) {
     valueColumn.reset();
     deltaColumn.reset();
   }
@@ -67,11 +70,13 @@
       : $isValidPercentOfTotal
         ? DEFAULT_COL_WIDTH
         : 0);
+
+  $: shouldDisplayLeaderboardsInColumn = activeMeasureNames.length > 2;
 </script>
 
 <div class="flex flex-col overflow-hidden size-full">
   <div class="pl-2.5 pb-3">
-    <LeaderboardControls exploreName={$exploreName} />
+    <LeaderboardControls exploreName={$exploreName} {comparisonTimeRange} />
   </div>
   <div
     bind:this={parentElement}
@@ -84,13 +89,19 @@
     }}
   >
     {#if parentElement}
-      <div class="leaderboard-grid overflow-hidden pb-4">
+      <div
+        class={cn(
+          "flex flex-wrap gap-4 overflow-x-auto pb-4",
+          shouldDisplayLeaderboardsInColumn ? "flex-col" : "flex-row",
+        )}
+      >
         {#each $visibleDimensions as dimension (dimension.name)}
           {#if dimension.name}
             <Leaderboard
               isValidPercentOfTotal={$isValidPercentOfTotal}
+              contextColumnFilters={$contextColumnFilters}
               {metricsViewName}
-              {activeMeasureName}
+              {activeMeasureNames}
               {whereFilter}
               {dimensionThresholdFilters}
               {instanceId}
@@ -114,6 +125,8 @@
               {toggleSort}
               {toggleDimensionValueSelection}
               {toggleComparisonDimension}
+              sortMeasure={$sortMeasure}
+              measureLabel={$measureLabel}
             />
           {/if}
         {/each}
@@ -121,9 +134,3 @@
     {/if}
   </div>
 </div>
-
-<style lang="postcss">
-  .leaderboard-grid {
-    @apply flex flex-row flex-wrap gap-4;
-  }
-</style>

@@ -19,6 +19,7 @@
   import type { ResizeEvent } from "../drag-table-cell";
   import type { HeaderPosition, VirtualizedTableConfig } from "../types";
   import StickyHeader from "./StickyHeader.svelte";
+  import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
 
   export let pinned = false;
   export let noPin = false;
@@ -31,8 +32,8 @@
   export let enableResize = true;
   export let enableSorting = true;
   export let isSelected = false;
-  export let highlight = false;
   export let sorted: SortDirection | undefined = undefined;
+  export let firstMeasure: MetricsViewSpecMeasureV2 | undefined;
 
   const config: VirtualizedTableConfig = getContext("config");
   const dispatch = createEventDispatcher();
@@ -45,9 +46,7 @@
 
   $: textAlignment = isDimensionColumn ? "text-left pl-1" : "text-right pr-1";
 
-  $: columnFontWeight = isSelected
-    ? "font-bold"
-    : config.columnHeaderFontWeightClass;
+  $: columnFontWeight = isSelected ? "" : config.columnHeaderFontWeightClass;
 
   const handleResize = (event: ResizeEvent) => {
     dispatch("resize-column", {
@@ -59,9 +58,7 @@
 
 <StickyHeader
   {enableResize}
-  bgClass={highlight
-    ? config.headerBgColorHighlightClass
-    : config.headerBgColorClass}
+  bgClass={config.headerBgColorClass}
   on:reset-column-width={() => {
     dispatch("reset-column-width", { name });
   }}
@@ -78,7 +75,7 @@
     dispatch("click-column");
   }}
   onShiftClick={() => {
-    copyToClipboard(name, `copied column name "${name}" to clipboard`);
+    copyToClipboard(name, `Copied column name "${name}" to clipboard`);
   }}
 >
   <div
@@ -156,7 +153,7 @@
       </TooltipContent>
     </Tooltip>
 
-    {#if sorted}
+    {#if sorted && firstMeasure?.displayName === name}
       <div class="mt-0.5 ui-copy-icon">
         {#if sorted === SortDirection.DESCENDING}
           <div in:fly|global={{ duration: 200, y: -8 }} style:opacity={1}>

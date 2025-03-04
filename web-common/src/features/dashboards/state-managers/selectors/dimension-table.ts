@@ -11,7 +11,7 @@ import {
   prepareDimensionTableRows,
   prepareVirtualizedDimTableColumns,
 } from "../../dimension-table/dimension-table-utils";
-import { activeMeasureName, isValidPercentOfTotal } from "./active-measure";
+import { activeMeasureNames, isValidPercentOfTotal } from "./active-measure";
 import { selectedDimensionValues } from "./dimension-filters";
 import { allMeasures, visibleMeasures } from "./measures";
 import { isTimeComparisonActive } from "./time-range";
@@ -88,7 +88,7 @@ export const prepareDimTableRows =
     if (!dimension) return [];
 
     const dimensionColumn = dimension.name ?? "";
-    const leaderboardMeasureName = activeMeasureName(dashData);
+    const leaderboardMeasureNames = activeMeasureNames(dashData);
 
     // FIXME: should this really be all measures, or just visible measures?
     const measures = allMeasures(dashData);
@@ -96,7 +96,7 @@ export const prepareDimTableRows =
     return prepareDimensionTableRows(
       sortedQuery?.data?.data ?? [],
       measures,
-      leaderboardMeasureName,
+      leaderboardMeasureNames,
       dimensionColumn,
       isTimeComparisonActive(dashData),
       isValidPercentOfTotal(dashData),

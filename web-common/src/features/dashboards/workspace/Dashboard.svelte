@@ -30,12 +30,10 @@
   const StateManagers = getStateManagers();
   const {
     selectors: {
-      measures: { visibleMeasures },
-      activeMeasure: { activeMeasureName },
+      measures: { visibleMeasures, leaderboardMeasureNames },
       dimensions: { getDimensionByName },
       pivot: { showPivot },
     },
-
     dashboardStore,
   } = StateManagers;
 
@@ -93,6 +91,8 @@
 
   $: exploreSpec = $explore.data?.explore;
   $: timeRanges = exploreSpec?.timeRanges ?? [];
+
+  $: visibleMeasureNames = $visibleMeasures.map(({ name }) => name ?? "");
 
   let metricsWidth = DEFAULT_TIMESERIES_WIDTH;
   let resizing = false;
@@ -209,17 +209,15 @@
               {dimensionThresholdFilters}
               {timeRange}
               {comparisonTimeRange}
-              activeMeasureName={$activeMeasureName}
+              activeMeasureNames={$leaderboardMeasureNames}
               {timeControlsReady}
-              visibleMeasureNames={$visibleMeasures.map(
-                ({ name }) => name ?? "",
-              )}
+              {visibleMeasureNames}
               hideStartPivotButton={hidePivot}
             />
           {:else}
             <LeaderboardDisplay
               {metricsViewName}
-              activeMeasureName={$activeMeasureName}
+              activeMeasureNames={$leaderboardMeasureNames}
               {whereFilter}
               {dimensionThresholdFilters}
               {timeRange}

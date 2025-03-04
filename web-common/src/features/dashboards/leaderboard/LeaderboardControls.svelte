@@ -1,36 +1,46 @@
 <script lang="ts">
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import DashboardVisibilityDropdown from "@rilldata/web-common/components/menu/shadcn/DashboardVisibilityDropdown.svelte";
-  import * as Select from "@rilldata/web-common/components/select";
+  import DashboardVisibilityDropdown from "@rilldata/web-common/components/menu/DashboardVisibilityDropdown.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import { getSimpleMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { getStateManagers } from "../state-managers/state-managers";
+  import LeaderboardActiveMeasureNamesDropdown from "@rilldata/web-common/components/menu/LeaderboardActiveMeasureNamesDropdown.svelte";
+  import ContextColumnDropdown from "@rilldata/web-common/components/menu/ContextColumnDropdown.svelte";
+  import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
 
   export let exploreName: string;
+  export let comparisonTimeRange: V1TimeRange | undefined;
 
+  const StateManagers = getStateManagers();
   const {
     selectors: {
-      measures: { leaderboardMeasureName, getMeasureByName, visibleMeasures },
+      measures: {
+        leaderboardMeasureNames,
+        getMeasureByName,
+        visibleMeasures,
+        allMeasures,
+      },
       dimensions: { visibleDimensions, allDimensions },
+      contextColumn: { contextColumnFilters },
     },
     actions: {
       dimensions: { toggleDimensionVisibility },
-      contextCol: { setContextColumn },
-      setLeaderboardMeasureName,
+      contextColumn: { setContextColumn, setContextColumnFilters },
+      toggleLeaderboardMeasureNames,
     },
-  } = getStateManagers();
-
-  let active = false;
+  } = StateManagers;
 
   $: measures = getSimpleMeasures($visibleMeasures);
 
   $: metricsExplorer = $metricsExplorerStore.entities[exploreName];
 
-  $: activeLeaderboardMeasure = $getMeasureByName($leaderboardMeasureName);
+  $: activeLeaderboardMeasures = $leaderboardMeasureNames.map((name) =>
+    $getMeasureByName(name),
+  );
 
-  $: validPercentOfTotal =
-    activeLeaderboardMeasure?.validPercentOfTotal || false;
+  // First measure is used for sorting and validation
+  $: firstMeasure = activeLeaderboardMeasures[0];
+  $: validPercentOfTotal = firstMeasure?.validPercentOfTotal || false;
 
   $: visibleDimensionsNames = $visibleDimensions
     .map(({ name }) => name)
@@ -38,6 +48,7 @@
   $: allDimensionNames = $allDimensions
     .map(({ name }) => name)
     .filter(isDefined);
+  $: allMeasureNames = $allMeasures.map(({ name }) => name).filter(isDefined);
 
   // if the percent of total is currently being shown,
   // but it is not valid for this measure, then turn it off
@@ -55,10 +66,10 @@
 </script>
 
 <div>
-  {#if measures.length && activeLeaderboardMeasure}
+  {#if measures.length && firstMeasure}
     <div
       class="flex flex-row items-center ui-copy-muted gap-x-1"
-      style:max-width="450px"
+      style:max-width="768px"
     >
       <DashboardVisibilityDropdown
         category="Dimensions"
@@ -74,53 +85,33 @@
         }}
       />
 
-      <Select.Root
-        bind:open={active}
-        selected={{ value: activeLeaderboardMeasure.name, label: "" }}
-        items={measures.map((measure) => ({
-          value: measure.name ?? "",
-          label: measure.displayName || measure.name,
-        }))}
-        onSelectedChange={(newSelection) => {
-          if (!newSelection?.value) return;
-          setLeaderboardMeasureName(newSelection.value);
+      <LeaderboardActiveMeasureNamesDropdown
+        {measures}
+        {firstMeasure}
+        tooltipText="Choose measures to display"
+        selectedMeasureNames={$leaderboardMeasureNames}
+        onToggle={(name) => {
+          toggleLeaderboardMeasureNames(allMeasureNames, name);
         }}
-      >
-        <Select.Trigger class="outline-none border-none w-fit  px-0 gap-x-0.5">
-          <Button type="text" label="Select a measure to filter by">
-            <span class="truncate text-gray-700 hover:text-inherit">
-              Showing <b>
-                {activeLeaderboardMeasure?.displayName ||
-                  activeLeaderboardMeasure.name}
-              </b>
-            </span>
-          </Button>
-        </Select.Trigger>
+        onSelectAll={() => {
+          toggleLeaderboardMeasureNames(allMeasureNames);
+        }}
+      />
 
-        <Select.Content
-          sameWidth={false}
-          align="start"
-          class="max-h-80 overflow-y-auto min-w-44"
-        >
-          {#each measures as measure (measure.name)}
-            <Select.Item
-              value={measure.name}
-              label={measure.displayName || measure.name}
-              class="text-[12px]"
-            >
-              <div class="flex flex-col">
-                <div class:font-bold={$leaderboardMeasureName === measure.name}>
-                  {measure.displayName || measure.name}
-                </div>
-
-                <p class="ui-copy-muted" style:font-size="11px">
-                  {measure.description}
-                </p>
-              </div>
-            </Select.Item>
-          {/each}
-        </Select.Content>
-      </Select.Root>
+      {#if Boolean(comparisonTimeRange)}
+        <ContextColumnDropdown
+          tooltipText="Choose context columns to display"
+          isValidPercentOfTotal={validPercentOfTotal}
+          isTimeComparisonActive={Boolean(comparisonTimeRange)}
+          selectedFilters={$contextColumnFilters}
+          onContextColumnChange={setContextColumnFilters}
+          {measures}
+          selectedMeasureNames={$leaderboardMeasureNames}
+          onSelectAll={() => {
+            toggleLeaderboardMeasureNames(allMeasureNames);
+          }}
+        />
+      {/if}
     </div>
   {/if}
 </div>

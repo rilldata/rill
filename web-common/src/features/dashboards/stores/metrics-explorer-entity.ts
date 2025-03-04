@@ -1,5 +1,8 @@
 import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
-import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
+import {
+  LeaderboardContextColumn,
+  type ContextColWidths,
+} from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import type { PivotState } from "@rilldata/web-common/features/dashboards/pivot/types";
 import type {
   SortDirection,
@@ -52,6 +55,7 @@ export interface MetricsExplorerEntity {
    */
   allDimensionsVisible: boolean;
 
+  // TODO: to be removed
   /**
    * This is the name of the primary active measure in the dashboard.
    * This is the measure that will be shown in leaderboards, and
@@ -59,7 +63,14 @@ export interface MetricsExplorerEntity {
    * This "name" is the internal name of the measure from the YAML,
    * not the human readable name.
    */
-  leaderboardMeasureName: string;
+  // leaderboardMeasureName: string;
+
+  /**
+   * Array of active measures in the dashboard. These measures are used
+   * in the leaderboards and dimension detail table. This "name" is the
+   * internal name of the measure from the YAML, not the human readable name.
+   */
+  leaderboardMeasureNames: string[];
 
   /**
    * This is the sort type that will be used for the leaderboard
@@ -72,6 +83,13 @@ export interface MetricsExplorerEntity {
    * and dimension detail table.
    */
   sortDirection: SortDirection;
+
+  /**
+   * The measure name to sort by when sorting by value.
+   * This is used when there are multiple measures to determine which measure
+   * to sort the leaderboard by.
+   */
+  sortMeasure?: string;
 
   whereFilter: V1Expression;
   dimensionThresholdFilters: Array<DimensionThresholdFilter>;
@@ -127,6 +145,11 @@ export interface MetricsExplorerEntity {
   leaderboardContextColumn: LeaderboardContextColumn;
 
   /**
+   * Array of context columns to be shown in the leaderboard when comparison is enabled
+   */
+  leaderboardContextColumnFilters: LeaderboardContextColumn[];
+
+  /**
    * Width of each context column. Needs to be reset to default
    * when changing context column or switching between leaderboard
    * and dimension detail table
@@ -149,15 +172,3 @@ export interface MetricsExplorerEntity {
 
   proto?: string;
 }
-
-export type ContextColWidths = {
-  [LeaderboardContextColumn.DELTA_ABSOLUTE]: number;
-  [LeaderboardContextColumn.DELTA_PERCENT]: number;
-  [LeaderboardContextColumn.PERCENT]: number;
-};
-
-export const contextColWidthDefaults: ContextColWidths = {
-  [LeaderboardContextColumn.DELTA_ABSOLUTE]: 56,
-  [LeaderboardContextColumn.DELTA_PERCENT]: 44,
-  [LeaderboardContextColumn.PERCENT]: 44,
-};

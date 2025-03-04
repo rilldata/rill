@@ -84,9 +84,10 @@ function syncMeasures(
   // sync measures with selected leaderboard measure.
   if (
     explore.measures?.length &&
-    !measuresSet.has(metricsExplorer.leaderboardMeasureName)
+    !measuresSet.has(metricsExplorer.leaderboardMeasureNames[0])
   ) {
-    metricsExplorer.leaderboardMeasureName = explore.measures[0];
+    const defaultMeasure = explore.measures[0];
+    metricsExplorer.leaderboardMeasureNames[0] = defaultMeasure;
   }
 
   if (
@@ -561,21 +562,21 @@ export function useExploreState(name: string): Readable<MetricsExplorerEntity> {
 }
 
 export function sortTypeForContextColumnType(
-  contextCol: LeaderboardContextColumn,
+  contextColumn: LeaderboardContextColumn,
 ): SortType {
   const sortType = {
     [LeaderboardContextColumn.DELTA_PERCENT]: SortType.DELTA_PERCENT,
     [LeaderboardContextColumn.DELTA_ABSOLUTE]: SortType.DELTA_ABSOLUTE,
     [LeaderboardContextColumn.PERCENT]: SortType.PERCENT,
     [LeaderboardContextColumn.HIDDEN]: SortType.VALUE,
-  }[contextCol];
+  }[contextColumn];
 
   // Note: the above map needs to be EXHAUSTIVE over
   // LeaderboardContextColumn variants. If we ever add a new
   // context column type, we need to add it to the map above.
   // Otherwise, we will throw an error here.
   if (!sortType) {
-    throw new Error(`Invalid context column type: ${contextCol}`);
+    throw new Error(`Invalid context column type: ${contextColumn}`);
   }
   return sortType;
 }

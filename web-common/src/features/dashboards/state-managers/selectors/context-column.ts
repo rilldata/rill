@@ -10,12 +10,18 @@ const contextColumnWidth = ({ dashboard }: DashboardDataSources): string => {
   return "0px";
 };
 
-export const contextColSelectors = {
+export const contextColumnSelectors = {
   /**
    * Gets the active context column type for the dashboard.
    */
   contextColumn: ({ dashboard }: DashboardDataSources) =>
     dashboard.leaderboardContextColumn,
+
+  /**
+   * Gets the context column filters for the dashboard.
+   */
+  contextColumnFilters: ({ dashboard }: DashboardDataSources) =>
+    dashboard.leaderboardContextColumnFilters,
 
   /**
    * Is the context column hidden in the leaderboards?

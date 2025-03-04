@@ -29,7 +29,7 @@
 
   const queryLimit = 250;
 
-  export let activeMeasureName: string;
+  export let activeMeasureNames: string[];
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
   export let whereFilter: V1Expression;
@@ -48,7 +48,8 @@
         selectedDimensionValueNames,
         prepareDimTableRows,
       },
-      sorting: { sortedAscending, sortType },
+      sorting: { sortedAscending, sortType, sortMeasure },
+      measures: { leaderboardMeasureNames, getMeasureByName },
     },
     actions: {
       dimensionsFilter: {
@@ -93,26 +94,41 @@
     },
   );
 
-  $: unfilteredTotal = $totalsQuery?.data?.data?.[0]?.[activeMeasureName] ?? 0;
+  $: unfilteredTotal =
+    $totalsQuery?.data?.data?.[0]?.[activeMeasureNames[0]] ?? 0;
 
   $: columns = $virtualizedTableColumns($totalsQuery);
 
   $: measures = getMeasuresForDimensionTable(
-    activeMeasureName,
+    activeMeasureNames[0],
     dimensionThresholdFilters,
     visibleMeasureNames,
-  )
-    .map(
-      (n) =>
-        ({
-          name: n,
-        }) as V1MetricsViewAggregationMeasure,
-    )
-    .concat(
-      ...(comparisonTimeRange
-        ? getComparisonRequestMeasures(activeMeasureName)
-        : []),
+  ).map(
+    (measureName) =>
+      ({
+        name: measureName,
+      }) as V1MetricsViewAggregationMeasure,
+  );
+
+  $: if (comparisonTimeRange) {
+    measures = measures.concat(
+      activeMeasureNames.flatMap((name) => getComparisonRequestMeasures(name)),
     );
+  }
+
+  $: sort = getSort(
+    $sortedAscending,
+    $sortType,
+    activeMeasureNames[0],
+    dimensionName,
+    !!comparisonTimeRange,
+    $sortMeasure,
+  );
+
+  $: where = sanitiseExpression(
+    mergeDimensionAndMeasureFilters(filterSet, dimensionThresholdFilters),
+    undefined,
+  );
 
   $: sortedQuery = createQueryServiceMetricsViewAggregation(
     instanceId,
@@ -122,17 +138,8 @@
       measures,
       timeRange,
       comparisonTimeRange,
-      sort: getSort(
-        $sortedAscending,
-        $sortType,
-        activeMeasureName,
-        dimensionName,
-        !!comparisonTimeRange,
-      ),
-      where: sanitiseExpression(
-        mergeDimensionAndMeasureFilters(filterSet, dimensionThresholdFilters),
-        undefined,
-      ),
+      sort,
+      where,
       limit: queryLimit.toString(),
       offset: "0",
     },
@@ -148,6 +155,8 @@
   $: areAllTableRowsSelected = tableRows.every((row) =>
     $selectedDimensionValueNames.includes(row[dimensionName] as string),
   );
+
+  $: firstMeasure = $getMeasureByName($leaderboardMeasureNames[0]);
 
   function onSelectItem(event) {
     const label = tableRows[event.detail.index][dimensionName] as string;
@@ -205,9 +214,10 @@
         {areAllTableRowsSelected}
         isRowsEmpty={!tableRows.length}
         isFetching={$sortedQuery?.isFetching}
+        {comparisonTimeRange}
+        {hideStartPivotButton}
         bind:searchText={$dimensionSearchText}
         onToggleSearchItems={toggleAllSearchItems}
-        {hideStartPivotButton}
       />
     </div>
 
@@ -218,6 +228,7 @@
           isFetching={$sortedQuery?.isFetching}
           {dimensionName}
           {columns}
+          {firstMeasure}
           selectedValues={$selectedDimensionValueNames}
           rows={tableRows}
         />
