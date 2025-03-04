@@ -60,7 +60,8 @@ test.describe("Metrics editor", () => {
   });
 
   test("Multiple measure formats resolved gracefully", async ({ page }) => {
-    await gotoNavEntry(page, AD_BIDS_METRICS_PATH);
+    // Using the AD_BIDS_METRICS_PATH variable is causing the test to fail in CI
+    await gotoNavEntry(page, "/metrics/AdBids_model_metrics.yaml");
 
     const errorText =
       'cannot set both "format_preset" and "format_d3" for a measure';
