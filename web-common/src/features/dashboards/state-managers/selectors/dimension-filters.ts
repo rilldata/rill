@@ -1,3 +1,5 @@
+import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
+import { useDimensionSearch } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimensionFilterValues";
 import { getDimensionDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
 import { filterItemsSortFunction } from "@rilldata/web-common/features/dashboards/state-managers/selectors/filters";
 import {
@@ -11,6 +13,7 @@ import type {
   V1Expression,
 } from "@rilldata/web-common/runtime-client";
 import { V1Operation } from "@rilldata/web-common/runtime-client";
+import { readable } from "svelte/store";
 import type { AtLeast } from "../types";
 import type { DashboardDataSources } from "./types";
 
@@ -37,6 +40,65 @@ export const selectedDimensionValues = (
     // it in a set dedupes the values.
     return [...new Set(getValuesInExpression(dimExpr) as string[])];
   };
+};
+
+export const selectedDimensionValuesV2 = (
+  instanceId: string,
+  metricsViewNames: string[],
+  whereFilter: V1Expression | undefined,
+  dimensionName: string,
+  timeStart?: string,
+  timeEnd?: string,
+): CompoundQueryResult<string[]> => {
+  // if it is a complex filter unsupported by UI then no values are selected
+  if (!whereFilter || isExpressionUnsupported(whereFilter))
+    return readable({
+      isFetching: false,
+      error: undefined,
+      data: [],
+    });
+
+  const dimExpr = whereFilter.cond?.exprs?.find((e) =>
+    matchExpressionByName(e, dimensionName),
+  );
+  if (!dimExpr?.cond?.op)
+    return readable({
+      isFetching: false,
+      error: undefined,
+      data: [],
+    });
+
+  if (
+    dimExpr.cond.op === V1Operation.OPERATION_IN ||
+    dimExpr.cond.op === V1Operation.OPERATION_NIN
+  ) {
+    return readable({
+      isFetching: false,
+      error: undefined,
+      data: [...new Set(getValuesInExpression(dimExpr) as string[])],
+    });
+  }
+
+  if (
+    dimExpr.cond.op === V1Operation.OPERATION_LIKE ||
+    dimExpr.cond.op === V1Operation.OPERATION_NLIKE
+  ) {
+    return useDimensionSearch(
+      instanceId,
+      metricsViewNames,
+      dimensionName,
+      (dimExpr.cond?.exprs?.[1]?.val as string) ?? "",
+      timeStart,
+      timeEnd,
+      true,
+    );
+  }
+
+  return readable({
+    isFetching: false,
+    error: undefined,
+    data: [],
+  });
 };
 
 export const atLeastOneSelection = (

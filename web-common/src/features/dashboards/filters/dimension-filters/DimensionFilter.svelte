@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button } from "@rilldata/web-common/components/button";
+  import { Button, IconButton } from "@rilldata/web-common/components/button";
   import { Chip } from "@rilldata/web-common/components/chip";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
@@ -7,10 +7,12 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
   import { Search } from "@rilldata/web-common/components/search";
+  import { Tag } from "@rilldata/web-common/components/tag";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { XIcon } from "lucide-svelte";
   import { fly } from "svelte/transition";
   import {
     useBulkSearchMatchedCount,
@@ -38,8 +40,10 @@
   export let onToggleFilterMode: () => void;
 
   let open = openOnMount && !selectedValues.length && !searchText;
-  let curSearchText = isMatchList ? selectedValues.join(",") : "";
   $: sanitisedSearchText = searchText?.replace(/^%/, "").replace(/%$/, "");
+  let curSearchText = isMatchList
+    ? selectedValues.join(",")
+    : (sanitisedSearchText ?? "");
 
   $: ({ instanceId } = $runtime);
 
@@ -48,13 +52,17 @@
     Search,
     Bulk,
   }
-  let mode: SearchMode = isMatchList ? SearchMode.Bulk : SearchMode.Select;
+  let mode: SearchMode = isMatchList
+    ? SearchMode.Bulk
+    : searchText?.length
+      ? SearchMode.Search
+      : SearchMode.Select;
 
   function updateBasedOnMatchList(isMatchList: boolean | undefined) {
     if (isMatchList) {
       mode = SearchMode.Bulk;
       curSearchText = selectedValues.join(",");
-    } else {
+    } else if (mode === SearchMode.Bulk) {
       mode = SearchMode.Select;
       curSearchText = "";
     }
@@ -144,7 +152,7 @@
 
   function onApply() {
     if (mode === SearchMode.Bulk) {
-      onBulkSelect(dataFromBulk ?? []);
+      onBulkSelect(searchedBulkValues);
       isMatchList = true;
       open = false;
     } else {
@@ -236,13 +244,27 @@
       {#if showExtraInfo}
         <div class="flex flex-row items-center justify-between pt-3">
           {#if mode === SearchMode.Bulk}
-            <Chip removable on:remove={() => (mode = SearchMode.Select)}>
-              <svelte:fragment slot="body">Match list</svelte:fragment>
-            </Chip>
+            <Tag noSpan>
+              <span>Match list</span>
+              <IconButton
+                disableHover
+                size={12}
+                on:click={() => (mode = SearchMode.Select)}
+              >
+                <XIcon size="12px" class="text-gray-500 cursor-pointer" />
+              </IconButton>
+            </Tag>
           {:else if mode === SearchMode.Search}
-            <Chip removable on:remove={() => (mode = SearchMode.Select)}>
-              <svelte:fragment slot="body">Search</svelte:fragment>
-            </Chip>
+            <Tag noSpan>
+              <span>Search</span>
+              <IconButton
+                disableHover
+                size={12}
+                on:click={() => (mode = SearchMode.Select)}
+              >
+                <XIcon size="12px" class="text-gray-500 cursor-pointer" />
+              </IconButton>
+            </Tag>
           {:else if curSearchText.length}
             <Button
               type="subtle"

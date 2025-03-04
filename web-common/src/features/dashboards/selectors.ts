@@ -15,7 +15,6 @@ import {
   type V1GetResourceResponse,
   type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
-  V1Operation,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import {
@@ -137,11 +136,8 @@ export function getFiltersForOtherDimensions(
   whereFilter: V1Expression,
   dimName: string,
 ) {
-  const exprIdx = whereFilter?.cond?.exprs?.findIndex(
-    (e) =>
-      matchExpressionByName(e, dimName) &&
-      (e.cond?.op === V1Operation.OPERATION_IN ||
-        e.cond?.op === V1Operation.OPERATION_NIN),
+  const exprIdx = whereFilter?.cond?.exprs?.findIndex((e) =>
+    matchExpressionByName(e, dimName),
   );
   if (exprIdx === undefined || exprIdx === -1) return whereFilter;
 

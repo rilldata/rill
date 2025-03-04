@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { selectedDimensionValuesV2 } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
+
   /**
    * DimensionDisplay.svelte
    * -------------------------
@@ -57,6 +59,7 @@
         deselectItemsInFilter,
       },
     },
+    dashboardStore,
   } = getStateManagers();
 
   $: ({ name: dimensionName = "" } = dimension);
@@ -218,7 +221,14 @@
           isFetching={$sortedQuery?.isFetching}
           {dimensionName}
           {columns}
-          selectedValues={$selectedDimensionValueNames}
+          selectedValues={selectedDimensionValuesV2(
+            $runtime.instanceId,
+            [metricsViewName],
+            $dashboardStore.whereFilter,
+            dimensionName,
+            timeRange.start,
+            timeRange.end,
+          )}
           rows={tableRows}
         />
       </div>

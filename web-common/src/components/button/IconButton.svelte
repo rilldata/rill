@@ -13,12 +13,15 @@
   export let active = false;
   export let disableTooltip = false;
   export let disableHover = false;
+  export let size: number | undefined = undefined;
 
   export let tooltipDistance = 8;
   export let tooltipLocation: Location = "bottom";
   export let tooltipAlignment: Alignment = "middle";
   export let marginClasses = "";
   export let ariaLabel = "";
+
+  $: buttonSize = size ? size : compact ? 20 : 24;
 </script>
 
 <Tooltip
@@ -32,16 +35,17 @@
     aria-label={ariaLabel}
     class:cursor-auto={disabled}
     class:rounded
-    class="{marginClasses} grid place-items-center
-{active ? 'bg-gray-100' : ''}
-{disabled ? 'text-gray-400' : 'text-gray-800'}
+    class="{marginClasses} grid place-items-center {disabled
+      ? 'text-gray-400'
+      : 'text-gray-800'}
 {disableHover || disabled
       ? ''
       : bgDark
         ? 'hover:bg-gray-600'
         : 'hover:bg-gray-50'}"
-    style:width="{compact ? 20 : 24}px"
-    style:height="{compact ? 20 : 24}px"
+    class:bg-gray-100={active}
+    style:width="{buttonSize}px"
+    style:height="{buttonSize}px"
     style:font-size="18px"
   >
     <slot />

@@ -40,7 +40,7 @@
 
   $: atLeastOneSelected = !!selectedIndex?.length;
 
-  const getCellProps = (row: VirtualItem) => {
+  const getCellProps = (row: VirtualItem, selectedIndex: number[]) => {
     const value = rows[row.index]?.[column.name];
     return {
       value,
@@ -78,7 +78,7 @@
     on:resize={handleResize}
   >
     <div class="flex items-center">
-      <span class={"px-1 " + $sortedByDimensionValue ? "font-bold" : ""}
+      <span class:font-bold={"px-1 " + $sortedByDimensionValue}
         >{column?.label || column?.name}</span
       >
       {#if $sortedByDimensionValue}
@@ -112,7 +112,7 @@
         {atLeastOneSelected}
         {excludeMode}
         {rowActive}
-        {...getCellProps(row)}
+        {...getCellProps(row, selectedIndex)}
         colSelected={$sortedByDimensionValue}
         on:inspect
         on:select-item

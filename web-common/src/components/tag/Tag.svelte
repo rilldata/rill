@@ -15,6 +15,7 @@
   export let color: Color = "gray";
   export let height = 21;
   export let text: string = "";
+  export let noSpan = false;
 
   let className: string | undefined = undefined;
 
@@ -52,11 +53,15 @@
     color,
   )} {className}"
 >
-  <span class="text-xs font-normal">
-    {#if text !== ""}
-      {text}
-    {:else}
-      <slot />
-    {/if}
-  </span>
+  {#if noSpan}
+    <slot />
+  {:else}
+    <span class="text-xs font-normal">
+      {#if text !== ""}
+        {text}
+      {:else}
+        <slot />
+      {/if}
+    </span>
+  {/if}
 </div>
