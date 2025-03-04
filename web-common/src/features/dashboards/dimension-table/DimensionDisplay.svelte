@@ -218,7 +218,6 @@
         {areAllTableRowsSelected}
         isRowsEmpty={!tableRows.length}
         isFetching={$sortedQuery?.isFetching}
-        {comparisonTimeRange}
         {hideStartPivotButton}
         bind:searchText={$dimensionSearchText}
         onToggleSearchItems={toggleAllSearchItems}
