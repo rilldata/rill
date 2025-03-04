@@ -303,6 +303,62 @@ tests:
       - sum: 0
         sum_prev: 1
         time__day: "2024-01-04T00:00:00Z"
+  - name: null_filling_no_overlap_results_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics
+      dimensions:
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: sum
+      time_range:
+        end: 2024-01-15T00:00:00Z
+        start: 2024-01-10T00:00:00Z
+      sort:
+        - name: time__day
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - sum: 0
+        time__day: "2024-01-10T00:00:00Z"
+      - sum: 0
+        time__day: "2024-01-11T00:00:00Z"
+      - sum: 0
+        time__day: "2024-01-12T00:00:00Z"
+      - sum: 0
+        time__day: "2024-01-13T00:00:00Z"
+      - sum: 0
+        time__day: "2024-01-14T00:00:00Z"
+  - name: null_filling_no_overlap_cross_no_results_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics
+      dimensions:
+        - name: country
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: sum
+      time_range:
+        end: 2024-01-15T00:00:00Z
+        start: 2024-01-10T00:00:00Z
+      sort:
+        - name: time__day
+      spine:
+        time:
+          start:
+          end:
+          grain:
   - name: null_filling_coalesce_adv_measure_duckdb
     resolver: metrics
     properties:
