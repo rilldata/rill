@@ -13,6 +13,7 @@ import {
   type V1MetricsViewAggregationDimension,
   type V1MetricsViewAggregationMeasure,
   type V1MetricsViewAggregationResponse,
+  type V1MetricsViewAggregationResponseDataItem,
   type V1MetricsViewAggregationSort,
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
@@ -23,7 +24,11 @@ export function createChartDataQuery(
   ctx: StateManagers,
   config: ChartConfig & ComponentFilterProperties,
   timeAndFilterStore: Readable<TimeAndFilterStore>,
-): CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> {
+): Readable<{
+  isFetching: boolean;
+  error: HTTPError | null;
+  data: V1MetricsViewAggregationResponseDataItem[] | undefined;
+}> {
   let measures: V1MetricsViewAggregationMeasure[] = [];
   let dimensions: V1MetricsViewAggregationDimension[] = [];
 
@@ -32,7 +37,7 @@ export function createChartDataQuery(
   }
 
   let sort: V1MetricsViewAggregationSort | undefined;
-  let topN: number | undefined;
+  let limit: number | undefined;
   let hasColorDimension = false;
 
   return derived(
@@ -41,7 +46,7 @@ export function createChartDataQuery(
       const { timeRange, where, timeGrain } = $timeAndFilterStore;
 
       if (config.x?.type === "nominal" && config.x?.field) {
-        topN = config.x.topN;
+        limit = config.x.limit;
         sort = vegaSortToAggregationSort(config.x?.sort, config);
         dimensions = [{ name: config.x?.field }];
       } else if (config.x?.type === "temporal" && timeGrain) {
@@ -64,7 +69,7 @@ export function createChartDataQuery(
         | CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> =
         readable(null);
 
-      if (topN && hasColorDimension) {
+      if (limit && hasColorDimension) {
         topNQuery = createQueryServiceMetricsViewAggregation(
           runtime.instanceId,
           config.metrics_view,
@@ -74,7 +79,7 @@ export function createChartDataQuery(
             sort: sort ? [sort] : undefined,
             where,
             timeRange,
-            limit: topN.toString(),
+            limit: limit.toString(),
           },
           {
             query: queryOptions,
@@ -102,10 +107,11 @@ export function createChartDataQuery(
             dimensionName,
             topValues,
           );
+
           combinedWhere = mergeFilters(where, filterForTopValues);
         }
 
-        return createQueryServiceMetricsViewAggregation(
+        const dataQuery = createQueryServiceMetricsViewAggregation(
           runtime.instanceId,
           config.metrics_view,
           {
@@ -114,13 +120,20 @@ export function createChartDataQuery(
             sort: sort ? [sort] : undefined,
             where: combinedWhere,
             timeRange,
-            limit: "5000",
-            offset: "0",
+            limit: hasColorDimension || !limit ? "5000" : limit.toString(),
           },
           {
             query: queryOptions,
           },
-        ).subscribe(topNSet);
+        );
+
+        return derived(dataQuery, ($dataQuery) => {
+          return {
+            isFetching: $dataQuery.isFetching,
+            error: $dataQuery.error,
+            data: $dataQuery?.data?.data,
+          };
+        }).subscribe(topNSet);
       }).subscribe(set);
     },
   );

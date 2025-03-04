@@ -84,7 +84,7 @@ export function getChartData(
         >,
       );
       return {
-        data: chartData?.data?.data || [],
+        data: chartData.data || [],
         isFetching: chartData.isFetching,
         error: chartData.error,
         fields: fieldSpecMap,
