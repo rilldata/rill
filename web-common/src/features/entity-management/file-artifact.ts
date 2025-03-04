@@ -147,6 +147,7 @@ export class FileArtifact {
 
     const remoteContentHasChanged = currentRemoteContent !== fetchedContent;
     const isSaveConfirmation = editorContent === fetchedContent;
+    const fileUntouched = !get(this.hasUnsavedChanges);
 
     this.saveState.resolve();
 
@@ -166,7 +167,7 @@ export class FileArtifact {
 
       if (inferred) this.inferredResourceKind.set(inferred);
 
-      if (editorContent === null || !get(this.hasUnsavedChanges)) {
+      if (editorContent === null || fileUntouched) {
         this.updateEditorContent(fetchedContent, false, false, true);
       } else if (!isSaveConfirmation) {
         // This is the secondary sequence wherein a file is saved in an external editor

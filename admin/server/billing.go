@@ -39,12 +39,13 @@ func (s *Server) GetBillingSubscription(ctx context.Context, req *adminv1.GetBil
 		return &adminv1.GetBillingSubscriptionResponse{Organization: s.organizationToDTO(org, true)}, nil
 	}
 
-	sub, err := s.admin.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
+	sub, org, err := s.getSubscriptionAndUpdateOrg(ctx, org)
 	if err != nil {
-		if errors.Is(err, billing.ErrNotFound) {
-			return &adminv1.GetBillingSubscriptionResponse{Organization: s.organizationToDTO(org, true)}, nil
-		}
 		return nil, err
+	}
+
+	if sub == nil {
+		return &adminv1.GetBillingSubscriptionResponse{Organization: s.organizationToDTO(org, true)}, nil
 	}
 
 	return &adminv1.GetBillingSubscriptionResponse{
@@ -145,10 +146,12 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		return nil, status.Errorf(codes.FailedPrecondition, "cannot assign a private plan %q", plan.Name)
 	}
 
-	// check for validation errors
-	err = s.planChangeValidationChecks(ctx, org, forceAccess)
-	if err != nil {
-		return nil, err
+	// check for validation errors if not forced
+	if !forceAccess {
+		err = s.planChangeValidationChecks(ctx, org)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if planDowngrade(plan, org) {
@@ -211,6 +214,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 			s.logger.Named("billing").Info("upgraded to team plan",
 				zap.String("org_id", org.ID),
 				zap.String("org_name", org.Name),
+				zap.String("user_email", org.BillingEmail),
 				zap.String("plan_id", sub.Plan.ID),
 				zap.String("plan_name", sub.Plan.Name),
 			)
@@ -351,10 +355,12 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 		return nil, status.Errorf(codes.FailedPrecondition, "cannot renew to a private plan %q", plan.Name)
 	}
 
-	// check for validation errors
-	err = s.planChangeValidationChecks(ctx, org, forceAccess)
-	if err != nil {
-		return nil, err
+	if !forceAccess {
+		// check for validation errors
+		err = s.planChangeValidationChecks(ctx, org)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	sub, err := s.admin.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
@@ -400,6 +406,8 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 		QuotaOutstandingInvites:             valOrDefault(sub.Plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites),
 		QuotaStorageLimitBytesPerDeployment: valOrDefault(sub.Plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
 		BillingCustomerID:                   org.BillingCustomerID,
+		BillingPlanName:                     &sub.Plan.Name,
+		BillingPlanDisplayName:              &sub.Plan.DisplayName,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
 		CreatedByUserID:                     org.CreatedByUserID,
@@ -427,6 +435,14 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 			PlanName:         sub.Plan.DisplayName,
 			BillingStartDate: sub.CurrentBillingCycleEndDate,
 		})
+
+		s.logger.Named("billing").Info("upgraded to team plan",
+			zap.String("org_id", org.ID),
+			zap.String("org_name", org.Name),
+			zap.String("user_email", org.BillingEmail),
+			zap.String("plan_id", sub.Plan.ID),
+			zap.String("plan_name", sub.Plan.Name),
+		)
 	} else {
 		err = s.admin.Email.SendSubscriptionRenewed(&email.SubscriptionRenewed{
 			ToEmail:  org.BillingEmail,
@@ -518,6 +534,8 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 		BillingCustomerID:                   valOrDefault(req.BillingCustomerId, org.BillingCustomerID),
 		PaymentCustomerID:                   valOrDefault(req.PaymentCustomerId, org.PaymentCustomerID),
 		BillingEmail:                        org.BillingEmail,
+		BillingPlanName:                     org.BillingPlanName,
+		BillingPlanDisplayName:              org.BillingPlanDisplayName,
 		CreatedByUserID:                     org.CreatedByUserID,
 	}
 
@@ -890,6 +908,8 @@ func (s *Server) updateQuotasAndHandleBillingIssues(ctx context.Context, org *da
 		QuotaOutstandingInvites:             valOrDefault(sub.Plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites),
 		QuotaStorageLimitBytesPerDeployment: valOrDefault(sub.Plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
 		BillingCustomerID:                   org.BillingCustomerID,
+		BillingPlanName:                     &sub.Plan.Name,
+		BillingPlanDisplayName:              &sub.Plan.DisplayName,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
 		CreatedByUserID:                     org.CreatedByUserID,
@@ -913,7 +933,7 @@ func (s *Server) updateQuotasAndHandleBillingIssues(ctx context.Context, org *da
 	return org, nil
 }
 
-func (s *Server) planChangeValidationChecks(ctx context.Context, org *database.Organization, forceAccess bool) error {
+func (s *Server) planChangeValidationChecks(ctx context.Context, org *database.Organization) error {
 	// not a trial plan, check for a payment method and a valid billing address
 	var validationErrs []string
 	pc, err := s.admin.PaymentProvider.FindCustomer(ctx, org.PaymentCustomerID)
@@ -938,11 +958,57 @@ func (s *Server) planChangeValidationChecks(ctx context.Context, org *database.O
 		validationErrs = append(validationErrs, "a previous payment is due")
 	}
 
-	if len(validationErrs) > 0 && !forceAccess {
+	if len(validationErrs) > 0 {
 		return status.Errorf(codes.FailedPrecondition, "please fix following by visiting billing portal: %s", strings.Join(validationErrs, ", "))
 	}
 
 	return nil
+}
+
+func (s *Server) getSubscriptionAndUpdateOrg(ctx context.Context, org *database.Organization) (*billing.Subscription, *database.Organization, error) {
+	sub, err := s.admin.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
+	if err != nil && !errors.Is(err, billing.ErrNotFound) {
+		return nil, nil, err
+	}
+
+	var planDisplayName string
+	var planName string
+	if sub == nil {
+		planDisplayName = ""
+		planName = ""
+	} else {
+		planDisplayName = sub.Plan.DisplayName
+		planName = sub.Plan.Name
+	}
+
+	// update the cached plan
+	if org.BillingPlanName == nil || *org.BillingPlanName != planName {
+		org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
+			Name:                                org.Name,
+			DisplayName:                         org.DisplayName,
+			Description:                         org.Description,
+			LogoAssetID:                         org.LogoAssetID,
+			FaviconAssetID:                      org.FaviconAssetID,
+			CustomDomain:                        org.CustomDomain,
+			QuotaProjects:                       org.QuotaProjects,
+			QuotaDeployments:                    org.QuotaDeployments,
+			QuotaSlotsTotal:                     org.QuotaSlotsTotal,
+			QuotaSlotsPerDeployment:             org.QuotaSlotsPerDeployment,
+			QuotaOutstandingInvites:             org.QuotaOutstandingInvites,
+			QuotaStorageLimitBytesPerDeployment: org.QuotaStorageLimitBytesPerDeployment,
+			BillingCustomerID:                   org.BillingCustomerID,
+			PaymentCustomerID:                   org.PaymentCustomerID,
+			BillingEmail:                        org.BillingEmail,
+			BillingPlanName:                     &planName,
+			BillingPlanDisplayName:              &planDisplayName,
+			CreatedByUserID:                     org.CreatedByUserID,
+		})
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
+	return sub, org, nil
 }
 
 func subscriptionToDTO(sub *billing.Subscription) *adminv1.Subscription {

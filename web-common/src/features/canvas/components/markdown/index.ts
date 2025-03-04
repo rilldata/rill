@@ -55,8 +55,21 @@ export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
   }
 
   newComponentSpec(): MarkdownSpec {
+    const defaultContent = `# H1 Markdown Text
+## H2 Markdown text
+### H3 Markdown text
+#### H4 markdown text
+Normal text paragraph with **bold** and _italics_
+
+| Column 1 | Column 2 | Column 3 |
+|----------|----------|----------|
+| Data 1   | Data 2   | Data 3   |
+| Data 4   | Data 5   | Data 6   |
+
+Start writing in **Markdown** and see your text beautifully formatted! 🚀`;
+
     return {
-      content: "Markdown Text",
+      content: defaultContent,
       alignment: defaultAlignment,
     };
   }

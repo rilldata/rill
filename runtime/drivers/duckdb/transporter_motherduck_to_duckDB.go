@@ -100,7 +100,8 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 	defer func() {
 		_ = release()
 	}()
-	return db.CreateTableAsSelect(ctx, sinkCfg.Table, userQuery, &rduckdb.CreateTableOptions{
+	_, err = db.CreateTableAsSelect(ctx, sinkCfg.Table, userQuery, &rduckdb.CreateTableOptions{
 		BeforeCreateFn: beforeCreateFn,
 	})
+	return err
 }

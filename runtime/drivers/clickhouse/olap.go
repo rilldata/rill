@@ -57,7 +57,7 @@ func (c *connection) WithConnection(ctx context.Context, priority int, longRunni
 func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 	// Log query if enabled (usually disabled)
 	if c.config.LogQueries {
-		c.logger.Info("clickhouse query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args))
+		c.logger.Info("clickhouse query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
 	}
 
 	// We use the meta conn for dry run queries
@@ -206,53 +206,71 @@ func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName
 }
 
 // CreateTableAsSelect implements drivers.OLAPStore.
-func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, opts *drivers.CreateTableOptions) error {
+func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, opts *drivers.CreateTableOptions) (*drivers.TableWriteMetrics, error) {
 	outputProps := &ModelOutputProperties{}
 	if err := mapstructure.WeakDecode(opts.TableOpts, outputProps); err != nil {
-		return fmt.Errorf("failed to parse output properties: %w", err)
+		return nil, fmt.Errorf("failed to parse output properties: %w", err)
 	}
 	var onClusterClause string
 	if c.config.Cluster != "" {
 		onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
 	}
 
+	t := time.Now()
 	if outputProps.Typ == "VIEW" {
-		return c.Exec(ctx, &drivers.Statement{
+		err := c.Exec(ctx, &drivers.Statement{
 			Query:    fmt.Sprintf("CREATE OR REPLACE VIEW %s %s AS %s", safeSQLName(name), onClusterClause, sql),
 			Priority: 100,
 		})
+		if err != nil {
+			return nil, err
+		}
+		return &drivers.TableWriteMetrics{Duration: time.Since(t)}, nil
 	} else if outputProps.Typ == "DICTIONARY" {
-		return c.createDictionary(ctx, name, sql, outputProps)
+		err := c.createDictionary(ctx, name, sql, outputProps)
+		if err != nil {
+			return nil, err
+		}
+		return &drivers.TableWriteMetrics{Duration: time.Since(t)}, nil
 	}
 	// on replicated databases `create table t as select * from ...` is prohibited
 	// so we need to create a table first and then insert data into it
 	if err := c.createTable(ctx, name, sql, outputProps); err != nil {
-		return err
+		return nil, err
 	}
 	// insert into table
-	return c.Exec(ctx, &drivers.Statement{
+	err := c.Exec(ctx, &drivers.Statement{
 		Query:    fmt.Sprintf("INSERT INTO %s %s", safeSQLName(name), sql),
 		Priority: 100,
 	})
+	if err != nil {
+		return nil, err
+	}
+	return &drivers.TableWriteMetrics{Duration: time.Since(t)}, nil
 }
 
 // InsertTableAsSelect implements drivers.OLAPStore.
-func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, opts *drivers.InsertTableOptions) error {
+func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, opts *drivers.InsertTableOptions) (*drivers.TableWriteMetrics, error) {
 	if !opts.InPlace {
-		return fmt.Errorf("clickhouse: inserts does not support inPlace=false")
+		return nil, fmt.Errorf("clickhouse: inserts does not support inPlace=false")
 	}
 	if opts.Strategy == drivers.IncrementalStrategyAppend {
-		return c.Exec(ctx, &drivers.Statement{
+		t := time.Now()
+		err := c.Exec(ctx, &drivers.Statement{
 			Query:       fmt.Sprintf("INSERT INTO %s %s", safeSQLName(name), sql),
 			Priority:    1,
 			LongRunning: true,
 		})
+		if err != nil {
+			return nil, err
+		}
+		return &drivers.TableWriteMetrics{Duration: time.Since(t)}, nil
 	}
 
 	if opts.Strategy == drivers.IncrementalStrategyPartitionOverwrite {
 		_, onCluster, err := informationSchema{c: c}.entityType(ctx, c.config.Database, name)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		onClusterClause := ""
 		if onCluster {
@@ -261,7 +279,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		// Get the engine info of the given table
 		engine, err := c.getTableEngine(ctx, name)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		// Distributed table cannot be altered directly, so we need to alter the local table
 		if engine == "Distributed" {
@@ -282,7 +300,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 				Priority: 1,
 			})
 			if err != nil {
-				c.logger.Warn("clickhouse: failed to drop temp table", zap.String("name", tempName), zap.Error(err))
+				c.logger.Warn("clickhouse: failed to drop temp table", zap.String("name", tempName), zap.Error(err), observability.ZapCtx(ctx))
 			}
 		}()
 		err = c.Exec(ctx, &drivers.Statement{
@@ -290,21 +308,23 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 			Priority: 1,
 		})
 		if err != nil {
-			return err
+			return nil, err
 		}
 		// insert into temp table
+		t := time.Now()
 		err = c.Exec(ctx, &drivers.Statement{
 			Query:       fmt.Sprintf("INSERT INTO %s %s", safeSQLName(tempName), sql),
 			Priority:    1,
 			LongRunning: true,
 		})
 		if err != nil {
-			return err
+			return nil, err
 		}
+		metrics := &drivers.TableWriteMetrics{Duration: time.Since(t)}
 		// list partitions from the temp table
 		partitions, err := c.getTablePartitions(ctx, tempName)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		// iterate over partitions and replace them in the main table
 		for _, part := range partitions {
@@ -315,16 +335,16 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 				Priority: 1,
 			})
 			if err != nil {
-				return err
+				return nil, err
 			}
 		}
-		return nil
+		return metrics, nil
 	}
 
 	if opts.Strategy == drivers.IncrementalStrategyMerge {
 		_, onCluster, err := informationSchema{c: c}.entityType(ctx, c.config.Database, name)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		onClusterClause := ""
 		if onCluster {
@@ -333,20 +353,25 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		// get the engine info of the given table
 		engine, err := c.getTableEngine(ctx, name)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if !strings.Contains(engine, "ReplacingMergeTree") {
-			return fmt.Errorf("clickhouse: merge strategy requires ReplacingMergeTree engine")
+			return nil, fmt.Errorf("clickhouse: merge strategy requires ReplacingMergeTree engine")
 		}
 
+		t := time.Now()
 		// insert into table using the merge strategy
-		return c.Exec(ctx, &drivers.Statement{
+		err = c.Exec(ctx, &drivers.Statement{
 			Query:       fmt.Sprintf("INSERT INTO %s %s %s", safeSQLName(name), onClusterClause, sql),
 			Priority:    1,
 			LongRunning: true,
 		})
+		if err != nil {
+			return nil, err
+		}
+		return &drivers.TableWriteMetrics{Duration: time.Since(t)}, nil
 	}
-	return fmt.Errorf("incremental insert strategy %q not supported", opts.Strategy)
+	return nil, fmt.Errorf("incremental insert strategy %q not supported", opts.Strategy)
 }
 
 // DropTable implements drivers.OLAPStore.
@@ -517,7 +542,7 @@ func (c *connection) renameView(ctx context.Context, oldName, newName, onCluster
 		Priority: 100,
 	})
 	if err != nil {
-		c.logger.Error("clickhouse: failed to drop old view", zap.String("name", oldName), zap.Error(err))
+		c.logger.Error("clickhouse: failed to drop old view", zap.String("name", oldName), zap.Error(err), observability.ZapCtx(ctx))
 	}
 	return nil
 }

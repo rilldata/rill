@@ -53,10 +53,10 @@ message DashboardState {
     LEADERBOARD_SORT_TYPE_DELTA_ABSOLUTE = 5;
   }
 
-  enum PivotRowJoinType {
-    PIVOT_ROW_JOIN_TYPE_UNSPECIFIED = 0;
-    PIVOT_ROW_JOIN_TYPE_FLAT = 1;
-    PIVOT_ROW_JOIN_TYPE_NEST = 2;
+  enum PivotTableMode {
+    PIVOT_TABLE_MODE_UNSPECIFIED = 0;
+    PIVOT_TABLE_MODE_FLAT = 1;
+    PIVOT_TABLE_MODE_NEST = 2;
   }
 
   enum ActivePage {
@@ -136,7 +136,7 @@ message DashboardState {
   repeated PivotColumnSort pivot_sort = 29;
   // Pagination data
   optional int32 pivot_column_page = 30;
-  optional PivotRowJoinType pivot_row_join_type = 31;
+  optional PivotTableMode pivot_table_mode = 31;
   // Enable comparison for pivot
   optional bool pivot_enable_comparison = 34;
 

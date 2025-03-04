@@ -219,9 +219,9 @@ export class DashboardState extends Message<DashboardState> {
   pivotColumnPage?: number;
 
   /**
-   * @generated from field: optional rill.ui.v1.DashboardState.PivotRowJoinType pivot_row_join_type = 31;
+   * @generated from field: optional rill.ui.v1.DashboardState.PivotTableMode pivot_table_mode = 31;
    */
-  pivotRowJoinType?: DashboardState_PivotRowJoinType;
+  pivotTableMode?: DashboardState_PivotTableMode;
 
   /**
    * Enable comparison for pivot
@@ -284,7 +284,7 @@ export class DashboardState extends Message<DashboardState> {
     { no: 28, name: "pivot_expanded", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 8 /* ScalarType.BOOL */} },
     { no: 29, name: "pivot_sort", kind: "message", T: PivotColumnSort, repeated: true },
     { no: 30, name: "pivot_column_page", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
-    { no: 31, name: "pivot_row_join_type", kind: "enum", T: proto3.getEnumType(DashboardState_PivotRowJoinType), opt: true },
+    { no: 31, name: "pivot_table_mode", kind: "enum", T: proto3.getEnumType(DashboardState_PivotTableMode), opt: true },
     { no: 34, name: "pivot_enable_comparison", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 35, name: "pivot_row_all_dimensions", kind: "message", T: PivotElement, repeated: true },
     { no: 36, name: "pivot_column_all_dimensions", kind: "message", T: PivotElement, repeated: true },
@@ -438,29 +438,29 @@ proto3.util.setEnumType(DashboardState_LeaderboardSortType, "rill.ui.v1.Dashboar
 ]);
 
 /**
- * @generated from enum rill.ui.v1.DashboardState.PivotRowJoinType
+ * @generated from enum rill.ui.v1.DashboardState.PivotTableMode
  */
-export enum DashboardState_PivotRowJoinType {
+export enum DashboardState_PivotTableMode {
   /**
-   * @generated from enum value: PIVOT_ROW_JOIN_TYPE_UNSPECIFIED = 0;
+   * @generated from enum value: PIVOT_TABLE_MODE_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: PIVOT_ROW_JOIN_TYPE_FLAT = 1;
+   * @generated from enum value: PIVOT_TABLE_MODE_FLAT = 1;
    */
   FLAT = 1,
 
   /**
-   * @generated from enum value: PIVOT_ROW_JOIN_TYPE_NEST = 2;
+   * @generated from enum value: PIVOT_TABLE_MODE_NEST = 2;
    */
   NEST = 2,
 }
-// Retrieve enum metadata with: proto3.getEnumType(DashboardState_PivotRowJoinType)
-proto3.util.setEnumType(DashboardState_PivotRowJoinType, "rill.ui.v1.DashboardState.PivotRowJoinType", [
-  { no: 0, name: "PIVOT_ROW_JOIN_TYPE_UNSPECIFIED" },
-  { no: 1, name: "PIVOT_ROW_JOIN_TYPE_FLAT" },
-  { no: 2, name: "PIVOT_ROW_JOIN_TYPE_NEST" },
+// Retrieve enum metadata with: proto3.getEnumType(DashboardState_PivotTableMode)
+proto3.util.setEnumType(DashboardState_PivotTableMode, "rill.ui.v1.DashboardState.PivotTableMode", [
+  { no: 0, name: "PIVOT_TABLE_MODE_UNSPECIFIED" },
+  { no: 1, name: "PIVOT_TABLE_MODE_FLAT" },
+  { no: 2, name: "PIVOT_TABLE_MODE_NEST" },
 ]);
 
 /**

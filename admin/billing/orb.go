@@ -219,6 +219,7 @@ func (o *Orb) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string,
 	if err != nil {
 		return nil, err
 	}
+
 	return &Subscription{
 		ID:                           s.ID,
 		Customer:                     getBillingCustomerFromOrbCustomer(&s.Customer),
@@ -282,6 +283,7 @@ func (o *Orb) CancelSubscriptionsForCustomer(ctx context.Context, customerID str
 			cancelDate = sub.EndDate
 		}
 	}
+
 	return cancelDate, nil
 }
 
@@ -620,6 +622,9 @@ func getBillingInvoiceFromOrbInvoice(i *orb.Invoice) *Invoice {
 	}
 }
 
+// Mapping of externalID/planName to a type.
+// Used in deciding email body in backend.
+// Make sure to update web-admin/src/features/billing/plans/utils.ts if this is updated
 func getPlanType(externalID string) PlanType {
 	switch externalID {
 	case "free_trial":

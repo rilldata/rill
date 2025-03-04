@@ -17,7 +17,7 @@
   const stateManagers = getStateManagers();
   const {
     selectors: {
-      pivot: { measures, dimensions, columns, rows },
+      pivot: { measures, dimensions, columns, rows, isFlat },
     },
   } = stateManagers;
 
@@ -99,6 +99,7 @@
     {extraSpace}
     {chipsPerSection}
     items={timeGrainOptions}
+    tableMode={$isFlat ? "flat" : "nest"}
     otherChipCounts={[filteredDimensions.length, filteredMeasures.length]}
   />
 
@@ -115,6 +116,7 @@
     {extraSpace}
     {chipsPerSection}
     items={filteredDimensions}
+    tableMode={$isFlat ? "flat" : "nest"}
     otherChipCounts={[timeGrainOptions.length, filteredDimensions.length]}
   />
 </div>

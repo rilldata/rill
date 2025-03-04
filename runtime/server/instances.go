@@ -264,7 +264,7 @@ func (s *Server) WatchLogs(req *runtimev1.WatchLogsRequest, srv runtimev1.Runtim
 	return logBuffer.WatchLogs(srv.Context(), func(item *runtimev1.Log) {
 		err := srv.Send(&runtimev1.WatchLogsResponse{Log: item})
 		if err != nil {
-			s.logger.Info("failed to send log event", zap.Error(err))
+			s.logger.Info("failed to send log event", zap.Error(err), observability.ZapCtx(ctx))
 		}
 	}, lvl)
 }

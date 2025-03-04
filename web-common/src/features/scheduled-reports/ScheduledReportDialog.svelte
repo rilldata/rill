@@ -2,34 +2,37 @@
   import { page } from "$app/stores";
   import {
     createAdminServiceCreateReport,
-    createAdminServiceGetCurrentUser,
     createAdminServiceEditReport,
+    createAdminServiceGetCurrentUser,
   } from "@rilldata/web-admin/client";
+  import * as Dialog from "@rilldata/web-common/components/dialog-v2";
   import {
     getDashboardNameFromReport,
     getInitialValues,
+    getQueryArgsFromQuery,
+    getQueryNameFromQuery,
     type ReportValues,
   } from "@rilldata/web-common/features/scheduled-reports/utils";
-  import { defaults, superForm } from "sveltekit-superforms";
-  import { array, object, string } from "yup";
-  import { type ValidationAdapter, yup } from "sveltekit-superforms/adapters";
-  import { Button } from "../../components/button";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { defaults, superForm } from "sveltekit-superforms";
+  import { type ValidationAdapter, yup } from "sveltekit-superforms/adapters";
+  import { array, object, string } from "yup";
+  import { Button } from "../../components/button";
   import {
-    getRuntimeServiceListResourcesQueryKey,
-    type V1ReportSpec,
     getRuntimeServiceGetResourceQueryKey,
+    getRuntimeServiceListResourcesQueryKey,
+    type V1Query,
+    type V1ReportSpec,
     type V1ReportSpecAnnotations,
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
+  import { ResourceKind } from "../entity-management/resource-selectors";
   import BaseScheduledReportForm from "./BaseScheduledReportForm.svelte";
   import { convertFormValuesToCronExpression } from "./time-utils";
-  import * as Dialog from "@rilldata/web-common/components/dialog-v2";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { ResourceKind } from "../entity-management/resource-selectors";
 
   export let open: boolean;
-  export let queryArgs: any | undefined = undefined;
+  export let query: V1Query | undefined = undefined;
   export let metricsViewProto: string | undefined = undefined;
   export let exploreName: string | undefined = undefined;
   export let reportSpec: V1ReportSpec | undefined = undefined;
@@ -41,9 +44,11 @@
   const user = createAdminServiceGetCurrentUser();
 
   $: if (!exploreName) {
-    exploreName =
-      getDashboardNameFromReport(reportSpec) ?? queryArgs.metricsViewName;
+    exploreName = getDashboardNameFromReport(reportSpec) ?? "";
   }
+
+  $: queryName = query ? getQueryNameFromQuery(query) : undefined;
+  $: queryArgs = query ? getQueryArgsFromQuery(query) : undefined;
 
   $: ({ organization, project, report: reportName } = $page.params);
 
@@ -79,7 +84,7 @@
             displayName: values.title,
             refreshCron: refreshCron, // for testing: "* * * * *"
             refreshTimeZone: values.timeZone,
-            queryName: reportSpec?.queryName ?? "MetricsViewAggregation",
+            queryName: reportSpec?.queryName ?? queryName,
             queryArgsJson: JSON.stringify(
               reportSpec?.queryArgsJson
                 ? JSON.parse(reportSpec.queryArgsJson)
