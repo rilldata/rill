@@ -191,25 +191,15 @@ setup.describe("global setup", () => {
         "rill-openrtb-prog-ads",
         "--project",
         RILL_PROJECT_NAME,
-        "--github",
+        "--upload",
         "--interactive=false",
       ],
       /https?:\/\/[^\s]+/,
     );
 
-    // Navigate to the GitHub auth URL
-    // (In a fresh browser, this would typically trigger a log-in to GitHub, but we've bootstrapped the Playwright browser with an authenticated GitHub session.
-    // See the `setup-github-session` project in `playwright.config.ts` for details.)
+    // Navigate to the project URL and expect to see the successful deployment
     const url = match[0];
     await adminPage.goto(url);
-    await adminPage.waitForURL("/-/github/connect/success");
-
-    // Wait for the deployment to complete
-    // TODO: Replace this with a better check. Maybe we could modify `spawnAndMatch` to match an array of regexes.
-    await adminPage.waitForTimeout(10000);
-
-    // Expect to see the successful deployment
-    await adminPage.goto(`/${RILL_ORG_NAME}/${RILL_PROJECT_NAME}`);
     await expect(
       adminPage.getByText("Your trial expires in 30 days"),
     ).toBeVisible(); // Billing banner
