@@ -294,6 +294,34 @@ export const AD_BIDS_SORT_PIVOT_BY_IMPRESSIONS_DESC: TestDashboardMutation =
       { id: AD_BIDS_IMPRESSIONS_MEASURE, desc: true },
     ]);
 
+export const AD_BIDS_TOGGLE_PIVOT_ROW_JOIN_TYPE: TestDashboardMutation = () =>
+  metricsExplorerStore.setPivotTableMode(
+    AD_BIDS_EXPLORE_NAME,
+    "flat",
+    { dimension: [] },
+    {
+      dimension: [
+        {
+          id: AD_BIDS_DOMAIN_DIMENSION,
+          title: AD_BIDS_DOMAIN_DIMENSION,
+          type: PivotChipType.Dimension,
+        },
+        {
+          id: V1TimeGrain.TIME_GRAIN_DAY,
+          title: "day",
+          type: PivotChipType.Time,
+        },
+      ],
+      measure: [
+        {
+          id: AD_BIDS_IMPRESSIONS_MEASURE,
+          title: AD_BIDS_IMPRESSIONS_MEASURE,
+          type: PivotChipType.Measure,
+        },
+      ],
+    },
+  );
+
 export const AD_BIDS_OPEN_PUB_IMP_PIVOT: TestDashboardMutation = () =>
   metricsExplorerStore.createPivot(
     AD_BIDS_EXPLORE_NAME,

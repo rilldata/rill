@@ -419,6 +419,11 @@ function toPivotUrlParams(
     );
   }
 
+  const tableMode = exploreState.pivot?.tableMode;
+  if (shouldSetParam(preset.pivotTableMode, tableMode)) {
+    searchParams.set(ExploreStateURLParams.PivotTableMode, tableMode ?? "nest");
+  }
+
   // TODO: other fields like expanded state and pin are not supported right now
   return searchParams;
 }
