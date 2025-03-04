@@ -140,6 +140,7 @@ export function getSort(
   activeMeasureName: string,
   dimensionName: string,
   timeComparison: boolean,
+  sortMeasure: string | null,
 ) {
   return [
     {
@@ -148,8 +149,8 @@ export function getSort(
         type === SortType.DIMENSION || !activeMeasureName
           ? dimensionName
           : timeComparison
-            ? getApiSortName(activeMeasureName, type)
-            : activeMeasureName || dimensionName,
+            ? getApiSortName(sortMeasure || activeMeasureName, type)
+            : sortMeasure || activeMeasureName || dimensionName,
     },
   ];
 }
