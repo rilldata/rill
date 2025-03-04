@@ -98,11 +98,6 @@
         }}
       />
 
-      <!-- TODO: should we have another dropdown for sorting? -->
-      <div class="ui-copy-muted truncate">
-        Sort by <strong>{firstMeasure.displayName || firstMeasure.name}</strong>
-      </div>
-
       {#if Boolean(comparisonTimeRange)}
         <ContextColumnDropdown
           tooltipText="Choose context columns to display"
