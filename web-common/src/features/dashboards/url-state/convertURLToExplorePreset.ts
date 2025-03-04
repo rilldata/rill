@@ -42,7 +42,7 @@ import {
   V1Operation,
 } from "@rilldata/web-common/runtime-client";
 
-export async function convertURLToExplorePreset(
+export function convertURLToExplorePreset(
   searchParams: URLSearchParams,
   metricsView: V1MetricsViewSpec,
   explore: V1ExploreSpec,
@@ -67,7 +67,7 @@ export async function convertURLToExplorePreset(
 
   if (searchParams.has(ExploreStateURLParams.GzippedParams)) {
     searchParams = new URLSearchParams(
-      await decompressUrlParams(
+      decompressUrlParams(
         searchParams.get(ExploreStateURLParams.GzippedParams)!,
       ),
     );

@@ -117,7 +117,60 @@
 
     // Pressing back button and going back to empty url state should not restore from session store
     const backButtonUsed = type === "popstate";
-    void handleAfterNavigate(to.url, backButtonUsed);
+    const skipSessionStorage =
+      backButtonUsed && $page.url.searchParams.size === 0;
+
+    let partialExplore = partialExploreStateFromUrl;
+    let shouldUpdateUrl = false;
+    if (exploreStateFromSessionStorage && !skipSessionStorage) {
+      partialExplore = exploreStateFromSessionStorage;
+      shouldUpdateUrl = true;
+    }
+
+    const redirectUrl = new URL(to.url);
+    metricsExplorerStore.mergePartialExplorerEntity(
+      exploreName,
+      partialExplore,
+      metricsSpec,
+    );
+    if (shouldUpdateUrl) {
+      // if we added extra url params from sessionStorage then update the url
+      redirectUrl.search = getUpdatedUrlForExploreState(
+        exploreSpec,
+        timeControlsState,
+        defaultExplorePreset,
+        partialExplore,
+        $page.url,
+      );
+    }
+    // update session store when back button was pressed.
+    if (backButtonUsed) {
+      updateExploreSessionStore(
+        exploreName,
+        extraKeyPrefix,
+        $dashboardStore,
+        exploreSpec,
+        timeControlsState,
+      );
+    }
+
+    if (
+      !shouldUpdateUrl ||
+      redirectUrl.search === to.url.toString() ||
+      // redirect loop breaker
+      (prevUrl && prevUrl === redirectUrl.toString())
+    ) {
+      prevUrl = redirectUrl.toString();
+      return;
+    }
+
+    prevUrl = redirectUrl.toString();
+    // using `replaceState` directly messes up the navigation entries,
+    // `from` and `to` have the old url before being replaced in `afterNavigate` calls leading to incorrect handling.
+    void goto(redirectUrl, {
+      replaceState: true,
+      state: $page.state,
+    });
   });
 
   async function handleExploreInit(isManualUrlChange: boolean) {
@@ -168,7 +221,7 @@
       get(metricsExplorerStore).entities[exploreName],
     );
     const redirectUrl = new URL($page.url);
-    redirectUrl.search = await getUpdatedUrlForExploreState(
+    redirectUrl.search = getUpdatedUrlForExploreState(
       exploreSpec,
       timeControlsState,
       defaultExplorePreset,
@@ -197,69 +250,11 @@
     });
   }
 
-  async function handleAfterNavigate(toUrl: URL, backButtonUsed: boolean) {
-    if (!exploreSpec || !metricsSpec) return;
-    const skipSessionStorage =
-      backButtonUsed && $page.url.searchParams.size === 0;
-
-    let partialExplore = partialExploreStateFromUrl;
-    let shouldUpdateUrl = false;
-    if (exploreStateFromSessionStorage && !skipSessionStorage) {
-      partialExplore = exploreStateFromSessionStorage;
-      shouldUpdateUrl = true;
-    }
-
-    const redirectUrl = new URL(toUrl);
-    metricsExplorerStore.mergePartialExplorerEntity(
-      exploreName,
-      partialExplore,
-      metricsSpec,
-    );
-    if (shouldUpdateUrl) {
-      // if we added extra url params from sessionStorage then update the url
-      redirectUrl.search = await getUpdatedUrlForExploreState(
-        exploreSpec,
-        timeControlsState,
-        defaultExplorePreset,
-        partialExplore,
-        $page.url,
-      );
-    }
-    // update session store when back button was pressed.
-    if (backButtonUsed) {
-      updateExploreSessionStore(
-        exploreName,
-        extraKeyPrefix,
-        $dashboardStore,
-        exploreSpec,
-        timeControlsState,
-      );
-    }
-
-    if (
-      !shouldUpdateUrl ||
-      redirectUrl.search === toUrl.toString() ||
-      // redirect loop breaker
-      (prevUrl && prevUrl === redirectUrl.toString())
-    ) {
-      prevUrl = redirectUrl.toString();
-      return;
-    }
-
-    prevUrl = redirectUrl.toString();
-    // using `replaceState` directly messes up the navigation entries,
-    // `from` and `to` have the old url before being replaced in `afterNavigate` calls leading to incorrect handling.
-    return goto(redirectUrl, {
-      replaceState: true,
-      state: $page.state,
-    });
-  }
-
-  async function gotoNewState() {
+  function gotoNewState() {
     if (!exploreSpec) return;
 
     const u = new URL($page.url);
-    u.search = await convertExploreStateToURLSearchParams(
+    u.search = convertExploreStateToURLSearchParams(
       $dashboardStore,
       exploreSpec,
       timeControlsState,

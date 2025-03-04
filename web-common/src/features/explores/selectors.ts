@@ -161,7 +161,7 @@ export async function fetchMetricsViewSchema(
   return schemaResp.schema ?? {};
 }
 
-export async function getExploreStates(
+export function getExploreStates(
   exploreName: string,
   prefix: string | undefined,
   searchParams: URLSearchParams,
@@ -178,7 +178,7 @@ export async function getExploreStates(
   }
 
   const { partialExploreState: partialExploreStateFromUrl, errors } =
-    await convertURLSearchParamsToExploreState(
+    convertURLSearchParamsToExploreState(
       searchParams,
       metricsViewSpec,
       exploreSpec,

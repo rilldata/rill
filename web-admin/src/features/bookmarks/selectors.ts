@@ -168,7 +168,7 @@ async function parseBookmark(
   } as MetricsExplorerEntity;
 
   const url = new URL(get(page).url);
-  url.search = await convertExploreStateToURLSearchParams(
+  url.search = convertExploreStateToURLSearchParams(
     finalExploreState,
     exploreSpec,
     getTimeControlState(

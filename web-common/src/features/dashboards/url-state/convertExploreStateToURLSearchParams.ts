@@ -42,7 +42,7 @@ import {
  * Sometimes data is loaded from sources other than the url.
  * In that case update the URL to make sure the state matches the current url.
  */
-export async function getUpdatedUrlForExploreState(
+export function getUpdatedUrlForExploreState(
   exploreSpec: V1ExploreSpec,
   timeControlsState: TimeControlState | undefined,
   defaultExplorePreset: V1ExplorePreset,
@@ -50,7 +50,7 @@ export async function getUpdatedUrlForExploreState(
   url: URL,
 ) {
   const newUrlSearchParams = new URLSearchParams(
-    await convertExploreStateToURLSearchParams(
+    convertExploreStateToURLSearchParams(
       partialExploreState as MetricsExplorerEntity,
       exploreSpec,
       timeControlsState,
@@ -72,7 +72,7 @@ export async function getUpdatedUrlForExploreState(
   return newUrlSearchParams.toString();
 }
 
-export async function convertExploreStateToURLSearchParams(
+export function convertExploreStateToURLSearchParams(
   exploreState: MetricsExplorerEntity,
   exploreSpec: V1ExploreSpec,
   // We have quite a bit of logic in TimeControlState to validate selections and update them
@@ -147,7 +147,7 @@ export async function convertExploreStateToURLSearchParams(
   const compressedUrlParams = new URLSearchParams();
   compressedUrlParams.set(
     ExploreStateURLParams.GzippedParams,
-    await compressUrlParams(urlCopy.search),
+    compressUrlParams(urlCopy.search),
   );
   return compressedUrlParams.toString();
 }

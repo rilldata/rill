@@ -346,7 +346,7 @@ describe("Human readable URL state variations", () => {
 
   describe("Should update url state and restore default state on empty params", () => {
     for (const { title, mutations, preset, expectedUrl } of TestCases) {
-      it(title, async () => {
+      it(title, () => {
         const explore: V1ExploreSpec = {
           ...AD_BIDS_EXPLORE_INIT,
           ...(preset ? { defaultPreset: preset } : {}),
@@ -370,7 +370,7 @@ describe("Human readable URL state variations", () => {
 
         // load url params with updated metrics state
         const url = new URL("http://localhost");
-        url.search = await convertExploreStateToURLSearchParams(
+        url.search = convertExploreStateToURLSearchParams(
           get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
           explore,
           getTimeControlState(
@@ -386,7 +386,7 @@ describe("Human readable URL state variations", () => {
 
         // load empty url into metrics
         const defaultUrl = new URL("http://localhost");
-        const errors = await applyURLToExploreState(
+        const errors = applyURLToExploreState(
           defaultUrl,
           explore,
           defaultExplorePreset,
@@ -402,7 +402,7 @@ describe("Human readable URL state variations", () => {
   describe("Should set correct state for legacy protobuf state and restore default state on empty params", () => {
     for (const { title, mutations, preset, legacyNotSupported } of TestCases) {
       if (legacyNotSupported) continue;
-      it(title, async () => {
+      it(title, () => {
         const explore: V1ExploreSpec = {
           ...AD_BIDS_EXPLORE_INIT,
           ...(preset ? { defaultPreset: preset } : {}),
@@ -430,7 +430,7 @@ describe("Human readable URL state variations", () => {
         url.searchParams.set("state", getProtoFromDashboardState(curState));
         // get back the entity from url params
         const { partialExploreState: entityFromUrl } =
-          await convertURLSearchParamsToExploreState(
+          convertURLSearchParamsToExploreState(
             url.searchParams,
             AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
             explore,
@@ -441,7 +441,7 @@ describe("Human readable URL state variations", () => {
         // go back to default url
         const defaultUrl = new URL("http://localhost");
         const { partialExploreState: entityFromDefaultUrl } =
-          await convertURLSearchParamsToExploreState(
+          convertURLSearchParamsToExploreState(
             defaultUrl.searchParams,
             AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
             explore,
@@ -477,7 +477,7 @@ describe("Human readable URL state variations", () => {
 
     // load url params with updated metrics state
     const url = new URL("http://localhost");
-    url.search = await convertExploreStateToURLSearchParams(
+    url.search = convertExploreStateToURLSearchParams(
       get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
       AD_BIDS_EXPLORE_INIT,
       getTimeControlState(
@@ -491,17 +491,13 @@ describe("Human readable URL state variations", () => {
     );
 
     // reset the explore state
-    await applyURLToExploreState(
+    applyURLToExploreState(
       new URL("http://localhost"),
       AD_BIDS_EXPLORE_INIT,
       defaultExplorePreset,
     );
     // reapply the compressed url
-    await applyURLToExploreState(
-      url,
-      AD_BIDS_EXPLORE_INIT,
-      defaultExplorePreset,
-    );
+    applyURLToExploreState(url, AD_BIDS_EXPLORE_INIT, defaultExplorePreset);
 
     const currentState = getCleanMetricsExploreForAssertion();
     expect(currentState.selectedTimeRange?.name).toEqual(
@@ -514,13 +510,13 @@ describe("Human readable URL state variations", () => {
   });
 });
 
-export async function applyURLToExploreState(
+export function applyURLToExploreState(
   url: URL,
   exploreSpec: V1ExploreSpec,
   defaultExplorePreset: V1ExplorePreset,
 ) {
   const { partialExploreState: partialExploreStateDefaultUrl, errors } =
-    await convertURLSearchParamsToExploreState(
+    convertURLSearchParamsToExploreState(
       url.searchParams,
       AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
       exploreSpec,

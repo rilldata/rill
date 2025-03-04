@@ -45,9 +45,9 @@
   let exploreStateFromSessionStorage:
     | Partial<MetricsExplorerEntity>
     | undefined = undefined;
-  async function parseUrl(url: URL, defaultExplorePreset: V1ExplorePreset) {
+  function parseUrl(url: URL, defaultExplorePreset: V1ExplorePreset) {
     ({ partialExploreStateFromUrl, exploreStateFromSessionStorage } =
-      await getExploreStates(
+      getExploreStates(
         $exploreName,
         storeKeyPrefix,
         url.searchParams,
@@ -58,7 +58,7 @@
   }
 
   // only reactive to url and defaultExplorePreset
-  $: void parseUrl($page.url, defaultExplorePreset);
+  $: parseUrl($page.url, defaultExplorePreset);
 
   $: validSpec = $validSpecStore.data;
 </script>

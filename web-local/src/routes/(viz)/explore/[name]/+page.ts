@@ -8,13 +8,13 @@ export const load = async ({ url, parent, params }) => {
 
   return {
     exploreName,
-    ...(await getExploreStates(
+    ...getExploreStates(
       exploreName,
       undefined,
       url.searchParams,
       metricsViewSpec,
       exploreSpec,
       defaultExplorePreset,
-    )),
+    ),
   };
 };

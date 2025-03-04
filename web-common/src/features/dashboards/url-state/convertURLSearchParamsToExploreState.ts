@@ -6,14 +6,14 @@ import type {
   V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
 
-export async function convertURLSearchParamsToExploreState(
+export function convertURLSearchParamsToExploreState(
   searchParams: URLSearchParams,
   metricsView: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
   defaultExplorePreset: V1ExplorePreset,
 ) {
   const errors: Error[] = [];
-  const { preset, errors: errorsFromPreset } = await convertURLToExplorePreset(
+  const { preset, errors: errorsFromPreset } = convertURLToExplorePreset(
     searchParams,
     metricsView,
     exploreSpec,

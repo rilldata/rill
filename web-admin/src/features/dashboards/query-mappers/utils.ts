@@ -205,7 +205,7 @@ export async function getExplorePageUrl(
     });
   }
 
-  url.search = await convertExploreStateToURLSearchParams(
+  url.search = convertExploreStateToURLSearchParams(
     exploreState,
     exploreSpec,
     getTimeControlState(
