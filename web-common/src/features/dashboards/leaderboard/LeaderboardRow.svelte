@@ -157,7 +157,7 @@
   );
 
   $: firstCellGradient = hasMoreThanOneMeasure
-    ? "transparent"
+    ? "bg-white"
     : `linear-gradient(to right, ${barColor}
     ${Math.max(...Object.values(barLengths))}px, transparent ${Math.max(...Object.values(barLengths))}px)`;
 
@@ -410,6 +410,20 @@
 
   td:first-of-type {
     @apply p-0 bg-surface;
+  }
+
+  td:nth-of-type(2) {
+    @apply sticky left-0 z-20;
+    background-color: white;
+  }
+
+  tr:hover td:nth-of-type(2) {
+    @apply bg-gray-100;
+  }
+
+  td:nth-of-type(2)::after {
+    content: "";
+    @apply absolute right-0 top-0 bottom-0 w-px bg-gray-200;
   }
 
   a {
