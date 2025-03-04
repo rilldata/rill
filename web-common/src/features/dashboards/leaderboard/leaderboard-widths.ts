@@ -39,4 +39,3 @@ class ColumnStore {
 }
 
 export const valueColumn = new ColumnStore(DEFAULT_COL_WIDTH);
-export const deltaColumn = new ColumnStore(DEFAULT_CONTEXT_COLUMN_WIDTH);

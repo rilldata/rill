@@ -42,7 +42,6 @@
   } from "./leaderboard-utils";
   import {
     DEFAULT_COL_WIDTH,
-    deltaColumn,
     valueColumn,
     DEFAULT_CONTEXT_COLUMN_WIDTH,
   } from "./leaderboard-widths";
@@ -316,7 +315,6 @@
 
   $: if (activeMeasureNames) {
     valueColumn.reset();
-    deltaColumn.reset();
   }
 
   $: firstColumnWidth =
@@ -326,7 +324,7 @@
     firstColumnWidth +
     $valueColumn +
     (comparisonTimeRange
-      ? $deltaColumn + DEFAULT_CONTEXT_COLUMN_WIDTH
+      ? DEFAULT_CONTEXT_COLUMN_WIDTH * (showDeltaPercent ? 2 : 1)
       : isValidPercentOfTotal
         ? DEFAULT_CONTEXT_COLUMN_WIDTH
         : 0);
@@ -347,7 +345,7 @@
       {#each activeMeasureNames as _}
         <col style:width="{$valueColumn}px" />
         {#if showDeltaAbsolute}
-          <col style:width="{$deltaColumn}px" />
+          <col style:width="{DEFAULT_CONTEXT_COLUMN_WIDTH}px" />
           {#if showDeltaPercent}
             <col style:width="{DEFAULT_CONTEXT_COLUMN_WIDTH}px" />
           {/if}
