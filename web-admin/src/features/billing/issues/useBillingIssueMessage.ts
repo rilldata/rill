@@ -1,4 +1,4 @@
-import { createAdminServiceGetBillingSubscription } from "@rilldata/web-admin/client";
+import { createAdminServiceGetOrganization } from "@rilldata/web-admin/client";
 import { getMessageForPaymentIssues } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
 import { getMessageForCancelledIssue } from "@rilldata/web-admin/features/billing/issues/getMessageForCancelledIssue";
 import { getMessageForTrialPlan } from "@rilldata/web-admin/features/billing/issues/getMessageForTrialPlan";
@@ -30,13 +30,13 @@ export function useBillingIssueMessage(
 ): CompoundQueryResult<BillingIssueMessage> {
   return derived(
     [
-      createAdminServiceGetBillingSubscription(organization),
+      createAdminServiceGetOrganization(organization),
       useCategorisedOrganizationBillingIssues(organization),
       areAllProjectsHibernating(organization),
     ],
-    ([subscriptionResp, categorisedIssuesResp, allProjectsHibernatingResp]) => {
+    ([orgResp, categorisedIssuesResp, allProjectsHibernatingResp]) => {
       if (
-        subscriptionResp.isFetching ||
+        orgResp.isFetching ||
         categorisedIssuesResp.isFetching ||
         allProjectsHibernatingResp.isFetching
       ) {
@@ -46,14 +46,14 @@ export function useBillingIssueMessage(
         };
       }
       if (
-        subscriptionResp.error ||
+        orgResp.error ||
         categorisedIssuesResp.error ||
         allProjectsHibernatingResp.error
       ) {
         return {
           isFetching: false,
           error:
-            subscriptionResp.error ??
+            orgResp.error ??
             categorisedIssuesResp.error ??
             allProjectsHibernatingResp.error,
         };
@@ -79,11 +79,10 @@ export function useBillingIssueMessage(
 
       if (
         categorisedIssuesResp.data?.payment.length &&
-        subscriptionResp.data?.subscription
+        orgResp.data?.organization?.billingPlanName
       ) {
         const paymentIssue = getMessageForPaymentIssues(
-          !!subscriptionResp.data.subscription.plan &&
-            !isTeamPlan(subscriptionResp.data.subscription.plan),
+          !isTeamPlan(orgResp.data.organization.billingPlanName),
           categorisedIssuesResp.data.payment,
         );
         // if we do not have any payment related message to show, skip it

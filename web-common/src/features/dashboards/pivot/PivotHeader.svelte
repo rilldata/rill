@@ -1,16 +1,28 @@
+<script context="module" lang="ts">
+  export const lastNestState = writable<PivotRows | null>(null);
+</script>
+
 <script lang="ts">
+  import { IconButton } from "@rilldata/web-common/components/button";
   import Column from "@rilldata/web-common/components/icons/Column.svelte";
   import Row from "@rilldata/web-common/components/icons/Row.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { ArrowUpDownIcon } from "lucide-svelte";
+  import { writable } from "svelte/store";
+  import { slide } from "svelte/transition";
   import { metricsExplorerStore } from "../stores/dashboard-stores";
   import DragList from "./DragList.svelte";
-  import { PivotChipType, type PivotChipData } from "./types";
-  import { slide } from "svelte/transition";
+  import {
+    PivotChipType,
+    type PivotChipData,
+    type PivotRows,
+    type PivotTableMode,
+  } from "./types";
 
   const stateManagers = getStateManagers();
   const {
     selectors: {
-      pivot: { rows, columns },
+      pivot: { rows, columns, isFlat },
     },
     exploreName,
   } = stateManagers;
@@ -19,6 +31,8 @@
   $: ({ dimension: rowsDimensions } = $rows);
 
   function updateColumn(e: CustomEvent<PivotChipData[]>) {
+    // Reset lastNestState when columns are updated
+    lastNestState.set(null);
     metricsExplorerStore.setPivotColumns($exploreName, e.detail);
   }
 
@@ -28,22 +42,78 @@
     );
     metricsExplorerStore.setPivotRows($exploreName, filtered);
   }
+
+  /**
+   * This method stores the previous nest state and passes it to
+   * dashboard store when toggling back from `flat` to `nest`
+   */
+  function togglePivotType(newJoinState: PivotTableMode) {
+    if (newJoinState === "flat") {
+      lastNestState.set($rows);
+      metricsExplorerStore.setPivotTableMode(
+        $exploreName,
+        "flat",
+        { dimension: [] },
+        {
+          measure: $columns.measure,
+          dimension: [...$columns.dimension, ...$rows.dimension],
+        },
+      );
+      return;
+    }
+
+    // Handle nest state
+    const updatedRows = $lastNestState ?? { dimension: $columns.dimension };
+    const rowDimensionIds = new Set(updatedRows.dimension.map((d) => d.id));
+
+    metricsExplorerStore.setPivotTableMode($exploreName, "nest", updatedRows, {
+      measure: $columns.measure,
+      dimension: $lastNestState
+        ? $columns.dimension.filter((d) => !rowDimensionIds.has(d.id))
+        : [],
+    });
+  }
 </script>
 
 <div class="header" transition:slide>
+  {#if !$isFlat}
+    <div
+      class="header-row"
+      transition:slide={{
+        duration: 200,
+        axis: "y",
+      }}
+    >
+      <span class="row-label">
+        <Row size="16px" /> Rows
+      </span>
+      <DragList
+        zone="rows"
+        placeholder="Drag dimensions here"
+        items={rowsDimensions}
+        on:update={updateRows}
+      />
+    </div>
+  {/if}
   <div class="header-row">
-    <span class="row-label">
-      <Row size="16px" /> Rows
-    </span>
-    <DragList
-      zone="rows"
-      placeholder="Drag dimensions here"
-      items={rowsDimensions}
-      on:update={updateRows}
-    />
-  </div>
-  <div class="header-row">
-    <span class="row-label"> <Column size="16px" /> Columns</span>
+    <div class="row-label">
+      <Column size="16px" /> Columns
+
+      <IconButton
+        marginClasses="ml-1"
+        rounded
+        ariaLabel={$isFlat ? "Nest" : "Flatten"}
+        on:click={() => togglePivotType($isFlat ? "nest" : "flat")}
+      >
+        <span slot="tooltip-content">{$isFlat ? "Nest" : "Flatten"} table</span>
+        <ArrowUpDownIcon
+          size="16px"
+          class="stroke-gray-500"
+          strokeWidth={1.8}
+        />
+      </IconButton>
+    </div>
+
     <DragList
       zone="columns"
       items={columnsDimensions.concat(columnsMeasures)}
@@ -68,6 +138,7 @@
     @apply flex items-center gap-x-2 px-2;
   }
   .row-label {
-    @apply flex items-center gap-x-1 w-20 flex-shrink-0;
+    @apply flex items-center gap-x-1 flex-shrink-0;
+    width: 104px;
   }
 </style>

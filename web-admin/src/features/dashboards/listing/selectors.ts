@@ -46,38 +46,6 @@ export interface DashboardResource {
   refreshedOn: string;
 }
 
-function getDashboardRefreshedOn(
-  dashboard: V1Resource,
-  allResources: Map<string, V1Resource>,
-): string | undefined {
-  if (!dashboard) return undefined;
-
-  const metricsViewRefName = dashboard.meta.refs[0];
-  const refTable = allResources.get(
-    `${metricsViewRefName?.kind}_${metricsViewRefName?.name}`,
-  );
-  return (
-    refTable?.model?.state.refreshedOn || refTable?.source?.state.refreshedOn
-  );
-}
-
-function getExploreRefreshedOn(
-  explore: V1Resource,
-  allResources: Map<string, V1Resource>,
-): string | undefined {
-  if (!explore) return undefined;
-
-  // 1st get the metrics view for the explore
-  const exploreRefName = explore.meta.refs[0];
-  const metricsView = allResources.get(
-    `${exploreRefName?.kind}_${exploreRefName?.name}`,
-  );
-  if (!metricsView) return undefined;
-
-  // next get the referenced table resource
-  return getDashboardRefreshedOn(metricsView, allResources);
-}
-
 // This iteration of `useDashboards` returns the above `DashboardResource` type, which includes `refreshedOn`
 export function useDashboardsV2(
   instanceId: string,
@@ -96,7 +64,7 @@ export function useDashboardsV2(
         allDashboards.push(
           ...canvasDashboards.map((resource) => {
             // Add `refreshedOn` to each resource
-            const refreshedOn = getDashboardRefreshedOn(resource, allResources);
+            const refreshedOn = getCanvasRefreshedOn(resource, allResources);
             return { resource, refreshedOn };
           }),
         );
@@ -115,34 +83,39 @@ export function useDashboardsV2(
   });
 }
 
-// This iteration of `useDashboard` returns the above `DashboardResource` type, which includes `refreshedOn`
-export function useDashboardV2(
-  instanceId: string,
-  name: string,
-): CreateQueryResult<DashboardResource> {
-  return createRuntimeServiceListResources(instanceId, undefined, {
-    query: {
-      enabled: !!instanceId && !!name,
-      select: (data) => {
-        if (!name) return;
+// Super naive heuristic for now.
+function getCanvasRefreshedOn(
+  dashboard: V1Resource,
+  allResources: Map<string, V1Resource>,
+): string | undefined {
+  if (!dashboard) return undefined;
 
-        const resource = data.resources.find(
-          (res) => res.meta.name.name.toLowerCase() === name.toLowerCase(),
-        );
-        // create a map since we are potentially looking up twice per explore
-        const allResources = getMapFromArray(
-          data.resources,
-          (r) => `${r.meta.name.kind}_${r.meta.name.name}`,
-        );
+  // First, get the first referenced resource for the canvas
+  const refResourceName = dashboard.meta.refs[0];
+  const refResource = allResources.get(
+    `${refResourceName?.kind}_${refResourceName?.name}`,
+  );
 
-        if (resource.canvas) {
-          const refreshedOn = getDashboardRefreshedOn(resource, allResources);
-          return { resource, refreshedOn };
-        }
+  // Second, get the refreshedOn from the referenced resource
+  return (
+    refResource?.model?.state.refreshedOn ||
+    refResource?.source?.state.refreshedOn
+  );
+}
 
-        const refreshedOn = getExploreRefreshedOn(resource, allResources);
-        return { resource, refreshedOn };
-      },
-    },
-  });
+function getExploreRefreshedOn(
+  explore: V1Resource,
+  allResources: Map<string, V1Resource>,
+): string | undefined {
+  if (!explore) return undefined;
+
+  // First, get the metrics view for the explore
+  const exploreRefName = explore.meta.refs[0];
+  const metricsView = allResources.get(
+    `${exploreRefName?.kind}_${exploreRefName?.name}`,
+  );
+  if (!metricsView) return undefined;
+
+  // Second, get the refreshedOn from the metrics view
+  return metricsView?.metricsView?.state?.modelRefreshedOn;
 }

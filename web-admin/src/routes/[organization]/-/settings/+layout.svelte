@@ -14,7 +14,7 @@
   $: organization = $page.params.organization;
   $: basePage = `/${organization}/-/settings`;
   $: onEnterprisePlan =
-    subscription?.plan && isEnterprisePlan(subscription?.plan);
+    subscription?.plan?.name && isEnterprisePlan(subscription.plan.name);
   $: hideBillingSettings = neverSubscribed;
   $: hideUsageSettings = onEnterprisePlan || !billingPortalUrl;
 

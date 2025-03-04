@@ -28,7 +28,7 @@
   } from "@rilldata/web-common/lib/time/types";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { DateTime, Interval } from "luxon";
-  import { onDestroy } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
   import CanvasComparisonPill from "./CanvasComparisonPill.svelte";
@@ -66,6 +66,9 @@
         minTimeGrain,
         selectTimeRange,
         setTimeZone,
+        displayTimeComparison,
+        setSelectedComparisonRange,
+        setInitialState,
         destroy,
       },
     },
@@ -175,7 +178,6 @@
      */
     comparisonTimeRange: DashboardTimeControls | undefined,
   ) {
-    console.log("timeRange", timeRange);
     selectTimeRange(timeRange, timeGrain, comparisonTimeRange);
   }
 
@@ -262,11 +264,18 @@
     localUserPreferences.set({ timeZone });
   }
 
+  onMount(() => {
+    if (!$timeRangeStateStore) {
+      setInitialState();
+    }
+  });
   onDestroy(destroy);
 </script>
 
-<div class="flex flex-col gap-y-2 w-full h-20 justify-center">
-  <div class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center ml-2">
+<div class="flex flex-col gap-y-2 size-full pointer-events-none">
+  <div
+    class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center ml-2 pointer-events-auto w-fit"
+  >
     <Calendar size="16px" />
     <SuperPill
       allTimeRange={$allTimeRange}
@@ -296,13 +305,20 @@
       allTimeRange={$allTimeRange}
       {selectedTimeRange}
       {selectedComparisonTimeRange}
+      showTimeComparison={$comparisonRangeStateStore?.showTimeComparison ??
+        false}
+      activeTimeZone={$selectedTimezone}
+      onDisplayTimeComparison={displayTimeComparison}
+      onSetSelectedComparisonRange={setSelectedComparisonRange}
     />
   </div>
   <div class="relative flex flex-row gap-x-2 gap-y-2 items-start ml-2">
     {#if !readOnly}
       <Filter size="16px" className="ui-copy-icon flex-none mt-[5px]" />
     {/if}
-    <div class="relative flex flex-row flex-wrap gap-x-2 gap-y-2">
+    <div
+      class="relative flex flex-row flex-wrap gap-x-2 gap-y-2 pointer-events-auto"
+    >
       {#if isComplexFilter}
         <AdvancedFilter advancedFilter={$whereFilter} />
       {:else if !allDimensionFilters.length && !allMeasureFilters.length}

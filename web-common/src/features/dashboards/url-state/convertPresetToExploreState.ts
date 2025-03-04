@@ -2,6 +2,7 @@ import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filte
 import {
   type PivotChipData,
   PivotChipType,
+  type PivotTableMode,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
@@ -213,7 +214,7 @@ function fromTimeRangesParams(
 
 export const CustomTimeRangeRegex =
   /(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z),(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z)/;
-function fromTimeRangeUrlParam(tr: string) {
+export function fromTimeRangeUrlParam(tr: string) {
   const customTimeRangeMatch = CustomTimeRangeRegex.exec(tr);
   if (customTimeRangeMatch?.length) {
     const [, start, end] = customTimeRangeMatch;
@@ -457,7 +458,7 @@ function fromPivotUrlParams(
           rowPage: 1,
           enableComparison: true,
           activeCell: null,
-          rowJoinType: "nest",
+          tableMode: "nest",
         },
       },
       errors,
@@ -474,6 +475,18 @@ function fromPivotUrlParams(
       id: sortById,
       desc: !preset.pivotSortAsc,
     });
+  }
+
+  let tableMode: PivotTableMode = "nest";
+
+  if (preset.pivotTableMode) {
+    if (preset.pivotTableMode === "nest" || preset.pivotTableMode === "flat") {
+      tableMode = preset.pivotTableMode;
+    } else {
+      errors.push(
+        getSingleFieldError("pivot table mode", preset.pivotTableMode),
+      );
+    }
   }
 
   return {
@@ -494,7 +507,7 @@ function fromPivotUrlParams(
         rowPage: 1,
         enableComparison: true,
         activeCell: null,
-        rowJoinType: "nest",
+        tableMode,
       },
     },
     errors,

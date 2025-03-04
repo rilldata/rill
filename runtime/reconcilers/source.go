@@ -13,6 +13,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
@@ -126,7 +127,7 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 					err = r.C.UpdateState(ctx, self.Meta.Name, self)
 				}
 				if err != nil {
-					r.C.Logger.Warn("failed to rename source", zap.String("source", n.Name), zap.String("renamed_from", self.Meta.RenamedFrom.Name), zap.Error(err))
+					r.C.Logger.Warn("failed to rename source", zap.String("source", n.Name), zap.String("renamed_from", self.Meta.RenamedFrom.Name), zap.Error(err), observability.ZapCtx(ctx))
 				}
 			}()
 			if ctx.Err() != nil { // Handle if the error was a ctx error
@@ -159,7 +160,7 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 			src.State.RefreshedOn = nil
 			err = r.C.UpdateState(ctx, self.Meta.Name, self)
 			if err != nil {
-				r.C.Logger.Error("refs check: failed to update state", zap.Any("error", err))
+				r.C.Logger.Error("refs check: failed to update state", zap.Any("error", err), observability.ZapCtx(ctx))
 			}
 		}
 		return runtime.ReconcileResult{Err: err}
@@ -231,7 +232,7 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 	}
 
 	// Execute ingestion
-	r.C.Logger.Info("Ingesting source data", zap.String("name", n.Name), zap.String("connector", connector))
+	r.C.Logger.Info("Ingesting source data", zap.String("name", n.Name), zap.String("connector", connector), observability.ZapCtx(ctx))
 	ingestErr := r.ingestSource(ctx, self, srcConfig, driversSink(stagingTableName))
 	if ingestErr != nil {
 		ingestErr = fmt.Errorf("failed to ingest source: %w", ingestErr)

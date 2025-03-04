@@ -1,4 +1,4 @@
-import { mergeDimensionAndMeasureFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import {
   type PivotChipData,
   PivotChipType,
@@ -33,7 +33,7 @@ export function convertExploreStateToPreset(
   }
 
   if (exploreState.whereFilter || exploreState.dimensionThresholdFilters) {
-    preset.where = mergeDimensionAndMeasureFilter(
+    preset.where = mergeDimensionAndMeasureFilters(
       exploreState.whereFilter ?? createAndExpression([]),
       exploreState.dimensionThresholdFilters ?? [],
     );
@@ -181,6 +181,8 @@ function getPivotFields(exploreState: Partial<MetricsExplorerEntity>) {
     preset.pivotSortBy = sort.id;
     preset.pivotSortAsc = !sort.desc;
   }
+
+  preset.pivotTableMode = exploreState.pivot.tableMode;
 
   // TODO: other fields like expanded state and pin are not supported right now
   return preset;

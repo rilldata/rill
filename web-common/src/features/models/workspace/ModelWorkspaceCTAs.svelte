@@ -4,11 +4,9 @@
   import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import MetricsViewIcon from "@rilldata/web-common/components/icons/MetricsViewIcon.svelte";
   import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { createExportTableMutation } from "@rilldata/web-common/features/models/workspace/export-table";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import {
-    V1ExportFormat,
     V1ReconcileStatus,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
@@ -29,8 +27,6 @@
   export let hasUnsavedChanges: boolean;
   export let connector: string;
 
-  const exportModelMutation = createExportTableMutation();
-
   $: ({ instanceId } = $runtime);
   $: isModelIdle =
     resource?.meta?.reconcileStatus === V1ReconcileStatus.RECONCILE_STATUS_IDLE;
@@ -49,16 +45,6 @@
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
   );
-
-  const onExport = async (format: V1ExportFormat) => {
-    return $exportModelMutation.mutateAsync({
-      data: {
-        instanceId,
-        format,
-        tableName: modelName,
-      },
-    });
-  };
 </script>
 
 <ModelRefreshButton {resource} {hasUnsavedChanges} />
@@ -66,8 +52,15 @@
 <ExportMenu
   label="Export model data"
   disabled={modelHasError || !isModelIdle}
-  {onExport}
   workspace
+  getQuery={() => {
+    return {
+      tableRowsRequest: {
+        instanceId,
+        tableName: modelName,
+      },
+    };
+  }}
 />
 
 {#if availableMetricsViews?.length === 0}

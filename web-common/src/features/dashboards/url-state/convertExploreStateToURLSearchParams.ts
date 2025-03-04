@@ -1,4 +1,4 @@
-import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import {
   type PivotChipData,
   PivotChipType,
@@ -96,7 +96,10 @@ export function convertExploreStateToURLSearchParams(
     );
   }
 
-  const expr = mergeMeasureFilters(exploreState);
+  const expr = mergeDimensionAndMeasureFilters(
+    exploreState.whereFilter,
+    exploreState.dimensionThresholdFilters,
+  );
   if (expr && expr?.cond?.exprs?.length) {
     searchParams.set(
       ExploreStateURLParams.Filters,
@@ -394,6 +397,11 @@ function toPivotUrlParams(
       ExploreStateURLParams.SortDirection,
       sort?.desc ? "DESC" : "ASC",
     );
+  }
+
+  const tableMode = exploreState.pivot?.tableMode;
+  if (shouldSetParam(preset.pivotTableMode, tableMode)) {
+    searchParams.set(ExploreStateURLParams.PivotTableMode, tableMode ?? "nest");
   }
 
   // TODO: other fields like expanded state and pin are not supported right now
