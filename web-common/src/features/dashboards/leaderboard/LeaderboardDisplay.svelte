@@ -37,6 +37,7 @@
       comparison: { isBeingCompared: isBeingComparedReadable },
       sorting: { sortedAscending, sortType, sortMeasure },
       contextColumn: { contextColumnFilters },
+      measures: { measureLabel },
     },
     actions: {
       dimensions: { setPrimaryDimension },
@@ -125,6 +126,7 @@
               {toggleDimensionValueSelection}
               {toggleComparisonDimension}
               sortMeasure={$sortMeasure}
+              measureLabel={$measureLabel}
             />
           {/if}
         {/each}
