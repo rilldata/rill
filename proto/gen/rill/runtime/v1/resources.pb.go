@@ -6819,7 +6819,7 @@ type MetricsViewSpec_MeasureV2 struct {
 	FormatD3            string                               `protobuf:"bytes,7,opt,name=format_d3,json=formatD3,proto3" json:"format_d3,omitempty"`
 	FormatD3Locale      *structpb.Struct                     `protobuf:"bytes,13,opt,name=format_d3_locale,json=formatD3Locale,proto3" json:"format_d3_locale,omitempty"`
 	ValidPercentOfTotal bool                                 `protobuf:"varint,6,opt,name=valid_percent_of_total,json=validPercentOfTotal,proto3" json:"valid_percent_of_total,omitempty"`
-	TreatNullsAs        string                               `protobuf:"bytes,14,opt,name=treat_nulls_as,json=treatNullsAs,proto3" json:"treat_nulls_as,omitempty"` // TODO what should the type, using string values will not work when coalescing numeric cols
+	TreatNullsAs        string                               `protobuf:"bytes,14,opt,name=treat_nulls_as,json=treatNullsAs,proto3" json:"treat_nulls_as,omitempty"`
 }
 
 func (x *MetricsViewSpec_MeasureV2) Reset() {

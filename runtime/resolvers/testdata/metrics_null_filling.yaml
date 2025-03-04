@@ -126,6 +126,66 @@ tests:
         time__day: "2024-01-03T00:00:00Z"
       - sum: 4
         time__day: "2024-01-04T00:00:00Z"
+  - name: null_filling_coalesce_cross_clickhouse
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics
+      dimensions:
+        - name: country
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: sum
+      time_range:
+        end: 2024-01-05T00:00:00Z
+        start: 2024-01-03T00:00:00Z
+      sort:
+        - name: time__day
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - country: US
+        sum: 123
+        time__day: "2024-01-03T00:00:00Z"
+      - country: US
+        sum: 4
+        time__day: "2024-01-04T00:00:00Z"
+  - name: null_filling_coalesce_cross_1_clickhouse
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics
+      dimensions:
+        - name: country
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: sum
+      time_range:
+        end: 2024-01-06T00:00:00Z
+        start: 2024-01-03T00:00:00Z
+      sort:
+        - name: time__day
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - country: US
+        sum: 123
+        time__day: "2024-01-03T00:00:00Z"
+      - country: US
+        sum: 4
+        time__day: "2024-01-04T00:00:00Z"
   - name: null_filling_coalesce_druid
     resolver: metrics
     properties:

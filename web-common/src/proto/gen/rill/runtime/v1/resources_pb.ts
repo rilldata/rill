@@ -1753,8 +1753,6 @@ export class MetricsViewSpec_MeasureV2 extends Message<MetricsViewSpec_MeasureV2
   validPercentOfTotal = false;
 
   /**
-   * TODO what should the type, using string values will not work when coalescing numeric cols
-   *
    * @generated from field: string treat_nulls_as = 14;
    */
   treatNullsAs = "";
