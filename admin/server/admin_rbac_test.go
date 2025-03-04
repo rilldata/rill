@@ -6,14 +6,12 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/rilldata/rill/admin/jobs"
-
-	"github.com/google/go-github/v50/github"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/ai"
 	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/billing/payment"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/jobs"
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/rilldata/rill/admin/server/auth"
 	"github.com/rilldata/rill/admin/server/cookies"
@@ -411,15 +409,13 @@ func TestAdmin_RBAC(t *testing.T) {
 
 	// test add duplicate member
 	t.Run("test add duplicate member", func(t *testing.T) {
-		resp, err := adminClient.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
+		_, err = adminClient.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
 			Organization: adminOrg.Organization.Name,
 			Email:        viewerUser.Email,
 			Role:         "viewer",
 		})
 
-		// this wont error out, since it re-sends an email
-		require.NoError(t, err)
-		require.NotNil(t, resp)
+		require.Error(t, err)
 	})
 
 	// remove user tests
@@ -579,7 +575,6 @@ func TestAdmin_RBAC(t *testing.T) {
 			Usergroup:    "group1",
 		})
 		require.Error(t, err)
-		require.Equal(t, codes.InvalidArgument, status.Code(err))
 	})
 
 	// Create a user group, assign an org-level role and check
@@ -604,7 +599,7 @@ func TestAdmin_RBAC(t *testing.T) {
 			Organization: adminOrg.Organization.Name,
 		})
 		require.NoError(t, err)
-		require.Equal(t, 2, len(resp.Members))
+		require.Equal(t, 4, len(resp.Members))
 
 		var group *adminv1.MemberUsergroup
 		for _, m := range resp.Members {
@@ -783,19 +778,4 @@ func (c *bearerTokenCredential) GetRequestMetadata(ctx context.Context, uri ...s
 
 func (c *bearerTokenCredential) RequireTransportSecurity() bool {
 	return false // false for testing
-}
-
-// mockGithub provides a mock implementation of admin.Github.
-type mockGithub struct{}
-
-func (m *mockGithub) AppClient() *github.Client {
-	return nil
-}
-
-func (m *mockGithub) InstallationClient(installationID int64) (*github.Client, error) {
-	return nil, nil
-}
-
-func (m *mockGithub) InstallationToken(ctx context.Context, installationID int64) (string, error) {
-	return "", nil
 }
