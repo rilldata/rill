@@ -183,9 +183,21 @@ tests:
       - country: US
         sum: 123
         time__day: "2024-01-03T00:00:00Z"
+      - country: DK
+        sum: 123
+        time__day: "2024-01-03T00:00:00Z"
       - country: US
         sum: 4
         time__day: "2024-01-04T00:00:00Z"
+      - country: DK
+        sum: 123
+        time__day: "2024-01-04T00:00:00Z"
+      - country: DK
+        sum: 5
+        time__day: "2024-01-05T00:00:00Z"
+      - country: US
+        sum: 123
+        time__day: "2024-01-05T00:00:00Z"
   - name: null_filling_coalesce_druid
     resolver: metrics
     properties:
