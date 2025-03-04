@@ -4,45 +4,24 @@ sidebar_label: FAQ
 sidebar_position: 20
 ---
 
-## Getting Started
+## Technical requirements
 
-### What is Rill?
-Rill is an operational BI tool that provides fast dashboards that your team will actually use. Rill’s unique architecture combines a last-mile ETL service, an in-memory database, and operational dashboards - all in a single solution
-
-## Install Rill 
-
-### How do I install Rill? 
-You can install rill using our installation script:
-```bash
-curl https://rill.sh | sh
-```
-### How do I upgrade Rill to the latest version?
-If you installed Rill using the installation script described above, you can upgrade by running:
-```
-rill upgrade
-```
-
-
-### Rill cannot be opened because it is from an unidentified developer.
+### Why does macOS say "Rill cannot be opened because it is from an unidentified developer"?
 This occurs when Rill binary is downloaded via the browser. You need to change the permissions to make it executable and remove it from Apple Developer identification quarantine. 
-Below CLI commands will help you to do that: 
+
+The below CLI commands will help you to do that: 
 ```bash
 chmod a+x rill
 xattr -d com.apple.quarantine ./rill
 ```
 
-
-### Error - This macOS version is not supported. Please upgrade.
+### Why am I seeing "This macOS version is not supported. Please upgrade"?
 Rill uses duckDB internally which requires a newer [macOS version](https://github.com/duckdb/duckdb/issues/3824). 
 Please upgrade your macOS version to 10.14 or higher.
 
 
-### How do I uninstall Rill?
-
-You can uninstall Rill using the following command:
-```bash
-rill uninstall
-```
+### Which browsers work best with Rill?
+Rill is optimized for Google Chrome. While other browsers may work, we recommend using the latest version of Chrome for the most reliable experience when accessing Rill Developer or Rill Cloud dashboards.
 
 
 ## Rill Developer
