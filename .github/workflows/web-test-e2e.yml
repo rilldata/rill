@@ -10,6 +10,18 @@ on:
       - "web-auth/**"
       - "web-common/**"
       - "web-local/**"
+  workflow_dispatch:
+    inputs:
+      browser:
+        type: choice
+        options:
+          - "chrome"
+          - "safari"
+          - "firefox"
+          - "all"
+        default: "chrome"
+        description: "Choose which browser to test"
+
 jobs:
   setup:
     runs-on: ubuntu-latest
@@ -118,10 +130,31 @@ jobs:
         if: matrix.name == 'web-admin'
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Test ${{ matrix.name }}
+      - name: Test web-local
+        if: matrix.name == 'web-local'
         run: |-
-          npm run build -w ${{ matrix.name }}
-          npm run test -w ${{ matrix.name }}
+          # For pull requests, always use chrome
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            npm run test:chrome -w web-local
+          # For manual workflow runs, use the selected browser
+          elif [ "${{ github.event.inputs.browser }}" == "all" ]; then
+            npm run test:all -w web-local
+          elif [ "${{ github.event.inputs.browser }}" == "chrome" ]; then
+            npm run test:chrome -w web-local
+          elif [ "${{ github.event.inputs.browser }}" == "safari" ]; then
+            npm run test:safari -w web-local
+          elif [ "${{ github.event.inputs.browser }}" == "firefox" ]; then
+            npm run test:firefox -w web-local
+          else
+            echo "Invalid browser choice: ${{ github.event.inputs.browser }}"
+            exit 1
+          fi
+
+      - name: Test web-admin
+        if: matrix.name == 'web-admin'
+        run: |-
+          npm run build -w web-admin
+          npm run test -w web-admin
 
       - uses: actions/upload-artifact@v4
         if: always()

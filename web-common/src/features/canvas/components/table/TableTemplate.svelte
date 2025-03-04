@@ -3,6 +3,7 @@
   import type { TableSpec } from "@rilldata/web-common/features/canvas/components/table";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
+  import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import PivotEmpty from "@rilldata/web-common/features/dashboards/pivot/PivotEmpty.svelte";
   import PivotError from "@rilldata/web-common/features/dashboards/pivot/PivotError.svelte";
   import PivotTable from "@rilldata/web-common/features/dashboards/pivot/PivotTable.svelte";
@@ -41,25 +42,23 @@
   $: if (tableSpec && $schema.isValid) {
     pivotState.update((state) => ({
       ...state,
-      columns: {
-        measure: measures.map((measure) => ({
+      columns: [
+        ...colDimensions.map((dimension) => ({
+          id: dimension,
+          title: dimension,
+          type: PivotChipType.Dimension,
+        })),
+        ...measures.map((measure) => ({
           id: measure,
           title: measure,
           type: PivotChipType.Measure,
         })),
-        dimension: colDimensions.map((dimension) => ({
-          id: dimension,
-          title: dimension,
-          type: PivotChipType.Dimension,
-        })),
-      },
-      rows: {
-        dimension: rowDimensions.map((dimension) => ({
-          id: dimension,
-          title: dimension,
-          type: PivotChipType.Dimension,
-        })),
-      },
+      ],
+      rows: rowDimensions.map((dimension) => ({
+        id: dimension,
+        title: dimension,
+        type: PivotChipType.Dimension,
+      })),
     }));
   }
 
@@ -81,9 +80,10 @@
     ({ isFetching, assembled } = $pivotDataStore);
   }
 
+  $: pivotColumns = splitPivotChips($pivotState.columns);
+
   $: hasColumnAndNoMeasure =
-    $pivotState.columns.dimension.length > 0 &&
-    $pivotState.columns.measure.length === 0;
+    pivotColumns.dimension.length > 0 && pivotColumns.measure.length === 0;
 </script>
 
 <div class="size-full overflow-hidden" style:max-height="inherit">

@@ -20,8 +20,8 @@ import { type Readable, derived, readable, writable } from "svelte/store";
 
 export const pivotState = writable<PivotState>({
   active: true,
-  columns: { measure: [], dimension: [] },
-  rows: { dimension: [] },
+  columns: [],
+  rows: [],
   expanded: {},
   sorting: [],
   columnPage: 1,

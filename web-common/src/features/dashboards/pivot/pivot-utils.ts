@@ -6,9 +6,9 @@ import {
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { getOffset } from "@rilldata/web-common/lib/time/transforms";
 import {
-  type AvailableTimeGrain,
   Period,
   TimeOffsetType,
+  type AvailableTimeGrain,
   type TimeRangeString,
 } from "@rilldata/web-common/lib/time/types";
 import type {
@@ -24,6 +24,8 @@ import { mergeFilters } from "./pivot-merge-filters";
 import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
+  PivotChipType,
+  type PivotChipData,
   type PivotDataRow,
   type PivotDataState,
   type PivotDataStoreConfig,
@@ -50,7 +52,7 @@ export function getPivotConfigKey(config: PivotDataStoreConfig) {
     pivot,
   } = config;
 
-  const { sorting } = pivot;
+  const { sorting, tableMode: tableModeKey } = pivot;
   const timeKey = JSON.stringify(time);
   const sortingKey = JSON.stringify(sorting);
   const filterKey = JSON.stringify(whereFilter);
@@ -59,7 +61,7 @@ export function getPivotConfigKey(config: PivotDataStoreConfig) {
     .concat(measureNames, colDimensionNames)
     .join("_");
 
-  return `${dimsAndMeasures}_${timeKey}_${sortingKey}_${filterKey}_${enableComparison}_${comparisonTimeKey}`;
+  return `${dimsAndMeasures}_${timeKey}_${sortingKey}_${tableModeKey}_${filterKey}_${enableComparison}_${comparisonTimeKey}`;
 }
 
 /**
@@ -483,7 +485,9 @@ export function canEnablePivotComparison(
   comparisonStart: string | Date | undefined,
 ) {
   // Disable if more than 10 measures
-  if (pivotState.columns.measure.length > 10) {
+
+  const measures = splitPivotChips(pivotState.columns).measure;
+  if (measures.length > 10) {
     return false;
   }
   // Disable if time comparison is not present
@@ -657,4 +661,14 @@ export function getErrorState(errors: PivotQueryError[]): PivotDataState {
 
 export function isElement(target: EventTarget | null): target is HTMLElement {
   return target instanceof HTMLElement;
+}
+
+export function splitPivotChips(data: PivotChipData[]): {
+  dimension: PivotChipData[];
+  measure: PivotChipData[];
+} {
+  return {
+    dimension: data?.filter((c) => c.type !== PivotChipType.Measure) || [],
+    measure: data?.filter((c) => c.type === PivotChipType.Measure) || [],
+  };
 }
