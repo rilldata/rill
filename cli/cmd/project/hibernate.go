@@ -21,6 +21,7 @@ func HibernateCmd(ch *cmdutil.Helper) *cobra.Command {
 			if len(args) > 0 {
 				project = args[0]
 			}
+			// Only prompt interactively if no flags or args are provided
 			if !cmd.Flags().Changed("project") && len(args) == 0 && ch.Interactive {
 				var err error
 				project, err = ch.InferProjectName(cmd.Context(), ch.Org, path)

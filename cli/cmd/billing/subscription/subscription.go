@@ -5,6 +5,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	PlanStarter    = "starter"
+	PlanPro        = "pro"
+	PlanEnterprise = "enterprise"
+)
+
+// AllPlans is a list of all available plans
+var AllPlans = []string{PlanStarter, PlanPro, PlanEnterprise}
+
 func SubscriptionCmd(ch *cmdutil.Helper) *cobra.Command {
 	subsCmd := &cobra.Command{
 		Use:               "subscription",
@@ -19,4 +28,14 @@ func SubscriptionCmd(ch *cmdutil.Helper) *cobra.Command {
 	subsCmd.AddCommand(RenewCmd(ch))
 
 	return subsCmd
+}
+
+// IsValidPlan checks if the given plan is valid
+func IsValidPlan(plan string) bool {
+	for _, p := range AllPlans {
+		if p == plan {
+			return true
+		}
+	}
+	return false
 }

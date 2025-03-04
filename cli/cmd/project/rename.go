@@ -38,7 +38,7 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			if ch.Interactive {
+			if !cmd.Flags().Changed("new-name") && ch.Interactive {
 				err = cmdutil.SetFlagsByInputPrompts(*cmd, "new-name")
 				if err != nil {
 					return err
