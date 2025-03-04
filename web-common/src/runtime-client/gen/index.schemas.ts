@@ -1231,11 +1231,11 @@ export interface V1ModelState {
   partitionsModelId?: string;
   /** partitions_have_errors is true if one or more partitions failed to execute. */
   partitionsHaveErrors?: boolean;
-  /** total_execution_duration is the time user queries took to execute while refreshing the model.
+  /** total_execution_duration_ms is the time user queries took to execute while refreshing the model.
 In case of incremental models it is the sum of all successful executions so far.
 This is not the time it took to refresh the model which also includes other stuff like taking a write lock. */
   totalExecutionDurationMs?: string;
-  /** latest_execution_duration is the time user queries took to execute in the last successful refresh. */
+  /** latest_execution_duration_ms is the time user queries took to execute in the last successful refresh. */
   latestExecutionDurationMs?: string;
 }
 
@@ -2037,6 +2037,7 @@ If not found in `time_ranges`, it should be added to the list. */
   pivotCols?: string[];
   pivotSortBy?: string;
   pivotSortAsc?: boolean;
+  pivotTableMode?: string;
 }
 
 export interface V1Explore {

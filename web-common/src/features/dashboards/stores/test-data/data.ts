@@ -258,6 +258,7 @@ export const AD_BIDS_PIVOT_PRESET: V1ExplorePreset = {
   pivotRows: ["publisher", "time.hour"],
   pivotCols: ["domain", "time.day", "impressions"],
   pivotSortBy: "time.day",
+  pivotTableMode: "nest",
   pivotSortAsc: true,
 };
 
@@ -401,6 +402,6 @@ export const AD_BIDS_PIVOT_ENTITY: Partial<MetricsExplorerEntity> = {
     rowPage: 1,
     enableComparison: true,
     activeCell: null,
-    rowJoinType: "nest",
+    tableMode: "nest",
   },
 };
