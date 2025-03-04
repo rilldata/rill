@@ -285,7 +285,7 @@
             <Chart
               bind:hoveredPoints
               {primaryData}
-              secondaryData={showComparison ? [comparisonData] : []}
+              secondaryData={showComparison ? comparisonData : []}
               {timeGrain}
               selectedTimeZone={timeZone}
               yAccessor={kpiProperties.measure}
