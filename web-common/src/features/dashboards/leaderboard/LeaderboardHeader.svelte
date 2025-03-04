@@ -101,13 +101,15 @@
         <button
           aria-label="Toggle sort leaderboards by value"
           on:click={() => toggleSort(SortType.VALUE, measureName)}
-          class="font-normal"
+          class="font-normal text-right"
         >
-          {#if hasMoreThanOneMeasure}
-            {measureLabel(measureName)}
-          {:else}
-            #
-          {/if}
+          <span class="measure-label">
+            {#if hasMoreThanOneMeasure}
+              {measureLabel(measureName)}
+            {:else}
+              #
+            {/if}
+          </span>
           {#if sortType === SortType.VALUE && measureName === sortMeasure}
             <div class="ui-copy-icon">
               {#if sortedAscending}
@@ -245,5 +247,11 @@
   th:nth-of-type(2)::after {
     content: "";
     @apply absolute right-0 top-0 bottom-0 w-px bg-gray-200;
+  } */
+
+  /* .measure-label {
+    @apply min-w-[24px];
+    @apply max-w-[164px];
+    @apply overflow-hidden;
   } */
 </style>
