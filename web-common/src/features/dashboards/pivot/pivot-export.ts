@@ -5,10 +5,10 @@ import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/ti
 import { mapSelectedTimeRangeToV1TimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
 import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import {
+  V1TimeGrain,
   type V1MetricsViewAggregationRequest,
   type V1MetricsViewAggregationSort,
   type V1Query,
-  V1TimeGrain,
   type V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
@@ -20,8 +20,7 @@ import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
   PivotChipType,
-  type PivotColumns,
-  type PivotRows,
+  type PivotChipData,
   type PivotState,
 } from "./types";
 
@@ -79,8 +78,8 @@ function getPivotAggregationRequest(
   timeDimension: string,
   dashboardState: MetricsExplorerEntity,
   timeRange: V1TimeRange,
-  rows: PivotRows,
-  columns: PivotColumns,
+  rows: PivotChipData[],
+  columns: { dimension: PivotChipData[]; measure: PivotChipData[] },
   enableComparison: boolean,
   comparisonTime: TimeRangeString | undefined,
   isFlat: boolean,
@@ -100,7 +99,7 @@ function getPivotAggregationRequest(
     return group;
   });
 
-  const allDimensions = [...rows.dimension, ...columns.dimension].map((d) =>
+  const allDimensions = [...rows, ...columns.dimension].map((d) =>
     d.type === PivotChipType.Time
       ? {
           name: timeDimension,
@@ -119,7 +118,7 @@ function getPivotAggregationRequest(
         d.type === PivotChipType.Time ? `Time ${d.title}` : d.id,
       );
 
-  const rowDimensions = [...rows.dimension].map((d) =>
+  const rowDimensions = rows.map((d) =>
     d.type === PivotChipType.Time
       ? {
           name: timeDimension,

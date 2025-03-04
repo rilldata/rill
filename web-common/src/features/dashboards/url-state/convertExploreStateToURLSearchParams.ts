@@ -371,15 +371,12 @@ function toPivotUrlParams(
     return data.id;
   };
 
-  const rows = exploreState.pivot.rows.dimension.map(mapPivotEntry);
+  const rows = exploreState.pivot.rows.map(mapPivotEntry);
   if (!arrayOrderedEquals(rows, preset.pivotRows ?? [])) {
     searchParams.set(ExploreStateURLParams.PivotRows, rows.join(","));
   }
 
-  const cols = [
-    ...exploreState.pivot.columns.dimension.map(mapPivotEntry),
-    ...exploreState.pivot.columns.measure.map(mapPivotEntry),
-  ];
+  const cols = exploreState.pivot.columns.map(mapPivotEntry);
   if (!arrayOrderedEquals(cols, preset.pivotCols ?? [])) {
     searchParams.set(ExploreStateURLParams.PivotColumns, cols.join(","));
   }

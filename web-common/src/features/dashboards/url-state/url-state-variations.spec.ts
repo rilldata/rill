@@ -41,7 +41,7 @@ import {
   AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY,
   AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY,
   AD_BIDS_TOGGLE_PIVOT,
-  AD_BIDS_TOGGLE_PIVOT_ROW_JOIN_TYPE,
+  AD_BIDS_TOGGLE_PIVOT_TABLE_MODE,
   applyMutationsToDashboard,
   type TestDashboardMutation,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
@@ -304,7 +304,7 @@ const TestCases: {
     title: "Pivot with no preset, toggle pivot to flat mode",
     mutations: [
       AD_BIDS_OPEN_DOMAIN_BID_PRICE_PIVOT,
-      AD_BIDS_TOGGLE_PIVOT_ROW_JOIN_TYPE,
+      AD_BIDS_TOGGLE_PIVOT_TABLE_MODE,
     ],
     expectedUrl:
       "http://localhost/?view=pivot&cols=domain%2Ctime.day%2Cimpressions&table_mode=flat",

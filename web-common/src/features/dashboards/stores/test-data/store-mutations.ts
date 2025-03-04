@@ -199,69 +199,59 @@ export const AD_BIDS_CLOSE_TDD: TestDashboardMutation = () =>
 export const AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS: TestDashboardMutation = () =>
   metricsExplorerStore.createPivot(
     AD_BIDS_EXPLORE_NAME,
-    {
-      dimension: [
-        {
-          id: AD_BIDS_PUBLISHER_DIMENSION,
-          title: AD_BIDS_PUBLISHER_DIMENSION,
-          type: PivotChipType.Dimension,
-        },
-        {
-          id: V1TimeGrain.TIME_GRAIN_HOUR,
-          title: "hour",
-          type: PivotChipType.Time,
-        },
-      ],
-    },
-    {
-      dimension: [
-        {
-          id: AD_BIDS_DOMAIN_DIMENSION,
-          title: AD_BIDS_DOMAIN_DIMENSION,
-          type: PivotChipType.Dimension,
-        },
-        {
-          id: V1TimeGrain.TIME_GRAIN_DAY,
-          title: "day",
-          type: PivotChipType.Time,
-        },
-      ],
-      measure: [
-        {
-          id: AD_BIDS_IMPRESSIONS_MEASURE,
-          title: AD_BIDS_IMPRESSIONS_MEASURE,
-          type: PivotChipType.Measure,
-        },
-      ],
-    },
+    [
+      {
+        id: AD_BIDS_PUBLISHER_DIMENSION,
+        title: AD_BIDS_PUBLISHER_DIMENSION,
+        type: PivotChipType.Dimension,
+      },
+      {
+        id: V1TimeGrain.TIME_GRAIN_HOUR,
+        title: "hour",
+        type: PivotChipType.Time,
+      },
+    ],
+    [
+      {
+        id: AD_BIDS_DOMAIN_DIMENSION,
+        title: AD_BIDS_DOMAIN_DIMENSION,
+        type: PivotChipType.Dimension,
+      },
+      {
+        id: V1TimeGrain.TIME_GRAIN_DAY,
+        title: "day",
+        type: PivotChipType.Time,
+      },
+
+      {
+        id: AD_BIDS_IMPRESSIONS_MEASURE,
+        title: AD_BIDS_IMPRESSIONS_MEASURE,
+        type: PivotChipType.Measure,
+      },
+    ],
   );
 export const AD_BIDS_OPEN_DOMAIN_BID_PRICE_PIVOT: TestDashboardMutation = () =>
   metricsExplorerStore.createPivot(
     AD_BIDS_EXPLORE_NAME,
-    {
-      dimension: [
-        {
-          id: AD_BIDS_DOMAIN_DIMENSION,
-          title: AD_BIDS_DOMAIN_DIMENSION,
-          type: PivotChipType.Dimension,
-        },
-        {
-          id: V1TimeGrain.TIME_GRAIN_DAY,
-          title: "day",
-          type: PivotChipType.Time,
-        },
-      ],
-    },
-    {
-      dimension: [],
-      measure: [
-        {
-          id: AD_BIDS_IMPRESSIONS_MEASURE,
-          title: AD_BIDS_IMPRESSIONS_MEASURE,
-          type: PivotChipType.Measure,
-        },
-      ],
-    },
+    [
+      {
+        id: AD_BIDS_DOMAIN_DIMENSION,
+        title: AD_BIDS_DOMAIN_DIMENSION,
+        type: PivotChipType.Dimension,
+      },
+      {
+        id: V1TimeGrain.TIME_GRAIN_DAY,
+        title: "day",
+        type: PivotChipType.Time,
+      },
+    ],
+    [
+      {
+        id: AD_BIDS_IMPRESSIONS_MEASURE,
+        title: AD_BIDS_IMPRESSIONS_MEASURE,
+        type: PivotChipType.Measure,
+      },
+    ],
   );
 export const AD_BIDS_TOGGLE_PIVOT: TestDashboardMutation = () =>
   metricsExplorerStore.setPivotMode(AD_BIDS_EXPLORE_NAME, false);
@@ -279,84 +269,70 @@ export const AD_BIDS_SORT_PIVOT_BY_IMPRESSIONS_DESC: TestDashboardMutation =
       { id: AD_BIDS_IMPRESSIONS_MEASURE, desc: true },
     ]);
 
-export const AD_BIDS_TOGGLE_PIVOT_ROW_JOIN_TYPE: TestDashboardMutation = () =>
+export const AD_BIDS_TOGGLE_PIVOT_TABLE_MODE: TestDashboardMutation = () =>
   metricsExplorerStore.setPivotTableMode(
     AD_BIDS_EXPLORE_NAME,
     "flat",
-    { dimension: [] },
-    {
-      dimension: [
-        {
-          id: AD_BIDS_DOMAIN_DIMENSION,
-          title: AD_BIDS_DOMAIN_DIMENSION,
-          type: PivotChipType.Dimension,
-        },
-        {
-          id: V1TimeGrain.TIME_GRAIN_DAY,
-          title: "day",
-          type: PivotChipType.Time,
-        },
-      ],
-      measure: [
-        {
-          id: AD_BIDS_IMPRESSIONS_MEASURE,
-          title: AD_BIDS_IMPRESSIONS_MEASURE,
-          type: PivotChipType.Measure,
-        },
-      ],
-    },
+    [],
+    [
+      {
+        id: AD_BIDS_DOMAIN_DIMENSION,
+        title: AD_BIDS_DOMAIN_DIMENSION,
+        type: PivotChipType.Dimension,
+      },
+      {
+        id: V1TimeGrain.TIME_GRAIN_DAY,
+        title: "day",
+        type: PivotChipType.Time,
+      },
+      {
+        id: AD_BIDS_IMPRESSIONS_MEASURE,
+        title: AD_BIDS_IMPRESSIONS_MEASURE,
+        type: PivotChipType.Measure,
+      },
+    ],
   );
 
 export const AD_BIDS_OPEN_PUB_IMP_PIVOT: TestDashboardMutation = () =>
   metricsExplorerStore.createPivot(
     AD_BIDS_EXPLORE_NAME,
-    {
-      dimension: [
-        {
-          id: V1TimeGrain.TIME_GRAIN_HOUR,
-          title: "hour",
-          type: PivotChipType.Time,
-        },
-        {
-          id: AD_BIDS_PUBLISHER_DIMENSION,
-          title: AD_BIDS_PUBLISHER_DIMENSION,
-          type: PivotChipType.Dimension,
-        },
-      ],
-    },
-    {
-      dimension: [],
-      measure: [
-        {
-          id: AD_BIDS_IMPRESSIONS_MEASURE,
-          title: AD_BIDS_IMPRESSIONS_MEASURE,
-          type: PivotChipType.Measure,
-        },
-      ],
-    },
+    [
+      {
+        id: V1TimeGrain.TIME_GRAIN_HOUR,
+        title: "hour",
+        type: PivotChipType.Time,
+      },
+      {
+        id: AD_BIDS_PUBLISHER_DIMENSION,
+        title: AD_BIDS_PUBLISHER_DIMENSION,
+        type: PivotChipType.Dimension,
+      },
+    ],
+    [
+      {
+        id: AD_BIDS_IMPRESSIONS_MEASURE,
+        title: AD_BIDS_IMPRESSIONS_MEASURE,
+        type: PivotChipType.Measure,
+      },
+    ],
   );
 export const AD_BIDS_OPEN_DOM_BP_PIVOT: TestDashboardMutation = () =>
   metricsExplorerStore.createPivot(
     AD_BIDS_EXPLORE_NAME,
-    {
-      dimension: [
-        {
-          id: AD_BIDS_DOMAIN_DIMENSION,
-          title: AD_BIDS_DOMAIN_DIMENSION,
-          type: PivotChipType.Dimension,
-        },
-      ],
-    },
-    {
-      dimension: [],
-      measure: [
-        {
-          id: AD_BIDS_BID_PRICE_MEASURE,
-          title: AD_BIDS_IMPRESSIONS_MEASURE,
-          type: PivotChipType.Measure,
-        },
-      ],
-    },
+    [
+      {
+        id: AD_BIDS_DOMAIN_DIMENSION,
+        title: AD_BIDS_DOMAIN_DIMENSION,
+        type: PivotChipType.Dimension,
+      },
+    ],
+    [
+      {
+        id: AD_BIDS_BID_PRICE_MEASURE,
+        title: AD_BIDS_IMPRESSIONS_MEASURE,
+        type: PivotChipType.Measure,
+      },
+    ],
   );
 
 export function applyMutationsToDashboard(
