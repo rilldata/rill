@@ -33,7 +33,7 @@
   export let enableSorting = true;
   export let isSelected = false;
   export let sorted: SortDirection | undefined = undefined;
-  export let firstMeasure: MetricsViewSpecMeasureV2;
+  export let firstMeasure: MetricsViewSpecMeasureV2 | undefined;
 
   const config: VirtualizedTableConfig = getContext("config");
   const dispatch = createEventDispatcher();
