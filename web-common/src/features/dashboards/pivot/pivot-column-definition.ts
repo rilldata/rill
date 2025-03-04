@@ -178,7 +178,9 @@ function formatDimensionValue(
 
 export type MeasureColumnProps = Array<{
   label: string;
-  formatter: ReturnType<typeof createMeasureValueFormatter<null | undefined>>;
+  formatter:
+    | ReturnType<typeof createMeasureValueFormatter<null | undefined>>
+    | ((v: unknown) => unknown);
   name: string;
   type: MeasureType;
 }>;
@@ -204,12 +206,14 @@ export function getMeasureColumnProps(
     );
 
     if (!measure) {
-      throw new Error(`Measure ${m} not found in config.allMeasures`);
+      console.warn(`Measure ${m} not found in config.allMeasures`);
     }
 
     return {
       label: label || measure?.displayName || measureName,
-      formatter: createMeasureValueFormatter<null | undefined>(measure),
+      formatter: measure
+        ? createMeasureValueFormatter<null | undefined>(measure)
+        : (v: unknown) => v,
       name: m,
       type,
     };

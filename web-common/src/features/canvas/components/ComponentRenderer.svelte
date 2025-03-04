@@ -48,6 +48,8 @@
 {#if rendererProperties && isCanvasComponentType(renderer)}
   {#if isChartComponentType(renderer) && timeAndFilterStore}
     <Chart {rendererProperties} {renderer} {timeAndFilterStore} />
+  {:else if renderer === "table" && timeAndFilterStore}
+    <Table {rendererProperties} {timeAndFilterStore} {componentName} />
   {:else if isFilterable && timeAndFilterStore}
     <svelte:component
       this={filterableComponents.get(renderer)}
