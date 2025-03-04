@@ -50,7 +50,7 @@ export function getPivotConfigKey(config: PivotDataStoreConfig) {
     pivot,
   } = config;
 
-  const { sorting } = pivot;
+  const { sorting, tableMode: tableModeKey } = pivot;
   const timeKey = JSON.stringify(time);
   const sortingKey = JSON.stringify(sorting);
   const filterKey = JSON.stringify(whereFilter);
@@ -59,7 +59,7 @@ export function getPivotConfigKey(config: PivotDataStoreConfig) {
     .concat(measureNames, colDimensionNames)
     .join("_");
 
-  return `${dimsAndMeasures}_${timeKey}_${sortingKey}_${filterKey}_${enableComparison}_${comparisonTimeKey}`;
+  return `${dimsAndMeasures}_${timeKey}_${sortingKey}_${tableModeKey}_${filterKey}_${enableComparison}_${comparisonTimeKey}`;
 }
 
 /**
@@ -188,13 +188,12 @@ export function getFilterForPivotTable(
   anchorDimension: string | undefined = undefined,
   yLimit = 100,
 ) {
-  // TODO: handle for already existing global filters
-
-  const { time } = config;
+  const { isFlat, time } = config;
 
   let rowFilters: V1Expression | undefined;
   if (
     anchorDimension &&
+    !isFlat &&
     !isTimeDimension(anchorDimension, time.timeDimension)
   ) {
     rowFilters = createInExpression(
@@ -378,8 +377,8 @@ export function getSortForAccessor(
     end: config.time.timeEnd,
   };
 
-  // Return un-changed filter if no sorting is applied
-  if (config.pivot?.sorting?.length === 0) {
+  // Return un-changed filter if no sorting is applied or in flat mode
+  if (config.pivot?.sorting?.length === 0 || config.isFlat) {
     return {
       sortPivotBy,
       timeRange: defaultTimeRange,
@@ -516,6 +515,30 @@ export function getSortFilteredMeasureBody(
   return { sortFilteredMeasureBody, isMeasureSortAccessor, sortAccessor };
 }
 
+function getValuesForFlatTable(
+  tableData: PivotDataRow[],
+  rowDimensions: string[],
+  rowId: string,
+  hasTotalsRow: boolean,
+): string[] {
+  let index = parseInt(rowId, 10);
+  const dimensionValues: string[] = [];
+
+  if (hasTotalsRow) index = index - 1;
+
+  const row = tableData?.[index];
+  if (!row) return dimensionValues;
+
+  // For flat tables, collect all dimension values in order
+  rowDimensions.forEach((dim) => {
+    if (dim in row) {
+      dimensionValues.push(row[dim] as string);
+    }
+  });
+
+  return dimensionValues;
+}
+
 export function getFiltersForCell(
   config: PivotDataStoreConfig,
   rowId: string,
@@ -523,18 +546,30 @@ export function getFiltersForCell(
   colDimensionAxes: Record<string, string[]> = {},
   tableData: PivotDataRow[],
 ): PivotFilter {
-  const { rowDimensionNames, measureNames } = config;
+  const { rowDimensionNames, measureNames, isFlat } = config;
   const defaultTimeRange = {
     start: config.time.timeStart,
     end: config.time.timeEnd,
   };
 
-  const values = getValuesForExpandedKey(
-    tableData,
-    rowDimensionNames,
-    rowId,
-    measureNames.length > 0,
-  );
+  let values: string[];
+
+  if (isFlat) {
+    // TODO: Update this when columns can be mixed with measures
+    values = getValuesForFlatTable(
+      tableData,
+      rowDimensionNames,
+      rowId,
+      measureNames.length > 0,
+    );
+  } else {
+    values = getValuesForExpandedKey(
+      tableData,
+      rowDimensionNames,
+      rowId,
+      measureNames.length > 0,
+    );
+  }
 
   const rowNestTimeFilters: TimeFilters[] = [];
   const rowNestFilters = values
@@ -569,7 +604,7 @@ export function getFiltersForCell(
   let columnFilters: V1Expression | undefined;
   let timeRangeCol: TimeRangeString;
   const firstDimension = rowDimensionNames?.[0];
-  if (firstDimension === colId || measureNames.includes(colId)) {
+  if (firstDimension === colId || measureNames.includes(colId) || isFlat) {
     columnFilters = undefined;
     timeRangeCol = defaultTimeRange;
   } else {
@@ -618,4 +653,8 @@ export function getErrorState(errors: PivotQueryError[]): PivotDataState {
     assembled: false,
     totalColumns: 0,
   };
+}
+
+export function isElement(target: EventTarget | null): target is HTMLElement {
+  return target instanceof HTMLElement;
 }

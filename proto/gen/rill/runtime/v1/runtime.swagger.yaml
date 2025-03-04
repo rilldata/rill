@@ -4358,6 +4358,8 @@ definitions:
         type: string
       pivotSortAsc:
         type: boolean
+      pivotTableMode:
+        type: string
   v1ExploreSortType:
     type: string
     enum:

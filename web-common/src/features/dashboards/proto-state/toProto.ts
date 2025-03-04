@@ -14,7 +14,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import {
   ToProtoOperationMap,
-  ToProtoPivotRowJoinTypeMap,
+  ToProtoPivotTableModeMap,
   ToProtoTimeGrainMap,
 } from "@rilldata/web-common/features/dashboards/proto-state/enum-maps";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
@@ -302,7 +302,7 @@ function toPivotProto(pivotState: PivotState): PartialMessage<DashboardState> {
     pivotSort: pivotState.sorting,
     pivotColumnPage: pivotState.columnPage,
     pivotEnableComparison: pivotState.enableComparison,
-    pivotRowJoinType: ToProtoPivotRowJoinTypeMap[pivotState.rowJoinType],
+    pivotTableMode: ToProtoPivotTableModeMap[pivotState.tableMode],
   };
 }
 
