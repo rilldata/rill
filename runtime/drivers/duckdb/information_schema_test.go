@@ -38,6 +38,8 @@ func TestInformationSchemaAll(t *testing.T) {
 
 	require.Equal(t, true, tables[2].View)
 	require.Equal(t, false, tables[3].View)
+	require.Equal(t, int64(0), tables[2].PhysicalSizeBytes)
+	require.Greater(t, tables[3].PhysicalSizeBytes, int64(0))
 }
 
 func TestInformationSchemaAllLike(t *testing.T) {
