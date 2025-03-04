@@ -203,6 +203,8 @@ export function estimateColumnSizes(
 ): number[] {
   const estimatedColumnSizes = columns.map((column, i) => {
     if (column.name.includes("delta")) return config.comparisonColumnWidth;
+    if (column.name.includes("percent_of_total"))
+      return config.comparisonColumnWidth;
     if (i != 0) return config.defaultColumnWidth;
 
     const largestStringLength =
