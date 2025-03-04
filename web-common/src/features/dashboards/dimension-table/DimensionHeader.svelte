@@ -34,7 +34,6 @@
   export let searchText: string;
   export let onToggleSearchItems: () => void;
   export let hideStartPivotButton = false;
-  export let comparisonTimeRange: V1TimeRange | undefined;
 
   const stateManagers = getStateManagers();
   const {
@@ -176,7 +175,6 @@
     <ContextColumnDropdown
       tooltipText="Choose context columns to display"
       isValidPercentOfTotal={validPercentOfTotal}
-      isTimeComparisonActive={Boolean(comparisonTimeRange)}
       selectedFilters={$contextColumnFilters}
       onContextColumnChange={setContextColumnFilters}
       {measures}

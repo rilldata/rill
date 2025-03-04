@@ -6,10 +6,8 @@
   import { getStateManagers } from "../state-managers/state-managers";
   import LeaderboardActiveMeasureNamesDropdown from "@rilldata/web-common/components/menu/LeaderboardActiveMeasureNamesDropdown.svelte";
   import ContextColumnDropdown from "@rilldata/web-common/components/menu/ContextColumnDropdown.svelte";
-  import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
 
   export let exploreName: string;
-  export let comparisonTimeRange: V1TimeRange | undefined;
 
   const StateManagers = getStateManagers();
   const {
@@ -98,20 +96,17 @@
         }}
       />
 
-      {#if Boolean(comparisonTimeRange)}
-        <ContextColumnDropdown
-          tooltipText="Choose context columns to display"
-          isValidPercentOfTotal={validPercentOfTotal}
-          isTimeComparisonActive={Boolean(comparisonTimeRange)}
-          selectedFilters={$contextColumnFilters}
-          onContextColumnChange={setContextColumnFilters}
-          {measures}
-          selectedMeasureNames={$leaderboardMeasureNames}
-          onSelectAll={() => {
-            toggleLeaderboardMeasureNames(allMeasureNames);
-          }}
-        />
-      {/if}
+      <ContextColumnDropdown
+        tooltipText="Choose context columns to display"
+        isValidPercentOfTotal={validPercentOfTotal}
+        selectedFilters={$contextColumnFilters}
+        onContextColumnChange={setContextColumnFilters}
+        {measures}
+        selectedMeasureNames={$leaderboardMeasureNames}
+        onSelectAll={() => {
+          toggleLeaderboardMeasureNames(allMeasureNames);
+        }}
+      />
     </div>
   {/if}
 </div>
