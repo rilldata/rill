@@ -95,7 +95,7 @@
       </Tooltip>
     </th>
 
-    {#each activeMeasureNames as measureName, index}
+    {#each activeMeasureNames as measureName}
       <th>
         <button
           aria-label="Toggle sort leaderboards by value"
