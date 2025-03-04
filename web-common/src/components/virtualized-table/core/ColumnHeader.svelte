@@ -32,7 +32,6 @@
   export let enableResize = true;
   export let enableSorting = true;
   export let isSelected = false;
-  export let highlight = false;
   export let sorted: SortDirection | undefined = undefined;
   export let firstMeasure: MetricsViewSpecMeasureV2;
 
