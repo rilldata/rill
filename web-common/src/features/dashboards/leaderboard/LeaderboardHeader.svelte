@@ -32,6 +32,7 @@
   export let toggleComparisonDimension: (
     dimensionName: string | undefined,
   ) => void;
+  export let measureLabel: (measureName: string) => string;
 
   $: showDeltaAbsolute =
     isTimeComparisonActive &&
@@ -103,7 +104,7 @@
           class="font-normal"
         >
           {#if hasMoreThanOneMeasure}
-            {measureName}
+            {measureLabel(measureName)}
           {:else}
             #
           {/if}
