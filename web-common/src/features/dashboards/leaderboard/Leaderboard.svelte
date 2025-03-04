@@ -110,14 +110,6 @@
   let visible = false;
   let hovered: boolean;
 
-  // TODO: hoist to const
-  $: comparisonIconWidth =
-    contextColumnFilters.length === 0
-      ? 36
-      : contextColumnFilters.length === 1
-        ? 28.67
-        : 24;
-
   $: ({
     name: dimensionName = "",
     description = "",
@@ -443,8 +435,7 @@
         class="transition-color ui-copy-muted table-message"
         on:click={() => setPrimaryDimension(dimensionName)}
       >
-        <div style:width="{comparisonIconWidth}px" />
-        <div>(Expand Table)</div>
+        <div class="pl-8">(Expand Table)</div>
       </button>
       <TooltipContent slot="tooltip-content">
         Expand dimension to see more values
@@ -452,8 +443,7 @@
     </Tooltip>
   {:else if noAvailableValues && !isFetching}
     <div class="table-message ui-copy-muted">
-      <div style:width="{comparisonIconWidth}px" />
-      <div>(No available values)</div>
+      <div class="pl-8">(No available values)</div>
     </div>
   {/if}
 </div>
