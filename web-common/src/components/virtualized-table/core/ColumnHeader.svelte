@@ -153,7 +153,7 @@
       </TooltipContent>
     </Tooltip>
 
-    {#if sorted && firstMeasure.displayName === name}
+    {#if sorted && firstMeasure?.displayName === name}
       <div class="mt-0.5 ui-copy-icon">
         {#if sorted === SortDirection.DESCENDING}
           <div in:fly|global={{ duration: 200, y: -8 }} style:opacity={1}>
