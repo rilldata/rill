@@ -41,6 +41,13 @@ project_files:
       select '2024-01-02T00:00:00Z'::TIMESTAMP as time, 'US' as country, 1 as val union all
       select '2024-01-03T00:00:00Z'::TIMESTAMP as time, 'US' as country, 10 as val union all
       select '2024-01-05T00:00:00Z'::TIMESTAMP as time, 'DK' as country, 100 as val
+  duckdb_data_null.yaml:
+    type: model
+    connector: duckdb
+    sql: |
+      select '2024-01-02T00:00:00Z'::TIMESTAMP as time, 'US' as country, 1 as val union all
+      select '2024-01-03T00:00:00Z'::TIMESTAMP as time, 'US' as country, null as val union all
+      select '2024-01-05T00:00:00Z'::TIMESTAMP as time, 'DK' as country, 100 as val
   duckdb_metrics.yaml:
     type: metrics_view
     model: duckdb_data
@@ -57,13 +64,13 @@ project_files:
         expression: sum(val)
       - name: sum_nullable_2day_rolling_avg_nullable
         expression: AVG(sum_nullable)
-        requires: [ sum_nullable ]
+        requires: [sum_nullable]
         window:
           order: time
           frame: RANGE BETWEEN INTERVAL 2 DAY PRECEDING AND CURRENT ROW
       - name: sum_nullable_2day_rolling_avg
         expression: AVG(sum_nullable)
-        requires: [ sum_nullable ]
+        requires: [sum_nullable]
         treat_nulls_as: -1
         window:
           order: time
@@ -76,18 +83,11 @@ project_files:
           frame: RANGE BETWEEN INTERVAL 2 DAY PRECEDING AND CURRENT ROW
       - name: recursive_measure
         expression: sum_nullable_2day_rolling_avg + sum
-        requires: [ sum_nullable_2day_rolling_avg, sum ]
+        requires: [sum_nullable_2day_rolling_avg, sum]
       - name: recursive_measure_1
         expression: sum_nullable_2day_rolling_avg_nullable + sum_nullable
-        requires: [ sum_nullable_2day_rolling_avg_nullable, sum_nullable ]
+        requires: [sum_nullable_2day_rolling_avg_nullable, sum_nullable]
         treat_nulls_as: -7
-  duckdb_data_null.yaml:
-    type: model
-    connector: duckdb
-    sql: |
-      select '2024-01-02T00:00:00Z'::TIMESTAMP as time, 'US' as country, 1 as val union all
-      select '2024-01-03T00:00:00Z'::TIMESTAMP as time, 'US' as country, null as val union all
-      select '2024-01-05T00:00:00Z'::TIMESTAMP as time, 'DK' as country, 100 as val
   duckdb_metrics_null.yaml:
     type: metrics_view
     model: duckdb_data_null
@@ -212,6 +212,60 @@ tests:
       - count: -123
         time__day: "2021-12-31T00:00:00Z"
       - count: 1116
+        time__day: "2022-01-01T00:00:00Z"
+  - name: null_filling_coalesce_cross_druid
+    resolver: metrics
+    properties:
+      metrics_view: druid_metrics
+      dimensions:
+        - name: publisher
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: __time
+              grain: day
+      measures:
+        - name: count
+      time_range:
+        end: 2022-01-02T00:00:00Z
+        start: 2021-12-31T00:00:00Z
+      sort:
+        - name: time__day
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - count: -123
+        publisher: null
+        time__day: "2021-12-31T00:00:00Z"
+      - count: -123
+        publisher: Facebook
+        time__day: "2021-12-31T00:00:00Z"
+      - count: -123
+        publisher: Google
+        time__day: "2021-12-31T00:00:00Z"
+      - count: -123
+        publisher: Microsoft
+        time__day: "2021-12-31T00:00:00Z"
+      - count: -123
+        publisher: Yahoo
+        time__day: "2021-12-31T00:00:00Z"
+      - count: 349
+        publisher: null
+        time__day: "2022-01-01T00:00:00Z"
+      - count: 242
+        publisher: Facebook
+        time__day: "2022-01-01T00:00:00Z"
+      - count: 231
+        publisher: Google
+        time__day: "2022-01-01T00:00:00Z"
+      - count: 62
+        publisher: Microsoft
+        time__day: "2022-01-01T00:00:00Z"
+      - count: 232
+        publisher: Yahoo
         time__day: "2022-01-01T00:00:00Z"
   - name: null_filling_coalesce_duckdb
     resolver: metrics
@@ -477,7 +531,7 @@ tests:
         - name: time__day
     result:
       - sum: 100
-        sum_prev: -1 # for "2024-01-03T00:00:00Z"
+        sum_prev: -1
         time__day: "2024-01-05T00:00:00Z"
   - name: null_filling_coalesce_iso_ranges_clickhouse
     resolver: metrics
