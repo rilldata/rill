@@ -56,6 +56,47 @@ test.describe("Metrics editor", () => {
     ).not.toBeVisible();
   });
 
+  test("Multiple measure formats resolved gracefully", async ({ page }) => {
+    // Using the AD_BIDS_METRICS_PATH variable is causing the test to fail in CI
+    await gotoNavEntry(page, "/metrics/AdBids_model_metrics.yaml");
+
+    const errorText =
+      'cannot set both "format_preset" and "format_d3" for a measure';
+
+    await page.getByLabel("code").click();
+
+    await updateCodeEditor(
+      page,
+      `version: 1
+type: metrics_view
+title: "AdBids table"
+table: "AdBids"
+timeseries: "timestamp"
+measures:
+  - name: "Total Records"
+    expression: count(*)
+    format_preset: humanize
+    format_d3: ".2f"
+dimensions:
+  - name: publisher
+    label: Publisher
+    column: publisher
+  `,
+    );
+
+    await expect(page.getByText(errorText)).toBeVisible();
+
+    await page.getByLabel("viz").click();
+
+    await page.getByRole("row", { name: "Total Records" }).click();
+
+    await page.getByRole("button", { name: "Save changes" }).click();
+
+    await page.waitForTimeout(3000);
+
+    await expect(page.getByText(errorText)).not.toBeVisible();
+  });
+
   test("Metrics editor", async ({ page }) => {
     await page.getByLabel("/metrics").click();
     await page.getByLabel("/dashboards").click();
