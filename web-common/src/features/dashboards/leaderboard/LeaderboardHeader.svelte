@@ -12,6 +12,7 @@
   import DeltaChangePercentage from "../dimension-table/DeltaChangePercentage.svelte";
   import DeltaChange from "../dimension-table/DeltaChange.svelte";
   import PercentOfTotal from "../dimension-table/PercentOfTotal.svelte";
+  import { fly } from "svelte/transition";
 
   export let dimensionName: string;
   export let isFetching: boolean;
@@ -107,7 +108,17 @@
             #
           {/if}
           {#if sortType === SortType.VALUE && measureName === sortMeasure}
-            <ArrowDown flip={sortedAscending} />
+            <div class="ui-copy-icon">
+              {#if sortedAscending}
+                <div in:fly|global={{ duration: 200, y: 8 }} style:opacity={1}>
+                  <ArrowDown flip />
+                </div>
+              {:else}
+                <div in:fly|global={{ duration: 200, y: -8 }} style:opacity={1}>
+                  <ArrowDown />
+                </div>
+              {/if}
+            </div>
           {/if}
         </button>
       </th>
@@ -120,7 +131,23 @@
           >
             <DeltaChange />
             {#if sortType === SortType.DELTA_ABSOLUTE}
-              <ArrowDown flip={sortedAscending} />
+              <div class="ui-copy-icon">
+                {#if sortedAscending}
+                  <div
+                    in:fly|global={{ duration: 200, y: 8 }}
+                    style:opacity={1}
+                  >
+                    <ArrowDown flip />
+                  </div>
+                {:else}
+                  <div
+                    in:fly|global={{ duration: 200, y: -8 }}
+                    style:opacity={1}
+                  >
+                    <ArrowDown />
+                  </div>
+                {/if}
+              </div>
             {/if}
           </button>
         </th>
@@ -134,7 +161,23 @@
           >
             <DeltaChangePercentage />
             {#if sortType === SortType.DELTA_PERCENT}
-              <ArrowDown flip={sortedAscending} />
+              <div class="ui-copy-icon">
+                {#if sortedAscending}
+                  <div
+                    in:fly|global={{ duration: 200, y: 8 }}
+                    style:opacity={1}
+                  >
+                    <ArrowDown flip />
+                  </div>
+                {:else}
+                  <div
+                    in:fly|global={{ duration: 200, y: -8 }}
+                    style:opacity={1}
+                  >
+                    <ArrowDown />
+                  </div>
+                {/if}
+              </div>
             {/if}
           </button>
         </th>
@@ -148,7 +191,23 @@
           >
             <PercentOfTotal />
             {#if sortType === SortType.PERCENT}
-              <ArrowDown flip={sortedAscending} />
+              <div class="ui-copy-icon">
+                {#if sortedAscending}
+                  <div
+                    in:fly|global={{ duration: 200, y: 8 }}
+                    style:opacity={1}
+                  >
+                    <ArrowDown flip />
+                  </div>
+                {:else}
+                  <div
+                    in:fly|global={{ duration: 200, y: -8 }}
+                    style:opacity={1}
+                  >
+                    <ArrowDown />
+                  </div>
+                {/if}
+              </div>
             {/if}
           </button>
         </th>
