@@ -52,14 +52,6 @@
   const queryLimit = 8;
   const maxValuesToShow = 15;
 
-  // TODO: hoist to const
-  $: comparisonIconWidth =
-    contextColumnFilters.length === 0
-      ? 36
-      : contextColumnFilters.length === 1
-        ? 28.67
-        : 24;
-
   export let dimension: MetricsViewSpecDimensionV2;
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
@@ -70,6 +62,7 @@
   export let activeMeasureNames: string[];
   export let metricsViewName: string;
   export let sortType: SortType;
+  export let sortMeasure: string | null;
   export let tableWidth: number;
   export let sortedAscending: boolean;
   export let isValidPercentOfTotal: boolean;
@@ -114,6 +107,14 @@
   let container: HTMLElement;
   let visible = false;
   let hovered: boolean;
+
+  // TODO: hoist to const
+  $: comparisonIconWidth =
+    contextColumnFilters.length === 0
+      ? 36
+      : contextColumnFilters.length === 1
+        ? 28.67
+        : 24;
 
   $: ({
     name: dimensionName = "",
@@ -166,6 +167,7 @@
     activeMeasureNames[0],
     dimensionName,
     !!comparisonTimeRange,
+    sortMeasure,
   );
 
   $: sortedQuery = createQueryServiceMetricsViewAggregation(
@@ -309,6 +311,23 @@
   $: showPercentOfTotal =
     !!comparisonTimeRange &&
     contextColumnFilters.includes(LeaderboardContextColumn.PERCENT);
+
+  $: if (activeMeasureNames) {
+    valueColumn.reset();
+    deltaColumn.reset();
+  }
+
+  $: firstColumnWidth =
+    !comparisonTimeRange && !isValidPercentOfTotal ? 240 : 164;
+
+  $: tableWidth =
+    firstColumnWidth +
+    $valueColumn +
+    (comparisonTimeRange
+      ? $deltaColumn + DEFAULT_COL_WIDTH
+      : isValidPercentOfTotal
+        ? DEFAULT_COL_WIDTH
+        : 0);
 </script>
 
 <div
@@ -355,6 +374,7 @@
       {toggleSort}
       {setPrimaryDimension}
       {toggleComparisonDimension}
+      {sortMeasure}
     />
 
     <tbody>

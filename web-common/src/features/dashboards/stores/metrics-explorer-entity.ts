@@ -84,6 +84,13 @@ export interface MetricsExplorerEntity {
    */
   sortDirection: SortDirection;
 
+  /**
+   * The measure name to sort by when sorting by value.
+   * This is used when there are multiple measures to determine which measure
+   * to sort the leaderboard by.
+   */
+  sortMeasure?: string;
+
   whereFilter: V1Expression;
   dimensionsWithInlistFilter: string[];
   dimensionThresholdFilters: Array<DimensionThresholdFilter>;

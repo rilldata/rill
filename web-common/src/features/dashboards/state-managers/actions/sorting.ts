@@ -5,6 +5,7 @@ import type { DashboardMutables } from "./types";
 export const toggleSort = (
   { dashboard }: DashboardMutables,
   sortType: SortType,
+  measureName?: string,
 ) => {
   // if sortType is not provided,  or if it is provided
   // and is the same as the current sort type,
@@ -20,6 +21,11 @@ export const toggleSort = (
     // to descending
     dashboard.dashboardSortType = sortType;
     dashboard.sortDirection = SortDirection.DESCENDING;
+  }
+
+  // If a measure name is provided, update the sort measure
+  if (measureName) {
+    dashboard.sortMeasure = measureName;
   }
 };
 

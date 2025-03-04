@@ -25,7 +25,8 @@
   export let sortType: SortType;
   export let contextColumnFilters: LeaderboardContextColumn[] = [];
   export let activeMeasureNames: string[] = [];
-  export let toggleSort: (sortType: SortType) => void;
+  export let toggleSort: (sortType: SortType, measureName?: string) => void;
+  export let sortMeasure: string | null;
   export let setPrimaryDimension: (dimensionName: string) => void;
   export let toggleComparisonDimension: (
     dimensionName: string | undefined,
@@ -97,7 +98,7 @@
       <th>
         <button
           aria-label="Toggle sort leaderboards by value"
-          on:click={() => toggleSort(SortType.VALUE)}
+          on:click={() => toggleSort(SortType.VALUE, measureName)}
           class="font-normal"
         >
           {#if hasMoreThanOneMeasure}
@@ -105,7 +106,7 @@
           {:else}
             #
           {/if}
-          {#if sortType === SortType.VALUE && index === 0}
+          {#if sortType === SortType.VALUE && measureName === sortMeasure}
             <ArrowDown flip={sortedAscending} />
           {/if}
         </button>
