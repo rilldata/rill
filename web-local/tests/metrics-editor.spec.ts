@@ -62,6 +62,9 @@ test.describe("Metrics editor", () => {
   test("Multiple measure formats resolved gracefully", async ({ page }) => {
     await gotoNavEntry(page, AD_BIDS_METRICS_PATH);
 
+    const errorText =
+      'cannot set both "format_preset" and "format_d3" for a measure';
+
     await page.getByLabel("code").click();
 
     await updateCodeEditor(
@@ -83,11 +86,7 @@ dimensions:
   `,
     );
 
-    await expect(
-      page.getByText(
-        'cannot set both "format_preset" and "format_d3" for a measure',
-      ),
-    ).toBeVisible();
+    await expect(page.getByText(errorText)).toBeVisible();
 
     await page.getByLabel("viz").click();
 
@@ -97,11 +96,7 @@ dimensions:
 
     await page.waitForTimeout(3000);
 
-    await expect(
-      page.getByText(
-        'cannot set both "format_preset" and "format_d3" for a measure',
-      ),
-    ).not.toBeVisible();
+    await expect(page.getByText(errorText)).not.toBeVisible();
   });
 
   test("Metrics editor", async ({ page }) => {
