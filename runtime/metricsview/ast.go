@@ -700,11 +700,15 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 			return nil, errors.New("failed to apply time spine: time range has more than 1000 bins")
 		}
 
+		tf, ok := a.findFieldForComputedTimeDimension(a.dimFields, a.metricsView.TimeDimension)
+		if !ok {
+			return nil, fmt.Errorf("failed to find computed time dimension %q", a.metricsView.TimeDimension)
+		}
+		timeAlias := tf.Name
+
 		var newDims []FieldNode
-		var timeAlias string
 		for _, f := range a.dimFields {
-			if strings.Contains(f.Expr, a.metricsView.TimeDimension) && strings.Contains(strings.ToLower(f.Expr), strings.ToLower(string(spine.TimeRange.Grain))) {
-				timeAlias = f.Name
+			if f.Name == tf.Name {
 				continue
 			}
 			newDims = append(newDims, f)
@@ -1119,6 +1123,30 @@ func (a *AST) findFieldForDimension(n *SelectNode, dim *runtimev1.MetricsViewSpe
 			}
 
 			if dim.TimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED && dim.TimeGrain != fqd.Compute.TimeFloor.Grain.ToProto() {
+				continue
+			}
+
+			return f, true
+		}
+	}
+
+	return FieldNode{}, false
+}
+
+func (a *AST) findFieldForComputedTimeDimension(dims []FieldNode, baseTimeDim string) (FieldNode, bool) {
+	for _, f := range dims {
+		// Find original query dimension for the field
+		var fqd Dimension
+		for _, qd := range a.query.Dimensions {
+			if f.Name == qd.Name {
+				fqd = qd
+				break
+			}
+		}
+
+		// If it's a computed dimension, check against the underlying dimension name (and time grain if specified)
+		if fqd.Compute != nil && fqd.Compute.TimeFloor != nil {
+			if baseTimeDim != fqd.Compute.TimeFloor.Dimension {
 				continue
 			}
 
