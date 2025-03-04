@@ -509,6 +509,13 @@ function fromPivotUrlParams(
       "ASC";
   }
 
+  if (searchParams.has(ExploreStateURLParams.PivotTableMode)) {
+    const tableMode = searchParams.get(
+      ExploreStateURLParams.PivotTableMode,
+    ) as string;
+    preset.pivotTableMode = tableMode;
+  }
+
   // TODO: other fields like expanded state and pin are not supported right now
   return { preset, errors };
 }

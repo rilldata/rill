@@ -1,18 +1,22 @@
 <script context="module" lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
+  import Column from "@rilldata/web-common/components/icons/Column.svelte";
+  import Row from "@rilldata/web-common/components/icons/Row.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { createEventDispatcher } from "svelte";
   import { writable } from "svelte/store";
+  import { getStateManagers } from "../state-managers/state-managers";
+  import { metricsExplorerStore } from "../stores/dashboard-stores";
   import AddField from "./AddField.svelte";
   import PivotDragItem from "./PivotDragItem.svelte";
   import PivotPortalItem from "./PivotPortalItem.svelte";
   import { swapListener } from "./swapListener";
-  import { type PivotChipData, PivotChipType } from "./types";
-  import Column from "@rilldata/web-common/components/icons/Column.svelte";
-  import Row from "@rilldata/web-common/components/icons/Row.svelte";
-  import { getStateManagers } from "../state-managers/state-managers";
-  import { metricsExplorerStore } from "../stores/dashboard-stores";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import {
+    type PivotChipData,
+    PivotChipType,
+    type PivotTableMode,
+  } from "./types";
 
   export type Zone = "rows" | "columns" | "Time" | "Measures" | "Dimensions";
 
@@ -31,6 +35,7 @@
   export let items: PivotChipData[] = [];
   export let placeholder: string | null = null;
   export let zone: Zone;
+  export let tableMode: PivotTableMode = "nest";
 
   const isDropLocation = zone === "columns" || zone === "rows";
 
@@ -208,7 +213,7 @@
       />
 
       <div class="icons">
-        {#if zone === "Time" || zone === "Dimensions"}
+        {#if (zone === "Time" || zone === "Dimensions") && tableMode === "nest"}
           <Tooltip distance={8} location="top" alignment="start">
             <button
               class="icon-wrapper"

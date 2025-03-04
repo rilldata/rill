@@ -140,10 +140,10 @@ function createColumnDefinitionForDimensions(
 }
 
 /**
- * Get formatted value for row dimension values. Format
+ * Get formatted value for dimension values. Format
  * time dimension values if present.
  */
-function formatRowDimensionValue(
+function formatDimensionValue(
   value: string,
   depth: number,
   timeConfig: PivotTimeConfig,
@@ -151,7 +151,14 @@ function formatRowDimensionValue(
 ) {
   const dimension = rowDimensionNames?.[depth];
   if (isTimeDimension(dimension, timeConfig?.timeDimension)) {
-    if (value === "Total" || value === "LOADING_CELL") return value;
+    if (
+      value === "Total" ||
+      value === "LOADING_CELL" ||
+      value === undefined ||
+      value === null
+    )
+      return value;
+
     const timeGrain = getTimeGrainFromDimension(dimension);
     const duration = timeGrainToDuration(timeGrain);
     const dt = addZoneOffset(
@@ -168,11 +175,19 @@ function formatRowDimensionValue(
   return value;
 }
 
-export function getMeasureColumnProps(config: PivotDataStoreConfig) {
+export type MeasureColumnProps = Array<{
+  label: string;
+  formatter: ReturnType<typeof createMeasureValueFormatter<null | undefined>>;
+  name: string;
+  type: MeasureType;
+}>;
+export function getMeasureColumnProps(
+  config: PivotDataStoreConfig,
+): MeasureColumnProps {
   const { measureNames } = config;
   return measureNames.map((m) => {
     let measureName = m;
-    let label: string | undefined;
+    let label: string = "";
     let type: MeasureType = "measure";
     if (m.endsWith(COMPARISON_DELTA)) {
       label = "Δ";
@@ -230,8 +245,7 @@ export function getColumnDefForPivot(
   columnDimensionAxes: Record<string, string[]> | undefined,
   totals: PivotDataRow,
 ) {
-  const IsNested = true;
-
+  const isFlat = config.isFlat;
   const { rowDimensionNames, colDimensionNames } = config;
 
   const measures = getMeasureColumnProps(config);
@@ -240,26 +254,33 @@ export function getColumnDefForPivot(
 
   let rowDimensionsForColumnDef = rowDimensions;
   let nestedLabel: string;
-  if (IsNested) {
+  if (isFlat) {
+    rowDimensionsForColumnDef = rowDimensions;
+  } else {
     rowDimensionsForColumnDef = rowDimensions.slice(0, 1);
     nestedLabel = rowDimensions.map((d) => d.label || d.name).join(" > ");
   }
   const rowDefinitions: ColumnDef<PivotDataRow>[] =
-    rowDimensionsForColumnDef.map((d) => {
+    rowDimensionsForColumnDef.map((d, i) => {
       return {
         id: d.name,
         accessorFn: (row) => row[d.name],
-        header: nestedLabel,
-        cell: ({ row, getValue }) =>
-          cellComponent(PivotExpandableCell, {
-            value: formatRowDimensionValue(
-              getValue() as string,
-              row.depth,
-              config.time,
-              rowDimensionNames,
-            ),
-            row,
-          }),
+        header: isFlat ? d.label || d.name : nestedLabel,
+        cell: ({ row, getValue }) => {
+          const formattedDimensionValue = formatDimensionValue(
+            getValue() as string,
+            isFlat ? i : row.depth,
+            config.time,
+            rowDimensionNames,
+          );
+
+          return isFlat
+            ? formattedDimensionValue
+            : cellComponent(PivotExpandableCell, {
+                value: formattedDimensionValue,
+                row,
+              });
+        },
       };
     });
 
@@ -288,6 +309,10 @@ export function getColumnDefForPivot(
         },
       };
     });
+
+  if (config.isFlat) {
+    return [...rowDefinitions, ...leafColumns];
+  }
 
   const groupedColDef = createColumnDefinitionForDimensions(
     config,
