@@ -26,8 +26,8 @@
   export let sortType: SortType;
   export let contextColumnFilters: LeaderboardContextColumn[] = [];
   export let activeMeasureNames: string[] = [];
-  export let toggleSort: (sortType: SortType, measureName?: string) => void;
   export let sortMeasure: string | null;
+  export let toggleSort: (sortType: SortType, measureName?: string) => void;
   export let setPrimaryDimension: (dimensionName: string) => void;
   export let toggleComparisonDimension: (
     dimensionName: string | undefined,
@@ -237,12 +237,12 @@
     @apply justify-end;
   }
 
-  th:nth-of-type(2) {
+  /* th:nth-of-type(2) {
     @apply sticky left-0 z-20 bg-white;
   }
 
   th:nth-of-type(2)::after {
     content: "";
     @apply absolute right-0 top-0 bottom-0 w-px bg-gray-200;
-  }
+  } */
 </style>
