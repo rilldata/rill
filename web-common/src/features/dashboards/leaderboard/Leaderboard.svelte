@@ -320,12 +320,14 @@
     // NOTE: workaround for when multiple context columns are selected, and the leaderboard header is not wide enough
     // Update column width based on measure labels
     if (activeMeasureNames.length > 1) {
-      // Calculate width needed for each label (8px per character + 24px padding)
+      // Calculate width needed for each label (8px per character + padding + sort icon space)
       const maxLabelWidth = Math.max(
         ...activeMeasureNames.map((name) => {
           const labelText = measureLabel(name);
           const textWidth = labelText.length * 8;
-          const totalWidth = textWidth + 24; // Add padding
+          const sortIconSpace = 24; // Space for sort icon
+          const padding = 16; // Left/right padding
+          const totalWidth = textWidth + sortIconSpace + padding;
           return totalWidth;
         }),
       );
