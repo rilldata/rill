@@ -92,6 +92,8 @@
   $: exploreSpec = $explore.data?.explore;
   $: timeRanges = exploreSpec?.timeRanges ?? [];
 
+  $: visibleMeasureNames = $visibleMeasures.map(({ name }) => name ?? "");
+
   let metricsWidth = DEFAULT_TIMESERIES_WIDTH;
   let resizing = false;
 
@@ -209,9 +211,7 @@
               {comparisonTimeRange}
               activeMeasureNames={$leaderboardMeasureNames}
               {timeControlsReady}
-              visibleMeasureNames={$visibleMeasures.map(
-                ({ name }) => name ?? "",
-              )}
+              {visibleMeasureNames}
               hideStartPivotButton={hidePivot}
             />
           {:else}
