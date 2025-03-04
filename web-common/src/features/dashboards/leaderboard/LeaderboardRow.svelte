@@ -156,20 +156,24 @@
     ]),
   );
 
-  $: firstCellGradient = hasMoreThanOneMeasure
-    ? "bg-white"
-    : `linear-gradient(to right, ${barColor}
+  $: firstCellGradient =
+    activeMeasureNames.length >= 2
+      ? "bg-white"
+      : `linear-gradient(to right, ${barColor}
     ${Math.max(...Object.values(barLengths))}px, transparent ${Math.max(...Object.values(barLengths))}px)`;
 
-  $: secondCellGradients = Object.fromEntries(
-    Object.entries(secondCellBarLengths).map(([name, length]) => [
-      name,
-      length
-        ? `linear-gradient(to right, ${barColor}
+  $: secondCellGradients =
+    activeMeasureNames.length === 1
+      ? "bg-white"
+      : Object.fromEntries(
+          Object.entries(secondCellBarLengths).map(([name, length]) => [
+            name,
+            length
+              ? `linear-gradient(to right, ${barColor}
     ${length}px, transparent ${length}px)`
-        : undefined,
-    ]),
-  );
+              : undefined,
+          ]),
+        );
 
   $: thirdCellGradients = Object.fromEntries(
     Object.entries(thirdCellBarLengths).map(([name, length]) => [
@@ -215,8 +219,6 @@
     contextColumnFilters.includes(LeaderboardContextColumn.PERCENT);
 
   $: showTooltip = hovered && !suppressTooltip;
-
-  $: hasMoreThanOneMeasure = activeMeasureNames.length > 1;
 
   function shiftClickHandler(label: string) {
     let truncatedLabel = label?.toString();
@@ -412,19 +414,20 @@
     @apply p-0 bg-surface;
   }
 
-  td:nth-of-type(2) {
+  /* td:nth-of-type(2) {
     @apply sticky left-0 z-20;
     background-color: white;
-  }
+  } */
 
-  tr:hover td:nth-of-type(2) {
+  /* tr:hover td:nth-of-type(2) {
     @apply bg-gray-100;
-  }
+  } */
 
+  /* 
   td:nth-of-type(2)::after {
     content: "";
     @apply absolute right-0 top-0 bottom-0 w-px bg-gray-200;
-  }
+  } */
 
   a {
     @apply absolute right-0 z-50 h-[22px] w-[32px];
