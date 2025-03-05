@@ -7,6 +7,7 @@ import {
 } from "@bufbuild/protobuf";
 import { mapMeasureFilterToExpr } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
+import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
 import {
   type PivotChipData,
   PivotChipType,
@@ -290,13 +291,12 @@ const mapPivotDimensions: (
 };
 
 function toPivotProto(pivotState: PivotState): PartialMessage<DashboardState> {
+  const pivotColumns = splitPivotChips(pivotState.columns);
   return {
     pivotIsActive: pivotState.active,
-    pivotRowAllDimensions: pivotState.rows.dimension.map(mapPivotDimensions),
-    pivotColumnAllDimensions:
-      pivotState.columns.dimension.map(mapPivotDimensions),
-
-    pivotColumnMeasures: pivotState.columns.measure.map((m) => m.id),
+    pivotRowAllDimensions: pivotState.rows.map(mapPivotDimensions),
+    pivotColumnAllDimensions: pivotColumns.dimension.map(mapPivotDimensions),
+    pivotColumnMeasures: pivotColumns.measure.map((m) => m.id),
 
     // pivotExpanded: pivotState.expanded,
     pivotSort: pivotState.sorting,

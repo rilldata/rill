@@ -408,13 +408,11 @@ function fromPivotProto(
 
   return {
     active: dashboard.pivotIsActive ?? false,
-    rows: {
-      dimension: rowDimensions,
-    },
-    columns: {
-      dimension: colDimensions,
-      measure: dashboard.pivotColumnMeasures.map(mapMeasure),
-    },
+    rows: rowDimensions,
+    columns: [
+      ...colDimensions,
+      ...dashboard.pivotColumnMeasures.map(mapMeasure),
+    ],
     expanded: dashboard.pivotExpanded,
     sorting: dashboard.pivotSort ?? [],
     columnPage: dashboard.pivotColumnPage ?? 1,

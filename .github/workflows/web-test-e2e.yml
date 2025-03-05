@@ -118,7 +118,9 @@ jobs:
         run: echo "$GITHUB_WORKSPACE" >> $GITHUB_PATH
 
       - name: Install browser for UI tests
-        run: npx playwright@latest install
+        run: |
+          npx playwright@latest install
+          npx playwright install-deps
 
       - name: Authenticate GCloud
         uses: google-github-actions/auth@v2
