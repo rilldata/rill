@@ -18,18 +18,6 @@ const config: PlaywrightTestConfig = {
   },
   testDir: "tests",
   projects: [
-    ...(process.env.CI
-      ? [] // skip in CI
-      : [
-          {
-            // Whenever the GitHub session expires, run this project manually to re-authenticate.
-            // This process captures the browser’s current storage state (i.e. cookies and local storage)
-            // and updates the `RILL_DEVTOOL_E2E_GITHUB_STORAGE_STATE_JSON` environment variable.
-            // Afterwards, manually deploy the updated `.env` file to GCS.
-            name: "setup-github-session",
-            testMatch: "github-session-setup.ts",
-          },
-        ]),
     {
       name: "setup",
       testMatch: "setup.ts",

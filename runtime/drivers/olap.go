@@ -542,7 +542,7 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, []any, erro
 		if err := result.Scan(valuePtrs...); err != nil {
 			return "", nil, nil, fmt.Errorf("select inline: failed to scan value: %w", err)
 		}
-		if d == DialectDruid || d == DialectDuckDB {
+		if d == DialectDruid || d == DialectDuckDB || d == DialectPinot {
 			// format - select * from (values (1, 2), (3, 4)) t(a, b)
 			if rows == 0 {
 				prefix = "SELECT * FROM (VALUES "
@@ -570,7 +570,7 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, []any, erro
 
 		dimVals = append(dimVals, values[0])
 		for i, v := range values {
-			if d == DialectDruid || d == DialectDuckDB {
+			if d == DialectDruid || d == DialectDuckDB || d == DialectPinot {
 				if i == 0 {
 					prefix += "("
 				} else {
@@ -604,7 +604,7 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, []any, erro
 			} else if d == DialectClickHouse {
 				suffix += "?"
 				args = append(args, v)
-			} else if d == DialectDruid {
+			} else if d == DialectDruid || d == DialectPinot {
 				ok, expr, err := d.GetValExpr(v, result.Schema.Fields[i].Type.Code)
 				if err != nil {
 					return "", nil, nil, fmt.Errorf("select inline: failed to get value expression: %w", err)
@@ -619,7 +619,7 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, []any, erro
 			}
 		}
 
-		if d == DialectDruid || d == DialectDuckDB {
+		if d == DialectDruid || d == DialectDuckDB || d == DialectPinot {
 			prefix += ")"
 			if rows == 0 {
 				suffix += ")"
@@ -631,7 +631,7 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, []any, erro
 		rows++
 	}
 
-	if d == DialectDruid || d == DialectDuckDB {
+	if d == DialectDruid || d == DialectDuckDB || d == DialectPinot {
 		prefix += ") "
 	} else if d == DialectClickHouse {
 		suffix += ")"
@@ -700,8 +700,10 @@ func (d Dialect) GetTimeExpr(t time.Time) (bool, string) {
 	switch d {
 	case DialectClickHouse:
 		return true, fmt.Sprintf("parseDateTimeBestEffort('%s')", t.Format(time.RFC3339Nano))
-	case DialectDuckDB, DialectDruid, DialectPinot:
+	case DialectDuckDB, DialectDruid:
 		return true, fmt.Sprintf("CAST('%s' AS TIMESTAMP)", t.Format(time.RFC3339Nano))
+	case DialectPinot:
+		return true, fmt.Sprintf("CAST(%d AS TIMESTAMP)", t.UnixMilli())
 	default:
 		return false, ""
 	}
