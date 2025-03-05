@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -412,7 +413,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		webOpenMode = "none" // for older reports if web_open_path is not set
 		if path, ok := rep.Spec.Annotations["web_open_path"]; ok {
 			// parse path, extract explore name, it will be like /explore/{explore}
-			if explore == "" && len(path) > 9 {
+			if explore == "" && strings.HasPrefix(path, "/explore/") {
 				explore = path[9:]
 				if explore[len(explore)-1] == '/' {
 					explore = explore[:len(explore)-1]
