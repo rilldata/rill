@@ -1,9 +1,10 @@
 <script lang="ts">
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
+  import Chart from "@rilldata/web-common/components/time-series-chart/Chart.svelte";
   import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
-  import { getLocalComparison } from "@rilldata/web-common/features/canvas/components/kpi/util";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
+  import RangeDisplay from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/RangeDisplay.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
@@ -16,24 +17,17 @@
     V1TimeGrain,
     type V1ComponentSpecRendererProperties,
   } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { DateTime, Interval } from "luxon";
+  import type { Readable } from "svelte/motion";
   import type { KPISpec } from ".";
   import { validateKPISchema } from "./selector";
-  import Chart from "@rilldata/web-common/components/time-series-chart/Chart.svelte";
-  import { DateTime, Interval } from "luxon";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import RangeDisplay from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/RangeDisplay.svelte";
-  import type { Readable } from "svelte/motion";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
   export let timeAndFilterStore: Readable<TimeAndFilterStore>;
 
   const ctx = getCanvasStateManagers();
-  const {
-    canvasEntity: {
-      spec,
-      timeControls: { showTimeComparison, selectedComparisonTimeRange },
-    },
-  } = ctx;
+  const { spec } = ctx.canvasEntity;
 
   let hoveredPoints: {
     interval: Interval<true>;
@@ -48,17 +42,22 @@
     metrics_view: metricsViewName,
     measure: measureName,
     sparkline,
-    time_filters: localTimeFilters,
     comparison: comparisonOptions,
   } = kpiProperties);
 
-  $: ({ showLocalTimeComparison, localComparisonTimeRange } =
-    getLocalComparison(localTimeFilters));
+  $: ({
+    timeGrain,
+    timeRange: { timeZone, start, end },
+    where,
+    comparisonTimeRange,
+    showTimeComparison,
+    comparisonTimeRangeState,
+  } = $timeAndFilterStore);
 
   $: schema = validateKPISchema(ctx, kpiProperties);
+  $: ({ isValid } = $schema);
 
   $: measureStore = spec.getMeasureForMetricView(measureName, metricsViewName);
-
   $: measure = $measureStore;
   $: measureIsPercentage = measure?.formatPreset === FormatPreset.PERCENTAGE;
 
@@ -69,24 +68,12 @@
   $: showSparkline = sparkline !== "none";
   $: isSparkRight = sparkline === "right";
 
-  $: ({ isValid } = $schema);
-
-  $: ({
-    timeGrain,
-    timeRange: { timeZone, start, end },
-    where,
-    comparisonTimeRange,
-  } = $timeAndFilterStore);
-
-  $: showComparison =
-    (!!comparisonOptions && localTimeFilters && showLocalTimeComparison) ||
-    (!localTimeFilters && $showTimeComparison);
+  $: showComparison = !!comparisonOptions?.length && showTimeComparison;
 
   $: comparisonLabel =
-    (localComparisonTimeRange?.name &&
-      TIME_COMPARISON[localComparisonTimeRange.name]?.label) ||
-    ($selectedComparisonTimeRange?.name &&
-      TIME_COMPARISON[$selectedComparisonTimeRange.name]?.label);
+    comparisonTimeRangeState?.selectedComparisonTimeRange?.name &&
+    TIME_COMPARISON[comparisonTimeRangeState?.selectedComparisonTimeRange.name]
+      ?.label;
 
   // BIG NUMBER QUERIES
   $: kpiTotalsQuery = createQueryServiceMetricsViewAggregation(
@@ -145,9 +132,9 @@
       : comparisonTotal;
 
   $: comparisonPercChange =
-    currentValue != null && comparisonVal != null
+    currentValue != null && comparisonVal
       ? (currentValue - comparisonVal) / comparisonVal
-      : undefined;
+      : null;
 
   // TIME SERIES QUERIES
   $: sparklineDataQuery = createQueryServiceMetricsViewTimeSeries(
@@ -224,7 +211,7 @@
         <span
           class="text-3xl font-medium text-gray-600 flex gap-x-0.5 items-end"
         >
-          {#if hoveredPoints?.[0]?.value !== undefined}
+          {#if hoveredPoints?.[0]?.value != null}
             <span class="text-primary-500">
               {measureValueFormatter(currentValue)}
             </span>
@@ -298,7 +285,7 @@
             <Chart
               bind:hoveredPoints
               {primaryData}
-              secondaryData={showComparison ? [comparisonData] : []}
+              secondaryData={showComparison ? comparisonData : []}
               {timeGrain}
               selectedTimeZone={timeZone}
               yAccessor={kpiProperties.measure}

@@ -5,9 +5,10 @@ import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/ti
 import { mapSelectedTimeRangeToV1TimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
 import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import {
-  type V1MetricsViewAggregationRequest,
-  type V1Query,
   V1TimeGrain,
+  type V1MetricsViewAggregationRequest,
+  type V1MetricsViewAggregationSort,
+  type V1Query,
   type V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
@@ -19,8 +20,7 @@ import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
   PivotChipType,
-  type PivotColumns,
-  type PivotRows,
+  type PivotChipData,
   type PivotState,
 } from "./types";
 
@@ -37,6 +37,7 @@ export function getPivotExportQuery(ctx: StateManagers, isScheduled: boolean) {
     return undefined;
 
   const enableComparison = configStore.enableComparison;
+  const isFlat = configStore.isFlat;
   const comparisonTime = configStore.comparisonTime;
   const pivotState = configStore.pivot;
 
@@ -64,6 +65,7 @@ export function getPivotExportQuery(ctx: StateManagers, isScheduled: boolean) {
       columns,
       enableComparison,
       comparisonTime,
+      isFlat,
       pivotState,
     ),
   };
@@ -76,10 +78,11 @@ function getPivotAggregationRequest(
   timeDimension: string,
   dashboardState: MetricsExplorerEntity,
   timeRange: V1TimeRange,
-  rows: PivotRows,
-  columns: PivotColumns,
+  rows: PivotChipData[],
+  columns: { dimension: PivotChipData[]; measure: PivotChipData[] },
   enableComparison: boolean,
   comparisonTime: TimeRangeString | undefined,
+  isFlat: boolean,
   pivotState: PivotState,
 ): undefined | V1MetricsViewAggregationRequest {
   const measures = columns.measure.flatMap((m) => {
@@ -96,7 +99,7 @@ function getPivotAggregationRequest(
     return group;
   });
 
-  const allDimensions = [...rows.dimension, ...columns.dimension].map((d) =>
+  const allDimensions = [...rows, ...columns.dimension].map((d) =>
     d.type === PivotChipType.Time
       ? {
           name: timeDimension,
@@ -109,11 +112,13 @@ function getPivotAggregationRequest(
         },
   );
 
-  const pivotOn = columns.dimension.map((d) =>
-    d.type === PivotChipType.Time ? `Time ${d.title}` : d.id,
-  );
+  const pivotOn = isFlat
+    ? undefined
+    : columns.dimension.map((d) =>
+        d.type === PivotChipType.Time ? `Time ${d.title}` : d.id,
+      );
 
-  const rowDimensions = [...rows.dimension].map((d) =>
+  const rowDimensions = rows.map((d) =>
     d.type === PivotChipType.Time
       ? {
           name: timeDimension,
@@ -126,13 +131,33 @@ function getPivotAggregationRequest(
         },
   );
 
-  // Sort by the dimensions in the pivot's rows
-  const sort = rowDimensions.map((d) => {
-    return {
-      name: d.alias ? d.alias : d.name,
-      desc: pivotState.sorting.find((s) => s.id === d.name)?.desc ?? false,
-    };
-  });
+  let sort: V1MetricsViewAggregationSort[] = [];
+
+  if (isFlat) {
+    if (pivotState.sorting.length > 0) {
+      sort = [
+        {
+          name: pivotState.sorting[0].id,
+          desc: pivotState.sorting[0].desc,
+        },
+      ];
+    } else {
+      sort = [
+        {
+          desc: measures?.[0] ? true : false,
+          name: measures?.[0]?.name || allDimensions?.[0]?.name,
+        },
+      ];
+    }
+  } else {
+    // Sort by the dimensions in the pivot's rows
+    sort = rowDimensions.map((d) => {
+      return {
+        name: d.alias ? d.alias : d.name,
+        desc: pivotState.sorting.find((s) => s.id === d.name)?.desc ?? false,
+      };
+    });
+  }
 
   return {
     instanceId: get(runtime).instanceId,

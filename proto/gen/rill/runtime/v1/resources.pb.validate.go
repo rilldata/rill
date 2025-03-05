@@ -2808,6 +2808,10 @@ func (m *ModelState) validate(all bool) error {
 
 	// no validation rules for PartitionsHaveErrors
 
+	// no validation rules for TotalExecutionDurationMs
+
+	// no validation rules for LatestExecutionDurationMs
+
 	if len(errors) > 0 {
 		return ModelStateMultiError(errors)
 	}
@@ -5053,6 +5057,10 @@ func (m *ExplorePreset) validate(all bool) error {
 
 	if m.PivotSortAsc != nil {
 		// no validation rules for PivotSortAsc
+	}
+
+	if m.PivotTableMode != nil {
+		// no validation rules for PivotTableMode
 	}
 
 	if len(errors) > 0 {
@@ -10289,6 +10297,8 @@ func (m *CanvasSpec) validate(all bool) error {
 
 	// no validation rules for DisplayName
 
+	// no validation rules for Banner
+
 	// no validation rules for MaxWidth
 
 	// no validation rules for GapX
@@ -10425,7 +10435,7 @@ func (m *CanvasSpec) validate(all bool) error {
 
 	}
 
-	for idx, item := range m.GetItems() {
+	for idx, item := range m.GetRows() {
 		_, _ = idx, item
 
 		if all {
@@ -10433,7 +10443,7 @@ func (m *CanvasSpec) validate(all bool) error {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
 					errors = append(errors, CanvasSpecValidationError{
-						field:  fmt.Sprintf("Items[%v]", idx),
+						field:  fmt.Sprintf("Rows[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
@@ -10441,7 +10451,7 @@ func (m *CanvasSpec) validate(all bool) error {
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
 					errors = append(errors, CanvasSpecValidationError{
-						field:  fmt.Sprintf("Items[%v]", idx),
+						field:  fmt.Sprintf("Rows[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
@@ -10450,42 +10460,13 @@ func (m *CanvasSpec) validate(all bool) error {
 		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return CanvasSpecValidationError{
-					field:  fmt.Sprintf("Items[%v]", idx),
+					field:  fmt.Sprintf("Rows[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
 				}
 			}
 		}
 
-	}
-
-	if all {
-		switch v := interface{}(m.GetLayout()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, CanvasSpecValidationError{
-					field:  "Layout",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, CanvasSpecValidationError{
-					field:  "Layout",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetLayout()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return CanvasSpecValidationError{
-				field:  "Layout",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
 	}
 
 	for idx, item := range m.GetSecurityRules() {
@@ -10521,8 +10502,6 @@ func (m *CanvasSpec) validate(all bool) error {
 		}
 
 	}
-
-	// no validation rules for Banner
 
 	if len(errors) > 0 {
 		return CanvasSpecMultiError(errors)
@@ -10729,6 +10708,145 @@ var _ interface {
 	ErrorName() string
 } = CanvasStateValidationError{}
 
+// Validate checks the field values on CanvasRow with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *CanvasRow) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CanvasRow with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in CanvasRowMultiError, or nil
+// if none found.
+func (m *CanvasRow) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CanvasRow) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for HeightUnit
+
+	for idx, item := range m.GetItems() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, CanvasRowValidationError{
+						field:  fmt.Sprintf("Items[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, CanvasRowValidationError{
+						field:  fmt.Sprintf("Items[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return CanvasRowValidationError{
+					field:  fmt.Sprintf("Items[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if m.Height != nil {
+		// no validation rules for Height
+	}
+
+	if len(errors) > 0 {
+		return CanvasRowMultiError(errors)
+	}
+
+	return nil
+}
+
+// CanvasRowMultiError is an error wrapping multiple validation errors returned
+// by CanvasRow.ValidateAll() if the designated constraints aren't met.
+type CanvasRowMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CanvasRowMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CanvasRowMultiError) AllErrors() []error { return m }
+
+// CanvasRowValidationError is the validation error returned by
+// CanvasRow.Validate if the designated constraints aren't met.
+type CanvasRowValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CanvasRowValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CanvasRowValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CanvasRowValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CanvasRowValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CanvasRowValidationError) ErrorName() string { return "CanvasRowValidationError" }
+
+// Error satisfies the builtin error interface
+func (e CanvasRowValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCanvasRow.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CanvasRowValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CanvasRowValidationError{}
+
 // Validate checks the field values on CanvasItem with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
@@ -10755,20 +10873,10 @@ func (m *CanvasItem) validate(all bool) error {
 
 	// no validation rules for DefinedInCanvas
 
-	if m.X != nil {
-		// no validation rules for X
-	}
-
-	if m.Y != nil {
-		// no validation rules for Y
-	}
+	// no validation rules for WidthUnit
 
 	if m.Width != nil {
 		// no validation rules for Width
-	}
-
-	if m.Height != nil {
-		// no validation rules for Height
 	}
 
 	if len(errors) > 0 {

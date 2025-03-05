@@ -6,6 +6,10 @@ import {
   buildValidMetricsViewFilter,
   createAndExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import type {
+  ComparisonTimeRangeState,
+  TimeRangeState,
+} from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   type V1Expression,
@@ -46,7 +50,7 @@ export class CanvasEntity {
   /**
    * Index of the component higlighted or selected in the canvas
    */
-  selectedComponentIndex: Writable<number | null>;
+  selectedComponent: Writable<{ row: number; column: number } | null>;
 
   private specStore: CanvasSpecResponseStore;
 
@@ -63,14 +67,16 @@ export class CanvasEntity {
     this.name = name;
 
     this.components = new Map();
-    this.selectedComponentIndex = writable(null);
+    this.selectedComponent = writable<{ row: number; column: number } | null>(
+      null,
+    );
     this.spec = new CanvasResolvedSpec(this.specStore);
     this.timeControls = new TimeControls(this.specStore);
     this.filters = new Filters(this.spec);
   }
 
-  setSelectedComponentIndex = (index: number | null) => {
-    this.selectedComponentIndex.set(index);
+  setSelectedComponent = (pos: { row: number; column: number } | null) => {
+    this.selectedComponent.set(pos);
   };
 
   useComponent = (componentName: string): CanvasComponentState => {
@@ -110,9 +116,9 @@ export class CanvasEntity {
       const metricsViewName = componentSpec?.rendererProperties
         ?.metrics_view as string;
 
-      if (!metricsViewName) {
-        throw new Error("Metrics view name is not set for component");
-      }
+      // if (!metricsViewName) {
+      //   throw new Error("Metrics view name is not set for component");
+      // }
 
       const component = useComponent(componentName);
       const dimensionsStore = spec.getDimensionsForMetricView(metricsViewName);
@@ -125,7 +131,6 @@ export class CanvasEntity {
           timeControls.comparisonRangeStateStore,
           component.localTimeControls.comparisonRangeStateStore,
           timeControls.selectedTimezone,
-          component.localTimeControls.showTimeComparison,
           filters.whereFilter,
           filters.dimensionThresholdFilters,
           dimensionsStore,
@@ -137,7 +142,6 @@ export class CanvasEntity {
           globalComparisonRangeState,
           localComparisonRangeState,
           timeZone,
-          showLocalTimeComparison,
           whereFilter,
           dtf,
           dimensions,
@@ -152,11 +156,23 @@ export class CanvasEntity {
 
           let timeGrain = globalTimeRangeState?.selectedTimeRange?.interval;
 
+          const localShowTimeComparison =
+            !!localComparisonRangeState?.showTimeComparison;
+          const globalShowTimeComparison =
+            !!globalComparisonRangeState?.showTimeComparison;
+
+          let showTimeComparison = globalShowTimeComparison;
+
           let comparisonTimeRange: V1TimeRange | undefined = {
             start: globalComparisonRangeState?.comparisonTimeStart,
             end: globalComparisonRangeState?.comparisonTimeEnd,
             timeZone,
           };
+
+          let timeRangeState: TimeRangeState | undefined = globalTimeRangeState;
+          let comparisonTimeRangeState: ComparisonTimeRangeState | undefined =
+            globalComparisonRangeState;
+
           if (componentSpec?.rendererProperties?.time_filters) {
             timeRange = {
               start: localTimeRangeState?.timeStart,
@@ -170,8 +186,13 @@ export class CanvasEntity {
               timeZone,
             };
 
-            if (!showLocalTimeComparison) comparisonTimeRange = undefined;
+            if (!localShowTimeComparison) {
+              showTimeComparison = false;
+            }
             timeGrain = localTimeRangeState?.selectedTimeRange?.interval;
+
+            timeRangeState = localTimeRangeState;
+            comparisonTimeRangeState = localComparisonRangeState;
           }
 
           // Dimension Filters
@@ -192,7 +213,15 @@ export class CanvasEntity {
             where = mergeFilters(globalWhere, componentWhere);
           }
 
-          return { timeRange, comparisonTimeRange, where, timeGrain };
+          return {
+            timeRange,
+            showTimeComparison,
+            comparisonTimeRange,
+            where,
+            timeGrain,
+            timeRangeState,
+            comparisonTimeRangeState,
+          };
         },
       ).subscribe(set);
     });

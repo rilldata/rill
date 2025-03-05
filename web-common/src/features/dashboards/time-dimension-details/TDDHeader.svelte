@@ -13,6 +13,7 @@
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import SelectAllButton from "@rilldata/web-common/features/dashboards/dimension-table/SelectAllButton.svelte";
+  import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import {
@@ -112,10 +113,11 @@
   function startPivotForTDD() {
     const pivot = $dashboardStore?.pivot;
 
+    const pivotColumns = splitPivotChips(pivot.columns);
     if (
-      pivot.rows.dimension.length ||
-      pivot.columns.measure.length ||
-      pivot.columns.dimension.length
+      pivot.rows.length ||
+      pivotColumns.measure.length ||
+      pivotColumns.dimension.length
     ) {
       showReplacePivotModal = true;
     } else {
@@ -138,26 +140,18 @@
           },
         ]
       : [];
-    metricsExplorerStore.createPivot(
-      exploreName,
-      { dimension: rowDimensions },
+    metricsExplorerStore.createPivot(exploreName, rowDimensions, [
       {
-        dimension: [
-          {
-            id: dashboardGrain,
-            title: timeGrain.label,
-            type: PivotChipType.Time,
-          },
-        ],
-        measure: [
-          {
-            id: expandedMeasureName,
-            title: $measureLabel(expandedMeasureName),
-            type: PivotChipType.Measure,
-          },
-        ],
+        id: dashboardGrain,
+        title: timeGrain.label,
+        type: PivotChipType.Time,
       },
-    );
+      {
+        id: expandedMeasureName,
+        title: $measureLabel(expandedMeasureName),
+        type: PivotChipType.Measure,
+      },
+    ]);
   }
 
   const timeControlsStore = useTimeControlStore(stateManagers);
