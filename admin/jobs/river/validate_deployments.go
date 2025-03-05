@@ -2,6 +2,7 @@ package river
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/rilldata/rill/admin"
@@ -27,8 +28,16 @@ func (w *ValidateDeploymentsWorker) Work(ctx context.Context, job *river.Job[Val
 const validateDeploymentsForProjectTimeout = 5 * time.Minute
 
 func (w *ValidateDeploymentsWorker) validateDeployments(ctx context.Context) error {
-	// Iterate over batches of projects
+	// Resolve batch size from config
 	limit := 100
+	if w.admin.ProvisionerMaxConcurrency <= 100 {
+		limit = w.admin.ProvisionerMaxConcurrency
+	} else {
+		w.admin.Logger.Warn("validate deployments: provisioner max concurrency set too high, using maximum concurrency of 100", zap.Int("provisioner_max_concurrency", w.admin.ProvisionerMaxConcurrency), observability.ZapCtx(ctx))
+	}
+
+	// Iterate over batches of projects
+	var wg sync.WaitGroup
 	afterName := ""
 	stop := false
 	for !stop {
@@ -44,14 +53,20 @@ func (w *ValidateDeploymentsWorker) validateDeployments(ctx context.Context) err
 			afterName = projs[len(projs)-1].Name
 		}
 
-		// Process batch
+		// Process batch concurrently
 		for _, proj := range projs {
-			err := w.validateDeploymentsForProject(ctx, proj)
-			if err != nil {
-				// We log the error, but continue to the next project
-				w.admin.Logger.Error("validate deployments: failed to validate project deployments", zap.String("project_id", proj.ID), zap.Error(err), observability.ZapCtx(ctx))
-			}
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				err := w.validateDeploymentsForProject(ctx, proj)
+				if err != nil {
+					// We log the error, but continue to the next project
+					w.admin.Logger.Error("validate deployments: failed to validate project deployments", zap.String("project_id", proj.ID), zap.Error(err), observability.ZapCtx(ctx))
+				}
+			}()
 		}
+
+		wg.Wait()
 	}
 
 	return nil

@@ -24,6 +24,7 @@ type Options struct {
 	ExternalURL               string
 	FrontendURL               string
 	ProvisionerSetJSON        string
+	ProvisionerMaxConcurrency int
 	DefaultProvisioner        string
 	VersionNumber             string
 	VersionCommit             string
@@ -34,25 +35,26 @@ type Options struct {
 }
 
 type Service struct {
-	DB                  database.DB
-	Jobs                jobs.Client
-	URLs                *URLs
-	ProvisionerSet      map[string]provisioner.Provisioner
-	Email               *email.Client
-	Github              Github
-	AI                  ai.Client
-	Assets              *storage.BucketHandle
-	Used                *usedFlusher
-	Logger              *zap.Logger
-	opts                *Options
-	issuer              *auth.Issuer
-	VersionNumber       string
-	VersionCommit       string
-	MetricsProjectID    string
-	AutoscalerCron      string
-	ScaleDownConstraint int
-	Biller              billing.Biller
-	PaymentProvider     payment.Provider
+	DB                        database.DB
+	Jobs                      jobs.Client
+	URLs                      *URLs
+	ProvisionerSet            map[string]provisioner.Provisioner
+	ProvisionerMaxConcurrency int
+	Email                     *email.Client
+	Github                    Github
+	AI                        ai.Client
+	Assets                    *storage.BucketHandle
+	Used                      *usedFlusher
+	Logger                    *zap.Logger
+	opts                      *Options
+	issuer                    *auth.Issuer
+	VersionNumber             string
+	VersionCommit             string
+	MetricsProjectID          string
+	AutoscalerCron            string
+	ScaleDownConstraint       int
+	Biller                    billing.Biller
+	PaymentProvider           payment.Provider
 }
 
 func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient *email.Client, github Github, aiClient ai.Client, assets *storage.BucketHandle, biller billing.Biller, p payment.Provider) (*Service, error) {
@@ -112,24 +114,25 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 	}
 
 	return &Service{
-		DB:                  db,
-		URLs:                urls,
-		ProvisionerSet:      provSet,
-		Email:               emailClient,
-		Github:              github,
-		AI:                  aiClient,
-		Assets:              assets,
-		Used:                newUsedFlusher(logger, db),
-		Logger:              logger,
-		opts:                opts,
-		issuer:              issuer,
-		VersionNumber:       opts.VersionNumber,
-		VersionCommit:       opts.VersionCommit,
-		MetricsProjectID:    metricsProjectID,
-		AutoscalerCron:      opts.AutoscalerCron,
-		ScaleDownConstraint: opts.ScaleDownConstraint,
-		Biller:              biller,
-		PaymentProvider:     p,
+		DB:                        db,
+		URLs:                      urls,
+		ProvisionerSet:            provSet,
+		ProvisionerMaxConcurrency: opts.ProvisionerMaxConcurrency,
+		Email:                     emailClient,
+		Github:                    github,
+		AI:                        aiClient,
+		Assets:                    assets,
+		Used:                      newUsedFlusher(logger, db),
+		Logger:                    logger,
+		opts:                      opts,
+		issuer:                    issuer,
+		VersionNumber:             opts.VersionNumber,
+		VersionCommit:             opts.VersionCommit,
+		MetricsProjectID:          metricsProjectID,
+		AutoscalerCron:            opts.AutoscalerCron,
+		ScaleDownConstraint:       opts.ScaleDownConstraint,
+		Biller:                    biller,
+		PaymentProvider:           p,
 	}, nil
 }
 
