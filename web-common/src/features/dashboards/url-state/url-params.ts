@@ -18,6 +18,7 @@ export enum ExploreStateURLParams {
   SortBy = "sort_by",
   SortType = "sort_type",
   SortDirection = "sort_dir",
+  ContextMeasures = "context_measures",
 
   ExpandedMeasure = "measure",
   ChartType = "chart_type",
