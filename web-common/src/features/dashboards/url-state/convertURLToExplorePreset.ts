@@ -157,20 +157,50 @@ export function convertURLToExplorePreset(
     }
   }
 
+  // Handle sort measure
   if (searchParams.has(ExploreStateURLParams.SortBy)) {
-    const sortByMeasures = (
-      searchParams.get(ExploreStateURLParams.SortBy) as string
+    const sortByMeasure = searchParams.get(
+      ExploreStateURLParams.SortBy,
+    ) as string;
+    if (measures.has(sortByMeasure)) {
+      preset.exploreSortBy = sortByMeasure;
+    } else {
+      errors.push(getSingleFieldError("sort by measure", sortByMeasure));
+    }
+  }
+
+  // Handle visible measures
+  if (searchParams.has(ExploreStateURLParams.VisibleMeasures)) {
+    const mes = searchParams.get(
+      ExploreStateURLParams.VisibleMeasures,
+    ) as string;
+    if (mes === "*") {
+      preset.measures = explore.measures ?? [];
+    } else {
+      const selectedMeasures = mes.split(",").filter((m) => measures.has(m));
+      preset.measures = selectedMeasures;
+      const missingMeasures = getMissingValues(
+        selectedMeasures,
+        mes.split(","),
+      );
+      if (missingMeasures.length) {
+        errors.push(getMultiFieldError("measure", missingMeasures));
+      }
+    }
+  }
+
+  // Handle context measures
+  if (searchParams.has(ExploreStateURLParams.ContextMeasures)) {
+    const contextMeasures = (
+      searchParams.get(ExploreStateURLParams.ContextMeasures) as string
     ).split(",");
-    const validMeasures = sortByMeasures.filter((measure) =>
+    const validMeasures = contextMeasures.filter((measure) =>
       measures.has(measure),
     );
-
     if (validMeasures.length > 0) {
-      preset.exploreSortBy = validMeasures.join(",");
-    } else {
-      errors.push(
-        getSingleFieldError("sort by measures", sortByMeasures.join(",")),
-      );
+      preset.contextMeasures = validMeasures;
+    } else if (contextMeasures.length > 0) {
+      errors.push(getMultiFieldError("context measures", contextMeasures));
     }
   }
 
@@ -425,19 +455,13 @@ function fromExploreUrlParams(
   }
 
   if (searchParams.has(ExploreStateURLParams.SortBy)) {
-    const sortByMeasures = (
-      searchParams.get(ExploreStateURLParams.SortBy) as string
-    ).split(",");
-    const validMeasures = sortByMeasures.filter((measure) =>
-      measures.has(measure),
-    );
-
-    if (validMeasures.length > 0) {
-      preset.exploreSortBy = validMeasures.join(",");
+    const sortByMeasure = searchParams.get(
+      ExploreStateURLParams.SortBy,
+    ) as string;
+    if (measures.has(sortByMeasure)) {
+      preset.exploreSortBy = sortByMeasure;
     } else {
-      errors.push(
-        getSingleFieldError("sort by measures", sortByMeasures.join(",")),
-      );
+      errors.push(getSingleFieldError("sort by measure", sortByMeasure));
     }
   }
 

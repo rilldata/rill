@@ -21,10 +21,10 @@ export const handleMeasureColumnHeaderClick = (
     toggleSort(generalArgs, SortType.PERCENT);
     setContextColumn(generalArgs, LeaderboardContextColumn.PERCENT);
   } else if (measureName === names[0]) {
-    toggleSort(generalArgs, SortType.VALUE);
+    toggleSort(generalArgs, SortType.VALUE, measureName);
   } else {
     toggleLeaderboardMeasureNames(generalArgs, [measureName]);
-    toggleSort(generalArgs, SortType.VALUE);
+    toggleSort(generalArgs, SortType.VALUE, measureName);
     sortActions.setSortDescending(generalArgs);
   }
 };

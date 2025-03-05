@@ -106,9 +106,14 @@ export function convertPresetToExploreState(
   errors.push(...pivotErrors);
 
   if (preset.exploreSortBy) {
-    const measures = preset.exploreSortBy.split(",");
-    partialExploreState.leaderboardMeasureNames = measures;
-    // partialExploreState.leaderboardMeasureName = measures[0];
+    partialExploreState.sortMeasure = preset.exploreSortBy;
+    // Initialize leaderboardMeasureNames with the sort measure
+    partialExploreState.leaderboardMeasureNames = [preset.exploreSortBy];
+  }
+
+  // Handle context measures
+  if (preset.contextMeasures?.length) {
+    partialExploreState.leaderboardMeasureNames = preset.contextMeasures;
   }
 
   return { partialExploreState, errors };
