@@ -2019,6 +2019,8 @@ export interface V1ExplorePreset {
   /** Dimensions to show. If `dimensions_selector` is set, this will only be set in `state.valid_spec`. */
   dimensions?: string[];
   dimensionsSelector?: V1FieldSelector;
+  /** Measures to show in the context of the explore. */
+  contextMeasures?: string[];
   /** Measures to show. If `measures_selector` is set, this will only be set in `state.valid_spec`. */
   measures?: string[];
   measuresSelector?: V1FieldSelector;
