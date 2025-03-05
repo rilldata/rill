@@ -298,6 +298,7 @@
 
   $: showPercentOfTotal =
     !!comparisonTimeRange &&
+    isValidPercentOfTotal &&
     contextColumnFilters.includes(LeaderboardContextColumn.PERCENT);
 
   $: if (activeMeasureNames) {
