@@ -317,6 +317,18 @@ function toExploreUrl(
     );
   }
 
+  if (
+    shouldSetParam(
+      preset.exploreSortBy,
+      exploreState.leaderboardMeasureNames?.[0],
+    )
+  ) {
+    searchParams.set(
+      ExploreStateURLParams.SortBy,
+      exploreState.leaderboardMeasureNames?.[0] ?? "",
+    );
+  }
+
   const sortType = FromLegacySortTypeMap[exploreState.dashboardSortType];
   if (shouldSetParam(preset.exploreSortType, sortType)) {
     searchParams.set(
