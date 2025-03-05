@@ -1,16 +1,13 @@
 package resolvers
 
 import (
-	"bytes"
 	"context"
-	"encoding/gob"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"time"
 
-	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
@@ -102,33 +99,13 @@ func (r *metricsResolver) CacheKey(ctx context.Context) ([]byte, bool, error) {
 		return nil, false, nil
 	}
 
-	queryMap := make(map[string]any)
-	err = mapstructure.Decode(r.query, &queryMap)
+	queryMap, err := r.query.AsMap()
 	if err != nil {
 		return nil, false, err
 	}
 
 	queryMap["mv_cache_key"] = key
 
-	// add time ranges explicitly as decoding does not work out of box - https://github.com/mitchellh/mapstructure/issues/270
-	if r.query.TimeRange != nil {
-		var buf bytes.Buffer
-		enc := gob.NewEncoder(&buf)
-		err = enc.Encode(r.query.TimeRange)
-		if err != nil {
-			return nil, false, err
-		}
-		queryMap["time_range"] = buf.Bytes()
-	}
-	if r.query.ComparisonTimeRange != nil {
-		var buf bytes.Buffer
-		enc := gob.NewEncoder(&buf)
-		err = enc.Encode(r.query.ComparisonTimeRange)
-		if err != nil {
-			return nil, false, err
-		}
-		queryMap["comparison_time_range"] = buf.Bytes()
-	}
 	b, err := json.Marshal(queryMap)
 	return b, true, err
 }
