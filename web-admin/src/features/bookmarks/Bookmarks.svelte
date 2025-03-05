@@ -89,7 +89,12 @@
 
 <DropdownMenu bind:open typeahead={false}>
   <DropdownMenuTrigger asChild let:builder>
-    <Button builders={[builder]} compact type="secondary">
+    <Button
+      builders={[builder]}
+      compact
+      type="secondary"
+      label="Bookmark dropdown"
+    >
       <BookmarkIcon
         class="inline-flex"
         fill={open ? "black" : "none"}
