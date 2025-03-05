@@ -216,6 +216,8 @@ func (builder *ExpressionBuilder) buildExpression(expr *runtimev1.Expression) (s
 
 	case *runtimev1.Expression_Cond:
 		return builder.buildConditionExpression(e.Cond)
+	case *runtimev1.Expression_Subquery:
+		return "", nil, fmt.Errorf("measure filter expressions are not supported in this context")
 	}
 
 	return "", nil, nil

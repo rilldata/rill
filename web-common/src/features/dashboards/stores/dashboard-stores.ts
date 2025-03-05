@@ -31,8 +31,11 @@ import {
 import type { ExpandedState, SortingState } from "@tanstack/svelte-table";
 import { derived, writable, type Readable } from "svelte/store";
 import { SortType } from "web-common/src/features/dashboards/proto-state/derived-types";
-import type { PivotColumns, PivotRows } from "../pivot/types";
-import { PivotChipType, type PivotChipData } from "../pivot/types";
+import {
+  PivotChipType,
+  type PivotChipData,
+  type PivotTableMode,
+} from "../pivot/types";
 
 export interface MetricsExplorerStoreType {
   entities: Record<string, MetricsExplorerEntity>;
@@ -97,10 +100,9 @@ function syncMeasures(
     metricsExplorer.tdd.expandedMeasureName = undefined;
   }
 
-  metricsExplorer.pivot.columns.measure =
-    metricsExplorer.pivot.columns.measure.filter((measure) =>
-      measuresSet.has(measure.id),
-    );
+  metricsExplorer.pivot.columns = metricsExplorer.pivot.columns.filter(
+    (measure) => measuresSet.has(measure.id),
+  );
 
   if (metricsExplorer.allMeasuresVisible) {
     // this makes sure that the visible keys is in sync with list of measures
@@ -142,19 +144,15 @@ function syncDimensions(
     metricsExplorer.activePage = DashboardState_ActivePage.DEFAULT;
   }
 
-  metricsExplorer.pivot.rows.dimension =
-    metricsExplorer.pivot.rows.dimension.filter(
-      (dimension) =>
-        dimensionsSet.has(dimension.id) ||
-        dimension.type === PivotChipType.Time,
-    );
+  metricsExplorer.pivot.rows = metricsExplorer.pivot.rows.filter(
+    (dimension) =>
+      dimensionsSet.has(dimension.id) || dimension.type === PivotChipType.Time,
+  );
 
-  metricsExplorer.pivot.columns.dimension =
-    metricsExplorer.pivot.columns.dimension.filter(
-      (dimension) =>
-        dimensionsSet.has(dimension.id) ||
-        dimension.type === PivotChipType.Time,
-    );
+  metricsExplorer.pivot.columns = metricsExplorer.pivot.columns.filter(
+    (dimension) =>
+      dimensionsSet.has(dimension.id) || dimension.type === PivotChipType.Time,
+  );
 
   if (metricsExplorer.allDimensionsVisible) {
     // this makes sure that the visible keys is in sync with list of dimensions
@@ -281,9 +279,7 @@ const metricsViewReducers = {
         }
       }
 
-      metricsExplorer.pivot.rows = {
-        dimension: dimensions,
-      };
+      metricsExplorer.pivot.rows = dimensions;
     });
   },
 
@@ -293,29 +289,22 @@ const metricsViewReducers = {
       metricsExplorer.pivot.activeCell = null;
       metricsExplorer.pivot.expanded = {};
 
-      const dimensions: PivotChipData[] = [];
-      const measures: PivotChipData[] = [];
-
-      value.forEach((val) => {
-        if (val.type === PivotChipType.Measure) {
-          measures.push(val);
-        } else {
-          dimensions.push(val);
-        }
-      });
-
-      // Reset sorting if the sorting field is not in the pivot columns
       if (metricsExplorer.pivot.sorting.length) {
         const accessor = metricsExplorer.pivot.sorting[0].id;
-        const anchorDimension = metricsExplorer.pivot.rows.dimension?.[0].id;
-        if (accessor !== anchorDimension) {
-          metricsExplorer.pivot.sorting = [];
+
+        if (metricsExplorer.pivot.tableMode === "flat") {
+          const validAccessors = value.map((d) => d.id);
+          if (!validAccessors.includes(accessor)) {
+            metricsExplorer.pivot.sorting = [];
+          }
+        } else {
+          const anchorDimension = metricsExplorer.pivot.rows?.[0]?.id;
+          if (accessor !== anchorDimension) {
+            metricsExplorer.pivot.sorting = [];
+          }
         }
       }
-      metricsExplorer.pivot.columns = {
-        dimension: dimensions,
-        measure: measures,
-      };
+      metricsExplorer.pivot.columns = value;
     });
   },
 
@@ -324,12 +313,12 @@ const metricsViewReducers = {
       metricsExplorer.pivot.rowPage = 1;
       metricsExplorer.pivot.activeCell = null;
       if (value.type === PivotChipType.Measure) {
-        metricsExplorer.pivot.columns.measure.push(value);
+        metricsExplorer.pivot.columns.push(value);
       } else {
         if (rows) {
-          metricsExplorer.pivot.rows.dimension.push(value);
+          metricsExplorer.pivot.rows.push(value);
         } else {
-          metricsExplorer.pivot.columns.dimension.push(value);
+          metricsExplorer.pivot.columns.push(value);
         }
       }
     });
@@ -389,7 +378,7 @@ const metricsViewReducers = {
     });
   },
 
-  createPivot(name: string, rows: PivotRows, columns: PivotColumns) {
+  createPivot(name: string, rows: PivotChipData[], columns: PivotChipData[]) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.activePage = DashboardState_ActivePage.PIVOT;
       metricsExplorer.pivot = {
@@ -540,6 +529,25 @@ const metricsViewReducers = {
     update((state) => {
       delete state.entities[name];
       return state;
+    });
+  },
+
+  setPivotTableMode(
+    name: string,
+    tableMode: PivotTableMode,
+    rows: PivotChipData[],
+    columns: PivotChipData[],
+  ) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pivot = {
+        ...metricsExplorer.pivot,
+        tableMode,
+        rows,
+        columns,
+        sorting: [],
+        expanded: {},
+        activeCell: null,
+      };
     });
   },
 };

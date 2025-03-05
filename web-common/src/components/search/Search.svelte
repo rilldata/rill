@@ -6,7 +6,7 @@
   export let autofocus = true;
   export let showBorderOnFocus = true;
   /* Input value being searched */
-  export let value;
+  export let value: string | number;
   /* Aria label for input */
   export let label = "Search";
   export let placeholder = "Search";
@@ -29,6 +29,7 @@
   }
 
   onMount(() => {
+    value = "";
     // Keep ref optional here. If component is unmounted before this animation frame runs, ref will be null and throw a TypeError
     if (autofocus) window.requestAnimationFrame(() => ref?.focus());
   });

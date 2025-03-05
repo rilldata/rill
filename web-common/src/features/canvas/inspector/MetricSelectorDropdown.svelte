@@ -2,7 +2,7 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import { type CanvasComponentObj } from "@rilldata/web-common/features/canvas/components/util";
   import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
-  import { isString } from "@rilldata/web-common/features/canvas/util";
+  import { isString } from "../../workspaces/visual-util";
   import {
     ResourceKind,
     useFilteredResources,

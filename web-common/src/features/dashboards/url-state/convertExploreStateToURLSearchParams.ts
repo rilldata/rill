@@ -6,6 +6,10 @@ import {
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+import {
+  compressUrlParams,
+  shouldCompressParams,
+} from "@rilldata/web-common/features/dashboards/url-state/compression";
 import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
 import { FromLegacySortTypeMap } from "@rilldata/web-common/features/dashboards/url-state/legacyMappers";
 import {
@@ -43,7 +47,7 @@ export function getUpdatedUrlForExploreState(
   timeControlsState: TimeControlState | undefined,
   defaultExplorePreset: V1ExplorePreset,
   partialExploreState: Partial<MetricsExplorerEntity>,
-  curSearchParams: URLSearchParams,
+  url: URL,
 ) {
   const newUrlSearchParams = new URLSearchParams(
     convertExploreStateToURLSearchParams(
@@ -51,9 +55,10 @@ export function getUpdatedUrlForExploreState(
       exploreSpec,
       timeControlsState,
       defaultExplorePreset,
+      url,
     ),
   );
-  curSearchParams.forEach((value, key) => {
+  url.searchParams.forEach((value, key) => {
     if (
       key === ExploreStateURLParams.WebView &&
       FromURLParamViewMap[value] === defaultExplorePreset.view
@@ -75,14 +80,19 @@ export function convertExploreStateToURLSearchParams(
   // But it is only available in TimeControlState and not MetricsExplorerEntity
   timeControlsState: TimeControlState | undefined,
   preset: V1ExplorePreset,
+  // Used to decide whether to compress or not based on the full url length
+  url: URL,
+  disableCompression = false,
 ) {
-  const searchParams = new URLSearchParams();
+  const urlCopy = new URL(url);
+  // clear any existing search params
+  urlCopy.search = "";
 
-  if (!exploreState) return searchParams.toString();
+  if (!exploreState) return urlCopy.searchParams.toString();
 
   const currentView = FromActivePageMap[exploreState.activePage];
   if (shouldSetParam(preset.view, currentView)) {
-    searchParams.set(
+    urlCopy.searchParams.set(
       ExploreStateURLParams.WebView,
       ToURLParamViewMap[currentView] as string,
     );
@@ -92,7 +102,7 @@ export function convertExploreStateToURLSearchParams(
   if (timeControlsState) {
     mergeSearchParams(
       toTimeRangesUrl(exploreState, exploreSpec, timeControlsState, preset),
-      searchParams,
+      urlCopy.searchParams,
     );
   }
 
@@ -101,7 +111,7 @@ export function convertExploreStateToURLSearchParams(
     exploreState.dimensionThresholdFilters,
   );
   if (expr && expr?.cond?.exprs?.length) {
-    searchParams.set(
+    urlCopy.searchParams.set(
       ExploreStateURLParams.Filters,
       convertExpressionToFilterParam(expr),
     );
@@ -113,23 +123,33 @@ export function convertExploreStateToURLSearchParams(
     case DashboardState_ActivePage.DIMENSION_TABLE:
       mergeSearchParams(
         toExploreUrl(exploreState, exploreSpec, preset),
-        searchParams,
+        urlCopy.searchParams,
       );
       break;
 
     case DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL:
       mergeSearchParams(
         toTimeDimensionUrlParams(exploreState, preset),
-        searchParams,
+        urlCopy.searchParams,
       );
       break;
 
     case DashboardState_ActivePage.PIVOT:
-      mergeSearchParams(toPivotUrlParams(exploreState, preset), searchParams);
+      mergeSearchParams(
+        toPivotUrlParams(exploreState, preset),
+        urlCopy.searchParams,
+      );
       break;
   }
 
-  return searchParams.toString();
+  if (disableCompression || !shouldCompressParams(urlCopy))
+    return urlCopy.searchParams.toString();
+  const compressedUrlParams = new URLSearchParams();
+  compressedUrlParams.set(
+    ExploreStateURLParams.GzippedParams,
+    compressUrlParams(urlCopy.search),
+  );
+  return compressedUrlParams.toString();
 }
 
 function toTimeRangesUrl(
@@ -371,15 +391,12 @@ function toPivotUrlParams(
     return data.id;
   };
 
-  const rows = exploreState.pivot.rows.dimension.map(mapPivotEntry);
+  const rows = exploreState.pivot.rows.map(mapPivotEntry);
   if (!arrayOrderedEquals(rows, preset.pivotRows ?? [])) {
     searchParams.set(ExploreStateURLParams.PivotRows, rows.join(","));
   }
 
-  const cols = [
-    ...exploreState.pivot.columns.dimension.map(mapPivotEntry),
-    ...exploreState.pivot.columns.measure.map(mapPivotEntry),
-  ];
+  const cols = exploreState.pivot.columns.map(mapPivotEntry);
   if (!arrayOrderedEquals(cols, preset.pivotCols ?? [])) {
     searchParams.set(ExploreStateURLParams.PivotColumns, cols.join(","));
   }
@@ -397,6 +414,11 @@ function toPivotUrlParams(
       ExploreStateURLParams.SortDirection,
       sort?.desc ? "DESC" : "ASC",
     );
+  }
+
+  const tableMode = exploreState.pivot?.tableMode;
+  if (shouldSetParam(preset.pivotTableMode, tableMode)) {
+    searchParams.set(ExploreStateURLParams.PivotTableMode, tableMode ?? "nest");
   }
 
   // TODO: other fields like expanded state and pin are not supported right now
