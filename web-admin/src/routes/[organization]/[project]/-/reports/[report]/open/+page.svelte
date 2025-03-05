@@ -7,6 +7,7 @@
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
+  import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import type { PageData } from "./$types";
@@ -33,10 +34,16 @@
   );
 
   $: if ($dashboardStateForReport?.data) {
-    void gotoExplorePage();
+    void gotoExplorePage(
+      $dashboardStateForReport.data.exploreName,
+      $dashboardStateForReport.data.exploreState,
+    );
   }
 
-  async function gotoExplorePage() {
+  async function gotoExplorePage(
+    exploreName: string,
+    exploreState: MetricsExplorerEntity,
+  ) {
     const url = new URL(`${$page.url.protocol}//${$page.url.host}`);
     if (token) {
       url.pathname = `/${organization}/${project}/-/share/${token}/explore/${exploreName}`;
@@ -45,16 +52,14 @@
     }
 
     const exploreStateParams = await getExplorePageUrlSearchParams(
-      $dashboardStateForReport.data.exploreName,
-      $dashboardStateForReport.data.exploreState,
+      exploreName,
+      exploreState,
     );
 
     url.search = exploreStateParams.toString();
 
     return goto(url.toString());
   }
-
-  // TODO: error handling
 </script>
 
 <CtaLayoutContainer>
