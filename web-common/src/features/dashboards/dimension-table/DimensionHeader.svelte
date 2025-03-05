@@ -176,7 +176,7 @@
       tooltipText="Choose context columns to display"
       isValidPercentOfTotal={validPercentOfTotal}
       selectedFilters={$contextColumnFilters}
-      onContextColumnChange={setContextColumnFilters}
+      onToggle={setContextColumnFilters}
       {measures}
       selectedMeasureNames={$leaderboardMeasureNames}
       onSelectAll={() => {
