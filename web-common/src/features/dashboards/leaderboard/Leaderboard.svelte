@@ -40,7 +40,6 @@
     prepareLeaderboardItemData,
   } from "./leaderboard-utils";
   import {
-    DEFAULT_COL_WIDTH,
     valueColumn,
     DEFAULT_CONTEXT_COLUMN_WIDTH,
     MEASURE_SPACING_WIDTH,
@@ -148,11 +147,6 @@
     ...(uri ? [getURIRequestMeasure(dimensionName)] : []),
   ];
 
-  $: allMeasures = [
-    ...measures,
-    ...activeMeasureNames.map((name) => ({ name })),
-  ];
-
   $: sort = getSort(
     sortedAscending,
     sortType,
@@ -167,7 +161,7 @@
     metricsViewName,
     {
       dimensions: [{ name: dimensionName }],
-      measures: allMeasures,
+      measures,
       timeRange,
       comparisonTimeRange,
       sort,
