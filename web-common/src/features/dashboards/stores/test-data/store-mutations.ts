@@ -27,6 +27,10 @@ import {
   updateMetricsExplorerByName,
 } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import {
+  createAndExpression,
+  createInExpression,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import {
   AD_BIDS_BID_PRICE_MEASURE,
   AD_BIDS_DOMAIN_DIMENSION,
   AD_BIDS_EXPLORE_INIT,
@@ -35,6 +39,10 @@ import {
   AD_BIDS_METRICS_INIT,
   AD_BIDS_PUBLISHER_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
+import {
+  RandomDomains,
+  RandomPublishers,
+} from "@rilldata/web-common/features/dashboards/stores/test-data/random";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
@@ -50,6 +58,13 @@ export const AD_BIDS_REMOVE_PUB_DIMENSION_FILTER: TestDashboardMutation = (
 export const AD_BIDS_APPLY_DOM_DIMENSION_FILTER: TestDashboardMutation = (
   mut,
 ) => toggleDimensionValueSelection(mut, AD_BIDS_DOMAIN_DIMENSION, "google.com");
+export const AD_BIDS_LARGE_FILTER = createAndExpression([
+  createInExpression(AD_BIDS_PUBLISHER_DIMENSION, RandomPublishers),
+  createInExpression(AD_BIDS_DOMAIN_DIMENSION, RandomDomains),
+]);
+export const AD_BIDS_APPLY_LARGE_FILTERS: TestDashboardMutation = (mut) => {
+  mut.dashboard.whereFilter = AD_BIDS_LARGE_FILTER;
+};
 
 export const AD_BIDS_APPLY_IMP_MEASURE_FILTER: TestDashboardMutation = (mut) =>
   setMeasureFilter(mut, AD_BIDS_PUBLISHER_DIMENSION, {
