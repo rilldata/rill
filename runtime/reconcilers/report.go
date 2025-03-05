@@ -425,7 +425,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 			m := make(map[string]interface{})
 			err := json.Unmarshal([]byte(rep.Spec.QueryArgsJson), &m)
 			if err == nil {
-				if v, ok := m["metricsViewName"]; ok {
+				if v, ok := m["metricsView"]; ok {
 					explore = v.(string)
 				}
 			}
