@@ -109,6 +109,8 @@ func (r *metricsResolver) CacheKey(ctx context.Context) ([]byte, bool, error) {
 	}
 
 	queryMap["mv_cache_key"] = key
+
+	// add time ranges explicitly as decoding does not work out of box - https://github.com/mitchellh/mapstructure/issues/270
 	if r.query.TimeRange != nil {
 		var buf bytes.Buffer
 		enc := gob.NewEncoder(&buf)
