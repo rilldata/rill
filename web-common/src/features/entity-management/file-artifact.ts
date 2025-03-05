@@ -35,6 +35,8 @@ import {
 import { inferResourceKind } from "./infer-resource-kind";
 import { debounce } from "@rilldata/web-common/lib/create-debouncer";
 import { AsyncSaveState } from "./async-save-state";
+import type { EditorSelection } from "@codemirror/state";
+import type { EditorView } from "@codemirror/view";
 
 const UNSUPPORTED_EXTENSIONS = [
   // Data formats
@@ -84,6 +86,10 @@ export class FileArtifact {
   readonly fileName: string;
   readonly disableAutoSave: boolean;
   readonly autoSave: Writable<boolean>;
+  readonly snapshot: Writable<{
+    scroll?: ReturnType<EditorView["scrollSnapshot"]>;
+    selection?: EditorSelection;
+  }> = writable({});
 
   private editorCallback: (content: string) => void = () => {};
 
@@ -251,6 +257,13 @@ export class FileArtifact {
   resetConflictState = () => {
     this.merging.set(false);
     this.inConflict.set(false);
+  };
+
+  saveSnapshot = (editor: EditorView) => {
+    this.snapshot.set({
+      scroll: editor.scrollSnapshot(),
+      selection: editor.state.selection,
+    });
   };
 
   revertChanges = () => {
