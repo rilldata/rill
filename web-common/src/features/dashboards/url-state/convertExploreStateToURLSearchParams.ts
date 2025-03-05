@@ -142,44 +142,27 @@ export function convertExploreStateToURLSearchParams(
       break;
   }
 
-  if (
-    shouldSetParam(
-      preset.exploreSortBy,
-      exploreState.leaderboardMeasureNames?.join(","),
-    )
-  ) {
-    urlCopy.searchParams.set(
-      ExploreStateURLParams.SortBy,
-      exploreState.leaderboardMeasureNames?.join(",") ?? "",
-    );
-  }
+  // TODO: Revisit this
+  // // Handle visible measures
+  // const visibleMeasuresParam = toVisibleMeasuresUrlParam(
+  //   exploreState,
+  //   exploreSpec,
+  //   preset,
+  // );
+  // if (visibleMeasuresParam) {
+  //   searchParams.set(
+  //     ExploreStateURLParams.VisibleMeasures,
+  //     visibleMeasuresParam,
+  //   );
+  // }
 
-  if (disableCompression || !shouldCompressParams(urlCopy)) {
-    return urlCopy.searchParams.toString();
-  }
-
-  // Handle visible measures
-  const visibleMeasuresParam = toVisibleMeasuresUrlParam(
-    exploreState,
-    exploreSpec,
-    preset,
-  );
-  if (visibleMeasuresParam) {
-    urlCopy.searchParams.set(
-      ExploreStateURLParams.VisibleMeasures,
-      visibleMeasuresParam,
-    );
-  }
-
-  // Handle sort measure
-  const effectiveSortMeasure =
-    exploreState.sortMeasure ?? exploreState.leaderboardMeasureNames?.[0] ?? "";
-  if (effectiveSortMeasure) {
-    urlCopy.searchParams.set(
-      ExploreStateURLParams.SortBy,
-      effectiveSortMeasure,
-    );
-  }
+  // TODO: questionable, revisit
+  // // Handle sort measure
+  // const effectiveSortMeasure =
+  //   exploreState.sortMeasure ?? exploreState.leaderboardMeasureNames?.[0] ?? "";
+  // if (effectiveSortMeasure) {
+  //   searchParams.set(ExploreStateURLParams.SortBy, effectiveSortMeasure);
+  // }
 
   // Handle context measures - use all leaderboard measure names directly
   const contextMeasures = exploreState.leaderboardMeasureNames;
@@ -322,6 +305,18 @@ function toExploreUrl(
     searchParams.set(
       ExploreStateURLParams.ExpandedDimension,
       exploreState.selectedDimensionName ?? "",
+    );
+  }
+
+  if (
+    shouldSetParam(
+      preset.exploreSortBy,
+      exploreState.leaderboardMeasureNames?.[0],
+    )
+  ) {
+    searchParams.set(
+      ExploreStateURLParams.SortBy,
+      exploreState.leaderboardMeasureNames?.[0] ?? "",
     );
   }
 
