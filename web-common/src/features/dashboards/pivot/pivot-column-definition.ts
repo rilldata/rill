@@ -178,9 +178,9 @@ function formatDimensionValue(
 
 export type MeasureColumnProps = Array<{
   label: string;
-  formatter:
-    | ReturnType<typeof createMeasureValueFormatter<null | undefined>>
-    | ((v: unknown) => unknown);
+  formatter: (
+    value: string | number | null | undefined,
+  ) => string | (null | undefined);
   name: string;
   type: MeasureType;
 }>;
@@ -213,7 +213,7 @@ export function getMeasureColumnProps(
       label: label || measure?.displayName || measureName,
       formatter: measure
         ? createMeasureValueFormatter<null | undefined>(measure)
-        : (v: unknown) => v,
+        : (v: string | number | null | undefined) => v?.toString(),
       name: m,
       type,
     };
