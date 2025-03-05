@@ -169,14 +169,14 @@ func (w *DeleteOrgWorker) Work(ctx context.Context, job *river.Job[DeleteOrgArgs
 	}
 
 	if len(res) > 0 {
-		w.logger.Warn("inactive organization has projects", zap.String("org_id", job.Args.OrgID), zap.Int("connected_projects", len(res)))
+		w.logger.Warn("deleting an organization that has projects", zap.String("org_id", job.Args.OrgID), zap.Int("projects_count", len(res)))
 		for _, proj := range res {
-			err := w.admin.DB.DeleteProject(ctx, proj.ID)
+			err := w.admin.TeardownProject(ctx, proj)
 			if err != nil {
 				return fmt.Errorf("failed to delete project %s: %w", proj.ID, err)
 			}
 		}
-		w.logger.Warn("deleted projects for inactive organization", zap.String("org_id", job.Args.OrgID), zap.Int("connected_projects", len(res)))
+		w.logger.Warn("deleted project during organization deletion", zap.String("org_id", job.Args.OrgID), zap.Int("connected_projects", len(res)))
 	}
 
 	// delete org, billing issues will be cascade deleted
@@ -192,7 +192,7 @@ func (w *DeleteOrgWorker) Work(ctx context.Context, job *river.Job[DeleteOrgArgs
 
 type HibernateInactiveOrgsArgs struct{}
 
-func (HibernateInactiveOrgsArgs) Kind() string { return "log_inactive_orgs" }
+func (HibernateInactiveOrgsArgs) Kind() string { return "hibernate_inactive_orgs" }
 
 type HibernateInactiveOrgsWorker struct {
 	river.WorkerDefaults[HibernateInactiveOrgsArgs]

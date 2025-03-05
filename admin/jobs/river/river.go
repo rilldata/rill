@@ -390,7 +390,7 @@ func (c *Client) PlanChanged(ctx context.Context, billingCustomerID string) (*jo
 	}, nil
 }
 
-func (c *Client) LogInactiveOrgs(ctx context.Context) (*jobs.InsertResult, error) {
+func (c *Client) HibernateInactiveOrgs(ctx context.Context) (*jobs.InsertResult, error) {
 	res, err := c.riverClient.Insert(ctx, HibernateInactiveOrgsArgs{}, nil)
 	if err != nil {
 		return nil, err
