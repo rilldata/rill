@@ -336,17 +336,20 @@ function toVisibleMeasuresUrlParam(
   exploreSpec: V1ExploreSpec,
   preset: V1ExplorePreset,
 ) {
-  if (!exploreState.visibleMeasureKeys) return undefined;
+  if (!exploreState.visibleMeasures) return undefined;
 
-  const measures = [...exploreState.visibleMeasureKeys];
   const presetMeasures = preset.measures ?? exploreSpec.measures ?? [];
-  if (arrayUnorderedEquals(measures, presetMeasures)) {
+  if (arrayOrderedEquals(exploreState.visibleMeasures, presetMeasures)) {
     return undefined;
   }
-  if (exploreState.allMeasuresVisible) {
+  if (
+    // if the measures are exactly equal to measures from explore then show "*"
+    // else the measures are re-ordered, so retain them in url param
+    arrayOrderedEquals(exploreState.visibleMeasures, exploreSpec.measures ?? [])
+  ) {
     return "*";
   }
-  return measures.join(",");
+  return exploreState.visibleMeasures.join(",");
 }
 
 function toVisibleDimensionsUrlParam(
@@ -354,17 +357,23 @@ function toVisibleDimensionsUrlParam(
   exploreSpec: V1ExploreSpec,
   preset: V1ExplorePreset,
 ) {
-  if (!exploreState.visibleDimensionKeys) return undefined;
+  if (!exploreState.visibleDimensions) return undefined;
 
-  const dimensions = [...exploreState.visibleDimensionKeys];
   const presetDimensions = preset.dimensions ?? exploreSpec.dimensions ?? [];
-  if (arrayUnorderedEquals(dimensions, presetDimensions)) {
+  if (arrayOrderedEquals(exploreState.visibleDimensions, presetDimensions)) {
     return undefined;
   }
-  if (exploreState.allDimensionsVisible) {
+  if (
+    // if the dimensions are exactly equal to dimensions from explore then show "*"
+    // else the dimensions are re-ordered, so retain them in url param
+    arrayOrderedEquals(
+      exploreState.visibleDimensions,
+      exploreSpec.dimensions ?? [],
+    )
+  ) {
     return "*";
   }
-  return dimensions.join(",");
+  return exploreState.visibleDimensions.join(",");
 }
 
 function toTimeDimensionUrlParams(

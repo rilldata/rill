@@ -66,12 +66,9 @@ export const visibleMeasures = ({
 }: DashboardDataSources): MetricsViewSpecMeasureV2[] => {
   if (!validMetricsView?.measures || !validExplore?.measures) return [];
 
-  return Array.from(dashboard.visibleMeasureKeys).map(
-    (key) =>
-      validMetricsView.measures?.find(
-        (m) => m.name === key,
-      ) as MetricsViewSpecMeasureV2,
-  );
+  return dashboard.visibleMeasures
+    .map((mes) => validMetricsView.measures?.find((m) => m.name === mes))
+    .filter(Boolean) as MetricsViewSpecMeasureV2[];
 };
 
 export const getMeasureByName = (

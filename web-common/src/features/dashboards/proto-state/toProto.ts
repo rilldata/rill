@@ -133,14 +133,14 @@ export function getProtoFromDashboardState(
 
   if (metrics.allMeasuresVisible) {
     state.allMeasuresVisible = true;
-  } else if (metrics.visibleMeasureKeys) {
-    state.visibleMeasures = [...metrics.visibleMeasureKeys];
+  } else if (metrics.visibleMeasures) {
+    state.visibleMeasures = [...metrics.visibleMeasures];
   }
 
   if (metrics.allDimensionsVisible) {
     state.allDimensionsVisible = true;
-  } else if (metrics.visibleDimensionKeys) {
-    state.visibleDimensions = [...metrics.visibleDimensionKeys];
+  } else if (metrics.visibleDimensions) {
+    state.visibleDimensions = [...metrics.visibleDimensions];
   }
 
   if (metrics.leaderboardContextColumn) {

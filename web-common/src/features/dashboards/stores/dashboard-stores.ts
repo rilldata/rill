@@ -107,20 +107,18 @@ function syncMeasures(
 
   if (metricsExplorer.allMeasuresVisible) {
     // this makes sure that the visible keys is in sync with list of measures
-    metricsExplorer.visibleMeasureKeys = measuresSet;
+    metricsExplorer.visibleMeasures = [...measuresSet];
   } else {
-    // remove any keys from visible measure if it doesn't exist anymore
-    for (const measureKey of metricsExplorer.visibleMeasureKeys) {
-      if (!measuresSet.has(measureKey)) {
-        metricsExplorer.visibleMeasureKeys.delete(measureKey);
-      }
-    }
+    // remove any visible measures that doesn't exist anymore
+    metricsExplorer.visibleMeasures = metricsExplorer.visibleMeasures.filter(
+      (m) => measuresSet.has(m),
+    );
     // If there are no visible measures, make the first measure visible
     if (
       explore.measures?.length &&
-      metricsExplorer.visibleMeasureKeys.size === 0
+      metricsExplorer.visibleMeasures.length === 0
     ) {
-      metricsExplorer.visibleMeasureKeys = new Set([explore.measures[0]]);
+      metricsExplorer.visibleMeasures = [explore.measures[0]];
     }
   }
 }
@@ -157,14 +155,11 @@ function syncDimensions(
 
   if (metricsExplorer.allDimensionsVisible) {
     // this makes sure that the visible keys is in sync with list of dimensions
-    metricsExplorer.visibleDimensionKeys = dimensionsSet;
+    metricsExplorer.visibleDimensions = [...dimensionsSet];
   } else {
-    // remove any keys from visible dimension if it doesn't exist anymore
-    for (const dimensionKey of metricsExplorer.visibleDimensionKeys) {
-      if (!dimensionsSet.has(dimensionKey)) {
-        metricsExplorer.visibleDimensionKeys.delete(dimensionKey);
-      }
-    }
+    // remove any visible dimensions that doesn't exist anymore
+    metricsExplorer.visibleDimensions =
+      metricsExplorer.visibleDimensions.filter((d) => dimensionsSet.has(d));
   }
 }
 

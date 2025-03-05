@@ -255,7 +255,7 @@ export function prepareVirtualizedDimTableColumns(
   const dimensionColumn = dimension.name ?? "";
 
   // copy column names so we don't mutate the original
-  const columnNames = [...dash.visibleMeasureKeys].filter((m) =>
+  const columnNames = dash.visibleMeasures.filter((m) =>
     allMeasures.some((am) => am.name === m),
   );
 

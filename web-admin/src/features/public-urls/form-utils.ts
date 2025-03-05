@@ -73,6 +73,7 @@ export function getSanitizedDashboardStateParam(
         metricsViewFields?.includes(measure),
       ),
     ),
+    visibleMeasures: [...dashboard.visibleMeasures],
     allMeasuresVisible: dashboard.allMeasuresVisible,
     // Remove any dimensions not specified in the metrics view fields
     visibleDimensionKeys: new Set(
@@ -80,6 +81,7 @@ export function getSanitizedDashboardStateParam(
         metricsViewFields?.includes(dimension),
       ),
     ),
+    visibleDimensions: [...dashboard.visibleDimensions],
     allDimensionsVisible: dashboard.allDimensionsVisible,
     leaderboardMeasureName: dashboard.leaderboardMeasureName,
     dashboardSortType: dashboard.dashboardSortType,

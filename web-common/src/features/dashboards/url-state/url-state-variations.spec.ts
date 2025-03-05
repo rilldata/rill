@@ -576,11 +576,6 @@ export function getCleanMetricsExploreForAssertion() {
   const cleanedState = deepClone(
     get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
   ) as Partial<MetricsExplorerEntity>;
-  // these are not cloned
-  cleanedState.visibleMeasureKeys = new Set(cleanedState.visibleMeasureKeys);
-  cleanedState.visibleDimensionKeys = new Set(
-    cleanedState.visibleDimensionKeys,
-  );
 
   delete cleanedState.name;
   delete cleanedState.proto;

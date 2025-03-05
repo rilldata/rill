@@ -6,28 +6,28 @@ export const toggleMeasureVisibility = (
   measureName?: string,
 ) => {
   if (measureName) {
-    const deleted = dashboard.visibleMeasureKeys.delete(measureName);
-    if (!deleted) {
-      dashboard.visibleMeasureKeys.add(measureName);
-    } else if (
-      dashboard.leaderboardMeasureName === measureName &&
-      dashboard.visibleMeasureKeys.size > 0
-    ) {
-      dashboard.leaderboardMeasureName = dashboard.visibleMeasureKeys
-        .keys()
-        .next().value;
+    const index = dashboard.visibleMeasures.indexOf(measureName);
+    if (index > -1) {
+      dashboard.visibleMeasures.splice(index, 1);
+      if (
+        dashboard.leaderboardMeasureName === measureName &&
+        dashboard.visibleMeasures.length > 1
+      ) {
+        dashboard.leaderboardMeasureName = dashboard.visibleMeasures[0];
+      }
+    } else {
+      dashboard.visibleMeasures.push(measureName);
     }
   } else {
-    const allSelected =
-      dashboard.visibleMeasureKeys.size === allMeasures.length;
+    const allSelected = dashboard.visibleMeasures.length === allMeasures.length;
 
-    dashboard.visibleMeasureKeys = new Set(
-      allSelected ? allMeasures.slice(0, 1) : allMeasures,
-    );
+    dashboard.visibleMeasures = allSelected
+      ? allMeasures.slice(0, 1)
+      : [...allMeasures];
   }
 
   dashboard.allMeasuresVisible =
-    dashboard.visibleMeasureKeys.size === allMeasures.length;
+    dashboard.visibleMeasures.length === allMeasures.length;
 };
 
 export const setMeasureVisibility = (

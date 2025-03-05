@@ -20,21 +20,24 @@ export const toggleDimensionVisibility = (
   dimensionName?: string,
 ) => {
   if (dimensionName) {
-    const deleted = dashboard.visibleDimensionKeys.delete(dimensionName);
-    if (!deleted) {
-      dashboard.visibleDimensionKeys.add(dimensionName);
+    const index = dashboard.visibleDimensions.indexOf(dimensionName);
+    if (index !== -1) {
+      dashboard.visibleDimensions.splice(index, 1);
+    } else {
+      // TODO: should this be appended to end or in relative order?
+      dashboard.visibleDimensions.push(dimensionName);
     }
   } else {
     const allSelected =
-      dashboard.visibleDimensionKeys.size === allDimensions.length;
+      dashboard.visibleDimensions.length === allDimensions.length;
 
-    dashboard.visibleDimensionKeys = new Set(
-      allSelected ? allDimensions.slice(0, 1) : allDimensions,
-    );
+    dashboard.visibleDimensions = allSelected
+      ? allDimensions.slice(0, 1)
+      : [...allDimensions];
   }
 
   dashboard.allDimensionsVisible =
-    dashboard.visibleDimensionKeys.size === allDimensions.length;
+    dashboard.visibleDimensions.length === allDimensions.length;
 };
 
 export const setDimensionVisibility = (
