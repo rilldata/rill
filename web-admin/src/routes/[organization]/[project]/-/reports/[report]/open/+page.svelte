@@ -9,7 +9,6 @@
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import { mergeAndRetainParams } from "@rilldata/web-common/lib/url-utils";
   import type { PageData } from "./$types";
 
   export let data: PageData;
@@ -39,11 +38,8 @@
 
   async function gotoExplorePage() {
     const url = new URL(`${$page.url.protocol}//${$page.url.host}`);
-    let urlSearchParams = new URLSearchParams();
     if (token) {
-      url.pathname = `/${organization}/${project}/-/share/${token}`;
-      urlSearchParams.set("resource", exploreName);
-      urlSearchParams.set("type", "explore");
+      url.pathname = `/${organization}/${project}/-/share/${token}/explore/${exploreName}`;
     } else {
       url.pathname = `/${organization}/${project}/explore/${exploreName}`;
     }
@@ -53,10 +49,7 @@
       $dashboardStateForReport.data.exploreState,
     );
 
-    url.search = mergeAndRetainParams(
-      urlSearchParams,
-      exploreStateParams,
-    ).toString();
+    url.search = exploreStateParams.toString();
 
     return goto(url.toString());
   }

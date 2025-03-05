@@ -24,14 +24,11 @@
   import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
   import { useDashboardsV2 } from "../dashboards/listing/selectors";
   import PageTitle from "../public-urls/PageTitle.svelte";
-  import { createAdminServiceGetMagicAuthToken } from "../public-urls/get-magic-auth-token";
-  import { usePublicURLExplore } from "../public-urls/selectors";
   import { useReports } from "../scheduled-reports/selectors";
   import {
     isMetricsExplorerPage,
     isOrganizationPage,
     isProjectPage,
-    isPublicReportResourcePage,
     isPublicURLPage,
   } from "./nav-utils";
 
@@ -46,23 +43,14 @@
 
   // These can be undefined
   $: ({
-    params: {
-      organization,
-      project,
-      dashboard: dashboardParam,
-      alert,
-      report,
-      token,
-    },
+    params: { organization, project, dashboard, alert, report, token },
   } = $page);
-  $: resource = $page.url.searchParams.get("resource");
 
   $: onProjectPage = isProjectPage($page);
   $: onAlertPage = !!alert;
   $: onReportPage = !!report;
   $: onMetricsExplorerPage = isMetricsExplorerPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
-  $: onPublicReportResourcePage = isPublicReportResourcePage($page);
   $: onOrgPage = isOrganizationPage($page);
 
   $: loggedIn = !!$user.data?.user;
@@ -153,35 +141,15 @@
     report ? reportPaths : alert ? alertPaths : null,
   ];
 
-  $: dashboardQuery = useExplore(instanceId, dashboardParam, {
-    enabled: !!instanceId && onMetricsExplorerPage,
+  $: exploreQuery = useExplore(instanceId, dashboard, {
+    enabled: !!instanceId && !!dashboard,
   });
-  $: exploreSpec = $dashboardQuery.data?.explore?.explore?.state?.validSpec;
+  $: exploreSpec = $exploreQuery.data?.explore?.explore?.state?.validSpec;
   $: isDashboardValid = !!exploreSpec;
 
-  // Public URLs do not have the resource name in the URL. However, the magic token's metadata includes the resource name.
-  $: tokenQuery = createAdminServiceGetMagicAuthToken(token, {
-    query: {
-      enabled: onPublicURLPage && !onPublicReportResourcePage,
-    },
-  });
-  $: dashboard =
-    onPublicURLPage && !onPublicReportResourcePage
-      ? $tokenQuery?.data?.token?.resourceName
-      : dashboardParam;
-
-  // If on a Public URL, get the dashboard title
-  $: exploreQuery = usePublicURLExplore(
-    instanceId,
-    onPublicReportResourcePage
-      ? resource
-      : $tokenQuery?.data?.token?.resourceName,
-    onPublicURLPage,
-  );
   $: publicURLDashboardTitle =
-    $exploreQuery.data?.explore?.state?.validSpec?.displayName ||
-    dashboard ||
-    "";
+    $exploreQuery.data?.explore?.explore?.state?.validSpec?.displayName ||
+    dashboard;
 
   $: currentPath = [organization, project, dashboard, report || alert];
 </script>
@@ -217,7 +185,7 @@
     {#if onProjectPage && manageProjectMembers}
       <ShareProjectPopover {organization} {project} />
     {/if}
-    {#if (onMetricsExplorerPage && isDashboardValid) || onPublicURLPage}
+    {#if onMetricsExplorerPage && isDashboardValid}
       {#if exploreSpec}
         {#key dashboard}
           <StateManagersProvider

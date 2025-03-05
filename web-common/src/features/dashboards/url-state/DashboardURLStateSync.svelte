@@ -27,7 +27,6 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { onMount } from "svelte";
   import { get } from "svelte/store";
-  import { mergeAndRetainParams } from "../../../lib/url-utils";
 
   export let metricsViewName: string;
   export let exploreName: string;
@@ -257,22 +256,13 @@
     const u = new URL(
       `${$page.url.protocol}//${$page.url.host}${$page.url.pathname}`,
     );
-    // get current url params
-    const currentUrlParams = new URLSearchParams($page.url.search);
-    // get explore state params
     const exploreStateParams = convertExploreStateToURLSearchParams(
       $dashboardStore,
       exploreSpec,
       timeControlsState,
       defaultExplorePreset,
     );
-    // merge current url params with explore state params
-    const newUrlParams = mergeAndRetainParams(
-      currentUrlParams,
-      exploreStateParams,
-    );
-    // update url
-    u.search = newUrlParams.toString();
+    u.search = exploreStateParams.toString();
     const newUrl = u.toString();
     if (!prevUrl || prevUrl === newUrl) return;
 

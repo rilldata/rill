@@ -27,10 +27,7 @@ import {
   type TimeRange,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
-import {
-  copyParamsToTarget,
-  mergeAndRetainParams,
-} from "@rilldata/web-common/lib/url-utils";
+import { copyParamsToTarget } from "@rilldata/web-common/lib/url-utils";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   type V1ExplorePreset,
@@ -57,7 +54,6 @@ export function getUpdatedUrlForExploreState(
   );
 
   // Filter out the default view parameter if needed
-  const filteredCurrentParams = new URLSearchParams();
   curSearchParams.forEach((value, key) => {
     if (
       key === ExploreStateURLParams.WebView &&
@@ -65,12 +61,10 @@ export function getUpdatedUrlForExploreState(
     ) {
       return; // Skip this parameter
     }
-    filteredCurrentParams.set(key, value);
+    stateParams.set(key, value);
   });
 
-  // Merge with current params overwriting the state params
-  const mergedParams = mergeAndRetainParams(filteredCurrentParams, stateParams);
-  return mergedParams.toString();
+  return stateParams.toString();
 }
 
 export function convertExploreStateToURLSearchParams(

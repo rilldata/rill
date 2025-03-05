@@ -16,9 +16,8 @@
   $: ({ instanceId } = $runtime);
 
   $: ({
-    resourceName,
+    exploreName,
     defaultExplorePreset,
-    tokenExploreState,
     exploreStateFromYAMLConfig,
     partialExploreStateFromUrl,
     exploreStateFromSessionStorage,
@@ -31,7 +30,7 @@
   $: if (cookieProject) {
     eventBus.emit("banner", {
       type: "default",
-      message: `Limited view. For full access and features, visit the <a href='/${organization}/${project}/explore/${resourceName}'>original dashboard</a>.`,
+      message: `Limited view. For full access and features, visit the <a href='/${organization}/${project}/explore/${exploreName}'>original dashboard</a>.`,
       includesHtml: true,
       iconType: "alert",
     });
@@ -39,7 +38,7 @@
 
   // Call `GetExplore` to get the Explore's metrics view
   $: exploreQuery = createRuntimeServiceGetExplore(instanceId, {
-    name: resourceName,
+    name: exploreName,
   });
   $: ({ data: explore } = $exploreQuery);
 
@@ -54,25 +53,23 @@
   });
 </script>
 
-{#key resourceName}
+{#key exploreName}
   {#if explore?.metricsView}
     <StateManagersProvider
       metricsViewName={explore.metricsView.meta.name.name}
-      exploreName={resourceName}
+      {exploreName}
     >
       <DashboardURLStateSync
         metricsViewName={explore.metricsView.meta.name.name}
-        exploreName={resourceName}
-        extraKeyPrefix={undefined}
+        {exploreName}
         {defaultExplorePreset}
-        initExploreState={tokenExploreState}
         {exploreStateFromYAMLConfig}
         {partialExploreStateFromUrl}
         {exploreStateFromSessionStorage}
       >
         <DashboardThemeProvider>
           <Dashboard
-            exploreName={resourceName}
+            {exploreName}
             metricsViewName={explore.metricsView.meta.name.name}
           />
         </DashboardThemeProvider>

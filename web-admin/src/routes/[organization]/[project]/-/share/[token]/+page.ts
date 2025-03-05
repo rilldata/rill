@@ -1,20 +1,37 @@
-import { getExploreStates } from "@rilldata/web-common/features/explores/selectors";
+import { fetchMagicAuthToken } from "@rilldata/web-admin/features/projects/selectors";
+import { error, redirect } from "@sveltejs/kit";
 
-export const load = async ({ url, parent }) => {
-  const { explore, metricsView, defaultExplorePreset } = await parent();
-  const exploreName = explore.meta.name.name;
-  const metricsViewSpec = metricsView.metricsView?.state?.validSpec;
-  const exploreSpec = explore.explore?.state?.validSpec;
+export const load = async ({
+  params: { organization, project, token },
+  url,
+}) => {
+  // Public URLs specify the resource in the token's metadata
+  const tokenData = await fetchMagicAuthToken(token).catch((e) => {
+    console.error(e);
+    throw error(404, "Unable to find token");
+  });
 
-  return {
-    resourceName: exploreName,
-    ...getExploreStates(
-      exploreName,
-      undefined,
-      url.searchParams,
-      metricsViewSpec,
-      exploreSpec,
-      defaultExplorePreset,
-    ),
-  };
+  const {
+    token: { resourceName, resources },
+  } = tokenData;
+  if (!resourceName && !resources) {
+    console.error("Token does not have an associated resource");
+    throw error(404, "Unable to find resource");
+  }
+
+  const exploreName = resources[0].name || resourceName; // `resourceName` is here for backwards compatibility
+
+  const redirectUrl = new URL(
+    `/${organization}/${project}/-/share/${token}/explore/${exploreName}`,
+    url.origin,
+  );
+
+  // Get the initial state from the token
+  if (tokenData?.token?.state) {
+    redirectUrl.search = new URLSearchParams({
+      state: tokenData.token.state,
+    }).toString();
+  }
+
+  throw redirect(307, redirectUrl.toString());
 };
