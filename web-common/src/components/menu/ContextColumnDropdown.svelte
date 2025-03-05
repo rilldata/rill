@@ -17,9 +17,7 @@
   export let measures: MetricsViewSpecMeasureV2[];
   export let selectedFilters: LeaderboardContextColumn[] = [];
   export let selectedMeasureNames: string[] = [];
-  export let onContextColumnChange: (
-    column: LeaderboardContextColumn[],
-  ) => void;
+  export let onToggle: (column: LeaderboardContextColumn[]) => void;
   export let onSelectAll: () => void;
 
   let active = false;
@@ -51,13 +49,15 @@
     return options.find((option) => option.value === value)?.label;
   }
 
+  // FIXME: enable comparisonTimeRange when delta absolute or percent is selected
+  // FIXME: can use setSelectedComparisonRange
   function toggleContextColumn(name: string) {
     if (!name) return;
     const column = name as LeaderboardContextColumn;
     const newFilters = selectedFilters.includes(column)
       ? selectedFilters.filter((f) => f !== column)
       : [...selectedFilters, column];
-    onContextColumnChange(newFilters);
+    onToggle(newFilters);
   }
 
   $: allSelected = selectedMeasureNames.length === measures.length;
