@@ -11,6 +11,9 @@
   import PercentOfTotal from "@rilldata/web-common/features/dashboards/dimension-table/PercentOfTotal.svelte";
   import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
+  import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
+  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 
   export let isValidPercentOfTotal: boolean;
   export let tooltipText: string;
@@ -20,7 +23,26 @@
   export let onToggle: (column: LeaderboardContextColumn[]) => void;
   export let onSelectAll: () => void;
 
+  const { exploreName } = getStateManagers();
+
   let active = false;
+
+  function removeTimeComparisonColumns(filters: LeaderboardContextColumn[]) {
+    return filters.filter(
+      (f) =>
+        f !== LeaderboardContextColumn.DELTA_ABSOLUTE &&
+        f !== LeaderboardContextColumn.DELTA_PERCENT &&
+        f !== LeaderboardContextColumn.PERCENT,
+    );
+  }
+
+  // Side effect to clean up filters when time comparison is disabled
+  $: if (!$metricsExplorerStore.entities[$exploreName]?.showTimeComparison) {
+    const cleanedFilters = removeTimeComparisonColumns(selectedFilters);
+    if (cleanedFilters.length !== selectedFilters.length) {
+      onToggle(cleanedFilters);
+    }
+  }
 
   $: options = [
     ...(isValidPercentOfTotal
@@ -49,15 +71,37 @@
     return options.find((option) => option.value === value)?.label;
   }
 
-  // FIXME: enable comparisonTimeRange when delta absolute or percent is selected
-  // FIXME: can use setSelectedComparisonRange
   function toggleContextColumn(name: string) {
     if (!name) return;
     const column = name as LeaderboardContextColumn;
-    const newFilters = selectedFilters.includes(column)
-      ? selectedFilters.filter((f) => f !== column)
-      : [...selectedFilters, column];
+    const isAdding = !selectedFilters.includes(column);
+    const newFilters = isAdding
+      ? [...selectedFilters, column]
+      : selectedFilters.filter((f) => f !== column);
     onToggle(newFilters);
+
+    // If adding a delta column and comparison time range is not enabled,
+    // automatically enable it with a default comparison range
+    if (
+      isAdding &&
+      (column === LeaderboardContextColumn.DELTA_ABSOLUTE ||
+        column === LeaderboardContextColumn.DELTA_PERCENT ||
+        column === LeaderboardContextColumn.PERCENT) &&
+      !$metricsExplorerStore.entities[$exploreName]?.showTimeComparison
+    ) {
+      const defaultComparisonRange = {
+        name: TimeComparisonOption.CONTIGUOUS,
+        start: new Date(),
+        end: new Date(),
+      };
+      const currentMeasures = measures.map((m) => ({ name: m.name }));
+      metricsExplorerStore.setSelectedComparisonRange(
+        $exploreName,
+        defaultComparisonRange,
+        { measures: currentMeasures },
+      );
+      metricsExplorerStore.displayTimeComparison($exploreName, true);
+    }
   }
 
   $: allSelected = selectedMeasureNames.length === measures.length;

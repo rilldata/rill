@@ -8,7 +8,6 @@ export function getMeasuresForDimensionTable(
 ) {
   const allMeasures = new Set([
     ...visibleMeasureNames,
-    // TODO: refactor activeMeasureName to activeMeasureNames
     ...additionalMeasures(activeMeasureName, dimensionThresholdFilters),
   ]);
   return [...allMeasures];
