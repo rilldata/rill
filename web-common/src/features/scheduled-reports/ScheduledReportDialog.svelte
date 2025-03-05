@@ -105,7 +105,6 @@
                   "web_open_state"
                 ] // backwards compatibility
               : undefined, // Now, we map `queryName` and `queryArgsJson` to a dashboard view in `[report]/open/+page.svelte`
-            webOpenPath: exploreName ? `/explore/${exploreName}` : undefined,
             webOpenMode: isEdit
               ? (((reportSpec?.annotations as V1ReportSpecAnnotations)[
                   "web_open_mode"

@@ -15,12 +15,13 @@ export const load = async ({
   const { token: tokenMetadata } = tokenResp;
   if (!tokenMetadata?.resources) {
     console.error("Token does not have any associated resources");
-    throw error(404, "Unable to find a resource");
+    throw error(404, "Unable to find the token's resource");
   }
 
   const exploreName = tokenMetadata.resources.find(
     (r) => r.type === ResourceKind.Explore,
   ); // Assumes only one explore per token
+
   if (!exploreName) {
     console.error("Token does not have an associated explore");
     throw error(404, "Unable to find an explore");

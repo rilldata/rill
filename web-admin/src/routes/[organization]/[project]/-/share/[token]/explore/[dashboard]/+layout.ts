@@ -19,6 +19,6 @@ export const load = async ({ params: { dashboard: exploreName }, parent }) => {
     explore,
     metricsView,
     defaultExplorePreset,
-    exploreStateFromYAMLConfig, // Do we use this for anything???
+    exploreStateFromYAMLConfig,
   };
 };

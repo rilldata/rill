@@ -52,8 +52,10 @@
   }
 
   async function gotoExplorePage() {
-    const url = new URL(`${$page.url.protocol}//${$page.url.host}`);
-    url.pathname = `/${organization}/${project}/explore/${exploreName}`;
+    const url = new URL(
+      `/${organization}/${project}/explore/${exploreName}`,
+      window.location.origin,
+    );
     url.search = await getExplorePageUrlSearchParams(
       $dashboardStateForAlert.data.exploreName,
       $dashboardStateForAlert.data.exploreState,

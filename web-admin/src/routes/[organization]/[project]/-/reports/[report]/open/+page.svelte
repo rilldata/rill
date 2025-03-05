@@ -1,6 +1,5 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { page } from "$app/stores";
   import { mapQueryToDashboard } from "@rilldata/web-admin/features/dashboards/query-mappers/mapQueryToDashboard";
   import { getExplorePageUrlSearchParams } from "@rilldata/web-admin/features/dashboards/query-mappers/utils";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
@@ -44,7 +43,7 @@
     exploreName: string,
     exploreState: MetricsExplorerEntity,
   ) {
-    const url = new URL(`${$page.url.protocol}//${$page.url.host}`);
+    const url = new URL(window.location.origin);
     if (token) {
       url.pathname = `/${organization}/${project}/-/share/${token}/explore/${exploreName}`;
     } else {
