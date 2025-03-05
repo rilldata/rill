@@ -4,33 +4,39 @@
     getHeaderForComponent,
     isCanvasComponentType,
   } from "@rilldata/web-common/features/canvas/components/util";
-  import VegaConfigInput from "@rilldata/web-common/features/canvas/inspector/VegaConfigInput.svelte";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import SidebarWrapper from "@rilldata/web-common/features/visual-editing/SidebarWrapper.svelte";
+  import VegaConfigInput from "./chart/VegaConfigInput.svelte";
   import ComponentTabs from "./ComponentTabs.svelte";
   import FiltersMapper from "./filters/FiltersMapper.svelte";
   import ParamMapper from "./ParamMapper.svelte";
 
-  export let selectedComponentIndex: number;
+  export let selectedComponent: { row: number; column: number };
   export let fileArtifact: FileArtifact;
 
   const {
     canvasEntity: {
-      spec: { getComponentFromIndex, getComponentNameFromIndex },
+      spec: { getComponentFromIndex, getComponentNameFromPos },
     },
   } = getCanvasStateManagers();
   let currentTab: string;
 
-  $: componentSpec = getComponentFromIndex(selectedComponentIndex);
-  $: componentName = getComponentNameFromIndex(selectedComponentIndex);
+  $: componentSpec = getComponentFromIndex(selectedComponent);
+  $: componentName = getComponentNameFromPos(selectedComponent);
 
   $: ({ renderer, rendererProperties } = $componentSpec || {});
 
   $: componentType = isCanvasComponentType(renderer) ? renderer : null;
-  $: path = ["items", selectedComponentIndex, "component", componentType || ""];
+  $: path = [
+    "rows",
+    selectedComponent.row,
+    "items",
+    selectedComponent.column,
+    componentType || "",
+  ];
 
   $: component =
     componentType && rendererProperties

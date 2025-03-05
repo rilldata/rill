@@ -37,6 +37,12 @@ type CreateTableOptions struct {
 	TableOpts    map[string]any
 }
 
+// TableWriteMetrics reports metrics for an execution that mutates table data.
+type TableWriteMetrics struct {
+	// Duration is the time taken to run user queries only.
+	Duration time.Duration
+}
+
 type InsertTableOptions struct {
 	BeforeInsert string
 	AfterInsert  string
@@ -55,8 +61,8 @@ type OLAPStore interface {
 	Execute(ctx context.Context, stmt *Statement) (*Result, error)
 	InformationSchema() InformationSchema
 
-	CreateTableAsSelect(ctx context.Context, name, sql string, opts *CreateTableOptions) error
-	InsertTableAsSelect(ctx context.Context, name, sql string, opts *InsertTableOptions) error
+	CreateTableAsSelect(ctx context.Context, name, sql string, opts *CreateTableOptions) (*TableWriteMetrics, error)
+	InsertTableAsSelect(ctx context.Context, name, sql string, opts *InsertTableOptions) (*TableWriteMetrics, error)
 	DropTable(ctx context.Context, name string) error
 	RenameTable(ctx context.Context, name, newName string) error
 	AddTableColumn(ctx context.Context, tableName, columnName string, typ string) error
@@ -67,11 +73,15 @@ type OLAPStore interface {
 
 // Statement wraps a query to execute against an OLAP driver.
 type Statement struct {
-	Query            string
-	Args             []any
-	DryRun           bool
-	Priority         int
-	LongRunning      bool
+	Query       string
+	Args        []any
+	DryRun      bool
+	Priority    int
+	LongRunning bool
+	// *Cache configs are used to send olap specific cache configs to underlying drivers on per query basis. For example,
+	// both Druid and ClickHouse supports specifying if cache should be used for the query or not and if the query results should be populated in cache or not.
+	UseCache         *bool // can be used to enable/disable cache for the query
+	PopulateCache    *bool // can be used to enable/disable cache population for the query results
 	ExecutionTimeout time.Duration
 }
 
@@ -480,10 +490,11 @@ func (d Dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_DimensionV2, grain
 	case DialectPinot:
 		// TODO: Handle tz instead of ignoring it.
 		// TODO: Handle firstDayOfWeek and firstMonthOfYear. NOTE: We currently error when configuring these for Pinot in runtime/validate.go.
+		// adding a cast to timestamp to get the the output type as TIMESTAMP otherwise it returns a long
 		if tz == "" {
-			return fmt.Sprintf("date_trunc('%s', %s, 'MILLISECONDS')", specifier, expr), nil
+			return fmt.Sprintf("CAST(date_trunc('%s', %s, 'MILLISECONDS') AS TIMESTAMP)", specifier, expr), nil
 		}
-		return fmt.Sprintf("date_trunc('%s', %s, 'MILLISECONDS', '%s')", specifier, expr, tz), nil
+		return fmt.Sprintf("CAST(date_trunc('%s', %s, 'MILLISECONDS', '%s') AS TIMESTAMP)", specifier, expr, tz), nil
 	default:
 		return "", fmt.Errorf("unsupported dialect %q", d)
 	}
@@ -499,7 +510,7 @@ func (d Dialect) DateDiff(grain runtimev1.TimeGrain, t1, t2 time.Time) (string, 
 	case DialectDuckDB:
 		return fmt.Sprintf("DATEDIFF('%s', TIMESTAMP '%s', TIMESTAMP '%s')", unit, t1.Format(time.RFC3339), t2.Format(time.RFC3339)), nil
 	case DialectPinot:
-		return fmt.Sprintf("DATETIMECONVERT(DATETRUNC('MILLISECONDS', %s) - DATETRUNC('MILLISECONDS', %s), '1:MILLISECONDS:EPOCH', '1:%s:EPOCH')", t1.Format(time.RFC3339), t2.Format(time.RFC3339), unit), nil
+		return fmt.Sprintf("CAST(DATEDIFF('%s', %d, %d) AS TIMESTAMP)", unit, t1.UnixMilli(), t2.UnixMilli()), nil
 	default:
 		return "", fmt.Errorf("unsupported dialect %q", d)
 	}
@@ -531,7 +542,7 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, []any, erro
 		if err := result.Scan(valuePtrs...); err != nil {
 			return "", nil, nil, fmt.Errorf("select inline: failed to scan value: %w", err)
 		}
-		if d == DialectDruid || d == DialectDuckDB {
+		if d == DialectDruid || d == DialectDuckDB || d == DialectPinot {
 			// format - select * from (values (1, 2), (3, 4)) t(a, b)
 			if rows == 0 {
 				prefix = "SELECT * FROM (VALUES "
@@ -559,7 +570,7 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, []any, erro
 
 		dimVals = append(dimVals, values[0])
 		for i, v := range values {
-			if d == DialectDruid || d == DialectDuckDB {
+			if d == DialectDruid || d == DialectDuckDB || d == DialectPinot {
 				if i == 0 {
 					prefix += "("
 				} else {
@@ -593,7 +604,7 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, []any, erro
 			} else if d == DialectClickHouse {
 				suffix += "?"
 				args = append(args, v)
-			} else if d == DialectDruid {
+			} else if d == DialectDruid || d == DialectPinot {
 				ok, expr, err := d.GetValExpr(v, result.Schema.Fields[i].Type.Code)
 				if err != nil {
 					return "", nil, nil, fmt.Errorf("select inline: failed to get value expression: %w", err)
@@ -608,7 +619,7 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, []any, erro
 			}
 		}
 
-		if d == DialectDruid || d == DialectDuckDB {
+		if d == DialectDruid || d == DialectDuckDB || d == DialectPinot {
 			prefix += ")"
 			if rows == 0 {
 				suffix += ")"
@@ -620,7 +631,7 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, []any, erro
 		rows++
 	}
 
-	if d == DialectDruid || d == DialectDuckDB {
+	if d == DialectDruid || d == DialectDuckDB || d == DialectPinot {
 		prefix += ") "
 	} else if d == DialectClickHouse {
 		suffix += ")"
@@ -689,8 +700,10 @@ func (d Dialect) GetTimeExpr(t time.Time) (bool, string) {
 	switch d {
 	case DialectClickHouse:
 		return true, fmt.Sprintf("parseDateTimeBestEffort('%s')", t.Format(time.RFC3339Nano))
-	case DialectDuckDB, DialectDruid, DialectPinot:
+	case DialectDuckDB, DialectDruid:
 		return true, fmt.Sprintf("CAST('%s' AS TIMESTAMP)", t.Format(time.RFC3339Nano))
+	case DialectPinot:
+		return true, fmt.Sprintf("CAST(%d AS TIMESTAMP)", t.UnixMilli())
 	default:
 		return false, ""
 	}

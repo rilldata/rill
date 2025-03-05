@@ -342,6 +342,11 @@ service AdminService {
     };
   }
 
+  // DeleteUser deletes the user from the organization by email
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse) {
+    option (google.api.http) = {delete: "/v1/users/{email}"};
+  }
+
   // IssueRepresentativeAuthToken returns the temporary token for given email
   rpc IssueRepresentativeAuthToken(IssueRepresentativeAuthTokenRequest) returns (IssueRepresentativeAuthTokenResponse) {
     option (google.api.http) = {
@@ -1173,6 +1178,7 @@ message UpdateProjectRequest {
   optional string new_name = 9;
   optional int64 prod_ttl_seconds = 10;
   optional string prod_version = 11;
+  bool superuser_force_access = 14;
 }
 
 message UpdateProjectResponse {
@@ -1639,6 +1645,12 @@ message UpdateUserPreferencesRequest {
 message UpdateUserPreferencesResponse {
   UserPreferences preferences = 1;
 }
+
+message DeleteUserRequest {
+  string email = 1 [(validate.rules).string.email = true];
+}
+
+message DeleteUserResponse {}
 
 message ListBookmarksRequest {
   string project_id = 1;
@@ -2234,6 +2246,8 @@ message Organization {
   string billing_customer_id = 7;
   string payment_customer_id = 8;
   string billing_email = 9;
+  optional string billing_plan_name = 14;
+  optional string billing_plan_display_name = 15;
   google.protobuf.Timestamp created_on = 5;
   google.protobuf.Timestamp updated_on = 6;
 }

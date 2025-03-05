@@ -11,6 +11,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 )
@@ -28,8 +29,8 @@ func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName
 }
 
 // CreateTableAsSelect implements drivers.OLAPStore.
-func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, opts *drivers.CreateTableOptions) error {
-	return fmt.Errorf("pinot: data transformation not yet supported")
+func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, opts *drivers.CreateTableOptions) (*drivers.TableWriteMetrics, error) {
+	return nil, fmt.Errorf("pinot: data transformation not yet supported")
 }
 
 // DropTable implements drivers.OLAPStore.
@@ -38,8 +39,8 @@ func (c *connection) DropTable(ctx context.Context, name string) error {
 }
 
 // InsertTableAsSelect implements drivers.OLAPStore.
-func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, opts *drivers.InsertTableOptions) error {
-	return fmt.Errorf("pinot: data transformation not yet supported")
+func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, opts *drivers.InsertTableOptions) (*drivers.TableWriteMetrics, error) {
+	return nil, fmt.Errorf("pinot: data transformation not yet supported")
 }
 
 // RenameTable implements drivers.OLAPStore.
@@ -56,9 +57,6 @@ func (c *connection) WithConnection(ctx context.Context, priority int, longRunni
 }
 
 func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
-	if c.logQueries {
-		c.logger.Info("pinot query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args))
-	}
 	res, err := c.Execute(ctx, stmt)
 	if err != nil {
 		return err
@@ -71,7 +69,7 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 
 func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
 	if c.logQueries {
-		c.logger.Info("pinot query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args))
+		c.logger.Info("pinot query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
 	}
 	if stmt.DryRun {
 		rows, err := c.db.QueryxContext(ctx, "EXPLAIN PLAN FOR "+stmt.Query, stmt.Args...)

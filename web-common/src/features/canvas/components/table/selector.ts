@@ -4,46 +4,80 @@ import {
   validateMeasures,
 } from "@rilldata/web-common/features/canvas/components/validators";
 import type { StateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
+import { createPivotDataStore } from "@rilldata/web-common/features/dashboards/pivot/pivot-data-store";
 import { canEnablePivotComparison } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
 import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
+  type PivotDashboardContext,
   type PivotDataStoreConfig,
   type PivotState,
+  type PivotTimeConfig,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import { type Readable, derived } from "svelte/store";
+import { type Readable, derived, readable, writable } from "svelte/store";
+
+export const pivotState = writable<PivotState>({
+  active: true,
+  columns: [],
+  rows: [],
+  expanded: {},
+  sorting: [],
+  columnPage: 1,
+  rowPage: 1,
+  enableComparison: false,
+  tableMode: "nest",
+  activeCell: null,
+});
 
 export function getTableConfig(
   ctx: StateManagers,
-  tableSpec: TableSpec,
-  pivotState: PivotState,
+  metricsViewName: string,
+  tableSpecStore: Readable<TableSpec>,
+  pivotState: Readable<PivotState>,
+  timeAndFilterStore: Readable<TimeAndFilterStore>,
 ): Readable<PivotDataStoreConfig> {
-  const { metrics_view, time_range, comparison_range, dimension_filters } =
-    tableSpec;
   const {
     canvasEntity: {
-      createTimeAndFilterStore,
       spec: { getMetricsViewFromName },
     },
   } = ctx;
 
-  const timeAndFilterStore = createTimeAndFilterStore(metrics_view, {
-    componentTimeRange: time_range,
-    componentComparisonRange: comparison_range,
-    componentFilter: dimension_filters,
-  });
-
   return derived(
-    [getMetricsViewFromName(metrics_view), timeAndFilterStore],
-    ([metricsView, { timeRange, comparisonRange, where }]) => {
+    [
+      getMetricsViewFromName(metricsViewName),
+      tableSpecStore,
+      pivotState,
+      timeAndFilterStore,
+    ],
+    ([metricsView, $tableSpec, $pivotState, $timeAndFilterStore]) => {
+      const { timeRange, comparisonTimeRange, where } = $timeAndFilterStore;
+
+      if (!$tableSpec) {
+        return {
+          measureNames: [],
+          rowDimensionNames: [],
+          colDimensionNames: [],
+          allMeasures: [],
+          allDimensions: [],
+          whereFilter: where ?? createAndExpression([]),
+          pivot: $pivotState,
+          time: {} as PivotTimeConfig,
+          comparisonTime: undefined,
+          enableComparison: false,
+          searchText: "",
+          isFlat: false,
+        };
+      }
+
       const enableComparison = canEnablePivotComparison(
-        pivotState,
-        comparisonRange.start,
+        $pivotState,
+        comparisonTimeRange?.start,
       );
 
       const config: PivotDataStoreConfig = {
-        measureNames: (tableSpec.measures || []).flatMap((name) => {
+        measureNames: ($tableSpec?.measures || []).flatMap((name) => {
           const group = [name];
           if (enableComparison) {
             group.push(
@@ -53,17 +87,18 @@ export function getTableConfig(
           }
           return group;
         }),
-        rowDimensionNames: tableSpec.row_dimensions || [],
-        colDimensionNames: tableSpec.col_dimensions || [],
+        rowDimensionNames: $tableSpec?.row_dimensions || [],
+        colDimensionNames: $tableSpec?.col_dimensions || [],
         allMeasures: metricsView?.measures || [],
         allDimensions: metricsView?.dimensions || [],
         whereFilter: where ?? createAndExpression([]),
         searchText: "",
-        pivot: pivotState,
+        isFlat: false,
+        pivot: $pivotState,
         enableComparison,
         comparisonTime: {
-          start: comparisonRange?.start,
-          end: comparisonRange?.end,
+          start: comparisonTimeRange?.start,
+          end: comparisonTimeRange?.end,
         },
         time: {
           timeStart: timeRange?.start,
@@ -136,3 +171,41 @@ export function validateTableSchema(
     },
   );
 }
+
+export const usePivotForCanvas = (() => {
+  const cache = new Map<string, ReturnType<typeof createPivotDataStore>>();
+
+  return (
+    ctx: StateManagers,
+    metricsViewName: string,
+    tableSpecStore: Readable<TableSpec>,
+    timeAndFilterStore: Readable<TimeAndFilterStore>,
+  ) => {
+    if (cache.has(metricsViewName)) {
+      return cache.get(metricsViewName)!;
+    }
+
+    const pivotConfig = getTableConfig(
+      ctx,
+      metricsViewName,
+      tableSpecStore,
+      pivotState,
+      timeAndFilterStore,
+    );
+
+    const pivotDashboardContext: PivotDashboardContext = {
+      metricsViewName: readable(metricsViewName),
+      queryClient: ctx.queryClient,
+      enabled: !!ctx.canvasEntity.spec.canvasSpec,
+    };
+
+    const pivotDataStore = createPivotDataStore(
+      pivotDashboardContext,
+      pivotConfig,
+    );
+
+    cache.set(metricsViewName, pivotDataStore);
+
+    return pivotDataStore;
+  };
+})();

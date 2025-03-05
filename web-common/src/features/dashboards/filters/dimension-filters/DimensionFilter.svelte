@@ -3,7 +3,8 @@
   import { Chip } from "@rilldata/web-common/components/chip";
   import RemovableListBody from "@rilldata/web-common/components/chip/removable-list-chip/RemovableListBody.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import SearchableMenuContent from "@rilldata/web-common/components/searchable-filter-menu/SearchableMenuContent.svelte";
+  import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
+  import { Search } from "@rilldata/web-common/components/search";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
@@ -40,13 +41,14 @@
     timeEnd,
     Boolean(timeControlsReady && open),
   );
+  $: ({ data, error, isFetching } = $searchValues);
 
   $: allSelected = Boolean(
-    selectedValues.length && $searchValues?.length === selectedValues.length,
+    selectedValues.length && data?.length === selectedValues.length,
   );
 
   function onToggleSelectAll() {
-    $searchValues?.forEach((dimensionValue) => {
+    data?.forEach((dimensionValue) => {
       if (!allSelected && selectedValues.includes(dimensionValue)) return;
 
       onSelect(dimensionValue);
@@ -113,29 +115,87 @@
     </Tooltip>
   </DropdownMenu.Trigger>
 
-  <SearchableMenuContent
-    {onSelect}
-    {onToggleSelectAll}
-    bind:searchText
-    showXForSelected={excludeMode}
-    selectedItems={[selectedValues]}
-    allowMultiSelect={true}
-    selectableGroups={[
-      {
-        name: "DIMENSIONS",
-        items: $searchValues.map((dimensionValue) => ({
-          name: dimensionValue,
-          label: dimensionValue,
-        })),
-      },
-    ]}
+  <!-- There will be some custom controls for this. Until we have the full design have a custom dropdown here. -->
+  <DropdownMenu.Content
+    align="start"
+    class="flex flex-col max-h-96 w-72 overflow-hidden p-0"
   >
-    <Button slot="action" on:click={onToggleFilterMode} type="secondary">
-      {#if excludeMode}
-        Include
-      {:else}
-        Exclude
+    <div class="px-3 pt-3 pb-1">
+      <Search
+        bind:value={searchText}
+        label="Search list"
+        showBorderOnFocus={false}
+      />
+    </div>
+
+    <div class="flex flex-col flex-1 overflow-y-auto w-full h-fit pb-1">
+      {#if isFetching}
+        <div class="min-h-9 flex flex-row items-center mx-auto">
+          <LoadingSpinner />
+        </div>
+      {:else if error}
+        <div class="min-h-9 p-3 text-center text-red-600 text-xs">
+          {error}
+        </div>
+      {:else if data}
+        <DropdownMenu.Group class="px-1">
+          {#each data as name (name)}
+            {@const selected = selectedValues.includes(name)}
+
+            <DropdownMenu.CheckboxItem
+              class="text-xs cursor-pointer"
+              role="menuitem"
+              checked={selected}
+              showXForSelected={excludeMode}
+              on:click={() => onSelect(name)}
+            >
+              <span>
+                {#if name.length > 240}
+                  {name.slice(0, 240)}...
+                {:else}
+                  {name}
+                {/if}
+              </span>
+            </DropdownMenu.CheckboxItem>
+          {:else}
+            <div class="ui-copy-disabled text-center p-2 w-full">
+              no results
+            </div>
+          {/each}
+        </DropdownMenu.Group>
       {/if}
-    </Button>
-  </SearchableMenuContent>
+    </div>
+
+    <footer>
+      <Button on:click={onToggleSelectAll} type="plain">
+        {#if allSelected}
+          Deselect all
+        {:else}
+          Select all
+        {/if}
+      </Button>
+      <Button on:click={onToggleFilterMode} type="secondary">
+        {#if excludeMode}
+          Include
+        {:else}
+          Exclude
+        {/if}
+      </Button>
+    </footer>
+  </DropdownMenu.Content>
 </DropdownMenu.Root>
+
+<style lang="postcss">
+  footer {
+    height: 42px;
+    @apply border-t border-slate-300;
+    @apply bg-slate-100;
+    @apply flex flex-row flex-none items-center justify-end;
+    @apply gap-x-2 p-2 px-3.5;
+  }
+
+  footer:is(.dark) {
+    @apply bg-gray-800;
+    @apply border-gray-700;
+  }
+</style>

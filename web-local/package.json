@@ -11,7 +11,11 @@
     "check:watch": "svelte-check --no-ts-config --watch",
     "lint": "eslint --ignore-path .gitignore .",
     "format": "prettier --ignore-path .gitignore --write --plugin-search-dir=. .",
-    "test": "npx playwright test",
+    "test": "npx playwright test --project=e2e-chrome",
+    "test:all": "npx playwright test",
+    "test:chrome": "npx playwright test --project=e2e-chrome",
+    "test:safari": "npx playwright test --project=e2e-safari",
+    "test:firefox": "npx playwright test --project=e2e-firefox",
     "test:watch": "npm run test -- --watch",
     "manual-publish": "./build-tools/npm_publish.sh"
   },

@@ -81,7 +81,7 @@
         {/each}
       {/if}
 
-      {#if selectedItems.size > 0 && filteredItems.length > 0}
+      {#if selectedProxy.size > 0 && filteredItems.length > 0}
         <DropdownMenu.Separator />
       {/if}
 

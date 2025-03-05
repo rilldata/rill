@@ -6,15 +6,19 @@
     isChartComponentType,
   } from "@rilldata/web-common/features/canvas/components/util";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-  import { builderActions, getAttrs, type Builder } from "bits-ui";
+  import type { V1CanvasItem } from "@rilldata/web-common/runtime-client";
+  import { hideBorder } from "./layout-util";
+  import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
 </script>
 
 <script lang="ts">
-  export let i: number;
-  export let builders: Builder[] = [];
-  export let embed = false;
+  export let canvasItem: V1CanvasItem | null;
   export let selected = false;
-  export let componentName: string;
+  export let id: string;
+  export let ghost = false;
+  export let allowPointerEvents = true;
+  export let editable = false;
+  export let onMouseDown: (e: MouseEvent) => void = () => {};
 
   const {
     canvasEntity: {
@@ -22,7 +26,7 @@
     },
   } = getCanvasStateManagers();
 
-  let isHovered = false;
+  $: componentName = canvasItem?.component ?? "";
 
   $: component = getComponentResourceFromName(componentName);
   $: ({ renderer, rendererProperties } = $component ?? {});
@@ -32,46 +36,45 @@
   $: title = rendererProperties?.title;
   $: description = rendererProperties?.description;
   $: componentFilters = getComponentFilterProperties(rendererProperties);
-
-  function handleMouseEnter() {
-    if (embed) return;
-    isHovered = true;
-  }
-
-  function handleMouseLeave() {
-    if (embed) return;
-    isHovered = false;
-  }
 </script>
 
-<div
-  {...getAttrs(builders)}
-  use:builderActions={{ builders }}
+<article
   role="presentation"
-  data-index={i}
-  class="canvas-component pointer-events-auto size-full"
-  data-selected={selected}
-  data-hovered={isHovered}
-  class:!cursor-default={embed}
-  style:z-index={renderer === "select" ? 100 : 0}
-  on:contextmenu
-  on:pointerenter
-  on:pointerleave
-  on:mouseenter={handleMouseEnter}
-  on:mouseleave={handleMouseLeave}
+  {id}
+  class:selected
+  class:editable
+  class:opacity-20={ghost}
+  style:pointer-events={!allowPointerEvents ? "none" : "auto"}
+  class:outline={!hideBorder.has(renderer)}
+  class:shadow-sm={!hideBorder.has(renderer)}
+  class="group component-card size-full flex flex-col cursor-pointer z-10 p-0 relative outline-[1px] outline-gray-200 bg-white overflow-hidden rounded-sm"
+  on:mousedown={onMouseDown}
 >
-  <div class="size-full relative">
-    <div class="size-full overflow-hidden flex flex-col flex-none">
-      <div
-        class="size-full overflow-hidden flex flex-col gap-y-1 flex-none relative"
-      >
-        {#if !isChartType}
-          <ComponentHeader {title} {description} filters={componentFilters} />
-        {/if}
-        {#if renderer && rendererProperties}
-          <ComponentRenderer {renderer} {componentName} />
-        {/if}
-      </div>
+  {#if componentName}
+    {#if !isChartType}
+      <ComponentHeader {title} {description} filters={componentFilters} />
+    {/if}
+    {#if renderer && rendererProperties}
+      <ComponentRenderer {renderer} {rendererProperties} {componentName} />
+    {/if}
+  {:else}
+    <div class="size-full grid place-content-center">
+      <LoadingSpinner size="36px" />
     </div>
-  </div>
-</div>
+  {/if}
+</article>
+
+<style lang="postcss">
+  .component-card.editable:hover {
+    @apply shadow-md outline;
+  }
+
+  .component-card:has(.component-error) {
+    @apply outline-red-200;
+  }
+
+  .selected {
+    @apply outline-2 outline-primary-300;
+    outline-style: solid !important;
+  }
+</style>

@@ -105,7 +105,7 @@ func (c *connection) FindOrganizationByName(ctx context.Context, name string) (*
 
 func (c *connection) CountProjectsForOrganization(ctx context.Context, orgID string) (int, error) {
 	var count int
-	err := c.getDB(ctx).SelectContext(ctx, &count, "SELECT COUNT(*) FROM projects WHERE org_id=$1", orgID)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT COUNT(*) FROM projects WHERE org_id=$1", orgID).Scan(&count)
 	if err != nil {
 		return 0, parseErr("projects", err)
 	}
@@ -168,8 +168,8 @@ func (c *connection) UpdateOrganization(ctx context.Context, id string, opts *da
 
 	res := &database.Organization{}
 	err := c.getDB(ctx).QueryRowxContext(ctx,
-		`UPDATE orgs SET name=$1, display_name=$2, description=$3, logo_asset_id=$4, favicon_asset_id=$5, custom_domain=$6, quota_projects=$7, quota_deployments=$8, quota_slots_total=$9, quota_slots_per_deployment=$10, quota_outstanding_invites=$11, quota_storage_limit_bytes_per_deployment=$12, billing_customer_id=$13, payment_customer_id=$14, billing_email=$15, created_by_user_id=$16, updated_on=now() WHERE id=$17 RETURNING *`,
-		opts.Name, opts.DisplayName, opts.Description, opts.LogoAssetID, opts.FaviconAssetID, opts.CustomDomain, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, opts.CreatedByUserID, id).StructScan(res)
+		`UPDATE orgs SET name=$1, display_name=$2, description=$3, logo_asset_id=$4, favicon_asset_id=$5, custom_domain=$6, quota_projects=$7, quota_deployments=$8, quota_slots_total=$9, quota_slots_per_deployment=$10, quota_outstanding_invites=$11, quota_storage_limit_bytes_per_deployment=$12, billing_customer_id=$13, payment_customer_id=$14, billing_email=$15, created_by_user_id=$16, billing_plan_name=$17, billing_plan_display_name=$18, updated_on=now() WHERE id=$19 RETURNING *`,
+		opts.Name, opts.DisplayName, opts.Description, opts.LogoAssetID, opts.FaviconAssetID, opts.CustomDomain, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, opts.CreatedByUserID, opts.BillingPlanName, opts.BillingPlanDisplayName, id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("org", err)
 	}

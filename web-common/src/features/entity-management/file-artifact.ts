@@ -128,14 +128,18 @@ export class FileArtifact {
       Awaited<ReturnType<typeof runtimeServiceGetFile>>
     > = ({ signal }) => runtimeServiceGetFile(instanceId, queryParams, signal);
 
-    const { blob: fetchedContent } = await queryClient.fetchQuery({
-      queryKey,
-      queryFn,
-      staleTime: Infinity,
-    });
+    let fetchedContent: string | undefined = undefined;
 
-    if (fetchedContent === undefined) {
-      throw new Error("Content undefined");
+    try {
+      const response = await queryClient.fetchQuery({
+        queryKey,
+        queryFn,
+        staleTime: Infinity,
+      });
+
+      fetchedContent = response.blob;
+    } catch (e) {
+      console.log("FETCH ERROR", e);
     }
 
     const currentRemoteContent = get(this.remoteContent);
@@ -143,6 +147,7 @@ export class FileArtifact {
 
     const remoteContentHasChanged = currentRemoteContent !== fetchedContent;
     const isSaveConfirmation = editorContent === fetchedContent;
+    const fileUntouched = !get(this.hasUnsavedChanges);
 
     this.saveState.resolve();
 
@@ -155,14 +160,14 @@ export class FileArtifact {
       this.saveState.untouch(this.path);
     }
 
-    if (remoteContentHasChanged) {
+    if (remoteContentHasChanged && fetchedContent !== undefined) {
       this.remoteContent.set(fetchedContent);
 
       const inferred = inferResourceKind(this.path, fetchedContent);
 
       if (inferred) this.inferredResourceKind.set(inferred);
 
-      if (editorContent === null) {
+      if (editorContent === null || fileUntouched) {
         this.updateEditorContent(fetchedContent, false, false, true);
       } else if (!isSaveConfirmation) {
         // This is the secondary sequence wherein a file is saved in an external editor

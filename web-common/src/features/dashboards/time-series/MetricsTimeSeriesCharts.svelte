@@ -6,6 +6,7 @@
   import DashboardVisibilityDropdown from "@rilldata/web-common/components/menu/shadcn/DashboardVisibilityDropdown.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
+  import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import {
     PivotChipType,
     type PivotChipData,
@@ -243,10 +244,11 @@
   function startPivotForTimeseries() {
     const pivot = $exploreState?.pivot;
 
+    const pivotColumns = splitPivotChips(pivot.columns);
     if (
-      pivot.rows.dimension.length ||
-      pivot.columns.measure.length ||
-      pivot.columns.dimension.length
+      pivot.rows.length ||
+      pivotColumns.measure.length ||
+      pivotColumns.dimension.length
     ) {
       showReplacePivotModal = true;
     } else {
@@ -277,11 +279,8 @@
 
     metricsExplorerStore.createPivot(
       exploreName,
-      { dimension: [getTimeDimension()] },
-      {
-        dimension: [],
-        measure: measures,
-      },
+      [getTimeDimension()],
+      measures,
     );
   }
 </script>

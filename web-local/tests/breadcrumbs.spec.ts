@@ -1,8 +1,10 @@
 import { expect } from "playwright/test";
-import { test } from "./utils/test";
+import { test } from "./setup/base";
 import { uploadFile } from "./utils/sourceHelpers";
 
 test.describe("Breadcrumbs", () => {
+  test.use({ project: "Blank" });
+
   test.describe("Breadcrumb interactions", () => {
     test("breadcrumb navigation", async ({ page }) => {
       await uploadFile(page, "AdBids.csv");
@@ -61,8 +63,8 @@ test.describe("Breadcrumbs", () => {
         })
         .click();
 
-      await page.getByText("Go to dashboard").click();
-      await page.getByText("Create dashboard").click();
+      await page.getByRole("button", { name: "Create resource menu" }).click();
+      await page.getByRole("menuitem", { name: "Create dashboard" }).click();
 
       await page.waitForURL(
         "**/files/dashboards/AdBids_model_metrics_explore_1.yaml",

@@ -19,6 +19,7 @@
   import { useTimeControlStore } from "../time-controls/time-control-store";
   import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
   import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
+  import { onMount, tick } from "svelte";
 
   export let exploreName: string;
   export let metricsViewName: string;
@@ -90,8 +91,33 @@
       }
     : undefined;
 
+  $: exploreSpec = $explore.data?.explore;
+  $: timeRanges = exploreSpec?.timeRanges ?? [];
+
   let metricsWidth = DEFAULT_TIMESERIES_WIDTH;
   let resizing = false;
+
+  let initEmbedPublicAPI;
+
+  // Hacky solution to ensure that the embed public API is initialized after the dashboard is fully loaded
+  onMount(async () => {
+    if (isEmbedded) {
+      initEmbedPublicAPI = (
+        await import(
+          "@rilldata/web-admin/features/embeds/init-embed-public-api"
+        )
+      ).default;
+    }
+    await tick();
+  });
+
+  $: if (initEmbedPublicAPI) {
+    try {
+      initEmbedPublicAPI(instanceId);
+    } catch (error) {
+      console.error("Error running initEmbedPublicAPI:", error);
+    }
+  }
 </script>
 
 <article
@@ -108,7 +134,7 @@
     {:else}
       {#key exploreName}
         <section class="flex relative justify-between gap-x-4 py-4 pb-6 px-4">
-          <Filters />
+          <Filters {timeRanges} {metricsViewName} />
           <div class="absolute bottom-0 flex flex-col right-0">
             <TabBar {hidePivot} {exploreName} onPivot={$showPivot} />
           </div>

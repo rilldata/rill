@@ -491,8 +491,7 @@ select 1
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 2, 0, 0)
 	// Assert that the model is a table now
-	// TODO : fix with information schema fix
-	// testruntime.RequireIsView(t, olap, "bar", false)
+	testruntime.RequireIsView(t, olap, "bar", false)
 
 	// Mark the model as not materialized
 	testruntime.PutFiles(t, rt, id, map[string]string{
@@ -970,6 +969,10 @@ measures:
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 	testruntime.RequireResource(t, rt, id, metricsRes)
+
+	// Since RequireResource doesn't check that State.ModelRefreshedOn is set, we add a manual check for it here.
+	mv := testruntime.GetResource(t, rt, id, metricsRes.Meta.Name.Kind, metricsRes.Meta.Name.Name)
+	require.NotNil(t, mv.GetMetricsView().State.ModelRefreshedOn)
 
 	// Model has error, dashboard has error as well
 	testruntime.PutFiles(t, rt, id, map[string]string{

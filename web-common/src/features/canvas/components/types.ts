@@ -1,3 +1,4 @@
+import type { KPIGridSpec } from "@rilldata/web-common/features/canvas/components/kpi-grid";
 import type { ChartConfig, ChartType } from "./charts/types";
 import type { ImageSpec } from "./image";
 import type { KPISpec } from "./kpi";
@@ -10,6 +11,7 @@ export type ComponentSpec =
   | TableSpec
   | ImageSpec
   | KPISpec
+  | KPIGridSpec
   | MarkdownSpec;
 
 export interface ComponentCommonProperties {
@@ -24,9 +26,13 @@ export interface ComponentAlignment {
   horizontal: HoritzontalAlignment;
 }
 
+export type ComponentComparisonOptions =
+  | "previous"
+  | "delta"
+  | "percent_change";
+
 export interface ComponentFilterProperties {
-  time_range?: string;
-  comparison_range?: string;
+  time_filters?: string;
   dimension_filters?: string;
 }
 
@@ -39,6 +45,7 @@ export type CanvasComponentType =
   | ChartType
   | "markdown"
   | "kpi"
+  | "kpi_grid"
   | "image"
   | "table";
 

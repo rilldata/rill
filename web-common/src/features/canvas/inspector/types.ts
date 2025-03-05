@@ -6,7 +6,7 @@ type SemanticInputTypes =
   | "multi_measures"
   | "multi_dimensions";
 type ChartInputTypes = "positional" | "mark" | "tooltip" | "config";
-type CustomInputTypes = "rill_time";
+type CustomInputTypes = "rill_time" | "sparkline" | "comparison_options";
 type PositionalInputTypes = "alignment";
 
 export type InputType =
@@ -16,11 +16,7 @@ export type InputType =
   | CustomInputTypes
   | PositionalInputTypes;
 
-export type FilterInputTypes =
-  | "time_range"
-  | "comparison_range"
-  | "grain"
-  | "dimension_filters";
+export type FilterInputTypes = "time_filters" | "dimension_filters";
 
 export interface ComponentInputParam {
   type: InputType;
@@ -33,7 +29,7 @@ export interface ComponentInputParam {
 
 export interface FilterInputParam {
   type: FilterInputTypes;
-  label: string;
+  meta?: Record<string, any>;
 }
 
 export interface InputParams<T> {
