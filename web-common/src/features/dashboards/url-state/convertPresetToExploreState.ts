@@ -7,7 +7,6 @@ import {
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
-import { convertURLToExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/convertURLToExplorePreset";
 import {
   getMultiFieldError,
   getSingleFieldError,
@@ -43,26 +42,6 @@ import {
   type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
 import type { SortingState } from "@tanstack/svelte-table";
-
-export function convertURLToExploreState(
-  searchParams: URLSearchParams,
-  metricsView: V1MetricsViewSpec,
-  exploreSpec: V1ExploreSpec,
-  defaultExplorePreset: V1ExplorePreset,
-) {
-  const errors: Error[] = [];
-  const { preset, errors: errorsFromPreset } = convertURLToExplorePreset(
-    searchParams,
-    metricsView,
-    exploreSpec,
-    defaultExplorePreset,
-  );
-  errors.push(...errorsFromPreset);
-  const { partialExploreState, errors: errorsFromEntity } =
-    convertPresetToExploreState(metricsView, exploreSpec, preset);
-  errors.push(...errorsFromEntity);
-  return { partialExploreState, errors };
-}
 
 /**
  * Converts a V1ExplorePreset to our internal metrics explore state.
@@ -423,17 +402,12 @@ function fromPivotUrlParams(
     hasSomePivotFields = true;
   }
 
-  const colMeasures: PivotChipData[] = [];
-  const colDimensions: PivotChipData[] = [];
+  const colChips: PivotChipData[] = [];
   if (preset.pivotCols) {
     preset.pivotCols.forEach((pivotRow) => {
       const chip = mapPivotEntry(pivotRow);
       if (!chip) return;
-      if (chip.type === PivotChipType.Measure) {
-        colMeasures.push(chip);
-      } else {
-        colDimensions.push(chip);
-      }
+      colChips.push(chip);
     });
     hasSomePivotFields = true;
   }
@@ -445,13 +419,8 @@ function fromPivotUrlParams(
       partialExploreState: {
         pivot: {
           active: false,
-          rows: {
-            dimension: [],
-          },
-          columns: {
-            measure: [],
-            dimension: [],
-          },
+          rows: [],
+          columns: [],
           sorting: [],
           expanded: {},
           columnPage: 1,
@@ -493,13 +462,8 @@ function fromPivotUrlParams(
     partialExploreState: {
       pivot: {
         active: pivotIsActive,
-        rows: {
-          dimension: rowDimensions,
-        },
-        columns: {
-          measure: colMeasures,
-          dimension: colDimensions,
-        },
+        rows: rowDimensions,
+        columns: colChips,
         sorting,
         // TODO: other fields are not supported right now
         expanded: {},

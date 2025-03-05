@@ -50,6 +50,7 @@ import {
   getTimeGrainFromDimension,
   getTotalColumnCount,
   isTimeDimension,
+  splitPivotChips,
 } from "./pivot-utils";
 import {
   type PivotAxesData,
@@ -226,10 +227,11 @@ export function createPivotDataStore(
       (!rowDimensionNames.length && !measureNames.length) ||
       (colDimensionNames.length && !measureNames.length)
     ) {
+      const { dimension: colDimensions, measure: colMeasures } =
+        splitPivotChips(config.pivot.columns);
       const isFetching =
-        config.pivot.columns.measure.length > 0 ||
-        (config.pivot.rows.dimension.length > 0 &&
-          !config.pivot.columns.dimension.length);
+        colMeasures.length > 0 ||
+        (config.pivot.rows.length > 0 && !colDimensions.length);
       return configSet({
         isFetching: isFetching,
         data: [],

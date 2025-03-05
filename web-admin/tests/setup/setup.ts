@@ -1,4 +1,4 @@
-import { chromium, expect } from "@playwright/test";
+import { expect } from "@playwright/test";
 import {
   execAsync,
   spawnAndMatch,
@@ -11,7 +11,6 @@ import { mkdir } from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { writeFileEnsuringDir } from "../utils/fs";
-import type { StorageState } from "../utils/storage-state";
 import { test as setup } from "./base";
 import {
   ADMIN_STORAGE_STATE,
@@ -55,8 +54,7 @@ setup.describe("global setup", () => {
     // Fail quickly if any of these are missing.
     if (
       !process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL ||
-      !process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_PASSWORD ||
-      !process.env.RILL_DEVTOOL_E2E_GITHUB_STORAGE_STATE_JSON
+      !process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_PASSWORD
     ) {
       throw new Error(
         "Missing required environment variables for authentication",
@@ -109,26 +107,16 @@ setup.describe("global setup", () => {
     console.log("Runtime service ready");
   });
 
-  setup("should log in with the admin account", async () => {
+  setup("should log in with the admin account", async ({ page }) => {
     // Again, check that the required environment variables are set. This is for type-safety.
     if (
       !process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL ||
-      !process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_PASSWORD ||
-      !process.env.RILL_DEVTOOL_E2E_GITHUB_STORAGE_STATE_JSON
+      !process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_PASSWORD
     ) {
       throw new Error(
         "Missing required environment variables for authentication",
       );
     }
-
-    // Launch a Chromium browser with an authenticated GitHub session
-    const browser = await chromium.launch();
-    const context = await browser.newContext({
-      storageState: JSON.parse(
-        process.env.RILL_DEVTOOL_E2E_GITHUB_STORAGE_STATE_JSON,
-      ) as StorageState,
-    });
-    const page = await context.newPage();
 
     // Log in with the admin account
     await page.goto("/");
@@ -144,7 +132,7 @@ setup.describe("global setup", () => {
     await page.getByRole("button", { name: "Continue with Email" }).click();
     await page.waitForURL("/");
 
-    // Save the admin's Rill auth cookies to file. The resultant file will include both the GitHub and Rill auth cookies.
+    // Save the admin's Rill auth cookies to file.
     // Subsequent tests can seed their browser with this state, instead of needing to go through the log-in flow again.
     await page.context().storageState({ path: ADMIN_STORAGE_STATE });
   });
@@ -191,25 +179,15 @@ setup.describe("global setup", () => {
         "rill-openrtb-prog-ads",
         "--project",
         RILL_PROJECT_NAME,
-        "--github",
+        "--upload",
         "--interactive=false",
       ],
       /https?:\/\/[^\s]+/,
     );
 
-    // Navigate to the GitHub auth URL
-    // (In a fresh browser, this would typically trigger a log-in to GitHub, but we've bootstrapped the Playwright browser with an authenticated GitHub session.
-    // See the `setup-github-session` project in `playwright.config.ts` for details.)
+    // Navigate to the project URL and expect to see the successful deployment
     const url = match[0];
     await adminPage.goto(url);
-    await adminPage.waitForURL("/-/github/connect/success");
-
-    // Wait for the deployment to complete
-    // TODO: Replace this with a better check. Maybe we could modify `spawnAndMatch` to match an array of regexes.
-    await adminPage.waitForTimeout(10000);
-
-    // Expect to see the successful deployment
-    await adminPage.goto(`/${RILL_ORG_NAME}/${RILL_PROJECT_NAME}`);
     await expect(
       adminPage.getByText("Your trial expires in 30 days"),
     ).toBeVisible(); // Billing banner

@@ -26,4 +26,6 @@ export enum ExploreStateURLParams {
   PivotRows = "rows",
   PivotColumns = "cols",
   PivotTableMode = "table_mode",
+
+  GzippedParams = "gzipped_state",
 }
