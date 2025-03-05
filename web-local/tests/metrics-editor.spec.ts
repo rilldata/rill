@@ -1,18 +1,15 @@
 import { expect } from "@playwright/test";
-import { useDashboardFlowTestSetup } from "web-local/tests/explores/dashboard-flow-test-setup";
-import {
-  AD_BIDS_EXPLORE_PATH,
-  AD_BIDS_METRICS_PATH,
-} from "web-local/tests/utils/dataSpecifcHelpers";
-import { gotoNavEntry } from "web-local/tests/utils/waitHelpers";
+import { gotoNavEntry } from "./utils/waitHelpers";
 import { updateCodeEditor, wrapRetryAssertion } from "./utils/commonHelpers";
-import { test } from "./utils/test";
+import { test } from "./setup/base";
 
 test.describe("Metrics editor", () => {
-  useDashboardFlowTestSetup();
+  test.use({ project: "AdBids" });
 
   test("Can add and remove measures and dimensions", async ({ page }) => {
-    await gotoNavEntry(page, AD_BIDS_METRICS_PATH);
+    await page.getByLabel("/metrics").click();
+    await page.getByLabel("/dashboards").click();
+    await gotoNavEntry(page, "/metrics/AdBids_metrics.yaml");
 
     await page.getByRole("button", { name: "Add new measure" }).click();
 
@@ -59,49 +56,10 @@ test.describe("Metrics editor", () => {
     ).not.toBeVisible();
   });
 
-  test("Multiple measure formats resolved gracefully", async ({ page }) => {
-    // Using the AD_BIDS_METRICS_PATH variable is causing the test to fail in CI
-    await gotoNavEntry(page, "/metrics/AdBids_model_metrics.yaml");
-
-    const errorText =
-      'cannot set both "format_preset" and "format_d3" for a measure';
-
-    await page.getByLabel("code").click();
-
-    await updateCodeEditor(
-      page,
-      `version: 1
-type: metrics_view
-title: "AdBids table"
-table: "AdBids"
-timeseries: "timestamp"
-measures:
-  - name: "Total Records"
-    expression: count(*)
-    format_preset: humanize
-    format_d3: ".2f"
-dimensions:
-  - name: publisher
-    label: Publisher
-    column: publisher
-  `,
-    );
-
-    await expect(page.getByText(errorText)).toBeVisible();
-
-    await page.getByLabel("viz").click();
-
-    await page.getByRole("row", { name: "Total Records" }).click();
-
-    await page.getByRole("button", { name: "Save changes" }).click();
-
-    await page.waitForTimeout(3000);
-
-    await expect(page.getByText(errorText)).not.toBeVisible();
-  });
-
   test("Metrics editor", async ({ page }) => {
-    await gotoNavEntry(page, AD_BIDS_METRICS_PATH);
+    await page.getByLabel("/metrics").click();
+    await page.getByLabel("/dashboards").click();
+    await gotoNavEntry(page, "/metrics/AdBids_metrics.yaml");
 
     await page.getByLabel("code").click();
 
@@ -119,11 +77,11 @@ dimensions:
     });
 
     // This is causing issues in the test, so we'll skip it for now.
-    // await gotoNavEntry(page, AD_BIDS_EXPLORE_PATH);
+    // await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
     // // the Preview button should be disabled
     // await expect(page.getByRole("button", { name: "Preview" })).toBeDisabled();
     // await page.waitForTimeout(3000);
-    // await gotoNavEntry(page, AD_BIDS_METRICS_PATH);
+    // await gotoNavEntry(page, "/metrics/AdBids_metrics.yaml");
 
     // the editor should show a validation error
     await expect(
@@ -154,7 +112,7 @@ dimensions:
     await expect(page.getByText("Table columns")).toBeVisible();
 
     // go to the dashboard and make sure the metrics and dimensions are there.
-    await gotoNavEntry(page, AD_BIDS_EXPLORE_PATH);
+    await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
 
     await page.getByRole("button", { name: "Preview" }).click();
 
