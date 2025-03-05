@@ -89,7 +89,7 @@ export class FileArtifact {
   readonly snapshot: Writable<{
     scroll?: ReturnType<EditorView["scrollSnapshot"]>;
     selection?: EditorSelection;
-  }> = writable({});
+  }> = writable({ scroll: undefined, selection: undefined });
 
   private editorCallback: (content: string) => void = () => {};
 

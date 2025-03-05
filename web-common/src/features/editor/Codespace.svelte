@@ -92,6 +92,8 @@
   function mountEditor() {
     mergeView?.destroy();
 
+    const { selection, scroll } = $snapshot;
+
     editor = new EditorView({
       state: EditorState.create({
         doc: $editorContent ?? "",
@@ -105,11 +107,11 @@
             EditorSelection.range(
               Math.min(
                 $editorContent?.length ?? Infinity,
-                $snapshot?.selection?.ranges[0].anchor ?? 0,
+                selection?.ranges[0].anchor ?? 0,
               ),
               Math.min(
                 $editorContent?.length ?? Infinity,
-                $snapshot?.selection?.ranges[0].head ?? 0,
+                selection?.ranges[0].head ?? 0,
               ),
             ),
           ],
@@ -117,7 +119,7 @@
         ),
       }),
       parent,
-      scrollTo: $snapshot.scroll,
+      scrollTo: scroll,
     });
   }
 
