@@ -127,10 +127,54 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 		return nil, fmt.Errorf("parent metrics view %q is invalid", spec.MetricsView)
 	}
 
-	// Add the access and field access security rules from the parent metrics view.
-	for _, rule := range mv.SecurityRules {
-		if rule.GetAccess() != nil || rule.GetFieldAccess() != nil {
-			spec.SecurityRules = append(spec.SecurityRules, rule)
+	if len(spec.SecurityRules) == 0 {
+		for _, rule := range mv.SecurityRules {
+			if rule.GetAccess() != nil || rule.GetFieldAccess() != nil {
+				spec.SecurityRules = append(spec.SecurityRules, rule)
+			}
+		}
+	} else {
+		for _, rule := range mv.SecurityRules {
+			if rule.GetFieldAccess() != nil {
+				spec.SecurityRules = append(spec.SecurityRules, rule)
+			}
+		}
+
+		var exploreAccess *runtimev1.SecurityRule
+		var metricsViewAccess *runtimev1.SecurityRule
+		exploreAccessIndex := -1
+
+		for i, rule := range spec.SecurityRules {
+			if rule.GetAccess() != nil {
+				exploreAccess = rule
+				exploreAccessIndex = i
+				break
+			}
+		}
+
+		// Find metrics view's access rule
+		for _, rule := range mv.SecurityRules {
+			if rule.GetAccess() != nil {
+				metricsViewAccess = rule
+				break
+			}
+		}
+
+		if exploreAccess != nil && metricsViewAccess != nil {
+			condition := fmt.Sprintf("(%s) AND (%s)", metricsViewAccess.GetAccess().Condition, exploreAccess.GetAccess().Condition)
+
+			if exploreAccessIndex >= 0 {
+				spec.SecurityRules[exploreAccessIndex] = &runtimev1.SecurityRule{
+					Rule: &runtimev1.SecurityRule_Access{
+						Access: &runtimev1.SecurityRuleAccess{
+							Condition: condition,
+							Allow:     true,
+						},
+					},
+				}
+			}
+		} else if metricsViewAccess != nil && exploreAccess == nil {
+			spec.SecurityRules = append(spec.SecurityRules, metricsViewAccess)
 		}
 	}
 
