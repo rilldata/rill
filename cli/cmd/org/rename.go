@@ -11,7 +11,6 @@ import (
 
 func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 	var name, newName, displayName string
-	var flagSet bool
 
 	renameCmd := &cobra.Command{
 		Use:   "rename",
@@ -38,6 +37,11 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Build update request
 			req := &adminv1.UpdateOrganizationRequest{Name: org.Name}
 
+			if req.NewName != nil && req.DisplayName == nil && org.DisplayName != "" {
+				ch.PrintfWarn("\nWarn: Changing org name will invalidate dashboard URLs.\n")
+			}
+
+			var flagSet bool
 			if cmd.Flags().Changed("new-name") {
 				flagSet = true
 				req.NewName = &newName

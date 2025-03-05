@@ -10,7 +10,7 @@ import (
 
 func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	var name, description, prodVersion, prodBranch, subpath, path, provisioner string
-	var flagSet, public bool
+	var public bool
 	var prodTTL int64
 
 	editCmd := &cobra.Command{
@@ -37,10 +37,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				Name:             name,
 			}
 
-			// Set values from flags if they were changed
-			if cmd.Flags().Changed("prod-ttl-seconds") && prodTTL < 0 {
-				return fmt.Errorf("prod-ttl-seconds must be non-negative")
-			}
+			var flagSet bool
 			if cmd.Flags().Changed("provisioner") {
 				flagSet = true
 				req.Provisioner = &provisioner

@@ -116,11 +116,6 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("the --full flag can only be used with --all or --model")
 			}
 
-			// Return an error for ineffective use of --partition
-			if !cmd.Flags().Changed("model") {
-				return fmt.Errorf("--partition requires --model to be explicitly set")
-			}
-
 			// Send request
 			_, err = rt.CreateTrigger(cmd.Context(), &runtimev1.CreateTriggerRequest{
 				InstanceId:           instanceID,

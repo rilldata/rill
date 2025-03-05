@@ -12,7 +12,6 @@ import (
 
 func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	var orgName, displayName, description, billingEmail string
-	var flagsSet bool
 
 	editCmd := &cobra.Command{
 		Use:   "edit [<org-name>]",
@@ -28,6 +27,9 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			if len(args) > 0 {
 				orgName = args[0]
+			}
+			if orgName == "" {
+				return fmt.Errorf("must specify an organization name")
 			}
 
 			resp, err := client.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: orgName})
@@ -46,22 +48,23 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				Name: org.Name,
 			}
 
+			var flagSet bool
 			if cmd.Flags().Changed("display-name") {
-				flagsSet = true
+				flagSet = true
 				req.DisplayName = &displayName
 			}
 
 			if cmd.Flags().Changed("description") {
-				flagsSet = true
+				flagSet = true
 				req.Description = &description
 			}
 
 			if cmd.Flags().Changed("billing-email") {
-				flagsSet = true
+				flagSet = true
 				req.BillingEmail = &billingEmail
 			}
 
-			if !flagsSet {
+			if !flagSet {
 				return fmt.Errorf("at least one flag must be set")
 			}
 
