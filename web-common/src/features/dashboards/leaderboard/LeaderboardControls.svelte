@@ -4,7 +4,7 @@
   import { getSimpleMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { getStateManagers } from "../state-managers/state-managers";
-  import LeaderboardActiveMeasureNamesDropdown from "@rilldata/web-common/components/menu/LeaderboardActiveMeasureNamesDropdown.svelte";
+  import ActiveMeasureNamesDropdown from "@rilldata/web-common/components/menu/ActiveMeasureNamesDropdown.svelte";
   import ContextColumnDropdown from "@rilldata/web-common/components/menu/ContextColumnDropdown.svelte";
 
   export let exploreName: string;
@@ -83,7 +83,7 @@
         }}
       />
 
-      <LeaderboardActiveMeasureNamesDropdown
+      <ActiveMeasureNamesDropdown
         {measures}
         {firstMeasure}
         tooltipText="Choose measures to display"
