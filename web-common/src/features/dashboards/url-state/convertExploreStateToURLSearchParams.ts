@@ -158,6 +158,43 @@ export function convertExploreStateToURLSearchParams(
     return urlCopy.searchParams.toString();
   }
 
+  // Handle visible measures
+  const visibleMeasuresParam = toVisibleMeasuresUrlParam(
+    exploreState,
+    exploreSpec,
+    preset,
+  );
+  if (visibleMeasuresParam) {
+    urlCopy.searchParams.set(
+      ExploreStateURLParams.VisibleMeasures,
+      visibleMeasuresParam,
+    );
+  }
+
+  // Handle sort measure
+  const effectiveSortMeasure =
+    exploreState.sortMeasure ?? exploreState.leaderboardMeasureNames?.[0] ?? "";
+  if (effectiveSortMeasure) {
+    urlCopy.searchParams.set(
+      ExploreStateURLParams.SortBy,
+      effectiveSortMeasure,
+    );
+  }
+
+  // Handle context measures - use all leaderboard measure names directly
+  const contextMeasures = exploreState.leaderboardMeasureNames;
+
+  if (contextMeasures?.length) {
+    urlCopy.searchParams.set(
+      ExploreStateURLParams.ContextMeasures,
+      contextMeasures.join(","),
+    );
+  } else {
+    urlCopy.searchParams.delete(ExploreStateURLParams.ContextMeasures);
+  }
+
+  // return urlCopy.searchParams.toString();
+
   const compressedUrlParams = new URLSearchParams();
   compressedUrlParams.set(
     ExploreStateURLParams.GzippedParams,
@@ -263,18 +300,6 @@ function toExploreUrl(
   preset: V1ExplorePreset,
 ) {
   const searchParams = new URLSearchParams();
-
-  const visibleMeasuresParam = toVisibleMeasuresUrlParam(
-    exploreState,
-    exploreSpec,
-    preset,
-  );
-  if (visibleMeasuresParam) {
-    searchParams.set(
-      ExploreStateURLParams.VisibleMeasures,
-      visibleMeasuresParam,
-    );
-  }
 
   const visibleDimensionsParam = toVisibleDimensionsUrlParam(
     exploreState,

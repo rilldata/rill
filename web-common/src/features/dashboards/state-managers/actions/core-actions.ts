@@ -24,5 +24,6 @@ export const toggleLeaderboardMeasureNames = (
       ? [dashboard.leaderboardMeasureNames[0]] // Keep first selected when deselecting all
       : allMeasureNames;
   }
+
   resetAllContextColumnWidths(dashboard.contextColumnWidths);
 };
