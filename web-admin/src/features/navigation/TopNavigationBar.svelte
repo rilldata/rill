@@ -43,7 +43,7 @@
 
   // These can be undefined
   $: ({
-    params: { organization, project, dashboard, alert, report, token },
+    params: { organization, project, dashboard, alert, report },
   } = $page);
 
   $: onProjectPage = isProjectPage($page);

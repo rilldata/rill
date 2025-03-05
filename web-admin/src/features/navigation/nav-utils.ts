@@ -68,6 +68,8 @@ export function isReportExportPage(page: Page): boolean {
 }
 
 export function isPublicURLPage(page: Page): boolean {
+  if (!page.route.id) return false;
+
   return (
     page.route.id.startsWith("/[organization]/[project]/-/share/[token]") ||
     isPublicReportPage(page)

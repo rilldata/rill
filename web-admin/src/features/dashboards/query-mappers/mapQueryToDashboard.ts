@@ -112,6 +112,26 @@ export function mapQueryToDashboard(
         return;
       }
 
+      if (
+        !validSpecResp.data ||
+        !validSpecResp.data.explore ||
+        !validSpecResp.data.metricsView
+      ) {
+        set({
+          isFetching: false,
+          error: "Failed to fetch explore.",
+        });
+        return;
+      }
+
+      if (!timeRangeSummary.data) {
+        set({
+          isFetching: false,
+          error: "Failed to fetch time range summary.",
+        });
+        return;
+      }
+
       const { metricsView, explore } = validSpecResp.data;
 
       initLocalUserPreferenceStore(metricsViewName);

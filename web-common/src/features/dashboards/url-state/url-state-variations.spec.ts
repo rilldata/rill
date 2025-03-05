@@ -499,7 +499,7 @@ describe("Human readable URL state variations", () => {
       ),
       defaultExplorePreset,
       url,
-    );
+    ).toString();
 
     // reset the explore state
     applyURLToExploreState(
