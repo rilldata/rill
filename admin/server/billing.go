@@ -146,10 +146,12 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		return nil, status.Errorf(codes.FailedPrecondition, "cannot assign a private plan %q", plan.Name)
 	}
 
-	// check for validation errors
-	err = s.planChangeValidationChecks(ctx, org, forceAccess)
-	if err != nil {
-		return nil, err
+	// check for validation errors if not forced
+	if !forceAccess {
+		err = s.planChangeValidationChecks(ctx, org)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if planDowngrade(plan, org) {
@@ -353,10 +355,12 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 		return nil, status.Errorf(codes.FailedPrecondition, "cannot renew to a private plan %q", plan.Name)
 	}
 
-	// check for validation errors
-	err = s.planChangeValidationChecks(ctx, org, forceAccess)
-	if err != nil {
-		return nil, err
+	if !forceAccess {
+		// check for validation errors
+		err = s.planChangeValidationChecks(ctx, org)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	sub, err := s.admin.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
@@ -929,7 +933,7 @@ func (s *Server) updateQuotasAndHandleBillingIssues(ctx context.Context, org *da
 	return org, nil
 }
 
-func (s *Server) planChangeValidationChecks(ctx context.Context, org *database.Organization, forceAccess bool) error {
+func (s *Server) planChangeValidationChecks(ctx context.Context, org *database.Organization) error {
 	// not a trial plan, check for a payment method and a valid billing address
 	var validationErrs []string
 	pc, err := s.admin.PaymentProvider.FindCustomer(ctx, org.PaymentCustomerID)
@@ -954,7 +958,7 @@ func (s *Server) planChangeValidationChecks(ctx context.Context, org *database.O
 		validationErrs = append(validationErrs, "a previous payment is due")
 	}
 
-	if len(validationErrs) > 0 && !forceAccess {
+	if len(validationErrs) > 0 {
 		return status.Errorf(codes.FailedPrecondition, "please fix following by visiting billing portal: %s", strings.Join(validationErrs, ", "))
 	}
 

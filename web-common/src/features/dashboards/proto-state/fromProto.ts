@@ -1,7 +1,7 @@
 import { protoBase64, type Timestamp } from "@bufbuild/protobuf";
 import {
-  type MeasureFilterEntry,
   mapExprToMeasureFilter,
+  type MeasureFilterEntry,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import {
@@ -11,7 +11,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import {
   FromProtoOperationMap,
-  FromProtoPivotRowJoinTypeMap,
+  FromProtoPivotTableModeMap,
   FromProtoTimeGrainMap,
 } from "@rilldata/web-common/features/dashboards/proto-state/enum-maps";
 import { convertFilterToExpression } from "@rilldata/web-common/features/dashboards/proto-state/filter-converter";
@@ -42,7 +42,7 @@ import {
   DashboardState,
   DashboardState_ActivePage,
   DashboardState_LeaderboardContextColumn,
-  DashboardState_PivotRowJoinType,
+  DashboardState_PivotTableMode,
   DashboardTimeRange,
   PivotElement,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
@@ -408,22 +408,20 @@ function fromPivotProto(
 
   return {
     active: dashboard.pivotIsActive ?? false,
-    rows: {
-      dimension: rowDimensions,
-    },
-    columns: {
-      dimension: colDimensions,
-      measure: dashboard.pivotColumnMeasures.map(mapMeasure),
-    },
+    rows: rowDimensions,
+    columns: [
+      ...colDimensions,
+      ...dashboard.pivotColumnMeasures.map(mapMeasure),
+    ],
     expanded: dashboard.pivotExpanded,
     sorting: dashboard.pivotSort ?? [],
     columnPage: dashboard.pivotColumnPage ?? 1,
     rowPage: 1,
     enableComparison: dashboard.pivotEnableComparison ?? true,
     activeCell: null,
-    rowJoinType:
-      FromProtoPivotRowJoinTypeMap[
-        dashboard.pivotRowJoinType || DashboardState_PivotRowJoinType.NEST
+    tableMode:
+      FromProtoPivotTableModeMap[
+        dashboard.pivotTableMode || DashboardState_PivotTableMode.NEST
       ],
   };
 }

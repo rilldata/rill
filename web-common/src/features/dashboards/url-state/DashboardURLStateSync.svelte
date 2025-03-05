@@ -140,7 +140,7 @@
         timeControlsState,
         defaultExplorePreset,
         partialExplore,
-        $page.url.searchParams,
+        $page.url,
       );
     }
     // update session store when back button was pressed.
@@ -226,7 +226,7 @@
       timeControlsState,
       defaultExplorePreset,
       initState,
-      $page.url.searchParams,
+      $page.url,
     );
     // update session store to make sure updated to url or the initial state is propagated to the session store
     updateExploreSessionStore(
@@ -244,7 +244,7 @@
 
     // using `replaceState` directly messes up the navigation entries,
     // `from` and `to` have the old url before being replaced in `afterNavigate` calls leading to incorrect handling.
-    void goto(redirectUrl, {
+    return goto(redirectUrl, {
       replaceState: true,
       state: $page.state,
     });
@@ -253,14 +253,13 @@
   function gotoNewState() {
     if (!exploreSpec) return;
 
-    const u = new URL(
-      `${$page.url.protocol}//${$page.url.host}${$page.url.pathname}`,
-    );
+    const u = new URL($page.url);
     const exploreStateParams = convertExploreStateToURLSearchParams(
       $dashboardStore,
       exploreSpec,
       timeControlsState,
       defaultExplorePreset,
+      u,
     );
     u.search = exploreStateParams.toString();
     const newUrl = u.toString();
@@ -282,7 +281,7 @@
   // reactive to only dashboardStore
   // but gotoNewState checks other fields
   $: if ($dashboardStore) {
-    gotoNewState();
+    void gotoNewState();
   }
 
   // reactive statement to try re-init if not already initialised

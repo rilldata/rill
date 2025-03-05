@@ -2,6 +2,7 @@ package reconcilers
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
@@ -408,9 +409,28 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	if w, ok := rep.Spec.Annotations["web_open_mode"]; ok {
 		webOpenMode = w
 	} else {
-		webOpenMode = "legacy" // backward compatibility
-		if _, ok = rep.Spec.Annotations["web_open_path"]; !ok {
-			webOpenMode = "none" // for older reports if web_open_path is not set
+		webOpenMode = "none" // for older reports if web_open_path is not set
+		if path, ok := rep.Spec.Annotations["web_open_path"]; ok {
+			// parse path, extract explore name, it will be like /explore/{explore}
+			if explore == "" && len(path) > 9 {
+				explore = path[9:]
+				if explore[len(explore)-1] == '/' {
+					explore = explore[:len(explore)-1]
+				}
+			}
+		}
+		// still not found, try to extract mv from query args
+		if explore == "" && rep.Spec.QueryArgsJson != "" {
+			m := make(map[string]interface{})
+			err := json.Unmarshal([]byte(rep.Spec.QueryArgsJson), &m)
+			if err == nil {
+				if v, ok := m["metricsViewName"]; ok {
+					explore = v.(string)
+				}
+			}
+		}
+		if explore != "" {
+			webOpenMode = "legacy"
 		}
 	}
 

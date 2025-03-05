@@ -5059,6 +5059,10 @@ func (m *ExplorePreset) validate(all bool) error {
 		// no validation rules for PivotSortAsc
 	}
 
+	if m.PivotTableMode != nil {
+		// no validation rules for PivotTableMode
+	}
+
 	if len(errors) > 0 {
 		return ExplorePresetMultiError(errors)
 	}

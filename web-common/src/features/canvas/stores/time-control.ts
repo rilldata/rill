@@ -273,8 +273,7 @@ export class TimeControls {
 
         if (
           defaultPreset?.comparisonMode ===
-            V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME &&
-          !this.componentName
+          V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
         ) {
           const newComparisonRange = getComparisonTimeRange(
             timeRanges,
@@ -283,7 +282,10 @@ export class TimeControls {
             comparisonTimeRange,
           );
           this.selectedComparisonTimeRange.set(newComparisonRange);
-          this.showTimeComparison.set(true);
+
+          if (!this.componentName) {
+            this.showTimeComparison.set(true);
+          }
         }
 
         this.selectedTimeRange.set(newTimeRange);

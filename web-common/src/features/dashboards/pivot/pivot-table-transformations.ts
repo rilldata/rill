@@ -161,7 +161,7 @@ export function getTotalsRow(
       totalsRow = { ...total, ...totalsRow };
     });
 
-    if (anchorDimensionName) {
+    if (anchorDimensionName && !config.isFlat) {
       totalsRow[anchorDimensionName] = "Total";
     }
   }

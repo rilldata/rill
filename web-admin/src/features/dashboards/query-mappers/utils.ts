@@ -158,6 +158,7 @@ export async function convertQueryFilterToToplistQuery(
 export async function getExplorePageUrlSearchParams(
   exploreName: string,
   exploreState: MetricsExplorerEntity,
+  url: URL,
 ): Promise<URLSearchParams> {
   const instanceId = get(runtime).instanceId;
   const { explore, metricsView } = await queryClient.fetchQuery({
@@ -209,6 +210,7 @@ export async function getExplorePageUrlSearchParams(
       exploreState,
     ),
     getDefaultExplorePreset(exploreSpec, fullTimeRange),
+    url,
   );
 
   return searchParams;

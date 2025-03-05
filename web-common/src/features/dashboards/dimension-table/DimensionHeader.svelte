@@ -10,6 +10,7 @@
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
+  import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
@@ -84,10 +85,12 @@
   function startPivotForDimensionTable() {
     const pivot = $dashboardStore?.pivot;
 
+    const pivotColumns = splitPivotChips(pivot.columns);
+
     if (
-      pivot.rows.dimension.length ||
-      pivot.columns.measure.length ||
-      pivot.columns.dimension.length
+      pivot.rows.length ||
+      pivotColumns.measure.length ||
+      pivotColumns.dimension.length
     ) {
       showReplacePivotModal = true;
     } else {
@@ -118,14 +121,7 @@
         };
       });
 
-    metricsExplorerStore.createPivot(
-      $exploreName,
-      { dimension: rowDimensions },
-      {
-        dimension: [],
-        measure: measures,
-      },
-    );
+    metricsExplorerStore.createPivot($exploreName, rowDimensions, measures);
   }
 
   onDestroy(() => {

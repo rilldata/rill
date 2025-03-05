@@ -274,7 +274,7 @@ measures: '*'
 
     await page.getByLabel("code").click();
     await watcher.updateAndWaitForDashboard(addBackTimestampColumnDoc);
-    await page.getByRole("button", { name: "Go to dashboard" }).click();
+    await page.getByRole("button", { name: "Create resource menu" }).click();
     await page
       .getByRole("menuitem", { name: "Adbids dashboard renamed" })
       .click();

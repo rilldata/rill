@@ -54,6 +54,7 @@
     const exploreStateParams = await getExplorePageUrlSearchParams(
       exploreName,
       exploreState,
+      url,
     );
 
     url.search = exploreStateParams.toString();

@@ -9,7 +9,11 @@ import {
 import { timeControlStateSelector } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import { type Readable, derived } from "svelte/store";
-import { canEnablePivotComparison, getPivotConfigKey } from "./pivot-utils";
+import {
+  canEnablePivotComparison,
+  getPivotConfigKey,
+  splitPivotChips,
+} from "./pivot-utils";
 import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
@@ -51,6 +55,7 @@ export function getPivotConfig(
           comparisonTime: undefined,
           enableComparison: false,
           searchText,
+          isFlat: false,
         };
       }
 
@@ -85,7 +90,10 @@ export function getPivotConfig(
         };
       }
 
-      const measureNames = dashboardStore.pivot.columns.measure.flatMap((m) => {
+      const { dimension: colDimensions, measure: colMeasures } =
+        splitPivotChips(dashboardStore.pivot.columns);
+
+      const measureNames = colMeasures.flatMap((m) => {
         const measureName = m.id;
         const group = [measureName];
 
@@ -99,21 +107,30 @@ export function getPivotConfig(
       });
 
       // This is temporary until we have a better way to handle time grains
-      const rowDimensionNames = dashboardStore.pivot.rows.dimension.map((d) => {
+      let rowDimensionNames = dashboardStore.pivot.rows.map((d) => {
         if (d.type === PivotChipType.Time) {
           return `${time.timeDimension}_rill_${d.id}`;
         }
         return d.id;
       });
 
-      const colDimensionNames = dashboardStore.pivot.columns.dimension.map(
-        (d) => {
-          if (d.type === PivotChipType.Time) {
-            return `${time.timeDimension}_rill_${d.id}`;
-          }
-          return d.id;
-        },
-      );
+      let colDimensionNames = colDimensions.map((d) => {
+        if (d.type === PivotChipType.Time) {
+          return `${time.timeDimension}_rill_${d.id}`;
+        }
+        return d.id;
+      });
+
+      const isFlat = dashboardStore.pivot.tableMode === "flat";
+
+      /**
+       * For flat table, internally rows have all
+       * the dimensions and measures are in columns
+       */
+      if (isFlat) {
+        rowDimensionNames = colDimensionNames;
+        colDimensionNames = [];
+      }
 
       const config: PivotDataStoreConfig = {
         measureNames,
@@ -136,6 +153,7 @@ export function getPivotConfig(
         comparisonTime,
         time,
         searchText,
+        isFlat,
       };
 
       const currentKey = getPivotConfigKey(config);

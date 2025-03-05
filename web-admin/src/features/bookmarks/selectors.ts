@@ -91,6 +91,7 @@ export function categorizeBookmarks(
       bookmarks.personal.push(bookmark);
     }
   });
+
   return bookmarks;
 }
 
@@ -173,8 +174,8 @@ function parseBookmark(
       finalExploreState,
     ),
     defaultExplorePreset,
+    url,
   ).toString();
-
   return {
     resource: bookmarkResource,
     absoluteTimeRange:

@@ -13,6 +13,11 @@ import {
   adminServiceGetProjectWithBearerToken,
   getAdminServiceGetProjectWithBearerTokenQueryKey,
 } from "@rilldata/web-admin/features/public-urls/get-project-with-bearer-token";
+import {
+  ResourceKind,
+  SingletonProjectParserName,
+  useResourceV2,
+} from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
@@ -116,4 +121,18 @@ export async function fetchProjectDeploymentDetails(
       },
     },
   };
+}
+
+export function useGithubLastSynced(instanceId: string) {
+  return useResourceV2(
+    instanceId,
+    SingletonProjectParserName,
+    ResourceKind.ProjectParser,
+    {
+      select: (data) =>
+        data.resource?.projectParser?.state?.currentCommitOn
+          ? new Date(data.resource.projectParser.state.currentCommitOn)
+          : null,
+    },
+  );
 }
