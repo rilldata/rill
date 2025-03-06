@@ -5,6 +5,7 @@ import {
 } from "@rilldata/web-common/features/canvas/components/util";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
+import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 import type {
   ComponentCommonProperties,
   ComponentComparisonOptions,
@@ -32,6 +33,7 @@ export const defaultComparisonOptions: ComponentComparisonOptions[] = [
 export class KPIComponent extends BaseCanvasComponent<KPISpec> {
   minSize = { width: 2, height: 2 };
   defaultSize = { width: 6, height: 4 };
+  resetParams = ["measure"];
 
   constructor(
     fileArtifact: FileArtifact | undefined = undefined,
@@ -65,10 +67,15 @@ export class KPIComponent extends BaseCanvasComponent<KPISpec> {
     };
   }
 
-  newComponentSpec(metrics_view: string, measure: string): KPISpec {
+  newComponentSpec(
+    metricsViewName: string,
+    metricsViewSpec: V1MetricsViewSpec | undefined,
+  ): KPISpec {
+    const measures = metricsViewSpec?.measures || [];
+    const measureNames = measures.map((m) => m.name as string);
     return {
-      metrics_view,
-      measure,
+      metrics_view: metricsViewName,
+      measure: measureNames[Math.floor(Math.random() * measureNames.length)],
       comparison: defaultComparisonOptions,
     };
   }
