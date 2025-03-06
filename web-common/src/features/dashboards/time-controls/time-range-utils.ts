@@ -5,10 +5,7 @@
  * */
 import type { TimeRange } from "@rilldata/web-common/lib/time/types";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import {
-  lastXTimeRangeNames,
-  TimeRangeName_DEPRECATE,
-} from "./time-control-types";
+import { TimeRangeName_DEPRECATE } from "./time-control-types";
 
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { durationToMillis } from "@rilldata/web-common/lib/time/grains";
@@ -31,12 +28,6 @@ export const supportedTimeGrainEnums = () => {
 
   return supportedEnums;
 };
-
-//TODO: Co locate with TimeControls
-// export function getDefaultTimeRange(allTimeRange: TimeRange): TimeRange {
-//   // Use AllTime for now. When we go to production real-time datasets, we'll want to change this.
-//   return allTimeRange;
-// }
 
 // Moved to time range and renamed to isTimeRangeValidForMinTimeGrain
 export function isTimeRangeValidForTimeGrain(

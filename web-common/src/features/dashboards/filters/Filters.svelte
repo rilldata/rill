@@ -353,7 +353,7 @@
                 italic
                 suppress
                 showDate={false}
-                date={DateTime.fromJSDate(allTimeRange?.end)}
+                date={interval.end}
                 zone={activeTimeZone}
               />
             </span>
