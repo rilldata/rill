@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test";
 import { test } from "./setup/base";
 
-test.describe("Public URLs", () => {
+test.describe.serial("Public URLs", () => {
   let publicUrl: string;
 
   test("should be able to create a public URL", async ({ page }) => {
@@ -51,9 +51,6 @@ test.describe("Public URLs", () => {
   });
 
   test("admin should be able to view a public URL", async ({ page }) => {
-    // Skip this test if the publicUrl wasn't set
-    test.skip(!publicUrl, "Public URL not created in previous test");
-
     await page.goto(publicUrl);
 
     // Check that the "Limited view" banner is visible
@@ -74,9 +71,6 @@ test.describe("Public URLs", () => {
   });
 
   test("anon should be able to view a public URL", async ({ anonPage }) => {
-    // Skip this test if the publicUrl wasn't set
-    test.skip(!publicUrl, "Public URL not created in previous test");
-
     await anonPage.goto(publicUrl);
 
     // Check that the "Limited view" banner is NOT visible
