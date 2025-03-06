@@ -48,11 +48,11 @@
     exploreName,
   } = StateManagers;
 
-  $: console.log("LeaderboardDisplay $sortMeasure: ", $sortMeasure);
-  $: console.log(
-    "LeaderboardDisplay $leaderboardMeasureNames: ",
-    $leaderboardMeasureNames,
-  );
+  // $: console.log("LeaderboardDisplay $sortMeasure: ", $sortMeasure);
+  // $: console.log(
+  //   "LeaderboardDisplay $leaderboardMeasureNames: ",
+  //   $leaderboardMeasureNames,
+  // );
 
   let parentElement: HTMLDivElement;
   let suppressTooltip = false;

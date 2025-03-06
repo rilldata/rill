@@ -8,6 +8,8 @@ export const handleDimensionMeasureColumnHeaderClick = (
   generalArgs: DashboardMutables,
   measureName: string,
 ) => {
+  console.log("handleDimensionMeasureColumnHeaderClick: ", measureName);
+
   const { dashboard } = generalArgs;
 
   if (measureName === dashboard.sortedMeasureName + "_delta") {
