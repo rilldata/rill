@@ -110,7 +110,7 @@
               #
             {/if}
           </span>
-          {#if sortType === SortType.VALUE && measureName === sortMeasure}
+          {#if measureName === sortMeasure}
             <div class="ui-copy-icon">
               {#if sortedAscending}
                 <div in:fly|global={{ duration: 200, y: 8 }} style:opacity={1}>
