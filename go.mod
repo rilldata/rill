@@ -90,7 +90,7 @@ require (
 	github.com/snowflakedb/gosnowflake v1.12.0
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.5
-	github.com/startreedata/pinot-client-go v0.4.0
+	github.com/startreedata/pinot-client-go v0.5.0
 	github.com/stretchr/testify v1.10.0
 	github.com/stripe/stripe-go/v79 v79.6.0
 	github.com/testcontainers/testcontainers-go v0.33.0
