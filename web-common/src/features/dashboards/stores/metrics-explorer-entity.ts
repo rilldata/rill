@@ -55,16 +55,6 @@ export interface MetricsExplorerEntity {
    */
   allDimensionsVisible: boolean;
 
-  // TODO: to be removed
-  /**
-   * This is the name of the primary active measure in the dashboard.
-   * This is the measure that will be shown in leaderboards, and
-   * will be used for sorting the leaderboard and dimension detail table.
-   * This "name" is the internal name of the measure from the YAML,
-   * not the human readable name.
-   */
-  // leaderboardMeasureName: string;
-
   /**
    * Array of active measures in the dashboard. These measures are used
    * in the leaderboards and dimension detail table. This "name" is the
@@ -83,13 +73,6 @@ export interface MetricsExplorerEntity {
    * and dimension detail table.
    */
   sortDirection: SortDirection;
-
-  /**
-   * The measure name to sort by when sorting by value.
-   * This is used when there are multiple measures to determine which measure
-   * to sort the leaderboard by.
-   */
-  sortMeasure?: string;
 
   whereFilter: V1Expression;
   dimensionsWithInlistFilter: string[];

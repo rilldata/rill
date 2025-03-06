@@ -105,13 +105,12 @@ export function convertPresetToExploreState(
   Object.assign(partialExploreState, pivotPartialState);
   errors.push(...pivotErrors);
 
+  // TODO: revisit
   if (preset.exploreSortBy) {
-    partialExploreState.sortMeasure = preset.exploreSortBy;
-    // Initialize leaderboardMeasureNames with the sort measure
     partialExploreState.leaderboardMeasureNames = [preset.exploreSortBy];
   }
 
-  // Handle context measures
+  // TODO: revisit
   if (preset.contextMeasures?.length) {
     partialExploreState.leaderboardMeasureNames = preset.contextMeasures;
   }
