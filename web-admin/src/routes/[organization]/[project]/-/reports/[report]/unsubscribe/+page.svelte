@@ -12,6 +12,7 @@
   $: project = $page.params.project;
   $: report = $page.params.report;
   $: token = $page.url.searchParams.get("token");
+  $: email = $page.url.searchParams.get("email");
 
   // using this instead of reportUnsubscriber to avoid a flicker before reportUnsubscriber is triggered
   let loading = true;
@@ -28,7 +29,9 @@
       project,
       name: report,
       token,
-      data: {},
+      data: {
+        email,
+      },
     });
     loading = false;
   }
