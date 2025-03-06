@@ -180,7 +180,7 @@ type Parser struct {
 
 	// Output
 	RillYAML  *RillYAML
-	DotEnv    map[string]string
+	DotEnv    map[string]map[string]string // Map of .env file paths to their key-value pairs
 	Resources map[ResourceName]*Resource
 	Errors    []*runtimev1.ParseError
 
@@ -302,11 +302,31 @@ func (p *Parser) TrackedPathsInDir(dir string) []string {
 	return paths
 }
 
+// GetDotEnv returns all the project's environment variables
+func (p *Parser) GetDotEnv() map[string]string {
+	env := make(map[string]string)
+
+	paths := make([]string, 0, len(p.DotEnv))
+	for path := range p.DotEnv {
+		paths = append(paths, path)
+	}
+	slices.Sort(paths)
+
+	for _, path := range paths {
+		envMap := p.DotEnv[path]
+		for k, v := range envMap {
+			env[k] = v
+		}
+	}
+
+	return env
+}
+
 // reload resets the parser's state and then parses the entire project.
 func (p *Parser) reload(ctx context.Context) error {
 	// Reset state
 	p.RillYAML = nil
-	p.DotEnv = nil
+	p.DotEnv = make(map[string]map[string]string)
 	p.Resources = make(map[ResourceName]*Resource)
 	p.Errors = nil
 	p.resourceNamesForDataPaths = make(map[string][]ResourceName)
@@ -411,10 +431,10 @@ func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Di
 		// Watcher sends multiple events for a single edit. We want to only restart the controller when .env actually changes.
 		// So we check the new .env contents against the contents stored in parser state.
 		if isDotEnv {
-			oldDotEnv := p.DotEnv
-			err := p.parseDotEnv(ctx, checkPaths[i])
+			oldDotEnv := p.DotEnv[path]
+			err := p.parseDotEnv(ctx, path)
 			if err == nil {
-				modifiedDotEnv = !maps.Equal(p.DotEnv, oldDotEnv)
+				modifiedDotEnv = !maps.Equal(p.DotEnv[path], oldDotEnv)
 			} else {
 				// any error means .env is under change
 				modifiedDotEnv = true
@@ -422,7 +442,6 @@ func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Di
 			if !modifiedDotEnv {
 				continue
 			}
-			p.DotEnv = nil
 		}
 
 		// If a file exists at path, add it to the parse list
@@ -709,7 +728,7 @@ func (p *Parser) parseStemPaths(ctx context.Context, paths []string) error {
 				}
 			}
 		} else {
-			// Not a path error – we add the error to all paths
+			// Not a path error – we add the error to all paths
 			for _, path := range paths {
 				p.addParseError(path, err, false)
 			}
@@ -1045,9 +1064,9 @@ func pathIsRillYAML(path string) bool {
 	return path == "/rill.yaml" || path == "/rill.yml"
 }
 
-// pathIsDotEnv returns true if the path is .env
+// pathIsDotEnv returns true if the path is a .env file (in any directory)
 func pathIsDotEnv(path string) bool {
-	return path == "/.env"
+	return strings.HasSuffix(path, "/.env")
 }
 
 // pathIsIgnored returns true if the path should be ignored by the parser.
