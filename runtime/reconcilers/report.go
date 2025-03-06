@@ -427,6 +427,10 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 			if err == nil {
 				if v, ok := m["metricsView"]; ok {
 					explore = v.(string)
+				} else if v, ok = m["metrics_view_name"]; ok {
+					explore = v.(string)
+				} else if v, ok = m["metrics_view"]; ok {
+					explore = v.(string)
 				}
 			}
 		}
