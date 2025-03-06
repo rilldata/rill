@@ -4,6 +4,7 @@
   import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
   import type {
     MetricsViewSpecDimensionV2,
+    MetricsViewSpecMeasureV2,
     V1Expression,
     V1MetricsViewAggregationMeasure,
     V1TimeRange,
@@ -85,6 +86,7 @@
   export let toggleComparisonDimension: (
     dimensionName: string | undefined,
   ) => void;
+  export let leaderboardMeasureCount: number = 1;
 
   const observer = new IntersectionObserver(
     ([entry]) => {
@@ -136,6 +138,8 @@
         : []),
     )
     .concat(uri ? [getURIRequestMeasure(dimensionName)] : []);
+
+  $: console.log("Leaderboard measures: ", measures);
 
   $: sort = getSort(
     sortedAscending,
@@ -257,7 +261,9 @@
     ),
   );
 
-  $: columnCount = comparisonTimeRange ? 3 : isValidPercentOfTotal ? 2 : 1;
+  $: columnCount =
+    (comparisonTimeRange ? 3 : isValidPercentOfTotal ? 2 : 1) *
+    leaderboardMeasureCount;
 </script>
 
 <div
@@ -272,13 +278,15 @@
     <colgroup>
       <col style:width="{gutterWidth}px" />
       <col style:width="{firstColumnWidth}px" />
-      <col style:width="{$valueColumn}px" />
-      {#if !!comparisonTimeRange}
-        <col style:width="{$deltaColumn}px" />
-        <col style:width="{DEFAULT_COL_WIDTH}px" />
-      {:else if isValidPercentOfTotal}
-        <col style:width="{DEFAULT_COL_WIDTH}px" />
-      {/if}
+      {#each { length: leaderboardMeasureCount } as _, i (i)}
+        <col style:width="{$valueColumn}px" />
+        {#if !!comparisonTimeRange}
+          <col style:width="{$deltaColumn}px" />
+          <col style:width="{DEFAULT_COL_WIDTH}px" />
+        {:else if isValidPercentOfTotal}
+          <col style:width="{DEFAULT_COL_WIDTH}px" />
+        {/if}
+      {/each}
     </colgroup>
 
     <LeaderboardHeader
@@ -295,6 +303,7 @@
       {toggleSort}
       {setPrimaryDimension}
       {toggleComparisonDimension}
+      {leaderboardMeasureCount}
     />
 
     <tbody>

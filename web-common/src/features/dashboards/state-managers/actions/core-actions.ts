@@ -10,3 +10,10 @@ export const setLeaderboardMeasureName = (
   // reset column widths when changing the leaderboard measure
   resetAllContextColumnWidths(dashboard.contextColumnWidths);
 };
+
+export const setLeaderboardMeasureCount = (
+  { dashboard }: DashboardMutables,
+  count: number,
+) => {
+  dashboard.leaderboardMeasureCount = count;
+};

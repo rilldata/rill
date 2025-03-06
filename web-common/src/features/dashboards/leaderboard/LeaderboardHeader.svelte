@@ -26,6 +26,8 @@
   export let toggleComparisonDimension: (
     dimensionName: string | undefined,
   ) => void;
+  export let leaderboardMeasureCount: number = 1;
+  export let measures: { name: string }[] = [];
 </script>
 
 <thead>
@@ -74,54 +76,59 @@
       </Tooltip>
     </th>
 
-    <th>
-      <button
-        aria-label="Toggle sort leaderboards by value"
-        on:click={() => toggleSort(SortType.VALUE)}
-      >
-        #{#if sortType === SortType.VALUE}
-          <ArrowDown flip={sortedAscending} />
-        {/if}
-      </button>
-    </th>
-
-    {#if isTimeComparisonActive}
+    {#each { length: leaderboardMeasureCount } as _, i (i)}
       <th>
         <button
-          aria-label="Toggle sort leaderboards by absolute change"
-          on:click={() => toggleSort(SortType.DELTA_ABSOLUTE)}
+          aria-label="Toggle sort leaderboards by value"
+          on:click={() => toggleSort(SortType.VALUE)}
         >
-          <Delta />
-          {#if sortType === SortType.DELTA_ABSOLUTE}
+          {#if i < measures.length}
+            {measures[i].name}
+          {/if}
+          {#if sortType === SortType.VALUE}
             <ArrowDown flip={sortedAscending} />
           {/if}
         </button>
       </th>
 
-      <th>
-        <button
-          aria-label="Toggle sort leaderboards by percent change"
-          on:click={() => toggleSort(SortType.DELTA_PERCENT)}
-        >
-          <Delta /> %
-          {#if sortType === SortType.DELTA_PERCENT}
-            <ArrowDown flip={sortedAscending} />
-          {/if}
-        </button>
-      </th>
-    {:else if isValidPercentOfTotal}
-      <th>
-        <button
-          aria-label="Toggle sort leaderboards by percent of total"
-          on:click={() => toggleSort(SortType.PERCENT)}
-        >
-          <PieChart /> %
-          {#if sortType === SortType.PERCENT}
-            <ArrowDown flip={sortedAscending} />
-          {/if}
-        </button>
-      </th>
-    {/if}
+      {#if isTimeComparisonActive || isValidPercentOfTotal}
+        <th>
+          <button
+            aria-label="Toggle sort leaderboards by absolute change"
+            on:click={() => toggleSort(SortType.DELTA_ABSOLUTE)}
+          >
+            <Delta />
+            {#if sortType === SortType.DELTA_ABSOLUTE}
+              <ArrowDown flip={sortedAscending} />
+            {/if}
+          </button>
+        </th>
+
+        <th>
+          <button
+            aria-label="Toggle sort leaderboards by percent change"
+            on:click={() => toggleSort(SortType.DELTA_PERCENT)}
+          >
+            <Delta /> %
+            {#if sortType === SortType.DELTA_PERCENT}
+              <ArrowDown flip={sortedAscending} />
+            {/if}
+          </button>
+        </th>
+      {:else if isValidPercentOfTotal}
+        <th>
+          <button
+            aria-label="Toggle sort leaderboards by percent of total"
+            on:click={() => toggleSort(SortType.PERCENT)}
+          >
+            <PieChart /> %
+            {#if sortType === SortType.PERCENT}
+              <ArrowDown flip={sortedAscending} />
+            {/if}
+          </button>
+        </th>
+      {/if}
+    {/each}
   </tr>
 </thead>
 

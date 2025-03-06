@@ -13,6 +13,8 @@
     deltaColumn,
     valueColumn,
   } from "./leaderboard-widths";
+  import { metricsExplorerStore } from "../stores/dashboard-stores";
+  import { get } from "svelte/store";
 
   export let metricsViewName: string;
   export let whereFilter: V1Expression;
@@ -35,6 +37,7 @@
       dimensions: { visibleDimensions },
       comparison: { isBeingCompared: isBeingComparedReadable },
       sorting: { sortedAscending, sortType },
+      measures: { visibleMeasures },
     },
     actions: {
       dimensions: { setPrimaryDimension },
@@ -67,6 +70,9 @@
       : $isValidPercentOfTotal
         ? DEFAULT_COL_WIDTH
         : 0);
+
+  $: metricsExplorer = get(metricsExplorerStore).entities[get(exploreName)];
+  $: leaderboardMeasureCount = metricsExplorer?.leaderboardMeasureCount || 1;
 </script>
 
 <div class="flex flex-col overflow-hidden size-full">
@@ -114,6 +120,7 @@
               {toggleSort}
               {toggleDimensionValueSelection}
               {toggleComparisonDimension}
+              {leaderboardMeasureCount}
             />
           {/if}
         {/each}

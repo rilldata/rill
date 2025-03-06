@@ -2,37 +2,32 @@
   import DashboardVisibilityDropdown from "@rilldata/web-common/components/menu/DashboardVisibilityDropdown.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import { getSimpleMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
-  import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
+  import { metricsExplorerStore } from "../stores/dashboard-stores";
   import { getStateManagers } from "../state-managers/state-managers";
-  import ActiveMeasureNamesDropdown from "@rilldata/web-common/components/menu/ActiveMeasureNameDropdown.svelte";
+  import LeaderboardMeasureCountSelector from "@rilldata/web-common/components/menu/LeaderboardMeasureCountSelector.svelte";
   import ContextColumnDropdown from "@rilldata/web-common/components/menu/ContextColumnDropdown.svelte";
+  import { get } from "svelte/store";
 
   export let exploreName: string;
 
   const StateManagers = getStateManagers();
   const {
     selectors: {
-      measures: {
-        leaderboardMeasureName,
-        getMeasureByName,
-        visibleMeasures,
-        allMeasures,
-      },
+      measures: { leaderboardMeasureName, getMeasureByName, visibleMeasures },
       dimensions: { visibleDimensions, allDimensions },
       contextColumn: { contextColumnFilters },
     },
     actions: {
       dimensions: { toggleDimensionVisibility },
       contextCol: { setContextColumn, setContextColumnFilters },
-      setLeaderboardMeasureName,
+      setLeaderboardMeasureCount,
     },
   } = StateManagers;
 
-  let active = false;
-
   $: measures = getSimpleMeasures($visibleMeasures);
 
-  $: metricsExplorer = $metricsExplorerStore.entities[exploreName];
+  $: metricsExplorer = get(metricsExplorerStore).entities[exploreName];
+  $: leaderboardMeasureCount = metricsExplorer?.leaderboardMeasureCount || 1;
 
   $: activeLeaderboardMeasure = $getMeasureByName($leaderboardMeasureName);
 
@@ -45,7 +40,6 @@
   $: allDimensionNames = $allDimensions
     .map(({ name }) => name)
     .filter(isDefined);
-  $: allMeasureNames = $allMeasures.map(({ name }) => name).filter(isDefined);
 
   // if the percent of total is currently being shown,
   // but it is not valid for this measure, then turn it off
@@ -82,20 +76,17 @@
         }}
       />
 
-      <ActiveMeasureNamesDropdown
+      <LeaderboardMeasureCountSelector
         {measures}
         firstMeasure={activeLeaderboardMeasure}
-        tooltipText="Choose measures to display"
-        selectedMeasureNames={[$leaderboardMeasureName]}
-        onToggle={(name) => {
-          setLeaderboardMeasureName(name);
-        }}
-        onSelectAll={() => {
-          setLeaderboardMeasureName(allMeasureNames[0]);
+        tooltipText="Choose number of measures to display"
+        selectedMeasureCount={leaderboardMeasureCount}
+        onToggle={(count) => {
+          setLeaderboardMeasureCount(count);
         }}
       />
 
-      <ContextColumnDropdown
+      <!-- <ContextColumnDropdown
         tooltipText="Choose context columns to display"
         isValidPercentOfTotal={validPercentOfTotal}
         selectedFilters={$contextColumnFilters}
@@ -105,7 +96,7 @@
         onSelectAll={() => {
           console.log("TODO: show for all measures");
         }}
-      />
+      /> -->
     </div>
   {/if}
 </div>

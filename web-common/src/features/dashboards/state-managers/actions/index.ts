@@ -3,7 +3,10 @@ import { measureFilterActions } from "@rilldata/web-common/features/dashboards/s
 import { sortActions } from "./sorting";
 import { contextColActions } from "./context-columns";
 import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
-import { setLeaderboardMeasureName } from "./core-actions";
+import {
+  setLeaderboardMeasureName,
+  setLeaderboardMeasureCount,
+} from "./core-actions";
 import { dimensionTableActions } from "./dimension-table";
 import type {
   DashboardCallbackExecutor,
@@ -91,6 +94,14 @@ export const createStateManagerActions = (
       actionArgs,
       setLeaderboardMeasureName,
     ),
+
+    /**
+     * sets the number of measures to show in the leaderboard.
+     */
+    setLeaderboardMeasureCount: dashboardMutatorToUpdater(
+      actionArgs,
+      setLeaderboardMeasureCount,
+    ),
   };
 };
 
@@ -98,7 +109,7 @@ export const createStateManagerActions = (
  * `dashboardMutatorToUpdater` takes a DashboardConnectedMutators
  * object, and returns a DashboardMutatorFn that directly updates
  * the dashboard by calling the included DashboardCallbackExecutor.
- **/
+ */
 function dashboardMutatorToUpdater<T extends unknown[]>(
   connectedMutators: DashboardConnectedMutators,
   mutator: DashboardMutatorFn<T>,

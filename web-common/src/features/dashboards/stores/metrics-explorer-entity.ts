@@ -62,6 +62,12 @@ export interface MetricsExplorerEntity {
   leaderboardMeasureName: string;
 
   /**
+   * This is the number of measures to show in the leaderboard.
+   * If not set, defaults to 1.
+   */
+  leaderboardMeasureCount: number;
+
+  /**
    * This is the sort type that will be used for the leaderboard
    * and dimension detail table. See SortType for more details.
    */
