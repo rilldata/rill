@@ -45,10 +45,24 @@ export function createChartDataQuery(
     ([runtime, $timeAndFilterStore], set) => {
       const { timeRange, where, timeGrain } = $timeAndFilterStore;
 
+      let outerWhere = where;
+      console.log("outerWhere", where);
+
       if (config.x?.type === "nominal" && config.x?.field) {
         limit = config.x.limit;
         sort = vegaSortToAggregationSort(config.x?.sort, config);
         dimensions = [{ name: config.x?.field }];
+
+        const showNull = !!config.x.showNull;
+        if (!showNull) {
+          const excludeNullFilter = createInExpression(
+            config.x?.field,
+            [null],
+            true,
+          );
+          outerWhere = mergeFilters(where, excludeNullFilter);
+          console.log("changed outerWhere", outerWhere);
+        }
       } else if (config.x?.type === "temporal" && timeGrain) {
         dimensions = [{ name: config.x?.field, timeGrain }];
       }
@@ -77,7 +91,7 @@ export function createChartDataQuery(
             measures,
             dimensions: [{ name: config.x?.field }],
             sort: sort ? [sort] : undefined,
-            where,
+            where: outerWhere,
             timeRange,
             limit: limit.toString(),
           },
@@ -98,7 +112,7 @@ export function createChartDataQuery(
 
         const dimensionName = config.x?.field;
 
-        let combinedWhere: V1Expression | undefined = where;
+        let combinedWhere: V1Expression | undefined = outerWhere;
         if ($topNQuery?.data?.data?.length && dimensionName) {
           const topValues = $topNQuery?.data?.data.map(
             (d) => d[dimensionName] as string,
@@ -110,6 +124,8 @@ export function createChartDataQuery(
 
           combinedWhere = mergeFilters(where, filterForTopValues);
         }
+
+        console.log("combinedWhere", combinedWhere);
 
         const dataQuery = createQueryServiceMetricsViewAggregation(
           runtime.instanceId,
