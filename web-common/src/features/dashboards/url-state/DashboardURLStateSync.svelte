@@ -262,6 +262,7 @@
       u,
     );
     const newUrl = u.toString();
+    console.log("gotoNewState", prevUrl, newUrl);
     if (!prevUrl || prevUrl === newUrl) return;
 
     prevUrl = newUrl;
