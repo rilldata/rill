@@ -24,7 +24,6 @@
   import SelectAllButton from "./SelectAllButton.svelte";
   import { getDimensionTableExportQuery } from "./dimension-table-export";
   import ContextColumnDropdown from "@rilldata/web-common/components/menu/ContextColumnDropdown.svelte";
-  import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
   import { getSimpleMeasures } from "../state-managers/selectors/measures";
 
   export let dimensionName: string;

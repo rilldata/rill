@@ -40,8 +40,6 @@
   export let dimension: MetricsViewSpecDimensionV2;
   export let hideStartPivotButton = false;
 
-  // $: console.log("DimensionDisplay activeMeasureNames: ", activeMeasureNames);
-
   const {
     selectors: {
       dimensionFilters: { unselectedDimensionValues },
@@ -233,7 +231,6 @@
           isFetching={$sortedQuery?.isFetching}
           {dimensionName}
           {columns}
-          {firstMeasure}
           selectedValues={$selectedDimensionValueNames}
           rows={tableRows}
         />
