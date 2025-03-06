@@ -10,6 +10,7 @@
   import { useProjectParser } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { BannerSlot } from "@rilldata/web-common/lib/event-bus/events";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { PageData } from "./$types";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -58,9 +59,12 @@
 
   $: if (hasBanner) {
     eventBus.emit("banner", {
-      type: "default",
-      message: $exploreQuery.data?.explore?.banner ?? "",
-      iconType: "alert",
+      slot: BannerSlot.Dashboard,
+      message: {
+        type: "default",
+        message: $exploreQuery.data?.explore?.banner ?? "",
+        iconType: "alert",
+      },
     });
   }
 
@@ -73,7 +77,10 @@
 
   onNavigate(() => {
     if (hasBanner) {
-      eventBus.emit("banner", null);
+      eventBus.emit("banner", {
+        slot: BannerSlot.Dashboard,
+        message: null,
+      });
     }
   });
 </script>

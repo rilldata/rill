@@ -1,20 +1,26 @@
 <script lang="ts">
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import type { BannerMessage } from "@rilldata/web-common/lib/event-bus/events";
+  import {
+    type BannerMessage,
+    BannerSlot,
+  } from "@rilldata/web-common/lib/event-bus/events";
   import { onMount } from "svelte";
   import Banner from "./Banner.svelte";
 
-  let banner: BannerMessage | null = null;
+  let banners: (BannerMessage | null)[] = new Array(BannerSlot.Other + 1).fill(
+    null,
+  );
+  const unsubscribe = eventBus.on("banner", (newBanner) => {
+    banners[newBanner.slot] = newBanner.message;
+  });
 
   onMount(() => {
-    const unsubscribe = eventBus.on("banner", (newBanner) => {
-      banner = newBanner;
-    });
-
     return unsubscribe;
   });
 </script>
 
-{#if banner}
-  <Banner {banner} />
-{/if}
+{#each banners as banner, i (i)}
+  {#if banner}
+    <Banner {banner} />
+  {/if}
+{/each}

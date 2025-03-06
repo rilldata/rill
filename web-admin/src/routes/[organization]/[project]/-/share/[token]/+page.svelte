@@ -7,6 +7,7 @@
   import DashboardURLStateSync from "@rilldata/web-common/features/dashboards/url-state/DashboardURLStateSync.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { BannerSlot } from "@rilldata/web-common/lib/event-bus/events";
   import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { PageData } from "./$types";
@@ -30,10 +31,13 @@
   $: ({ data: cookieProject } = $cookieProjectQuery);
   $: if (cookieProject) {
     eventBus.emit("banner", {
-      type: "default",
-      message: `Limited view. For full access and features, visit the <a href='/${organization}/${project}/explore/${resourceName}'>original dashboard</a>.`,
-      includesHtml: true,
-      iconType: "alert",
+      slot: BannerSlot.Other,
+      message: {
+        type: "default",
+        message: `Limited view. For full access and features, visit the <a href='/${organization}/${project}/explore/${resourceName}'>original dashboard</a>.`,
+        includesHtml: true,
+        iconType: "alert",
+      },
     });
   }
 
@@ -49,7 +53,10 @@
     const currentPath = from?.url.pathname;
     const newPath = to?.url.pathname;
     if (newPath !== currentPath) {
-      eventBus.emit("banner", null);
+      eventBus.emit("banner", {
+        slot: BannerSlot.Other,
+        message: null,
+      });
     }
   });
 </script>
