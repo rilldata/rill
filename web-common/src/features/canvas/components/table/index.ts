@@ -5,6 +5,7 @@ import {
 } from "@rilldata/web-common/features/canvas/components/util";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
+import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 import type {
   ComponentCommonProperties,
   ComponentFilterProperties,
@@ -60,14 +61,17 @@ export class TableCanvasComponent extends BaseCanvasComponent<TableSpec> {
   }
 
   newComponentSpec(
-    metrics_view: string,
-    measure: string,
-    dimension: string,
+    metricsViewName: string,
+    metricsViewSpec: V1MetricsViewSpec | undefined,
   ): TableSpec {
+    const firstDimension = metricsViewSpec?.dimensions?.[0]?.name;
+    const secondDimension = metricsViewSpec?.dimensions?.[1]?.name;
+
     return {
-      metrics_view,
-      measures: [measure],
-      row_dimensions: [dimension],
+      metrics_view: metricsViewName,
+      measures: metricsViewSpec?.measures?.map((m) => m.name as string) ?? [],
+      row_dimensions: firstDimension ? [firstDimension] : [],
+      col_dimensions: secondDimension ? [secondDimension] : undefined,
     };
   }
 }

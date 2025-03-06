@@ -6,6 +6,7 @@ import {
 } from "@rilldata/web-common/features/canvas/components/util";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
+import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 import type {
   ComponentCommonProperties,
   ComponentComparisonOptions,
@@ -59,10 +60,15 @@ export class KPIGridComponent extends BaseCanvasComponent<KPIGridSpec> {
     };
   }
 
-  newComponentSpec(metrics_view: string, measure: string): KPIGridSpec {
+  newComponentSpec(
+    metricsViewName: string,
+    metricsViewSpec: V1MetricsViewSpec | undefined,
+  ): KPIGridSpec {
+    const measures = metricsViewSpec?.measures || [];
+    const measureNames = measures.map((m) => m.name as string).slice(0, 4);
     return {
-      metrics_view,
-      measures: [measure],
+      metrics_view: metricsViewName,
+      measures: measureNames,
       comparison: defaultComparisonOptions,
     };
   }

@@ -3,6 +3,7 @@ import type { ComponentSize } from "@rilldata/web-common/features/canvas/compone
 import { getParsedDocument } from "@rilldata/web-common/features/canvas/inspector/selectors";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
+import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 import { get, writable, type Writable } from "svelte/store";
 
 // A base class that implements all the store logic
@@ -50,9 +51,8 @@ export abstract class BaseCanvasComponent<T> {
    * Get the spec when the component is added to the canvas
    */
   abstract newComponentSpec(
-    metrics_view: string,
-    measure: string,
-    dimension: string,
+    metricsViewName: string,
+    metricsViewSpec: V1MetricsViewSpec | undefined,
   ): T;
 
   constructor(
