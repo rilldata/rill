@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test";
+import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/exploreInteractions";
 import { test } from "../setup/base";
 import { clickMenuButton } from "../utils/commonHelpers";
-import { interactWithTimeRangeMenu } from "../utils/metricsViewHelpers";
 import { ResourceWatcher } from "../utils/ResourceWatcher";
 import { validateTableContents } from "../utils/tableHelpers";
 import { gotoNavEntry } from "../utils/waitHelpers";

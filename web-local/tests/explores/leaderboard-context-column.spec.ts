@@ -1,5 +1,5 @@
 import { expect } from "@playwright/test";
-import { interactWithTimeRangeMenu } from "../utils/metricsViewHelpers";
+import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/exploreInteractions";
 import { ResourceWatcher } from "../utils/ResourceWatcher";
 import { gotoNavEntry } from "../utils/waitHelpers";
 import { clickMenuButton } from "../utils/commonHelpers";

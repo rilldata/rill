@@ -1,12 +1,10 @@
 import { expect } from "@playwright/test";
+import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/exploreInteractions";
 import {
   createExploreFromModel,
   createExploreFromSource,
 } from "../utils/exploreHelpers";
-import {
-  assertLeaderboards,
-  interactWithTimeRangeMenu,
-} from "../utils/metricsViewHelpers";
+import { assertLeaderboards } from "../utils/metricsViewHelpers";
 import { ResourceWatcher } from "../utils/ResourceWatcher";
 import { updateCodeEditor, wrapRetryAssertion } from "../utils/commonHelpers";
 import {
