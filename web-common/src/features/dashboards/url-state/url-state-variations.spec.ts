@@ -6,6 +6,7 @@ import {
   AD_BIDS_EXPLORE_INIT,
   AD_BIDS_EXPLORE_NAME,
   AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+  AD_BIDS_METRICS_INIT,
   AD_BIDS_PIVOT_PRESET,
   AD_BIDS_PRESET,
   AD_BIDS_TIME_DIMENSION_DETAILS_PRESET,
@@ -65,6 +66,7 @@ import {
 import { deepClone } from "@vitest/utils";
 import { get } from "svelte/store";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { ALL_TIME_RANGE_ALIAS } from "../time-controls/new-time-controls";
 
 vi.stubEnv("TZ", "UTC");
 
@@ -374,6 +376,7 @@ describe("Human readable URL state variations", () => {
         const initState = getCleanMetricsExploreForAssertion();
         const defaultExplorePreset = getDefaultExplorePreset(
           explore,
+          AD_BIDS_METRICS_INIT,
           AD_BIDS_TIME_RANGE_SUMMARY,
         );
 
@@ -428,6 +431,7 @@ describe("Human readable URL state variations", () => {
         );
         const defaultExplorePreset = getDefaultExplorePreset(
           explore,
+          AD_BIDS_METRICS_INIT,
           AD_BIDS_TIME_RANGE_SUMMARY,
         );
 
@@ -476,6 +480,7 @@ describe("Human readable URL state variations", () => {
     );
     const defaultExplorePreset = getDefaultExplorePreset(
       AD_BIDS_EXPLORE_INIT,
+      AD_BIDS_METRICS_INIT,
       AD_BIDS_TIME_RANGE_SUMMARY,
     );
 
@@ -560,7 +565,7 @@ export function getCleanMetricsExploreForAssertion() {
   delete cleanedState.contextColumnWidths;
   if (cleanedState.selectedTimeRange) {
     cleanedState.selectedTimeRange = {
-      name: cleanedState.selectedTimeRange?.name ?? "inf",
+      name: cleanedState.selectedTimeRange?.name ?? ALL_TIME_RANGE_ALIAS,
       interval: cleanedState.selectedTimeRange?.interval,
     } as DashboardTimeControls;
   }

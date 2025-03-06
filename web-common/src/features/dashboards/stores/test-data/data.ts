@@ -264,6 +264,7 @@ export const AD_BIDS_PIVOT_PRESET: V1ExplorePreset = {
 
 export const AD_BIDS_BASE_PRESET = getDefaultExplorePreset(
   AD_BIDS_EXPLORE_INIT,
+  AD_BIDS_METRICS_INIT,
   undefined,
 );
 

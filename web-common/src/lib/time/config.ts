@@ -635,6 +635,7 @@ export const TIME_COMPARISON = {
 export const NO_COMPARISON_LABEL = "No comparison dimension";
 
 export const DEFAULT_TIMEZONES = [
+  "UTC",
   "America/Los_Angeles",
   "America/Chicago",
   "America/New_York",

@@ -121,6 +121,7 @@ export function mapQueryToDashboard(
       initLocalUserPreferenceStore(metricsViewName);
       const defaultExplorePreset = getDefaultExplorePreset(
         validSpecResp.data.explore,
+        validSpecResp.data.metricsView,
         timeRangeSummary.data,
       );
       const { partialExploreState } = convertPresetToExploreState(

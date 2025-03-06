@@ -34,6 +34,7 @@
   export let activeTimeZone: string;
   export let timeStart: string | undefined;
   export let timeEnd: string | undefined;
+  export let context = "dashboard";
   export let onSelectRange: (range: NamedRange | ISODurationString) => void;
   export let onPan: (direction: "left" | "right") => void;
   export let onTimeGrainSelect: (timeGrain: V1TimeGrain) => void;
@@ -72,14 +73,13 @@
     />
   {/if}
 
-  {#if availableTimeZones.length}
-    <Elements.Zone
-      watermark={interval.end?.toJSDate() ?? new Date()}
-      {activeTimeZone}
-      {availableTimeZones}
-      {onSelectTimeZone}
-    />
-  {/if}
+  <Elements.Zone
+    watermark={DateTime.fromISO(timeStart ?? "")}
+    {activeTimeZone}
+    {availableTimeZones}
+    {onSelectTimeZone}
+    {context}
+  />
 
   {#if !showPivot && minTimeGrain}
     <TimeGrainSelector

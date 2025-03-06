@@ -9,6 +9,7 @@ import {
   AD_BIDS_EXPLORE_NAME,
   AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
   AD_BIDS_TIME_RANGE_SUMMARY,
+  AD_BIDS_METRICS_INIT,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import { getInitExploreStateForTest } from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
@@ -161,6 +162,7 @@ describe("Invalid Human readable URL State", () => {
       const initState = getCleanMetricsExploreForAssertion();
       const defaultExplorePreset = getDefaultExplorePreset(
         AD_BIDS_EXPLORE_INIT,
+        AD_BIDS_METRICS_INIT,
         AD_BIDS_TIME_RANGE_SUMMARY,
       );
 

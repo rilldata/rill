@@ -8,6 +8,7 @@ import {
   AD_BIDS_EXPLORE_NAME,
   AD_BIDS_IMPRESSIONS_MEASURE,
   AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+  AD_BIDS_METRICS_INIT,
   AD_BIDS_NAME,
   AD_BIDS_TIME_RANGE_SUMMARY,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
@@ -244,6 +245,7 @@ describe.skip("ExploreWebViewStore", () => {
       });
       const defaultExplorePreset = getDefaultExplorePreset(
         AD_BIDS_EXPLORE_INIT,
+        AD_BIDS_METRICS_INIT,
         AD_BIDS_TIME_RANGE_SUMMARY,
       );
 

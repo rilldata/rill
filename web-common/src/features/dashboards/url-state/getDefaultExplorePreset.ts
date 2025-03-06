@@ -2,27 +2,59 @@ import { createAndExpression } from "@rilldata/web-common/features/dashboards/st
 import { getValidComparisonOption } from "@rilldata/web-common/features/dashboards/time-controls/time-range-store";
 import { getDefaultTimeGrain } from "@rilldata/web-common/features/dashboards/time-controls/time-range-utils";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
-import { ExploreStateDefaultTimezone } from "@rilldata/web-common/features/dashboards/url-state/defaults";
 import {
   ToURLParamTDDChartMap,
   ToURLParamTimeGrainMapMap,
 } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import { ISODurationToTimePreset } from "@rilldata/web-common/lib/time/ranges";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
-import { getLocalIANA } from "@rilldata/web-common/lib/time/timezone";
+import {
+  getLocalIANA,
+  getUTCIANA,
+} from "@rilldata/web-common/lib/time/timezone";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
   V1ExploreComparisonMode,
   V1ExploreSortType,
   V1ExploreWebView,
+  V1TimeGrain,
   type V1ExplorePreset,
   type V1ExploreSpec,
+  type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
+import { ALL_TIME_RANGE_ALIAS } from "../time-controls/new-time-controls";
+
+export function getDefaultTimeRange(
+  smallestTimeGrain: V1TimeGrain | undefined,
+  exploreSpec: V1ExploreSpec,
+) {
+  if (exploreSpec.defaultPreset?.timeRange) {
+    return exploreSpec.defaultPreset.timeRange;
+  }
+
+  switch (smallestTimeGrain) {
+    case V1TimeGrain.TIME_GRAIN_SECOND:
+    case V1TimeGrain.TIME_GRAIN_MINUTE:
+    case V1TimeGrain.TIME_GRAIN_HOUR:
+      return "PT6H";
+    case V1TimeGrain.TIME_GRAIN_DAY:
+      return "P7D";
+    case V1TimeGrain.TIME_GRAIN_WEEK:
+      return "P4W";
+    case V1TimeGrain.TIME_GRAIN_MONTH:
+      return "P3M";
+    case V1TimeGrain.TIME_GRAIN_YEAR:
+      return "P1Y";
+    default:
+      return "P7D";
+  }
+}
 
 export function getDefaultExplorePreset(
   explore: V1ExploreSpec,
+  metricsViewSpec: V1MetricsViewSpec,
   fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
 ) {
   const defaultExplorePreset: V1ExplorePreset = {
@@ -32,8 +64,11 @@ export function getDefaultExplorePreset(
     measures: explore.measures,
     dimensions: explore.dimensions,
 
-    timeRange: fullTimeRange ? "inf" : "",
-    timezone: explore.defaultPreset?.timezone ?? getLocalIANA(),
+    timeRange: getDefaultTimeRange(metricsViewSpec.smallestTimeGrain, explore),
+    timezone:
+      (explore.defaultPreset?.timezone ?? explore.timeZones?.[0] === "Local")
+        ? getLocalIANA()
+        : (explore.timeZones?.[0] ?? getUTCIANA()),
     timeGrain: "",
     comparisonMode: V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_NONE,
     compareTimeRange: "",
@@ -57,18 +92,6 @@ export function getDefaultExplorePreset(
 
     ...(explore.defaultPreset ?? {}),
   };
-
-  if (!explore.timeZones?.length) {
-    // this is the old behaviour. if no timezones are configures for the explore, default it to UTC and not local IANA
-    defaultExplorePreset.timezone = ExploreStateDefaultTimezone;
-  } else if (!explore.timeZones?.includes(defaultExplorePreset.timezone!)) {
-    // else if the default is not in the list of timezones
-    if (explore.timeZones?.includes(ExploreStateDefaultTimezone)) {
-      defaultExplorePreset.timezone = ExploreStateDefaultTimezone;
-    } else {
-      defaultExplorePreset.timezone = explore.timeZones[0];
-    }
-  }
 
   if (!defaultExplorePreset.timeGrain) {
     defaultExplorePreset.timeGrain = getDefaultPresetTimeGrain(
@@ -144,7 +167,7 @@ function getDefaultComparisonFields(
 
   if (
     !defaultExplorePreset.timeRange ||
-    defaultExplorePreset.timeRange === "inf" ||
+    defaultExplorePreset.timeRange === ALL_TIME_RANGE_ALIAS ||
     !timeRangeSummary?.min ||
     !timeRangeSummary?.max
   ) {

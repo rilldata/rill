@@ -40,6 +40,10 @@
   import { initLocalUserPreferenceStore } from "../user-preferences";
   import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
   import { getValidComparisonOption } from "../time-controls/time-range-store";
+  import { Tooltip } from "bits-ui";
+  import SyntaxElement from "../time-controls/super-pill/components/SyntaxElement.svelte";
+  import Timestamp from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/Timestamp.svelte";
+  import Metadata from "../time-controls/super-pill/components/Metadata.svelte";
 
   export let readOnly = false;
   export let timeRanges: V1ExploreTimeRange[];
@@ -318,6 +322,7 @@
           {timeRanges}
           complete={false}
           {interval}
+          context={$exploreName}
           {timeStart}
           {timeEnd}
           {activeTimeGrain}
@@ -338,6 +343,29 @@
           showTimeComparison={!!showTimeComparison}
           {selectedComparisonTimeRange}
         />
+      {/if}
+
+      {#if interval.end?.isValid}
+        <Tooltip.Root openDelay={0}>
+          <Tooltip.Trigger>
+            <span class="text-gray-600 italic">
+              as of latest <Timestamp
+                italic
+                suppress
+                showDate={false}
+                date={DateTime.fromJSDate(allTimeRange?.end)}
+                zone={activeTimeZone}
+              />
+            </span>
+          </Tooltip.Trigger>
+          <Tooltip.Content side="bottom" sideOffset={10}>
+            <Metadata
+              timeZone={activeTimeZone}
+              timeStart={allTimeRange?.start}
+              timeEnd={allTimeRange?.end}
+            />
+          </Tooltip.Content>
+        </Tooltip.Root>
       {/if}
     </div>
   {/if}
