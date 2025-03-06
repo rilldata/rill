@@ -175,7 +175,7 @@ function parseBookmark(
     ),
     defaultExplorePreset,
     url,
-  );
+  ).toString();
   return {
     resource: bookmarkResource,
     absoluteTimeRange:
