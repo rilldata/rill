@@ -82,6 +82,7 @@ export const createStateManagerActions = (
      */
     measuresFilter: createDashboardUpdaters(actionArgs, measureFilterActions),
 
+    // FIXME: move this action elsewhere
     /**
      * Toggles the leaderboard measure names for the dashboard.
      */

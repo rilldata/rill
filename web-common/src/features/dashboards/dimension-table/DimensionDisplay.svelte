@@ -60,6 +60,8 @@
     },
   } = getStateManagers();
 
+  $: console.log("DimensionDisplay $sortMeasure: ", $sortMeasure);
+
   $: ({ name: dimensionName = "" } = dimension);
 
   $: ({ instanceId } = $runtime);
