@@ -56,10 +56,12 @@
       `/${organization}/${project}/explore/${exploreName}`,
       window.location.origin,
     );
-    url.search = await getExplorePageUrlSearchParams(
-      $dashboardStateForAlert.data.exploreName,
-      $dashboardStateForAlert.data.exploreState,
-      url,
+    url.search = (
+      await getExplorePageUrlSearchParams(
+        $dashboardStateForAlert.data.exploreName,
+        $dashboardStateForAlert.data.exploreState,
+        url,
+      )
     ).toString();
     return goto(url.toString());
   }

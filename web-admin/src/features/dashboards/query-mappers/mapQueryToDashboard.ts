@@ -112,6 +112,7 @@ export function mapQueryToDashboard(
         return;
       }
 
+      // Type guard
       if (
         !validSpecResp.data ||
         !validSpecResp.data.explore ||
@@ -124,6 +125,7 @@ export function mapQueryToDashboard(
         return;
       }
 
+      // Type guard
       if (!timeRangeSummary.data) {
         set({
           isFetching: false,

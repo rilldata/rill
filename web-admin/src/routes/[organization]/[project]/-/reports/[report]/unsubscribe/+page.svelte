@@ -1,6 +1,9 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { type RpcStatus } from "@rilldata/web-admin/client";
+  import {
+    type AdminServiceUnsubscribeReportBody,
+    type RpcStatus,
+  } from "@rilldata/web-admin/client";
   import { createAdminServiceUnsubscribeReportUsingToken } from "@rilldata/web-admin/features/scheduled-reports/unsubscribe-report-using-token";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
@@ -13,6 +16,7 @@
   $: report = $page.params.report;
   $: token = $page.url.searchParams.get("token");
   $: email = $page.url.searchParams.get("email");
+  $: slackUser = $page.url.searchParams.get("slack_user");
 
   // using this instead of reportUnsubscriber to avoid a flicker before reportUnsubscriber is triggered
   let loading = true;
@@ -24,14 +28,16 @@
       ?.data?.message ?? $reportUnsubscriber.error?.message;
 
   async function unsubscribe() {
+    const data: AdminServiceUnsubscribeReportBody = {};
+    if (email) data.email = email;
+    if (slackUser) data.slackUser = slackUser;
+
     await $reportUnsubscriber.mutateAsync({
       organization,
       project,
       name: report,
+      data,
       token,
-      data: {
-        email,
-      },
     });
     loading = false;
   }
