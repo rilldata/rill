@@ -1,7 +1,9 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import { chartMetadata } from "@rilldata/web-common/features/canvas/components/charts/util";
   import { PlusCircle } from "lucide-svelte";
   import type { ComponentType, SvelteComponent } from "svelte";
+  import type { ChartType } from "./components/charts/types";
   import type { CanvasComponentType } from "./components/types";
   import BigNumberIcon from "./icons/BigNumberIcon.svelte";
   import ChartIcon from "./icons/ChartIcon.svelte";
@@ -14,8 +16,16 @@
     icon: ComponentType<SvelteComponent>;
   };
 
+  // Function to get a random chart type
+  function getRandomChartType(): ChartType {
+    const chartTypes = chartMetadata.map((chart) => chart.type);
+    const randomIndex = Math.floor(Math.random() * chartTypes.length);
+    return chartTypes[randomIndex];
+  }
+
+  // Create menu items with a function to get random chart type when clicked
   export const menuItems: MenuItem[] = [
-    { id: "stacked_bar", label: "Chart", icon: ChartIcon },
+    { id: "bar_chart", label: "Chart", icon: ChartIcon }, // Default value, will be replaced with random type when clicked
     { id: "table", label: "Table", icon: TableIcon },
     { id: "markdown", label: "Text", icon: TextIcon },
     { id: "kpi_grid", label: "KPI", icon: BigNumberIcon },
@@ -27,6 +37,12 @@
   export let open = false;
   export let onItemClick: (type: CanvasComponentType) => void;
   export let onMouseEnter: () => void;
+
+  // Wrapper function to handle chart item click with randomization
+  function handleChartItemClick() {
+    const randomChartType = getRandomChartType();
+    onItemClick(randomChartType);
+  }
 </script>
 
 <DropdownMenu.Root bind:open>
@@ -58,7 +74,11 @@
         <DropdownMenu.Item
           on:click={() => {
             open = false;
-            onItemClick(id);
+            if (id === "bar_chart") {
+              handleChartItemClick();
+            } else {
+              onItemClick(id);
+            }
           }}
         >
           <div class="flex flex-row gap-x-2">
