@@ -106,7 +106,7 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 		newPeriodicJob(&TrialEndCheckArgs{}, "10 1 * * *", true),                 // daily at 1:10am UTC
 		newPeriodicJob(&TrialGracePeriodCheckArgs{}, "15 1 * * *", true),         // daily at 1:15am UTC
 		newPeriodicJob(&SubscriptionCancellationCheckArgs{}, "20 1 * * *", true), // daily at 1:20am UTC
-		newPeriodicJob(&HibernateInactiveOrgsArgs{}, "0 1 * * 0", true),          // weekly at 1am UTC on Sunday
+		newPeriodicJob(&HibernateInactiveOrgsArgs{}, "0 7 * * 1", true),          // Monday at 7:00am UTC
 	}
 
 	// Wire our zap logger to a slog logger for the river client
