@@ -2,28 +2,31 @@ import { SortType } from "../../proto-state/derived-types";
 import { toggleSort, sortActions } from "./sorting";
 import { LeaderboardContextColumn } from "../../leaderboard-context-column";
 import { setContextColumn } from "./context-columns";
-import { toggleLeaderboardMeasureNames } from "./core-actions";
 import type { DashboardMutables } from "./types";
 
-export const handleMeasureColumnHeaderClick = (
+export const handleDimensionMeasureColumnHeaderClick = (
   generalArgs: DashboardMutables,
   measureName: string,
 ) => {
-  const { leaderboardMeasureNames } = generalArgs.dashboard;
+  const { dashboard } = generalArgs;
 
-  if (measureName === leaderboardMeasureNames[0] + "_delta") {
+  if (measureName === dashboard.sortedMeasureName + "_delta") {
     toggleSort(generalArgs, SortType.DELTA_ABSOLUTE);
     setContextColumn(generalArgs, LeaderboardContextColumn.DELTA_ABSOLUTE);
-  } else if (measureName === leaderboardMeasureNames[0] + "_delta_perc") {
+  } else if (measureName === dashboard.sortedMeasureName + "_delta_perc") {
     toggleSort(generalArgs, SortType.DELTA_PERCENT);
     setContextColumn(generalArgs, LeaderboardContextColumn.DELTA_PERCENT);
-  } else if (measureName === leaderboardMeasureNames[0] + "_percent_of_total") {
+  } else if (
+    measureName ===
+    dashboard.sortedMeasureName + "_percent_of_total"
+  ) {
     toggleSort(generalArgs, SortType.PERCENT);
     setContextColumn(generalArgs, LeaderboardContextColumn.PERCENT);
-  } else if (measureName === leaderboardMeasureNames[0]) {
+  } else if (measureName === dashboard.sortedMeasureName) {
     toggleSort(generalArgs, SortType.VALUE, measureName);
   } else {
-    toggleLeaderboardMeasureNames(generalArgs, [measureName]);
+    // If clicking on a different measure, update the sorted measure and sort by it
+    dashboard.sortedMeasureName = measureName;
     toggleSort(generalArgs, SortType.VALUE, measureName);
     sortActions.setSortDescending(generalArgs);
   }
@@ -36,5 +39,5 @@ export const dimensionTableActions = {
    * columns. This will set the active measure and sort the leaderboard
    * by the selected measure (or context column).
    */
-  handleMeasureColumnHeaderClick,
+  handleDimensionMeasureColumnHeaderClick,
 };

@@ -170,7 +170,7 @@ TableCells – the cell contents.
   async function handleColumnHeaderClick(event) {
     colScrollOffset = $columnVirtualizer.scrollOffset;
     const columnName = event.detail;
-    dimensionTable.handleMeasureColumnHeaderClick(columnName);
+    dimensionTable.handleDimensionMeasureColumnHeaderClick(columnName);
   }
 
   async function handleResizeDimensionColumn(event) {

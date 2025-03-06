@@ -317,32 +317,17 @@ function toExploreUrl(
     );
   }
 
-  // When in dimension table view, set sort_by to the currently selected measure
+  // Set sort_by to the currently sorted measure
   // or fall back to the first leaderboard measure if no measure is selected
   if (
-    exploreState.activePage === DashboardState_ActivePage.DIMENSION_TABLE &&
     shouldSetParam(
       preset.exploreSortBy,
-      exploreState.leaderboardMeasureNames[0],
+      exploreState.sortedMeasureName || exploreState.leaderboardMeasureNames[0],
     )
   ) {
     searchParams.set(
       ExploreStateURLParams.SortBy,
-      exploreState.leaderboardMeasureNames[0],
-    );
-  }
-
-  // For leaderboard view, set sort_by to the first leaderboard measure
-  // This ensures we have a consistent sort measure in the leaderboard
-  if (
-    shouldSetParam(
-      preset.exploreSortBy,
-      exploreState.leaderboardMeasureNames[0],
-    )
-  ) {
-    searchParams.set(
-      ExploreStateURLParams.SortBy,
-      exploreState.leaderboardMeasureNames[0],
+      exploreState.sortedMeasureName || exploreState.leaderboardMeasureNames[0],
     );
   }
 
