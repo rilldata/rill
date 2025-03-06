@@ -145,6 +145,7 @@
 
   <!-- We fix the height to avoid a layout shift when the Search component is expanded. -->
   <div class="flex items-center gap-x-1 cursor-pointer h-9">
+    <div>TODO: Context menu dropdown</div>
     {#if !isRowsEmpty}
       <SelectAllButton
         {areAllTableRowsSelected}

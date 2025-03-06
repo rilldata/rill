@@ -43,6 +43,27 @@ export const setContextColumn = (
   }
 };
 
+export const setContextColumnFilters = (
+  { dashboard }: DashboardMutables,
+  contextColumnFilters: LeaderboardContextColumn[],
+) => {
+  // Validate filters
+  const validFilters = contextColumnFilters.filter((filter) => {
+    switch (filter) {
+      case LeaderboardContextColumn.DELTA_ABSOLUTE:
+      case LeaderboardContextColumn.DELTA_PERCENT:
+        // Only allow delta columns if time comparison is enabled
+        return dashboard.showTimeComparison !== false;
+      default:
+        return true;
+    }
+  });
+
+  // Update filters and reset widths
+  dashboard.leaderboardContextColumnFilters = validFilters;
+  resetAllContextColumnWidths(dashboard.contextColumnWidths);
+};
+
 export const resetAllContextColumnWidths = (
   contextColumnWidths: ContextColWidths,
 ) => {
@@ -74,6 +95,12 @@ export const contextColActions = {
    * as well as updating to sort by that context column.
    */
   setContextColumn,
+
+  /**
+   * Updates the dashboard to use the context column filters of the given type,
+   * as well as updating to sort by that context column.
+   */
+  setContextColumnFilters,
 
   /**
    * Observe this width value, updating the overall width of

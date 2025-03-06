@@ -127,6 +127,11 @@ export interface MetricsExplorerEntity {
   leaderboardContextColumn: LeaderboardContextColumn;
 
   /**
+   * filters applied to the context column in the leaderboard
+   */
+  leaderboardContextColumnFilters: LeaderboardContextColumn[];
+
+  /**
    * Width of each context column. Needs to be reset to default
    * when changing context column or switching between leaderboard
    * and dimension detail table

@@ -5,6 +5,7 @@
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { getStateManagers } from "../state-managers/state-managers";
   import ActiveMeasureNamesDropdown from "@rilldata/web-common/components/menu/ActiveMeasureNameDropdown.svelte";
+  import ContextColumnDropdown from "@rilldata/web-common/components/menu/ContextColumnDropdown.svelte";
 
   export let exploreName: string;
 
@@ -18,11 +19,11 @@
         allMeasures,
       },
       dimensions: { visibleDimensions, allDimensions },
-      // contextColumn: { contextColumnFilters },
+      contextColumn: { contextColumnFilters },
     },
     actions: {
       dimensions: { toggleDimensionVisibility },
-      contextCol: { setContextColumn },
+      contextCol: { setContextColumn, setContextColumnFilters },
       setLeaderboardMeasureName,
     },
   } = StateManagers;
@@ -94,53 +95,17 @@
         }}
       />
 
-      <!-- <Select.Root
-        bind:open={active}
-        selected={{ value: activeLeaderboardMeasure.name, label: "" }}
-        items={measures.map((measure) => ({
-          value: measure.name ?? "",
-          label: measure.displayName || measure.name,
-        }))}
-        onSelectedChange={(newSelection) => {
-          if (!newSelection?.value) return;
-          setLeaderboardMeasureName(newSelection.value);
+      <ContextColumnDropdown
+        tooltipText="Choose context columns to display"
+        isValidPercentOfTotal={validPercentOfTotal}
+        selectedFilters={$contextColumnFilters}
+        {measures}
+        selectedMeasureNames={[$leaderboardMeasureName]}
+        onToggle={setContextColumnFilters}
+        onSelectAll={() => {
+          console.log("TODO: show for all measures");
         }}
-      >
-        <Select.Trigger class="outline-none border-none w-fit  px-0 gap-x-0.5">
-          <Button type="text" label="Select a measure to filter by">
-            <span class="truncate text-gray-700 hover:text-inherit">
-              Showing <b>
-                {activeLeaderboardMeasure?.displayName ||
-                  activeLeaderboardMeasure.name}
-              </b>
-            </span>
-          </Button>
-        </Select.Trigger>
-
-        <Select.Content
-          sameWidth={false}
-          align="start"
-          class="max-h-80 overflow-y-auto min-w-44"
-        >
-          {#each measures as measure (measure.name)}
-            <Select.Item
-              value={measure.name}
-              label={measure.displayName || measure.name}
-              class="text-[12px]"
-            >
-              <div class="flex flex-col">
-                <div class:font-bold={$leaderboardMeasureName === measure.name}>
-                  {measure.displayName || measure.name}
-                </div>
-
-                <p class="ui-copy-muted" style:font-size="11px">
-                  {measure.description}
-                </p>
-              </div>
-            </Select.Item>
-          {/each}
-        </Select.Content>
-      </Select.Root> -->
+      />
     </div>
   {/if}
 </div>
