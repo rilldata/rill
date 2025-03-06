@@ -10,11 +10,14 @@ export const toggleSort = (
   const { dashboard } = generalArgs;
   if (sortType === dashboard.dashboardSortType) {
     sortActions.toggleSortDirection(generalArgs);
+    if (measureName) {
+      dashboard.sortedMeasureName = measureName;
+    }
   } else {
     dashboard.dashboardSortType = sortType;
     dashboard.sortDirection = SortDirection.DESCENDING;
     if (measureName) {
-      dashboard.leaderboardMeasureNames = [measureName];
+      dashboard.sortedMeasureName = measureName;
     }
   }
 };

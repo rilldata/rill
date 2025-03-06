@@ -104,6 +104,7 @@ export function convertPresetToExploreState(
   // TODO: revisit
   if (preset.exploreSortBy) {
     partialExploreState.leaderboardMeasureNames = [preset.exploreSortBy];
+    partialExploreState.sortedMeasureName = preset.exploreSortBy;
   }
 
   // TODO: revisit
