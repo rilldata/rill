@@ -1,25 +1,31 @@
 <script lang="ts">
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import DashboardVisibilityDropdown from "@rilldata/web-common/components/menu/shadcn/DashboardVisibilityDropdown.svelte";
-  import * as Select from "@rilldata/web-common/components/select";
+  import DashboardVisibilityDropdown from "@rilldata/web-common/components/menu/DashboardVisibilityDropdown.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import { getSimpleMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { getStateManagers } from "../state-managers/state-managers";
+  import ActiveMeasureNamesDropdown from "@rilldata/web-common/components/menu/ActiveMeasureNameDropdown.svelte";
 
   export let exploreName: string;
 
+  const StateManagers = getStateManagers();
   const {
     selectors: {
-      measures: { leaderboardMeasureName, getMeasureByName, visibleMeasures },
+      measures: {
+        leaderboardMeasureName,
+        getMeasureByName,
+        visibleMeasures,
+        allMeasures,
+      },
       dimensions: { visibleDimensions, allDimensions },
+      // contextColumn: { contextColumnFilters },
     },
     actions: {
       dimensions: { toggleDimensionVisibility },
       contextCol: { setContextColumn },
       setLeaderboardMeasureName,
     },
-  } = getStateManagers();
+  } = StateManagers;
 
   let active = false;
 
@@ -38,6 +44,7 @@
   $: allDimensionNames = $allDimensions
     .map(({ name }) => name)
     .filter(isDefined);
+  $: allMeasureNames = $allMeasures.map(({ name }) => name).filter(isDefined);
 
   // if the percent of total is currently being shown,
   // but it is not valid for this measure, then turn it off
@@ -74,7 +81,20 @@
         }}
       />
 
-      <Select.Root
+      <ActiveMeasureNamesDropdown
+        {measures}
+        firstMeasure={activeLeaderboardMeasure}
+        tooltipText="Choose measures to display"
+        selectedMeasureNames={[$leaderboardMeasureName]}
+        onToggle={(name) => {
+          setLeaderboardMeasureName(name);
+        }}
+        onSelectAll={() => {
+          setLeaderboardMeasureName(allMeasureNames[0]);
+        }}
+      />
+
+      <!-- <Select.Root
         bind:open={active}
         selected={{ value: activeLeaderboardMeasure.name, label: "" }}
         items={measures.map((measure) => ({
@@ -120,7 +140,7 @@
             </Select.Item>
           {/each}
         </Select.Content>
-      </Select.Root>
+      </Select.Root> -->
     </div>
   {/if}
 </div>
