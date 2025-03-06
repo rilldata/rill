@@ -190,8 +190,6 @@
     const delta = currentValue - comparisonValue;
     return `${delta >= 0 ? "+" : ""}${measureValueFormatter(delta)}`;
   }
-
-  $: console.log({ primaryData });
 </script>
 
 {#if isValid}
