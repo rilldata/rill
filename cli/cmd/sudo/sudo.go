@@ -15,10 +15,12 @@ import (
 )
 
 func SudoCmd(ch *cmdutil.Helper) *cobra.Command {
+	internalGroupID := ""
 	sudoCmd := &cobra.Command{
-		Use:    "sudo",
-		Short:  "sudo commands for superusers",
-		Hidden: true,
+		Use:     "sudo",
+		Short:   "sudo commands for superusers",
+		Hidden:  !ch.IsDev(),
+		GroupID: internalGroupID,
 	}
 	sudoCmd.AddCommand(lookupCmd(ch))
 	sudoCmd.AddCommand(org.OrgCmd(ch))

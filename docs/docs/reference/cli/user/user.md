@@ -17,7 +17,7 @@ Manage users
 
 ### SEE ALSO
 
-* [rill](../cli.md)	 - Rill CLI
+* [rill](../cli.md)	 - A CLI for Rill
 * [rill user add](add.md)	 - Add user to a project, organization or group
 * [rill user list](list.md)	 - List users
 * [rill user remove](remove.md)	 - Remove a user

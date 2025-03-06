@@ -74,6 +74,15 @@ func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizati
 		perms.ReadProjects = true
 	}
 
+	// TODO: This is used to update plan name cache and can be removed a few months after Feb 2025 when plans have been cached for most orgs.
+	// after that we can return nil plan name for uncached orgs, discussion - https://github.com/rilldata/rill/pull/6338#discussion_r1952713404
+	if org.BillingPlanName == nil && org.BillingCustomerID != "" {
+		_, org, err = s.getSubscriptionAndUpdateOrg(ctx, org)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &adminv1.GetOrganizationResponse{
 		Organization: s.organizationToDTO(org, perms.ManageOrg),
 		Permissions:  perms,
@@ -109,14 +118,14 @@ func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrga
 
 	user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	if !claims.Superuser(ctx) {
 		// check single user org limit for this user
 		count, err := s.admin.DB.CountSingleuserOrganizationsForMemberUser(ctx, user.ID)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 		if user.QuotaSingleuserOrgs >= 0 && count >= user.QuotaSingleuserOrgs {
 			return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: you can only create %d single-user orgs", user.QuotaSingleuserOrgs)
@@ -146,9 +155,9 @@ func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrga
 		return nil, status.Error(codes.PermissionDenied, "not allowed to delete org")
 	}
 
-	_, err = s.admin.Jobs.PurgeOrg(ctx, org.ID)
+	_, err = s.admin.Jobs.DeleteOrg(ctx, org.ID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.DeleteOrganizationResponse{}, nil
@@ -185,6 +194,15 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		}
 	}
 
+	faviconAssetID := org.FaviconAssetID
+	if req.FaviconAssetId != nil { // Means it should be updated
+		if *req.FaviconAssetId == "" { // Means it should be cleared
+			faviconAssetID = nil
+		} else {
+			faviconAssetID = req.FaviconAssetId
+		}
+	}
+
 	nameChanged := req.NewName != nil && *req.NewName != org.Name
 	emailChanged := req.BillingEmail != nil && *req.BillingEmail != org.BillingEmail
 	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
@@ -192,6 +210,7 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		DisplayName:                         valOrDefault(req.DisplayName, org.DisplayName),
 		Description:                         valOrDefault(req.Description, org.Description),
 		LogoAssetID:                         logoAssetID,
+		FaviconAssetID:                      faviconAssetID,
 		CustomDomain:                        org.CustomDomain,
 		QuotaProjects:                       org.QuotaProjects,
 		QuotaDeployments:                    org.QuotaDeployments,
@@ -202,6 +221,8 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        valOrDefault(req.BillingEmail, org.BillingEmail),
+		BillingPlanName:                     org.BillingPlanName,
+		BillingPlanDisplayName:              org.BillingPlanDisplayName,
 		CreatedByUserID:                     org.CreatedByUserID,
 	})
 	if err != nil {
@@ -219,13 +240,13 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		if org.BillingCustomerID != "" {
 			err = s.admin.Biller.UpdateCustomerEmail(ctx, org.BillingCustomerID, org.BillingEmail)
 			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to update billing email in biller: %v", err)
+				return nil, fmt.Errorf("failed to update billing email in biller: %w", err)
 			}
 		}
 		if org.PaymentCustomerID != "" {
 			err = s.admin.PaymentProvider.UpdateCustomerEmail(ctx, org.PaymentCustomerID, org.BillingEmail)
 			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to update billing email in payment provider: %v", err)
+				return nil, fmt.Errorf("failed to update billing email in payment provider: %w", err)
 			}
 		}
 	}
@@ -301,7 +322,7 @@ func (s *Server) ListOrganizationInvites(ctx context.Context, req *adminv1.ListO
 	// get pending user invites for this org
 	userInvites, err := s.admin.DB.FindOrganizationInvites(ctx, org.ID, token.Val, pageSize)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	nextToken := ""
@@ -339,7 +360,7 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 
 	count, err := s.admin.DB.CountInvitesForOrganization(ctx, org.ID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 	if org.QuotaOutstandingInvites >= 0 && count >= org.QuotaOutstandingInvites {
 		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org can at most have %d outstanding invitations", org.QuotaOutstandingInvites)
@@ -363,7 +384,7 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 
 		// Invite user to join org
@@ -471,7 +492,7 @@ func (s *Server) RemoveOrganizationMemberUser(ctx context.Context, req *adminv1.
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 
 		// Only admins can remove pending invites.
@@ -489,7 +510,7 @@ func (s *Server) RemoveOrganizationMemberUser(ctx context.Context, req *adminv1.
 
 		err = s.admin.DB.DeleteOrganizationInvite(ctx, invite.ID)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 
 		return &adminv1.RemoveOrganizationMemberUserResponse{}, nil
@@ -510,11 +531,11 @@ func (s *Server) RemoveOrganizationMemberUser(ctx context.Context, req *adminv1.
 	// Check that the user is not the last admin
 	role, err := s.admin.DB.FindOrganizationRole(ctx, database.OrganizationRoleNameAdmin)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 	users, err := s.admin.DB.FindOrganizationMemberUsersByRole(ctx, org.ID, role.ID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 	if len(users) == 1 && users[0].ID == user.ID {
 		return nil, status.Error(codes.InvalidArgument, "cannot remove the last admin member")
@@ -522,7 +543,7 @@ func (s *Server) RemoveOrganizationMemberUser(ctx context.Context, req *adminv1.
 
 	ctx, tx, err := s.admin.DB.NewTx(ctx)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 	defer func() { _ = tx.Rollback() }()
 
@@ -534,20 +555,20 @@ func (s *Server) RemoveOrganizationMemberUser(ctx context.Context, req *adminv1.
 	// delete from all user groups of the org
 	err = s.admin.DB.DeleteUsergroupsMemberUser(ctx, org.ID, user.ID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	// delete from projects if KeepProjectRoles flag is set
 	if !req.KeepProjectRoles {
 		err = s.admin.DB.DeleteAllProjectMemberUserForOrganization(ctx, org.ID, user.ID)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.RemoveOrganizationMemberUserResponse{}, nil
@@ -601,7 +622,7 @@ func (s *Server) SetOrganizationMemberUserRole(ctx context.Context, req *adminv1
 		//  and store as part of the claims and fetch admins only if the user is an admin
 		users, err := s.admin.DB.FindOrganizationMemberUsersByRole(ctx, org.ID, adminRole.ID)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 		if len(users) == 1 && users[0].ID == user.ID {
 			return nil, status.Error(codes.InvalidArgument, "cannot change role of the last owner")
@@ -643,7 +664,7 @@ func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrgani
 
 	user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	if org.BillingEmail == user.Email {
@@ -655,7 +676,7 @@ func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrgani
 	//  and store as part of the claims and fetch admins only if the user is an admin
 	users, err := s.admin.DB.FindOrganizationMemberUsersByRole(ctx, org.ID, role.ID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	if len(users) == 1 && users[0].ID == claims.OwnerID() {
@@ -664,7 +685,7 @@ func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrgani
 
 	ctx, tx, err := s.admin.DB.NewTx(ctx)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 	defer func() { _ = tx.Rollback() }()
 	err = s.admin.DB.DeleteOrganizationMemberUser(ctx, org.ID, claims.OwnerID())
@@ -675,12 +696,12 @@ func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrgani
 	// delete from all user groups of the org
 	err = s.admin.DB.DeleteUsergroupsMemberUser(ctx, org.ID, claims.OwnerID())
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.LeaveOrganizationResponse{}, nil
@@ -710,7 +731,7 @@ func (s *Server) CreateWhitelistedDomain(ctx context.Context, req *adminv1.Creat
 		// check if the user's domain matches the whitelist domain
 		user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 		if !strings.HasSuffix(user.Email, "@"+req.Domain) {
 			return nil, status.Error(codes.PermissionDenied, "Domain name doesn’t match verified email domain. Please contact Rill support.")
@@ -729,7 +750,7 @@ func (s *Server) CreateWhitelistedDomain(ctx context.Context, req *adminv1.Creat
 	// find existing users belonging to the whitelisted domain to the org
 	users, err := s.admin.DB.FindUsersByEmailPattern(ctx, "%@"+req.Domain, "", math.MaxInt)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	// filter out users who are already members of the org
@@ -738,7 +759,7 @@ func (s *Server) CreateWhitelistedDomain(ctx context.Context, req *adminv1.Creat
 		// check if user is already a member of the org
 		exists, err := s.admin.DB.CheckUserIsAnOrganizationMember(ctx, user.ID, org.ID)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 		if !exists {
 			newUsers = append(newUsers, user)
@@ -805,7 +826,7 @@ func (s *Server) RemoveWhitelistedDomain(ctx context.Context, req *adminv1.Remov
 
 	err = s.admin.DB.DeleteOrganizationWhitelistedDomain(ctx, invite.ID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.RemoveWhitelistedDomainResponse{}, nil
@@ -829,7 +850,7 @@ func (s *Server) ListWhitelistedDomains(ctx context.Context, req *adminv1.ListWh
 
 	whitelistedDomains, err := s.admin.DB.FindOrganizationWhitelistedDomainForOrganizationWithJoinedRoleNames(ctx, org.ID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	whitelistedDomainDtos := make([]*adminv1.WhitelistedDomain, len(whitelistedDomains))
@@ -875,6 +896,7 @@ func (s *Server) SudoUpdateOrganizationQuotas(ctx context.Context, req *adminv1.
 		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
 		LogoAssetID:                         org.LogoAssetID,
+		FaviconAssetID:                      org.FaviconAssetID,
 		CustomDomain:                        org.CustomDomain,
 		QuotaProjects:                       int(valOrDefault(req.Projects, int32(org.QuotaProjects))),
 		QuotaDeployments:                    int(valOrDefault(req.Deployments, int32(org.QuotaDeployments))),
@@ -885,6 +907,8 @@ func (s *Server) SudoUpdateOrganizationQuotas(ctx context.Context, req *adminv1.
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
+		BillingPlanName:                     org.BillingPlanName,
+		BillingPlanDisplayName:              org.BillingPlanDisplayName,
 		CreatedByUserID:                     org.CreatedByUserID,
 	}
 
@@ -919,6 +943,7 @@ func (s *Server) SudoUpdateOrganizationCustomDomain(ctx context.Context, req *ad
 		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
 		LogoAssetID:                         org.LogoAssetID,
+		FaviconAssetID:                      org.FaviconAssetID,
 		CustomDomain:                        req.CustomDomain,
 		QuotaProjects:                       org.QuotaProjects,
 		QuotaDeployments:                    org.QuotaDeployments,
@@ -929,6 +954,8 @@ func (s *Server) SudoUpdateOrganizationCustomDomain(ctx context.Context, req *ad
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
+		BillingPlanName:                     org.BillingPlanName,
+		BillingPlanDisplayName:              org.BillingPlanDisplayName,
 		CreatedByUserID:                     org.CreatedByUserID,
 	})
 	if err != nil {
@@ -946,12 +973,18 @@ func (s *Server) organizationToDTO(o *database.Organization, privileged bool) *a
 		logoURL = s.admin.URLs.WithCustomDomain(o.CustomDomain).Asset(*o.LogoAssetID)
 	}
 
+	var faviconURL string
+	if o.FaviconAssetID != nil {
+		faviconURL = s.admin.URLs.WithCustomDomain(o.CustomDomain).Asset(*o.FaviconAssetID)
+	}
+
 	res := &adminv1.Organization{
 		Id:           o.ID,
 		Name:         o.Name,
 		DisplayName:  o.DisplayName,
 		Description:  o.Description,
 		LogoUrl:      logoURL,
+		FaviconUrl:   faviconURL,
 		CustomDomain: o.CustomDomain,
 		Quotas: &adminv1.OrganizationQuotas{
 			Projects:                       int32(o.QuotaProjects),
@@ -969,6 +1002,8 @@ func (s *Server) organizationToDTO(o *database.Organization, privileged bool) *a
 		res.BillingCustomerId = o.BillingCustomerID
 		res.PaymentCustomerId = o.PaymentCustomerID
 		res.BillingEmail = o.BillingEmail
+		res.BillingPlanName = o.BillingPlanName
+		res.BillingPlanDisplayName = o.BillingPlanDisplayName
 	}
 
 	return res

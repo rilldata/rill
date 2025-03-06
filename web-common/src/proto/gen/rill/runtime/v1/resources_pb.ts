@@ -604,6 +604,11 @@ export class ProjectParserState extends Message<ProjectParserState> {
   currentCommitSha = "";
 
   /**
+   * @generated from field: google.protobuf.Timestamp current_commit_on = 4;
+   */
+  currentCommitOn?: Timestamp;
+
+  /**
    * @generated from field: bool watching = 3;
    */
   watching = false;
@@ -618,6 +623,7 @@ export class ProjectParserState extends Message<ProjectParserState> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "parse_errors", kind: "message", T: ParseError, repeated: true },
     { no: 2, name: "current_commit_sha", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "current_commit_on", kind: "message", T: Timestamp },
     { no: 3, name: "watching", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
@@ -1076,6 +1082,22 @@ export class ModelState extends Message<ModelState> {
    */
   partitionsHaveErrors = false;
 
+  /**
+   * total_execution_duration_ms is the time user queries took to execute while refreshing the model.
+   * In case of incremental models it is the sum of all successful executions so far.
+   * This is not the time it took to refresh the model which also includes other stuff like taking a write lock.
+   *
+   * @generated from field: int64 total_execution_duration_ms = 12;
+   */
+  totalExecutionDurationMs = protoInt64.zero;
+
+  /**
+   * latest_execution_duration_ms is the time user queries took to execute in the last successful refresh.
+   *
+   * @generated from field: int64 latest_execution_duration_ms = 13;
+   */
+  latestExecutionDurationMs = protoInt64.zero;
+
   constructor(data?: PartialMessage<ModelState>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1095,6 +1117,8 @@ export class ModelState extends Message<ModelState> {
     { no: 8, name: "incremental_state_schema", kind: "message", T: StructType },
     { no: 10, name: "partitions_model_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "partitions_have_errors", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 12, name: "total_execution_duration_ms", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 13, name: "latest_execution_duration_ms", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelState {
@@ -1728,6 +1752,11 @@ export class MetricsViewSpec_MeasureV2 extends Message<MetricsViewSpec_MeasureV2
    */
   validPercentOfTotal = false;
 
+  /**
+   * @generated from field: string treat_nulls_as = 14;
+   */
+  treatNullsAs = "";
+
   constructor(data?: PartialMessage<MetricsViewSpec_MeasureV2>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1749,6 +1778,7 @@ export class MetricsViewSpec_MeasureV2 extends Message<MetricsViewSpec_MeasureV2
     { no: 7, name: "format_d3", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "format_d3_locale", kind: "message", T: Struct },
     { no: 6, name: "valid_percent_of_total", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 14, name: "treat_nulls_as", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_MeasureV2 {
@@ -2089,6 +2119,14 @@ export class MetricsViewState extends Message<MetricsViewState> {
    */
   streaming = false;
 
+  /**
+   * The last time the metrics view's underlying model was refreshed.
+   * This may be empty if the metrics view is based on an externally managed table.
+   *
+   * @generated from field: google.protobuf.Timestamp model_refreshed_on = 3;
+   */
+  modelRefreshedOn?: Timestamp;
+
   constructor(data?: PartialMessage<MetricsViewState>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2099,6 +2137,7 @@ export class MetricsViewState extends Message<MetricsViewState> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "valid_spec", kind: "message", T: MetricsViewSpec },
     { no: 2, name: "streaming", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "model_refreshed_on", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewState {
@@ -2265,6 +2304,13 @@ export class ExploreSpec extends Message<ExploreSpec> {
    */
   securityRules: SecurityRule[] = [];
 
+  /**
+   * Banner text that can be displayed in Rill Cloud.
+   *
+   * @generated from field: string banner = 18;
+   */
+  banner = "";
+
   constructor(data?: PartialMessage<ExploreSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2287,6 +2333,7 @@ export class ExploreSpec extends Message<ExploreSpec> {
     { no: 15, name: "default_preset", kind: "message", T: ExplorePreset },
     { no: 16, name: "embeds_hide_pivot", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 12, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
+    { no: 18, name: "banner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExploreSpec {
@@ -2578,6 +2625,11 @@ export class ExplorePreset extends Message<ExplorePreset> {
    */
   pivotSortAsc?: boolean;
 
+  /**
+   * @generated from field: optional string pivot_table_mode = 28;
+   */
+  pivotTableMode?: string;
+
   constructor(data?: PartialMessage<ExplorePreset>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2610,6 +2662,7 @@ export class ExplorePreset extends Message<ExplorePreset> {
     { no: 25, name: "pivot_cols", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 26, name: "pivot_sort_by", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 27, name: "pivot_sort_asc", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 28, name: "pivot_table_mode", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExplorePreset {
@@ -4304,13 +4357,6 @@ export class ComponentSpec extends Message<ComponentSpec> {
   output?: ComponentVariable;
 
   /**
-   * Templated string that should evaluate to a boolean.
-   *
-   * @generated from field: string show = 10;
-   */
-  show = "";
-
-  /**
    * @generated from field: bool defined_in_canvas = 6;
    */
   definedInCanvas = false;
@@ -4329,7 +4375,6 @@ export class ComponentSpec extends Message<ComponentSpec> {
     { no: 5, name: "renderer_properties", kind: "message", T: Struct },
     { no: 8, name: "input", kind: "message", T: ComponentVariable, repeated: true },
     { no: 9, name: "output", kind: "message", T: ComponentVariable },
-    { no: 10, name: "show", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "defined_in_canvas", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
@@ -4484,36 +4529,103 @@ export class Canvas extends Message<Canvas> {
  */
 export class CanvasSpec extends Message<CanvasSpec> {
   /**
+   * Display name for the canvas.
+   *
    * @generated from field: string display_name = 1;
    */
   displayName = "";
 
   /**
+   * Banner text that can be displayed in Rill Cloud.
+   *
+   * @generated from field: string banner = 17;
+   */
+  banner = "";
+
+  /**
+   * Max width in pixels of the canvas.
+   *
    * @generated from field: uint32 max_width = 2;
    */
   maxWidth = 0;
 
   /**
+   * Horizontal gap in pixels of the canvas.
+   *
+   * @generated from field: uint32 gap_x = 9;
+   */
+  gapX = 0;
+
+  /**
+   * Vertical gap in pixels of the canvas.
+   *
+   * @generated from field: uint32 gap_y = 10;
+   */
+  gapY = 0;
+
+  /**
+   * Name of the theme to use. Only one of theme and embedded_theme can be set.
+   *
    * @generated from field: string theme = 7;
    */
   theme = "";
 
   /**
+   * Theme to use, provided inline. Only one of theme and embedded_theme can be set.
+   *
    * @generated from field: rill.runtime.v1.ThemeSpec embedded_theme = 8;
    */
   embeddedTheme?: ThemeSpec;
 
   /**
+   * List of selectable time ranges with comparison time ranges.
+   * If the list is empty, a default list should be shown.
+   * TODO: Once the canvas APIs have stabilized, rename ExploreTimeRange to a non-explore-specific name.
+   *
+   * @generated from field: repeated rill.runtime.v1.ExploreTimeRange time_ranges = 11;
+   */
+  timeRanges: ExploreTimeRange[] = [];
+
+  /**
+   * List of selectable time zones.
+   * If the list is empty, a default list should be shown.
+   * The values should be valid IANA location identifiers.
+   *
+   * @generated from field: repeated string time_zones = 12;
+   */
+  timeZones: string[] = [];
+
+  /**
+   * Indicates if filters should be enabled for the canvas.
+   *
+   * @generated from field: bool filters_enabled = 13;
+   */
+  filtersEnabled = false;
+
+  /**
+   * Preset UI state to show by default.
+   *
+   * @generated from field: rill.runtime.v1.CanvasPreset default_preset = 15;
+   */
+  defaultPreset?: CanvasPreset;
+
+  /**
+   * Variables that can be used in the canvas.
+   *
    * @generated from field: repeated rill.runtime.v1.ComponentVariable variables = 5;
    */
   variables: ComponentVariable[] = [];
 
   /**
-   * @generated from field: repeated rill.runtime.v1.CanvasItem items = 4;
+   * Rows to render on the canvas
+   *
+   * @generated from field: repeated rill.runtime.v1.CanvasRow rows = 18;
    */
-  items: CanvasItem[] = [];
+  rows: CanvasRow[] = [];
 
   /**
+   * Security rules to apply for access to the canvas.
+   *
    * @generated from field: repeated rill.runtime.v1.SecurityRule security_rules = 6;
    */
   securityRules: SecurityRule[] = [];
@@ -4527,11 +4639,18 @@ export class CanvasSpec extends Message<CanvasSpec> {
   static readonly typeName = "rill.runtime.v1.CanvasSpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 17, name: "banner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "max_width", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 9, name: "gap_x", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 10, name: "gap_y", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 7, name: "theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "embedded_theme", kind: "message", T: ThemeSpec },
+    { no: 11, name: "time_ranges", kind: "message", T: ExploreTimeRange, repeated: true },
+    { no: 12, name: "time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 13, name: "filters_enabled", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 15, name: "default_preset", kind: "message", T: CanvasPreset },
     { no: 5, name: "variables", kind: "message", T: ComponentVariable, repeated: true },
-    { no: 4, name: "items", kind: "message", T: CanvasItem, repeated: true },
+    { no: 18, name: "rows", kind: "message", T: CanvasRow, repeated: true },
     { no: 6, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
   ]);
 
@@ -4590,38 +4709,91 @@ export class CanvasState extends Message<CanvasState> {
 }
 
 /**
+ * @generated from message rill.runtime.v1.CanvasRow
+ */
+export class CanvasRow extends Message<CanvasRow> {
+  /**
+   * Height of the row. The unit is given in height_unit.
+   *
+   * @generated from field: optional uint32 height = 1;
+   */
+  height?: number;
+
+  /**
+   * Unit of the height. Current possible values: "px", empty string.
+   *
+   * @generated from field: string height_unit = 2;
+   */
+  heightUnit = "";
+
+  /**
+   * Items to render in the row.
+   *
+   * @generated from field: repeated rill.runtime.v1.CanvasItem items = 3;
+   */
+  items: CanvasItem[] = [];
+
+  constructor(data?: PartialMessage<CanvasRow>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.CanvasRow";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "height", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
+    { no: 2, name: "height_unit", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "items", kind: "message", T: CanvasItem, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasRow {
+    return new CanvasRow().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CanvasRow {
+    return new CanvasRow().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CanvasRow {
+    return new CanvasRow().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CanvasRow | PlainMessage<CanvasRow> | undefined, b: CanvasRow | PlainMessage<CanvasRow> | undefined): boolean {
+    return proto3.util.equals(CanvasRow, a, b);
+  }
+}
+
+/**
  * @generated from message rill.runtime.v1.CanvasItem
  */
 export class CanvasItem extends Message<CanvasItem> {
   /**
+   * Name of the component to render.
+   *
    * @generated from field: string component = 1;
    */
   component = "";
 
   /**
+   * Indicates if the component was defined inline as part of the canvas YAML.
+   *
    * @generated from field: bool defined_in_canvas = 8;
    */
   definedInCanvas = false;
 
   /**
-   * @generated from field: optional uint32 x = 2;
-   */
-  x?: number;
-
-  /**
-   * @generated from field: optional uint32 y = 3;
-   */
-  y?: number;
-
-  /**
-   * @generated from field: optional uint32 width = 4;
+   * Width of the item. The unit is given in width_unit.
+   *
+   * @generated from field: optional uint32 width = 9;
    */
   width?: number;
 
   /**
-   * @generated from field: optional uint32 height = 5;
+   * Unit of the width. Current possible values: empty string.
+   *
+   * @generated from field: string width_unit = 10;
    */
-  height?: number;
+  widthUnit = "";
 
   constructor(data?: PartialMessage<CanvasItem>) {
     super();
@@ -4633,10 +4805,8 @@ export class CanvasItem extends Message<CanvasItem> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "component", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "defined_in_canvas", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 2, name: "x", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
-    { no: 3, name: "y", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
-    { no: 4, name: "width", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
-    { no: 5, name: "height", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
+    { no: 9, name: "width", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
+    { no: 10, name: "width_unit", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasItem {
@@ -4653,6 +4823,64 @@ export class CanvasItem extends Message<CanvasItem> {
 
   static equals(a: CanvasItem | PlainMessage<CanvasItem> | undefined, b: CanvasItem | PlainMessage<CanvasItem> | undefined): boolean {
     return proto3.util.equals(CanvasItem, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.CanvasPreset
+ */
+export class CanvasPreset extends Message<CanvasPreset> {
+  /**
+   * Time range for the explore.
+   * It corresponds to the `range` property of the explore's `time_ranges`.
+   * If not found in `time_ranges`, it should be added to the list.
+   *
+   * @generated from field: optional string time_range = 1;
+   */
+  timeRange?: string;
+
+  /**
+   * Comparison mode.
+   * TODO: Once the canvas APIs have stabilized, rename ExploreComparisonMode to a non-explore-specific name.
+   *
+   * @generated from field: rill.runtime.v1.ExploreComparisonMode comparison_mode = 2;
+   */
+  comparisonMode = ExploreComparisonMode.UNSPECIFIED;
+
+  /**
+   * If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use.
+   *
+   * @generated from field: optional string comparison_dimension = 8;
+   */
+  comparisonDimension?: string;
+
+  constructor(data?: PartialMessage<CanvasPreset>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.CanvasPreset";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "time_range", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "comparison_mode", kind: "enum", T: proto3.getEnumType(ExploreComparisonMode) },
+    { no: 8, name: "comparison_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasPreset {
+    return new CanvasPreset().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CanvasPreset {
+    return new CanvasPreset().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CanvasPreset {
+    return new CanvasPreset().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CanvasPreset | PlainMessage<CanvasPreset> | undefined, b: CanvasPreset | PlainMessage<CanvasPreset> | undefined): boolean {
+    return proto3.util.equals(CanvasPreset, a, b);
   }
 }
 
@@ -4730,6 +4958,16 @@ export class APISpec extends Message<APISpec> {
    */
   openapiResponseSchema?: Struct;
 
+  /**
+   * @generated from field: repeated rill.runtime.v1.SecurityRule security_rules = 6;
+   */
+  securityRules: SecurityRule[] = [];
+
+  /**
+   * @generated from field: bool skip_nested_security = 7;
+   */
+  skipNestedSecurity = false;
+
   constructor(data?: PartialMessage<APISpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4743,6 +4981,8 @@ export class APISpec extends Message<APISpec> {
     { no: 3, name: "openapi_summary", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "openapi_parameters", kind: "message", T: Struct, repeated: true },
     { no: 5, name: "openapi_response_schema", kind: "message", T: Struct },
+    { no: 6, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
+    { no: 7, name: "skip_nested_security", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): APISpec {

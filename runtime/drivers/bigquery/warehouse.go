@@ -24,8 +24,10 @@ import (
 	"google.golang.org/api/option"
 )
 
-// recommended size is 512MB - 1GB, entire data is buffered in memory before its written to disk
-const rowGroupBufferSize = int64(datasize.MB) * 512
+// entire data is buffered in memory before its written to disk so keeping it small reduces memory usage
+// but keeping it too small can lead to bad ingestion performance
+// 64MB seems to be a good balance
+const rowGroupBufferSize = int64(datasize.MB) * 64
 
 const _jsonDownloadLimitBytes = 100 * int64(datasize.MB)
 
@@ -92,7 +94,7 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (dr
 		if metadata.Type == bigquery.RegularTable || metadata.Type == bigquery.Snapshot {
 			it = table.Read(ctx)
 		} else {
-			c.logger.Debug("source is not a regular table or a snapshot, falling back to a query execution")
+			c.logger.Debug("source is not a regular table or a snapshot, falling back to a query execution", observability.ZapCtx(ctx))
 			fallbackToQueryExecution = true
 			client.Close()
 		}
@@ -125,7 +127,7 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (dr
 		if err != nil && !strings.Contains(err.Error(), "Syntax error") {
 			// close the read storage API client
 			client.Close()
-			c.logger.Debug("query failed, retrying without storage api", zap.Error(err))
+			c.logger.Debug("query failed, retrying without storage api", zap.Error(err), observability.ZapCtx(ctx))
 			// the query results are always cached in a temporary table that storage api can use
 			// there are some exceptions when results aren't cached
 			// so we also try without storage api

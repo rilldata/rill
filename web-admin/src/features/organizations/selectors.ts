@@ -4,8 +4,10 @@ import {
   createAdminServiceListProjectsForOrganization,
   getAdminServiceGetOrganizationQueryKey,
   getAdminServiceListProjectsForOrganizationQueryKey,
+  type V1GetOrganizationResponse,
 } from "@rilldata/web-admin/client";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import type { FetchQueryOptions } from "@tanstack/query-core";
 
 export function areAllProjectsHibernating(organization: string) {
   return createAdminServiceListProjectsForOrganization(
@@ -31,11 +33,10 @@ export async function fetchAllProjectsHibernating(organization: string) {
   return projectsResp.projects?.every((p) => !p.prodDeploymentId) ?? false;
 }
 
-export async function fetchOrganizationPermissions(organization: string) {
-  const orgResp = await queryClient.fetchQuery({
+export function getFetchOrganizationQueryOptions(organization: string) {
+  return <FetchQueryOptions<V1GetOrganizationResponse>>{
     queryKey: getAdminServiceGetOrganizationQueryKey(organization),
     queryFn: () => adminServiceGetOrganization(organization),
     staleTime: Infinity,
-  });
-  return orgResp.permissions ?? {};
+  };
 }

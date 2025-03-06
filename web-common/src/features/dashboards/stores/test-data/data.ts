@@ -151,7 +151,6 @@ export const AD_BIDS_TIME_RANGE_SUMMARY: V1MetricsViewTimeRangeResponse = {
   timeRangeSummary: {
     min: TestTimeConstants.LAST_DAY.toISOString(),
     max: TestTimeConstants.NOW.toISOString(),
-    interval: V1TimeGrain.TIME_GRAIN_MINUTE as any,
   },
 };
 
@@ -242,7 +241,7 @@ export const AD_BIDS_PRESET: V1ExplorePreset = {
   compareTimeRange: "rill-PP",
   measures: [AD_BIDS_IMPRESSIONS_MEASURE],
   dimensions: [AD_BIDS_PUBLISHER_DIMENSION],
-  exploreSortBy: AD_BIDS_BID_PRICE_MEASURE,
+  exploreSortBy: AD_BIDS_IMPRESSIONS_MEASURE,
   exploreSortAsc: true,
   exploreSortType: V1ExploreSortType.EXPLORE_SORT_TYPE_PERCENT,
 };
@@ -259,6 +258,7 @@ export const AD_BIDS_PIVOT_PRESET: V1ExplorePreset = {
   pivotRows: ["publisher", "time.hour"],
   pivotCols: ["domain", "time.day", "impressions"],
   pivotSortBy: "time.day",
+  pivotTableMode: "nest",
   pivotSortAsc: true,
 };
 
@@ -361,47 +361,42 @@ export const AD_BIDS_PIVOT_ENTITY: Partial<MetricsExplorerEntity> = {
   activePage: DashboardState_ActivePage.PIVOT,
   pivot: {
     active: true,
-    rows: {
-      dimension: [
-        {
-          id: AD_BIDS_PUBLISHER_DIMENSION,
-          type: PivotChipType.Dimension,
-          title: AD_BIDS_PUBLISHER_DIMENSION,
-        },
-        {
-          id: V1TimeGrain.TIME_GRAIN_HOUR,
-          type: PivotChipType.Time,
-          title: "hour",
-        },
-      ],
-    },
-    columns: {
-      measure: [
-        {
-          id: AD_BIDS_IMPRESSIONS_MEASURE,
-          type: PivotChipType.Measure,
-          title: AD_BIDS_IMPRESSIONS_MEASURE,
-        },
-      ],
-      dimension: [
-        {
-          id: AD_BIDS_DOMAIN_DIMENSION,
-          type: PivotChipType.Dimension,
-          title: AD_BIDS_DOMAIN_DIMENSION,
-        },
-        {
-          id: V1TimeGrain.TIME_GRAIN_DAY,
-          type: PivotChipType.Time,
-          title: "day",
-        },
-      ],
-    },
+    rows: [
+      {
+        id: AD_BIDS_PUBLISHER_DIMENSION,
+        type: PivotChipType.Dimension,
+        title: AD_BIDS_PUBLISHER_DIMENSION,
+      },
+      {
+        id: V1TimeGrain.TIME_GRAIN_HOUR,
+        type: PivotChipType.Time,
+        title: "hour",
+      },
+    ],
+
+    columns: [
+      {
+        id: AD_BIDS_DOMAIN_DIMENSION,
+        type: PivotChipType.Dimension,
+        title: AD_BIDS_DOMAIN_DIMENSION,
+      },
+      {
+        id: V1TimeGrain.TIME_GRAIN_DAY,
+        type: PivotChipType.Time,
+        title: "day",
+      },
+      {
+        id: AD_BIDS_IMPRESSIONS_MEASURE,
+        type: PivotChipType.Measure,
+        title: AD_BIDS_IMPRESSIONS_MEASURE,
+      },
+    ],
     expanded: {},
     sorting: [],
     columnPage: 1,
     rowPage: 1,
     enableComparison: true,
     activeCell: null,
-    rowJoinType: "nest",
+    tableMode: "nest",
   },
 };

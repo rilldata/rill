@@ -5,13 +5,13 @@ import {
   ComparisonDeltaRelativeSuffix,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import {
+  copyFilterExpression,
+  createAndExpression,
   createInExpression,
   createLikeExpression,
   createOrExpression,
-  matchExpressionByName,
   filterExpressions,
-  createAndExpression,
-  copyFilterExpression,
+  matchExpressionByName,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
   type V1MetricsViewAggregationResponseDataItem,
@@ -29,14 +29,14 @@ import type {
 
 import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
 
-import type { SvelteComponent } from "svelte";
-import type { DimensionTableRow } from "./dimension-table-types";
-import { getFiltersForOtherDimensions } from "../selectors";
-import { SortType } from "../proto-state/derived-types";
-import type { MetricsExplorerEntity } from "../stores/metrics-explorer-entity";
 import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
 import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
 import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
+import type { SvelteComponent } from "svelte";
+import { SortType } from "../proto-state/derived-types";
+import { getFiltersForOtherDimensions } from "../selectors";
+import type { MetricsExplorerEntity } from "../stores/metrics-explorer-entity";
+import type { DimensionTableRow } from "./dimension-table-types";
 import type { DimensionTableConfig } from "./DimensionTableConfig";
 
 /** Returns an updated filter set for a given dimension on search */

@@ -25,7 +25,7 @@ export const getRillTheme: (isCustomDashboard: boolean) => Config = (
   area: {
     line: { stroke: MainLineColor, strokeWidth: 1 },
     stroke: null,
-    fillOpacity: 0.7,
+    fillOpacity: 0.8,
     color: {
       x1: 1,
       y1: 1,
@@ -44,14 +44,22 @@ export const getRillTheme: (isCustomDashboard: boolean) => Config = (
       ],
     },
   },
-  bar: { fill: BarFill, opacity: 0.7 },
+  bar: { fill: BarFill, opacity: 0.8 },
   line: { stroke: defaultMarkColor, strokeWidth: 1.5, strokeOpacity: 1 },
   path: { stroke: defaultMarkColor },
   rect: { fill: defaultMarkColor },
   shape: { stroke: defaultMarkColor },
   symbol: { fill: defaultMarkColor },
 
-  legend: { orient: "top" },
+  legend: {
+    orient: "top",
+    labelFontSize: 11,
+    labelColor: axisLabelColor,
+    titleColor: axisLabelColor,
+    labelFontWeight: 400,
+    titleFontWeight: 500,
+    titleFontSize: 12,
+  },
   axisY: {
     orient: "right",
     gridColor: gridColor,
@@ -67,7 +75,7 @@ export const getRillTheme: (isCustomDashboard: boolean) => Config = (
     titleColor: axisLabelColor,
     titleFont: "Inter, sans-serif",
     titleFontSize: 12,
-    titleFontWeight: "bold",
+    titleFontWeight: 500,
     titlePadding: 10,
     labelOverlap: false,
   },
@@ -87,7 +95,7 @@ export const getRillTheme: (isCustomDashboard: boolean) => Config = (
     titleColor: axisLabelColor,
     titleFont: "Inter, sans-serif",
     titleFontSize: 12,
-    titleFontWeight: "bold",
+    titleFontWeight: 500,
     titlePadding: 10,
   },
   view: {

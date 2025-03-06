@@ -49,7 +49,6 @@ describe("toProto/fromProto", () => {
           timeRangeSummary: {
             min: TestTimeConstants.LAST_DAY.toISOString(),
             max: TestTimeConstants.NOW.toISOString(),
-            interval: V1TimeGrain.TIME_GRAIN_MINUTE as any,
           },
         },
       ),

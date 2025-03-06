@@ -77,7 +77,7 @@
   <PopoverContent align="end" class="w-[520px] p-4">
     <div class="flex flex-col">
       <div class="flex flex-row items-center mb-4">
-        <div class="text-sm font-medium">{project}</div>
+        <div class="text-sm font-medium">Share project: {project}</div>
         <div class="grow"></div>
         <CopyInviteLinkButton {copyLink} />
       </div>

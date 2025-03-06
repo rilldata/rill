@@ -32,6 +32,22 @@ var errCyclicDependency = errors.New("cannot be reconciled due to cyclic depende
 // errControllerClosed is returned from controller functions that require the controller to be running
 var errControllerClosed = errors.New("controller is closed")
 
+// dependencyError is returned when a resource can not be reconciled due to a dependency error.
+type dependencyError struct {
+	err error
+}
+
+func NewDependencyError(err error) error {
+	if err == nil {
+		return nil
+	}
+	return dependencyError{err: err}
+}
+
+func (d dependencyError) Error() string {
+	return fmt.Sprintf("dependency error: %v", d.err)
+}
+
 // Reconciler implements reconciliation logic for all resources of a specific kind.
 // Reconcilers are managed and invoked by a Controller.
 type Reconciler interface {
@@ -49,7 +65,7 @@ type ReconcileResult struct {
 }
 
 // ReconcilerInitializer is a function that initializes a new reconciler for a specific controller
-type ReconcilerInitializer func(*Controller) Reconciler
+type ReconcilerInitializer func(context.Context, *Controller) (Reconciler, error)
 
 // ReconcilerInitializers is a registry of reconciler initializers for different resource kinds.
 // There can be only one reconciler per resource kind.
@@ -118,6 +134,15 @@ func NewController(ctx context.Context, rt *Runtime, instanceID string, logger *
 		return nil, fmt.Errorf("failed to create catalog cache: %w", err)
 	}
 	c.catalog = cc
+
+	// Initialize all reconcilers
+	for kind, initializer := range ReconcilerInitializers {
+		reconciler, err := initializer(ctx, c)
+		if err != nil {
+			return nil, fmt.Errorf("failed to initialize reconciler for %q: %w", kind, err)
+		}
+		c.reconcilers[kind] = reconciler
+	}
 
 	return c, nil
 }
@@ -238,7 +263,6 @@ func (c *Controller) Run(ctx context.Context) error {
 			if len(hanging) != 0 {
 				loopErr = fmt.Errorf("reconciles for resources %v have hung for more than %s after cancelation", hanging, reconcileCancelationTimeout.String())
 				stop = true
-				break
 			}
 		case <-c.catalog.hasEventsCh: // The catalog has events to process
 			// Need a write lock to call resetEvents.
@@ -257,7 +281,6 @@ func (c *Controller) Run(ctx context.Context) error {
 			c.mu.RUnlock()
 		case <-ctx.Done(): // We've been asked to stop
 			stop = true
-			break
 		}
 	}
 
@@ -275,8 +298,8 @@ func (c *Controller) Run(ctx context.Context) error {
 	}
 	c.mu.RUnlock()
 
-	// Allow 10 seconds for closing invocations and reconcilers
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	// Allow 30 seconds for closing invocations and reconcilers
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	// Need to consume all the cancelled invocation completions (otherwise, they will hang on sending to c.completed)
@@ -796,22 +819,12 @@ func (c *Controller) Unlock(ctx context.Context) {
 	c.mu.Unlock()
 }
 
-// reconciler gets or lazily initializes a reconciler.
-// reconciler is not thread-safe and must be called while c.mu is held.
+// reconciler finds the reconciler for a resource kind.
 func (c *Controller) reconciler(resourceKind string) Reconciler {
-	reconciler := c.reconcilers[resourceKind]
-	if reconciler != nil {
-		return reconciler
-	}
-
-	initializer := ReconcilerInitializers[resourceKind]
-	if initializer == nil {
+	reconciler, ok := c.reconcilers[resourceKind]
+	if !ok {
 		panic(fmt.Errorf("no reconciler registered for resource type %q", resourceKind))
 	}
-
-	reconciler = initializer(c)
-	c.reconcilers[resourceKind] = reconciler
-
 	return reconciler
 }
 
@@ -1267,20 +1280,17 @@ func (c *Controller) invoke(r *runtimev1.Resource) error {
 	c.invocations[nameStr(n)] = inv
 
 	// Log invocation
-	if !inv.isHidden {
-		logArgs := []zap.Field{zap.String("name", n.Name), zap.String("type", PrettifyResourceKind(n.Kind))}
-		if inv.isDelete {
-			logArgs = append(logArgs, zap.Bool("deleted", inv.isDelete))
-		}
-		if inv.isRename {
-			logArgs = append(logArgs, zap.String("renamed_from", r.Meta.RenamedFrom.Name))
-		}
-		c.Logger.Info("Reconciling resource", logArgs...)
+	logArgs := []zap.Field{zap.String("name", n.Name), zap.String("type", PrettifyResourceKind(n.Kind))}
+	if inv.isDelete {
+		logArgs = append(logArgs, zap.Bool("deleted", inv.isDelete))
 	}
+	if inv.isRename {
+		logArgs = append(logArgs, zap.String("renamed_from", r.Meta.RenamedFrom.Name))
+	}
+	c.Logger.Info("Reconciling resource", logArgs...)
 
 	// Start reconcile in background
 	ctx = contextWithInvocation(ctx, inv)
-	reconciler := c.reconciler(n.Kind) // fetched outside of goroutine to keep access under mutex
 	go func() {
 		defer func() {
 			// Catch panics and set as error
@@ -1301,6 +1311,7 @@ func (c *Controller) invoke(r *runtimev1.Resource) error {
 		}()
 
 		// Start tracing span
+		reconciler := c.reconciler(n.Kind)
 		tracerAttrs := []attribute.KeyValue{
 			attribute.String("instance_id", c.InstanceID),
 			attribute.String("name", n.Name),
@@ -1346,38 +1357,58 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 	if !inv.result.Retrigger.IsZero() {
 		logArgs = append(logArgs, zap.String("retrigger_on", inv.result.Retrigger.Format(time.RFC3339)))
 	}
-	if !inv.cancelledOn.IsZero() {
+	if inv.deletedSelf {
+		logArgs = append(logArgs, zap.Bool("deleted", true))
+	} else if !inv.cancelledOn.IsZero() {
 		logArgs = append(logArgs, zap.Bool("cancelled", true))
 	}
 	errorLevel := false
 	if inv.result.Err != nil && !errors.Is(inv.result.Err, context.Canceled) {
 		logArgs = append(logArgs, zap.Any("error", inv.result.Err))
 		errorLevel = true
+		var err dependencyError
+		if errors.As(inv.result.Err, &err) {
+			logArgs = append(logArgs, zap.Bool("dependency_error", true))
+			errorLevel = false
+		}
 	}
 	if errorLevel {
 		c.Logger.Warn("Reconcile failed", logArgs...)
-	} else if !inv.isHidden {
+	} else {
 		c.Logger.Info("Reconciled resource", logArgs...)
 	}
 
-	// Emit event unless it was a cancellation.
-	if inv.cancelledOn.IsZero() {
-		eventArgs := []attribute.KeyValue{
-			attribute.String("name", inv.name.Name),
-			attribute.String("type", PrettifyResourceKind(inv.name.Kind)),
-			attribute.Int64("elapsed_ms", elapsed.Milliseconds()),
-		}
-		if inv.isDelete {
-			eventArgs = append(eventArgs, attribute.Bool("deleted", true))
-		}
-		if inv.isRename {
-			eventArgs = append(eventArgs, attribute.Bool("renamed", true))
-		}
-		if inv.result.Err != nil {
-			eventArgs = append(eventArgs, attribute.String("error", inv.result.Err.Error()))
-		}
-		c.Activity.Record(context.Background(), activity.EventTypeLog, "reconciled_resource", eventArgs...)
+	commonDims := []attribute.KeyValue{
+		attribute.String("resource_name", inv.name.Name),
+		attribute.String("resource_type", PrettifyResourceKind(inv.name.Kind)),
 	}
+
+	if inv.isDelete {
+		commonDims = append(commonDims, attribute.String("reconcile_operation", "delete"))
+	} else if inv.isRename {
+		commonDims = append(commonDims, attribute.String("reconcile_operation", "rename"))
+	} else {
+		commonDims = append(commonDims, attribute.String("reconcile_operation", "normal"))
+	}
+
+	if !inv.cancelledOn.IsZero() && !inv.deletedSelf {
+		commonDims = append(commonDims, attribute.String("reconcile_result", "canceled"))
+	} else if inv.result.Err != nil {
+		if errors.Is(inv.result.Err, context.Canceled) {
+			commonDims = append(commonDims, attribute.String("reconcile_result", "canceled"))
+		} else if errors.Is(inv.result.Err, context.DeadlineExceeded) {
+			commonDims = append(commonDims, attribute.String("reconcile_result", "timeout"))
+		} else {
+			commonDims = append(commonDims, attribute.String("reconcile_result", "error"), attribute.String("reconcile_error", inv.result.Err.Error()))
+		}
+	} else {
+		commonDims = append(commonDims, attribute.String("reconcile_result", "success"))
+	}
+
+	if !inv.result.Retrigger.IsZero() {
+		commonDims = append(commonDims, attribute.String("retrigger_time", inv.result.Retrigger.Format(time.RFC3339)))
+	}
+	c.Activity.RecordMetric(context.Background(), "reconcile_elapsed_ms", float64(elapsed.Milliseconds()), commonDims...)
 
 	r, err := c.catalog.get(inv.name, true, false)
 	if err != nil {

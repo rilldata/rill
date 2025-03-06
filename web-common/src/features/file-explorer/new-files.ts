@@ -245,16 +245,14 @@ vega_lite: |
     }
   }`;
     case ResourceKind.Canvas:
-      return `type: canvas
+      return `# Explore YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/canvas-dashboards
+
+type: canvas
 title: "Canvas Dashboard"
-items:
-  - component:
-      markdown:
-        content: "First Component"
-    width: 4
-    height: 3
-    x: 2
-    y: 1
+defaults:
+  time_range: PT24H
+  comparison_mode: time
 `;
     case ResourceKind.Theme:
       return `# Theme YAML

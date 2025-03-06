@@ -5,6 +5,7 @@ import {
 } from "@rilldata/web-common/features/canvas/components/util";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
+import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 import type {
   ComponentCommonProperties,
   ComponentFilterProperties,
@@ -23,18 +24,17 @@ export interface TableSpec
 
 export class TableCanvasComponent extends BaseCanvasComponent<TableSpec> {
   minSize = { width: 2, height: 2 };
-  defaultSize = { width: 16, height: 10 };
+  defaultSize = { width: 4, height: 10 };
+  resetParams = ["measures", "row_dimensions", "col_dimensions"];
 
   constructor(
-    fileArtifact: FileArtifact,
+    fileArtifact: FileArtifact | undefined = undefined,
     path: (string | number)[] = [],
     initialSpec: Partial<TableSpec> = {},
   ) {
     const defaultSpec: TableSpec = {
       metrics_view: "",
       measures: [],
-      time_range: "",
-      comparison_range: "",
       row_dimensions: [],
       col_dimensions: [],
     };
@@ -42,13 +42,7 @@ export class TableCanvasComponent extends BaseCanvasComponent<TableSpec> {
   }
 
   isValid(spec: TableSpec): boolean {
-    return (
-      typeof spec.metrics_view === "string" &&
-      ((Array.isArray(spec.measures) && spec.measures.length > 0) ||
-        (Array.isArray(spec.row_dimensions) &&
-          spec.row_dimensions.length > 0) ||
-        (Array.isArray(spec.col_dimensions) && spec.col_dimensions.length > 0))
-    );
+    return typeof spec.metrics_view === "string";
   }
 
   inputParams(): InputParams<TableSpec> {
@@ -63,20 +57,24 @@ export class TableCanvasComponent extends BaseCanvasComponent<TableSpec> {
         row_dimensions: { type: "multi_dimensions", label: "Row dimensions" },
         ...commonOptions,
       },
-      filter: getFilterOptions(),
+      filter: getFilterOptions(true, false),
     };
   }
 
   newComponentSpec(
-    metrics_view: string,
-    measure: string,
-    dimension: string,
+    metricsViewName: string,
+    metricsViewSpec: V1MetricsViewSpec | undefined,
   ): TableSpec {
+    const firstDimension = metricsViewSpec?.dimensions?.[0]?.name;
+    const secondDimension = metricsViewSpec?.dimensions?.[1]?.name;
+
     return {
-      metrics_view,
-      measures: [measure],
-      row_dimensions: [dimension],
-      time_range: "PT24H",
+      metrics_view: metricsViewName,
+      measures:
+        metricsViewSpec?.measures?.slice(0, 3).map((m) => m.name as string) ??
+        [],
+      row_dimensions: firstDimension ? [firstDimension] : [],
+      col_dimensions: secondDimension ? [secondDimension] : undefined,
     };
   }
 }

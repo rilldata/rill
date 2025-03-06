@@ -256,7 +256,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		runtimeauth.ReadAPI,
 	}
 	if permissions.ManageProject {
-		instancePermissions = append(instancePermissions, runtimeauth.EditTrigger)
+		instancePermissions = append(instancePermissions, runtimeauth.EditTrigger, runtimeauth.ReadResolvers)
 	}
 
 	var systemPermissions []runtimeauth.Permission
@@ -397,7 +397,10 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	// check if org has any blocking billing errors
 	err = s.admin.CheckBlockingBillingErrors(ctx, org.ID)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, ctx.Err()) {
+			return nil, err
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	// Check projects quota
@@ -587,8 +590,9 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to delete project")
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject && !forceAccess {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage project")
 	}
 
 	if req.GithubUrl != nil && req.ArchiveAssetId != nil {

@@ -38,9 +38,12 @@ func GitPushCmd(ch *cmdutil.Helper) *cobra.Command {
 	opts := &DeployOpts{}
 
 	deployCmd := &cobra.Command{
-		Use:   "connect-github",
+		Use:   "connect-github [<path>]",
 		Short: "Deploy project to Rill Cloud by pulling project files from a git repository",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) > 0 {
+				opts.GitPath = args[0]
+			}
 			return ConnectGithubFlow(cmd.Context(), ch, opts)
 		},
 	}
@@ -264,9 +267,25 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 	ch.PrintfSuccess("Created project \"%s/%s\". Use `rill project rename` to change name if required.\n\n", ch.Org, res.Project.Name)
 	ch.PrintfSuccess("Rill projects deploy continuously when you push changes to Github.\n")
 
-	// If the Git path is local, we can parse the project and check if credentials are available for the connectors used by the project.
+	// Upload .env
 	if isLocalGitPath {
-		variablesFlow(ctx, ch, localProjectPath, opts.SubPath, opts.Name)
+		vars, err := local.ParseDotenv(ctx, localProjectPath)
+		if err != nil {
+			ch.PrintfWarn("Failed to parse .env: %v\n", err)
+		} else if len(vars) > 0 {
+			c, err := ch.Client()
+			if err != nil {
+				return err
+			}
+			_, err = c.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
+				Organization: ch.Org,
+				Project:      opts.Name,
+				Variables:    vars,
+			})
+			if err != nil {
+				ch.PrintfWarn("Failed to upload .env: %v\n", err)
+			}
+		}
 	}
 
 	// Open browser
@@ -306,7 +325,9 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 			ch.Print("\t" + res.GrantAccessUrl + "\n\n")
 
 			// Open browser if possible
-			_ = browser.Open(res.GrantAccessUrl)
+			if ch.Interactive {
+				_ = browser.Open(res.GrantAccessUrl)
+			}
 		}
 	}
 
@@ -516,7 +537,9 @@ func githubFlow(ctx context.Context, ch *cmdutil.Helper, githubURL string) (*adm
 		ch.Print("\t" + res.GrantAccessUrl + "\n\n")
 
 		// Open browser if possible
-		_ = browser.Open(res.GrantAccessUrl)
+		if ch.Interactive {
+			_ = browser.Open(res.GrantAccessUrl)
+		}
 
 		// Poll for permission granted
 		pollCtx, cancel := context.WithTimeout(ctx, pollTimeout)

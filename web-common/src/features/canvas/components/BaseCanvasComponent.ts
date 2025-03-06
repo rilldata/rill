@@ -3,6 +3,7 @@ import type { ComponentSize } from "@rilldata/web-common/features/canvas/compone
 import { getParsedDocument } from "@rilldata/web-common/features/canvas/inspector/selectors";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
+import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 import { get, writable, type Writable } from "svelte/store";
 
 // A base class that implements all the store logic
@@ -19,7 +20,7 @@ export abstract class BaseCanvasComponent<T> {
    * File artifact where the component
    * is stored
    */
-  fileArtifact: FileArtifact;
+  fileArtifact: FileArtifact | undefined = undefined;
 
   // Let child classes define these
   /**
@@ -33,6 +34,12 @@ export abstract class BaseCanvasComponent<T> {
    * is added to the canvas
    */
   abstract defaultSize: ComponentSize;
+
+  /**
+   * The parameters that should be reset when the metrics_view
+   * is changed
+   */
+  abstract resetParams: string[];
 
   /**
    * The minimum condition needed for the spec to be valid
@@ -50,13 +57,12 @@ export abstract class BaseCanvasComponent<T> {
    * Get the spec when the component is added to the canvas
    */
   abstract newComponentSpec(
-    metrics_view: string,
-    measure: string,
-    dimension: string,
+    metricsViewName: string,
+    metricsViewSpec: V1MetricsViewSpec | undefined,
   ): T;
 
   constructor(
-    fileArtifact: FileArtifact,
+    fileArtifact: FileArtifact | undefined,
     path: (string | number)[],
     defaultSpec: T,
     initialSpec: Partial<T> = {},
@@ -69,6 +75,7 @@ export abstract class BaseCanvasComponent<T> {
   }
 
   private async updateYAML(newSpec: T): Promise<void> {
+    if (!this.fileArtifact) return;
     const parseDocumentStore = getParsedDocument(this.fileArtifact);
     const parsedDocument = get(parseDocumentStore);
 
@@ -78,7 +85,7 @@ export abstract class BaseCanvasComponent<T> {
     parsedDocument.setIn(this.pathInYAML, newSpec);
 
     // Save the updated document
-    updateEditorContent(parsedDocument.toString(), true);
+    updateEditorContent(parsedDocument.toString(), false);
     await saveLocalContent();
   }
 
@@ -104,6 +111,22 @@ export abstract class BaseCanvasComponent<T> {
     if (value === undefined || value == "") {
       delete newSpec[key];
     }
+
+    // If the metrics_view is changed, clear the time_filters and dimension_filters
+    if (key === "metrics_view") {
+      if ("time_filters" in newSpec) {
+        delete newSpec.time_filters;
+      }
+      if ("dimension_filters" in newSpec) {
+        delete newSpec.dimension_filters;
+      }
+      if (this.resetParams.length > 0) {
+        this.resetParams.forEach((param) => {
+          delete newSpec[param];
+        });
+      }
+    }
+
     if (this.isValid(newSpec)) {
       await this.updateYAML(newSpec);
     }
@@ -114,6 +137,7 @@ export abstract class BaseCanvasComponent<T> {
    * Update the chart type of chart component in store and YAML
    */
   async updateChartType(key: ChartType) {
+    if (!this.fileArtifact) return;
     const currentSpec = get(this.specStore);
     const parentSpec = { [key]: currentSpec };
     const parentPath = this.pathInYAML.slice(0, -1);

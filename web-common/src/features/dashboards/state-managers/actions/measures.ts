@@ -1,7 +1,7 @@
 import type { DashboardMutables } from "./types";
 
 export const toggleMeasureVisibility = (
-  { dashboard, persistentDashboardStore }: DashboardMutables,
+  { dashboard }: DashboardMutables,
   allMeasures: string[],
   measureName?: string,
 ) => {
@@ -9,6 +9,13 @@ export const toggleMeasureVisibility = (
     const deleted = dashboard.visibleMeasureKeys.delete(measureName);
     if (!deleted) {
       dashboard.visibleMeasureKeys.add(measureName);
+    } else if (
+      dashboard.leaderboardMeasureName === measureName &&
+      dashboard.visibleMeasureKeys.size > 0
+    ) {
+      dashboard.leaderboardMeasureName = dashboard.visibleMeasureKeys
+        .keys()
+        .next().value;
     }
   } else {
     const allSelected =
@@ -21,10 +28,6 @@ export const toggleMeasureVisibility = (
 
   dashboard.allMeasuresVisible =
     dashboard.visibleMeasureKeys.size === allMeasures.length;
-
-  persistentDashboardStore.updateVisibleMeasures(
-    Array.from(dashboard.visibleMeasureKeys),
-  );
 };
 
 export const measureActions = {

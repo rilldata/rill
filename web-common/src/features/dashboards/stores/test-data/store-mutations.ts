@@ -26,7 +26,10 @@ import {
   metricsExplorerStore,
   updateMetricsExplorerByName,
 } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-import { createPersistentDashboardStore } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
+import {
+  createAndExpression,
+  createInExpression,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
   AD_BIDS_BID_PRICE_MEASURE,
   AD_BIDS_DOMAIN_DIMENSION,
@@ -36,6 +39,10 @@ import {
   AD_BIDS_METRICS_INIT,
   AD_BIDS_PUBLISHER_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
+import {
+  RandomDomains,
+  RandomPublishers,
+} from "@rilldata/web-common/features/dashboards/stores/test-data/random";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
@@ -51,6 +58,13 @@ export const AD_BIDS_REMOVE_PUB_DIMENSION_FILTER: TestDashboardMutation = (
 export const AD_BIDS_APPLY_DOM_DIMENSION_FILTER: TestDashboardMutation = (
   mut,
 ) => toggleDimensionValueSelection(mut, AD_BIDS_DOMAIN_DIMENSION, "google.com");
+export const AD_BIDS_LARGE_FILTER = createAndExpression([
+  createInExpression(AD_BIDS_PUBLISHER_DIMENSION, RandomPublishers),
+  createInExpression(AD_BIDS_DOMAIN_DIMENSION, RandomDomains),
+]);
+export const AD_BIDS_APPLY_LARGE_FILTERS: TestDashboardMutation = (mut) => {
+  mut.dashboard.whereFilter = AD_BIDS_LARGE_FILTER;
+};
 
 export const AD_BIDS_APPLY_IMP_MEASURE_FILTER: TestDashboardMutation = (mut) =>
   setMeasureFilter(mut, AD_BIDS_PUBLISHER_DIMENSION, {
@@ -147,10 +161,19 @@ export const AD_BIDS_SORT_DESC_BY_IMPRESSIONS: TestDashboardMutation = (
   setLeaderboardMeasureName(mut, AD_BIDS_IMPRESSIONS_MEASURE);
   setSortDescending(mut);
 };
+export const AD_BIDS_SORT_ASC_BY_IMPRESSIONS: TestDashboardMutation = (mut) => {
+  setLeaderboardMeasureName(mut, AD_BIDS_IMPRESSIONS_MEASURE);
+  setSortDescending(mut);
+  toggleSort(mut, mut.dashboard.dashboardSortType);
+};
 export const AD_BIDS_SORT_ASC_BY_BID_PRICE: TestDashboardMutation = (mut) => {
   setLeaderboardMeasureName(mut, AD_BIDS_BID_PRICE_MEASURE);
   setSortDescending(mut);
   toggleSort(mut, mut.dashboard.dashboardSortType);
+};
+export const AD_BIDS_SORT_DESC_BY_BID_PRICE: TestDashboardMutation = (mut) => {
+  setLeaderboardMeasureName(mut, AD_BIDS_BID_PRICE_MEASURE);
+  setSortDescending(mut);
 };
 export const AD_BIDS_SORT_BY_VALUE: TestDashboardMutation = (mut) => {
   toggleSort(mut, DashboardState_LeaderboardSortType.VALUE);
@@ -191,69 +214,59 @@ export const AD_BIDS_CLOSE_TDD: TestDashboardMutation = () =>
 export const AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS: TestDashboardMutation = () =>
   metricsExplorerStore.createPivot(
     AD_BIDS_EXPLORE_NAME,
-    {
-      dimension: [
-        {
-          id: AD_BIDS_PUBLISHER_DIMENSION,
-          title: AD_BIDS_PUBLISHER_DIMENSION,
-          type: PivotChipType.Dimension,
-        },
-        {
-          id: V1TimeGrain.TIME_GRAIN_HOUR,
-          title: "hour",
-          type: PivotChipType.Time,
-        },
-      ],
-    },
-    {
-      dimension: [
-        {
-          id: AD_BIDS_DOMAIN_DIMENSION,
-          title: AD_BIDS_DOMAIN_DIMENSION,
-          type: PivotChipType.Dimension,
-        },
-        {
-          id: V1TimeGrain.TIME_GRAIN_DAY,
-          title: "day",
-          type: PivotChipType.Time,
-        },
-      ],
-      measure: [
-        {
-          id: AD_BIDS_IMPRESSIONS_MEASURE,
-          title: AD_BIDS_IMPRESSIONS_MEASURE,
-          type: PivotChipType.Measure,
-        },
-      ],
-    },
+    [
+      {
+        id: AD_BIDS_PUBLISHER_DIMENSION,
+        title: AD_BIDS_PUBLISHER_DIMENSION,
+        type: PivotChipType.Dimension,
+      },
+      {
+        id: V1TimeGrain.TIME_GRAIN_HOUR,
+        title: "hour",
+        type: PivotChipType.Time,
+      },
+    ],
+    [
+      {
+        id: AD_BIDS_DOMAIN_DIMENSION,
+        title: AD_BIDS_DOMAIN_DIMENSION,
+        type: PivotChipType.Dimension,
+      },
+      {
+        id: V1TimeGrain.TIME_GRAIN_DAY,
+        title: "day",
+        type: PivotChipType.Time,
+      },
+
+      {
+        id: AD_BIDS_IMPRESSIONS_MEASURE,
+        title: AD_BIDS_IMPRESSIONS_MEASURE,
+        type: PivotChipType.Measure,
+      },
+    ],
   );
 export const AD_BIDS_OPEN_DOMAIN_BID_PRICE_PIVOT: TestDashboardMutation = () =>
   metricsExplorerStore.createPivot(
     AD_BIDS_EXPLORE_NAME,
-    {
-      dimension: [
-        {
-          id: AD_BIDS_DOMAIN_DIMENSION,
-          title: AD_BIDS_DOMAIN_DIMENSION,
-          type: PivotChipType.Dimension,
-        },
-        {
-          id: V1TimeGrain.TIME_GRAIN_DAY,
-          title: "day",
-          type: PivotChipType.Time,
-        },
-      ],
-    },
-    {
-      dimension: [],
-      measure: [
-        {
-          id: AD_BIDS_IMPRESSIONS_MEASURE,
-          title: AD_BIDS_IMPRESSIONS_MEASURE,
-          type: PivotChipType.Measure,
-        },
-      ],
-    },
+    [
+      {
+        id: AD_BIDS_DOMAIN_DIMENSION,
+        title: AD_BIDS_DOMAIN_DIMENSION,
+        type: PivotChipType.Dimension,
+      },
+      {
+        id: V1TimeGrain.TIME_GRAIN_DAY,
+        title: "day",
+        type: PivotChipType.Time,
+      },
+    ],
+    [
+      {
+        id: AD_BIDS_IMPRESSIONS_MEASURE,
+        title: AD_BIDS_IMPRESSIONS_MEASURE,
+        type: PivotChipType.Measure,
+      },
+    ],
   );
 export const AD_BIDS_TOGGLE_PIVOT: TestDashboardMutation = () =>
   metricsExplorerStore.setPivotMode(AD_BIDS_EXPLORE_NAME, false);
@@ -271,56 +284,70 @@ export const AD_BIDS_SORT_PIVOT_BY_IMPRESSIONS_DESC: TestDashboardMutation =
       { id: AD_BIDS_IMPRESSIONS_MEASURE, desc: true },
     ]);
 
+export const AD_BIDS_TOGGLE_PIVOT_TABLE_MODE: TestDashboardMutation = () =>
+  metricsExplorerStore.setPivotTableMode(
+    AD_BIDS_EXPLORE_NAME,
+    "flat",
+    [],
+    [
+      {
+        id: AD_BIDS_DOMAIN_DIMENSION,
+        title: AD_BIDS_DOMAIN_DIMENSION,
+        type: PivotChipType.Dimension,
+      },
+      {
+        id: V1TimeGrain.TIME_GRAIN_DAY,
+        title: "day",
+        type: PivotChipType.Time,
+      },
+      {
+        id: AD_BIDS_IMPRESSIONS_MEASURE,
+        title: AD_BIDS_IMPRESSIONS_MEASURE,
+        type: PivotChipType.Measure,
+      },
+    ],
+  );
+
 export const AD_BIDS_OPEN_PUB_IMP_PIVOT: TestDashboardMutation = () =>
   metricsExplorerStore.createPivot(
     AD_BIDS_EXPLORE_NAME,
-    {
-      dimension: [
-        {
-          id: V1TimeGrain.TIME_GRAIN_HOUR,
-          title: "hour",
-          type: PivotChipType.Time,
-        },
-        {
-          id: AD_BIDS_PUBLISHER_DIMENSION,
-          title: AD_BIDS_PUBLISHER_DIMENSION,
-          type: PivotChipType.Dimension,
-        },
-      ],
-    },
-    {
-      dimension: [],
-      measure: [
-        {
-          id: AD_BIDS_IMPRESSIONS_MEASURE,
-          title: AD_BIDS_IMPRESSIONS_MEASURE,
-          type: PivotChipType.Measure,
-        },
-      ],
-    },
+    [
+      {
+        id: V1TimeGrain.TIME_GRAIN_HOUR,
+        title: "hour",
+        type: PivotChipType.Time,
+      },
+      {
+        id: AD_BIDS_PUBLISHER_DIMENSION,
+        title: AD_BIDS_PUBLISHER_DIMENSION,
+        type: PivotChipType.Dimension,
+      },
+    ],
+    [
+      {
+        id: AD_BIDS_IMPRESSIONS_MEASURE,
+        title: AD_BIDS_IMPRESSIONS_MEASURE,
+        type: PivotChipType.Measure,
+      },
+    ],
   );
 export const AD_BIDS_OPEN_DOM_BP_PIVOT: TestDashboardMutation = () =>
   metricsExplorerStore.createPivot(
     AD_BIDS_EXPLORE_NAME,
-    {
-      dimension: [
-        {
-          id: AD_BIDS_DOMAIN_DIMENSION,
-          title: AD_BIDS_DOMAIN_DIMENSION,
-          type: PivotChipType.Dimension,
-        },
-      ],
-    },
-    {
-      dimension: [],
-      measure: [
-        {
-          id: AD_BIDS_BID_PRICE_MEASURE,
-          title: AD_BIDS_IMPRESSIONS_MEASURE,
-          type: PivotChipType.Measure,
-        },
-      ],
-    },
+    [
+      {
+        id: AD_BIDS_DOMAIN_DIMENSION,
+        title: AD_BIDS_DOMAIN_DIMENSION,
+        type: PivotChipType.Dimension,
+      },
+    ],
+    [
+      {
+        id: AD_BIDS_BID_PRICE_MEASURE,
+        title: AD_BIDS_IMPRESSIONS_MEASURE,
+        type: PivotChipType.Measure,
+      },
+    ],
   );
 
 export function applyMutationsToDashboard(
@@ -330,7 +357,6 @@ export function applyMutationsToDashboard(
   updateMetricsExplorerByName(name, (dashboard) => {
     const dashboardMutables = {
       dashboard,
-      persistentDashboardStore: createPersistentDashboardStore("dummy"),
     } as DashboardMutables;
     mutations.forEach((mutation) => mutation(dashboardMutables));
   });

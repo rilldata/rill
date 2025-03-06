@@ -103,6 +103,15 @@ func (c *connection) FindOrganizationByName(ctx context.Context, name string) (*
 	return res, nil
 }
 
+func (c *connection) CountProjectsForOrganization(ctx context.Context, orgID string) (int, error) {
+	var count int
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT COUNT(*) FROM projects WHERE org_id=$1", orgID).Scan(&count)
+	if err != nil {
+		return 0, parseErr("projects", err)
+	}
+	return count, nil
+}
+
 func (c *connection) FindOrganizationByCustomDomain(ctx context.Context, domain string) (*database.Organization, error) {
 	res := &database.Organization{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM orgs WHERE lower(custom_domain)=lower($1)", domain).StructScan(res)
@@ -138,9 +147,9 @@ func (c *connection) InsertOrganization(ctx context.Context, opts *database.Inse
 	}
 
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs(name, display_name, description, logo_asset_id, custom_domain, quota_projects, quota_deployments, quota_slots_total, quota_slots_per_deployment, quota_outstanding_invites, quota_storage_limit_bytes_per_deployment, billing_customer_id, payment_customer_id, billing_email, created_by_user_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *`,
-		opts.Name, opts.DisplayName, opts.Description, opts.LogoAssetID, opts.CustomDomain, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, opts.CreatedByUserID).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs(name, display_name, description, logo_asset_id, favicon_asset_id, custom_domain, quota_projects, quota_deployments, quota_slots_total, quota_slots_per_deployment, quota_outstanding_invites, quota_storage_limit_bytes_per_deployment, billing_customer_id, payment_customer_id, billing_email, created_by_user_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING *`,
+		opts.Name, opts.DisplayName, opts.Description, opts.LogoAssetID, opts.FaviconAssetID, opts.CustomDomain, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, opts.CreatedByUserID).StructScan(res)
 	if err != nil {
 		return nil, parseErr("org", err)
 	}
@@ -159,8 +168,8 @@ func (c *connection) UpdateOrganization(ctx context.Context, id string, opts *da
 
 	res := &database.Organization{}
 	err := c.getDB(ctx).QueryRowxContext(ctx,
-		`UPDATE orgs SET name=$1, display_name=$2, description=$3, logo_asset_id=$4, custom_domain=$5, quota_projects=$6, quota_deployments=$7, quota_slots_total=$8, quota_slots_per_deployment=$9, quota_outstanding_invites=$10, quota_storage_limit_bytes_per_deployment=$11, billing_customer_id=$12, payment_customer_id=$13, billing_email=$14, created_by_user_id=$15, updated_on=now() WHERE id=$16 RETURNING *`,
-		opts.Name, opts.DisplayName, opts.Description, opts.LogoAssetID, opts.CustomDomain, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, opts.CreatedByUserID, id).StructScan(res)
+		`UPDATE orgs SET name=$1, display_name=$2, description=$3, logo_asset_id=$4, favicon_asset_id=$5, custom_domain=$6, quota_projects=$7, quota_deployments=$8, quota_slots_total=$9, quota_slots_per_deployment=$10, quota_outstanding_invites=$11, quota_storage_limit_bytes_per_deployment=$12, billing_customer_id=$13, payment_customer_id=$14, billing_email=$15, created_by_user_id=$16, billing_plan_name=$17, billing_plan_display_name=$18, updated_on=now() WHERE id=$19 RETURNING *`,
+		opts.Name, opts.DisplayName, opts.Description, opts.LogoAssetID, opts.FaviconAssetID, opts.CustomDomain, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, opts.CreatedByUserID, opts.BillingPlanName, opts.BillingPlanDisplayName, id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("org", err)
 	}
@@ -219,6 +228,20 @@ func (c *connection) InsertOrganizationWhitelistedDomain(ctx context.Context, op
 func (c *connection) DeleteOrganizationWhitelistedDomain(ctx context.Context, id string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM orgs_autoinvite_domains WHERE id=$1", id)
 	return checkDeleteRow("org whitelist domain", res, err)
+}
+
+func (c *connection) FindInactiveOrganizations(ctx context.Context) ([]*database.Organization, error) {
+	// TODO: This definition may change, but for now, we are considering an organization as inactive if it has no users
+	res := []*database.Organization{}
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT o.* FROM orgs o
+		WHERE now() - o.updated_on > INTERVAL '1 DAY'
+		AND NOT EXISTS ( SELECT 1 FROM users_orgs_roles uor WHERE uor.org_id = o.id )
+	`)
+	if err != nil {
+		return nil, parseErr("orgs", err)
+	}
+	return res, nil
 }
 
 func (c *connection) FindProjects(ctx context.Context, afterName string, limit int) ([]*database.Project, error) {
@@ -1203,8 +1226,8 @@ func (c *connection) DeleteMagicAuthToken(ctx context.Context, id string) error 
 }
 
 func (c *connection) DeleteMagicAuthTokens(ctx context.Context, ids []string) error {
-	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM magic_auth_tokens WHERE id=ANY($1)", ids)
-	return checkDeleteRow("magic auth token", res, err)
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM magic_auth_tokens WHERE id=ANY($1)", ids)
+	return parseErr("magic auth token", err)
 }
 
 func (c *connection) DeleteExpiredMagicAuthTokens(ctx context.Context, retention time.Duration) error {
@@ -1933,12 +1956,12 @@ func (c *connection) FindAsset(ctx context.Context, id string) (*database.Asset,
 	return res, nil
 }
 
-func (c *connection) InsertAsset(ctx context.Context, id, organizationID, path, ownerID string, cacheable bool) (*database.Asset, error) {
+func (c *connection) InsertAsset(ctx context.Context, id, organizationID, path, ownerID string, public bool) (*database.Asset, error) {
 	res := &database.Asset{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO assets (id, org_id, path, owner_id, cacheable)
+		INSERT INTO assets (id, org_id, path, owner_id, public)
 		VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-		id, organizationID, path, ownerID, cacheable,
+		id, organizationID, path, ownerID, public,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("asset", err)
@@ -1948,11 +1971,12 @@ func (c *connection) InsertAsset(ctx context.Context, id, organizationID, path, 
 
 func (c *connection) FindUnusedAssets(ctx context.Context, limit int) ([]*database.Asset, error) {
 	var res []*database.Asset
-	// We skip unused assets created in last 6 hours to prevent race condition
-	// where somebody just created an asset but is yet to use it
+	// find assets that are not associated with any project or org
+	// skip assets that are less than 7 days old to avoid deleting assets for projects
+	// that were accidentally deleted and may need to be restored
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 		SELECT a.* FROM assets a 
-		WHERE a.created_on < now() - INTERVAL '6 hours'
+		WHERE a.created_on < now() - INTERVAL '7 DAYS'
 		AND NOT EXISTS (SELECT 1 FROM projects p WHERE p.archive_asset_id = a.id)
 		AND NOT EXISTS (SELECT 1 FROM orgs o WHERE o.logo_asset_id = a.id)
 		ORDER BY a.created_on DESC LIMIT $1
@@ -2131,14 +2155,14 @@ func (c *connection) FindProjectVariables(ctx context.Context, projectID string,
 		// Also include variables that are not environment specific and not set for the given environment
 		q += `
 			AND (
-				p.environment = $2 
+				p.environment = $2
 				OR (
-					p.environment = '' 
+					p.environment = ''
 					AND NOT EXISTS (
-						SELECT 1 
-						FROM project_variables p2 
-						WHERE p2.project_id = p.project_id 
-						AND p2.environment = $2 
+						SELECT 1
+						FROM project_variables p2
+						WHERE p2.project_id = p.project_id
+						AND p2.environment = $2
 						AND lower(p2.name) = lower(p.name)
 					)
 				)

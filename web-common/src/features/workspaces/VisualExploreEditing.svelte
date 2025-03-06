@@ -4,13 +4,15 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import {
+    DEFAULT_RANGES,
+    isString,
+    stringGuard,
+  } from "@rilldata/web-common/features/workspaces/visual-util";
   import Inspector from "@rilldata/web-common/layout/workspace/Inspector.svelte";
   import {
     DEFAULT_TIMEZONES,
     DEFAULT_TIME_RANGES,
-    LATEST_WINDOW_TIME_RANGES,
-    PERIOD_TO_DATE_RANGES,
-    PREVIOUS_COMPLETE_DATE_RANGES,
   } from "@rilldata/web-common/lib/time/config";
   import {
     TimeRangePreset,
@@ -34,12 +36,6 @@
   import MultiSelectInput from "../visual-editing/MultiSelectInput.svelte";
   import SidebarWrapper from "../visual-editing/SidebarWrapper.svelte";
   import ThemeInput from "../visual-editing/ThemeInput.svelte";
-
-  const ranges = [
-    ...Object.keys(LATEST_WINDOW_TIME_RANGES),
-    ...Object.keys(PERIOD_TO_DATE_RANGES),
-    ...Object.keys(PREVIOUS_COMPLETE_DATE_RANGES),
-  ];
 
   const itemTypes = ["measures", "dimensions"] as const;
 
@@ -189,14 +185,6 @@
 
   $: if (exploreSpec) metricsExplorerStore.sync(exploreName, exploreSpec);
 
-  function isString(value: unknown): value is string {
-    return typeof value === "string";
-  }
-
-  function stringGuard(value: unknown | undefined): string {
-    return value && typeof value === "string" ? value : "";
-  }
-
   function getMeasureOrDimensionState(
     node: unknown,
   ): "all" | "subset" | "expression" | null {
@@ -214,7 +202,7 @@
     }
   }
 
-  async function updateProperties(
+  function updateProperties(
     newRecord: Record<string, unknown>,
     removeProperties?: Array<string | string[]>,
   ) {
@@ -302,7 +290,7 @@
     return newDefaults;
   }
 
-  async function onSelectTimeRangeItem(item: string) {
+  function onSelectTimeRangeItem(item: string) {
     const deleted = timeRanges.delete(item);
     if (!deleted) {
       timeRanges.add(item);
@@ -318,7 +306,7 @@
       properties.defaults = { ...defaults, time_range: time_ranges[0] };
     }
 
-    await updateProperties(properties);
+    updateProperties(properties);
   }
 
   function getSequenceItems(node: unknown): YAMLSeq {
@@ -350,11 +338,11 @@
       textClass="text-sm"
       label="Display name"
       bind:value={title}
-      onBlur={async () => {
-        await updateProperties({ display_name: title }, ["title"]);
+      onBlur={() => {
+        updateProperties({ display_name: title }, ["title"]);
       }}
-      onEnter={async () => {
-        await updateProperties({ display_name: title });
+      onEnter={() => {
+        updateProperties({ display_name: title });
       }}
     />
 
@@ -371,10 +359,10 @@
         label: name,
         value: name,
       }))}
-      onChange={async () => {
+      onChange={() => {
         killState();
 
-        await updateProperties(
+        updateProperties(
           {
             metrics_view: metricsView,
             measures: "*",
@@ -394,13 +382,13 @@
         selectedItems={subsets[type]}
         excludeMode={excludeMode[type]}
         mode={fields[type]}
-        onSelectAll={async () => {
-          await updateProperties({ [type]: "*" });
+        onSelectAll={() => {
+          updateProperties({ [type]: "*" });
         }}
-        onSelectExpression={async () => {
-          await updateProperties({ [type]: { expr: "*" } });
+        onSelectExpression={() => {
+          updateProperties({ [type]: { expr: "*" } });
         }}
-        setItems={async (items, exclude) => {
+        setItems={(items, exclude) => {
           const deleteKeys = [["defaults", type]];
           if (type === "dimensions") {
             deleteKeys.push(["defaults", "comparison_dimension"]);
@@ -408,20 +396,20 @@
           }
 
           if (exclude) {
-            await updateProperties({ [type]: { exclude: items } }, deleteKeys);
+            updateProperties({ [type]: { exclude: items } }, deleteKeys);
           } else {
-            await updateProperties({ [type]: items }, deleteKeys);
+            updateProperties({ [type]: items }, deleteKeys);
           }
         }}
-        onExpressionBlur={async (value) => {
+        onExpressionBlur={(value) => {
           const deleteKeys = [["defaults", type]];
           if (type === "dimensions") {
             deleteKeys.push(["defaults", "comparison_dimension"]);
             deleteKeys.push(["defaults", "comparison_mode"]);
           }
-          await updateProperties({ [type]: { expr: value } }, deleteKeys);
+          updateProperties({ [type]: { expr: value } }, deleteKeys);
         }}
-        onSelectSubsetItem={async (item) => {
+        onSelectSubsetItem={(item) => {
           const deleted = subsets[type].delete(item);
           if (!deleted) {
             subsets[type].add(item);
@@ -434,15 +422,12 @@
           }
 
           if (excludeMode[type]) {
-            await updateProperties(
+            updateProperties(
               { [type]: { exclude: Array.from(subsets[type]) } },
               deleteKeys,
             );
           } else {
-            await updateProperties(
-              { [type]: Array.from(subsets[type]) },
-              deleteKeys,
-            );
+            updateProperties({ [type]: Array.from(subsets[type]) }, deleteKeys);
           }
         }}
       />
@@ -452,15 +437,15 @@
       label="Time ranges"
       id="visual-explore-range"
       hint="Time range shortcuts available via the dashboard filter bar"
-      defaultItems={ranges}
+      defaultItems={DEFAULT_RANGES}
       keyNotSet={!rawTimeRanges}
       selectedItems={timeRanges}
       onSelectCustomItem={onSelectTimeRangeItem}
-      setItems={async (time_ranges) => {
+      setItems={(time_ranges) => {
         if (time_ranges.length === 0) {
-          await updateProperties({ time_ranges }, [["defaults", "time_range"]]);
+          updateProperties({ time_ranges }, [["defaults", "time_range"]]);
         } else {
-          await updateProperties({ time_ranges });
+          updateProperties({ time_ranges });
         }
       }}
       let:item
@@ -477,17 +462,17 @@
       keyNotSet={!rawTimeZones}
       selectedItems={timeZones}
       noneOption
-      clearKey={async () => {
-        await updateProperties({}, ["time_zones"]);
+      clearKey={() => {
+        updateProperties({}, ["time_zones"]);
       }}
-      onSelectCustomItem={async (item) => {
+      onSelectCustomItem={(item) => {
         const deleted = timeZones.delete(item);
         if (!deleted) timeZones.add(item);
 
-        await updateProperties({ time_zones: Array.from(timeZones) });
+        updateProperties({ time_zones: Array.from(timeZones) });
       }}
-      setItems={async (time_zones) => {
-        await updateProperties({ time_zones });
+      setItems={(time_zones) => {
+        updateProperties({ time_zones });
       }}
       let:item
     >
@@ -497,15 +482,15 @@
     <ThemeInput
       {theme}
       {themeNames}
-      onThemeChange={async (value) => {
+      onThemeChange={(value) => {
         if (!value) {
-          await updateProperties({}, ["theme"]);
+          updateProperties({}, ["theme"]);
         } else {
-          await updateProperties({ theme: value });
+          updateProperties({ theme: value });
         }
       }}
-      onColorChange={async (primary, secondary) => {
-        await updateProperties({
+      onColorChange={(primary, secondary) => {
+        updateProperties({
           theme: {
             colors: {
               primary,
@@ -533,11 +518,11 @@
             type="subtle"
             gray={viewingDefaults}
             large
-            on:click={async () => {
+            on:click={() => {
               if (viewingDefaults) {
-                await updateProperties({}, ["defaults"]);
+                updateProperties({}, ["defaults"]);
               } else {
-                await updateProperties({ defaults: newDefaults });
+                updateProperties({ defaults: newDefaults });
               }
             }}
           >

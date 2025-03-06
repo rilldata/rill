@@ -1,61 +1,47 @@
 <script lang="ts">
-  import { page } from "$app/stores";
-  import { createAdminServiceGetProject } from "../../client";
-  import ProjectGlobalStatusIndicator from "./status/ProjectGlobalStatusIndicator.svelte";
+  import { type V1ProjectPermissions } from "../../client";
+  import Tab from "@rilldata/web-admin/components/nav/Tab.svelte";
+  import {
+    width,
+    position,
+  } from "@rilldata/web-admin//components/nav/Tab.svelte";
 
-  $: ({
-    url: { pathname },
-    params: { organization, project },
-  } = $page);
+  export let projectPermissions: V1ProjectPermissions;
+  export let organization: string;
+  export let project: string;
+  export let pathname: string;
 
-  // Get the list of tabs to display, depending on the user's permissions
-  $: tabsQuery = createAdminServiceGetProject(
-    organization,
-    project,
-    undefined,
+  $: tabs = [
     {
-      query: {
-        select: (data) => {
-          let commonTabs = [
-            {
-              route: `/${organization}/${project}`,
-              label: "Dashboards",
-            },
-            {
-              route: `/${organization}/${project}/-/reports`,
-              label: "Reports",
-            },
-          ];
-
-          commonTabs.push({
-            route: `/${organization}/${project}/-/alerts`,
-            label: "Alerts",
-          });
-
-          const adminTabs = [
-            {
-              route: `/${organization}/${project}/-/status`,
-              label: "Status",
-            },
-            {
-              // TODO: Change this back to `/${organization}/${project}/-/settings`
-              // Once project settings are implemented
-              route: `/${organization}/${project}/-/settings/environment-variables`,
-              label: "Settings",
-            },
-          ];
-
-          if (data.projectPermissions?.manageProject) {
-            return [...commonTabs, ...adminTabs];
-          } else {
-            return commonTabs;
-          }
-        },
-      },
+      route: `/${organization}/${project}`,
+      label: "Dashboards",
+      hasPermission: true,
     },
-  );
+    {
+      route: `/${organization}/${project}/-/reports`,
+      label: "Reports",
+      hasPermission: true,
+    },
+    {
+      route: `/${organization}/${project}/-/alerts`,
+      label: "Alerts",
+      hasPermission: true,
+    },
+    {
+      route: `/${organization}/${project}/-/status`,
+      label: "Status",
+      hasPermission: projectPermissions.manageProject,
+    },
+    {
+      // TODO: Change this back to `/${organization}/${project}/-/settings`
+      // Once project settings are implemented
+      route: `/${organization}/${project}/-/settings/environment-variables`,
+      label: "Settings",
+      hasPermission: projectPermissions.manageProject,
+    },
+  ];
 
-  $: tabs = $tabsQuery.data;
+  $: selectedIndex = tabs?.findLastIndex((t) => isSelected(t.route, pathname));
 
   function isSelected(tabRoute: string, currentPathname: string) {
     if (tabRoute.endsWith(`/${organization}/${project}`)) {
@@ -70,35 +56,41 @@
   }
 </script>
 
-{#if tabs}
+<div>
   <nav>
-    {#each tabs as tab (tab.route)}
-      <a href={tab.route} class:selected={isSelected(tab.route, pathname)}>
-        {tab.label}
-        {#if tab.label === "Status"}
-          <ProjectGlobalStatusIndicator {organization} {project} />
-        {/if}
-      </a>
+    {#each tabs as tab, i (tab.route)}
+      {#if tab.hasPermission}
+        <Tab
+          route={tab.route}
+          label={tab.label}
+          selected={selectedIndex === i}
+          {organization}
+          {project}
+        />
+      {/if}
     {/each}
   </nav>
-{/if}
+
+  {#if $width && $position}
+    <span
+      style:width="{$width}px"
+      style:transform="translateX({$position}px) "
+    />
+  {/if}
+</div>
 
 <style lang="postcss">
-  a {
-    @apply p-2 flex gap-x-1 items-center;
-    @apply rounded-sm text-gray-500;
-    @apply text-xs font-medium justify-center;
-  }
-
-  .selected {
-    @apply text-gray-900;
-  }
-
-  a:hover {
-    @apply bg-slate-100 text-gray-700;
+  div {
+    @apply border-b pt-1;
+    @apply gap-y-[3px] flex flex-col;
   }
 
   nav {
-    @apply flex gap-x-6 px-[17px] border-b pt-1 pb-[3px];
+    @apply flex w-fit;
+    @apply gap-x-3 px-[17px];
+  }
+
+  span {
+    @apply h-[3px] bg-primary-500 rounded transition-all;
   }
 </style>

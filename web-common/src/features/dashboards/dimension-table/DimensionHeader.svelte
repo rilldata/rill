@@ -10,23 +10,19 @@
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
+  import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
-  import {
-    V1ExportFormat,
-    createQueryServiceExport,
-  } from "@rilldata/web-common/runtime-client";
   import { onDestroy } from "svelte";
   import { fly } from "svelte/transition";
   import ExportMenu from "../../exports/ExportMenu.svelte";
   import { SortType } from "../proto-state/derived-types";
   import { getStateManagers } from "../state-managers/state-managers";
   import SelectAllButton from "./SelectAllButton.svelte";
-  import { getDimensionTableExportArgs } from "./dimension-table-export-utils";
-  import exportToplist from "./export-toplist";
+  import { getDimensionTableExportQuery } from "./dimension-table-export";
 
   export let dimensionName: string;
   export let isFetching: boolean;
@@ -35,8 +31,6 @@
   export let searchText: string;
   export let onToggleSearchItems: () => void;
   export let hideStartPivotButton = false;
-
-  const exportDash = createQueryServiceExport();
 
   const stateManagers = getStateManagers();
   const {
@@ -93,10 +87,12 @@
   function startPivotForDimensionTable() {
     const pivot = $dashboardStore?.pivot;
 
+    const pivotColumns = splitPivotChips(pivot.columns);
+
     if (
-      pivot.rows.dimension.length ||
-      pivot.columns.measure.length ||
-      pivot.columns.dimension.length
+      pivot.rows.length ||
+      pivotColumns.measure.length ||
+      pivotColumns.dimension.length
     ) {
       showReplacePivotModal = true;
     } else {
@@ -127,26 +123,8 @@
         };
       });
 
-    metricsExplorerStore.createPivot(
-      $exploreName,
-      { dimension: rowDimensions },
-      {
-        dimension: [],
-        measure: measures,
-      },
-    );
+    metricsExplorerStore.createPivot($exploreName, rowDimensions, measures);
   }
-
-  const scheduledReportsQueryArgs = getDimensionTableExportArgs(stateManagers);
-
-  const handleExportTopList = async (format: V1ExportFormat) => {
-    await exportToplist({
-      ctx: stateManagers,
-      query: exportDash,
-      format,
-      searchText,
-    });
-  };
 
   onDestroy(() => {
     searchText = "";
@@ -216,11 +194,11 @@
     {#if $exports}
       <ExportMenu
         label="Export dimension table data"
-        onExport={handleExportTopList}
         includeScheduledReport={$adminServer}
-        queryArgs={$scheduledReportsQueryArgs}
-        {metricsViewProto}
+        getQuery={(isScheduled) =>
+          getDimensionTableExportQuery(stateManagers, isScheduled)}
         exploreName={$exploreName}
+        {metricsViewProto}
       />
     {/if}
     {#if !hideStartPivotButton}

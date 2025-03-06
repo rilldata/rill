@@ -294,7 +294,12 @@ func (p *securityEngine) resolveRules(claims *SecurityClaims, r *runtimev1.Resou
 		}
 	// Everyone can access an API.
 	case ResourceKindAPI:
-		rules = append(rules, allowAccessRule)
+		spec := r.GetApi().Spec
+		if len(spec.SecurityRules) == 0 {
+			rules = append(rules, allowAccessRule)
+		} else {
+			rules = append(rules, spec.SecurityRules...)
+		}
 	// Everyone can access a component.
 	case ResourceKindComponent:
 		rules = append(rules, allowAccessRule)

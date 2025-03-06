@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"net"
 	"net/url"
 	"strings"
@@ -18,23 +19,31 @@ import (
 )
 
 type duckDBToDuckDB struct {
-	to             *connection
-	logger         *zap.Logger
-	externalDBType string // mysql, postgres, duckdb
+	from   drivers.Handle
+	to     *connection
+	logger *zap.Logger
 }
 
-func newDuckDBToDuckDB(c *connection, db string, logger *zap.Logger) drivers.Transporter {
+func newDuckDBToDuckDB(from drivers.Handle, c *connection, logger *zap.Logger) drivers.Transporter {
 	return &duckDBToDuckDB{
-		to:             c,
-		logger:         logger,
-		externalDBType: db,
+		from:   from,
+		to:     c,
+		logger: logger,
 	}
 }
 
 var _ drivers.Transporter = &duckDBToDuckDB{}
 
 func (t *duckDBToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[string]any, opts *drivers.TransferOptions) error {
-	srcCfg, err := parseDBSourceProperties(srcProps)
+	var props map[string]any
+	if t.from.Driver() != "duckdb" {
+		// ingest from external db which can also be configured separately via a connector
+		props = maps.Clone(t.from.Config())
+		maps.Copy(props, srcProps)
+	} else {
+		props = srcProps
+	}
+	srcCfg, err := parseDBSourceProperties(props)
 	if err != nil {
 		return err
 	}
@@ -47,7 +56,7 @@ func (t *duckDBToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[s
 	t.logger = t.logger.With(zap.String("source", sinkCfg.Table))
 
 	if srcCfg.Database != "" { // query to be run against an external DB
-		if t.externalDBType == "duckdb" {
+		if t.from.Driver() == "duckdb" {
 			srcCfg.Database, err = fileutil.ResolveLocalPath(srcCfg.Database, opts.RepoRoot, opts.AllowHostAccess)
 			if err != nil {
 				return err
@@ -116,14 +125,15 @@ func (t *duckDBToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[s
 		srcCfg.SQL = rewrittenSQL
 	}
 
-	return t.to.CreateTableAsSelect(ctx, sinkCfg.Table, srcCfg.SQL, &drivers.CreateTableOptions{})
+	_, err = t.to.CreateTableAsSelect(ctx, sinkCfg.Table, srcCfg.SQL, &drivers.CreateTableOptions{})
+	return err
 }
 
 func (t *duckDBToDuckDB) transferFromExternalDB(ctx context.Context, srcProps *dbSourceProperties, sinkProps *sinkProperties) error {
 	var initSQL []string
 	safeDBName := safeName(sinkProps.Table + "_external_db_")
 	safeTempTable := safeName(sinkProps.Table + "__temp__")
-	switch t.externalDBType {
+	switch t.from.Driver() {
 	case "mysql":
 		dsn := rewriteMySQLDSN(srcProps.Database)
 		initSQL = append(initSQL, "INSTALL 'MYSQL'; LOAD 'MYSQL';", fmt.Sprintf("ATTACH %s AS %s (TYPE mysql, READ_ONLY)", safeSQLString(dsn), safeDBName))
@@ -132,7 +142,7 @@ func (t *duckDBToDuckDB) transferFromExternalDB(ctx context.Context, srcProps *d
 	case "duckdb":
 		initSQL = append(initSQL, fmt.Sprintf("ATTACH %s AS %s (READ_ONLY)", safeSQLString(srcProps.Database), safeDBName))
 	default:
-		return fmt.Errorf("internal error: unsupported external database: %s", t.externalDBType)
+		return fmt.Errorf("internal error: unsupported external database: %s", t.from.Driver())
 	}
 	beforeCreateFn := func(ctx context.Context, conn *sqlx.Conn) error {
 		for _, sql := range initSQL {
@@ -176,10 +186,11 @@ func (t *duckDBToDuckDB) transferFromExternalDB(ctx context.Context, srcProps *d
 	defer func() {
 		_ = release()
 	}()
-	return db.CreateTableAsSelect(ctx, sinkProps.Table, fmt.Sprintf("SELECT * FROM %s", safeTempTable), &rduckdb.CreateTableOptions{
+	_, err = db.CreateTableAsSelect(ctx, sinkProps.Table, fmt.Sprintf("SELECT * FROM %s", safeTempTable), &rduckdb.CreateTableOptions{
 		BeforeCreateFn: beforeCreateFn,
 		AfterCreateFn:  afterCreateFn,
 	})
+	return err
 }
 
 // rewriteLocalPaths rewrites a DuckDB SQL statement such that relative paths become absolute paths relative to the basePath,

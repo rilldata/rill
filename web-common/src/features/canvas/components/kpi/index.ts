@@ -5,8 +5,10 @@ import {
 } from "@rilldata/web-common/features/canvas/components/util";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
+import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 import type {
   ComponentCommonProperties,
+  ComponentComparisonOptions,
   ComponentFilterProperties,
 } from "../types";
 
@@ -17,23 +19,31 @@ export interface KPISpec
     ComponentFilterProperties {
   metrics_view: string;
   measure: string;
-  sparkline?: boolean;
+  // Defaults to "bottom"
+  sparkline?: "none" | "bottom" | "right";
+  // Defaults to "delta" and "percent_change"
+  comparison?: ComponentComparisonOptions[];
 }
+
+export const defaultComparisonOptions: ComponentComparisonOptions[] = [
+  "delta",
+  "percent_change",
+];
 
 export class KPIComponent extends BaseCanvasComponent<KPISpec> {
   minSize = { width: 2, height: 2 };
-  defaultSize = { width: 8, height: 4 };
+  defaultSize = { width: 6, height: 4 };
+  resetParams = ["measure"];
 
   constructor(
-    fileArtifact: FileArtifact,
+    fileArtifact: FileArtifact | undefined = undefined,
     path: (string | number)[] = [],
     initialSpec: Partial<KPISpec> = {},
   ) {
     const defaultSpec: KPISpec = {
       metrics_view: "",
       measure: "",
-      time_range: "PT24H",
-      sparkline: true,
+      comparison: defaultComparisonOptions,
     };
     super(fileArtifact, path, defaultSpec, initialSpec);
   }
@@ -49,19 +59,24 @@ export class KPIComponent extends BaseCanvasComponent<KPISpec> {
       options: {
         metrics_view: { type: "metrics", label: "Metrics view" },
         measure: { type: "measure", label: "Measure" },
-        sparkline: { type: "boolean", optional: true, label: "Sparkline" },
+        sparkline: { type: "sparkline", optional: true, label: "Sparkline" },
+        comparison: { type: "comparison_options", label: "Comparison values" },
         ...commonOptions,
       },
       filter: getFilterOptions(),
     };
   }
 
-  newComponentSpec(metrics_view: string, measure: string): KPISpec {
+  newComponentSpec(
+    metricsViewName: string,
+    metricsViewSpec: V1MetricsViewSpec | undefined,
+  ): KPISpec {
+    const measures = metricsViewSpec?.measures || [];
+    const measureNames = measures.map((m) => m.name as string);
     return {
-      metrics_view,
-      measure,
-      time_range: "PT24H",
-      sparkline: true,
+      metrics_view: metricsViewName,
+      measure: measureNames[Math.floor(Math.random() * measureNames.length)],
+      comparison: defaultComparisonOptions,
     };
   }
 }

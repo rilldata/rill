@@ -20,11 +20,13 @@ func init() {
 }
 
 type metricsResolver struct {
-	runtime    *runtime.Runtime
-	instanceID string
-	executor   *metricsview.Executor
-	query      *metricsview.Query
-	args       *metricsResolverArgs
+	runtime        *runtime.Runtime
+	instanceID     string
+	executor       *metricsview.Executor
+	query          *metricsview.Query
+	args           *metricsResolverArgs
+	claims         *runtime.SecurityClaims
+	metricsHasTime bool
 }
 
 type metricsResolverArgs struct {
@@ -73,11 +75,13 @@ func newMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Res
 	}
 
 	return &metricsResolver{
-		runtime:    opts.Runtime,
-		instanceID: opts.InstanceID,
-		executor:   executor,
-		query:      qry,
-		args:       args,
+		runtime:        opts.Runtime,
+		instanceID:     opts.InstanceID,
+		executor:       executor,
+		query:          qry,
+		args:           args,
+		claims:         opts.Claims,
+		metricsHasTime: mv.TimeDimension != "",
 	}, nil
 }
 
@@ -116,6 +120,18 @@ func (r *metricsResolver) Validate(ctx context.Context) error {
 }
 
 func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
+	if r.metricsHasTime {
+		tsRes, err := resolveTimestampResult(ctx, r.runtime, r.instanceID, r.query.MetricsView, r.claims, r.args.Priority)
+		if err != nil {
+			return nil, err
+		}
+
+		err = r.executor.BindQuery(ctx, r.query, tsRes)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	res, err := r.executor.Query(ctx, r.query, r.args.ExecutionTime)
 	if err != nil {
 		return nil, err

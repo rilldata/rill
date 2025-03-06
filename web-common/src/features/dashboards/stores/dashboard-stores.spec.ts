@@ -32,10 +32,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
 import { createValidSpecQueryMock } from "@rilldata/web-common/features/dashboards/stores/test-data/query-mocks";
 import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
-import {
-  V1ExploreComparisonMode,
-  V1TimeGrain,
-} from "@rilldata/web-common/runtime-client";
+import { V1ExploreComparisonMode } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { get } from "svelte/store";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
@@ -237,7 +234,6 @@ describe("dashboard-stores", () => {
           timeRangeSummary: {
             min: TestTimeConstants.LAST_DAY.toISOString(),
             max: TestTimeConstants.NOW.toISOString(),
-            interval: V1TimeGrain.TIME_GRAIN_MINUTE as any,
           },
         },
       ),
@@ -266,7 +262,6 @@ describe("dashboard-stores", () => {
           timeRangeSummary: {
             min: TestTimeConstants.LAST_DAY.toISOString(),
             max: TestTimeConstants.NOW.toISOString(),
-            interval: V1TimeGrain.TIME_GRAIN_MINUTE as any,
           },
         },
       ),
@@ -296,7 +291,6 @@ describe("dashboard-stores", () => {
           timeRangeSummary: {
             min: TestTimeConstants.LAST_DAY.toISOString(),
             max: TestTimeConstants.NOW.toISOString(),
-            interval: V1TimeGrain.TIME_GRAIN_MINUTE as any,
           },
         },
       ),

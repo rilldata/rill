@@ -36,6 +36,10 @@ connectors:
 
 env:
   foo: bar
+
+mock_users:
+- email: foo@bar.com
+  custom_attribute: yeah
 `,
 	})
 
@@ -1618,8 +1622,9 @@ theme:
 			Paths: []string{"/canvases/c1.yaml"},
 			Refs:  []ResourceName{{Kind: ResourceKindTheme, Name: "t1"}},
 			CanvasSpec: &runtimev1.CanvasSpec{
-				DisplayName: "C1",
-				Theme:       "t1",
+				DisplayName:    "C1",
+				Theme:          "t1",
+				FiltersEnabled: true,
 			},
 		},
 		{
@@ -1636,6 +1641,7 @@ theme:
 					},
 					PrimaryColorRaw: "red",
 				},
+				FiltersEnabled: true,
 			},
 		},
 	}
@@ -1681,15 +1687,35 @@ kpi:
 `,
 		`canvases/d1.yaml`: `
 type: canvas
+
 max_width: 4
-items:
-- component: c1
-- component: c2
-  width: 1
-  height: 2
-- component:
+gap_x: 1
+gap_y: 2
+
+time_ranges:
+  - P2W
+  - range: P4W
+  - range: P2M
+    comparison_offsets:
+      - P1M
+      - offset: P4M
+        range: P2M
+
+filters:
+  enable: false
+
+defaults:
+  time_range: P4W
+
+rows:
+- items:
+  - component: c1
+- height: 100px
+  items:
+  - component: c2
+  - width: 2
     markdown:
-      content: "Hello world!"
+      content: "Foo"
 `,
 	})
 
@@ -1723,11 +1749,11 @@ items:
 			},
 		},
 		{
-			Name:  ResourceName{Kind: ResourceKindComponent, Name: "d1--component-2"},
+			Name:  ResourceName{Kind: ResourceKindComponent, Name: "d1--component-1-1"},
 			Paths: []string{"/canvases/d1.yaml"},
 			ComponentSpec: &runtimev1.ComponentSpec{
 				Renderer:           "markdown",
-				RendererProperties: must(structpb.NewStruct(map[string]any{"content": "Hello world!"})),
+				RendererProperties: must(structpb.NewStruct(map[string]any{"content": "Foo"})),
 				DefinedInCanvas:    true,
 			},
 		},
@@ -1737,15 +1763,43 @@ items:
 			Refs: []ResourceName{
 				{Kind: ResourceKindComponent, Name: "c1"},
 				{Kind: ResourceKindComponent, Name: "c2"},
-				{Kind: ResourceKindComponent, Name: "d1--component-2"},
+				{Kind: ResourceKindComponent, Name: "d1--component-1-1"},
 			},
 			CanvasSpec: &runtimev1.CanvasSpec{
 				DisplayName: "D1",
 				MaxWidth:    4,
-				Items: []*runtimev1.CanvasItem{
-					{Component: "c1"},
-					{Component: "c2", Width: asPtr(uint32(1)), Height: asPtr(uint32(2))},
-					{Component: "d1--component-2", DefinedInCanvas: true},
+				GapX:        1,
+				GapY:        2,
+				TimeRanges: []*runtimev1.ExploreTimeRange{
+					{Range: "P2W"},
+					{Range: "P4W"},
+					{
+						Range: "P2M",
+						ComparisonTimeRanges: []*runtimev1.ExploreComparisonTimeRange{
+							{Offset: "P1M"},
+							{Offset: "P4M", Range: "P2M"},
+						},
+					},
+				},
+				FiltersEnabled: false,
+				DefaultPreset: &runtimev1.CanvasPreset{
+					TimeRange:      asPtr("P4W"),
+					ComparisonMode: runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_NONE,
+				},
+				Rows: []*runtimev1.CanvasRow{
+					{
+						Items: []*runtimev1.CanvasItem{
+							{Component: "c1"},
+						},
+					},
+					{
+						Height:     asPtr(uint32(100)),
+						HeightUnit: "px",
+						Items: []*runtimev1.CanvasItem{
+							{Component: "c2"},
+							{Component: "d1--component-1-1", DefinedInCanvas: true, Width: asPtr(uint32(2))},
+						},
+					},
 				},
 			},
 		},
@@ -1771,6 +1825,28 @@ sql: select * from m1
 		`apis/a2.yaml`: `
 type: api
 metrics_sql: select * from m1
+`,
+		// api a3 with security rules
+		`apis/a3.yaml`: `
+type: api
+sql: select * from m1
+security:
+  access: true
+`,
+		// api a4
+		`apis/a4.yaml`: `
+type: api
+metrics_sql: select * from m1
+security:
+  access: '{{ .user.admin }}'
+`,
+		// api a5
+		`apis/a5.yaml`: `
+type: api
+metrics_sql: select * from m1
+skip_nested_security: true
+security:
+  access: '{{ .user.admin }}'
 `,
 	})
 
@@ -1801,8 +1877,50 @@ metrics_sql: select * from m1
 				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
 			},
 		},
+		{
+			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a3"},
+			Paths: []string{"/apis/a3.yaml"},
+			APISpec: &runtimev1.APISpec{
+				Resolver:           "sql",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"connector": "duckdb", "sql": "select * from m1"})),
+				SecurityRules: []*runtimev1.SecurityRule{
+					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
+						Condition: "true",
+						Allow:     true,
+					}}},
+				},
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a4"},
+			Paths: []string{"/apis/a4.yaml"},
+			APISpec: &runtimev1.APISpec{
+				Resolver:           "metrics_sql",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
+				SecurityRules: []*runtimev1.SecurityRule{
+					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
+						Condition: "{{ .user.admin }}",
+						Allow:     true,
+					}}},
+				},
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a5"},
+			Paths: []string{"/apis/a5.yaml"},
+			APISpec: &runtimev1.APISpec{
+				Resolver:           "metrics_sql",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
+				SecurityRules: []*runtimev1.SecurityRule{
+					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
+						Condition: "{{ .user.admin }}",
+						Allow:     true,
+					}}},
+				},
+				SkipNestedSecurity: true,
+			},
+		},
 	}
-
 	p, err := Parse(ctx, repo, "", "", "duckdb")
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)

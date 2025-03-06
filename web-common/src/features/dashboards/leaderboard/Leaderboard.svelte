@@ -6,7 +6,6 @@
     MetricsViewSpecDimensionV2,
     V1Expression,
     V1MetricsViewAggregationMeasure,
-    V1MetricsViewSpec,
     V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
   import {
@@ -15,41 +14,41 @@
   } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
   import {
-    cleanUpComparisonValue,
-    compareLeaderboardValues,
-    getSort,
-    prepareLeaderboardItemData,
-  } from "./leaderboard-utils";
-  import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
+    getComparisonRequestMeasures,
+    getURIRequestMeasure,
+  } from "../dashboard-utils";
+  import { mergeDimensionAndMeasureFilters } from "../filters/measure-filters/measure-filter-utils";
   import { SortType } from "../proto-state/derived-types";
+  import {
+    additionalMeasures,
+    getFiltersForOtherDimensions,
+  } from "../selectors";
   import {
     createAndExpression,
     createOrExpression,
     isExpressionUnsupported,
     sanitiseExpression,
   } from "../stores/filter-utils";
-  import {
-    getComparisonRequestMeasures,
-    getURIRequestMeasure,
-  } from "../dashboard-utils";
-  import { mergeDimensionAndMeasureFilter } from "../filters/measure-filters/measure-filter-utils";
-  import {
-    additionalMeasures,
-    getFiltersForOtherDimensions,
-  } from "../selectors";
-  import { getIndependentMeasures } from "../state-managers/selectors/measures";
+  import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
   import LeaderboardRow from "./LeaderboardRow.svelte";
   import LoadingRows from "./LoadingRows.svelte";
   import {
-    valueColumn,
-    deltaColumn,
+    cleanUpComparisonValue,
+    compareLeaderboardValues,
+    getSort,
+    prepareLeaderboardItemData,
+  } from "./leaderboard-utils";
+  import {
     DEFAULT_COL_WIDTH,
+    deltaColumn,
+    valueColumn,
   } from "./leaderboard-widths";
 
   const slice = 7;
   const gutterWidth = 24;
   const queryLimit = 8;
+  const maxValuesToShow = 15;
 
   export let dimension: MetricsViewSpecDimensionV2;
   export let timeRange: V1TimeRange;
@@ -60,7 +59,6 @@
   export let dimensionThresholdFilters: DimensionThresholdFilter[];
   export let activeMeasureName: string;
   export let metricsViewName: string;
-  export let metricsView: V1MetricsViewSpec;
   export let sortType: SortType;
   export let tableWidth: number;
   export let sortedAscending: boolean;
@@ -72,6 +70,7 @@
   export let atLeastOneActive: boolean;
   export let isBeingCompared: boolean;
   export let parentElement: HTMLElement;
+  export let suppressTooltip = false;
   export let toggleDimensionValueSelection: (
     dimensionName: string,
     dimensionValue: string,
@@ -117,17 +116,14 @@
   $: where = isComplexFilter
     ? whereFilter
     : sanitiseExpression(
-        mergeDimensionAndMeasureFilter(
+        mergeDimensionAndMeasureFilters(
           getFiltersForOtherDimensions(whereFilter, dimensionName),
           dimensionThresholdFilters,
         ),
         undefined,
       );
 
-  $: measures = getIndependentMeasures(
-    metricsView,
-    additionalMeasures(activeMeasureName, dimensionThresholdFilters),
-  )
+  $: measures = additionalMeasures(activeMeasureName, dimensionThresholdFilters)
     .map(
       (n) =>
         ({
@@ -202,6 +198,7 @@
       leaderboardTotal,
     ));
 
+  $: belowTheFoldDataLimit = maxValuesToShow - aboveTheFold.length;
   $: belowTheFoldDataQuery = createQueryServiceMetricsViewAggregation(
     instanceId,
     metricsViewName,
@@ -226,10 +223,15 @@
       timeRange,
       comparisonTimeRange,
       measures,
+      limit: belowTheFoldDataLimit.toString(),
     },
     {
       query: {
-        enabled: !!belowTheFoldValues.length && timeControlsReady && visible,
+        enabled:
+          !!belowTheFoldValues.length &&
+          timeControlsReady &&
+          visible &&
+          belowTheFoldDataLimit > 0,
       },
     },
   );
@@ -301,6 +303,7 @@
       {:else}
         {#each aboveTheFold as itemData (itemData.dimensionValue)}
           <LeaderboardRow
+            {suppressTooltip}
             {tableWidth}
             {firstColumnWidth}
             {isSummableMeasure}
@@ -319,6 +322,7 @@
 
       {#each belowTheFoldRows as itemData, i (itemData.dimensionValue)}
         <LeaderboardRow
+          {suppressTooltip}
           {itemData}
           {firstColumnWidth}
           {isSummableMeasure}
@@ -350,7 +354,7 @@
         Expand dimension to see more values
       </TooltipContent>
     </Tooltip>
-  {:else if noAvailableValues}
+  {:else if noAvailableValues && !isFetching}
     <div class="table-message ui-copy-muted">(No available values)</div>
   {/if}
 </div>

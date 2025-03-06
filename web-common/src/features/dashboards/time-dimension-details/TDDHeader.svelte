@@ -13,6 +13,7 @@
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import SelectAllButton from "@rilldata/web-common/features/dashboards/dimension-table/SelectAllButton.svelte";
+  import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import {
@@ -22,19 +23,20 @@
   import ComparisonSelector from "@rilldata/web-common/features/dashboards/time-controls/ComparisonSelector.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
-  import type { TimeGrain } from "@rilldata/web-common/lib/time/types";
+  import type {
+    DashboardTimeControls,
+    TimeGrain,
+    TimeRange,
+  } from "@rilldata/web-common/lib/time/types";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
-  import {
-    createQueryServiceExport,
-    V1ExportFormat,
-  } from "@rilldata/web-common/runtime-client";
+  import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { fly } from "svelte/transition";
   import ExportMenu from "../../exports/ExportMenu.svelte";
   import { featureFlags } from "../../feature-flags";
   import { PivotChipType } from "../pivot/types";
+  import { useTimeControlStore } from "../time-controls/time-control-store";
   import TimeGrainSelector from "../time-controls/TimeGrainSelector.svelte";
-  import exportTDD from "./export-tdd";
-  import { getTDDExportArgs } from "./getTDDExportArgs";
+  import { getTDDExportQuery } from "./tdd-export";
   import type { TDDComparison } from "./types";
 
   export let exploreName: string;
@@ -48,7 +50,6 @@
   export let hideStartPivotButton = false;
 
   const { adminServer, exports } = featureFlags;
-  const exportDash = createQueryServiceExport();
   const stateManagers = getStateManagers();
 
   const {
@@ -62,8 +63,6 @@
     dashboardStore,
     validSpecStore,
   } = stateManagers;
-
-  const scheduledReportsQueryArgs = getTDDExportArgs(stateManagers);
 
   $: metricsViewProto = $dashboardStore.proto;
 
@@ -114,10 +113,11 @@
   function startPivotForTDD() {
     const pivot = $dashboardStore?.pivot;
 
+    const pivotColumns = splitPivotChips(pivot.columns);
     if (
-      pivot.rows.dimension.length ||
-      pivot.columns.measure.length ||
-      pivot.columns.dimension.length
+      pivot.rows.length ||
+      pivotColumns.measure.length ||
+      pivotColumns.dimension.length
     ) {
       showReplacePivotModal = true;
     } else {
@@ -140,37 +140,61 @@
           },
         ]
       : [];
-    metricsExplorerStore.createPivot(
-      exploreName,
-      { dimension: rowDimensions },
+    metricsExplorerStore.createPivot(exploreName, rowDimensions, [
       {
-        dimension: [
-          {
-            id: dashboardGrain,
-            title: timeGrain.label,
-            type: PivotChipType.Time,
-          },
-        ],
-        measure: [
-          {
-            id: expandedMeasureName,
-            title: $measureLabel(expandedMeasureName),
-            type: PivotChipType.Measure,
-          },
-        ],
+        id: dashboardGrain,
+        title: timeGrain.label,
+        type: PivotChipType.Time,
       },
-    );
+      {
+        id: expandedMeasureName,
+        title: $measureLabel(expandedMeasureName),
+        type: PivotChipType.Measure,
+      },
+    ]);
   }
 
-  const handleExportTDD = async (format: V1ExportFormat) => {
-    await exportTDD({
-      ctx: stateManagers,
-      query: exportDash,
-      format,
-      timeDimension: $validSpecStore.data?.metricsView?.timeDimension as string,
-      searchText: $dimensionSearchText,
-    });
-  };
+  const timeControlsStore = useTimeControlStore(stateManagers);
+
+  $: ({ minTimeGrain, timeStart, timeEnd, selectedTimeRange } =
+    $timeControlsStore);
+
+  $: activeTimeGrain = selectedTimeRange?.interval;
+
+  $: baseTimeRange = selectedTimeRange?.start &&
+    selectedTimeRange?.end && {
+      name: selectedTimeRange?.name,
+      start: selectedTimeRange.start,
+      end: selectedTimeRange.end,
+    };
+
+  function onTimeGrainSelect(timeGrain: V1TimeGrain) {
+    if (baseTimeRange) {
+      makeTimeSeriesTimeRangeAndUpdateAppState(
+        baseTimeRange,
+        timeGrain,
+        $dashboardStore?.selectedComparisonTimeRange,
+      );
+    }
+  }
+
+  function makeTimeSeriesTimeRangeAndUpdateAppState(
+    timeRange: TimeRange,
+    timeGrain: V1TimeGrain,
+    /** we should only reset the comparison range when the user has explicitly chosen a new
+     * time range. Otherwise, the current comparison state should continue to be the
+     * source of truth.
+     */
+    comparisonTimeRange: DashboardTimeControls | undefined,
+  ) {
+    metricsExplorerStore.selectTimeRange(
+      exploreName,
+      timeRange,
+      timeGrain,
+      comparisonTimeRange,
+      $validSpecStore.data?.metricsView ?? {},
+    );
+  }
 </script>
 
 <div class="tdd-header">
@@ -188,7 +212,14 @@
         <Column size="16px" /> Columns
       </div>
       <div class="flex items-center gap-x-2">
-        <TimeGrainSelector {exploreName} tdd />
+        <TimeGrainSelector
+          tdd
+          {activeTimeGrain}
+          {onTimeGrainSelect}
+          {timeStart}
+          {timeEnd}
+          {minTimeGrain}
+        />
         <SearchableFilterChip
           label={selectedMeasureLabel}
           onSelect={switchMeasure}
@@ -261,11 +292,11 @@
       {#if $exports}
         <ExportMenu
           label="Export table data"
-          onExport={handleExportTDD}
           includeScheduledReport={$adminServer}
-          queryArgs={$scheduledReportsQueryArgs}
-          {metricsViewProto}
+          getQuery={(isScheduled) =>
+            getTDDExportQuery(stateManagers, isScheduled)}
           {exploreName}
+          {metricsViewProto}
         />
       {/if}
       {#if !hideStartPivotButton}

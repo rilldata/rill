@@ -34,10 +34,7 @@ func Test_sqliteToDuckDB_Transfer(t *testing.T) {
 	require.NoError(t, err)
 	olap, _ := to.AsOLAP("")
 
-	tr := &duckDBToDuckDB{
-		to:     to.(*connection),
-		logger: zap.NewNop(),
-	}
+	tr := newDuckDBToDuckDB(to, to.(*connection), zap.NewNop())
 	query := fmt.Sprintf("SELECT * FROM sqlite_scan('%s', 't');", dbPath)
 	err = tr.Transfer(context.Background(), map[string]any{"sql": query}, map[string]any{"table": "test"}, &drivers.TransferOptions{})
 	require.NoError(t, err)

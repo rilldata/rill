@@ -6,6 +6,7 @@
     setGithubData,
   } from "@rilldata/web-admin/features/projects/github/GithubData";
   import GithubRepoSelectionDialog from "@rilldata/web-admin/features/projects/github/GithubRepoSelectionDialog.svelte";
+  import { useGithubLastSynced } from "@rilldata/web-admin/features/projects/selectors";
   import { Button, IconButton } from "@rilldata/web-common/components/button";
   import DisconnectIcon from "@rilldata/web-common/components/icons/DisconnectIcon.svelte";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
@@ -29,11 +30,15 @@
     $proj.data?.project?.githubUrl &&
     getRepoNameFromGithubUrl($proj.data.project.githubUrl);
   $: subpath = $proj.data?.project?.subpath;
-  $: githubLastSynced = useDashboardsLastUpdated(
+  $: githubLastSynced = useGithubLastSynced(instanceId);
+  $: dashboardsLastUpdated = useDashboardsLastUpdated(
     instanceId,
     organization,
     project,
   );
+  // Github last synced might not always be available for projects not updated since we added commitedOn
+  // So fallback to old way of aproximating the last updated.
+  $: lastUpdated = $githubLastSynced.data ?? $dashboardsLastUpdated;
 
   let hovered = false;
   let editDropdownOpen = false;
@@ -123,9 +128,9 @@
             </span>
           </div>
         {/if}
-        {#if $githubLastSynced}
+        {#if lastUpdated}
           <span class="text-gray-500 text-[11px] leading-4">
-            Synced {$githubLastSynced.toLocaleString(undefined, {
+            Synced {lastUpdated.toLocaleString(undefined, {
               month: "short",
               day: "numeric",
               hour: "numeric",

@@ -1,4 +1,3 @@
-import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import {
   createAndExpression,
   createInExpression,
@@ -15,6 +14,7 @@ import {
   createQueryServiceMetricsViewAggregation,
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { type Readable, derived, readable } from "svelte/store";
 import { mergeFilters } from "./pivot-merge-filters";
@@ -29,6 +29,7 @@ import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
   type PivotAxesData,
+  type PivotDashboardContext,
   type PivotDataStoreConfig,
   type PivotQueryError,
 } from "./types";
@@ -37,7 +38,7 @@ import {
  * Wrapper function for Aggregate Query API
  */
 export function createPivotAggregationRowQuery(
-  ctx: StateManagers,
+  ctx: PivotDashboardContext,
   config: PivotDataStoreConfig,
   measures: V1MetricsViewAggregationMeasure[],
   dimensions: V1MetricsViewAggregationDimension[],
@@ -69,16 +70,15 @@ export function createPivotAggregationRowQuery(
   }
 
   return derived(
-    [ctx.runtime, ctx.metricsViewName],
-    ([runtime, metricsViewName], set) =>
+    [runtime, ctx.metricsViewName],
+    ([$runtime, metricsViewName], set) =>
       createQueryServiceMetricsViewAggregation(
-        runtime.instanceId,
+        $runtime.instanceId,
         metricsViewName,
         {
           measures: prepareMeasureForComparison(measures),
           dimensions,
           where: sanitiseExpression(whereFilter, undefined),
-          whereSql: config.pivot?.whereSql,
           timeRange: {
             start: timeRange?.start ? timeRange.start : config.time.timeStart,
             end: timeRange?.end ? timeRange.end : config.time.timeEnd,
@@ -96,7 +96,7 @@ export function createPivotAggregationRowQuery(
         },
         {
           query: {
-            enabled: !!ctx.dashboardStore,
+            enabled: ctx.enabled,
             queryClient: ctx.queryClient,
             keepPreviousData: true,
           },
@@ -109,7 +109,7 @@ export function createPivotAggregationRowQuery(
  * Get a list of axis values for a given list of dimension values and filters
  */
 export function getAxisForDimensions(
-  ctx: StateManagers,
+  ctx: PivotDashboardContext,
   config: PivotDataStoreConfig,
   dimensions: string[],
   measures: V1MetricsViewAggregationMeasure[],
@@ -210,7 +210,7 @@ export function getAxisForDimensions(
 }
 
 export function getAxisQueryForMeasureTotals(
-  ctx: StateManagers,
+  ctx: PivotDashboardContext,
   config: PivotDataStoreConfig,
   isMeasureSortAccessor: boolean,
   sortAccessor: string | undefined,
@@ -253,7 +253,7 @@ export function getAxisQueryForMeasureTotals(
 }
 
 export function getTotalsRowQuery(
-  ctx: StateManagers,
+  ctx: PivotDashboardContext,
   config: PivotDataStoreConfig,
   colDimensionAxes: Record<string, string[]> = {},
 ) {
@@ -274,6 +274,7 @@ export function getTotalsRowQuery(
 
   const colFilters = colDimensionNames
     .filter((d) => !isTimeDimension(d, time.timeDimension))
+    .filter((d) => colDimensionAxes[d]?.length > 0)
     .map((dimension) =>
       createInExpression(dimension, colDimensionAxes[dimension]),
     );

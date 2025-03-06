@@ -1,93 +1,144 @@
 <script lang="ts">
-  import { createPivotDataStore } from "@rilldata/web-common/features/dashboards/pivot/pivot-data-store";
+  import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
+  import type { TableSpec } from "@rilldata/web-common/features/canvas/components/table";
+  import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
+  import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
+  import PivotEmpty from "@rilldata/web-common/features/dashboards/pivot/PivotEmpty.svelte";
+  import PivotError from "@rilldata/web-common/features/dashboards/pivot/PivotError.svelte";
+  import PivotTable from "@rilldata/web-common/features/dashboards/pivot/PivotTable.svelte";
   import {
     PivotChipType,
     type PivotDataStore,
-    type PivotDataStoreConfig,
     type PivotState,
   } from "@rilldata/web-common/features/dashboards/pivot/types";
-  import { createStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import type { TableProperties } from "@rilldata/web-common/features/templates/types";
   import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { useQueryClient } from "@tanstack/svelte-query";
-  import { type Readable, writable } from "svelte/store";
-  import { getTableConfig, hasValidTableSchema } from "./selector";
-  import TableRenderer from "./TableRenderer.svelte";
+  import { writable, type Readable } from "svelte/store";
+  import { validateTableSchema } from "./selector";
+  import { clearTableCache, getTableConfig, usePivotForCanvas } from "./util";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
+  export let timeAndFilterStore: Readable<TimeAndFilterStore>;
+  export let componentName: string;
 
-  const queryClient = useQueryClient();
-  const TABLE_PREFIX = "_custom-table";
-
-  $: ({ instanceId } = $runtime);
-
-  $: tableProperties = rendererProperties as TableProperties;
-
-  $: tableSchema = hasValidTableSchema(instanceId, tableProperties);
-
-  $: isValidSchema = $tableSchema.isValid;
-
-  $: colDimensions = tableProperties.col_dimensions || [];
-  $: rowDimensions = tableProperties.row_dimensions || [];
-  $: whereSql = tableProperties.filter;
-
-  $: pivotState = writable<PivotState>({
+  const ctx = getCanvasStateManagers();
+  const tableSpecStore = writable(rendererProperties as TableSpec);
+  const pivotState = writable<PivotState>({
     active: true,
-    columns: {
-      measure: tableProperties.measures.map((measure) => ({
-        id: measure,
-        title: measure,
-        type: PivotChipType.Measure,
-      })),
-      dimension: colDimensions.map((dimension) => ({
-        id: dimension,
-        title: dimension,
-        type: PivotChipType.Dimension,
-      })),
-    },
-    rows: {
-      dimension: rowDimensions.map((dimension) => ({
-        id: dimension,
-        title: dimension,
-        type: PivotChipType.Dimension,
-      })),
-    },
-    whereSql,
+    columns: [],
+    rows: [],
     expanded: {},
     sorting: [],
     columnPage: 1,
     rowPage: 1,
     enableComparison: false,
-    rowJoinType: "nest",
+    tableMode: "nest",
     activeCell: null,
   });
 
-  let pivotDataStore: PivotDataStore | undefined = undefined;
-  let pivotConfig: Readable<PivotDataStoreConfig> | undefined = undefined;
-  $: if (isValidSchema) {
-    const stateManagerContext = createStateManagers({
-      queryClient,
-      exploreName: "TODO", // Historically, State Managers have only been used for Explore, not Canvas.
-      metricsViewName: tableProperties.metrics_view,
-      extraKeyPrefix: TABLE_PREFIX,
-    });
+  let pivotDataStore: PivotDataStore | undefined;
 
-    pivotConfig = getTableConfig(instanceId, tableProperties, $pivotState);
-    pivotDataStore = createPivotDataStore(stateManagerContext, pivotConfig);
+  $: tableSpec = rendererProperties as TableSpec;
+  $: tableSpecStore.set(tableSpec);
+
+  $: measures = tableSpec.measures || [];
+  $: colDimensions = tableSpec.col_dimensions || [];
+  $: rowDimensions = tableSpec.row_dimensions || [];
+
+  $: schema = validateTableSchema(ctx, tableSpec);
+
+  $: if (tableSpec && $schema.isValid) {
+    pivotState.update((state) => ({
+      ...state,
+      sorting: [],
+      expanded: {},
+      columns: [
+        ...colDimensions.map((dimension) => ({
+          id: dimension,
+          title: dimension,
+          type: PivotChipType.Dimension,
+        })),
+        ...measures.map((measure) => ({
+          id: measure,
+          title: measure,
+          type: PivotChipType.Measure,
+        })),
+      ],
+      rows: rowDimensions.map((dimension) => ({
+        id: dimension,
+        title: dimension,
+        type: PivotChipType.Dimension,
+      })),
+    }));
   }
+
+  $: pivotConfig = getTableConfig(
+    ctx,
+    tableSpec.metrics_view,
+    tableSpecStore,
+    pivotState,
+    timeAndFilterStore,
+  );
+
+  $: if ($schema.isValid && tableSpec.metrics_view) {
+    pivotDataStore = usePivotForCanvas(
+      ctx,
+      componentName,
+      tableSpec.metrics_view,
+      pivotState,
+      tableSpecStore,
+      timeAndFilterStore,
+    );
+  } else {
+    pivotDataStore = undefined;
+    clearTableCache(componentName);
+  }
+
+  $: pivotColumns = splitPivotChips($pivotState.columns);
+
+  $: hasColumnAndNoMeasure =
+    pivotColumns.dimension.length > 0 && pivotColumns.measure.length === 0;
 </script>
 
-<div class="overflow-y-auto">
-  {#if !isValidSchema}
-    <div>{$tableSchema.error}</div>
-  {:else if pivotDataStore && pivotConfig && $pivotConfig}
-    <TableRenderer
-      {pivotDataStore}
-      config={$pivotConfig}
-      pivotDashboardStore={pivotState}
-    />
-  {:else}
-    <div>Loading...</div>
+<div class="size-full overflow-hidden" style:max-height="inherit">
+  {#if !$schema.isValid}
+    <ComponentError error={$schema.error} />
+  {:else if pivotDataStore && $pivotDataStore && pivotConfig && $pivotConfig}
+    {#if $pivotDataStore?.error?.length}
+      <PivotError errors={$pivotDataStore.error} />
+    {:else if !$pivotDataStore?.data || $pivotDataStore?.data?.length === 0}
+      <PivotEmpty
+        assembled={$pivotDataStore.assembled}
+        isFetching={$pivotDataStore.isFetching}
+        {hasColumnAndNoMeasure}
+      />
+    {:else}
+      <PivotTable
+        border={false}
+        {pivotDataStore}
+        config={pivotConfig}
+        {pivotState}
+        setPivotExpanded={(expanded) => {
+          pivotState.update((state) => ({
+            ...state,
+            expanded,
+          }));
+        }}
+        setPivotSort={(sorting) => {
+          pivotState.update((state) => ({
+            ...state,
+            sorting,
+            rowPage: 1,
+            expanded: {},
+          }));
+        }}
+        setPivotRowPage={(page) => {
+          pivotState.update((state) => ({
+            ...state,
+            rowPage: page,
+          }));
+        }}
+      />
+    {/if}
   {/if}
 </div>

@@ -6,6 +6,7 @@
   } from "@rilldata/web-admin/features/billing/issues/useBillingIssueMessage";
   import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { onMount } from "svelte";
 
   export let organization: string;
 
@@ -14,7 +15,9 @@
   $: ({ showStartTeamPlanDialog, startTeamPlanType, teamPlanEndDate } =
     billingCTAHandler);
 
-  function showBillingIssueBanner(message: BillingIssueMessage) {
+  function showBillingIssueBanner(message: BillingIssueMessage | undefined) {
+    if (!message) return;
+
     eventBus.emit("banner", {
       type: message.type,
       message: message.title + " " + message.description,
@@ -33,15 +36,13 @@
     });
   }
 
-  $: if (!$billingIssueMessage.isFetching) {
-    // is fetching guard is to avoid flicker while the issues are re-fetched
-    if ($billingIssueMessage.data) {
-      showBillingIssueBanner($billingIssueMessage.data);
-    } else {
-      // when switching orgs we need to make sure we clear previous org's banner.
-      eventBus.emit("banner", null);
-    }
-  }
+  $: showBillingIssueBanner($billingIssueMessage.data);
+  onMount(() => {
+    // There is a race condition where BannerCenter is mounted after the above statement is run.
+    // So call showBillingIssueBanner again to make sure banner is shown.
+    // TODO: we should probably save the last event args and re-fire them when a listener added
+    showBillingIssueBanner($billingIssueMessage.data);
+  });
 </script>
 
 <StartTeamPlanDialog

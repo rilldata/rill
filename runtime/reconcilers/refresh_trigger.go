@@ -9,6 +9,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 )
 
@@ -23,8 +24,8 @@ type RefreshTriggerReconciler struct {
 	C *runtime.Controller
 }
 
-func newRefreshTriggerReconciler(c *runtime.Controller) runtime.Reconciler {
-	return &RefreshTriggerReconciler{C: c}
+func newRefreshTriggerReconciler(ctx context.Context, c *runtime.Controller) (runtime.Reconciler, error) {
+	return &RefreshTriggerReconciler{C: c}, nil
 }
 
 func (r *RefreshTriggerReconciler) Close(ctx context.Context) error {
@@ -70,14 +71,16 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.R
 		return runtime.ReconcileResult{}
 	}
 
-	// As a special case, triggers for the global project parser should actually be handled just by triggering a reconcile on it.
-	// We do this here instead of in the loop below since calling r.C.Reconcile directly must be done outside of a catalog lock.
+	// For some resource types, it is sufficient to call r.C.Reconcile without updating the spec.
+	// This applies for resources that run a full reconcile on every invocation (i.e. doesn't cache state).
+	// We handle these resources here instead of in the loop below since calling r.C.Reconcile directly must be done outside of a catalog lock.
 	for i, rn := range trigger.Spec.Resources {
-		if !equalResourceName(rn, runtime.GlobalProjectParserName) {
+		// Apply only to project parsers and metrics views.
+		if rn.Kind != runtime.ResourceKindProjectParser && rn.Kind != runtime.ResourceKindMetricsView {
 			continue
 		}
 
-		err = r.C.Reconcile(ctx, runtime.GlobalProjectParserName)
+		err = r.C.Reconcile(ctx, rn)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
 		}
@@ -106,7 +109,7 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.R
 			if !errors.Is(err, drivers.ErrResourceNotFound) {
 				return runtime.ReconcileResult{Err: err}
 			}
-			r.C.Logger.Warn("Skipped trigger for non-existent model", zap.String("model", mt.Model))
+			r.C.Logger.Warn("Skipped trigger for non-existent model", zap.String("model", mt.Model), observability.ZapCtx(ctx))
 			continue
 		}
 
@@ -114,11 +117,11 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.R
 			mdl := mr.GetModel()
 			modelID := mdl.State.PartitionsModelId
 			if !mdl.Spec.Incremental {
-				r.C.Logger.Warn("Skipped partitions trigger for model because it is not incremental", zap.String("model", mt.Model))
+				r.C.Logger.Warn("Skipped partitions trigger for model because it is not incremental", zap.String("model", mt.Model), observability.ZapCtx(ctx))
 				continue
 			}
 			if modelID == "" {
-				r.C.Logger.Warn("Skipped partitions trigger for model because no partitions have been ingested yet", zap.String("model", mt.Model))
+				r.C.Logger.Warn("Skipped partitions trigger for model because no partitions have been ingested yet", zap.String("model", mt.Model), observability.ZapCtx(ctx))
 				continue
 			}
 
@@ -152,7 +155,7 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.R
 			if !errors.Is(err, drivers.ErrResourceNotFound) {
 				return runtime.ReconcileResult{Err: err}
 			}
-			r.C.Logger.Warn("Skipped trigger for non-existent resource", zap.String("kind", rn.Kind), zap.String("name", rn.Name))
+			r.C.Logger.Warn("Skipped trigger for non-existent resource", zap.String("kind", rn.Kind), zap.String("name", rn.Name), observability.ZapCtx(ctx))
 			continue
 		}
 
@@ -207,7 +210,7 @@ func (r *RefreshTriggerReconciler) UpdateTriggerTrue(ctx context.Context, res *r
 		report.Spec.Trigger = true
 	default:
 		// Nothing to do
-		r.C.Logger.Warn("Attempted to trigger a resource type that is not triggerable", zap.String("kind", res.Meta.Name.Kind), zap.String("name", res.Meta.Name.Name))
+		r.C.Logger.Warn("Attempted to trigger a resource type that is not triggerable", zap.String("kind", res.Meta.Name.Kind), zap.String("name", res.Meta.Name.Name), observability.ZapCtx(ctx))
 		return nil
 	}
 

@@ -1,66 +1,67 @@
 <script lang="ts">
-  import CanvasFilters from "@rilldata/web-common/features/canvas/filters/CanvasFilters.svelte";
-  import { type V1CanvasItem } from "@rilldata/web-common/runtime-client";
+  import {
+    createQueryServiceResolveCanvas,
+    type V1Resource,
+  } from "@rilldata/web-common/runtime-client";
+  import {
+    MIN_HEIGHT,
+    normalizeSizeArray,
+    DEFAULT_DASHBOARD_WIDTH,
+  } from "./layout-util";
+  import RowWrapper from "./RowWrapper.svelte";
+  import CanvasComponent from "./CanvasComponent.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import Component from "./Component.svelte";
-  import * as defaults from "./constants";
-  import DashboardWrapper from "./DashboardWrapper.svelte";
+  import ItemWrapper from "./ItemWrapper.svelte";
+  import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
 
-  export let columns = 20;
-  export let items: V1CanvasItem[];
-  export let gap = 1;
-  export let chartView = false;
+  export let resource: V1Resource;
 
-  let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
   $: ({ instanceId } = $runtime);
 
-  const dashboardWidth = chartView
-    ? defaults.DASHBOARD_WIDTH / 2
-    : defaults.DASHBOARD_WIDTH;
+  $: meta = resource?.meta;
+  $: canvasName = meta?.name?.name;
 
-  $: gridWidth = contentRect.width;
-  $: scale = gridWidth / dashboardWidth;
-  $: gapSize = dashboardWidth * (gap / 1000);
-  $: gridCell = dashboardWidth / columns;
-  $: radius = gridCell * defaults.COMPONENT_RADIUS;
+  $: canvas = resource?.canvas;
+  $: rows = canvas?.spec?.rows || [];
+  $: maxWidth = canvas?.spec?.maxWidth || DEFAULT_DASHBOARD_WIDTH;
 
-  $: maxBottom = items.reduce((max, el) => {
-    const bottom = Number(el.height) + Number(el.y);
-    return Math.max(max, bottom);
-  }, 0);
+  $: canvasResolverQuery = createQueryServiceResolveCanvas(
+    instanceId,
+    canvasName ?? "",
+    {},
+    { query: { enabled: !!canvasName } },
+  );
+
+  $: canvasData = $canvasResolverQuery.data;
 </script>
 
-<div
-  id="header"
-  class="border-b w-fit min-w-full flex flex-col bg-slate-50 slide"
+<CanvasDashboardWrapper
+  {maxWidth}
+  filtersEnabled={canvas?.spec?.filtersEnabled}
 >
-  <CanvasFilters />
-</div>
-
-<DashboardWrapper
-  bind:contentRect
-  {scale}
-  height={maxBottom * gridCell * scale}
-  width={dashboardWidth}
->
-  {#each items as component, i (i)}
-    {@const componentName = component.component}
-    {#if componentName}
-      <Component
-        embed
-        {i}
-        {instanceId}
-        {componentName}
-        {chartView}
-        {scale}
-        {radius}
-        padding={gapSize}
-        width={Number(component.width ?? defaults.COMPONENT_WIDTH) * gridCell}
-        height={Number(component.height ?? defaults.COMPONENT_HEIGHT) *
-          gridCell}
-        left={Number(component.x) * gridCell}
-        top={Number(component.y) * gridCell}
-      />
-    {/if}
+  {#each rows as { items = [], height = MIN_HEIGHT, heightUnit = "px" }, rowIndex (rowIndex)}
+    {@const widths = normalizeSizeArray(items?.map((el) => el?.width ?? 0))}
+    {@const types = items?.map(
+      ({ component }) =>
+        canvasData?.resolvedComponents?.[component ?? ""]?.component?.spec
+          ?.renderer,
+    )}
+    <RowWrapper
+      {maxWidth}
+      {rowIndex}
+      zIndex={50 - rowIndex * 2}
+      height="{height}{heightUnit}"
+      gridTemplate={widths.map((w) => `${w}fr`).join(" ")}
+    >
+      {#each items as item, columnIndex (columnIndex)}
+        <ItemWrapper type={types[columnIndex]} zIndex={4 - columnIndex}>
+          <CanvasComponent canvasItem={item} id={item.component ?? ""} />
+        </ItemWrapper>
+      {/each}
+    </RowWrapper>
+  {:else}
+    <div class="size-full flex items-center justify-center">
+      <p class="text-lg text-gray-500">No components added</p>
+    </div>
   {/each}
-</DashboardWrapper>
+</CanvasDashboardWrapper>

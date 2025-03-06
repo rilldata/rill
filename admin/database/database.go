@@ -72,6 +72,7 @@ type DB interface {
 	FindOrganizationWhitelistedDomainsForDomain(ctx context.Context, domain string) ([]*OrganizationWhitelistedDomain, error)
 	InsertOrganizationWhitelistedDomain(ctx context.Context, opts *InsertOrganizationWhitelistedDomainOptions) (*OrganizationWhitelistedDomain, error)
 	DeleteOrganizationWhitelistedDomain(ctx context.Context, id string) error
+	FindInactiveOrganizations(ctx context.Context) ([]*Organization, error)
 
 	FindProjects(ctx context.Context, afterName string, limit int) ([]*Project, error)
 	FindProjectsByVersion(ctx context.Context, version, afterName string, limit int) ([]*Project, error)
@@ -89,6 +90,7 @@ type DB interface {
 	InsertProject(ctx context.Context, opts *InsertProjectOptions) (*Project, error)
 	DeleteProject(ctx context.Context, id string) error
 	UpdateProject(ctx context.Context, id string, opts *UpdateProjectOptions) (*Project, error)
+	CountProjectsForOrganization(ctx context.Context, orgID string) (int, error)
 	CountProjectsQuotaUsage(ctx context.Context, orgID string) (*ProjectsQuotaUsage, error)
 	FindProjectWhitelistedDomain(ctx context.Context, projectID, domain string) (*ProjectWhitelistedDomain, error)
 	FindProjectWhitelistedDomainForProjectWithJoinedRoleNames(ctx context.Context, projectID string) ([]*ProjectWhitelistedDomainWithJoinedRoleNames, error)
@@ -265,7 +267,7 @@ type DB interface {
 
 	FindAsset(ctx context.Context, id string) (*Asset, error)
 	FindUnusedAssets(ctx context.Context, limit int) ([]*Asset, error)
-	InsertAsset(ctx context.Context, id string, organizationID, path, ownerID string, cacheable bool) (*Asset, error)
+	InsertAsset(ctx context.Context, id string, organizationID, path, ownerID string, public bool) (*Asset, error)
 	DeleteAssets(ctx context.Context, ids []string) error
 
 	FindOrganizationIDsWithBilling(ctx context.Context) ([]string, error)
@@ -317,6 +319,7 @@ type Organization struct {
 	DisplayName                         string `db:"display_name"`
 	Description                         string
 	LogoAssetID                         *string   `db:"logo_asset_id"`
+	FaviconAssetID                      *string   `db:"favicon_asset_id"`
 	CustomDomain                        string    `db:"custom_domain"`
 	AllUsergroupID                      *string   `db:"all_usergroup_id"`
 	CreatedOn                           time.Time `db:"created_on"`
@@ -330,6 +333,8 @@ type Organization struct {
 	BillingCustomerID                   string    `db:"billing_customer_id"`
 	PaymentCustomerID                   string    `db:"payment_customer_id"`
 	BillingEmail                        string    `db:"billing_email"`
+	BillingPlanName                     *string   `db:"billing_plan_name"`
+	BillingPlanDisplayName              *string   `db:"billing_plan_display_name"`
 	CreatedByUserID                     *string   `db:"created_by_user_id"`
 }
 
@@ -339,6 +344,7 @@ type InsertOrganizationOptions struct {
 	DisplayName                         string
 	Description                         string
 	LogoAssetID                         *string
+	FaviconAssetID                      *string
 	CustomDomain                        string `validate:"omitempty,fqdn"`
 	QuotaProjects                       int
 	QuotaDeployments                    int
@@ -358,6 +364,7 @@ type UpdateOrganizationOptions struct {
 	DisplayName                         string
 	Description                         string
 	LogoAssetID                         *string
+	FaviconAssetID                      *string
 	CustomDomain                        string `validate:"omitempty,fqdn"`
 	QuotaProjects                       int
 	QuotaDeployments                    int
@@ -368,6 +375,8 @@ type UpdateOrganizationOptions struct {
 	BillingCustomerID                   string
 	PaymentCustomerID                   string
 	BillingEmail                        string
+	BillingPlanName                     *string
+	BillingPlanDisplayName              *string
 	CreatedByUserID                     *string
 }
 
@@ -1002,7 +1011,7 @@ type Asset struct {
 	OrganizationID *string   `db:"org_id"`
 	Path           string    `db:"path"`
 	OwnerID        string    `db:"owner_id"`
-	Cacheable      bool      `db:"cacheable"`
+	Public         bool      `db:"public"`
 	CreatedOn      time.Time `db:"created_on"`
 }
 

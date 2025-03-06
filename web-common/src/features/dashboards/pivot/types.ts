@@ -6,6 +6,7 @@ import type {
   V1MetricsViewAggregationResponseDataItem,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
+import type { QueryClient } from "@tanstack/svelte-query";
 import type {
   ColumnDef,
   ExpandedState,
@@ -36,30 +37,26 @@ export interface PivotCell {
   columnId: string;
 }
 
+export interface PivotDashboardContext {
+  metricsViewName: Readable<string>;
+  queryClient: QueryClient;
+  enabled: boolean;
+}
+
 export interface PivotState {
   active: boolean;
-  columns: PivotColumns;
-  rows: PivotRows;
+  columns: PivotChipData[];
+  rows: PivotChipData[];
   expanded: ExpandedState;
   sorting: SortingState;
   columnPage: number;
   rowPage: number;
   enableComparison: boolean;
-  rowJoinType: PivotRowJoinType;
+  tableMode: PivotTableMode;
   activeCell: PivotCell | null;
-  whereSql?: string;
 }
 
-export type PivotRowJoinType = "flat" | "nest";
-
-export type PivotColumns = {
-  measure: PivotChipData[];
-  dimension: PivotChipData[];
-};
-
-export type PivotRows = {
-  dimension: PivotChipData[];
-};
+export type PivotTableMode = "flat" | "nest";
 
 export interface PivotDataRow {
   subRows?: PivotDataRow[];
@@ -101,6 +98,7 @@ export interface PivotDataStoreConfig {
   enableComparison: boolean;
   comparisonTime: TimeRangeString | undefined;
   searchText: string | undefined;
+  isFlat: boolean;
 }
 
 export interface PivotAxesData {
@@ -138,7 +136,6 @@ export type PivotColumnSet = {
 export type PivotConfig = {
   rowDims: PivotDimension[];
   colSets: PivotColumnSet[];
-  rowJoinType: "flat" | "nest";
   sort: any; // TBD
   expanded: any[];
 };

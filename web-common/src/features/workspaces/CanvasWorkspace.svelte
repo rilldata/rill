@@ -1,16 +1,10 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
-  import Canvas from "@rilldata/web-common/features/canvas/Canvas.svelte";
   import CanvasEditor from "@rilldata/web-common/features/canvas/CanvasEditor.svelte";
   import CanvasThemeProvider from "@rilldata/web-common/features/canvas/CanvasThemeProvider.svelte";
-  import AddComponentMenu from "@rilldata/web-common/features/canvas/components/AddComponentMenu.svelte";
-  import type { CanvasComponentType } from "@rilldata/web-common/features/canvas/components/types";
-  import { getComponentRegistry } from "@rilldata/web-common/features/canvas/components/util";
   import VisualCanvasEditing from "@rilldata/web-common/features/canvas/inspector/VisualCanvasEditing.svelte";
-  import { useDefaultMetrics } from "@rilldata/web-common/features/canvas/selector";
   import StateManagersProvider from "@rilldata/web-common/features/canvas/state-managers/StateManagersProvider.svelte";
-  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import {
@@ -28,23 +22,19 @@
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { parseDocument } from "yaml";
   import PreviewButton from "../explores/PreviewButton.svelte";
+  import RowBasedCanvas from "../canvas/RowBasedCanvas.svelte";
 
   export let fileArtifact: FileArtifact;
 
   let canvasName: string;
   let selectedView: "split" | "code" | "viz";
 
-  const componentRegistry = getComponentRegistry(fileArtifact);
-
   $: ({
-    saveLocalContent: updateComponentFile,
     autoSave,
     path: filePath,
     fileName,
-    updateEditorContent,
-    editorContent,
+
     getResource,
     getAllErrors,
     remoteContent,
@@ -67,8 +57,6 @@
   $: canvasResource = data?.canvas;
   $: canvasName = getNameFromFile(filePath);
 
-  $: metricsViewQuery = useDefaultMetrics(instanceId);
-
   $: ({ instanceId } = $runtime);
 
   $: lineBasedRuntimeErrors = mapParseErrorsToLines(
@@ -87,104 +75,72 @@
     );
     if (newRoute) await goto(newRoute);
   }
-
-  async function addComponent(componentName: CanvasComponentType) {
-    const defaultMetrics = $metricsViewQuery?.data;
-    if (!defaultMetrics) return;
-
-    const newSpec = componentRegistry[componentName].newComponentSpec(
-      defaultMetrics.metricsView,
-      defaultMetrics.measure,
-      defaultMetrics.dimension,
-    );
-
-    const { width, height } = componentRegistry[componentName].defaultSize;
-    const newComponent = {
-      component: { [componentName]: newSpec },
-      height,
-      width,
-      x: 0,
-      y: 0,
-    };
-    const parsedDocument = parseDocument(
-      $editorContent ?? $remoteContent ?? "",
-    );
-
-    const items = parsedDocument.get("items") as any;
-
-    if (!items) {
-      parsedDocument.set("items", [newComponent]);
-    } else {
-      items.add(newComponent);
-    }
-
-    updateEditorContent(parsedDocument.toString(), true);
-    await updateComponentFile();
-  }
 </script>
 
-{#if fileArtifact}
-  {#key canvasName}
-    <StateManagersProvider {canvasName}>
-      <CanvasThemeProvider>
-        <WorkspaceContainer>
-          <WorkspaceHeader
-            slot="header"
-            {filePath}
-            hasUnsavedChanges={$hasUnsavedChanges}
-            titleInput={fileName}
-            onTitleChange={onChangeCallback}
-            resourceKind={ResourceKind.Canvas}
-          >
-            <div class="flex gap-x-2" slot="cta">
-              <PreviewButton
-                href="/canvas/{canvasName}"
-                disabled={allErrors.length > 0 || resourceIsReconciling}
-                reconciling={resourceIsReconciling}
-              />
+{#key canvasName}
+  <StateManagersProvider {canvasName}>
+    <CanvasThemeProvider>
+      <WorkspaceContainer>
+        <WorkspaceHeader
+          slot="header"
+          {filePath}
+          resource={data}
+          hasUnsavedChanges={$hasUnsavedChanges}
+          titleInput={fileName}
+          onTitleChange={onChangeCallback}
+          resourceKind={ResourceKind.Canvas}
+        >
+          <div class="flex gap-x-2" slot="cta">
+            <PreviewButton
+              href="/canvas/{canvasName}"
+              disabled={allErrors.length > 0 || resourceIsReconciling}
+              reconciling={resourceIsReconciling}
+            />
 
-              <AddComponentMenu {addComponent} />
-              <ViewSelector
-                allowSplit={false}
-                bind:selectedView={$selectedViewStore}
-              />
-            </div>
-          </WorkspaceHeader>
+            <!-- <AddComponentMenu {addComponent} /> -->
+            <ViewSelector
+              allowSplit={false}
+              bind:selectedView={$selectedViewStore}
+            />
+          </div>
+        </WorkspaceHeader>
 
-          <WorkspaceEditorContainer
-            slot="body"
-            error={mainError}
-            showError={!!$remoteContent && selectedView === "code"}
-          >
-            {#if selectedView === "code"}
-              <CanvasEditor
-                bind:autoSave={$autoSave}
-                {canvasName}
+        <WorkspaceEditorContainer
+          slot="body"
+          error={mainError}
+          showError={!!$remoteContent && selectedView === "code"}
+        >
+          {#if selectedView === "code"}
+            <CanvasEditor
+              bind:autoSave={$autoSave}
+              {canvasName}
+              {fileArtifact}
+              {lineBasedRuntimeErrors}
+            />
+          {:else if selectedView === "viz"}
+            {#if mainError}
+              <ErrorPage
+                body={mainError.message}
+                fatal
+                detail={allErrors.map((error) => error.message).join("\n")}
+                header="Unable to load canvas preview"
+                statusCode={404}
+              />
+            {:else if canvasResource}
+              <RowBasedCanvas
+                openSidebar={workspace.inspector.open}
                 {fileArtifact}
-                {lineBasedRuntimeErrors}
               />
-            {:else if selectedView === "viz"}
-              {#if mainError}
-                <ErrorPage
-                  body={mainError.message}
-                  fatal
-                  detail={allErrors.map((error) => error.message).join("\n")}
-                  header="Unable to load canvas preview"
-                  statusCode={404}
-                />
-              {:else if canvasResource}
-                <Canvas {fileArtifact} />
-              {/if}
             {/if}
-          </WorkspaceEditorContainer>
+          {/if}
+        </WorkspaceEditorContainer>
 
-          <VisualCanvasEditing {fileArtifact} slot="inspector" />
-        </WorkspaceContainer>
-      </CanvasThemeProvider>
-    </StateManagersProvider>
-  {/key}
-{:else}
-  <div class="grid place-items-center size-full">
-    <DelayedSpinner isLoading={true} size="40px" />
-  </div>
-{/if}
+        <VisualCanvasEditing
+          {fileArtifact}
+          autoSave={selectedView === "viz" || $autoSave}
+          slot="inspector"
+        />
+      </WorkspaceContainer>
+    </CanvasThemeProvider>
+  </StateManagersProvider>
+{/key}

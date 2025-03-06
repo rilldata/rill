@@ -9,6 +9,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
 
 // AST is the abstract syntax tree for a metrics SQL query.
@@ -39,6 +40,7 @@ type AST struct {
 //   - FromSelect and optionally SpineSelect and/or LeftJoinSelects
 //   - FromSelect and optionally JoinComparisonSelect (for comparison CTE based optimization, this combination is used, both should be set and one of them will be used as CTE)
 type SelectNode struct {
+	RawSelect            *ExprNode        // Raw SQL SELECT statement to use
 	Alias                string           // Alias for the node used by outer SELECTs to reference it.
 	IsCTE                bool             // Whether this node is a Common Table Expression
 	DimFields            []FieldNode      // Dimensions fields to select
@@ -47,6 +49,7 @@ type SelectNode struct {
 	FromSelect           *SelectNode      // Sub-select to select from (if set, FromTable must not be set)
 	SpineSelect          *SelectNode      // Sub-select that returns a spine of dimensions. Currently it will be right-joined onto FromSelect.
 	LeftJoinSelects      []*SelectNode    // Sub-selects to left join onto FromSelect, to enable "per-dimension" measures
+	CrossJoinSelects     []*SelectNode    // sub-selects to cross join onto FromSelect
 	JoinComparisonSelect *SelectNode      // Sub-select to join onto FromSelect for comparison measures
 	JoinComparisonType   JoinType         // Type of join to use for JoinComparisonSelect
 	Unnests              []string         // Unnest expressions to add in the FROM clause
@@ -67,6 +70,7 @@ type FieldNode struct {
 	DisplayName string
 	Expr        string
 	AutoUnnest  bool
+	TreatNullAs string // only used for measures
 }
 
 // ExprNode represents an expression for a WHERE clause.
@@ -108,6 +112,7 @@ const (
 	JoinTypeFull        JoinType = "FULL OUTER"
 	JoinTypeLeft        JoinType = "LEFT OUTER"
 	JoinTypeRight       JoinType = "RIGHT OUTER"
+	JoinTypeCross       JoinType = "CROSS"
 )
 
 // NewAST builds a new SQL AST based on a metrics query.
@@ -643,7 +648,7 @@ func (a *AST) buildBaseSelect(alias string, comparison bool) (*SelectNode, error
 	// If there is a spine, we wrap the base SELECT in a new SELECT that we add the spine to.
 	// We do not join the spine directly to the FromTable because the join would be evaluated before the GROUP BY,
 	// which would impact the measure aggregations (e.g. counts per group would be wrong).
-	if a.query.Spine != nil {
+	if a.query.Spine != nil && !(a.query.Spine.TimeRange != nil && comparison) { // Skip time range spines in the comparison select
 		sn, err := a.buildSpineSelect(a.generateIdentifier(), a.query.Spine, tr)
 		if err != nil {
 			return nil, err
@@ -689,7 +694,72 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 	}
 
 	if spine.TimeRange != nil {
-		return nil, errors.New("time_range not yet supported in spine")
+		// if spine generates more than 1000 values then return an error
+		bins := timeutil.ApproximateBins(spine.TimeRange.Start, spine.TimeRange.End, spine.TimeRange.Grain.ToTimeutil())
+		if bins > 1000 {
+			return nil, errors.New("failed to apply time spine: time range has more than 1000 bins")
+		}
+
+		tf, ok := a.findFieldForComputedTimeDimension(a.dimFields, a.metricsView.TimeDimension)
+		if !ok {
+			return nil, fmt.Errorf("failed to find computed time dimension %q", a.metricsView.TimeDimension)
+		}
+		timeAlias := tf.Name
+
+		var newDims []FieldNode
+		for _, f := range a.dimFields {
+			if f.Name == tf.Name {
+				continue
+			}
+			newDims = append(newDims, f)
+		}
+
+		start := spine.TimeRange.Start
+		end := spine.TimeRange.End
+		grain := spine.TimeRange.Grain
+		sel, args, err := a.dialect.SelectTimeRangeBins(start, end, grain.ToProto(), timeAlias)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate time spine: %w", err)
+		}
+
+		rangeSelect := &SelectNode{
+			Alias: alias,
+			RawSelect: &ExprNode{
+				Expr: sel,
+				Args: args,
+			},
+		}
+
+		// if there is only one dimension in the query, then we can directly join the spine time range with the dimension
+		if len(a.dimFields) == 1 {
+			return rangeSelect, nil
+		}
+
+		// give alias to the outer select as range select will be moved to cross join
+		rangeSelect.Alias = a.generateIdentifier()
+
+		dimSelect := &SelectNode{
+			Alias:     alias,
+			DimFields: newDims,
+			FromTable: a.underlyingTable,
+			Where:     a.underlyingWhere,
+			Group:     true,
+		}
+
+		a.addTimeRange(dimSelect, tr)
+
+		a.wrapSelect(dimSelect, a.generateIdentifier())
+
+		dimSelect.CrossJoinSelects = []*SelectNode{rangeSelect}
+
+		// now add cross join field to the dimension list
+		dimSelect.DimFields = append(dimSelect.DimFields, FieldNode{
+			Name:        timeAlias,
+			DisplayName: timeAlias,
+			Expr:        a.sqlForMember(rangeSelect.Alias, timeAlias),
+		})
+
+		return dimSelect, nil
 	}
 
 	return nil, errors.New("unhandled spine type")
@@ -730,14 +800,20 @@ func (a *AST) addMeasureField(n *SelectNode, m *runtimev1.MetricsViewSpec_Measur
 
 	switch m.Type {
 	case runtimev1.MetricsViewSpec_MEASURE_TYPE_UNSPECIFIED, runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE:
-		return a.addSimpleMeasure(n, m)
+		err = a.addSimpleMeasure(n, m)
 	case runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED:
-		return a.addDerivedMeasure(n, m)
+		err = a.addDerivedMeasure(n, m)
 	case runtimev1.MetricsViewSpec_MEASURE_TYPE_TIME_COMPARISON:
-		return a.addTimeComparisonMeasure(n, m)
+		err = a.addTimeComparisonMeasure(n, m)
 	default:
 		panic("unhandled measure type")
 	}
+
+	if m.TreatNullsAs != "" {
+		n.MeasureFields[len(n.MeasureFields)-1].TreatNullAs = m.TreatNullsAs
+	}
+
+	return err
 }
 
 // addSimpleMeasure adds a measure of type simple to the given SelectNode.
@@ -982,12 +1058,23 @@ func (a *AST) wrapSelect(s *SelectNode, innerAlias string) {
 		})
 	}
 
+	for _, cjs := range cpy.CrossJoinSelects {
+		for _, f := range cjs.DimFields {
+			s.DimFields = append(s.DimFields, FieldNode{
+				Name:        f.Name,
+				DisplayName: f.DisplayName,
+				Expr:        a.sqlForMember(cpy.Alias, f.Name),
+			})
+		}
+	}
+
 	s.MeasureFields = make([]FieldNode, 0, len(cpy.MeasureFields))
 	for _, f := range cpy.MeasureFields {
 		s.MeasureFields = append(s.MeasureFields, FieldNode{
 			Name:        f.Name,
 			DisplayName: f.DisplayName,
 			Expr:        a.sqlForMember(cpy.Alias, f.Name),
+			TreatNullAs: "",
 		})
 	}
 
@@ -1008,6 +1095,7 @@ func (a *AST) wrapSelect(s *SelectNode, innerAlias string) {
 
 	s.Limit = nil
 	s.Offset = nil
+	s.CrossJoinSelects = nil
 }
 
 // findFieldForDimension finds the field in the SelectNode that corresponds to the dimension selector.
@@ -1035,6 +1123,30 @@ func (a *AST) findFieldForDimension(n *SelectNode, dim *runtimev1.MetricsViewSpe
 			}
 
 			if dim.TimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED && dim.TimeGrain != fqd.Compute.TimeFloor.Grain.ToProto() {
+				continue
+			}
+
+			return f, true
+		}
+	}
+
+	return FieldNode{}, false
+}
+
+func (a *AST) findFieldForComputedTimeDimension(dims []FieldNode, baseTimeDim string) (FieldNode, bool) {
+	for _, f := range dims {
+		// Find original query dimension for the field
+		var fqd Dimension
+		for _, qd := range a.query.Dimensions {
+			if f.Name == qd.Name {
+				fqd = qd
+				break
+			}
+		}
+
+		// If it's a computed dimension, check against the underlying dimension name (and time grain if specified)
+		if fqd.Compute != nil && fqd.Compute.TimeFloor != nil {
+			if baseTimeDim != fqd.Compute.TimeFloor.Dimension {
 				continue
 			}
 

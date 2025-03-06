@@ -1,16 +1,16 @@
 // WIP as of 04/19/2024
 
 import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
-import { writable, type Writable, get } from "svelte/store";
+import type { MetricsViewSpecAvailableTimeRange } from "@rilldata/web-common/runtime-client";
 import {
-  Interval,
   DateTime,
-  type DurationObjectUnits,
   type DateTimeUnit,
   Duration,
+  type DurationObjectUnits,
   IANAZone,
+  Interval,
 } from "luxon";
-import type { MetricsViewSpecAvailableTimeRange } from "@rilldata/web-common/runtime-client";
+import { get, writable, type Writable } from "svelte/store";
 
 // CONSTANTS -> time-control-constants.ts
 
@@ -69,7 +69,7 @@ export const RILL_LATEST = [
   "PT24H",
   "P7D",
   "P14D",
-  "P3M",
+  "P4W",
   "P12M",
 ] as const;
 
@@ -84,8 +84,8 @@ export type RillPreviousPeriod = RillPreviousPeriodTuple[number];
 type RillLatestTuple = typeof RILL_LATEST;
 export type RillLatest = RillLatestTuple[number];
 
-export const CUSTOM_TIME_RANGE_ALIAS = "CUSTOM" as const;
-export const ALL_TIME_RANGE_ALIAS = "inf" as const;
+export const CUSTOM_TIME_RANGE_ALIAS = "CUSTOM";
+export const ALL_TIME_RANGE_ALIAS = "inf";
 export type AllTime = typeof ALL_TIME_RANGE_ALIAS;
 export type CustomRange = typeof CUSTOM_TIME_RANGE_ALIAS;
 export type ISODurationString = string;
@@ -418,7 +418,7 @@ export function bucketYamlRanges(
         record.periodToDate.push({ range, label: RILL_TO_LABEL[range] });
       } else if (isRillPreviousPeriod(range)) {
         record.previous.push({ range, label: RILL_TO_LABEL[range] });
-      } else {
+      } else if (isValidISODuration(range)) {
         record.latest.push({ range, label: getDurationLabel(range) });
       }
 

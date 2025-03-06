@@ -1,8 +1,5 @@
-import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
-import {
-  getFilteredMeasuresAndDimensions,
-  getIndependentMeasures,
-} from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
+import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { removeSomeAdvancedMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -21,7 +18,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
-import { type Writable, derived, writable, type Readable } from "svelte/store";
+import { type Readable, type Writable, derived, writable } from "svelte/store";
 import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
 import {
   type DimensionDataItem,
@@ -70,7 +67,10 @@ export function createMetricsViewTimeSeries(
         {
           measureNames: measures,
           where: sanitiseExpression(
-            mergeMeasureFilters(dashboardStore),
+            mergeDimensionAndMeasureFilters(
+              dashboardStore.whereFilter,
+              dashboardStore.dimensionThresholdFilters,
+            ),
             undefined,
           ),
           timeStart: isComparison
@@ -133,17 +133,22 @@ export function createTimeSeriesDataStore(
           : [];
       }
 
-      const { measures: filteredMeasures } = getFilteredMeasuresAndDimensions({
-        dashboard: dashboardStore,
-      })(metricsView ?? {}, measures);
-      const independentMeasures = getIndependentMeasures(
+      const measuresForTimeSeries = removeSomeAdvancedMeasures(
+        dashboardStore,
         metricsView ?? {},
         measures,
+        true,
+      );
+      const measuresForTotals = removeSomeAdvancedMeasures(
+        dashboardStore,
+        metricsView ?? {},
+        measures,
+        false,
       );
 
       const primaryTimeSeries =
-        measures.length > 0
-          ? createMetricsViewTimeSeries(ctx, filteredMeasures, false)
+        measuresForTimeSeries.length > 0
+          ? createMetricsViewTimeSeries(ctx, measuresForTimeSeries, false)
           : writable({
               isFetching: false,
               isError: false,
@@ -152,13 +157,13 @@ export function createTimeSeriesDataStore(
             });
 
       const primaryTotals =
-        measures.length > 0
-          ? createTotalsForMeasure(ctx, independentMeasures, false)
+        measuresForTotals.length > 0
+          ? createTotalsForMeasure(ctx, measuresForTotals, false)
           : writable({
               isFetching: false,
               isError: false,
-              data: null,
-              error: {},
+              data: { data: [] },
+              error: undefined,
             });
 
       let unfilteredTotals:
@@ -168,7 +173,7 @@ export function createTimeSeriesDataStore(
       if (dashboardStore?.selectedComparisonDimension) {
         unfilteredTotals = createUnfilteredTotalsForMeasure(
           ctx,
-          independentMeasures,
+          measures,
           dashboardStore?.selectedComparisonDimension,
         );
       }
@@ -181,14 +186,10 @@ export function createTimeSeriesDataStore(
       if (showComparison) {
         comparisonTimeSeries = createMetricsViewTimeSeries(
           ctx,
-          filteredMeasures,
+          measuresForTimeSeries,
           true,
         );
-        comparisonTotals = createTotalsForMeasure(
-          ctx,
-          independentMeasures,
-          true,
-        );
+        comparisonTotals = createTotalsForMeasure(ctx, measures, true);
       }
 
       let dimensionTimeSeriesCharts:
@@ -197,7 +198,7 @@ export function createTimeSeriesDataStore(
       if (dashboardStore?.selectedComparisonDimension) {
         dimensionTimeSeriesCharts = getDimensionValueTimeSeries(
           ctx,
-          filteredMeasures,
+          measuresForTimeSeries,
           "chart",
         );
       }
@@ -242,9 +243,7 @@ export function createTimeSeriesDataStore(
           }
           if (primaryTotal.error) {
             isError = true;
-            error["totals"] = (
-              primaryTotal.error as HTTPError
-            ).response?.data?.message;
+            error["totals"] = primaryTotal.error.response?.data?.message;
           }
 
           return {

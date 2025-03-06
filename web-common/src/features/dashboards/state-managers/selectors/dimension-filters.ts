@@ -82,6 +82,7 @@ export type DimensionFilterItem = {
   label: string;
   selectedValues: string[];
   isInclude: boolean;
+  metricsViewNames?: string[];
 };
 export function getDimensionFilterItems(
   dashData: AtLeast<DashboardDataSources, "dashboard">,

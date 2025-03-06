@@ -51,7 +51,26 @@ func (w *TrialEndingSoonWorker) trialEndingSoon(ctx context.Context) error {
 			return fmt.Errorf("failed to find organization: %w", err)
 		}
 
-		w.logger.Warn("trial ending soon", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.Time("trial_end_date", m.EndDate))
+		// remaining days in the trial period
+		daysRemaining := int(m.EndDate.Sub(time.Now().UTC()).Hours() / 24)
+		if daysRemaining < 0 {
+			daysRemaining = 0
+		}
+
+		// number of projects for the org
+		projects, err := w.admin.DB.CountProjectsForOrganization(ctx, org.ID)
+		if err != nil {
+			return fmt.Errorf("failed to count projects for org %q: %w", org.Name, err)
+		}
+
+		w.logger.Warn("trial ending soon",
+			zap.String("org_id", org.ID),
+			zap.String("org_name", org.Name),
+			zap.Time("trial_end_date", m.EndDate),
+			zap.String("user_email", org.BillingEmail),
+			zap.Int("count_of_projects", projects),
+			zap.Int("count_of_days_remaining", daysRemaining),
+		)
 
 		err = w.admin.Email.SendTrialEndingSoon(&email.TrialEndingSoon{
 			ToEmail:      org.BillingEmail,
@@ -120,7 +139,18 @@ func (w *TrialEndCheckWorker) trialEndCheck(ctx context.Context) error {
 			continue
 		}
 
-		w.logger.Warn("trial period has ended", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
+		// number of projects for the org
+		projects, err := w.admin.DB.CountProjectsForOrganization(ctx, org.ID)
+		if err != nil {
+			return fmt.Errorf("failed to count projects for org %q: %w", org.Name, err)
+		}
+
+		w.logger.Warn("trial period has ended",
+			zap.String("org_id", org.ID),
+			zap.String("org_name", org.Name),
+			zap.String("user_email", org.BillingEmail),
+			zap.Int("count_of_projects", projects),
+		)
 
 		cctx, tx, err := w.admin.DB.NewTx(ctx)
 		if err != nil {
@@ -247,6 +277,7 @@ func (w *TrialGracePeriodCheckWorker) trialGracePeriodCheck(ctx context.Context)
 			DisplayName:                         org.DisplayName,
 			Description:                         org.Description,
 			LogoAssetID:                         org.LogoAssetID,
+			FaviconAssetID:                      org.FaviconAssetID,
 			CustomDomain:                        org.CustomDomain,
 			QuotaProjects:                       0,
 			QuotaDeployments:                    0,
@@ -257,6 +288,8 @@ func (w *TrialGracePeriodCheckWorker) trialGracePeriodCheck(ctx context.Context)
 			BillingCustomerID:                   org.BillingCustomerID,
 			PaymentCustomerID:                   org.PaymentCustomerID,
 			BillingEmail:                        org.BillingEmail,
+			BillingPlanName:                     org.BillingPlanName,
+			BillingPlanDisplayName:              org.BillingPlanDisplayName,
 			CreatedByUserID:                     org.CreatedByUserID,
 		})
 		if err != nil {

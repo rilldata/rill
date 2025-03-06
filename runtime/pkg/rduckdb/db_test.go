@@ -3,14 +3,13 @@ package rduckdb
 import (
 	"context"
 	"fmt"
-	"io"
-	"log/slog"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 	"gocloud.dev/blob/fileblob"
 )
 
@@ -18,7 +17,7 @@ func TestDB(t *testing.T) {
 	db, _, _ := prepareDB(t)
 	ctx := context.Background()
 	// create table
-	err := db.CreateTableAsSelect(ctx, "test", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{})
+	_, err := db.CreateTableAsSelect(ctx, "test", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{})
 	require.NoError(t, err)
 
 	// query table
@@ -43,7 +42,7 @@ func TestDB(t *testing.T) {
 	require.Error(t, err)
 
 	// insert into table
-	err = db.MutateTable(ctx, "test2", func(ctx context.Context, conn *sqlx.Conn) error {
+	_, err = db.MutateTable(ctx, "test2", func(ctx context.Context, conn *sqlx.Conn) error {
 		_, err := conn.ExecContext(ctx, "INSERT INTO test2 (id, country) VALUES (2, 'USA')")
 		return err
 	})
@@ -59,7 +58,7 @@ func TestDB(t *testing.T) {
 	require.NoError(t, release())
 
 	// Add column
-	err = db.MutateTable(ctx, "test2", func(ctx context.Context, conn *sqlx.Conn) error {
+	_, err = db.MutateTable(ctx, "test2", func(ctx context.Context, conn *sqlx.Conn) error {
 		_, err := conn.ExecContext(ctx, "ALTER TABLE test2 ADD COLUMN city TEXT")
 		return err
 	})
@@ -74,32 +73,32 @@ func TestDB(t *testing.T) {
 func TestCreateTable(t *testing.T) {
 	db, _, _ := prepareDB(t)
 	ctx := context.Background()
-	err := db.CreateTableAsSelect(ctx, "test", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{})
+	_, err := db.CreateTableAsSelect(ctx, "test", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{})
 	require.NoError(t, err)
 	verifyTable(t, db, "SELECT id, country FROM test", []testData{{ID: 1, Country: "India"}})
 
 	// replace table
-	err = db.CreateTableAsSelect(ctx, "test", "SELECT 2 AS id, 'USA' AS country", &CreateTableOptions{})
+	_, err = db.CreateTableAsSelect(ctx, "test", "SELECT 2 AS id, 'USA' AS country", &CreateTableOptions{})
 	require.NoError(t, err)
 	verifyTable(t, db, "SELECT id, country FROM test", []testData{{ID: 2, Country: "USA"}})
 
 	// create another table that ingests from first table
-	err = db.CreateTableAsSelect(ctx, "test2", "SELECT * FROM test", &CreateTableOptions{})
+	_, err = db.CreateTableAsSelect(ctx, "test2", "SELECT * FROM test", &CreateTableOptions{})
 	require.NoError(t, err)
 	verifyTable(t, db, "SELECT id, country FROM test2", []testData{{ID: 2, Country: "USA"}})
 
 	// create view
-	err = db.CreateTableAsSelect(ctx, "test_view", "SELECT * FROM test", &CreateTableOptions{View: true})
+	_, err = db.CreateTableAsSelect(ctx, "test_view", "SELECT * FROM test", &CreateTableOptions{View: true})
 	require.NoError(t, err)
 	verifyTable(t, db, "SELECT id, country FROM test_view", []testData{{ID: 2, Country: "USA"}})
 
 	// view on top of view
-	err = db.CreateTableAsSelect(ctx, "pest_view", "SELECT * FROM test_view", &CreateTableOptions{View: true})
+	_, err = db.CreateTableAsSelect(ctx, "pest_view", "SELECT * FROM test_view", &CreateTableOptions{View: true})
 	require.NoError(t, err)
 	verifyTable(t, db, "SELECT id, country FROM pest_view", []testData{{ID: 2, Country: "USA"}})
 
 	// replace underlying table
-	err = db.CreateTableAsSelect(ctx, "test", "SELECT 3 AS id, 'UK' AS country", &CreateTableOptions{})
+	_, err = db.CreateTableAsSelect(ctx, "test", "SELECT 3 AS id, 'UK' AS country", &CreateTableOptions{})
 	require.NoError(t, err)
 	verifyTable(t, db, "SELECT id, country FROM test", []testData{{ID: 3, Country: "UK"}})
 
@@ -107,12 +106,12 @@ func TestCreateTable(t *testing.T) {
 	verifyTable(t, db, "SELECT id, country FROM test_view", []testData{{ID: 3, Country: "UK"}})
 
 	// create table that was previously view
-	err = db.CreateTableAsSelect(ctx, "test_view", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{})
+	_, err = db.CreateTableAsSelect(ctx, "test_view", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{})
 	require.NoError(t, err)
 	verifyTable(t, db, "SELECT id, country FROM test_view", []testData{{ID: 1, Country: "India"}})
 
 	// create view that was previously table
-	err = db.CreateTableAsSelect(ctx, "test", "SELECT * FROM test_view", &CreateTableOptions{View: true})
+	_, err = db.CreateTableAsSelect(ctx, "test", "SELECT * FROM test_view", &CreateTableOptions{View: true})
 	require.NoError(t, err)
 	verifyTable(t, db, "SELECT id, country FROM test", []testData{{ID: 1, Country: "India"}})
 	require.NoError(t, db.Close())
@@ -123,12 +122,12 @@ func TestDropTable(t *testing.T) {
 	ctx := context.Background()
 
 	// create table
-	err := db.CreateTableAsSelect(ctx, "test", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{})
+	_, err := db.CreateTableAsSelect(ctx, "test", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{})
 	require.NoError(t, err)
 	verifyTable(t, db, "SELECT id, country FROM test", []testData{{ID: 1, Country: "India"}})
 
 	// create view
-	err = db.CreateTableAsSelect(ctx, "test_view", "SELECT * FROM test", &CreateTableOptions{View: true})
+	_, err = db.CreateTableAsSelect(ctx, "test_view", "SELECT * FROM test", &CreateTableOptions{View: true})
 	require.NoError(t, err)
 	verifyTable(t, db, "SELECT id, country FROM test_view", []testData{{ID: 1, Country: "India"}})
 
@@ -150,15 +149,15 @@ func TestMutateTable(t *testing.T) {
 	ctx := context.Background()
 
 	// create table
-	err := db.CreateTableAsSelect(ctx, "test", "SELECT 1 AS id, 'Delhi' AS city", &CreateTableOptions{})
+	_, err := db.CreateTableAsSelect(ctx, "test", "SELECT 1 AS id, 'Delhi' AS city", &CreateTableOptions{})
 	require.NoError(t, err)
 
 	// create dependent view
-	err = db.CreateTableAsSelect(ctx, "test_view", "SELECT * FROM test", &CreateTableOptions{View: true})
+	_, err = db.CreateTableAsSelect(ctx, "test_view", "SELECT * FROM test", &CreateTableOptions{View: true})
 	require.NoError(t, err)
 
 	// insert into table
-	err = db.MutateTable(ctx, "test", func(ctx context.Context, conn *sqlx.Conn) error {
+	_, err = db.MutateTable(ctx, "test", func(ctx context.Context, conn *sqlx.Conn) error {
 		_, err := conn.ExecContext(ctx, "INSERT INTO test (id, city) VALUES (2, 'NY')")
 		return err
 	})
@@ -202,7 +201,7 @@ func TestResetLocal(t *testing.T) {
 	ctx := context.Background()
 
 	// create table
-	err := db.CreateTableAsSelect(ctx, "test", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{})
+	_, err := db.CreateTableAsSelect(ctx, "test", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{})
 	require.NoError(t, err)
 	verifyTable(t, db, "SELECT id, country FROM test", []testData{{ID: 1, Country: "India"}})
 
@@ -210,18 +209,17 @@ func TestResetLocal(t *testing.T) {
 	require.NoError(t, db.Close())
 	require.NoError(t, os.RemoveAll(localDir))
 
-	logger := slog.New(slog.NewTextHandler(io.Discard, &slog.HandlerOptions{
-		Level: slog.LevelDebug,
-	}))
+	logger := zap.NewNop()
 	bucket, err := fileblob.OpenBucket(remoteDir, nil)
 	require.NoError(t, err)
 	db, err = NewDB(ctx, &DBOptions{
-		LocalPath:     localDir,
-		Remote:        bucket,
-		ReadSettings:  map[string]string{"memory_limit": "2GB", "threads": "1"},
-		WriteSettings: map[string]string{"memory_limit": "2GB", "threads": "1"},
-		InitQueries:   []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
-		Logger:        logger,
+		LocalPath:      localDir,
+		Remote:         bucket,
+		MemoryLimitGB:  2,
+		CPU:            1,
+		ReadWriteRatio: 0.5,
+		DBInitQueries:  []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
+		Logger:         logger,
 	})
 	require.NoError(t, err)
 
@@ -249,22 +247,22 @@ func TestResetSelectiveLocal(t *testing.T) {
 	ctx := context.Background()
 
 	// create table
-	err := db.CreateTableAsSelect(ctx, "test", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{})
+	_, err := db.CreateTableAsSelect(ctx, "test", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{})
 	require.NoError(t, err)
 	verifyTable(t, db, "SELECT id, country FROM test", []testData{{ID: 1, Country: "India"}})
 
 	// create two views on this
-	err = db.CreateTableAsSelect(ctx, "test_view", "SELECT * FROM test", &CreateTableOptions{View: true})
+	_, err = db.CreateTableAsSelect(ctx, "test_view", "SELECT * FROM test", &CreateTableOptions{View: true})
 	require.NoError(t, err)
-	err = db.CreateTableAsSelect(ctx, "test_view2", "SELECT * FROM test", &CreateTableOptions{View: true})
+	_, err = db.CreateTableAsSelect(ctx, "test_view2", "SELECT * FROM test", &CreateTableOptions{View: true})
 	require.NoError(t, err)
 
 	// create another table
-	err = db.CreateTableAsSelect(ctx, "test2", "SELECT 2 AS id, 'USA' AS country", &CreateTableOptions{})
+	_, err = db.CreateTableAsSelect(ctx, "test2", "SELECT 2 AS id, 'USA' AS country", &CreateTableOptions{})
 	require.NoError(t, err)
 
 	// create views on this
-	err = db.CreateTableAsSelect(ctx, "test2_view", "SELECT * FROM test2", &CreateTableOptions{View: true})
+	_, err = db.CreateTableAsSelect(ctx, "test2_view", "SELECT * FROM test2", &CreateTableOptions{View: true})
 	require.NoError(t, err)
 
 	// reset local for some tables
@@ -272,18 +270,17 @@ func TestResetSelectiveLocal(t *testing.T) {
 	require.NoError(t, os.RemoveAll(filepath.Join(localDir, "test2")))
 	require.NoError(t, os.RemoveAll(filepath.Join(localDir, "test_view2")))
 
-	logger := slog.New(slog.NewTextHandler(io.Discard, &slog.HandlerOptions{
-		Level: slog.LevelDebug,
-	}))
+	logger := zap.NewNop()
 	bucket, err := fileblob.OpenBucket(remoteDir, nil)
 	require.NoError(t, err)
 	db, err = NewDB(ctx, &DBOptions{
-		LocalPath:     localDir,
-		Remote:        bucket,
-		ReadSettings:  map[string]string{"memory_limit": "2GB", "threads": "1"},
-		WriteSettings: map[string]string{"memory_limit": "2GB", "threads": "1"},
-		InitQueries:   []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
-		Logger:        logger,
+		LocalPath:      localDir,
+		Remote:         bucket,
+		MemoryLimitGB:  2,
+		CPU:            1,
+		ReadWriteRatio: 0.5,
+		DBInitQueries:  []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
+		Logger:         logger,
 	})
 	require.NoError(t, err)
 	verifyTable(t, db, "SELECT id, country FROM test2_view", []testData{{ID: 2, Country: "USA"}})
@@ -296,7 +293,7 @@ func TestResetTablesRemote(t *testing.T) {
 	ctx := context.Background()
 
 	// create table
-	err := db.CreateTableAsSelect(ctx, "test", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{})
+	_, err := db.CreateTableAsSelect(ctx, "test", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{})
 	require.NoError(t, err)
 
 	require.NoError(t, db.Close())
@@ -304,18 +301,17 @@ func TestResetTablesRemote(t *testing.T) {
 	// remove remote data
 	require.NoError(t, os.RemoveAll(remoteDir))
 
-	logger := slog.New(slog.NewTextHandler(io.Discard, &slog.HandlerOptions{
-		Level: slog.LevelDebug,
-	}))
+	logger := zap.NewNop()
 	bucket, err := fileblob.OpenBucket(remoteDir, &fileblob.Options{CreateDir: true})
 	require.NoError(t, err)
 	db, err = NewDB(ctx, &DBOptions{
-		LocalPath:     localDir,
-		Remote:        bucket,
-		ReadSettings:  map[string]string{"memory_limit": "2GB", "threads": "1"},
-		WriteSettings: map[string]string{"memory_limit": "2GB", "threads": "1"},
-		InitQueries:   []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
-		Logger:        logger,
+		LocalPath:      localDir,
+		Remote:         bucket,
+		MemoryLimitGB:  2,
+		CPU:            1,
+		ReadWriteRatio: 0.5,
+		DBInitQueries:  []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
+		Logger:         logger,
 	})
 	require.NoError(t, err)
 	require.ErrorContains(t, db.DropTable(ctx, "test"), "not found")
@@ -327,21 +323,21 @@ func TestResetSelectiveTablesRemote(t *testing.T) {
 	ctx := context.Background()
 
 	// create table
-	err := db.CreateTableAsSelect(ctx, "test", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{})
+	_, err := db.CreateTableAsSelect(ctx, "test", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{})
 	require.NoError(t, err)
 
 	// create two views on this
-	err = db.CreateTableAsSelect(ctx, "test_view", "SELECT * FROM test", &CreateTableOptions{View: true})
+	_, err = db.CreateTableAsSelect(ctx, "test_view", "SELECT * FROM test", &CreateTableOptions{View: true})
 	require.NoError(t, err)
-	err = db.CreateTableAsSelect(ctx, "test_view2", "SELECT * FROM test", &CreateTableOptions{View: true})
+	_, err = db.CreateTableAsSelect(ctx, "test_view2", "SELECT * FROM test", &CreateTableOptions{View: true})
 	require.NoError(t, err)
 
 	// create another table
-	err = db.CreateTableAsSelect(ctx, "test2", "SELECT 2 AS id, 'USA' AS country", &CreateTableOptions{})
+	_, err = db.CreateTableAsSelect(ctx, "test2", "SELECT 2 AS id, 'USA' AS country", &CreateTableOptions{})
 	require.NoError(t, err)
 
 	// create views on this
-	err = db.CreateTableAsSelect(ctx, "test2_view", "SELECT * FROM test2", &CreateTableOptions{View: true})
+	_, err = db.CreateTableAsSelect(ctx, "test2_view", "SELECT * FROM test2", &CreateTableOptions{View: true})
 	require.NoError(t, err)
 
 	require.NoError(t, db.Close())
@@ -350,18 +346,17 @@ func TestResetSelectiveTablesRemote(t *testing.T) {
 	require.NoError(t, os.RemoveAll(filepath.Join(remoteDir, "test2")))
 	require.NoError(t, os.RemoveAll(filepath.Join(remoteDir, "test_view2")))
 
-	logger := slog.New(slog.NewTextHandler(io.Discard, &slog.HandlerOptions{
-		Level: slog.LevelDebug,
-	}))
+	logger := zap.NewNop()
 	bucket, err := fileblob.OpenBucket(remoteDir, nil)
 	require.NoError(t, err)
 	db, err = NewDB(ctx, &DBOptions{
-		LocalPath:     localDir,
-		Remote:        bucket,
-		ReadSettings:  map[string]string{"memory_limit": "2GB", "threads": "1"},
-		WriteSettings: map[string]string{"memory_limit": "2GB", "threads": "1"},
-		InitQueries:   []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
-		Logger:        logger,
+		LocalPath:      localDir,
+		Remote:         bucket,
+		MemoryLimitGB:  2,
+		CPU:            1,
+		ReadWriteRatio: 0.5,
+		DBInitQueries:  []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
+		Logger:         logger,
 	})
 	require.NoError(t, err)
 	verifyTable(t, db, "SELECT id, country FROM test", []testData{{ID: 1, Country: "India"}})
@@ -374,11 +369,11 @@ func TestConcurrentReads(t *testing.T) {
 	ctx := context.Background()
 
 	// create table
-	err := testDB.CreateTableAsSelect(ctx, "pest", "SELECT 2 AS id, 'USA' AS country", &CreateTableOptions{})
+	_, err := testDB.CreateTableAsSelect(ctx, "pest", "SELECT 2 AS id, 'USA' AS country", &CreateTableOptions{})
 	require.NoError(t, err)
 
 	// create test table
-	err = testDB.CreateTableAsSelect(ctx, "test", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{})
+	_, err = testDB.CreateTableAsSelect(ctx, "test", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{})
 	require.NoError(t, err)
 
 	// acquire connection
@@ -386,7 +381,7 @@ func TestConcurrentReads(t *testing.T) {
 	require.NoError(t, err1)
 
 	// replace with a view
-	err = testDB.CreateTableAsSelect(ctx, "test", "SELECT * FROM pest", &CreateTableOptions{View: true})
+	_, err = testDB.CreateTableAsSelect(ctx, "test", "SELECT * FROM pest", &CreateTableOptions{View: true})
 	require.NoError(t, err)
 
 	// acquire connection
@@ -417,16 +412,16 @@ func TestInconsistentSchema(t *testing.T) {
 	ctx := context.Background()
 
 	// create table
-	err := testDB.CreateTableAsSelect(ctx, "test", "SELECT 2 AS id, 'USA' AS country", &CreateTableOptions{})
+	_, err := testDB.CreateTableAsSelect(ctx, "test", "SELECT 2 AS id, 'USA' AS country", &CreateTableOptions{})
 	require.NoError(t, err)
 
 	// create view
-	err = testDB.CreateTableAsSelect(ctx, "test_view", "SELECT id, country FROM test", &CreateTableOptions{View: true})
+	_, err = testDB.CreateTableAsSelect(ctx, "test_view", "SELECT id, country FROM test", &CreateTableOptions{View: true})
 	require.NoError(t, err)
 	verifyTable(t, testDB, "SELECT * FROM test_view", []testData{{ID: 2, Country: "USA"}})
 
 	// replace underlying table
-	err = testDB.CreateTableAsSelect(ctx, "test", "SELECT 20 AS id, 'USB' AS city", &CreateTableOptions{})
+	_, err = testDB.CreateTableAsSelect(ctx, "test", "SELECT 20 AS id, 'USB' AS city", &CreateTableOptions{})
 	require.NoError(t, err)
 
 	conn, release, err := testDB.AcquireReadConnection(ctx)
@@ -452,16 +447,16 @@ func TestViews(t *testing.T) {
 	ctx := context.Background()
 
 	// create view
-	err := testDB.CreateTableAsSelect(ctx, "parent_view", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{View: true})
+	_, err := testDB.CreateTableAsSelect(ctx, "parent_view", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{View: true})
 	require.NoError(t, err)
 
 	// create dependent view
-	err = testDB.CreateTableAsSelect(ctx, "child_view", "SELECT * FROM parent_view", &CreateTableOptions{View: true})
+	_, err = testDB.CreateTableAsSelect(ctx, "child_view", "SELECT * FROM parent_view", &CreateTableOptions{View: true})
 	require.NoError(t, err)
 	verifyTable(t, testDB, "SELECT id, country FROM child_view", []testData{{ID: 1, Country: "India"}})
 
 	// replace parent view
-	err = testDB.CreateTableAsSelect(ctx, "parent_view", "SELECT 2 AS id, 'USA' AS country", &CreateTableOptions{View: true})
+	_, err = testDB.CreateTableAsSelect(ctx, "parent_view", "SELECT 2 AS id, 'USA' AS country", &CreateTableOptions{View: true})
 	require.NoError(t, err)
 	verifyTable(t, testDB, "SELECT id, country FROM child_view", []testData{{ID: 2, Country: "USA"}})
 
@@ -476,7 +471,7 @@ func TestViews(t *testing.T) {
 
 	// create a chain of views
 	for i := 1; i <= 10; i++ {
-		err = testDB.CreateTableAsSelect(ctx, fmt.Sprintf("view%d", i), fmt.Sprintf("SELECT * FROM view%d", i-1), &CreateTableOptions{View: true})
+		_, err = testDB.CreateTableAsSelect(ctx, fmt.Sprintf("view%d", i), fmt.Sprintf("SELECT * FROM view%d", i-1), &CreateTableOptions{View: true})
 		require.NoError(t, err)
 	}
 	verifyTable(t, testDB, "SELECT id, country FROM view10", []testData{{ID: 2, Country: "USA"}})
@@ -484,22 +479,32 @@ func TestViews(t *testing.T) {
 	require.NoError(t, testDB.Close())
 }
 
+func TestNoConfigUpdate(t *testing.T) {
+	db, _, _ := prepareDB(t)
+	ctx := context.Background()
+	_, err := db.CreateTableAsSelect(ctx, "test", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{
+		BeforeCreateFn: func(ctx context.Context, conn *sqlx.Conn) error {
+			_, err := conn.ExecContext(ctx, "SET secret_directory = '/tmp'")
+			return err
+		},
+	})
+	require.Error(t, err, "the configuration has been locked")
+}
+
 func prepareDB(t *testing.T) (db DB, localDir, remoteDir string) {
 	localDir = t.TempDir()
 	ctx := context.Background()
-	logger := slog.New(slog.NewTextHandler(io.Discard, &slog.HandlerOptions{
-		Level: slog.LevelDebug,
-	}))
 	remoteDir = t.TempDir()
 	bucket, err := fileblob.OpenBucket(remoteDir, nil)
 	require.NoError(t, err)
 	db, err = NewDB(ctx, &DBOptions{
-		LocalPath:     localDir,
-		Remote:        bucket,
-		ReadSettings:  map[string]string{"memory_limit": "2GB", "threads": "1"},
-		WriteSettings: map[string]string{"memory_limit": "2GB", "threads": "1"},
-		InitQueries:   []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
-		Logger:        logger,
+		LocalPath:      localDir,
+		Remote:         bucket,
+		MemoryLimitGB:  2,
+		CPU:            1,
+		ReadWriteRatio: 0.5,
+		DBInitQueries:  []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
+		Logger:         zap.NewNop(),
 	})
 	require.NoError(t, err)
 	return

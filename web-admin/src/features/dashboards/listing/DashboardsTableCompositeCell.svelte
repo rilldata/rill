@@ -18,8 +18,7 @@
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
-  $: lastRefreshedDate = new Date(lastRefreshed);
-  $: isValidLastRefreshedDate = !isNaN(lastRefreshedDate.getTime());
+  $: lastRefreshedDate = lastRefreshed ? new Date(lastRefreshed) : null;
 
   $: href = isEmbedded
     ? undefined
@@ -50,8 +49,8 @@
     {/if}
   </div>
   <div class="pl-[22px] flex gap-x-1 text-gray-500 text-xs font-normal">
-    <span class="shrink-0">{name}</span>
-    {#if isValidLastRefreshedDate}
+    <span class="truncate">{name}</span>
+    {#if lastRefreshedDate}
       <span>•</span>
       <Tooltip distance={8}>
         <span class="shrink-0">Last refreshed {timeAgo(lastRefreshedDate)}</span

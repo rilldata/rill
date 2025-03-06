@@ -81,6 +81,7 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 	river.AddWorker(workers, &PaymentFailedWorker{admin: adm, logger: billingLogger})
 	river.AddWorker(workers, &PaymentSuccessWorker{admin: adm, logger: billingLogger})
 	river.AddWorker(workers, &PaymentFailedGracePeriodCheckWorker{admin: adm, logger: billingLogger})
+	river.AddWorker(workers, &PlanChangedWorker{admin: adm})
 
 	// trial checks worker
 	river.AddWorker(workers, &TrialEndingSoonWorker{admin: adm, logger: billingLogger})
@@ -94,7 +95,8 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 	river.AddWorker(workers, &InitOrgBillingWorker{admin: adm, logger: billingLogger})
 	river.AddWorker(workers, &RepairOrgBillingWorker{admin: adm, logger: billingLogger})
 	river.AddWorker(workers, &StartTrialWorker{admin: adm, logger: billingLogger})
-	river.AddWorker(workers, &PurgeOrgWorker{admin: adm, logger: billingLogger})
+	river.AddWorker(workers, &DeleteOrgWorker{admin: adm, logger: billingLogger})
+	river.AddWorker(workers, &HibernateInactiveOrgsWorker{admin: adm, logger: billingLogger})
 
 	periodicJobs := []*river.PeriodicJob{
 		// NOTE: Add new periodic jobs here
@@ -104,6 +106,7 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 		newPeriodicJob(&TrialEndCheckArgs{}, "10 1 * * *", true),                 // daily at 1:10am UTC
 		newPeriodicJob(&TrialGracePeriodCheckArgs{}, "15 1 * * *", true),         // daily at 1:15am UTC
 		newPeriodicJob(&SubscriptionCancellationCheckArgs{}, "20 1 * * *", true), // daily at 1:20am UTC
+		newPeriodicJob(&HibernateInactiveOrgsArgs{}, "0 7 * * 1", true),          // Monday at 7:00am UTC
 	}
 
 	// Wire our zap logger to a slog logger for the river client
@@ -359,14 +362,39 @@ func (c *Client) StartOrgTrial(ctx context.Context, orgID string) (*jobs.InsertR
 	}, nil
 }
 
-func (c *Client) PurgeOrg(ctx context.Context, orgID string) (*jobs.InsertResult, error) {
-	res, err := c.riverClient.Insert(ctx, PurgeOrgArgs{
+func (c *Client) DeleteOrg(ctx context.Context, orgID string) (*jobs.InsertResult, error) {
+	res, err := c.riverClient.Insert(ctx, DeleteOrgArgs{
 		OrgID: orgID,
 	}, &river.InsertOpts{})
 	if err != nil {
 		return nil, err
 	}
 
+	return &jobs.InsertResult{
+		ID:        res.Job.ID,
+		Duplicate: res.UniqueSkippedAsDuplicate,
+	}, nil
+}
+
+func (c *Client) PlanChanged(ctx context.Context, billingCustomerID string) (*jobs.InsertResult, error) {
+	res, err := c.riverClient.Insert(ctx, PlanChangedArgs{
+		BillingCustomerID: billingCustomerID,
+	}, &river.InsertOpts{})
+	if err != nil {
+		return nil, err
+	}
+
+	return &jobs.InsertResult{
+		ID:        res.Job.ID,
+		Duplicate: res.UniqueSkippedAsDuplicate,
+	}, nil
+}
+
+func (c *Client) HibernateInactiveOrgs(ctx context.Context) (*jobs.InsertResult, error) {
+	res, err := c.riverClient.Insert(ctx, HibernateInactiveOrgsArgs{}, nil)
+	if err != nil {
+		return nil, err
+	}
 	return &jobs.InsertResult{
 		ID:        res.Job.ID,
 		Duplicate: res.UniqueSkippedAsDuplicate,

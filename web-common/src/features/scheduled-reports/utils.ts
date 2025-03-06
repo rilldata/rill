@@ -1,18 +1,43 @@
 import { getExploreName } from "@rilldata/web-admin/features/dashboards/query-mappers/utils";
 import {
+  getDayOfMonthFromCronExpression,
   getDayOfWeekFromCronExpression,
   getFrequencyFromCronExpression,
   getNextQuarterHour,
   getTimeIn24FormatFromDateTime,
   getTimeOfDayFromCronExpression,
   getTodaysDayOfWeek,
+  ReportFrequency,
 } from "@rilldata/web-common/features/scheduled-reports/time-utils";
 import { getLocalIANA } from "@rilldata/web-common/lib/time/timezone";
 import {
   V1ExportFormat,
   type V1Notifier,
+  type V1Query,
   type V1ReportSpec,
 } from "@rilldata/web-common/runtime-client";
+
+export type ReportValues = ReturnType<typeof getInitialValues>;
+
+export function getQueryNameFromQuery(query: V1Query) {
+  if (query.metricsViewAggregationRequest) {
+    return "MetricsViewAggregation";
+  } else {
+    throw new Error(
+      "Currently, only `MetricsViewAggregation` queries can be scheduled through the UI",
+    );
+  }
+}
+
+export function getQueryArgsFromQuery(query: V1Query) {
+  if (query.metricsViewAggregationRequest) {
+    return query.metricsViewAggregationRequest;
+  } else {
+    throw new Error(
+      "Currently, only `MetricsViewAggregation` queries can be scheduled through the UI",
+    );
+  }
+}
 
 export function getInitialValues(
   reportSpec: V1ReportSpec | undefined,
@@ -24,12 +49,17 @@ export function getInitialValues(
       ? getFrequencyFromCronExpression(
           reportSpec.refreshSchedule?.cron as string,
         )
-      : "Weekly",
+      : ReportFrequency.Weekly,
     dayOfWeek: reportSpec
       ? getDayOfWeekFromCronExpression(
           reportSpec.refreshSchedule?.cron as string,
         )
       : getTodaysDayOfWeek(),
+    dayOfMonth: reportSpec
+      ? getDayOfMonthFromCronExpression(
+          reportSpec.refreshSchedule?.cron as string,
+        )
+      : 1, // We only support first of day right now
     timeOfDay: reportSpec
       ? getTimeOfDayFromCronExpression(
           reportSpec.refreshSchedule?.cron as string,
@@ -47,8 +77,6 @@ export function getInitialValues(
     ...extractNotificationV2(reportSpec?.notifiers, userEmail, !!reportSpec),
   };
 }
-
-export type ReportValues = ReturnType<typeof getInitialValues>;
 
 export function getDashboardNameFromReport(
   reportSpec: V1ReportSpec | undefined,

@@ -1,6 +1,6 @@
 swagger: "2.0"
 info:
-  title: rill/runtime/v1/colors.proto
+  title: rill/runtime/v1/schema.proto
   version: version not set
 tags:
   - name: RuntimeService
@@ -677,18 +677,39 @@ paths:
           schema:
             type: object
             properties:
+              model:
+                type: string
+                description: |-
+                  Model to base the metrics view on.
+                  If you set this, do NOT set connector, database, database_schema or table.
               connector:
                 type: string
+                description: |-
+                  Connector for the table.
+                  See "table" for more details.
               database:
                 type: string
+                description: |-
+                  Database for the table.
+                  See "table" for more details.
               databaseSchema:
                 type: string
+                description: |-
+                  Database schema for the table.
+                  See "table" for more details.
               table:
                 type: string
+                description: |-
+                  Table to base the metrics view on.
+                  If you set this, do NOT set model.
               path:
                 type: string
+                description: Path to save the metrics view file to.
               useAi:
                 type: boolean
+                description: |-
+                  If true, the AI will be used to generate the metrics view file.
+                  Otherwise, it falls back to a simpler heuristic approach.
             title: Request message for RuntimeService.GenerateMetricsViewFile
       tags:
         - RuntimeService
@@ -1012,6 +1033,41 @@ paths:
           type: string
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/queries/canvases/{canvas}/resolve:
+    post:
+      summary: ResolveCanvas is a convenience API that returns a canvas and all its referenced components and metrics views.
+      operationId: QueryService_ResolveCanvas
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ResolveCanvasResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          description: Instance ID
+          in: path
+          required: true
+          type: string
+        - name: canvas
+          description: Canvas name
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              args:
+                type: object
+                title: Optional args for resolving templating in the component properties
+      tags:
+        - QueryService
   /v1/instances/{instanceId}/queries/column-cardinality/tables/{tableName}:
     get:
       summary: Get cardinality for a column
@@ -1103,7 +1159,7 @@ paths:
         - QueryService
   /v1/instances/{instanceId}/queries/components/{component}/resolve:
     post:
-      summary: ResolveComponent resolves the data and renderer for a Component resource.
+      summary: ResolveComponent resolves renderer for a Component resource.
       operationId: QueryService_ResolveComponent
       responses:
         "200":
@@ -1319,6 +1375,8 @@ paths:
                 description: Deprecated. should be removed once UI is moved to use new filters
                 title: Optional
               exact:
+                type: boolean
+              fillMissing:
                 type: boolean
       tags:
         - QueryService
@@ -1624,6 +1682,42 @@ paths:
           schema:
             type: object
             properties:
+              priority:
+                type: integer
+                format: int32
+      tags:
+        - QueryService
+  /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/time-ranges:
+    post:
+      operationId: QueryService_MetricsViewTimeRanges
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1MetricsViewTimeRangesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: metricsViewName
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              expressions:
+                type: array
+                items:
+                  type: string
               priority:
                 type: integer
                 format: int32
@@ -2386,6 +2480,41 @@ paths:
                   $ref: '#/definitions/v1Query'
       tags:
         - QueryService
+  /v1/instances/{instanceId}/query/resolver:
+    post:
+      summary: QueryResolver queries a resolver with the given properties and arguments
+      operationId: RuntimeService_QueryResolver
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1QueryResolverResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              resolver:
+                type: string
+              resolverProperties:
+                type: object
+              resolverArgs:
+                type: object
+              limit:
+                type: integer
+                format: int32
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/reports/{report}/export:
     post:
       summary: ExportReport builds a URL to download the results of a query as a file.
@@ -2450,6 +2579,10 @@ paths:
           in: query
           required: false
           type: string
+        - name: skipSecurityChecks
+          in: query
+          required: false
+          type: boolean
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/resources:
@@ -2481,6 +2614,11 @@ paths:
           in: query
           required: false
           type: string
+        - name: skipSecurityChecks
+          description: Skip security checks
+          in: query
+          required: false
+          type: boolean
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/resources/-/watch:
@@ -2999,6 +3137,8 @@ definitions:
         type: object
       validPercentOfTotal:
         type: boolean
+      treatNullsAs:
+        type: string
     title: Measures are aggregated computed values
   MetricsViewSpecMeasureWindow:
     type: object
@@ -3058,18 +3198,6 @@ definitions:
         type: string
       type:
         $ref: '#/definitions/runtimev1Type'
-  TimeRangeSummaryInterval:
-    type: object
-    properties:
-      months:
-        type: integer
-        format: int32
-      days:
-        type: integer
-        format: int32
-      micros:
-        type: string
-        format: int64
   TopKEntry:
     type: object
     properties:
@@ -3185,6 +3313,13 @@ definitions:
           type: object
       openapiResponseSchema:
         type: object
+      securityRules:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1SecurityRule'
+      skipNestedSecurity:
+        type: boolean
   v1APIState:
     type: object
   v1Alert:
@@ -3458,47 +3593,118 @@ definitions:
     properties:
       component:
         type: string
+        description: Name of the component to render.
       definedInCanvas:
         type: boolean
-      x:
-        type: integer
-        format: int64
-      "y":
-        type: integer
-        format: int64
+        description: Indicates if the component was defined inline as part of the canvas YAML.
       width:
         type: integer
         format: int64
+        description: Width of the item. The unit is given in width_unit.
+      widthUnit:
+        type: string
+        description: 'Unit of the width. Current possible values: empty string.'
+  v1CanvasPreset:
+    type: object
+    properties:
+      timeRange:
+        type: string
+        description: |-
+          Time range for the explore.
+          It corresponds to the `range` property of the explore's `time_ranges`.
+          If not found in `time_ranges`, it should be added to the list.
+      comparisonMode:
+        $ref: '#/definitions/v1ExploreComparisonMode'
+        description: |-
+          Comparison mode.
+          TODO: Once the canvas APIs have stabilized, rename ExploreComparisonMode to a non-explore-specific name.
+      comparisonDimension:
+        type: string
+        description: If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use.
+  v1CanvasRow:
+    type: object
+    properties:
       height:
         type: integer
         format: int64
-  v1CanvasSpec:
-    type: object
-    properties:
-      displayName:
+        description: Height of the row. The unit is given in height_unit.
+      heightUnit:
         type: string
-      maxWidth:
-        type: integer
-        format: int64
-      theme:
-        type: string
-      embeddedTheme:
-        $ref: '#/definitions/v1ThemeSpec'
-      variables:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1ComponentVariable'
+        description: 'Unit of the height. Current possible values: "px", empty string.'
       items:
         type: array
         items:
           type: object
           $ref: '#/definitions/v1CanvasItem'
+        description: Items to render in the row.
+  v1CanvasSpec:
+    type: object
+    properties:
+      displayName:
+        type: string
+        description: Display name for the canvas.
+      banner:
+        type: string
+        description: Banner text that can be displayed in Rill Cloud.
+      maxWidth:
+        type: integer
+        format: int64
+        description: Max width in pixels of the canvas.
+      gapX:
+        type: integer
+        format: int64
+        description: Horizontal gap in pixels of the canvas.
+      gapY:
+        type: integer
+        format: int64
+        description: Vertical gap in pixels of the canvas.
+      theme:
+        type: string
+        description: Name of the theme to use. Only one of theme and embedded_theme can be set.
+      embeddedTheme:
+        $ref: '#/definitions/v1ThemeSpec'
+        description: Theme to use, provided inline. Only one of theme and embedded_theme can be set.
+      timeRanges:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ExploreTimeRange'
+        description: |-
+          List of selectable time ranges with comparison time ranges.
+          If the list is empty, a default list should be shown.
+          TODO: Once the canvas APIs have stabilized, rename ExploreTimeRange to a non-explore-specific name.
+      timeZones:
+        type: array
+        items:
+          type: string
+        description: |-
+          List of selectable time zones.
+          If the list is empty, a default list should be shown.
+          The values should be valid IANA location identifiers.
+      filtersEnabled:
+        type: boolean
+        description: Indicates if filters should be enabled for the canvas.
+      defaultPreset:
+        $ref: '#/definitions/v1CanvasPreset'
+        description: Preset UI state to show by default.
+      variables:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ComponentVariable'
+        description: Variables that can be used in the canvas.
+      rows:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1CanvasRow'
+        title: Rows to render on the canvas
       securityRules:
         type: array
         items:
           type: object
           $ref: '#/definitions/v1SecurityRule'
+        description: Security rules to apply for access to the canvas.
   v1CanvasState:
     type: object
     properties:
@@ -3844,9 +4050,6 @@ definitions:
           $ref: '#/definitions/v1ComponentVariable'
       output:
         $ref: '#/definitions/v1ComponentVariable'
-      show:
-        type: string
-        description: Templated string that should evaluate to a boolean.
       definedInCanvas:
         type: boolean
   v1ComponentState:
@@ -4155,6 +4358,8 @@ definitions:
         type: string
       pivotSortAsc:
         type: boolean
+      pivotTableMode:
+        type: string
   v1ExploreSortType:
     type: string
     enum:
@@ -4228,6 +4433,9 @@ definitions:
         description: |-
           Security for the explore dashboard.
           These are not currently parsed from YAML, but will be derived from the parent metrics view.
+      banner:
+        type: string
+        description: Banner text that can be displayed in Rill Cloud.
   v1ExploreState:
     type: object
     properties:
@@ -4355,6 +4563,7 @@ definitions:
     properties:
       aiSucceeded:
         type: boolean
+        description: Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach.
     title: Response message for RuntimeService.GenerateMetricsViewFile
   v1GenerateRendererResponse:
     type: object
@@ -4532,6 +4741,11 @@ definitions:
           type: string
       admin:
         type: boolean
+      attributes:
+        type: object
+        description: |-
+          Additional arbitrary attributes to include in the JWT.
+          They take precedence if they collide with name, email, groups or admin.
     title: Request message for RuntimeService.IssueDevJWT
   v1IssueDevJWTResponse:
     type: object
@@ -4780,6 +4994,8 @@ definitions:
         description: Deprecated. should be removed once UI is moved to use new filters
         title: Optional
       exact:
+        type: boolean
+      fillMissing:
         type: boolean
   v1MetricsViewAggregationResponse:
     type: object
@@ -5185,12 +5401,26 @@ definitions:
         description: |-
           Streaming is true if the underlying data may change without the metrics view's spec/state version changing.
           It's set to true if the metrics view is based on an externally managed table.
+      modelRefreshedOn:
+        type: string
+        format: date-time
+        description: |-
+          The last time the metrics view's underlying model was refreshed.
+          This may be empty if the metrics view is based on an externally managed table.
   v1MetricsViewTimeRangeResponse:
     type: object
     properties:
       timeRangeSummary:
         $ref: '#/definitions/v1TimeRangeSummary'
         title: Not optional, not null
+  v1MetricsViewTimeRangesResponse:
+    type: object
+    properties:
+      timeRanges:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1TimeRange'
   v1MetricsViewTimeSeriesRequest:
     type: object
     properties:
@@ -5476,6 +5706,17 @@ definitions:
       partitionsHaveErrors:
         type: boolean
         description: partitions_have_errors is true if one or more partitions failed to execute.
+      totalExecutionDurationMs:
+        type: string
+        format: int64
+        description: |-
+          total_execution_duration_ms is the time user queries took to execute while refreshing the model.
+          In case of incremental models it is the sum of all successful executions so far.
+          This is not the time it took to refresh the model which also includes other stuff like taking a write lock.
+      latestExecutionDurationMs:
+        type: string
+        format: int64
+        description: latest_execution_duration_ms is the time user queries took to execute in the last successful refresh.
   v1ModelV2:
     type: object
     properties:
@@ -5633,6 +5874,9 @@ definitions:
           $ref: '#/definitions/v1ParseError'
       currentCommitSha:
         type: string
+      currentCommitOn:
+        type: string
+        format: date-time
       watching:
         type: boolean
   v1PullTrigger:
@@ -5705,6 +5949,15 @@ definitions:
         $ref: '#/definitions/v1QueryResult'
       error:
         type: string
+  v1QueryResolverResponse:
+    type: object
+    properties:
+      schema:
+        $ref: '#/definitions/v1StructType'
+      data:
+        type: array
+        items:
+          type: object
   v1QueryResponse:
     type: object
     properties:
@@ -5890,14 +6143,28 @@ definitions:
       executionCount:
         type: integer
         format: int64
+  v1ResolveCanvasResponse:
+    type: object
+    properties:
+      canvas:
+        $ref: '#/definitions/v1Resource'
+        description: The canvas resource.
+      resolvedComponents:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/v1Resource'
+        description: |-
+          All the component resources referenced by the canvas.
+          The resources state.valid_spec.renderer_properties will have templating resolved for the provided args.
+          (Corresponds to calling the ResolveComponent API for each component referenced in the canvas spec).
+      referencedMetricsViews:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/v1Resource'
+        description: All the metrics view resources referenced in the components' renderer_properties.metrics_view field.
   v1ResolveComponentResponse:
     type: object
     properties:
-      show:
-        type: boolean
-        description: |-
-          Show property with templating resolved for the provided args.
-          If it resolves to false, the other fields are not set.
       rendererProperties:
         type: object
         title: Renderer properties with templating resolved for the provided args
@@ -6318,6 +6585,11 @@ definitions:
       timeZone:
         type: string
         title: Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
+      expression:
+        type: string
+        description: |-
+          Optional. Rill format time range. Should only be used for alerts and reports.
+          For dashboard call ResolveTimeRanges.
     title: 2 of the (start, end, iso_duration) should be set
   v1TimeRangeSummary:
     type: object
@@ -6330,8 +6602,9 @@ definitions:
         type: string
         format: date-time
         title: Not optional, not null
-      interval:
-        $ref: '#/definitions/TimeRangeSummaryInterval'
+      watermark:
+        type: string
+        format: date-time
         title: Not optional, not null
   v1TimeSeriesResponse:
     type: object

@@ -8,7 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"log/slog"
+	"math"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -21,8 +21,9 @@ import (
 	"github.com/XSAM/otelsql"
 	"github.com/jmoiron/sqlx"
 	"github.com/marcboeker/go-duckdb"
-	"github.com/mitchellh/mapstructure"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
+	"go.uber.org/zap"
 	"gocloud.dev/blob"
 	"golang.org/x/sync/semaphore"
 )
@@ -45,16 +46,21 @@ type DB interface {
 	// CRUD APIs
 
 	// CreateTableAsSelect creates a new table by name from the results of the given SQL query.
-	CreateTableAsSelect(ctx context.Context, name string, sql string, opts *CreateTableOptions) error
+	CreateTableAsSelect(ctx context.Context, name string, sql string, opts *CreateTableOptions) (*TableWriteMetrics, error)
 
 	// MutateTable allows mutating a table in the database by calling the mutateFn.
-	MutateTable(ctx context.Context, name string, mutateFn func(ctx context.Context, conn *sqlx.Conn) error) error
+	MutateTable(ctx context.Context, name string, mutateFn func(ctx context.Context, conn *sqlx.Conn) error) (*TableWriteMetrics, error)
 
 	// DropTable removes a table from the database.
 	DropTable(ctx context.Context, name string) error
 
 	// RenameTable renames a table in the database.
 	RenameTable(ctx context.Context, oldName, newName string) error
+
+	// Meta APIs
+
+	// Schema returns the schema of the database.
+	Schema(ctx context.Context, ilike, name string) ([]*Table, error)
 }
 
 type DBOptions struct {
@@ -63,40 +69,41 @@ type DBOptions struct {
 	// Remote is the blob storage bucket where the database files will be stored. This is the source of truth.
 	// The local db will be eventually synced with the remote.
 	Remote *blob.Bucket
-
+	// CPU cores available for the DB. If no ratio is set then this is split evenly between read and write.
+	CPU int `mapstructure:"cpu"`
+	// MemoryLimitGB is the amount of memory available for the DB. If no ratio is set then this is split evenly between read and write.
+	MemoryLimitGB int `mapstructure:"memory_limit_gb"`
+	// ReadWriteRatio is the ratio of resources to allocate to the read DB. If set, CPU and MemoryLimitGB are distributed based on this ratio.
+	ReadWriteRatio float64 `mapstructure:"read_write_ratio"`
 	// ReadSettings are settings applied the read duckDB handle.
 	ReadSettings map[string]string
 	// WriteSettings are settings applied the write duckDB handle.
 	WriteSettings map[string]string
-	// InitQueries are the queries to run when the database is first created.
-	InitQueries []string
+	// DBInitQueries are run when the database is first created. These are typically global duckdb configurations.
+	DBInitQueries []string
+	// ConnInitQueries are run when a new connection is created. These are typically local duckdb configurations.
+	ConnInitQueries []string
 
-	Logger         *slog.Logger
+	Logger         *zap.Logger
 	OtelAttributes []attribute.KeyValue
 }
 
 func (d *DBOptions) ValidateSettings() error {
-	read := &settings{}
-	err := mapstructure.Decode(d.ReadSettings, read)
-	if err != nil {
-		return fmt.Errorf("read settings: %w", err)
+	if d.ReadWriteRatio < 0 || d.ReadWriteRatio > 1 {
+		return fmt.Errorf("read_write_ratio should be between 0 and 1")
 	}
-
-	write := &settings{}
-	err = mapstructure.Decode(d.WriteSettings, write)
-	if err != nil {
-		return fmt.Errorf("write settings: %w", err)
+	if d.ReadSettings == nil {
+		d.ReadSettings = make(map[string]string)
 	}
-
-	// no memory limits defined
-	// divide memory equally between read and write
-	if read.MaxMemory == "" && write.MaxMemory == "" {
-		connector, err := duckdb.NewConnector("", nil)
+	if d.WriteSettings == nil {
+		d.WriteSettings = make(map[string]string)
+	}
+	memoryLimitBytes := int64(d.MemoryLimitGB * 1000 * 1000 * 1000)
+	if memoryLimitBytes == 0 {
+		db, err := sql.Open("duckdb", "")
 		if err != nil {
-			return fmt.Errorf("unable to create duckdb connector: %w", err)
+			return err
 		}
-		defer connector.Close()
-		db := sql.OpenDB(connector)
 		defer db.Close()
 
 		row := db.QueryRow("SELECT value FROM duckdb_settings() WHERE name = 'max_memory'")
@@ -111,87 +118,38 @@ func (d *DBOptions) ValidateSettings() error {
 			return fmt.Errorf("unable to parse max_memory: %w", err)
 		}
 
-		read.MaxMemory = fmt.Sprintf("%d bytes", int64(bytes)/2)
-		write.MaxMemory = fmt.Sprintf("%d bytes", int64(bytes)/2)
+		memoryLimitBytes = int64(bytes)
 	}
 
-	if read.MaxMemory == "" != (write.MaxMemory == "") {
-		// only one is defined
-		var mem string
-		if read.MaxMemory != "" {
-			mem = read.MaxMemory
-		} else {
-			mem = write.MaxMemory
-		}
-
-		bytes, err := humanReadableSizeToBytes(mem)
+	threads := d.CPU
+	if threads == 0 {
+		db, err := sql.Open("duckdb", "")
 		if err != nil {
-			return fmt.Errorf("unable to parse max_memory: %w", err)
+			return err
 		}
-
-		read.MaxMemory = fmt.Sprintf("%d bytes", int64(bytes)/2)
-		write.MaxMemory = fmt.Sprintf("%d bytes", int64(bytes)/2)
-	}
-
-	var readThread, writeThread int
-	if read.Threads != "" {
-		readThread, err = strconv.Atoi(read.Threads)
-		if err != nil {
-			return fmt.Errorf("unable to parse read threads: %w", err)
-		}
-	}
-	if write.Threads != "" {
-		writeThread, err = strconv.Atoi(write.Threads)
-		if err != nil {
-			return fmt.Errorf("unable to parse write threads: %w", err)
-		}
-	}
-
-	if readThread == 0 && writeThread == 0 {
-		connector, err := duckdb.NewConnector("", nil)
-		if err != nil {
-			return fmt.Errorf("unable to create duckdb connector: %w", err)
-		}
-		defer connector.Close()
-		db := sql.OpenDB(connector)
 		defer db.Close()
 
 		row := db.QueryRow("SELECT value FROM duckdb_settings() WHERE name = 'threads'")
-		var threads int
 		err = row.Scan(&threads)
 		if err != nil {
 			return fmt.Errorf("unable to get threads: %w", err)
 		}
-
-		read.Threads = strconv.Itoa((threads + 1) / 2)
-		write.Threads = strconv.Itoa(threads / 2)
 	}
 
-	if readThread == 0 != (writeThread == 0) {
-		// only one is defined
-		var threads int
-		if readThread != 0 {
-			threads = readThread
-		} else {
-			threads = writeThread
-		}
+	d.ReadSettings["memory_limit"] = fmt.Sprintf("%d bytes", int64(float64(memoryLimitBytes)*d.ReadWriteRatio))
+	d.WriteSettings["memory_limit"] = fmt.Sprintf("%d bytes", int64(float64(memoryLimitBytes)*(1-d.ReadWriteRatio)))
 
-		read.Threads = strconv.Itoa((threads + 1) / 2)
-		if threads <= 3 {
-			write.Threads = "1"
-		} else {
-			write.Threads = strconv.Itoa(threads / 2)
-		}
+	readThreads := math.Floor(float64(threads) * d.ReadWriteRatio)
+	if readThreads <= 1 {
+		d.ReadSettings["threads"] = "1"
+	} else {
+		d.ReadSettings["threads"] = strconv.Itoa(int(readThreads))
 	}
-
-	err = mapstructure.WeakDecode(read, &d.ReadSettings)
-	if err != nil {
-		return fmt.Errorf("failed to update read settings: %w", err)
-	}
-
-	err = mapstructure.WeakDecode(write, &d.WriteSettings)
-	if err != nil {
-		return fmt.Errorf("failed to update write settings: %w", err)
+	writeThreads := threads - int(readThreads)
+	if writeThreads <= 1 {
+		d.WriteSettings["threads"] = "1"
+	} else {
+		d.WriteSettings["threads"] = strconv.Itoa(writeThreads)
 	}
 	return nil
 }
@@ -204,6 +162,12 @@ type CreateTableOptions struct {
 	// If AfterCreateFn is set, it will be executed after the create query is executed.
 	// This will execute even if the create query fails.
 	AfterCreateFn func(ctx context.Context, conn *sqlx.Conn) error
+}
+
+// TableWriteMetrics summarizes executed CRUD operation.
+type TableWriteMetrics struct {
+	// Duration records the time taken to execute all user queries.
+	Duration time.Duration
 }
 
 // NewDB creates a new DB instance.
@@ -232,6 +196,41 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 		return nil, fmt.Errorf("unable to create local path: %w", err)
 	}
 
+	// migrate db from old storage structure to new
+	err = db.migrateDB()
+	if err != nil && !errors.Is(err, context.Canceled) {
+		// do not return error just truncate the directory and start fresh
+		db.logger.Error("failed to migrate db", zap.Error(err), observability.ZapCtx(ctx))
+		err = os.RemoveAll(db.localPath)
+		if err != nil {
+			return nil, err
+		}
+		err = os.MkdirAll(db.localPath, fs.ModePerm)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// By adding a _duckdb_on_gcs_.txt we can check if the db files are synced to cloud storage.
+	// If db files are present on cloud storage, the source of truth is cloud storage else local storage.
+	// The file _duckdb_on_gcs_.txt with true/false as content
+	// This is a temporary solution and will be removed in future when we enable cloud storage completely
+	duckdbONGCS, _ := db.duckdbOnGCS()
+	if !duckdbONGCS && db.remote != nil {
+		// switched on remote storage
+		// push local data to remote
+		err := db.iterateLocalTables(false, func(name string, meta *tableMeta) error {
+			return db.pushToRemote(ctx, name, nil, meta)
+		})
+		if err != nil {
+			return nil, fmt.Errorf("unable to write local data to remote: %w", err)
+		}
+	}
+	err = os.WriteFile(filepath.Join(db.localPath, "_duckdb_on_gcs_.txt"), []byte(strconv.FormatBool(db.remote != nil)), fs.ModePerm)
+	if err != nil {
+		return nil, err
+	}
+
 	// sync local data
 	err = db.pullFromRemote(ctx, false)
 	if err != nil {
@@ -251,7 +250,7 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 			go func() {
 				err := db.removeTableVersion(bgctx, name, version)
 				if err != nil && !errors.Is(err, context.Canceled) {
-					db.logger.Error("error in removing table version", slog.String("name", name), slog.String("version", version), slog.String("error", err.Error()))
+					db.logger.Error("error in removing table version", zap.String("name", name), zap.String("version", version), zap.Error(err))
 				}
 			}()
 		},
@@ -259,7 +258,7 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 			go func() {
 				err := db.removeSnapshot(bgctx, i)
 				if err != nil && !errors.Is(err, context.Canceled) {
-					db.logger.Error("error in removing snapshot", slog.Int("id", i), slog.String("error", err.Error()))
+					db.logger.Error("error in removing snapshot", zap.Int("id", i), zap.Error(err))
 				}
 			}()
 		},
@@ -297,7 +296,7 @@ type db struct {
 	localDirty bool
 	catalog    *catalog
 
-	logger *slog.Logger
+	logger *zap.Logger
 
 	// ctx and cancel to cancel background operations
 	ctx    context.Context
@@ -317,11 +316,13 @@ func (d *db) AcquireReadConnection(ctx context.Context) (*sqlx.Conn, func() erro
 
 	conn, err := d.dbHandle.Connx(ctx)
 	if err != nil {
+		d.catalog.releaseSnapshot(snapshot)
 		return nil, nil, err
 	}
 
 	err = d.prepareSnapshot(ctx, conn, snapshot)
 	if err != nil {
+		d.catalog.releaseSnapshot(snapshot)
 		_ = conn.Close()
 		return nil, nil, err
 	}
@@ -333,24 +334,24 @@ func (d *db) AcquireReadConnection(ctx context.Context) (*sqlx.Conn, func() erro
 	return conn, release, nil
 }
 
-func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *CreateTableOptions) error {
-	d.logger.Debug("create: create table", slog.String("name", name), slog.Bool("view", opts.View))
+func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *CreateTableOptions) (res *TableWriteMetrics, createErr error) {
+	d.logger.Debug("create: create table", zap.String("name", name), zap.Bool("view", opts.View), observability.ZapCtx(ctx))
 	err := d.writeSem.Acquire(ctx, 1)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer d.writeSem.Release(1)
 
 	// pull latest changes from remote
 	err = d.pullFromRemote(ctx, true)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// check if some older version exists
 	oldMeta, _ := d.catalog.tableMeta(name)
 	if oldMeta != nil {
-		d.logger.Debug("create: old version", slog.String("table", name), slog.String("version", oldMeta.Version))
+		d.logger.Debug("create: old version", zap.String("version", oldMeta.Version), observability.ZapCtx(ctx))
 	}
 
 	// create new version directory
@@ -366,25 +367,31 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 		newMeta.SQL = query
 		err = d.initLocalTable(name, "")
 		if err != nil {
-			return fmt.Errorf("create: unable to create dir %q: %w", name, err)
+			return nil, fmt.Errorf("create: unable to create dir %q: %w", name, err)
 		}
 	} else {
 		err = d.initLocalTable(name, newVersion)
 		if err != nil {
-			return fmt.Errorf("create: unable to create dir %q: %w", name, err)
+			return nil, fmt.Errorf("create: unable to create dir %q: %w", name, err)
 		}
 		dsn = d.localDBPath(name, newVersion)
+		defer func() {
+			if createErr != nil {
+				_ = d.deleteLocalTableFiles(name, newVersion)
+			}
+		}()
 	}
 
 	// need to attach existing table so that any views dependent on this table are correctly attached
 	conn, release, err := d.acquireWriteConn(ctx, dsn, name, true)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer func() {
 		_ = release()
 	}()
 
+	t := time.Now()
 	safeName := safeSQLName(name)
 	var typ string
 	if opts.View {
@@ -396,7 +403,7 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 	if opts.BeforeCreateFn != nil {
 		err = opts.BeforeCreateFn(ctx, conn)
 		if err != nil {
-			return fmt.Errorf("create: BeforeCreateFn returned error: %w", err)
+			return nil, fmt.Errorf("create: BeforeCreateFn returned error: %w", err)
 		}
 	}
 	execAfterCreate := func() error {
@@ -412,84 +419,93 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 	// ingest data
 	_, err = conn.ExecContext(ctx, fmt.Sprintf("CREATE OR REPLACE %s %s AS (%s\n)", typ, safeName, query), nil)
 	if err != nil {
-		return errors.Join(fmt.Errorf("create: create %s %q failed: %w", typ, name, err), execAfterCreate())
+		return nil, errors.Join(fmt.Errorf("create: create %s %q failed: %w", typ, name, err), execAfterCreate())
 	}
 	err = execAfterCreate()
 	if err != nil {
-		return err
+		return nil, err
 	}
+	duration := time.Since(t)
 
 	// close write handle before syncing local so that temp files or wal files are removed
 	err = release()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// update remote data and metadata
 	if err := d.pushToRemote(ctx, name, oldMeta, newMeta); err != nil {
-		return fmt.Errorf("create: replicate failed: %w", err)
+		return nil, fmt.Errorf("create: replicate failed: %w", err)
 	}
-	d.logger.Debug("create: remote table updated", slog.String("name", name))
+	d.logger.Debug("create: remote table updated", observability.ZapCtx(ctx))
 	// no errors after this point since background goroutine will eventually sync the local db
 
 	// update local metadata
 	err = d.writeTableMeta(name, newMeta)
 	if err != nil {
-		d.logger.Debug("create: error in writing table meta", slog.String("name", name), slog.String("error", err.Error()))
-		return nil
+		d.logger.Debug("create: error in writing table meta", zap.String("error", err.Error()), observability.ZapCtx(ctx))
+		return &TableWriteMetrics{Duration: duration}, nil
 	}
 
-	d.catalog.addTableVersion(name, newMeta)
+	d.catalog.addTableVersion(name, newMeta, true)
 	d.localDirty = false
-	return nil
+	return &TableWriteMetrics{Duration: duration}, nil
 }
 
-func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx context.Context, conn *sqlx.Conn) error) error {
-	d.logger.Debug("mutate table", slog.String("name", name))
+func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx context.Context, conn *sqlx.Conn) error) (*TableWriteMetrics, error) {
+	d.logger.Debug("mutate table", zap.String("name", name), observability.ZapCtx(ctx))
 	err := d.writeSem.Acquire(ctx, 1)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer d.writeSem.Release(1)
 
 	// pull latest changes from remote
 	err = d.pullFromRemote(ctx, true)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	oldMeta, err := d.catalog.tableMeta(name)
 	if err != nil {
 		if errors.Is(err, errNotFound) {
-			return fmt.Errorf("mutate: Table %q not found", name)
+			return nil, fmt.Errorf("mutate: Table %q not found", name)
 		}
-		return fmt.Errorf("mutate: unable to get table meta: %w", err)
+		return nil, fmt.Errorf("mutate: unable to get table meta: %w", err)
 	}
 
 	// create new version directory
 	newVersion := newVersion()
-	err = copyDir(d.localTableDir(name, newVersion), d.localTableDir(name, oldMeta.Version))
+	newDir := d.localTableDir(name, newVersion)
+	err = copyDir(newDir, d.localTableDir(name, oldMeta.Version))
 	if err != nil {
-		return fmt.Errorf("mutate: copy table failed: %w", err)
+		_ = os.RemoveAll(newDir)
+		return nil, fmt.Errorf("mutate: copy table failed: %w", err)
 	}
 
 	// acquire write connection
 	// need to ignore attaching table since it is already present in the db file
 	conn, release, err := d.acquireWriteConn(ctx, d.localDBPath(name, newVersion), name, false)
 	if err != nil {
-		return err
+		_ = os.RemoveAll(newDir)
+		return nil, err
 	}
 
+	t := time.Now()
 	err = mutateFn(ctx, conn)
 	if err != nil {
+		_ = os.RemoveAll(newDir)
 		_ = release()
-		return fmt.Errorf("mutate: mutate failed: %w", err)
+		return nil, fmt.Errorf("mutate: mutate failed: %w", err)
 	}
+
+	duration := time.Since(t)
 
 	// push to remote
 	err = release()
 	if err != nil {
-		return fmt.Errorf("mutate: failed to close connection: %w", err)
+		_ = os.RemoveAll(newDir)
+		return nil, fmt.Errorf("mutate: failed to close connection: %w", err)
 	}
 	meta := &tableMeta{
 		Name:           name,
@@ -500,25 +516,26 @@ func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx con
 	}
 	err = d.pushToRemote(ctx, name, oldMeta, meta)
 	if err != nil {
-		return fmt.Errorf("mutate: replicate failed: %w", err)
+		_ = os.RemoveAll(newDir)
+		return nil, fmt.Errorf("mutate: replicate failed: %w", err)
 	}
 	// no errors after this point since background goroutine will eventually sync the local db
 
 	// update local meta
 	err = d.writeTableMeta(name, meta)
 	if err != nil {
-		d.logger.Debug("mutate: error in writing table meta", slog.String("name", name), slog.String("error", err.Error()))
-		return nil
+		d.logger.Debug("mutate: error in writing table meta", zap.Error(err), observability.ZapCtx(ctx))
+		return &TableWriteMetrics{Duration: duration}, nil
 	}
 
-	d.catalog.addTableVersion(name, meta)
+	d.catalog.addTableVersion(name, meta, true)
 	d.localDirty = false
-	return nil
+	return &TableWriteMetrics{Duration: duration}, nil
 }
 
 // DropTable implements DB.
 func (d *db) DropTable(ctx context.Context, name string) error {
-	d.logger.Debug("drop table", slog.String("name", name))
+	d.logger.Debug("drop table", zap.String("name", name), observability.ZapCtx(ctx))
 	err := d.writeSem.Acquire(ctx, 1)
 	if err != nil {
 		return err
@@ -554,7 +571,7 @@ func (d *db) DropTable(ctx context.Context, name string) error {
 }
 
 func (d *db) RenameTable(ctx context.Context, oldName, newName string) error {
-	d.logger.Debug("rename table", slog.String("from", oldName), slog.String("to", newName))
+	d.logger.Debug("rename table", zap.String("from", oldName), zap.String("to", newName), observability.ZapCtx(ctx))
 	if strings.EqualFold(oldName, newName) {
 		return fmt.Errorf("rename: Table with name %q already exists", newName)
 	}
@@ -578,17 +595,26 @@ func (d *db) RenameTable(ctx context.Context, oldName, newName string) error {
 		return fmt.Errorf("rename: unable to get table meta: %w", err)
 	}
 
+	newTableOldMeta, err := d.catalog.tableMeta(newName)
+	if err != nil && !errors.Is(err, errNotFound) {
+		return fmt.Errorf("rename: unable to get table meta for new table: %w", err)
+	}
+
 	// copy the old table to new table
 	newVersion := newVersion()
+	var newDir string
 	if oldMeta.Type == "TABLE" {
+		newDir = d.localTableDir(newName, newVersion)
 		err = copyDir(d.localTableDir(newName, newVersion), d.localTableDir(oldName, oldMeta.Version))
 		if err != nil {
+			_ = os.RemoveAll(newDir)
 			return fmt.Errorf("rename: copy table failed: %w", err)
 		}
 
 		// rename the underlying table
 		err = renameTable(ctx, d.localDBPath(newName, newVersion), oldName, newName)
 		if err != nil {
+			_ = os.RemoveAll(newDir)
 			return fmt.Errorf("rename: rename table failed: %w", err)
 		}
 	} else {
@@ -606,7 +632,10 @@ func (d *db) RenameTable(ctx context.Context, oldName, newName string) error {
 		Type:           oldMeta.Type,
 		SQL:            oldMeta.SQL,
 	}
-	if err := d.pushToRemote(ctx, newName, oldMeta, meta); err != nil {
+	if err := d.pushToRemote(ctx, newName, newTableOldMeta, meta); err != nil {
+		if newDir != "" {
+			_ = os.RemoveAll(newDir)
+		}
 		return fmt.Errorf("rename: unable to replicate new table: %w", err)
 	}
 
@@ -617,6 +646,9 @@ func (d *db) RenameTable(ctx context.Context, oldName, newName string) error {
 	// drop the old table in remote
 	err = d.deleteRemote(ctx, oldName, "")
 	if err != nil {
+		if newDir != "" {
+			_ = os.RemoveAll(newDir)
+		}
 		return fmt.Errorf("rename: unable to delete old table %q from remote: %w", oldName, err)
 	}
 
@@ -625,13 +657,13 @@ func (d *db) RenameTable(ctx context.Context, oldName, newName string) error {
 	// update local meta for new table
 	err = d.writeTableMeta(newName, meta)
 	if err != nil {
-		d.logger.Debug("rename: error in writing table meta", slog.String("name", newName), slog.String("error", err.Error()))
+		d.logger.Debug("rename: error in writing table meta", zap.Error(err), observability.ZapCtx(ctx))
 		return nil
 	}
 
 	// remove old table from local db
 	d.catalog.removeTable(oldName)
-	d.catalog.addTableVersion(newName, meta)
+	d.catalog.addTableVersion(newName, meta, true)
 	d.localDirty = false
 	return nil
 }
@@ -644,11 +676,9 @@ func (d *db) localDBMonitor() {
 		case <-d.ctx.Done():
 			return
 		case <-ticker.C:
-			err := d.writeSem.Acquire(d.ctx, 1)
-			if err != nil {
-				if !errors.Is(err, context.Canceled) {
-					d.logger.Error("localDBMonitor: error in acquiring write sem", slog.String("error", err.Error()))
-				}
+			// We do not want the localDBMonitor to compete with write operations so we return early if writeSem is not available.
+			// Anyways if a write operation is in progress it will sync the local db
+			if !d.writeSem.TryAcquire(1) {
 				continue
 			}
 			if !d.localDirty {
@@ -656,9 +686,9 @@ func (d *db) localDBMonitor() {
 				// all good
 				continue
 			}
-			err = d.pullFromRemote(d.ctx, true)
+			err := d.pullFromRemote(d.ctx, true)
 			if err != nil && !errors.Is(err, context.Canceled) {
-				d.logger.Error("localDBMonitor: error in pulling from remote", slog.String("error", err.Error()))
+				d.logger.Error("localDBMonitor: error in pulling from remote", zap.Error(err))
 			}
 			d.localDirty = false
 			d.writeSem.Release(1)
@@ -713,8 +743,8 @@ func (d *db) acquireWriteConn(ctx context.Context, dsn, table string, attachExis
 	}, nil
 }
 
-func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, read bool) (*sqlx.DB, error) {
-	d.logger.Debug("open db", slog.Bool("read", read), slog.String("uri", uri))
+func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, read bool) (db *sqlx.DB, dbErr error) {
+	d.logger.Debug("open db", zap.Bool("read", read), zap.String("uri", uri), observability.ZapCtx(ctx))
 	// open the db
 	var settings map[string]string
 	dsn, err := url.Parse(uri)
@@ -733,19 +763,12 @@ func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, read 
 	// Rebuild DuckDB DSN (which should be "path?key=val&...")
 	// this is required since spaces and other special characters are valid in db file path but invalid and hence encoded in URL
 	connector, err := duckdb.NewConnector(generateDSN(dsn.Path, query.Encode()), func(execer driver.ExecerContext) error {
-		for _, qry := range d.opts.InitQueries {
+		for _, qry := range d.opts.ConnInitQueries {
 			_, err := execer.ExecContext(ctx, qry, nil)
 			if err != nil && strings.Contains(err.Error(), "Failed to download extension") {
 				// Retry using another mirror. Based on: https://github.com/duckdb/duckdb/issues/9378
 				_, err = execer.ExecContext(ctx, qry+" FROM 'http://nightly-extensions.duckdb.org'", nil)
 			}
-			if err != nil {
-				return err
-			}
-		}
-		if !read {
-			// disable any more configuration changes on the write handle via init queries
-			_, err = execer.ExecContext(ctx, "SET lock_configuration TO true", nil)
 			if err != nil {
 				return err
 			}
@@ -756,7 +779,29 @@ func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, read 
 		return nil, err
 	}
 
-	db := sqlx.NewDb(otelsql.OpenDB(connector), "duckdb")
+	db = sqlx.NewDb(otelsql.OpenDB(connector), "duckdb")
+	defer func() {
+		// there are too many error paths after this so closing the db in a defer seems better
+		// but the dbErr can be non nil even before function reaches this point so need to check for db is non nil
+		if dbErr != nil && db != nil {
+			_ = db.Close()
+		}
+	}()
+
+	for _, qry := range d.opts.DBInitQueries {
+		_, err := db.ExecContext(ctx, qry)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if !read {
+		// at the end disable any more configuration changes on the write handle via pre_exec sql
+		_, err = db.ExecContext(ctx, "SET lock_configuration TO true", nil)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	err = otelsql.RegisterDBStatsMetrics(db.DB, otelsql.WithAttributes(d.opts.OtelAttributes...))
 	if err != nil {
 		return nil, fmt.Errorf("registering db stats metrics: %w", err)
@@ -764,7 +809,6 @@ func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, read 
 
 	conn, err := db.Connx(ctx)
 	if err != nil {
-		db.Close()
 		return nil, err
 	}
 
@@ -772,7 +816,6 @@ func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, read 
 	err = d.attachTables(ctx, conn, tables, ignoreTable)
 	if err != nil {
 		conn.Close()
-		db.Close()
 		return nil, err
 	}
 	if err := conn.Close(); err != nil {
@@ -797,7 +840,6 @@ func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, read 
 		order by 1, 2, 3, 4
 	`)
 	if err != nil {
-		db.Close()
 		return nil, err
 	}
 
@@ -913,8 +955,13 @@ func (d *db) tableMeta(name string) (*tableMeta, error) {
 		return nil, err
 	}
 
-	// this is required because release version does not delete table directory as of now
-	_, err = os.Stat(d.localTableDir(name, m.Version))
+	// this is required because release version does not delete entire table directory but only the version directory
+	// and hence the meta file may exist but the db file may not
+	if m.Type == "TABLE" {
+		_, err = os.Stat(d.localDBPath(name, m.Version))
+	} else {
+		_, err = os.Stat(d.localTableDir(name, m.Version))
+	}
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			return nil, errNotFound
@@ -998,7 +1045,7 @@ func (d *db) iterateLocalTables(cleanup bool, fn func(name string, meta *tableMe
 			if !cleanup {
 				continue
 			}
-			d.logger.Debug("cleanup: remove table", slog.String("table", entry.Name()))
+			d.logger.Debug("cleanup: remove table", zap.String("table", entry.Name()))
 			err = d.deleteLocalTableFiles(entry.Name(), "")
 			if err != nil {
 				return err
@@ -1018,7 +1065,7 @@ func (d *db) iterateLocalTables(cleanup bool, fn func(name string, meta *tableMe
 				if version.Name() == meta.Version {
 					continue
 				}
-				d.logger.Debug("cleanup: remove old version", slog.String("table", entry.Name()), slog.String("version", version.Name()))
+				d.logger.Debug("cleanup: remove old version", zap.String("table", entry.Name()), zap.String("version", version.Name()))
 				err = d.deleteLocalTableFiles(entry.Name(), version.Name())
 				if err != nil {
 					return err
@@ -1070,8 +1117,140 @@ func (d *db) removeSnapshot(ctx context.Context, id int) error {
 	}
 	defer d.metaSem.Release(1)
 
-	_, err = d.dbHandle.Exec(fmt.Sprintf("DROP SCHEMA IF EXISTS %s CASCADE", schemaName(id)))
+	_, err = d.dbHandle.ExecContext(ctx, fmt.Sprintf("DROP SCHEMA IF EXISTS %s CASCADE", schemaName(id)))
 	return err
+}
+
+func (d *db) migrateDB() error {
+	// does not accept context by choice so that migration is not interrupted by context cancel
+	// The queries are expected to be fast
+	entries, err := os.ReadDir(d.opts.LocalPath)
+	if err != nil {
+		return err
+	}
+	if len(entries) == 0 {
+		return nil
+	}
+
+	// presence of meta.json indicates that the db is already migrated
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		_, err := os.Stat(filepath.Join(d.localPath, entry.Name(), "meta.json"))
+		if err == nil {
+			// already migrated
+			return nil
+		}
+	}
+
+	// files are in old structure
+	// Table migration requires following things:
+	// 1. Move the db file named <version>.db to the version folder
+	// 2. Rename the table from "default" to the table name
+	// 3. Create meta.json
+	//
+	// Views are directly present in main.db and are not versioned in old structure
+	tables := make(map[string]*tableMeta)
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		contents, err := os.ReadFile(filepath.Join(d.localPath, entry.Name(), "version.txt"))
+		if err != nil {
+			// version.txt not found, skip this directory, also safe to delete this directory
+			_ = os.RemoveAll(filepath.Join(d.localPath, entry.Name()))
+			continue
+		}
+		// get version
+		version := strings.TrimSpace(string(contents))
+		err = d.initLocalTable(entry.Name(), version)
+		if err != nil {
+			return err
+		}
+
+		err = os.Rename(filepath.Join(d.localPath, entry.Name(), fmt.Sprintf("%v.db", version)), filepath.Join(d.localPath, entry.Name(), version, "data.db"))
+		if err != nil {
+			return err
+		}
+		_ = os.RemoveAll(filepath.Join(d.localPath, entry.Name(), "version.txt"))
+		err = renameTable(context.Background(), filepath.Join(d.localPath, entry.Name(), version, "data.db"), "default", entry.Name())
+		if err != nil {
+			return err
+		}
+		// create meta.json file
+		meta := &tableMeta{
+			Name:           entry.Name(),
+			Version:        version,
+			CreatedVersion: version,
+			Type:           "TABLE",
+		}
+		err = d.writeTableMeta(entry.Name(), meta)
+		if err != nil {
+			return err
+		}
+		tables[entry.Name()] = meta
+	}
+
+	// handle views
+	// present directly in main.db file
+	if err := d.migrateViews(tables); err != nil {
+		return err
+	}
+	// drop the old db files
+	_ = os.RemoveAll(filepath.Join(d.localPath, "main.db"))
+	_ = os.RemoveAll(filepath.Join(d.localPath, "main.db.wal"))
+	return err
+}
+
+func (d *db) migrateViews(existingTables map[string]*tableMeta) error {
+	db, err := sql.Open("duckdb", filepath.Join(d.localPath, "main.db"))
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	rows, err := db.Query("SELECT view_name, sql FROM duckdb_views() WHERE database_name = current_database() AND schema_name = current_schema() AND internal = false")
+	if err != nil {
+		return err
+	}
+	var viewName, viewSQL string
+	for rows.Next() {
+		err = rows.Scan(&viewName, &viewSQL)
+		if err != nil {
+			return err
+		}
+		if _, ok := existingTables[viewName]; ok {
+			// view on a table, skip
+			continue
+		}
+		err := d.initLocalTable(viewName, "")
+		if err != nil {
+			return err
+		}
+		version := newVersion()
+		// create meta.json file
+		meta := &tableMeta{
+			Name:           viewName,
+			Version:        version,
+			CreatedVersion: version,
+			Type:           "VIEW",
+			SQL:            viewSQL,
+		}
+		err = d.writeTableMeta(viewName, meta)
+		if err != nil {
+			return err
+		}
+	}
+	return rows.Err()
+}
+
+func (d *db) duckdbOnGCS() (bool, error) {
+	contents, err := os.ReadFile(filepath.Join(d.localPath, "_duckdb_on_gcs_.txt"))
+	if err != nil {
+		return false, err
+	}
+	return strings.TrimSpace(string(contents)) == "true", nil
 }
 
 type tableMeta struct {
@@ -1106,12 +1285,6 @@ func newVersion() string {
 
 func dbName(table, version string) string {
 	return fmt.Sprintf("%s__%s__db", table, version)
-}
-
-type settings struct {
-	MaxMemory string `mapstructure:"max_memory"`
-	Threads   string `mapstructure:"threads"`
-	// Can be more settings
 }
 
 // Regex to parse human-readable size returned by DuckDB

@@ -1,16 +1,16 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import { DateTime, Interval } from "luxon";
   import type {
-    RangeBuckets,
-    NamedRange,
     ISODurationString,
+    NamedRange,
+    RangeBuckets,
   } from "../../new-time-controls";
   import { getRangeLabel } from "../../new-time-controls";
-  import TimeRangeMenu from "./TimeRangeMenu.svelte";
-  import { DateTime, Interval } from "luxon";
-  import RangeDisplay from "./RangeDisplay.svelte";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import CalendarPlusDateInput from "./CalendarPlusDateInput.svelte";
+  import RangeDisplay from "./RangeDisplay.svelte";
+  import TimeRangeMenu from "./TimeRangeMenu.svelte";
 
   export let ranges: RangeBuckets;
   export let selected: NamedRange | ISODurationString;
@@ -20,6 +20,7 @@
   export let grain: string;
   export let minDate: DateTime | undefined = undefined;
   export let maxDate: DateTime | undefined = undefined;
+  export let showFullRange: boolean;
   export let defaultTimeRange: NamedRange | ISODurationString | undefined;
   export let onSelectRange: (range: NamedRange | ISODurationString) => void;
   export let applyCustomRange: (range: Interval<true>) => void;
@@ -48,7 +49,7 @@
       aria-label="Select time range"
     >
       <b class="mr-1 line-clamp-1 flex-none">{getRangeLabel(selected)}</b>
-      {#if interval.isValid}
+      {#if interval.isValid && showFullRange}
         <RangeDisplay {interval} {grain} />
       {/if}
       <span class="flex-none transition-transform" class:-rotate-180={open}>

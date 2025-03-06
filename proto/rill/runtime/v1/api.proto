@@ -4,6 +4,7 @@ package rill.runtime.v1;
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
+import "rill/runtime/v1/schema.proto";
 import "rill/runtime/v1/resources.proto";
 import "validate/validate.proto";
 
@@ -149,6 +150,14 @@ service RuntimeService {
   rpc GenerateRenderer(GenerateRendererRequest) returns (GenerateRendererResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/generate/renderer",
+      body: "*"
+    };
+  }
+
+  // QueryResolver queries a resolver with the given properties and arguments
+  rpc QueryResolver(QueryResolverRequest) returns (QueryResolverResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/query/resolver",
       body: "*"
     };
   }
@@ -532,16 +541,31 @@ message UnpackEmptyResponse {}
 // Request message for RuntimeService.GenerateMetricsViewFile
 message GenerateMetricsViewFileRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  // Model to base the metrics view on.
+  // If you set this, do NOT set connector, database, database_schema or table.
+  string model = 8;
+  // Connector for the table.
+  // See "table" for more details.
   string connector = 2;
+  // Database for the table.
+  // See "table" for more details.
   string database = 6;
+  // Database schema for the table.
+  // See "table" for more details.
   string database_schema = 7;
+  // Table to base the metrics view on.
+  // If you set this, do NOT set model.
   string table = 3;
+  // Path to save the metrics view file to.
   string path = 4;
+  // If true, the AI will be used to generate the metrics view file.
+  // Otherwise, it falls back to a simpler heuristic approach.
   bool use_ai = 5;
 }
 
 // Response message for RuntimeService.GenerateMetricsViewFile
 message GenerateMetricsViewFileResponse {
+  // Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach.
   bool ai_succeeded = 1;
 }
 
@@ -570,6 +594,19 @@ message GenerateRendererRequest {
 message GenerateRendererResponse {
   string renderer = 1;
   google.protobuf.Struct renderer_properties = 2;
+}
+
+message QueryResolverRequest {
+  string instance_id = 1;
+  string resolver = 2;
+  google.protobuf.Struct resolver_properties = 3;
+  google.protobuf.Struct resolver_args = 4;
+  int32 limit = 5;
+}
+
+message QueryResolverResponse {
+  StructType schema = 1;
+  repeated google.protobuf.Struct data = 2;
 }
 
 // **********
@@ -636,6 +673,8 @@ message ListResourcesRequest {
   string kind = 2;
   // Filter by resource path (optional).
   string path = 3;
+  // Skip security checks
+  bool skip_security_checks = 4;
 }
 
 message ListResourcesResponse {
@@ -658,6 +697,7 @@ message WatchResourcesResponse {
 message GetResourceRequest {
   string instance_id = 1;
   ResourceName name = 2;
+  bool skip_security_checks = 3;
 }
 
 message GetResourceResponse {
@@ -832,6 +872,9 @@ message IssueDevJWTRequest {
   string email = 2 [(validate.rules).string.min_len = 1];
   repeated string groups = 3;
   bool admin = 4;
+  // Additional arbitrary attributes to include in the JWT.
+  // They take precedence if they collide with name, email, groups or admin.
+  google.protobuf.Struct attributes = 5;
 }
 
 // Response message for RuntimeService.IssueDevJWT

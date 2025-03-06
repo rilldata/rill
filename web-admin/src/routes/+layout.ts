@@ -9,21 +9,25 @@ import { dev } from "$app/environment";
 import {
   adminServiceGetCurrentUser,
   getAdminServiceGetCurrentUserQueryKey,
+  type RpcStatus,
   type V1GetCurrentUserResponse,
   type V1OrganizationPermissions,
   type V1ProjectPermissions,
   type V1User,
 } from "@rilldata/web-admin/client";
+import { redirectToLogin } from "@rilldata/web-admin/client/redirect-utils";
 import { redirectToLoginOrRequestAccess } from "@rilldata/web-admin/features/authentication/checkUserAccess";
-import { fetchOrganizationPermissions } from "@rilldata/web-admin/features/organizations/selectors";
+import { getFetchOrganizationQueryOptions } from "@rilldata/web-admin/features/organizations/selectors";
 import { fetchProjectDeploymentDetails } from "@rilldata/web-admin/features/projects/selectors";
 import { initPosthog } from "@rilldata/web-common/lib/analytics/posthog";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
 import { fixLocalhostRuntimePort } from "@rilldata/web-common/runtime-client/fix-localhost-runtime-port";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { error, redirect, type Page } from "@sveltejs/kit";
+import { isAxiosError } from "axios";
 
-export const load = async ({ params, url, route }) => {
+export const load = async ({ params, url, route, depends }) => {
+  depends("app:root");
   // Route params
   const { organization, project, token: routeToken } = params;
   const pageState = {
@@ -60,8 +64,11 @@ export const load = async ({ params, url, route }) => {
       queryFn: () => adminServiceGetCurrentUser(),
     });
     user = userQuery.user;
-  } catch {
-    // no-op
+  } catch (e) {
+    // If the user's auth token has expired, we automatically redirect to the login page
+    if (isAxiosError<RpcStatus>(e) && e.response?.status === 401) {
+      redirectToLogin();
+    }
   }
 
   // If no organization or project, return empty permissions
@@ -75,13 +82,30 @@ export const load = async ({ params, url, route }) => {
 
   // Get organization permissions
   let organizationPermissions: V1OrganizationPermissions = {};
+  let organizationLogoUrl: string | undefined = undefined;
+  let organizationFaviconUrl: string | undefined = undefined;
+  let planDisplayName: string | undefined = undefined;
   if (organization && !token) {
     try {
-      organizationPermissions =
-        await fetchOrganizationPermissions(organization);
-    } catch (e) {
-      if (e.response?.status !== 403) {
-        throw error(e.response.status, "Error fetching organization");
+      const organizationResp = await queryClient.fetchQuery(
+        getFetchOrganizationQueryOptions(organization),
+      );
+      organizationPermissions = organizationResp.permissions ?? {};
+      organizationLogoUrl = organizationResp.organization?.logoUrl;
+      organizationFaviconUrl = organizationResp.organization?.faviconUrl;
+      planDisplayName = organizationResp.organization?.billingPlanDisplayName;
+    } catch (e: unknown) {
+      if (!isAxiosError<RpcStatus>(e) || !e.response) {
+        throw error(500, "Error fetching organization");
+      }
+
+      const shouldRedirectToRequestAccess =
+        e.response.status === 403 && !!project;
+
+      if (shouldRedirectToRequestAccess) {
+        // The redirect is handled below after the call to `GetProject`
+      } else {
+        throw error(e.response.status, e.response.data.message);
       }
     }
   }
@@ -90,6 +114,9 @@ export const load = async ({ params, url, route }) => {
     return {
       user,
       organizationPermissions,
+      organizationLogoUrl,
+      organizationFaviconUrl,
+      planDisplayName,
       projectPermissions: <V1ProjectPermissions>{},
     };
   }
@@ -112,17 +139,26 @@ export const load = async ({ params, url, route }) => {
     return {
       user,
       organizationPermissions,
+      organizationLogoUrl,
+      organizationFaviconUrl,
+      planDisplayName,
       projectPermissions,
       project: proj,
       runtime: runtimeData,
     };
   } catch (e) {
-    if (e.response?.status !== 403) {
-      throw error(e.response.status, "Error fetching deployment");
+    if (!isAxiosError<RpcStatus>(e) || !e.response) {
+      throw error(500, "Error fetching project");
     }
-    const didRedirect = await redirectToLoginOrRequestAccess(pageState);
-    if (!didRedirect) {
-      throw error(e.response.status, "Error fetching organization");
+
+    const shouldRedirectToRequestAccess =
+      e.response.status === 403 && !!project;
+
+    if (shouldRedirectToRequestAccess) {
+      const didRedirect = await redirectToLoginOrRequestAccess(pageState);
+      if (didRedirect) return;
     }
+
+    throw error(e.response.status, e.response.data.message);
   }
 };

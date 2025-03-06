@@ -6,17 +6,11 @@
 
   export let data: PageData;
 
-  let columns = 20;
-  let gap = 1;
   $: canvasName = data.dashboardName;
 </script>
 
 <StateManagersProvider {canvasName}>
   <CanvasThemeProvider>
-    <CanvasDashboardEmbed
-      items={data.dashboard.spec?.items || []}
-      {columns}
-      {gap}
-    />
+    <CanvasDashboardEmbed resource={data.dashboard} />
   </CanvasThemeProvider>
 </StateManagersProvider>

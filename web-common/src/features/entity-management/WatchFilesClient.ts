@@ -25,7 +25,7 @@ export class WatchFilesClient {
   private invalidateAllFiles() {
     // TODO: reset project parser errors
     const instanceId = get(runtime).instanceId;
-    return queryClient.resetQueries({
+    return queryClient.refetchQueries({
       predicate: (query) =>
         query.queryHash.includes(`v1/instances/${instanceId}/files`),
     });

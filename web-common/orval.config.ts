@@ -102,6 +102,12 @@ export default defineConfig({
               signal: true,
             },
           },
+          QueryService_ResolveCanvas: {
+            query: {
+              useQuery: true,
+              signal: true,
+            },
+          },
           RuntimeService_IssueDevJWT: {
             query: {
               useQuery: true,

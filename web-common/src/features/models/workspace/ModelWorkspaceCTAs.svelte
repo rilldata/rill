@@ -1,16 +1,12 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { Button } from "@rilldata/web-common/components/button";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import Add from "@rilldata/web-common/components/icons/Add.svelte";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import MetricsViewIcon from "@rilldata/web-common/components/icons/MetricsViewIcon.svelte";
   import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { createExportTableMutation } from "@rilldata/web-common/features/models/workspace/export-table";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import {
-    V1ExportFormat,
     V1ReconcileStatus,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
@@ -22,6 +18,7 @@
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import ModelRefreshButton from "../incremental/ModelRefreshButton.svelte";
   import CreateDashboardButton from "./CreateDashboardButton.svelte";
+  import NavigateOrDropdown from "../../metrics-views/NavigateOrDropdown.svelte";
 
   export let resource: V1Resource | undefined;
   export let modelName: string;
@@ -29,8 +26,6 @@
   export let collapse = false;
   export let hasUnsavedChanges: boolean;
   export let connector: string;
-
-  const exportModelMutation = createExportTableMutation();
 
   $: ({ instanceId } = $runtime);
   $: isModelIdle =
@@ -50,16 +45,6 @@
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
   );
-
-  const onExport = async (format: V1ExportFormat) => {
-    return $exportModelMutation.mutateAsync({
-      data: {
-        instanceId,
-        format,
-        tableName: modelName,
-      },
-    });
-  };
 </script>
 
 <ModelRefreshButton {resource} {hasUnsavedChanges} />
@@ -67,29 +52,23 @@
 <ExportMenu
   label="Export model data"
   disabled={modelHasError || !isModelIdle}
-  {onExport}
   workspace
+  getQuery={() => {
+    return {
+      tableRowsRequest: {
+        instanceId,
+        tableName: modelName,
+      },
+    };
+  }}
 />
 
 {#if availableMetricsViews?.length === 0}
   <CreateDashboardButton {collapse} hasError={modelHasError} {modelName} />
 {:else}
   <DropdownMenu.Root>
-    <DropdownMenu.Trigger
-      asChild
-      let:builder
-      on:click={async () => {
-        if (availableMetricsViews[0]?.meta?.filePaths?.[0]) {
-          await goto(
-            `/files/${removeLeadingSlash(availableMetricsViews[0].meta.filePaths[0])}`,
-          );
-        }
-      }}
-    >
-      <Button builders={[builder]} type="secondary">
-        Go to metrics view
-        <CaretDownIcon />
-      </Button>
+    <DropdownMenu.Trigger asChild let:builder>
+      <NavigateOrDropdown resources={availableMetricsViews} {builder} />
     </DropdownMenu.Trigger>
 
     {#if availableMetricsViews.length}

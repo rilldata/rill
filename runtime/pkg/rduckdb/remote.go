@@ -6,13 +6,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log/slog"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.uber.org/zap"
 	"gocloud.dev/blob"
 	"gocloud.dev/gcerrors"
 	"golang.org/x/sync/errgroup"
@@ -31,7 +32,7 @@ func (d *db) pullFromRemote(ctx context.Context, updateCatalog bool) error {
 		}
 		return nil
 	}
-	d.logger.Debug("syncing from remote")
+	d.logger.Debug("syncing from remote", observability.ZapCtx(ctx))
 	// Create an errgroup for background downloads with limited concurrency.
 	g, gctx := errgroup.WithContext(ctx)
 	g.SetLimit(8)
@@ -66,7 +67,7 @@ func (d *db) pullFromRemote(ctx context.Context, updateCatalog bool) error {
 		}
 
 		table := strings.TrimSuffix(obj.Key, "/")
-		d.logger.Debug("SyncWithObjectStorage: discovered table", slog.String("table", table))
+		d.logger.Debug("SyncWithObjectStorage: discovered table", zap.String("table", table), observability.ZapCtx(ctx))
 
 		// get version of the table
 		var b []byte
@@ -81,7 +82,7 @@ func (d *db) pullFromRemote(ctx context.Context, updateCatalog bool) error {
 		if err != nil {
 			if gcerrors.Code(err) == gcerrors.NotFound {
 				// invalid table directory
-				d.logger.Debug("SyncWithObjectStorage: invalid table directory", slog.String("table", table))
+				d.logger.Debug("SyncWithObjectStorage: invalid table directory", zap.String("table", table), observability.ZapCtx(ctx))
 				continue
 			}
 			return err
@@ -89,7 +90,7 @@ func (d *db) pullFromRemote(ctx context.Context, updateCatalog bool) error {
 		remoteMeta := &tableMeta{}
 		err = json.Unmarshal(b, remoteMeta)
 		if err != nil {
-			d.logger.Debug("SyncWithObjectStorage: failed to unmarshal table metadata", slog.String("table", table), slog.Any("error", err))
+			d.logger.Debug("SyncWithObjectStorage: failed to unmarshal table metadata", zap.String("table", table), zap.Error(err), observability.ZapCtx(ctx))
 			continue
 		}
 		remoteTables[table] = remoteMeta
@@ -97,7 +98,7 @@ func (d *db) pullFromRemote(ctx context.Context, updateCatalog bool) error {
 		// check if table is locally present
 		meta, _ := d.tableMeta(table)
 		if meta != nil && meta.Version == remoteMeta.Version {
-			d.logger.Debug("SyncWithObjectStorage: local table is in sync with remote", slog.String("table", table))
+			d.logger.Debug("SyncWithObjectStorage: local table is in sync with remote", zap.String("table", table), observability.ZapCtx(ctx))
 			continue
 		}
 		if err := d.initLocalTable(table, remoteMeta.Version); err != nil {
@@ -166,13 +167,13 @@ func (d *db) pullFromRemote(ctx context.Context, updateCatalog bool) error {
 		if err != nil {
 			if errors.Is(err, errNotFound) {
 				// table not found in catalog
-				d.catalog.addTableVersion(table, remoteMeta)
+				d.catalog.addTableVersion(table, remoteMeta, true)
 			}
 			return err
 		}
 		// table is present in catalog but has version mismatch
 		if meta.Version != remoteMeta.Version {
-			d.catalog.addTableVersion(table, remoteMeta)
+			d.catalog.addTableVersion(table, remoteMeta, true)
 		}
 	}
 
@@ -208,10 +209,10 @@ func (d *db) pushToRemote(ctx context.Context, table string, oldMeta, meta *tabl
 		}
 
 		for _, entry := range entries {
-			d.logger.Debug("replicating file", slog.String("file", entry.Name()), slog.String("path", localPath))
+			d.logger.Debug("replicating file", zap.String("file", entry.Name()), zap.String("path", localPath), observability.ZapCtx(ctx))
 			// no directory should exist as of now
 			if entry.IsDir() {
-				d.logger.Debug("found directory in path which should not exist", slog.String("file", entry.Name()), slog.String("path", localPath))
+				d.logger.Debug("found directory in path which should not exist", zap.String("file", entry.Name()), zap.String("path", localPath), observability.ZapCtx(ctx))
 				continue
 			}
 
@@ -244,7 +245,7 @@ func (d *db) pushToRemote(ctx context.Context, table string, oldMeta, meta *tabl
 		return d.remote.WriteAll(ctx, path.Join(table, "meta.json"), m, nil)
 	})
 	if err != nil {
-		d.logger.Error("failed to update meta.json in remote", slog.String("table", table), slog.Any("error", err))
+		d.logger.Error("failed to update meta.json in remote", zap.String("table", table), zap.Error(err), observability.ZapCtx(ctx))
 	}
 
 	// success -- remove old version
@@ -264,7 +265,7 @@ func (d *db) deleteRemote(ctx context.Context, table, version string) error {
 	if table == "" && version != "" {
 		return fmt.Errorf("table must be specified if version is specified")
 	}
-	d.logger.Debug("deleting remote", slog.String("table", table), slog.String("version", version))
+	d.logger.Debug("deleting remote", zap.String("table", table), zap.String("version", version), observability.ZapCtx(ctx))
 	var prefix string
 	if table != "" {
 		if version != "" {
@@ -274,7 +275,7 @@ func (d *db) deleteRemote(ctx context.Context, table, version string) error {
 			// delete meta.json first
 			err := retry(ctx, func() error { return d.remote.Delete(ctx, "meta.json") })
 			if err != nil && gcerrors.Code(err) != gcerrors.NotFound {
-				d.logger.Error("failed to delete meta.json in remote", slog.String("table", table), slog.Any("error", err))
+				d.logger.Error("failed to delete meta.json in remote", zap.String("table", table), zap.Error(err), observability.ZapCtx(ctx))
 				return err
 			}
 		}
@@ -288,11 +289,11 @@ func (d *db) deleteRemote(ctx context.Context, table, version string) error {
 			if errors.Is(err, io.EOF) {
 				break
 			}
-			d.logger.Debug("failed to list object", slog.String("table", table), slog.Any("error", err))
+			d.logger.Debug("failed to list object", zap.String("table", table), zap.Error(err), observability.ZapCtx(ctx))
 		}
 		err = retry(ctx, func() error { return d.remote.Delete(ctx, obj.Key) })
 		if err != nil {
-			d.logger.Debug("failed to delete object", slog.String("table", table), slog.String("object", obj.Key), slog.Any("error", err))
+			d.logger.Debug("failed to delete object", zap.String("table", table), zap.String("object", obj.Key), zap.Error(err), observability.ZapCtx(ctx))
 		}
 	}
 	return nil

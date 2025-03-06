@@ -7,6 +7,7 @@ import (
 )
 
 func verifyInstallCmd(ch *cmdutil.Helper) *cobra.Command {
+	internalGroupID := ""
 	cmd := &cobra.Command{
 		Use:    "verify-install",
 		Short:  "Verify installation (called by install script)",
@@ -15,6 +16,7 @@ func verifyInstallCmd(ch *cmdutil.Helper) *cobra.Command {
 			ch.Telemetry(cmd.Context()).RecordBehavioralLegacy(activity.BehavioralEventInstallSuccess)
 			return nil
 		},
+		GroupID: internalGroupID,
 	}
 
 	return cmd

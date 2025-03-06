@@ -13,6 +13,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/email"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/queries"
 	"go.opentelemetry.io/otel/attribute"
@@ -36,8 +37,8 @@ type ReportReconciler struct {
 	C *runtime.Controller
 }
 
-func newReportReconciler(c *runtime.Controller) runtime.Reconciler {
-	return &ReportReconciler{C: c}
+func newReportReconciler(ctx context.Context, c *runtime.Controller) (runtime.Reconciler, error) {
+	return &ReportReconciler{C: c}, nil
 }
 
 func (r *ReportReconciler) Close(ctx context.Context) error {
@@ -307,15 +308,15 @@ func (r *ReportReconciler) executeAllWrapped(ctx context.Context, self *runtimev
 	if err != nil {
 		skipErr := &skipError{}
 		if errors.As(err, skipErr) {
-			r.C.Logger.Info("Skipped report", zap.String("name", self.Meta.Name.Name), zap.String("reason", skipErr.reason), zap.Time("current_watermark", watermark), zap.Time("previous_watermark", previousWatermark), zap.String("interval", rep.Spec.IntervalsIsoDuration))
+			r.C.Logger.Info("Skipped report", zap.String("name", self.Meta.Name.Name), zap.String("reason", skipErr.reason), zap.Time("current_watermark", watermark), zap.Time("previous_watermark", previousWatermark), zap.String("interval", rep.Spec.IntervalsIsoDuration), observability.ZapCtx(ctx))
 			return false, nil
 		}
-		r.C.Logger.Error("Internal: failed to calculate execution times", zap.String("name", self.Meta.Name.Name), zap.Error(err))
+		r.C.Logger.Error("Internal: failed to calculate execution times", zap.String("name", self.Meta.Name.Name), zap.Error(err), observability.ZapCtx(ctx))
 		return false, err
 	}
 	if len(ts) == 0 {
 		// This should never happen
-		r.C.Logger.Error("Internal: no execution times found", zap.String("name", self.Meta.Name.Name), zap.Error(err))
+		r.C.Logger.Error("Internal: no execution times found", zap.String("name", self.Meta.Name.Name), zap.Error(err), observability.ZapCtx(ctx))
 		return false, nil
 	}
 
@@ -360,12 +361,12 @@ func (r *ReportReconciler) executeSingle(ctx context.Context, self *runtimev1.Re
 		} else {
 			rep.State.CurrentExecution.ErrorMessage = fmt.Sprintf("Report run failed: %v", reportErr.Error())
 		}
-		reportErr = fmt.Errorf("Last report run failed with error: %v", reportErr.Error())
+		reportErr = fmt.Errorf("last report run failed with error: %v", reportErr.Error())
 	}
 
 	// Log it
 	if reportErr != nil {
-		r.C.Logger.Error("Report run failed", zap.Any("report", self.Meta.Name), zap.Any("error", reportErr.Error()))
+		r.C.Logger.Error("Report run failed", zap.Any("report", self.Meta.Name), zap.Any("error", reportErr.Error()), observability.ZapCtx(ctx))
 	}
 
 	// Commit CurrentExecution to history
@@ -381,12 +382,12 @@ func (r *ReportReconciler) executeSingle(ctx context.Context, self *runtimev1.Re
 // sendReport composes and sends the actual report to the configured recipients.
 // It returns true if an error occurred after some or all notifications were sent.
 func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time) (bool, error) {
-	r.C.Logger.Info("Sending report", zap.String("report", self.Meta.Name.Name), zap.Time("report_time", t))
+	r.C.Logger.Info("Sending report", zap.String("report", self.Meta.Name.Name), zap.Time("report_time", t), observability.ZapCtx(ctx))
 
 	admin, release, err := r.C.Runtime.Admin(ctx, r.C.InstanceID)
 	if err != nil {
 		if errors.Is(err, runtime.ErrAdminNotConfigured) {
-			r.C.Logger.Info("Skipped sending report because an admin service is not configured", zap.String("report", self.Meta.Name.Name))
+			r.C.Logger.Info("Skipped sending report because an admin service is not configured", zap.String("report", self.Meta.Name.Name), observability.ZapCtx(ctx))
 			return false, nil
 		}
 		return false, fmt.Errorf("failed to get admin client: %w", err)

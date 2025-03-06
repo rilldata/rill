@@ -5,19 +5,25 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/pkg/timeutil"
 
 	// Load IANA time zone data
 	_ "time/tzdata"
 )
 
-// ErrUnsupportedConnector is returned from Ingest for unsupported connectors.
-var ErrUnsupportedConnector = errors.New("drivers: connector not supported")
+var (
+	// ErrUnsupportedConnector is returned from Ingest for unsupported connectors.
+	ErrUnsupportedConnector = errors.New("drivers: connector not supported")
+	// ErrOptimizationFailure is returned when an optimization fails.
+	ErrOptimizationFailure = errors.New("drivers: optimization failure")
+)
 
 // WithConnectionFunc is a callback function that provides a context to be used in further OLAP store calls to enforce affinity to a single connection.
 // It also provides pointers to the actual database/sql and database/sql/driver connections.
@@ -30,6 +36,12 @@ type CreateTableOptions struct {
 	BeforeCreate string
 	AfterCreate  string
 	TableOpts    map[string]any
+}
+
+// TableWriteMetrics reports metrics for an execution that mutates table data.
+type TableWriteMetrics struct {
+	// Duration is the time taken to run user queries only.
+	Duration time.Duration
 }
 
 type InsertTableOptions struct {
@@ -50,8 +62,8 @@ type OLAPStore interface {
 	Execute(ctx context.Context, stmt *Statement) (*Result, error)
 	InformationSchema() InformationSchema
 
-	CreateTableAsSelect(ctx context.Context, name, sql string, opts *CreateTableOptions) error
-	InsertTableAsSelect(ctx context.Context, name, sql string, opts *InsertTableOptions) error
+	CreateTableAsSelect(ctx context.Context, name, sql string, opts *CreateTableOptions) (*TableWriteMetrics, error)
+	InsertTableAsSelect(ctx context.Context, name, sql string, opts *InsertTableOptions) (*TableWriteMetrics, error)
 	DropTable(ctx context.Context, name string) error
 	RenameTable(ctx context.Context, name, newName string) error
 	AddTableColumn(ctx context.Context, tableName, columnName string, typ string) error
@@ -62,11 +74,15 @@ type OLAPStore interface {
 
 // Statement wraps a query to execute against an OLAP driver.
 type Statement struct {
-	Query            string
-	Args             []any
-	DryRun           bool
-	Priority         int
-	LongRunning      bool
+	Query       string
+	Args        []any
+	DryRun      bool
+	Priority    int
+	LongRunning bool
+	// *Cache configs are used to send olap specific cache configs to underlying drivers on per query basis. For example,
+	// both Druid and ClickHouse supports specifying if cache should be used for the query or not and if the query results should be populated in cache or not.
+	UseCache         *bool // can be used to enable/disable cache for the query
+	PopulateCache    *bool // can be used to enable/disable cache population for the query results
 	ExecutionTimeout time.Duration
 }
 
@@ -475,10 +491,11 @@ func (d Dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_DimensionV2, grain
 	case DialectPinot:
 		// TODO: Handle tz instead of ignoring it.
 		// TODO: Handle firstDayOfWeek and firstMonthOfYear. NOTE: We currently error when configuring these for Pinot in runtime/validate.go.
+		// adding a cast to timestamp to get the the output type as TIMESTAMP otherwise it returns a long
 		if tz == "" {
-			return fmt.Sprintf("date_trunc('%s', %s, 'MILLISECONDS')", specifier, expr), nil
+			return fmt.Sprintf("CAST(date_trunc('%s', %s, 'MILLISECONDS') AS TIMESTAMP)", specifier, expr), nil
 		}
-		return fmt.Sprintf("date_trunc('%s', %s, 'MILLISECONDS', '%s')", specifier, expr, tz), nil
+		return fmt.Sprintf("CAST(date_trunc('%s', %s, 'MILLISECONDS', '%s') AS TIMESTAMP)", specifier, expr, tz), nil
 	default:
 		return "", fmt.Errorf("unsupported dialect %q", d)
 	}
@@ -494,9 +511,252 @@ func (d Dialect) DateDiff(grain runtimev1.TimeGrain, t1, t2 time.Time) (string, 
 	case DialectDuckDB:
 		return fmt.Sprintf("DATEDIFF('%s', TIMESTAMP '%s', TIMESTAMP '%s')", unit, t1.Format(time.RFC3339), t2.Format(time.RFC3339)), nil
 	case DialectPinot:
-		return fmt.Sprintf("DATETIMECONVERT(DATETRUNC('MILLISECONDS', %s) - DATETRUNC('MILLISECONDS', %s), '1:MILLISECONDS:EPOCH', '1:%s:EPOCH')", t1.Format(time.RFC3339), t2.Format(time.RFC3339), unit), nil
+		return fmt.Sprintf("CAST(DATEDIFF('%s', %d, %d) AS TIMESTAMP)", unit, t1.UnixMilli(), t2.UnixMilli()), nil
 	default:
 		return "", fmt.Errorf("unsupported dialect %q", d)
+	}
+}
+
+func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeGrain, alias string) (string, []any, error) {
+	var args []any
+	switch d {
+	case DialectDuckDB:
+		return fmt.Sprintf("SELECT range AS %s FROM range('%s'::TIMESTAMP, '%s'::TIMESTAMP, INTERVAL '1 %s')", d.EscapeIdentifier(alias), start.Format(time.RFC3339), end.Format(time.RFC3339), d.ConvertToDateTruncSpecifier(grain)), nil, nil
+	case DialectClickHouse:
+		// format - SELECT c1 AS "alias" FROM VALUES(toDateTime('2021-01-01 00:00:00'), toDateTime('2021-01-01 00:00:00'),...)
+		var sb strings.Builder
+		sb.WriteString(fmt.Sprintf("SELECT c1 AS %s FROM VALUES(", d.EscapeIdentifier(alias)))
+		for t := start; t.Before(end); t = timeutil.AddTimeProto(t, grain, 1) {
+			if t != start {
+				sb.WriteString(", ")
+			}
+			sb.WriteString("?")
+			args = append(args, t)
+		}
+		sb.WriteString(")")
+		return sb.String(), args, nil
+	case DialectDruid:
+		// generate select like - SELECT * FROM (
+		//  VALUES
+		//  (CAST('2006-01-02T15:04:05Z' AS TIMESTAMP)),
+		//  (CAST('2006-01-02T15:04:05Z' AS TIMESTAMP))
+		// ) t (time)
+		var sb strings.Builder
+		sb.WriteString("SELECT * FROM (VALUES ")
+		for t := start; t.Before(end); t = timeutil.AddTimeProto(t, grain, 1) {
+			if t != start {
+				sb.WriteString(", ")
+			}
+			sb.WriteString("(CAST(? AS TIMESTAMP))")
+			args = append(args, t)
+		}
+		sb.WriteString(fmt.Sprintf(") t (%s)", d.EscapeIdentifier(alias)))
+		return sb.String(), args, nil
+	default:
+		return "", nil, fmt.Errorf("unsupported dialect %q", d)
+	}
+}
+
+// SelectInlineResults returns a SQL query which inline results from the result set supplied along with the positional arguments and dimension values.
+func (d Dialect) SelectInlineResults(result *Result) (string, []any, []any, error) {
+	// check schema field type for compatibility
+	for _, f := range result.Schema.Fields {
+		if !d.checkTypeCompatibility(f) {
+			return "", nil, nil, fmt.Errorf("select inline: schema field type not supported %q: %w", f.Type.Code, ErrOptimizationFailure)
+		}
+	}
+
+	values := make([]any, len(result.Schema.Fields))
+	valuePtrs := make([]any, len(result.Schema.Fields))
+	for i := range values {
+		valuePtrs[i] = &values[i]
+	}
+
+	var dimVals []any
+	var args []any
+
+	rows := 0
+	prefix := ""
+	suffix := ""
+	// creating inline query for all dialects in one loop, accumulating field exprs first and then creating the query can be more cleaner
+	for result.Next() {
+		if err := result.Scan(valuePtrs...); err != nil {
+			return "", nil, nil, fmt.Errorf("select inline: failed to scan value: %w", err)
+		}
+		if d == DialectDruid || d == DialectDuckDB || d == DialectPinot {
+			// format - select * from (values (1, 2), (3, 4)) t(a, b)
+			if rows == 0 {
+				prefix = "SELECT * FROM (VALUES "
+				suffix = "t("
+			}
+			if rows > 0 {
+				prefix += ", "
+			}
+		} else if d == DialectClickHouse {
+			// format - SELECT c1 AS a, c2 AS b FROM VALUES((1, 2), (3, 4))
+			if rows == 0 {
+				prefix = "SELECT "
+				suffix = " FROM VALUES ("
+			}
+			if rows > 0 {
+				suffix += ", "
+			}
+		} else {
+			// format - select 1 as a, 2 as b union all select 3 as a, 4 as b
+			if rows > 0 {
+				prefix += " UNION ALL "
+			}
+			prefix += "SELECT "
+		}
+
+		dimVals = append(dimVals, values[0])
+		for i, v := range values {
+			if d == DialectDruid || d == DialectDuckDB || d == DialectPinot {
+				if i == 0 {
+					prefix += "("
+				} else {
+					prefix += ", "
+				}
+				if rows == 0 {
+					suffix += d.EscapeIdentifier(result.Schema.Fields[i].Name)
+					if i != len(result.Schema.Fields)-1 {
+						suffix += ", "
+					}
+				}
+			} else if d == DialectClickHouse {
+				if i == 0 {
+					suffix += "("
+				} else {
+					suffix += ", "
+				}
+				if rows == 0 {
+					prefix += fmt.Sprintf("c%d AS %s", i+1, d.EscapeIdentifier(result.Schema.Fields[i].Name))
+					if i != len(result.Schema.Fields)-1 {
+						prefix += ", "
+					}
+				}
+			} else if i > 0 {
+				prefix += ", "
+			}
+
+			if d == DialectDuckDB {
+				prefix += "?"
+				args = append(args, v)
+			} else if d == DialectClickHouse {
+				suffix += "?"
+				args = append(args, v)
+			} else if d == DialectDruid || d == DialectPinot {
+				ok, expr, err := d.GetValExpr(v, result.Schema.Fields[i].Type.Code)
+				if err != nil {
+					return "", nil, nil, fmt.Errorf("select inline: failed to get value expression: %w", err)
+				}
+				if !ok {
+					return "", nil, nil, fmt.Errorf("select inline: unsupported value type %q: %w", result.Schema.Fields[i].Type.Code, ErrOptimizationFailure)
+				}
+				prefix += expr
+			} else {
+				prefix += fmt.Sprintf("%s AS %s", "?", d.EscapeIdentifier(result.Schema.Fields[i].Name))
+				args = append(args, v)
+			}
+		}
+
+		if d == DialectDruid || d == DialectDuckDB || d == DialectPinot {
+			prefix += ")"
+			if rows == 0 {
+				suffix += ")"
+			}
+		} else if d == DialectClickHouse {
+			suffix += ")"
+		}
+
+		rows++
+	}
+
+	if d == DialectDruid || d == DialectDuckDB || d == DialectPinot {
+		prefix += ") "
+	} else if d == DialectClickHouse {
+		suffix += ")"
+	}
+
+	return prefix + suffix, args, dimVals, nil
+}
+
+func (d Dialect) GetValExpr(val any, typ runtimev1.Type_Code) (bool, string, error) {
+	if val == nil {
+		ok, expr := d.GetNullExpr(typ)
+		if ok {
+			return true, expr, nil
+		}
+		return false, "", fmt.Errorf("could not get null expr for type %q", typ)
+	}
+	switch typ {
+	case runtimev1.Type_CODE_STRING:
+		if s, ok := val.(string); ok {
+			return true, d.EscapeStringValue(s), nil
+		}
+		return false, "", fmt.Errorf("could not cast value %v to string type", val)
+	case runtimev1.Type_CODE_INT8, runtimev1.Type_CODE_INT16, runtimev1.Type_CODE_INT32, runtimev1.Type_CODE_INT64, runtimev1.Type_CODE_UINT8, runtimev1.Type_CODE_UINT16, runtimev1.Type_CODE_UINT32, runtimev1.Type_CODE_UINT64, runtimev1.Type_CODE_FLOAT32, runtimev1.Type_CODE_FLOAT64:
+		// check NaN and Inf
+		if f, ok := val.(float64); ok && (math.IsNaN(f) || math.IsInf(f, 0)) {
+			return true, "NULL", nil
+		}
+
+		return true, fmt.Sprintf("%v", val), nil
+	case runtimev1.Type_CODE_BOOL:
+		return true, fmt.Sprintf("%v", val), nil
+	case runtimev1.Type_CODE_TIME, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_TIMESTAMP:
+		if t, ok := val.(time.Time); ok {
+			if ok, expr := d.GetTimeExpr(t); ok {
+				return true, expr, nil
+			}
+			return false, "", fmt.Errorf("cannot get time expr for dialect %q", d)
+		}
+		return false, "", fmt.Errorf("unsupported time type %q", typ)
+	default:
+		return false, "", fmt.Errorf("unsupported type %q", typ)
+	}
+}
+
+func (d Dialect) GetNullExpr(typ runtimev1.Type_Code) (bool, string) {
+	if d == DialectDruid {
+		switch typ {
+		case runtimev1.Type_CODE_STRING:
+			return true, "CAST(NULL AS VARCHAR)"
+		case runtimev1.Type_CODE_INT8, runtimev1.Type_CODE_INT16, runtimev1.Type_CODE_INT32, runtimev1.Type_CODE_INT64, runtimev1.Type_CODE_INT128, runtimev1.Type_CODE_INT256, runtimev1.Type_CODE_UINT8, runtimev1.Type_CODE_UINT16, runtimev1.Type_CODE_UINT32, runtimev1.Type_CODE_UINT64, runtimev1.Type_CODE_UINT128, runtimev1.Type_CODE_UINT256:
+			return true, "CAST(NULL AS INTEGER)"
+		case runtimev1.Type_CODE_FLOAT32, runtimev1.Type_CODE_FLOAT64, runtimev1.Type_CODE_DECIMAL:
+			return true, "CAST(NULL AS DOUBLE)"
+		case runtimev1.Type_CODE_BOOL:
+			return true, "CAST(NULL AS BOOLEAN)"
+		case runtimev1.Type_CODE_TIME, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_TIMESTAMP:
+			return true, "CAST(NULL AS TIMESTAMP)"
+		default:
+			return false, ""
+		}
+	}
+	return true, "NULL"
+}
+
+func (d Dialect) GetTimeExpr(t time.Time) (bool, string) {
+	switch d {
+	case DialectClickHouse:
+		return true, fmt.Sprintf("parseDateTimeBestEffort('%s')", t.Format(time.RFC3339Nano))
+	case DialectDuckDB, DialectDruid:
+		return true, fmt.Sprintf("CAST('%s' AS TIMESTAMP)", t.Format(time.RFC3339Nano))
+	case DialectPinot:
+		return true, fmt.Sprintf("CAST(%d AS TIMESTAMP)", t.UnixMilli())
+	default:
+		return false, ""
+	}
+}
+
+func (d Dialect) checkTypeCompatibility(f *runtimev1.StructType_Field) bool {
+	switch f.Type.Code {
+	// types that align with native go types are supported
+	case runtimev1.Type_CODE_STRING, runtimev1.Type_CODE_INT8, runtimev1.Type_CODE_INT16, runtimev1.Type_CODE_INT32, runtimev1.Type_CODE_INT64, runtimev1.Type_CODE_UINT8, runtimev1.Type_CODE_UINT16, runtimev1.Type_CODE_UINT32, runtimev1.Type_CODE_UINT64, runtimev1.Type_CODE_FLOAT32, runtimev1.Type_CODE_FLOAT64, runtimev1.Type_CODE_BOOL, runtimev1.Type_CODE_TIME, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_TIMESTAMP:
+		return true
+	default:
+		return false
 	}
 }
 

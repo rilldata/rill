@@ -13,25 +13,40 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
+	"golang.org/x/sync/semaphore"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const _defaultIngestTimeout = 60 * time.Minute
+// If changing this value also update maxAcquiredConnDuration in runtime/drivers/duckdb/duckdb.go
+const _defaultIngestTimeout = 3 * time.Hour
 
 func init() {
 	runtime.RegisterReconcilerInitializer(runtime.ResourceKindSource, newSourceReconciler)
 }
 
 type SourceReconciler struct {
-	C *runtime.Controller
+	C       *runtime.Controller
+	execSem *semaphore.Weighted
 }
 
-func newSourceReconciler(c *runtime.Controller) runtime.Reconciler {
-	return &SourceReconciler{C: c}
+func newSourceReconciler(ctx context.Context, c *runtime.Controller) (runtime.Reconciler, error) {
+	cfg, err := c.Runtime.InstanceConfig(ctx, c.InstanceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get model execution concurrency limit: %w", err)
+	}
+	// Re-using the model limit since we are deprecating sources soon (so everything will be a model).
+	if cfg.ModelConcurrentExecutionLimit <= 0 {
+		return nil, errors.New("model_concurrent_execution_limit must be greater than zero")
+	}
+	return &SourceReconciler{
+		C:       c,
+		execSem: semaphore.NewWeighted(int64(cfg.ModelConcurrentExecutionLimit)),
+	}, nil
 }
 
 func (r *SourceReconciler) Close(ctx context.Context) error {
@@ -80,6 +95,12 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 
 	// Handle deletion
 	if self.Meta.DeletedOn != nil {
+		err = r.execSem.Acquire(ctx, 1)
+		if err != nil {
+			return runtime.ReconcileResult{Err: err}
+		}
+		defer r.execSem.Release(1)
+
 		olapDropTableIfExists(ctx, r.C, src.State.Connector, src.State.Table)
 		olapDropTableIfExists(ctx, r.C, src.State.Connector, r.stagingTableName(tableName))
 		return runtime.ReconcileResult{}
@@ -91,15 +112,26 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 		_, ok := olapTableInfo(ctx, r.C, src.State.Connector, src.State.Table)
 		// NOTE: Not checking if it's a view because some backends will represent sources as views (like DuckDB with external table storage enabled).
 		if ok {
-			// Rename and update state
-			err = olapForceRenameTable(ctx, r.C, src.State.Connector, src.State.Table, false, tableName)
-			if err != nil {
-				return runtime.ReconcileResult{Err: fmt.Errorf("failed to rename table: %w", err)}
-			}
-			src.State.Table = tableName
-			err = r.C.UpdateState(ctx, self.Meta.Name, self)
-			if err != nil {
-				return runtime.ReconcileResult{Err: err}
+			// Using a nested scope to ensure the execSem is released (even if there's a panic).
+			func() {
+				err = r.execSem.Acquire(ctx, 1)
+				if err != nil {
+					return // Safe to ignore because the err can only be ctx.Err()
+				}
+				defer r.execSem.Release(1)
+
+				// Rename and update state
+				err = olapForceRenameTable(ctx, r.C, src.State.Connector, src.State.Table, false, tableName)
+				if err == nil {
+					src.State.Table = tableName
+					err = r.C.UpdateState(ctx, self.Meta.Name, self)
+				}
+				if err != nil {
+					r.C.Logger.Warn("failed to rename source", zap.String("source", n.Name), zap.String("renamed_from", self.Meta.RenamedFrom.Name), zap.Error(err), observability.ZapCtx(ctx))
+				}
+			}()
+			if ctx.Err() != nil { // Handle if the error was a ctx error
+				return runtime.ReconcileResult{Err: ctx.Err()}
 			}
 		}
 		// Note: Not exiting early. It might need to be (re-)ingested, and we need to set the correct retrigger time based on the refresh schedule.
@@ -114,6 +146,12 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 	err = checkRefs(ctx, r.C, self.Meta.Refs)
 	if err != nil {
 		if !src.Spec.StageChanges && src.State.Table != "" {
+			err = r.execSem.Acquire(ctx, 1)
+			if err != nil {
+				return runtime.ReconcileResult{Err: err}
+			}
+			defer r.execSem.Release(1)
+
 			// Remove previously ingested table
 			olapDropTableIfExists(ctx, r.C, src.State.Connector, src.State.Table)
 			src.State.Connector = ""
@@ -122,7 +160,7 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 			src.State.RefreshedOn = nil
 			err = r.C.UpdateState(ctx, self.Meta.Name, self)
 			if err != nil {
-				r.C.Logger.Error("refs check: failed to update state", zap.Any("error", err))
+				r.C.Logger.Error("refs check: failed to update state", zap.Any("error", err), observability.ZapCtx(ctx))
 			}
 		}
 		return runtime.ReconcileResult{Err: err}
@@ -168,6 +206,13 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 		return runtime.ReconcileResult{Retrigger: refreshOn}
 	}
 
+	// Acquire the execution semaphore for the remainder of the function.
+	err = r.execSem.Acquire(ctx, 1)
+	if err != nil {
+		return runtime.ReconcileResult{Err: err}
+	}
+	defer r.execSem.Release(1)
+
 	// If the SinkConnector was changed, drop data in the old connector
 	if src.State.Table != "" && src.State.Connector != src.Spec.SinkConnector {
 		olapDropTableIfExists(ctx, r.C, src.State.Connector, src.State.Table)
@@ -187,7 +232,7 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 	}
 
 	// Execute ingestion
-	r.C.Logger.Info("Ingesting source data", zap.String("name", n.Name), zap.String("connector", connector))
+	r.C.Logger.Info("Ingesting source data", zap.String("name", n.Name), zap.String("connector", connector), observability.ZapCtx(ctx))
 	ingestErr := r.ingestSource(ctx, self, srcConfig, driversSink(stagingTableName))
 	if ingestErr != nil {
 		ingestErr = fmt.Errorf("failed to ingest source: %w", ingestErr)

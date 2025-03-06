@@ -12,8 +12,10 @@ import (
 	compilerv1 "github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/arrayutil"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 var ErrParserHasParseErrors = errors.New("encountered parse errors")
@@ -26,8 +28,8 @@ type ProjectParserReconciler struct {
 	C *runtime.Controller
 }
 
-func newProjectParser(c *runtime.Controller) runtime.Reconciler {
-	return &ProjectParserReconciler{C: c}
+func newProjectParser(ctx context.Context, c *runtime.Controller) (runtime.Reconciler, error) {
+	return &ProjectParserReconciler{C: c}, nil
 }
 
 func (r *ProjectParserReconciler) Close(ctx context.Context) error {
@@ -116,14 +118,22 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to sync repo: %w", err)}
 	}
 
-	// Update commit sha
+	// Update commit sha and timestamp
 	hash, err := repo.CommitHash(ctx)
 	if err != nil {
 		// Not worth failing the reconcile for this. On error, it'll just set CurrentCommitSha to "".
-		r.C.Logger.Error("failed to get commit hash", zap.String("error", err.Error()))
+		r.C.Logger.Error("failed to get commit hash", zap.String("error", err.Error()), observability.ZapCtx(ctx))
+	}
+	ts, err := repo.CommitTimestamp(ctx)
+	if err != nil {
+		r.C.Logger.Error("failed to get commit timestamp", zap.String("error", err.Error()), observability.ZapCtx(ctx))
 	}
 	if pp.State.CurrentCommitSha != hash {
 		pp.State.CurrentCommitSha = hash
+		pp.State.CurrentCommitOn = nil
+		if !ts.IsZero() {
+			pp.State.CurrentCommitOn = timestamppb.New(ts)
+		}
 		err = r.C.UpdateState(ctx, n, self)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
@@ -162,7 +172,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	defer func() {
 		pp.State.Watching = false
 		if err = r.C.UpdateState(ctx, n, self); err != nil {
-			r.C.Logger.Error("failed to update watch state", zap.Any("error", err))
+			r.C.Logger.Error("failed to update watch state", zap.Any("error", err), observability.ZapCtx(ctx))
 		}
 	}()
 
@@ -237,7 +247,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 
 	// If the watch failed, we return without rescheduling.
 	// TODO: Should we have some kind of retry?
-	r.C.Logger.Error("Stopped watching for file changes", zap.String("error", err.Error()))
+	r.C.Logger.Error("Stopped watching for file changes", zap.String("error", err.Error()), observability.ZapCtx(ctx))
 	return runtime.ReconcileResult{Err: err}
 }
 
@@ -263,14 +273,14 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 			if skipRillYAMLErr && e.FilePath == "/rill.yaml" {
 				continue
 			}
-			r.C.Logger.Warn("Parser error", zap.String("path", e.FilePath), zap.String("error", e.Message))
+			r.C.Logger.Warn("Parser error", zap.String("path", e.FilePath), zap.String("error", e.Message), observability.ZapCtx(ctx))
 		}
 	} else if diff.Skipped {
-		r.C.Logger.Warn("Not parsing changed paths due to missing or broken rill.yaml")
+		r.C.Logger.Warn("Not parsing changed paths due to missing or broken rill.yaml", observability.ZapCtx(ctx))
 	} else {
 		for _, e := range parser.Errors {
 			if slices.Contains(changedPaths, e.FilePath) {
-				r.C.Logger.Warn("Parser error", zap.String("path", e.FilePath), zap.String("error", e.Message))
+				r.C.Logger.Warn("Parser error", zap.String("path", e.FilePath), zap.String("error", e.Message), observability.ZapCtx(ctx))
 			}
 		}
 	}

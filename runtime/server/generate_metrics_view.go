@@ -34,6 +34,7 @@ const aiGenerateTimeout = 30 * time.Second
 func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.GenerateMetricsViewFileRequest) (*runtimev1.GenerateMetricsViewFileResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.model", req.Model),
 		attribute.String("args.connector", req.Connector),
 		attribute.String("args.database", req.Database),
 		attribute.String("args.database_schema", req.DatabaseSchema),
@@ -52,6 +53,66 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 	inst, err := s.runtime.Instance(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
+	}
+
+	// Check that only one of model or table is provided
+	if req.Model != "" && req.Table != "" {
+		return nil, status.Error(codes.InvalidArgument, "only one of model or table can be provided")
+	} else if req.Model == "" && req.Table == "" {
+		return nil, status.Error(codes.InvalidArgument, "either model or table must be provided")
+	}
+
+	// The `model:` field has fuzzy logic, supporting either models, sources, or external table names.
+	// So we need some similarly fuzzy logic here to determine if there's a matching model.
+	var modelFound bool
+	var modelConnector, modelTable string
+	searchName := req.Table
+	if req.Model != "" {
+		searchName = req.Model
+	}
+	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
+	if err != nil {
+		return nil, err
+	}
+	model, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: searchName}, false)
+	if err != nil && !errors.Is(err, drivers.ErrResourceNotFound) {
+		return nil, err
+	}
+	if model != nil {
+		modelFound = true
+		modelConnector = model.GetModel().State.ResultConnector
+		modelTable = model.GetModel().State.ResultTable
+	} else {
+		// Check if it's a source
+		source, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindSource, Name: searchName}, false)
+		if err != nil && !errors.Is(err, drivers.ErrResourceNotFound) {
+			return nil, err
+		}
+		if source != nil {
+			modelFound = true
+			modelConnector = source.GetSource().State.Connector
+			modelTable = source.GetSource().State.Table
+		}
+	}
+
+	// Depending on the result, we populate req.Connector and req.Table which we use subsequently.
+	if modelFound {
+		// We found a matching model.
+		if req.Model != "" { // We found req.Model
+			req.Connector = modelConnector
+			req.Table = modelTable
+		} else if (req.Connector == "" || req.Connector == modelConnector) && strings.EqualFold(req.Table, modelTable) { // We found a model with the same name as req.Table
+			req.Connector = modelConnector
+			req.Table = modelTable
+		} else { // We found a model that doesn't match the request.
+			modelFound = false
+		}
+	} else {
+		// We did not find a model. We proceed to check if "model" references an external table in the default OLAP.
+		if req.Model != "" {
+			req.Connector = ""
+			req.Table = req.Model
+		}
 	}
 
 	// If a connector is not provided, default to the instance's OLAP connector
@@ -73,46 +134,15 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 		return nil, status.Errorf(codes.InvalidArgument, "table not found: %s", err)
 	}
 
-	// The table may have been created by a model. Search for a model with the same name in the same connector.
-	// NOTE: If it's a source, we will also mark it as a model. The metrics view YAML supports that, and we'll anyway deprecate sources soon.
-	var isModel bool
-	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
-	if err != nil {
-		return nil, err
-	}
-	model, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: tbl.Name}, false)
-	if err != nil && !errors.Is(err, drivers.ErrResourceNotFound) {
-		return nil, err
-	}
-	if model != nil {
-		// Check model is for this table.
-		modelState := model.GetModel().State
-		if modelState.ResultConnector == req.Connector && strings.EqualFold(modelState.ResultTable, tbl.Name) {
-			isModel = true
-		}
-	} else {
-		// Check if it's a source
-		source, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindSource, Name: tbl.Name}, false)
-		if err != nil && !errors.Is(err, drivers.ErrResourceNotFound) {
-			return nil, err
-		}
-		if source != nil {
-			sourceState := source.GetSource().State
-			if sourceState.Connector == req.Connector && strings.EqualFold(sourceState.Table, tbl.Name) {
-				isModel = true
-			}
-		}
-	}
-
 	// Try to generate the YAML with AI
 	var data string
 	var aiSucceeded bool
 	if req.UseAi {
 		// Generate
 		start := time.Now()
-		res, err := s.generateMetricsViewYAMLWithAI(ctx, req.InstanceId, olap.Dialect().String(), req.Connector, tbl, isDefaultConnector, isModel)
+		res, err := s.generateMetricsViewYAMLWithAI(ctx, req.InstanceId, olap.Dialect().String(), req.Connector, tbl, isDefaultConnector, modelFound)
 		if err != nil {
-			s.logger.Warn("failed to generate metrics view YAML using AI", zap.Error(err))
+			s.logger.Warn("failed to generate metrics view YAML using AI", zap.Error(err), observability.ZapCtx(ctx))
 		} else {
 			data = res.data
 			aiSucceeded = true
@@ -138,7 +168,7 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 
 	// If we didn't manage to generate the YAML using AI, we fall back to the simple generator
 	if data == "" {
-		data, err = generateMetricsViewYAMLSimple(req.Connector, tbl, isDefaultConnector, isModel)
+		data, err = generateMetricsViewYAMLSimple(req.Connector, tbl, isDefaultConnector, modelFound)
 		if err != nil {
 			return nil, err
 		}

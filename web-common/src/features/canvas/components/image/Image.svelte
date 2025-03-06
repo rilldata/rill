@@ -1,33 +1,14 @@
 <script lang="ts">
-  import type { ImageProperties } from "@rilldata/web-common/features/templates/types";
+  import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
   import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
   import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import type { ImageSpec } from "./";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
 
   const instanceId = $runtime.instanceId;
-  const DEFAULT_IMAGE_PROPERTIES: ImageProperties = {
-    url: "",
-    css: {
-      "object-fit": "contain",
-      opacity: "1",
-      filter: "blur(0px) saturate(1)",
-    },
-  };
-
-  $: imageProperties = {
-    ...DEFAULT_IMAGE_PROPERTIES,
-    ...rendererProperties,
-    css: {
-      ...DEFAULT_IMAGE_PROPERTIES.css,
-      ...rendererProperties.css,
-    },
-  } as ImageProperties;
-
-  $: styleString = Object.entries(imageProperties.css || {})
-    .map(([k, v]) => `${k}:${v}`)
-    .join(";");
+  $: imageProperties = rendererProperties as ImageSpec;
 
   let imageSrc: string | null = null;
   let errorMessage: string | null = null;
@@ -36,7 +17,7 @@
       fetchImage(imageProperties.url);
     } else {
       imageSrc = null;
-      errorMessage = null;
+      errorMessage = "No image URL provided";
     }
   }
 
@@ -77,19 +58,14 @@
 </script>
 
 {#if errorMessage}
-  <div class="error-message">{errorMessage}</div>
+  <ComponentError error={errorMessage} />
 {:else}
-  <img
-    src={imageSrc || ""}
-    alt={"Dashboard Image"}
-    draggable="false"
-    style={styleString}
-  />
+  <div class="flex items-center justify-center h-full w-full">
+    <img
+      src={imageSrc || ""}
+      alt={"Canvas Image"}
+      draggable="false"
+      class="h-full w-full object-contain"
+    />
+  </div>
 {/if}
-
-<style>
-  .error-message {
-    color: red;
-    font-weight: bold;
-  }
-</style>

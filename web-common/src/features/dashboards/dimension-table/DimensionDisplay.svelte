@@ -12,12 +12,11 @@
     type MetricsViewSpecDimensionV2,
     type V1Expression,
     type V1MetricsViewAggregationMeasure,
-    type V1MetricsViewSpec,
     type V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { getComparisonRequestMeasures } from "../dashboard-utils";
-  import { mergeDimensionAndMeasureFilter } from "../filters/measure-filters/measure-filter-utils";
+  import { mergeDimensionAndMeasureFilters } from "../filters/measure-filters/measure-filter-utils";
   import { getSort } from "../leaderboard/leaderboard-utils";
   import { getFiltersForOtherDimensions } from "../selectors";
   import { getMeasuresForDimensionTable } from "../state-managers/selectors/dashboard-queries";
@@ -36,7 +35,6 @@
   export let whereFilter: V1Expression;
   export let metricsViewName: string;
   export let dimensionThresholdFilters: DimensionThresholdFilter[];
-  export let metricsView: V1MetricsViewSpec;
   export let visibleMeasureNames: string[];
   export let timeControlsReady: boolean;
   export let dimension: MetricsViewSpecDimensionV2;
@@ -79,7 +77,7 @@
         name: measureName,
       })),
       where: sanitiseExpression(
-        mergeDimensionAndMeasureFilter(
+        mergeDimensionAndMeasureFilters(
           getFiltersForOtherDimensions(whereFilter, dimensionName),
           dimensionThresholdFilters,
         ),
@@ -102,7 +100,6 @@
   $: measures = getMeasuresForDimensionTable(
     activeMeasureName,
     dimensionThresholdFilters,
-    metricsView,
     visibleMeasureNames,
   )
     .map(
@@ -133,7 +130,7 @@
         !!comparisonTimeRange,
       ),
       where: sanitiseExpression(
-        mergeDimensionAndMeasureFilter(filterSet, dimensionThresholdFilters),
+        mergeDimensionAndMeasureFilters(filterSet, dimensionThresholdFilters),
         undefined,
       ),
       limit: queryLimit.toString(),

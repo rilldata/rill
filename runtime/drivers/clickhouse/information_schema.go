@@ -195,7 +195,7 @@ func (i informationSchema) entityType(ctx context.Context, db, name string) (typ
 		q = `SELECT
     			multiIf(engine IN ('MaterializedView', 'View'), 'VIEW', engine = 'Dictionary', 'DICTIONARY', 'TABLE') AS type,
     			countDistinct(_shard_num) > 1 AS is_on_cluster
-			FROM clusterAllReplicas(` + i.c.config.Cluster + `, system.tables) AS t
+			FROM clusterAllReplicas(` + safeSQLName(i.c.config.Cluster) + `, system.tables) AS t
 			JOIN system.databases AS db ON t.database = db.name
 			WHERE t.database = coalesce(?, currentDatabase()) AND t.name = ?
 			GROUP BY engine, t.name`
