@@ -10,25 +10,33 @@
   import {
     PivotChipType,
     type PivotDataStore,
+    type PivotState,
   } from "@rilldata/web-common/features/dashboards/pivot/types";
   import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
   import { writable, type Readable } from "svelte/store";
-  import {
-    getTableConfig,
-    pivotState,
-    usePivotForCanvas,
-    validateTableSchema,
-  } from "./selector";
+  import { validateTableSchema } from "./selector";
+  import { clearTableCache, getTableConfig, usePivotForCanvas } from "./util";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
   export let timeAndFilterStore: Readable<TimeAndFilterStore>;
+  export let componentName: string;
 
   const ctx = getCanvasStateManagers();
   const tableSpecStore = writable(rendererProperties as TableSpec);
+  const pivotState = writable<PivotState>({
+    active: true,
+    columns: [],
+    rows: [],
+    expanded: {},
+    sorting: [],
+    columnPage: 1,
+    rowPage: 1,
+    enableComparison: false,
+    tableMode: "nest",
+    activeCell: null,
+  });
 
-  let pivotDataStore: PivotDataStore;
-  let isFetching = false;
-  let assembled = false;
+  let pivotDataStore: PivotDataStore | undefined;
 
   $: tableSpec = rendererProperties as TableSpec;
   $: tableSpecStore.set(tableSpec);
@@ -42,6 +50,8 @@
   $: if (tableSpec && $schema.isValid) {
     pivotState.update((state) => ({
       ...state,
+      sorting: [],
+      expanded: {},
       columns: [
         ...colDimensions.map((dimension) => ({
           id: dimension,
@@ -70,14 +80,18 @@
     timeAndFilterStore,
   );
 
-  $: if ($schema.isValid && tableSpec.metrics_view && !pivotDataStore) {
+  $: if ($schema.isValid && tableSpec.metrics_view) {
     pivotDataStore = usePivotForCanvas(
       ctx,
+      componentName,
       tableSpec.metrics_view,
+      pivotState,
       tableSpecStore,
       timeAndFilterStore,
     );
-    ({ isFetching, assembled } = $pivotDataStore);
+  } else {
+    pivotDataStore = undefined;
+    clearTableCache(componentName);
   }
 
   $: pivotColumns = splitPivotChips($pivotState.columns);
@@ -93,7 +107,11 @@
     {#if $pivotDataStore?.error?.length}
       <PivotError errors={$pivotDataStore.error} />
     {:else if !$pivotDataStore?.data || $pivotDataStore?.data?.length === 0}
-      <PivotEmpty {assembled} {isFetching} {hasColumnAndNoMeasure} />
+      <PivotEmpty
+        assembled={$pivotDataStore.assembled}
+        isFetching={$pivotDataStore.isFetching}
+        {hasColumnAndNoMeasure}
+      />
     {:else}
       <PivotTable
         border={false}
@@ -110,6 +128,8 @@
           pivotState.update((state) => ({
             ...state,
             sorting,
+            rowPage: 1,
+            expanded: {},
           }));
         }}
         setPivotRowPage={(page) => {
@@ -120,32 +140,5 @@
         }}
       />
     {/if}
-  {:else}
-    <PivotTable
-      border={false}
-      {pivotDataStore}
-      config={pivotConfig}
-      {pivotState}
-      setPivotExpanded={(expanded) => {
-        pivotState.update((state) => ({
-          ...state,
-          expanded,
-        }));
-      }}
-      setPivotSort={(sorting) => {
-        pivotState.update((state) => ({
-          ...state,
-          sorting,
-          rowPage: 1,
-          expanded: {},
-        }));
-      }}
-      setPivotRowPage={(page) => {
-        pivotState.update((state) => ({
-          ...state,
-          rowPage: page,
-        }));
-      }}
-    />
   {/if}
 </div>
