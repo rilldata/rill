@@ -69,7 +69,9 @@ export class TableCanvasComponent extends BaseCanvasComponent<TableSpec> {
 
     return {
       metrics_view: metricsViewName,
-      measures: metricsViewSpec?.measures?.map((m) => m.name as string) ?? [],
+      measures:
+        metricsViewSpec?.measures?.slice(0, 3).map((m) => m.name as string) ??
+        [],
       row_dimensions: firstDimension ? [firstDimension] : [],
       col_dimensions: secondDimension ? [secondDimension] : undefined,
     };
