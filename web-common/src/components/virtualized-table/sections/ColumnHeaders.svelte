@@ -14,7 +14,6 @@
   export let virtualColumnItems;
   export let noPin = false;
   export let showDataIcon = false;
-  export let firstMeasure: MetricsViewSpecMeasureV2 | undefined;
   export let selectedColumn: string | null = null;
 
   const config: VirtualizedTableConfig = getContext("config");
@@ -51,7 +50,6 @@
       {header}
       {noPin}
       {showDataIcon}
-      {firstMeasure}
       on:pin={() => {
         dispatch("pin", columns[header.index]);
       }}

@@ -9,18 +9,18 @@ export const handleMeasureColumnHeaderClick = (
   generalArgs: DashboardMutables,
   measureName: string,
 ) => {
-  const { leaderboardMeasureNames: names } = generalArgs.dashboard;
+  const { leaderboardMeasureNames } = generalArgs.dashboard;
 
-  if (measureName === names[0] + "_delta") {
+  if (measureName === leaderboardMeasureNames[0] + "_delta") {
     toggleSort(generalArgs, SortType.DELTA_ABSOLUTE);
     setContextColumn(generalArgs, LeaderboardContextColumn.DELTA_ABSOLUTE);
-  } else if (measureName === names[0] + "_delta_perc") {
+  } else if (measureName === leaderboardMeasureNames[0] + "_delta_perc") {
     toggleSort(generalArgs, SortType.DELTA_PERCENT);
     setContextColumn(generalArgs, LeaderboardContextColumn.DELTA_PERCENT);
-  } else if (measureName === names[0] + "_percent_of_total") {
+  } else if (measureName === leaderboardMeasureNames[0] + "_percent_of_total") {
     toggleSort(generalArgs, SortType.PERCENT);
     setContextColumn(generalArgs, LeaderboardContextColumn.PERCENT);
-  } else if (measureName === names[0]) {
+  } else if (measureName === leaderboardMeasureNames[0]) {
     toggleSort(generalArgs, SortType.VALUE, measureName);
   } else {
     toggleLeaderboardMeasureNames(generalArgs, [measureName]);
