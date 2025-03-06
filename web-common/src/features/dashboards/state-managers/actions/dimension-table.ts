@@ -8,7 +8,7 @@ export const handleDimensionMeasureColumnHeaderClick = (
   generalArgs: DashboardMutables,
   measureName: string,
 ) => {
-  // console.log("handleDimensionMeasureColumnHeaderClick: ", measureName);
+  console.log("handleDimensionMeasureColumnHeaderClick: ", measureName);
 
   const { dashboard } = generalArgs;
 
