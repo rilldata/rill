@@ -64,6 +64,7 @@ export class ChartComponent extends BaseCanvasComponent<ChartSpec> {
         type: "nominal",
         field: dimension,
         sort: "-y",
+        limit: 20,
       },
       y: {
         type: "quantitative",
