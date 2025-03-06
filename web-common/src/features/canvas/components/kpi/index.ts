@@ -33,6 +33,7 @@ export const defaultComparisonOptions: ComponentComparisonOptions[] = [
 export class KPIComponent extends BaseCanvasComponent<KPISpec> {
   minSize = { width: 2, height: 2 };
   defaultSize = { width: 6, height: 4 };
+  resetParams = ["measure"];
 
   constructor(
     fileArtifact: FileArtifact | undefined = undefined,

@@ -25,6 +25,7 @@ export interface TableSpec
 export class TableCanvasComponent extends BaseCanvasComponent<TableSpec> {
   minSize = { width: 2, height: 2 };
   defaultSize = { width: 4, height: 10 };
+  resetParams = ["measures", "row_dimensions", "col_dimensions"];
 
   constructor(
     fileArtifact: FileArtifact | undefined = undefined,

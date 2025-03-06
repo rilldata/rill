@@ -21,6 +21,7 @@ export type ChartSpec = ComponentFilterProperties &
 export class ChartComponent extends BaseCanvasComponent<ChartSpec> {
   minSize = { width: 4, height: 4 };
   defaultSize = { width: 6, height: 4 };
+  resetParams = [];
 
   constructor(
     fileArtifact: FileArtifact | undefined = undefined,

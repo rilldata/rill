@@ -29,6 +29,7 @@ export interface KPIGridSpec
 export class KPIGridComponent extends BaseCanvasComponent<KPIGridSpec> {
   minSize = { width: 2, height: 2 };
   defaultSize = { width: 6, height: 4 };
+  resetParams = ["measures"];
 
   constructor(
     fileArtifact: FileArtifact | undefined = undefined,

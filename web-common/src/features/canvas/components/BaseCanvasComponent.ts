@@ -36,6 +36,12 @@ export abstract class BaseCanvasComponent<T> {
   abstract defaultSize: ComponentSize;
 
   /**
+   * The parameters that should be reset when the metrics_view
+   * is changed
+   */
+  abstract resetParams: string[];
+
+  /**
    * The minimum condition needed for the spec to be valid
    * for the given component and to be rendered on the canvas
    */
@@ -113,6 +119,11 @@ export abstract class BaseCanvasComponent<T> {
       }
       if ("dimension_filters" in newSpec) {
         delete newSpec.dimension_filters;
+      }
+      if (this.resetParams.length > 0) {
+        this.resetParams.forEach((param) => {
+          delete newSpec[param];
+        });
       }
     }
 
