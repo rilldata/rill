@@ -19,7 +19,6 @@
   import type { ResizeEvent } from "../drag-table-cell";
   import type { HeaderPosition, VirtualizedTableConfig } from "../types";
   import StickyHeader from "./StickyHeader.svelte";
-  import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
 
   export let pinned = false;
   export let noPin = false;
@@ -33,7 +32,6 @@
   export let enableSorting = true;
   export let isSelected = false;
   export let sorted: SortDirection | undefined = undefined;
-  export let firstMeasure: MetricsViewSpecMeasureV2 | undefined;
 
   const config: VirtualizedTableConfig = getContext("config");
   const dispatch = createEventDispatcher();
@@ -153,7 +151,7 @@
       </TooltipContent>
     </Tooltip>
 
-    {#if sorted && firstMeasure?.displayName === name}
+    {#if sorted}
       <div class="mt-0.5 ui-copy-icon">
         {#if sorted === SortDirection.DESCENDING}
           <div in:fly|global={{ duration: 200, y: -8 }} style:opacity={1}>

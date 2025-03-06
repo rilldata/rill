@@ -42,8 +42,6 @@
   export let dimension: MetricsViewSpecDimensionV2;
   export let hideStartPivotButton = false;
 
-  // $: console.log("DimensionDisplay activeMeasureNames: ", activeMeasureNames);
-
   const {
     selectors: {
       dimensionFilters: { unselectedDimensionValues },
