@@ -48,6 +48,8 @@
     exploreName,
   } = StateManagers;
 
+  $: console.log("LeaderboardDisplay $sortMeasure: ", $sortMeasure);
+
   let parentElement: HTMLDivElement;
   let suppressTooltip = false;
 
