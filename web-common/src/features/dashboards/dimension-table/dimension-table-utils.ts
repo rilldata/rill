@@ -299,20 +299,26 @@ export function prepareVirtualizedDimTableColumns(
       }
 
       let sorted;
-      if (name.endsWith("_delta") && sortType === SortType.DELTA_ABSOLUTE) {
+      if (
+        name.endsWith("_delta") &&
+        sortType === SortType.DELTA_ABSOLUTE &&
+        name === dash.sortedMeasureName + "_delta"
+      ) {
         sorted = sortDirection;
       } else if (
         name.endsWith("_delta_perc") &&
-        sortType === SortType.DELTA_PERCENT
+        sortType === SortType.DELTA_PERCENT &&
+        name === dash.sortedMeasureName + "_delta_perc"
       ) {
         sorted = sortDirection;
       } else if (
         name.endsWith("_percent_of_total") &&
-        sortType === SortType.PERCENT
+        sortType === SortType.PERCENT &&
+        name === dash.sortedMeasureName + "_percent_of_total"
       ) {
         sorted = sortDirection;
       } else if (
-        selectedMeasures.some((m) => m.name === name) &&
+        name === dash.sortedMeasureName &&
         sortType === SortType.VALUE
       ) {
         sorted = sortDirection;

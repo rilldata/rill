@@ -31,8 +31,8 @@
   export let areAllTableRowsSelected = false;
   export let isRowsEmpty = true;
   export let searchText: string;
-  export let onToggleSearchItems: () => void;
   export let hideStartPivotButton = false;
+  export let onToggleSearchItems: () => void;
 
   const stateManagers = getStateManagers();
   const {
