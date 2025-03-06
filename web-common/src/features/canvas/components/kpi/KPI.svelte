@@ -190,15 +190,20 @@
     const delta = currentValue - comparisonValue;
     return `${delta >= 0 ? "+" : ""}${measureValueFormatter(delta)}`;
   }
+
+  $: console.log({ primaryData });
 </script>
 
 {#if isValid}
   {#if measure && !primaryTotalIsFetching}
     <div
-      class:flex-col={!isSparkRight}
       class="flex gap-0 items-center justify-center size-full"
+      class:flex-col={!isSparkRight}
     >
-      <div class="flex flex-col size-full">
+      <div
+        class:size-full={isSparkRight}
+        class="flex max-w-64 flex-col justify-center"
+      >
         <div
           class="flex flex-col items-center w-full"
           class:!items-start={isSparkRight}
