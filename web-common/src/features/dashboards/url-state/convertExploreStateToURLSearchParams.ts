@@ -106,6 +106,17 @@ export function convertExploreStateToURLSearchParams(
     );
   }
 
+  // TODO: rename leaderboardMeasureNames to contextMeasures
+  const contextMeasures = exploreState.leaderboardMeasureNames;
+  if (contextMeasures?.length) {
+    urlCopy.searchParams.set(
+      ExploreStateURLParams.ContextMeasures,
+      contextMeasures.join(","),
+    );
+  } else {
+    urlCopy.searchParams.delete(ExploreStateURLParams.ContextMeasures);
+  }
+
   const expr = mergeDimensionAndMeasureFilters(
     exploreState.whereFilter,
     exploreState.dimensionThresholdFilters,
@@ -141,41 +152,6 @@ export function convertExploreStateToURLSearchParams(
       );
       break;
   }
-
-  // TODO: Revisit this
-  // // Handle visible measures
-  // const visibleMeasuresParam = toVisibleMeasuresUrlParam(
-  //   exploreState,
-  //   exploreSpec,
-  //   preset,
-  // );
-  // if (visibleMeasuresParam) {
-  //   searchParams.set(
-  //     ExploreStateURLParams.VisibleMeasures,
-  //     visibleMeasuresParam,
-  //   );
-  // }
-
-  // TODO: questionable, revisit
-  // // Handle sort measure
-  // const effectiveSortMeasure = exploreState.leaderboardMeasureNames?.[0] ?? "";
-  // if (effectiveSortMeasure) {
-  //   searchParams.set(ExploreStateURLParams.SortBy, effectiveSortMeasure);
-  // }
-
-  // Handle context measures - use all leaderboard measure names directly
-  const contextMeasures = exploreState.leaderboardMeasureNames;
-
-  if (contextMeasures?.length) {
-    urlCopy.searchParams.set(
-      ExploreStateURLParams.ContextMeasures,
-      contextMeasures.join(","),
-    );
-  } else {
-    urlCopy.searchParams.delete(ExploreStateURLParams.ContextMeasures);
-  }
-
-  // return urlCopy.searchParams.toString();
 
   const compressedUrlParams = new URLSearchParams();
   compressedUrlParams.set(
