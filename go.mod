@@ -90,12 +90,13 @@ require (
 	github.com/snowflakedb/gosnowflake v1.12.0
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.5
-	github.com/startreedata/pinot-client-go v0.4.0
+	github.com/startreedata/pinot-client-go v0.5.0
 	github.com/stretchr/testify v1.10.0
 	github.com/stripe/stripe-go/v79 v79.6.0
 	github.com/testcontainers/testcontainers-go v0.35.0
 	github.com/testcontainers/testcontainers-go/modules/clickhouse v0.33.0
 	github.com/testcontainers/testcontainers-go/modules/compose v0.33.0
+	github.com/testcontainers/testcontainers-go/modules/mysql v0.35.0
 	github.com/xuri/excelize/v2 v2.7.1
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.58.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.58.0
@@ -361,7 +362,6 @@ require (
 	github.com/skeema/knownhosts v1.3.1 // indirect
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966 // indirect
 	github.com/spf13/cast v1.5.1 // indirect
-	github.com/testcontainers/testcontainers-go/modules/mysql v0.35.0 // indirect
 	github.com/theupdateframework/notary v0.7.0 // indirect
 	github.com/tidwall/gjson v1.14.4 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
