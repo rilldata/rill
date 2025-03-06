@@ -29,7 +29,7 @@ func UnassumeCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 			if originalToken == "" {
-				return fmt.Errorf("Original token is not available, you are not assuming any user")
+				return fmt.Errorf("original token is not available, you are not assuming any user")
 			}
 
 			// Revoke current token
@@ -63,7 +63,7 @@ func UnassumeCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// Select org again for original user
-			err = auth.SelectOrgFlow(ctx, ch, true)
+			err = auth.SelectOrgFlow(ctx, ch, true, "")
 			if err != nil {
 				return err
 			}
