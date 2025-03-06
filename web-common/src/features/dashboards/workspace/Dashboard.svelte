@@ -31,7 +31,7 @@
   const {
     selectors: {
       measures: { visibleMeasures },
-      activeMeasure: { activeMeasureName },
+      activeMeasure: { activeMeasureName, leaderboardMeasureCount },
       dimensions: { getDimensionByName },
       pivot: { showPivot },
     },
@@ -225,6 +225,7 @@
               {timeRange}
               {comparisonTimeRange}
               {timeControlsReady}
+              leaderboardMeasureCount={$leaderboardMeasureCount}
             />
           {/if}
         </div>

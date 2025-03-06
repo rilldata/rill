@@ -23,6 +23,7 @@
   export let comparisonTimeRange: V1TimeRange | undefined;
   export let timeControlsReady: boolean;
   export let activeMeasureName: string;
+  export let leaderboardMeasureCount: number;
 
   const StateManagers = getStateManagers();
   const {
@@ -71,8 +72,12 @@
         ? DEFAULT_COL_WIDTH
         : 0);
 
-  $: metricsExplorer = get(metricsExplorerStore).entities[get(exploreName)];
-  $: leaderboardMeasureCount = metricsExplorer?.leaderboardMeasureCount || 1;
+  $: leaderboardMeasures = $visibleMeasures
+    .filter((m) => m.name)
+    .slice(0, leaderboardMeasureCount);
+
+  // $: console.log("count: ", leaderboardMeasureCount);
+  // $: console.log("asdasdas leaderboardMeasures: ", leaderboardMeasures);
 </script>
 
 <div class="flex flex-col overflow-hidden size-full">
@@ -120,7 +125,7 @@
               {toggleSort}
               {toggleDimensionValueSelection}
               {toggleComparisonDimension}
-              {leaderboardMeasureCount}
+              measures={leaderboardMeasures}
             />
           {/if}
         {/each}

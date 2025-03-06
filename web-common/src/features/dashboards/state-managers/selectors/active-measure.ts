@@ -19,6 +19,13 @@ export const activeMeasureName = (dashData: DashboardDataSources): string => {
   return dashData.dashboard.leaderboardMeasureName;
 };
 
+// FIXME: move elsewhere
+export const leaderboardMeasureCount = (
+  dashData: DashboardDataSources,
+): number => {
+  return dashData.dashboard.leaderboardMeasureCount ?? 1;
+};
+
 export const selectedMeasureNames = (
   dashData: DashboardDataSources,
 ): string[] => {
@@ -59,4 +66,6 @@ export const activeMeasureSelectors = {
    * in its measure definition?
    */
   isValidPercentOfTotal,
+
+  leaderboardMeasureCount,
 };

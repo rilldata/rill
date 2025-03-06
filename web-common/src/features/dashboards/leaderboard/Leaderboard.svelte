@@ -86,7 +86,7 @@
   export let toggleComparisonDimension: (
     dimensionName: string | undefined,
   ) => void;
-  export let leaderboardMeasureCount: number = 1;
+  export let measures: MetricsViewSpecMeasureV2[] = [];
 
   const observer = new IntersectionObserver(
     ([entry]) => {
@@ -125,21 +125,25 @@
         undefined,
       );
 
-  $: measures = additionalMeasures(activeMeasureName, dimensionThresholdFilters)
-    .map(
-      (n) =>
-        ({
-          name: n,
-        }) as V1MetricsViewAggregationMeasure,
-    )
-    .concat(
-      ...(comparisonTimeRange
-        ? getComparisonRequestMeasures(activeMeasureName)
-        : []),
-    )
-    .concat(uri ? [getURIRequestMeasure(dimensionName)] : []);
+  $: transformedMeasures = [
+    // Get additional measures for each active measure
+    ...measures
+      .flatMap((m) => additionalMeasures(m.name!, dimensionThresholdFilters))
+      .map(
+        (name) =>
+          ({
+            name,
+          }) as V1MetricsViewAggregationMeasure,
+      ),
 
-  $: console.log("Leaderboard measures: ", measures);
+    // Add comparison measures if there's a comparison time range
+    ...(comparisonTimeRange
+      ? measures.flatMap((m) => getComparisonRequestMeasures(m.name!))
+      : []),
+
+    // Add URI measure if URI is present
+    ...(uri ? [getURIRequestMeasure(dimensionName)] : []),
+  ];
 
   $: sort = getSort(
     sortedAscending,
@@ -154,7 +158,7 @@
     metricsViewName,
     {
       dimensions: [{ name: dimensionName }],
-      measures,
+      measures: transformedMeasures,
       timeRange,
       comparisonTimeRange,
       sort,
@@ -173,7 +177,7 @@
     instanceId,
     metricsViewName,
     {
-      measures: [{ name: activeMeasureName }],
+      measures: transformedMeasures.map((m) => ({ name: m.name! })),
       where,
       timeStart: timeRange.start,
       timeEnd: timeRange.end,
@@ -196,7 +200,7 @@
     prepareLeaderboardItemData(
       sortedData?.data,
       dimensionName,
-      activeMeasureName,
+      transformedMeasures.map((m) => m.name!),
       slice,
       selectedValues,
       leaderboardTotal,
@@ -226,7 +230,7 @@
       sort,
       timeRange,
       comparisonTimeRange,
-      measures,
+      measures: transformedMeasures,
       limit: belowTheFoldDataLimit.toString(),
     },
     {
@@ -253,7 +257,7 @@
     cleanUpComparisonValue(
       item,
       dimensionName,
-      activeMeasureName,
+      transformedMeasures.map((m) => m.name!),
       leaderboardTotal,
       selectedValues.findIndex((value) =>
         compareLeaderboardValues(value, item[dimensionName]),
@@ -262,8 +266,9 @@
   );
 
   $: columnCount =
-    (comparisonTimeRange ? 3 : isValidPercentOfTotal ? 2 : 1) *
-    leaderboardMeasureCount;
+    (comparisonTimeRange ? 3 : isValidPercentOfTotal ? 2 : 1) * measures.length;
+
+  $: headerMeasures = measures.map((m) => ({ name: m.name! }));
 </script>
 
 <div
@@ -278,7 +283,7 @@
     <colgroup>
       <col style:width="{gutterWidth}px" />
       <col style:width="{firstColumnWidth}px" />
-      {#each { length: leaderboardMeasureCount } as _, i (i)}
+      {#each { length: measures.length } as _, i (i)}
         <col style:width="{$valueColumn}px" />
         {#if !!comparisonTimeRange}
           <col style:width="{$deltaColumn}px" />
@@ -303,7 +308,8 @@
       {toggleSort}
       {setPrimaryDimension}
       {toggleComparisonDimension}
-      {leaderboardMeasureCount}
+      leaderboardMeasureCount={measures.length}
+      measures={headerMeasures}
     />
 
     <tbody>

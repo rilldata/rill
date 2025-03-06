@@ -20,9 +20,9 @@ export type LeaderboardItemData = {
   uri: string | null;
 
   /**
-   *  main value to be shown in the leaderboard
+   *  main values to be shown in the leaderboard
    */
-  value: number | null;
+  values: (number | null)[];
 
   /**
    * Percent of total for summable measures; null if not summable.
@@ -31,24 +31,24 @@ export type LeaderboardItemData = {
   pctOfTotal: number | null;
 
   /**
-   *  The value from the comparison period.
+   *  The values from the comparison period.
    * Techinally this might not be a "previous value" but
    * we use that name as a shorthand, since it's the most
    * common use case.
    */
-  prevValue: number | null;
+  prevValues: (number | null)[];
+
   /**
-   *
-   * the relative change from the previous value
+   *  the relative changes from the previous values
    * note that this needs to be multiplied by 100 to get
    * the percentage change
    */
-  deltaRel: number | null;
+  deltaRels: (number | null)[];
 
   /**
-   *  the absolute change from the previous value
+   *  the absolute changes from the previous values
    */
-  deltaAbs: number | null;
+  deltaAbs: (number | null)[];
 
   /**
    *  This tracks the order in which an item was selected,
@@ -69,28 +69,42 @@ const finiteOrNull = (v: unknown): number | null =>
 export function cleanUpComparisonValue(
   v: V1MetricsViewAggregationResponseDataItem,
   dimensionName: string,
-  measureName: string,
+  measureNames: string[],
   total: number | null,
   selectedIndex: number,
 ): LeaderboardItemData {
-  const measureValue = v[measureName];
-  if (!(Number.isFinite(measureValue) || measureValue === null)) {
-    console.warn(
-      `Leaderboards only implemented for numeric baseValues or missing data (null). Got: ${JSON.stringify(
-        v,
-      )}`,
-    );
-  }
-  const value = finiteOrNull(measureValue);
+  const values = measureNames.map((name) => {
+    const measureValue = v[name];
+    if (!(Number.isFinite(measureValue) || measureValue === null)) {
+      console.warn(
+        `Leaderboards only implemented for numeric baseValues or missing data (null). Got: ${JSON.stringify(
+          v,
+        )}`,
+      );
+    }
+    return finiteOrNull(measureValue);
+  });
+
+  const prevValues = measureNames.map((name) =>
+    finiteOrNull(v[name + ComparisonDeltaPreviousSuffix]),
+  );
+
+  const deltaRels = measureNames.map((name) =>
+    finiteOrNull(v[name + ComparisonDeltaRelativeSuffix]),
+  );
+
+  const deltaAbs = measureNames.map((name) =>
+    finiteOrNull(v[name + ComparisonDeltaAbsoluteSuffix]),
+  );
 
   return {
     dimensionValue: v[dimensionName],
     uri: v[dimensionName + URI_DIMENSION_SUFFIX] || null,
-    value,
-    pctOfTotal: total !== null && value !== null ? value / total : null,
-    prevValue: finiteOrNull(v[measureName + ComparisonDeltaPreviousSuffix]),
-    deltaRel: finiteOrNull(v[measureName + ComparisonDeltaRelativeSuffix]),
-    deltaAbs: finiteOrNull(v[measureName + ComparisonDeltaAbsoluteSuffix]),
+    values,
+    pctOfTotal: total !== null && values[0] !== null ? values[0] / total : null,
+    prevValues,
+    deltaRels,
+    deltaAbs,
     selectedIndex,
   };
 }
@@ -139,7 +153,7 @@ export function getSort(
 export function prepareLeaderboardItemData(
   values: V1MetricsViewAggregationResponseDataItem[] | undefined,
   dimensionName: string,
-  measureName: string,
+  measureNames: string[],
   numberAboveTheFold: number,
   selectedValues: string[],
   // The total of the measure for the current period,
@@ -172,7 +186,7 @@ export function prepareLeaderboardItemData(
     const cleanValue = cleanUpComparisonValue(
       value,
       dimensionName,
-      measureName,
+      measureNames,
       total,
       selectedIndex,
     );
