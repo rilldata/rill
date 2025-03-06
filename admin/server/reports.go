@@ -304,10 +304,7 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 			slackEmail = *req.SlackUser
 		} else {
 			userEmail = reportTkn.RecipientEmail
-			if req.Email == nil {
-				return nil, status.Error(codes.InvalidArgument, "no email provided for unsubscribing")
-			}
-			if !strings.EqualFold(userEmail, *req.Email) {
+			if req.Email != nil && !strings.EqualFold(userEmail, *req.Email) {
 				return nil, status.Error(codes.InvalidArgument, "email does not match token")
 			}
 		}
