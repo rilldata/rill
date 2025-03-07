@@ -327,17 +327,19 @@ function toExploreUrl(
     );
   }
 
-  if (
-    shouldSetParam(
-      preset.exploreLeaderboardContextColumns,
-      exploreState.leaderboardContextColumns,
-    )
-  ) {
-    searchParams.set(
-      ExploreStateURLParams.LeaderboardContextColumns,
-      exploreState.leaderboardContextColumns.join(","),
-    );
-  }
+  // UNCOMMENT TO SET URL PARAM
+  // TODO: ping aditya
+  // if (
+  //   shouldSetParam(
+  //     preset.exploreLeaderboardContextColumns,
+  //     exploreState.leaderboardContextColumns,
+  //   )
+  // ) {
+  //   searchParams.set(
+  //     ExploreStateURLParams.LeaderboardContextColumns,
+  //     exploreState.leaderboardContextColumns.join(","),
+  //   );
+  // }
 
   return searchParams;
 }
