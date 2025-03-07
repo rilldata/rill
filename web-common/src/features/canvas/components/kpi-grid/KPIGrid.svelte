@@ -7,6 +7,7 @@
   import type { KPISpec } from "../kpi";
   import KPI from "../kpi/KPI.svelte";
   import { validateKPIGridSchema } from "./selector";
+  import { getMinWidth } from "../kpi";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
   export let timeAndFilterStore: Readable<TimeAndFilterStore>;
@@ -25,14 +26,23 @@
     dimension_filters: kpiGridProperties.dimension_filters,
     time_filters: kpiGridProperties.time_filters,
   }));
+
+  $: sparkline = kpiGridProperties.sparkline;
+
+  $: minWidth = getMinWidth(sparkline);
 </script>
 
 {#if schema.isValid}
-  <div class="h-fit p-4 grow" style:--item-count={kpis.length}>
-    <div class="grid-wrapper gap-px overflow-hidden size-full min-h-32">
+  <div class="h-fit p-0 grow relative" class:!p-0={kpis.length === 1}>
+    <span class="border-overlay" />
+    <div
+      style:grid-template-columns="repeat(auto-fit, minmax(min({minWidth}px,
+      100%), 1fr))"
+      class="grid-wrapper gap-px overflow-hidden size-full"
+    >
       {#each kpis as kpi, i (i)}
         <div
-          class="kpi-wrapper before:absolute before:top-full before:h-px before:w-full before:bg-gray-200 after:absolute after:left-full after:h-full after:w-px after:bg-gray-200"
+          class="min-h-32 kpi-wrapper before:absolute before:z-20 before:top-full before:h-px before:w-full before:bg-gray-200 after:absolute after:left-full after:h-full after:w-px after:bg-gray-200"
         >
           <KPI rendererProperties={kpi} {timeAndFilterStore} />
         </div>
@@ -46,7 +56,6 @@
 <style lang="postcss">
   .grid-wrapper {
     @apply size-full grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
     grid-auto-rows: auto;
   }
 
@@ -54,36 +63,13 @@
     @apply relative p-4 grid;
   }
 
-  @container component-container (inline-size < 600px) {
-    .kpi-wrapper:nth-of-type(odd) {
-      padding-left: 0px;
-    }
-
-    .kpi-wrapper:nth-of-type(even) {
-      padding-right: 0px;
-    }
-
-    .grid-wrapper {
-      grid-template-columns: repeat(min(2, var(--item-count)), 1fr);
-    }
+  .border-overlay {
+    @apply border-[16px] pointer-events-none border-white absolute size-full z-50;
   }
 
   @container component-container (inline-size < 440px) {
-    .kpi-wrapper {
-      padding-left: 0px;
-      padding-right: 0px;
-    }
-
-    .kpi-wrapper:last-of-type {
-      padding-bottom: 0px;
-    }
-
-    .kpi-wrapper:first-of-type {
-      padding-top: 0px;
-    }
-
     .grid-wrapper {
-      grid-template-columns: repeat(1, 1fr);
+      grid-template-columns: repeat(1, 1fr) !important;
     }
   }
 </style>
