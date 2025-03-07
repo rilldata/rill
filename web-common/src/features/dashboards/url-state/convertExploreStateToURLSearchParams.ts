@@ -105,16 +105,15 @@ export function convertExploreStateToURLSearchParams(
     );
   }
 
-  // TODO: rename leaderboardMeasureNames to contextMeasures
-  const contextMeasures = exploreState.leaderboardMeasureNames;
-  if (contextMeasures?.length) {
-    urlCopy.searchParams.set(
-      ExploreStateURLParams.ContextMeasures,
-      contextMeasures.join(","),
-    );
-  } else {
-    urlCopy.searchParams.delete(ExploreStateURLParams.ContextMeasures);
-  }
+  // const contextMeasures = exploreState.leaderboardMeasureNames;
+  // if (contextMeasures?.length) {
+  //   urlCopy.searchParams.set(
+  //     ExploreStateURLParams.ContextMeasures,
+  //     contextMeasures.join(","),
+  //   );
+  // } else {
+  //   urlCopy.searchParams.delete(ExploreStateURLParams.ContextMeasures);
+  // }
 
   const expr = mergeDimensionAndMeasureFilters(
     exploreState.whereFilter,

@@ -4300,11 +4300,6 @@ definitions:
       dimensionsSelector:
         $ref: '#/definitions/v1FieldSelector'
         description: Dynamic selector for `dimensions`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
-      contextMeasures:
-        type: array
-        items:
-          type: string
-        description: Measures to show in the context of the explore.
       measures:
         type: array
         items:
