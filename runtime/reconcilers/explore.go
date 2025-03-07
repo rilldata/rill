@@ -127,10 +127,11 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 		return nil, fmt.Errorf("parent metrics view %q is invalid", spec.MetricsView)
 	}
 
-	// Add the access and field access security rules from the parent metrics view.
-	for _, rule := range mv.SecurityRules {
-		if rule.GetAccess() != nil || rule.GetFieldAccess() != nil {
-			spec.SecurityRules = append(spec.SecurityRules, rule)
+	if len(spec.SecurityRules) == 0 {
+		for _, rule := range mv.SecurityRules {
+			if rule.GetAccess() != nil || rule.GetFieldAccess() != nil {
+				spec.SecurityRules = append(spec.SecurityRules, rule)
+			}
 		}
 	}
 
