@@ -121,6 +121,8 @@
       parent,
       scrollTo: scroll,
     });
+
+    if (selection) editor?.focus();
   }
 
   function updateEditorExtensions(newExtensions: Extension[]) {
