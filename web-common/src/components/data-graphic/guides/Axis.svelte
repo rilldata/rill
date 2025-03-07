@@ -2,9 +2,6 @@
 This component will draw an axis on the specified side.
 -->
 <script lang="ts">
-  import { NumberKind } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
-  import { SingleDigitTimesPowerOfTenFormatter } from "@rilldata/web-common/lib/number-formatting/strategies/SingleDigitTimesPowerOfTen";
-  import { formatMsInterval } from "@rilldata/web-common/lib/number-formatting/strategies/intervals";
   import { getContext } from "svelte";
   import { contexts } from "../constants";
   import type { ScaleStore, SimpleConfigurationStore } from "../state/types";
@@ -21,7 +18,9 @@ This component will draw an axis on the specified side.
   export let placement = "middle";
 
   export let labelColor = "fill-gray-600";
-  export let numberKind: NumberKind = NumberKind.ANY;
+  export let measureFormatter: (
+    v: number | string | null | undefined,
+  ) => string | undefined | null = (v) => v?.toString();
 
   // superlabel properties
   export let superlabel = false;
@@ -161,20 +160,7 @@ This component will draw an axis on the specified side.
     );
   } else {
     superlabel = false;
-    // Note that SingleDigitTimesPowerOfTenFormatter expects a single
-    // digit time a power of ten. The d3 axis function used upstream
-    // in this context _normally_ satisfies this requirement, but
-    // there are edge cases where it does not. In these edge cases,
-    // this formatter often does the right thing, but may not in some
-    // circumstances. See https://github.com/rilldata/rill/issues/3631
-    const formatter = new SingleDigitTimesPowerOfTenFormatter(ticks, {
-      numberKind,
-      padWithInsignificantZeros: false,
-    });
-    formatterFunction = (x) =>
-      numberKind === "INTERVAL"
-        ? formatMsInterval(x)
-        : formatter.stringFormat(x);
+    formatterFunction = measureFormatter;
   }
 </script>
 
