@@ -16,7 +16,6 @@
     selectors: {
       measures: {
         leaderboardMeasureName,
-        leaderboardMeasureNames,
         getMeasureByName,
         visibleMeasures,
         allMeasures,
@@ -36,13 +35,9 @@
 
   $: metricsExplorer = $metricsExplorerStore.entities[exploreName];
 
-  $: activeLeaderboardMeasures = $leaderboardMeasureNames.map((name) =>
-    $getMeasureByName(name),
-  );
-
-  // First measure is used for sorting and validation
-  $: firstMeasure = activeLeaderboardMeasures[0];
-  $: validPercentOfTotal = firstMeasure?.validPercentOfTotal || false;
+  $: activeLeaderboardMeasure = $getMeasureByName($leaderboardMeasureName);
+  $: validPercentOfTotal =
+    activeLeaderboardMeasure?.validPercentOfTotal || false;
 
   $: visibleDimensionsNames = $visibleDimensions
     .map(({ name }) => name)
@@ -50,7 +45,6 @@
   $: allDimensionNames = $allDimensions
     .map(({ name }) => name)
     .filter(isDefined);
-  $: allMeasureNames = $allMeasures.map(({ name }) => name).filter(isDefined);
 
   // if the percent of total is currently being shown,
   // but it is not valid for this measure, then turn it off
@@ -68,7 +62,7 @@
 </script>
 
 <div>
-  {#if measures.length && firstMeasure}
+  {#if measures.length}
     <div
       class="flex flex-row items-center ui-copy-muted gap-x-1"
       style:max-width="768px"
@@ -102,11 +96,7 @@
         hasComparisonTimeRange={!!comparisonTimeRange}
         selectedFilters={$contextColumnFilters}
         {measures}
-        selectedMeasureNames={$leaderboardMeasureNames}
         onToggle={setContextColumnFilters}
-        onSelectAll={() => {
-          console.log("Fired onSelectAll in LeaderboardControls");
-        }}
       />
     </div>
   {/if}

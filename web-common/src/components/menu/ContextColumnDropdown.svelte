@@ -20,9 +20,7 @@
   export let tooltipText: string;
   export let measures: MetricsViewSpecMeasureV2[];
   export let selectedFilters: LeaderboardContextColumn[] = [];
-  export let selectedMeasureNames: string[] = [];
   export let onToggle: (column: LeaderboardContextColumn[]) => void;
-  export let onSelectAll: () => void;
 
   const { exploreName } = getStateManagers();
 
@@ -109,7 +107,7 @@
     }
   }
 
-  $: allSelected = selectedMeasureNames.length === measures.length;
+  // $: allSelected = selectedMeasureNames.length === measures.length;
 
   $: withText =
     selectedFilters && selectedFilters.length > 1
@@ -179,13 +177,13 @@
             </DropdownMenu.CheckboxItem>
           {/each}
         </div>
-
+        <!-- 
         <footer>
           <div class="w-full">
             <p class="text-xs">Show for all measures</p>
           </div>
           <Switch small bind:checked={allSelected} on:click={onSelectAll} />
-        </footer>
+        </footer> -->
       </DropdownMenu.Content>
 
       <div slot="tooltip-content" transition:fly={{ duration: 300, y: 4 }}>

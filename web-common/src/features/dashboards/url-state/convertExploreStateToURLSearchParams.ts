@@ -105,16 +105,6 @@ export function convertExploreStateToURLSearchParams(
     );
   }
 
-  // const contextMeasures = exploreState.leaderboardMeasureNames;
-  // if (contextMeasures?.length) {
-  //   urlCopy.searchParams.set(
-  //     ExploreStateURLParams.ContextMeasures,
-  //     contextMeasures.join(","),
-  //   );
-  // } else {
-  //   urlCopy.searchParams.delete(ExploreStateURLParams.ContextMeasures);
-  // }
-
   const expr = mergeDimensionAndMeasureFilters(
     exploreState.whereFilter,
     exploreState.dimensionThresholdFilters,
@@ -289,14 +279,11 @@ function toExploreUrl(
   }
 
   if (
-    shouldSetParam(
-      preset.exploreSortBy,
-      exploreState.leaderboardMeasureNames[0],
-    )
+    shouldSetParam(preset.exploreSortBy, exploreState.leaderboardMeasureName)
   ) {
     searchParams.set(
       ExploreStateURLParams.SortBy,
-      exploreState.leaderboardMeasureNames[0],
+      exploreState.leaderboardMeasureName,
     );
   }
 

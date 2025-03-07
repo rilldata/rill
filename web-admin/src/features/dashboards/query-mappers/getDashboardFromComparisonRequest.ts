@@ -39,7 +39,7 @@ export async function getDashboardFromComparisonRequest({
     (metricsView.measures?.findIndex((m) => m.name === req.sort?.[0]?.name) ??
       -1) >= 0
   ) {
-    dashboard.leaderboardMeasureNames = [req.sort[0].name ?? ""];
+    dashboard.leaderboardMeasureName = req.sort[0].name ?? "";
     dashboard.sortDirection = req.sort[0].desc
       ? SortDirection.DESCENDING
       : SortDirection.ASCENDING;

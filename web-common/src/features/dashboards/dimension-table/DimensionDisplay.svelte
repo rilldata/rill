@@ -51,7 +51,6 @@
         prepareDimTableRows,
       },
       sorting: { sortedAscending, sortType, sortMeasure },
-      measures: { leaderboardMeasureNames, getMeasureByName },
     },
     actions: {
       dimensionsFilter: {
@@ -160,8 +159,6 @@
   $: areAllTableRowsSelected = tableRows.every((row) =>
     $selectedDimensionValueNames.includes(row[dimensionName] as string),
   );
-
-  $: firstMeasure = $getMeasureByName($leaderboardMeasureNames[0]);
 
   function onSelectItem(event) {
     const label = tableRows[event.detail.index][dimensionName] as string;
