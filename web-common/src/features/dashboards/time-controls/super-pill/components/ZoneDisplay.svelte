@@ -4,7 +4,6 @@
 
   export let iana: string;
   export let isBrowserTime = false;
-  export let selected = false;
   export let abbreviation: string | undefined = undefined;
   export let offset: string = formatIANA(iana, DateTime.now()).offset;
 </script>

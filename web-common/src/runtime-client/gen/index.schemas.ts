@@ -1970,6 +1970,7 @@ These are not currently parsed from YAML, but will be derived from the parent me
   securityRules?: V1SecurityRule[];
   /** Banner text that can be displayed in Rill Cloud. */
   banner?: string;
+  LockTimeZone?: boolean;
 }
 
 export interface V1ExploreState {

@@ -193,7 +193,6 @@ function toTimeRangesUrl(
     ToURLParamTimeGrainMapMap[
       timeControlsState.selectedTimeRange?.interval ?? ""
     ] ?? "";
-  console.log({ mappedTimeGrain });
 
   if (mappedTimeGrain && shouldSetParam(preset.timeGrain, mappedTimeGrain)) {
     searchParams.set(ExploreStateURLParams.TimeGrain, mappedTimeGrain);

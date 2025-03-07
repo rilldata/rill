@@ -29,6 +29,7 @@
   export let canPanRight: boolean;
   export let interval: Interval;
   export let showPan = false;
+  export let lockTimeZone = false;
   export let showFullRange = true;
   export let complete: boolean;
   export let activeTimeZone: string;
@@ -78,6 +79,7 @@
     {activeTimeZone}
     {availableTimeZones}
     {onSelectTimeZone}
+    {lockTimeZone}
     {context}
   />
 

@@ -4436,6 +4436,9 @@ definitions:
       banner:
         type: string
         description: Banner text that can be displayed in Rill Cloud.
+      LockTimeZone:
+        type: boolean
+        title: When set to true, dashboard will be locked to the first time zone in the time_zones key (or UTC)
   v1ExploreState:
     type: object
     properties:

@@ -9,6 +9,7 @@
   import { getExploreStates } from "@rilldata/web-common/features/explores/selectors";
   import type { V1ExplorePreset } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { onMount } from "svelte";
 
   /**
    * Temporary wrapper component that mimics the parsing and loading of url into metrics.
@@ -42,6 +43,10 @@
       exploreSpec,
       defaultExplorePreset,
     ));
+
+  onMount(() => {
+    console.log("Moutn");
+  });
 
   let partialExploreStateFromUrl: Partial<MetricsExplorerEntity> = {};
   let exploreStateFromSessionStorage:

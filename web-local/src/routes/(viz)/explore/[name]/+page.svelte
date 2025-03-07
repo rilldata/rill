@@ -103,18 +103,24 @@
 {:else}
   {#key exploreName}
     <StateManagersProvider {metricsViewName} {exploreName}>
-      <DashboardURLStateSync
-        {metricsViewName}
-        {exploreName}
-        {defaultExplorePreset}
-        {exploreStateFromYAMLConfig}
-        {partialExploreStateFromUrl}
-        {exploreStateFromSessionStorage}
-      >
-        <DashboardThemeProvider>
-          <Dashboard {metricsViewName} {exploreName} />
-        </DashboardThemeProvider>
-      </DashboardURLStateSync>
+      {#key exploreName}
+        <DashboardURLStateSync
+          {metricsViewName}
+          {exploreName}
+          {defaultExplorePreset}
+          {exploreStateFromYAMLConfig}
+          {partialExploreStateFromUrl}
+          {exploreStateFromSessionStorage}
+        >
+          {#key exploreName}
+            <DashboardThemeProvider>
+              {#key exploreName}
+                <Dashboard {metricsViewName} {exploreName} />
+              {/key}
+            </DashboardThemeProvider>
+          {/key}
+        </DashboardURLStateSync>
+      {/key}
     </StateManagersProvider>
   {/key}
 {/if}

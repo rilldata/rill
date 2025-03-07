@@ -372,6 +372,8 @@ message ExploreSpec {
   repeated SecurityRule security_rules = 12;
   // Banner text that can be displayed in Rill Cloud.
   string banner = 18; 
+  // When set to true, dashboard will be locked to the first time zone in the time_zones key (or UTC)
+  bool LockTimeZone = 19;
 }
 
 message ExploreState {

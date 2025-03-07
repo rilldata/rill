@@ -23,7 +23,8 @@ type ExploreYAML struct {
 	Measures    *FieldSelectorYAML     `yaml:"measures"`
 	Theme       yaml.Node              `yaml:"theme"` // Name (string) or inline theme definition (map)
 	TimeRanges  []ExploreTimeRangeYAML `yaml:"time_ranges"`
-	TimeZones   []string               `yaml:"time_zones"`
+	TimeZones   []string               `yaml:"time_zones"` // Single time zone or list of time zones
+	LockTimeZone bool                  `yaml:"lock_time_zone"`
 	Defaults    *struct {
 		Dimensions          *FieldSelectorYAML `yaml:"dimensions"`
 		Measures            *FieldSelectorYAML `yaml:"measures"`
@@ -281,6 +282,7 @@ func (p *Parser) parseExplore(node *Node) error {
 	r.ExploreSpec.DefaultPreset = defaultPreset
 	r.ExploreSpec.EmbedsHidePivot = tmp.Embeds.HidePivot
 	r.ExploreSpec.SecurityRules = rules
+	r.ExploreSpec.LockTimeZone = tmp.LockTimeZone
 
 	return nil
 }

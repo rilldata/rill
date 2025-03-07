@@ -97,18 +97,8 @@ export function getPinnedTimeZones(explore: V1ExploreSpec) {
   return yamlTimeZones;
 }
 
-function getDefaultTimeZone(explore: V1ExploreSpec, exploreName: string) {
-  const timeZonePreference = localStorage.getItem(`${exploreName}-tz`);
-
-  let preference = explore.timeZones?.[0] ?? DEFAULT_TIMEZONES[0];
-
-  if (timeZonePreference !== null) {
-    try {
-      preference = JSON.parse(timeZonePreference);
-    } catch {
-      localStorage.removeItem(`${exploreName}-tz`);
-    }
-  }
+function getDefaultTimeZone(explore: V1ExploreSpec) {
+  const preference = explore.timeZones?.[0] ?? DEFAULT_TIMEZONES[0];
 
   if (preference === "Local") {
     return getLocalIANA();
@@ -145,7 +135,7 @@ export function getDefaultExplorePreset(
       metricsViewSpec.smallestTimeGrain,
       fullTimeRange,
     ),
-    timezone: getDefaultTimeZone(explore, exploreName),
+    timezone: getDefaultTimeZone(explore),
     timeGrain: "",
     comparisonMode: V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_NONE,
     compareTimeRange: "",

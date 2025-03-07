@@ -31,6 +31,7 @@
   export let availableTimeZones: string[];
   export let activeTimeZone: string;
   export let context: string;
+  export let lockTimeZone = false;
   export let onSelectTimeZone: (timeZone: string) => void;
 
   const recents = localStorageStore<string[]>(`${context}-recent-zones`, []);
@@ -60,11 +61,6 @@
       ),
     );
   }
-
-  $: localTimeZonePreference = localStorageStore(
-    `${context}-tz`,
-    availableTimeZones[0],
-  );
 </script>
 
 <DropdownMenu.Root bind:open typeahead={false}>
@@ -75,10 +71,10 @@
       class="flex items-center gap-x-1"
       aria-label="Timezone selector"
       title={!availableTimeZones.length ? "No timezones configured" : ""}
-      disabled={pinnedTimeZones.size === 0}
+      disabled={lockTimeZone}
     >
       {getAbbreviationForIANA(watermark, activeTimeZone)}
-      {#if pinnedTimeZones.size}
+      {#if !lockTimeZone}
         <span class="flex-none transition-transform" class:-rotate-180={open}>
           <CaretDownIcon />
         </span>
