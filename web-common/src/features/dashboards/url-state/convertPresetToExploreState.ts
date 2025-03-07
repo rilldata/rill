@@ -105,17 +105,6 @@ export function convertPresetToExploreState(
   Object.assign(partialExploreState, pivotPartialState);
   errors.push(...pivotErrors);
 
-  // TODO: revisit
-  if (preset.exploreSortBy) {
-    partialExploreState.leaderboardMeasureNames = [preset.exploreSortBy];
-    partialExploreState.sortedMeasureName = preset.exploreSortBy;
-  }
-
-  // // TODO: revisit
-  // if (preset.contextMeasures?.length) {
-  //   partialExploreState.leaderboardMeasureNames = preset.contextMeasures;
-  // }
-
   return { partialExploreState, errors };
 }
 
@@ -261,15 +250,13 @@ function fromExploreUrlParams(
     partialExploreState.visibleDimensionKeys = new Set(selectedDimensions);
   }
 
-  // TODO: REVISIT
-  // Uncomment to disable error about multiple active measures
-  // if (preset.exploreSortBy) {
-  //   if (measures.has(preset.exploreSortBy)) {
-  //     partialExploreState.leaderboardMeasureNames = [preset.exploreSortBy];
-  //   } else {
-  //     errors.push(getSingleFieldError("sort by measure", preset.exploreSortBy));
-  //   }
-  // }
+  if (preset.exploreSortBy) {
+    if (measures.has(preset.exploreSortBy)) {
+      partialExploreState.leaderboardMeasureNames = [preset.exploreSortBy];
+    } else {
+      errors.push(getSingleFieldError("sort by measure", preset.exploreSortBy));
+    }
+  }
 
   if (preset.exploreSortAsc !== undefined) {
     partialExploreState.sortDirection = preset.exploreSortAsc

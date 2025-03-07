@@ -4,6 +4,7 @@ import {
   createAndExpression,
   filterIdentifiers,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { decompressUrlParams } from "@rilldata/web-common/features/dashboards/url-state/compression";
 import { convertLegacyStateToExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/convertLegacyStateToExplorePreset";
 import { CustomTimeRangeRegex } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
@@ -156,53 +157,6 @@ export function convertURLToExplorePreset(
       break;
     }
   }
-
-  // Handle sort measure
-  if (searchParams.has(ExploreStateURLParams.SortBy)) {
-    const sortByMeasure = searchParams.get(
-      ExploreStateURLParams.SortBy,
-    ) as string;
-    if (measures.has(sortByMeasure)) {
-      preset.exploreSortBy = sortByMeasure;
-    } else {
-      errors.push(getSingleFieldError("sort by measure", sortByMeasure));
-    }
-  }
-
-  // Handle visible measures
-  if (searchParams.has(ExploreStateURLParams.VisibleMeasures)) {
-    const mes = searchParams.get(
-      ExploreStateURLParams.VisibleMeasures,
-    ) as string;
-    if (mes === "*") {
-      preset.measures = explore.measures ?? [];
-    } else {
-      const selectedMeasures = mes.split(",").filter((m) => measures.has(m));
-      preset.measures = selectedMeasures;
-      const missingMeasures = getMissingValues(
-        selectedMeasures,
-        mes.split(","),
-      );
-      if (missingMeasures.length) {
-        errors.push(getMultiFieldError("measure", missingMeasures));
-      }
-    }
-  }
-
-  // Handle context measures
-  // if (searchParams.has(ExploreStateURLParams.ContextMeasures)) {
-  //   const contextMeasures = (
-  //     searchParams.get(ExploreStateURLParams.ContextMeasures) as string
-  //   ).split(",");
-  //   const validMeasures = contextMeasures.filter((measure) =>
-  //     measures.has(measure),
-  //   );
-  //   if (validMeasures.length > 0) {
-  //     preset.contextMeasures = validMeasures;
-  //   } else if (contextMeasures.length > 0) {
-  //     errors.push(getMultiFieldError("context measures", contextMeasures));
-  //   }
-  // }
 
   return { preset, errors };
 }
@@ -477,6 +431,20 @@ function fromExploreUrlParams(
       preset.exploreSortType = FromURLParamsSortTypeMap[sortType];
     } else {
       errors.push(getSingleFieldError("sort type", sortType));
+    }
+  }
+
+  if (searchParams.has(ExploreStateURLParams.LeaderboardMeasureCount)) {
+    const count = searchParams.get(
+      ExploreStateURLParams.LeaderboardMeasureCount,
+    );
+    const parsedCount = parseInt(count ?? "", 10);
+    if (!isNaN(parsedCount) && parsedCount > 0) {
+      preset.exploreLeaderboardMeasureCount = parsedCount;
+    } else {
+      errors.push(
+        getSingleFieldError("leaderboard measure count", count ?? ""),
+      );
     }
   }
 
