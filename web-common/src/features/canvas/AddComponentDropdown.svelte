@@ -54,7 +54,7 @@
         class="pointer-events-auto shadow-sm hover:shadow-md flex bg-white h-[84px] flex-col justify-center gap-2 items-center rounded-md border border-slate-200 w-full"
       >
         <PlusCircle class="w-6 h-6 text-slate-500" />
-        <span class="text-sm font-medium text-slate-500">Add a component</span>
+        <span class="text-sm font-medium text-slate-500">Add widget</span>
       </button>
     {:else}
       <button
