@@ -195,86 +195,95 @@
 {#if isValid}
   {#if measure && !primaryTotalIsFetching}
     <div
-      class:flex-col={!isSparkRight}
       class="flex gap-0 items-center justify-center size-full"
+      class:flex-col={!isSparkRight}
     >
       <div
-        class:!items-start={isSparkRight}
-        class="flex flex-col items-center w-full"
+        class:size-full={isSparkRight}
+        class="flex max-w-64 flex-col justify-center"
       >
-        <h2
-          class:text-center={!isSparkRight}
-          class="font-medium text-sm text-gray-600 line-clamp-1 truncate"
+        <div
+          class="flex flex-col items-center w-full"
+          class:!items-start={isSparkRight}
         >
-          {measure?.displayName || measureName}
-        </h2>
-        <span
-          class="text-3xl font-medium text-gray-600 flex gap-x-0.5 items-end"
-        >
-          {#if hoveredPoints?.[0]?.value != null}
-            <span class="text-primary-500">
-              {measureValueFormatter(currentValue)}
-            </span>
-            <span class="text-lg">/</span>
-            <span class="text-gray-600 text-lg">
+          <h2
+            class="font-medium text-sm text-gray-600 line-clamp-1 truncate"
+            class:text-center={!isSparkRight}
+          >
+            {measure?.displayName || measureName}
+          </h2>
+
+          <span
+            class="text-3xl font-medium text-gray-600 flex gap-x-0.5 items-end"
+          >
+            {#if hoveredPoints?.[0]?.value != null}
+              <span class="text-primary-500">
+                {measureValueFormatter(currentValue)}
+              </span>
+              <span class="text-lg">/</span>
+              <span class="text-gray-600 text-lg">
+                {measureValueFormatter(primaryTotal)}
+              </span>
+            {:else}
               {measureValueFormatter(primaryTotal)}
-            </span>
-          {:else}
-            {measureValueFormatter(primaryTotal)}
-          {/if}
-        </span>
-      </div>
-
-      <div class="flex flex-col items-center">
-        {#if showComparison}
-          <div class="flex items-baseline gap-x-2 text-sm -mb-[3px]">
-            {#if comparisonOptions?.includes("previous")}
-              <span class="comparison-value">
-                {measureValueFormatter(comparisonVal)}
-              </span>
             {/if}
+          </span>
+        </div>
 
-            {#if comparisonOptions?.includes("delta")}
-              <span
-                class="comparison-value"
-                class:text-red-500={primaryTotal !== null &&
-                  comparisonVal !== null &&
-                  primaryTotal - comparisonVal < 0}
-                class:ui-copy-disabled-faint={comparisonVal === null}
-                class:italic={comparisonVal === null}
-                class:text-sm={comparisonVal === null}
-              >
-                {#if comparisonVal != null && currentValue != null}
-                  {getFormattedDiff(comparisonVal, currentValue)}
-                {:else}
-                  no change
-                {/if}
-              </span>
-            {/if}
+        <div
+          class="flex flex-col items-center"
+          class:!items-start={isSparkRight}
+        >
+          {#if showComparison}
+            <div class="flex items-baseline gap-x-2 text-sm -mb-[3px]">
+              {#if comparisonOptions?.includes("previous")}
+                <span class="comparison-value">
+                  {measureValueFormatter(comparisonVal)}
+                </span>
+              {/if}
 
-            {#if comparisonOptions?.includes("percent_change") && comparisonPercChange != null && !measureIsPercentage}
-              <div
-                class="w-fit font-semibold ui-copy-inactive"
-                class:text-red-500={primaryTotal && primaryTotal < 0}
-              >
-                <PercentageChange
-                  color="text-gray-500"
-                  showPosSign
-                  tabularNumber={false}
-                  value={formatMeasurePercentageDifference(
-                    comparisonPercChange,
-                  )}
-                />
+              {#if comparisonOptions?.includes("delta")}
+                <span
+                  class="comparison-value"
+                  class:text-red-500={primaryTotal !== null &&
+                    comparisonVal !== null &&
+                    primaryTotal - comparisonVal < 0}
+                  class:ui-copy-disabled-faint={comparisonVal === null}
+                  class:italic={comparisonVal === null}
+                  class:text-sm={comparisonVal === null}
+                >
+                  {#if comparisonVal != null && currentValue != null}
+                    {getFormattedDiff(comparisonVal, currentValue)}
+                  {:else}
+                    no change
+                  {/if}
+                </span>
+              {/if}
+
+              {#if comparisonOptions?.includes("percent_change") && comparisonPercChange != null && !measureIsPercentage}
+                <div
+                  class="w-fit font-semibold ui-copy-inactive"
+                  class:text-red-500={primaryTotal && primaryTotal < 0}
+                >
+                  <PercentageChange
+                    color="text-gray-500"
+                    showPosSign
+                    tabularNumber={false}
+                    value={formatMeasurePercentageDifference(
+                      comparisonPercChange,
+                    )}
+                  />
+                </div>
+              {/if}
+            </div>
+
+            {#if comparisonLabel}
+              <div class="comparison-range">
+                vs {comparisonLabel?.toLowerCase()}
               </div>
             {/if}
-          </div>
-
-          {#if comparisonLabel}
-            <div class="comparison-range">
-              vs {comparisonLabel?.toLowerCase()}
-            </div>
           {/if}
-        {/if}
+        </div>
       </div>
 
       {#if showSparkline}
