@@ -1,9 +1,10 @@
+import type {
+  V1CanvasRow as APIV1CanvasRow,
+  V1CanvasItem,
+  V1MetricsViewSpec,
+} from "@rilldata/web-common/runtime-client";
 import { YAMLMap, YAMLSeq } from "yaml";
 import type { CanvasComponentType } from "./components/types";
-import type {
-  V1CanvasItem,
-  V1CanvasRow as APIV1CanvasRow,
-} from "@rilldata/web-common/runtime-client";
 import { getComponentRegistry } from "./components/util";
 
 export const initialHeights: Record<CanvasComponentType, number> = {
@@ -79,9 +80,8 @@ export function moveToRow<T extends YAMLRow | V1CanvasRow>(
     row: number;
   },
   defaultMetrics?: {
-    metricsView: string;
-    measure: string;
-    dimension: string;
+    metricsViewName: string;
+    metricsViewSpec: V1MetricsViewSpec | undefined;
   },
 ): Array<T> {
   const rowsClone = structuredClone(rows);
@@ -214,15 +214,13 @@ export function getInitialHeight(id: string | undefined) {
 function createComponent(
   componentType: CanvasComponentType,
   defaultMetrics: {
-    metricsView: string;
-    measure: string;
-    dimension: string;
+    metricsViewName: string;
+    metricsViewSpec: V1MetricsViewSpec | undefined;
   },
 ) {
   const newSpec = componentRegistry[componentType].newComponentSpec(
-    defaultMetrics.metricsView,
-    defaultMetrics.measure,
-    defaultMetrics.dimension,
+    defaultMetrics.metricsViewName,
+    defaultMetrics.metricsViewSpec,
   );
 
   return {
