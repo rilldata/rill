@@ -90,6 +90,8 @@
     dimensionName: string | undefined,
   ) => void;
 
+  $: console.log("Leaderboard activeMeasureNames: ", activeMeasureNames);
+
   const observer = new IntersectionObserver(
     ([entry]) => {
       visible = entry.isIntersecting;
@@ -329,8 +331,8 @@
     <colgroup>
       <col style:width="{gutterWidth}px" />
       <col style:width="{firstColumnWidth}px" />
-      {#each activeMeasureNames as _}
-        <col style:width="{$valueColumn}px" />
+      {#each activeMeasureNames as _, index (index)}
+        <col style:width="{$valueColumn}px" data-index={index} />
         {#if showDeltaAbsolute}
           <col style:width="{DEFAULT_CONTEXT_COLUMN_WIDTH}px" />
           {#if showDeltaPercent}

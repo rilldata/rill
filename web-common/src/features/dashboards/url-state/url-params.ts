@@ -21,6 +21,8 @@ export enum ExploreStateURLParams {
 
   LeaderboardMeasureCount = "leaderboard_measure_count",
 
+  LeaderboardContextColumns = "leaderboard_context_columns",
+
   ExpandedMeasure = "measure",
   ChartType = "chart_type",
   Pin = "pin",

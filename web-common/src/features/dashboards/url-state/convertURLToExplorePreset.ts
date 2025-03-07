@@ -441,6 +441,10 @@ function fromExploreUrlParams(
     const parsedCount = parseInt(count ?? "", 10);
     if (!isNaN(parsedCount) && parsedCount > 0) {
       preset.exploreLeaderboardMeasureCount = parsedCount;
+      console.log(
+        "should set url param value to preset.exploreLeaderboardMeasureCount: ",
+        parsedCount,
+      );
     } else {
       errors.push(
         getSingleFieldError("leaderboard measure count", count ?? ""),
