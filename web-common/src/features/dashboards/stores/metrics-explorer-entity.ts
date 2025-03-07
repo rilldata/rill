@@ -141,7 +141,7 @@ export interface MetricsExplorerEntity {
   leaderboardContextColumn: LeaderboardContextColumn;
 
   /**
-   * Array of context columns to be shown in the leaderboard when comparison is enabled
+   * Array of context columns to be shown in the leaderboard
    */
   leaderboardContextColumns: LeaderboardContextColumn[];
 
