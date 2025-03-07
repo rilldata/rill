@@ -105,7 +105,7 @@ export class TimeControls {
             return min;
           const timeGrain = metricsViewSpec.smallestTimeGrain;
 
-          return isGrainBigger(min, timeGrain) ? timeGrain : min;
+          return !isGrainBigger(min, timeGrain) ? timeGrain : min;
         },
         V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
       );
