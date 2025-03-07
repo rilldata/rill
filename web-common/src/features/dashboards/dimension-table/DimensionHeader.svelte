@@ -55,6 +55,7 @@
       dimensions: { setPrimaryDimension },
       dimensionsFilter: { toggleDimensionFilterMode },
       contextColumn: { setContextColumnFilters },
+      toggleLeaderboardMeasureNames,
     },
     timeRangeSummaryStore,
     dashboardStore,
@@ -181,7 +182,7 @@
       {measures}
       selectedMeasureNames={$leaderboardMeasureNames}
       onSelectAll={() => {
-        console.log("Fired onSelectAll in DimensionHeader");
+        toggleLeaderboardMeasureNames(allMeasureNames);
       }}
     />
     {#if !isRowsEmpty}
