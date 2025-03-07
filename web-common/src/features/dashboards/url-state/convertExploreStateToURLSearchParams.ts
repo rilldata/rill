@@ -286,17 +286,15 @@ function toExploreUrl(
     );
   }
 
-  // Set sort_by to the currently sorted measure
-  // or fall back to the first leaderboard measure if no measure is selected
   if (
     shouldSetParam(
       preset.exploreSortBy,
-      exploreState.sortedMeasureName || exploreState.leaderboardMeasureNames[0],
+      exploreState.leaderboardMeasureNames[0],
     )
   ) {
     searchParams.set(
       ExploreStateURLParams.SortBy,
-      exploreState.sortedMeasureName || exploreState.leaderboardMeasureNames[0],
+      exploreState.leaderboardMeasureNames[0],
     );
   }
 
@@ -313,6 +311,18 @@ function toExploreUrl(
     searchParams.set(
       ExploreStateURLParams.SortDirection,
       sortAsc ? "ASC" : "DESC",
+    );
+  }
+
+  if (
+    shouldSetParam(
+      preset.exploreLeaderboardMeasureCount,
+      exploreState.leaderboardMeasureCount,
+    )
+  ) {
+    searchParams.set(
+      ExploreStateURLParams.LeaderboardMeasureCount,
+      exploreState.leaderboardMeasureCount?.toString() ?? "",
     );
   }
 
