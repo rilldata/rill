@@ -28,7 +28,6 @@
     actions: {
       dimensions: { toggleDimensionVisibility },
       contextColumn: { setContextColumn, setContextColumnFilters },
-      toggleLeaderboardMeasureNames,
       setLeaderboardMeasureCount,
     },
   } = StateManagers;
@@ -106,7 +105,7 @@
         selectedMeasureNames={$leaderboardMeasureNames}
         onToggle={setContextColumnFilters}
         onSelectAll={() => {
-          toggleLeaderboardMeasureNames(allMeasureNames);
+          console.log("Fired onSelectAll in LeaderboardControls");
         }}
       />
     </div>
