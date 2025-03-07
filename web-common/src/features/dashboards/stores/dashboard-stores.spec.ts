@@ -155,12 +155,12 @@ describe("dashboard-stores", () => {
     const mock = createValidSpecQueryMock();
     const { stateManagers } = initStateManagers();
     const {
-      actions: { toggleLeaderboardMeasureNames },
+      actions: { setLeaderboardMeasureName },
     } = stateManagers;
     assertMetricsView(AD_BIDS_EXPLORE_NAME);
 
     // select a different leaderboard measure
-    toggleLeaderboardMeasureNames([AD_BIDS_BID_PRICE_MEASURE]);
+    setLeaderboardMeasureName(AD_BIDS_BID_PRICE_MEASURE);
     assertMetricsView(
       AD_BIDS_EXPLORE_NAME,
       undefined,
@@ -330,9 +330,10 @@ describe("dashboard-stores", () => {
       const mock = createValidSpecQueryMock();
       const { stateManagers } = initStateManagers();
       const {
-        actions: { toggleLeaderboardMeasureNames },
+        actions: { setLeaderboardMeasureName },
       } = stateManagers;
-      toggleLeaderboardMeasureNames([AD_BIDS_BID_PRICE_MEASURE]);
+
+      setLeaderboardMeasureName(AD_BIDS_BID_PRICE_MEASURE);
 
       // create a mirror from state
       createAdBidsMirrorInStore(get(mock).data!);
@@ -344,7 +345,7 @@ describe("dashboard-stores", () => {
       // assert that the selected measure is reset to the 1st available one
       expect(
         get(metricsExplorerStore).entities[AD_BIDS_MIRROR_NAME]
-          .leaderboardMeasureNames[0],
+          .leaderboardMeasureName,
       ).toBe(AD_BIDS_IMPRESSIONS_MEASURE);
     });
 

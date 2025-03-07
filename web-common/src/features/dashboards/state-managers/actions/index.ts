@@ -4,8 +4,8 @@ import { sortActions } from "./sorting";
 import { contextColActions } from "./context-columns";
 import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
 import {
-  toggleLeaderboardMeasureNames,
   setLeaderboardMeasureCount,
+  setLeaderboardMeasureName,
 } from "./core-actions";
 import { dimensionTableActions } from "./dimension-table";
 import type {
@@ -85,21 +85,22 @@ export const createStateManagerActions = (
      */
     measuresFilter: createDashboardUpdaters(actionArgs, measureFilterActions),
 
-    // FIXME: move this action elsewhere
-    /**
-     * Toggles the leaderboard measure names for the dashboard.
-     */
-    toggleLeaderboardMeasureNames: dashboardMutatorToUpdater(
-      actionArgs,
-      toggleLeaderboardMeasureNames,
-    ),
-
     /**
      * sets the number of measures to show in the leaderboard.
      */
     setLeaderboardMeasureCount: dashboardMutatorToUpdater(
       actionArgs,
       setLeaderboardMeasureCount,
+    ),
+
+    // Note: for now, some core actions are kept in the root of the
+    // actions object. Can revisit that later if we want to move them.
+    /**
+     * sets the main measure name for the dashboard.
+     */
+    setLeaderboardMeasureName: dashboardMutatorToUpdater(
+      actionArgs,
+      setLeaderboardMeasureName,
     ),
   };
 };
