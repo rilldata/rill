@@ -55,6 +55,7 @@
       dimensions: { setPrimaryDimension },
       dimensionsFilter: { toggleDimensionFilterMode },
       contextColumn: { setContextColumnFilters },
+      toggleLeaderboardMeasureNames,
     },
     dashboardStore,
     exploreName,
@@ -179,7 +180,7 @@
       {measures}
       selectedMeasureNames={$leaderboardMeasureNames}
       onSelectAll={() => {
-        console.log("Fired onSelectAll in DimensionHeader");
+        toggleLeaderboardMeasureNames(allMeasureNames);
       }}
     />
     {#if !isRowsEmpty}

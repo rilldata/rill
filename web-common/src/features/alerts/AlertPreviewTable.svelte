@@ -10,9 +10,18 @@
   import { DIMENSION_TABLE_CONFIG as config } from "@rilldata/web-common/features/dashboards/dimension-table/DimensionTableConfig";
   import { createVirtualizer } from "@tanstack/svelte-virtual";
   import { setContext } from "svelte";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 
   export let rows: DimensionTableRow[];
   export let columns: VirtualizedTableColumns[];
+
+  const {
+    selectors: {
+      measures: { getMeasureByName, leaderboardMeasureNames },
+    },
+  } = getStateManagers();
+
+  $: firstMeasure = $getMeasureByName($leaderboardMeasureNames[0]);
 
   /** the overscan values tell us how much to render off-screen. These may be set by the consumer
    * in certain circumstances. The tradeoff: the higher the overscan amount, the more DOM elements we have
@@ -107,6 +116,7 @@
         virtualColumnItems={virtualColumns}
         noPin
         showDataIcon={false}
+        {firstMeasure}
       />
       {#if rows.length}
         <TableCells
