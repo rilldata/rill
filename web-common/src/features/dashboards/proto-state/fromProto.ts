@@ -166,7 +166,7 @@ export function getDashboardStateFromProto(
   }
 
   if (dashboard.leaderboardMeasure) {
-    entity.leaderboardMeasureNames = [dashboard.leaderboardMeasure];
+    entity.leaderboardMeasureName = dashboard.leaderboardMeasure;
   }
   if (dashboard.comparisonDimension) {
     entity.selectedComparisonDimension = dashboard.comparisonDimension;

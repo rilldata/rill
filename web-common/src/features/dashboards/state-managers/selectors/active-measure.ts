@@ -16,13 +16,14 @@ export const activeMeasure = (
 };
 
 export const activeMeasureName = (dashData: DashboardDataSources): string => {
-  return dashData.dashboard.leaderboardMeasureNames[0];
+  return dashData.dashboard.leaderboardMeasureName;
 };
 
+// TODO: remove this
 export const activeMeasureNames = (
   dashData: DashboardDataSources,
 ): string[] => {
-  return dashData.dashboard.leaderboardMeasureNames;
+  return [dashData.dashboard.leaderboardMeasureName];
 };
 
 export const selectedMeasureNames = (

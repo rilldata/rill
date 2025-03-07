@@ -288,17 +288,26 @@ function toExploreUrl(
     );
   }
 
-  // Set sort_by to the currently sorted measure
-  // or fall back to the first leaderboard measure if no measure is selected
+  // // Set sort_by to the currently sorted measure
+  // // or fall back to the first leaderboard measure if no measure is selected
+  // if (
+  //   shouldSetParam(
+  //     preset.exploreSortBy,
+  //     exploreState.sortedMeasureName || exploreState.leaderboardMeasureNames[0],
+  //   )
+  // ) {
+  //   searchParams.set(
+  //     ExploreStateURLParams.SortBy,
+  //     exploreState.sortedMeasureName || exploreState.leaderboardMeasureNames[0],
+  //   );
+  // }
+
   if (
-    shouldSetParam(
-      preset.exploreSortBy,
-      exploreState.sortedMeasureName || exploreState.leaderboardMeasureNames[0],
-    )
+    shouldSetParam(preset.exploreSortBy, exploreState.leaderboardMeasureName)
   ) {
     searchParams.set(
       ExploreStateURLParams.SortBy,
-      exploreState.sortedMeasureName || exploreState.leaderboardMeasureNames[0],
+      exploreState.leaderboardMeasureName,
     );
   }
 

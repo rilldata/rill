@@ -88,10 +88,10 @@ function syncMeasures(
   // sync measures with selected leaderboard measure.
   if (
     explore.measures?.length &&
-    !measuresSet.has(metricsExplorer.leaderboardMeasureNames[0])
+    !measuresSet.has(metricsExplorer.leaderboardMeasureName)
   ) {
     const defaultMeasure = explore.measures[0];
-    metricsExplorer.leaderboardMeasureNames[0] = defaultMeasure;
+    metricsExplorer.leaderboardMeasureName = defaultMeasure;
   }
 
   if (

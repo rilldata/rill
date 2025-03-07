@@ -10,10 +10,10 @@ export const toggleMeasureVisibility = (
     if (!deleted) {
       dashboard.visibleMeasureKeys.add(measureName);
     } else if (
-      dashboard.leaderboardMeasureNames[0] === measureName &&
+      dashboard.leaderboardMeasureName === measureName &&
       dashboard.visibleMeasureKeys.size > 0
     ) {
-      dashboard.leaderboardMeasureNames[0] = dashboard.visibleMeasureKeys
+      dashboard.leaderboardMeasureName = dashboard.visibleMeasureKeys
         .keys()
         .next().value;
     }
