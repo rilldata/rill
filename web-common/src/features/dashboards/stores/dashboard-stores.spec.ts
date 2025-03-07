@@ -234,7 +234,6 @@ describe("dashboard-stores", () => {
             max: TestTimeConstants.NOW.toISOString(),
           },
         },
-        AD_BIDS_EXPLORE_NAME,
       ),
     );
 
@@ -263,7 +262,6 @@ describe("dashboard-stores", () => {
             max: TestTimeConstants.NOW.toISOString(),
           },
         },
-        AD_BIDS_EXPLORE_NAME,
       ),
     );
     metrics = get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME];

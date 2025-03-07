@@ -147,7 +147,6 @@ export function createStateManagers({
         validSpec.data?.explore ?? {},
         validSpec.data.metricsView ?? {},
         timeRangeSummary.data,
-        exploreName,
       );
     },
   );

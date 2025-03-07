@@ -245,7 +245,6 @@ describe.skip("ExploreWebViewStore", () => {
         AD_BIDS_EXPLORE_INIT,
         AD_BIDS_METRICS_INIT,
         AD_BIDS_TIME_RANGE_SUMMARY,
-        AD_BIDS_EXPLORE_NAME,
       );
 
       // apply mutations to main view to setup the initial state

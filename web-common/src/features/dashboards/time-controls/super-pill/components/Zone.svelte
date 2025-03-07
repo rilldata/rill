@@ -83,7 +83,6 @@
             <ZoneDisplay
               abbreviation={formatted.abbreviation}
               offset={formatted.offset}
-              selected
               iana={activeTimeZone}
             />
           </DropdownMenu.Item>
@@ -104,7 +103,6 @@
           <ZoneDisplay
             {abbreviation}
             {offset}
-            selected={activeTimeZone === iana}
             isBrowserTime={iana === browserIANA}
             {iana}
           />
@@ -140,7 +138,6 @@
               <ZoneDisplay
                 abbreviation={formatted.abbreviation}
                 offset={formatted.offset}
-                selected={activeTimeZone === iana}
                 {iana}
               />
             </DropdownMenu.CheckboxItem>
@@ -167,12 +164,7 @@
               recents.set(Array.from(new Set([iana, ...$recents])).slice(0, 5));
             }}
           >
-            <ZoneDisplay
-              {iana}
-              {offset}
-              {abbreviation}
-              selected={activeTimeZone === iana}
-            />
+            <ZoneDisplay {iana} {offset} {abbreviation} />
           </DropdownMenu.CheckboxItem>
         {:else}
           <DropdownMenu.Group>

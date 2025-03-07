@@ -121,7 +121,6 @@ export function mapQueryToDashboard(
         validSpecResp.data.explore,
         validSpecResp.data.metricsView,
         timeRangeSummary.data,
-        exploreName,
       );
       const { partialExploreState } = convertPresetToExploreState(
         validSpecResp.data.metricsView,

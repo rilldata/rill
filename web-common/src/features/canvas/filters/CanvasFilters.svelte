@@ -37,7 +37,6 @@
   /** the height of a row of chips */
   const ROW_HEIGHT = "26px";
   const {
-    canvasName,
     canvasEntity: {
       filters: {
         whereFilter,
@@ -211,7 +210,7 @@
     if (includesTimeZoneOffset) {
       const timeZone = name.match(/@ {(.*)}/)?.[1];
 
-      if (timeZone) setTimeZone(timeZone, $canvasName);
+      if (timeZone) setTimeZone(timeZone);
     }
 
     const interval = deriveInterval(
@@ -257,7 +256,7 @@
       });
     }
 
-    setTimeZone(timeZone, $canvasName);
+    setTimeZone(timeZone);
   }
 
   onMount(() => {

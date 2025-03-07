@@ -131,7 +131,6 @@ export async function fetchExploreSpec(
     exploreSpec,
     metricsViewSpec,
     fullTimeRange,
-    exploreName,
   );
   const { partialExploreState: exploreStateFromYAMLConfig, errors } =
     convertPresetToExploreState(

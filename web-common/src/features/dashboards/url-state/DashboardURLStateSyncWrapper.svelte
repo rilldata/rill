@@ -34,7 +34,6 @@
     exploreSpec,
     metricsViewSpec,
     $metricsViewTimeRange.data,
-    $exploreName,
   );
   $: ({ partialExploreState: exploreStateFromYAMLConfig } =
     convertPresetToExploreState(

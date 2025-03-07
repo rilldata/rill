@@ -14,7 +14,6 @@
     getUpdatedUrlForExploreState,
   } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
   import {
-    clearExploreSessionStore,
     hasSessionStorageData,
     updateExploreSessionStore,
   } from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-store";

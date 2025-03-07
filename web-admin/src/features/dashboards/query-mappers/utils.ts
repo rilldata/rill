@@ -214,12 +214,7 @@ export async function getExplorePageUrl(
       fullTimeRange?.timeRangeSummary,
       exploreState,
     ),
-    getDefaultExplorePreset(
-      exploreSpec,
-      metricsViewSpec,
-      fullTimeRange,
-      exploreName,
-    ),
+    getDefaultExplorePreset(exploreSpec, metricsViewSpec, fullTimeRange),
     url,
   );
   return url.toString();

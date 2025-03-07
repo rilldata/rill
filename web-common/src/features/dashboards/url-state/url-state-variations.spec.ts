@@ -366,7 +366,6 @@ describe("Human readable URL state variations", () => {
             AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
             explore,
             AD_BIDS_TIME_RANGE_SUMMARY,
-            AD_BIDS_EXPLORE_NAME,
           ),
         );
         const initState = getCleanMetricsExploreForAssertion();
@@ -374,7 +373,6 @@ describe("Human readable URL state variations", () => {
           explore,
           AD_BIDS_METRICS_INIT,
           AD_BIDS_TIME_RANGE_SUMMARY,
-          AD_BIDS_EXPLORE_NAME,
         );
 
         applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
@@ -424,14 +422,12 @@ describe("Human readable URL state variations", () => {
             AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
             explore,
             AD_BIDS_TIME_RANGE_SUMMARY,
-            AD_BIDS_EXPLORE_NAME,
           ),
         );
         const defaultExplorePreset = getDefaultExplorePreset(
           explore,
           AD_BIDS_METRICS_INIT,
           AD_BIDS_TIME_RANGE_SUMMARY,
-          AD_BIDS_EXPLORE_NAME,
         );
 
         const initState = getCleanMetricsExploreForAssertion();
@@ -475,14 +471,12 @@ describe("Human readable URL state variations", () => {
         AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
         AD_BIDS_EXPLORE_INIT,
         AD_BIDS_TIME_RANGE_SUMMARY,
-        AD_BIDS_EXPLORE_NAME,
       ),
     );
     const defaultExplorePreset = getDefaultExplorePreset(
       AD_BIDS_EXPLORE_INIT,
       AD_BIDS_METRICS_INIT,
       AD_BIDS_TIME_RANGE_SUMMARY,
-      AD_BIDS_EXPLORE_NAME,
     );
 
     applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, [

@@ -267,7 +267,6 @@ export const AD_BIDS_BASE_PRESET = getDefaultExplorePreset(
   AD_BIDS_EXPLORE_INIT,
   AD_BIDS_METRICS_INIT,
   undefined,
-  AD_BIDS_EXPLORE_NAME,
 );
 
 export const AD_BIDS_SCHEMA: V1StructType = {

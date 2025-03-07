@@ -10,7 +10,6 @@ import { ISODurationToTimePreset } from "@rilldata/web-common/lib/time/ranges";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
   getLocalIANA,
-  getTimeZoneNameFromIANA,
   getUTCIANA,
 } from "@rilldata/web-common/lib/time/timezone";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
@@ -28,7 +27,6 @@ import {
 import { ALL_TIME_RANGE_ALIAS } from "../time-controls/new-time-controls";
 import { DateTime, IANAZone, Interval } from "luxon";
 import { DEFAULT_TIMEZONES } from "@rilldata/web-common/lib/time/config";
-import type Timer from "@rilldata/web-common/components/icons/Timer.svelte";
 
 export function getDefaultTimeRange(
   exploreSpec: V1ExploreSpec,
@@ -121,7 +119,6 @@ export function getDefaultExplorePreset(
   explore: V1ExploreSpec,
   metricsViewSpec: V1MetricsViewSpec,
   fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
-  exploreName: string,
 ) {
   const defaultExplorePreset: V1ExplorePreset = {
     view: V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE,

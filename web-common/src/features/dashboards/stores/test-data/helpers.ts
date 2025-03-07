@@ -62,13 +62,11 @@ export function getInitExploreStateForTest(
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
   timeRangeSummary: V1MetricsViewTimeRangeResponse | undefined = undefined,
-  exploreName = AD_BIDS_EXPLORE_NAME,
 ) {
   const defaultExplorePreset = getDefaultExplorePreset(
     exploreSpec,
     metricsViewSpec,
     timeRangeSummary,
-    exploreName,
   );
   const { partialExploreState } = convertPresetToExploreState(
     metricsViewSpec,
