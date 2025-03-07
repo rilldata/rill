@@ -27,3 +27,10 @@ export const toggleLeaderboardMeasureNames = (
 
   resetAllContextColumnWidths(dashboard.contextColumnWidths);
 };
+
+export const setLeaderboardMeasureCount = (
+  { dashboard }: DashboardMutables,
+  count: number,
+) => {
+  dashboard.leaderboardMeasureCount = count;
+};
