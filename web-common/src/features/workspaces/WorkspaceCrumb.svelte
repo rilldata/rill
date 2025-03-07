@@ -42,7 +42,7 @@
   $: resourceKind = meta?.name?.kind as ResourceKind | undefined;
   $: resourceName = meta?.name?.name ?? filePath?.split("/").pop();
 
-  $: withoutComponents = resources?.filter((r) => r?.meta?.name?.kind);
+  $: withoutComponents = resources?.filter((r) => !r?.component);
 
   $: showDropdown = withoutComponents.length > 1;
 
