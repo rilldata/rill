@@ -74,14 +74,14 @@
       name: "",
       measure:
         $dashboardStore.tdd.expandedMeasureName ??
-        $dashboardStore.leaderboardMeasureNames[0] ??
+        $dashboardStore.leaderboardMeasureName ??
         "",
       splitByDimension: dimension,
       evaluationInterval: "",
       criteria: [
         {
           ...getEmptyMeasureFilterEntry(),
-          measure: $dashboardStore.leaderboardMeasureNames[0] ?? "",
+          measure: $dashboardStore.leaderboardMeasureName ?? "",
         },
       ],
       criteriaOperation: V1Operation.OPERATION_AND,

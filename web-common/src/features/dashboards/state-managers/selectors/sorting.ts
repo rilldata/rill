@@ -21,7 +21,7 @@ export const sortingSelectors = {
   sortMeasure: ({ dashboard }: DashboardDataSources) =>
     dashboard.dashboardSortType !== SortType.DIMENSION &&
     dashboard.dashboardSortType !== SortType.UNSPECIFIED
-      ? dashboard.sortedMeasureName || dashboard.leaderboardMeasureNames[0]
+      ? dashboard.leaderboardMeasureName
       : null,
 
   /**

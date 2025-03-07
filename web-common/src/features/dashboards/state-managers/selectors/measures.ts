@@ -32,12 +32,6 @@ export const leaderboardMeasureName = ({ dashboard }: DashboardDataSources) => {
   return dashboard.leaderboardMeasureName;
 };
 
-export const leaderboardMeasureNames = ({
-  dashboard,
-}: DashboardDataSources) => {
-  return dashboard.leaderboardMeasureNames;
-};
-
 export const visibleMeasures = ({
   validMetricsView,
   validExplore,
@@ -196,8 +190,6 @@ export const measureSelectors = {
   isMeasureValidPercentOfTotal,
 
   filteredSimpleMeasures,
-
-  leaderboardMeasureNames,
 
   leaderboardMeasureName,
 };
