@@ -67,7 +67,7 @@ func (q *Query) AsMap() (map[string]any, error) {
 					return nil, fmt.Errorf("expected time.Time, got %T", data)
 				}
 				return map[string]any{
-					"t": t.Format(time.RFC3339),
+					"t": t.Format(time.RFC3339Nano),
 				}, nil
 			}
 			return data, nil
