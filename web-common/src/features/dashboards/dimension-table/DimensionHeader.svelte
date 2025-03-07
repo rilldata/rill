@@ -25,6 +25,7 @@
   import { getDimensionTableExportQuery } from "./dimension-table-export";
   import ContextColumnDropdown from "@rilldata/web-common/components/menu/ContextColumnDropdown.svelte";
   import { getSimpleMeasures } from "../state-managers/selectors/measures";
+  import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
 
   export let dimensionName: string;
   export let isFetching: boolean;
@@ -33,6 +34,7 @@
   export let searchText: string;
   export let hideStartPivotButton = false;
   export let onToggleSearchItems: () => void;
+  export let comparisonTimeRange: V1TimeRange | undefined;
 
   const stateManagers = getStateManagers();
   const {
@@ -174,6 +176,7 @@
     <ContextColumnDropdown
       tooltipText="Choose context columns to display"
       isValidPercentOfTotal={validPercentOfTotal}
+      hasComparisonTimeRange={!!comparisonTimeRange}
       selectedFilters={$contextColumnFilters}
       onToggle={setContextColumnFilters}
       {measures}
