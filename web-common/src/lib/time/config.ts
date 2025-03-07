@@ -161,6 +161,31 @@ export const LATEST_WINDOW_TIME_RANGES: TimeRangeMetaSet = {
       ],
     },
   },
+  [TimeRangePreset.LAST_3_MONTHS]: {
+    label: "Last 3 Months",
+    rangePreset: RangePresetType.OFFSET_ANCHORED,
+    defaultComparison: TimeComparisonOption.CONTIGUOUS,
+    start: {
+      reference: ReferencePoint.LATEST_DATA,
+      transformation: [
+        {
+          period: Period.MONTH,
+          truncationType: TimeTruncationType.START_OF_PERIOD,
+        }, // truncation
+        { duration: "P3M", operationType: TimeOffsetType.SUBTRACT },
+      ],
+    },
+    end: {
+      reference: ReferencePoint.LATEST_DATA,
+      transformation: [
+        { duration: "P1M", operationType: TimeOffsetType.ADD },
+        {
+          period: Period.MONTH,
+          truncationType: TimeTruncationType.START_OF_PERIOD,
+        },
+      ],
+    },
+  },
   [TimeRangePreset.LAST_12_MONTHS]: {
     label: "Last 12 Months",
     rangePreset: RangePresetType.OFFSET_ANCHORED,

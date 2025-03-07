@@ -321,7 +321,7 @@
           {interval}
           context={$exploreName}
           {timeStart}
-          lockTimeZone={exploreSpec.lockTimezone}
+          lockTimeZone={exploreSpec.lockTimeZone}
           {timeEnd}
           {activeTimeGrain}
           {activeTimeZone}
