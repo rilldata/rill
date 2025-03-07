@@ -32,11 +32,10 @@ export const leaderboardMeasureName = ({ dashboard }: DashboardDataSources) => {
   return dashboard.leaderboardMeasureName;
 };
 
-// TODO: remove this
 export const leaderboardMeasureNames = ({
   dashboard,
 }: DashboardDataSources) => {
-  return [dashboard.leaderboardMeasureName];
+  return dashboard.leaderboardMeasureNames;
 };
 
 export const visibleMeasures = ({

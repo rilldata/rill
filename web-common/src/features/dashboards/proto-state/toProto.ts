@@ -116,8 +116,8 @@ export function getProtoFromDashboardState(
 
   state.selectedTimezone = metrics.selectedTimezone;
 
-  if (metrics.leaderboardMeasureName) {
-    state.leaderboardMeasure = metrics.leaderboardMeasureName;
+  if (metrics.leaderboardMeasureNames) {
+    state.leaderboardMeasure = metrics.leaderboardMeasureNames[0];
   }
 
   if (metrics.tdd?.pinIndex !== undefined) {

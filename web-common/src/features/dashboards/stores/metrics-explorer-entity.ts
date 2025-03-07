@@ -68,7 +68,7 @@ export interface MetricsExplorerEntity {
    * Array of context measures in the dashboard. These measures are used
    * in the leaderboards and dimension detail table.
    */
-  // leaderboardMeasureNames: string[];
+  leaderboardMeasureNames: string[];
 
   /**
    * This is the number of measures to show in the leaderboard.

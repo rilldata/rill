@@ -74,7 +74,7 @@ describe("AdvancedMeasureCorrector", () => {
       "AdBids",
       getInitExploreStateForTest(MetricsView, Explore),
     );
-    dashboard.leaderboardMeasureName = AD_BIDS_IMPRESSIONS_MEASURE;
+    dashboard.leaderboardMeasureNames = [AD_BIDS_IMPRESSIONS_MEASURE];
     dashboard.dimensionThresholdFilters = [
       {
         name: AD_BIDS_PUBLISHER_DIMENSION,
@@ -91,7 +91,7 @@ describe("AdvancedMeasureCorrector", () => {
     ];
 
     AdvancedMeasureCorrector.correct(dashboard, MetricsView);
-    expect(dashboard.leaderboardMeasureName).toEqual(
+    expect(dashboard.leaderboardMeasureNames[0]).toEqual(
       AD_BIDS_IMPRESSIONS_MEASURE,
     );
     expect(dashboard.dimensionThresholdFilters[0]?.filters.length).toEqual(1);
@@ -133,7 +133,7 @@ describe("AdvancedMeasureCorrector", () => {
         },
       ],
     });
-    expect(dashboard.leaderboardMeasureName).toEqual(
+    expect(dashboard.leaderboardMeasureNames[0]).toEqual(
       AD_BIDS_IMPRESSIONS_MEASURE_NO_GRAIN,
     );
     expect(dashboard.dimensionThresholdFilters.length).toEqual(0);

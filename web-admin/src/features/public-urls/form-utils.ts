@@ -81,7 +81,7 @@ export function getSanitizedDashboardStateParam(
       ),
     ),
     allDimensionsVisible: dashboard.allDimensionsVisible,
-    leaderboardMeasureName: dashboard.leaderboardMeasureName,
+    leaderboardMeasureNames: dashboard.leaderboardMeasureNames,
     dashboardSortType: dashboard.dashboardSortType,
     sortDirection: dashboard.sortDirection,
     // Remove the where filter

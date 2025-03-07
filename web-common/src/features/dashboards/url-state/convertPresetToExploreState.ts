@@ -105,10 +105,15 @@ export function convertPresetToExploreState(
   Object.assign(partialExploreState, pivotPartialState);
   errors.push(...pivotErrors);
 
+  // TODO: revisit
+  if (preset.exploreSortBy) {
+    partialExploreState.leaderboardMeasureNames = [preset.exploreSortBy];
+    partialExploreState.sortedMeasureName = preset.exploreSortBy;
+  }
+
   // // TODO: revisit
-  // if (preset.exploreSortBy) {
-  //   partialExploreState.leaderboardMeasureNames = [preset.exploreSortBy];
-  //   partialExploreState.sortedMeasureName = preset.exploreSortBy;
+  // if (preset.contextMeasures?.length) {
+  //   partialExploreState.leaderboardMeasureNames = preset.contextMeasures;
   // }
 
   return { partialExploreState, errors };

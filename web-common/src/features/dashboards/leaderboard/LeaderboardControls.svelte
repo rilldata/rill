@@ -28,6 +28,7 @@
     actions: {
       dimensions: { toggleDimensionVisibility },
       contextColumn: { setContextColumn, setContextColumnFilters },
+      toggleLeaderboardMeasureNames,
       setLeaderboardMeasureCount,
     },
   } = StateManagers;
@@ -36,9 +37,13 @@
 
   $: metricsExplorer = $metricsExplorerStore.entities[exploreName];
 
-  $: activeLeaderboardMeasure = $getMeasureByName($leaderboardMeasureName);
-  $: validPercentOfTotal =
-    activeLeaderboardMeasure?.validPercentOfTotal || false;
+  $: activeLeaderboardMeasures = $leaderboardMeasureNames.map((name) =>
+    $getMeasureByName(name),
+  );
+
+  // First measure is used for sorting and validation
+  $: firstMeasure = activeLeaderboardMeasures[0];
+  $: validPercentOfTotal = firstMeasure?.validPercentOfTotal || false;
 
   $: visibleDimensionsNames = $visibleDimensions
     .map(({ name }) => name)
@@ -61,14 +66,10 @@
   function isDefined(value: string | undefined): value is string {
     return value !== undefined;
   }
-
-  $: console.log("activeLeaderboardMeasure", activeLeaderboardMeasure);
-  $: console.log("measures.length: ", measures.length);
 </script>
 
 <div>
-  {#if measures.length}
-    <!-- {#if measures.length && activeLeaderboardMeasure} -->
+  {#if measures.length && firstMeasure}
     <div
       class="flex flex-row items-center ui-copy-muted gap-x-1"
       style:max-width="768px"
@@ -105,7 +106,7 @@
         selectedMeasureNames={$leaderboardMeasureNames}
         onToggle={setContextColumnFilters}
         onSelectAll={() => {
-          console.log("Fired onSelectAll in LeaderboardControls");
+          toggleLeaderboardMeasureNames(allMeasureNames);
         }}
       />
     </div>

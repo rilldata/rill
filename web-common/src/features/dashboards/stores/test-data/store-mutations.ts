@@ -3,7 +3,7 @@ import {
   MeasureFilterType,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
 import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
-import { setLeaderboardMeasureName } from "@rilldata/web-common/features/dashboards/state-managers/actions/core-actions";
+import { toggleLeaderboardMeasureNames } from "@rilldata/web-common/features/dashboards/state-managers/actions/core-actions";
 import {
   applyDimensionInListMode,
   applyDimensionContainsMode,
@@ -177,21 +177,21 @@ export const AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY: TestDashboardMutati
 export const AD_BIDS_SORT_DESC_BY_IMPRESSIONS: TestDashboardMutation = (
   mut,
 ) => {
-  setLeaderboardMeasureName(mut, AD_BIDS_IMPRESSIONS_MEASURE);
+  toggleLeaderboardMeasureNames(mut, [AD_BIDS_IMPRESSIONS_MEASURE]);
   setSortDescending(mut);
 };
 export const AD_BIDS_SORT_ASC_BY_IMPRESSIONS: TestDashboardMutation = (mut) => {
-  setLeaderboardMeasureName(mut, AD_BIDS_IMPRESSIONS_MEASURE);
+  toggleLeaderboardMeasureNames(mut, [AD_BIDS_IMPRESSIONS_MEASURE]);
   setSortDescending(mut);
   toggleSort(mut, mut.dashboard.dashboardSortType);
 };
 export const AD_BIDS_SORT_ASC_BY_BID_PRICE: TestDashboardMutation = (mut) => {
-  setLeaderboardMeasureName(mut, AD_BIDS_BID_PRICE_MEASURE);
+  toggleLeaderboardMeasureNames(mut, [AD_BIDS_BID_PRICE_MEASURE]);
   setSortDescending(mut);
   toggleSort(mut, mut.dashboard.dashboardSortType);
 };
 export const AD_BIDS_SORT_DESC_BY_BID_PRICE: TestDashboardMutation = (mut) => {
-  setLeaderboardMeasureName(mut, AD_BIDS_BID_PRICE_MEASURE);
+  toggleLeaderboardMeasureNames(mut, [AD_BIDS_BID_PRICE_MEASURE]);
   setSortDescending(mut);
 };
 export const AD_BIDS_SORT_BY_VALUE: TestDashboardMutation = (mut) => {
