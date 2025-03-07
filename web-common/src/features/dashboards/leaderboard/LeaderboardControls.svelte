@@ -4,11 +4,12 @@
   import { getSimpleMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { getStateManagers } from "../state-managers/state-managers";
-  import ActiveMeasureNamesDropdown from "@rilldata/web-common/components/menu/ActiveMeasureNamesDropdown.svelte";
   import ContextColumnDropdown from "@rilldata/web-common/components/menu/ContextColumnDropdown.svelte";
   import LeaderboardMeasureCountSelector from "@rilldata/web-common/components/menu/LeaderboardMeasureCountSelector.svelte";
+  import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
 
   export let exploreName: string;
+  export let comparisonTimeRange: V1TimeRange | undefined;
 
   const StateManagers = getStateManagers();
   const {
@@ -116,6 +117,7 @@
       <ContextColumnDropdown
         tooltipText="Choose context columns to display"
         isValidPercentOfTotal={validPercentOfTotal}
+        hasComparisonTimeRange={!!comparisonTimeRange}
         selectedFilters={$contextColumnFilters}
         {measures}
         selectedMeasureNames={$leaderboardMeasureNames}

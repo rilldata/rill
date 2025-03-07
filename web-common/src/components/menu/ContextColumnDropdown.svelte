@@ -16,6 +16,7 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 
   export let isValidPercentOfTotal: boolean;
+  export let hasComparisonTimeRange: boolean;
   export let tooltipText: string;
   export let measures: MetricsViewSpecMeasureV2[];
   export let selectedFilters: LeaderboardContextColumn[] = [];
@@ -55,16 +56,20 @@
           },
         ]
       : []),
-    {
-      value: LeaderboardContextColumn.DELTA_ABSOLUTE,
-      label: "Change",
-      icon: DeltaChange,
-    },
-    {
-      value: LeaderboardContextColumn.DELTA_PERCENT,
-      label: "Percent change",
-      icon: DeltaChangePercentage,
-    },
+    ...(hasComparisonTimeRange
+      ? [
+          {
+            value: LeaderboardContextColumn.DELTA_ABSOLUTE,
+            label: "Change",
+            icon: DeltaChange,
+          },
+          {
+            value: LeaderboardContextColumn.DELTA_PERCENT,
+            label: "Percent change",
+            icon: DeltaChangePercentage,
+          },
+        ]
+      : []),
   ];
 
   function getLabelFromValue(value: LeaderboardContextColumn) {
