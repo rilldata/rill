@@ -153,13 +153,17 @@ export function convertExploreStateToURLSearchParams(
       break;
   }
 
-  const compressedUrlParams = new URLSearchParams();
-  compressedUrlParams.set(
-    ExploreStateURLParams.GzippedParams,
-    compressUrlParams(urlCopy.search),
-  );
+  // TODO(@lovincyrus): gzip params is blocking the dev
+  // UNCOMMENT THIS BEFORE SHIPPING
 
-  return compressedUrlParams.toString();
+  // const compressedUrlParams = new URLSearchParams();
+  // compressedUrlParams.set(
+  //   ExploreStateURLParams.GzippedParams,
+  //   compressUrlParams(urlCopy.search),
+  // );
+  // return compressedUrlParams.toString();
+
+  return urlCopy.searchParams.toString();
 }
 
 function toTimeRangesUrl(
