@@ -219,6 +219,7 @@
         {hideStartPivotButton}
         bind:searchText={$dimensionSearchText}
         onToggleSearchItems={toggleAllSearchItems}
+        {comparisonTimeRange}
       />
     </div>
 
