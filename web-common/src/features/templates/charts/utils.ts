@@ -25,7 +25,11 @@ export function multiLayerBaseSpec() {
 
 export function sanitizeValueForVega(value: unknown) {
   if (typeof value === "string") {
-    return value.replace(/[\.\-\{\}\[\]]/g, (match) => `\\${match}`); //eslint-disable-line
+    // Escape all special characters including quotes, brackets, operators, etc.
+    return value.replace(
+      /[!@#$%^&*()+=\-[\]\\';,./{}|":<>?~_]/g,
+      (match) => `\\${match}`,
+    );
   } else {
     return String(value);
   }
