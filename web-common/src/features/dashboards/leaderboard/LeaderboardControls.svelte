@@ -6,6 +6,7 @@
   import { getStateManagers } from "../state-managers/state-managers";
   import ActiveMeasureNamesDropdown from "@rilldata/web-common/components/menu/ActiveMeasureNamesDropdown.svelte";
   import ContextColumnDropdown from "@rilldata/web-common/components/menu/ContextColumnDropdown.svelte";
+  import LeaderboardMeasureCountSelector from "@rilldata/web-common/components/menu/LeaderboardMeasureCountSelector.svelte";
 
   export let exploreName: string;
 
@@ -13,6 +14,7 @@
   const {
     selectors: {
       measures: {
+        leaderboardMeasureName,
         leaderboardMeasureNames,
         getMeasureByName,
         visibleMeasures,
@@ -20,17 +22,23 @@
       },
       dimensions: { visibleDimensions, allDimensions },
       contextColumn: { contextColumnFilters },
+      activeMeasure: { leaderboardMeasureCount },
     },
     actions: {
       dimensions: { toggleDimensionVisibility },
       contextColumn: { setContextColumn, setContextColumnFilters },
       toggleLeaderboardMeasureNames,
+      setLeaderboardMeasureCount,
     },
   } = StateManagers;
 
   $: measures = getSimpleMeasures($visibleMeasures);
 
   $: metricsExplorer = $metricsExplorerStore.entities[exploreName];
+
+  $: console.log("leaderboardMeasureCount: ", $leaderboardMeasureCount);
+
+  $: activeLeaderboardMeasure = $getMeasureByName($leaderboardMeasureName);
 
   $: activeLeaderboardMeasures = $leaderboardMeasureNames.map((name) =>
     $getMeasureByName(name),
@@ -83,7 +91,7 @@
         }}
       />
 
-      <ActiveMeasureNamesDropdown
+      <!-- <ActiveMeasureNamesDropdown
         {measures}
         {firstMeasure}
         tooltipText="Choose measures to display"
@@ -93,6 +101,15 @@
         }}
         onSelectAll={() => {
           toggleLeaderboardMeasureNames(allMeasureNames);
+        }}
+      /> -->
+
+      <LeaderboardMeasureCountSelector
+        {measures}
+        tooltipText="Choose number of measures to display"
+        count={$leaderboardMeasureCount}
+        onToggle={(count) => {
+          setLeaderboardMeasureCount(count);
         }}
       />
 
