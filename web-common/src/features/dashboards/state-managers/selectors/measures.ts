@@ -39,16 +39,9 @@ export const visibleMeasures = ({
 }: DashboardDataSources): MetricsViewSpecMeasureV2[] => {
   if (!validMetricsView?.measures || !validExplore?.measures) return [];
 
-  return (
-    validMetricsView.measures
-      .filter((m) => dashboard.visibleMeasureKeys.has(m.name!))
-      // Sort the filtered measures based on their order in validExplore.measures
-      .sort(
-        (a, b) =>
-          validExplore.measures!.indexOf(a.name!) -
-          validExplore.measures!.indexOf(b.name!),
-      )
-  );
+  return dashboard.visibleMeasures
+    .map((mes) => validMetricsView.measures?.find((m) => m.name === mes))
+    .filter(Boolean) as MetricsViewSpecMeasureV2[];
 };
 
 export const getMeasureByName = (
