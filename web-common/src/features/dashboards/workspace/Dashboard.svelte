@@ -30,7 +30,7 @@
   const StateManagers = getStateManagers();
   const {
     selectors: {
-      measures: { visibleMeasures, leaderboardMeasureNames },
+      measures: { visibleMeasures },
       dimensions: { getDimensionByName },
       pivot: { showPivot },
       activeMeasure: { leaderboardMeasureCount },

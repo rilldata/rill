@@ -2,23 +2,43 @@ import { LeaderboardContextColumn } from "../../leaderboard-context-column";
 import { SortDirection, SortType } from "../../proto-state/derived-types";
 import type { DashboardMutables } from "./types";
 
+// export const toggleSort = (
+//   generalArgs: DashboardMutables,
+//   sortType: SortType,
+//   measureName?: string,
+// ) => {
+//   const { dashboard } = generalArgs;
+//   if (sortType === dashboard.dashboardSortType) {
+//     sortActions.toggleSortDirection(generalArgs);
+//     if (measureName) {
+//       dashboard.sortedMeasureName = measureName;
+//     }
+//   } else {
+//     dashboard.dashboardSortType = sortType;
+//     dashboard.sortDirection = SortDirection.DESCENDING;
+//     if (measureName) {
+//       dashboard.sortedMeasureName = measureName;
+//     }
+//   }
+// };
 export const toggleSort = (
-  generalArgs: DashboardMutables,
+  { dashboard }: DashboardMutables,
   sortType: SortType,
-  measureName?: string,
 ) => {
-  const { dashboard } = generalArgs;
-  if (sortType === dashboard.dashboardSortType) {
-    sortActions.toggleSortDirection(generalArgs);
-    if (measureName) {
-      dashboard.sortedMeasureName = measureName;
-    }
+  // if sortType is not provided,  or if it is provided
+  // and is the same as the current sort type,
+  // then just toggle the current sort direction
+  if (sortType === undefined || dashboard.dashboardSortType === sortType) {
+    dashboard.sortDirection =
+      dashboard.sortDirection === SortDirection.ASCENDING
+        ? SortDirection.DESCENDING
+        : SortDirection.ASCENDING;
   } else {
+    // if the sortType is different from the current sort type,
+    //  then update the sort type and set the sort direction
+    // to descending
     dashboard.dashboardSortType = sortType;
     dashboard.sortDirection = SortDirection.DESCENDING;
-    if (measureName) {
-      dashboard.sortedMeasureName = measureName;
-    }
   }
 };
 

@@ -37,7 +37,7 @@
       comparison: { isBeingCompared: isBeingComparedReadable },
       sorting: { sortedAscending, sortType, sortMeasure },
       contextColumn: { contextColumnFilters },
-      measures: { measureLabel, leaderboardMeasureNames },
+      measures: { measureLabel },
     },
     actions: {
       dimensions: { setPrimaryDimension },
@@ -47,12 +47,6 @@
     },
     exploreName,
   } = StateManagers;
-
-  // $: console.log("LeaderboardDisplay $sortMeasure: ", $sortMeasure);
-  // $: console.log(
-  //   "LeaderboardDisplay $leaderboardMeasureNames: ",
-  //   $leaderboardMeasureNames,
-  // );
 
   let parentElement: HTMLDivElement;
   let suppressTooltip = false;

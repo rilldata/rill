@@ -248,7 +248,7 @@ function fromExploreUrlParams(
 
   if (preset.exploreSortBy) {
     if (measures.has(preset.exploreSortBy)) {
-      partialExploreState.leaderboardMeasureNames = [preset.exploreSortBy];
+      partialExploreState.leaderboardMeasureName = preset.exploreSortBy;
     } else {
       errors.push(getSingleFieldError("sort by measure", preset.exploreSortBy));
     }
@@ -259,6 +259,11 @@ function fromExploreUrlParams(
       ? SortDirection.ASCENDING
       : SortDirection.DESCENDING;
   }
+
+  // if (preset.exploreLeaderboardMeasureCount !== undefined) {
+  //   partialExploreState.leaderboardMeasureCount =
+  //     preset.exploreLeaderboardMeasureCount;
+  // }
 
   if (
     preset.exploreSortType !== undefined &&
