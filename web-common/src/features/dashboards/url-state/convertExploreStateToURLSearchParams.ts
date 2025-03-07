@@ -284,6 +284,18 @@ function toExploreUrl(
     );
   }
 
+  // if (
+  //   shouldSetParam(
+  //     preset.exploreLeaderboardMeasureCount,
+  //     exploreState.leaderboardMeasureCount,
+  //   )
+  // ) {
+  //   searchParams.set(
+  //     ExploreStateURLParams.LeaderboardMeasureCount,
+  //     exploreState.leaderboardMeasureCount.toString(),
+  //   );
+  // }
+
   const sortType = FromLegacySortTypeMap[exploreState.dashboardSortType];
   if (shouldSetParam(preset.exploreSortType, sortType)) {
     searchParams.set(
@@ -308,7 +320,19 @@ function toExploreUrl(
   ) {
     searchParams.set(
       ExploreStateURLParams.LeaderboardMeasureCount,
-      exploreState.leaderboardMeasureCount?.toString() ?? "",
+      exploreState.leaderboardMeasureCount?.toString(),
+    );
+  }
+
+  if (
+    shouldSetParam(
+      preset.exploreLeaderboardContextColumns,
+      exploreState.leaderboardContextColumns,
+    )
+  ) {
+    searchParams.set(
+      ExploreStateURLParams.LeaderboardContextColumns,
+      exploreState.leaderboardContextColumns.join(","),
     );
   }
 

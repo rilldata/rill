@@ -31,13 +31,6 @@ export const isValidPercentOfTotal = (
   return activeMeasure(dashData)?.validPercentOfTotal ?? false;
 };
 
-// FIXME: move elsewhere
-export const leaderboardMeasureCount = (
-  dashData: DashboardDataSources,
-): number => {
-  return dashData.dashboard.leaderboardMeasureCount ?? 1;
-};
-
 export const activeMeasureSelectors = {
   /**
    * Gets the MetricsViewSpecMeasureV2 of the primary
@@ -66,6 +59,4 @@ export const activeMeasureSelectors = {
    * in its measure definition?
    */
   isValidPercentOfTotal,
-
-  leaderboardMeasureCount,
 };
