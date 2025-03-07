@@ -20,13 +20,17 @@ export const padding = 32;
 export const SPARK_RIGHT_MIN =
   SPARKLINE_MIN_WIDTH + 8 + BIG_NUMBER_MIN_WIDTH + padding;
 
-export function getMinWidth(sparkline: "none" | "bottom" | "right"): number {
+export function getMinWidth(
+  sparkline: "none" | "bottom" | "right" | undefined,
+): number {
   switch (sparkline) {
     case "none":
       return BIG_NUMBER_MIN_WIDTH + padding;
     case "bottom":
       return SPARKLINE_MIN_WIDTH + padding;
     case "right":
+      return SPARK_RIGHT_MIN;
+    default:
       return SPARK_RIGHT_MIN;
   }
 }
