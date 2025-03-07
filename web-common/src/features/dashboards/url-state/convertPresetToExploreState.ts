@@ -111,10 +111,10 @@ export function convertPresetToExploreState(
     partialExploreState.sortedMeasureName = preset.exploreSortBy;
   }
 
-  // TODO: revisit
-  if (preset.contextMeasures?.length) {
-    partialExploreState.leaderboardMeasureNames = preset.contextMeasures;
-  }
+  // // TODO: revisit
+  // if (preset.contextMeasures?.length) {
+  //   partialExploreState.leaderboardMeasureNames = preset.contextMeasures;
+  // }
 
   return { partialExploreState, errors };
 }

@@ -68,7 +68,6 @@ export interface MetricsExplorerEntity {
    * Array of context measures in the dashboard. These measures are used
    * in the leaderboards and dimension detail table.
    */
-  // FIXME: rename to contextMeasures
   leaderboardMeasureNames: string[];
 
   /**

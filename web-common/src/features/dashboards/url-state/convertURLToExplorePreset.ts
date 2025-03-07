@@ -190,19 +190,19 @@ export function convertURLToExplorePreset(
   }
 
   // Handle context measures
-  if (searchParams.has(ExploreStateURLParams.ContextMeasures)) {
-    const contextMeasures = (
-      searchParams.get(ExploreStateURLParams.ContextMeasures) as string
-    ).split(",");
-    const validMeasures = contextMeasures.filter((measure) =>
-      measures.has(measure),
-    );
-    if (validMeasures.length > 0) {
-      preset.contextMeasures = validMeasures;
-    } else if (contextMeasures.length > 0) {
-      errors.push(getMultiFieldError("context measures", contextMeasures));
-    }
-  }
+  // if (searchParams.has(ExploreStateURLParams.ContextMeasures)) {
+  //   const contextMeasures = (
+  //     searchParams.get(ExploreStateURLParams.ContextMeasures) as string
+  //   ).split(",");
+  //   const validMeasures = contextMeasures.filter((measure) =>
+  //     measures.has(measure),
+  //   );
+  //   if (validMeasures.length > 0) {
+  //     preset.contextMeasures = validMeasures;
+  //   } else if (contextMeasures.length > 0) {
+  //     errors.push(getMultiFieldError("context measures", contextMeasures));
+  //   }
+  // }
 
   return { preset, errors };
 }
