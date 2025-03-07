@@ -56,11 +56,26 @@ export interface MetricsExplorerEntity {
   allDimensionsVisible: boolean;
 
   /**
+   * This is the name of the primary active measure in the dashboard.
+   * This is the measure that will be shown in leaderboards, and
+   * will be used for sorting the leaderboard and dimension detail table.
+   * This "name" is the internal name of the measure from the YAML,
+   * not the human readable name.
+   */
+  leaderboardMeasureName: string;
+
+  /**
    * Array of context measures in the dashboard. These measures are used
    * in the leaderboards and dimension detail table.
    */
   // FIXME: rename to contextMeasures
   leaderboardMeasureNames: string[];
+
+  /**
+   * This is the number of measures to show in the leaderboard.
+   * If not set, defaults to 1.
+   */
+  leaderboardMeasureCount: number;
 
   /**
    * The name of the measure that the dashboard is currently sorted by.

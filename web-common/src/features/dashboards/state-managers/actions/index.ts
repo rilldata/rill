@@ -3,7 +3,10 @@ import { measureFilterActions } from "@rilldata/web-common/features/dashboards/s
 import { sortActions } from "./sorting";
 import { contextColActions } from "./context-columns";
 import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
-import { toggleLeaderboardMeasureNames } from "./core-actions";
+import {
+  toggleLeaderboardMeasureNames,
+  setLeaderboardMeasureCount,
+} from "./core-actions";
 import { dimensionTableActions } from "./dimension-table";
 import type {
   DashboardCallbackExecutor,
@@ -89,6 +92,14 @@ export const createStateManagerActions = (
     toggleLeaderboardMeasureNames: dashboardMutatorToUpdater(
       actionArgs,
       toggleLeaderboardMeasureNames,
+    ),
+
+    /**
+     * sets the number of measures to show in the leaderboard.
+     */
+    setLeaderboardMeasureCount: dashboardMutatorToUpdater(
+      actionArgs,
+      setLeaderboardMeasureCount,
     ),
   };
 };
