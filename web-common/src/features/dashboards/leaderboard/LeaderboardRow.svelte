@@ -31,7 +31,7 @@
   export let atLeastOneActive: boolean;
   export let isValidPercentOfTotal: boolean;
   export let isTimeComparisonActive: boolean;
-  export let contextColumnFilters: LeaderboardContextColumn[] = [];
+  export let contextColumns: LeaderboardContextColumn[] = [];
   export let activeMeasureNames: string[] = [];
   export let toggleDimensionValueSelection: (
     dimensionName: string,
@@ -207,16 +207,16 @@
 
   $: showDeltaAbsolute =
     isTimeComparisonActive &&
-    contextColumnFilters.includes(LeaderboardContextColumn.DELTA_ABSOLUTE);
+    contextColumns.includes(LeaderboardContextColumn.DELTA_ABSOLUTE);
 
   $: showDeltaPercent =
     isTimeComparisonActive &&
-    contextColumnFilters.includes(LeaderboardContextColumn.DELTA_PERCENT);
+    contextColumns.includes(LeaderboardContextColumn.DELTA_PERCENT);
 
   $: showPercentOfTotal =
     isTimeComparisonActive &&
     isValidPercentOfTotal &&
-    contextColumnFilters.includes(LeaderboardContextColumn.PERCENT);
+    contextColumns.includes(LeaderboardContextColumn.PERCENT);
 
   $: showTooltip = hovered && !suppressTooltip;
 

@@ -14,22 +14,19 @@
   const StateManagers = getStateManagers();
   const {
     selectors: {
-      measures: {
-        leaderboardMeasureName,
-        getMeasureByName,
-        visibleMeasures,
-        allMeasures,
-      },
+      measures: { leaderboardMeasureName, getMeasureByName, visibleMeasures },
       dimensions: { visibleDimensions, allDimensions },
-      contextColumn: { contextColumnFilters },
+      contextColumn: { contextColumn, contextColumns },
       activeMeasure: { leaderboardMeasureCount },
     },
     actions: {
       dimensions: { toggleDimensionVisibility },
-      contextColumn: { setContextColumn, setContextColumnFilters },
+      contextColumn: { setContextColumn, setContextColumns },
       setLeaderboardMeasureCount,
     },
   } = StateManagers;
+
+  $: console.log("contextColumns: ", $contextColumns);
 
   $: measures = getSimpleMeasures($visibleMeasures);
 
@@ -94,9 +91,12 @@
         tooltipText="Choose context columns to display"
         isValidPercentOfTotal={validPercentOfTotal}
         hasComparisonTimeRange={!!comparisonTimeRange}
-        selectedFilters={$contextColumnFilters}
+        selectedFilters={$contextColumns}
         {measures}
-        onToggle={setContextColumnFilters}
+        onToggle={setContextColumns}
+        onSelectAll={() => {
+          setContextColumns([]);
+        }}
       />
     </div>
   {/if}

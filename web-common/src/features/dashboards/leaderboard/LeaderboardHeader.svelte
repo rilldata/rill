@@ -24,7 +24,7 @@
   export let displayName: string;
   export let hovered: boolean;
   export let sortType: SortType;
-  export let contextColumnFilters: LeaderboardContextColumn[] = [];
+  export let contextColumns: LeaderboardContextColumn[] = [];
   export let activeMeasureNames: string[] = [];
   export let sortMeasure: string | null;
   export let toggleSort: (sortType: SortType, measureName?: string) => void;
@@ -36,16 +36,16 @@
 
   $: showDeltaAbsolute =
     isTimeComparisonActive &&
-    contextColumnFilters.includes(LeaderboardContextColumn.DELTA_ABSOLUTE);
+    contextColumns.includes(LeaderboardContextColumn.DELTA_ABSOLUTE);
 
   $: showDeltaPercent =
     isTimeComparisonActive &&
-    contextColumnFilters.includes(LeaderboardContextColumn.DELTA_PERCENT);
+    contextColumns.includes(LeaderboardContextColumn.DELTA_PERCENT);
 
   $: showPercentOfTotal =
     isTimeComparisonActive &&
     isValidPercentOfTotal &&
-    contextColumnFilters.includes(LeaderboardContextColumn.PERCENT);
+    contextColumns.includes(LeaderboardContextColumn.PERCENT);
 
   $: hasMoreThanOneMeasure = activeMeasureNames.length > 1;
 </script>
@@ -100,7 +100,10 @@
       <th>
         <button
           aria-label="Toggle sort leaderboards by value"
-          on:click={() => toggleSort(SortType.VALUE, measureName)}
+          on:click={() => {
+            console.log("FIRED toggleSort: ", measureName);
+            toggleSort(SortType.VALUE, measureName);
+          }}
           class="font-normal text-right"
         >
           <span class="measure-label">
@@ -130,7 +133,7 @@
         <th>
           <button
             aria-label="Toggle sort leaderboards by absolute change"
-            on:click={() => toggleSort(SortType.DELTA_ABSOLUTE)}
+            on:click={() => toggleSort(SortType.DELTA_ABSOLUTE, measureName)}
           >
             <DeltaChange />
             {#if sortType === SortType.DELTA_ABSOLUTE}
@@ -160,7 +163,7 @@
         <th>
           <button
             aria-label="Toggle sort leaderboards by percent change"
-            on:click={() => toggleSort(SortType.DELTA_PERCENT)}
+            on:click={() => toggleSort(SortType.DELTA_PERCENT, measureName)}
           >
             <DeltaChangePercentage />
             {#if sortType === SortType.DELTA_PERCENT}
@@ -190,7 +193,7 @@
         <th>
           <button
             aria-label="Toggle sort leaderboards by percent of total"
-            on:click={() => toggleSort(SortType.PERCENT)}
+            on:click={() => toggleSort(SortType.PERCENT, measureName)}
           >
             <PercentOfTotal />
             {#if sortType === SortType.PERCENT}
