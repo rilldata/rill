@@ -37,10 +37,6 @@
 
   $: metricsExplorer = $metricsExplorerStore.entities[exploreName];
 
-  $: console.log("leaderboardMeasureCount: ", $leaderboardMeasureCount);
-
-  $: activeLeaderboardMeasure = $getMeasureByName($leaderboardMeasureName);
-
   $: activeLeaderboardMeasures = $leaderboardMeasureNames.map((name) =>
     $getMeasureByName(name),
   );
@@ -91,19 +87,6 @@
           toggleDimensionVisibility(allDimensionNames);
         }}
       />
-
-      <!-- <ActiveMeasureNamesDropdown
-        {measures}
-        {firstMeasure}
-        tooltipText="Choose measures to display"
-        selectedMeasureNames={$leaderboardMeasureNames}
-        onToggle={(name) => {
-          toggleLeaderboardMeasureNames(allMeasureNames, name);
-        }}
-        onSelectAll={() => {
-          toggleLeaderboardMeasureNames(allMeasureNames);
-        }}
-      /> -->
 
       <LeaderboardMeasureCountSelector
         {measures}

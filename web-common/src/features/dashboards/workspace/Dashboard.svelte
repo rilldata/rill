@@ -33,9 +33,17 @@
       measures: { visibleMeasures, leaderboardMeasureNames },
       dimensions: { getDimensionByName },
       pivot: { showPivot },
+      activeMeasure: { leaderboardMeasureCount },
     },
     dashboardStore,
   } = StateManagers;
+
+  // TODO(@lovincyrus): move this elsewhere
+  // Get top k (leaderboardMeasureCount) of visible measures
+  $: activeMeasureNames = $visibleMeasures
+    .slice(0, $leaderboardMeasureCount)
+    .map(({ name }) => name)
+    .filter(isDefined);
 
   const timeControlsStore = useTimeControlStore(StateManagers);
 
@@ -117,6 +125,10 @@
     } catch (error) {
       console.error("Error running initEmbedPublicAPI:", error);
     }
+  }
+
+  function isDefined(value: string | undefined): value is string {
+    return value !== undefined;
   }
 </script>
 
@@ -209,7 +221,7 @@
               {dimensionThresholdFilters}
               {timeRange}
               {comparisonTimeRange}
-              activeMeasureNames={$leaderboardMeasureNames}
+              {activeMeasureNames}
               {timeControlsReady}
               {visibleMeasureNames}
               hideStartPivotButton={hidePivot}
@@ -217,7 +229,7 @@
           {:else}
             <LeaderboardDisplay
               {metricsViewName}
-              activeMeasureNames={$leaderboardMeasureNames}
+              {activeMeasureNames}
               {whereFilter}
               {dimensionThresholdFilters}
               {timeRange}
