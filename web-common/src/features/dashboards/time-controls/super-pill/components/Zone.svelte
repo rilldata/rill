@@ -12,18 +12,6 @@
   import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
   import type { DateTime } from "luxon";
 
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import {
-    ArrowUpCircle,
-    Computer,
-    HardDrive,
-    Save,
-    SaveIcon,
-  } from "lucide-svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { CheckboxItem } from "@rilldata/web-common/components/context-menu";
-
   const browserIANA = getLocalIANA();
 
   // watermark indicates the latest reference point in the dashboard
@@ -193,29 +181,5 @@
         {/each}
       </DropdownMenu.Group>
     {/if}
-
-    <!-- <footer
-      class="px-3 overflow-hidden justify-between flex items-center h-10 text-gray-600 border-t -m-1.5 mt-1 bg-slate-100"
-    >
-      Default:
-      {$localTimeZonePreference}
-      {#if activeTimeZone !== $localTimeZonePreference}
-        <Tooltip distance={8} activeDelay={600}>
-          <Button
-            square
-            type="text"
-            on:click={() => {
-              localTimeZonePreference.set(activeTimeZone);
-            }}
-          >
-            Make selected my default timezone
-            <Arrow size="14px" />
-          </Button>
-          <TooltipContent slot="tooltip-content">
-            Set {activeTimeZone} as the default timezone
-          </TooltipContent>
-        </Tooltip>
-      {/if}
-    </footer> -->
   </DropdownMenu.Content>
 </DropdownMenu.Root>
