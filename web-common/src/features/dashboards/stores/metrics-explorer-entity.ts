@@ -74,7 +74,7 @@ export interface MetricsExplorerEntity {
    * The name of the measure that the dashboard is currently sorted by.
    * This is used to track which measure is being sorted when multiple measures are selected.
    */
-  sortedMeasureName?: string;
+  // sortedMeasureName?: string;
 
   /**
    * This is the sort type that will be used for the leaderboard
@@ -145,7 +145,7 @@ export interface MetricsExplorerEntity {
   /**
    * Array of context columns to be shown in the leaderboard when comparison is enabled
    */
-  leaderboardContextColumnFilters: LeaderboardContextColumn[];
+  leaderboardContextColumns: LeaderboardContextColumn[];
 
   /**
    * Width of each context column. Needs to be reset to default

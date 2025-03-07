@@ -20,24 +20,23 @@
   export let tooltipText: string;
   export let measures: MetricsViewSpecMeasureV2[];
   export let selectedFilters: LeaderboardContextColumn[] = [];
-  export let onToggle: (column: LeaderboardContextColumn[]) => void;
+  export let onToggle: (columns: LeaderboardContextColumn[]) => void;
+  export let onSelectAll: () => void;
 
   const { exploreName } = getStateManagers();
 
   let active = false;
 
-  function removeTimeComparisonColumns(filters: LeaderboardContextColumn[]) {
-    return filters.filter(
+  let allSelected = false;
+
+  // Side effect to clean up filters when time comparison is disabled
+  $: if (!$metricsExplorerStore.entities[$exploreName]?.showTimeComparison) {
+    const cleanedFilters = selectedFilters.filter(
       (f) =>
         f !== LeaderboardContextColumn.DELTA_ABSOLUTE &&
         f !== LeaderboardContextColumn.DELTA_PERCENT &&
         f !== LeaderboardContextColumn.PERCENT,
     );
-  }
-
-  // Side effect to clean up filters when time comparison is disabled
-  $: if (!$metricsExplorerStore.entities[$exploreName]?.showTimeComparison) {
-    const cleanedFilters = removeTimeComparisonColumns(selectedFilters);
     if (cleanedFilters.length !== selectedFilters.length) {
       onToggle(cleanedFilters);
     }
@@ -107,8 +106,6 @@
     }
   }
 
-  // $: allSelected = selectedMeasureNames.length === measures.length;
-
   $: withText =
     selectedFilters && selectedFilters.length > 1
       ? `${selectedFilters.length} context columns`
@@ -145,45 +142,47 @@
         align="start"
         class="flex flex-col max-h-96 w-[204px] overflow-hidden p-0"
       >
-        <div class="px-1 pb-1 pt-1">
-          {#each options as option}
-            <DropdownMenu.CheckboxItem
-              checked={selectedFilters.includes(option.value)}
-              onCheckedChange={() => toggleContextColumn(option.value)}
-            >
-              <div class="flex items-center">
-                {#if option.value === LeaderboardContextColumn.DELTA_ABSOLUTE}
-                  <div class="flex items-center justify-start w-[26px]">
-                    <svelte:component this={option.icon} />
-                  </div>
-                  <span>{option.label}</span>
-                {:else if option.value === LeaderboardContextColumn.DELTA_PERCENT}
-                  <div class="flex items-center justify-start w-[26px]">
-                    <svelte:component this={option.icon} />
-                  </div>
-                  <span>{option.label}</span>
-                {:else if option.value === LeaderboardContextColumn.PERCENT}
-                  <div class="flex flex-col">
-                    <div class="flex flex-row gap-x-1">
+        {#if options.length > 0}
+          <div class="px-1 pb-1 pt-1">
+            {#each options as option}
+              <DropdownMenu.CheckboxItem
+                checked={selectedFilters.includes(option.value)}
+                onCheckedChange={() => toggleContextColumn(option.value)}
+              >
+                <div class="flex items-center">
+                  {#if option.value === LeaderboardContextColumn.DELTA_ABSOLUTE}
+                    <div class="flex items-center justify-start w-[26px]">
                       <svelte:component this={option.icon} />
-                      <span>{option.label}</span>
                     </div>
-                    <span class="ui-copy-muted text-[11px]">
-                      {option.description}
-                    </span>
-                  </div>
-                {/if}
-              </div>
-            </DropdownMenu.CheckboxItem>
-          {/each}
-        </div>
-        <!-- 
+                    <span>{option.label}</span>
+                  {:else if option.value === LeaderboardContextColumn.DELTA_PERCENT}
+                    <div class="flex items-center justify-start w-[26px]">
+                      <svelte:component this={option.icon} />
+                    </div>
+                    <span>{option.label}</span>
+                  {:else if option.value === LeaderboardContextColumn.PERCENT}
+                    <div class="flex flex-col">
+                      <div class="flex flex-row gap-x-1">
+                        <svelte:component this={option.icon} />
+                        <span>{option.label}</span>
+                      </div>
+                      <span class="ui-copy-muted text-[11px]">
+                        {option.description}
+                      </span>
+                    </div>
+                  {/if}
+                </div>
+              </DropdownMenu.CheckboxItem>
+            {/each}
+          </div>
+        {/if}
+
         <footer>
           <div class="w-full">
             <p class="text-xs">Show for all measures</p>
           </div>
           <Switch small bind:checked={allSelected} on:click={onSelectAll} />
-        </footer> -->
+        </footer>
       </DropdownMenu.Content>
 
       <div slot="tooltip-content" transition:fly={{ duration: 300, y: 4 }}>

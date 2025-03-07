@@ -20,8 +20,8 @@ export const contextColumnSelectors = {
   /**
    * Gets the context column filters for the dashboard.
    */
-  contextColumnFilters: ({ dashboard }: DashboardDataSources) =>
-    dashboard.leaderboardContextColumnFilters,
+  contextColumns: ({ dashboard }: DashboardDataSources) =>
+    dashboard.leaderboardContextColumns,
 
   /**
    * Is the context column hidden in the leaderboards?

@@ -58,6 +58,7 @@
   export let instanceId: string;
   export let whereFilter: V1Expression;
   export let dimensionThresholdFilters: DimensionThresholdFilter[];
+  export let activeMeasureName: string;
   export let activeMeasureNames: string[];
   export let metricsViewName: string;
   export let sortType: SortType;
@@ -65,7 +66,7 @@
   export let tableWidth: number;
   export let sortedAscending: boolean;
   export let isValidPercentOfTotal: boolean;
-  export let contextColumnFilters: LeaderboardContextColumn[] = [];
+  export let contextColumns: LeaderboardContextColumn[] = [];
   export let timeControlsReady: boolean;
   export let firstColumnWidth: number;
   export let isSummableMeasure: boolean;
@@ -151,10 +152,9 @@
   $: sort = getSort(
     sortedAscending,
     sortType,
-    activeMeasureNames[0],
+    activeMeasureName,
     dimensionName,
     !!comparisonTimeRange,
-    sortMeasure,
   );
 
   $: sortedQuery = createQueryServiceMetricsViewAggregation(
@@ -289,16 +289,16 @@
 
   $: showDeltaAbsolute =
     !!comparisonTimeRange &&
-    contextColumnFilters.includes(LeaderboardContextColumn.DELTA_ABSOLUTE);
+    contextColumns.includes(LeaderboardContextColumn.DELTA_ABSOLUTE);
 
   $: showDeltaPercent =
     !!comparisonTimeRange &&
-    contextColumnFilters.includes(LeaderboardContextColumn.DELTA_PERCENT);
+    contextColumns.includes(LeaderboardContextColumn.DELTA_PERCENT);
 
   $: showPercentOfTotal =
     !!comparisonTimeRange &&
     isValidPercentOfTotal &&
-    contextColumnFilters.includes(LeaderboardContextColumn.PERCENT);
+    contextColumns.includes(LeaderboardContextColumn.PERCENT);
 
   $: if (activeMeasureNames) {
     valueColumn.reset();
@@ -356,7 +356,7 @@
       {isValidPercentOfTotal}
       {sortedAscending}
       isTimeComparisonActive={!!comparisonTimeRange}
-      {contextColumnFilters}
+      {contextColumns}
       {activeMeasureNames}
       {toggleSort}
       {setPrimaryDimension}
@@ -381,7 +381,7 @@
             {dimensionName}
             {itemData}
             {isValidPercentOfTotal}
-            {contextColumnFilters}
+            {contextColumns}
             {activeMeasureNames}
             isTimeComparisonActive={!!comparisonTimeRange}
             {toggleDimensionValueSelection}

@@ -115,7 +115,7 @@ export function computePercentOfTotal(
 export function getComparisonProperties(
   measureName: string,
   selectedMeasure: MetricsViewSpecMeasureV2,
-  contextColumnFilters: LeaderboardContextColumn[] = [],
+  contextColumns: LeaderboardContextColumn[] = [],
 ): {
   component: typeof SvelteComponent<any>;
   type: string;
@@ -129,9 +129,7 @@ export function getComparisonProperties(
       type: "RILL_PERCENTAGE_CHANGE",
       format: FormatPreset.PERCENTAGE,
       description: "Percentage change over comparison period",
-      visible: contextColumnFilters.includes(
-        LeaderboardContextColumn.DELTA_PERCENT,
-      ),
+      visible: contextColumns.includes(LeaderboardContextColumn.DELTA_PERCENT),
     };
   } else if (measureName.includes("_delta")) {
     return {
@@ -139,9 +137,7 @@ export function getComparisonProperties(
       type: "RILL_CHANGE",
       format: selectedMeasure.formatPreset ?? FormatPreset.HUMANIZE,
       description: "Change over comparison period",
-      visible: contextColumnFilters.includes(
-        LeaderboardContextColumn.DELTA_ABSOLUTE,
-      ),
+      visible: contextColumns.includes(LeaderboardContextColumn.DELTA_ABSOLUTE),
     };
   } else if (measureName.includes("_percent_of_total")) {
     return {
@@ -149,7 +145,7 @@ export function getComparisonProperties(
       type: "RILL_PERCENTAGE_CHANGE",
       format: FormatPreset.PERCENTAGE,
       description: "Percent of total",
-      visible: contextColumnFilters.includes(LeaderboardContextColumn.PERCENT),
+      visible: contextColumns.includes(LeaderboardContextColumn.PERCENT),
     };
   }
   throw new Error(

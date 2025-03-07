@@ -264,11 +264,6 @@ function fromExploreUrlParams(
       : SortDirection.DESCENDING;
   }
 
-  // if (preset.exploreLeaderboardMeasureCount !== undefined) {
-  //   partialExploreState.leaderboardMeasureCount =
-  //     preset.exploreLeaderboardMeasureCount;
-  // }
-
   if (
     preset.exploreSortType !== undefined &&
     preset.exploreSortType !== V1ExploreSortType.EXPLORE_SORT_TYPE_UNSPECIFIED

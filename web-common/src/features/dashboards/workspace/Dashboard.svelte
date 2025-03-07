@@ -31,6 +31,7 @@
   const {
     selectors: {
       measures: { visibleMeasures },
+      activeMeasure: { activeMeasureName },
       dimensions: { getDimensionByName },
       pivot: { showPivot },
       activeMeasure: { leaderboardMeasureCount },
@@ -229,6 +230,7 @@
           {:else}
             <LeaderboardDisplay
               {metricsViewName}
+              activeMeasureName={$activeMeasureName}
               {activeMeasureNames}
               {whereFilter}
               {dimensionThresholdFilters}

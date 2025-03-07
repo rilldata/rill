@@ -43,12 +43,12 @@ export const setContextColumn = (
   }
 };
 
-export const setContextColumnFilters = (
+export const setContextColumns = (
   { dashboard }: DashboardMutables,
-  contextColumnFilters: LeaderboardContextColumn[],
+  contextColumns: LeaderboardContextColumn[],
 ) => {
   // Validate filters
-  const validFilters = contextColumnFilters.filter((filter) => {
+  const validFilters = contextColumns.filter((filter) => {
     switch (filter) {
       case LeaderboardContextColumn.DELTA_ABSOLUTE:
       case LeaderboardContextColumn.DELTA_PERCENT:
@@ -60,7 +60,7 @@ export const setContextColumnFilters = (
   });
 
   // Update filters and reset widths
-  dashboard.leaderboardContextColumnFilters = validFilters;
+  dashboard.leaderboardContextColumns = validFilters;
   resetAllContextColumnWidths(dashboard.contextColumnWidths);
 };
 
@@ -100,7 +100,7 @@ export const contextColActions = {
    * Updates the dashboard to use the context column filters of the given type,
    * as well as updating to sort by that context column.
    */
-  setContextColumnFilters,
+  setContextColumns,
 
   /**
    * Observe this width value, updating the overall width of

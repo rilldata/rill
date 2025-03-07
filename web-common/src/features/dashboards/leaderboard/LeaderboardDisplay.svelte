@@ -14,7 +14,6 @@
     deltaColumn,
     valueColumn,
   } from "./leaderboard-widths";
-  import { cn } from "@rilldata/web-common/lib/shadcn";
 
   export let metricsViewName: string;
   export let whereFilter: V1Expression;
@@ -22,6 +21,7 @@
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
   export let timeControlsReady: boolean;
+  export let activeMeasureName: string;
   export let activeMeasureNames: string[];
 
   const StateManagers = getStateManagers();
@@ -33,7 +33,7 @@
       dimensions: { visibleDimensions },
       comparison: { isBeingCompared: isBeingComparedReadable },
       sorting: { sortedAscending, sortType, sortMeasure },
-      contextColumn: { contextColumnFilters },
+      contextColumn: { contextColumns },
       measures: { measureLabel },
     },
     actions: {
@@ -68,8 +68,6 @@
       : $isValidPercentOfTotal
         ? DEFAULT_COL_WIDTH
         : 0);
-
-  $: shouldDisplayLeaderboardsInColumn = activeMeasureNames.length > 2;
 </script>
 
 <div class="flex flex-col overflow-hidden size-full" aria-label="Leaderboards">
@@ -87,18 +85,14 @@
     }}
   >
     {#if parentElement}
-      <div
-        class={cn(
-          "flex flex-wrap gap-4 overflow-x-auto pb-4",
-          shouldDisplayLeaderboardsInColumn ? "flex-col" : "flex-row",
-        )}
-      >
+      <div class="leaderboard-grid overflow-hidden pb-4">
         {#each $visibleDimensions as dimension (dimension.name)}
           {#if dimension.name}
             <Leaderboard
               isValidPercentOfTotal={$isValidPercentOfTotal}
-              contextColumnFilters={$contextColumnFilters}
+              contextColumns={$contextColumns}
               {metricsViewName}
+              {activeMeasureName}
               {activeMeasureNames}
               {whereFilter}
               {dimensionThresholdFilters}
@@ -138,3 +132,9 @@
     {/if}
   </div>
 </div>
+
+<style lang="postcss">
+  .leaderboard-grid {
+    @apply flex flex-row flex-wrap gap-4 overflow-x-auto;
+  }
+</style>
