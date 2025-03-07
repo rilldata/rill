@@ -66,7 +66,6 @@ export interface MetricsExplorerEntity {
 
   /**
    * This is the number of measures to show in the leaderboard.
-   * If not set, defaults to 1.
    */
   leaderboardMeasureCount: number;
 

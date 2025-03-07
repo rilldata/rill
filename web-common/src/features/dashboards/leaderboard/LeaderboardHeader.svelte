@@ -96,8 +96,8 @@
       </Tooltip>
     </th>
 
-    {#each activeMeasureNames as measureName}
-      <th>
+    {#each activeMeasureNames as measureName, index (index)}
+      <th style:paddingLeft="1rem">
         <button
           aria-label="Toggle sort leaderboards by value"
           on:click={() => {

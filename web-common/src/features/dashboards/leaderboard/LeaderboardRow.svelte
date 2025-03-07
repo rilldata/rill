@@ -162,6 +162,7 @@
       : `linear-gradient(to right, ${barColor}
     ${Math.max(...Object.values(barLengths))}px, transparent ${Math.max(...Object.values(barLengths))}px)`;
 
+  // TODO: add spacing on the left side to the bg gradient
   $: secondCellGradients =
     activeMeasureNames.length === 1
       ? "bg-white"
@@ -292,9 +293,11 @@
   </td>
 
   {#each Object.keys(values) as measureName}
+    <!-- TODO: add padding left to the background -->
     <td
       data-second-cell
       style:background={secondCellGradients[measureName]}
+      style:paddingLeft="1rem"
       on:click={modified({
         shift: () => shiftClickHandler(values[measureName]?.toString() || ""),
       })}
@@ -419,9 +422,10 @@
     @apply p-0 bg-surface;
   }
 
-  /* td:nth-of-type(2) {
+  /* 
+  td:nth-of-type(3) {
     @apply sticky left-0 z-20;
-    background-color: white;
+    
   } */
 
   /* tr:hover td:nth-of-type(2) {

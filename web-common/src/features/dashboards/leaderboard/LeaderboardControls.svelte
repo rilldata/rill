@@ -14,10 +14,14 @@
   const StateManagers = getStateManagers();
   const {
     selectors: {
-      measures: { leaderboardMeasureName, getMeasureByName, visibleMeasures },
+      measures: {
+        leaderboardMeasureName,
+        leaderboardMeasureCount,
+        getMeasureByName,
+        visibleMeasures,
+      },
       dimensions: { visibleDimensions, allDimensions },
       contextColumn: { contextColumn, contextColumns },
-      activeMeasure: { leaderboardMeasureCount },
     },
     actions: {
       dimensions: { toggleDimensionVisibility },
@@ -26,7 +30,7 @@
     },
   } = StateManagers;
 
-  $: console.log("contextColumns: ", $contextColumns);
+  $: console.log("$leaderboardMeasureCount: ", $leaderboardMeasureCount);
 
   $: measures = getSimpleMeasures($visibleMeasures);
 
