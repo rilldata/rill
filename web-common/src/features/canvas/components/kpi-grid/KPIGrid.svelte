@@ -28,14 +28,16 @@
 </script>
 
 {#if schema.isValid}
-  <div class="grid-wrapper h-fit" style:--item-count={kpis.length}>
-    {#each kpis as kpi, i (i)}
-      <div
-        class="kpi-wrapper border-gray-200 size-full min-h-52 p-4 overflow-hidden"
-      >
-        <KPI rendererProperties={kpi} {timeAndFilterStore} />
-      </div>
-    {/each}
+  <div class="h-fit p-4 grow" style:--item-count={kpis.length}>
+    <div class="grid-wrapper gap-px overflow-hidden size-full min-h-32">
+      {#each kpis as kpi, i (i)}
+        <div
+          class="kpi-wrapper before:absolute before:top-full before:h-px before:w-full before:bg-gray-200 after:absolute after:left-full after:h-full after:w-px after:bg-gray-200"
+        >
+          <KPI rendererProperties={kpi} {timeAndFilterStore} />
+        </div>
+      {/each}
+    </div>
   </div>
 {:else}
   <ComponentError error={schema.error} />
@@ -44,57 +46,44 @@
 <style lang="postcss">
   .grid-wrapper {
     @apply size-full grid;
-    @apply px-0;
-    grid-template-columns: repeat(var(--item-count), 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
+    grid-auto-rows: auto;
   }
 
   .kpi-wrapper {
-    @apply w-full;
-    @apply border-r border-b;
-  }
-
-  .kpi-wrapper:last-of-type {
-    border-right-width: 0px;
-  }
-
-  .kpi-wrapper {
-    border-bottom-width: 0px;
+    @apply relative p-4 grid;
   }
 
   @container component-container (inline-size < 600px) {
+    .kpi-wrapper:nth-of-type(odd) {
+      padding-left: 0px;
+    }
+
+    .kpi-wrapper:nth-of-type(even) {
+      padding-right: 0px;
+    }
+
     .grid-wrapper {
       grid-template-columns: repeat(min(2, var(--item-count)), 1fr);
-    }
-
-    .kpi-wrapper {
-      border-bottom-width: 1px;
-    }
-
-    .kpi-wrapper:last-of-type,
-    .kpi-wrapper:nth-last-of-type(2):not(:nth-of-type(2)) {
-      border-bottom-width: 0px;
-    }
-
-    .kpi-wrapper:nth-child(2n) {
-      border-right-width: 0px;
-    }
-
-    .kpi-wrapper:nth-child(3) {
-      border-right-width: 1px;
     }
   }
 
   @container component-container (inline-size < 440px) {
+    .kpi-wrapper {
+      padding-left: 0px;
+      padding-right: 0px;
+    }
+
+    .kpi-wrapper:last-of-type {
+      padding-bottom: 0px;
+    }
+
+    .kpi-wrapper:first-of-type {
+      padding-top: 0px;
+    }
+
     .grid-wrapper {
       grid-template-columns: repeat(1, 1fr);
-    }
-
-    .kpi-wrapper {
-      border-right-width: 0px !important;
-    }
-
-    .kpi-wrapper:not(:last-of-type) {
-      border-bottom-width: 1px !important;
     }
   }
 </style>
