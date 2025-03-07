@@ -42,6 +42,10 @@
   $: resourceKind = meta?.name?.kind as ResourceKind | undefined;
   $: resourceName = meta?.name?.name ?? filePath?.split("/").pop();
 
+  $: withoutComponents = resources?.filter((r) => r?.meta?.name?.kind);
+
+  $: showDropdown = withoutComponents.length > 1;
+
   $: allRefs = resources?.map((r) => r?.meta?.refs).flat();
 
   $: upstreamResources = downstream
@@ -96,52 +100,58 @@
 {#if upstreamResources.length}
   <svelte:self resources={upstreamResources} {allResources} upstream />
 
-  <CaretDownIcon size="12px" className="text-gray-500 -rotate-90 flex-none" />
+  {#if showDropdown}
+    <CaretDownIcon size="12px" className="text-gray-500 -rotate-90 flex-none" />
+  {/if}
 {/if}
 
-<DropdownMenu.Root bind:open>
-  <DropdownMenu.Trigger asChild let:builder>
-    <svelte:element
-      this={dropdown ? "button" : "a"}
-      class:open
-      class="text-gray-500 px-[5px] py-1 w-full max-w-fit line-clamp-1"
-      class:selected={current}
-      href={dropdown
-        ? undefined
-        : exampleResource
-          ? `/files${exampleResource?.meta?.filePaths?.[0]}`
-          : "#"}
-      {...dropdown ? builder : {}}
-      use:builderActions={{ builders: dropdown ? [builder] : [] }}
-    >
-      <CrumbTrigger
-        {filePath}
-        kind={resourceKind}
-        label={!selectedResource && dropdown
-          ? generateLabel(resources)
-          : resourceName}
-      />
-    </svelte:element>
-  </DropdownMenu.Trigger>
+{#if showDropdown}
+  <DropdownMenu.Root bind:open>
+    <DropdownMenu.Trigger asChild let:builder>
+      <svelte:element
+        this={dropdown ? "button" : "a"}
+        class:open
+        class="text-gray-500 px-[5px] py-1 w-full max-w-fit line-clamp-1"
+        class:selected={current}
+        href={dropdown
+          ? undefined
+          : exampleResource
+            ? `/files${exampleResource?.meta?.filePaths?.[0]}`
+            : "#"}
+        {...dropdown ? builder : {}}
+        use:builderActions={{ builders: dropdown ? [builder] : [] }}
+      >
+        <CrumbTrigger
+          {filePath}
+          kind={resourceKind}
+          label={!selectedResource && dropdown
+            ? generateLabel(resources)
+            : resourceName}
+        />
+      </svelte:element>
+    </DropdownMenu.Trigger>
 
-  {#if dropdown}
-    <DropdownMenu.Content align="start">
-      {#each resources as resource (resource?.meta?.name?.name)}
-        {@const kind = resource?.meta?.name?.kind}
-        <DropdownMenu.Item href="/files{resource?.meta?.filePaths?.[0] ?? '/'}">
-          {#if kind}
-            <svelte:component
-              this={resourceIconMapping[kind]}
-              color={resourceColorMapping[kind]}
-              size="14px"
-            />
-          {/if}
-          {resource?.meta?.name?.name}
-        </DropdownMenu.Item>
-      {/each}
-    </DropdownMenu.Content>
-  {/if}
-</DropdownMenu.Root>
+    {#if dropdown}
+      <DropdownMenu.Content align="start">
+        {#each withoutComponents as resource (resource?.meta?.name?.name)}
+          {@const kind = resource?.meta?.name?.kind}
+          <DropdownMenu.Item
+            href="/files{resource?.meta?.filePaths?.[0] ?? '/'}"
+          >
+            {#if kind}
+              <svelte:component
+                this={resourceIconMapping[kind]}
+                color={resourceColorMapping[kind]}
+                size="14px"
+              />
+            {/if}
+            {resource?.meta?.name?.name}
+          </DropdownMenu.Item>
+        {/each}
+      </DropdownMenu.Content>
+    {/if}
+  </DropdownMenu.Root>
+{/if}
 
 {#if downstreamResources.length}
   <CaretDownIcon size="12px" className="text-gray-500 -rotate-90 flex-none" />
