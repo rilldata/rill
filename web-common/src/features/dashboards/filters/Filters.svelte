@@ -119,8 +119,6 @@
     (dimension) => (dimension.name || dimension.column) as string,
   );
 
-  $: console.log({ selectedTimeRange });
-
   $: measures = $allMeasures;
   $: measureIdMap = getMapFromArray(measures, (m) => m.name as string);
 
@@ -323,7 +321,7 @@
           {interval}
           context={$exploreName}
           {timeStart}
-          lockTimeZone={exploreSpec.lockTimeZone}
+          lockTimeZone={exploreSpec.LockTimeZone}
           {timeEnd}
           {activeTimeGrain}
           {activeTimeZone}

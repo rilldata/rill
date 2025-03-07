@@ -1,10 +1,3 @@
-<script context="module" lang="ts">
-  type ExploreName = string;
-  type SearchParams = string;
-
-  export const lastVisitedState = new Map<ExploreName, SearchParams>();
-</script>
-
 <script lang="ts">
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import PivotDisplay from "@rilldata/web-common/features/dashboards/pivot/PivotDisplay.svelte";
@@ -27,8 +20,6 @@
   import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
   import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
   import { onMount, tick } from "svelte";
-  import { page } from "$app/stores";
-  import { goto, beforeNavigate } from "$app/navigation";
 
   export let exploreName: string;
   export let metricsViewName: string;
@@ -53,8 +44,6 @@
   const { cloudDataViewer, readOnly } = featureFlags;
 
   let exploreContainerWidth: number;
-
-  $: url = $page.url;
 
   $: ({ instanceId } = $runtime);
 
@@ -112,12 +101,6 @@
 
   // Hacky solution to ensure that the embed public API is initialized after the dashboard is fully loaded
   onMount(async () => {
-    console.log(lastVisitedState);
-    const url = lastVisitedState.get(exploreName);
-
-    console.log({ url, exploreName });
-
-    if (url) await goto(url);
     if (isEmbedded) {
       initEmbedPublicAPI = (
         await import(
@@ -135,12 +118,6 @@
       console.error("Error running initEmbedPublicAPI:", error);
     }
   }
-
-  beforeNavigate((e) => {
-    if (e.from !== url) return;
-    console.log("SERCH", exploreName, url.search);
-    lastVisitedState.set(exploreName, url.search);
-  });
 </script>
 
 <article
