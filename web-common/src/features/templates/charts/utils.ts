@@ -27,7 +27,7 @@ export function sanitizeValueForVega(value: unknown) {
   if (typeof value === "string") {
     // Escape all special characters including quotes, brackets, operators, etc.
     return value.replace(
-      /[!@#$%^&*()+=\-[\]\\';,./{}|":<>?~_]/g,
+      /[!@#$%^&*()+=\-[\]\\';,./{}|:<>?~]/g,
       (match) => `\\${match}`,
     );
   } else {
