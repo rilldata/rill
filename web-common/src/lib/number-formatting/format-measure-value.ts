@@ -23,6 +23,11 @@ import {
 } from "./strategies/intervals";
 import { PerRangeFormatter } from "./strategies/per-range";
 import {
+  axisCurrencyOptions,
+  axisDefaultFormattingOptions,
+  axisPercentOptions,
+} from "./strategies/per-range-axis-options";
+import {
   bigNumCurrencyOptions,
   bigNumDefaultFormattingOptions,
   bigNumPercentOptions,
@@ -71,6 +76,13 @@ function humanizeDataType(
       currencyEur: bigNumCurrencyOptions(NumberKind.EURO),
       percent: bigNumPercentOptions,
       humanize: bigNumDefaultFormattingOptions,
+    },
+    axis: {
+      none: axisDefaultFormattingOptions,
+      currencyUsd: axisCurrencyOptions(NumberKind.DOLLAR),
+      currencyEur: axisCurrencyOptions(NumberKind.EURO),
+      percent: axisPercentOptions,
+      humanize: axisDefaultFormattingOptions,
     },
     table: {
       none: defaultNoFormattingOptions,
@@ -156,6 +168,7 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
 ): (value: number | string | T) => string | T {
   const useUnabridged = type === "unabridged";
   const isBigNumber = type === "big-number";
+  const isAxis = type === "axis";
   const isTooltip = type === "tooltip";
 
   let humanizer: (value: number, type: FormatPreset) => string;
@@ -195,8 +208,8 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
       return (value: number | string | T) => {
         if (typeof value !== "number") return value;
 
-        // For the Big Number and Tooltips, override the d3formatter
-        if (isBigNumber || isTooltip) {
+        // For the Big Number, Axis and Tooltips, override the d3formatter
+        if (isBigNumber || isTooltip || isAxis) {
           if (hasCurrencySymbol) {
             if (isValidLocale && measureSpec?.formatD3Locale?.currency) {
               const currency = measureSpec.formatD3Locale.currency as [
@@ -232,7 +245,7 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
       ? (measureSpec.formatPreset as FormatPreset)
       : FormatPreset.NONE;
 
-  if (isBigNumber && formatPreset === FormatPreset.NONE) {
+  if ((isAxis || isBigNumber) && formatPreset === FormatPreset.NONE) {
     formatPreset = FormatPreset.HUMANIZE;
   }
 

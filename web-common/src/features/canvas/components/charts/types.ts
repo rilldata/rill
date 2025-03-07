@@ -9,6 +9,7 @@ export interface FieldConfig {
   type: "quantitative" | "ordinal" | "nominal" | "temporal";
   timeUnit?: string; // For temporal fields
   sort?: ChartSortDirection;
+  limit?: number;
 }
 
 export interface ChartConfig {
