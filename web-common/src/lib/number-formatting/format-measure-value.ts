@@ -208,7 +208,7 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
       return (value: number | string | T) => {
         if (typeof value !== "number") return value;
 
-        // For the Big Number and Tooltips, override the d3formatter
+        // For the Big Number, Axis and Tooltips, override the d3formatter
         if (isBigNumber || isTooltip || isAxis) {
           if (hasCurrencySymbol) {
             if (isValidLocale && measureSpec?.formatD3Locale?.currency) {

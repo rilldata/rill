@@ -36,7 +36,6 @@ export const axisDefaultFormattingOptions: FormatterOptionsCommon &
   numberKind: NumberKind.ANY,
   rangeSpecs: axisRangeSpec,
   defaultMaxDigitsRight: 0,
-  padWithInsignificantZeros: false,
 };
 
 export const axisPercentOptions: FormatterOptionsCommon &
