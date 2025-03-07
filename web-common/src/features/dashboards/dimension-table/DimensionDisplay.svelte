@@ -123,7 +123,6 @@
     activeMeasureNames[0],
     dimensionName,
     !!comparisonTimeRange,
-    $sortMeasure,
   );
 
   $: where = sanitiseExpression(
@@ -216,7 +215,6 @@
         {hideStartPivotButton}
         bind:searchText={$dimensionSearchText}
         onToggleSearchItems={toggleAllSearchItems}
-        {comparisonTimeRange}
       />
     </div>
 
