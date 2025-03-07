@@ -44,7 +44,7 @@
 
   $: withoutComponents = resources?.filter((r) => !r?.component);
 
-  $: showDropdown = withoutComponents.length > 1;
+  $: showDropdown = withoutComponents.length > 0;
 
   $: allRefs = resources?.map((r) => r?.meta?.refs).flat();
 
