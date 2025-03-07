@@ -13,19 +13,19 @@ import (
 )
 
 type ExploreYAML struct {
-	commonYAML  `yaml:",inline"`       // Not accessed here, only setting it so we can use KnownFields for YAML parsing
-	DisplayName string                 `yaml:"display_name"`
-	Title       string                 `yaml:"title"` // Deprecated: use display_name
-	Description string                 `yaml:"description"`
-	Banner      string                 `yaml:"banner"`
-	MetricsView string                 `yaml:"metrics_view"`
-	Dimensions  *FieldSelectorYAML     `yaml:"dimensions"`
-	Measures    *FieldSelectorYAML     `yaml:"measures"`
-	Theme       yaml.Node              `yaml:"theme"` // Name (string) or inline theme definition (map)
-	TimeRanges  []ExploreTimeRangeYAML `yaml:"time_ranges"`
-	TimeZones   []string               `yaml:"time_zones"` // Single time zone or list of time zones
-	LockTimeZone bool                  `yaml:"lock_time_zone"`
-	Defaults    *struct {
+	commonYAML   `yaml:",inline"`       // Not accessed here, only setting it so we can use KnownFields for YAML parsing
+	DisplayName  string                 `yaml:"display_name"`
+	Title        string                 `yaml:"title"` // Deprecated: use display_name
+	Description  string                 `yaml:"description"`
+	Banner       string                 `yaml:"banner"`
+	MetricsView  string                 `yaml:"metrics_view"`
+	Dimensions   *FieldSelectorYAML     `yaml:"dimensions"`
+	Measures     *FieldSelectorYAML     `yaml:"measures"`
+	Theme        yaml.Node              `yaml:"theme"` // Name (string) or inline theme definition (map)
+	TimeRanges   []ExploreTimeRangeYAML `yaml:"time_ranges"`
+	TimeZones    []string               `yaml:"time_zones"` // Single time zone or list of time zones
+	LockTimeZone bool                   `yaml:"lock_time_zone"`
+	Defaults     *struct {
 		Dimensions          *FieldSelectorYAML `yaml:"dimensions"`
 		Measures            *FieldSelectorYAML `yaml:"measures"`
 		TimeRange           string             `yaml:"time_range"`

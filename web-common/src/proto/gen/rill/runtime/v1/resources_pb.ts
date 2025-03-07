@@ -2314,9 +2314,9 @@ export class ExploreSpec extends Message<ExploreSpec> {
   /**
    * When set to true, dashboard will be locked to the first time zone in the time_zones key (or UTC)
    *
-   * @generated from field: bool LockTimeZone = 19;
+   * @generated from field: bool lock_time_zone = 19;
    */
-  LockTimeZone = false;
+  lockTimeZone = false;
 
   constructor(data?: PartialMessage<ExploreSpec>) {
     super();
@@ -2341,7 +2341,7 @@ export class ExploreSpec extends Message<ExploreSpec> {
     { no: 16, name: "embeds_hide_pivot", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 12, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
     { no: 18, name: "banner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 19, name: "LockTimeZone", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 19, name: "lock_time_zone", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExploreSpec {
