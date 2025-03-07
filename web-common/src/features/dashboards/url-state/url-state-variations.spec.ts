@@ -53,7 +53,6 @@ import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/featu
 
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
-import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import {
   type DashboardTimeControls,
   TimeComparisonOption,
@@ -65,7 +64,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { deepClone } from "@vitest/utils";
 import { get } from "svelte/store";
-import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ALL_TIME_RANGE_ALIAS } from "../time-controls/new-time-controls";
 
 vi.stubEnv("TZ", "UTC");
@@ -348,10 +347,6 @@ const TestCases: {
 ];
 
 describe("Human readable URL state variations", () => {
-  beforeAll(() => {
-    initLocalUserPreferenceStore(AD_BIDS_EXPLORE_NAME);
-  });
-
   beforeEach(() => {
     sessionStorage.clear();
     metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
@@ -371,6 +366,7 @@ describe("Human readable URL state variations", () => {
             AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
             explore,
             AD_BIDS_TIME_RANGE_SUMMARY,
+            AD_BIDS_EXPLORE_NAME,
           ),
         );
         const initState = getCleanMetricsExploreForAssertion();
@@ -378,6 +374,7 @@ describe("Human readable URL state variations", () => {
           explore,
           AD_BIDS_METRICS_INIT,
           AD_BIDS_TIME_RANGE_SUMMARY,
+          AD_BIDS_EXPLORE_NAME,
         );
 
         applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
@@ -427,12 +424,14 @@ describe("Human readable URL state variations", () => {
             AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
             explore,
             AD_BIDS_TIME_RANGE_SUMMARY,
+            AD_BIDS_EXPLORE_NAME,
           ),
         );
         const defaultExplorePreset = getDefaultExplorePreset(
           explore,
           AD_BIDS_METRICS_INIT,
           AD_BIDS_TIME_RANGE_SUMMARY,
+          AD_BIDS_EXPLORE_NAME,
         );
 
         const initState = getCleanMetricsExploreForAssertion();
@@ -476,12 +475,14 @@ describe("Human readable URL state variations", () => {
         AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
         AD_BIDS_EXPLORE_INIT,
         AD_BIDS_TIME_RANGE_SUMMARY,
+        AD_BIDS_EXPLORE_NAME,
       ),
     );
     const defaultExplorePreset = getDefaultExplorePreset(
       AD_BIDS_EXPLORE_INIT,
       AD_BIDS_METRICS_INIT,
       AD_BIDS_TIME_RANGE_SUMMARY,
+      AD_BIDS_EXPLORE_NAME,
     );
 
     applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, [

@@ -56,6 +56,7 @@
     exploreSpec,
     metricsViewSpec,
     $metricsViewTimeRange.data,
+    exploreName,
   );
   $: schemaResp = createQueryServiceMetricsViewSchema(
     instanceId,

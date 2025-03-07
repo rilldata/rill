@@ -17,13 +17,9 @@ import {
   applyURLToExploreState,
   getCleanMetricsExploreForAssertion,
 } from "@rilldata/web-common/features/dashboards/url-state/url-state-variations.spec";
-import {
-  getLocalUserPreferences,
-  initLocalUserPreferenceStore,
-} from "@rilldata/web-common/features/dashboards/user-preferences";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 const TestCases: {
   title: string;
@@ -136,17 +132,8 @@ Unexpected " ".`,
 ];
 
 describe("Invalid Human readable URL State", () => {
-  beforeAll(() => {
-    initLocalUserPreferenceStore(AD_BIDS_EXPLORE_NAME);
-  });
-
   beforeEach(() => {
     metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
-    getLocalUserPreferences().updateTimeZone("UTC");
-    localStorage.setItem(
-      `${AD_BIDS_EXPLORE_NAME}-userPreference`,
-      `{"timezone":"UTC"}`,
-    );
   });
 
   for (const { title, url, errors, entity } of TestCases) {
@@ -157,6 +144,7 @@ describe("Invalid Human readable URL State", () => {
           AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
           AD_BIDS_EXPLORE_INIT,
           AD_BIDS_TIME_RANGE_SUMMARY,
+          AD_BIDS_EXPLORE_NAME,
         ),
       );
       const initState = getCleanMetricsExploreForAssertion();
@@ -164,6 +152,7 @@ describe("Invalid Human readable URL State", () => {
         AD_BIDS_EXPLORE_INIT,
         AD_BIDS_METRICS_INIT,
         AD_BIDS_TIME_RANGE_SUMMARY,
+        AD_BIDS_EXPLORE_NAME,
       );
 
       const errorsFromUrl = applyURLToExploreState(

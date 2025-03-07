@@ -16,7 +16,6 @@
     deriveInterval,
   } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls";
   import SuperPill from "@rilldata/web-common/features/dashboards/time-controls/super-pill/SuperPill.svelte";
-  import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
   import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
@@ -100,8 +99,6 @@
         DateTime.fromJSDate(selectedTimeRange.end).setZone($selectedTimezone),
       )
     : Interval.fromDateTimes($allTimeRange.start, $allTimeRange.end);
-
-  $: localUserPreferences = initLocalUserPreferenceStore($canvasName);
 
   $: dimensionIdMap = getMapFromArray(
     $allDimensions,
@@ -214,7 +211,7 @@
     if (includesTimeZoneOffset) {
       const timeZone = name.match(/@ {(.*)}/)?.[1];
 
-      if (timeZone) setTimeZone(timeZone);
+      if (timeZone) setTimeZone(timeZone, $canvasName);
     }
 
     const interval = deriveInterval(
@@ -260,8 +257,7 @@
       });
     }
 
-    setTimeZone(timeZone);
-    localUserPreferences.set({ timeZone });
+    setTimeZone(timeZone, $canvasName);
   }
 
   onMount(() => {

@@ -15,6 +15,7 @@ import { describe, expect, it } from "vitest";
 import {
   AD_BIDS_ADVANCED_MEASURES,
   AD_BIDS_EXPLORE_INIT,
+  AD_BIDS_EXPLORE_NAME,
   AD_BIDS_IMPRESSIONS_MEASURE,
   AD_BIDS_IMPRESSIONS_MEASURE_DAY_GRAIN,
   AD_BIDS_IMPRESSIONS_MEASURE_NO_GRAIN,
@@ -72,7 +73,7 @@ describe("AdvancedMeasureCorrector", () => {
   it("metrics view spec changed converting a measure to an advanced measure", () => {
     const dashboard = getFullInitExploreState(
       "AdBids",
-      getInitExploreStateForTest(MetricsView, Explore),
+      getInitExploreStateForTest(MetricsView, Explore, AD_BIDS_EXPLORE_NAME),
     );
     dashboard.leaderboardMeasureName = AD_BIDS_IMPRESSIONS_MEASURE;
     dashboard.dimensionThresholdFilters = [

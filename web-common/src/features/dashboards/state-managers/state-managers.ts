@@ -4,7 +4,6 @@ import {
   contextColWidthDefaults,
 } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
-import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import {
   type ExploreValidSpecResponse,
   useExploreValidSpec,
@@ -129,6 +128,7 @@ export function createStateManagers({
     callback: (metricsExplorer: MetricsExplorerEntity) => void,
   ) => {
     const name = get(dashboardStore).name;
+
     // TODO: Remove dependency on MetricsExplorerStore singleton and its exports
     updateMetricsExplorerByName(name, callback);
   };
@@ -147,11 +147,10 @@ export function createStateManagers({
         validSpec.data?.explore ?? {},
         validSpec.data.metricsView ?? {},
         timeRangeSummary.data,
+        exploreName,
       );
     },
   );
-
-  initLocalUserPreferenceStore(exploreName);
 
   return {
     runtime: runtime,

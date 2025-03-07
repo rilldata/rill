@@ -13,25 +13,30 @@
   class="flex items-baseline text-xs w-full cursor-pointer justify-between overflow-hidden"
 >
   <div class="flex gap-x-1 w-full overflow-hidden items-baseline">
-    <p class="truncate font-normal" class:!font-bold={selected}>
+    {#if abbreviation}
+      <p class="w-12 truncate overflow-hidden">
+        {abbreviation}
+      </p>
+    {/if}
+
+    <p class="truncate font-normal">
       {#if isBrowserTime}
         Browser Time
       {:else}
         {iana}
       {/if}
     </p>
-
-    {#if abbreviation}
-      <p class="min-w-12 max-w-12 text-[10px]">
-        {abbreviation}
-      </p>
-    {/if}
   </div>
 
   <span
-    class="self-end italic line-clamp-1 w-fit flex-none text-xs"
-    class:!font-semibold={selected}
+    class="self-end text-slate-500 rounded-sm line-clamp-1 w-fit flex-none text-[11px]"
   >
     {offset}
   </span>
 </div>
+
+<style>
+  span {
+    font-family: "Source Code Variable";
+  }
+</style>

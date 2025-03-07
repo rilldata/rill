@@ -138,8 +138,8 @@ export const TestTimeOffsetConstants = {
   LAST_DAY: getOffsetByHour(TestTimeConstants.LAST_DAY),
 };
 export const AD_BIDS_DEFAULT_TIME_RANGE = {
-  name: TimeRangePreset.ALL_TIME,
-  interval: V1TimeGrain.TIME_GRAIN_HOUR,
+  name: TimeRangePreset.QUARTER_TO_DATE,
+  interval: V1TimeGrain.TIME_GRAIN_WEEK,
   start: TestTimeConstants.LAST_DAY,
   end: new Date(TestTimeConstants.NOW.getTime() + 1),
 };
@@ -147,6 +147,7 @@ export const AD_BIDS_DEFAULT_URL_TIME_RANGE = {
   name: TimeRangePreset.ALL_TIME,
   interval: V1TimeGrain.TIME_GRAIN_HOUR,
 };
+
 export const AD_BIDS_TIME_RANGE_SUMMARY: V1MetricsViewTimeRangeResponse = {
   timeRangeSummary: {
     min: TestTimeConstants.LAST_DAY.toISOString(),
@@ -266,6 +267,7 @@ export const AD_BIDS_BASE_PRESET = getDefaultExplorePreset(
   AD_BIDS_EXPLORE_INIT,
   AD_BIDS_METRICS_INIT,
   undefined,
+  AD_BIDS_EXPLORE_NAME,
 );
 
 export const AD_BIDS_SCHEMA: V1StructType = {
@@ -334,8 +336,8 @@ export const AD_BIDS_CLEARED_FILTER = createAndExpression([
 
 // parsed time controls won't have start & end
 export const ALL_TIME_PARSED_TEST_CONTROLS = {
-  name: TimeRangePreset.ALL_TIME,
-  interval: V1TimeGrain.TIME_GRAIN_HOUR,
+  name: TimeRangePreset.QUARTER_TO_DATE,
+  interval: V1TimeGrain.TIME_GRAIN_WEEK,
 } as DashboardTimeControls;
 
 export const LAST_6_HOURS_TEST_CONTROLS = {

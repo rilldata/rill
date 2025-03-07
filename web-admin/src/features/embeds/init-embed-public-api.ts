@@ -19,12 +19,14 @@ import {
 export default function initEmbedPublicAPI(instanceId: string): () => void {
   const {
     metricsViewName,
+    exploreName,
     validSpecStore,
     dashboardStore,
     timeRangeSummaryStore,
   } = getStateManagers();
 
   const metricsViewNameValue = get(metricsViewName);
+  const exploreNameValue = get(exploreName);
   const metricsViewTimeRange = useMetricsViewTimeRange(
     instanceId,
     metricsViewNameValue,
@@ -50,6 +52,7 @@ export default function initEmbedPublicAPI(instanceId: string): () => void {
         exploreSpec,
         metricsViewSpec,
         $metricsViewTimeRange?.data,
+        exploreNameValue,
       );
 
       let timeControlsState: TimeControlState | undefined = undefined;
@@ -92,6 +95,7 @@ export default function initEmbedPublicAPI(instanceId: string): () => void {
       exploreSpec,
       metricsViewSpec,
       metricsTime?.data,
+      exploreNameValue,
     );
 
     let timeControlsState: TimeControlState | undefined = undefined;

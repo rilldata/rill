@@ -254,6 +254,7 @@
     if (!exploreSpec) return;
 
     const u = new URL($page.url);
+
     u.search = convertExploreStateToURLSearchParams(
       $dashboardStore,
       exploreSpec,

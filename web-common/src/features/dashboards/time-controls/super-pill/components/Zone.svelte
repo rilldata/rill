@@ -12,6 +12,18 @@
   import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
   import type { DateTime } from "luxon";
 
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import {
+    ArrowUpCircle,
+    Computer,
+    HardDrive,
+    Save,
+    SaveIcon,
+  } from "lucide-svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { CheckboxItem } from "@rilldata/web-common/components/context-menu";
+
   const browserIANA = getLocalIANA();
 
   // watermark indicates the latest reference point in the dashboard
@@ -48,6 +60,11 @@
       ),
     );
   }
+
+  $: localTimeZonePreference = localStorageStore(
+    `${context}-tz`,
+    availableTimeZones[0],
+  );
 </script>
 
 <DropdownMenu.Root bind:open typeahead={false}>
@@ -70,13 +87,32 @@
   </DropdownMenu.Trigger>
 
   <DropdownMenu.Content align="start" class="w-80 ">
-    <div class="p-1.5 pb-1">
+    <div class="p-1.5 pb-1 flex items-center gap-x-2">
       <Search bind:value={searchValue} autofocus={false} />
     </div>
 
+    {#if !pinnedTimeZones.has(activeTimeZone) && !recentIANAs.includes(activeTimeZone)}
+      <DropdownMenu.Group>
+        {@const formatted = ianaMap.get(activeTimeZone)}
+        {#if formatted}
+          <DropdownMenu.Item>
+            <ZoneDisplay
+              abbreviation={formatted.abbreviation}
+              offset={formatted.offset}
+              selected
+              iana={activeTimeZone}
+            />
+          </DropdownMenu.Item>
+        {/if}
+      </DropdownMenu.Group>
+      <DropdownMenu.Separator />
+    {/if}
+
     <DropdownMenu.Group>
       {#each filteredPinnedTimeZones as [iana, { offset, abbreviation }] (iana)}
-        <DropdownMenu.Item
+        <DropdownMenu.CheckboxItem
+          checkRight
+          checked={activeTimeZone === iana}
           on:click={() => {
             onSelectTimeZone(iana);
           }}
@@ -88,34 +124,31 @@
             isBrowserTime={iana === browserIANA}
             {iana}
           />
-        </DropdownMenu.Item>
+        </DropdownMenu.CheckboxItem>
       {/each}
     </DropdownMenu.Group>
 
-    {#if !searchValue && (recentIANAs.length || (activeTimeZone && !pinnedTimeZones.has(activeTimeZone) && !recentIANAs.includes(activeTimeZone)))}
+    {#if !searchValue && recentIANAs.length}
       <DropdownMenu.Separator />
 
       <DropdownMenu.Group>
-        <DropdownMenu.Label>Recent</DropdownMenu.Label>
-
-        {#if !pinnedTimeZones.has(activeTimeZone) && !recentIANAs.includes(activeTimeZone)}
-          {@const formatted = ianaMap.get(activeTimeZone)}
-          {#if formatted}
-            <DropdownMenu.Item>
-              <ZoneDisplay
-                abbreviation={formatted.abbreviation}
-                offset={formatted.offset}
-                selected
-                iana={activeTimeZone}
-              />
-            </DropdownMenu.Item>
+        <div class="flex justify-between pr-2">
+          <DropdownMenu.Label>Recent</DropdownMenu.Label>
+          {#if recentIANAs.length}
+            <button
+              on:click={() => {
+                recents.set([]);
+              }}
+              class="text-[10px] text-gray-500">Clear recents</button
+            >
           {/if}
-        {/if}
+        </div>
 
         {#each recentIANAs as iana, i (i)}
           {@const formatted = ianaMap.get(iana)}
           {#if formatted && !availableTimeZones.includes(iana) && iana !== browserIANA}
-            <DropdownMenu.Item
+            <DropdownMenu.CheckboxItem
+              checkRight
               on:click={() => {
                 onSelectTimeZone(iana);
               }}
@@ -126,7 +159,7 @@
                 selected={activeTimeZone === iana}
                 {iana}
               />
-            </DropdownMenu.Item>
+            </DropdownMenu.CheckboxItem>
           {/if}
         {/each}
       </DropdownMenu.Group>
@@ -143,7 +176,8 @@
         </DropdownMenu.Label>
 
         {#each filteredTimeZones as [iana, { abbreviation, offset }], i (i)}
-          <DropdownMenu.Item
+          <DropdownMenu.CheckboxItem
+            checkRight
             on:click={() => {
               onSelectTimeZone(iana);
               recents.set(Array.from(new Set([iana, ...$recents])).slice(0, 5));
@@ -155,7 +189,7 @@
               {abbreviation}
               selected={activeTimeZone === iana}
             />
-          </DropdownMenu.Item>
+          </DropdownMenu.CheckboxItem>
         {:else}
           <DropdownMenu.Group>
             <p class="pt-0 pb-2 text-gray-500 text-center">No options found</p>
@@ -163,5 +197,29 @@
         {/each}
       </DropdownMenu.Group>
     {/if}
+
+    <!-- <footer
+      class="px-3 overflow-hidden justify-between flex items-center h-10 text-gray-600 border-t -m-1.5 mt-1 bg-slate-100"
+    >
+      Default:
+      {$localTimeZonePreference}
+      {#if activeTimeZone !== $localTimeZonePreference}
+        <Tooltip distance={8} activeDelay={600}>
+          <Button
+            square
+            type="text"
+            on:click={() => {
+              localTimeZonePreference.set(activeTimeZone);
+            }}
+          >
+            Make selected my default timezone
+            <Arrow size="14px" />
+          </Button>
+          <TooltipContent slot="tooltip-content">
+            Set {activeTimeZone} as the default timezone
+          </TooltipContent>
+        </Tooltip>
+      {/if}
+    </footer> -->
   </DropdownMenu.Content>
 </DropdownMenu.Root>
