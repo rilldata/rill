@@ -97,7 +97,7 @@
     </th>
 
     {#each activeMeasureNames as measureName, index (index)}
-      <th style:paddingLeft="1rem">
+      <th>
         <button
           aria-label="Toggle sort leaderboards by value"
           on:click={() => {
