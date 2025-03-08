@@ -362,6 +362,7 @@ require (
 	github.com/skeema/knownhosts v1.3.1 // indirect
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966 // indirect
 	github.com/spf13/cast v1.5.1 // indirect
+	github.com/testcontainers/testcontainers-go/modules/azurite v0.35.0 // indirect
 	github.com/theupdateframework/notary v0.7.0 // indirect
 	github.com/tidwall/gjson v1.14.4 // indirect
 	github.com/tidwall/match v1.1.1 // indirect

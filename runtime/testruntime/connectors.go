@@ -9,10 +9,12 @@ import (
 	goruntime "runtime"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/joho/godotenv"
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/modules/azurite"
 	"github.com/testcontainers/testcontainers-go/modules/clickhouse"
 	"github.com/testcontainers/testcontainers-go/modules/mysql"
 )
@@ -172,4 +174,75 @@ var Connectors = map[string]ConnectorAcquireFunc{
 
 		return map[string]string{"dsn": dsn, "ip": ip}
 	},
+	"azure": func(t TestingT) map[string]string {
+		ctx := context.Background()
+		azuriteContainer, err := azurite.Run(
+			ctx,
+			"mcr.microsoft.com/azure-storage/azurite:3.34.0",
+			azurite.WithInMemoryPersistence(64),
+		)
+		t.Cleanup(func() {
+			err := testcontainers.TerminateContainer(azuriteContainer)
+			require.NoError(t, err)
+		})
+		require.NoError(t, err)
+
+		blobServiceURL := fmt.Sprintf("%s/%s", azuriteContainer.MustServiceURL(ctx, azurite.BlobService), azurite.AccountName)
+
+		cred, err := azblob.NewSharedKeyCredential(azurite.AccountName, azurite.AccountKey)
+		require.NoError(t, err)
+		client, err := azblob.NewClientWithSharedKeyCredential(blobServiceURL, cred, nil)
+		require.NoError(t, err)
+		containerName := "integration-test"
+		_, err = client.CreateContainer(ctx, containerName, nil)
+		require.NoError(t, err)
+
+		_, currentFile, _, _ := goruntime.Caller(0)
+		testdataPath := filepath.Join(currentFile, "..", "testdata")
+		azureInitData := filepath.Join(testdataPath, "init_data", "azure")
+		uploadDirectory(ctx, client, containerName, azureInitData)
+
+		connectionString := fmt.Sprintf("DefaultEndpointsProtocol=http;AccountName=%s;AccountKey=%s;BlobEndpoint=%s;", azurite.AccountName, azurite.AccountKey, blobServiceURL)
+
+		ip, err := azuriteContainer.ContainerIP(context.Background())
+		require.NoError(t, err)
+		blobEndpointWithIp := fmt.Sprintf("http://%s:%d/%s", ip, 10000, azurite.AccountName)
+
+		connectionStringWithIp := fmt.Sprintf("DefaultEndpointsProtocol=http;AccountName=%s;AccountKey=%s;BlobEndpoint=%s;", azurite.AccountName, azurite.AccountKey, blobEndpointWithIp)
+
+		return map[string]string{
+			"azure_storage_connection_string":    connectionString,
+			"azure_storage_connection_string_ip": connectionStringWithIp,
+		}
+	},
+}
+
+func uploadDirectory(ctx context.Context, client *azblob.Client, containerName, localDir string) error {
+	return filepath.WalkDir(localDir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		file, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+
+		// Get relative path for blob name (preserving directory structure)
+		blobName, err := filepath.Rel(localDir, path)
+		if err != nil {
+			return err
+		}
+
+		_, err = client.UploadFile(ctx, containerName, blobName, file, nil)
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf("Uploaded: %s\n", blobName)
+		return nil
+	})
 }

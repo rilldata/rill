@@ -2291,6 +2291,8 @@ github.com/tchap/go-patricia v2.2.6+incompatible/go.mod h1:bmLyhP68RS6kStMGxByiQ
 github.com/testcontainers/testcontainers-go v0.14.0/go.mod h1:hSRGJ1G8Q5Bw2gXgPulJOLlEBaYJHeBSOkQM5JLG+JQ=
 github.com/testcontainers/testcontainers-go v0.35.0 h1:uADsZpTKFAtp8SLK+hMwSaa+X+JiERHtd4sQAFmXeMo=
 github.com/testcontainers/testcontainers-go v0.35.0/go.mod h1:oEVBj5zrfJTrgjwONs1SsRbnBtH9OKl+IGl3UMcr2B4=
+github.com/testcontainers/testcontainers-go/modules/azurite v0.35.0 h1:gUZ25e1DVE/0+ZZ0nupsIo+C1j7UNloN7Pkg3w6tceI=
+github.com/testcontainers/testcontainers-go/modules/azurite v0.35.0/go.mod h1:2Fc67EpyOEexLAF99zhSuzu9H22zd83pkjxEHHTtHf4=
 github.com/testcontainers/testcontainers-go/modules/clickhouse v0.33.0 h1:YbB5DBkpgY+GlGPFqTSV1hzWPm3ZHirEyooZrj+ZXK0=
 github.com/testcontainers/testcontainers-go/modules/clickhouse v0.33.0/go.mod h1:qJuMPl9yWIWasmdBILM2uDk1Ny1kdeigcKMJ6A8PZz0=
 github.com/testcontainers/testcontainers-go/modules/compose v0.33.0 h1:PyrUOF+zG+xrS3p+FesyVxMI+9U+7pwhZhyFozH3jKY=
