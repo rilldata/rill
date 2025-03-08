@@ -35,7 +35,7 @@ export const leaderboardMeasureName = ({ dashboard }: DashboardDataSources) => {
 export const leaderboardMeasureCount = ({
   dashboard,
 }: DashboardDataSources) => {
-  return dashboard.leaderboardMeasureCount;
+  return dashboard.leaderboardMeasureCount ?? 1;
 };
 
 export const visibleMeasures = ({
