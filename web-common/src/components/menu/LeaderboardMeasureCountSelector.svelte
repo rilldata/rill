@@ -1,7 +1,4 @@
 <script lang="ts">
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { fly } from "svelte/transition";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
   import IconButton from "../button/IconButton.svelte";
