@@ -3,13 +3,16 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { SortType } from "../proto-state/derived-types";
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
-  import Delta from "@rilldata/web-common/components/icons/Delta.svelte";
-  import PieChart from "@rilldata/web-common/components/icons/PieChart.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import DimensionCompareMenu from "./DimensionCompareMenu.svelte";
+  import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
+  import DeltaChangePercentage from "../dimension-table/DeltaChangePercentage.svelte";
+  import DeltaChange from "../dimension-table/DeltaChange.svelte";
+  import PercentOfTotal from "../dimension-table/PercentOfTotal.svelte";
+  import { fly } from "svelte/transition";
 
   export let dimensionName: string;
   export let isFetching: boolean;
@@ -21,11 +24,30 @@
   export let displayName: string;
   export let hovered: boolean;
   export let sortType: SortType;
-  export let toggleSort: (sortType: SortType) => void;
+  export let contextColumns: LeaderboardContextColumn[] = [];
+  export let activeMeasureNames: string[] = [];
+  export let sortMeasure: string | null;
+  export let toggleSort: (sortType: SortType, measureName?: string) => void;
   export let setPrimaryDimension: (dimensionName: string) => void;
   export let toggleComparisonDimension: (
     dimensionName: string | undefined,
   ) => void;
+  export let measureLabel: (measureName: string) => string;
+
+  $: showDeltaAbsolute =
+    isTimeComparisonActive &&
+    contextColumns.includes(LeaderboardContextColumn.DELTA_ABSOLUTE);
+
+  $: showDeltaPercent =
+    isTimeComparisonActive &&
+    contextColumns.includes(LeaderboardContextColumn.DELTA_PERCENT);
+
+  $: showPercentOfTotal =
+    isTimeComparisonActive &&
+    isValidPercentOfTotal &&
+    contextColumns.includes(LeaderboardContextColumn.PERCENT);
+
+  $: hasMoreThanOneMeasure = activeMeasureNames.length > 1;
 </script>
 
 <thead>
@@ -74,54 +96,129 @@
       </Tooltip>
     </th>
 
-    <th>
-      <button
-        aria-label="Toggle sort leaderboards by value"
-        on:click={() => toggleSort(SortType.VALUE)}
-      >
-        #{#if sortType === SortType.VALUE}
-          <ArrowDown flip={sortedAscending} />
-        {/if}
-      </button>
-    </th>
-
-    {#if isTimeComparisonActive}
+    {#each activeMeasureNames as measureName, index (index)}
       <th>
         <button
-          aria-label="Toggle sort leaderboards by absolute change"
-          on:click={() => toggleSort(SortType.DELTA_ABSOLUTE)}
+          aria-label="Toggle sort leaderboards by value"
+          on:click={() => {
+            console.log("FIRED toggleSort: ", measureName);
+            toggleSort(SortType.VALUE, measureName);
+          }}
+          class="font-normal text-right"
         >
-          <Delta />
-          {#if sortType === SortType.DELTA_ABSOLUTE}
-            <ArrowDown flip={sortedAscending} />
+          <span class="measure-label">
+            {#if hasMoreThanOneMeasure}
+              {measureLabel(measureName)}
+            {:else}
+              #
+            {/if}
+          </span>
+          {#if measureName === sortMeasure}
+            <div class="ui-copy-icon">
+              {#if sortedAscending}
+                <div in:fly|global={{ duration: 200, y: 8 }} style:opacity={1}>
+                  <ArrowDown flip />
+                </div>
+              {:else}
+                <div in:fly|global={{ duration: 200, y: -8 }} style:opacity={1}>
+                  <ArrowDown />
+                </div>
+              {/if}
+            </div>
           {/if}
         </button>
       </th>
 
-      <th>
-        <button
-          aria-label="Toggle sort leaderboards by percent change"
-          on:click={() => toggleSort(SortType.DELTA_PERCENT)}
-        >
-          <Delta /> %
-          {#if sortType === SortType.DELTA_PERCENT}
-            <ArrowDown flip={sortedAscending} />
-          {/if}
-        </button>
-      </th>
-    {:else if isValidPercentOfTotal}
-      <th>
-        <button
-          aria-label="Toggle sort leaderboards by percent of total"
-          on:click={() => toggleSort(SortType.PERCENT)}
-        >
-          <PieChart /> %
-          {#if sortType === SortType.PERCENT}
-            <ArrowDown flip={sortedAscending} />
-          {/if}
-        </button>
-      </th>
-    {/if}
+      {#if showDeltaAbsolute}
+        <th>
+          <button
+            aria-label="Toggle sort leaderboards by absolute change"
+            on:click={() => toggleSort(SortType.DELTA_ABSOLUTE, measureName)}
+          >
+            <DeltaChange />
+            {#if sortType === SortType.DELTA_ABSOLUTE}
+              <div class="ui-copy-icon">
+                {#if sortedAscending}
+                  <div
+                    in:fly|global={{ duration: 200, y: 8 }}
+                    style:opacity={1}
+                  >
+                    <ArrowDown flip />
+                  </div>
+                {:else}
+                  <div
+                    in:fly|global={{ duration: 200, y: -8 }}
+                    style:opacity={1}
+                  >
+                    <ArrowDown />
+                  </div>
+                {/if}
+              </div>
+            {/if}
+          </button>
+        </th>
+      {/if}
+
+      {#if showDeltaPercent}
+        <th>
+          <button
+            aria-label="Toggle sort leaderboards by percent change"
+            on:click={() => toggleSort(SortType.DELTA_PERCENT, measureName)}
+          >
+            <DeltaChangePercentage />
+            {#if sortType === SortType.DELTA_PERCENT}
+              <div class="ui-copy-icon">
+                {#if sortedAscending}
+                  <div
+                    in:fly|global={{ duration: 200, y: 8 }}
+                    style:opacity={1}
+                  >
+                    <ArrowDown flip />
+                  </div>
+                {:else}
+                  <div
+                    in:fly|global={{ duration: 200, y: -8 }}
+                    style:opacity={1}
+                  >
+                    <ArrowDown />
+                  </div>
+                {/if}
+              </div>
+            {/if}
+          </button>
+        </th>
+      {/if}
+
+      {#if showPercentOfTotal}
+        <th>
+          <button
+            aria-label="Toggle sort leaderboards by percent of total"
+            on:click={() => toggleSort(SortType.PERCENT, measureName)}
+          >
+            <PercentOfTotal />
+            {#if sortType === SortType.PERCENT}
+              <div class="ui-copy-icon">
+                {#if sortedAscending}
+                  <div
+                    in:fly|global={{ duration: 200, y: 8 }}
+                    style:opacity={1}
+                  >
+                    <ArrowDown flip />
+                  </div>
+                {:else}
+                  <div
+                    in:fly|global={{ duration: 200, y: -8 }}
+                    style:opacity={1}
+                  >
+                    <ArrowDown />
+                  </div>
+                {/if}
+              </div>
+            {/if}
+          </button>
+        </th>
+      {/if}
+    {/each}
   </tr>
 </thead>
 

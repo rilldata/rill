@@ -21,6 +21,7 @@
   export let comparisonTimeRange: V1TimeRange | undefined;
   export let timeControlsReady: boolean;
   export let activeMeasureName: string;
+  export let activeMeasureNames: string[];
 
   const StateManagers = getStateManagers();
   const {
@@ -34,7 +35,9 @@
       },
       dimensions: { visibleDimensions },
       comparison: { isBeingCompared: isBeingComparedReadable },
-      sorting: { sortedAscending, sortType },
+      sorting: { sortedAscending, sortType, sortMeasure },
+      contextColumn: { contextColumns },
+      measures: { measureLabel },
     },
     actions: {
       dimensions: { setPrimaryDimension },
@@ -51,16 +54,16 @@
   $: ({ instanceId } = $runtime);
 
   // Reset column widths when the measure changes
-  $: if (activeMeasureName) {
+  $: if (activeMeasureNames) {
     valueColumn.reset();
     deltaColumn.reset();
   }
 
-  $: firstColumnWidth =
+  $: dimensionColumnWidth =
     !comparisonTimeRange && !$isValidPercentOfTotal ? 240 : 164;
 
   $: tableWidth =
-    firstColumnWidth +
+    dimensionColumnWidth +
     $valueColumn +
     (comparisonTimeRange
       ? $deltaColumn + DEFAULT_COL_WIDTH
@@ -71,7 +74,7 @@
 
 <div class="flex flex-col overflow-hidden size-full">
   <div class="pl-2.5 pb-3">
-    <LeaderboardControls exploreName={$exploreName} />
+    <LeaderboardControls exploreName={$exploreName} {comparisonTimeRange} />
   </div>
   <div
     bind:this={parentElement}
@@ -89,14 +92,16 @@
           {#if dimension.name}
             <Leaderboard
               isValidPercentOfTotal={$isValidPercentOfTotal}
+              contextColumns={$contextColumns}
               {metricsViewName}
               {activeMeasureName}
+              {activeMeasureNames}
               {whereFilter}
               {dimensionThresholdFilters}
               {instanceId}
               {tableWidth}
               {timeRange}
-              {firstColumnWidth}
+              {dimensionColumnWidth}
               sortedAscending={$sortedAscending}
               sortType={$sortType}
               filterExcludeMode={$isFilterExcludeMode(dimension.name)}
@@ -114,6 +119,8 @@
               {toggleSort}
               {toggleDimensionValueSelection}
               {toggleComparisonDimension}
+              sortMeasure={$sortMeasure}
+              measureLabel={$measureLabel}
             />
           {/if}
         {/each}
@@ -124,6 +131,6 @@
 
 <style lang="postcss">
   .leaderboard-grid {
-    @apply flex flex-row flex-wrap gap-4;
+    @apply flex flex-row flex-wrap gap-4 overflow-x-auto;
   }
 </style>

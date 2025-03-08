@@ -38,6 +38,7 @@ import { getFiltersForOtherDimensions } from "../selectors";
 import type { MetricsExplorerEntity } from "../stores/metrics-explorer-entity";
 import type { DimensionTableRow } from "./dimension-table-types";
 import type { DimensionTableConfig } from "./DimensionTableConfig";
+import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 
 /** Returns an updated filter set for a given dimension on search */
 export function updateFilterOnSearch(
@@ -114,29 +115,29 @@ export function computePercentOfTotal(
 export function getComparisonProperties(
   measureName: string,
   selectedMeasure: MetricsViewSpecMeasureV2,
+  contextColumns: LeaderboardContextColumn[] = [],
 ): {
-  /**
-   * "component" in this context is a Svelte component that will be
-   * used to render the column header.
-   */
   component: typeof SvelteComponent<any>;
   type: string;
   format: string;
   description: string;
+  visible: boolean;
 } {
-  if (measureName.includes("_delta_perc"))
+  if (measureName.includes("_delta_perc")) {
     return {
       component: DeltaChangePercentage,
       type: "RILL_PERCENTAGE_CHANGE",
       format: FormatPreset.PERCENTAGE,
-      description: "Perc. change over comparison period",
+      description: "Percentage change over comparison period",
+      visible: contextColumns.includes(LeaderboardContextColumn.DELTA_PERCENT),
     };
-  else if (measureName.includes("_delta")) {
+  } else if (measureName.includes("_delta")) {
     return {
       component: DeltaChange,
       type: "RILL_CHANGE",
       format: selectedMeasure.formatPreset ?? FormatPreset.HUMANIZE,
       description: "Change over comparison period",
+      visible: contextColumns.includes(LeaderboardContextColumn.DELTA_ABSOLUTE),
     };
   } else if (measureName.includes("_percent_of_total")) {
     return {
@@ -144,6 +145,7 @@ export function getComparisonProperties(
       type: "RILL_PERCENTAGE_CHANGE",
       format: FormatPreset.PERCENTAGE,
       description: "Percent of total",
+      visible: contextColumns.includes(LeaderboardContextColumn.PERCENT),
     };
   }
   throw new Error(
@@ -197,6 +199,8 @@ export function estimateColumnSizes(
 ): number[] {
   const estimatedColumnSizes = columns.map((column, i) => {
     if (column.name.includes("delta")) return config.comparisonColumnWidth;
+    if (column.name.includes("percent_of_total"))
+      return config.comparisonColumnWidth;
     if (i != 0) return config.defaultColumnWidth;
 
     const largestStringLength =
@@ -407,6 +411,93 @@ function castUnknownToNumberOrNull(val: unknown): number | null {
  * API.
  *
  */
+// export function prepareDimensionTableRows(
+//   queryRows: V1MetricsViewAggregationResponseDataItem[],
+//   // all of the measures defined for this metrics spec,
+//   // including those that are not visible
+//   allMeasuresForSpec: MetricsViewSpecMeasureV2[],
+//   activeMeasureNames: string[],
+//   dimensionColumn: string,
+//   addDeltas: boolean,
+//   addPercentOfTotal: boolean,
+//   unfilteredTotal: number,
+// ): DimensionTableRow[] {
+//   if (!queryRows || !queryRows.length) return [];
+
+//   const formattersForMeasures: { [key: string]: (val: number) => string } =
+//     Object.fromEntries(
+//       allMeasuresForSpec.map((m) => [m.name, createMeasureValueFormatter(m)]),
+//     );
+
+//   const tableRows: DimensionTableRow[] = queryRows
+//     .filter((row) => activeMeasureNames.some((name) => row[name] !== undefined))
+//     .map((row) => {
+//       // cast is safe since we filtered out rows without measureValues
+//       const rawVals: [string, number | null][] = allMeasuresForSpec
+//         .filter((m) => m.name! in row)
+//         .map((m) => [m.name!, castUnknownToNumberOrNull(row[m.name!])]);
+
+//       const formattedVals: [string, string | number | PERC_DIFF][] =
+//         rawVals.map(([name, val]) => [
+//           "__formatted_" + name,
+//           val !== null
+//             ? formattersForMeasures[name](val)
+//             : PERC_DIFF.CURRENT_VALUE_NO_DATA,
+//         ]);
+
+//       const rowOut: DimensionTableRow = Object.fromEntries([
+//         [dimensionColumn, row[dimensionColumn] as string],
+//         ...rawVals,
+//         ...formattedVals,
+//       ]);
+
+//       if (addDeltas) {
+//         for (const activeMeasureName of activeMeasureNames) {
+//           const deltaAbs =
+//             row[activeMeasureName + ComparisonDeltaAbsoluteSuffix];
+//           rowOut[`${activeMeasureName}_delta`] =
+//             castUnknownToNumberOrNull(deltaAbs);
+
+//           rowOut[`__formatted_${activeMeasureName}_delta`] = deltaAbs
+//             ? formattersForMeasures[activeMeasureName](deltaAbs as number)
+//             : PERC_DIFF.PREV_VALUE_NO_DATA;
+
+//           const deltaRel =
+//             row[activeMeasureName + ComparisonDeltaRelativeSuffix];
+//           rowOut[`${activeMeasureName}_delta_perc`] =
+//             castUnknownToNumberOrNull(deltaRel);
+
+//           rowOut[`__formatted_${activeMeasureName}_delta_perc`] = deltaRel
+//             ? formatMeasurePercentageDifference(deltaRel as number)
+//             : PERC_DIFF.PREV_VALUE_NO_DATA;
+//         }
+//       }
+
+//       if (addPercentOfTotal) {
+//         for (const activeMeasureName of activeMeasureNames) {
+//           const value = castUnknownToNumberOrNull(row[activeMeasureName]);
+
+//           if (value === null || unfilteredTotal === 0 || !unfilteredTotal) {
+//             rowOut[activeMeasureName + "_percent_of_total"] =
+//               PERC_DIFF.CURRENT_VALUE_NO_DATA;
+
+//             rowOut[`__formatted_${activeMeasureName}_percent_of_total`] =
+//               PERC_DIFF.CURRENT_VALUE_NO_DATA;
+//           } else {
+//             rowOut[activeMeasureName + "_percent_of_total"] =
+//               value / unfilteredTotal;
+
+//             rowOut[`__formatted_${activeMeasureName}_percent_of_total`] =
+//               formatMeasurePercentageDifference(value / unfilteredTotal);
+//           }
+//         }
+//       }
+
+//       return rowOut;
+//     });
+
+//   return tableRows;
+// }
 export function prepareDimensionTableRows(
   queryRows: V1MetricsViewAggregationResponseDataItem[],
   // all of the measures defined for this metrics spec,

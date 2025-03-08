@@ -4,6 +4,7 @@ import {
   createAndExpression,
   filterIdentifiers,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { decompressUrlParams } from "@rilldata/web-common/features/dashboards/url-state/compression";
 import { convertLegacyStateToExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/convertLegacyStateToExplorePreset";
 import { CustomTimeRangeRegex } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
@@ -397,20 +398,13 @@ function fromExploreUrlParams(
   }
 
   if (searchParams.has(ExploreStateURLParams.SortBy)) {
-    const sortBy = searchParams.get(ExploreStateURLParams.SortBy) as string;
-    if (measures.has(sortBy)) {
-      if (
-        (preset.measures && preset.measures.includes(sortBy)) ||
-        !preset.measures
-      ) {
-        preset.exploreSortBy = sortBy;
-      } else {
-        errors.push(
-          getSingleFieldError("sort by measure", sortBy, "It is hidden."),
-        );
-      }
+    const sortByMeasure = searchParams.get(
+      ExploreStateURLParams.SortBy,
+    ) as string;
+    if (measures.has(sortByMeasure)) {
+      preset.exploreSortBy = sortByMeasure;
     } else {
-      errors.push(getSingleFieldError("sort by measure", sortBy));
+      errors.push(getSingleFieldError("sort by measure", sortByMeasure));
     }
   }
 
@@ -428,6 +422,24 @@ function fromExploreUrlParams(
       errors.push(getSingleFieldError("sort type", sortType));
     }
   }
+
+  // if (searchParams.has(ExploreStateURLParams.LeaderboardMeasureCount)) {
+  //   const count = searchParams.get(
+  //     ExploreStateURLParams.LeaderboardMeasureCount,
+  //   );
+  //   const parsedCount = parseInt(count ?? "", 10);
+  //   if (!isNaN(parsedCount) && parsedCount > 0) {
+  //     preset.exploreLeaderboardMeasureCount = parsedCount;
+  //     console.log(
+  //       "should set url param value to preset.exploreLeaderboardMeasureCount: ",
+  //       parsedCount,
+  //     );
+  //   } else {
+  //     errors.push(
+  //       getSingleFieldError("leaderboard measure count", count ?? ""),
+  //     );
+  //   }
+  // }
 
   return { preset, errors };
 }

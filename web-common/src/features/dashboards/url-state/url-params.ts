@@ -19,6 +19,10 @@ export enum ExploreStateURLParams {
   SortType = "sort_type",
   SortDirection = "sort_dir",
 
+  LeaderboardMeasureCount = "leaderboard_measure_count",
+
+  LeaderboardContextColumns = "leaderboard_context_columns",
+
   ExpandedMeasure = "measure",
   ChartType = "chart_type",
   Pin = "pin",

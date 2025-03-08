@@ -121,13 +121,18 @@ function getExploreFields(
     preset.exploreSortBy = exploreState.leaderboardMeasureName;
   }
 
+  // if (exploreState.leaderboardMeasureCount !== undefined) {
+  //   preset.exploreLeaderboardMeasureCount =
+  //     exploreState.leaderboardMeasureCount;
+  // }
+
   if (exploreState.sortDirection) {
     preset.exploreSortAsc =
       exploreState.sortDirection ===
       DashboardState_LeaderboardSortDirection.ASCENDING;
   }
 
-  if (exploreState.leaderboardContextColumn !== undefined) {
+  if (exploreState.leaderboardContextColumns !== undefined) {
     // TODO: is this still used?
   }
 

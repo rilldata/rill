@@ -40,10 +40,10 @@
     prepareLeaderboardItemData,
   } from "./leaderboard-utils";
   import {
-    DEFAULT_COL_WIDTH,
-    deltaColumn,
     valueColumn,
+    DEFAULT_CONTEXT_COLUMN_WIDTH,
   } from "./leaderboard-widths";
+  import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 
   const slice = 7;
   const gutterWidth = 24;
@@ -58,19 +58,23 @@
   export let whereFilter: V1Expression;
   export let dimensionThresholdFilters: DimensionThresholdFilter[];
   export let activeMeasureName: string;
+  export let activeMeasureNames: string[];
   export let metricsViewName: string;
   export let sortType: SortType;
+  export let sortMeasure: string | null;
   export let tableWidth: number;
   export let sortedAscending: boolean;
   export let isValidPercentOfTotal: boolean;
+  export let contextColumns: LeaderboardContextColumn[] = [];
   export let timeControlsReady: boolean;
-  export let firstColumnWidth: number;
+  export let dimensionColumnWidth: number;
   export let isSummableMeasure: boolean;
   export let filterExcludeMode: boolean;
   export let atLeastOneActive: boolean;
   export let isBeingCompared: boolean;
   export let parentElement: HTMLElement;
   export let suppressTooltip = false;
+  export let measureLabel: (measureName: string) => string;
   export let toggleDimensionValueSelection: (
     dimensionName: string,
     dimensionValue: string,
@@ -85,6 +89,8 @@
   export let toggleComparisonDimension: (
     dimensionName: string | undefined,
   ) => void;
+
+  $: console.log("Leaderboard activeMeasureNames: ", activeMeasureNames);
 
   const observer = new IntersectionObserver(
     ([entry]) => {
@@ -123,19 +129,25 @@
         undefined,
       );
 
-  $: measures = additionalMeasures(activeMeasureName, dimensionThresholdFilters)
-    .map(
-      (n) =>
-        ({
-          name: n,
-        }) as V1MetricsViewAggregationMeasure,
-    )
-    .concat(
-      ...(comparisonTimeRange
-        ? getComparisonRequestMeasures(activeMeasureName)
-        : []),
-    )
-    .concat(uri ? [getURIRequestMeasure(dimensionName)] : []);
+  $: measures = [
+    // Get additional measures for each active measure
+    ...activeMeasureNames
+      .flatMap((name) => additionalMeasures(name, dimensionThresholdFilters))
+      .map(
+        (name) =>
+          ({
+            name,
+          }) as V1MetricsViewAggregationMeasure,
+      ),
+
+    // Add comparison measures if there's a comparison time range
+    ...(comparisonTimeRange
+      ? activeMeasureNames.flatMap((name) => getComparisonRequestMeasures(name))
+      : []),
+
+    // Add URI measure if URI is present
+    ...(uri ? [getURIRequestMeasure(dimensionName)] : []),
+  ];
 
   $: sort = getSort(
     sortedAscending,
@@ -169,7 +181,7 @@
     instanceId,
     metricsViewName,
     {
-      measures: [{ name: activeMeasureName }],
+      measures: activeMeasureNames.map((name) => ({ name })),
       where,
       timeStart: timeRange.start,
       timeEnd: timeRange.end,
@@ -184,18 +196,23 @@
   $: ({ data: sortedData, isFetching } = $sortedQuery);
   $: ({ data: totalsData } = $totalsQuery);
 
-  $: leaderboardTotal = totalsData?.data?.[0]?.[activeMeasureName] as
-    | number
-    | null;
+  $: leaderboardTotals = totalsData?.data?.[0]
+    ? Object.fromEntries(
+        activeMeasureNames.map((name) => [
+          name,
+          (totalsData?.data?.[0]?.[name] as number) ?? null,
+        ]),
+      )
+    : {};
 
   $: ({ aboveTheFold, belowTheFoldValues, noAvailableValues, showExpandTable } =
     prepareLeaderboardItemData(
       sortedData?.data,
       dimensionName,
-      activeMeasureName,
+      activeMeasureNames,
       slice,
       selectedValues,
-      leaderboardTotal,
+      leaderboardTotals,
     ));
 
   $: belowTheFoldDataLimit = maxValuesToShow - aboveTheFold.length;
@@ -242,22 +259,57 @@
     ? data?.data
     : belowTheFoldValues.map((value) => ({
         [dimensionName]: value,
-        [activeMeasureName]: null,
+        ...Object.fromEntries(activeMeasureNames.map((name) => [name, null])),
       }));
 
   $: belowTheFoldRows = belowTheFoldData.map((item) =>
     cleanUpComparisonValue(
       item,
       dimensionName,
-      activeMeasureName,
-      leaderboardTotal,
+      activeMeasureNames,
+      leaderboardTotals,
       selectedValues.findIndex((value) =>
         compareLeaderboardValues(value, item[dimensionName]),
       ),
     ),
   );
 
-  $: columnCount = comparisonTimeRange ? 3 : isValidPercentOfTotal ? 2 : 1;
+  $: columnCount =
+    1 + // Base column (dimension)
+    activeMeasureNames.length *
+      (1 + // Value column for each measure
+        (showDeltaAbsolute ? 1 : 0) + // Delta absolute column for each measure
+        (showDeltaPercent ? 1 : 0) + // Delta percent column for each measure
+        (showPercentOfTotal ? 1 : 0)); // Percent of total column for each measure
+
+  $: showDeltaAbsolute =
+    !!comparisonTimeRange &&
+    contextColumns.includes(LeaderboardContextColumn.DELTA_ABSOLUTE);
+
+  $: showDeltaPercent =
+    !!comparisonTimeRange &&
+    contextColumns.includes(LeaderboardContextColumn.DELTA_PERCENT);
+
+  $: showPercentOfTotal =
+    !!comparisonTimeRange &&
+    isValidPercentOfTotal &&
+    contextColumns.includes(LeaderboardContextColumn.PERCENT);
+
+  $: if (activeMeasureNames) {
+    valueColumn.reset();
+  }
+
+  $: dimensionColumnWidth =
+    !comparisonTimeRange && !isValidPercentOfTotal ? 240 : 164;
+
+  $: tableWidth =
+    dimensionColumnWidth +
+    $valueColumn +
+    (comparisonTimeRange
+      ? DEFAULT_CONTEXT_COLUMN_WIDTH * (showDeltaPercent ? 2 : 1)
+      : isValidPercentOfTotal
+        ? DEFAULT_CONTEXT_COLUMN_WIDTH
+        : 0);
 </script>
 
 <div
@@ -271,14 +323,21 @@
   <table style:width="{tableWidth + gutterWidth}px">
     <colgroup>
       <col style:width="{gutterWidth}px" />
-      <col style:width="{firstColumnWidth}px" />
-      <col style:width="{$valueColumn}px" />
-      {#if !!comparisonTimeRange}
-        <col style:width="{$deltaColumn}px" />
-        <col style:width="{DEFAULT_COL_WIDTH}px" />
-      {:else if isValidPercentOfTotal}
-        <col style:width="{DEFAULT_COL_WIDTH}px" />
-      {/if}
+      <col style:width="{dimensionColumnWidth}px" />
+      {#each activeMeasureNames as _, index (index)}
+        <col style:width="{$valueColumn}px" data-index={index} />
+        {#if showDeltaAbsolute}
+          <col style:width="{DEFAULT_CONTEXT_COLUMN_WIDTH}px" />
+          {#if showDeltaPercent}
+            <col style:width="{DEFAULT_CONTEXT_COLUMN_WIDTH}px" />
+          {/if}
+        {:else if showDeltaPercent}
+          <col style:width="{DEFAULT_CONTEXT_COLUMN_WIDTH}px" />
+        {/if}
+        {#if showPercentOfTotal}
+          <col style:width="{DEFAULT_CONTEXT_COLUMN_WIDTH}px" />
+        {/if}
+      {/each}
     </colgroup>
 
     <LeaderboardHeader
@@ -292,9 +351,13 @@
       {isValidPercentOfTotal}
       {sortedAscending}
       isTimeComparisonActive={!!comparisonTimeRange}
+      {contextColumns}
+      {activeMeasureNames}
       {toggleSort}
       {setPrimaryDimension}
       {toggleComparisonDimension}
+      {sortMeasure}
+      {measureLabel}
     />
 
     <tbody>
@@ -305,7 +368,7 @@
           <LeaderboardRow
             {suppressTooltip}
             {tableWidth}
-            {firstColumnWidth}
+            {dimensionColumnWidth}
             {isSummableMeasure}
             {isBeingCompared}
             {filterExcludeMode}
@@ -313,6 +376,8 @@
             {dimensionName}
             {itemData}
             {isValidPercentOfTotal}
+            {contextColumns}
+            {activeMeasureNames}
             isTimeComparisonActive={!!comparisonTimeRange}
             {toggleDimensionValueSelection}
             {formatter}
@@ -324,7 +389,7 @@
         <LeaderboardRow
           {suppressTooltip}
           {itemData}
-          {firstColumnWidth}
+          {dimensionColumnWidth}
           {isSummableMeasure}
           {tableWidth}
           {dimensionName}
@@ -348,14 +413,16 @@
         class="transition-color ui-copy-muted table-message"
         on:click={() => setPrimaryDimension(dimensionName)}
       >
-        (Expand Table)
+        <div class="pl-8">(Expand Table)</div>
       </button>
       <TooltipContent slot="tooltip-content">
         Expand dimension to see more values
       </TooltipContent>
     </Tooltip>
   {:else if noAvailableValues && !isFetching}
-    <div class="table-message ui-copy-muted">(No available values)</div>
+    <div class="table-message ui-copy-muted">
+      <div class="pl-8">(No available values)</div>
+    </div>
   {/if}
 </div>
 
@@ -367,6 +434,6 @@
   }
 
   .table-message {
-    @apply h-[22px] p-1 flex-row w-full text-left pl-7;
+    @apply h-[22px] flex items-center w-fit;
   }
 </style>

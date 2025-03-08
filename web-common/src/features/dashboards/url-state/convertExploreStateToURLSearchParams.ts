@@ -142,14 +142,17 @@ export function convertExploreStateToURLSearchParams(
       break;
   }
 
-  if (disableCompression || !shouldCompressParams(urlCopy))
-    return urlCopy.searchParams.toString();
-  const compressedUrlParams = new URLSearchParams();
-  compressedUrlParams.set(
-    ExploreStateURLParams.GzippedParams,
-    compressUrlParams(urlCopy.search),
-  );
-  return compressedUrlParams.toString();
+  // TODO(@lovincyrus): gzip params is blocking the dev
+  // UNCOMMENT THIS BEFORE SHIPPING
+
+  // const compressedUrlParams = new URLSearchParams();
+  // compressedUrlParams.set(
+  //   ExploreStateURLParams.GzippedParams,
+  //   compressUrlParams(urlCopy.search),
+  // );
+  // return compressedUrlParams.toString();
+
+  return urlCopy.searchParams.toString();
 }
 
 function toTimeRangesUrl(
@@ -249,18 +252,6 @@ function toExploreUrl(
 ) {
   const searchParams = new URLSearchParams();
 
-  const visibleMeasuresParam = toVisibleMeasuresUrlParam(
-    exploreState,
-    exploreSpec,
-    preset,
-  );
-  if (visibleMeasuresParam) {
-    searchParams.set(
-      ExploreStateURLParams.VisibleMeasures,
-      visibleMeasuresParam,
-    );
-  }
-
   const visibleDimensionsParam = toVisibleDimensionsUrlParam(
     exploreState,
     exploreSpec,
@@ -309,6 +300,32 @@ function toExploreUrl(
       sortAsc ? "ASC" : "DESC",
     );
   }
+
+  // if (
+  //   shouldSetParam(
+  //     preset.exploreLeaderboardMeasureCount,
+  //     exploreState.leaderboardMeasureCount,
+  //   )
+  // ) {
+  //   searchParams.set(
+  //     ExploreStateURLParams.LeaderboardMeasureCount,
+  //     exploreState.leaderboardMeasureCount?.toString(),
+  //   );
+  // }
+
+  // UNCOMMENT TO SET URL PARAM
+  // TODO: ping aditya
+  // if (
+  //   shouldSetParam(
+  //     preset.exploreLeaderboardContextColumns,
+  //     exploreState.leaderboardContextColumns,
+  //   )
+  // ) {
+  //   searchParams.set(
+  //     ExploreStateURLParams.LeaderboardContextColumns,
+  //     exploreState.leaderboardContextColumns.join(","),
+  //   );
+  // }
 
   return searchParams;
 }
