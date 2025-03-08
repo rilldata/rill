@@ -16,6 +16,20 @@ interface NotificationOptions {
   timeout?: number;
 }
 
+export enum BannerSlot {
+  Billing,
+  Dashboard,
+  // Catch all slot when none is provided.
+  // Make sure this is at the end
+  Other,
+}
+export interface BannerEvent {
+  // Slot for the banner to appear. A new banner here will clear the older ones.
+  // A lower number here will mean it will show up higher.
+  slot: BannerSlot;
+  // null here means the slot is being cleared.
+  message: BannerMessage | null;
+}
 export interface BannerMessage {
   type: "default" | "success" | "info" | "warning" | "error";
   message: string;

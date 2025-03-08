@@ -11,6 +11,7 @@
   import DashboardURLStateSync from "@rilldata/web-common/features/dashboards/url-state/DashboardURLStateSync.svelte";
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { BannerSlot } from "@rilldata/web-common/lib/event-bus/events";
   import type { V1GetExploreResponse } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { PageData } from "./$types";
@@ -74,9 +75,12 @@
   // Display a dashboard banner
   $: if (hasBanner) {
     eventBus.emit("banner", {
-      type: "default",
-      message: $explore.data.explore.explore.state.validSpec.banner,
-      iconType: "alert",
+      slot: BannerSlot.Dashboard,
+      message: {
+        type: "default",
+        message: $explore.data.explore.explore.state.validSpec.banner,
+        iconType: "alert",
+      },
     });
   }
 
@@ -88,7 +92,10 @@
       !from || !to || from.params.dashboard !== to.params.dashboard;
     // Clear out any dashboard banners
     if (hasBanner && changedDashboard) {
-      eventBus.emit("banner", null);
+      eventBus.emit("banner", {
+        slot: BannerSlot.Dashboard,
+        message: null,
+      });
     }
   });
 

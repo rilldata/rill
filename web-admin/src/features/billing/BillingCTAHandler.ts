@@ -3,6 +3,7 @@ import { fetchPaymentsPortalURL } from "@rilldata/web-admin/features/billing/pla
 import type { TeamPlanDialogTypes } from "@rilldata/web-admin/features/billing/plans/types";
 import { wakeAllProjects } from "@rilldata/web-admin/features/organizations/hibernating/wakeAllProjects";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+import { BannerSlot } from "@rilldata/web-common/lib/event-bus/events";
 import { writable } from "svelte/store";
 
 export class BillingCTAHandler {
@@ -53,20 +54,26 @@ export class BillingCTAHandler {
       case "wake-projects":
         this.wakingProjects.set(true);
         eventBus.emit("banner", {
-          type: "info",
-          message: "Waking projects. We’ll notify you when they’re ready.",
-          iconType: "loading",
+          slot: BannerSlot.Billing,
+          message: {
+            type: "info",
+            message: "Waking projects. We’ll notify you when they’re ready.",
+            iconType: "loading",
+          },
         });
         await wakeAllProjects(this.organization);
         this.wakingProjects.set(false);
         eventBus.emit("banner", {
-          type: "success",
-          message: "Your projects are awake and ready.",
-          iconType: "check",
-          cta: {
-            type: "link",
-            text: "View projects ->",
-            url: `/${this.organization}`,
+          slot: BannerSlot.Billing,
+          message: {
+            type: "success",
+            message: "Your projects are awake and ready.",
+            iconType: "check",
+            cta: {
+              type: "link",
+              text: "View projects ->",
+              url: `/${this.organization}`,
+            },
           },
         });
         eventBus.emit("notification", {
