@@ -99,7 +99,7 @@
               {instanceId}
               {tableWidth}
               {timeRange}
-              firstColumnWidth={dimensionColumnWidth}
+              {dimensionColumnWidth}
               sortedAscending={$sortedAscending}
               sortType={$sortType}
               filterExcludeMode={$isFilterExcludeMode(dimension.name)}
