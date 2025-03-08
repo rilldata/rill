@@ -275,7 +275,9 @@ function toExploreUrl(
     );
   }
 
+  // sort_by is only set when the leaderboard_measure_count is set
   if (
+    exploreState.leaderboardMeasureCount !== undefined &&
     shouldSetParam(preset.exploreSortBy, exploreState.leaderboardMeasureName)
   ) {
     searchParams.set(
@@ -283,18 +285,6 @@ function toExploreUrl(
       exploreState.leaderboardMeasureName,
     );
   }
-
-  // if (
-  //   shouldSetParam(
-  //     preset.exploreLeaderboardMeasureCount,
-  //     exploreState.leaderboardMeasureCount,
-  //   )
-  // ) {
-  //   searchParams.set(
-  //     ExploreStateURLParams.LeaderboardMeasureCount,
-  //     exploreState.leaderboardMeasureCount.toString(),
-  //   );
-  // }
 
   const sortType = FromLegacySortTypeMap[exploreState.dashboardSortType];
   if (shouldSetParam(preset.exploreSortType, sortType)) {
