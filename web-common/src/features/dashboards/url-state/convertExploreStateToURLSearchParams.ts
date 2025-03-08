@@ -313,17 +313,17 @@ function toExploreUrl(
     );
   }
 
-  if (
-    shouldSetParam(
-      preset.exploreLeaderboardMeasureCount,
-      exploreState.leaderboardMeasureCount,
-    )
-  ) {
-    searchParams.set(
-      ExploreStateURLParams.LeaderboardMeasureCount,
-      exploreState.leaderboardMeasureCount?.toString(),
-    );
-  }
+  // if (
+  //   shouldSetParam(
+  //     preset.exploreLeaderboardMeasureCount,
+  //     exploreState.leaderboardMeasureCount,
+  //   )
+  // ) {
+  //   searchParams.set(
+  //     ExploreStateURLParams.LeaderboardMeasureCount,
+  //     exploreState.leaderboardMeasureCount?.toString(),
+  //   );
+  // }
 
   // UNCOMMENT TO SET URL PARAM
   // TODO: ping aditya
