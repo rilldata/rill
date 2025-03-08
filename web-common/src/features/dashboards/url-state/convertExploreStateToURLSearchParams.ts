@@ -276,9 +276,7 @@ function toExploreUrl(
     );
   }
 
-  // sort_by is only set when the leaderboard_measure_count is set
   if (
-    exploreState.leaderboardMeasureCount !== undefined &&
     shouldSetParam(preset.exploreSortBy, exploreState.leaderboardMeasureName)
   ) {
     searchParams.set(
