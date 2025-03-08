@@ -152,7 +152,7 @@ func (w *TrialEndCheckWorker) trialEndCheck(ctx context.Context) error {
 			zap.Int("count_of_projects", projects),
 		)
 
-		cctx, tx, err := w.admin.DB.NewTx(ctx)
+		cctx, tx, err := w.admin.DB.NewTx(ctx, false)
 		if err != nil {
 			return fmt.Errorf("failed to start transaction: %w", err)
 		}

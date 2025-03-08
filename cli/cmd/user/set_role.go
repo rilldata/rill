@@ -18,7 +18,13 @@ func SetRoleCmd(ch *cmdutil.Helper) *cobra.Command {
 		Use:   "set-role",
 		Short: "Change a user's role",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			err := cmdutil.SelectPromptIfEmpty(&role, "Select role", userRoles, "")
+			var roleOptions []string
+			if projectName != "" {
+				roleOptions = projectRoles
+			} else {
+				roleOptions = orgRoles
+			}
+			err := cmdutil.SelectPromptIfEmpty(&role, "Select role", roleOptions, "")
 			if err != nil {
 				return err
 			}
@@ -63,7 +69,7 @@ func SetRoleCmd(ch *cmdutil.Helper) *cobra.Command {
 	setRoleCmd.Flags().StringVar(&ch.Org, "org", ch.Org, "Organization")
 	setRoleCmd.Flags().StringVar(&projectName, "project", "", "Project")
 	setRoleCmd.Flags().StringVar(&email, "email", "", "Email of the user")
-	setRoleCmd.Flags().StringVar(&role, "role", "", fmt.Sprintf("Role of the user (options: %s)", strings.Join(userRoles, ", ")))
+	setRoleCmd.Flags().StringVar(&role, "role", "", fmt.Sprintf("Role of the user (options: %s)", strings.Join(orgRoles, ", ")))
 
 	return setRoleCmd
 }

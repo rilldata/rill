@@ -67,8 +67,6 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 						return err
 					}
 				}
-
-				ch.Printf("\nShowing organization members only. Use the --project flag to list members of a specific project.\n")
 			}
 
 			return nil
