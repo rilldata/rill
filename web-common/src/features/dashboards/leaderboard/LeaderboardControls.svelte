@@ -84,9 +84,8 @@
 
       <LeaderboardMeasureCountSelector
         {measures}
-        tooltipText="Choose number of measures to display"
         count={$leaderboardMeasureCount}
-        onToggle={(count) => {
+        onMeasureCountChange={(count) => {
           setLeaderboardMeasureCount(count);
         }}
       />
