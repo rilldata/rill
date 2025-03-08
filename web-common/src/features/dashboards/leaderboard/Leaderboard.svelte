@@ -67,7 +67,7 @@
   export let isValidPercentOfTotal: boolean;
   export let contextColumns: LeaderboardContextColumn[] = [];
   export let timeControlsReady: boolean;
-  export let firstColumnWidth: number;
+  export let dimensionColumnWidth: number;
   export let isSummableMeasure: boolean;
   export let filterExcludeMode: boolean;
   export let atLeastOneActive: boolean;
@@ -299,11 +299,11 @@
     valueColumn.reset();
   }
 
-  $: firstColumnWidth =
+  $: dimensionColumnWidth =
     !comparisonTimeRange && !isValidPercentOfTotal ? 240 : 164;
 
   $: tableWidth =
-    firstColumnWidth +
+    dimensionColumnWidth +
     $valueColumn +
     (comparisonTimeRange
       ? DEFAULT_CONTEXT_COLUMN_WIDTH * (showDeltaPercent ? 2 : 1)
@@ -323,7 +323,7 @@
   <table style:width="{tableWidth + gutterWidth}px">
     <colgroup>
       <col style:width="{gutterWidth}px" />
-      <col style:width="{firstColumnWidth}px" />
+      <col style:width="{dimensionColumnWidth}px" />
       {#each activeMeasureNames as _, index (index)}
         <col style:width="{$valueColumn}px" data-index={index} />
         {#if showDeltaAbsolute}
@@ -368,7 +368,7 @@
           <LeaderboardRow
             {suppressTooltip}
             {tableWidth}
-            {firstColumnWidth}
+            {dimensionColumnWidth}
             {isSummableMeasure}
             {isBeingCompared}
             {filterExcludeMode}
@@ -389,7 +389,7 @@
         <LeaderboardRow
           {suppressTooltip}
           {itemData}
-          {firstColumnWidth}
+          {dimensionColumnWidth}
           {isSummableMeasure}
           {tableWidth}
           {dimensionName}

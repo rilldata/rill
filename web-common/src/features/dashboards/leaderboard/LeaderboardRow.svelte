@@ -42,7 +42,7 @@
   export let formatter:
     | ((_value: number | undefined) => undefined)
     | ((value: string | number) => string);
-  export let firstColumnWidth: number;
+  export let dimensionColumnWidth: number;
   export let suppressTooltip: boolean;
 
   let hovered = false;
@@ -108,7 +108,7 @@
   $: secondCellBarLengths = Object.fromEntries(
     Object.entries(barLengths).map(([name, length]) => [
       name,
-      clamp(0, length - firstColumnWidth, $valueColumn),
+      clamp(0, length - dimensionColumnWidth, $valueColumn),
     ]),
   );
 
@@ -116,11 +116,11 @@
     Object.entries(barLengths).map(([name, length]) => [
       name,
       isTimeComparisonActive
-        ? clamp(0, length - firstColumnWidth - $valueColumn, $deltaColumn)
+        ? clamp(0, length - dimensionColumnWidth - $valueColumn, $deltaColumn)
         : isValidPercentOfTotal
           ? clamp(
               0,
-              length - firstColumnWidth - $valueColumn,
+              length - dimensionColumnWidth - $valueColumn,
               DEFAULT_COL_WIDTH,
             )
           : 0,
@@ -133,7 +133,7 @@
       clamp(
         0,
         length -
-          firstColumnWidth -
+          dimensionColumnWidth -
           $valueColumn -
           (thirdCellBarLengths[name] || 0),
         DEFAULT_COL_WIDTH,
@@ -147,7 +147,7 @@
       clamp(
         0,
         length -
-          firstColumnWidth -
+          dimensionColumnWidth -
           $valueColumn -
           (thirdCellBarLengths[name] || 0) -
           (fourthCellBarLengths[name] || 0),
@@ -162,7 +162,6 @@
       : `linear-gradient(to right, ${barColor}
     ${Math.max(...Object.values(barLengths))}px, transparent ${Math.max(...Object.values(barLengths))}px)`;
 
-  // TODO: add spacing on the left side to the bg gradient
   $: secondCellGradients =
     activeMeasureNames.length === 1
       ? "bg-white"
@@ -170,8 +169,8 @@
           Object.entries(secondCellBarLengths).map(([name, length]) => [
             name,
             length
-              ? `linear-gradient(to right, ${barColor}
-    ${length}px, transparent ${length}px)`
+              ? `linear-gradient(to right, transparent 16px, ${barColor} 16px,
+    ${barColor} ${length + 16}px, transparent ${length + 16}px)`
               : undefined,
           ]),
         );
@@ -293,11 +292,9 @@
   </td>
 
   {#each Object.keys(values) as measureName}
-    <!-- TODO: add padding left to the background -->
     <td
       data-second-cell
       style:background={secondCellGradients[measureName]}
-      style:paddingLeft="1rem"
       on:click={modified({
         shift: () => shiftClickHandler(values[measureName]?.toString() || ""),
       })}
