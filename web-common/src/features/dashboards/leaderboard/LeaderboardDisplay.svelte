@@ -57,11 +57,11 @@
     deltaColumn.reset();
   }
 
-  $: firstColumnWidth =
+  $: dimensionColumnWidth =
     !comparisonTimeRange && !$isValidPercentOfTotal ? 240 : 164;
 
   $: tableWidth =
-    firstColumnWidth +
+    dimensionColumnWidth +
     $valueColumn +
     (comparisonTimeRange
       ? $deltaColumn + DEFAULT_COL_WIDTH
@@ -99,7 +99,7 @@
               {instanceId}
               {tableWidth}
               {timeRange}
-              {firstColumnWidth}
+              firstColumnWidth={dimensionColumnWidth}
               sortedAscending={$sortedAscending}
               sortType={$sortType}
               filterExcludeMode={$isFilterExcludeMode(dimension.name)}
