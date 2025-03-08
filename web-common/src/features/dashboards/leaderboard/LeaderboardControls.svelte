@@ -30,7 +30,8 @@
     },
   } = StateManagers;
 
-  $: console.log("$leaderboardMeasureCount: ", $leaderboardMeasureCount);
+  $: console.log("$contextColumn: ", $contextColumn);
+  $: console.log("$contextColumns: ", $contextColumns);
 
   $: measures = getSimpleMeasures($visibleMeasures);
 
