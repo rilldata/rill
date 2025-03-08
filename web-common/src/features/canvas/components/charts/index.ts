@@ -6,6 +6,7 @@ import {
 } from "@rilldata/web-common/features/canvas/components/util";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
+import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 import type {
   ComponentCommonProperties,
   ComponentFilterProperties,
@@ -20,6 +21,7 @@ export type ChartSpec = ComponentFilterProperties &
 export class ChartComponent extends BaseCanvasComponent<ChartSpec> {
   minSize = { width: 4, height: 4 };
   defaultSize = { width: 6, height: 4 };
+  resetParams = [];
 
   constructor(
     fileArtifact: FileArtifact | undefined = undefined,
@@ -54,23 +56,54 @@ export class ChartComponent extends BaseCanvasComponent<ChartSpec> {
   }
 
   newComponentSpec(
-    metrics_view: string,
-    measure: string,
-    dimension: string,
+    metricsViewName: string,
+    metricsViewSpec: V1MetricsViewSpec | undefined,
   ): ChartSpec {
-    return {
-      metrics_view,
+    // Randomly select a measure and dimension if available
+    const measures = metricsViewSpec?.measures || [];
+    const dimensions = metricsViewSpec?.dimensions || [];
+
+    const randomMeasure = measures[Math.floor(Math.random() * measures.length)]
+      ?.name as string;
+
+    const randomDimension = dimensions[
+      Math.floor(Math.random() * dimensions.length)
+    ]?.name as string;
+
+    let randomColorDimension: string | undefined = undefined;
+    if (dimensions.length > 1) {
+      const availableDimensions = dimensions.filter(
+        (d) => d.name !== randomDimension,
+      );
+      randomColorDimension =
+        availableDimensions[
+          Math.floor(Math.random() * availableDimensions.length)
+        ]?.name;
+    }
+
+    const spec: ChartSpec = {
+      metrics_view: metricsViewName,
       x: {
         type: "nominal",
-        field: dimension,
+        field: randomDimension,
         sort: "-y",
         limit: 20,
       },
       y: {
         type: "quantitative",
-        field: measure,
+        field: randomMeasure,
         zeroBasedOrigin: true,
       },
     };
+
+    // Only add color if we have more than one dimension
+    if (randomColorDimension) {
+      spec.color = {
+        type: "nominal",
+        field: randomColorDimension,
+      };
+    }
+
+    return spec;
   }
 }

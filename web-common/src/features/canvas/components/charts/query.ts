@@ -46,7 +46,6 @@ export function createChartDataQuery(
       const { timeRange, where, timeGrain } = $timeAndFilterStore;
 
       let outerWhere = where;
-      console.log("outerWhere", where);
 
       if (config.x?.type === "nominal" && config.x?.field) {
         limit = config.x.limit;
@@ -61,7 +60,6 @@ export function createChartDataQuery(
             true,
           );
           outerWhere = mergeFilters(where, excludeNullFilter);
-          console.log("changed outerWhere", outerWhere);
         }
       } else if (config.x?.type === "temporal" && timeGrain) {
         dimensions = [{ name: config.x?.field, timeGrain }];
@@ -124,8 +122,6 @@ export function createChartDataQuery(
 
           combinedWhere = mergeFilters(where, filterForTopValues);
         }
-
-        console.log("combinedWhere", combinedWhere);
 
         const dataQuery = createQueryServiceMetricsViewAggregation(
           runtime.instanceId,
