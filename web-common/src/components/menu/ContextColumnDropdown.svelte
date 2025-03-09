@@ -14,6 +14,7 @@
   import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { cn } from "@rilldata/web-common/lib/shadcn";
 
   export let isValidPercentOfTotal: boolean;
   export let hasComparisonTimeRange: boolean;
@@ -177,7 +178,7 @@
           </div>
         {/if}
 
-        <footer>
+        <footer class={cn(options.length > 0 && "border-t border-slate-300")}>
           <div class="w-full">
             <p class="text-xs">Show for all measures</p>
           </div>
@@ -197,7 +198,6 @@
 <style lang="postcss">
   footer {
     height: 42px;
-    @apply border-t border-slate-300;
     @apply bg-white px-3.5 py-2;
     @apply flex flex-row flex-none items-center gap-x-2;
   }

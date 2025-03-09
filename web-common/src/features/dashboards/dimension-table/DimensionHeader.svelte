@@ -49,7 +49,7 @@
       sorting: { toggleSort },
       dimensions: { setPrimaryDimension },
       dimensionsFilter: { toggleDimensionFilterMode },
-      contextColumn: { setContextColumn, setContextColumns },
+      contextColumn: { setContextColumns },
     },
     timeRangeSummaryStore,
     dashboardStore,
