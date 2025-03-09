@@ -105,6 +105,7 @@ export function isGrainBigger(
 ): boolean {
   const biggerGrainConfig = TIME_GRAIN[possiblyBiggerGrain];
   const smallerGrainConfig = TIME_GRAIN[possiblySmallerGrain];
+
   return (
     durationToMillis(biggerGrainConfig?.duration) >
     durationToMillis(smallerGrainConfig.duration)

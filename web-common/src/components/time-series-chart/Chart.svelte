@@ -118,15 +118,15 @@
   function getPos(pos: number, width: number) {
     const percentage = pos / width;
 
-    if (percentage < 0.1) return "-right-2";
-    if (percentage > 0.9) return "-left-2";
+    if (percentage < 0.2) return "-right-0";
+    if (percentage > 0.8) return "-left-0";
 
-    if (percentage <= 0.5) return "-left-2";
-    return "-right-2";
+    if (percentage <= 0.5) return "-left-0";
+    return "-right-0";
   }
 </script>
 
-<div role="presentation" class="flex flex-col size-full relative">
+<div role="presentation" class="flex flex-col grow h-full relative">
   {#if hoveredPoints.length > 0 && offsetPosition}
     <div
       class="{getPos(

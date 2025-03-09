@@ -14,8 +14,8 @@ export const initialHeights: Record<CanvasComponentType, number> = {
   stacked_bar: 320,
   stacked_bar_normalized: 320,
   markdown: 80,
-  kpi: 200,
-  kpi_grid: 200,
+  kpi: 128,
+  kpi_grid: 128,
   image: 300,
   table: 300,
 };

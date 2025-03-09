@@ -4,6 +4,8 @@
     ResourceKind,
     useResource,
   } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
+  import CanvasThemeProvider from "@rilldata/web-common/features/canvas/CanvasThemeProvider.svelte";
+  import StateManagersProvider from "@rilldata/web-common/features/canvas/state-managers/StateManagersProvider.svelte";
 
   export let instanceId: string;
   export let canvasName: string;
@@ -13,4 +15,8 @@
   $: resource = $canvasQuery.data;
 </script>
 
-<CanvasDashboardEmbed {resource} />
+<StateManagersProvider {canvasName}>
+  <CanvasThemeProvider>
+    <CanvasDashboardEmbed {resource} />
+  </CanvasThemeProvider>
+</StateManagersProvider>

@@ -139,7 +139,7 @@ export abstract class BaseCanvasComponent<T> {
   async updateChartType(key: ChartType) {
     if (!this.fileArtifact) return;
     const currentSpec = get(this.specStore);
-    const parentSpec = { [key]: currentSpec };
+
     const parentPath = this.pathInYAML.slice(0, -1);
 
     const parseDocumentStore = getParsedDocument(this.fileArtifact);
@@ -147,7 +147,9 @@ export abstract class BaseCanvasComponent<T> {
 
     const { updateEditorContent, saveLocalContent } = this.fileArtifact;
 
-    parsedDocument.setIn(parentPath, parentSpec);
+    const width = parsedDocument.getIn([...parentPath, "width"]);
+
+    parsedDocument.setIn(parentPath, { [key]: currentSpec, width });
 
     // Save the updated document
     updateEditorContent(parsedDocument.toString(), true);
