@@ -9,7 +9,6 @@ import { getFullInitExploreState } from "@rilldata/web-common/features/dashboard
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
-import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
@@ -118,9 +117,9 @@ export function mapQueryToDashboard(
 
       const { metricsView, explore } = validSpecResp.data;
 
-      initLocalUserPreferenceStore(metricsViewName);
       const defaultExplorePreset = getDefaultExplorePreset(
         validSpecResp.data.explore,
+        validSpecResp.data.metricsView,
         timeRangeSummary.data,
       );
       const { partialExploreState } = convertPresetToExploreState(

@@ -145,6 +145,7 @@ test.describe("time controls settings from explore preset", () => {
   comparison_mode: time
 `,
         `time_ranges:
+- inf
 - PT6H
 - range: P5D
   comparison_offsets:

@@ -8,7 +8,7 @@
  * This list is derived from https://www.timeanddate.com/time/zones/
  */
 
-export const timeZoneNameToAbbreviationMap = {
+export const timeZoneNameToAbbreviationMap: Record<string, string> = {
   "Alfa Time Zone": "A",
   "Australian Central Daylight Time": "ACDT",
   "Australian Central Standard Time": "ACST",

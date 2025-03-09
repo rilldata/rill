@@ -48,6 +48,7 @@ export default function initEmbedPublicAPI(instanceId: string): () => void {
 
       const defaultExplorePreset = getDefaultExplorePreset(
         exploreSpec,
+        metricsViewSpec,
         $metricsViewTimeRange?.data,
       );
 
@@ -89,6 +90,7 @@ export default function initEmbedPublicAPI(instanceId: string): () => void {
 
     const defaultExplorePreset = getDefaultExplorePreset(
       exploreSpec,
+      metricsViewSpec,
       metricsTime?.data,
     );
 

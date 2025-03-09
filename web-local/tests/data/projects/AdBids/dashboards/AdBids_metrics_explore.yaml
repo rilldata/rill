@@ -8,3 +8,22 @@ metrics_view: AdBids_metrics
 
 dimensions: '*'
 measures: '*'
+
+time_ranges:
+  - PT6H
+  - PT24H
+  - P7D
+  - P14D
+  - P4W
+  - P12M
+  - rill-TD
+  - rill-WTD
+  - rill-MTD
+  - rill-QTD
+  - rill-YTD
+  - rill-PDC
+  - rill-PWC
+  - rill-PMC
+  - rill-PQC
+  - rill-PYC
+  - inf
