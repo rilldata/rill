@@ -13,7 +13,7 @@ test.describe("Explores", () => {
 
     // Set the time zone to UTC
     await page.getByLabel("Timezone selector").click();
-    await page.getByRole("menuitem", { name: "UTC GMT +00:00 UTC" }).click();
+    await page.getByRole("menuitem", { name: "UTC UTC UTC+00:00" }).click();
 
     // Check the Big Number
     await expect(

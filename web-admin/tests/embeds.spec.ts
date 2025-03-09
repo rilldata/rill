@@ -25,7 +25,7 @@ test.describe("Embeds", () => {
     const frame = embedPage.frameLocator("iframe");
 
     await frame.getByLabel("Timezone selector").click();
-    await frame.getByRole("menuitem", { name: "UTC GMT +00:00 UTC" }).click();
+    await frame.getByRole("menuitem", { name: "UTC UTC UTC+00:00" }).click();
 
     await expect(
       frame.getByRole("button", { name: "Advertising Spend Overall $1.30M" }),
@@ -38,7 +38,7 @@ test.describe("Embeds", () => {
     const frame = embedPage.frameLocator("iframe");
 
     await frame.getByLabel("Timezone selector").click();
-    await frame.getByRole("menuitem", { name: "UTC GMT +00:00 UTC" }).click();
+    await frame.getByRole("menuitem", { name: "UTC UTC UTC+00:00" }).click();
 
     await frame.getByRole("row", { name: "Instacart $107.3k" }).click();
     await embedPage.waitForTimeout(500);
@@ -56,7 +56,7 @@ test.describe("Embeds", () => {
     const frame = embedPage.frameLocator("iframe");
 
     await frame.getByLabel("Timezone selector").click();
-    await frame.getByRole("menuitem", { name: "UTC GMT +00:00 UTC" }).click();
+    await frame.getByRole("menuitem", { name: "UTC UTC UTC+00:00" }).click();
 
     await frame.getByRole("row", { name: "Instacart $107.3k" }).click();
     await embedPage.waitForTimeout(500);

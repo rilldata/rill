@@ -131,6 +131,7 @@
           {#if formatted && !availableTimeZones.includes(iana) && iana !== browserIANA}
             <DropdownMenu.CheckboxItem
               checkRight
+              checked={activeTimeZone === iana}
               on:click={() => {
                 onSelectTimeZone(iana);
               }}
