@@ -46,7 +46,7 @@
 </script>
 
 <DropdownMenu.Root bind:open typeahead={false}>
-  <DropdownMenu.Trigger asChild let:builder>
+  <DropdownMenu.Trigger asChild let:builder id="filter-add-btn">
     <Tooltip distance={8} suppress={open}>
       <button
         class:addBorder
