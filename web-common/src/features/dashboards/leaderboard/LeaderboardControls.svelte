@@ -30,8 +30,9 @@
     },
   } = StateManagers;
 
-  $: console.log("$contextColumn: ", $contextColumn);
-  $: console.log("$contextColumns: ", $contextColumns);
+  // TODO: remove contextColumn
+  // $: console.log("$contextColumn: ", $contextColumn);
+  // $: console.log("$contextColumns: ", $contextColumns);
 
   $: measures = getSimpleMeasures($visibleMeasures);
 

@@ -90,7 +90,7 @@
     dimensionName: string | undefined,
   ) => void;
 
-  $: console.log("Leaderboard activeMeasureNames: ", activeMeasureNames);
+  // $: console.log("Leaderboard activeMeasureNames: ", activeMeasureNames);
 
   const observer = new IntersectionObserver(
     ([entry]) => {
