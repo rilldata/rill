@@ -101,7 +101,7 @@
         <button
           aria-label="Toggle sort leaderboards by value"
           on:click={() => {
-            console.log("FIRED toggleSort: ", measureName);
+            console.log("[LeaderboardHeader.svelte] toggleSort: ", measureName);
             toggleSort(SortType.VALUE, measureName);
           }}
           class="font-normal text-right"

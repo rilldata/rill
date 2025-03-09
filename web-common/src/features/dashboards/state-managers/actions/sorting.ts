@@ -11,6 +11,8 @@ export const toggleSort = (
 ) => {
   const { dashboard } = args;
 
+  console.log("[sorting.ts] toggleSort: ", SortType[sortType], measureName);
+
   // If a measureName is provided that's different from the current one,
   // update it for both value sorts and comparison sorts
   if (
