@@ -96,6 +96,7 @@ export class TimeControls {
       const minTimeGrain = Object.keys(metricsViews).reduce<V1TimeGrain>(
         (min: V1TimeGrain, metricView) => {
           const metricsViewSpec = metricsViews[metricView]?.state?.validSpec;
+
           if (
             !metricsViewSpec?.smallestTimeGrain ||
             metricsViewSpec.smallestTimeGrain ===
@@ -103,7 +104,8 @@ export class TimeControls {
           )
             return min;
           const timeGrain = metricsViewSpec.smallestTimeGrain;
-          return isGrainBigger(min, timeGrain) ? timeGrain : min;
+
+          return !isGrainBigger(min, timeGrain) ? timeGrain : min;
         },
         V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
       );
