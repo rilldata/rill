@@ -1,0 +1,64 @@
+# Explore YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/explores
+
+type: explore
+
+title: "Programmatic Ads Bids"
+metrics_view: bids_metrics
+
+dimensions: '*'
+measures: '*'
+
+#default:
+#  time_range: "PT24H"
+
+time_zones:
+  - America/Los_Angeles
+  - America/Chicago
+  - America/New_York
+  - Europe/London
+  - Europe/Paris
+  - Asia/Jerusalem
+  - Europe/Moscow
+  - Asia/Kolkata
+  - Asia/Shanghai
+  - Asia/Tokyo
+  - Australia/Sydney
+defaults:
+  measures:
+    - overall_spend
+    - total_bids
+    - impressions
+    - win_rate
+    - clicks
+    - ctr
+    - video_starts
+    - video_completes
+    - video_completion_rate
+    - avg_bid_price
+    - ecpm
+    - avg_bid_floor
+  dimensions:
+    - adomain
+    - advertiser_name
+    - app_or_site
+    - sites_domain
+    - app_site_name
+    - auction_type
+    - bid_floor_bucket
+    - campaign_name
+    - creative_type
+    - device_os
+    - device_osv
+    - device_region
+    - device_type
+    - interstitial
+    - line_item_name
+    - placement_type
+    - platform_browser
+    - player_size
+    - privacy
+    - pub_name
+    - sdk
+    - video_activity
+  time_range: P7D

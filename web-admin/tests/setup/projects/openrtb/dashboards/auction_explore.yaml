@@ -1,0 +1,45 @@
+# Explore YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/explores
+
+type: explore
+
+title: "Programmatic Ads Auction"
+metrics_view: auction_metrics
+
+dimensions: '*'
+measures: '*'
+
+time_zones:
+  - America/Los_Angeles
+  - America/Chicago
+  - America/New_York
+  - Europe/London
+  - Europe/Paris
+
+embeds:
+  hide_pivot: true
+defaults:
+  measures:
+    - requests
+    - avg_bid_floor
+    - 1d_qps
+  dimensions:
+    - app_site_name
+    - app_site_domain
+    - pub_name
+    - app_site_cat
+    - ad_size
+    - device_state
+    - device_osv
+    - bid_floor_bucket
+    - platform_browser
+    - device_os
+    - device_type
+    - ad_position
+    - video_max_duration_bucket
+    - video_min_duration_bucket
+    - placement_type
+    - auction_type
+    - app_or_site
+    - device_country
+  time_range: P7D
