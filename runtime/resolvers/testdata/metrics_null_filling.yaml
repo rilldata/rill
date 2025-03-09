@@ -1,0 +1,635 @@
+connectors:
+  - clickhouse
+  - druid
+project_files:
+  clickhouse_data.yaml:
+    type: model
+    connector: clickhouse
+    sql: |
+      select parseDateTimeBestEffort('2024-01-01T00:00:00Z') as time, 'DK' as country, 1 as val union all
+      select parseDateTimeBestEffort('2024-01-02T00:00:00Z') as time, 'US' as country, 2 as val union all
+      select parseDateTimeBestEffort('2024-01-04T00:00:00Z') as time, 'US' as country, 4 as val union all
+      select parseDateTimeBestEffort('2024-01-05T00:00:00Z') as time, 'DK' as country, 5 as val
+  clickhouse_metrics.yaml:
+    type: metrics_view
+    model: clickhouse_data
+    timeseries: time
+    dimensions:
+      - column: country
+    measures:
+      - name: count
+        expression: count(*)
+      - name: sum
+        expression: sum(val)
+        treat_nulls_as: 123
+  druid_metrics.yaml:
+    type: metrics_view
+    connector: druid
+    model: AdBids
+    timeseries: __time
+    dimensions:
+      - column: publisher
+      - column: domain
+    measures:
+      - name: count
+        expression: count(*)
+        treat_nulls_as: -123
+  duckdb_data.yaml:
+    type: model
+    connector: duckdb
+    sql: |
+      select '2024-01-02T00:00:00Z'::TIMESTAMP as time, 'US' as country, 1 as val union all
+      select '2024-01-03T00:00:00Z'::TIMESTAMP as time, 'US' as country, 10 as val union all
+      select '2024-01-05T00:00:00Z'::TIMESTAMP as time, 'DK' as country, 100 as val
+  duckdb_data_null.yaml:
+    type: model
+    connector: duckdb
+    sql: |
+      select '2024-01-02T00:00:00Z'::TIMESTAMP as time, 'US' as country, 1 as val union all
+      select '2024-01-03T00:00:00Z'::TIMESTAMP as time, 'US' as country, null as val union all
+      select '2024-01-05T00:00:00Z'::TIMESTAMP as time, 'DK' as country, 100 as val
+  duckdb_metrics.yaml:
+    type: metrics_view
+    model: duckdb_data
+    timeseries: time
+    dimensions:
+      - column: country
+    measures:
+      - name: count
+        expression: count(*)
+      - name: sum
+        expression: sum(val)
+        treat_nulls_as: 0
+      - name: sum_nullable
+        expression: sum(val)
+      - name: sum_nullable_2day_rolling_avg_nullable
+        expression: AVG(sum_nullable)
+        requires: [sum_nullable]
+        window:
+          order: time
+          frame: RANGE BETWEEN INTERVAL 2 DAY PRECEDING AND CURRENT ROW
+      - name: sum_nullable_2day_rolling_avg
+        expression: AVG(sum_nullable)
+        requires: [sum_nullable]
+        treat_nulls_as: -1
+        window:
+          order: time
+          frame: RANGE BETWEEN INTERVAL 2 DAY PRECEDING AND CURRENT ROW
+      - name: sum_2day_rolling_avg_nullable
+        expression: AVG(sum)
+        requires: [sum]
+        window:
+          order: time
+          frame: RANGE BETWEEN INTERVAL 2 DAY PRECEDING AND CURRENT ROW
+      - name: recursive_measure
+        expression: sum_nullable_2day_rolling_avg + sum
+        requires: [sum_nullable_2day_rolling_avg, sum]
+      - name: recursive_measure_1
+        expression: sum_nullable_2day_rolling_avg_nullable + sum_nullable
+        requires: [sum_nullable_2day_rolling_avg_nullable, sum_nullable]
+        treat_nulls_as: -7
+  duckdb_metrics_null.yaml:
+    type: metrics_view
+    model: duckdb_data_null
+    timeseries: time
+    dimensions:
+      - column: country
+    measures:
+      - name: sum
+        expression: sum(val)
+        treat_nulls_as: -1
+tests:
+  - name: null_filling_coalesce_clickhouse
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics
+      dimensions:
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: sum
+      time_range:
+        end: 2024-01-05T00:00:00Z
+        start: 2024-01-03T00:00:00Z
+      sort:
+        - name: time__day
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - sum: 123
+        time__day: "2024-01-03T00:00:00Z"
+      - sum: 4
+        time__day: "2024-01-04T00:00:00Z"
+  - name: null_filling_coalesce_cross_clickhouse
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics
+      dimensions:
+        - name: country
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: sum
+      time_range:
+        end: 2024-01-05T00:00:00Z
+        start: 2024-01-03T00:00:00Z
+      sort:
+        - name: time__day
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - country: US
+        sum: 123
+        time__day: "2024-01-03T00:00:00Z"
+      - country: US
+        sum: 4
+        time__day: "2024-01-04T00:00:00Z"
+  - name: null_filling_coalesce_cross_1_clickhouse
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics
+      dimensions:
+        - name: country
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: sum
+      time_range:
+        end: 2024-01-06T00:00:00Z
+        start: 2024-01-03T00:00:00Z
+      sort:
+        - name: time__day
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - country: US
+        sum: 123
+        time__day: "2024-01-03T00:00:00Z"
+      - country: DK
+        sum: 123
+        time__day: "2024-01-03T00:00:00Z"
+      - country: US
+        sum: 4
+        time__day: "2024-01-04T00:00:00Z"
+      - country: DK
+        sum: 123
+        time__day: "2024-01-04T00:00:00Z"
+      - country: DK
+        sum: 5
+        time__day: "2024-01-05T00:00:00Z"
+      - country: US
+        sum: 123
+        time__day: "2024-01-05T00:00:00Z"
+  - name: null_filling_coalesce_druid
+    resolver: metrics
+    properties:
+      metrics_view: druid_metrics
+      dimensions:
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: __time
+              grain: day
+      measures:
+        - name: count
+      time_range:
+        end: 2022-01-02T00:00:00Z
+        start: 2021-12-31T00:00:00Z
+      sort:
+        - name: time__day
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - count: -123
+        time__day: "2021-12-31T00:00:00Z"
+      - count: 1116
+        time__day: "2022-01-01T00:00:00Z"
+  - name: null_filling_coalesce_cross_druid
+    resolver: metrics
+    properties:
+      metrics_view: druid_metrics
+      dimensions:
+        - name: publisher
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: __time
+              grain: day
+      measures:
+        - name: count
+      time_range:
+        end: 2022-01-02T00:00:00Z
+        start: 2021-12-31T00:00:00Z
+      sort:
+        - name: time__day
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - count: -123
+        publisher: null
+        time__day: "2021-12-31T00:00:00Z"
+      - count: -123
+        publisher: Facebook
+        time__day: "2021-12-31T00:00:00Z"
+      - count: -123
+        publisher: Google
+        time__day: "2021-12-31T00:00:00Z"
+      - count: -123
+        publisher: Microsoft
+        time__day: "2021-12-31T00:00:00Z"
+      - count: -123
+        publisher: Yahoo
+        time__day: "2021-12-31T00:00:00Z"
+      - count: 349
+        publisher: null
+        time__day: "2022-01-01T00:00:00Z"
+      - count: 242
+        publisher: Facebook
+        time__day: "2022-01-01T00:00:00Z"
+      - count: 231
+        publisher: Google
+        time__day: "2022-01-01T00:00:00Z"
+      - count: 62
+        publisher: Microsoft
+        time__day: "2022-01-01T00:00:00Z"
+      - count: 232
+        publisher: Yahoo
+        time__day: "2022-01-01T00:00:00Z"
+  - name: null_filling_coalesce_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics
+      dimensions:
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: sum
+        - name: sum_prev
+          compute:
+            comparison_value:
+              measure: sum
+      time_range:
+        end: 2024-01-05T00:00:00Z
+        start: 2024-01-03T00:00:00Z
+      comparison_time_range:
+        end: 2024-01-03T00:00:00Z
+        start: 2024-01-01T00:00:00Z
+      sort:
+        - name: time__day
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - sum: 10
+        sum_prev: null
+        time__day: "2024-01-03T00:00:00Z"
+      - sum: 0
+        sum_prev: 1
+        time__day: "2024-01-04T00:00:00Z"
+  - name: null_filling_no_overlap_results_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics
+      dimensions:
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: sum
+      time_range:
+        end: 2024-01-15T00:00:00Z
+        start: 2024-01-10T00:00:00Z
+      sort:
+        - name: time__day
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - sum: 0
+        time__day: "2024-01-10T00:00:00Z"
+      - sum: 0
+        time__day: "2024-01-11T00:00:00Z"
+      - sum: 0
+        time__day: "2024-01-12T00:00:00Z"
+      - sum: 0
+        time__day: "2024-01-13T00:00:00Z"
+      - sum: 0
+        time__day: "2024-01-14T00:00:00Z"
+  - name: null_filling_no_overlap_cross_no_results_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics
+      dimensions:
+        - name: country
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: sum
+      time_range:
+        end: 2024-01-15T00:00:00Z
+        start: 2024-01-10T00:00:00Z
+      sort:
+        - name: time__day
+      spine:
+        time:
+          start:
+          end:
+          grain:
+  - name: null_filling_coalesce_adv_measure_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics
+      dimensions:
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: sum_nullable_2day_rolling_avg
+      time_range:
+        end: 2024-01-06T00:00:00Z
+        start: 2023-12-31T00:00:00Z
+      sort:
+        - name: time__day
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - sum_nullable_2day_rolling_avg: -1
+        time__day: "2023-12-31T00:00:00Z"
+      - sum_nullable_2day_rolling_avg: -1
+        time__day: "2024-01-01T00:00:00Z"
+      - sum_nullable_2day_rolling_avg: 1
+        time__day: "2024-01-02T00:00:00Z"
+      - sum_nullable_2day_rolling_avg: 5.5
+        time__day: "2024-01-03T00:00:00Z"
+      - sum_nullable_2day_rolling_avg: 5.5
+        time__day: "2024-01-04T00:00:00Z"
+      - sum_nullable_2day_rolling_avg: 55
+        time__day: "2024-01-05T00:00:00Z"
+  - name: null_filling_coalesce_adv_measure_base_not_null_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics
+      dimensions:
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: sum_2day_rolling_avg_nullable
+      time_range:
+        end: 2024-01-06T00:00:00Z
+        start: 2023-12-31T00:00:00Z
+      sort:
+        - name: time__day
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - sum_2day_rolling_avg_nullable: 0
+        time__day: "2023-12-31T00:00:00Z"
+      - sum_2day_rolling_avg_nullable: 0
+        time__day: "2024-01-01T00:00:00Z"
+      - sum_2day_rolling_avg_nullable: 0.3333333333333333
+        time__day: "2024-01-02T00:00:00Z"
+      - sum_2day_rolling_avg_nullable: 3.6666666666666665
+        time__day: "2024-01-03T00:00:00Z"
+      - sum_2day_rolling_avg_nullable: 3.6666666666666665
+        time__day: "2024-01-04T00:00:00Z"
+      - sum_2day_rolling_avg_nullable: 36.666666666666664
+        time__day: "2024-01-05T00:00:00Z"
+  - name: null_filling_coalesce_recursive_adv_measure_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics
+      dimensions:
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: recursive_measure
+      time_range:
+        end: 2024-01-06T00:00:00Z
+        start: 2023-12-31T00:00:00Z
+      sort:
+        - name: time__day
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - recursive_measure: -1
+        time__day: "2023-12-31T00:00:00Z"
+      - recursive_measure: -1
+        time__day: "2024-01-01T00:00:00Z"
+      - recursive_measure: 2
+        time__day: "2024-01-02T00:00:00Z"
+      - recursive_measure: 15.5
+        time__day: "2024-01-03T00:00:00Z"
+      - recursive_measure: 5.5
+        time__day: "2024-01-04T00:00:00Z"
+      - recursive_measure: 155
+        time__day: "2024-01-05T00:00:00Z"
+  - name: null_filling_coalesce_recursive_adv_measure_1_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics
+      dimensions:
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: recursive_measure_1
+      time_range:
+        end: 2024-01-06T00:00:00Z
+        start: 2023-12-31T00:00:00Z
+      sort:
+        - name: time__day
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - recursive_measure_1: -7
+        time__day: "2023-12-31T00:00:00Z"
+      - recursive_measure_1: -7
+        time__day: "2024-01-01T00:00:00Z"
+      - recursive_measure_1: 2
+        time__day: "2024-01-02T00:00:00Z"
+      - recursive_measure_1: 15.5
+        time__day: "2024-01-03T00:00:00Z"
+      - recursive_measure_1: -7
+        time__day: "2024-01-04T00:00:00Z"
+      - recursive_measure_1: 155
+        time__day: "2024-01-05T00:00:00Z"
+  - name: null_filling_coalesce_iso_ranges_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics
+      dimensions:
+        - name: country
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: sum
+        - name: sum_prev
+          compute:
+            comparison_value:
+              measure: sum
+      time_range:
+        iso_duration: P2D
+      comparison_time_range:
+        iso_duration: P2D
+        iso_offset: P2D
+      sort:
+        - name: sum
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - country: US
+        sum: 0
+        sum_prev: 1
+        time__day: "2024-01-04T00:00:00Z"
+      - country: US
+        sum: 10
+        sum_prev: null
+        time__day: "2024-01-03T00:00:00Z"
+  - name: coalesce_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics_null
+      dimensions:
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: sum
+      time_range:
+        end: 2024-01-06T00:00:00Z
+        start: 2024-01-02T00:00:00Z
+      sort:
+        - name: time__day
+    result:
+      - sum: 1
+        time__day: "2024-01-02T00:00:00Z"
+      - sum: -1
+        time__day: "2024-01-03T00:00:00Z"
+      - sum: 100
+        time__day: "2024-01-05T00:00:00Z"
+  - name: coalesce_compare_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics_null
+      dimensions:
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: sum
+        - name: sum_prev
+          compute:
+            comparison_value:
+              measure: sum
+      time_range:
+        end: 2024-01-06T00:00:00Z
+        start: 2024-01-05T00:00:00Z
+      comparison_time_range:
+        end: 2024-01-04T00:00:00Z
+        start: 2024-01-03T00:00:00Z
+      sort:
+        - name: time__day
+    result:
+      - sum: 100
+        sum_prev: -1
+        time__day: "2024-01-05T00:00:00Z"
+  - name: null_filling_coalesce_iso_ranges_clickhouse
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics
+      dimensions:
+        - name: country
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: sum
+      time_range:
+        iso_duration: P3D
+      sort:
+        - name: sum
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - country: US
+        sum: 2
+        time__day: "2024-01-02T00:00:00Z"
+      - country: US
+        sum: 4
+        time__day: "2024-01-04T00:00:00Z"
+      - country: US
+        sum: 123
+        time__day: "2024-01-03T00:00:00Z"

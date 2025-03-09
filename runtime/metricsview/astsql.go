@@ -114,10 +114,22 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 			b.out.WriteString(", ")
 		}
 
+		if f.TreatNullAs != "" {
+			b.out.WriteString("COALESCE(")
+		}
+
 		b.out.WriteByte('(')
 		b.out.WriteString(f.Expr)
+		if f.TreatNullAs != "" {
+			b.out.WriteString("), ")
+			b.out.WriteString(f.TreatNullAs)
+		}
 		b.out.WriteString(") AS ")
 		b.out.WriteString(b.ast.dialect.EscapeIdentifier(f.Name))
+	}
+
+	if n.FromTable == nil && n.FromSelect == nil {
+		panic("internal: FromTable and FromSelect are both nil")
 	}
 
 	b.out.WriteString(" FROM ")
@@ -142,6 +154,13 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 
 		for _, ljs := range n.LeftJoinSelects {
 			err := b.writeJoin("LEFT", n.FromSelect, ljs)
+			if err != nil {
+				return err
+			}
+		}
+
+		for _, cjs := range n.CrossJoinSelects {
+			err := b.writeJoin(JoinTypeCross, n.FromSelect, cjs)
 			if err != nil {
 				return err
 			}
@@ -237,6 +256,10 @@ func (b *sqlBuilder) writeJoin(joinType JoinType, baseSelect, joinSelect *Select
 		b.out.WriteString(") ")
 	}
 	b.out.WriteString(joinSelect.Alias)
+
+	if joinType == JoinTypeCross {
+		return nil
+	}
 
 	if len(baseSelect.DimFields) == 0 {
 		b.out.WriteString(" ON TRUE")
