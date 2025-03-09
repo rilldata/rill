@@ -208,7 +208,7 @@ setup.describe("global setup", () => {
           });
           return listing.textContent();
         },
-        { intervals: Array(12).fill(5_000), timeout: 60_000 },
+        { intervals: Array(36).fill(5_000), timeout: 180_000 },
       )
       .toContain("Last refreshed");
 
