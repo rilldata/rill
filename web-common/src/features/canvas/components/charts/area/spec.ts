@@ -41,6 +41,8 @@ export function generateVLAreaChartSpec(
       type: config.x?.type,
       ...(config.x.type === "temporal" && { format: "%b %d, %Y %H:%M" }),
     });
+
+    multiValueTooltipChannel = multiValueTooltipChannel.slice(0, 50);
   }
 
   spec.layer = [

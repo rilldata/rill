@@ -146,8 +146,9 @@
     initialMousePosition = mousePosition;
     const row = Number(e.currentTarget.getAttribute("data-row"));
     const column = Number(e.currentTarget.getAttribute("data-column"));
-    const rowWidths =
-      specCanvasRows[row]?.items?.map((el) => el?.width ?? 0) ?? [];
+    const rowWidths = normalizeSizeArray(
+      specCanvasRows[row]?.items?.map((el) => el?.width ?? 0) ?? [],
+    );
 
     const nextElementWidth = rowWidths[column + 1];
 
@@ -407,6 +408,12 @@
     );
 
     updateAssets(newSpecRows, newYamlRows);
+
+    const id = getId(position.row, position.column);
+
+    selected = new Set([id]);
+
+    setSelectedComponent({ column: position.column, row: position.row });
   }
 
   function updateContents() {
