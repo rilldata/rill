@@ -41,6 +41,7 @@
   }
   :global(.markdown p) {
     font-size: 14px;
+    @apply my-2;
   }
   :global(.markdown table) {
     @apply w-full border-collapse my-4;
@@ -56,5 +57,35 @@
   }
   :global(.markdown tr:hover) {
     @apply bg-gray-100;
+  }
+  :global(.markdown a) {
+    @apply text-blue-600;
+  }
+  :global(.markdown ul) {
+    @apply list-disc pl-6 my-3;
+  }
+  :global(.markdown ol) {
+    @apply list-decimal pl-6 my-3;
+  }
+  :global(.markdown li) {
+    @apply text-sm my-1;
+  }
+  :global(.markdown blockquote) {
+    @apply border-l-4 border-gray-300 pl-4 py-1 my-3 italic text-gray-600;
+  }
+  :global(.markdown code) {
+    @apply bg-gray-100 px-1 py-0.5 rounded text-sm font-mono;
+  }
+  :global(.markdown pre) {
+    @apply bg-gray-100 p-3 rounded my-3 overflow-x-auto;
+  }
+  :global(.markdown pre code) {
+    @apply bg-transparent p-0 text-sm;
+  }
+  :global(.markdown hr) {
+    @apply my-3 border-t border-gray-300 w-full;
+  }
+  :global(.markdown img) {
+    @apply max-w-full h-auto my-3;
   }
 </style>
