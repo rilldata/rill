@@ -1,18 +1,55 @@
 import { expect } from "@playwright/test";
-import { createExploreFromModel } from "../utils/exploreHelpers";
-import { interactWithTimeRangeMenu } from "../utils/metricsViewHelpers";
+import {
+  createExploreFromModel,
+  createExploreFromSource,
+} from "../utils/exploreHelpers";
+import {
+  assertLeaderboards,
+  interactWithTimeRangeMenu,
+} from "../utils/metricsViewHelpers";
 import { ResourceWatcher } from "../utils/ResourceWatcher";
-import { updateCodeEditor } from "../utils/commonHelpers";
+import { updateCodeEditor, wrapRetryAssertion } from "../utils/commonHelpers";
 import {
   AD_BIDS_EXPLORE_PATH,
   AD_BIDS_METRICS_PATH,
+  assertAdBidsDashboard,
   createAdBidsModel,
 } from "../utils/dataSpecifcHelpers";
+import { createSource } from "../utils/sourceHelpers";
 import { test } from "../setup/base";
 import { gotoNavEntry } from "../utils/waitHelpers";
 
 test.describe("explores", () => {
-  test.use({ project: "AdBids" });
+  test.use({ project: "Blank" });
+
+  test("Autogenerate explore from source", async ({ page }) => {
+    await createSource(page, "AdBids.csv", "/sources/AdBids.yaml");
+    await createExploreFromSource(page);
+    // Temporary timeout while the issue is looked into
+    await page.waitForTimeout(1000);
+    await assertAdBidsDashboard(page);
+  });
+
+  test("Autogenerate explore from model", async ({ page }) => {
+    await createAdBidsModel(page);
+    await createExploreFromModel(page, true);
+    await assertAdBidsDashboard(page);
+
+    // click on publisher=Facebook leaderboard value
+    await page.getByRole("row", { name: "Facebook 19.3k" }).click();
+    await wrapRetryAssertion(() =>
+      assertLeaderboards(page, [
+        {
+          label: "Publisher",
+          values: ["null", "Facebook", "Google", "Yahoo", "Microsoft"],
+        },
+        {
+          label: "Domain",
+          values: ["facebook.com", "instagram.com"],
+        },
+      ]),
+    );
+  });
 
   test("Dashboard runthrough", async ({ page }) => {
     // Enable to get logs in CI
@@ -27,7 +64,43 @@ test.describe("explores", () => {
     const watcher = new ResourceWatcher(page);
 
     await createAdBidsModel(page);
-    await createExploreFromModel(page, true);
+    await createExploreFromModel(page);
+
+    await page.getByLabel("code").click();
+
+    // Add `inf` alias to the time range
+    const addAllTime = `
+type: explore
+
+title: "Adbids dashboard"
+metrics_view: AdBids_model_metrics
+
+dimensions: '*'
+measures: '*'
+
+time_ranges:
+  - PT6H
+  - PT24H
+  - P7D
+  - P14D
+  - P4W
+  - P12M
+  - rill-TD
+  - rill-WTD
+  - rill-MTD
+  - rill-QTD
+  - rill-YTD
+  - rill-PDC
+  - rill-PWC
+  - rill-PMC
+  - rill-PQC
+  - rill-PYC
+  - inf
+`;
+
+    await watcher.updateAndWaitForExplore(addAllTime);
+
+    await page.getByRole("button", { name: "Preview" }).click();
 
     // Check the total records are 100k
     await expect(page.getByText("Total records 100k")).toBeVisible();
@@ -185,6 +258,25 @@ metrics_view: AdBids_model_metrics
 
 dimensions: '*'
 measures: '*'
+
+time_ranges:
+  - PT6H
+  - PT24H
+  - P7D
+  - P14D
+  - P4W
+  - P12M
+  - rill-TD
+  - rill-WTD
+  - rill-MTD
+  - rill-QTD
+  - rill-YTD
+  - rill-PDC
+  - rill-PWC
+  - rill-PMC
+  - rill-PQC
+  - rill-PYC
+  - inf
 `;
     await page.getByLabel("code").click();
     await watcher.updateAndWaitForExplore(changeDisplayNameDoc);
