@@ -1,7 +1,5 @@
-import { expect } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 import { test } from "./setup/base";
-
-import { type Page } from "@playwright/test";
 
 async function waitForReadyMessage(embedPage: Page, logMessages: string[]) {
   return new Promise<void>((resolve) => {
@@ -28,7 +26,7 @@ test.describe("Embeds", () => {
     await frame.getByRole("menuitem", { name: "UTC GMT +00:00 UTC" }).click();
 
     await expect(
-      frame.getByRole("button", { name: "Advertising Spend Overall $1.30M" }),
+      frame.getByRole("button", { name: "Advertising Spend Overall $20,603" }),
     ).toBeVisible();
   });
 
@@ -40,7 +38,7 @@ test.describe("Embeds", () => {
     await frame.getByLabel("Timezone selector").click();
     await frame.getByRole("menuitem", { name: "UTC GMT +00:00 UTC" }).click();
 
-    await frame.getByRole("row", { name: "Instacart $107.3k" }).click();
+    await frame.getByRole("row", { name: "Instacart $2.1k" }).click();
     await embedPage.waitForTimeout(500);
 
     expect(
@@ -58,7 +56,7 @@ test.describe("Embeds", () => {
     await frame.getByLabel("Timezone selector").click();
     await frame.getByRole("menuitem", { name: "UTC GMT +00:00 UTC" }).click();
 
-    await frame.getByRole("row", { name: "Instacart $107.3k" }).click();
+    await frame.getByRole("row", { name: "Instacart $2.1k" }).click();
     await embedPage.waitForTimeout(500);
 
     await embedPage.evaluate(() => {
@@ -95,7 +93,7 @@ test.describe("Embeds", () => {
 
     await expect(frame.getByLabel("Timezone selector")).toHaveText("UTC");
     await expect(
-      frame.getByRole("row", { name: "Instacart $107.3k" }),
+      frame.getByRole("row", { name: "Instacart $2.1k" }),
     ).toBeVisible();
     expect(
       logMessages.some((msg) => msg.includes(`{"id":1337,"result":true}`)),

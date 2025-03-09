@@ -17,7 +17,7 @@ test.describe("Explores", () => {
 
     // Check the Big Number
     await expect(
-      page.getByRole("button", { name: "Requests 547M" }),
+      page.getByRole("button", { name: "Requests 6.60M" }),
     ).toBeVisible();
   });
 });
