@@ -44,7 +44,7 @@
 
   $: withoutComponents = resources?.filter((r) => !r?.component);
 
-  $: showDropdown = withoutComponents.length > 0;
+  $: componentsOnly = !withoutComponents.length && resources.length;
 
   $: allRefs = resources?.map((r) => r?.meta?.refs).flat();
 
@@ -100,12 +100,12 @@
 {#if upstreamResources.length}
   <svelte:self resources={upstreamResources} {allResources} upstream />
 
-  {#if showDropdown}
+  {#if !componentsOnly}
     <CaretDownIcon size="12px" className="text-gray-500 -rotate-90 flex-none" />
   {/if}
 {/if}
 
-{#if showDropdown}
+{#if !componentsOnly}
   <DropdownMenu.Root bind:open>
     <DropdownMenu.Trigger asChild let:builder>
       <svelte:element
@@ -133,7 +133,7 @@
 
     {#if dropdown}
       <DropdownMenu.Content align="start">
-        {#each withoutComponents as resource (resource?.meta?.name?.name)}
+        {#each resources as resource (resource?.meta?.name?.name)}
           {@const kind = resource?.meta?.name?.kind}
           <DropdownMenu.Item
             href="/files{resource?.meta?.filePaths?.[0] ?? '/'}"
