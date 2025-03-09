@@ -29,7 +29,7 @@
 
   $: ianaMap = formatIANAs(allTimeZones, watermark);
 
-  $: pinnedTimeZones = formatIANAs(availableTimeZones, watermark);
+  $: pinnedTimeZones = formatIANAs([...availableTimeZones, "UTC"], watermark);
 
   $: filteredPinnedTimeZones = filterTimeZones(pinnedTimeZones, searchValue);
 

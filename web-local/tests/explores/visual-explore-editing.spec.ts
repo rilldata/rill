@@ -37,7 +37,7 @@ test.describe("visual explore editing", () => {
       .textContent();
 
     expect(text).toEqual(
-      ' 30123456789101112131415161718192021222324252627282930# Explore YAML# Reference documentation: https://docs.rilldata.com/reference/project-files/explore-dashboardstype: exploretitle: "Adbids dashboard"metrics_view: AdBids_metricsdimensions:  expr: "*"measures:  expr: "*"time_ranges:  - PT6H  - PT24H  - P7D  - P14D  - P4W  - P12M  - rill-TD  - rill-WTD  - rill-MTD  - rill-QTD  - rill-YTD  - rill-PDC  - rill-PWC  - rill-PMC  - rill-PQC  - rill-PYC',
+      ' 321234567891011121314151617181920212223242526272829303132# Explore YAML# Reference documentation: https://docs.rilldata.com/reference/project-files/explore-dashboardstype: exploretitle: "Adbids dashboard"metrics_view: AdBids_metricsdimensions:  expr: "*"measures:  expr: "*"time_ranges:  - PT6H  - PT24H  - P7D  - P14D  - P4W  - P3M  - P12M  - rill-TD  - rill-WTD  - rill-MTD  - rill-QTD  - rill-YTD  - rill-PDC  - rill-PWC  - rill-PMC  - rill-PQC  - rill-PYC',
     );
   });
 });
