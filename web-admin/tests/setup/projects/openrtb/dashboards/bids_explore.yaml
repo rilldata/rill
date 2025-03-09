@@ -13,6 +13,7 @@ measures: '*'
 #  time_range: "PT24H"
 
 time_zones:
+  - UTC
   - America/Los_Angeles
   - America/Chicago
   - America/New_York
