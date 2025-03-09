@@ -53,6 +53,16 @@
       </div>
       {#if isDimension && !isTemporal}
         <div class="py-1.5 flex items-center justify-between">
+          <span class="text-xs">Show null values</span>
+          <Switch
+            small
+            checked={fieldConfig?.showNull}
+            on:click={() => {
+              onChange("showNull", !fieldConfig?.showNull);
+            }}
+          />
+        </div>
+        <div class="py-1.5 flex items-center justify-between">
           <span class="text-xs">Sort</span>
           <Select
             size="sm"
