@@ -48,7 +48,7 @@
           />
         </svg>
       </IconButton>
-      <span class=" text-gray-700">
+      <span class=" text-gray-700 cursor-text">
         <strong>{count} measure{count === 1 ? "" : "s"}</strong>
       </span>
       <IconButton

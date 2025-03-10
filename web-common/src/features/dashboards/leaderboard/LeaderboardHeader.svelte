@@ -34,6 +34,10 @@
   ) => void;
   export let measureLabel: (measureName: string) => string;
 
+  $: showPercentOfTotal =
+    isValidPercentOfTotal &&
+    contextColumns.includes(LeaderboardContextColumn.PERCENT);
+
   $: showDeltaAbsolute =
     isTimeComparisonActive &&
     contextColumns.includes(LeaderboardContextColumn.DELTA_ABSOLUTE);
@@ -41,11 +45,6 @@
   $: showDeltaPercent =
     isTimeComparisonActive &&
     contextColumns.includes(LeaderboardContextColumn.DELTA_PERCENT);
-
-  $: showPercentOfTotal =
-    isTimeComparisonActive &&
-    isValidPercentOfTotal &&
-    contextColumns.includes(LeaderboardContextColumn.PERCENT);
 
   $: hasMoreThanOneMeasure = activeMeasureNames.length > 1;
 </script>

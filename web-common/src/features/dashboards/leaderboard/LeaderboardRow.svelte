@@ -205,6 +205,10 @@
     ]),
   );
 
+  $: showPercentOfTotal =
+    isValidPercentOfTotal &&
+    contextColumns.includes(LeaderboardContextColumn.PERCENT);
+
   $: showDeltaAbsolute =
     isTimeComparisonActive &&
     contextColumns.includes(LeaderboardContextColumn.DELTA_ABSOLUTE);
@@ -212,11 +216,6 @@
   $: showDeltaPercent =
     isTimeComparisonActive &&
     contextColumns.includes(LeaderboardContextColumn.DELTA_PERCENT);
-
-  $: showPercentOfTotal =
-    isTimeComparisonActive &&
-    isValidPercentOfTotal &&
-    contextColumns.includes(LeaderboardContextColumn.PERCENT);
 
   $: showTooltip = hovered && !suppressTooltip;
 
