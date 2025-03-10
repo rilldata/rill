@@ -163,8 +163,7 @@
       isValidPercentOfTotal={validPercentOfTotal}
       hasComparisonTimeRange={!!comparisonTimeRange}
       selectedFilters={$contextColumns}
-      {measures}
-      onToggle={setContextColumns}
+      onContextColumnChange={setContextColumns}
       onSelectAll={() => {
         setContextColumns([]);
       }}
