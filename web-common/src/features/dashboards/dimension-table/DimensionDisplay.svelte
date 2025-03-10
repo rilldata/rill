@@ -62,7 +62,7 @@
     },
   } = getStateManagers();
 
-  console.log("$dimensionShowForAllMeasures: ", $dimensionShowForAllMeasures);
+  // console.log("$dimensionShowForAllMeasures: ", $dimensionShowForAllMeasures);
   // $: console.log("activeMeasureName: ", activeMeasureName);
   // $: console.log("DimensionDisplay $sortByMeasure: ", $sortByMeasure);
   // $: console.log("DimensionDisplay $contextColumns: ", $contextColumns);
