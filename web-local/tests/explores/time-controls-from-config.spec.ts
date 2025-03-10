@@ -12,7 +12,7 @@ test.describe("time controls settings from explore preset", () => {
 
     await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
-    await page.getByLabel("code").click();
+    await page.getByRole("button", { name: "switch to code editor" }).click();
 
     // Set a time range that is one of the supported presets
     await watcher.updateAndWaitForExplore(
@@ -88,7 +88,7 @@ test.describe("time controls settings from explore preset", () => {
 
     await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
-    await page.getByLabel("code").click();
+    await page.getByRole("button", { name: "switch to code editor" }).click();
 
     // Set comparison to time
     await watcher.updateAndWaitForExplore(
@@ -137,7 +137,7 @@ test.describe("time controls settings from explore preset", () => {
 
     await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
-    await page.getByLabel("code").click();
+    await page.getByRole("button", { name: "switch to code editor" }).click();
 
     await watcher.updateAndWaitForExplore(
       getDashboardYaml(

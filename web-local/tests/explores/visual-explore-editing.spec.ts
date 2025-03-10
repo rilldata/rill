@@ -8,7 +8,7 @@ test.describe("visual explore editing", () => {
   test("visual explore editor runthrough", async ({ page }) => {
     await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
-    await page.getByLabel("code").click();
+    await page.getByRole("button", { name: "switch to code editor" }).click();
 
     await page.getByRole("button", { name: "Subset" }).first().click();
     await page.getByRole("button", { name: "Subset" }).nth(1).click();
@@ -18,7 +18,7 @@ test.describe("visual explore editing", () => {
     await page.getByRole("button", { name: "Custom" }).nth(2).click();
 
     let text = await page
-      .getByRole("textbox", { name: "Code editor" })
+      .getByRole("textbox", { name: "codemirror editor" })
       .textContent();
 
     expect(text).toEqual(
@@ -33,7 +33,7 @@ test.describe("visual explore editing", () => {
     await page.getByRole("button", { name: "Presets" }).click();
 
     text = await page
-      .getByRole("textbox", { name: "Code editor" })
+      .getByRole("textbox", { name: "codemirror editor" })
       .textContent();
 
     expect(text).toEqual(

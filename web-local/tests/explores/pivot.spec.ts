@@ -551,7 +551,7 @@ test.describe("pivot run through", () => {
     await page.getByLabel("/metrics").click();
     await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/metrics/AdBids_metrics.yaml");
-    await page.getByLabel("code").click();
+    await page.getByRole("button", { name: "switch to code editor" }).click();
 
     // update the code editor with the new spec
     await watcher.updateAndWaitForDashboard(pivotDashboard);

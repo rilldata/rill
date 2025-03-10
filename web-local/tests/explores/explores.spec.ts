@@ -66,7 +66,7 @@ test.describe("explores", () => {
     await createAdBidsModel(page);
     await createExploreFromModel(page);
 
-    await page.getByLabel("code").click();
+    await page.getByRole("button", { name: "switch to code editor" }).click();
 
     // Add `inf` alias to the time range
     const addAllTime = `
@@ -102,8 +102,16 @@ time_ranges:
 
     await page.getByRole("button", { name: "Preview" }).click();
 
-    // Check the total records are 100k
-    await expect(page.getByText("Total records 100k")).toBeVisible();
+    await page.waitForTimeout(1000);
+
+    await page
+      .getByRole("button", { name: "Total records 100k" })
+      .waitFor({ timeout: 2000 });
+
+    // // Check the total records are 100k
+    // await expect(
+    //   page.getByRole("button", { name: "Total records 100k" }),
+    // ).toBeVisible();
 
     // Check the row viewer accordion is visible
     await expect(page.getByText("Model Data 100k of 100k rows")).toBeVisible();
@@ -278,7 +286,7 @@ time_ranges:
   - rill-PYC
   - inf
 `;
-    await page.getByLabel("code", { exact: true }).click();
+
     await watcher.updateAndWaitForExplore(changeDisplayNameDoc);
 
     // Remove timestamp column
@@ -327,7 +335,7 @@ time_ranges:
 
         `;
 
-    await page.getByLabel("code").click();
+    await page.getByRole("button", { name: "switch to code editor" }).click();
     await watcher.updateAndWaitForDashboard(addBackTimestampColumnDoc);
     await page.getByRole("button", { name: "Create resource menu" }).click();
     await page
