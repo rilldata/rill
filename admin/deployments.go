@@ -405,6 +405,13 @@ func (s *Service) CheckProvisionerResource(ctx context.Context, pr *database.Pro
 }
 
 func (s *Service) OpenRuntimeClient(depl *database.Deployment) (*client.Client, error) {
+	if depl.RuntimeHost == "" {
+		if depl.Status == database.DeploymentStatusError {
+			return nil, fmt.Errorf("deployment %q has no runtime host: %s", depl.ID, depl.StatusMessage)
+		}
+		return nil, fmt.Errorf("deployment %q has no runtime host", depl.ID)
+	}
+
 	jwt, err := s.IssueRuntimeManagementToken(depl.RuntimeAudience)
 	if err != nil {
 		return nil, err
