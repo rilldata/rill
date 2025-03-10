@@ -246,6 +246,9 @@
               class:cursor-pointer={header.column.getCanSort()}
               class:select-none={header.column.getCanSort()}
               class:flex-row-reverse={isMeasureColumn(header, i)}
+              class:border-r={isMeasureColumn(header, i)
+                ? i % measureCount === 0 && i
+                : true}
               on:click={header.column.getToggleSortingHandler()}
             >
               {#if !header.isPlaceholder}
@@ -342,7 +345,7 @@
 
   th {
     @apply p-0 m-0 text-xs;
-    @apply border-r border-b relative;
+    @apply border-b relative;
   }
 
   th:last-of-type,
