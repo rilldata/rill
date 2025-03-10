@@ -24,10 +24,14 @@
   </span>
 
   {#if search}
-    <span>SEARCH</span>
-    <span class="italic">{search}</span>
+    <span>Contains</span>
+    {#if loading}
+      <Spinner status={EntityStatus.Running} size="10px" />
+    {:else}
+      <span class="italic">{search} ({matchedCount})</span>
+    {/if}
   {:else if matchedCount !== undefined}
-    <span>MATCH LIST</span>
+    <span>In list</span>
     {#if loading}
       <Spinner status={EntityStatus.Running} size="10px" />
     {:else}

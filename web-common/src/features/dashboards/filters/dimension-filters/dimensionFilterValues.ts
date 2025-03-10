@@ -52,6 +52,55 @@ export function useDimensionSearch(
   });
 }
 
+export function useSearchMatchedCount(
+  instanceId: string,
+  metricsViewNames: string[],
+  dimensionName: string,
+  searchText: string,
+  timeStart?: string,
+  timeEnd?: string,
+  enabled?: boolean,
+): CompoundQueryResult<number | undefined> {
+  const addNull = searchText.length !== 0 && "null".includes(searchText);
+
+  const queries = metricsViewNames.map((mvName) =>
+    createQueryServiceMetricsViewAggregation(
+      instanceId,
+      mvName,
+      {
+        measures: [
+          {
+            name: dimensionName + "__distinct_count",
+            builtinMeasure: V1BuiltinMeasure.BUILTIN_MEASURE_COUNT_DISTINCT,
+            builtinMeasureArgs: [dimensionName],
+          },
+        ],
+        timeRange: { start: timeStart, end: timeEnd },
+        limit: limit.toString(),
+        offset: "0",
+        where: addNull
+          ? createInExpression(dimensionName, [null])
+          : createLikeExpression(dimensionName, `%${searchText}%`),
+      },
+      {
+        query: { enabled },
+      },
+    ),
+  );
+
+  return getCompoundAggregationQuery(queries, (responses) => {
+    if (!enabled) return undefined;
+
+    const values = responses
+      .filter((r) => !!r?.data)
+      .map((r) =>
+        r!.data!.map((i) => i[dimensionName + "__distinct_count"] as number),
+      )
+      .flat();
+    return values.reduce((s, v) => s + v, 0);
+  });
+}
+
 const limit = 250;
 export function useBulkSearchResults(
   instanceId: string,

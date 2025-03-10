@@ -16,6 +16,7 @@
   export let options: {
     value: string;
     label: string;
+    description?: string;
     type?: string;
     disabled?: boolean;
     tooltip?: string;
@@ -109,12 +110,13 @@
           <Search bind:value={searchText} showBorderOnFocus={false} />
         </div>
       {/if}
-      {#each filteredOptions as { type, value, label, disabled, tooltip } (value)}
+      {#each filteredOptions as { type, value, label, description, disabled, tooltip } (value)}
         <Select.Item
           {value}
           {label}
+          {description}
           {disabled}
-          class="text-[{fontSize}px] gap-x-2"
+          class="text-[{fontSize}px] gap-x-2 items-start"
         >
           {#if tooltip}
             <Tooltip.Root portal="body">

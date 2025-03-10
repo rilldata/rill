@@ -1,23 +1,23 @@
 <script lang="ts">
-  import { Button, IconButton } from "@rilldata/web-common/components/button";
+  import { Button } from "@rilldata/web-common/components/button";
   import { Chip } from "@rilldata/web-common/components/chip";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
+  import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import RemovableListBody from "@rilldata/web-common/components/chip/removable-list-chip/RemovableListBody.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
   import { Search } from "@rilldata/web-common/components/search";
-  import { Tag } from "@rilldata/web-common/components/tag";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { XIcon } from "lucide-svelte";
   import { fly } from "svelte/transition";
   import {
     useBulkSearchMatchedCount,
     useBulkSearchResults,
     useDimensionSearch,
+    useSearchMatchedCount,
   } from "./dimensionFilterValues";
 
   export let name: string;
@@ -48,9 +48,9 @@
   $: ({ instanceId } = $runtime);
 
   enum SearchMode {
-    Select,
-    Search,
-    Bulk,
+    Select = "Select",
+    Search = "Search",
+    Bulk = "Bulk",
   }
   let mode: SearchMode = isMatchList
     ? SearchMode.Bulk
@@ -84,6 +84,20 @@
     error: errorFromSearch,
     isFetching: isFetchingFromSearch,
   } = $searchValues);
+  $: searchMatchedCount = useSearchMatchedCount(
+    instanceId,
+    metricsViewNames,
+    name,
+    curSearchText,
+    timeStart,
+    timeEnd,
+    Boolean(timeControlsReady) && mode === SearchMode.Search,
+  );
+  $: ({
+    data: dataFromSearchMatchedCount,
+    error: errorFromSearchMatchedCount,
+    isFetching: isFetchingFromSearchMatchedCount,
+  } = $searchMatchedCount);
   $: bulkValues = useBulkSearchResults(
     instanceId,
     metricsViewNames,
@@ -114,7 +128,11 @@
   } = $bulkMatchedCount);
 
   $: data = mode === SearchMode.Bulk ? dataFromBulk : dataFromSearch;
-  $: error = errorFromSearch ?? errorFromBulk ?? errorFromBulkMatchedCount;
+  $: error =
+    errorFromSearch ??
+    errorFromBulk ??
+    errorFromBulkMatchedCount ??
+    errorFromSearchMatchedCount;
   $: isFetching =
     isFetchingFromSearch ??
     isFetchingFromBulk ??
@@ -122,25 +140,29 @@
 
   $: showExtraInfo = mode !== SearchMode.Select || curSearchText.length > 0;
 
-  $: if (curSearchText.length > 0) {
-    const values = curSearchText.split(/\s*,\s*/);
-    if (values.length > 1) {
-      searchedBulkValues = values;
-      mode = SearchMode.Bulk;
-    } else if (mode === SearchMode.Bulk) {
-      searchedBulkValues = [];
-      mode = SearchMode.Select;
+  function checkSearchText(searchText: string) {
+    const values = searchText.split(/\s*,\s*/);
+    if (values.length <= 1 || mode === SearchMode.Bulk) {
+      return;
     }
-  } else if (mode === SearchMode.Bulk) {
-    searchedBulkValues = [];
-    mode = SearchMode.Select;
+    searchedBulkValues = values;
+    mode = SearchMode.Bulk;
   }
+  $: checkSearchText(curSearchText);
 
   $: allSelected = Boolean(
     selectedValues.length && data?.length === selectedValues.length,
   );
   $: effectiveSelectedValues =
     mode !== SearchMode.Bulk ? selectedValues : (data ?? []);
+
+  function handleModeChange(newMode: SearchMode) {
+    if (newMode !== SearchMode.Bulk) {
+      searchedBulkValues = [];
+    } else {
+      searchedBulkValues = curSearchText.split(/\s*,\s*/);
+    }
+  }
 
   function onToggleSelectAll() {
     data?.forEach((dimensionValue) => {
@@ -212,8 +234,9 @@
           values={mode === SearchMode.Bulk
             ? searchedBulkValues
             : effectiveSelectedValues}
-          matchedCount={dataFromBulkMatchedCount}
-          loading={isFetchingFromBulkMatchedCount}
+          matchedCount={dataFromBulkMatchedCount ?? dataFromSearchMatchedCount}
+          loading={isFetchingFromBulkMatchedCount ??
+            isFetchingFromSearchMatchedCount}
           search={sanitisedSearchText}
         />
       </Chip>
@@ -235,45 +258,52 @@
     class="flex flex-col max-h-96 w-[400px] overflow-hidden p-0"
   >
     <div class="flex flex-col px-3 pt-3">
-      <Search
-        bind:value={curSearchText}
-        label="Search list"
-        showBorderOnFocus={false}
-        placeholder="Enter search term or paste list of values"
-      />
+      <div class="flex flex-row">
+        <Select
+          id="search-mode"
+          bind:value={mode}
+          options={[
+            {
+              value: SearchMode.Select,
+              label: "Select",
+              description: "Manually select values for this filter",
+            },
+            {
+              value: SearchMode.Search,
+              label: "Contains",
+              description: "Create a dynamic filter based on a search term",
+            },
+            {
+              value: SearchMode.Bulk,
+              label: "In List",
+              description: "Create a filter based on a list of values",
+            },
+          ]}
+          onChange={handleModeChange}
+        />
+        <Search
+          bind:value={curSearchText}
+          label="Search list"
+          showBorderOnFocus={false}
+          placeholder="Enter search term or paste list of values"
+        />
+      </div>
       {#if showExtraInfo}
         <div class="flex flex-row items-center justify-between pt-2 pb-1">
-          {#if mode === SearchMode.Bulk}
-            <Tag noSpan>
-              <span>Match list</span>
-              <IconButton
-                disableHover
-                size={12}
-                on:click={() => (mode = SearchMode.Select)}
-              >
-                <XIcon size="12px" class="text-gray-500 cursor-pointer" />
-              </IconButton>
-            </Tag>
-          {:else if mode === SearchMode.Search}
-            <Tag noSpan>
-              <span>Search</span>
-              <IconButton
-                disableHover
-                size={12}
-                on:click={() => (mode = SearchMode.Select)}
-              >
-                <XIcon size="12px" class="text-gray-500 cursor-pointer" />
-              </IconButton>
-            </Tag>
-          {:else if curSearchText.length}
-            <Button
-              type="subtle"
-              small
-              on:click={() => (mode = SearchMode.Search)}
+          {#if mode === SearchMode.Search}
+            <DropdownMenu.Label
+              class="pb-0 uppercase text-[10px] text-gray-500"
             >
-              Convert to search filter
-            </Button>
+              {dataFromSearch?.length ?? 0} results
+            </DropdownMenu.Label>
+          {:else if mode === SearchMode.Bulk}
+            <DropdownMenu.Label
+              class="pb-0 uppercase text-[10px] text-gray-500"
+            >
+              {searchedBulkValues.length} of {dataFromBulkMatchedCount} matched
+            </DropdownMenu.Label>
           {/if}
+
           <a
             href="https://docs.rilldata.com/"
             target="_blank"
@@ -300,20 +330,6 @@
         </div>
       {:else if data}
         <DropdownMenu.Group class="px-1">
-          {#if mode === SearchMode.Search}
-            <DropdownMenu.Label
-              class="pb-0 uppercase text-[10px] text-gray-500"
-            >
-              {dataFromSearch?.length ?? 0} results
-            </DropdownMenu.Label>
-          {:else if mode === SearchMode.Bulk}
-            <DropdownMenu.Label
-              class="pb-0 uppercase text-[10px] text-gray-500"
-            >
-              {searchedBulkValues.length} of {dataFromBulkMatchedCount} matched
-            </DropdownMenu.Label>
-          {/if}
-
           {#each data as name (name)}
             {@const selected = effectiveSelectedValues.includes(name)}
             {@const label = name ?? "null"}
