@@ -139,7 +139,7 @@ func resourcesForProject(ctx context.Context, c *client.Client, org, project, fi
 		InstanceId: depl.RuntimeInstanceId,
 	}
 	if filter != "" {
-		req.Kind = parseResourceKind(filter)
+		req.Kind = runtime.ResourceKindFromShorthand(filter)
 	}
 	res, err := rt.ListResources(ctx, req)
 	if err != nil {
@@ -151,37 +151,6 @@ func resourcesForProject(ctx context.Context, c *client.Client, org, project, fi
 	}
 
 	return res.Resources, nil
-}
-
-func parseResourceKind(k string) string {
-	switch strings.ToLower(strings.TrimSpace(k)) {
-	case "source":
-		return runtime.ResourceKindSource
-	case "model":
-		return runtime.ResourceKindModel
-	case "metricsview", "metrics_view":
-		return runtime.ResourceKindMetricsView
-	case "explore":
-		return runtime.ResourceKindExplore
-	case "migration":
-		return runtime.ResourceKindMigration
-	case "report":
-		return runtime.ResourceKindReport
-	case "alert":
-		return runtime.ResourceKindAlert
-	case "theme":
-		return runtime.ResourceKindTheme
-	case "component":
-		return runtime.ResourceKindComponent
-	case "canvas":
-		return runtime.ResourceKindCanvas
-	case "api":
-		return runtime.ResourceKindAPI
-	case "connector":
-		return runtime.ResourceKindConnector
-	default:
-		return k
-	}
 }
 
 func printResources(p *printer.Printer, resources map[string]map[string][]*runtimev1.Resource) {

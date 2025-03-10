@@ -2,7 +2,6 @@ package project
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -37,7 +36,7 @@ func DescribeCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			kind := parseResourceKind(args[len(args)-2])
+			kind := runtime.ResourceKindFromShorthand(args[len(args)-2])
 			name := args[len(args)-1]
 
 			proj, err := client.GetProject(cmd.Context(), &adminv1.GetProjectRequest{
@@ -89,35 +88,4 @@ func DescribeCmd(ch *cmdutil.Helper) *cobra.Command {
 	statusCmd.Flags().StringVar(&path, "path", ".", "Project directory")
 
 	return statusCmd
-}
-
-func parseResourceKind(k string) string {
-	switch strings.ToLower(strings.TrimSpace(k)) {
-	case "source":
-		return runtime.ResourceKindSource
-	case "model":
-		return runtime.ResourceKindModel
-	case "metricsview", "metrics_view":
-		return runtime.ResourceKindMetricsView
-	case "explore":
-		return runtime.ResourceKindExplore
-	case "migration":
-		return runtime.ResourceKindMigration
-	case "report":
-		return runtime.ResourceKindReport
-	case "alert":
-		return runtime.ResourceKindAlert
-	case "theme":
-		return runtime.ResourceKindTheme
-	case "component":
-		return runtime.ResourceKindComponent
-	case "canvas":
-		return runtime.ResourceKindCanvas
-	case "api":
-		return runtime.ResourceKindAPI
-	case "connector":
-		return runtime.ResourceKindConnector
-	default:
-		return k
-	}
 }

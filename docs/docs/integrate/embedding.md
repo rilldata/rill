@@ -71,8 +71,9 @@ curl -X POST --location 'https://admin.rilldata.com/v1/organizations/<org-name>/
 --header 'Content-Type: application/json' \
 --header 'Authorization: Bearer <rill-svc-token>' \
 --data-raw '{
-"resource": "<dashboard-name>",
-"user_email":"<user-email>"
+"resource": "<explore-name>",
+"type": "explore",
+"user_email": "<user-email>"
 }'
 ```
   </TabItem>
@@ -143,6 +144,7 @@ def get_rill_iframe():
             },
             json={
                 'resource': dashboard_name,
+                'type': 'explore',
                 'user_email': '<user-email>',
             }
         )
@@ -177,7 +179,8 @@ func getRillIframe(w http.ResponseWriter, r *http.Request) {
 	dashboardName := reqBody["resource"]
 
 	requestBody, err := json.Marshal(map[string]string{
-		"resource":   dashboardName,
+		"resource": dashboardName,
+		"type": "explore",
 		"user_email": "<user-email>",
 	})
 
@@ -247,6 +250,7 @@ public class DashboardController {
 
         Map<String, Object> request = Map.of(
                 "resource", dashboardName,
+                "type", "explore",
                 "user_email", "<user-email>"
         );
 
@@ -269,15 +273,15 @@ public class DashboardController {
 
 The API accepts the following parameters:
 
-| Parameter | Description                                                                                                                                                                                     | Required                         |
-| --- |-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------|
-| resource | The name of the dashboard to embed                                                                                                                                              | No (if not specified, `navigation` should be set to `true`)                              |
-| navigation | Boolean whether to enable navigation and allow users to navigate to other dashboards (`false` will hard embed and allow access to a single dashboard; `true` allows navigation)                                                                        | No (defaults to `false`) |
-| theme | If [themes](/build/dashboards/customize.md#changing-themes--colors) are being used, the specific theme to pass to the embedded dashboard                                                                                                                                          | No (set to the name of the theme) |
-| user_id | The id of the user to embed the dashboard for                                                                                                                                                | No (only one of `user_id`, `user_email`, or `attributes` should be passed in) |
-| user_email | The email of the user to embed the dashboard for                                                                                                                                                | No (only one of `user_id`, `user_email`, or `attributes` should be passed in) |
-| attributes | Json payload to be put in the access token, used to pass attributes to the dashboard for enforcing policies. When using this make sure to pass all the attributes used in your security policy like `email`, `domain` and `admin` and any other custom attributes such as `tenantId`, `customerId`, etc. | No (It is also possible to add custom attributes here) |
-| ttl_seconds | The time to live for the iframe URL                                                                                                                                                | No (Default: 86400)              |
+| Parameter   | Description                                                                                                                                                                                                                                                                                              | Required                                                                      |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| resource    | The name of the dashboard to embed                                                                                                                                                                                                                                                                       | No (if not specified, `navigation` should be set to `true`)                   |
+| navigation  | Boolean whether to enable navigation and allow users to navigate to other dashboards (`false` will hard embed and allow access to a single dashboard; `true` allows navigation)                                                                                                                          | No (defaults to `false`)                                                      |
+| theme       | If [themes](/build/dashboards/customize.md#changing-themes--colors) are being used, the specific theme to pass to the embedded dashboard                                                                                                                                                                 | No (set to the name of the theme)                                             |
+| user_id     | The id of the user to embed the dashboard for                                                                                                                                                                                                                                                            | No (only one of `user_id`, `user_email`, or `attributes` should be passed in) |
+| user_email  | The email of the user to embed the dashboard for                                                                                                                                                                                                                                                         | No (only one of `user_id`, `user_email`, or `attributes` should be passed in) |
+| attributes  | Json payload to be put in the access token, used to pass attributes to the dashboard for enforcing policies. When using this make sure to pass all the attributes used in your security policy like `email`, `domain` and `admin` and any other custom attributes such as `tenantId`, `customerId`, etc. | No (It is also possible to add custom attributes here)                        |
+| ttl_seconds | The time to live for the iframe URL                                                                                                                                                                                                                                                                      | No (Default: 86400)                                                           |
 
 :::tip Embedding the project vs embedding an individual dashboard
 
