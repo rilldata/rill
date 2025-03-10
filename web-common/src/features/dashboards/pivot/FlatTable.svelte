@@ -274,13 +274,9 @@
 
   /* The totals row */
   :global(.with-measure) tbody > tr:nth-of-type(2) {
-    @apply bg-slate-50 sticky z-20 font-semibold;
+    @apply bg-white sticky z-20;
     top: var(--total-header-height);
-  }
-
-  /* The totals row header */
-  :global(.with-measure) tbody > tr:nth-of-type(2) > td {
-    @apply font-semibold;
+    height: calc(var(--row-height) + 2px);
   }
 
   tr:hover,

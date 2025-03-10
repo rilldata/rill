@@ -395,8 +395,9 @@
 
   /* The totals row */
   tbody > tr:nth-of-type(2) {
-    @apply bg-slate-50 sticky z-20 font-semibold;
+    @apply bg-white sticky z-20;
     top: var(--total-header-height);
+    height: calc(var(--row-height) + 2px);
   }
 
   /* The totals row header */
@@ -413,9 +414,6 @@
     @apply bg-primary-100;
   }
 
-  .totals-column {
-    @apply bg-slate-50;
-  }
   :global(.with-col-dimension) .totals-column {
     @apply font-semibold;
   }
