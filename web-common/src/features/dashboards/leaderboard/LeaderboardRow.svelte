@@ -169,8 +169,8 @@
           Object.entries(secondCellBarLengths).map(([name, length]) => [
             name,
             length
-              ? `linear-gradient(to right, transparent 16px, ${barColor} 16px,
-    ${barColor} ${length + 16}px, transparent ${length + 16}px)`
+              ? `linear-gradient(to right, ${barColor},
+    ${barColor} ${length}px, transparent ${length}px)`
               : undefined,
           ]),
         );
