@@ -196,6 +196,8 @@
   $: ({ data: sortedData, isFetching } = $sortedQuery);
   $: ({ data: totalsData } = $totalsQuery);
 
+  $: isTimeComparisonActive = !!comparisonTimeRange;
+
   $: leaderboardTotals = totalsData?.data?.[0]
     ? Object.fromEntries(
         activeMeasureNames.map((name) => [
@@ -282,6 +284,10 @@
         (showDeltaPercent ? 1 : 0) + // Delta percent column for each measure
         (showPercentOfTotal ? 1 : 0)); // Percent of total column for each measure
 
+  $: showPercentOfTotal =
+    isValidPercentOfTotal &&
+    contextColumns.includes(LeaderboardContextColumn.PERCENT);
+
   $: showDeltaAbsolute =
     !!comparisonTimeRange &&
     contextColumns.includes(LeaderboardContextColumn.DELTA_ABSOLUTE);
@@ -290,24 +296,19 @@
     !!comparisonTimeRange &&
     contextColumns.includes(LeaderboardContextColumn.DELTA_PERCENT);
 
-  $: showPercentOfTotal =
-    !!comparisonTimeRange &&
-    isValidPercentOfTotal &&
-    contextColumns.includes(LeaderboardContextColumn.PERCENT);
-
   $: if (activeMeasureNames) {
     valueColumn.reset();
   }
 
   $: dimensionColumnWidth =
-    !comparisonTimeRange && !isValidPercentOfTotal ? 240 : 164;
+    !comparisonTimeRange && !showPercentOfTotal ? 240 : 164;
 
   $: tableWidth =
     dimensionColumnWidth +
     $valueColumn +
     (comparisonTimeRange
       ? DEFAULT_CONTEXT_COLUMN_WIDTH * (showDeltaPercent ? 2 : 1)
-      : isValidPercentOfTotal
+      : showPercentOfTotal
         ? DEFAULT_CONTEXT_COLUMN_WIDTH
         : 0);
 </script>
