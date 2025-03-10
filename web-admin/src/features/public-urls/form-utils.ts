@@ -6,6 +6,7 @@ import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/u
 import type {
   MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
+  V1ExploreSpec,
 } from "@rilldata/web-common/runtime-client";
 
 export function hasDashboardWhereFilter(dashboardStore: MetricsExplorerEntity) {
@@ -61,9 +62,11 @@ export function convertDateToMinutes(date: string) {
 export function getSanitizedDashboardStateParam(
   dashboard: MetricsExplorerEntity,
   metricsViewFields: string[] | undefined,
+  exploreSpec: V1ExploreSpec,
 ): string {
   // If no metrics view fields are specified, everything is visible, and there's no need to sanitize
-  if (!metricsViewFields) return getProtoFromDashboardState(dashboard);
+  if (!metricsViewFields)
+    return getProtoFromDashboardState(dashboard, exploreSpec);
 
   // Else, explicitly add the sanitized state that we want to remember.
   const sanitizedDashboardState = {
@@ -73,6 +76,7 @@ export function getSanitizedDashboardStateParam(
         metricsViewFields?.includes(measure),
       ),
     ),
+    visibleMeasures: [...dashboard.visibleMeasures],
     allMeasuresVisible: dashboard.allMeasuresVisible,
     // Remove any dimensions not specified in the metrics view fields
     visibleDimensionKeys: new Set(
@@ -80,6 +84,7 @@ export function getSanitizedDashboardStateParam(
         metricsViewFields?.includes(dimension),
       ),
     ),
+    visibleDimensions: [...dashboard.visibleDimensions],
     allDimensionsVisible: dashboard.allDimensionsVisible,
     leaderboardMeasureName: dashboard.leaderboardMeasureName,
     dashboardSortType: dashboard.dashboardSortType,
@@ -126,5 +131,5 @@ export function getSanitizedDashboardStateParam(
     },
   } as MetricsExplorerEntity;
 
-  return getProtoFromDashboardState(sanitizedDashboardState);
+  return getProtoFromDashboardState(sanitizedDashboardState, exploreSpec);
 }

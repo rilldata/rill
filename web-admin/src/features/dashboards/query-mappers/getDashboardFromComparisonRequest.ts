@@ -29,9 +29,7 @@ export async function getDashboardFromComparisonRequest({
     dashboard.selectedTimezone = req.timeRange?.timeZone || "UTC";
   }
 
-  dashboard.visibleMeasureKeys = new Set(
-    req.measures?.map((m) => m.name ?? "") ?? [],
-  );
+  dashboard.visibleMeasures = req.measures?.map((m) => m.name ?? "") ?? [];
 
   // if the selected sort is a measure set it to leaderboardMeasureName
   if (

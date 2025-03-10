@@ -2,6 +2,7 @@ import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashbo
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+import type { V1ExploreSpec } from "@rilldata/web-common/runtime-client";
 
 /**
  * Returns the bookmark data to be stored.
@@ -11,12 +12,14 @@ import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
  * @param filtersOnly Only dimension/measure filters and the selected time range is stored.
  * @param absoluteTimeRange Time ranges is treated as absolute.
  * @param timeControlState Time control state to derive the time range from.
+ * @param exploreSpec
  */
 export function getBookmarkDataForDashboard(
   dashboard: MetricsExplorerEntity,
   filtersOnly?: boolean,
   absoluteTimeRange?: boolean,
   timeControlState?: TimeControlState,
+  exploreSpec?: V1ExploreSpec,
 ): string {
   const newDashboard = structuredClone(dashboard);
 
@@ -47,12 +50,15 @@ export function getBookmarkDataForDashboard(
   }
 
   if (filtersOnly) {
-    return getProtoFromDashboardState({
-      whereFilter: newDashboard.whereFilter,
-      dimensionThresholdFilters: newDashboard.dimensionThresholdFilters,
-      selectedTimeRange: newDashboard.selectedTimeRange,
-    } as MetricsExplorerEntity);
+    return getProtoFromDashboardState(
+      {
+        whereFilter: newDashboard.whereFilter,
+        dimensionThresholdFilters: newDashboard.dimensionThresholdFilters,
+        selectedTimeRange: newDashboard.selectedTimeRange,
+      } as MetricsExplorerEntity,
+      exploreSpec,
+    );
   } else {
-    return getProtoFromDashboardState(newDashboard);
+    return getProtoFromDashboardState(newDashboard, exploreSpec);
   }
 }

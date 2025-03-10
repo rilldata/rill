@@ -28,6 +28,7 @@ export interface MetricsExplorerEntity {
    * or else all measure will be hidden
    */
   visibleMeasureKeys: Set<string>;
+  visibleMeasures: string[];
 
   /**
    * While the `visibleMeasureKeys` has the list of visible measures,
@@ -44,6 +45,7 @@ export interface MetricsExplorerEntity {
    * server)
    */
   visibleDimensionKeys: Set<string>;
+  visibleDimensions: string[];
 
   /**
    * While the `visibleDimensionKeys` has the list of all visible dimensions,
