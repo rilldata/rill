@@ -156,7 +156,7 @@ func (c *Connection) awsConfig(ctx context.Context, awsRegion string) (aws.Confi
 }
 
 func (c *Connection) unload(ctx context.Context, client *athena.Client, conf *sourceProperties, unloadLocation string) error {
-	ctx, span := tracer.Start(ctx, "athenaUnload", trace.WithAttributes(attribute.String("project_id", conf.SQL), attribute.String("location", unloadLocation)))
+	ctx, span := tracer.Start(ctx, "athenaUnload", trace.WithAttributes(attribute.String("sql", conf.SQL), attribute.String("location", unloadLocation)))
 	defer span.End()
 
 	finalSQL := fmt.Sprintf("UNLOAD (%s\n) TO '%s' WITH (format = 'PARQUET')", conf.SQL, unloadLocation)
