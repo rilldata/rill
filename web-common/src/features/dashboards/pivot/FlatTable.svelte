@@ -21,6 +21,7 @@
   export let assembled: boolean;
   export let measures: MeasureColumnProps;
   export let dataRows: PivotDataRow[];
+  export let hasMeasureContextColumns: boolean;
   export let canShowDataViewer = false;
   export let activeCell: { rowId: string; columnId: string } | null | undefined;
 
@@ -86,6 +87,14 @@
       cell.row.id === activeCell?.rowId &&
       cell.column.id === activeCell?.columnId
     );
+  }
+
+  function isLastInMeasureGroup(columnId: string): boolean {
+    if (!hasMeasureContextColumns) return true;
+    const measureIndex = measures.findIndex((m) => m.name === columnId);
+    if (measureIndex === -1) return true;
+    //  Every third column is the last in its group
+    return (measureIndex + 1) % 3 === 0;
   }
 </script>
 
@@ -187,7 +196,11 @@
             on:mouseleave={onCellLeave}
             data-value={cell.getValue()}
           >
-            <div class="cell pointer-events-none truncate" role="presentation">
+            <div
+              class="cell pointer-events-none truncate"
+              role="presentation"
+              class:border-r={isLastInMeasureGroup(cell.column.id)}
+            >
               {#if result?.component && result?.props}
                 <svelte:component
                   this={result.component}
@@ -269,7 +282,12 @@
   }
 
   tr > td {
-    @apply border-r font-normal;
+    @apply font-normal;
+  }
+
+  /* Add border only for last measure in group or non-measure columns */
+  tr > td:has(.cell[data-is-last-in-group="true"]) {
+    @apply border-r;
   }
 
   /* The totals row */

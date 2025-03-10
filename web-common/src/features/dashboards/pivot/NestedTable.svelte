@@ -348,6 +348,10 @@
     @apply border-b relative;
   }
 
+  /* thead tr:last-of-type th {
+    @apply border-b;
+  } */
+
   th:last-of-type,
   td:last-of-type {
     @apply border-r-0;

@@ -99,6 +99,7 @@
   $: dataRows = $pivotDataStore.data;
   $: totalsRow = $pivotDataStore.totalsRowData;
   $: isFlat = $config.isFlat;
+  $: hasMeasureContextColumns = $config.enableComparison;
 
   $: measures = getMeasureColumnProps($config);
 
@@ -237,6 +238,7 @@
       {after}
       {totalRowSize}
       {canShowDataViewer}
+      {hasMeasureContextColumns}
       activeCell={$pivotState.activeCell}
       {assembled}
       onCellClick={handleCellClick}
