@@ -34,7 +34,7 @@ TableCells – the cell contents.
       comparison: { toggleComparisonDimension },
     },
     selectors: {
-      sorting: { sortMeasure },
+      sorting: { sortByMeasure: sortMeasure },
       dimensionFilters: { isFilterExcludeMode },
       comparison: { isBeingCompared: isBeingComparedReadable },
     },
