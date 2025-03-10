@@ -25,7 +25,7 @@
         allDimensions,
         dimensionShowForAllMeasures,
       },
-      contextColumn: { contextColumn, contextColumns },
+      contextColumn: { contextColumns },
     },
     actions: {
       dimensions: {
@@ -56,8 +56,9 @@
   // but it is not valid for this measure, then turn it off
   $: if (
     !validPercentOfTotal &&
-    metricsExplorer?.leaderboardContextColumn ===
-      LeaderboardContextColumn.PERCENT
+    metricsExplorer?.leaderboardContextColumns.includes(
+      LeaderboardContextColumn.PERCENT,
+    )
   ) {
     setContextColumn(LeaderboardContextColumn.HIDDEN);
   }
