@@ -64,7 +64,43 @@ test.describe("explores", () => {
     const watcher = new ResourceWatcher(page);
 
     await createAdBidsModel(page);
-    await createExploreFromModel(page, true);
+    await createExploreFromModel(page);
+
+    await page.getByLabel("code").click();
+
+    // Add `inf` alias to the time range
+    const addAllTime = `
+type: explore
+
+title: "Adbids dashboard"
+metrics_view: AdBids_model_metrics
+
+dimensions: '*'
+measures: '*'
+
+time_ranges:
+  - PT6H
+  - PT24H
+  - P7D
+  - P14D
+  - P4W
+  - P12M
+  - rill-TD
+  - rill-WTD
+  - rill-MTD
+  - rill-QTD
+  - rill-YTD
+  - rill-PDC
+  - rill-PWC
+  - rill-PMC
+  - rill-PQC
+  - rill-PYC
+  - inf
+`;
+
+    await watcher.updateAndWaitForExplore(addAllTime);
+
+    await page.getByRole("button", { name: "Preview" }).click();
 
     // Check the total records are 100k
     await expect(page.getByText("Total records 100k")).toBeVisible();
@@ -222,8 +258,27 @@ metrics_view: AdBids_model_metrics
 
 dimensions: '*'
 measures: '*'
+
+time_ranges:
+  - PT6H
+  - PT24H
+  - P7D
+  - P14D
+  - P4W
+  - P12M
+  - rill-TD
+  - rill-WTD
+  - rill-MTD
+  - rill-QTD
+  - rill-YTD
+  - rill-PDC
+  - rill-PWC
+  - rill-PMC
+  - rill-PQC
+  - rill-PYC
+  - inf
 `;
-    await page.getByLabel("code").click();
+    await page.getByLabel("code", { exact: true }).click();
     await watcher.updateAndWaitForExplore(changeDisplayNameDoc);
 
     // Remove timestamp column

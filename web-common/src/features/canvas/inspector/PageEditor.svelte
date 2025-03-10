@@ -27,6 +27,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { YAMLMap, YAMLSeq } from "yaml";
   import { DEFAULT_DASHBOARD_WIDTH } from "../layout-util";
+  import { allTimeZones } from "@rilldata/web-common/lib/time/timezone";
 
   export let updateProperties: (
     newRecord: Record<string, unknown>,
@@ -188,7 +189,7 @@
           id="visual-explore-zone"
           showLabel={false}
           defaultLabel="Default time zones"
-          searchableItems={Intl.supportedValuesOf("timeZone")}
+          searchableItems={allTimeZones}
           defaultItems={DEFAULT_TIMEZONES}
           keyNotSet={!rawTimeZones}
           selectedItems={timeZones}

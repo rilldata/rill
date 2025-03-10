@@ -109,6 +109,7 @@ export const timeControlStateSelector = ([
     timeRangeResponse.data?.timeRangeSummary,
     metricsExplorer,
   );
+
   if (!state) {
     return {
       ready: false,

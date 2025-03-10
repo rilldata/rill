@@ -78,6 +78,7 @@
     <DropdownMenu.Content class="min-w-52" align="start">
       {#each timeGrains as option (option.key)}
         <DropdownMenu.CheckboxItem
+          checkRight
           role="menuitem"
           checked={option.key === activeTimeGrain}
           class="text-xs cursor-pointer capitalize"
