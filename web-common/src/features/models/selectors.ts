@@ -17,7 +17,7 @@ export function useModels(instanceId: string) {
     ResourceKind.Model,
     (res) =>
       res.meta?.name?.name === res.model?.state?.resultTable &&
-      !res.model?.spec?.generatedFromSource,
+      !res.model?.spec?.definedAsSource,
   );
 }
 

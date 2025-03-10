@@ -958,11 +958,11 @@ export class ModelSpec extends Message<ModelSpec> {
   triggerFull = false;
 
   /**
-   * generated_from_source is true if the model was generated from a source.
+   * defined_as_source is true if it was defined by user as a source but converted internally to a model.
    *
-   * @generated from field: bool generated_from_source = 23;
+   * @generated from field: bool defined_as_source = 23;
    */
-  generatedFromSource = false;
+  definedAsSource = false;
 
   constructor(data?: PartialMessage<ModelSpec>) {
     super();
@@ -989,7 +989,7 @@ export class ModelSpec extends Message<ModelSpec> {
     { no: 12, name: "output_properties", kind: "message", T: Struct },
     { no: 9, name: "trigger", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 22, name: "trigger_full", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 23, name: "generated_from_source", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 23, name: "defined_as_source", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelSpec {

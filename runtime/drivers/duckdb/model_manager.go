@@ -14,8 +14,8 @@ type ModelInputProperties struct {
 	Args     []any  `mapstructure:"args"`
 	PreExec  string `mapstructure:"pre_exec"`
 	PostExec string `mapstructure:"post_exec"`
-	// DB is set if sql is to be run against an external database
-	DB string `mapstructure:"db"`
+	// Database is set if sql is to be run against an external database
+	Database string `mapstructure:"db"`
 }
 
 func (p *ModelInputProperties) Validate() error {

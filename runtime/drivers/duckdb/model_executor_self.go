@@ -111,11 +111,15 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		_ = olap.DropTable(ctx, stagingTableName)
 
 		// Create the table
-		if inputProps.DB != "" {
+		if inputProps.Database != "" {
 			// special handling for ingesting from an external database
+			//
 			// not handling incremental use cases since ingesting from an external database is mostly for small,experimental use cases
+			if opts.Incremental {
+				return nil, fmt.Errorf("`incremental` models are not supported when ingesting data from external db files")
+			}
 			var err error
-			inputProps.DB, err = fileutil.ResolveLocalPath(inputProps.DB, opts.Env.RepoRoot, opts.Env.AllowHostAccess)
+			inputProps.Database, err = fileutil.ResolveLocalPath(inputProps.Database, opts.Env.RepoRoot, opts.Env.AllowHostAccess)
 			if err != nil {
 				return nil, err
 			}
@@ -194,7 +198,7 @@ func (e *selfToSelfExecutor) createFromExternalDuckDB(ctx context.Context, input
 			}
 		}
 
-		if _, err := conn.ExecContext(ctx, fmt.Sprintf("ATTACH %s AS %s (READ_ONLY)", safeSQLString(inputProps.DB), safeDBName)); err != nil {
+		if _, err := conn.ExecContext(ctx, fmt.Sprintf("ATTACH %s AS %s (READ_ONLY)", safeSQLString(inputProps.Database), safeDBName)); err != nil {
 			return err
 		}
 

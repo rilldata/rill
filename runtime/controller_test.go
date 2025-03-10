@@ -61,7 +61,7 @@ measures:
 					InputProperties:     must(structpb.NewStruct(map[string]any{"path": "data/foo.csv"})),
 					OutputProperties:    must(structpb.NewStruct(map[string]any{"materialize": true})),
 					RefreshSchedule:     &runtimev1.Schedule{RefUpdate: true},
-					GeneratedFromSource: true,
+					DefinedAsSource: true,
 				},
 				State: &runtimev1.ModelState{
 					ExecutorConnector: "duckdb",
@@ -225,7 +225,7 @@ path: data/foo.csv
 					InputProperties:     must(structpb.NewStruct(map[string]any{"path": "data/foo.csv"})),
 					OutputProperties:    must(structpb.NewStruct(map[string]any{"materialize": true})),
 					RefreshSchedule:     &runtimev1.Schedule{RefUpdate: true},
-					GeneratedFromSource: true,
+					DefinedAsSource: true,
 				},
 				State: &runtimev1.ModelState{
 					ExecutorConnector: "duckdb",
@@ -298,7 +298,7 @@ path: data/foo.csv
 					InputProperties:     must(structpb.NewStruct(map[string]any{"path": "data/foo.csv"})),
 					OutputProperties:    must(structpb.NewStruct(map[string]any{"materialize": true})),
 					RefreshSchedule:     &runtimev1.Schedule{RefUpdate: true},
-					GeneratedFromSource: true,
+					DefinedAsSource: true,
 				},
 				State: &runtimev1.ModelState{
 					ExecutorConnector: "duckdb",
@@ -1156,7 +1156,7 @@ func newSource(name, path string) (*runtimev1.ModelV2, *runtimev1.Resource) {
 			InputProperties:     must(structpb.NewStruct(map[string]any{"path": path})),
 			OutputProperties:    must(structpb.NewStruct(map[string]any{"materialize": true})),
 			RefreshSchedule:     &runtimev1.Schedule{RefUpdate: true},
-			GeneratedFromSource: true,
+			DefinedAsSource: true,
 		},
 		State: &runtimev1.ModelState{
 			ExecutorConnector: "duckdb",

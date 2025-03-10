@@ -1270,8 +1270,8 @@ export interface V1ModelSpec {
   outputProperties?: V1ModelSpecOutputProperties;
   trigger?: boolean;
   triggerFull?: boolean;
-  /** generated_from_source is true if the model was generated from a source. */
-  generatedFromSource?: boolean;
+  /** defined_as_source is true if it was defined by user as a source but converted internally to a model. */
+  definedAsSource?: boolean;
 }
 
 export type V1ModelPartitionData = { [key: string]: any };

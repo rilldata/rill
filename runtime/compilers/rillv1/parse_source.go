@@ -111,7 +111,7 @@ func (p *Parser) parseSource(ctx context.Context, node *Node) error {
 
 	r.ModelSpec.OutputConnector = p.defaultOLAPConnector()
 	r.ModelSpec.OutputProperties = outputProps
-	r.ModelSpec.GeneratedFromSource = true
+	r.ModelSpec.DefinedAsSource = true
 	return nil
 }
 

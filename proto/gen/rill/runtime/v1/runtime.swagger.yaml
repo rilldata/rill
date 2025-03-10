@@ -5661,9 +5661,9 @@ definitions:
         type: boolean
       triggerFull:
         type: boolean
-      generatedFromSource:
+      definedAsSource:
         type: boolean
-        description: generated_from_source is true if the model was generated from a source.
+        description: defined_as_source is true if it was defined by user as a source but converted internally to a model.
   v1ModelState:
     type: object
     properties:
