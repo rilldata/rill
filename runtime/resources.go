@@ -29,6 +29,7 @@ const (
 )
 
 // ResourceKindFromPretty converts a user-friendly resource kind to a runtime resource kind.
+// If the kind doesn't match a known shorthand, it is returned as-is.
 func ResourceKindFromShorthand(kind string) string {
 	switch strings.ToLower(strings.TrimSpace(kind)) {
 	case "projectparser", "project_parser":
