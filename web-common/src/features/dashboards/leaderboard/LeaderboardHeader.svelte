@@ -24,7 +24,7 @@
   export let displayName: string;
   export let hovered: boolean;
   export let sortType: SortType;
-  export let contextColumns: LeaderboardContextColumn[] = [];
+  export let contextColumns: string[] = [];
   export let activeMeasureNames: string[] = [];
   export let sortMeasure: string | null;
   export let toggleSort: (sortType: SortType, measureName?: string) => void;
@@ -101,7 +101,6 @@
         <button
           aria-label="Toggle sort leaderboards by value"
           on:click={() => {
-            console.log("[LeaderboardHeader.svelte] toggleSort: ", measureName);
             toggleSort(SortType.VALUE, measureName);
           }}
           class="font-normal text-right"
@@ -113,7 +112,7 @@
               #
             {/if}
           </span>
-          {#if measureName === sortMeasure}
+          {#if measureName === sortMeasure && sortType === SortType.VALUE}
             <div class="ui-copy-icon">
               {#if sortedAscending}
                 <div in:fly|global={{ duration: 200, y: 8 }} style:opacity={1}>
@@ -136,7 +135,7 @@
             on:click={() => toggleSort(SortType.DELTA_ABSOLUTE, measureName)}
           >
             <DeltaChange />
-            {#if sortType === SortType.DELTA_ABSOLUTE}
+            {#if sortType === SortType.DELTA_ABSOLUTE && measureName === sortMeasure}
               <div class="ui-copy-icon">
                 {#if sortedAscending}
                   <div
@@ -166,7 +165,7 @@
             on:click={() => toggleSort(SortType.DELTA_PERCENT, measureName)}
           >
             <DeltaChangePercentage />
-            {#if sortType === SortType.DELTA_PERCENT}
+            {#if sortType === SortType.DELTA_PERCENT && measureName === sortMeasure}
               <div class="ui-copy-icon">
                 {#if sortedAscending}
                   <div
@@ -196,7 +195,7 @@
             on:click={() => toggleSort(SortType.PERCENT, measureName)}
           >
             <PercentOfTotal />
-            {#if sortType === SortType.PERCENT}
+            {#if sortType === SortType.PERCENT && measureName === sortMeasure}
               <div class="ui-copy-icon">
                 {#if sortedAscending}
                   <div
