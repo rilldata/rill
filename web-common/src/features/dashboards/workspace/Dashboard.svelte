@@ -222,7 +222,6 @@
               {timeRange}
               {comparisonTimeRange}
               activeMeasureName={$activeMeasureName}
-              {activeMeasureNames}
               {timeControlsReady}
               {visibleMeasureNames}
               hideStartPivotButton={hidePivot}
