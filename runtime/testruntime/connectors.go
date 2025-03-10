@@ -110,11 +110,15 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		}
 		hmacKey := os.Getenv("RILL_RUNTIME_GCS_TEST_HMAC_KEY")
 		hmacSecret := os.Getenv("RILL_RUNTIME_GCS_TEST_HMAC_SECRET")
+		gac := os.Getenv("RILL_RUNTIME_GCS_TEST_GOOGLE_APPLICATION_CREDENTIALS_JSON")
 		require.NotEmpty(t, hmacKey, "GCS RILL_RUNTIME_GCS_TEST_HMAC_KEY not configured")
 		require.NotEmpty(t, hmacSecret, "GCS RILL_RUNTIME_GCS_TEST_HMAC_SECRET not configured")
+		require.NotEmpty(t, gac, "GCS RILL_RUNTIME_GCS_TEST_GOOGLE_APPLICATION_CREDENTIALS_JSON not configured")
+
 		return map[string]string{
-			"key_id": hmacKey,
-			"secret": hmacSecret,
+			"google_application_credentials": gac,
+			"key_id":                         hmacKey,
+			"secret":                         hmacSecret,
 		}
 	},
 	"s3": func(t TestingT) map[string]string {
