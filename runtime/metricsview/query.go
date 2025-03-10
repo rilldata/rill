@@ -64,7 +64,7 @@ func (q *Query) AsMap() (map[string]any, error) {
 			if from == reflect.TypeOf(&time.Time{}) {
 				t, ok := data.(*time.Time)
 				if !ok {
-					return nil, fmt.Errorf("expected time.Time, got %T", data)
+					return nil, fmt.Errorf("expected *time.Time, got %T", data)
 				}
 				return map[string]any{
 					"t": t.Format(time.RFC3339Nano),
