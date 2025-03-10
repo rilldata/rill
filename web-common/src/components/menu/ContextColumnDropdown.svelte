@@ -9,27 +9,20 @@
   import DeltaChange from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChange.svelte";
   import DeltaChangePercentage from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChangePercentage.svelte";
   import PercentOfTotal from "@rilldata/web-common/features/dashboards/dimension-table/PercentOfTotal.svelte";
-  import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
-  import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
-  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { cn } from "@rilldata/web-common/lib/shadcn";
 
   export let isValidPercentOfTotal: boolean;
-  export let hasComparisonTimeRange: boolean;
+  export let isTimeComparisonActive: boolean;
   export let tooltipText: string;
   export let selectedFilters: string[] = [];
+  export let dimensionShowForAllMeasures: boolean;
   export let onContextColumnChange: (
     columns: LeaderboardContextColumn[],
   ) => void;
-  export let onSelectAll: () => void;
-
-  const { exploreName } = getStateManagers();
+  export let onShowForAllMeasures: () => void;
 
   let active = false;
-
-  let allSelected = false;
 
   $: options = [
     ...(isValidPercentOfTotal
@@ -42,7 +35,7 @@
           },
         ]
       : []),
-    ...(hasComparisonTimeRange
+    ...(isTimeComparisonActive
       ? [
           {
             value: LeaderboardContextColumn.DELTA_ABSOLUTE,
@@ -71,6 +64,7 @@
     onContextColumnChange(newFilters as LeaderboardContextColumn[]);
   }
 
+  // FIXME: when comparison is off and have 3 context columns selected, we should fix the copy
   $: withText =
     selectedFilters && selectedFilters.length > 1
       ? `${selectedFilters.length} context columns`
@@ -142,11 +136,16 @@
           </div>
         {/if}
 
+        <!-- TODO: consider hiding below if not in dimension detail -->
         <footer class={cn(options.length > 0 && "border-t border-slate-300")}>
           <div class="w-full">
             <p class="text-xs">Show for all measures</p>
           </div>
-          <Switch small bind:checked={allSelected} on:click={onSelectAll} />
+          <Switch
+            small
+            bind:checked={dimensionShowForAllMeasures}
+            on:click={onShowForAllMeasures}
+          />
         </footer>
       </DropdownMenu.Content>
 

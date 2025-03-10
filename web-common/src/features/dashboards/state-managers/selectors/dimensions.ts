@@ -50,6 +50,12 @@ export const dimensionTableColumnName = (
   };
 };
 
+export const dimensionShowForAllMeasures = (
+  dashData: DashboardDataSources,
+): boolean => {
+  return Boolean(dashData.dashboard.dimensionShowForAllMeasures);
+};
+
 export const getDimensionByName = (
   dashData: DashboardDataSources,
 ): ((name: string) => MetricsViewSpecDimensionV2 | undefined) => {
@@ -107,4 +113,9 @@ export const dimensionSelectors = {
    * Gets the name of the column that is currently selected in the dimension table.
    */
   dimensionTableColumnName,
+
+  /**
+   * Gets whether all measures are being shown for a dimension.
+   */
+  dimensionShowForAllMeasures,
 };
