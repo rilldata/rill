@@ -189,7 +189,7 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 		gateway.WithOutgoingHeaderMatcher(func(s string) (string, bool) {
 			// grpc gateway adds gateway.MetadataHeaderPrefix to all outgoing headers
 			// we want to skip that for `x-trace-id` set in response
-			if s == "x-trace-id" {
+			if s == observability.TracingHeader {
 				return s, true
 			}
 			// default matcher logic

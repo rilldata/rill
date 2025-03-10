@@ -23,6 +23,8 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+const TracingHeader = "x-trace-id"
+
 // Middleware is HTTP middleware that combines all observability-related middlewares.
 func Middleware(serviceName string, logger *zap.Logger, next http.Handler) http.Handler {
 	return TracingMiddleware(LoggingMiddleware(logger, next), serviceName)
@@ -60,7 +62,7 @@ func LoggingUnaryServerInterceptor(logger *zap.Logger) grpc.UnaryServerIntercept
 		// Add datadog trace ID to response headers
 		traceID := TraceID(ctx)
 		if traceID != "" {
-			header := metadata.Pairs("x-trace-id", traceID)
+			header := metadata.Pairs(TracingHeader, traceID)
 			_ = grpc.SetHeader(ctx, header)
 		}
 
@@ -125,7 +127,7 @@ func LoggingStreamServerInterceptor(logger *zap.Logger) grpc.StreamServerInterce
 		// Add datadog trace ID to response headers
 		traceID := TraceID(ss.Context())
 		if traceID != "" {
-			header := metadata.Pairs("x-trace-id", traceID)
+			header := metadata.Pairs(TracingHeader, traceID)
 			_ = grpc.SetHeader(ss.Context(), header)
 		}
 
@@ -229,7 +231,7 @@ func LoggingMiddleware(logger *zap.Logger, next http.Handler) http.Handler {
 		// Set datadog trace ID header in response headers
 		traceID := TraceID(r.Context())
 		if traceID != "" {
-			w.Header().Set("x-trace-id", traceID)
+			w.Header().Set(TracingHeader, traceID)
 		}
 
 		wrapped := wrappedResponseWriter{ResponseWriter: w}
