@@ -104,14 +104,10 @@ time_ranges:
 
     await page.waitForTimeout(1000);
 
+    // Check the total records are 100k
     await page
       .getByRole("button", { name: "Total records 100k" })
       .waitFor({ timeout: 2000 });
-
-    // // Check the total records are 100k
-    // await expect(
-    //   page.getByRole("button", { name: "Total records 100k" }),
-    // ).toBeVisible();
 
     // Check the row viewer accordion is visible
     await expect(page.getByText("Model Data 100k of 100k rows")).toBeVisible();
