@@ -12,7 +12,7 @@
 </script>
 
 <div class="size-full p-2 bg-white overflow-y-auto">
-  <div class="markdown {positionClasses} h-full flex flex-col min-h-min">
+  <div class="canvas-markdown {positionClasses} h-full flex flex-col min-h-min">
     {#await marked(markdownProperties.content) then content}
       {@html DOMPurify.sanitize(content)}
     {/await}
@@ -20,72 +20,72 @@
 </div>
 
 <style lang="postcss">
-  :global(.markdown) {
+  :global(.canvas-markdown) {
     @apply text-gray-800;
   }
-  :global(.markdown h1) {
+  :global(.canvas-markdown h1) {
     font-size: 24px;
     @apply font-medium;
   }
-  :global(.markdown h2) {
+  :global(.canvas-markdown h2) {
     font-size: 20px;
     @apply font-medium;
   }
-  :global(.markdown h3) {
+  :global(.canvas-markdown h3) {
     font-size: 18px;
     @apply font-medium;
   }
-  :global(.markdown h4) {
+  :global(.canvas-markdown h4) {
     font-size: 16px;
     @apply font-medium;
   }
-  :global(.markdown p) {
+  :global(.canvas-markdown p) {
     font-size: 14px;
     @apply my-2;
   }
-  :global(.markdown table) {
+  :global(.canvas-markdown table) {
     @apply w-full border-collapse my-4;
   }
-  :global(.markdown th) {
+  :global(.canvas-markdown th) {
     @apply bg-gray-50 border border-gray-200 px-4 py-2 text-left text-sm font-medium;
   }
-  :global(.markdown td) {
+  :global(.canvas-markdown td) {
     @apply border border-gray-200 px-4 py-2 text-sm;
   }
-  :global(.markdown tr:nth-child(even)) {
+  :global(.canvas-markdown tr:nth-child(even)) {
     @apply bg-gray-50;
   }
-  :global(.markdown tr:hover) {
+  :global(.canvas-markdown tr:hover) {
     @apply bg-gray-100;
   }
-  :global(.markdown a) {
+  :global(.canvas-markdown a) {
     @apply text-blue-600;
   }
-  :global(.markdown ul) {
+  :global(.canvas-markdown ul) {
     @apply list-disc pl-6 my-3;
   }
-  :global(.markdown ol) {
+  :global(.canvas-markdown ol) {
     @apply list-decimal pl-6 my-3;
   }
-  :global(.markdown li) {
+  :global(.canvas-markdown li) {
     @apply text-sm my-1;
   }
-  :global(.markdown blockquote) {
+  :global(.canvas-markdown blockquote) {
     @apply border-l-4 border-gray-300 pl-4 py-1 my-3 italic text-gray-600;
   }
-  :global(.markdown code) {
+  :global(.canvas-markdown code) {
     @apply bg-gray-100 px-1 py-0.5 rounded text-sm font-mono;
   }
-  :global(.markdown pre) {
+  :global(.canvas-markdown pre) {
     @apply bg-gray-100 p-3 rounded my-3 overflow-x-auto;
   }
-  :global(.markdown pre code) {
+  :global(.canvas-markdown pre code) {
     @apply bg-transparent p-0 text-sm;
   }
-  :global(.markdown hr) {
+  :global(.canvas-markdown hr) {
     @apply my-3 border-t border-gray-300 w-full;
   }
-  :global(.markdown img) {
+  :global(.canvas-markdown img) {
     @apply max-w-full h-auto my-3;
   }
 </style>
