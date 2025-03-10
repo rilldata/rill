@@ -34,7 +34,9 @@ func (p *objectStoreInputProps) Validate() error {
 	if p.Path != "" && p.URI != "" {
 		return fmt.Errorf("cannot specify both `path` and `uri`")
 	}
-	p.Path = p.URI
+	if p.URI != "" { // Backwards compatibility
+		p.Path = p.URI
+	}
 	return nil
 }
 
