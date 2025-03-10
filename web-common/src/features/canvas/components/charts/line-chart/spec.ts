@@ -2,6 +2,7 @@ import type {
   ChartConfig,
   TooltipValue,
 } from "@rilldata/web-common/features/canvas/components/charts/types";
+import { sanitizeFieldName } from "@rilldata/web-common/features/canvas/components/charts/util";
 import { sanitizeValueForVega } from "@rilldata/web-common/features/templates/charts/utils";
 import type { VisualizationSpec } from "svelte-vega";
 import {
@@ -21,8 +22,8 @@ export function generateVLLineChartSpec(
 
   const colorField =
     typeof config.color === "object" ? config.color.field : undefined;
-  const xField = config.x?.field;
-  const yField = config.y?.field;
+  const xField = sanitizeValueForVega(config.x?.field);
+  const yField = sanitizeValueForVega(config.y?.field);
 
   const defaultTooltipChannel = createDefaultTooltipEncoding(config, data);
   let multiValueTooltipChannel: TooltipValue[] | undefined;
@@ -31,15 +32,17 @@ export function generateVLLineChartSpec(
     multiValueTooltipChannel = data.data?.map((value) => ({
       field: sanitizeValueForVega(value?.[colorField]),
       type: "quantitative",
-      formatType: yField,
+      formatType: sanitizeFieldName(yField),
     }));
 
     multiValueTooltipChannel.unshift({
-      field: sanitizeValueForVega(config.x.field),
+      field: xField,
       title: data.fields[config.x.field]?.displayName || config.x.field,
       type: config.x?.type,
       ...(config.x.type === "temporal" && { format: "%b %d, %Y %H:%M" }),
     });
+
+    multiValueTooltipChannel = multiValueTooltipChannel.slice(0, 50);
   }
 
   spec.encoding = { x: createXEncoding(config, data) };
@@ -82,6 +85,24 @@ export function generateVLLineChartSpec(
         clip: true,
       },
       encoding: {
+        x: {
+          field: xField,
+          ...(yField && config.x?.sort === "y"
+            ? {
+                sort: {
+                  field: yField,
+                  order: "ascending",
+                },
+              }
+            : yField && config.x?.sort === "-y"
+              ? {
+                  sort: {
+                    field: yField,
+                    order: "descending",
+                  },
+                }
+              : {}),
+        },
         color: {
           condition: [
             {
@@ -92,7 +113,6 @@ export function generateVLLineChartSpec(
           ],
           value: "transparent",
         },
-        y: { value: -400 },
         tooltip: multiValueTooltipChannel?.length
           ? multiValueTooltipChannel
           : defaultTooltipChannel,

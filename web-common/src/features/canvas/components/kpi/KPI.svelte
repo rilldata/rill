@@ -1,9 +1,10 @@
 <script lang="ts">
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
+  import Chart from "@rilldata/web-common/components/time-series-chart/Chart.svelte";
   import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
-  import { getLocalComparison } from "@rilldata/web-common/features/canvas/components/kpi/util";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
+  import RangeDisplay from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/RangeDisplay.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
@@ -16,22 +17,18 @@
     V1TimeGrain,
     type V1ComponentSpecRendererProperties,
   } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { DateTime, Interval } from "luxon";
+  import type { Readable } from "svelte/motion";
   import type { KPISpec } from ".";
   import { validateKPISchema } from "./selector";
-  import Chart from "@rilldata/web-common/components/time-series-chart/Chart.svelte";
-  import { DateTime, Interval } from "luxon";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import RangeDisplay from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/RangeDisplay.svelte";
-  import type { Readable } from "svelte/motion";
+  import { SPARKLINE_MIN_WIDTH, BIG_NUMBER_MIN_WIDTH } from ".";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
   export let timeAndFilterStore: Readable<TimeAndFilterStore>;
 
   const ctx = getCanvasStateManagers();
-  const {
-    spec,
-    timeControls: { showTimeComparison, selectedComparisonTimeRange },
-  } = ctx.canvasEntity;
+  const { spec } = ctx.canvasEntity;
 
   let hoveredPoints: {
     interval: Interval<true>;
@@ -46,17 +43,22 @@
     metrics_view: metricsViewName,
     measure: measureName,
     sparkline,
-    time_filters: localTimeFilters,
     comparison: comparisonOptions,
   } = kpiProperties);
 
-  $: ({ showLocalTimeComparison, localComparisonTimeRange } =
-    getLocalComparison(localTimeFilters));
+  $: ({
+    timeGrain,
+    timeRange: { timeZone, start, end },
+    where,
+    comparisonTimeRange,
+    showTimeComparison,
+    comparisonTimeRangeState,
+  } = $timeAndFilterStore);
 
   $: schema = validateKPISchema(ctx, kpiProperties);
+  $: ({ isValid } = $schema);
 
   $: measureStore = spec.getMeasureForMetricView(measureName, metricsViewName);
-
   $: measure = $measureStore;
   $: measureIsPercentage = measure?.formatPreset === FormatPreset.PERCENTAGE;
 
@@ -67,25 +69,12 @@
   $: showSparkline = sparkline !== "none";
   $: isSparkRight = sparkline === "right";
 
-  $: ({ isValid } = $schema);
-
-  $: ({
-    timeGrain,
-    timeRange: { timeZone, start, end },
-    where,
-    comparisonTimeRange,
-  } = $timeAndFilterStore);
-
-  $: showComparison =
-    !!comparisonOptions?.length &&
-    ((localTimeFilters && showLocalTimeComparison) ||
-      (!localTimeFilters && $showTimeComparison));
+  $: showComparison = !!comparisonOptions?.length && showTimeComparison;
 
   $: comparisonLabel =
-    (localComparisonTimeRange?.name &&
-      TIME_COMPARISON[localComparisonTimeRange.name]?.label) ||
-    ($selectedComparisonTimeRange?.name &&
-      TIME_COMPARISON[$selectedComparisonTimeRange.name]?.label);
+    comparisonTimeRangeState?.selectedComparisonTimeRange?.name &&
+    TIME_COMPARISON[comparisonTimeRangeState?.selectedComparisonTimeRange.name]
+      ?.label;
 
   // BIG NUMBER QUERIES
   $: kpiTotalsQuery = createQueryServiceMetricsViewAggregation(
@@ -144,9 +133,9 @@
       : comparisonTotal;
 
   $: comparisonPercChange =
-    currentValue != null && comparisonVal != null
+    currentValue != null && comparisonVal
       ? (currentValue - comparisonVal) / comparisonVal
-      : undefined;
+      : null;
 
   // TIME SERIES QUERIES
   $: sparklineDataQuery = createQueryServiceMetricsViewTimeSeries(
@@ -206,40 +195,29 @@
 
 {#if isValid}
   {#if measure && !primaryTotalIsFetching}
-    <div
-      class:flex-col={!isSparkRight}
-      class="flex gap-0 items-center justify-center size-full"
-    >
-      <div
-        class:!items-start={isSparkRight}
-        class="flex flex-col items-center w-full"
-      >
-        <h2
-          class:text-center={!isSparkRight}
-          class="font-medium text-sm text-gray-600 line-clamp-1 truncate"
-        >
+    <div class="wrapper" class:spark-right={isSparkRight}>
+      <div class="data-wrapper" style:min-width="{BIG_NUMBER_MIN_WIDTH}px">
+        <h2 class="measure-name">
           {measure?.displayName || measureName}
         </h2>
-        <span
-          class="text-3xl font-medium text-gray-600 flex gap-x-0.5 items-end"
-        >
+
+        <span class="big-number">
           {#if hoveredPoints?.[0]?.value != null}
-            <span class="text-primary-500">
+            <span class="hovered-value">
               {measureValueFormatter(currentValue)}
             </span>
-            <span class="text-lg">/</span>
-            <span class="text-gray-600 text-lg">
+
+            <span class="slash">/</span>
+            <span class="primary-value-on-hover">
               {measureValueFormatter(primaryTotal)}
             </span>
           {:else}
             {measureValueFormatter(primaryTotal)}
           {/if}
         </span>
-      </div>
 
-      <div class="flex flex-col items-center">
         {#if showComparison}
-          <div class="flex items-baseline gap-x-2 text-sm -mb-[3px]">
+          <div class="comparison-value-wrapper">
             {#if comparisonOptions?.includes("previous")}
               <span class="comparison-value">
                 {measureValueFormatter(comparisonVal)}
@@ -265,7 +243,7 @@
             {/if}
 
             {#if comparisonOptions?.includes("percent_change") && comparisonPercChange != null && !measureIsPercentage}
-              <div
+              <span
                 class="w-fit font-semibold ui-copy-inactive"
                 class:text-red-500={primaryTotal && primaryTotal < 0}
               >
@@ -277,27 +255,30 @@
                     comparisonPercChange,
                   )}
                 />
-              </div>
+              </span>
             {/if}
           </div>
 
           {#if comparisonLabel}
-            <div class="comparison-range">
+            <p class="text-sm text-gray-400 break-words">
               vs {comparisonLabel?.toLowerCase()}
-            </div>
+            </p>
           {/if}
         {/if}
       </div>
 
       {#if showSparkline}
-        <div class="size-full flex items-center justify-center mt-2">
+        <div
+          class="sparkline-wrapper"
+          style:min-width="{SPARKLINE_MIN_WIDTH}px"
+        >
           {#if primaryDataIsFetching}
             <Spinner status={EntityStatus.Running} />
           {:else if timeGrain && timeZone}
             <Chart
               bind:hoveredPoints
               {primaryData}
-              secondaryData={showComparison ? [comparisonData] : []}
+              secondaryData={showComparison ? comparisonData : []}
               {timeGrain}
               selectedTimeZone={timeZone}
               yAccessor={kpiProperties.measure}
@@ -321,12 +302,76 @@
 {/if}
 
 <style lang="postcss">
-  .comparison-range {
-    @apply text-sm text-gray-400;
+  .wrapper {
+    @apply flex items-center justify-center size-full gap-2 flex-col;
+  }
+
+  .wrapper.spark-right {
+    @apply flex-row;
+  }
+
+  .data-wrapper {
+    @apply flex size-full max-h-fit min-h-fit flex-col justify-center overflow-hidden;
+    @apply items-center;
+  }
+
+  .spark-right .data-wrapper {
+    @apply items-start w-2/5 max-w-52;
+  }
+
+  .measure-name {
+    @apply text-center font-medium text-sm text-gray-600 break-words max-w-40 line-clamp-1;
+  }
+
+  .spark-right .measure-name {
+    @apply line-clamp-2;
+  }
+
+  .big-number {
+    @apply text-3xl font-medium text-gray-600 flex gap-x-0.5 items-end;
+  }
+
+  .hovered-value {
+    @apply text-primary-500;
+  }
+
+  .slash {
+    @apply text-lg;
+  }
+
+  .primary-value-on-hover {
+    @apply text-gray-600 text-lg;
+  }
+
+  .spark-right .slash,
+  .spark-right .primary-value-on-hover {
+    display: none;
+  }
+
+  .comparison-value-wrapper {
+    @apply flex items-baseline gap-x-2 text-sm -mb-[3px] truncate;
+  }
+
+  .sparkline-wrapper {
+    @apply size-full flex items-center justify-center;
+  }
+
+  .spark-right .sparkline-wrapper {
+    @apply mt-2;
   }
 
   .comparison-value {
     @apply w-fit max-w-full overflow-hidden;
     @apply font-medium text-ellipsis text-gray-500;
+  }
+
+  @container component-container (inline-size < 300px) {
+    .sparkline-wrapper {
+      display: none;
+    }
+
+    .data-wrapper {
+      align-items: center !important;
+    }
   }
 </style>

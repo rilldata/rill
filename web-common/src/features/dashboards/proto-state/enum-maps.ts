@@ -1,7 +1,7 @@
-import type { PivotRowJoinType } from "@rilldata/web-common/features/dashboards/pivot/types";
+import type { PivotTableMode } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { Operation } from "@rilldata/web-common/proto/gen/rill/runtime/v1/expression_pb";
 import { TimeGrain } from "@rilldata/web-common/proto/gen/rill/runtime/v1/time_grain_pb";
-import { DashboardState_PivotRowJoinType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
+import { DashboardState_PivotTableMode } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import { V1Operation, V1TimeGrain } from "@rilldata/web-common/runtime-client";
 
 // This file should contain all the map from proto and API values.
@@ -46,18 +46,18 @@ for (const grain in ToProtoTimeGrainMap) {
   FromProtoTimeGrainMap[ToProtoTimeGrainMap[grain]] = grain;
 }
 
-export const ToProtoPivotRowJoinTypeMap: Record<
-  PivotRowJoinType,
-  DashboardState_PivotRowJoinType
+export const ToProtoPivotTableModeMap: Record<
+  PivotTableMode,
+  DashboardState_PivotTableMode
 > = {
-  flat: DashboardState_PivotRowJoinType.FLAT,
-  nest: DashboardState_PivotRowJoinType.NEST,
+  flat: DashboardState_PivotTableMode.FLAT,
+  nest: DashboardState_PivotTableMode.NEST,
 };
 
-export const FromProtoPivotRowJoinTypeMap = {} as Record<
-  DashboardState_PivotRowJoinType,
-  PivotRowJoinType
+export const FromProtoPivotTableModeMap = {} as Record<
+  DashboardState_PivotTableMode,
+  PivotTableMode
 >;
-for (const op in ToProtoPivotRowJoinTypeMap) {
-  FromProtoPivotRowJoinTypeMap[ToProtoPivotRowJoinTypeMap[op]] = op;
+for (const op in ToProtoPivotTableModeMap) {
+  FromProtoPivotTableModeMap[ToProtoPivotTableModeMap[op]] = op;
 }

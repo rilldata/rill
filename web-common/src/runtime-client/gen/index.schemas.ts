@@ -333,6 +333,7 @@ export type QueryServiceMetricsViewAggregationBody = {
   priority?: number;
   filter?: V1MetricsViewFilter;
   exact?: boolean;
+  fillMissing?: boolean;
 };
 
 export type QueryServiceExportBody = {
@@ -1656,6 +1657,7 @@ export interface V1MetricsViewAggregationRequest {
   priority?: number;
   filter?: V1MetricsViewFilter;
   exact?: boolean;
+  fillMissing?: boolean;
 }
 
 export interface V1MapType {
@@ -2039,6 +2041,7 @@ If not found in `time_ranges`, it should be added to the list. */
   pivotCols?: string[];
   pivotSortBy?: string;
   pivotSortAsc?: boolean;
+  pivotTableMode?: string;
 }
 
 export interface V1Explore {
@@ -2776,6 +2779,7 @@ export interface MetricsViewSpecMeasureV2 {
   formatD3?: string;
   formatD3Locale?: MetricsViewSpecMeasureV2FormatD3Locale;
   validPercentOfTotal?: boolean;
+  treatNullsAs?: string;
 }
 
 /**
