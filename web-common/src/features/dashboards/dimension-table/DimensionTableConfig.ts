@@ -5,11 +5,11 @@ export type DimensionTableConfig = VirtualizedTableConfig & {
 };
 
 export const DIMENSION_TABLE_CONFIG: DimensionTableConfig = {
-  defaultColumnWidth: 110,
+  defaultColumnWidth: 96,
   maxColumnWidth: 320,
   minColumnWidth: 104,
   minHeaderWidthWhenColumsAreSmall: 160,
-  comparisonColumnWidth: 95,
+  comparisonColumnWidth: 60,
   rowHeight: 24,
   columnHeaderHeight: 28,
   indexWidth: 24,
