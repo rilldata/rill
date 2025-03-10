@@ -421,6 +421,12 @@ dimensions:
     // Preview
     await page.getByRole("button", { name: "Preview" }).click();
 
+    await page.waitForTimeout(500);
+
+    await interactWithTimeRangeMenu(page, async () => {
+      await page.getByRole("menuitem", { name: "All Time" }).click();
+    });
+
     // Check Avg Bid Price
     await expect(page.getByText("Avg Bid Price $3.01")).toBeVisible();
 
