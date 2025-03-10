@@ -14,6 +14,7 @@ export const contextColumnSelectors = {
   /**
    * Gets the active context column type for the dashboard.
    */
+  // FIXME: remove this single selector
   contextColumn: ({ dashboard }: DashboardDataSources) =>
     dashboard.leaderboardContextColumn,
 
