@@ -275,7 +275,7 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 	}
 
 	if req.Kind != "" { // nolint:staticcheck // For backwards compatibility
-		req.Type = req.Kind
+		req.Type = req.Kind // nolint:staticcheck // For backwards compatibility
 	}
 	if req.Type == "" {
 		// Default to an explore if no type is explicitly provided
