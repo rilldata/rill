@@ -170,7 +170,18 @@ func (s *Server) ServeHTTP(ctx context.Context, registerAdditionalHandlers func(
 // HTTPHandler HTTP handler serving REST gateway.
 func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers func(mux *http.ServeMux)) (http.Handler, error) {
 	// Create REST gateway
-	gwMux := gateway.NewServeMux(gateway.WithErrorHandler(HTTPErrorHandler))
+	gwMux := gateway.NewServeMux(
+		gateway.WithErrorHandler(HTTPErrorHandler),
+		gateway.WithOutgoingHeaderMatcher(func(s string) (string, bool) {
+			// grpc gateway adds gateway.MetadataHeaderPrefix to all outgoing headers
+			// we want to skip that for `x-trace-id` set in response
+			if s == "x-trace-id" {
+				return s, true
+			}
+			// default matcher logic
+			return fmt.Sprintf("%s%s", gateway.MetadataHeaderPrefix, s), true
+		}),
+	)
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	grpcAddress := fmt.Sprintf("localhost:%d", s.opts.GRPCPort)
 	err := runtimev1.RegisterRuntimeServiceHandlerFromEndpoint(ctx, gwMux, grpcAddress, opts)

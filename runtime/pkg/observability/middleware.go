@@ -58,9 +58,9 @@ func LoggingUnaryServerInterceptor(logger *zap.Logger) grpc.UnaryServerIntercept
 		start := time.Now()
 
 		// Add datadog trace ID to response headers
-		traceID := DatadogTraceID(ctx)
+		traceID := TraceID(ctx)
 		if traceID != "" {
-			header := metadata.Pairs("dd-trace-id", traceID)
+			header := metadata.Pairs("x-trace-id", traceID)
 			_ = grpc.SetHeader(ctx, header)
 		}
 
@@ -123,9 +123,9 @@ func LoggingStreamServerInterceptor(logger *zap.Logger) grpc.StreamServerInterce
 		start := time.Now()
 
 		// Add datadog trace ID to response headers
-		traceID := DatadogTraceID(ss.Context())
+		traceID := TraceID(ss.Context())
 		if traceID != "" {
-			header := metadata.Pairs("dd-trace-id", traceID)
+			header := metadata.Pairs("x-trace-id", traceID)
 			_ = grpc.SetHeader(ss.Context(), header)
 		}
 
@@ -227,9 +227,9 @@ func LoggingMiddleware(logger *zap.Logger, next http.Handler) http.Handler {
 		start := time.Now()
 
 		// Set datadog trace ID header in response headers
-		traceID := DatadogTraceID(r.Context())
+		traceID := TraceID(r.Context())
 		if traceID != "" {
-			w.Header().Set("dd-trace-id", traceID)
+			w.Header().Set("x-trace-id", traceID)
 		}
 
 		wrapped := wrappedResponseWriter{ResponseWriter: w}

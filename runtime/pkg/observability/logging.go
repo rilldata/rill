@@ -22,13 +22,13 @@ func ZapCtx(ctx context.Context) zap.Field {
 	})
 }
 
-func DatadogTraceID(ctx context.Context) string {
+func TraceID(ctx context.Context) string {
 	span := trace.SpanFromContext(ctx)
 	sctx := span.SpanContext()
 	if !sctx.IsValid() {
 		return ""
 	}
-	return convertToDatadogID(sctx.TraceID().String())
+	return sctx.TraceID().String()
 }
 
 type zapSpan struct {
