@@ -1,4 +1,6 @@
 import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
+import DeltaChange from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChange.svelte";
+import DeltaChangePercentage from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChangePercentage.svelte";
 import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
 import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
@@ -9,6 +11,8 @@ import {
 } from "@rilldata/web-common/lib/time/timezone";
 import type { ColumnDef } from "@tanstack/svelte-table";
 import { timeFormat } from "d3-time-format";
+import type { ComponentType, SvelteComponent } from "svelte";
+import PivotDeltaCell from "./PivotDeltaCell.svelte";
 import PivotExpandableCell from "./PivotExpandableCell.svelte";
 import PivotMeasureCell from "./PivotMeasureCell.svelte";
 import {
@@ -178,6 +182,7 @@ function formatDimensionValue(
 
 export type MeasureColumnProps = Array<{
   label: string;
+  icon?: ComponentType<SvelteComponent>;
   formatter: (
     value: string | number | null | undefined,
   ) => string | (null | undefined);
@@ -191,12 +196,15 @@ export function getMeasureColumnProps(
   return measureNames.map((m) => {
     let measureName = m;
     let label: string = "";
+    let icon: ComponentType<SvelteComponent> | undefined;
     let type: MeasureType = "measure";
     if (m.endsWith(COMPARISON_DELTA)) {
+      icon = DeltaChange;
       label = "Δ";
       type = "comparison_delta";
       measureName = m.replace(COMPARISON_DELTA, "");
     } else if (m.endsWith(COMPARISON_PERCENT)) {
+      icon = DeltaChangePercentage;
       label = "Δ %";
       type = "comparison_percent";
       measureName = m.replace(COMPARISON_PERCENT, "");
@@ -216,6 +224,7 @@ export function getMeasureColumnProps(
         : (v: string | number | null | undefined) => v?.toString(),
       name: m,
       type,
+      icon,
     };
   });
 }
@@ -298,16 +307,25 @@ function getFlatColumnDef(
       accessorKey: m.name,
       header: m.label || m.name,
       name: m.name,
+      meta: {
+        icon: m.icon,
+      },
       cell: (info) => {
         const measureValue = info.getValue() as number | null | undefined;
         if (m.type === "comparison_percent") {
           return cellComponent(PercentageChange, {
             isNull: measureValue == null,
+            color: "text-gray-500",
             value:
               measureValue !== null && measureValue !== undefined
                 ? formatMeasurePercentageDifference(measureValue)
                 : null,
             inTable: true,
+          });
+        } else if (m.type === "comparison_delta") {
+          return cellComponent(PivotDeltaCell, {
+            formattedValue: m.formatter(measureValue),
+            value: measureValue,
           });
         }
         const value = m.formatter(measureValue);
@@ -418,16 +436,25 @@ function getNestedColumnDef(
         accessorKey: m.name,
         header: m.label || m.name,
         name: m.name,
+        meta: {
+          icon: m.icon,
+        },
         cell: (info) => {
           const measureValue = info.getValue() as number | null | undefined;
           if (m.type === "comparison_percent") {
             return cellComponent(PercentageChange, {
               isNull: measureValue == null,
+              color: "text-gray-500",
               value:
                 measureValue !== null && measureValue !== undefined
                   ? formatMeasurePercentageDifference(measureValue)
                   : null,
               inTable: true,
+            });
+          } else if (m.type === "comparison_delta") {
+            return cellComponent(PivotDeltaCell, {
+              formattedValue: m.formatter(measureValue),
+              value: measureValue,
             });
           }
           const value = m.formatter(measureValue);

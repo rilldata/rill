@@ -239,6 +239,7 @@
       <tr>
         {#each headerGroup.headers as header, i (header.id)}
           {@const sortDirection = header.column.getIsSorted()}
+          {@const icon = header.column.columnDef.meta?.icon}
 
           <th colSpan={header.colSpan}>
             <button
@@ -246,12 +247,19 @@
               class:cursor-pointer={header.column.getCanSort()}
               class:select-none={header.column.getCanSort()}
               class:flex-row-reverse={isMeasureColumn(header, i)}
+              class:border-r={isMeasureColumn(header, i)
+                ? i % measureCount === 0 && i
+                : true}
               on:click={header.column.getToggleSortingHandler()}
             >
               {#if !header.isPlaceholder}
-                <p class="truncate">
-                  {header.column.columnDef.header}
-                </p>
+                {#if icon}
+                  <svelte:component this={icon} />
+                {:else}
+                  <p class="truncate">
+                    {header.column.columnDef.header}
+                  </p>
+                {/if}
                 {#if sortDirection}
                   <span
                     class="transition-transform -mr-1"
@@ -342,8 +350,12 @@
 
   th {
     @apply p-0 m-0 text-xs;
-    @apply border-r border-b relative;
+    @apply border-b relative;
   }
+
+  /* thead tr:last-of-type th {
+    @apply border-b;
+  } */
 
   th:last-of-type,
   td:last-of-type {
@@ -363,12 +375,12 @@
   .header-cell {
     @apply px-2 bg-white size-full;
     @apply flex items-center gap-x-1 w-full truncate;
-    @apply font-medium;
+    @apply text-gray-800 font-medium;
     height: var(--header-height);
   }
 
   .cell {
-    @apply size-full p-1 px-2;
+    @apply size-full p-1 px-2 text-gray-800;
   }
 
   /* The leftmost header cells have no bottom border unless they're the last row */
@@ -395,8 +407,9 @@
 
   /* The totals row */
   tbody > tr:nth-of-type(2) {
-    @apply bg-slate-50 sticky z-20 font-semibold;
+    @apply bg-white sticky z-20;
     top: var(--total-header-height);
+    height: calc(var(--row-height) + 2px);
   }
 
   /* The totals row header */
@@ -413,9 +426,6 @@
     @apply bg-primary-100;
   }
 
-  .totals-column {
-    @apply bg-slate-50;
-  }
   :global(.with-col-dimension) .totals-column {
     @apply font-semibold;
   }

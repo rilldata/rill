@@ -18,7 +18,7 @@
   {:else if assembled && row.getCanExpand()}
     <button
       on:click|stopPropagation={row.getToggleExpandedHandler()}
-      class="cursor-pointer p-1 -m-1 pointer-events-auto"
+      class="cursor-pointer px-0.5 -m-1 pointer-events-auto"
     >
       <div class:rotate={row.getIsExpanded()} class="transition-transform">
         <ChevronRight size="16px" color="#9CA3AF" />
