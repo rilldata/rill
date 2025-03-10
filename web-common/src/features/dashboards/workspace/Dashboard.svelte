@@ -225,6 +225,7 @@
               {timeControlsReady}
               {visibleMeasureNames}
               hideStartPivotButton={hidePivot}
+              canShowForAllMeasures={Boolean(selectedDimension)}
             />
           {:else}
             <LeaderboardDisplay

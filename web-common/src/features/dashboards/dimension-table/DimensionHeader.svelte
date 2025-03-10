@@ -34,6 +34,7 @@
   export let onToggleSearchItems: () => void;
   export let hideStartPivotButton = false;
   export let comparisonTimeRange: V1TimeRange | undefined;
+  export let canShowForAllMeasures: boolean;
 
   const stateManagers = getStateManagers();
   const {
@@ -164,6 +165,7 @@
       dimensionShowForAllMeasures={$dimensionShowForAllMeasures}
       onContextColumnChange={setContextColumns}
       onShowForAllMeasures={toggleDimensionShowForAllMeasures}
+      {canShowForAllMeasures}
     />
     {#if !isRowsEmpty}
       <SelectAllButton
