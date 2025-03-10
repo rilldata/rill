@@ -9,6 +9,7 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
+  import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import {
     Popover,
     PopoverContent,
@@ -32,7 +33,6 @@
     hasDashboardDimensionThresholdFilter,
     hasDashboardWhereFilter,
   } from "./form-utils";
-  import Check from "@rilldata/web-common/components/icons/Check.svelte";
 
   const queryClient = useQueryClient();
   const StateManagers = getStateManagers();
@@ -181,7 +181,7 @@
             </label>
             <Popover bind:open={popoverOpen}>
               <PopoverTrigger>
-                <IconButton>
+                <IconButton ariaLabel="Edit expiration date">
                   <Pencil size="14px" class="text-primary-600" />
                 </IconButton>
               </PopoverTrigger>
@@ -275,14 +275,18 @@
 {:else}
   <div class="flex flex-col gap-y-4">
     <h3>Success! A public URL has been created.</h3>
-    <Button type="secondary" on:click={onCopy}>
+    <Button
+      type="secondary"
+      on:click={onCopy}
+      dataAttributes={{ "data-public-url": url }}
+    >
       {#if copied}
         <Check size="16px" />
         Copied URL
       {:else}
         Copy Public URL
-      {/if}</Button
-    >
+      {/if}
+    </Button>
   </div>
 {/if}
 
