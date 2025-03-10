@@ -66,7 +66,7 @@
   export let tableWidth: number;
   export let sortedAscending: boolean;
   export let isValidPercentOfTotal: boolean;
-  export let contextColumns: LeaderboardContextColumn[] = [];
+  export let contextColumns: string[] = [];
   export let timeControlsReady: boolean;
   export let dimensionColumnWidth: number;
   export let isSummableMeasure: boolean;
