@@ -17,6 +17,7 @@
     DropdownMenu,
     DropdownMenuTrigger,
   } from "@rilldata/web-common/components/dropdown-menu";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
@@ -28,6 +29,8 @@
 
   let showDialog = false;
   let bookmark: BookmarkEntry | null = null;
+
+  const { validSpecStore } = getStateManagers();
 
   $: exploreState = useExploreState(exploreName);
   $: projectId = useProjectId($page.params.organization, $page.params.project);
@@ -51,7 +54,13 @@
 
   async function createHomeBookmark() {
     await homeBookmarkModifier(
-      getBookmarkDataForDashboard($exploreState),
+      getBookmarkDataForDashboard(
+        $exploreState,
+        undefined,
+        undefined,
+        undefined,
+        $validSpecStore.data?.explore,
+      ),
       $projectId.data,
       $bookamrksResp.data?.bookmarks ?? [],
     );

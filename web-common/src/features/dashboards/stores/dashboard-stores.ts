@@ -1,6 +1,5 @@
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
-import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import { getWhereFilterExpressionIndex } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import { AdvancedMeasureCorrector } from "@rilldata/web-common/features/dashboards/stores/AdvancedMeasureCorrector";
 import { getFullInitExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
@@ -44,10 +43,6 @@ const { update, subscribe } = writable({
   entities: {},
 } as MetricsExplorerStoreType);
 
-function updateMetricsExplorerProto(metricsExplorer: MetricsExplorerEntity) {
-  metricsExplorer.proto = getProtoFromDashboardState(metricsExplorer);
-}
-
 export const updateMetricsExplorerByName = (
   name: string,
   callback: (metricsExplorer: MetricsExplorerEntity) => void,
@@ -58,8 +53,6 @@ export const updateMetricsExplorerByName = (
     }
 
     callback(state.entities[name]);
-    // every change triggers a proto update
-    updateMetricsExplorerProto(state.entities[name]);
     return state;
   });
 };
@@ -171,8 +164,6 @@ const metricsViewReducers = {
         initState.whereFilter,
       );
       state.entities[name] = getFullInitExploreState(name, initState);
-
-      updateMetricsExplorerProto(state.entities[name]);
 
       return state;
     });
