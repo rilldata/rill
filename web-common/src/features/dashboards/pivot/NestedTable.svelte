@@ -239,6 +239,7 @@
       <tr>
         {#each headerGroup.headers as header, i (header.id)}
           {@const sortDirection = header.column.getIsSorted()}
+          {@const icon = header.column.columnDef.meta?.icon}
 
           <th colSpan={header.colSpan}>
             <button
@@ -252,9 +253,13 @@
               on:click={header.column.getToggleSortingHandler()}
             >
               {#if !header.isPlaceholder}
-                <p class="truncate">
-                  {header.column.columnDef.header}
-                </p>
+                {#if icon}
+                  <svelte:component this={icon} />
+                {:else}
+                  <p class="truncate">
+                    {header.column.columnDef.header}
+                  </p>
+                {/if}
                 {#if sortDirection}
                   <span
                     class="transition-transform -mr-1"
