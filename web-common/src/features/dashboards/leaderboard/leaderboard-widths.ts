@@ -1,7 +1,7 @@
 import { clamp } from "@rilldata/web-common/lib/clamp";
 import { get, writable, type Writable } from "svelte/store";
 
-export const DEFAULT_COL_WIDTH = 80;
+export const DEFAULT_COL_WIDTH = 110;
 export const DEFAULT_CONTEXT_COLUMN_WIDTH = 60;
 
 const MIN_COL_WIDTH = 56;

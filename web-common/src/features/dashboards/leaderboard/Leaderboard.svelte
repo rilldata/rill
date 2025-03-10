@@ -90,8 +90,6 @@
     dimensionName: string | undefined,
   ) => void;
 
-  // $: console.log("Leaderboard activeMeasureNames: ", activeMeasureNames);
-
   const observer = new IntersectionObserver(
     ([entry]) => {
       visible = entry.isIntersecting;
@@ -197,8 +195,6 @@
 
   $: ({ data: sortedData, isFetching } = $sortedQuery);
   $: ({ data: totalsData } = $totalsQuery);
-
-  $: isTimeComparisonActive = !!comparisonTimeRange;
 
   $: leaderboardTotals = totalsData?.data?.[0]
     ? Object.fromEntries(
