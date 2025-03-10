@@ -396,6 +396,7 @@ func resourceNameFromArgs(parts ...string) (ResourceName, error) {
 		return ResourceName{}, err
 	}
 
+	// Backwards compatibility: sources are now emitted as models
 	if kind == ResourceKindSource {
 		kind = ResourceKindModel
 	}
