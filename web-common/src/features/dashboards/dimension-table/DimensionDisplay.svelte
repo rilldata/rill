@@ -43,6 +43,7 @@
 
   const {
     selectors: {
+      dimensions: { dimensionShowForAllMeasures },
       dimensionFilters: { unselectedDimensionValues },
       dimensionTable: {
         virtualizedTableColumns,
@@ -61,9 +62,11 @@
     },
   } = getStateManagers();
 
-  $: console.log("activeMeasureName: ", activeMeasureName);
-  $: console.log("activeMeasureNames: ", activeMeasureNames);
-  $: console.log("DimensionDisplay $contextColumns: ", $contextColumns);
+  console.log("$dimensionShowForAllMeasures: ", $dimensionShowForAllMeasures);
+
+  // $: console.log("activeMeasureName: ", activeMeasureName);
+  // $: console.log("activeMeasureNames: ", activeMeasureNames);
+  // $: console.log("DimensionDisplay $contextColumns: ", $contextColumns);
   $: console.log("DimensionDisplay $sortMeasure: ", $sortMeasure);
 
   $: ({ name: dimensionName = "" } = dimension);

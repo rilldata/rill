@@ -20,19 +20,22 @@
         getMeasureByName,
         visibleMeasures,
       },
-      dimensions: { visibleDimensions, allDimensions },
+      dimensions: {
+        visibleDimensions,
+        allDimensions,
+        dimensionShowForAllMeasures,
+      },
       contextColumn: { contextColumn, contextColumns },
     },
     actions: {
-      dimensions: { toggleDimensionVisibility },
+      dimensions: {
+        toggleDimensionVisibility,
+        toggleDimensionShowForAllMeasures,
+      },
       contextColumn: { setContextColumn, setContextColumns },
       setLeaderboardMeasureCount,
     },
   } = StateManagers;
-
-  // TODO: remove contextColumn
-  // $: console.log("$contextColumn: ", $contextColumn);
-  // $: console.log("$contextColumns: ", $contextColumns);
 
   $: measures = getSimpleMeasures($visibleMeasures);
 
@@ -95,12 +98,11 @@
       <ContextColumnDropdown
         tooltipText="Choose context columns to display"
         isValidPercentOfTotal={validPercentOfTotal}
-        hasComparisonTimeRange={!!comparisonTimeRange}
+        isTimeComparisonActive={!!comparisonTimeRange}
         selectedFilters={$contextColumns}
+        dimensionShowForAllMeasures={$dimensionShowForAllMeasures}
         onContextColumnChange={setContextColumns}
-        onSelectAll={() => {
-          setContextColumns([]);
-        }}
+        onShowForAllMeasures={toggleDimensionShowForAllMeasures}
       />
     </div>
   {/if}

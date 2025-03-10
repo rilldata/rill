@@ -23,7 +23,6 @@
   import { getStateManagers } from "../state-managers/state-managers";
   import SelectAllButton from "./SelectAllButton.svelte";
   import { getDimensionTableExportQuery } from "./dimension-table-export";
-  import { getSimpleMeasures } from "../state-managers/selectors/measures";
   import ContextColumnDropdown from "@rilldata/web-common/components/menu/ContextColumnDropdown.svelte";
   import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
 
@@ -40,14 +39,14 @@
   const {
     selectors: {
       sorting: { sortedByDimensionValue },
-      dimensions: { getDimensionDisplayName },
+      dimensions: { getDimensionDisplayName, dimensionShowForAllMeasures },
       dimensionFilters: { isFilterExcludeMode },
       measures: { leaderboardMeasureName, getMeasureByName, visibleMeasures },
       contextColumn: { contextColumns },
     },
     actions: {
       sorting: { toggleSort },
-      dimensions: { setPrimaryDimension },
+      dimensions: { setPrimaryDimension, toggleDimensionShowForAllMeasures },
       dimensionsFilter: { toggleDimensionFilterMode },
       contextColumn: { setContextColumns },
     },
@@ -59,7 +58,6 @@
   const { adminServer, exports } = featureFlags;
 
   $: exploreHasTimeDimension = !!$timeRangeSummaryStore.data;
-  $: measures = getSimpleMeasures($visibleMeasures);
 
   $: activeLeaderboardMeasure = $getMeasureByName($leaderboardMeasureName);
   $: validPercentOfTotal =
@@ -161,12 +159,11 @@
     <ContextColumnDropdown
       tooltipText="Choose context columns to display"
       isValidPercentOfTotal={validPercentOfTotal}
-      hasComparisonTimeRange={!!comparisonTimeRange}
+      isTimeComparisonActive={!!comparisonTimeRange}
       selectedFilters={$contextColumns}
+      dimensionShowForAllMeasures={$dimensionShowForAllMeasures}
       onContextColumnChange={setContextColumns}
-      onSelectAll={() => {
-        setContextColumns([]);
-      }}
+      onShowForAllMeasures={toggleDimensionShowForAllMeasures}
     />
     {#if !isRowsEmpty}
       <SelectAllButton
