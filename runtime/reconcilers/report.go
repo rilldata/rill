@@ -435,14 +435,14 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 			}
 		}
 		if explore != "" {
-			webOpenMode = "legacy"
+			webOpenMode = "recipient"
 		}
 	}
 
 	var reqWebOpenMode adminv1.ReportOptions_OpenMode
 	switch webOpenMode {
-	case "legacy":
-		reqWebOpenMode = adminv1.ReportOptions_OPEN_MODE_LEGACY
+	case "recipient":
+		reqWebOpenMode = adminv1.ReportOptions_OPEN_MODE_RECIPIENT
 	case "creator":
 		reqWebOpenMode = adminv1.ReportOptions_OPEN_MODE_CREATOR
 	case "none":

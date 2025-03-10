@@ -13488,9 +13488,9 @@ export enum ReportOptions_OpenMode {
   /**
    * send this for older reports
    *
-   * @generated from enum value: OPEN_MODE_LEGACY = 1;
+   * @generated from enum value: OPEN_MODE_RECIPIENT = 1;
    */
-  LEGACY = 1,
+  RECIPIENT = 1,
 
   /**
    * send this for reports that should be opened with creators permissions
@@ -13516,7 +13516,7 @@ export enum ReportOptions_OpenMode {
 // Retrieve enum metadata with: proto3.getEnumType(ReportOptions_OpenMode)
 proto3.util.setEnumType(ReportOptions_OpenMode, "rill.admin.v1.ReportOptions.OpenMode", [
   { no: 0, name: "OPEN_MODE_UNSPECIFIED" },
-  { no: 1, name: "OPEN_MODE_LEGACY" },
+  { no: 1, name: "OPEN_MODE_RECIPIENT" },
   { no: 2, name: "OPEN_MODE_CREATOR" },
   { no: 3, name: "OPEN_MODE_NONE" },
   { no: 4, name: "OPEN_MODE_FILTERED" },
