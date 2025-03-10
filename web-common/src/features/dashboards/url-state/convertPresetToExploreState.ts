@@ -304,6 +304,16 @@ function fromExploreUrlParams(
     }
   }
 
+  if (preset.exploreLeaderboardMeasureCount !== undefined) {
+    partialExploreState.leaderboardMeasureCount =
+      preset.exploreLeaderboardMeasureCount;
+  }
+
+  if (preset.exploreLeaderboardContextColumns !== undefined) {
+    partialExploreState.leaderboardContextColumns =
+      preset.exploreLeaderboardContextColumns;
+  }
+
   return { partialExploreState, errors };
 }
 

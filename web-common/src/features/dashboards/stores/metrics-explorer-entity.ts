@@ -144,7 +144,7 @@ export interface MetricsExplorerEntity {
   /**
    * Array of context columns to be shown in the leaderboard
    */
-  leaderboardContextColumns: LeaderboardContextColumn[];
+  leaderboardContextColumns: string[];
 
   /**
    * Width of each context column. Needs to be reset to default
