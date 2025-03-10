@@ -115,7 +115,7 @@ export function computePercentOfTotal(
 export function getComparisonProperties(
   measureName: string,
   selectedMeasure: MetricsViewSpecMeasureV2,
-  contextColumns: LeaderboardContextColumn[] = [],
+  contextColumns: string[] = [],
 ): {
   component: typeof SvelteComponent<any>;
   type: string;
@@ -250,6 +250,7 @@ export function prepareVirtualizedDimTableColumns(
 ): VirtualizedTableColumns[] {
   const sortType = dash.dashboardSortType;
   const sortDirection = dash.sortDirection;
+  const contextColumns = dash.leaderboardContextColumns;
 
   const measureNames = allMeasures.map((m) => m.name);
   const leaderboardMeasureName = dash.leaderboardMeasureName;
@@ -336,17 +337,23 @@ export function prepareVirtualizedDimTableColumns(
         };
       } else if (selectedMeasure !== undefined) {
         // Handle delta, delta_perc, and percent_of_total columns
-        const comparison = getComparisonProperties(name, selectedMeasure);
-        columnOut = {
+        const comparison = getComparisonProperties(
           name,
-          type: comparison.type,
-          label: comparison.component,
-          description: comparison.description,
-          enableResize: false,
-          format: comparison.format,
-          highlight,
-          sorted,
-        };
+          selectedMeasure,
+          contextColumns,
+        );
+        if (comparison.visible) {
+          columnOut = {
+            name,
+            type: comparison.type,
+            label: comparison.component,
+            description: comparison.description,
+            enableResize: false,
+            format: comparison.format,
+            highlight,
+            sorted,
+          };
+        }
       }
       return columnOut;
     })

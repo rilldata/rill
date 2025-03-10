@@ -31,6 +31,7 @@
 
   const queryLimit = 250;
 
+  export let activeMeasureName: string;
   export let activeMeasureNames: string[];
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
@@ -51,6 +52,7 @@
         prepareDimTableRows,
       },
       sorting: { sortedAscending, sortType, sortMeasure },
+      contextColumn: { contextColumns },
     },
     actions: {
       dimensionsFilter: {
@@ -62,6 +64,9 @@
     dashboardStore,
   } = getStateManagers();
 
+  $: console.log("activeMeasureName: ", activeMeasureName);
+  $: console.log("activeMeasureNames: ", activeMeasureNames);
+  $: console.log("DimensionDisplay $contextColumns: ", $contextColumns);
   $: console.log("DimensionDisplay $sortMeasure: ", $sortMeasure);
 
   $: ({ name: dimensionName = "" } = dimension);
@@ -98,32 +103,33 @@
     },
   );
 
-  $: unfilteredTotal =
-    $totalsQuery?.data?.data?.[0]?.[activeMeasureNames[0]] ?? 0;
+  $: unfilteredTotal = $totalsQuery?.data?.data?.[0]?.[activeMeasureName] ?? 0;
 
   $: columns = $virtualizedTableColumns($totalsQuery);
 
   $: measures = getMeasuresForDimensionTable(
-    activeMeasureNames[0],
+    activeMeasureName,
     dimensionThresholdFilters,
     visibleMeasureNames,
-  ).map(
-    (measureName) =>
-      ({
-        name: measureName,
-      }) as V1MetricsViewAggregationMeasure,
-  );
-
-  $: if (comparisonTimeRange) {
-    measures = measures.concat(
-      activeMeasureNames.flatMap((name) => getComparisonRequestMeasures(name)),
+  )
+    .map(
+      (n) =>
+        ({
+          name: n,
+        }) as V1MetricsViewAggregationMeasure,
+    )
+    .concat(
+      ...(comparisonTimeRange
+        ? activeMeasureNames.flatMap((name) =>
+            getComparisonRequestMeasures(name),
+          )
+        : []),
     );
-  }
 
   $: sort = getSort(
     $sortedAscending,
     $sortType,
-    activeMeasureNames[0],
+    activeMeasureName,
     dimensionName,
     !!comparisonTimeRange,
   );
