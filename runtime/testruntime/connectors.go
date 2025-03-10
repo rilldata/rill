@@ -200,19 +200,20 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		_, currentFile, _, _ := goruntime.Caller(0)
 		testdataPath := filepath.Join(currentFile, "..", "testdata")
 		azureInitData := filepath.Join(testdataPath, "init_data", "azure")
-		uploadDirectory(ctx, client, containerName, azureInitData)
+		err = uploadDirectory(ctx, client, containerName, azureInitData)
+		require.NoError(t, err)
 
 		connectionString := fmt.Sprintf("DefaultEndpointsProtocol=http;AccountName=%s;AccountKey=%s;BlobEndpoint=%s;", azurite.AccountName, azurite.AccountKey, blobServiceURL)
 
 		ip, err := azuriteContainer.ContainerIP(context.Background())
 		require.NoError(t, err)
-		blobEndpointWithIp := fmt.Sprintf("http://%s:%d/%s", ip, 10000, azurite.AccountName)
+		blobEndpointWithIP := fmt.Sprintf("http://%s:%d/%s", ip, 10000, azurite.AccountName)
 
-		connectionStringWithIp := fmt.Sprintf("DefaultEndpointsProtocol=http;AccountName=%s;AccountKey=%s;BlobEndpoint=%s;", azurite.AccountName, azurite.AccountKey, blobEndpointWithIp)
+		connectionStringWithIP := fmt.Sprintf("DefaultEndpointsProtocol=http;AccountName=%s;AccountKey=%s;BlobEndpoint=%s;", azurite.AccountName, azurite.AccountKey, blobEndpointWithIP)
 
 		return map[string]string{
 			"azure_storage_connection_string":    connectionString,
-			"azure_storage_connection_string_ip": connectionStringWithIp,
+			"azure_storage_connection_string_ip": connectionStringWithIP,
 		}
 	},
 }
