@@ -31,7 +31,7 @@
   export let atLeastOneActive: boolean;
   export let isValidPercentOfTotal: boolean;
   export let isTimeComparisonActive: boolean;
-  export let contextColumns: LeaderboardContextColumn[] = [];
+  export let contextColumns: string[] = [];
   export let activeMeasureNames: string[] = [];
   export let toggleDimensionValueSelection: (
     dimensionName: string,
