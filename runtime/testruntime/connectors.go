@@ -101,6 +101,13 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		return map[string]string{"google_application_credentials": gac}
 	},
 	"gcs": func(t TestingT) map[string]string {
+		// Load .env file at the repo root (if any)
+		_, currentFile, _, _ := goruntime.Caller(0)
+		envPath := filepath.Join(currentFile, "..", "..", "..", ".env")
+		_, err := os.Stat(envPath)
+		if err == nil {
+			require.NoError(t, godotenv.Load(envPath))
+		}
 		hmacKey := os.Getenv("RILL_RUNTIME_GCS_TEST_HMAC_KEY")
 		hmacSecret := os.Getenv("RILL_RUNTIME_GCS_TEST_HMAC_SECRET")
 		require.NotEmpty(t, hmacKey, "GCS RILL_RUNTIME_GCS_TEST_HMAC_KEY not configured")
