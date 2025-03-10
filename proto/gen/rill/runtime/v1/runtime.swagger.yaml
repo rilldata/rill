@@ -1376,6 +1376,8 @@ paths:
                 title: Optional
               exact:
                 type: boolean
+              fillMissing:
+                type: boolean
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/compare-toplist:
@@ -3135,6 +3137,8 @@ definitions:
         type: object
       validPercentOfTotal:
         type: boolean
+      treatNullsAs:
+        type: string
     title: Measures are aggregated computed values
   MetricsViewSpecMeasureWindow:
     type: object
@@ -4354,6 +4358,8 @@ definitions:
         type: string
       pivotSortAsc:
         type: boolean
+      pivotTableMode:
+        type: string
   v1ExploreSortType:
     type: string
     enum:
@@ -4988,6 +4994,8 @@ definitions:
         description: Deprecated. should be removed once UI is moved to use new filters
         title: Optional
       exact:
+        type: boolean
+      fillMissing:
         type: boolean
   v1MetricsViewAggregationResponse:
     type: object
@@ -5702,13 +5710,13 @@ definitions:
         type: string
         format: int64
         description: |-
-          total_execution_duration is the time user queries took to execute while refreshing the model.
+          total_execution_duration_ms is the time user queries took to execute while refreshing the model.
           In case of incremental models it is the sum of all successful executions so far.
           This is not the time it took to refresh the model which also includes other stuff like taking a write lock.
       latestExecutionDurationMs:
         type: string
         format: int64
-        description: latest_execution_duration is the time user queries took to execute in the last successful refresh.
+        description: latest_execution_duration_ms is the time user queries took to execute in the last successful refresh.
   v1ModelV2:
     type: object
     properties:

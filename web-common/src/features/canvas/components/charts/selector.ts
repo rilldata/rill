@@ -1,10 +1,3 @@
-import type { ChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
-import type {
-  ChartConfig,
-  ChartSortDirection,
-} from "@rilldata/web-common/features/canvas/components/charts/types";
-import { timeGrainToVegaTimeUnitMap } from "@rilldata/web-common/features/canvas/components/charts/util";
-import type { ComponentFilterProperties } from "@rilldata/web-common/features/canvas/components/types";
 import {
   validateDimensions,
   validateMeasures,
@@ -13,18 +6,16 @@ import type { StateManagers } from "@rilldata/web-common/features/canvas/state-m
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import {
-  createQueryServiceMetricsViewAggregation,
   type MetricsViewSpecDimensionV2,
   type MetricsViewSpecMeasureV2,
-  type V1MetricsViewAggregationDimension,
-  type V1MetricsViewAggregationMeasure,
-  type V1MetricsViewAggregationResponse,
   type V1MetricsViewAggregationResponseDataItem,
-  type V1MetricsViewAggregationSort,
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
-import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, type Readable } from "svelte/store";
+import type { ChartSpec } from "./";
+import { createChartDataQuery } from "./query";
+import type { ChartConfig } from "./types";
+import { timeGrainToVegaTimeUnitMap } from "./util";
 
 export type ChartDataResult = {
   data: V1MetricsViewAggregationResponseDataItem[];
@@ -93,67 +84,11 @@ export function getChartData(
         >,
       );
       return {
-        data: chartData?.data?.data || [],
+        data: chartData.data || [],
         isFetching: chartData.isFetching,
         error: chartData.error,
         fields: fieldSpecMap,
       };
-    },
-  );
-}
-
-export function createChartDataQuery(
-  ctx: StateManagers,
-  config: ChartConfig & ComponentFilterProperties,
-  timeAndFilterStore: Readable<TimeAndFilterStore>,
-  limit = "5000",
-  offset = "0",
-): CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> {
-  let measures: V1MetricsViewAggregationMeasure[] = [];
-  let dimensions: V1MetricsViewAggregationDimension[] = [];
-
-  if (config.y?.type === "quantitative" && config.y?.field) {
-    measures = [{ name: config.y?.field }];
-  }
-
-  let sort: V1MetricsViewAggregationSort | undefined;
-
-  return derived(
-    [ctx.runtime, timeAndFilterStore],
-    ([runtime, $timeAndFilterStore], set) => {
-      const { timeRange, where, timeGrain } = $timeAndFilterStore;
-
-      if (config.x?.type === "nominal" && config.x?.field) {
-        sort = vegaSortToAggregationSort(config.x?.sort, config);
-        dimensions = [{ name: config.x?.field }];
-      } else if (config.x?.type === "temporal" && timeGrain) {
-        dimensions = [{ name: config.x?.field, timeGrain }];
-      }
-
-      if (typeof config.color === "object" && config.color?.field) {
-        dimensions = [...dimensions, { name: config.color.field }];
-      }
-
-      return createQueryServiceMetricsViewAggregation(
-        runtime.instanceId,
-        config.metrics_view,
-        {
-          measures,
-          dimensions,
-          sort: sort ? [sort] : undefined,
-          where,
-          timeRange,
-          limit,
-          offset,
-        },
-        {
-          query: {
-            enabled: !!timeRange?.start && !!timeRange?.end,
-            queryClient: ctx.queryClient,
-            keepPreviousData: true,
-          },
-        },
-      ).subscribe(set);
     },
   );
 }
@@ -237,19 +172,4 @@ export function validateChartSchema(
       };
     },
   );
-}
-
-function vegaSortToAggregationSort(
-  sort: ChartSortDirection | undefined,
-  config: ChartConfig,
-): V1MetricsViewAggregationSort | undefined {
-  if (!sort) return undefined;
-  const field =
-    sort === "x" || sort === "-x" ? config.x?.field : config.y?.field;
-  if (!field) return undefined;
-
-  return {
-    name: field,
-    desc: sort === "-x" || sort === "-y",
-  };
 }

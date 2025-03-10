@@ -1,7 +1,6 @@
 <script lang="ts">
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import type { ComponentType, SvelteComponent } from "svelte";
+  import { Tooltip } from "bits-ui";
 
   export let fields: {
     id: string;
@@ -16,18 +15,25 @@
 
 <div class:small class:expand class="option-wrapper">
   {#each fields as { id, Icon, tooltip } (id)}
-    <Tooltip distance={4} location="top" alignment="start">
-      <TooltipContent slot="tooltip-content" maxWidth="280px">
-        {tooltip}
-      </TooltipContent>
-      <button
-        on:click={() => onClick(id)}
-        class="-ml-[1px] first-of-type:-ml-0 px-2 border border-gray-300 first-of-type:rounded-l-[2px] last-of-type:rounded-r-[2px]"
-        class:selected={selected === id}
-      >
-        <Icon size={small ? "14px" : "16px"} />
-      </button>
-    </Tooltip>
+    <Tooltip.Root>
+      <Tooltip.Trigger asChild let:builder>
+        <button
+          {...builder}
+          use:builder.action
+          on:click={() => onClick(id)}
+          class="-ml-[1px] first-of-type:-ml-0 px-2 border border-gray-300 first-of-type:rounded-l-[2px] last-of-type:rounded-r-[2px]"
+          class:selected={selected === id}
+        >
+          <Icon size={small ? "14px" : "16px"} />
+        </button>
+      </Tooltip.Trigger>
+
+      <Tooltip.Content class="z-[1000]" sideOffset={8}>
+        <div class="bg-gray-700 text-white rounded p-2 pt-1 pb-1">
+          {tooltip}
+        </div>
+      </Tooltip.Content>
+    </Tooltip.Root>
   {/each}
 </div>
 

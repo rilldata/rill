@@ -1083,7 +1083,7 @@ export class ModelState extends Message<ModelState> {
   partitionsHaveErrors = false;
 
   /**
-   * total_execution_duration is the time user queries took to execute while refreshing the model.
+   * total_execution_duration_ms is the time user queries took to execute while refreshing the model.
    * In case of incremental models it is the sum of all successful executions so far.
    * This is not the time it took to refresh the model which also includes other stuff like taking a write lock.
    *
@@ -1092,7 +1092,7 @@ export class ModelState extends Message<ModelState> {
   totalExecutionDurationMs = protoInt64.zero;
 
   /**
-   * latest_execution_duration is the time user queries took to execute in the last successful refresh.
+   * latest_execution_duration_ms is the time user queries took to execute in the last successful refresh.
    *
    * @generated from field: int64 latest_execution_duration_ms = 13;
    */
@@ -1752,6 +1752,11 @@ export class MetricsViewSpec_MeasureV2 extends Message<MetricsViewSpec_MeasureV2
    */
   validPercentOfTotal = false;
 
+  /**
+   * @generated from field: string treat_nulls_as = 14;
+   */
+  treatNullsAs = "";
+
   constructor(data?: PartialMessage<MetricsViewSpec_MeasureV2>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1773,6 +1778,7 @@ export class MetricsViewSpec_MeasureV2 extends Message<MetricsViewSpec_MeasureV2
     { no: 7, name: "format_d3", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "format_d3_locale", kind: "message", T: Struct },
     { no: 6, name: "valid_percent_of_total", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 14, name: "treat_nulls_as", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_MeasureV2 {
@@ -2619,6 +2625,11 @@ export class ExplorePreset extends Message<ExplorePreset> {
    */
   pivotSortAsc?: boolean;
 
+  /**
+   * @generated from field: optional string pivot_table_mode = 28;
+   */
+  pivotTableMode?: string;
+
   constructor(data?: PartialMessage<ExplorePreset>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2651,6 +2662,7 @@ export class ExplorePreset extends Message<ExplorePreset> {
     { no: 25, name: "pivot_cols", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 26, name: "pivot_sort_by", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 27, name: "pivot_sort_asc", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 28, name: "pivot_table_mode", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExplorePreset {
