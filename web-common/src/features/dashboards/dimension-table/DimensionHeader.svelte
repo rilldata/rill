@@ -148,7 +148,7 @@
     {#if isFetching}
       <DelayedSpinner isLoading={isFetching} size="16px" />
     {:else}
-      <Button type="link" forcedStyle="padding: 0; gap: 0px;">
+      <Button type="link" forcedStyle="padding: 0; gap: 4px;">
         <Back size="16px" />
         <span>All Dimensions</span>
       </Button>
