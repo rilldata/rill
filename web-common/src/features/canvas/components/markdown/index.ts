@@ -21,6 +21,7 @@ export interface MarkdownSpec extends ComponentCommonProperties {
 export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
   minSize = { width: 1, height: 1 };
   defaultSize = { width: 3, height: 2 };
+  resetParams = [];
 
   constructor(
     fileArtifact: FileArtifact | undefined = undefined,

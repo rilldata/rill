@@ -1,5 +1,6 @@
 <script lang="ts">
   import { getInitialHeight } from "./layout-util";
+
   export let zIndex: number;
   export let type: string | undefined;
 

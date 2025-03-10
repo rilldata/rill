@@ -3,6 +3,8 @@ package timeutil
 import (
 	"time"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+
 	// Load IANA time zone data
 	_ "time/tzdata"
 )
@@ -127,4 +129,58 @@ func CeilTime(start time.Time, tg TimeGrain, tz *time.Location, firstDay, firstM
 	}
 
 	return TruncateTime(start, tg, tz, firstDay, firstMonth)
+}
+
+func ApproximateBins(start, end time.Time, tg TimeGrain) int {
+	switch tg {
+	case TimeGrainUnspecified:
+		return -1
+	case TimeGrainMillisecond:
+		return int(end.Sub(start) / time.Millisecond)
+	case TimeGrainSecond:
+		return int(end.Sub(start) / time.Second)
+	case TimeGrainMinute:
+		return int(end.Sub(start) / time.Minute)
+	case TimeGrainHour:
+		return int(end.Sub(start) / time.Hour)
+	case TimeGrainDay:
+		return int(end.Sub(start) / (24 * time.Hour))
+	case TimeGrainWeek:
+		return int(end.Sub(start) / (7 * 24 * time.Hour))
+	case TimeGrainMonth:
+		return int(end.Sub(start) / (30 * 24 * time.Hour))
+	case TimeGrainQuarter:
+		return int(end.Sub(start) / (90 * 24 * time.Hour))
+	case TimeGrainYear:
+		return int(end.Sub(start) / (365 * 24 * time.Hour))
+	}
+
+	return -1
+}
+
+func AddTimeProto(to time.Time, tg runtimev1.TimeGrain, count int) time.Time {
+	switch tg {
+	case runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED:
+		return to
+	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
+		return to.Add(time.Duration(count) * time.Millisecond)
+	case runtimev1.TimeGrain_TIME_GRAIN_SECOND:
+		return to.Add(time.Duration(count) * time.Second)
+	case runtimev1.TimeGrain_TIME_GRAIN_MINUTE:
+		return to.Add(time.Duration(count) * time.Minute)
+	case runtimev1.TimeGrain_TIME_GRAIN_HOUR:
+		return to.Add(time.Duration(count) * time.Hour)
+	case runtimev1.TimeGrain_TIME_GRAIN_DAY:
+		return to.AddDate(0, 0, count)
+	case runtimev1.TimeGrain_TIME_GRAIN_WEEK:
+		return to.AddDate(0, 0, count*7)
+	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
+		return to.AddDate(0, count, 0)
+	case runtimev1.TimeGrain_TIME_GRAIN_QUARTER:
+		return to.AddDate(0, count*3, 0)
+	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
+		return to.AddDate(count, 0, 0)
+	}
+
+	return to
 }

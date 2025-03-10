@@ -1,39 +1,40 @@
 <script lang="ts">
+  import { portal } from "@rilldata/web-common/lib/actions/portal";
   import { clamp } from "@rilldata/web-common/lib/clamp";
   import {
-    type V1CanvasItem,
     type V1CanvasRow as APIV1CanvasRow,
     createQueryServiceResolveCanvas,
+    type V1CanvasItem,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { get, writable } from "svelte/store";
   import { parseDocument } from "yaml";
   import type { FileArtifact } from "../entity-management/file-artifact";
   import AddComponentDropdown from "./AddComponentDropdown.svelte";
+  import CanvasComponent from "./CanvasComponent.svelte";
+  import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
   import DropZone from "./components/DropZone.svelte";
   import type { CanvasComponentType } from "./components/types";
   import ElementDivider from "./ElementDivider.svelte";
+  import ItemWrapper from "./ItemWrapper.svelte";
+  import type { DragItem, YAMLRow } from "./layout-util";
+  import {
+    COLUMN_COUNT,
+    DEFAULT_DASHBOARD_WIDTH,
+    getInitialHeight,
+    mapGuard,
+    MIN_HEIGHT,
+    MIN_WIDTH,
+    moveToRow,
+    normalizeSizeArray,
+    rowsGuard,
+  } from "./layout-util";
   import RowDropZone from "./RowDropZone.svelte";
   import RowWrapper from "./RowWrapper.svelte";
   import { useDefaultMetrics } from "./selector";
   import { getCanvasStateManagers } from "./state-managers/state-managers";
   import { activeDivider, dropZone } from "./stores/ui-stores";
-  import {
-    rowsGuard,
-    mapGuard,
-    moveToRow,
-    MIN_HEIGHT,
-    MIN_WIDTH,
-    COLUMN_COUNT,
-    normalizeSizeArray,
-    getInitialHeight,
-    DEFAULT_DASHBOARD_WIDTH,
-  } from "./layout-util";
-  import type { DragItem, YAMLRow } from "./layout-util";
-  import { portal } from "@rilldata/web-common/lib/actions/portal";
-  import CanvasComponent from "./CanvasComponent.svelte";
-  import ItemWrapper from "./ItemWrapper.svelte";
-  import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
-  import { get, writable } from "svelte/store";
+  import ComponentError from "./components/ComponentError.svelte";
 
   const activelyEditing = writable(false);
 
@@ -46,7 +47,7 @@
   const {
     canvasEntity: {
       setSelectedComponent,
-      spec: { canvasSpec },
+      spec: { canvasSpec, metricViewNames },
       name: canvasName,
     },
   } = ctx;
@@ -82,7 +83,7 @@
 
   $: ({ instanceId } = $runtime);
 
-  $: metricsViewQuery = useDefaultMetrics(instanceId);
+  $: metricsViewQuery = useDefaultMetrics(instanceId, $metricViewNames?.[0]);
 
   $: ({ editorContent, updateEditorContent } = fileArtifact);
   $: contents = parseDocument($editorContent ?? "");
@@ -117,7 +118,7 @@
   $: resizeRowData = structuredClone(specCanvasRows?.[resizeRow]);
 
   $: resizeColumnData =
-    resizeColumnInfo &&
+    !!resizeColumnInfo &&
     structuredClone(specCanvasRows?.[resizeColumnInfo.row]?.items);
 
   $: if (resizeRowData && initialMousePosition) {
@@ -145,8 +146,9 @@
     initialMousePosition = mousePosition;
     const row = Number(e.currentTarget.getAttribute("data-row"));
     const column = Number(e.currentTarget.getAttribute("data-column"));
-    const rowWidths =
-      specCanvasRows[row]?.items?.map((el) => el?.width ?? 0) ?? [];
+    const rowWidths = normalizeSizeArray(
+      specCanvasRows[row]?.items?.map((el) => el?.width ?? 0) ?? [],
+    );
 
     const nextElementWidth = rowWidths[column + 1];
 
@@ -211,7 +213,11 @@
     const rowIndex = resizeColumnInfo.row;
     resizeColumnData.forEach((el, i) => {
       if (!el) return;
-      contents.setIn(["rows", rowIndex, "items", i, "width"], el.width);
+      try {
+        contents.setIn(["rows", rowIndex, "items", i, "width"], el.width);
+      } catch (e) {
+        console.error(e);
+      }
     });
 
     updateContents();
@@ -264,11 +270,11 @@
   }
 
   function onRowResizeStart(
+    e: MouseEvent,
     rowIndex: number,
-
     types: (string | undefined)[],
   ) {
-    initialMousePosition = mousePosition;
+    initialMousePosition = { x: e.clientX, y: e.clientY };
     resizeRow = rowIndex;
     initialHeight =
       document
@@ -319,8 +325,10 @@
   }
 
   function spreadEvenly(index: number) {
-    const specRow = structuredClone(specCanvasRows[index]);
-    const yamlRow = structuredClone(yamlCanvasRows[index]);
+    const specRowsClone = structuredClone(specCanvasRows);
+    const yamlRowsClone = structuredClone(yamlCanvasRows);
+    const specRow = specRowsClone[index];
+    const yamlRow = yamlRowsClone[index];
     if (!specRow?.items || !yamlRow?.items) return;
 
     const baseSize = COLUMN_COUNT / specRow.items.length;
@@ -331,7 +339,7 @@
       yamlRow.items[i].width = baseSize;
     });
 
-    updateAssets(specCanvasRows, yamlCanvasRows);
+    updateAssets(specRowsClone, yamlRowsClone);
   }
 
   function updateAssets(
@@ -346,7 +354,11 @@
 
     specCanvasRows = specRows;
 
-    contents.setIn(["rows"], yamlRows);
+    try {
+      contents.setIn(["rows"], yamlRows);
+    } catch (e) {
+      console.error(e);
+    }
 
     updateContents();
   }
@@ -396,10 +408,21 @@
     );
 
     updateAssets(newSpecRows, newYamlRows);
+
+    const id = getId(position.row, position.column);
+
+    selected = new Set([id]);
+
+    setSelectedComponent({ column: position.column, row: position.row });
   }
 
   function updateContents() {
-    updateEditorContent(contents.toString(), false, true);
+    const newContent = contents.toString();
+    if (newContent === $editorContent) {
+      contents = parseDocument(newContent);
+    } else {
+      updateEditorContent(contents.toString(), false, true);
+    }
   }
 
   function initializeRow(row: number, type: CanvasComponentType) {
@@ -556,8 +579,8 @@
         allowDrop={!!dragItemInfo}
         resizeIndex={rowIndex}
         dropIndex={rowIndex + 1}
-        onRowResizeStart={() => {
-          onRowResizeStart(rowIndex, types);
+        onRowResizeStart={(e) => {
+          onRowResizeStart(e, rowIndex, types);
         }}
         {onDrop}
         addItem={(type) => {
@@ -577,15 +600,19 @@
       {/if}
     </RowWrapper>
   {:else}
-    <AddComponentDropdown
-      componentForm
-      onMouseEnter={() => {
-        if (timeout) clearTimeout(timeout);
-      }}
-      onItemClick={(type) => {
-        initializeRow(0, type);
-      }}
-    />
+    {#if defaultMetrics}
+      <AddComponentDropdown
+        componentForm
+        onMouseEnter={() => {
+          if (timeout) clearTimeout(timeout);
+        }}
+        onItemClick={(type) => {
+          initializeRow(0, type);
+        }}
+      />
+    {:else}
+      <ComponentError error="No valid metrics view in project" />
+    {/if}
   {/each}
 </CanvasDashboardWrapper>
 

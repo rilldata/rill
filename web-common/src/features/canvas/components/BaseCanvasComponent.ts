@@ -3,6 +3,7 @@ import type { ComponentSize } from "@rilldata/web-common/features/canvas/compone
 import { getParsedDocument } from "@rilldata/web-common/features/canvas/inspector/selectors";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
+import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 import { get, writable, type Writable } from "svelte/store";
 
 // A base class that implements all the store logic
@@ -35,6 +36,12 @@ export abstract class BaseCanvasComponent<T> {
   abstract defaultSize: ComponentSize;
 
   /**
+   * The parameters that should be reset when the metrics_view
+   * is changed
+   */
+  abstract resetParams: string[];
+
+  /**
    * The minimum condition needed for the spec to be valid
    * for the given component and to be rendered on the canvas
    */
@@ -50,9 +57,8 @@ export abstract class BaseCanvasComponent<T> {
    * Get the spec when the component is added to the canvas
    */
   abstract newComponentSpec(
-    metrics_view: string,
-    measure: string,
-    dimension: string,
+    metricsViewName: string,
+    metricsViewSpec: V1MetricsViewSpec | undefined,
   ): T;
 
   constructor(
@@ -114,6 +120,11 @@ export abstract class BaseCanvasComponent<T> {
       if ("dimension_filters" in newSpec) {
         delete newSpec.dimension_filters;
       }
+      if (this.resetParams.length > 0) {
+        this.resetParams.forEach((param) => {
+          delete newSpec[param];
+        });
+      }
     }
 
     if (this.isValid(newSpec)) {
@@ -128,7 +139,7 @@ export abstract class BaseCanvasComponent<T> {
   async updateChartType(key: ChartType) {
     if (!this.fileArtifact) return;
     const currentSpec = get(this.specStore);
-    const parentSpec = { [key]: currentSpec };
+
     const parentPath = this.pathInYAML.slice(0, -1);
 
     const parseDocumentStore = getParsedDocument(this.fileArtifact);
@@ -136,7 +147,9 @@ export abstract class BaseCanvasComponent<T> {
 
     const { updateEditorContent, saveLocalContent } = this.fileArtifact;
 
-    parsedDocument.setIn(parentPath, parentSpec);
+    const width = parsedDocument.getIn([...parentPath, "width"]);
+
+    parsedDocument.setIn(parentPath, { [key]: currentSpec, width });
 
     // Save the updated document
     updateEditorContent(parsedDocument.toString(), true);

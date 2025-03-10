@@ -100,6 +100,24 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		require.NotEmpty(t, gac, "Bigquery RILL_RUNTIME_BIGQUERY_TEST_GOOGLE_APPLICATION_CREDENTIALS_JSON not configured")
 		return map[string]string{"google_application_credentials": gac}
 	},
+	"s3": func(t TestingT) map[string]string {
+		// Load .env file at the repo root (if any)
+		_, currentFile, _, _ := goruntime.Caller(0)
+		envPath := filepath.Join(currentFile, "..", "..", "..", ".env")
+		_, err := os.Stat(envPath)
+		if err == nil {
+			require.NoError(t, godotenv.Load(envPath))
+		}
+
+		accessKeyID := os.Getenv("RILL_RUNTIME_S3_TEST_AWS_ACCESS_KEY_ID")
+		secretAccessKey := os.Getenv("RILL_RUNTIME_S3_TEST_AWS_SECRET_ACCESS_KEY")
+		require.NotEmpty(t, accessKeyID, "S3 RILL_RUNTIME_S3_TEST_AWS_ACCESS_KEY_ID not configured")
+		require.NotEmpty(t, secretAccessKey, "S3 RILL_RUNTIME_S3_TEST_AWS_SECRET_ACCESS_KEY not configured")
+		return map[string]string{
+			"aws_access_key_id":     accessKeyID,
+			"aws_secret_access_key": secretAccessKey,
+		}
+	},
 	// druid connects to a real Druid cluster using the connection string in RILL_RUNTIME_DRUID_TEST_DSN.
 	// This usually uses the master.in cluster.
 	"druid": func(t TestingT) map[string]string {

@@ -1,4 +1,4 @@
-import { chromium, expect } from "@playwright/test";
+import { expect } from "@playwright/test";
 import {
   execAsync,
   spawnAndMatch,
@@ -11,7 +11,6 @@ import { mkdir } from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { writeFileEnsuringDir } from "../utils/fs";
-import type { StorageState } from "../utils/storage-state";
 import { test as setup } from "./base";
 import {
   ADMIN_STORAGE_STATE,
@@ -26,7 +25,7 @@ import { cliLogin } from "./fixtures/cli";
 setup.describe("global setup", () => {
   setup.describe.configure({
     mode: "serial",
-    timeout: 240_000,
+    timeout: 180_000,
   });
 
   setup("should start services", async () => {
@@ -55,8 +54,7 @@ setup.describe("global setup", () => {
     // Fail quickly if any of these are missing.
     if (
       !process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL ||
-      !process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_PASSWORD ||
-      !process.env.RILL_DEVTOOL_E2E_GITHUB_STORAGE_STATE_JSON
+      !process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_PASSWORD
     ) {
       throw new Error(
         "Missing required environment variables for authentication",
@@ -109,26 +107,16 @@ setup.describe("global setup", () => {
     console.log("Runtime service ready");
   });
 
-  setup("should log in with the admin account", async () => {
+  setup("should log in with the admin account", async ({ page }) => {
     // Again, check that the required environment variables are set. This is for type-safety.
     if (
       !process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL ||
-      !process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_PASSWORD ||
-      !process.env.RILL_DEVTOOL_E2E_GITHUB_STORAGE_STATE_JSON
+      !process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_PASSWORD
     ) {
       throw new Error(
         "Missing required environment variables for authentication",
       );
     }
-
-    // Launch a Chromium browser with an authenticated GitHub session
-    const browser = await chromium.launch();
-    const context = await browser.newContext({
-      storageState: JSON.parse(
-        process.env.RILL_DEVTOOL_E2E_GITHUB_STORAGE_STATE_JSON,
-      ) as StorageState,
-    });
-    const page = await context.newPage();
 
     // Log in with the admin account
     await page.goto("/");
@@ -144,7 +132,7 @@ setup.describe("global setup", () => {
     await page.getByRole("button", { name: "Continue with Email" }).click();
     await page.waitForURL("/");
 
-    // Save the admin's Rill auth cookies to file. The resultant file will include both the GitHub and Rill auth cookies.
+    // Save the admin's Rill auth cookies to file.
     // Subsequent tests can seed their browser with this state, instead of needing to go through the log-in flow again.
     await page.context().storageState({ path: ADMIN_STORAGE_STATE });
   });
@@ -174,48 +162,33 @@ setup.describe("global setup", () => {
   });
 
   setup("should deploy the OpenRTB project", async ({ adminPage }) => {
-    // Pull the repositories to be used for testing
-    const examplesRepoPath = "tests/setup/git/repos/rill-examples";
-    await execAsync(
-      `rm -rf ${examplesRepoPath} && git clone https://github.com/rilldata/rill-examples.git ${examplesRepoPath}`,
-    );
-
     // Deploy the OpenRTB project
     const { match } = await spawnAndMatch(
       "rill",
       [
         "deploy",
         "--path",
-        "tests/setup/git/repos/rill-examples",
-        "--subpath",
-        "rill-openrtb-prog-ads",
+        "tests/setup/projects/openrtb",
         "--project",
         RILL_PROJECT_NAME,
-        "--github",
+        "--upload",
         "--interactive=false",
       ],
       /https?:\/\/[^\s]+/,
     );
 
-    // Navigate to the GitHub auth URL
-    // (In a fresh browser, this would typically trigger a log-in to GitHub, but we've bootstrapped the Playwright browser with an authenticated GitHub session.
-    // See the `setup-github-session` project in `playwright.config.ts` for details.)
+    // Navigate to the project URL and expect to see the successful deployment
     const url = match[0];
     await adminPage.goto(url);
-    await adminPage.waitForURL("/-/github/connect/success");
-
-    // Wait for the deployment to complete
-    // TODO: Replace this with a better check. Maybe we could modify `spawnAndMatch` to match an array of regexes.
-    await adminPage.waitForTimeout(10000);
-
-    // Expect to see the successful deployment
-    await adminPage.goto(`/${RILL_ORG_NAME}/${RILL_PROJECT_NAME}`);
-    await expect(
-      adminPage.getByText("Your trial expires in 30 days"),
-    ).toBeVisible(); // Billing banner
     await expect(adminPage.getByText(RILL_ORG_NAME)).toBeVisible(); // Organization breadcrumb
-    await expect(adminPage.getByText("Free trial")).toBeVisible(); // Billing status
     await expect(adminPage.getByText(RILL_PROJECT_NAME)).toBeVisible(); // Project breadcrumb
+
+    // Trial is started in an async job after the 1st deploy. It is not worth the effort to re-fetch the issues list right now.
+    // So disabling this for now, we could add a re-fetch to the issues list if users start facing issues.
+    // await expect(
+    //   adminPage.getByText("Your trial expires in 30 days"),
+    // ).toBeVisible(); // Billing banner
+    // await expect(adminPage.getByText("Free trial")).toBeVisible(); // Billing status
 
     // Check that the dashboards are listed
     await expect(
@@ -235,7 +208,7 @@ setup.describe("global setup", () => {
           });
           return listing.textContent();
         },
-        { intervals: Array(24).fill(5_000), timeout: 180_000 },
+        { intervals: Array(36).fill(5_000), timeout: 180_000 },
       )
       .toContain("Last refreshed");
 
@@ -248,7 +221,7 @@ setup.describe("global setup", () => {
           });
           return listing.textContent();
         },
-        { intervals: Array(24).fill(5_000), timeout: 180_000 },
+        { intervals: Array(12).fill(5_000), timeout: 60_000 },
       )
       .toContain("Last refreshed");
   });

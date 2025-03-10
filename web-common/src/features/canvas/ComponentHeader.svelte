@@ -13,7 +13,7 @@
 </script>
 
 {#if title || description}
-  <div class="w-full h-fit flex flex-col bg-white px-2 pt-2 pb-1 items-start">
+  <div class="w-full h-fit flex flex-col bg-white px-4 pt-2 pb-1 items-start">
     {#if title}
       <div class="flex items-center gap-x-2">
         <h1 class:faint class="title">{title}</h1>

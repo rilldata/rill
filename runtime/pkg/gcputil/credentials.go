@@ -24,9 +24,8 @@ func Credentials(ctx context.Context, jsonData string, allowHostAccess bool) (*g
 		creds, err := gcp.DefaultCredentials(ctx)
 		if err != nil {
 			if strings.Contains(err.Error(), "google: could not find default credentials") {
-				return nil, ErrNoCredentials
+				return nil, fmt.Errorf("%w: %w", ErrNoCredentials, err)
 			}
-
 			return nil, err
 		}
 		return creds, nil

@@ -13,7 +13,7 @@ test.describe("File Explorer", () => {
       await page.getByRole("menuitem", { name: "More" }).hover();
       await page.getByRole("menuitem", { name: "Blank file" }).click();
       await expect(
-        page.getByRole("link", { name: "untitled_file" }),
+        page.getByRole("link", { name: "untitled_file", exact: true }),
       ).toBeVisible();
       await expect(
         page.getByRole("heading", { name: "untitled_file", exact: true }),

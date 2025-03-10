@@ -29,6 +29,7 @@
 
   let open = openOnMount && !selectedValues.length;
   let searchText = "";
+  let allValues: string[] = [];
 
   $: ({ instanceId } = $runtime);
 
@@ -41,14 +42,16 @@
     timeEnd,
     Boolean(timeControlsReady && open),
   );
-  $: ({ data, error, isFetching } = $searchValues);
+  $: ({ error, isFetching } = $searchValues);
+
+  $: allValues = $searchValues?.data ?? allValues;
 
   $: allSelected = Boolean(
-    selectedValues.length && data?.length === selectedValues.length,
+    selectedValues.length && allValues?.length === selectedValues.length,
   );
 
   function onToggleSelectAll() {
-    data?.forEach((dimensionValue) => {
+    allValues?.forEach((dimensionValue) => {
       if (!allSelected && selectedValues.includes(dimensionValue)) return;
 
       onSelect(dimensionValue);
@@ -137,9 +140,9 @@
         <div class="min-h-9 p-3 text-center text-red-600 text-xs">
           {error}
         </div>
-      {:else if data}
+      {:else if allValues}
         <DropdownMenu.Group class="px-1">
-          {#each data as name (name)}
+          {#each allValues as name (name)}
             {@const selected = selectedValues.includes(name)}
 
             <DropdownMenu.CheckboxItem
@@ -150,7 +153,9 @@
               on:click={() => onSelect(name)}
             >
               <span>
-                {#if name.length > 240}
+                {#if name === null}
+                  null
+                {:else if name.length > 240}
                   {name.slice(0, 240)}...
                 {:else}
                   {name}

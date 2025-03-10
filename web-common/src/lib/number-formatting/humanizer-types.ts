@@ -307,6 +307,7 @@ export type FormatterContext =
   | "table"
   | "unabridged"
   | "big-number"
+  | "axis"
   | "tooltip";
 
 export type FormatterContextSurface = Exclude<FormatterContext, "unabridged">;

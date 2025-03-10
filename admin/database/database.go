@@ -72,6 +72,7 @@ type DB interface {
 	FindOrganizationWhitelistedDomainsForDomain(ctx context.Context, domain string) ([]*OrganizationWhitelistedDomain, error)
 	InsertOrganizationWhitelistedDomain(ctx context.Context, opts *InsertOrganizationWhitelistedDomainOptions) (*OrganizationWhitelistedDomain, error)
 	DeleteOrganizationWhitelistedDomain(ctx context.Context, id string) error
+	FindInactiveOrganizations(ctx context.Context) ([]*Organization, error)
 
 	FindProjects(ctx context.Context, afterName string, limit int) ([]*Project, error)
 	FindProjectsByVersion(ctx context.Context, version, afterName string, limit int) ([]*Project, error)

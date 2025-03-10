@@ -73,3 +73,12 @@ services:
     ports:
       - '9000:9000' # Native port
       - '8123:8123' # HTTP port
+  pgweb:
+    image: sosedoff/pgweb
+    restart: always
+    ports:
+      - "8082:8081"
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable
+    depends_on:
+      - postgres

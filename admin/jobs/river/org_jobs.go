@@ -163,6 +163,22 @@ func (w *DeleteOrgWorker) Work(ctx context.Context, job *river.Job[DeleteOrgArgs
 		}
 	}
 
+	res, err := w.admin.DB.FindProjectsForOrganization(ctx, job.Args.OrgID, "", 100)
+	if err != nil {
+		return fmt.Errorf("failed to find projects for organization %s: %w", job.Args.OrgID, err)
+	}
+
+	if len(res) > 0 {
+		w.logger.Warn("deleting an organization that has projects", zap.String("org_id", job.Args.OrgID), zap.Int("projects_count", len(res)))
+		for _, proj := range res {
+			err := w.admin.TeardownProject(ctx, proj)
+			if err != nil {
+				return fmt.Errorf("failed to delete project %s: %w", proj.ID, err)
+			}
+		}
+		w.logger.Warn("deleted project during organization deletion", zap.String("org_id", job.Args.OrgID), zap.Int("connected_projects", len(res)))
+	}
+
 	// delete org, billing issues will be cascade deleted
 	err = w.admin.DB.DeleteOrganization(ctx, org.Name)
 	if err != nil {
@@ -170,6 +186,44 @@ func (w *DeleteOrgWorker) Work(ctx context.Context, job *river.Job[DeleteOrgArgs
 	}
 
 	w.logger.Warn("organization deleted", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
+
+	return nil
+}
+
+type HibernateInactiveOrgsArgs struct{}
+
+func (HibernateInactiveOrgsArgs) Kind() string { return "hibernate_inactive_orgs" }
+
+type HibernateInactiveOrgsWorker struct {
+	river.WorkerDefaults[HibernateInactiveOrgsArgs]
+	admin  *admin.Service
+	logger *zap.Logger
+}
+
+func (w *HibernateInactiveOrgsWorker) Work(ctx context.Context, job *river.Job[HibernateInactiveOrgsArgs]) error {
+	orgs, err := w.admin.DB.FindInactiveOrganizations(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to find inactive organizations: %w", err)
+	}
+
+	for _, org := range orgs {
+		projects, err := w.admin.DB.FindProjectsForOrganization(ctx, org.ID, "", 100)
+		if err != nil {
+			return fmt.Errorf("failed to find projects for organization %s: %w", org.Name, err)
+		}
+		for _, proj := range projects {
+			if proj.ProdDeploymentID == nil {
+				continue
+			}
+
+			p, err := w.admin.HibernateProject(ctx, proj)
+			if err != nil {
+				return fmt.Errorf("failed to hibernate project %s: %w", proj.ID, err)
+			}
+			w.logger.Warn("hibernated project", zap.String("project_id", p.ID), zap.String("project_name", p.Name), zap.String("org_id", org.ID), zap.String("org_name", org.Name))
+		}
+		w.logger.Warn("inactive organization", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.Time("last_updated_at", org.UpdatedOn), zap.Int("connected_projects", len(projects)))
+	}
 
 	return nil
 }
