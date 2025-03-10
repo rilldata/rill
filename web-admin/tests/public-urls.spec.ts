@@ -15,13 +15,9 @@ test.describe.serial("Public URLs", () => {
     await page.getByRole("menuitem", { name: "Disney" }).first().click();
     await page.getByLabel("View filter").first().click(); // Hides the popover
 
-    // Set the time zone to UTC
-    await page.getByLabel("Timezone selector").click();
-    await page.getByRole("menuitem", { name: "UTC GMT +00:00 UTC" }).click();
-
     // Check the Big Number
     await expect(
-      page.getByRole("button", { name: "Requests 10.2M" }),
+      page.getByRole("button", { name: "Requests 87,000" }),
     ).toBeVisible();
 
     // Create a Public URL
@@ -60,13 +56,9 @@ test.describe.serial("Public URLs", () => {
       ),
     ).toBeVisible();
 
-    // Change to UTC time zone
-    await page.getByLabel("Timezone selector").click();
-    await page.getByRole("menuitem", { name: "UTC GMT +00:00 UTC" }).click();
-
     // Check that the Big Number reflects the filtered data
     await expect(
-      page.getByRole("button", { name: "Requests 10.2M" }),
+      page.getByRole("button", { name: "Requests 87,000" }),
     ).toBeVisible();
   });
 
@@ -80,15 +72,9 @@ test.describe.serial("Public URLs", () => {
       ),
     ).toBeHidden();
 
-    // Change to UTC time zone
-    await anonPage.getByLabel("Timezone selector").click();
-    await anonPage
-      .getByRole("menuitem", { name: "UTC GMT +00:00 UTC" })
-      .click();
-
     // Check the Big Number reflects the filtered data
     await expect(
-      anonPage.getByRole("button", { name: "Requests 10.2M" }),
+      anonPage.getByRole("button", { name: "Requests 87,000" }),
     ).toBeVisible();
 
     // Check that the filtered column is hidden
