@@ -169,6 +169,9 @@ func (r *Result) Close() error {
 type InformationSchema interface {
 	All(ctx context.Context, like string) ([]*Table, error)
 	Lookup(ctx context.Context, db, schema, name string) (*Table, error)
+	// LoadPhysicalSize populates the PhysicalSizeBytes field of the tables.
+	// It should be called after All or Lookup and not on manually created tables.
+	LoadPhysicalSize(ctx context.Context, tables []*Table) error
 }
 
 // Table represents a table in an information schema.
@@ -181,11 +184,7 @@ type Table struct {
 	View                    bool
 	Schema                  *runtimev1.StructType
 	UnsupportedCols         map[string]string
-}
-
-// IngestionSummary is details about ingestion
-type IngestionSummary struct {
-	BytesIngested int64
+	PhysicalSizeBytes       int64
 }
 
 // IncrementalStrategy is a strategy to use for incrementally inserting data into a SQL table.
