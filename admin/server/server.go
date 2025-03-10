@@ -186,6 +186,15 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	gwMux := gateway.NewServeMux(
 		gateway.WithErrorHandler(httpErrorHandler),
 		gateway.WithMetadata(s.authenticator.Annotator),
+		gateway.WithOutgoingHeaderMatcher(func(s string) (string, bool) {
+			// grpc gateway adds gateway.MetadataHeaderPrefix to all outgoing headers
+			// we want to skip that for `x-trace-id` set in response
+			if s == observability.TracingHeader {
+				return s, true
+			}
+			// default matcher logic
+			return fmt.Sprintf("%s%s", gateway.MetadataHeaderPrefix, s), true
+		}),
 	)
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	grpcAddress := fmt.Sprintf(":%d", s.opts.GRPCPort)
