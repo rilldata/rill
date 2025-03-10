@@ -9,6 +9,7 @@ import {
 } from "@rilldata/web-common/lib/time/timezone";
 import type { ColumnDef } from "@tanstack/svelte-table";
 import { timeFormat } from "d3-time-format";
+import PivotDeltaCell from "./PivotDeltaCell.svelte";
 import PivotExpandableCell from "./PivotExpandableCell.svelte";
 import PivotMeasureCell from "./PivotMeasureCell.svelte";
 import {
@@ -303,11 +304,17 @@ function getFlatColumnDef(
         if (m.type === "comparison_percent") {
           return cellComponent(PercentageChange, {
             isNull: measureValue == null,
+            color: "text-gray-500",
             value:
               measureValue !== null && measureValue !== undefined
                 ? formatMeasurePercentageDifference(measureValue)
                 : null,
             inTable: true,
+          });
+        } else if (m.type === "comparison_delta") {
+          return cellComponent(PivotDeltaCell, {
+            formattedValue: m.formatter(measureValue),
+            value: measureValue,
           });
         }
         const value = m.formatter(measureValue);
@@ -423,11 +430,17 @@ function getNestedColumnDef(
           if (m.type === "comparison_percent") {
             return cellComponent(PercentageChange, {
               isNull: measureValue == null,
+              color: "text-gray-500",
               value:
                 measureValue !== null && measureValue !== undefined
                   ? formatMeasurePercentageDifference(measureValue)
                   : null,
               inTable: true,
+            });
+          } else if (m.type === "comparison_delta") {
+            return cellComponent(PivotDeltaCell, {
+              formattedValue: m.formatter(measureValue),
+              value: measureValue,
             });
           }
           const value = m.formatter(measureValue);

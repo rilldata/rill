@@ -366,12 +366,12 @@
   .header-cell {
     @apply px-2 bg-white size-full;
     @apply flex items-center gap-x-1 w-full truncate;
-    @apply font-medium;
+    @apply text-gray-800 font-medium;
     height: var(--header-height);
   }
 
   .cell {
-    @apply size-full p-1 px-2;
+    @apply size-full p-1 px-2 text-gray-800;
   }
 
   /* The leftmost header cells have no bottom border unless they're the last row */
