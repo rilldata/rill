@@ -4,6 +4,7 @@
   import BillingBannerManagerForAdmins from "@rilldata/web-admin/features/billing/banner/BillingBannerManagerForAdmins.svelte";
   import BillingBannerManagerForViewers from "@rilldata/web-admin/features/billing/banner/BillingBannerManagerForViewers.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { BannerSlot } from "@rilldata/web-common/lib/event-bus/events";
 
   export let organization: string;
   export let organizationPermissions: V1OrganizationPermissions;
@@ -12,7 +13,10 @@
     const changedOrganization =
       !from || !to || from.params.organization !== to.params.organization;
     if (changedOrganization) {
-      eventBus.emit("banner", null);
+      eventBus.emit("banner", {
+        slot: BannerSlot.Billing,
+        message: null,
+      });
     }
   });
 </script>

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { BannerSlot } from "@rilldata/web-common/lib/event-bus/events";
   import { Story, Template } from "@storybook/addon-svelte-csf";
   import BannerCenter from "@rilldata/web-common/components/banner/BannerCenter.svelte";
   import { Button } from "@rilldata/web-common/components/button/index.js";
@@ -27,12 +28,15 @@
 
   function showBanner() {
     eventBus.emit("banner", {
-      message,
-      type: type as any,
-      iconType: iconType as any,
-      cta: {
-        text: "contact us",
-        type: "button",
+      slot: BannerSlot.Billing,
+      message: {
+        message,
+        type: type as any,
+        iconType: iconType as any,
+        cta: {
+          text: "contact us",
+          type: "button",
+        },
       },
     });
   }
