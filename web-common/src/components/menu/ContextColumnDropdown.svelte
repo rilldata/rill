@@ -21,6 +21,7 @@
     columns: LeaderboardContextColumn[],
   ) => void;
   export let onShowForAllMeasures: () => void;
+  export let canShowForAllMeasures: boolean = false;
 
   let active = false;
 
@@ -136,17 +137,18 @@
           </div>
         {/if}
 
-        <!-- TODO: consider hiding below if not in dimension detail -->
-        <footer class={cn(options.length > 0 && "border-t border-slate-300")}>
-          <div class="w-full">
-            <p class="text-xs">Show for all measures</p>
-          </div>
-          <Switch
-            small
-            bind:checked={dimensionShowForAllMeasures}
-            on:click={onShowForAllMeasures}
-          />
-        </footer>
+        {#if canShowForAllMeasures}
+          <footer class={cn(options.length > 0 && "border-t border-slate-300")}>
+            <div class="w-full">
+              <p class="text-xs">Show for all measures</p>
+            </div>
+            <Switch
+              small
+              bind:checked={dimensionShowForAllMeasures}
+              on:click={onShowForAllMeasures}
+            />
+          </footer>
+        {/if}
       </DropdownMenu.Content>
 
       <div slot="tooltip-content" transition:fly={{ duration: 300, y: 4 }}>
