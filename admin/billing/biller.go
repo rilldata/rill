@@ -19,7 +19,13 @@ var ErrNotFound = errors.New("not found")
 
 type Biller interface {
 	Name() string
+	// DefaultQuotas returns the default quotas to assign to orgs before billing has been initialized.
+	DefaultQuotas() Quotas
+	// DefaultUserQuotas returns the default quotas to assign to users.
+	DefaultUserQuotas() UserQuotas
+	// GetDefaultPlan returns the default plan for new organizations.
 	GetDefaultPlan(ctx context.Context) (*Plan, error)
+	// GetPlans returns all the plans available in the billing system.
 	GetPlans(ctx context.Context) ([]*Plan, error)
 	// GetPublicPlans for listing purposes
 	GetPublicPlans(ctx context.Context) ([]*Plan, error)
@@ -63,6 +69,11 @@ type Biller interface {
 	WebhookHandlerFunc(ctx context.Context, jobs jobs.Client) httputil.Handler
 }
 
+type UserQuotas struct {
+	SingleuserOrgs *int
+	TrialOrgs      *int
+}
+
 type PlanType int
 
 const (
@@ -87,13 +98,11 @@ type Plan struct {
 
 type Quotas struct {
 	StorageLimitBytesPerDeployment *int64
-
-	// Existing quotas
-	NumProjects           *int
-	NumDeployments        *int
-	NumSlotsTotal         *int
-	NumSlotsPerDeployment *int
-	NumOutstandingInvites *int
+	NumProjects                    *int
+	NumDeployments                 *int
+	NumSlotsTotal                  *int
+	NumSlotsPerDeployment          *int
+	NumOutstandingInvites          *int
 }
 
 type planMetadata struct {
