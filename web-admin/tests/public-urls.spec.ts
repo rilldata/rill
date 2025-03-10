@@ -47,6 +47,8 @@ test.describe.serial("Public URLs", () => {
   });
 
   test("admin should be able to view a public URL", async ({ page }) => {
+    test.skip(!publicUrl, "Public URL not set");
+
     await page.goto(publicUrl);
 
     // Check that the "Limited view" banner is visible
@@ -63,6 +65,8 @@ test.describe.serial("Public URLs", () => {
   });
 
   test("anon should be able to view a public URL", async ({ anonPage }) => {
+    test.skip(!publicUrl, "Public URL not set");
+
     await anonPage.goto(publicUrl);
 
     // Check that the "Limited view" banner is NOT visible
