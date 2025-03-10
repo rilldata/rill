@@ -11,16 +11,20 @@ import {
   V1BuiltinMeasure,
 } from "@rilldata/web-common/runtime-client";
 
+type DimensionSearchArgs = {
+  searchText?: string;
+  values?: string[];
+  timeStart?: string;
+  timeEnd?: string;
+  enabled?: boolean;
+};
 export function useDimensionSearch(
   instanceId: string,
   metricsViewNames: string[],
   dimensionName: string,
-  searchText: string,
-  timeStart?: string,
-  timeEnd?: string,
-  enabled?: boolean,
+  { searchText, values, timeStart, timeEnd, enabled }: DimensionSearchArgs,
 ): CompoundQueryResult<string[]> {
-  const addNull = searchText.length !== 0 && "null".includes(searchText);
+  const where = getFilterForSearchArgs(dimensionName, { searchText, values });
 
   const queries = metricsViewNames.map((mvName) =>
     createQueryServiceMetricsViewAggregation(
@@ -29,12 +33,10 @@ export function useDimensionSearch(
       {
         dimensions: [{ name: dimensionName }],
         timeRange: { start: timeStart, end: timeEnd },
-        limit: "100",
+        limit: "250",
         offset: "0",
         sort: [{ name: dimensionName }],
-        where: addNull
-          ? createInExpression(dimensionName, [null])
-          : createLikeExpression(dimensionName, `%${searchText}%`),
+        where,
       },
       {
         query: { enabled },
@@ -52,16 +54,13 @@ export function useDimensionSearch(
   });
 }
 
-export function useSearchMatchedCount(
+export function useAllSearchResultsCount(
   instanceId: string,
   metricsViewNames: string[],
   dimensionName: string,
-  searchText: string,
-  timeStart?: string,
-  timeEnd?: string,
-  enabled?: boolean,
+  { searchText, values, timeStart, timeEnd, enabled }: DimensionSearchArgs,
 ): CompoundQueryResult<number | undefined> {
-  const addNull = searchText.length !== 0 && "null".includes(searchText);
+  const where = getFilterForSearchArgs(dimensionName, { searchText, values });
 
   const queries = metricsViewNames.map((mvName) =>
     createQueryServiceMetricsViewAggregation(
@@ -76,11 +75,9 @@ export function useSearchMatchedCount(
           },
         ],
         timeRange: { start: timeStart, end: timeEnd },
-        limit: limit.toString(),
+        limit: "250",
         offset: "0",
-        where: addNull
-          ? createInExpression(dimensionName, [null])
-          : createLikeExpression(dimensionName, `%${searchText}%`),
+        where,
       },
       {
         query: { enabled },
@@ -101,85 +98,18 @@ export function useSearchMatchedCount(
   });
 }
 
-const limit = 250;
-export function useBulkSearchResults(
-  instanceId: string,
-  metricsViewNames: string[],
+function getFilterForSearchArgs(
   dimensionName: string,
-  values: string[],
-  timeStart?: string,
-  timeEnd?: string,
-  enabled?: boolean,
-): CompoundQueryResult<string[]> {
-  const queries = metricsViewNames.map((mvName) =>
-    createQueryServiceMetricsViewAggregation(
-      instanceId,
-      mvName,
-      {
-        dimensions: [{ name: dimensionName }],
-        timeRange: { start: timeStart, end: timeEnd },
-        limit: limit.toString(),
-        offset: "0",
-        sort: [{ name: dimensionName }],
-        where: createInExpression(dimensionName, values),
-      },
-      {
-        query: { enabled },
-      },
-    ),
-  );
+  { searchText, values }: DimensionSearchArgs,
+) {
+  if (searchText) {
+    const addNull = searchText.length !== 0 && "null".includes(searchText);
+    return addNull
+      ? createInExpression(dimensionName, [null])
+      : createLikeExpression(dimensionName, `%${searchText}%`);
+  } else if (values?.length) {
+    return createInExpression(dimensionName, values);
+  }
 
-  return getCompoundAggregationQuery(queries, (responses) => {
-    const values = responses
-      .filter((r) => !!r?.data)
-      .map((r) => r!.data!.map((i) => i[dimensionName] as string))
-      .flat();
-    const dedupedValues = new Set(values);
-    return [...dedupedValues];
-  });
-}
-
-export function useBulkSearchMatchedCount(
-  instanceId: string,
-  metricsViewNames: string[],
-  dimensionName: string,
-  values: string[],
-  timeStart?: string,
-  timeEnd?: string,
-  enabled?: boolean,
-): CompoundQueryResult<number | undefined> {
-  const queries = metricsViewNames.map((mvName) =>
-    createQueryServiceMetricsViewAggregation(
-      instanceId,
-      mvName,
-      {
-        measures: [
-          {
-            name: dimensionName + "__distinct_count",
-            builtinMeasure: V1BuiltinMeasure.BUILTIN_MEASURE_COUNT_DISTINCT,
-            builtinMeasureArgs: [dimensionName],
-          },
-        ],
-        timeRange: { start: timeStart, end: timeEnd },
-        limit: limit.toString(),
-        offset: "0",
-        where: createInExpression(dimensionName, values),
-      },
-      {
-        query: { enabled },
-      },
-    ),
-  );
-
-  return getCompoundAggregationQuery(queries, (responses) => {
-    if (!enabled) return undefined;
-
-    const values = responses
-      .filter((r) => !!r?.data)
-      .map((r) =>
-        r!.data!.map((i) => i[dimensionName + "__distinct_count"] as number),
-      )
-      .flat();
-    return values.reduce((s, v) => s + v, 0);
-  });
+  return undefined;
 }

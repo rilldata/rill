@@ -3,20 +3,31 @@ import type {
   V1ExploreSpec,
   V1GetExploreResponse,
   V1GetResourceResponse,
+  V1MetricsViewAggregationResponse,
   V1MetricsViewSpec,
   V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { afterAll, beforeAll, vi } from "vitest";
 import { asyncWait } from "../../lib/waitUtils";
 
 export class DashboardFetchMocks {
   private responses = new Map<string, any>();
+  private aggregationRequestMocks: {
+    regex: RegExp;
+    response: V1MetricsViewAggregationResponse;
+  }[] = [];
 
   public static useDashboardFetchMocks(): DashboardFetchMocks {
+    runtime.set({
+      host: "http://localhost",
+      instanceId: "default",
+    });
+
     const mock = new DashboardFetchMocks();
 
     beforeAll(() => {
-      vi.stubGlobal("fetch", (url) => mock.fetchMock(url));
+      vi.stubGlobal("fetch", (url, { body }) => mock.fetchMock(url, body));
     });
 
     afterAll(() => {
@@ -91,7 +102,14 @@ export class DashboardFetchMocks {
     );
   }
 
-  private async fetchMock(url: string) {
+  public mockMetricsViewAggregation(
+    regex: RegExp,
+    response: V1MetricsViewAggregationResponse,
+  ) {
+    this.aggregationRequestMocks.push({ regex, response });
+  }
+
+  private async fetchMock(url: string, body: string | undefined) {
     const u = new URL(url);
     const [, , , , type, ...parts] = u.pathname.split("/");
     let key: string;
@@ -128,7 +146,16 @@ export class DashboardFetchMocks {
     return {
       ready: true,
       ok: true,
-      json: () => this.responses.get(key),
+      json: () => {
+        if (body && parts[2] === "aggregation") {
+          console.log(body);
+          for (const { regex, response } of this.aggregationRequestMocks) {
+            if (!regex.test(body)) continue;
+            return response;
+          }
+        }
+        return this.responses.get(key);
+      },
       headers: new Map([["content-type", "application/json"]]),
     };
   }

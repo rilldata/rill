@@ -14,10 +14,8 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { fly } from "svelte/transition";
   import {
-    useBulkSearchMatchedCount,
-    useBulkSearchResults,
     useDimensionSearch,
-    useSearchMatchedCount,
+    useAllSearchResultsCount,
   } from "./dimensionFilterValues";
 
   export let name: string;
@@ -41,9 +39,7 @@
 
   let open = openOnMount && !selectedValues.length && !searchText;
   $: sanitisedSearchText = searchText?.replace(/^%/, "").replace(/%$/, "");
-  let curSearchText = isMatchList
-    ? selectedValues.join(",")
-    : (sanitisedSearchText ?? "");
+  let curSearchText = "";
 
   $: ({ instanceId } = $runtime);
 
@@ -58,91 +54,78 @@
       ? SearchMode.Search
       : SearchMode.Select;
 
-  function updateBasedOnMatchList(isMatchList: boolean | undefined) {
+  function updateBasedOnFilterSettings(
+    isMatchList: boolean | undefined,
+    sanitisedSearchText: string | undefined,
+  ) {
     if (isMatchList) {
       mode = SearchMode.Bulk;
       curSearchText = selectedValues.join(",");
-    } else if (mode === SearchMode.Bulk) {
+    } else if (sanitisedSearchText) {
+      mode = SearchMode.Search;
+      curSearchText = sanitisedSearchText ?? "";
+    } else {
       mode = SearchMode.Select;
       curSearchText = "";
     }
   }
-  $: updateBasedOnMatchList(isMatchList);
+  $: updateBasedOnFilterSettings(isMatchList, sanitisedSearchText);
 
   let searchedBulkValues: string[] = isMatchList ? selectedValues : [];
-  $: searchValues = useDimensionSearch(
+  $: searchResultsQuery = useDimensionSearch(
     instanceId,
     metricsViewNames,
     name,
-    curSearchText,
-    timeStart,
-    timeEnd,
-    Boolean(timeControlsReady && open) && mode !== SearchMode.Bulk,
+    {
+      ...(mode === SearchMode.Bulk
+        ? {
+            values: searchedBulkValues,
+          }
+        : {
+            searchText: curSearchText,
+          }),
+      timeStart,
+      timeEnd,
+      enabled: Boolean(timeControlsReady && open),
+    },
   );
   $: ({
-    data: dataFromSearch,
-    error: errorFromSearch,
-    isFetching: isFetchingFromSearch,
-  } = $searchValues);
-  $: searchMatchedCount = useSearchMatchedCount(
+    data: searchResults,
+    error: errorFromSearchResults,
+    isFetching: isFetchingFromSearchResults,
+  } = $searchResultsQuery);
+  $: allSearchResultsCountQuery = useAllSearchResultsCount(
     instanceId,
     metricsViewNames,
     name,
-    curSearchText,
-    timeStart,
-    timeEnd,
-    Boolean(timeControlsReady) && mode === SearchMode.Search,
+    {
+      ...(mode === SearchMode.Bulk
+        ? {
+            values: searchedBulkValues,
+          }
+        : {
+            searchText: curSearchText,
+          }),
+      timeStart,
+      timeEnd,
+      enabled: Boolean(timeControlsReady) && mode !== SearchMode.Select,
+    },
   );
   $: ({
-    data: dataFromSearchMatchedCount,
-    error: errorFromSearchMatchedCount,
-    isFetching: isFetchingFromSearchMatchedCount,
-  } = $searchMatchedCount);
-  $: bulkValues = useBulkSearchResults(
-    instanceId,
-    metricsViewNames,
-    name,
-    searchedBulkValues,
-    timeStart,
-    timeEnd,
-    Boolean(timeControlsReady && open) && mode === SearchMode.Bulk,
-  );
-  $: ({
-    data: dataFromBulk,
-    error: errorFromBulk,
-    isFetching: isFetchingFromBulk,
-  } = $bulkValues);
-  $: bulkMatchedCount = useBulkSearchMatchedCount(
-    instanceId,
-    metricsViewNames,
-    name,
-    searchedBulkValues,
-    timeStart,
-    timeEnd,
-    Boolean(timeControlsReady) && mode === SearchMode.Bulk,
-  );
-  $: ({
-    data: dataFromBulkMatchedCount,
-    error: errorFromBulkMatchedCount,
-    isFetching: isFetchingFromBulkMatchedCount,
-  } = $bulkMatchedCount);
+    data: allSearchResultsCount,
+    error: errorFromAllSearchResultsCount,
+    isFetching: isFetchingFromAllSearchResultsCount,
+  } = $allSearchResultsCountQuery);
 
-  $: data = mode === SearchMode.Bulk ? dataFromBulk : dataFromSearch;
-  $: error =
-    errorFromSearch ??
-    errorFromBulk ??
-    errorFromBulkMatchedCount ??
-    errorFromSearchMatchedCount;
+  $: error = errorFromSearchResults ?? errorFromAllSearchResultsCount;
   $: isFetching =
-    isFetchingFromSearch ??
-    isFetchingFromBulk ??
-    isFetchingFromBulkMatchedCount;
+    isFetchingFromSearchResults ?? isFetchingFromAllSearchResultsCount;
 
   $: showExtraInfo = mode !== SearchMode.Select || curSearchText.length > 0;
 
   function checkSearchText(searchText: string) {
     const values = searchText.split(/\s*,\s*/);
-    if (values.length <= 1 || mode === SearchMode.Bulk) {
+    if (values.length <= 1) {
       return;
     }
     searchedBulkValues = values;
@@ -151,10 +134,10 @@
   $: checkSearchText(curSearchText);
 
   $: allSelected = Boolean(
-    selectedValues.length && data?.length === selectedValues.length,
+    selectedValues.length && searchResults?.length === selectedValues.length,
   );
   $: effectiveSelectedValues =
-    mode !== SearchMode.Bulk ? selectedValues : (data ?? []);
+    mode !== SearchMode.Bulk ? selectedValues : (searchResults ?? []);
 
   function handleModeChange(newMode: SearchMode) {
     if (newMode !== SearchMode.Bulk) {
@@ -164,8 +147,21 @@
     }
   }
 
+  function handleOpenChange(open: boolean) {
+    console.log("handleOpenChange", open);
+    if (open) {
+      curSearchText = isMatchList
+        ? selectedValues.join(",")
+        : (sanitisedSearchText ?? "");
+    } else {
+      if (selectedValues.length === 0 && !searchText) {
+        onRemove();
+      }
+    }
+  }
+
   function onToggleSelectAll() {
-    data?.forEach((dimensionValue) => {
+    searchResults?.forEach((dimensionValue) => {
       if (!allSelected && selectedValues.includes(dimensionValue)) return;
 
       onSelect(dimensionValue);
@@ -183,23 +179,15 @@
       open = false;
     }
   }
+
+  $: console.log(mode, curSearchText, searchedBulkValues);
 </script>
 
 <DropdownMenu.Root
   bind:open
   typeahead={false}
   closeOnItemClick={false}
-  onOpenChange={(open) => {
-    if (open) {
-      curSearchText = isMatchList
-        ? selectedValues.join(",")
-        : (sanitisedSearchText ?? "");
-    } else {
-      if (selectedValues.length === 0 && !searchText) {
-        onRemove();
-      }
-    }
-  }}
+  onOpenChange={handleOpenChange}
 >
   <DropdownMenu.Trigger asChild let:builder>
     <Tooltip
@@ -234,9 +222,8 @@
           values={mode === SearchMode.Bulk
             ? searchedBulkValues
             : effectiveSelectedValues}
-          matchedCount={dataFromBulkMatchedCount ?? dataFromSearchMatchedCount}
-          loading={isFetchingFromBulkMatchedCount ??
-            isFetchingFromSearchMatchedCount}
+          matchedCount={allSearchResultsCount}
+          loading={isFetchingFromAllSearchResultsCount}
           search={sanitisedSearchText}
         />
       </Chip>
@@ -285,6 +272,7 @@
           bind:value={curSearchText}
           label="Search list"
           showBorderOnFocus={false}
+          retailValueOnMount
           placeholder="Enter search term or paste list of values"
         />
       </div>
@@ -294,13 +282,13 @@
             <DropdownMenu.Label
               class="pb-0 uppercase text-[10px] text-gray-500"
             >
-              {dataFromSearch?.length ?? 0} results
+              {allSearchResultsCount} results
             </DropdownMenu.Label>
           {:else if mode === SearchMode.Bulk}
             <DropdownMenu.Label
               class="pb-0 uppercase text-[10px] text-gray-500"
             >
-              {searchedBulkValues.length} of {dataFromBulkMatchedCount} matched
+              {allSearchResultsCount} of {searchedBulkValues.length} matched
             </DropdownMenu.Label>
           {/if}
 
@@ -328,9 +316,9 @@
         <div class="min-h-9 p-3 text-center text-red-600 text-xs">
           {error}
         </div>
-      {:else if data}
+      {:else if searchResults}
         <DropdownMenu.Group class="px-1">
-          {#each data as name (name)}
+          {#each searchResults as name (name)}
             {@const selected = effectiveSelectedValues.includes(name)}
             {@const label = name ?? "null"}
 

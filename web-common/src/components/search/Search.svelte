@@ -14,6 +14,7 @@
   export let background = true;
   export let large = false;
   export let disabled = false;
+  export let retailValueOnMount = false;
 
   /* Reference of input DOM element */
   let ref: HTMLInputElement;
@@ -29,7 +30,7 @@
   }
 
   onMount(() => {
-    value = "";
+    if (!retailValueOnMount) value = "";
     // Keep ref optional here. If component is unmounted before this animation frame runs, ref will be null and throw a TypeError
     if (autofocus) window.requestAnimationFrame(() => ref?.focus());
   });
@@ -57,9 +58,8 @@
     class:bg-slate-50={background}
     class:border
     class:border-gray-200={border}
-    class="outline-none rounded-sm block w-full pl-8 p-1 {large
-      ? 'h-full'
-      : ''}"
+    class="outline-none rounded-sm block w-full pl-8 p-1"
+    class:h-full={large}
     {disabled}
     {placeholder}
     bind:value

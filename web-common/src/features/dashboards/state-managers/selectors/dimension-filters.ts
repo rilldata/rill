@@ -83,15 +83,12 @@ export const selectedDimensionValuesV2 = (
     dimExpr.cond.op === V1Operation.OPERATION_LIKE ||
     dimExpr.cond.op === V1Operation.OPERATION_NLIKE
   ) {
-    return useDimensionSearch(
-      instanceId,
-      metricsViewNames,
-      dimensionName,
-      (dimExpr.cond?.exprs?.[1]?.val as string) ?? "",
+    return useDimensionSearch(instanceId, metricsViewNames, dimensionName, {
+      searchText: (dimExpr.cond?.exprs?.[1]?.val as string) ?? "",
       timeStart,
       timeEnd,
-      true,
-    );
+      enabled: true,
+    });
   }
 
   return readable({
