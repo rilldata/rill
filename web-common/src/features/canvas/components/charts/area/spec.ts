@@ -2,6 +2,7 @@ import type {
   ChartConfig,
   TooltipValue,
 } from "@rilldata/web-common/features/canvas/components/charts/types";
+import { sanitizeFieldName } from "@rilldata/web-common/features/canvas/components/charts/util";
 import { sanitizeValueForVega } from "@rilldata/web-common/features/templates/charts/utils";
 import type { VisualizationSpec } from "svelte-vega";
 import {
@@ -31,7 +32,7 @@ export function generateVLAreaChartSpec(
     multiValueTooltipChannel = data.data?.map((value) => ({
       field: sanitizeValueForVega(value?.[colorField]),
       type: "quantitative",
-      formatType: yField,
+      formatType: sanitizeFieldName(yField),
     }));
 
     multiValueTooltipChannel.unshift({
@@ -40,6 +41,8 @@ export function generateVLAreaChartSpec(
       type: config.x?.type,
       ...(config.x.type === "temporal" && { format: "%b %d, %Y %H:%M" }),
     });
+
+    multiValueTooltipChannel = multiValueTooltipChannel.slice(0, 50);
   }
 
   spec.layer = [
