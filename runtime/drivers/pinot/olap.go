@@ -255,6 +255,8 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 	return table, nil
 }
 
+// LoadPhysicalSize populates the PhysicalSizeBytes field of the tables.
+// This was not tested when implemented so should be tested when pinot becomes a fairly used connector.
 func (i informationSchema) LoadPhysicalSize(ctx context.Context, tables []*drivers.Table) error {
 	if len(tables) == 0 {
 		return nil

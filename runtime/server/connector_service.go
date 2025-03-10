@@ -9,7 +9,6 @@ import (
 	"github.com/rilldata/rill/runtime/drivers/bigquery"
 	"github.com/rilldata/rill/runtime/drivers/gcs"
 	"github.com/rilldata/rill/runtime/drivers/s3"
-	"go.uber.org/zap"
 )
 
 func (s *Server) S3ListBuckets(ctx context.Context, req *runtimev1.S3ListBucketsRequest) (*runtimev1.S3ListBucketsResponse, error) {
@@ -148,11 +147,7 @@ func (s *Server) OLAPListTables(ctx context.Context, req *runtimev1.OLAPListTabl
 	if err != nil {
 		return nil, err
 	}
-	err = i.LoadPhysicalSize(ctx, tables)
-	if err != nil {
-		// the size queries can fail due to permission erros so we log them and continue
-		s.logger.Warn("failed to populate table sizes", zap.Error(err))
-	}
+	_ = i.LoadPhysicalSize(ctx, tables)
 
 	res := make([]*runtimev1.TableInfo, len(tables))
 	for i, table := range tables {
@@ -182,11 +177,7 @@ func (s *Server) OLAPGetTable(ctx context.Context, req *runtimev1.OLAPGetTableRe
 	if err != nil {
 		return nil, err
 	}
-	err = olap.InformationSchema().LoadPhysicalSize(ctx, []*drivers.Table{table})
-	if err != nil {
-		// the size queries can fail due to permission erros so we log them and continue
-		s.logger.Warn("failed to populate table sizes", zap.Error(err))
-	}
+	_ = olap.InformationSchema().LoadPhysicalSize(ctx, []*drivers.Table{table})
 
 	return &runtimev1.OLAPGetTableResponse{
 		Schema:             table.Schema,
