@@ -21,6 +21,7 @@
   export let error: string | null = null;
   export let canvasDashboard = false;
   export let chartView = false;
+  export let renderer: "canvas" | "svg" = "canvas";
   export let config: Config | undefined = undefined;
   export let tooltipFormatter: VLTooltipFormatter | undefined = undefined;
   export let viewVL: View;
@@ -39,7 +40,7 @@
 
   $: options = <EmbedOptions>{
     config: config || getRillTheme(canvasDashboard),
-    renderer: "canvas",
+    renderer,
     actions: false,
     logLevel: 0, // only show errors
     width: canvasDashboard ? width : undefined,
