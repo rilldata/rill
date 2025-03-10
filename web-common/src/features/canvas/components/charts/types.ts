@@ -10,6 +10,7 @@ export interface FieldConfig {
   timeUnit?: string; // For temporal fields
   sort?: ChartSortDirection;
   limit?: number;
+  showNull?: boolean;
 }
 
 export interface ChartConfig {
