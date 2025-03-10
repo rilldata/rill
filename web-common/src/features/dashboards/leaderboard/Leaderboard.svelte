@@ -62,7 +62,7 @@
   export let activeMeasureNames: string[];
   export let metricsViewName: string;
   export let sortType: SortType;
-  export let sortMeasure: string | null;
+  export let sortBy: string | null;
   export let tableWidth: number;
   export let sortedAscending: boolean;
   export let isValidPercentOfTotal: boolean;
@@ -363,7 +363,7 @@
       {toggleSort}
       {setPrimaryDimension}
       {toggleComparisonDimension}
-      {sortMeasure}
+      {sortBy}
       {measureLabel}
     />
 

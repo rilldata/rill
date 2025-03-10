@@ -32,7 +32,7 @@
       dimensionFilters: { isFilterExcludeMode },
       dimensions: { visibleDimensions },
       comparison: { isBeingCompared: isBeingComparedReadable },
-      sorting: { sortedAscending, sortType, sortByMeasure: sortMeasure },
+      sorting: { sortedAscending, sortType, sortByMeasure },
       contextColumn: { contextColumns },
       measures: { measureLabel },
     },
@@ -123,7 +123,7 @@
               {toggleSort}
               {toggleDimensionValueSelection}
               {toggleComparisonDimension}
-              sortMeasure={$sortMeasure}
+              sortBy={$sortByMeasure}
               measureLabel={$measureLabel}
             />
           {/if}

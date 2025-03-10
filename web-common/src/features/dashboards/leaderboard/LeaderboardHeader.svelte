@@ -26,7 +26,7 @@
   export let sortType: SortType;
   export let contextColumns: string[] = [];
   export let activeMeasureNames: string[] = [];
-  export let sortMeasure: string | null;
+  export let sortBy: string | null;
   export let toggleSort: (sortType: SortType, measureName?: string) => void;
   export let setPrimaryDimension: (dimensionName: string) => void;
   export let toggleComparisonDimension: (
@@ -112,7 +112,7 @@
               #
             {/if}
           </span>
-          {#if measureName === sortMeasure && sortType === SortType.VALUE}
+          {#if measureName === sortBy && sortType === SortType.VALUE}
             <div class="ui-copy-icon">
               {#if sortedAscending}
                 <div in:fly|global={{ duration: 200, y: 8 }} style:opacity={1}>
@@ -135,7 +135,7 @@
             on:click={() => toggleSort(SortType.DELTA_ABSOLUTE, measureName)}
           >
             <DeltaChange />
-            {#if sortType === SortType.DELTA_ABSOLUTE && measureName === sortMeasure}
+            {#if sortType === SortType.DELTA_ABSOLUTE && measureName === sortBy}
               <div class="ui-copy-icon">
                 {#if sortedAscending}
                   <div
@@ -165,7 +165,7 @@
             on:click={() => toggleSort(SortType.DELTA_PERCENT, measureName)}
           >
             <DeltaChangePercentage />
-            {#if sortType === SortType.DELTA_PERCENT && measureName === sortMeasure}
+            {#if sortType === SortType.DELTA_PERCENT && measureName === sortBy}
               <div class="ui-copy-icon">
                 {#if sortedAscending}
                   <div
@@ -195,7 +195,7 @@
             on:click={() => toggleSort(SortType.PERCENT, measureName)}
           >
             <PercentOfTotal />
-            {#if sortType === SortType.PERCENT && measureName === sortMeasure}
+            {#if sortType === SortType.PERCENT && measureName === sortBy}
               <div class="ui-copy-icon">
                 {#if sortedAscending}
                   <div
