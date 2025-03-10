@@ -1,0 +1,6 @@
+.DS_Store
+
+# Rill
+.env
+tmp
+.rillcloud

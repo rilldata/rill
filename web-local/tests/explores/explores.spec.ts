@@ -278,7 +278,7 @@ time_ranges:
   - rill-PYC
   - inf
 `;
-    await page.getByLabel("code").click();
+    await page.getByLabel("code", { exact: true }).click();
     await watcher.updateAndWaitForExplore(changeDisplayNameDoc);
 
     // Remove timestamp column

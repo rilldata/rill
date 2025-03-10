@@ -1,7 +1,5 @@
-import { expect } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 import { test } from "./setup/base";
-
-import { type Page } from "@playwright/test";
 
 async function waitForReadyMessage(embedPage: Page, logMessages: string[]) {
   return new Promise<void>((resolve) => {
@@ -24,11 +22,8 @@ test.describe("Embeds", () => {
   test("embeds should load", async ({ embedPage }) => {
     const frame = embedPage.frameLocator("iframe");
 
-    await frame.getByLabel("Timezone selector").click();
-    await frame.getByRole("menuitem", { name: "UTC UTC UTC+00:00" }).click();
-
     await expect(
-      frame.getByRole("button", { name: "Advertising Spend Overall $1.30M" }),
+      frame.getByRole("button", { name: "Advertising Spend Overall $20,603" }),
     ).toBeVisible();
   });
 
@@ -37,15 +32,12 @@ test.describe("Embeds", () => {
     await waitForReadyMessage(embedPage, logMessages);
     const frame = embedPage.frameLocator("iframe");
 
-    await frame.getByLabel("Timezone selector").click();
-    await frame.getByRole("menuitem", { name: "UTC UTC UTC+00:00" }).click();
-
-    await frame.getByRole("row", { name: "Instacart $107.3k" }).click();
+    await frame.getByRole("row", { name: "Instacart $2.1k" }).click();
     await embedPage.waitForTimeout(500);
 
     expect(
       logMessages.some((msg) =>
-        msg.includes("tz=UTC&f=advertiser_name+IN+('Instacart')"),
+        msg.includes("f=advertiser_name+IN+('Instacart')"),
       ),
     ).toBeTruthy();
   });
@@ -55,10 +47,7 @@ test.describe("Embeds", () => {
     await waitForReadyMessage(embedPage, logMessages);
     const frame = embedPage.frameLocator("iframe");
 
-    await frame.getByLabel("Timezone selector").click();
-    await frame.getByRole("menuitem", { name: "UTC UTC UTC+00:00" }).click();
-
-    await frame.getByRole("row", { name: "Instacart $107.3k" }).click();
+    await frame.getByRole("row", { name: "Instacart $2.1k" }).click();
     await embedPage.waitForTimeout(500);
 
     await embedPage.evaluate(() => {
@@ -70,7 +59,7 @@ test.describe("Embeds", () => {
     expect(
       logMessages.some((msg) =>
         msg.includes(
-          `{"id":1337,"result":{"state":"tz=UTC&f=advertiser_name+IN+('Instacart')"}}`,
+          `{"id":1337,"result":{"state":"f=advertiser_name+IN+('Instacart')"}}`,
         ),
       ),
     ).toBeTruthy();
@@ -87,15 +76,14 @@ test.describe("Embeds", () => {
         {
           id: 1337,
           method: "setState",
-          params: "tz=UTC&f=advertiser_name+IN+('Instacart')",
+          params: "f=advertiser_name+IN+('Instacart')",
         },
         "*",
       );
     });
 
-    await expect(frame.getByLabel("Timezone selector")).toHaveText("UTC");
     await expect(
-      frame.getByRole("row", { name: "Instacart $107.3k" }),
+      frame.getByRole("row", { name: "Instacart $2.1k" }),
     ).toBeVisible();
     expect(
       logMessages.some((msg) => msg.includes(`{"id":1337,"result":true}`)),

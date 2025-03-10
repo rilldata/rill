@@ -475,5 +475,7 @@ export class TimeControls {
     this.selectedTimeRange.set(selectedTimeRange);
     this.selectedComparisonTimeRange.set(selectedComparisonTimeRange);
     this.showTimeComparison.set(showTimeComparison);
+
+    this.isInitialStateSet = true;
   };
 }

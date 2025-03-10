@@ -1,0 +1,92 @@
+# Metrics view YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/dashboards
+# This file was generated using AI.
+
+version: 1
+type: metrics_view 
+
+display_name: Metrics Margin Model
+model: metrics_margin_model
+timeseries: __time
+smallest_time_grain: day
+# 
+dimensions:
+  - name: usage_unit
+    display_name: Usage Unit
+    column: usage_unit
+  - name: pipeline
+    display_name: Pipeline
+    column: pipeline
+  - name: component
+    display_name: Component
+    column: component
+  - name: company
+    display_name: Company
+    column: company
+  - name: sku_description
+    display_name: Sku Description
+    column: sku_description
+  - name: app_name
+    display_name: App Name
+    column: app_name
+  - name: environment
+    display_name: Environment
+    column: environment
+  - name: location
+    display_name: Location
+    column: location
+  - name: plan_name
+    display_name: Plan Name
+    column: plan_name
+
+measures:
+  - name: total_revenue_measure
+    display_name: Total Revenue
+    expression: SUM(revenue)
+    description: The total revenue generated across all records.
+    format_preset: humanize
+  - name: average_revenue_measure
+    display_name: Average Revenue
+    expression: AVG(revenue)
+    description: The average revenue per record.
+    format_preset: humanize
+  - name: total_cost_measure
+    display_name: Total Cost
+    expression: SUM(cost)
+    description: The total cost incurred across all records.
+    format_preset: humanize
+  - name: average_cost_measure
+    display_name: Average Cost
+    expression: AVG(cost)
+    description: The average cost per record.
+    format_preset: humanize
+  - name: revenue_count_measure
+    display_name: Revenue Count
+    expression: COUNT(revenue)
+    description: The number of records with revenue data.
+    format_preset: humanize
+  - name: cost_count_measure
+    display_name: Cost Count
+    expression: COUNT(cost)
+    description: The number of records with cost data.
+    format_preset: humanize
+  - name: min_revenue_measure
+    display_name: Minimum Revenue
+    expression: MIN(revenue)
+    description: The minimum revenue recorded in the dataset.
+    format_preset: humanize
+  - name: max_revenue_measure
+    display_name: Maximum Revenue
+    expression: MAX(revenue)
+    description: The maximum revenue recorded in the dataset.
+    format_preset: humanize
+  - name: min_cost_measure
+    display_name: Minimum Cost
+    expression: MIN(cost)
+    description: The minimum cost recorded in the dataset.
+    format_preset: humanize
+  - name: max_cost_measure
+    display_name: Maximum Cost
+    expression: MAX(cost)
+    description: The maximum cost recorded in the dataset.
+    format_preset: humanize
