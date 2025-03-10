@@ -89,7 +89,7 @@
     );
   }
 
-  function isLastInMeasureGroup(columnId: string): boolean {
+  function hasBorderRight(columnId: string): boolean {
     if (!hasMeasureContextColumns) return true;
     const measureIndex = measures.findIndex((m) => m.name === columnId);
     if (measureIndex === -1) return true;
@@ -153,6 +153,7 @@
               class:cursor-pointer={header.column.getCanSort()}
               class:select-none={header.column.getCanSort()}
               class:flex-row-reverse={!!getMeasureColumn(header.column)}
+              class:border-r={hasBorderRight(header.column.id)}
               on:click={header.column.getToggleSortingHandler()}
             >
               {#if !header.isPlaceholder}
@@ -203,7 +204,7 @@
             <div
               class="cell pointer-events-none truncate"
               role="presentation"
-              class:border-r={isLastInMeasureGroup(cell.column.id)}
+              class:border-r={hasBorderRight(cell.column.id)}
             >
               {#if result?.component && result?.props}
                 <svelte:component
@@ -257,7 +258,7 @@
 
   th {
     @apply p-0 m-0 text-xs;
-    @apply border-r border-b relative;
+    @apply border-b relative;
   }
 
   th:last-of-type,
@@ -289,16 +290,10 @@
     @apply font-normal;
   }
 
-  /* Add border only for last measure in group or non-measure columns */
-  tr > td:has(.cell[data-is-last-in-group="true"]) {
-    @apply border-r;
-  }
-
   /* The totals row */
   :global(.with-measure) tbody > tr:nth-of-type(2) {
     @apply bg-white sticky z-20;
     top: var(--total-header-height);
-    height: calc(var(--row-height) + 2px);
   }
 
   tr:hover,
