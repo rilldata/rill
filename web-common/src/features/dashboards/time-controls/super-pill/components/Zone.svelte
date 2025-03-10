@@ -70,7 +70,7 @@
     </button>
   </DropdownMenu.Trigger>
 
-  <DropdownMenu.Content align="start" class="w-80 ">
+  <DropdownMenu.Content align="start" class="w-80">
     <div class="p-1.5 pb-1 flex items-center gap-x-2">
       <Search bind:value={searchValue} autofocus={false} />
     </div>

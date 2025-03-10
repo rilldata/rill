@@ -115,6 +115,10 @@
     @apply px-2 flex items-center justify-center bg-white;
   }
 
+  :global(.wrapper > button:focus) {
+    @apply z-50;
+  }
+
   :global(.wrapper > button:first-child) {
     @apply pl-2.5 rounded-l-full;
   }
