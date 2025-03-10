@@ -68,7 +68,8 @@
   // FIXME: when comparison is off and have 3 context columns selected, we should fix the copy
   $: withText =
     selectedFilters && selectedFilters.length > 1
-      ? `${selectedFilters.length} context columns`
+      ? // ? `${selectedFilters.length} context columns`
+        `context columns`
       : selectedFilters.length === 1
         ? getLabelFromValue(selectedFilters[0] as LeaderboardContextColumn)
         : "no context columns";
