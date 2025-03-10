@@ -9,6 +9,7 @@
   import ChartIcon from "./icons/ChartIcon.svelte";
   import TableIcon from "./icons/TableIcon.svelte";
   import TextIcon from "./icons/TextIcon.svelte";
+  import { Tooltip } from "bits-ui";
 
   type MenuItem = {
     id: CanvasComponentType;
@@ -47,25 +48,34 @@
 
 <DropdownMenu.Root bind:open>
   <DropdownMenu.Trigger asChild let:builder>
-    {#if componentForm}
-      <button
-        {...builder}
-        use:builder.action
-        class="pointer-events-auto shadow-sm hover:shadow-md flex bg-white h-[84px] flex-col justify-center gap-2 items-center rounded-md border border-slate-200 w-full"
-      >
-        <PlusCircle class="w-6 h-6 text-slate-500" />
-        <span class="text-sm font-medium text-slate-500">Add a component</span>
-      </button>
-    {:else}
-      <button
-        {disabled}
-        on:mouseenter={onMouseEnter}
-        use:builder.action
-        class="pointer-events-auto disabled:pointer-events-none h-7 px-2 grid place-content-center z-50 hover:bg-gray-100 text-slate-500 disabled:opacity-50"
-      >
-        <PlusCircle size="15px" />
-      </button>
-    {/if}
+    <Tooltip.Root>
+      <Tooltip.Trigger>
+        {#if componentForm}
+          <button
+            {...builder}
+            use:builder.action
+            class="pointer-events-auto shadow-sm hover:shadow-md flex bg-white h-[84px] flex-col justify-center gap-2 items-center rounded-md border border-slate-200 w-full"
+          >
+            <PlusCircle class="w-6 h-6 text-slate-500" />
+            <span class="text-sm font-medium text-slate-500">Add widget</span>
+          </button>
+        {:else}
+          <button
+            {disabled}
+            on:mouseenter={onMouseEnter}
+            use:builder.action
+            class="pointer-events-auto disabled:pointer-events-none h-7 px-2 grid place-content-center z-50 hover:bg-gray-100 text-slate-500 disabled:opacity-50"
+          >
+            <PlusCircle size="15px" />
+          </button>
+        {/if}
+      </Tooltip.Trigger>
+      <Tooltip.Content side="top" sideOffset={8}>
+        <div class="bg-gray-700 text-white rounded p-2 pt-1 pb-1">
+          Insert widget
+        </div>
+      </Tooltip.Content>
+    </Tooltip.Root>
   </DropdownMenu.Trigger>
 
   <DropdownMenu.Content align={componentForm ? "center" : "start"}>
