@@ -12,13 +12,6 @@ const contextColumnWidth = ({ dashboard }: DashboardDataSources): string => {
 
 export const contextColumnSelectors = {
   /**
-   * Gets the active context column type for the dashboard.
-   */
-  // FIXME: remove this single selector
-  contextColumn: ({ dashboard }: DashboardDataSources) =>
-    dashboard.leaderboardContextColumn,
-
-  /**
    * Gets the context column filters for the dashboard.
    */
   contextColumns: ({ dashboard }: DashboardDataSources) =>
@@ -28,36 +21,45 @@ export const contextColumnSelectors = {
    * Is the context column hidden in the leaderboards?
    */
   isHidden: ({ dashboard }: DashboardDataSources) =>
-    dashboard.leaderboardContextColumn === LeaderboardContextColumn.HIDDEN,
+    dashboard.leaderboardContextColumns.includes(
+      LeaderboardContextColumn.HIDDEN,
+    ),
 
   /**
    * Is the Percentage change context column currently active in the leaderboards?
    */
   isDeltaPercent: ({ dashboard }: DashboardDataSources) =>
-    dashboard.leaderboardContextColumn ===
-    LeaderboardContextColumn.DELTA_PERCENT,
+    dashboard.leaderboardContextColumns.includes(
+      LeaderboardContextColumn.DELTA_PERCENT,
+    ),
 
   /**
    * Is the absolute change context column currently active in the leaderboards?
    */
   isDeltaAbsolute: ({ dashboard }: DashboardDataSources) =>
-    dashboard.leaderboardContextColumn ===
-    LeaderboardContextColumn.DELTA_ABSOLUTE,
+    dashboard.leaderboardContextColumns.includes(
+      LeaderboardContextColumn.DELTA_ABSOLUTE,
+    ),
 
   /**
    * Is the percent-of-total context column currently active in the leaderboards?
    */
   isPercentOfTotal: ({ dashboard }: DashboardDataSources) =>
-    dashboard.leaderboardContextColumn === LeaderboardContextColumn.PERCENT,
+    dashboard.leaderboardContextColumns.includes(
+      LeaderboardContextColumn.PERCENT,
+    ),
 
   /**
    * `true` if the context column is either percent or delta percent,
    * `false` otherwise.
    */
   isAPercentColumn: ({ dashboard }: DashboardDataSources) =>
-    dashboard.leaderboardContextColumn ===
-      LeaderboardContextColumn.DELTA_PERCENT ||
-    dashboard.leaderboardContextColumn === LeaderboardContextColumn.PERCENT,
+    dashboard.leaderboardContextColumns.includes(
+      LeaderboardContextColumn.DELTA_PERCENT,
+    ) ||
+    dashboard.leaderboardContextColumns.includes(
+      LeaderboardContextColumn.PERCENT,
+    ),
 
   /**
    * returns a css style string specifying the width of the context

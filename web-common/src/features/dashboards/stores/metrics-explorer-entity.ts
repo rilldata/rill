@@ -144,6 +144,7 @@ export interface MetricsExplorerEntity {
   /**
    * state of context column in the leaderboard
    */
+  // FIXME: to be removed once we fully migrate to leaderboardContextColumns
   leaderboardContextColumn: LeaderboardContextColumn;
 
   /**
