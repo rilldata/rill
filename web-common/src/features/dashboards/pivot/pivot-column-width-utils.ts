@@ -10,7 +10,7 @@ export const COLUMN_WIDTH_CONSTANTS = {
   MIN_COL_WIDTH: 100,
   MAX_COL_WIDTH: 600,
   MAX_INIT_COL_WIDTH: 400,
-  MIN_MEASURE_WIDTH: 70,
+  MIN_MEASURE_WIDTH: 40,
   MAX_MEASURE_WIDTH: 300,
   INIT_MEASURE_WIDTH: 100,
   MEASURE_PADDING: 24,
@@ -63,7 +63,7 @@ export function calculateMeasureWidth(
   if (totalsRow) {
     const isPercent = measureName.endsWith(COMPARISON_PERCENT);
     if (isPercent) {
-      maxValueLength = 6;
+      maxValueLength = 5;
     } else {
       const value = totalsRow[measureName];
       if (typeof value === "string" || typeof value === "number") {
