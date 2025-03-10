@@ -22,9 +22,14 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	rillblob "github.com/rilldata/rill/runtime/drivers/blob"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"gocloud.dev/blob"
 	"gocloud.dev/blob/s3blob"
 )
+
+var tracer = otel.Tracer("github.com/rilldata/rill/runtime/drivers/unload")
 
 var _ drivers.Warehouse = &Connection{}
 
@@ -151,6 +156,9 @@ func (c *Connection) awsConfig(ctx context.Context, awsRegion string) (aws.Confi
 }
 
 func (c *Connection) unload(ctx context.Context, client *athena.Client, conf *sourceProperties, unloadLocation string) error {
+	ctx, span := tracer.Start(ctx, "athenaUnload", trace.WithAttributes(attribute.String("project_id", conf.SQL), attribute.String("location", unloadLocation)))
+	defer span.End()
+
 	finalSQL := fmt.Sprintf("UNLOAD (%s\n) TO '%s' WITH (format = 'PARQUET')", conf.SQL, unloadLocation)
 
 	executeParams := &athena.StartQueryExecutionInput{
