@@ -274,14 +274,15 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		"access_token": jwt,
 	}
 
-	if req.Type != "" {
-		iframeQuery["type"] = req.Type
-	} else if req.Kind != "" { // nolint:staticcheck // Deprecated but still used
-		iframeQuery["type"] = req.Kind
-	} else {
-		// Default to an explore if no type is explicitly provided
-		iframeQuery["type"] = runtime.ResourceKindExplore
+	if req.Kind != "" { // nolint:staticcheck // For backwards compatibility
+		req.Type = req.Kind
 	}
+	if req.Type == "" {
+		// Default to an explore if no type is explicitly provided
+		req.Type = runtime.ResourceKindExplore
+	}
+	req.Type = runtime.ResourceKindFromShorthand(req.Type)
+	iframeQuery["type"] = req.Type
 	iframeQuery["kind"] = iframeQuery["type"] // For backwards compatibility
 
 	if req.Resource != "" {
