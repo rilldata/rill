@@ -1,6 +1,7 @@
 /**
  * This enum determines the state of the context column in the leaderboard
  */
+// FIXME: this should technically be LeaderboardContextColumnSortType
 export enum LeaderboardContextColumn {
   // show percent-of-total
   PERCENT = "percent",
@@ -11,3 +12,15 @@ export enum LeaderboardContextColumn {
   // Do not show the context column
   HIDDEN = "hidden",
 }
+
+export type ContextColWidths = {
+  [LeaderboardContextColumn.DELTA_ABSOLUTE]: number;
+  [LeaderboardContextColumn.DELTA_PERCENT]: number;
+  [LeaderboardContextColumn.PERCENT]: number;
+};
+
+export const contextColWidthDefaults: ContextColWidths = {
+  [LeaderboardContextColumn.DELTA_ABSOLUTE]: 56,
+  [LeaderboardContextColumn.DELTA_PERCENT]: 44,
+  [LeaderboardContextColumn.PERCENT]: 44,
+};

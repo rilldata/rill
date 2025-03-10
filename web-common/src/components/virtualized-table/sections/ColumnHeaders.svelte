@@ -5,6 +5,7 @@
     VirtualizedTableColumns,
     VirtualizedTableConfig,
   } from "../types";
+  import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
 
   const dispatch = createEventDispatcher();
 
@@ -34,13 +35,12 @@
       description: column.description || "",
       pinned: pinnedColumns.some((pinCol) => pinCol.name === column.name),
       isSelected: selectedColumn === column.name,
-      highlight: column.highlight,
       sorted: column.sorted,
     };
   };
 </script>
 
-<div class="w-full sticky relative top-0 z-10">
+<div class="w-full sticky top-0 z-10">
   {#each virtualColumnItems as header (header.key)}
     {@const props = getColumnHeaderProps(header)}
     <ColumnHeader

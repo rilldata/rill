@@ -3,10 +3,10 @@
   import type { SearchableFilterSelectableItem } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import { fly } from "svelte/transition";
-  import Button from "../../button/Button.svelte";
-  import CaretDownIcon from "../../icons/CaretDownIcon.svelte";
-  import TooltipContent from "../../tooltip/TooltipContent.svelte";
-  import SearchableMenuContent from "../../searchable-filter-menu/SearchableMenuContent.svelte";
+  import Button from "../button/Button.svelte";
+  import CaretDownIcon from "../icons/CaretDownIcon.svelte";
+  import TooltipContent from "../tooltip/TooltipContent.svelte";
+  import SearchableMenuContent from "../searchable-filter-menu/SearchableMenuContent.svelte";
 
   export let selectableItems: SearchableFilterSelectableItem[];
   export let selectedItems: string[];

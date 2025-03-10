@@ -1,8 +1,4 @@
-import {
-  type ContextColWidths,
-  type MetricsExplorerEntity,
-  contextColWidthDefaults,
-} from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { type MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import {
@@ -38,6 +34,10 @@ import {
   type StateManagerReadables,
   createStateManagerReadables,
 } from "./selectors";
+import {
+  contextColWidthDefaults,
+  type ContextColWidths,
+} from "../leaderboard-context-column";
 
 export type StateManagers = {
   runtime: Writable<Runtime>;

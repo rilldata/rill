@@ -4,6 +4,7 @@ import {
   createAndExpression,
   filterIdentifiers,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { decompressUrlParams } from "@rilldata/web-common/features/dashboards/url-state/compression";
 import { convertLegacyStateToExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/convertLegacyStateToExplorePreset";
 import { CustomTimeRangeRegex } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
@@ -148,6 +149,38 @@ export function convertURLToExplorePreset(
       Object.assign(preset, pivotPreset);
       errors.push(...pivotErrors);
       break;
+    }
+  }
+
+  if (searchParams.has(ExploreStateURLParams.SortType)) {
+    const sortType = searchParams.get(ExploreStateURLParams.SortType) as string;
+    if (sortType in FromURLParamsSortTypeMap) {
+      preset.exploreSortType = FromURLParamsSortTypeMap[sortType];
+    } else {
+      errors.push(getSingleFieldError("sort type", sortType));
+    }
+  }
+
+  if (searchParams.has(ExploreStateURLParams.LeaderboardMeasureCount)) {
+    const count = searchParams.get(
+      ExploreStateURLParams.LeaderboardMeasureCount,
+    );
+    const parsedCount = parseInt(count ?? "", 10);
+    if (!isNaN(parsedCount) && parsedCount > 0) {
+      preset.exploreLeaderboardMeasureCount = parsedCount;
+    } else {
+      errors.push(
+        getSingleFieldError("leaderboard measure count", count ?? ""),
+      );
+    }
+  }
+
+  if (searchParams.has(ExploreStateURLParams.LeaderboardContextColumns)) {
+    const columns = searchParams.get(
+      ExploreStateURLParams.LeaderboardContextColumns,
+    );
+    if (columns) {
+      preset.exploreLeaderboardContextColumns = columns.split(",");
     }
   }
 
@@ -397,20 +430,13 @@ function fromExploreUrlParams(
   }
 
   if (searchParams.has(ExploreStateURLParams.SortBy)) {
-    const sortBy = searchParams.get(ExploreStateURLParams.SortBy) as string;
-    if (measures.has(sortBy)) {
-      if (
-        (preset.measures && preset.measures.includes(sortBy)) ||
-        !preset.measures
-      ) {
-        preset.exploreSortBy = sortBy;
-      } else {
-        errors.push(
-          getSingleFieldError("sort by measure", sortBy, "It is hidden."),
-        );
-      }
+    const sortByMeasure = searchParams.get(
+      ExploreStateURLParams.SortBy,
+    ) as string;
+    if (measures.has(sortByMeasure)) {
+      preset.exploreSortBy = sortByMeasure;
     } else {
-      errors.push(getSingleFieldError("sort by measure", sortBy));
+      errors.push(getSingleFieldError("sort by measure", sortByMeasure));
     }
   }
 
@@ -426,6 +452,29 @@ function fromExploreUrlParams(
       preset.exploreSortType = FromURLParamsSortTypeMap[sortType];
     } else {
       errors.push(getSingleFieldError("sort type", sortType));
+    }
+  }
+
+  if (searchParams.has(ExploreStateURLParams.LeaderboardMeasureCount)) {
+    const count = searchParams.get(
+      ExploreStateURLParams.LeaderboardMeasureCount,
+    );
+    const parsedCount = parseInt(count ?? "", 10);
+    if (!isNaN(parsedCount) && parsedCount > 0) {
+      preset.exploreLeaderboardMeasureCount = parsedCount;
+    } else {
+      errors.push(
+        getSingleFieldError("leaderboard measure count", count ?? ""),
+      );
+    }
+  }
+
+  if (searchParams.has(ExploreStateURLParams.LeaderboardContextColumns)) {
+    const columns = searchParams.get(
+      ExploreStateURLParams.LeaderboardContextColumns,
+    );
+    if (columns) {
+      preset.exploreLeaderboardContextColumns = columns.split(",");
     }
   }
 
