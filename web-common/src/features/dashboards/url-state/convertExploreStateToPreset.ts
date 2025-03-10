@@ -121,11 +121,6 @@ function getExploreFields(
     preset.exploreSortBy = exploreState.leaderboardMeasureName;
   }
 
-  // if (exploreState.leaderboardMeasureCount !== undefined) {
-  //   preset.exploreLeaderboardMeasureCount =
-  //     exploreState.leaderboardMeasureCount;
-  // }
-
   if (exploreState.sortDirection) {
     preset.exploreSortAsc =
       exploreState.sortDirection ===
