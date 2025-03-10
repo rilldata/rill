@@ -94,6 +94,7 @@
         'focus:ring-2 focus:ring-primary-100'} {truncate
         ? 'break-all overflow-hidden'
         : ''}"
+      aria-label={label}
     >
       <Select.Value
         {placeholder}
