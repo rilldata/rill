@@ -86,10 +86,6 @@
       // routing to the same path but probably different url params
       return;
     }
-
-    // session store is only used to save state for different views and not keep other params url
-    // so, we clear the store when we navigate away
-    // clearExploreSessionStore(exploreName, extraKeyPrefix);
   });
 
   afterNavigate(({ from, to, type }) => {
