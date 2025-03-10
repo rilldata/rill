@@ -34,7 +34,7 @@ TableCells – the cell contents.
       comparison: { toggleComparisonDimension },
     },
     selectors: {
-      sorting: { sortByMeasure: sortMeasure },
+      sorting: { sortByMeasure },
       dimensionFilters: { isFilterExcludeMode },
       comparison: { isBeingCompared: isBeingComparedReadable },
     },
@@ -217,7 +217,7 @@ TableCells – the cell contents.
         <ColumnHeaders
           virtualColumnItems={virtualColumns}
           noPin={true}
-          selectedColumn={$sortMeasure}
+          sortByMeasure={$sortByMeasure}
           columns={measureColumns}
           on:click-column={handleColumnHeaderClick}
         />

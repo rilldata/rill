@@ -14,7 +14,7 @@
   export let virtualColumnItems;
   export let noPin = false;
   export let showDataIcon = false;
-  export let selectedColumn: string | null = null;
+  export let sortByMeasure: string | null = null;
 
   const config: VirtualizedTableConfig = getContext("config");
 
@@ -34,7 +34,7 @@
       type: column.type,
       description: column.description || "",
       pinned: pinnedColumns.some((pinCol) => pinCol.name === column.name),
-      isSelected: selectedColumn === column.name,
+      isSelected: sortByMeasure === column.name,
       sorted: column.sorted,
     };
   };
