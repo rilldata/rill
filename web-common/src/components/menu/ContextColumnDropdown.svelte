@@ -19,9 +19,10 @@
   export let isValidPercentOfTotal: boolean;
   export let hasComparisonTimeRange: boolean;
   export let tooltipText: string;
-  export let measures: MetricsViewSpecMeasureV2[];
-  export let selectedFilters: LeaderboardContextColumn[] = [];
-  export let onToggle: (columns: LeaderboardContextColumn[]) => void;
+  export let selectedFilters: string[] = [];
+  export let onContextColumnChange: (
+    columns: LeaderboardContextColumn[],
+  ) => void;
   export let onSelectAll: () => void;
 
   const { exploreName } = getStateManagers();
@@ -29,19 +30,6 @@
   let active = false;
 
   let allSelected = false;
-
-  // Side effect to clean up filters when time comparison is disabled
-  $: if (!$metricsExplorerStore.entities[$exploreName]?.showTimeComparison) {
-    const cleanedFilters = selectedFilters.filter(
-      (f) =>
-        f !== LeaderboardContextColumn.DELTA_ABSOLUTE &&
-        f !== LeaderboardContextColumn.DELTA_PERCENT &&
-        f !== LeaderboardContextColumn.PERCENT,
-    );
-    if (cleanedFilters.length !== selectedFilters.length) {
-      onToggle(cleanedFilters);
-    }
-  }
 
   $: options = [
     ...(isValidPercentOfTotal
@@ -77,41 +65,17 @@
   function toggleContextColumn(name: string) {
     if (!name) return;
     const column = name as LeaderboardContextColumn;
-    const isAdding = !selectedFilters.includes(column);
-    const newFilters = isAdding
-      ? [...selectedFilters, column]
-      : selectedFilters.filter((f) => f !== column);
-    onToggle(newFilters);
-
-    // If adding a delta column and comparison time range is not enabled,
-    // automatically enable it with a default comparison range
-    if (
-      isAdding &&
-      (column === LeaderboardContextColumn.DELTA_ABSOLUTE ||
-        column === LeaderboardContextColumn.DELTA_PERCENT ||
-        column === LeaderboardContextColumn.PERCENT) &&
-      !$metricsExplorerStore.entities[$exploreName]?.showTimeComparison
-    ) {
-      const defaultComparisonRange = {
-        name: TimeComparisonOption.CONTIGUOUS,
-        start: new Date(),
-        end: new Date(),
-      };
-      const currentMeasures = measures.map((m) => ({ name: m.name }));
-      metricsExplorerStore.setSelectedComparisonRange(
-        $exploreName,
-        defaultComparisonRange,
-        { measures: currentMeasures },
-      );
-      metricsExplorerStore.displayTimeComparison($exploreName, true);
-    }
+    const newFilters = selectedFilters.includes(column)
+      ? selectedFilters.filter((f) => f !== column)
+      : [...selectedFilters, column];
+    onContextColumnChange(newFilters as LeaderboardContextColumn[]);
   }
 
   $: withText =
     selectedFilters && selectedFilters.length > 1
       ? `${selectedFilters.length} context columns`
       : selectedFilters.length === 1
-        ? getLabelFromValue(selectedFilters[0])
+        ? getLabelFromValue(selectedFilters[0] as LeaderboardContextColumn)
         : "no context columns";
 </script>
 
