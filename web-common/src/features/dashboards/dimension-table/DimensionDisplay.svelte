@@ -32,7 +32,6 @@
   const queryLimit = 250;
 
   export let activeMeasureName: string;
-  export let activeMeasureNames: string[];
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
   export let whereFilter: V1Expression;
@@ -52,7 +51,7 @@
         selectedDimensionValueNames,
         prepareDimTableRows,
       },
-      sorting: { sortedAscending, sortType, sortMeasure },
+      sorting: { sortedAscending, sortType, sortByMeasure },
       contextColumn: { contextColumns },
     },
     actions: {
@@ -66,11 +65,10 @@
   } = getStateManagers();
 
   console.log("$dimensionShowForAllMeasures: ", $dimensionShowForAllMeasures);
-
   // $: console.log("activeMeasureName: ", activeMeasureName);
-  // $: console.log("activeMeasureNames: ", activeMeasureNames);
+  // $: console.log("DimensionDisplay $sortByMeasure: ", $sortByMeasure);
   // $: console.log("DimensionDisplay $contextColumns: ", $contextColumns);
-  $: console.log("DimensionDisplay $sortMeasure: ", $sortMeasure);
+  // $: console.log("visibleMeasureNames: ", visibleMeasureNames);
 
   $: ({ name: dimensionName = "" } = dimension);
 
@@ -106,28 +104,37 @@
     },
   );
 
-  $: unfilteredTotal = $totalsQuery?.data?.data?.[0]?.[activeMeasureName] ?? 0;
+  $: unfilteredTotal = $dimensionShowForAllMeasures
+    ? visibleMeasureNames.reduce(
+        (acc, measureName) => {
+          acc[measureName] = $totalsQuery?.data?.data?.[0]?.[measureName] ?? 0;
+          return acc;
+        },
+        {} as { [key: string]: number },
+      )
+    : ($totalsQuery?.data?.data?.[0]?.[activeMeasureName] ?? 0);
 
-  $: columns = $virtualizedTableColumns($totalsQuery);
+  $: columns = $virtualizedTableColumns(
+    $totalsQuery,
+    $dimensionShowForAllMeasures ? visibleMeasureNames : undefined,
+  );
 
-  $: measures = getMeasuresForDimensionTable(
-    activeMeasureName,
-    dimensionThresholdFilters,
-    visibleMeasureNames,
-  )
-    .map(
-      (n) =>
-        ({
-          name: n,
-        }) as V1MetricsViewAggregationMeasure,
-    )
-    .concat(
-      ...(comparisonTimeRange
-        ? activeMeasureNames.flatMap((name) =>
-            getComparisonRequestMeasures(name),
-          )
-        : []),
-    );
+  $: measures = [
+    // Get base measures
+    ...getMeasuresForDimensionTable(
+      $dimensionShowForAllMeasures ? null : activeMeasureName,
+      dimensionThresholdFilters,
+      visibleMeasureNames,
+    ).map((name) => ({ name }) as V1MetricsViewAggregationMeasure),
+
+    // Add comparison measures if comparison time range exists
+    ...(comparisonTimeRange
+      ? ($dimensionShowForAllMeasures
+          ? visibleMeasureNames
+          : [activeMeasureName]
+        ).flatMap((name) => getComparisonRequestMeasures(name))
+      : []),
+  ];
 
   $: sort = getSort(
     $sortedAscending,

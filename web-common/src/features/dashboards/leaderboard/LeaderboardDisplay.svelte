@@ -32,7 +32,7 @@
       dimensionFilters: { isFilterExcludeMode },
       dimensions: { visibleDimensions },
       comparison: { isBeingCompared: isBeingComparedReadable },
-      sorting: { sortedAscending, sortType, sortMeasure },
+      sorting: { sortedAscending, sortType, sortByMeasure: sortMeasure },
       contextColumn: { contextColumns },
       measures: { measureLabel },
     },

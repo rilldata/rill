@@ -5,57 +5,36 @@ import { setContextColumn } from "./context-columns";
 import type { DashboardMutables } from "./types";
 import { setLeaderboardMeasureName } from "./core-actions";
 
-// export const handleDimensionMeasureColumnHeaderClick = (
-//   generalArgs: DashboardMutables,
-//   measureName: string,
-// ) => {
-//   console.log("handleDimensionMeasureColumnHeaderClick: ", measureName);
-
-//   const { dashboard } = generalArgs;
-
-//   if (measureName === dashboard.sortedMeasureName + "_delta") {
-//     toggleSort(generalArgs, SortType.DELTA_ABSOLUTE);
-//     setContextColumn(generalArgs, LeaderboardContextColumn.DELTA_ABSOLUTE);
-//   } else if (measureName === dashboard.sortedMeasureName + "_delta_perc") {
-//     toggleSort(generalArgs, SortType.DELTA_PERCENT);
-//     setContextColumn(generalArgs, LeaderboardContextColumn.DELTA_PERCENT);
-//   } else if (
-//     measureName ===
-//     dashboard.sortedMeasureName + "_percent_of_total"
-//   ) {
-//     toggleSort(generalArgs, SortType.PERCENT);
-//     setContextColumn(generalArgs, LeaderboardContextColumn.PERCENT);
-//   } else if (measureName === dashboard.sortedMeasureName) {
-//     toggleSort(generalArgs, SortType.VALUE);
-//   } else {
-//     // If clicking on a different measure, update the sorted measure and sort by it
-//     dashboard.sortedMeasureName = measureName;
-//     toggleSort(generalArgs, SortType.VALUE);
-//     sortActions.setSortDescending(generalArgs);
-//   }
-// };
-
 export const handleDimensionMeasureColumnHeaderClick = (
   generalArgs: DashboardMutables,
   measureName: string,
 ) => {
   const { leaderboardMeasureName: name } = generalArgs.dashboard;
 
-  if (measureName === name + "_delta") {
-    toggleSort(generalArgs, SortType.DELTA_ABSOLUTE, name);
-    setContextColumn(generalArgs, LeaderboardContextColumn.DELTA_ABSOLUTE);
-  } else if (measureName === name + "_delta_perc") {
-    toggleSort(generalArgs, SortType.DELTA_PERCENT, name);
-    setContextColumn(generalArgs, LeaderboardContextColumn.DELTA_PERCENT);
-  } else if (measureName === name + "_percent_of_total") {
-    toggleSort(generalArgs, SortType.PERCENT, name);
-    setContextColumn(generalArgs, LeaderboardContextColumn.PERCENT);
-  } else if (measureName === name) {
-    toggleSort(generalArgs, SortType.VALUE);
-  } else {
-    setLeaderboardMeasureName(generalArgs, measureName);
-    toggleSort(generalArgs, SortType.VALUE);
-    sortActions.setSortDescending(generalArgs);
+  const delta = name + "_delta";
+  const deltaPerc = name + "_delta_perc";
+  const percentOfTotal = name + "_percent_of_total";
+
+  switch (measureName) {
+    case delta:
+      toggleSort(generalArgs, SortType.DELTA_ABSOLUTE, name);
+      setContextColumn(generalArgs, LeaderboardContextColumn.DELTA_ABSOLUTE);
+      break;
+    case deltaPerc:
+      toggleSort(generalArgs, SortType.DELTA_PERCENT, name);
+      setContextColumn(generalArgs, LeaderboardContextColumn.DELTA_PERCENT);
+      break;
+    case percentOfTotal:
+      toggleSort(generalArgs, SortType.PERCENT, name);
+      setContextColumn(generalArgs, LeaderboardContextColumn.PERCENT);
+      break;
+    case name:
+      toggleSort(generalArgs, SortType.VALUE);
+      break;
+    default:
+      setLeaderboardMeasureName(generalArgs, measureName);
+      toggleSort(generalArgs, SortType.VALUE);
+      sortActions.setSortDescending(generalArgs);
   }
 };
 
