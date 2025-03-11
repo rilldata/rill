@@ -1,4 +1,0 @@
-boolean_col,int32_col,int64_col,float_col,double_col,byte_array_col,fixed_len_byte_array_col,string_col,decimal_col,date_col,time_millis_col,time_micros_col,timestamp_millis_col,timestamp_micros_col,uuid_col,list_int_col,list_string_col,map_col,struct_col
-True,123,45678901234,1.23,3.14159,abcd,1234567890abcdef,hello,123.45,2024-03-06,00:02:03.456000,00:02:03.456789,2024-03-06 12:34:56.789,2024-03-06 12:34:56.789123,uuidabcd1234efgh,[1 2 3],['apple' 'banana' 'cherry'],"[('key1', 10), ('key2', 20)]","{'field_int_col': 42, 'field_float_col': 3.140000104904175, 'field_string_col': 'example'}"
-False,0,0,0.0,0.0,,0000000000000000,,0.00,1970-01-01,00:00:00,00:00:00,1970-01-01 00:00:00.000,1970-01-01 00:00:00.000000,0000000000000000,[],[],[],"{'field_int_col': 0, 'field_float_col': 0.0, 'field_string_col': ''}"
-,,,,,,,,,,,,,,,,,,
