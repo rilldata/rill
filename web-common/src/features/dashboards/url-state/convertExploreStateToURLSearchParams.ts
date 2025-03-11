@@ -141,6 +141,8 @@ export function convertExploreStateToURLSearchParams(
       break;
   }
 
+  if (disableCompression || !shouldCompressParams(urlCopy))
+    return urlCopy.searchParams.toString();
   const compressedUrlParams = new URLSearchParams();
   compressedUrlParams.set(
     ExploreStateURLParams.GzippedParams,
