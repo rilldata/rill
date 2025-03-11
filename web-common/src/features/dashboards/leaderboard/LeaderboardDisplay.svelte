@@ -11,9 +11,11 @@
   import LeaderboardControls from "./LeaderboardControls.svelte";
   import {
     DEFAULT_COL_WIDTH,
+    DEFAULT_CONTEXT_COLUMN_WIDTH,
     deltaColumn,
     valueColumn,
   } from "./leaderboard-widths";
+  import { LeaderboardContextColumn } from "../leaderboard-context-column";
 
   export let metricsViewName: string;
   export let whereFilter: V1Expression;
@@ -61,16 +63,23 @@
     deltaColumn.reset();
   }
 
-  $: dimensionColumnWidth =
-    !comparisonTimeRange && !$isValidPercentOfTotal ? 240 : 164;
+  $: dimensionColumnWidth = 164;
+
+  $: showPercentOfTotal =
+    isValidPercentOfTotal &&
+    $contextColumns.includes(LeaderboardContextColumn.PERCENT);
+
+  $: showDeltaPercent =
+    !!comparisonTimeRange &&
+    $contextColumns.includes(LeaderboardContextColumn.DELTA_PERCENT);
 
   $: tableWidth =
     dimensionColumnWidth +
     $valueColumn +
     (comparisonTimeRange
-      ? $deltaColumn + DEFAULT_COL_WIDTH
-      : $isValidPercentOfTotal
-        ? DEFAULT_COL_WIDTH
+      ? DEFAULT_CONTEXT_COLUMN_WIDTH * (showDeltaPercent ? 2 : 1)
+      : showPercentOfTotal
+        ? DEFAULT_CONTEXT_COLUMN_WIDTH
         : 0);
 </script>
 
