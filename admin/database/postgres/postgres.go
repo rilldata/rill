@@ -1471,6 +1471,21 @@ func (c *connection) FindOrganizationMemberUsersByRole(ctx context.Context, orgI
 	return res, nil
 }
 
+func (c *connection) FindOrganizationMemberUserAdminStatus(ctx context.Context, orgID, userID string) (isAdmin, isLastAdmin bool, err error) {
+	err = c.getDB(ctx).QueryRowxContext(ctx, `
+		SELECT
+			r.admin,
+			NOT EXISTS (SELECT 1 FROM users_orgs_roles uor JOIN org_roles r ON r.id = uor.org_role_id WHERE uor.org_id=$1 AND r.admin=true AND uor.user_id != $2 LIMIT 1)
+		FROM users_orgs_roles uor
+		JOIN org_roles r ON r.id = uor.org_role_id
+		WHERE uor.org_id=$1 AND uor.user_id=$2
+	`, orgID, userID).Scan(&isAdmin, &isLastAdmin)
+	if err != nil {
+		return false, false, parseErr("org member admin status", err)
+	}
+	return isAdmin, isLastAdmin, nil
+}
+
 func (c *connection) InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string, ifNotExists bool) (bool, error) {
 	if !ifNotExists {
 		res, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO users_orgs_roles (user_id, org_id, org_role_id) VALUES ($1, $2, $3)", userID, orgID, roleID)
@@ -1560,6 +1575,19 @@ func (c *connection) FindProjectMemberUsers(ctx context.Context, projectID, afte
 	return res, nil
 }
 
+func (c *connection) FindProjectMemberUserRole(ctx context.Context, projectID, userID string) (*database.ProjectRole, error) {
+	role := &database.ProjectRole{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		SELECT r.* FROM users_projects_roles upr
+		JOIN project_roles r ON r.id = upr.project_role_id
+		WHERE upr.project_id=$1 AND upr.user_id=$2
+	`, projectID, userID).StructScan(role)
+	if err != nil {
+		return nil, parseErr("project member role", err)
+	}
+	return role, nil
+}
+
 func (c *connection) FindSuperusers(ctx context.Context) ([]*database.User, error) {
 	var res []*database.User
 	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT u.* FROM users u WHERE u.superuser = true`)
@@ -1606,6 +1634,19 @@ func (c *connection) FindOrganizationMemberUsergroups(ctx context.Context, orgID
 	return res, nil
 }
 
+func (c *connection) FindOrganizationMemberUsergroupRole(ctx context.Context, groupID, orgID string) (*database.OrganizationRole, error) {
+	role := &database.OrganizationRole{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		SELECT r.* FROM usergroups_orgs_roles uor
+		JOIN org_roles r ON r.id = uor.org_role_id
+		WHERE uor.usergroup_id=$1 AND uor.org_id=$2
+	`, groupID, orgID).StructScan(role)
+	if err != nil {
+		return nil, parseErr("org group member role", err)
+	}
+	return role, nil
+}
+
 func (c *connection) InsertOrganizationMemberUsergroup(ctx context.Context, groupID, orgID, roleID string) error {
 	_, err := c.getDB(ctx).ExecContext(ctx, `
 		INSERT INTO usergroups_orgs_roles (usergroup_id, org_id, org_role_id) VALUES ($1, $2, $3)
@@ -1641,6 +1682,19 @@ func (c *connection) FindProjectMemberUsergroups(ctx context.Context, projectID,
 		return nil, parseErr("project groups", err)
 	}
 	return res, nil
+}
+
+func (c *connection) FindProjectMemberUsergroupRole(ctx context.Context, groupID, projectID string) (*database.ProjectRole, error) {
+	role := &database.ProjectRole{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		SELECT r.* FROM usergroups_projects_roles upr
+		JOIN project_roles r ON r.id = upr.project_role_id
+		WHERE upr.usergroup_id=$1 AND upr.project_id=$2
+	`, groupID, projectID).StructScan(role)
+	if err != nil {
+		return nil, parseErr("project group member role", err)
+	}
+	return role, nil
 }
 
 func (c *connection) InsertProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error {

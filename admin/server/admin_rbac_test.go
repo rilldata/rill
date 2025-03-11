@@ -540,7 +540,7 @@ func TestAdmin_RBAC(t *testing.T) {
 
 		require.Error(t, err)
 		require.Equal(t, codes.InvalidArgument, status.Code(err))
-		require.ErrorContains(t, err, "cannot remove the last owner")
+		require.ErrorContains(t, err, "last admin")
 	})
 
 	// Create, fetch, and delete a user group
@@ -693,7 +693,7 @@ func TestAdmin_RBAC(t *testing.T) {
 			})
 			require.Error(t, err)
 			require.Equal(t, codes.InvalidArgument, status.Code(err))
-			require.ErrorContains(t, err, "cannot change role of the last owner")
+			require.ErrorContains(t, err, "last admin")
 
 			// check changing role of invited user
 			e := "1@test.io"

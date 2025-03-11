@@ -2346,6 +2346,7 @@ message ProvisionerResource {
 }
 
 message OrganizationPermissions {
+  bool admin = 9;
   bool guest = 8;
   bool read_org = 1;
   bool manage_org = 2;
@@ -2357,6 +2358,7 @@ message OrganizationPermissions {
 }
 
 message ProjectPermissions {
+  bool admin = 21;
   bool read_project = 1;
   bool manage_project = 2;
   bool read_prod = 3;

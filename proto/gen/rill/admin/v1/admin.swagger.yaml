@@ -4732,6 +4732,8 @@ definitions:
   v1OrganizationPermissions:
     type: object
     properties:
+      admin:
+        type: boolean
       guest:
         type: boolean
       readOrg:
@@ -4844,6 +4846,8 @@ definitions:
   v1ProjectPermissions:
     type: object
     properties:
+      admin:
+        type: boolean
       readProject:
         type: boolean
       manageProject:

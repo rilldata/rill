@@ -883,6 +883,9 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+	if role.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).Admin {
+		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
+	}
 
 	var invitedByUserID, invitedByName string
 	if claims.OwnerType() == auth.OwnerTypeUser {
@@ -1002,6 +1005,15 @@ func (s *Server) RemoveProjectMemberUser(ctx context.Context, req *adminv1.Remov
 	if !isManager && !isSelf {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to remove project members")
 	}
+	if !isSelf {
+		currentRole, err := s.admin.DB.FindProjectMemberUserRole(ctx, proj.ID, user.ID)
+		if err != nil {
+			return nil, err
+		}
+		if currentRole.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).Admin {
+			return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to remove an admin")
+		}
+	}
 
 	err = s.admin.DB.DeleteProjectMemberUser(ctx, proj.ID, user.ID)
 	if err != nil {
@@ -1032,6 +1044,9 @@ func (s *Server) SetProjectMemberUserRole(ctx context.Context, req *adminv1.SetP
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+	if role.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).Admin {
+		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
+	}
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
@@ -1048,6 +1063,14 @@ func (s *Server) SetProjectMemberUserRole(ctx context.Context, req *adminv1.SetP
 			return nil, err
 		}
 		return &adminv1.SetProjectMemberUserRoleResponse{}, nil
+	}
+
+	currentRole, err := s.admin.DB.FindProjectMemberUserRole(ctx, proj.ID, user.ID)
+	if err != nil {
+		return nil, err
+	}
+	if currentRole.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).Admin {
+		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to remove an admin")
 	}
 
 	err = s.admin.DB.UpdateProjectMemberUserRole(ctx, proj.ID, user.ID, role.ID)
@@ -1234,6 +1257,9 @@ func (s *Server) ApproveProjectAccess(ctx context.Context, req *adminv1.ApproveP
 	role, err := s.admin.DB.FindProjectRole(ctx, req.Role)
 	if err != nil {
 		return nil, err
+	}
+	if role.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).Admin {
+		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
 	}
 
 	// Add the user as a project member.
@@ -1430,6 +1456,9 @@ func (s *Server) CreateProjectWhitelistedDomain(ctx context.Context, req *adminv
 	role, err := s.admin.DB.FindProjectRole(ctx, req.Role)
 	if err != nil {
 		return nil, err
+	}
+	if role.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).Admin {
+		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
 	}
 
 	// find existing users belonging to the whitelisted domain to the project

@@ -12612,6 +12612,11 @@ export class ProvisionerResource extends Message<ProvisionerResource> {
  */
 export class OrganizationPermissions extends Message<OrganizationPermissions> {
   /**
+   * @generated from field: bool admin = 9;
+   */
+  admin = false;
+
+  /**
    * @generated from field: bool guest = 8;
    */
   guest = false;
@@ -12659,6 +12664,7 @@ export class OrganizationPermissions extends Message<OrganizationPermissions> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.OrganizationPermissions";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 9, name: "admin", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 8, name: "guest", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 1, name: "read_org", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 2, name: "manage_org", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
@@ -12690,6 +12696,11 @@ export class OrganizationPermissions extends Message<OrganizationPermissions> {
  * @generated from message rill.admin.v1.ProjectPermissions
  */
 export class ProjectPermissions extends Message<ProjectPermissions> {
+  /**
+   * @generated from field: bool admin = 21;
+   */
+  admin = false;
+
   /**
    * @generated from field: bool read_project = 1;
    */
@@ -12798,6 +12809,7 @@ export class ProjectPermissions extends Message<ProjectPermissions> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.ProjectPermissions";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 21, name: "admin", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 1, name: "read_project", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 2, name: "manage_project", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 3, name: "read_prod", kind: "scalar", T: 8 /* ScalarType.BOOL */ },

@@ -34709,6 +34709,8 @@ func (m *OrganizationPermissions) validate(all bool) error {
 
 	var errors []error
 
+	// no validation rules for Admin
+
 	// no validation rules for Guest
 
 	// no validation rules for ReadOrg
@@ -34826,6 +34828,8 @@ func (m *ProjectPermissions) validate(all bool) error {
 	}
 
 	var errors []error
+
+	// no validation rules for Admin
 
 	// no validation rules for ReadProject
 

@@ -783,6 +783,7 @@ If empty, the variable is shared for all environments. */
 }
 
 export interface V1ProjectPermissions {
+  admin?: boolean;
   readProject?: boolean;
   manageProject?: boolean;
   readProd?: boolean;
@@ -854,6 +855,7 @@ export interface V1OrganizationQuotas {
 }
 
 export interface V1OrganizationPermissions {
+  admin?: boolean;
   guest?: boolean;
   readOrg?: boolean;
   manageOrg?: boolean;

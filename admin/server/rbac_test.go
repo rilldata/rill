@@ -695,6 +695,231 @@ func TestRBAC(t *testing.T) {
 		checkGroupMember(database.UsergroupNameAutogroupMembers, u1.Email, 1)
 		checkGroupMember(database.UsergroupNameAutogroupGuests, "", 0)
 	})
+
+	t.Run("Editors can manage non-admin users only", func(t *testing.T) {
+		// Create an org, project and usergroup
+		_, c1 := newTestUser(t, svr)
+		org1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
+		require.NoError(t, err)
+		proj1, err := c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
+			OrganizationName: org1.Organization.Name,
+			Name:             "proj1",
+			ProdSlots:        1,
+			SkipDeploy:       true,
+		})
+		require.NoError(t, err)
+		group1, err := c1.CreateUsergroup(ctx, &adminv1.CreateUsergroupRequest{
+			Organization: org1.Organization.Name,
+			Name:         "group1",
+		})
+		require.NoError(t, err)
+
+		// Create an editor user and add them to the org and project
+		u2, c2 := newTestUser(t, svr)
+		_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
+			Organization: org1.Organization.Name,
+			Email:        u2.Email,
+			Role:         database.OrganizationRoleNameEditor,
+		})
+		require.NoError(t, err)
+		_, err = c1.AddProjectMemberUser(ctx, &adminv1.AddProjectMemberUserRequest{
+			Organization: org1.Organization.Name,
+			Project:      proj1.Project.Name,
+			Email:        u2.Email,
+			Role:         database.ProjectRoleNameEditor,
+		})
+		require.NoError(t, err)
+
+		// Check that the editor can add a user and usergroup to the org and project
+		u3, _ := newTestUser(t, svr)
+		_, err = c2.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
+			Organization: org1.Organization.Name,
+			Email:        u3.Email,
+			Role:         database.OrganizationRoleNameEditor,
+		})
+		require.NoError(t, err)
+		_, err = c2.AddProjectMemberUser(ctx, &adminv1.AddProjectMemberUserRequest{
+			Organization: org1.Organization.Name,
+			Project:      proj1.Project.Name,
+			Email:        u3.Email,
+			Role:         database.ProjectRoleNameEditor,
+		})
+		require.NoError(t, err)
+		_, err = c2.AddOrganizationMemberUsergroup(ctx, &adminv1.AddOrganizationMemberUsergroupRequest{
+			Organization: org1.Organization.Name,
+			Usergroup:    group1.Usergroup.GroupName,
+			Role:         database.OrganizationRoleNameEditor,
+		})
+		require.NoError(t, err)
+		_, err = c2.AddProjectMemberUsergroup(ctx, &adminv1.AddProjectMemberUsergroupRequest{
+			Organization: org1.Organization.Name,
+			Project:      proj1.Project.Name,
+			Usergroup:    group1.Usergroup.GroupName,
+			Role:         database.ProjectRoleNameEditor,
+		})
+		require.NoError(t, err)
+
+		// Check that the editor can change the role of a user and usergroup in the org and project
+		_, err = c2.SetOrganizationMemberUserRole(ctx, &adminv1.SetOrganizationMemberUserRoleRequest{
+			Organization: org1.Organization.Name,
+			Email:        u3.Email,
+			Role:         database.OrganizationRoleNameViewer,
+		})
+		require.NoError(t, err)
+		_, err = c2.SetProjectMemberUserRole(ctx, &adminv1.SetProjectMemberUserRoleRequest{
+			Organization: org1.Organization.Name,
+			Project:      proj1.Project.Name,
+			Email:        u3.Email,
+			Role:         database.ProjectRoleNameViewer,
+		})
+		require.NoError(t, err)
+		_, err = c2.SetOrganizationMemberUsergroupRole(ctx, &adminv1.SetOrganizationMemberUsergroupRoleRequest{
+			Organization: org1.Organization.Name,
+			Usergroup:    group1.Usergroup.GroupName,
+			Role:         database.OrganizationRoleNameViewer,
+		})
+		require.NoError(t, err)
+		_, err = c2.SetProjectMemberUsergroupRole(ctx, &adminv1.SetProjectMemberUsergroupRoleRequest{
+			Organization: org1.Organization.Name,
+			Project:      proj1.Project.Name,
+			Usergroup:    group1.Usergroup.GroupName,
+			Role:         database.ProjectRoleNameViewer,
+		})
+		require.NoError(t, err)
+
+		// Check that the editor can remove a user and usergroup from the org and project
+		_, err = c2.RemoveProjectMemberUser(ctx, &adminv1.RemoveProjectMemberUserRequest{
+			Organization: org1.Organization.Name,
+			Project:      proj1.Project.Name,
+			Email:        u3.Email,
+		})
+		require.NoError(t, err)
+		_, err = c2.RemoveProjectMemberUsergroup(ctx, &adminv1.RemoveProjectMemberUsergroupRequest{
+			Organization: org1.Organization.Name,
+			Project:      proj1.Project.Name,
+			Usergroup:    group1.Usergroup.GroupName,
+		})
+		require.NoError(t, err)
+		_, err = c2.RemoveOrganizationMemberUsergroup(ctx, &adminv1.RemoveOrganizationMemberUsergroupRequest{
+			Organization: org1.Organization.Name,
+			Usergroup:    group1.Usergroup.GroupName,
+		})
+		require.NoError(t, err)
+		_, err = c2.RemoveOrganizationMemberUser(ctx, &adminv1.RemoveOrganizationMemberUserRequest{
+			Organization: org1.Organization.Name,
+			Email:        u3.Email,
+		})
+		require.NoError(t, err)
+
+		// Check that the editor can't add a user or usergroup to the org or project with an admin role
+		_, err = c2.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
+			Organization: org1.Organization.Name,
+			Email:        u3.Email,
+			Role:         database.OrganizationRoleNameAdmin,
+		})
+		require.ErrorContains(t, err, "non-admin")
+		_, err = c2.AddProjectMemberUser(ctx, &adminv1.AddProjectMemberUserRequest{
+			Organization: org1.Organization.Name,
+			Project:      proj1.Project.Name,
+			Email:        u3.Email,
+			Role:         database.ProjectRoleNameAdmin,
+		})
+		require.ErrorContains(t, err, "non-admin")
+		_, err = c2.AddOrganizationMemberUsergroup(ctx, &adminv1.AddOrganizationMemberUsergroupRequest{
+			Organization: org1.Organization.Name,
+			Usergroup:    group1.Usergroup.GroupName,
+			Role:         database.OrganizationRoleNameAdmin,
+		})
+		require.ErrorContains(t, err, "non-admin")
+		_, err = c2.AddProjectMemberUsergroup(ctx, &adminv1.AddProjectMemberUsergroupRequest{
+			Organization: org1.Organization.Name,
+			Project:      proj1.Project.Name,
+			Usergroup:    group1.Usergroup.GroupName,
+			Role:         database.ProjectRoleNameAdmin,
+		})
+		require.ErrorContains(t, err, "non-admin")
+
+		// Use the admin user to add an admin user and usergroup to the org and project
+		_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
+			Organization: org1.Organization.Name,
+			Email:        u3.Email,
+			Role:         database.OrganizationRoleNameAdmin,
+		})
+		require.NoError(t, err)
+		_, err = c1.AddProjectMemberUser(ctx, &adminv1.AddProjectMemberUserRequest{
+			Organization: org1.Organization.Name,
+			Project:      proj1.Project.Name,
+			Email:        u3.Email,
+			Role:         database.ProjectRoleNameAdmin,
+		})
+		require.NoError(t, err)
+		_, err = c1.AddOrganizationMemberUsergroup(ctx, &adminv1.AddOrganizationMemberUsergroupRequest{
+			Organization: org1.Organization.Name,
+			Usergroup:    group1.Usergroup.GroupName,
+			Role:         database.OrganizationRoleNameAdmin,
+		})
+		require.NoError(t, err)
+		_, err = c1.AddProjectMemberUsergroup(ctx, &adminv1.AddProjectMemberUsergroupRequest{
+			Organization: org1.Organization.Name,
+			Project:      proj1.Project.Name,
+			Usergroup:    group1.Usergroup.GroupName,
+			Role:         database.ProjectRoleNameAdmin,
+		})
+		require.NoError(t, err)
+
+		// Check that the editor can't change the role of a user or usergroup in the org or project to an admin role
+		_, err = c2.SetOrganizationMemberUserRole(ctx, &adminv1.SetOrganizationMemberUserRoleRequest{
+			Organization: org1.Organization.Name,
+			Email:        u3.Email,
+			Role:         database.OrganizationRoleNameViewer,
+		})
+		require.ErrorContains(t, err, "non-admin")
+		_, err = c2.SetProjectMemberUserRole(ctx, &adminv1.SetProjectMemberUserRoleRequest{
+			Organization: org1.Organization.Name,
+			Project:      proj1.Project.Name,
+			Email:        u3.Email,
+			Role:         database.ProjectRoleNameViewer,
+		})
+		require.ErrorContains(t, err, "non-admin")
+		_, err = c2.SetOrganizationMemberUsergroupRole(ctx, &adminv1.SetOrganizationMemberUsergroupRoleRequest{
+			Organization: org1.Organization.Name,
+			Usergroup:    group1.Usergroup.GroupName,
+			Role:         database.OrganizationRoleNameViewer,
+		})
+		require.ErrorContains(t, err, "non-admin")
+		_, err = c2.SetProjectMemberUsergroupRole(ctx, &adminv1.SetProjectMemberUsergroupRoleRequest{
+			Organization: org1.Organization.Name,
+			Project:      proj1.Project.Name,
+			Usergroup:    group1.Usergroup.GroupName,
+			Role:         database.ProjectRoleNameViewer,
+		})
+		require.ErrorContains(t, err, "non-admin")
+
+		// Check that the editor can't remove a user or usergroup from the org or project with an admin role
+		_, err = c2.RemoveOrganizationMemberUser(ctx, &adminv1.RemoveOrganizationMemberUserRequest{
+			Organization: org1.Organization.Name,
+			Email:        u3.Email,
+		})
+		require.ErrorContains(t, err, "non-admin")
+		_, err = c2.RemoveProjectMemberUser(ctx, &adminv1.RemoveProjectMemberUserRequest{
+			Organization: org1.Organization.Name,
+			Project:      proj1.Project.Name,
+			Email:        u3.Email,
+		})
+		require.ErrorContains(t, err, "non-admin")
+		_, err = c2.RemoveOrganizationMemberUsergroup(ctx, &adminv1.RemoveOrganizationMemberUsergroupRequest{
+			Organization: org1.Organization.Name,
+			Usergroup:    group1.Usergroup.GroupName,
+		})
+		require.ErrorContains(t, err, "non-admin")
+		_, err = c2.RemoveProjectMemberUsergroup(ctx, &adminv1.RemoveProjectMemberUsergroupRequest{
+			Organization: org1.Organization.Name,
+			Project:      proj1.Project.Name,
+			Usergroup:    group1.Usergroup.GroupName,
+		})
+		require.ErrorContains(t, err, "non-admin")
+	})
+
 }
 
 func randomName() string {
