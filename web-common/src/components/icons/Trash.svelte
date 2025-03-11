@@ -10,6 +10,7 @@
   fill="none"
   xmlns="http://www.w3.org/2000/svg"
   class={className}
+  style:pointer-events="none"
 >
   <path
     fill-rule="evenodd"

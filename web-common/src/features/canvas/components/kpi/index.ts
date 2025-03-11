@@ -24,14 +24,12 @@ export function getMinWidth(
   sparkline: "none" | "bottom" | "right" | undefined,
 ): number {
   switch (sparkline) {
-    case "none":
-      return BIG_NUMBER_MIN_WIDTH + padding;
-    case "bottom":
-      return SPARKLINE_MIN_WIDTH + padding;
     case "right":
       return SPARK_RIGHT_MIN;
+    case "none":
+    case "bottom":
     default:
-      return SPARK_RIGHT_MIN;
+      return BIG_NUMBER_MIN_WIDTH + padding;
   }
 }
 
