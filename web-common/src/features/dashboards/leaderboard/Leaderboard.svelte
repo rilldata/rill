@@ -132,9 +132,6 @@
     valueColumn.reset();
   }
 
-  $: dimensionColumnWidth =
-    !comparisonTimeRange && !showPercentOfTotal ? 240 : 164;
-
   function shouldShowComparisonForMeasure(measureName: string): boolean {
     return dimensionShowAllMeasures || measureName === activeMeasureName;
   }
@@ -306,15 +303,6 @@
   $: showDeltaPercent =
     !!comparisonTimeRange &&
     contextColumns.includes(LeaderboardContextColumn.DELTA_PERCENT);
-
-  $: tableWidth =
-    dimensionColumnWidth +
-    $valueColumn +
-    (comparisonTimeRange
-      ? DEFAULT_CONTEXT_COLUMN_WIDTH * (showDeltaPercent ? 2 : 1)
-      : showPercentOfTotal
-        ? DEFAULT_CONTEXT_COLUMN_WIDTH
-        : 0);
 </script>
 
 <div
