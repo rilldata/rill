@@ -276,6 +276,8 @@ export function fromTimeRangesParams(
         V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME;
     } else if (ctr == "") {
       preset.compareTimeRange = "";
+      preset.comparisonMode =
+        V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_NONE;
     } else {
       errors.push(getSingleFieldError("compare time range", ctr));
     }
