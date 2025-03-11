@@ -56,7 +56,7 @@
   // but it is not valid for this measure, then turn it off
   $: if (
     !validPercentOfTotal &&
-    metricsExplorer?.leaderboardContextColumns.includes(
+    metricsExplorer?.leaderboardContextColumns?.includes(
       LeaderboardContextColumn.PERCENT,
     )
   ) {
