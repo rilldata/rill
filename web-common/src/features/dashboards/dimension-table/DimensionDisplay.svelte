@@ -39,7 +39,6 @@
   export let timeControlsReady: boolean;
   export let dimension: MetricsViewSpecDimensionV2;
   export let hideStartPivotButton = false;
-  export let canShowAllMeasures: boolean;
 
   const {
     selectors: {
@@ -226,7 +225,6 @@
         bind:searchText={$dimensionSearchText}
         onToggleSearchItems={toggleAllSearchItems}
         {comparisonTimeRange}
-        {canShowAllMeasures}
       />
     </div>
 
