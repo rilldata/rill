@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/rilldata/rill/admin/database"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/stretchr/testify/require"
 )
@@ -62,7 +63,7 @@ func TestListRoles(t *testing.T) {
 		})
 		require.NoError(t, err)
 		require.Len(t, groups1.Members, 1)
-		require.Equal(t, "autogroup:members", groups1.Members[0].GroupName)
+		require.Equal(t, database.UsergroupNameAutogroupMembers, groups1.Members[0].GroupName)
 		require.Equal(t, "viewer", groups1.Members[0].RoleName)
 		require.True(t, groups1.Members[0].GroupManaged)
 
@@ -87,7 +88,7 @@ func TestListRoles(t *testing.T) {
 		})
 		require.NoError(t, err)
 		require.Len(t, groups2.Members, 1)
-		require.Equal(t, "autogroup:members", groups2.Members[0].GroupName)
+		require.Equal(t, database.UsergroupNameAutogroupMembers, groups2.Members[0].GroupName)
 		require.Equal(t, "editor", groups2.Members[0].RoleName)
 		require.True(t, groups2.Members[0].GroupManaged)
 
