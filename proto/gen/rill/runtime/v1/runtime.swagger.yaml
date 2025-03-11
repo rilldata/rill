@@ -1376,6 +1376,8 @@ paths:
                 title: Optional
               exact:
                 type: boolean
+              fillMissing:
+                type: boolean
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/compare-toplist:
@@ -3135,6 +3137,8 @@ definitions:
         type: object
       validPercentOfTotal:
         type: boolean
+      treatNullsAs:
+        type: string
     title: Measures are aggregated computed values
   MetricsViewSpecMeasureWindow:
     type: object
@@ -4991,6 +4995,8 @@ definitions:
         title: Optional
       exact:
         type: boolean
+      fillMissing:
+        type: boolean
   v1MetricsViewAggregationResponse:
     type: object
     properties:
@@ -5789,6 +5795,10 @@ definitions:
         title: unsupported_columns are columns having datatypes which are not supported by Rill
       view:
         type: boolean
+      physicalSizeBytes:
+        type: string
+        format: int64
+        description: physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
   v1OLAPListTablesResponse:
     type: object
     properties:
@@ -6497,6 +6507,10 @@ definitions:
       hasUnsupportedDataTypes:
         type: boolean
         title: has_unsupported_data_types indicates if the underlying table has any column with an unsupported OLAP engine datatype
+      physicalSizeBytes:
+        type: string
+        format: int64
+        description: physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
   v1TableRowsRequest:
     type: object
     properties:

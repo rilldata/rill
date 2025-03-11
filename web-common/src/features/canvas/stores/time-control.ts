@@ -96,6 +96,7 @@ export class TimeControls {
       const minTimeGrain = Object.keys(metricsViews).reduce<V1TimeGrain>(
         (min: V1TimeGrain, metricView) => {
           const metricsViewSpec = metricsViews[metricView]?.state?.validSpec;
+
           if (
             !metricsViewSpec?.smallestTimeGrain ||
             metricsViewSpec.smallestTimeGrain ===
@@ -103,7 +104,8 @@ export class TimeControls {
           )
             return min;
           const timeGrain = metricsViewSpec.smallestTimeGrain;
-          return isGrainBigger(min, timeGrain) ? timeGrain : min;
+
+          return !isGrainBigger(min, timeGrain) ? timeGrain : min;
         },
         V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
       );
@@ -273,8 +275,7 @@ export class TimeControls {
 
         if (
           defaultPreset?.comparisonMode ===
-            V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME &&
-          !this.componentName
+          V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
         ) {
           const newComparisonRange = getComparisonTimeRange(
             timeRanges,
@@ -283,7 +284,10 @@ export class TimeControls {
             comparisonTimeRange,
           );
           this.selectedComparisonTimeRange.set(newComparisonRange);
-          this.showTimeComparison.set(true);
+
+          if (!this.componentName) {
+            this.showTimeComparison.set(true);
+          }
         }
 
         this.selectedTimeRange.set(newTimeRange);
@@ -471,5 +475,7 @@ export class TimeControls {
     this.selectedTimeRange.set(selectedTimeRange);
     this.selectedComparisonTimeRange.set(selectedComparisonTimeRange);
     this.showTimeComparison.set(showTimeComparison);
+
+    this.isInitialStateSet = true;
   };
 }

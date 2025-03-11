@@ -149,7 +149,7 @@
             }}
           />
 
-          <!-- KPI SPARKLINE INPUT -->
+          <!-- COMPARISON OPTIONS INPUT -->
         {:else if config.type === "comparison_options"}
           <ComparisonInput
             {key}

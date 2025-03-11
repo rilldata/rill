@@ -1,23 +1,23 @@
 <script lang="ts">
-  import { min, max, extent } from "d3-array";
-  import Line from "./Line.svelte";
-  import { scaleLinear, scaleTime } from "d3-scale";
+  import RangeDisplay from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/RangeDisplay.svelte";
   import { MainLineColor } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
+  import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
+  import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import {
     V1TimeGrain,
     type V1TimeSeriesValue,
   } from "@rilldata/web-common/runtime-client";
+  import { extent, max, min } from "d3-array";
+  import { scaleLinear, scaleTime } from "d3-scale";
   import { DateTime, Interval } from "luxon";
-  import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
-  import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
-  import Point from "./Point.svelte";
-  import RangeDisplay from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/RangeDisplay.svelte";
   import Crosshairs from "./Crosshairs.svelte";
+  import Line from "./Line.svelte";
+  import Point from "./Point.svelte";
 
   const SNAP_RANGE = 0.05;
 
   export let primaryData: V1TimeSeriesValue[];
-  export let secondaryData: V1TimeSeriesValue[][] = [];
+  export let secondaryData: V1TimeSeriesValue[] = [];
   export let timeGrain: V1TimeGrain;
   export let selectedTimeZone: string;
   export let yAccessor: string;
@@ -35,7 +35,7 @@
 
   $: ({ width, height } = contentRect);
 
-  $: data = [primaryData, ...secondaryData];
+  $: data = [primaryData, secondaryData];
 
   $: mappedData = data
     .map((line) => line.map(mapData))
@@ -118,15 +118,15 @@
   function getPos(pos: number, width: number) {
     const percentage = pos / width;
 
-    if (percentage < 0.1) return "-right-2";
-    if (percentage > 0.9) return "-left-2";
+    if (percentage < 0.2) return "-right-0";
+    if (percentage > 0.8) return "-left-0";
 
-    if (percentage <= 0.5) return "-left-2";
-    return "-right-2";
+    if (percentage <= 0.5) return "-left-0";
+    return "-right-0";
   }
 </script>
 
-<div role="presentation" class="flex flex-col size-full relative">
+<div role="presentation" class="flex flex-col grow h-full relative">
   {#if hoveredPoints.length > 0 && offsetPosition}
     <div
       class="{getPos(
@@ -183,7 +183,8 @@
     />
 
     <g>
-      {#each mappedData as mappedDataLine, i (i)}
+      {#each [...mappedData].reverse() as mappedDataLine, reversedIndex (reversedIndex)}
+        {@const i = mappedData.length - reversedIndex - 1}
         {#each mappedDataLine as { interval, value }, pointIndex (pointIndex)}
           {@const xScale = xScales[i]}
           {#if value !== null && value !== undefined && (hoverIndex === pointIndex || (mappedDataLine[pointIndex - 1]?.value === null && mappedDataLine[pointIndex + 1]?.value === null))}

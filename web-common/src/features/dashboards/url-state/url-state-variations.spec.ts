@@ -13,9 +13,11 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import { getInitExploreStateForTest } from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
 import {
+  AD_BIDS_APPLY_LARGE_FILTERS,
   AD_BIDS_CLOSE_DIMENSION_TABLE,
   AD_BIDS_CLOSE_TDD,
   AD_BIDS_DISABLE_COMPARE_TIME_RANGE_FILTER,
+  AD_BIDS_LARGE_FILTER,
   AD_BIDS_OPEN_DOM_DIMENSION_TABLE,
   AD_BIDS_OPEN_DOMAIN_BID_PRICE_PIVOT,
   AD_BIDS_OPEN_IMP_TDD,
@@ -41,17 +43,23 @@ import {
   AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY,
   AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY,
   AD_BIDS_TOGGLE_PIVOT,
-  AD_BIDS_TOGGLE_PIVOT_ROW_JOIN_TYPE,
+  AD_BIDS_TOGGLE_PIVOT_TABLE_MODE,
   applyMutationsToDashboard,
   type TestDashboardMutation,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
-import { convertURLToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
+
+import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
-import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import {
+  type DashboardTimeControls,
+  TimeComparisonOption,
+  TimeRangePreset,
+} from "@rilldata/web-common/lib/time/types";
+import {
+  V1ExploreComparisonMode,
   type V1ExplorePreset,
   type V1ExploreSpec,
 } from "@rilldata/web-common/runtime-client";
@@ -135,6 +143,16 @@ const TestCases: {
     ],
     preset: AD_BIDS_PRESET,
     expectedUrl: "http://localhost/?tr=P4W&grain=week",
+    legacyNotSupported: true,
+  },
+  {
+    title: "Time range comparison with non-standard time range in preset",
+    mutations: [AD_BIDS_DISABLE_COMPARE_TIME_RANGE_FILTER],
+    preset: {
+      timeRange: "P9D",
+      comparisonMode: V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME,
+    },
+    expectedUrl: "http://localhost/?compare_tr=",
     legacyNotSupported: true,
   },
 
@@ -304,7 +322,7 @@ const TestCases: {
     title: "Pivot with no preset, toggle pivot to flat mode",
     mutations: [
       AD_BIDS_OPEN_DOMAIN_BID_PRICE_PIVOT,
-      AD_BIDS_TOGGLE_PIVOT_ROW_JOIN_TYPE,
+      AD_BIDS_TOGGLE_PIVOT_TABLE_MODE,
     ],
     expectedUrl:
       "http://localhost/?view=pivot&cols=domain%2Ctime.day%2Cimpressions&table_mode=flat",
@@ -384,6 +402,7 @@ describe("Human readable URL state variations", () => {
             get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
           ),
           defaultExplorePreset,
+          url,
         );
         expect(url.toString()).to.eq(expectedUrl);
 
@@ -432,18 +451,19 @@ describe("Human readable URL state variations", () => {
         // load url with legacy protobuf state
         url.searchParams.set("state", getProtoFromDashboardState(curState));
         // get back the entity from url params
-        const { partialExploreState: entityFromUrl } = convertURLToExploreState(
-          url.searchParams,
-          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-          explore,
-          defaultExplorePreset,
-        );
+        const { partialExploreState: entityFromUrl } =
+          convertURLSearchParamsToExploreState(
+            url.searchParams,
+            AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+            explore,
+            defaultExplorePreset,
+          );
         expect(entityFromUrl).toEqual(curState);
 
         // go back to default url
         const defaultUrl = new URL("http://localhost");
         const { partialExploreState: entityFromDefaultUrl } =
-          convertURLToExploreState(
+          convertURLSearchParamsToExploreState(
             defaultUrl.searchParams,
             AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
             explore,
@@ -455,6 +475,61 @@ describe("Human readable URL state variations", () => {
       });
     }
   });
+
+  it("Large state gets compressed", () => {
+    metricsExplorerStore.init(
+      AD_BIDS_EXPLORE_NAME,
+      getInitExploreStateForTest(
+        AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+        AD_BIDS_EXPLORE_INIT,
+        AD_BIDS_TIME_RANGE_SUMMARY,
+      ),
+    );
+    const defaultExplorePreset = getDefaultExplorePreset(
+      AD_BIDS_EXPLORE_INIT,
+      AD_BIDS_TIME_RANGE_SUMMARY,
+    );
+
+    applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, [
+      AD_BIDS_APPLY_LARGE_FILTERS,
+      AD_BIDS_SET_P4W_TIME_RANGE_FILTER,
+      AD_BIDS_SET_PREVIOUS_PERIOD_COMPARE_TIME_RANGE_FILTER,
+      AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS,
+    ]);
+
+    // load url params with updated metrics state
+    const url = new URL("http://localhost");
+    url.search = convertExploreStateToURLSearchParams(
+      get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
+      AD_BIDS_EXPLORE_INIT,
+      getTimeControlState(
+        AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+        AD_BIDS_EXPLORE_INIT,
+        AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
+        get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
+      ),
+      defaultExplorePreset,
+      url,
+    );
+
+    // reset the explore state
+    applyURLToExploreState(
+      new URL("http://localhost"),
+      AD_BIDS_EXPLORE_INIT,
+      defaultExplorePreset,
+    );
+    // reapply the compressed url
+    applyURLToExploreState(url, AD_BIDS_EXPLORE_INIT, defaultExplorePreset);
+
+    const currentState = getCleanMetricsExploreForAssertion();
+    expect(currentState.selectedTimeRange?.name).toEqual(
+      TimeRangePreset.LAST_4_WEEKS,
+    );
+    expect(currentState.selectedComparisonTimeRange?.name).toEqual(
+      TimeComparisonOption.CONTIGUOUS,
+    );
+    expect(currentState.whereFilter).toEqual(AD_BIDS_LARGE_FILTER);
+  });
 });
 
 export function applyURLToExploreState(
@@ -463,7 +538,7 @@ export function applyURLToExploreState(
   defaultExplorePreset: V1ExplorePreset,
 ) {
   const { partialExploreState: partialExploreStateDefaultUrl, errors } =
-    convertURLToExploreState(
+    convertURLSearchParamsToExploreState(
       url.searchParams,
       AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
       exploreSpec,

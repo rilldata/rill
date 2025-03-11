@@ -13,6 +13,7 @@ export interface ImageSpec extends ComponentCommonProperties {
 export class ImageComponent extends BaseCanvasComponent<ImageSpec> {
   minSize = { width: 1, height: 1 };
   defaultSize = { width: 2, height: 2 };
+  resetParams = [];
 
   constructor(
     fileArtifact: FileArtifact | undefined = undefined,

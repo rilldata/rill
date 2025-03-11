@@ -1,5 +1,5 @@
 <script context="module" lang="ts">
-  export const lastNestState = writable<PivotRows | null>(null);
+  export const lastNestState = writable<PivotChipData[] | null>(null);
 </script>
 
 <script lang="ts">
@@ -15,20 +15,18 @@
   import {
     PivotChipType,
     type PivotChipData,
-    type PivotRows,
     type PivotTableMode,
   } from "./types";
 
   const stateManagers = getStateManagers();
   const {
     selectors: {
-      pivot: { rows, columns, isFlat },
+      pivot: { rows, columns, isFlat, originalColumns },
     },
     exploreName,
   } = stateManagers;
 
   $: ({ dimension: columnsDimensions, measure: columnsMeasures } = $columns);
-  $: ({ dimension: rowsDimensions } = $rows);
 
   function updateColumn(e: CustomEvent<PivotChipData[]>) {
     // Reset lastNestState when columns are updated
@@ -53,25 +51,22 @@
       metricsExplorerStore.setPivotTableMode(
         $exploreName,
         "flat",
-        { dimension: [] },
-        {
-          measure: $columns.measure,
-          dimension: [...$columns.dimension, ...$rows.dimension],
-        },
+        [],
+        [...$columns.dimension, ...$rows, ...$columns.measure],
       );
       return;
     }
 
     // Handle nest state
-    const updatedRows = $lastNestState ?? { dimension: $columns.dimension };
-    const rowDimensionIds = new Set(updatedRows.dimension.map((d) => d.id));
+    const updatedRows = $lastNestState ?? $columns.dimension;
+    const rowDimensionIds = new Set(updatedRows.map((d) => d.id));
 
-    metricsExplorerStore.setPivotTableMode($exploreName, "nest", updatedRows, {
-      measure: $columns.measure,
-      dimension: $lastNestState
+    metricsExplorerStore.setPivotTableMode($exploreName, "nest", updatedRows, [
+      ...($lastNestState
         ? $columns.dimension.filter((d) => !rowDimensionIds.has(d.id))
-        : [],
-    });
+        : []),
+      ...$columns.measure,
+    ]);
   }
 </script>
 
@@ -90,7 +85,7 @@
       <DragList
         zone="rows"
         placeholder="Drag dimensions here"
-        items={rowsDimensions}
+        items={$rows}
         on:update={updateRows}
       />
     </div>
@@ -116,7 +111,10 @@
 
     <DragList
       zone="columns"
-      items={columnsDimensions.concat(columnsMeasures)}
+      tableMode={$isFlat ? "flat" : "nest"}
+      items={$isFlat
+        ? $originalColumns
+        : columnsDimensions.concat(columnsMeasures)}
       placeholder="Drag dimensions or measures here"
       on:update={updateColumn}
     />

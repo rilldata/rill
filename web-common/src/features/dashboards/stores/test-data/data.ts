@@ -361,41 +361,36 @@ export const AD_BIDS_PIVOT_ENTITY: Partial<MetricsExplorerEntity> = {
   activePage: DashboardState_ActivePage.PIVOT,
   pivot: {
     active: true,
-    rows: {
-      dimension: [
-        {
-          id: AD_BIDS_PUBLISHER_DIMENSION,
-          type: PivotChipType.Dimension,
-          title: AD_BIDS_PUBLISHER_DIMENSION,
-        },
-        {
-          id: V1TimeGrain.TIME_GRAIN_HOUR,
-          type: PivotChipType.Time,
-          title: "hour",
-        },
-      ],
-    },
-    columns: {
-      measure: [
-        {
-          id: AD_BIDS_IMPRESSIONS_MEASURE,
-          type: PivotChipType.Measure,
-          title: AD_BIDS_IMPRESSIONS_MEASURE,
-        },
-      ],
-      dimension: [
-        {
-          id: AD_BIDS_DOMAIN_DIMENSION,
-          type: PivotChipType.Dimension,
-          title: AD_BIDS_DOMAIN_DIMENSION,
-        },
-        {
-          id: V1TimeGrain.TIME_GRAIN_DAY,
-          type: PivotChipType.Time,
-          title: "day",
-        },
-      ],
-    },
+    rows: [
+      {
+        id: AD_BIDS_PUBLISHER_DIMENSION,
+        type: PivotChipType.Dimension,
+        title: AD_BIDS_PUBLISHER_DIMENSION,
+      },
+      {
+        id: V1TimeGrain.TIME_GRAIN_HOUR,
+        type: PivotChipType.Time,
+        title: "hour",
+      },
+    ],
+
+    columns: [
+      {
+        id: AD_BIDS_DOMAIN_DIMENSION,
+        type: PivotChipType.Dimension,
+        title: AD_BIDS_DOMAIN_DIMENSION,
+      },
+      {
+        id: V1TimeGrain.TIME_GRAIN_DAY,
+        type: PivotChipType.Time,
+        title: "day",
+      },
+      {
+        id: AD_BIDS_IMPRESSIONS_MEASURE,
+        type: PivotChipType.Measure,
+        title: AD_BIDS_IMPRESSIONS_MEASURE,
+      },
+    ],
     expanded: {},
     sorting: [],
     columnPage: 1,

@@ -1,10 +1,8 @@
 <script lang="ts">
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import MultiIconSelector from "@rilldata/web-common/components/forms/MultiIconSelector.svelte";
-  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import Delta from "@rilldata/web-common/components/icons/Delta.svelte";
   import DeltaPercentage from "@rilldata/web-common/components/icons/DeltaPercentage.svelte";
-  import { defaultComparisonOptions } from "@rilldata/web-common/features/canvas/components/kpi";
   import { type ComponentComparisonOptions } from "@rilldata/web-common/features/canvas/components/types";
   import type { ComponentType, SvelteComponent } from "svelte";
   import CounterClockWiseClock from "svelte-radix/CounterClockwiseClock.svelte";
@@ -38,24 +36,13 @@
 </script>
 
 <div class="flex flex-col gap-y-2">
-  <div class="flex justify-between">
-    <InputLabel small {label} id={key} faint={!options} />
-    <Switch
-      checked={!!options?.length}
-      on:click={() => {
-        onChange(options?.length ? [] : defaultComparisonOptions);
-      }}
-      small
-    />
-  </div>
+  <InputLabel small {label} id={key} faint={!options} />
 
-  {#if options}
-    <MultiIconSelector
-      small
-      expand
-      fields={comparisonOptions}
-      selected={options || defaultComparisonOptions}
-      onChange={(options) => onChange(options)}
-    />
-  {/if}
+  <MultiIconSelector
+    small
+    expand
+    fields={comparisonOptions}
+    selected={options || []}
+    onChange={(options) => onChange(options)}
+  />
 </div>
