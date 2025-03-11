@@ -63,7 +63,9 @@
   let activityStatus;
   $: {
     if (cellActive) {
-      activityStatus = "bg-gray-200 ";
+      // Specific cell active color, used to be bg-gray-200
+      // bg-gray-100 to match the hover color, and not too hard on the eyes
+      activityStatus = "bg-gray-100 ";
     } else if (rowActive && !cellActive) {
       activityStatus = "bg-gray-100 ";
     } else if (colSelected) {
