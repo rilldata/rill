@@ -254,6 +254,18 @@ function toExploreUrl(
 ) {
   const searchParams = new URLSearchParams();
 
+  const visibleMeasuresParam = toVisibleMeasuresUrlParam(
+    exploreState,
+    exploreSpec,
+    preset,
+  );
+  if (visibleMeasuresParam) {
+    searchParams.set(
+      ExploreStateURLParams.VisibleMeasures,
+      visibleMeasuresParam,
+    );
+  }
+
   const visibleDimensionsParam = toVisibleDimensionsUrlParam(
     exploreState,
     exploreSpec,
