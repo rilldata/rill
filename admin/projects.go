@@ -26,8 +26,8 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		return nil, err
 	}
 
-	// Get the all-members group
-	allMembers, err := s.DB.FindUsergroupByName(ctx, org.Name, database.ManagedUsergroupNameAllMembers)
+	// Get the autogroup:members group
+	allMembers, err := s.DB.FindUsergroupByName(ctx, org.Name, database.UsergroupNameAutogroupMembers)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +53,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		}
 	}
 
-	// Add the system-managed all-members group to the project with the org.DefaultProjectRoleID role (if configured)
+	// Add the system-managed autogroup:members group to the project with the org.DefaultProjectRoleID role (if configured)
 	if org.DefaultProjectRoleID != nil {
 		err = s.DB.InsertProjectMemberUsergroup(txCtx, allMembers.ID, proj.ID, *org.DefaultProjectRoleID)
 		if err != nil {

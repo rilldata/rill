@@ -284,19 +284,19 @@ func TestRBAC(t *testing.T) {
 		// Check that the user was added to the managed groups
 		allUsers, err := c1.ListUsergroupMemberUsers(ctx, &adminv1.ListUsergroupMemberUsersRequest{
 			Organization: org1.Organization.Name,
-			Usergroup:    database.ManagedUsergroupNameAllUsers,
+			Usergroup:    database.UsergroupNameAutogroupUsers,
 		})
 		require.NoError(t, err)
 		require.Len(t, allUsers.Members, 2)
 		allGuests, err := c1.ListUsergroupMemberUsers(ctx, &adminv1.ListUsergroupMemberUsersRequest{
 			Organization: org1.Organization.Name,
-			Usergroup:    database.ManagedUsergroupNameAllGuests,
+			Usergroup:    database.UsergroupNameAutogroupGuests,
 		})
 		require.NoError(t, err)
 		require.Len(t, allGuests.Members, 0)
 		allMembers, err := c1.ListUsergroupMemberUsers(ctx, &adminv1.ListUsergroupMemberUsersRequest{
 			Organization: org1.Organization.Name,
-			Usergroup:    database.ManagedUsergroupNameAllMembers,
+			Usergroup:    database.UsergroupNameAutogroupMembers,
 		})
 		require.NoError(t, err)
 		require.Len(t, allMembers.Members, 2)
@@ -340,10 +340,10 @@ func TestRBAC(t *testing.T) {
 		}
 		require.True(t, hasGuest)
 
-		// Check that the user is in the all-users group
+		// Check that the user is in the autogroup:users group
 		allUsers, err := c1.ListUsergroupMemberUsers(ctx, &adminv1.ListUsergroupMemberUsersRequest{
 			Organization: org1.Organization.Name,
-			Usergroup:    database.ManagedUsergroupNameAllUsers,
+			Usergroup:    database.UsergroupNameAutogroupUsers,
 		})
 		require.NoError(t, err)
 		require.Len(t, allUsers.Members, 2)
@@ -457,18 +457,18 @@ func TestRBAC(t *testing.T) {
 		checkOrgMember(adminEmail, org4.Organization.Name, database.OrganizationRoleNameAdmin, 1)
 
 		checkOrgMember(userEmail, org1.Organization.Name, database.OrganizationRoleNameViewer, 3)
-		checkGroupMember(userEmail, org1.Organization.Name, database.ManagedUsergroupNameAllUsers, 3)
-		checkGroupMember(userEmail, org1.Organization.Name, database.ManagedUsergroupNameAllMembers, 3)
+		checkGroupMember(userEmail, org1.Organization.Name, database.UsergroupNameAutogroupUsers, 3)
+		checkGroupMember(userEmail, org1.Organization.Name, database.UsergroupNameAutogroupMembers, 3)
 		checkOrgMember(userEmail2, org1.Organization.Name, database.OrganizationRoleNameViewer, 3)
-		checkGroupMember(userEmail2, org1.Organization.Name, database.ManagedUsergroupNameAllUsers, 3)
-		checkGroupMember(userEmail2, org1.Organization.Name, database.ManagedUsergroupNameAllMembers, 3)
+		checkGroupMember(userEmail2, org1.Organization.Name, database.UsergroupNameAutogroupUsers, 3)
+		checkGroupMember(userEmail2, org1.Organization.Name, database.UsergroupNameAutogroupMembers, 3)
 
 		checkOrgMember(userEmail, org2.Organization.Name, database.OrganizationRoleNameGuest, 3)
-		checkGroupMember(userEmail, org2.Organization.Name, database.ManagedUsergroupNameAllUsers, 3)
-		checkGroupMember(userEmail, org2.Organization.Name, database.ManagedUsergroupNameAllGuests, 2)
+		checkGroupMember(userEmail, org2.Organization.Name, database.UsergroupNameAutogroupUsers, 3)
+		checkGroupMember(userEmail, org2.Organization.Name, database.UsergroupNameAutogroupGuests, 2)
 		checkOrgMember(userEmail2, org2.Organization.Name, database.OrganizationRoleNameGuest, 3)
-		checkGroupMember(userEmail2, org2.Organization.Name, database.ManagedUsergroupNameAllUsers, 3)
-		checkGroupMember(userEmail2, org2.Organization.Name, database.ManagedUsergroupNameAllGuests, 2)
+		checkGroupMember(userEmail2, org2.Organization.Name, database.UsergroupNameAutogroupUsers, 3)
+		checkGroupMember(userEmail2, org2.Organization.Name, database.UsergroupNameAutogroupGuests, 2)
 	})
 
 	t.Run("Whitelisting domains on projects", func(t *testing.T) {
@@ -614,12 +614,12 @@ func TestRBAC(t *testing.T) {
 		checkOrgMember(userEmail2, org1.Organization.Name, database.OrganizationRoleNameGuest, 5)
 		checkOrgMember(userEmail3, org1.Organization.Name, database.OrganizationRoleNameViewer, 5)
 		checkOrgMember(userEmail4, org1.Organization.Name, database.OrganizationRoleNameGuest, 5)
-		checkGroupMember(adminEmail, org1.Organization.Name, database.ManagedUsergroupNameAllUsers, 5)
-		checkGroupMember(adminEmail, org1.Organization.Name, database.ManagedUsergroupNameAllMembers, 3)
-		checkGroupMember(userEmail1, org1.Organization.Name, database.ManagedUsergroupNameAllMembers, 3)
-		checkGroupMember(userEmail2, org1.Organization.Name, database.ManagedUsergroupNameAllGuests, 2)
-		checkGroupMember(userEmail3, org1.Organization.Name, database.ManagedUsergroupNameAllMembers, 3)
-		checkGroupMember(userEmail4, org1.Organization.Name, database.ManagedUsergroupNameAllGuests, 2)
+		checkGroupMember(adminEmail, org1.Organization.Name, database.UsergroupNameAutogroupUsers, 5)
+		checkGroupMember(adminEmail, org1.Organization.Name, database.UsergroupNameAutogroupMembers, 3)
+		checkGroupMember(userEmail1, org1.Organization.Name, database.UsergroupNameAutogroupMembers, 3)
+		checkGroupMember(userEmail2, org1.Organization.Name, database.UsergroupNameAutogroupGuests, 2)
+		checkGroupMember(userEmail3, org1.Organization.Name, database.UsergroupNameAutogroupMembers, 3)
+		checkGroupMember(userEmail4, org1.Organization.Name, database.UsergroupNameAutogroupGuests, 2)
 
 		// Check that project-level memberships match expectations
 		checkProjMember(adminEmail, org1.Organization.Name, proj1.Project.Name, database.ProjectRoleNameAdmin, 5)
@@ -658,9 +658,9 @@ func TestRBAC(t *testing.T) {
 		}
 
 		// Check that the user is in the right managed groups
-		checkGroupMember(database.ManagedUsergroupNameAllUsers, u1.Email, 1)
-		checkGroupMember(database.ManagedUsergroupNameAllMembers, u1.Email, 1)
-		checkGroupMember(database.ManagedUsergroupNameAllGuests, "", 0)
+		checkGroupMember(database.UsergroupNameAutogroupUsers, u1.Email, 1)
+		checkGroupMember(database.UsergroupNameAutogroupMembers, u1.Email, 1)
+		checkGroupMember(database.UsergroupNameAutogroupGuests, "", 0)
 
 		// Create another user, add them to the org, and check memberships
 		u2, _ := newTestUser(t, svr)
@@ -670,9 +670,9 @@ func TestRBAC(t *testing.T) {
 			Role:         database.OrganizationRoleNameGuest,
 		})
 		require.NoError(t, err)
-		checkGroupMember(database.ManagedUsergroupNameAllUsers, u2.Email, 2)
-		checkGroupMember(database.ManagedUsergroupNameAllMembers, "", 1)
-		checkGroupMember(database.ManagedUsergroupNameAllGuests, u2.Email, 1)
+		checkGroupMember(database.UsergroupNameAutogroupUsers, u2.Email, 2)
+		checkGroupMember(database.UsergroupNameAutogroupMembers, "", 1)
+		checkGroupMember(database.UsergroupNameAutogroupGuests, u2.Email, 1)
 
 		// Change the user to be a non-guest member and check memberships
 		_, err = c1.SetOrganizationMemberUserRole(ctx, &adminv1.SetOrganizationMemberUserRoleRequest{
@@ -681,9 +681,9 @@ func TestRBAC(t *testing.T) {
 			Role:         database.OrganizationRoleNameViewer,
 		})
 		require.NoError(t, err)
-		checkGroupMember(database.ManagedUsergroupNameAllUsers, u2.Email, 2)
-		checkGroupMember(database.ManagedUsergroupNameAllMembers, u2.Email, 2)
-		checkGroupMember(database.ManagedUsergroupNameAllGuests, "", 0)
+		checkGroupMember(database.UsergroupNameAutogroupUsers, u2.Email, 2)
+		checkGroupMember(database.UsergroupNameAutogroupMembers, u2.Email, 2)
+		checkGroupMember(database.UsergroupNameAutogroupGuests, "", 0)
 
 		// Remove the user from the org and check memberships
 		_, err = c1.RemoveOrganizationMemberUser(ctx, &adminv1.RemoveOrganizationMemberUserRequest{
@@ -691,9 +691,9 @@ func TestRBAC(t *testing.T) {
 			Email:        u2.Email,
 		})
 		require.NoError(t, err)
-		checkGroupMember(database.ManagedUsergroupNameAllUsers, u1.Email, 1)
-		checkGroupMember(database.ManagedUsergroupNameAllMembers, u1.Email, 1)
-		checkGroupMember(database.ManagedUsergroupNameAllGuests, "", 0)
+		checkGroupMember(database.UsergroupNameAutogroupUsers, u1.Email, 1)
+		checkGroupMember(database.UsergroupNameAutogroupMembers, u1.Email, 1)
+		checkGroupMember(database.UsergroupNameAutogroupGuests, "", 0)
 	})
 }
 

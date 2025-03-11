@@ -48,7 +48,7 @@ func TestListRoles(t *testing.T) {
 		org, err := c.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
 		require.NoError(t, err)
 
-		// Create a project and check the all-members group has the default viewer role
+		// Create a project and check the autogroup:members group has the default viewer role
 		proj1, err := c.CreateProject(ctx, &adminv1.CreateProjectRequest{
 			OrganizationName: org.Organization.Name,
 			Name:             "proj1",
@@ -62,7 +62,7 @@ func TestListRoles(t *testing.T) {
 		})
 		require.NoError(t, err)
 		require.Len(t, groups1.Members, 1)
-		require.Equal(t, "all-members", groups1.Members[0].GroupName)
+		require.Equal(t, "autogroup:members", groups1.Members[0].GroupName)
 		require.Equal(t, "viewer", groups1.Members[0].RoleName)
 		require.True(t, groups1.Members[0].GroupManaged)
 
@@ -73,7 +73,7 @@ func TestListRoles(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		// Create another project and check the all-members group now has the editor role
+		// Create another project and check the autogroup:members group now has the editor role
 		proj2, err := c.CreateProject(ctx, &adminv1.CreateProjectRequest{
 			OrganizationName: org.Organization.Name,
 			Name:             "proj2",
@@ -87,7 +87,7 @@ func TestListRoles(t *testing.T) {
 		})
 		require.NoError(t, err)
 		require.Len(t, groups2.Members, 1)
-		require.Equal(t, "all-members", groups2.Members[0].GroupName)
+		require.Equal(t, "autogroup:members", groups2.Members[0].GroupName)
 		require.Equal(t, "editor", groups2.Members[0].RoleName)
 		require.True(t, groups2.Members[0].GroupManaged)
 
@@ -98,7 +98,7 @@ func TestListRoles(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		// Create another project and check the all-members group now has no role
+		// Create another project and check the autogroup:members group now has no role
 		proj3, err := c.CreateProject(ctx, &adminv1.CreateProjectRequest{
 			OrganizationName: org.Organization.Name,
 			Name:             "proj3",
