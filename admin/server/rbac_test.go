@@ -759,6 +759,14 @@ func TestRBAC(t *testing.T) {
 		})
 		require.NoError(t, err)
 
+		// Check that the editor can add a member to the usergroup
+		_, err = c2.AddUsergroupMemberUser(ctx, &adminv1.AddUsergroupMemberUserRequest{
+			Organization: org1.Organization.Name,
+			Usergroup:    group1.Usergroup.GroupName,
+			Email:        u3.Email,
+		})
+		require.NoError(t, err)
+
 		// Check that the editor can change the role of a user and usergroup in the org and project
 		_, err = c2.SetOrganizationMemberUserRole(ctx, &adminv1.SetOrganizationMemberUserRoleRequest{
 			Organization: org1.Organization.Name,
@@ -866,6 +874,21 @@ func TestRBAC(t *testing.T) {
 			Role:         database.ProjectRoleNameAdmin,
 		})
 		require.NoError(t, err)
+
+		// Check that the editor can't add a member to the usergroup now that it has an admin role
+		u4, _ := newTestUser(t, svr)
+		_, err = c2.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
+			Organization: org1.Organization.Name,
+			Email:        u4.Email,
+			Role:         database.OrganizationRoleNameViewer,
+		})
+		require.NoError(t, err)
+		_, err = c2.AddUsergroupMemberUser(ctx, &adminv1.AddUsergroupMemberUserRequest{
+			Organization: org1.Organization.Name,
+			Usergroup:    group1.Usergroup.GroupName,
+			Email:        u4.Email,
+		})
+		require.ErrorContains(t, err, "non-admin")
 
 		// Check that the editor can't change the role of a user or usergroup in the org or project to an admin role
 		_, err = c2.SetOrganizationMemberUserRole(ctx, &adminv1.SetOrganizationMemberUserRoleRequest{

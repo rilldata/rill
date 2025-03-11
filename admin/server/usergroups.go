@@ -499,6 +499,16 @@ func (s *Server) AddUsergroupMemberUser(ctx context.Context, req *adminv1.AddUse
 		return nil, status.Error(codes.InvalidArgument, "cannot edit managed user group")
 	}
 
+	currentRole, err := s.admin.DB.FindOrganizationMemberUsergroupRole(ctx, group.ID, group.OrgID)
+	if err != nil {
+		return nil, err
+	}
+	if currentRole.Admin && !claims.OrganizationPermissions(ctx, group.OrgID).Admin {
+		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to edit a group that has an admin role")
+	}
+	// NOTE: In theory, the group could be admin on a project that the current user is not admin on.
+	// We don't check for that because it's complicated and not a big leak of permissions.
+
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
