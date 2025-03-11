@@ -451,6 +451,24 @@ function fromExploreUrlParams(
     }
   }
 
+  if (
+    searchParams.has(ExploreStateURLParams.SortBy) &&
+    !searchParams.has(ExploreStateURLParams.LeaderboardMeasureCount)
+  ) {
+    const leaderboardMeasureCount = searchParams.get(
+      ExploreStateURLParams.LeaderboardMeasureCount,
+    );
+
+    if (!leaderboardMeasureCount) {
+      // Gracefully remove sort_by from the URL
+      preset.exploreSortBy = undefined;
+    }
+
+    // Error because sort_by is not a valid option without
+    // leaderboard_measure_count
+    errors.push(new Error("sort_by requires leaderboard_measure_count"));
+  }
+
   if (searchParams.has(ExploreStateURLParams.SortDirection)) {
     preset.exploreSortAsc =
       (searchParams.get(ExploreStateURLParams.SortDirection) as string) ===
