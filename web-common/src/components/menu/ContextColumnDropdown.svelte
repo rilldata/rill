@@ -21,7 +21,7 @@
     columns: LeaderboardContextColumn[],
   ) => void;
   export let onShowForAllMeasures: () => void;
-  export let canShowForAllMeasures: boolean = false;
+  export let canShowAllMeasures: boolean = false;
 
   let active = false;
 
@@ -151,7 +151,7 @@
           </div>
         {/if}
 
-        {#if canShowForAllMeasures}
+        {#if canShowAllMeasures}
           <footer class={cn(options.length > 0 && "border-t border-slate-300")}>
             <div class="w-full">
               <p class="text-xs">Show for all measures</p>
