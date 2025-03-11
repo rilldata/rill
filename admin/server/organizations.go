@@ -209,7 +209,7 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		if *req.DefaultProjectRole == "" {
 			defaultProjectRoleID = nil
 		} else {
-			role, err := s.admin.DB.FindOrganizationRole(ctx, *req.DefaultProjectRole)
+			role, err := s.admin.DB.FindProjectRole(ctx, *req.DefaultProjectRole)
 			if err != nil {
 				return nil, fmt.Errorf("failed to find role %s: %w", *req.DefaultProjectRole, err)
 			}

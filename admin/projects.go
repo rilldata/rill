@@ -25,10 +25,6 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 	if err != nil {
 		return nil, err
 	}
-	viewerRole, err := s.DB.FindProjectRole(ctx, database.ProjectRoleNameViewer)
-	if err != nil {
-		return nil, err
-	}
 
 	// Get the all-members group
 	allMembers, err := s.DB.FindUsergroupByName(ctx, org.Name, database.ManagedUsergroupNameAllMembers)
@@ -57,10 +53,12 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		}
 	}
 
-	// All org members as a group get viewer role
-	err = s.DB.InsertProjectMemberUsergroup(txCtx, allMembers.ID, proj.ID, viewerRole.ID)
-	if err != nil {
-		return nil, err
+	// All org members as a group get the org.DefaultProjectRoleID role
+	if org.DefaultProjectRoleID != nil {
+		err = s.DB.InsertProjectMemberUsergroup(txCtx, allMembers.ID, proj.ID, *org.DefaultProjectRoleID)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	err = tx.Commit()
