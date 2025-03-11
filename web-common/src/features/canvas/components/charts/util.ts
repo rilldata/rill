@@ -48,6 +48,10 @@ export const chartMetadata: ChartMetadata[] = [
   { type: "area_chart", title: "Stacked Area", icon: StackedArea },
 ];
 
+export function isChartLineLike(chartType: ChartType) {
+  return chartType === "line_chart" || chartType === "area_chart";
+}
+
 export function mergedVlConfig(config: string): Config {
   const defaultConfig = getRillTheme(true);
   let parsedConfig: Config;
