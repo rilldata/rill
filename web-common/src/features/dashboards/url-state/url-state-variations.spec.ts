@@ -446,7 +446,6 @@ describe("Human readable URL state variations", () => {
         applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
         const curState =
           getCleanMetricsExploreForAssertion() as MetricsExplorerEntity;
-        console.log(curState);
 
         const url = new URL("http://localhost");
         // load url with legacy protobuf state
@@ -459,7 +458,6 @@ describe("Human readable URL state variations", () => {
             explore,
             defaultExplorePreset,
           );
-        console.log(entityFromUrl);
         expect(entityFromUrl).toEqual(curState);
 
         // go back to default url
