@@ -45,7 +45,7 @@
 
   const {
     selectors: {
-      dimensions: { dimensionShowForAllMeasures },
+      dimensions: { dimensionShowAllMeasures },
       dimensionFilters: { unselectedDimensionValues },
       dimensionTable: {
         virtualizedTableColumns,
@@ -98,7 +98,7 @@
     },
   );
 
-  $: unfilteredTotal = $dimensionShowForAllMeasures
+  $: unfilteredTotal = $dimensionShowAllMeasures
     ? visibleMeasureNames.reduce(
         (acc, measureName) => {
           acc[measureName] = $totalsQuery?.data?.data?.[0]?.[measureName] ?? 0;
@@ -110,20 +110,20 @@
 
   $: columns = $virtualizedTableColumns(
     $totalsQuery,
-    $dimensionShowForAllMeasures ? visibleMeasureNames : undefined,
+    $dimensionShowAllMeasures ? visibleMeasureNames : undefined,
   );
 
   $: measures = [
     // Get base measures
     ...getMeasuresForDimensionTable(
-      $dimensionShowForAllMeasures ? null : activeMeasureName,
+      $dimensionShowAllMeasures ? null : activeMeasureName,
       dimensionThresholdFilters,
       visibleMeasureNames,
     ).map((name) => ({ name }) as V1MetricsViewAggregationMeasure),
 
     // Add comparison measures if comparison time range exists
     ...(comparisonTimeRange
-      ? ($dimensionShowForAllMeasures
+      ? ($dimensionShowAllMeasures
           ? visibleMeasureNames
           : [activeMeasureName]
         ).flatMap((name) => getComparisonRequestMeasures(name))

@@ -100,7 +100,7 @@ export interface MetricsExplorerEntity {
   /**
    * Whether to show all measures for a dimension in dimension detail.
    */
-  dimensionShowForAllMeasures: boolean;
+  dimensionShowAllMeasures: boolean;
 
   /**
    * Used to add a dropdown for newly added dimension/measure filters.

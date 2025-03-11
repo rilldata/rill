@@ -50,10 +50,10 @@ export const dimensionTableColumnName = (
   };
 };
 
-export const dimensionShowForAllMeasures = (
+export const dimensionShowAllMeasures = (
   dashData: DashboardDataSources,
 ): boolean => {
-  return Boolean(dashData.dashboard.dimensionShowForAllMeasures);
+  return Boolean(dashData.dashboard.dimensionShowAllMeasures);
 };
 
 export const getDimensionByName = (
@@ -117,5 +117,5 @@ export const dimensionSelectors = {
   /**
    * Gets whether all measures are being shown for a dimension.
    */
-  dimensionShowForAllMeasures,
+  dimensionShowAllMeasures,
 };

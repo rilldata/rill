@@ -16,7 +16,7 @@
   export let isTimeComparisonActive: boolean;
   export let tooltipText: string;
   export let selectedFilters: string[] = [];
-  export let dimensionShowForAllMeasures: boolean;
+  export let dimensionShowAllMeasures: boolean;
   export let onContextColumnChange: (
     columns: LeaderboardContextColumn[],
   ) => void;
@@ -158,7 +158,7 @@
             </div>
             <Switch
               small
-              bind:checked={dimensionShowForAllMeasures}
+              bind:checked={dimensionShowAllMeasures}
               on:click={onShowForAllMeasures}
             />
           </footer>
