@@ -41,7 +41,7 @@
       sorting: { sortedByDimensionValue },
       dimensions: { getDimensionDisplayName, dimensionShowAllMeasures },
       dimensionFilters: { isFilterExcludeMode },
-      measures: { leaderboardMeasureName, getMeasureByName, visibleMeasures },
+      measures: { visibleMeasures },
       contextColumn: { contextColumns },
     },
     actions: {
@@ -56,9 +56,10 @@
 
   const { adminServer, exports } = featureFlags;
 
-  $: activeLeaderboardMeasure = $getMeasureByName($leaderboardMeasureName);
-  $: validPercentOfTotal =
-    activeLeaderboardMeasure?.validPercentOfTotal || false;
+  // If any measure has validPercentOfTotal, then the percent of total context column is valid
+  $: validPercentOfTotal = $visibleMeasures.some(
+    (measure) => measure.validPercentOfTotal,
+  );
 
   $: excludeMode = $isFilterExcludeMode(dimensionName);
 
@@ -157,7 +158,7 @@
       tooltipText="Choose context columns to display"
       isValidPercentOfTotal={validPercentOfTotal}
       isTimeComparisonActive={!!comparisonTimeRange}
-      selectedFilters={$contextColumns}
+      contextColumns={$contextColumns}
       dimensionShowAllMeasures={$dimensionShowAllMeasures}
       onContextColumnChange={setContextColumns}
       onShowForAllMeasures={toggleDimensionShowAllMeasures}
