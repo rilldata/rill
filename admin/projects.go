@@ -53,7 +53,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		}
 	}
 
-	// All org members as a group get the org.DefaultProjectRoleID role
+	// Add the system-managed all-members group to the project with the org.DefaultProjectRoleID role (if configured)
 	if org.DefaultProjectRoleID != nil {
 		err = s.DB.InsertProjectMemberUsergroup(txCtx, allMembers.ID, proj.ID, *org.DefaultProjectRoleID)
 		if err != nil {

@@ -231,6 +231,7 @@ func (s *Service) ProjectPermissionsForMagicAuthToken(ctx context.Context, proje
 	}, nil
 }
 
+// UnionOrgRoles merges an organization role's permissions into the given permissions object.
 func UnionOrgRoles(a *adminv1.OrganizationPermissions, b *database.OrganizationRole) *adminv1.OrganizationPermissions {
 	return &adminv1.OrganizationPermissions{
 		Guest:            a.Guest || b.Guest,
@@ -244,6 +245,7 @@ func UnionOrgRoles(a *adminv1.OrganizationPermissions, b *database.OrganizationR
 	}
 }
 
+// UnionProjectRoles merges a project role's permissions into the given permissions object.
 func UnionProjectRoles(a *adminv1.ProjectPermissions, b *database.ProjectRole) *adminv1.ProjectPermissions {
 	return &adminv1.ProjectPermissions{
 		ReadProject:                a.ReadProject || b.ReadProject,
