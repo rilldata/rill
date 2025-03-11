@@ -14,7 +14,7 @@
 
   const showLoading = writable(false);
 
-  let timeoutId: NodeJS.Timeout;
+  let timeoutId;
 
   $: {
     clearTimeout(timeoutId);
