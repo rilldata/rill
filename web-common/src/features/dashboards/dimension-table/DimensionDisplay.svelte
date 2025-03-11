@@ -50,8 +50,7 @@
         selectedDimensionValueNames,
         prepareDimTableRows,
       },
-      sorting: { sortedAscending, sortType, sortByMeasure },
-      contextColumn: { contextColumns },
+      sorting: { sortedAscending, sortType },
     },
     actions: {
       dimensionsFilter: {
@@ -61,12 +60,6 @@
       },
     },
   } = getStateManagers();
-
-  // console.log("$dimensionShowForAllMeasures: ", $dimensionShowForAllMeasures);
-  // $: console.log("activeMeasureName: ", activeMeasureName);
-  // $: console.log("DimensionDisplay $sortByMeasure: ", $sortByMeasure);
-  // $: console.log("DimensionDisplay $contextColumns: ", $contextColumns);
-  // $: console.log("visibleMeasureNames: ", visibleMeasureNames);
 
   $: ({ name: dimensionName = "" } = dimension);
 
