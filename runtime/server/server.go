@@ -343,6 +343,12 @@ func mapGRPCError(err error) error {
 }
 
 func (s *Server) checkRateLimit(ctx context.Context) (context.Context, error) {
+	// If the connection to the cache server is lost, skip rate limiting.
+	if err := s.limiter.Ping(ctx); err != nil {
+		s.logger.Warn("skipping rate limiting due to cache connection error", zap.Error(err))
+		return ctx, nil
+	}
+
 	// Any request type might be limited separately as it is part of Metadata
 	// Any request type might be excluded from this limit check and limited later,
 	// e.g. in the corresponding request handler by calling s.limiter.Limit(ctx, "limitKey", redis_rate.PerMinute(100))

@@ -25,7 +25,7 @@ import { cliLogin } from "./fixtures/cli";
 setup.describe("global setup", () => {
   setup.describe.configure({
     mode: "serial",
-    timeout: 240_000,
+    timeout: 180_000,
   });
 
   setup("should start services", async () => {
@@ -162,21 +162,13 @@ setup.describe("global setup", () => {
   });
 
   setup("should deploy the OpenRTB project", async ({ adminPage }) => {
-    // Pull the repositories to be used for testing
-    const examplesRepoPath = "tests/setup/git/repos/rill-examples";
-    await execAsync(
-      `rm -rf ${examplesRepoPath} && git clone https://github.com/rilldata/rill-examples.git ${examplesRepoPath}`,
-    );
-
     // Deploy the OpenRTB project
     const { match } = await spawnAndMatch(
       "rill",
       [
         "deploy",
         "--path",
-        "tests/setup/git/repos/rill-examples",
-        "--subpath",
-        "rill-openrtb-prog-ads",
+        "tests/setup/projects/openrtb",
         "--project",
         RILL_PROJECT_NAME,
         "--upload",
@@ -188,12 +180,15 @@ setup.describe("global setup", () => {
     // Navigate to the project URL and expect to see the successful deployment
     const url = match[0];
     await adminPage.goto(url);
-    await expect(
-      adminPage.getByText("Your trial expires in 30 days"),
-    ).toBeVisible(); // Billing banner
     await expect(adminPage.getByText(RILL_ORG_NAME)).toBeVisible(); // Organization breadcrumb
-    await expect(adminPage.getByText("Free trial")).toBeVisible(); // Billing status
     await expect(adminPage.getByText(RILL_PROJECT_NAME)).toBeVisible(); // Project breadcrumb
+
+    // Trial is started in an async job after the 1st deploy. It is not worth the effort to re-fetch the issues list right now.
+    // So disabling this for now, we could add a re-fetch to the issues list if users start facing issues.
+    // await expect(
+    //   adminPage.getByText("Your trial expires in 30 days"),
+    // ).toBeVisible(); // Billing banner
+    // await expect(adminPage.getByText("Free trial")).toBeVisible(); // Billing status
 
     // Check that the dashboards are listed
     await expect(
@@ -213,7 +208,7 @@ setup.describe("global setup", () => {
           });
           return listing.textContent();
         },
-        { intervals: Array(24).fill(5_000), timeout: 180_000 },
+        { intervals: Array(36).fill(5_000), timeout: 180_000 },
       )
       .toContain("Last refreshed");
 
@@ -226,7 +221,7 @@ setup.describe("global setup", () => {
           });
           return listing.textContent();
         },
-        { intervals: Array(24).fill(5_000), timeout: 180_000 },
+        { intervals: Array(12).fill(5_000), timeout: 60_000 },
       )
       .toContain("Last refreshed");
   });

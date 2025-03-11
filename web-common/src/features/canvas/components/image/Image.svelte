@@ -60,12 +60,10 @@
 {#if errorMessage}
   <ComponentError error={errorMessage} />
 {:else}
-  <div class="flex items-center justify-center h-full w-full">
-    <img
-      src={imageSrc || ""}
-      alt={"Canvas Image"}
-      draggable="false"
-      class="h-full w-full object-contain"
-    />
-  </div>
+  <img
+    src={imageSrc || ""}
+    alt={"Canvas Image"}
+    draggable="false"
+    class="h-full w-full object-contain overflow-hidden"
+  />
 {/if}
