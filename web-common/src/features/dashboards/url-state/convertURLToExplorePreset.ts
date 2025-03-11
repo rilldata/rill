@@ -432,13 +432,20 @@ function fromExploreUrlParams(
   }
 
   if (searchParams.has(ExploreStateURLParams.SortBy)) {
-    const sortByMeasure = searchParams.get(
-      ExploreStateURLParams.SortBy,
-    ) as string;
-    if (measures.has(sortByMeasure)) {
-      preset.exploreSortBy = sortByMeasure;
+    const sortBy = searchParams.get(ExploreStateURLParams.SortBy) as string;
+    if (measures.has(sortBy)) {
+      if (
+        (preset.measures && preset.measures.includes(sortBy)) ||
+        !preset.measures
+      ) {
+        preset.exploreSortBy = sortBy;
+      } else {
+        errors.push(
+          getSingleFieldError("sort by measure", sortBy, "It is hidden."),
+        );
+      }
     } else {
-      errors.push(getSingleFieldError("sort by measure", sortByMeasure));
+      errors.push(getSingleFieldError("sort by measure", sortBy));
     }
   }
 
