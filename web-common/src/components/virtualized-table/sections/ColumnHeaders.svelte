@@ -5,7 +5,6 @@
     VirtualizedTableColumns,
     VirtualizedTableConfig,
   } from "../types";
-  import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
 
   const dispatch = createEventDispatcher();
 
