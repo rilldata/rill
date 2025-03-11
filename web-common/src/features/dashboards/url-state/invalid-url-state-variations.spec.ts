@@ -113,13 +113,11 @@ Unexpected " ".`,
   {
     title: "Invalid sort by",
     url: "http://localhost/explore/AdBids_explore?sort_by=bp",
-    errors: [
-      `Selected sort by measure: "bp" is not valid.`,
-      `sort_by requires leaderboard_measure_count`,
-    ],
+    errors: [`Selected sort by measure: "bp" is not valid.`],
     entity: {
       // defaults to 1st measure
       leaderboardMeasureName: "impressions",
+      leaderboardMeasureCount: 1,
     },
   },
   {
