@@ -1,0 +1,14 @@
+
+compiler: rillv1
+
+title: Open RTB Ads
+description: Open RTB Ads
+
+mock_users:
+- email: someone@rilldata.com
+  name: John Doe
+  admin: true
+- email: jane@partnercompany.com
+  groups:
+    - partners
+- email: test@domain.com

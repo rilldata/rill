@@ -333,6 +333,7 @@ export type QueryServiceMetricsViewAggregationBody = {
   priority?: number;
   filter?: V1MetricsViewFilter;
   exact?: boolean;
+  fillMissing?: boolean;
 };
 
 export type QueryServiceExportBody = {
@@ -709,6 +710,8 @@ export interface V1TableInfo {
   isDefaultDatabaseSchema?: boolean;
   name?: string;
   hasUnsupportedDataTypes?: boolean;
+  /** physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined. */
+  physicalSizeBytes?: string;
 }
 
 export type V1TableColumnsResponseUnsupportedColumns = {
@@ -1161,6 +1164,8 @@ export interface V1OLAPGetTableResponse {
   schema?: V1StructType;
   unsupportedColumns?: V1OLAPGetTableResponseUnsupportedColumns;
   view?: boolean;
+  /** physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined. */
+  physicalSizeBytes?: string;
 }
 
 export interface V1NumericStatistics {
@@ -1654,6 +1659,7 @@ export interface V1MetricsViewAggregationRequest {
   priority?: number;
   filter?: V1MetricsViewFilter;
   exact?: boolean;
+  fillMissing?: boolean;
 }
 
 export interface V1MapType {
@@ -2775,6 +2781,7 @@ export interface MetricsViewSpecMeasureV2 {
   formatD3?: string;
   formatD3Locale?: MetricsViewSpecMeasureV2FormatD3Locale;
   validPercentOfTotal?: boolean;
+  treatNullsAs?: string;
 }
 
 /**

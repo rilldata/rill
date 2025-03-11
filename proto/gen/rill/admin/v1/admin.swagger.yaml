@@ -3698,13 +3698,13 @@ definitions:
     type: string
     enum:
       - OPEN_MODE_UNSPECIFIED
-      - OPEN_MODE_LEGACY
+      - OPEN_MODE_RECIPIENT
       - OPEN_MODE_CREATOR
       - OPEN_MODE_NONE
       - OPEN_MODE_FILTERED
     default: OPEN_MODE_UNSPECIFIED
     title: |-
-      - OPEN_MODE_LEGACY: send this for older reports
+      - OPEN_MODE_RECIPIENT: send this for older reports
        - OPEN_MODE_CREATOR: send this for reports that should be opened with creators permissions
        - OPEN_MODE_NONE: send this for reports that should not be opened or older reports which do not have any web_open_path
        - OPEN_MODE_FILTERED: send this for reports that should be opened with creators permissions but with locked filters

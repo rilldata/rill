@@ -1619,7 +1619,7 @@ export type ReportOptionsOpenMode =
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ReportOptionsOpenMode = {
   OPEN_MODE_UNSPECIFIED: "OPEN_MODE_UNSPECIFIED",
-  OPEN_MODE_LEGACY: "OPEN_MODE_LEGACY",
+  OPEN_MODE_RECIPIENT: "OPEN_MODE_RECIPIENT",
   OPEN_MODE_CREATOR: "OPEN_MODE_CREATOR",
   OPEN_MODE_NONE: "OPEN_MODE_NONE",
   OPEN_MODE_FILTERED: "OPEN_MODE_FILTERED",

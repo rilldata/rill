@@ -2463,7 +2463,7 @@ message ReportOptions {
   string canvas = 17;
   enum OpenMode {
     OPEN_MODE_UNSPECIFIED = 0;
-    OPEN_MODE_LEGACY = 1; // send this for older reports
+    OPEN_MODE_RECIPIENT = 1; // send this for older reports
     OPEN_MODE_CREATOR = 2; // send this for reports that should be opened with creators permissions
     OPEN_MODE_NONE = 3; // send this for reports that should not be opened or older reports which do not have any web_open_path
     OPEN_MODE_FILTERED = 4; // send this for reports that should be opened with creators permissions but with locked filters
