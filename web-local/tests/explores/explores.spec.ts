@@ -64,10 +64,50 @@ test.describe("explores", () => {
     const watcher = new ResourceWatcher(page);
 
     await createAdBidsModel(page);
-    await createExploreFromModel(page, true);
+    await createExploreFromModel(page);
+
+    await page.getByRole("button", { name: "switch to code editor" }).click();
+
+    // Add `inf` alias to the time range
+    const addAllTime = `
+type: explore
+
+title: "Adbids dashboard"
+metrics_view: AdBids_model_metrics
+
+dimensions: '*'
+measures: '*'
+
+time_ranges:
+  - PT6H
+  - PT24H
+  - P7D
+  - P14D
+  - P4W
+  - P12M
+  - rill-TD
+  - rill-WTD
+  - rill-MTD
+  - rill-QTD
+  - rill-YTD
+  - rill-PDC
+  - rill-PWC
+  - rill-PMC
+  - rill-PQC
+  - rill-PYC
+  - inf
+`;
+
+    await watcher.updateAndWaitForExplore(addAllTime);
+
+    await page.getByRole("button", { name: "Preview" }).click();
+
+    await page.waitForTimeout(1000);
 
     // Check the total records are 100k
-    await expect(page.getByText("Total records 100k")).toBeVisible();
+    await page
+      .getByRole("button", { name: "Total records 100k" })
+      .waitFor({ timeout: 2000 });
 
     // Check the row viewer accordion is visible
     await expect(page.getByText("Model Data 100k of 100k rows")).toBeVisible();
@@ -222,8 +262,27 @@ metrics_view: AdBids_model_metrics
 
 dimensions: '*'
 measures: '*'
+
+time_ranges:
+  - PT6H
+  - PT24H
+  - P7D
+  - P14D
+  - P4W
+  - P12M
+  - rill-TD
+  - rill-WTD
+  - rill-MTD
+  - rill-QTD
+  - rill-YTD
+  - rill-PDC
+  - rill-PWC
+  - rill-PMC
+  - rill-PQC
+  - rill-PYC
+  - inf
 `;
-    await page.getByLabel("code").click();
+
     await watcher.updateAndWaitForExplore(changeDisplayNameDoc);
 
     // Remove timestamp column
@@ -272,7 +331,7 @@ measures: '*'
 
         `;
 
-    await page.getByLabel("code").click();
+    await page.getByRole("button", { name: "switch to code editor" }).click();
     await watcher.updateAndWaitForDashboard(addBackTimestampColumnDoc);
     await page.getByRole("button", { name: "Create resource menu" }).click();
     await page
@@ -357,6 +416,12 @@ dimensions:
 
     // Preview
     await page.getByRole("button", { name: "Preview" }).click();
+
+    await page.waitForTimeout(500);
+
+    await interactWithTimeRangeMenu(page, async () => {
+      await page.getByRole("menuitem", { name: "All Time" }).click();
+    });
 
     // Check Avg Bid Price
     await expect(page.getByText("Avg Bid Price $3.01")).toBeVisible();

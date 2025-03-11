@@ -102,7 +102,7 @@ export function convertExploreStateToURLSearchParams(
   // timeControlsState will be undefined for dashboards without timeseries
   if (timeControlsState) {
     mergeSearchParams(
-      toTimeRangesUrl(exploreState, exploreSpec, timeControlsState, preset),
+      toTimeRangesUrl(exploreState, timeControlsState, preset),
       urlCopy.searchParams,
     );
   }
@@ -155,7 +155,6 @@ export function convertExploreStateToURLSearchParams(
 
 function toTimeRangesUrl(
   exploreState: MetricsExplorerEntity,
-  exploreSpec: V1ExploreSpec,
   timeControlsState: TimeControlState,
   preset: V1ExplorePreset,
 ) {
@@ -170,10 +169,7 @@ function toTimeRangesUrl(
     );
   }
 
-  if (
-    exploreSpec.timeZones?.length &&
-    shouldSetParam(preset.timezone, exploreState.selectedTimezone)
-  ) {
+  if (shouldSetParam(preset.timezone, exploreState.selectedTimezone)) {
     searchParams.set(
       ExploreStateURLParams.TimeZone,
       exploreState.selectedTimezone,
@@ -204,6 +200,7 @@ function toTimeRangesUrl(
     ToURLParamTimeGrainMapMap[
       timeControlsState.selectedTimeRange?.interval ?? ""
     ] ?? "";
+
   if (mappedTimeGrain && shouldSetParam(preset.timeGrain, mappedTimeGrain)) {
     searchParams.set(ExploreStateURLParams.TimeGrain, mappedTimeGrain);
   }
@@ -413,6 +410,7 @@ function toPivotUrlParams(
     sort?.id in ToURLParamTimeDimensionMap
       ? ToURLParamTimeDimensionMap[sort?.id]
       : sort?.id;
+
   if (shouldSetParam(preset.pivotSortBy, sortId)) {
     searchParams.set(ExploreStateURLParams.SortBy, sortId ?? "");
   }
