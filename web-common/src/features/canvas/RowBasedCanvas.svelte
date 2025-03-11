@@ -599,21 +599,31 @@
         />
       {/if}
     </RowWrapper>
-  {:else}
-    {#if defaultMetrics}
-      <AddComponentDropdown
-        componentForm
-        onMouseEnter={() => {
-          if (timeout) clearTimeout(timeout);
-        }}
-        onItemClick={(type) => {
-          initializeRow(0, type);
-        }}
-      />
-    {:else}
-      <ComponentError error="No valid metrics view in project" />
-    {/if}
   {/each}
+
+  <RowWrapper
+    gridTemplate="12fr"
+    zIndex={0}
+    height="200px"
+    {maxWidth}
+    rowIndex={specCanvasRows.length}
+  >
+    <ItemWrapper zIndex={0}>
+      {#if defaultMetrics}
+        <AddComponentDropdown
+          componentForm
+          onMouseEnter={() => {
+            if (timeout) clearTimeout(timeout);
+          }}
+          onItemClick={(type) => {
+            initializeRow(specCanvasRows.length, type);
+          }}
+        />
+      {:else}
+        <ComponentError error="No valid metrics view in project" />
+      {/if}
+    </ItemWrapper>
+  </RowWrapper>
 </CanvasDashboardWrapper>
 
 {#if dragItemInfo && dragItemInfo.position}

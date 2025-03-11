@@ -16,7 +16,7 @@ export const initialHeights: Record<CanvasComponentType, number> = {
   markdown: 80,
   kpi: 128,
   kpi_grid: 128,
-  image: 300,
+  image: 80,
   table: 300,
 };
 
