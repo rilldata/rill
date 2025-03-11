@@ -23,15 +23,12 @@
       dimensions: {
         visibleDimensions,
         allDimensions,
-        dimensionShowForAllMeasures,
+        dimensionShowAllMeasures,
       },
       contextColumn: { contextColumns },
     },
     actions: {
-      dimensions: {
-        toggleDimensionVisibility,
-        toggleDimensionShowForAllMeasures,
-      },
+      dimensions: { toggleDimensionVisibility, toggleDimensionShowAllMeasures },
       contextColumn: { setContextColumn, setContextColumns },
       setLeaderboardMeasureCount,
     },
@@ -101,9 +98,9 @@
         isValidPercentOfTotal={validPercentOfTotal}
         isTimeComparisonActive={!!comparisonTimeRange}
         selectedFilters={$contextColumns}
-        dimensionShowForAllMeasures={$dimensionShowForAllMeasures}
+        dimensionShowAllMeasures={$dimensionShowAllMeasures}
         onContextColumnChange={setContextColumns}
-        onShowForAllMeasures={toggleDimensionShowForAllMeasures}
+        onShowForAllMeasures={toggleDimensionShowAllMeasures}
       />
     </div>
   {/if}

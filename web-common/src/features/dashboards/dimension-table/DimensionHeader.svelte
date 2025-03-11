@@ -40,14 +40,14 @@
   const {
     selectors: {
       sorting: { sortedByDimensionValue },
-      dimensions: { getDimensionDisplayName, dimensionShowForAllMeasures },
+      dimensions: { getDimensionDisplayName, dimensionShowAllMeasures },
       dimensionFilters: { isFilterExcludeMode },
       measures: { leaderboardMeasureName, getMeasureByName, visibleMeasures },
       contextColumn: { contextColumns },
     },
     actions: {
       sorting: { toggleSort },
-      dimensions: { setPrimaryDimension, toggleDimensionShowForAllMeasures },
+      dimensions: { setPrimaryDimension, toggledimensionShowAllMeasures },
       dimensionsFilter: { toggleDimensionFilterMode },
       contextColumn: { setContextColumns },
     },
@@ -162,9 +162,9 @@
       isValidPercentOfTotal={validPercentOfTotal}
       isTimeComparisonActive={!!comparisonTimeRange}
       selectedFilters={$contextColumns}
-      dimensionShowForAllMeasures={$dimensionShowForAllMeasures}
+      dimensionShowAllMeasures={$dimensionShowAllMeasures}
       onContextColumnChange={setContextColumns}
-      onShowForAllMeasures={toggleDimensionShowForAllMeasures}
+      onShowForAllMeasures={toggledimensionShowAllMeasures}
       {canShowForAllMeasures}
     />
     {#if !isRowsEmpty}
