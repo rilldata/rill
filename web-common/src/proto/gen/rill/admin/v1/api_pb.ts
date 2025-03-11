@@ -2293,6 +2293,11 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
    */
   prodVersion = "";
 
+  /**
+   * @generated from field: bool skip_deploy = 15;
+   */
+  skipDeploy = false;
+
   constructor(data?: PartialMessage<CreateProjectRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2314,6 +2319,7 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
     { no: 10, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 14, name: "archive_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "prod_version", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 15, name: "skip_deploy", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateProjectRequest {
@@ -3493,11 +3499,6 @@ export class RemoveOrganizationMemberUserRequest extends Message<RemoveOrganizat
    */
   email = "";
 
-  /**
-   * @generated from field: bool keep_project_roles = 3;
-   */
-  keepProjectRoles = false;
-
   constructor(data?: PartialMessage<RemoveOrganizationMemberUserRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3508,7 +3509,6 @@ export class RemoveOrganizationMemberUserRequest extends Message<RemoveOrganizat
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "keep_project_roles", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RemoveOrganizationMemberUserRequest {
@@ -5236,6 +5236,11 @@ export class CreateUsergroupRequest extends Message<CreateUsergroupRequest> {
  * @generated from message rill.admin.v1.CreateUsergroupResponse
  */
 export class CreateUsergroupResponse extends Message<CreateUsergroupResponse> {
+  /**
+   * @generated from field: rill.admin.v1.Usergroup usergroup = 1;
+   */
+  usergroup?: Usergroup;
+
   constructor(data?: PartialMessage<CreateUsergroupResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5244,6 +5249,7 @@ export class CreateUsergroupResponse extends Message<CreateUsergroupResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.CreateUsergroupResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "usergroup", kind: "message", T: Usergroup },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateUsergroupResponse {
@@ -12520,6 +12526,11 @@ export class ProvisionerResource extends Message<ProvisionerResource> {
  */
 export class OrganizationPermissions extends Message<OrganizationPermissions> {
   /**
+   * @generated from field: bool guest = 8;
+   */
+  guest = false;
+
+  /**
    * @generated from field: bool read_org = 1;
    */
   readOrg = false;
@@ -12562,6 +12573,7 @@ export class OrganizationPermissions extends Message<OrganizationPermissions> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.OrganizationPermissions";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 8, name: "guest", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 1, name: "read_org", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 2, name: "manage_org", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 3, name: "read_projects", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
@@ -13660,6 +13672,11 @@ export class Usergroup extends Message<Usergroup> {
   groupDescription = "";
 
   /**
+   * @generated from field: bool managed = 6;
+   */
+  managed = false;
+
+  /**
    * @generated from field: google.protobuf.Timestamp created_on = 4;
    */
   createdOn?: Timestamp;
@@ -13680,6 +13697,7 @@ export class Usergroup extends Message<Usergroup> {
     { no: 1, name: "group_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "group_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "group_description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "managed", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 4, name: "created_on", kind: "message", T: Timestamp },
     { no: 5, name: "updated_on", kind: "message", T: Timestamp },
   ]);
@@ -13716,6 +13734,11 @@ export class MemberUsergroup extends Message<MemberUsergroup> {
   groupName = "";
 
   /**
+   * @generated from field: bool group_managed = 6;
+   */
+  groupManaged = false;
+
+  /**
    * @generated from field: string role_name = 3;
    */
   roleName = "";
@@ -13740,6 +13763,7 @@ export class MemberUsergroup extends Message<MemberUsergroup> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "group_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "group_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "group_managed", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 3, name: "role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "created_on", kind: "message", T: Timestamp },
     { no: 5, name: "updated_on", kind: "message", T: Timestamp },

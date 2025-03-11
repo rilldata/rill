@@ -50,7 +50,7 @@ type Driver interface {
 // DB is the interface for a database connection.
 type DB interface {
 	Close() error
-	NewTx(ctx context.Context) (context.Context, Tx, error)
+	NewTx(ctx context.Context, allowNested bool) (context.Context, Tx, error)
 
 	Migrate(ctx context.Context) error
 	FindMigrationVersion(ctx context.Context) (int, error)
@@ -60,12 +60,10 @@ type DB interface {
 	FindOrganization(ctx context.Context, id string) (*Organization, error)
 	FindOrganizationByName(ctx context.Context, name string) (*Organization, error)
 	FindOrganizationByCustomDomain(ctx context.Context, domain string) (*Organization, error)
-	CheckOrganizationHasOutsideUser(ctx context.Context, orgID, userID string) (bool, error)
 	CheckOrganizationHasPublicProjects(ctx context.Context, orgID string) (bool, error)
 	InsertOrganization(ctx context.Context, opts *InsertOrganizationOptions) (*Organization, error)
 	DeleteOrganization(ctx context.Context, name string) error
 	UpdateOrganization(ctx context.Context, id string, opts *UpdateOrganizationOptions) (*Organization, error)
-	UpdateOrganizationAllUsergroup(ctx context.Context, orgID, groupID string) (*Organization, error)
 
 	FindOrganizationWhitelistedDomain(ctx context.Context, orgID string, domain string) (*OrganizationWhitelistedDomain, error)
 	FindOrganizationWhitelistedDomainForOrganizationWithJoinedRoleNames(ctx context.Context, orgID string) ([]*OrganizationWhitelistedDomainWithJoinedRoleNames, error)
@@ -134,17 +132,21 @@ type DB interface {
 	GetCurrentTrialOrgCount(ctx context.Context, userID string) (int, error)
 	IncrementCurrentTrialOrgCount(ctx context.Context, userID string) error
 
+	FindUsergroupByName(ctx context.Context, orgName, name string) (*Usergroup, error)
+	CheckUsergroupExists(ctx context.Context, groupID string) (bool, error)
+	InsertManagedUsergroups(ctx context.Context, orgID string) error
 	InsertUsergroup(ctx context.Context, opts *InsertUsergroupOptions) (*Usergroup, error)
 	UpdateUsergroupName(ctx context.Context, name, groupID string) (*Usergroup, error)
 	UpdateUsergroupDescription(ctx context.Context, description, groupID string) (*Usergroup, error)
 	DeleteUsergroup(ctx context.Context, groupID string) error
-	FindUsergroupByName(ctx context.Context, orgName, name string) (*Usergroup, error)
+
 	FindUsergroupsForUser(ctx context.Context, userID, orgID string) ([]*Usergroup, error)
-	InsertUsergroupMemberUser(ctx context.Context, groupID, userID string) error
 	FindUsergroupMemberUsers(ctx context.Context, groupID, afterEmail string, limit int) ([]*MemberUser, error)
+	InsertUsergroupMemberUser(ctx context.Context, groupID, userID string) error
 	DeleteUsergroupMemberUser(ctx context.Context, groupID, userID string) error
 	DeleteUsergroupsMemberUser(ctx context.Context, orgID, userID string) error
-	CheckUsergroupExists(ctx context.Context, groupID string) (bool, error)
+	InsertManagedUsergroupsMemberUser(ctx context.Context, orgID, userID, roleID string) error
+	DeleteManagedUsergroupsMemberUser(ctx context.Context, orgID, userID string) error
 
 	FindUserAuthTokens(ctx context.Context, userID string) ([]*UserAuthToken, error)
 	FindUserAuthToken(ctx context.Context, id string) (*UserAuthToken, error)
@@ -206,7 +208,7 @@ type DB interface {
 
 	FindOrganizationMemberUsers(ctx context.Context, orgID, afterEmail string, limit int) ([]*MemberUser, error)
 	FindOrganizationMemberUsersByRole(ctx context.Context, orgID, roleID string) ([]*User, error)
-	InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string) error
+	InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string, ifNotExists bool) (bool, error)
 	DeleteOrganizationMemberUser(ctx context.Context, orgID, userID string) error
 	UpdateOrganizationMemberUserRole(ctx context.Context, orgID, userID, roleID string) error
 	CountSingleuserOrganizationsForMemberUser(ctx context.Context, userID string) (int, error)
@@ -303,6 +305,8 @@ type DB interface {
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
 // Actual database calls should be made by passing the ctx returned from DB.NewTx to functions on the DB.
+//
+// If the Tx was acquired with allowNested=true, it may be a no-op that defers commit/rollback to the parent transaction.
 type Tx interface {
 	// Commit commits the transaction
 	Commit() error
@@ -321,7 +325,6 @@ type Organization struct {
 	LogoAssetID                         *string   `db:"logo_asset_id"`
 	FaviconAssetID                      *string   `db:"favicon_asset_id"`
 	CustomDomain                        string    `db:"custom_domain"`
-	AllUsergroupID                      *string   `db:"all_usergroup_id"`
 	CreatedOn                           time.Time `db:"created_on"`
 	UpdatedOn                           time.Time `db:"updated_on"`
 	QuotaProjects                       int       `db:"quota_projects"`
@@ -581,6 +584,7 @@ type Usergroup struct {
 	ID          string    `db:"id"`
 	OrgID       string    `db:"org_id"`
 	Name        string    `db:"name" validate:"slug"`
+	Managed     bool      `db:"managed"`
 	Description string    `db:"description"`
 	CreatedOn   time.Time `db:"created_on"`
 	UpdatedOn   time.Time `db:"updated_on"`
@@ -588,9 +592,19 @@ type Usergroup struct {
 
 // InsertUsergroupOptions defines options for inserting a new usergroup
 type InsertUsergroupOptions struct {
-	OrgID string
-	Name  string `validate:"slug"`
+	OrgID   string
+	Name    string `validate:"slug"`
+	Managed bool
 }
+
+// Hard-coded managed usergroup names.
+// These are created and managed automatically by the system.
+// They will have managed==true and should not be editable by users.
+const (
+	ManagedUsergroupNameAllUsers   = "all-users"   // Everyone in the org
+	ManagedUsergroupNameAllMembers = "all-members" // Everyone in the org who is not a guest
+	ManagedUsergroupNameAllGuests  = "all-guests"  // Everyone in the org who is a guest
+)
 
 // UserAuthToken is a persistent API token for a user.
 type UserAuthToken struct {
@@ -773,18 +787,20 @@ type AuthorizationCode struct {
 
 // Constants for known role names (created in migrations).
 const (
-	OrganizationRoleNameAdmin        = "admin"
-	OrganizationRoleNameCollaborator = "collaborator"
-	OrganizationRoleNameViewer       = "viewer"
-	ProjectRoleNameAdmin             = "admin"
-	ProjectRoleNameCollaborator      = "collaborator"
-	ProjectRoleNameViewer            = "viewer"
+	OrganizationRoleNameAdmin  = "admin"
+	OrganizationRoleNameEditor = "editor"
+	OrganizationRoleNameViewer = "viewer"
+	OrganizationRoleNameGuest  = "guest"
+	ProjectRoleNameAdmin       = "admin"
+	ProjectRoleNameEditor      = "editor"
+	ProjectRoleNameViewer      = "viewer"
 )
 
 // OrganizationRole represents roles for orgs.
 type OrganizationRole struct {
 	ID               string
 	Name             string
+	Guest            bool `db:"guest"`
 	ReadOrg          bool `db:"read_org"`
 	ManageOrg        bool `db:"manage_org"`
 	ReadProjects     bool `db:"read_projects"`
@@ -834,6 +850,7 @@ type MemberUser struct {
 type MemberUsergroup struct {
 	ID        string    `db:"id"`
 	Name      string    `db:"name" validate:"slug"`
+	Managed   bool      `db:"managed"`
 	RoleName  string    `db:"role_name"`
 	CreatedOn time.Time `db:"created_on"`
 	UpdatedOn time.Time `db:"updated_on"`
@@ -913,17 +930,6 @@ type ProjectWhitelistedDomainWithJoinedRoleNames struct {
 	Domain   string
 	RoleName string `db:"name"`
 }
-
-const (
-	DefaultQuotaProjects                       = 1
-	DefaultQuotaDeployments                    = 2
-	DefaultQuotaSlotsTotal                     = 4
-	DefaultQuotaSlotsPerDeployment             = 2
-	DefaultQuotaOutstandingInvites             = 200
-	DefaultQuotaSingleuserOrgs                 = 100
-	DefaultQuotaTrialOrgs                      = 2
-	DefaultQuotaStorageLimitBytesPerDeployment = int64(10737418240) // 10GB
-)
 
 type InsertOrganizationInviteOptions struct {
 	Email     string `validate:"email"`
