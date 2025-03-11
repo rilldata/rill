@@ -59,6 +59,7 @@ import {
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
 import {
+  V1ExploreComparisonMode,
   type V1ExplorePreset,
   type V1ExploreSpec,
 } from "@rilldata/web-common/runtime-client";
@@ -143,6 +144,16 @@ const TestCases: {
     ],
     preset: AD_BIDS_PRESET,
     expectedUrl: "http://localhost/?tr=P4W&grain=week",
+    legacyNotSupported: true,
+  },
+  {
+    title: "Time range comparison with non-standard time range in preset",
+    mutations: [AD_BIDS_DISABLE_COMPARE_TIME_RANGE_FILTER],
+    preset: {
+      timeRange: "P9D",
+      comparisonMode: V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME,
+    },
+    expectedUrl: "http://localhost/?compare_tr=",
     legacyNotSupported: true,
   },
 

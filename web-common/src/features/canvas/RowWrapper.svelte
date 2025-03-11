@@ -2,7 +2,7 @@
   export let zIndex = 50;
   export let maxWidth: number;
   export let gridTemplate: string;
-  export let height: string;
+  export let height: string = "80px";
   export let rowIndex: number;
 </script>
 

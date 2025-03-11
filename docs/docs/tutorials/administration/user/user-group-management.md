@@ -43,13 +43,15 @@ Available Commands:
 ```
 As the name suggests, user groups are designed to group your users together so that you do not need to set permissions on each user. Simply adding the user to the group, the users will inherit permissions from the group.
 
-By default, `all-users` will be created in your environment. Let's add a `tutorial-admin` group.
+By default, some system-managed groups will be created in your project. Let's add a `tutorial-admin` group.
 ```
 rill usergroup list
 
-  NAME        ROLE   CREATED ON            UPDATED ON           
- ----------- ------ --------------------- --------------------- 
-  all-users   -      2024-08-01 09:32:29   2024-08-01 09:32:29  
+  NAME          ROLE   CREATED ON            UPDATED ON           
+ ------------- ------ --------------------- --------------------- 
+  all-users     -      2024-08-01 09:32:29   2024-08-01 09:32:29  
+  all-members   -      2024-08-01 09:32:29   2024-08-01 09:32:29  
+  all-guests    -      2024-08-01 09:32:29   2024-08-01 09:32:29  
 ```
 
 ```bash
@@ -64,7 +66,9 @@ Now, listing the usergroups we can see the new group created.
 rill usergroup list                                                                               
   NAME             ROLE   CREATED ON            UPDATED ON           
  ---------------- ------ --------------------- --------------------- 
-  all-users        -      2024-08-21 01:43:24   2024-08-21 01:43:24  
+  all-users        -      2024-08-01 09:32:29   2024-08-01 09:32:29  
+  all-members      -      2024-08-01 09:32:29   2024-08-01 09:32:29  
+  all-guests       -      2024-08-01 09:32:29   2024-08-01 09:32:29  
   tutorial-admin   -      2024-08-22 01:21:37   2024-08-22 01:21:37  
   ```
 Now let's give admin access to the group for the project `my-rill-tutorial`.
