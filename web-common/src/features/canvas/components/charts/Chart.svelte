@@ -20,6 +20,7 @@
   import {
     generateSpec,
     getChartTitle,
+    isChartLineLike,
     mergedVlConfig,
     sanitizeFieldName,
   } from "./util";
@@ -95,6 +96,7 @@
           canvasDashboard
           data={{ "metrics-view": $data.data }}
           {spec}
+          renderer={isChartLineLike(chartType) ? "svg" : "canvas"}
           expressionFunctions={{
             [measureName]: { fn: (val) => measureFormatter(val) },
           }}

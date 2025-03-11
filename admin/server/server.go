@@ -306,6 +306,12 @@ func (s *Server) checkRateLimit(ctx context.Context) (context.Context, error) {
 		return ctx, fmt.Errorf("server context does not have a method")
 	}
 
+	// If the connection to the cache server is lost, skip rate limiting.
+	if err := s.limiter.Ping(ctx); err != nil {
+		s.logger.Warn("skipping rate limiting due to cache connection error", zap.Error(err))
+		return ctx, nil
+	}
+
 	// Don't rate limit superusers. This is useful for scripting.
 	if auth.GetClaims(ctx).Superuser(ctx) {
 		return ctx, nil
