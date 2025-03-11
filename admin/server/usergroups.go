@@ -591,10 +591,11 @@ func usergroupToPB(group *database.Usergroup) *adminv1.Usergroup {
 
 func memberUsergroupToPB(member *database.MemberUsergroup) *adminv1.MemberUsergroup {
 	return &adminv1.MemberUsergroup{
-		GroupId:   member.ID,
-		GroupName: member.Name,
-		RoleName:  member.RoleName,
-		CreatedOn: timestamppb.New(member.CreatedOn),
-		UpdatedOn: timestamppb.New(member.UpdatedOn),
+		GroupId:      member.ID,
+		GroupName:    member.Name,
+		GroupManaged: member.Managed,
+		RoleName:     member.RoleName,
+		CreatedOn:    timestamppb.New(member.CreatedOn),
+		UpdatedOn:    timestamppb.New(member.UpdatedOn),
 	}
 }

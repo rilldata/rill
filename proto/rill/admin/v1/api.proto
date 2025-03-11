@@ -2512,6 +2512,7 @@ message Usergroup {
 message MemberUsergroup {
   string group_id = 1;
   string group_name = 2;
+  bool group_managed = 6;
   string role_name = 3;
   google.protobuf.Timestamp created_on = 4;
   google.protobuf.Timestamp updated_on = 5;

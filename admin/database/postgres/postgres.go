@@ -1562,7 +1562,7 @@ func (c *connection) InsertProjectMemberUser(ctx context.Context, projectID, use
 func (c *connection) FindOrganizationMemberUsergroups(ctx context.Context, orgID, afterName string, limit int) ([]*database.MemberUsergroup, error) {
 	var res []*database.MemberUsergroup
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT ug.id, ug.name, ug.created_on, ug.updated_on, COALESCE(r.name, '') as "role_name" FROM usergroups ug
+		SELECT ug.id, ug.name, ug.managed, ug.created_on, ug.updated_on, COALESCE(r.name, '') as "role_name" FROM usergroups ug
 		LEFT JOIN usergroups_orgs_roles uor ON ug.id = uor.usergroup_id
 		LEFT JOIN org_roles r ON uor.org_role_id = r.id
 		WHERE ug.org_id=$1 AND lower(ug.name) > lower($2)
@@ -1599,7 +1599,7 @@ func (c *connection) DeleteOrganizationMemberUsergroup(ctx context.Context, grou
 func (c *connection) FindProjectMemberUsergroups(ctx context.Context, projectID, afterName string, limit int) ([]*database.MemberUsergroup, error) {
 	var res []*database.MemberUsergroup
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT ug.id, ug.name, ug.created_on, ug.updated_on, r.name as "role_name" FROM usergroups ug
+		SELECT ug.id, ug.name, ug.managed, ug.created_on, ug.updated_on, r.name as "role_name" FROM usergroups ug
 		JOIN usergroups_projects_roles upr ON ug.id = upr.usergroup_id
 		JOIN project_roles r ON upr.project_role_id = r.id
 		WHERE upr.project_id=$1 AND lower(ug.name) > lower($2)

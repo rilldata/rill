@@ -849,6 +849,7 @@ type MemberUser struct {
 type MemberUsergroup struct {
 	ID        string    `db:"id"`
 	Name      string    `db:"name" validate:"slug"`
+	Managed   bool      `db:"managed"`
 	RoleName  string    `db:"role_name"`
 	CreatedOn time.Time `db:"created_on"`
 	UpdatedOn time.Time `db:"updated_on"`

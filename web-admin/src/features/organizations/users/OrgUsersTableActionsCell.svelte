@@ -53,6 +53,20 @@
         ),
       );
 
+      await queryClient.invalidateQueries(
+        getAdminServiceListUsergroupMemberUsersQueryKey(
+          organization,
+          "all-members",
+        ),
+      );
+
+      await queryClient.invalidateQueries(
+        getAdminServiceListUsergroupMemberUsersQueryKey(
+          organization,
+          "all-guests",
+        ),
+      );
+
       eventBus.emit("notification", {
         message: "User removed from organization",
       });

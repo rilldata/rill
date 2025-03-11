@@ -4634,6 +4634,8 @@ definitions:
         type: string
       groupName:
         type: string
+      groupManaged:
+        type: boolean
       roleName:
         type: string
       createdOn:

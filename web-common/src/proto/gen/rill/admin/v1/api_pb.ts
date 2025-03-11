@@ -13734,6 +13734,11 @@ export class MemberUsergroup extends Message<MemberUsergroup> {
   groupName = "";
 
   /**
+   * @generated from field: bool group_managed = 6;
+   */
+  groupManaged = false;
+
+  /**
    * @generated from field: string role_name = 3;
    */
   roleName = "";
@@ -13758,6 +13763,7 @@ export class MemberUsergroup extends Message<MemberUsergroup> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "group_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "group_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "group_managed", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 3, name: "role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "created_on", kind: "message", T: Timestamp },
     { no: 5, name: "updated_on", kind: "message", T: Timestamp },

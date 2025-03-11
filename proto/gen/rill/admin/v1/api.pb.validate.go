@@ -36497,6 +36497,8 @@ func (m *MemberUsergroup) validate(all bool) error {
 
 	// no validation rules for GroupName
 
+	// no validation rules for GroupManaged
+
 	// no validation rules for RoleName
 
 	if all {

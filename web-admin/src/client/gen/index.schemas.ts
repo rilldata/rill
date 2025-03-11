@@ -897,6 +897,7 @@ export const V1Operation = {
 export interface V1MemberUsergroup {
   groupId?: string;
   groupName?: string;
+  groupManaged?: boolean;
   roleName?: string;
   createdOn?: string;
   updatedOn?: string;
