@@ -33,9 +33,10 @@
     ["image", Image],
   ]);
 
+  let timeAndFilterStore: Readable<TimeAndFilterStore> | undefined;
+
   $: isFilterable = filterableComponents.has(renderer);
 
-  let timeAndFilterStore: Readable<TimeAndFilterStore> | undefined;
   $: if (
     (isChartComponentType(renderer) || isFilterable) &&
     rendererProperties?.metrics_view
@@ -47,6 +48,8 @@
 {#if rendererProperties && isCanvasComponentType(renderer)}
   {#if isChartComponentType(renderer) && timeAndFilterStore}
     <Chart {rendererProperties} {renderer} {timeAndFilterStore} />
+  {:else if renderer === "table" && timeAndFilterStore}
+    <Table {rendererProperties} {timeAndFilterStore} {componentName} />
   {:else if isFilterable && timeAndFilterStore}
     <svelte:component
       this={filterableComponents.get(renderer)}

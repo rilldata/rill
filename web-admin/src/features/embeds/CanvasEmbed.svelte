@@ -4,18 +4,19 @@
     ResourceKind,
     useResource,
   } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
+  import CanvasThemeProvider from "@rilldata/web-common/features/canvas/CanvasThemeProvider.svelte";
+  import StateManagersProvider from "@rilldata/web-common/features/canvas/state-managers/StateManagersProvider.svelte";
 
   export let instanceId: string;
   export let canvasName: string;
 
   $: canvasQuery = useResource(instanceId, canvasName, ResourceKind.Canvas);
 
-  $: canvas = $canvasQuery.data?.canvas.spec;
-
-  $: ({ items = [], filtersEnabled } = canvas || {
-    items: [],
-    filtersEnabled: true,
-  });
+  $: resource = $canvasQuery.data;
 </script>
 
-<CanvasDashboardEmbed {items} showFilterBar={filtersEnabled} spec={canvas} />
+<StateManagersProvider {canvasName}>
+  <CanvasThemeProvider>
+    <CanvasDashboardEmbed {resource} />
+  </CanvasThemeProvider>
+</StateManagersProvider>

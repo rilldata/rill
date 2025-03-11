@@ -13,11 +13,17 @@
     MetricsViewSpecMeasureV2,
     V1ComponentSpecRendererProperties,
   } from "@rilldata/web-common/runtime-client";
-  import type { View } from "svelte-vega";
   import type { Readable } from "svelte/store";
+  import type { View } from "vega-typings";
   import { getChartData, validateChartSchema } from "./selector";
   import type { ChartType } from "./types";
-  import { generateSpec, getChartTitle, mergedVlConfig } from "./util";
+  import {
+    generateSpec,
+    getChartTitle,
+    isChartLineLike,
+    mergedVlConfig,
+    sanitizeFieldName,
+  } from "./util";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
   export let renderer: string;
@@ -49,7 +55,7 @@
     chartConfig.metrics_view,
   );
 
-  $: measureName = $measure?.name || "measure";
+  $: measureName = sanitizeFieldName($measure?.name || "measure");
 
   $: measureFormatter = createMeasureValueFormatter<null | undefined>(
     $measure as MetricsViewSpecMeasureV2,
@@ -90,6 +96,7 @@
           canvasDashboard
           data={{ "metrics-view": $data.data }}
           {spec}
+          renderer={isChartLineLike(chartType) ? "svg" : "canvas"}
           expressionFunctions={{
             [measureName]: { fn: (val) => measureFormatter(val) },
           }}

@@ -47,7 +47,7 @@
 {/if}
 
 <div>
-  {#each Object.entries(inputParams) as [key, config]}
+  {#each Object.entries(inputParams) as [key, config] (key)}
     {#if config.showInUI !== false}
       <div class="component-param">
         <!-- TEXT, NUMBER, RILL_TIME -->
@@ -149,7 +149,7 @@
             }}
           />
 
-          <!-- KPI SPARKLINE INPUT -->
+          <!-- COMPARISON OPTIONS INPUT -->
         {:else if config.type === "comparison_options"}
           <ComparisonInput
             {key}

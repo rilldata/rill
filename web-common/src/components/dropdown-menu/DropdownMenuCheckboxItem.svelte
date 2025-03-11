@@ -31,7 +31,7 @@
   data-sveltekit-preload-data={preloadData ? "hover" : "false"}
 >
   <DropdownMenuPrimitive.CheckboxItem
-    bind:checked
+    {checked}
     role="menuitem"
     class={cn(
       "relative flex cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-xs outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 hover:bg-accent hover:rounded-sm focus:bg-accent focus:rounded-sm",

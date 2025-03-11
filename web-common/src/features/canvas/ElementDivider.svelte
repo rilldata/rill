@@ -3,6 +3,7 @@
   import AddComponentDropdown from "./AddComponentDropdown.svelte";
   import type { CanvasComponentType } from "./components/types";
   import { dropZone, hoveredDivider, activeDivider } from "./stores/ui-stores";
+  import { Tooltip } from "bits-ui";
 
   export let resizeIndex: number;
   export let addIndex: number;
@@ -12,10 +13,8 @@
   export let isSpreadEvenly: boolean;
   export let dragging: boolean;
   export let addItems: (
-    item: {
-      position: { row: number; order: number };
-      type: CanvasComponentType;
-    }[],
+    position: { row: number; column: number },
+    item: CanvasComponentType[],
   ) => void;
   export let onMouseDown: ((e: MouseEvent) => void) | undefined = undefined;
   export let spreadEvenly: (rowIndex: number) => void;
@@ -51,7 +50,7 @@
     activeDivider.reset();
 
     if (type) {
-      addItems([{ position: { row: rowIndex, order: addIndex }, type }]);
+      addItems({ row: rowIndex, column: addIndex }, [type]);
     }
   }
 
@@ -115,17 +114,28 @@
       />
 
       {#if !isSpreadEvenly}
-        <button
-          class="h-7 px-1 grid place-content-center border-t hover:bg-gray-100 text-slate-500"
-          on:click={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            spreadEvenly(rowIndex);
-            hoveredDivider.reset();
-          }}
-        >
-          <ArrowLeftRight size="15px" />
-        </button>
+        <Tooltip.Root>
+          <Tooltip.Trigger asChild let:builder>
+            <button
+              {...builder}
+              use:builder.action
+              class="h-7 px-1 grid place-content-center border-t hover:bg-gray-100 text-slate-500"
+              on:click={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                spreadEvenly(rowIndex);
+                hoveredDivider.reset();
+              }}
+            >
+              <ArrowLeftRight size="15px" />
+            </button>
+          </Tooltip.Trigger>
+          <Tooltip.Content side="bottom" sideOffset={8}>
+            <div class="bg-gray-700 text-white rounded p-2 pt-1 pb-1">
+              Evenly distribute widgets
+            </div>
+          </Tooltip.Content>
+        </Tooltip.Root>
       {/if}
     </div>
   {/if}

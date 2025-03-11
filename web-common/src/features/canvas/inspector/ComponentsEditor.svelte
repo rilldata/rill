@@ -14,23 +14,29 @@
   import FiltersMapper from "./filters/FiltersMapper.svelte";
   import ParamMapper from "./ParamMapper.svelte";
 
-  export let selectedComponentIndex: number;
+  export let selectedComponent: { row: number; column: number };
   export let fileArtifact: FileArtifact;
 
   const {
     canvasEntity: {
-      spec: { getComponentFromIndex, getComponentNameFromIndex },
+      spec: { getComponentFromIndex, getComponentNameFromPos },
     },
   } = getCanvasStateManagers();
   let currentTab: string;
 
-  $: componentSpec = getComponentFromIndex(selectedComponentIndex);
-  $: componentName = getComponentNameFromIndex(selectedComponentIndex);
+  $: componentSpec = getComponentFromIndex(selectedComponent);
+  $: componentName = getComponentNameFromPos(selectedComponent);
 
   $: ({ renderer, rendererProperties } = $componentSpec || {});
 
   $: componentType = isCanvasComponentType(renderer) ? renderer : null;
-  $: path = ["items", selectedComponentIndex, "component", componentType || ""];
+  $: path = [
+    "rows",
+    selectedComponent.row,
+    "items",
+    selectedComponent.column,
+    componentType || "",
+  ];
 
   $: component =
     componentType && rendererProperties
