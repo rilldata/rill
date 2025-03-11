@@ -40,8 +40,11 @@
   $: metricsExplorer = $metricsExplorerStore.entities[exploreName];
 
   $: activeLeaderboardMeasure = $getMeasureByName($leaderboardMeasureName);
-  $: validPercentOfTotal =
-    activeLeaderboardMeasure?.validPercentOfTotal || false;
+
+  // If any measure has validPercentOfTotal, then the percent of total context column is valid
+  $: validPercentOfTotal = $visibleMeasures.some(
+    (measure) => measure.validPercentOfTotal,
+  );
 
   $: visibleDimensionsNames = $visibleDimensions
     .map(({ name }) => name)
@@ -98,7 +101,7 @@
         tooltipText="Choose context columns to display"
         isValidPercentOfTotal={validPercentOfTotal}
         isTimeComparisonActive={!!comparisonTimeRange}
-        selectedFilters={$contextColumns}
+        contextColumns={$contextColumns}
         dimensionShowAllMeasures={$dimensionShowAllMeasures}
         onContextColumnChange={setContextColumns}
         onShowForAllMeasures={toggleDimensionShowAllMeasures}

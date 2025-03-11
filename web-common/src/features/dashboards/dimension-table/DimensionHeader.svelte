@@ -41,7 +41,7 @@
       sorting: { sortedByDimensionValue },
       dimensions: { getDimensionDisplayName, dimensionShowAllMeasures },
       dimensionFilters: { isFilterExcludeMode },
-      measures: { leaderboardMeasureName, getMeasureByName, visibleMeasures },
+      measures: { visibleMeasures },
       contextColumn: { contextColumns },
     },
     actions: {
@@ -160,7 +160,7 @@
       tooltipText="Choose context columns to display"
       isValidPercentOfTotal={validPercentOfTotal}
       isTimeComparisonActive={!!comparisonTimeRange}
-      selectedFilters={$contextColumns}
+      contextColumns={$contextColumns}
       dimensionShowAllMeasures={$dimensionShowAllMeasures}
       onContextColumnChange={setContextColumns}
       onShowForAllMeasures={toggleDimensionShowAllMeasures}

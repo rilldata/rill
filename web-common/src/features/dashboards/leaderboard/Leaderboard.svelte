@@ -74,6 +74,7 @@
   export let isBeingCompared: boolean;
   export let parentElement: HTMLElement;
   export let suppressTooltip = false;
+  export let dimensionShowAllMeasures: boolean;
   export let measureLabel: (measureName: string) => string;
   export let toggleDimensionValueSelection: (
     dimensionName: string,
@@ -129,20 +130,31 @@
         undefined,
       );
 
+  $: if (activeMeasureNames) {
+    valueColumn.reset();
+  }
+
+  $: dimensionColumnWidth =
+    !comparisonTimeRange && !showPercentOfTotal ? 240 : 164;
+
+  function shouldShowComparisonForMeasure(measureName: string): boolean {
+    return dimensionShowAllMeasures || measureName === activeMeasureName;
+  }
+
   $: measures = [
-    // Get additional measures for each active measure
-    ...activeMeasureNames
-      .flatMap((name) => additionalMeasures(name, dimensionThresholdFilters))
-      .map(
-        (name) =>
-          ({
-            name,
-          }) as V1MetricsViewAggregationMeasure,
-      ),
+    // Get base measures - always include all measures
+    ...activeMeasureNames.map(
+      (name) =>
+        ({
+          name,
+        }) as V1MetricsViewAggregationMeasure,
+    ),
 
     // Add comparison measures if there's a comparison time range
     ...(comparisonTimeRange
-      ? activeMeasureNames.flatMap((name) => getComparisonRequestMeasures(name))
+      ? activeMeasureNames
+          .filter(shouldShowComparisonForMeasure)
+          .flatMap((name) => getComparisonRequestMeasures(name))
       : []),
 
     // Add URI measure if URI is present
@@ -243,7 +255,10 @@
       ),
       sort,
       timeRange,
-      comparisonTimeRange,
+      comparisonTimeRange:
+        comparisonTimeRange && isBeingCompared
+          ? comparisonTimeRange
+          : undefined,
       measures,
       limit: belowTheFoldDataLimit.toString(),
     },
@@ -281,9 +296,9 @@
 
   $: columnCount =
     1 + // Base column (dimension)
-    activeMeasureNames.length *
-      (1 + // Value column for each measure
-        (showDeltaAbsolute ? 1 : 0) + // Delta absolute column for each measure
+    activeMeasureNames.length + // Value column for each measure
+    activeMeasureNames.filter(shouldShowComparisonForMeasure).length * // Only count comparison columns for measures that should show them
+      ((showDeltaAbsolute ? 1 : 0) + // Delta absolute column for each measure
         (showDeltaPercent ? 1 : 0) + // Delta percent column for each measure
         (showPercentOfTotal ? 1 : 0)); // Percent of total column for each measure
 
@@ -298,13 +313,6 @@
   $: showDeltaPercent =
     !!comparisonTimeRange &&
     contextColumns.includes(LeaderboardContextColumn.DELTA_PERCENT);
-
-  $: if (activeMeasureNames) {
-    valueColumn.reset();
-  }
-
-  $: dimensionColumnWidth =
-    !comparisonTimeRange && !showPercentOfTotal ? 240 : 164;
 
   $: tableWidth =
     dimensionColumnWidth +
@@ -328,18 +336,20 @@
     <colgroup>
       <col style:width="{gutterWidth}px" />
       <col style:width="{dimensionColumnWidth}px" />
-      {#each activeMeasureNames as _, index (index)}
+      {#each activeMeasureNames as measureName, index (index)}
         <col style:width="{$valueColumn}px" data-index={index} />
-        {#if showDeltaAbsolute}
-          <col style:width="{DEFAULT_CONTEXT_COLUMN_WIDTH}px" />
-          {#if showDeltaPercent}
+        {#if shouldShowComparisonForMeasure(measureName)}
+          {#if showDeltaAbsolute}
+            <col style:width="{DEFAULT_CONTEXT_COLUMN_WIDTH}px" />
+            {#if showDeltaPercent}
+              <col style:width="{DEFAULT_CONTEXT_COLUMN_WIDTH}px" />
+            {/if}
+          {:else if showDeltaPercent}
             <col style:width="{DEFAULT_CONTEXT_COLUMN_WIDTH}px" />
           {/if}
-        {:else if showDeltaPercent}
-          <col style:width="{DEFAULT_CONTEXT_COLUMN_WIDTH}px" />
-        {/if}
-        {#if showPercentOfTotal}
-          <col style:width="{DEFAULT_CONTEXT_COLUMN_WIDTH}px" />
+          {#if showPercentOfTotal}
+            <col style:width="{DEFAULT_CONTEXT_COLUMN_WIDTH}px" />
+          {/if}
         {/if}
       {/each}
     </colgroup>
@@ -362,6 +372,8 @@
       {toggleComparisonDimension}
       {sortBy}
       {measureLabel}
+      {dimensionShowAllMeasures}
+      {activeMeasureName}
     />
 
     <tbody>
@@ -381,7 +393,9 @@
             {itemData}
             {isValidPercentOfTotal}
             {contextColumns}
+            {activeMeasureName}
             {activeMeasureNames}
+            {dimensionShowAllMeasures}
             isTimeComparisonActive={!!comparisonTimeRange}
             {toggleDimensionValueSelection}
             {formatter}
@@ -401,6 +415,10 @@
           {filterExcludeMode}
           {atLeastOneActive}
           {isValidPercentOfTotal}
+          {contextColumns}
+          {activeMeasureName}
+          {activeMeasureNames}
+          {dimensionShowAllMeasures}
           isTimeComparisonActive={!!comparisonTimeRange}
           borderTop={i === 0}
           borderBottom={i === belowTheFoldRows.length - 1}

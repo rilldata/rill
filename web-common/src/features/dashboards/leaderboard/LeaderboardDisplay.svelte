@@ -29,8 +29,12 @@
     selectors: {
       activeMeasure: { isValidPercentOfTotal, isSummableMeasure },
       numberFormat: { activeMeasureFormatter },
-      dimensionFilters: { isFilterExcludeMode },
-      dimensions: { visibleDimensions },
+      dimensionFilters: {
+        selectedDimensionValues,
+        atLeastOneSelection,
+        isFilterExcludeMode,
+      },
+      dimensions: { visibleDimensions, dimensionShowAllMeasures },
       comparison: { isBeingCompared: isBeingComparedReadable },
       sorting: { sortedAscending, sortType, sortByMeasure },
       contextColumn: { contextColumns },
@@ -91,6 +95,7 @@
             <Leaderboard
               isValidPercentOfTotal={$isValidPercentOfTotal}
               contextColumns={$contextColumns}
+              dimensionShowAllMeasures={$dimensionShowAllMeasures}
               {metricsViewName}
               {activeMeasureName}
               {activeMeasureNames}

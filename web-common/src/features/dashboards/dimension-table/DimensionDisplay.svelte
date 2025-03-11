@@ -250,7 +250,6 @@
             timeRange.start,
             timeRange.end,
           )}
-          {firstMeasure}
           rows={tableRows}
         />
       </div>
