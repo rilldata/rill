@@ -65,7 +65,21 @@
     onContextColumnChange(newFilters as LeaderboardContextColumn[]);
   }
 
-  // FIXME: when comparison is off and have 3 context columns selected, we should fix the copy
+  // WORKAROUND for when comparison is off and have delta or percent context columns selected
+  // Remove time comparison columns when time comparison is disabled
+  $: {
+    if (!isTimeComparisonActive) {
+      const filteredColumns = selectedFilters.filter(
+        (column) =>
+          column !== LeaderboardContextColumn.DELTA_ABSOLUTE &&
+          column !== LeaderboardContextColumn.DELTA_PERCENT,
+      );
+      if (filteredColumns.length !== selectedFilters.length) {
+        onContextColumnChange(filteredColumns as LeaderboardContextColumn[]);
+      }
+    }
+  }
+
   $: withText =
     selectedFilters && selectedFilters.length > 1
       ? `${selectedFilters.length} context columns`
