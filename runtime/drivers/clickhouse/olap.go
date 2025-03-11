@@ -62,6 +62,7 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 	}
 
 	settings := map[string]any{
+		"cast_keep_nullable":        1,
 		"insert_distributed_sync":   1,
 		"prefer_global_in_and_join": 1,
 		"session_timezone":          "UTC",
@@ -598,7 +599,7 @@ func (c *connection) createTable(ctx context.Context, name, sql string, outputPr
 			return fmt.Errorf("clickhouse: no columns specified for table %q", name)
 		}
 		// infer columns
-		v := fmt.Sprintf("__rill_temp_%s_%x", name, md5.Sum([]byte(sql)))
+		v := safeSQLName(fmt.Sprintf("__rill_temp_%s_%x", name, md5.Sum([]byte(sql))))
 		defer func() {
 			// cleanup using a different ctx to prevent cleanups being impacted by the main ctx cancellation
 			// this is a best effort cleanup and query can still timeout and we don't want to wait forever due to blocked calls
