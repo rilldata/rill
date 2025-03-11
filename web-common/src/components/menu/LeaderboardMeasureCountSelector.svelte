@@ -7,7 +7,9 @@
 
   export let measures: MetricsViewSpecMeasureV2[];
   export let count: number = 1;
+  export let sortByMeasure: string | null;
   export let onMeasureCountChange: (count: number) => void;
+  export let setSort: () => void;
 
   let isHovered = false;
 
@@ -20,6 +22,13 @@
   function handleDecrement() {
     if (count > 1) {
       onMeasureCountChange(Math.max(count - 1, 1));
+
+      // FIXME: if there is better abstraction for this, please refactor
+      // WORKAROUND: Reset the sort when decrementing the measure count, but only if we're currently
+      // sorted by a measure (since that measure might no longer be visible)
+      if (sortByMeasure) {
+        setSort();
+      }
     }
   }
 </script>
