@@ -223,6 +223,10 @@ export const getYupSchema = {
   }),
 };
 
+export const dsnSchema = yup.object().shape({
+  dsn: yup.string().required("DSN is required"),
+});
+
 export function toYupFriendlyKey(key: string) {
   return key.replace(/\./g, "_");
 }

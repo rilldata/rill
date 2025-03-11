@@ -39,6 +39,7 @@ var spec = drivers.Spec{
 			Required:    false,
 			DisplayName: "Connection string",
 			Placeholder: "clickhouse://localhost:9000?username=default&password=",
+			Secret:      true,
 			NoPrompt:    true,
 		},
 		{
@@ -80,13 +81,6 @@ var spec = drivers.Spec{
 			Required:    true,
 			DisplayName: "SSL",
 			Description: "Use SSL to connect to the ClickHouse server",
-		},
-		{
-			Key:         "database",
-			Type:        drivers.StringPropertyType,
-			Required:    false,
-			DisplayName: "Database",
-			Description: "Specify the database within the ClickHouse server",
 		},
 	},
 	ImplementsOLAP: true,
