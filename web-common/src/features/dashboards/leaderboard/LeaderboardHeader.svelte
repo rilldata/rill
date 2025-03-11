@@ -27,6 +27,8 @@
   export let contextColumns: string[] = [];
   export let activeMeasureNames: string[] = [];
   export let sortBy: string | null;
+  export let dimensionShowAllMeasures: boolean;
+  export let activeMeasureName: string;
   export let toggleSort: (sortType: SortType, measureName?: string) => void;
   export let setPrimaryDimension: (dimensionName: string) => void;
   export let toggleComparisonDimension: (
@@ -46,7 +48,9 @@
     isTimeComparisonActive &&
     contextColumns.includes(LeaderboardContextColumn.DELTA_PERCENT);
 
-  $: hasMoreThanOneMeasure = activeMeasureNames.length > 1;
+  function shouldShowComparisonForMeasure(measureName: string): boolean {
+    return dimensionShowAllMeasures || measureName === activeMeasureName;
+  }
 </script>
 
 <thead>
@@ -126,94 +130,96 @@
         </button>
       </th>
 
-      {#if showDeltaAbsolute}
-        <th>
-          <button
-            aria-label="Toggle sort leaderboards by absolute change"
-            on:click={() => toggleSort(SortType.DELTA_ABSOLUTE, measureName)}
-          >
-            <DeltaChange />
-            {#if sortType === SortType.DELTA_ABSOLUTE && measureName === sortBy}
-              <div class="ui-copy-icon">
-                {#if sortedAscending}
-                  <div
-                    in:fly|global={{ duration: 200, y: 8 }}
-                    style:opacity={1}
-                  >
-                    <ArrowDown flip />
-                  </div>
-                {:else}
-                  <div
-                    in:fly|global={{ duration: 200, y: -8 }}
-                    style:opacity={1}
-                  >
-                    <ArrowDown />
-                  </div>
-                {/if}
-              </div>
-            {/if}
-          </button>
-        </th>
-      {/if}
+      {#if shouldShowComparisonForMeasure(measureName)}
+        {#if showDeltaAbsolute}
+          <th>
+            <button
+              aria-label="Toggle sort leaderboards by absolute change"
+              on:click={() => toggleSort(SortType.DELTA_ABSOLUTE, measureName)}
+            >
+              <DeltaChange />
+              {#if sortType === SortType.DELTA_ABSOLUTE && measureName === sortBy}
+                <div class="ui-copy-icon">
+                  {#if sortedAscending}
+                    <div
+                      in:fly|global={{ duration: 200, y: 8 }}
+                      style:opacity={1}
+                    >
+                      <ArrowDown flip />
+                    </div>
+                  {:else}
+                    <div
+                      in:fly|global={{ duration: 200, y: -8 }}
+                      style:opacity={1}
+                    >
+                      <ArrowDown />
+                    </div>
+                  {/if}
+                </div>
+              {/if}
+            </button>
+          </th>
+        {/if}
 
-      {#if showDeltaPercent}
-        <th>
-          <button
-            aria-label="Toggle sort leaderboards by percent change"
-            on:click={() => toggleSort(SortType.DELTA_PERCENT, measureName)}
-          >
-            <DeltaChangePercentage />
-            {#if sortType === SortType.DELTA_PERCENT && measureName === sortBy}
-              <div class="ui-copy-icon">
-                {#if sortedAscending}
-                  <div
-                    in:fly|global={{ duration: 200, y: 8 }}
-                    style:opacity={1}
-                  >
-                    <ArrowDown flip />
-                  </div>
-                {:else}
-                  <div
-                    in:fly|global={{ duration: 200, y: -8 }}
-                    style:opacity={1}
-                  >
-                    <ArrowDown />
-                  </div>
-                {/if}
-              </div>
-            {/if}
-          </button>
-        </th>
-      {/if}
+        {#if showDeltaPercent}
+          <th>
+            <button
+              aria-label="Toggle sort leaderboards by percent change"
+              on:click={() => toggleSort(SortType.DELTA_PERCENT, measureName)}
+            >
+              <DeltaChangePercentage />
+              {#if sortType === SortType.DELTA_PERCENT && measureName === sortBy}
+                <div class="ui-copy-icon">
+                  {#if sortedAscending}
+                    <div
+                      in:fly|global={{ duration: 200, y: 8 }}
+                      style:opacity={1}
+                    >
+                      <ArrowDown flip />
+                    </div>
+                  {:else}
+                    <div
+                      in:fly|global={{ duration: 200, y: -8 }}
+                      style:opacity={1}
+                    >
+                      <ArrowDown />
+                    </div>
+                  {/if}
+                </div>
+              {/if}
+            </button>
+          </th>
+        {/if}
 
-      {#if showPercentOfTotal}
-        <th>
-          <button
-            aria-label="Toggle sort leaderboards by percent of total"
-            on:click={() => toggleSort(SortType.PERCENT, measureName)}
-          >
-            <PercentOfTotal />
-            {#if sortType === SortType.PERCENT && measureName === sortBy}
-              <div class="ui-copy-icon">
-                {#if sortedAscending}
-                  <div
-                    in:fly|global={{ duration: 200, y: 8 }}
-                    style:opacity={1}
-                  >
-                    <ArrowDown flip />
-                  </div>
-                {:else}
-                  <div
-                    in:fly|global={{ duration: 200, y: -8 }}
-                    style:opacity={1}
-                  >
-                    <ArrowDown />
-                  </div>
-                {/if}
-              </div>
-            {/if}
-          </button>
-        </th>
+        {#if showPercentOfTotal}
+          <th>
+            <button
+              aria-label="Toggle sort leaderboards by percent of total"
+              on:click={() => toggleSort(SortType.PERCENT, measureName)}
+            >
+              <PercentOfTotal />
+              {#if sortType === SortType.PERCENT && measureName === sortBy}
+                <div class="ui-copy-icon">
+                  {#if sortedAscending}
+                    <div
+                      in:fly|global={{ duration: 200, y: 8 }}
+                      style:opacity={1}
+                    >
+                      <ArrowDown flip />
+                    </div>
+                  {:else}
+                    <div
+                      in:fly|global={{ duration: 200, y: -8 }}
+                      style:opacity={1}
+                    >
+                      <ArrowDown />
+                    </div>
+                  {/if}
+                </div>
+              {/if}
+            </button>
+          </th>
+        {/if}
       {/if}
     {/each}
   </tr>

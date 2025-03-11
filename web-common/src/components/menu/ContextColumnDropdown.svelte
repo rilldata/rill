@@ -15,7 +15,7 @@
   export let isValidPercentOfTotal: boolean;
   export let isTimeComparisonActive: boolean;
   export let tooltipText: string;
-  export let selectedFilters: string[] = [];
+  export let contextColumns: string[] | undefined;
   export let dimensionShowAllMeasures: boolean;
   export let onContextColumnChange: (
     columns: LeaderboardContextColumn[],
@@ -51,16 +51,19 @@
       : []),
   ];
 
-  function getLabelFromValue(value: LeaderboardContextColumn) {
-    return options.find((option) => option.value === value)?.label;
+  function getLabelFromValue(value: string) {
+    return (
+      options.find((option) => option.value === value)?.label ||
+      "unknown context column"
+    );
   }
 
   function toggleContextColumn(name: string) {
     if (!name) return;
     const column = name as LeaderboardContextColumn;
-    const newFilters = selectedFilters.includes(column)
-      ? selectedFilters.filter((f) => f !== column)
-      : [...selectedFilters, column];
+    const newFilters = contextColumns?.includes(column)
+      ? contextColumns?.filter((f) => f !== column)
+      : [...(contextColumns || []), column];
     onContextColumnChange(newFilters as LeaderboardContextColumn[]);
   }
 
@@ -68,22 +71,23 @@
   // Remove time comparison columns when time comparison is disabled
   $: {
     if (!isTimeComparisonActive) {
-      const filteredColumns = selectedFilters.filter(
+      const filteredColumns = contextColumns?.filter(
         (column) =>
           column !== LeaderboardContextColumn.DELTA_ABSOLUTE &&
           column !== LeaderboardContextColumn.DELTA_PERCENT,
       );
-      if (filteredColumns.length !== selectedFilters.length) {
+      if (filteredColumns?.length !== contextColumns?.length) {
         onContextColumnChange(filteredColumns as LeaderboardContextColumn[]);
       }
     }
   }
 
-  $: withText =
-    selectedFilters && selectedFilters.length > 1
-      ? `${selectedFilters.length} context columns`
-      : selectedFilters.length === 1
-        ? getLabelFromValue(selectedFilters[0] as LeaderboardContextColumn)
+  $: withText = !contextColumns
+    ? "no context columns"
+    : contextColumns.length > 1
+      ? `${contextColumns.length} context columns`
+      : contextColumns.length === 1
+        ? getLabelFromValue(contextColumns[0])
         : "no context columns";
 </script>
 
@@ -119,7 +123,7 @@
           <div class="px-1 pb-1 pt-1">
             {#each options as option}
               <DropdownMenu.CheckboxItem
-                checked={selectedFilters.includes(option.value)}
+                checked={contextColumns?.includes(option.value)}
                 onCheckedChange={() => toggleContextColumn(option.value)}
               >
                 <div class="flex items-center">
