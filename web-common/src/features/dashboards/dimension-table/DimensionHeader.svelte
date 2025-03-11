@@ -47,7 +47,7 @@
     },
     actions: {
       sorting: { toggleSort },
-      dimensions: { setPrimaryDimension, toggledimensionShowAllMeasures },
+      dimensions: { setPrimaryDimension, toggleDimensionShowAllMeasures },
       dimensionsFilter: { toggleDimensionFilterMode },
       contextColumn: { setContextColumns },
     },
@@ -164,7 +164,7 @@
       selectedFilters={$contextColumns}
       dimensionShowAllMeasures={$dimensionShowAllMeasures}
       onContextColumnChange={setContextColumns}
-      onShowForAllMeasures={toggledimensionShowAllMeasures}
+      onShowForAllMeasures={toggleDimensionShowAllMeasures}
       {canShowForAllMeasures}
     />
     {#if !isRowsEmpty}
