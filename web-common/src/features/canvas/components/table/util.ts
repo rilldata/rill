@@ -26,7 +26,6 @@ export function clearTableCache(componentName?: string) {
       if (!componentName) {
         // Clear all cache entries if componentName is undefined
         for (const entry of cache.values()) {
-          console.log("unsubscribing", entry);
           entry.unsubscribe();
         }
         cache.clear();
