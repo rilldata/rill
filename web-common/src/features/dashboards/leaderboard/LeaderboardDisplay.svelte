@@ -9,7 +9,6 @@
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardControls from "./LeaderboardControls.svelte";
   import {
-    DEFAULT_COL_WIDTH,
     DEFAULT_CONTEXT_COLUMN_WIDTH,
     deltaColumn,
     valueColumn,
@@ -65,11 +64,11 @@
 
   $: showPercentOfTotal =
     isValidPercentOfTotal &&
-    $contextColumns.includes(LeaderboardContextColumn.PERCENT);
+    $contextColumns?.includes(LeaderboardContextColumn.PERCENT);
 
   $: showDeltaPercent =
     !!comparisonTimeRange &&
-    $contextColumns.includes(LeaderboardContextColumn.DELTA_PERCENT);
+    $contextColumns?.includes(LeaderboardContextColumn.DELTA_PERCENT);
 
   $: tableWidth =
     dimensionColumnWidth +
