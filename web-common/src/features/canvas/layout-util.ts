@@ -78,6 +78,7 @@ export function moveToRow<T extends YAMLRow | V1CanvasRow>(
   dropPosition?: {
     column?: number;
     row: number;
+    copy?: boolean;
   },
   defaultMetrics?: {
     metricsViewName: string;
@@ -135,6 +136,13 @@ export function moveToRow<T extends YAMLRow | V1CanvasRow>(
               definedInCanvas: true,
             },
       );
+    } else if (dropPosition?.copy && item.position) {
+      const row = rowsClone[item.position.row];
+      if (!row) return;
+      const component = row.items?.[item.position.column];
+      if (!component) return;
+
+      movedComponents.push(structuredClone(component));
     } else if (item.position) {
       const row = rowsClone[item.position.row];
       if (!row) return;
