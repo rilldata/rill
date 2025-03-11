@@ -20,14 +20,23 @@ type CacheEntry = {
 };
 
 const tableStoreCache = writable<Map<string, CacheEntry>>(new Map());
-
-export function clearTableCache(componentName: string) {
+export function clearTableCache(componentName?: string) {
   tableStoreCache.update(
     (cache: Map<string, CacheEntry>): Map<string, CacheEntry> => {
-      for (const [key, entry] of cache.entries()) {
-        if (key.startsWith(componentName)) {
+      if (!componentName) {
+        // Clear all cache entries if componentName is undefined
+        for (const entry of cache.values()) {
+          console.log("unsubscribing", entry);
           entry.unsubscribe();
-          cache.delete(key);
+        }
+        cache.clear();
+      } else {
+        // Clear only entries matching componentName
+        for (const [key, entry] of cache.entries()) {
+          if (key.startsWith(componentName)) {
+            entry.unsubscribe();
+            cache.delete(key);
+          }
         }
       }
       return cache;
