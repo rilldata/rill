@@ -54,18 +54,19 @@ tests:
   - name: query_all_result_duckdb_source_csv
     resolver: sql
     properties:
-      sql: "select * from all_datatypes_duckdb_source_csv"
+      sql: "select * from all_datatypes_duckdb_source_csv order by id"
     result_csv: |
-      boolean_col,int32_col,int64_col,float_col,double_col,byte_array_col,fixed_len_byte_array_col,string_col,decimal_col,date_col,time_millis_col,time_micros_col,timestamp_millis_col,timestamp_micros_col,uuid_col,list_int_col,list_string_col,map_col,struct_col
-      true,123,45678901234,1.23,3.14159,abcd,1234567890abcdef,hello,123.45,2024-03-06,0001-01-01T00:02:03.456Z,0001-01-01T00:02:03.456789Z,2024-03-06T12:34:56.789Z,2024-03-06T12:34:56.789123Z,uuidabcd1234efgh,[1 2 3],['apple' 'banana' 'cherry'],"[('key1', 10), ('key2', 20)]","{'field_int_col': 42, 'field_float_col': 3.140000104904175, 'field_string_col': 'example'}"
-      false,0,0,0,0,,0000000000000000,,0,1970-01-01,0001-01-01T00:00:00Z,0001-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,0000000000000000,[],[],[],"{'field_int_col': 0, 'field_float_col': 0.0, 'field_string_col': ''}"
-      ,,,,,,,,,,,,,,,,,,
+      id,boolean_col,int32_col,int64_col,float_col,double_col,byte_array_col,fixed_len_byte_array_col,string_col,decimal_col,date_col,time_millis_col,time_micros_col,timestamp_millis_col,timestamp_micros_col,uuid_col,list_int_col,list_string_col,map_col,struct_col
+      1,true,123,45678901234,1.23,3.14159,abcd,1234567890abcdef,hello,123.45,2024-03-06,0001-01-01T00:02:03.456Z,0001-01-01T00:02:03.456789Z,2024-03-06T12:34:56.789Z,2024-03-06T12:34:56.789123Z,uuidabcd1234efgh,[1 2 3],['apple' 'banana' 'cherry'],"[('key1', 10), ('key2', 20)]","{'field_int_col': 42, 'field_float_col': 3.140000104904175, 'field_string_col': 'example'}"
+      2,false,0,0,0,0,,0000000000000000,,0,1970-01-01,0001-01-01T00:00:00Z,0001-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,0000000000000000,[],[],[],"{'field_int_col': 0, 'field_float_col': 0.0, 'field_string_col': ''}"
+      3,,,,,,,,,,,,,,,,,,,
   - name: query_all_datatypes_duckdb_source_csv
     resolver: sql
     properties:
       sql: "describe all_datatypes_duckdb_source_csv"
     result_csv: |
       column_name,column_type,null,key,default,extra
+      id,BIGINT,YES,,,
       boolean_col,BOOLEAN,YES,,,
       int32_col,BIGINT,YES,,,
       int64_col,BIGINT,YES,,,
@@ -88,18 +89,19 @@ tests:
   - name: query_all_result_duckdb_model_csv
     resolver: sql
     properties:
-      sql: "select * from all_datatypes_duckdb_model_csv"
+      sql: "select * from all_datatypes_duckdb_model_csv order by id"
     result_csv: |
-      boolean_col,int32_col,int64_col,float_col,double_col,byte_array_col,fixed_len_byte_array_col,string_col,decimal_col,date_col,time_millis_col,time_micros_col,timestamp_millis_col,timestamp_micros_col,uuid_col,list_int_col,list_string_col,map_col,struct_col
-      true,123,45678901234,1.23,3.14159,abcd,1234567890abcdef,hello,123.45,2024-03-06,0001-01-01T00:02:03.456Z,0001-01-01T00:02:03.456789Z,2024-03-06T12:34:56.789Z,2024-03-06T12:34:56.789123Z,uuidabcd1234efgh,[1 2 3],['apple' 'banana' 'cherry'],"[('key1', 10), ('key2', 20)]","{'field_int_col': 42, 'field_float_col': 3.140000104904175, 'field_string_col': 'example'}"
-      false,0,0,0,0,,0000000000000000,,0,1970-01-01,0001-01-01T00:00:00Z,0001-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,0000000000000000,[],[],[],"{'field_int_col': 0, 'field_float_col': 0.0, 'field_string_col': ''}"
-      ,,,,,,,,,,,,,,,,,,
+      id,boolean_col,int32_col,int64_col,float_col,double_col,byte_array_col,fixed_len_byte_array_col,string_col,decimal_col,date_col,time_millis_col,time_micros_col,timestamp_millis_col,timestamp_micros_col,uuid_col,list_int_col,list_string_col,map_col,struct_col
+      1,true,123,45678901234,1.23,3.14159,abcd,1234567890abcdef,hello,123.45,2024-03-06,0001-01-01T00:02:03.456Z,0001-01-01T00:02:03.456789Z,2024-03-06T12:34:56.789Z,2024-03-06T12:34:56.789123Z,uuidabcd1234efgh,[1 2 3],['apple' 'banana' 'cherry'],"[('key1', 10), ('key2', 20)]","{'field_int_col': 42, 'field_float_col': 3.140000104904175, 'field_string_col': 'example'}"
+      2,false,0,0,0,0,,0000000000000000,,0,1970-01-01,0001-01-01T00:00:00Z,0001-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,0000000000000000,[],[],[],"{'field_int_col': 0, 'field_float_col': 0.0, 'field_string_col': ''}"
+      3,,,,,,,,,,,,,,,,,,,
   - name: query_all_datatypes_duckdb_model_csv
     resolver: sql
     properties:
       sql: "describe all_datatypes_duckdb_model_csv"
     result_csv: |
       column_name,column_type,null,key,default,extra
+      id,BIGINT,YES,,,
       boolean_col,BOOLEAN,YES,,,
       int32_col,BIGINT,YES,,,
       int64_col,BIGINT,YES,,,
@@ -122,14 +124,22 @@ tests:
   - name: query_all_result_clickhouse_csv
     resolver: sql
     properties:
-      sql: "select * from all_datatypes_clickhouse_csv"
+      sql: "select * from all_datatypes_clickhouse_csv order by id"
       connector: clickhouse
       # time is converted to datetime like 2025-01-01T00:02:03.456Z but should be 1970-01-01T00:02:03.456Z, which is wrong.
     result_csv: |
-      boolean_col,int32_col,int64_col,float_col,double_col,byte_array_col,fixed_len_byte_array_col,string_col,decimal_col,date_col,time_millis_col,time_micros_col,timestamp_millis_col,timestamp_micros_col,uuid_col,list_int_col,list_string_col,map_col,struct_col
-      True,123,45678901234,1.23,3.14159,abcd,1234567890abcdef,hello,123.45,2024-03-06,2025-01-01T00:02:03.456Z,2025-01-01T00:02:03.456789Z,2024-03-06T12:34:56.789Z,2024-03-06T12:34:56.789123Z,uuidabcd1234efgh,[1 2 3],['apple' 'banana' 'cherry'],"[('key1', 10), ('key2', 20)]","{'field_int_col': 42, 'field_float_col': 3.140000104904175, 'field_string_col': 'example'}"
-      False,0,0,0,0,,0000000000000000,,0,1970-01-01,2025-01-01T00:00:00Z,2025-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,0000000000000000,[],[],[],"{'field_int_col': 0, 'field_float_col': 0.0, 'field_string_col': ''}"
-      ,,,,,,,,,,,,,,,,,,
+      id,boolean_col,int32_col,int64_col,float_col,double_col,byte_array_col,fixed_len_byte_array_col,string_col,decimal_col,date_col,time_millis_col,time_micros_col,timestamp_millis_col,timestamp_micros_col,uuid_col,list_int_col,list_string_col,map_col,struct_col
+      1,True,123,45678901234,1.23,3.14159,abcd,1234567890abcdef,hello,123.45,2024-03-06,2025-01-01T00:02:03.456Z,2025-01-01T00:02:03.456789Z,2024-03-06T12:34:56.789Z,2024-03-06T12:34:56.789123Z,uuidabcd1234efgh,[1 2 3],['apple' 'banana' 'cherry'],"[('key1', 10), ('key2', 20)]","{'field_int_col': 42, 'field_float_col': 3.140000104904175, 'field_string_col': 'example'}"
+      2,False,0,0,0,0,,0000000000000000,,0,1970-01-01,2025-01-01T00:00:00Z,2025-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,0000000000000000,[],[],[],"{'field_int_col': 0, 'field_float_col': 0.0, 'field_string_col': ''}"
+      3,,,,,,,,,,,,,,,,,,,
+  - name: query_table_type_clickhouse_csv
+    resolver: sql
+    properties:
+      sql: "select name, engine from system.tables where name = 'all_datatypes_clickhouse_csv'"
+      connector: clickhouse
+    result_csv: |
+      name,engine
+      all_datatypes_clickhouse_csv,MergeTree
   - name: query_all_datatypes_clickhouse_csv
     resolver: sql
     properties:
@@ -138,6 +148,7 @@ tests:
       connector: clickhouse
     result_csv: |
       name,type
+      id,Nullable(Int64)
       boolean_col,Nullable(String)
       int32_col,Nullable(Int64)
       int64_col,Nullable(Int64)
@@ -160,18 +171,19 @@ tests:
   - name: query_all_result_duckdb_source_parquet
     resolver: sql
     properties:
-      sql: "select * from all_datatypes_duckdb_source_parquet"
+      sql: "select * from all_datatypes_duckdb_source_parquet order by id"
     result_csv: |
-      boolean_col,int32_col,int64_col,float_col,double_col,byte_array_col,fixed_len_byte_array_col,string_col,decimal_col,date_col,time_millis_col,time_micros_col,timestamp_millis_col,timestamp_micros_col,uuid_col,list_int_col,list_string_col,map_col,struct_col
-      true,123,45678901234,1.2300000190734863,3.14159,YWJjZA==,MTIzNDU2Nzg5MGFiY2RlZg==,hello,123.45,2024-03-06,0001-01-01T00:02:03.456Z,0001-01-01T00:02:03.456789Z,2024-03-06T12:34:56.789Z,2024-03-06T12:34:56.789123Z,dXVpZGFiY2QxMjM0ZWZnaA==,"[1,2,3]","[""apple"",""banana"",""cherry""]","{""key1"":10,""key2"":20}","{""field_float_col"":3.140000104904175,""field_int_col"":42,""field_string_col"":""example""}"
-      false,0,0,0,0,,MDAwMDAwMDAwMDAwMDAwMA==,,0,1970-01-01,0001-01-01T00:00:00Z,0001-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,MDAwMDAwMDAwMDAwMDAwMA==,[],[],{},"{""field_float_col"":0,""field_int_col"":0,""field_string_col"":""""}"
-      ,,,,,,,,,,,,,,,,,,
+      id,boolean_col,int32_col,int64_col,float_col,double_col,byte_array_col,fixed_len_byte_array_col,string_col,decimal_col,date_col,time_millis_col,time_micros_col,timestamp_millis_col,timestamp_micros_col,uuid_col,list_int_col,list_string_col,map_col,struct_col
+      1,true,123,45678901234,1.2300000190734863,3.14159,YWJjZA==,MTIzNDU2Nzg5MGFiY2RlZg==,hello,123.45,2024-03-06,0001-01-01T00:02:03.456Z,0001-01-01T00:02:03.456789Z,2024-03-06T12:34:56.789Z,2024-03-06T12:34:56.789123Z,dXVpZGFiY2QxMjM0ZWZnaA==,"[1,2,3]","[""apple"",""banana"",""cherry""]","{""key1"":10,""key2"":20}","{""field_float_col"":3.140000104904175,""field_int_col"":42,""field_string_col"":""example""}"
+      2,false,0,0,0,0,,MDAwMDAwMDAwMDAwMDAwMA==,,0,1970-01-01,0001-01-01T00:00:00Z,0001-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,MDAwMDAwMDAwMDAwMDAwMA==,[],[],{},"{""field_float_col"":0,""field_int_col"":0,""field_string_col"":""""}"
+      3,,,,,,,,,,,,,,,,,,,
   - name: query_all_datatypes_duckdb_source_parquet
     resolver: sql
     properties:
       sql: "describe all_datatypes_duckdb_source_parquet"
     result_csv: |
       column_name,column_type,null,key,default,extra
+      id,INTEGER,YES,,,
       boolean_col,BOOLEAN,YES,,,
       int32_col,INTEGER,YES,,,
       int64_col,BIGINT,YES,,,
@@ -194,18 +206,19 @@ tests:
   - name: query_all_result_duckdb_model_parquet
     resolver: sql
     properties:
-      sql: "select * from all_datatypes_duckdb_model_parquet"
+      sql: "select * from all_datatypes_duckdb_model_parquet order by id"
     result_csv: |
-      boolean_col,int32_col,int64_col,float_col,double_col,byte_array_col,fixed_len_byte_array_col,string_col,decimal_col,date_col,time_millis_col,time_micros_col,timestamp_millis_col,timestamp_micros_col,uuid_col,list_int_col,list_string_col,map_col,struct_col
-      true,123,45678901234,1.2300000190734863,3.14159,YWJjZA==,MTIzNDU2Nzg5MGFiY2RlZg==,hello,123.45,2024-03-06,0001-01-01T00:02:03.456Z,0001-01-01T00:02:03.456789Z,2024-03-06T12:34:56.789Z,2024-03-06T12:34:56.789123Z,dXVpZGFiY2QxMjM0ZWZnaA==,"[1,2,3]","[""apple"",""banana"",""cherry""]","{""key1"":10,""key2"":20}","{""field_float_col"":3.140000104904175,""field_int_col"":42,""field_string_col"":""example""}"
-      false,0,0,0,0,,MDAwMDAwMDAwMDAwMDAwMA==,,0,1970-01-01,0001-01-01T00:00:00Z,0001-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,MDAwMDAwMDAwMDAwMDAwMA==,[],[],{},"{""field_float_col"":0,""field_int_col"":0,""field_string_col"":""""}"
-      ,,,,,,,,,,,,,,,,,,
+      id,boolean_col,int32_col,int64_col,float_col,double_col,byte_array_col,fixed_len_byte_array_col,string_col,decimal_col,date_col,time_millis_col,time_micros_col,timestamp_millis_col,timestamp_micros_col,uuid_col,list_int_col,list_string_col,map_col,struct_col
+      1,true,123,45678901234,1.2300000190734863,3.14159,YWJjZA==,MTIzNDU2Nzg5MGFiY2RlZg==,hello,123.45,2024-03-06,0001-01-01T00:02:03.456Z,0001-01-01T00:02:03.456789Z,2024-03-06T12:34:56.789Z,2024-03-06T12:34:56.789123Z,dXVpZGFiY2QxMjM0ZWZnaA==,"[1,2,3]","[""apple"",""banana"",""cherry""]","{""key1"":10,""key2"":20}","{""field_float_col"":3.140000104904175,""field_int_col"":42,""field_string_col"":""example""}"
+      2,false,0,0,0,0,,MDAwMDAwMDAwMDAwMDAwMA==,,0,1970-01-01,0001-01-01T00:00:00Z,0001-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,MDAwMDAwMDAwMDAwMDAwMA==,[],[],{},"{""field_float_col"":0,""field_int_col"":0,""field_string_col"":""""}"
+      3,,,,,,,,,,,,,,,,,,,
   - name: query_all_datatypes_duckdb_model_parquet
     resolver: sql
     properties:
       sql: "describe all_datatypes_duckdb_model_parquet"
     result_csv: |
       column_name,column_type,null,key,default,extra
+      id,INTEGER,YES,,,
       boolean_col,BOOLEAN,YES,,,
       int32_col,INTEGER,YES,,,
       int64_col,BIGINT,YES,,,
@@ -228,13 +241,13 @@ tests:
   - name: query_all_result_clickhouse_parquet
     resolver: sql
     properties:
-      sql: "select * from all_datatypes_clickhouse_parquet"
+      sql: "select * from all_datatypes_clickhouse_parquet order by id"
       connector: clickhouse
     result_csv: |
-      boolean_col,int32_col,int64_col,float_col,double_col,byte_array_col,fixed_len_byte_array_col,string_col,decimal_col,date_col,time_millis_col,time_micros_col,timestamp_millis_col,timestamp_micros_col,uuid_col,list_int_col,list_string_col,map_col,struct_col
-      true,123,45678901234,1.2300000190734863,3.14159,abcd,1234567890abcdef,hello,123.45,2024-03-06,1970-01-01T00:02:03.456Z,1970-01-01T00:02:03.456789Z,2024-03-06T12:34:56.789Z,2024-03-06T12:34:56.789123Z,uuidabcd1234efgh,"[1,2,3]","[""apple"",""banana"",""cherry""]","{""key1"":10,""key2"":20}","{""FIELD_FLOAT_COL"":null,""FIELD_INT_COL"":null,""FIELD_STRING_COL"":null,""field_float_col"":3.14,""field_int_col"":42,""field_string_col"":""example""}"
-      false,0,0,0,0,,0000000000000000,,0,1970-01-01,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,0000000000000000,[],[],{},"{""FIELD_FLOAT_COL"":null,""FIELD_INT_COL"":null,""FIELD_STRING_COL"":null,""field_float_col"":0,""field_int_col"":0,""field_string_col"":""""}"
-      ,,,,,,,,,,,,,,,[],[],{},"{""FIELD_FLOAT_COL"":null,""FIELD_INT_COL"":null,""FIELD_STRING_COL"":null,""field_float_col"":null,""field_int_col"":null,""field_string_col"":null}"
+      id,boolean_col,int32_col,int64_col,float_col,double_col,byte_array_col,fixed_len_byte_array_col,string_col,decimal_col,date_col,time_millis_col,time_micros_col,timestamp_millis_col,timestamp_micros_col,uuid_col,list_int_col,list_string_col,map_col,struct_col
+      1,true,123,45678901234,1.2300000190734863,3.14159,abcd,1234567890abcdef,hello,123.45,2024-03-06,1970-01-01T00:02:03.456Z,1970-01-01T00:02:03.456789Z,2024-03-06T12:34:56.789Z,2024-03-06T12:34:56.789123Z,uuidabcd1234efgh,"[1,2,3]","[""apple"",""banana"",""cherry""]","{""key1"":10,""key2"":20}","{""FIELD_FLOAT_COL"":null,""FIELD_INT_COL"":null,""FIELD_STRING_COL"":null,""field_float_col"":3.14,""field_int_col"":42,""field_string_col"":""example""}"
+      2,false,0,0,0,0,,0000000000000000,,0,1970-01-01,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,0000000000000000,[],[],{},"{""FIELD_FLOAT_COL"":null,""FIELD_INT_COL"":null,""FIELD_STRING_COL"":null,""field_float_col"":0,""field_int_col"":0,""field_string_col"":""""}"
+      3,,,,,,,,,,,,,,,,[],[],{},"{""FIELD_FLOAT_COL"":null,""FIELD_INT_COL"":null,""FIELD_STRING_COL"":null,""field_float_col"":null,""field_int_col"":null,""field_string_col"":null}"
   - name: query_all_datatypes_clickhouse_parquet
     resolver: sql
     properties:
@@ -243,6 +256,7 @@ tests:
       connector: clickhouse
     result_csv: |
       name,type
+      id,Nullable(Int32)
       boolean_col,Nullable(Bool)
       int32_col,Nullable(Int32)
       int64_col,Nullable(Int64)
@@ -265,38 +279,38 @@ tests:
   - name: query_all_result_duckdb_source_glob
     resolver: sql
     properties:
-      sql: "select * from all_datatypes_duckdb_source_glob order by y,boolean_col"
+      sql: "select * from all_datatypes_duckdb_source_glob order by id"
     result_csv: |
-      boolean_col,int32_col,int64_col,float_col,double_col,byte_array_col,fixed_len_byte_array_col,string_col,decimal_col,date_col,time_millis_col,time_micros_col,timestamp_millis_col,timestamp_micros_col,uuid_col,list_int_col,list_string_col,map_col,struct_col,y
-      false,0,0,0,0,,0000000000000000,,0,1970-01-01,0001-01-01T00:00:00Z,0001-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,0000000000000000,[],[],[],"{'field_int_col': 0, 'field_float_col': 0.0, 'field_string_col': ''}",2023
-      true,123,45678901234,1.23,3.14159,abcd,1234567890abcdef,hello,123.45,2024-03-06,0001-01-01T00:02:03.456Z,0001-01-01T00:02:03.456789Z,2024-03-06T12:34:56.789Z,2024-03-06T12:34:56.789123Z,uuidabcd1234efgh,[1 2 3],['apple' 'banana' 'cherry'],"[('key1', 10), ('key2', 20)]","{'field_int_col': 42, 'field_float_col': 3.140000104904175, 'field_string_col': 'example'}",2023
-      ,,,,,,,,,,,,,,,,,,,2023
-      false,0,0,0,0,,0000000000000000,,0,1970-01-01,0001-01-01T00:00:00Z,0001-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,0000000000000000,[],[],[],"{'field_int_col': 0, 'field_float_col': 0.0, 'field_string_col': ''}",2024
-      true,123,45678901234,1.23,3.14159,abcd,1234567890abcdef,hello,123.45,2024-03-06,0001-01-01T00:02:03.456Z,0001-01-01T00:02:03.456789Z,2024-03-06T12:34:56.789Z,2024-03-06T12:34:56.789123Z,uuidabcd1234efgh,[1 2 3],['apple' 'banana' 'cherry'],"[('key1', 10), ('key2', 20)]","{'field_int_col': 42, 'field_float_col': 3.140000104904175, 'field_string_col': 'example'}",2024
-      ,,,,,,,,,,,,,,,,,,,2024
+      id,boolean_col,int32_col,int64_col,float_col,double_col,byte_array_col,fixed_len_byte_array_col,string_col,decimal_col,date_col,time_millis_col,time_micros_col,timestamp_millis_col,timestamp_micros_col,uuid_col,list_int_col,list_string_col,map_col,struct_col,y
+      1,true,123,45678901234,1.23,3.14159,abcd,1234567890abcdef,hello,123.45,2024-03-06,0001-01-01T00:02:03.456Z,0001-01-01T00:02:03.456789Z,2024-03-06T12:34:56.789Z,2024-03-06T12:34:56.789123Z,uuidabcd1234efgh,[1 2 3],['apple' 'banana' 'cherry'],"[('key1', 10), ('key2', 20)]","{'field_int_col': 42, 'field_float_col': 3.140000104904175, 'field_string_col': 'example'}",2024
+      2,false,0,0,0,0,,0000000000000000,,0,1970-01-01,0001-01-01T00:00:00Z,0001-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,0000000000000000,[],[],[],"{'field_int_col': 0, 'field_float_col': 0.0, 'field_string_col': ''}",2024
+      3,,,,,,,,,,,,,,,,,,,,2024
+      4,true,123,45678901234,1.23,3.14159,abcd,1234567890abcdef,hello,123.45,2024-03-06,0001-01-01T00:02:03.456Z,0001-01-01T00:02:03.456789Z,2024-03-06T12:34:56.789Z,2024-03-06T12:34:56.789123Z,uuidabcd1234efgh,[1 2 3],['apple' 'banana' 'cherry'],"[('key1', 10), ('key2', 20)]","{'field_int_col': 42, 'field_float_col': 3.140000104904175, 'field_string_col': 'example'}",2023
+      5,false,0,0,0,0,,0000000000000000,,0,1970-01-01,0001-01-01T00:00:00Z,0001-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,0000000000000000,[],[],[],"{'field_int_col': 0, 'field_float_col': 0.0, 'field_string_col': ''}",2023
+      6,,,,,,,,,,,,,,,,,,,,2023
   - name: query_all_result_duckdb_model_glob
     resolver: sql
     properties:
-      sql: "select * from all_datatypes_duckdb_model_glob order by y,boolean_col"
+      sql: "select * from all_datatypes_duckdb_model_glob order by id"
     result_csv: |
-      boolean_col,int32_col,int64_col,float_col,double_col,byte_array_col,fixed_len_byte_array_col,string_col,decimal_col,date_col,time_millis_col,time_micros_col,timestamp_millis_col,timestamp_micros_col,uuid_col,list_int_col,list_string_col,map_col,struct_col,y
-      false,0,0,0,0,,0000000000000000,,0,1970-01-01,0001-01-01T00:00:00Z,0001-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,0000000000000000,[],[],[],"{'field_int_col': 0, 'field_float_col': 0.0, 'field_string_col': ''}",2023
-      true,123,45678901234,1.23,3.14159,abcd,1234567890abcdef,hello,123.45,2024-03-06,0001-01-01T00:02:03.456Z,0001-01-01T00:02:03.456789Z,2024-03-06T12:34:56.789Z,2024-03-06T12:34:56.789123Z,uuidabcd1234efgh,[1 2 3],['apple' 'banana' 'cherry'],"[('key1', 10), ('key2', 20)]","{'field_int_col': 42, 'field_float_col': 3.140000104904175, 'field_string_col': 'example'}",2023
-      ,,,,,,,,,,,,,,,,,,,2023
-      false,0,0,0,0,,0000000000000000,,0,1970-01-01,0001-01-01T00:00:00Z,0001-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,0000000000000000,[],[],[],"{'field_int_col': 0, 'field_float_col': 0.0, 'field_string_col': ''}",2024
-      true,123,45678901234,1.23,3.14159,abcd,1234567890abcdef,hello,123.45,2024-03-06,0001-01-01T00:02:03.456Z,0001-01-01T00:02:03.456789Z,2024-03-06T12:34:56.789Z,2024-03-06T12:34:56.789123Z,uuidabcd1234efgh,[1 2 3],['apple' 'banana' 'cherry'],"[('key1', 10), ('key2', 20)]","{'field_int_col': 42, 'field_float_col': 3.140000104904175, 'field_string_col': 'example'}",2024
-      ,,,,,,,,,,,,,,,,,,,2024
+      id,boolean_col,int32_col,int64_col,float_col,double_col,byte_array_col,fixed_len_byte_array_col,string_col,decimal_col,date_col,time_millis_col,time_micros_col,timestamp_millis_col,timestamp_micros_col,uuid_col,list_int_col,list_string_col,map_col,struct_col,y
+      1,true,123,45678901234,1.23,3.14159,abcd,1234567890abcdef,hello,123.45,2024-03-06,0001-01-01T00:02:03.456Z,0001-01-01T00:02:03.456789Z,2024-03-06T12:34:56.789Z,2024-03-06T12:34:56.789123Z,uuidabcd1234efgh,[1 2 3],['apple' 'banana' 'cherry'],"[('key1', 10), ('key2', 20)]","{'field_int_col': 42, 'field_float_col': 3.140000104904175, 'field_string_col': 'example'}",2024
+      2,false,0,0,0,0,,0000000000000000,,0,1970-01-01,0001-01-01T00:00:00Z,0001-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,0000000000000000,[],[],[],"{'field_int_col': 0, 'field_float_col': 0.0, 'field_string_col': ''}",2024
+      3,,,,,,,,,,,,,,,,,,,,2024
+      4,true,123,45678901234,1.23,3.14159,abcd,1234567890abcdef,hello,123.45,2024-03-06,0001-01-01T00:02:03.456Z,0001-01-01T00:02:03.456789Z,2024-03-06T12:34:56.789Z,2024-03-06T12:34:56.789123Z,uuidabcd1234efgh,[1 2 3],['apple' 'banana' 'cherry'],"[('key1', 10), ('key2', 20)]","{'field_int_col': 42, 'field_float_col': 3.140000104904175, 'field_string_col': 'example'}",2023
+      5,false,0,0,0,0,,0000000000000000,,0,1970-01-01,0001-01-01T00:00:00Z,0001-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,0000000000000000,[],[],[],"{'field_int_col': 0, 'field_float_col': 0.0, 'field_string_col': ''}",2023
+      6,,,,,,,,,,,,,,,,,,,,2023
   - name: query_all_result_clickhouse_glob
     resolver: sql
     properties:
-      sql: "select * from all_datatypes_clickhouse_glob"
+      sql: "select * from all_datatypes_clickhouse_glob order by id"
       connector: clickhouse
       # time is converted to datetime like 2025-01-01T00:02:03.456Z but should be 1970-01-01T00:02:03.456Z, which is wrong.
     result_csv: |
-      boolean_col,int32_col,int64_col,float_col,double_col,byte_array_col,fixed_len_byte_array_col,string_col,decimal_col,date_col,time_millis_col,time_micros_col,timestamp_millis_col,timestamp_micros_col,uuid_col,list_int_col,list_string_col,map_col,struct_col
-      True,123,45678901234,1.23,3.14159,abcd,1234567890abcdef,hello,123.45,2024-03-06,2025-01-01T00:02:03.456Z,2025-01-01T00:02:03.456789Z,2024-03-06T12:34:56.789Z,2024-03-06T12:34:56.789123Z,uuidabcd1234efgh,[1 2 3],['apple' 'banana' 'cherry'],"[('key1', 10), ('key2', 20)]","{'field_int_col': 42, 'field_float_col': 3.140000104904175, 'field_string_col': 'example'}"
-      False,0,0,0,0,,0000000000000000,,0,1970-01-01,2025-01-01T00:00:00Z,2025-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,0000000000000000,[],[],[],"{'field_int_col': 0, 'field_float_col': 0.0, 'field_string_col': ''}"
-      ,,,,,,,,,,,,,,,,,,
-      True,123,45678901234,1.23,3.14159,abcd,1234567890abcdef,hello,123.45,2024-03-06,2025-01-01T00:02:03.456Z,2025-01-01T00:02:03.456789Z,2024-03-06T12:34:56.789Z,2024-03-06T12:34:56.789123Z,uuidabcd1234efgh,[1 2 3],['apple' 'banana' 'cherry'],"[('key1', 10), ('key2', 20)]","{'field_int_col': 42, 'field_float_col': 3.140000104904175, 'field_string_col': 'example'}"
-      False,0,0,0,0,,0000000000000000,,0,1970-01-01,2025-01-01T00:00:00Z,2025-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,0000000000000000,[],[],[],"{'field_int_col': 0, 'field_float_col': 0.0, 'field_string_col': ''}"
-      ,,,,,,,,,,,,,,,,,,
+      id,boolean_col,int32_col,int64_col,float_col,double_col,byte_array_col,fixed_len_byte_array_col,string_col,decimal_col,date_col,time_millis_col,time_micros_col,timestamp_millis_col,timestamp_micros_col,uuid_col,list_int_col,list_string_col,map_col,struct_col
+      1,True,123,45678901234,1.23,3.14159,abcd,1234567890abcdef,hello,123.45,2024-03-06,2025-01-01T00:02:03.456Z,2025-01-01T00:02:03.456789Z,2024-03-06T12:34:56.789Z,2024-03-06T12:34:56.789123Z,uuidabcd1234efgh,[1 2 3],['apple' 'banana' 'cherry'],"[('key1', 10), ('key2', 20)]","{'field_int_col': 42, 'field_float_col': 3.140000104904175, 'field_string_col': 'example'}"
+      2,False,0,0,0,0,,0000000000000000,,0,1970-01-01,2025-01-01T00:00:00Z,2025-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,0000000000000000,[],[],[],"{'field_int_col': 0, 'field_float_col': 0.0, 'field_string_col': ''}"
+      3,,,,,,,,,,,,,,,,,,,
+      4,True,123,45678901234,1.23,3.14159,abcd,1234567890abcdef,hello,123.45,2024-03-06,2025-01-01T00:02:03.456Z,2025-01-01T00:02:03.456789Z,2024-03-06T12:34:56.789Z,2024-03-06T12:34:56.789123Z,uuidabcd1234efgh,[1 2 3],['apple' 'banana' 'cherry'],"[('key1', 10), ('key2', 20)]","{'field_int_col': 42, 'field_float_col': 3.140000104904175, 'field_string_col': 'example'}"
+      5,False,0,0,0,0,,0000000000000000,,0,1970-01-01,2025-01-01T00:00:00Z,2025-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,0000000000000000,[],[],[],"{'field_int_col': 0, 'field_float_col': 0.0, 'field_string_col': ''}"
+      6,,,,,,,,,,,,,,,,,,,
