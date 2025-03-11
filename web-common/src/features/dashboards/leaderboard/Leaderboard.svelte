@@ -33,7 +33,6 @@
   import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
   import LeaderboardRow from "./LeaderboardRow.svelte";
-  import LoadingRows from "./LoadingRows.svelte";
   import {
     cleanUpComparisonValue,
     compareLeaderboardValues,
@@ -45,6 +44,7 @@
     DEFAULT_CONTEXT_COLUMN_WIDTH,
   } from "./leaderboard-widths";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
+  import DelayedLoadingRows from "./DelayedLoadingRows.svelte";
 
   const slice = 7;
   const gutterWidth = 24;
@@ -366,7 +366,7 @@
 
     <tbody>
       {#if isFetching}
-        <LoadingRows columns={columnCount + 1} />
+        <DelayedLoadingRows isLoading={isFetching} columns={columnCount + 1} />
       {:else}
         {#each aboveTheFold as itemData (itemData.dimensionValue)}
           <LeaderboardRow
