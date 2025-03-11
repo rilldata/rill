@@ -1,7 +1,11 @@
 <script lang="ts">
   import VirtualTooltip from "@rilldata/web-common/components/virtualized-table/VirtualTooltip.svelte";
   import FlatTable from "@rilldata/web-common/features/dashboards/pivot/FlatTable.svelte";
-  import { getMeasureColumnProps } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-definition";
+  import {
+    getDimensionColumnProps,
+    getMeasureColumnProps,
+    getRowNestedLabel,
+  } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-definition";
   import { NUM_ROWS_PER_PAGE } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
   import {
     isElement,
@@ -102,6 +106,11 @@
   $: hasMeasureContextColumns = $config.enableComparison;
 
   $: measures = getMeasureColumnProps($config);
+  $: rowDimensions = getDimensionColumnProps(
+    $config.rowDimensionNames,
+    $config,
+  );
+  $: rowDimensionLabel = getRowNestedLabel(rowDimensions);
 
   $: headerGroups = $table.getHeaderGroups();
   $: totalHeaderHeight = headerGroups.length * HEADER_HEIGHT;
@@ -257,6 +266,7 @@
       {timeDimension}
       {totalsRow}
       {totalRowSize}
+      {rowDimensionLabel}
       {hasColumnDimension}
       {dataRows}
       {measures}

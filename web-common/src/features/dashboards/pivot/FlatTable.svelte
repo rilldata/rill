@@ -291,7 +291,7 @@
   }
 
   /* The totals row */
-  :global(.with-measure) tbody > tr:nth-of-type(2) {
+  .with-measure tbody > tr:nth-of-type(2) {
     @apply bg-white sticky z-20;
     top: var(--total-header-height);
   }

@@ -69,7 +69,7 @@ export function calculateMeasureWidth(
       if (typeof value === "string" || typeof value === "number") {
         maxValueLength = String(formatter(value)).length;
       } else {
-        maxValueLength = 0;
+        maxValueLength = 8;
       }
     }
   } else {

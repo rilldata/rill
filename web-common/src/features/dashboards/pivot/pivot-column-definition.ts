@@ -127,10 +127,11 @@ function createColumnDefinitionForDimensions(
   let rowTotalsColumns: ColumnDef<PivotDataRow>[] = [];
   if (config.rowDimensionNames.length && config.colDimensionNames.length) {
     rowTotalsColumns = colDimensions.reverse().reduce((acc, dimension) => {
-      const { label, name } = dimension;
+      const { name } = dimension;
 
       const headColumn = {
-        header: sanitizeHeaderValue(label || name),
+        id: name,
+        header: "",
         columns: acc,
       };
 
@@ -229,7 +230,7 @@ export function getMeasureColumnProps(
   });
 }
 
-function getDimensionColumnProps(
+export function getDimensionColumnProps(
   dimensionNames: string[],
   config: PivotDataStoreConfig,
 ) {
@@ -393,6 +394,12 @@ function getFlatColumnDef(
   return orderedColumnDefs;
 }
 
+export function getRowNestedLabel(
+  rowDimensions: Array<{ label: string; name: string }>,
+) {
+  return rowDimensions.map((d) => d.label || d.name).join(" > ");
+}
+
 function getNestedColumnDef(
   config: PivotDataStoreConfig,
   measures: MeasureColumnProps,
@@ -404,7 +411,7 @@ function getNestedColumnDef(
 ): ColumnDef<PivotDataRow>[] {
   // For nested tables, we only use the first row dimension in the column definition
   const rowDimensionsForColumnDef = rowDimensions.slice(0, 1);
-  const nestedLabel = rowDimensions.map((d) => d.label || d.name).join(" > ");
+  const nestedLabel = getRowNestedLabel(rowDimensions);
 
   // Create row dimension columns
   const rowDefinitions: ColumnDef<PivotDataRow>[] =
@@ -428,6 +435,21 @@ function getNestedColumnDef(
         },
       };
     });
+
+  let firstDimensionColumns: ColumnDef<PivotDataRow>[] = rowDefinitions;
+  if (config.rowDimensionNames.length && config.colDimensionNames.length) {
+    firstDimensionColumns = colDimensions.reverse().reduce((acc, dimension) => {
+      const { label, name } = dimension;
+
+      const headColumn = {
+        id: name,
+        header: label || name,
+        columns: acc,
+      };
+
+      return [headColumn];
+    }, rowDefinitions);
+  }
 
   // Create measure columns
   const leafColumns: (ColumnDef<PivotDataRow> & { name: string })[] =
@@ -474,5 +496,5 @@ function getNestedColumnDef(
     totals,
   );
 
-  return [...rowDefinitions, ...groupedColDef];
+  return [...firstDimensionColumns, ...groupedColDef];
 }

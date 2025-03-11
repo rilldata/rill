@@ -21,6 +21,7 @@
   export let hasRowDimension: boolean;
   export let hasColumnDimension: boolean;
   export let timeDimension: string;
+  export let rowDimensionLabel: string;
   export let assembled: boolean;
   export let dataRows: PivotDataRow[];
   export let measures: MeasureColumnProps;
@@ -54,14 +55,11 @@
   let initScrollOnResize = 0;
   let percentOfChangeDuringResize = 0;
 
-  $: headers = headerGroups[0].headers;
+  $: rowDimensionName = rowDimensionLabel ? rowDimensionLabel : null;
 
-  $: firstColumnName = hasRowDimension
-    ? String(headers[0]?.column.columnDef.header)
-    : null;
-  $: firstColumnWidth =
-    hasRowDimension && firstColumnName
-      ? calculateColumnWidth(firstColumnName, timeDimension, dataRows)
+  $: rowDimensionWidth =
+    hasRowDimension && rowDimensionName
+      ? calculateColumnWidth(rowDimensionName, timeDimension, dataRows)
       : 0;
 
   $: measures.forEach(({ name, label, formatter }) => {
@@ -73,6 +71,7 @@
         totalsRow,
         dataRows,
       );
+
       measureLengths.update((measureLengths) => {
         return measureLengths.set(name, estimatedWidth);
       });
@@ -117,7 +116,7 @@
     // Measure columns are the last columns in the header group
     if (header.depth !== headerGroups.length) return;
     // If there is a row dimension, the first column is not a measure column
-    if (!firstColumnName) {
+    if (!rowDimensionName) {
       return true;
     } else return colNumber > 0;
   }
@@ -129,7 +128,7 @@
     const offset =
       e.clientX -
       containerRefElement.getBoundingClientRect().left -
-      firstColumnWidth -
+      rowDimensionWidth -
       measures.reduce((rollingSum, { name }, i) => {
         return i <= initialMeasureIndexOnResize
           ? rollingSum + ($measureLengths.get(name) ?? 0)
@@ -147,24 +146,37 @@
     );
   }
 
+  function shouldShowHeaderRightBorder(header: any, index: number): boolean {
+    const isMeasure = isMeasureColumn(header, index);
+    if (!isMeasure) return true;
+
+    let offset = 0;
+    if (!hasRowDimension) offset = 1;
+    return (index + offset) % measureCount === 0 && index > 0;
+  }
+
+  function shouldShowRightBorder(index: number): boolean {
+    let offset = 0;
+    if (!hasRowDimension) offset = 1;
+    return (index + offset) % measureCount === 0;
+  }
+
   $: totalHeaderHeight = headerGroups.length * HEADER_HEIGHT;
 </script>
 
 <div
   class="w-full absolute top-0 z-50 flex pointer-events-none"
-  class:with-row-dimension={hasRowDimension}
-  class:with-col-dimension={hasColumnDimension}
-  style:width="{totalLength + firstColumnWidth}px"
+  style:width="{totalLength + rowDimensionWidth}px"
   style:height="{totalRowSize + totalHeaderHeight + headerGroups.length}px"
 >
-  <div style:width="{firstColumnWidth}px" class="sticky left-0 flex-none flex">
+  <div style:width="{rowDimensionWidth}px" class="sticky left-0 flex-none flex">
     <Resizer
       side="right"
       direction="EW"
       min={WIDTHS.MIN_COL_WIDTH}
       max={WIDTHS.MAX_COL_WIDTH}
-      dimension={firstColumnWidth}
-      onUpdate={(d) => (firstColumnWidth = d)}
+      dimension={rowDimensionWidth}
+      onUpdate={(d) => (rowDimensionWidth = d)}
       onMouseDown={(e) => {
         resizingMeasure = false;
         onResizeStart(e);
@@ -214,15 +226,17 @@
 </div>
 
 <table
+  class:with-row-dimension={hasRowDimension}
+  class:with-col-dimension={hasColumnDimension}
   role="presentation"
-  style:width="{totalLength + firstColumnWidth}px"
+  style:width="{totalLength + rowDimensionWidth}px"
   on:click={modified({ shift: onCellCopy })}
 >
   <colgroup>
-    {#if firstColumnName && firstColumnWidth}
+    {#if rowDimensionName && rowDimensionWidth}
       <col
-        style:width="{firstColumnWidth}px"
-        style:max-width="{firstColumnWidth}px"
+        style:width="{rowDimensionWidth}px"
+        style:max-width="{rowDimensionWidth}px"
       />
     {/if}
 
@@ -247,9 +261,7 @@
               class:cursor-pointer={header.column.getCanSort()}
               class:select-none={header.column.getCanSort()}
               class:flex-row-reverse={isMeasureColumn(header, i)}
-              class:border-r={isMeasureColumn(header, i)
-                ? i % measureCount === 0 && i
-                : true}
+              class:border-r={shouldShowHeaderRightBorder(header, i)}
               on:click={header.column.getToggleSortingHandler()}
             >
               {#if !header.isPlaceholder}
@@ -290,7 +302,7 @@
             class="ui-copy-number"
             class:active-cell={isActive}
             class:interactive-cell={canShowDataViewer}
-            class:border-r={i % measureCount === 0 && i}
+            class:border-r={shouldShowRightBorder(i)}
             on:click={() => onCellClick(cell)}
             on:mouseenter={onCellHover}
             on:mouseleave={onCellLeave}
@@ -344,6 +356,14 @@
     @apply z-30 bg-surface;
   }
 
+  .with-row-dimension thead tr th:first-of-type .header-cell {
+    @apply flex-row-reverse;
+  }
+
+  .with-row-dimension thead tr:last-of-type th:first-of-type .header-cell {
+    @apply flex-row;
+  }
+
   tbody .cell {
     height: var(--row-height);
   }
@@ -384,26 +404,23 @@
   }
 
   /* The leftmost header cells have no bottom border unless they're the last row */
-  :global(.with-row-dimension)
-    thead
-    > tr:not(:last-of-type)
-    > th:first-of-type {
+  .with-row-dimension thead > tr:not(:last-of-type) > th:first-of-type {
     @apply border-b-0;
   }
 
-  :global(.with-row-dimension) tr > th:first-of-type {
+  .with-row-dimension tr > th:first-of-type {
     @apply sticky left-0 z-20;
     @apply bg-white;
   }
 
-  :global(.with-row-dimension) tr > td:first-of-type {
+  .with-row-dimension tr > td:first-of-type {
     @apply sticky left-0 z-10;
     @apply bg-white;
   }
 
-  tr > td:first-of-type:not(:last-of-type) {
-    @apply border-r font-normal;
-  }
+  /* tr > td:first-of-type:not(:last-of-type) {
+    @apply border-r;
+  } */
 
   /* The totals row */
   tbody > tr:nth-of-type(2) {
@@ -426,9 +443,6 @@
     @apply bg-primary-100;
   }
 
-  :global(.with-col-dimension) .totals-column {
-    @apply font-semibold;
-  }
   .interactive-cell {
     @apply cursor-pointer;
   }
