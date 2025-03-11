@@ -14,32 +14,26 @@
   const StateManagers = getStateManagers();
   const {
     selectors: {
-      measures: {
-        leaderboardMeasureName,
-        leaderboardMeasureCount,
-        getMeasureByName,
-        visibleMeasures,
-        allMeasures,
-      },
+      measures: { leaderboardMeasureCount, visibleMeasures, allMeasures },
       dimensions: {
         visibleDimensions,
         allDimensions,
         dimensionShowAllMeasures,
       },
       contextColumn: { contextColumns },
+      sorting: { sortByMeasure },
     },
     actions: {
       dimensions: { toggleDimensionVisibility, toggleDimensionShowAllMeasures },
       contextColumn: { setContextColumn, setContextColumns },
       setLeaderboardMeasureCount,
+      sorting: { setDefaultSort },
     },
   } = StateManagers;
 
   $: measures = getSimpleMeasures($visibleMeasures);
 
   $: metricsExplorer = $metricsExplorerStore.entities[exploreName];
-
-  $: activeLeaderboardMeasure = $getMeasureByName($leaderboardMeasureName);
 
   // If any measure has validPercentOfTotal, then the percent of total context column is valid
   $: validPercentOfTotal = $visibleMeasures.some(
@@ -95,6 +89,8 @@
         onMeasureCountChange={(count) => {
           setLeaderboardMeasureCount(count);
         }}
+        setSort={() => setDefaultSort()}
+        sortByMeasure={$sortByMeasure}
       />
 
       <ContextColumnDropdown
