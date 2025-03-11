@@ -30,7 +30,6 @@ export interface MetricsExplorerEntity {
    * updated to include all measure keys upon initialization
    * or else all measure will be hidden
    */
-  visibleMeasureKeys: Set<string>;
   visibleMeasures: string[];
 
   /**
@@ -47,7 +46,6 @@ export interface MetricsExplorerEntity {
    * when there are not existing keys in the URL or saved on the
    * server)
    */
-  visibleDimensionKeys: Set<string>;
   visibleDimensions: string[];
 
   /**

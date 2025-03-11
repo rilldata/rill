@@ -71,20 +71,14 @@ export function getSanitizedDashboardStateParam(
   // Else, explicitly add the sanitized state that we want to remember.
   const sanitizedDashboardState = {
     // Remove any measures not specified in the metrics view fields
-    visibleMeasureKeys: new Set(
-      [...dashboard.visibleMeasureKeys].filter((measure) =>
-        metricsViewFields?.includes(measure),
-      ),
+    visibleMeasures: dashboard.visibleMeasures.filter((measure) =>
+      metricsViewFields?.includes(measure),
     ),
-    visibleMeasures: [...dashboard.visibleMeasures],
     allMeasuresVisible: dashboard.allMeasuresVisible,
     // Remove any dimensions not specified in the metrics view fields
-    visibleDimensionKeys: new Set(
-      [...dashboard.visibleDimensionKeys].filter((dimension) =>
-        metricsViewFields?.includes(dimension),
-      ),
+    visibleDimensions: dashboard.visibleDimensions.filter((dimension) =>
+      metricsViewFields?.includes(dimension),
     ),
-    visibleDimensions: [...dashboard.visibleDimensions],
     allDimensionsVisible: dashboard.allDimensionsVisible,
     leaderboardMeasureName: dashboard.leaderboardMeasureName,
     dashboardSortType: dashboard.dashboardSortType,
