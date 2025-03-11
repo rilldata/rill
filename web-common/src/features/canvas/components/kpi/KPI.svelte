@@ -22,7 +22,7 @@
   import type { Readable } from "svelte/motion";
   import type { KPISpec } from ".";
   import { validateKPISchema } from "./selector";
-  import { SPARKLINE_MIN_WIDTH, BIG_NUMBER_MIN_WIDTH } from ".";
+  import { BIG_NUMBER_MIN_WIDTH } from ".";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
   export let timeAndFilterStore: Readable<TimeAndFilterStore>;
@@ -187,6 +187,8 @@
     DateTime.fromISO(end ?? "").setZone(timeZone),
   );
 
+  $: adjustment = 30 - (comparisonOptions?.length ?? 0) * 10;
+
   function getFormattedDiff(comparisonValue: number, currentValue: number) {
     const delta = currentValue - comparisonValue;
     return `${delta >= 0 ? "+" : ""}${measureValueFormatter(delta)}`;
@@ -196,7 +198,10 @@
 {#if isValid}
   {#if measure && !primaryTotalIsFetching}
     <div class="wrapper" class:spark-right={isSparkRight}>
-      <div class="data-wrapper" style:min-width="{BIG_NUMBER_MIN_WIDTH}px">
+      <div
+        class="data-wrapper"
+        style:min-width="{BIG_NUMBER_MIN_WIDTH - adjustment}px"
+      >
         <h2 class="measure-name">
           {measure?.displayName || measureName}
         </h2>
@@ -268,10 +273,7 @@
       </div>
 
       {#if showSparkline}
-        <div
-          class="sparkline-wrapper"
-          style:min-width="{SPARKLINE_MIN_WIDTH}px"
-        >
+        <div class="sparkline-wrapper">
           {#if primaryDataIsFetching}
             <Spinner status={EntityStatus.Running} />
           {:else if timeGrain && timeZone}
@@ -311,20 +313,22 @@
   }
 
   .data-wrapper {
-    @apply flex size-full max-h-fit min-h-fit flex-col justify-center overflow-hidden;
-    @apply items-center;
+    @apply flex flex-col w-full h-fit justify-center  items-center;
+    @apply overflow-hidden text-ellipsis;
+    flex: 1 0 auto;
   }
 
   .spark-right .data-wrapper {
-    @apply items-start w-2/5 max-w-52;
+    @apply items-start h-full;
+    flex: 0 4 20%;
   }
 
   .measure-name {
-    @apply text-center font-medium text-sm text-gray-600 break-words max-w-40 line-clamp-1;
+    @apply flex-none text-center font-medium text-sm text-gray-600 break-words line-clamp-1;
   }
 
   .spark-right .measure-name {
-    @apply line-clamp-2;
+    @apply line-clamp-2 text-left max-w-40;
   }
 
   .big-number {
@@ -349,15 +353,16 @@
   }
 
   .comparison-value-wrapper {
-    @apply flex items-baseline gap-x-2 text-sm -mb-[3px] truncate;
+    @apply flex items-baseline gap-x-2 text-sm -mb-[3px] truncate flex-none;
   }
 
   .sparkline-wrapper {
-    @apply size-full flex items-center justify-center;
+    @apply size-full flex items-center justify-center flex-shrink;
   }
 
   .spark-right .sparkline-wrapper {
     @apply mt-2;
+    flex: 4 1 80%;
   }
 
   .comparison-value {
@@ -366,12 +371,18 @@
   }
 
   @container component-container (inline-size < 300px) {
-    .sparkline-wrapper {
+    .spark-right .sparkline-wrapper {
       display: none;
     }
 
-    .data-wrapper {
+    .spark-right .data-wrapper {
       align-items: center !important;
+      flex: 0 2 auto !important;
+    }
+
+    .spark-right .measure-name {
+      max-width: 100% !important;
+      text-align: center !important;
     }
   }
 </style>

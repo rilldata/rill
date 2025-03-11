@@ -80,6 +80,7 @@
     filtersEnabled: false,
     maxWidth: DEFAULT_DASHBOARD_WIDTH,
   };
+  let openSidebarAfterSelection = false;
 
   $: ({ instanceId } = $runtime);
 
@@ -239,8 +240,6 @@
   function handleDragStart(metadata: DragItem) {
     dragItemInfo = metadata;
 
-    initialMousePosition = mousePosition;
-
     const id = getId(metadata.position?.row, metadata.position?.column);
     const element = document.querySelector("#" + id);
     if (!element) return;
@@ -253,8 +252,8 @@
     dragItemDimensions = { width, height };
 
     offset = {
-      x: left - mousePosition.x,
-      y: top - mousePosition.y,
+      x: left - (initialMousePosition?.x ?? mousePosition.x),
+      y: top - (initialMousePosition?.y ?? mousePosition.y),
     };
   }
 
@@ -297,6 +296,11 @@
 
     if (dragItemInfo) {
       onDragEnd();
+    }
+
+    if (openSidebarAfterSelection) {
+      openSidebar();
+      openSidebarAfterSelection = false;
     }
 
     activeDivider.set(null);
@@ -472,7 +476,12 @@
   }}
   on:keydown={(e) => {
     if (e.key === "Backspace" && selected) {
-      if (e.target === document.body) {
+      if (
+        !(e.target instanceof HTMLElement) ||
+        (e.target.tagName !== "INPUT" &&
+          e.target.tagName !== "TEXTAREA" &&
+          !e.target.isContentEditable)
+      ) {
         removeItems(
           Array.from(selected).map((id) => {
             const [row, column] = id.split("-").slice(1).map(Number);
@@ -558,19 +567,43 @@
             onMouseDown={(e) => {
               if (e.button !== 0) return;
 
+              initialMousePosition = mousePosition;
+
               setSelectedComponent({ column: columnIndex, row: rowIndex });
               selected = new Set([id]);
-              openSidebar();
 
               if (dragTimeout) clearTimeout(dragTimeout);
 
+              openSidebarAfterSelection = true;
+
               dragTimeout = setTimeout(() => {
+                openSidebarAfterSelection = false;
                 handleDragStart({
                   position: { row: rowIndex, column: columnIndex },
                   type: type ?? "line_chart",
                 });
-              }, 100);
+              }, 150);
             }}
+            onDuplicate={() => {
+              if (!defaultMetrics) return;
+
+              const newYamlRows = moveToRow(
+                yamlCanvasRows,
+                [{ position: { row: rowIndex, column: columnIndex } }],
+                { row: rowIndex + 1, copy: true },
+              );
+              const newSpecRows = moveToRow(
+                specCanvasRows,
+                [{ position: { row: rowIndex, column: columnIndex } }],
+                { row: rowIndex + 1, copy: true },
+              );
+
+              updateAssets(newSpecRows, newYamlRows);
+            }}
+            onDelete={() =>
+              removeItems([
+                { position: { row: rowIndex, column: columnIndex } },
+              ])}
           />
         </ItemWrapper>
       {/each}
@@ -599,21 +632,30 @@
         />
       {/if}
     </RowWrapper>
-  {:else}
-    {#if defaultMetrics}
-      <AddComponentDropdown
-        componentForm
-        onMouseEnter={() => {
-          if (timeout) clearTimeout(timeout);
-        }}
-        onItemClick={(type) => {
-          initializeRow(0, type);
-        }}
-      />
-    {:else}
-      <ComponentError error="No valid metrics view in project" />
-    {/if}
   {/each}
+
+  <RowWrapper
+    gridTemplate="12fr"
+    zIndex={0}
+    {maxWidth}
+    rowIndex={specCanvasRows.length}
+  >
+    <ItemWrapper zIndex={0}>
+      {#if defaultMetrics}
+        <AddComponentDropdown
+          componentForm
+          onMouseEnter={() => {
+            if (timeout) clearTimeout(timeout);
+          }}
+          onItemClick={(type) => {
+            initializeRow(specCanvasRows.length, type);
+          }}
+        />
+      {:else}
+        <ComponentError error="No valid metrics view in project" />
+      {/if}
+    </ItemWrapper>
+  </RowWrapper>
 </CanvasDashboardWrapper>
 
 {#if dragItemInfo && dragItemInfo.position}

@@ -3,7 +3,8 @@
   import AddComponentDropdown from "./AddComponentDropdown.svelte";
   import type { CanvasComponentType } from "./components/types";
   import { dropZone, hoveredDivider, activeDivider } from "./stores/ui-stores";
-  import { Tooltip } from "bits-ui";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
   export let resizeIndex: number;
   export let addIndex: number;
@@ -114,28 +115,23 @@
       />
 
       {#if !isSpreadEvenly}
-        <Tooltip.Root>
-          <Tooltip.Trigger asChild let:builder>
-            <button
-              {...builder}
-              use:builder.action
-              class="h-7 px-1 grid place-content-center border-t hover:bg-gray-100 text-slate-500"
-              on:click={(e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                spreadEvenly(rowIndex);
-                hoveredDivider.reset();
-              }}
-            >
-              <ArrowLeftRight size="15px" />
-            </button>
-          </Tooltip.Trigger>
-          <Tooltip.Content side="bottom" sideOffset={8}>
-            <div class="bg-gray-700 text-white rounded p-2 pt-1 pb-1">
-              Evenly distribute widgets
-            </div>
-          </Tooltip.Content>
-        </Tooltip.Root>
+        <Tooltip distance={8} location="bottom">
+          <button
+            class="h-7 px-1 grid place-content-center border-t hover:bg-gray-100 text-slate-500"
+            on:click={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              spreadEvenly(rowIndex);
+              hoveredDivider.reset();
+            }}
+          >
+            <ArrowLeftRight size="15px" />
+          </button>
+
+          <TooltipContent slot="tooltip-content" side="bottom">
+            Evenly distribute widgets
+          </TooltipContent>
+        </Tooltip>
       {/if}
     </div>
   {/if}
