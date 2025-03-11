@@ -34,6 +34,7 @@ import {
 import { mergeSearchParams } from "@rilldata/web-common/lib/url-utils";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
+  V1ExploreComparisonMode,
   type V1ExplorePreset,
   type V1ExploreSpec,
 } from "@rilldata/web-common/runtime-client";
@@ -191,6 +192,12 @@ function toTimeRangesUrl(
       ExploreStateURLParams.ComparisonTimeRange,
       toTimeRangeParam(timeControlsState.selectedComparisonTimeRange),
     );
+  } else if (
+    !exploreState.showTimeComparison &&
+    preset.comparisonMode ===
+      V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
+  ) {
+    searchParams.set(ExploreStateURLParams.ComparisonTimeRange, "");
   }
 
   const mappedTimeGrain =

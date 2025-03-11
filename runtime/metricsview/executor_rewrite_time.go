@@ -36,6 +36,24 @@ func (e *Executor) rewriteQueryTimeRanges(ctx context.Context, qry *Query, execu
 		return fmt.Errorf("failed to resolve comparison time range: %w", err)
 	}
 
+	// If time range is specified in the spine, resolve it.
+	if qry.Spine != nil && qry.Spine.TimeRange != nil {
+		var computedTimeDims []*Dimension
+		for _, d := range qry.Dimensions {
+			if d.Compute != nil && d.Compute.TimeFloor != nil {
+				computedTimeDims = append(computedTimeDims, &d)
+			}
+		}
+
+		if len(computedTimeDims) != 1 {
+			return errors.New("spine time range is only supported with a single time dimension")
+		}
+
+		qry.Spine.TimeRange.Start = timeutil.TruncateTime(qry.TimeRange.Start, computedTimeDims[0].Compute.TimeFloor.Grain.ToTimeutil(), tz, 1, 1)
+		qry.Spine.TimeRange.End = qry.TimeRange.End
+		qry.Spine.TimeRange.Grain = computedTimeDims[0].Compute.TimeFloor.Grain
+	}
+
 	return nil
 }
 
