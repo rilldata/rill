@@ -254,6 +254,7 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, 
 
 // InsertTableAsSelect implements drivers.OLAPStore.
 func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, opts *drivers.InsertTableOptions) (*drivers.TableWriteMetrics, error) {
+	ctx = contextWithQueryID(ctx)
 	if !opts.InPlace {
 		return nil, fmt.Errorf("clickhouse: inserts does not support inPlace=false")
 	}
@@ -434,6 +435,7 @@ func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
 
 // RenameTable implements drivers.OLAPStore.
 func (c *connection) RenameTable(ctx context.Context, oldName, newName string) error {
+	ctx = contextWithQueryID(ctx)
 	typ, onCluster, err := informationSchema{c: c}.entityType(ctx, c.config.Database, oldName)
 	if err != nil {
 		return err

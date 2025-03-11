@@ -229,15 +229,9 @@ func LoggingMiddleware(logger *zap.Logger, next http.Handler) http.Handler {
 		start := time.Now()
 
 		// Set datadog trace ID header in response headers
-<<<<<<< HEAD
-		traceID := DatadogTraceID(r.Context())
-		if traceID != "" {
-			w.Header().Set("dd-trace-id", traceID)
-=======
 		traceID := TraceID(r.Context())
 		if traceID != "" {
 			w.Header().Set(TracingHeader, traceID)
->>>>>>> origin/main
 		}
 
 		wrapped := wrappedResponseWriter{ResponseWriter: w}

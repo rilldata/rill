@@ -46,7 +46,7 @@ func (c *connection) sessionAwareContext(ctx context.Context) context.Context {
 }
 
 func contextWithQueryID(ctx context.Context) context.Context {
-	traceID := observability.DatadogTraceID(ctx)
+	traceID := observability.TraceID(ctx)
 	if traceID == "" {
 		return ctx
 	}
