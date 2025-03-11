@@ -104,12 +104,11 @@
           }}
           class="font-normal text-right"
         >
-          <span class="measure-label">
-            {#if hasMoreThanOneMeasure}
-              {measureLabel(measureName)}
-            {:else}
-              #
-            {/if}
+          <span
+            class="measure-label line-clamp-2"
+            title={measureLabel(measureName)}
+          >
+            {measureLabel(measureName)}
           </span>
           {#if measureName === sortBy && sortType === SortType.VALUE}
             <div class="ui-copy-icon">

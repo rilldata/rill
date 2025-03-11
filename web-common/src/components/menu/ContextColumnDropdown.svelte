@@ -40,7 +40,7 @@
       ? [
           {
             value: LeaderboardContextColumn.DELTA_ABSOLUTE,
-            label: "Delta Change",
+            label: "Change",
             icon: DeltaChange,
           },
           {

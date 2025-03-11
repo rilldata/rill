@@ -19,6 +19,7 @@
         leaderboardMeasureCount,
         getMeasureByName,
         visibleMeasures,
+        allMeasures,
       },
       dimensions: {
         visibleDimensions,
@@ -86,7 +87,7 @@
       />
 
       <LeaderboardMeasureCountSelector
-        {measures}
+        measures={$allMeasures}
         count={$leaderboardMeasureCount}
         onMeasureCountChange={(count) => {
           setLeaderboardMeasureCount(count);
