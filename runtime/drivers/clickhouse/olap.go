@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/jmoiron/sqlx"
 	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -59,6 +60,14 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 	if c.config.LogQueries {
 		c.logger.Info("clickhouse query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
 	}
+
+	settings := map[string]any{
+		"insert_distributed_sync":   1,
+		"prefer_global_in_and_join": 1,
+		"session_timezone":          "UTC",
+		"join_use_nulls":            1,
+	}
+	ctx = clickhouse.Context(ctx, clickhouse.WithSettings(settings))
 
 	// We use the meta conn for dry run queries
 	if stmt.DryRun {
