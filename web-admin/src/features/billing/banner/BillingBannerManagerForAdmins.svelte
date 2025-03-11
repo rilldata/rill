@@ -5,8 +5,11 @@
     useBillingIssueMessage,
   } from "@rilldata/web-admin/features/billing/issues/useBillingIssueMessage";
   import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
+  import {
+    BillingBannerID,
+    BillingBannerPriority,
+  } from "@rilldata/web-common/components/banner/constants";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { BannerSlot } from "@rilldata/web-common/lib/event-bus/events";
 
   export let organization: string;
 
@@ -18,14 +21,16 @@
   function showBillingIssueBanner(message: BillingIssueMessage | undefined) {
     if (!message) {
       eventBus.emit("banner", {
-        slot: BannerSlot.Billing,
+        id: BillingBannerID,
+        priority: BillingBannerPriority,
         message: null,
       });
       return;
     }
 
     eventBus.emit("banner", {
-      slot: BannerSlot.Billing,
+      id: BillingBannerID,
+      priority: BillingBannerPriority,
       message: {
         type: message.type,
         message: message.title + " " + message.description,

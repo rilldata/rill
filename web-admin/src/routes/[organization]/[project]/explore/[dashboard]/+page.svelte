@@ -5,13 +5,16 @@
   import DashboardBuilding from "@rilldata/web-admin/features/dashboards/DashboardBuilding.svelte";
   import DashboardErrored from "@rilldata/web-admin/features/dashboards/DashboardErrored.svelte";
   import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
+  import {
+    DashboardBannerID,
+    DashboardBannerPriority,
+  } from "@rilldata/web-common/components/banner/constants";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import DashboardURLStateSync from "@rilldata/web-common/features/dashboards/url-state/DashboardURLStateSync.svelte";
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { BannerSlot } from "@rilldata/web-common/lib/event-bus/events";
   import type { V1GetExploreResponse } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { PageData } from "./$types";
@@ -75,7 +78,8 @@
   // Display a dashboard banner
   $: if (hasBanner) {
     eventBus.emit("banner", {
-      slot: BannerSlot.Dashboard,
+      id: DashboardBannerID,
+      priority: DashboardBannerPriority,
       message: {
         type: "default",
         message: $explore.data.explore.explore.state.validSpec.banner,
@@ -93,7 +97,8 @@
     // Clear out any dashboard banners
     if (hasBanner && changedDashboard) {
       eventBus.emit("banner", {
-        slot: BannerSlot.Dashboard,
+        id: DashboardBannerID,
+        priority: DashboardBannerPriority,
         message: null,
       });
     }

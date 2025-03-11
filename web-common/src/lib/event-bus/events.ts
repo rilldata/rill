@@ -24,9 +24,11 @@ export enum BannerSlot {
   Other,
 }
 export interface BannerEvent {
-  // Slot for the banner to appear. A new banner here will clear the older ones.
-  // A lower number here will mean it will show up higher.
-  slot: BannerSlot;
+  // Unique identifier used to set/unset for particular feature.
+  id: string;
+  // Determines the order in which the banner is shown.
+  // Lower values means the banner is shown higher in the stack.
+  priority: number;
   // null here means the slot is being cleared.
   message: BannerMessage | null;
 }

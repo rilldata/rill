@@ -1,6 +1,9 @@
 <script lang="ts">
+  import {
+    BillingBannerID,
+    BillingBannerPriority,
+  } from "@rilldata/web-common/components/banner/constants";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { BannerSlot } from "@rilldata/web-common/lib/event-bus/events";
   import { Story, Template } from "@storybook/addon-svelte-csf";
   import BannerCenter from "@rilldata/web-common/components/banner/BannerCenter.svelte";
   import { Button } from "@rilldata/web-common/components/button/index.js";
@@ -28,7 +31,8 @@
 
   function showBanner() {
     eventBus.emit("banner", {
-      slot: BannerSlot.Billing,
+      id: BillingBannerID,
+      priority: BillingBannerPriority,
       message: {
         message,
         type: type as any,
