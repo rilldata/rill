@@ -157,7 +157,7 @@ func (d *DBOptions) ValidateSettings() error {
 type CreateTableOptions struct {
 	// View specifies whether the created table is a view.
 	View bool
-	// InitQueries are queries that are run during initialisation of write handle. Applies on to the current table.
+	// InitQueries are queries that are run during initialisation of write handle. Applies only to the current table.
 	// For queries that should apply to all tables refer to DBOptions.ConnInitQueries
 	InitQueries []string
 	// If BeforeCreateFn is set, it will be executed before the create query is executed.
