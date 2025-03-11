@@ -201,7 +201,9 @@ type DB interface {
 	DeleteAuthorizationCode(ctx context.Context, code string) error
 	DeleteExpiredAuthorizationCodes(ctx context.Context, retention time.Duration) error
 
+	FindOrganizationRoles(ctx context.Context) ([]*OrganizationRole, error)
 	FindOrganizationRole(ctx context.Context, name string) (*OrganizationRole, error)
+	FindProjectRoles(ctx context.Context) ([]*ProjectRole, error)
 	FindProjectRole(ctx context.Context, name string) (*ProjectRole, error)
 	ResolveOrganizationRolesForUser(ctx context.Context, userID, orgID string) ([]*OrganizationRole, error)
 	ResolveProjectRolesForUser(ctx context.Context, userID, projectID string) ([]*ProjectRole, error)
@@ -325,6 +327,7 @@ type Organization struct {
 	LogoAssetID                         *string   `db:"logo_asset_id"`
 	FaviconAssetID                      *string   `db:"favicon_asset_id"`
 	CustomDomain                        string    `db:"custom_domain"`
+	DefaultProjectRoleID                *string   `db:"default_project_role_id"`
 	CreatedOn                           time.Time `db:"created_on"`
 	UpdatedOn                           time.Time `db:"updated_on"`
 	QuotaProjects                       int       `db:"quota_projects"`
@@ -349,6 +352,7 @@ type InsertOrganizationOptions struct {
 	LogoAssetID                         *string
 	FaviconAssetID                      *string
 	CustomDomain                        string `validate:"omitempty,fqdn"`
+	DefaultProjectRoleID                *string
 	QuotaProjects                       int
 	QuotaDeployments                    int
 	QuotaSlotsTotal                     int
@@ -369,6 +373,7 @@ type UpdateOrganizationOptions struct {
 	LogoAssetID                         *string
 	FaviconAssetID                      *string
 	CustomDomain                        string `validate:"omitempty,fqdn"`
+	DefaultProjectRoleID                *string
 	QuotaProjects                       int
 	QuotaDeployments                    int
 	QuotaSlotsTotal                     int

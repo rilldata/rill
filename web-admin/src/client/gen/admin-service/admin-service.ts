@@ -164,6 +164,7 @@ import type {
   AdminServicePullVirtualRepoParams,
   V1GetReportMetaResponse,
   AdminServiceGetReportMetaBody,
+  V1ListRolesResponse,
   V1RevokeServiceAuthTokenResponse,
   V1SudoTriggerBillingRepairResponse,
   V1SudoTriggerBillingRepairRequest,
@@ -6430,6 +6431,56 @@ export const createAdminServiceGetReportMeta = <
     TContext
   >(mutationFn, mutationOptions);
 };
+/**
+ * @summary ListRoles lists all the roles available for orgs and projects.
+ */
+export const adminServiceListRoles = (signal?: AbortSignal) => {
+  return httpClient<V1ListRolesResponse>({
+    url: `/v1/roles`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getAdminServiceListRolesQueryKey = () => [`/v1/roles`];
+
+export type AdminServiceListRolesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceListRoles>>
+>;
+export type AdminServiceListRolesQueryError = RpcStatus;
+
+export const createAdminServiceListRoles = <
+  TData = Awaited<ReturnType<typeof adminServiceListRoles>>,
+  TError = RpcStatus,
+>(options?: {
+  query?: CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceListRoles>>,
+    TError,
+    TData
+  >;
+}): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getAdminServiceListRolesQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceListRoles>>
+  > = ({ signal }) => adminServiceListRoles(signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceListRoles>>,
+    TError,
+    TData
+  >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
 /**
  * @summary RevokeServiceAuthToken revoke the service auth token
  */

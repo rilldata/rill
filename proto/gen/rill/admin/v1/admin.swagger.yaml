@@ -397,6 +397,8 @@ paths:
                 type: string
               faviconAssetId:
                 type: string
+              defaultProjectRole:
+                type: string
               billingEmail:
                 type: string
       tags:
@@ -3047,6 +3049,21 @@ paths:
                   type: string
       tags:
         - AdminService
+  /v1/roles:
+    get:
+      summary: ListRoles lists all the roles available for orgs and projects.
+      operationId: AdminService_ListRoles
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListRolesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      tags:
+        - AdminService
   /v1/services/tokens/{tokenId}:
     delete:
       summary: RevokeServiceAuthToken revoke the service auth token
@@ -4526,6 +4543,19 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1BillingPlan'
+  v1ListRolesResponse:
+    type: object
+    properties:
+      organizationRoles:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1OrganizationRole'
+      projectRoles:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ProjectRole'
   v1ListServiceAuthTokensResponse:
     type: object
     properties:
@@ -4679,6 +4709,8 @@ definitions:
         type: string
       customDomain:
         type: string
+      defaultProjectRoleId:
+        type: string
       quotas:
         $ref: '#/definitions/v1OrganizationQuotas'
       billingCustomerId:
@@ -4737,6 +4769,15 @@ definitions:
       storageLimitBytesPerDeployment:
         type: string
         format: int64
+  v1OrganizationRole:
+    type: object
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      permissions:
+        $ref: '#/definitions/v1OrganizationPermissions'
   v1PingResponse:
     type: object
     properties:
@@ -4843,6 +4884,15 @@ definitions:
         type: boolean
       manageBookmarks:
         type: boolean
+  v1ProjectRole:
+    type: object
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      permissions:
+        $ref: '#/definitions/v1ProjectPermissions'
   v1ProjectVariable:
     type: object
     properties:

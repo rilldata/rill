@@ -129,9 +129,9 @@ func (c *connection) InsertOrganization(ctx context.Context, opts *database.Inse
 	}
 
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs(name, display_name, description, logo_asset_id, favicon_asset_id, custom_domain, quota_projects, quota_deployments, quota_slots_total, quota_slots_per_deployment, quota_outstanding_invites, quota_storage_limit_bytes_per_deployment, billing_customer_id, payment_customer_id, billing_email, created_by_user_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING *`,
-		opts.Name, opts.DisplayName, opts.Description, opts.LogoAssetID, opts.FaviconAssetID, opts.CustomDomain, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, opts.CreatedByUserID).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs(name, display_name, description, logo_asset_id, favicon_asset_id, custom_domain, default_project_role_id, quota_projects, quota_deployments, quota_slots_total, quota_slots_per_deployment, quota_outstanding_invites, quota_storage_limit_bytes_per_deployment, billing_customer_id, payment_customer_id, billing_email, created_by_user_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING *`,
+		opts.Name, opts.DisplayName, opts.Description, opts.LogoAssetID, opts.FaviconAssetID, opts.CustomDomain, opts.DefaultProjectRoleID, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, opts.CreatedByUserID).StructScan(res)
 	if err != nil {
 		return nil, parseErr("org", err)
 	}
@@ -150,8 +150,8 @@ func (c *connection) UpdateOrganization(ctx context.Context, id string, opts *da
 
 	res := &database.Organization{}
 	err := c.getDB(ctx).QueryRowxContext(ctx,
-		`UPDATE orgs SET name=$1, display_name=$2, description=$3, logo_asset_id=$4, favicon_asset_id=$5, custom_domain=$6, quota_projects=$7, quota_deployments=$8, quota_slots_total=$9, quota_slots_per_deployment=$10, quota_outstanding_invites=$11, quota_storage_limit_bytes_per_deployment=$12, billing_customer_id=$13, payment_customer_id=$14, billing_email=$15, created_by_user_id=$16, billing_plan_name=$17, billing_plan_display_name=$18, updated_on=now() WHERE id=$19 RETURNING *`,
-		opts.Name, opts.DisplayName, opts.Description, opts.LogoAssetID, opts.FaviconAssetID, opts.CustomDomain, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, opts.CreatedByUserID, opts.BillingPlanName, opts.BillingPlanDisplayName, id).StructScan(res)
+		`UPDATE orgs SET name=$1, display_name=$2, description=$3, logo_asset_id=$4, favicon_asset_id=$5, custom_domain=$6, default_project_role_id=$7, quota_projects=$8, quota_deployments=$9, quota_slots_total=$10, quota_slots_per_deployment=$11, quota_outstanding_invites=$12, quota_storage_limit_bytes_per_deployment=$13, billing_customer_id=$14, payment_customer_id=$15, billing_email=$16, created_by_user_id=$17, billing_plan_name=$18, billing_plan_display_name=$19, updated_on=now() WHERE id=$20 RETURNING *`,
+		opts.Name, opts.DisplayName, opts.Description, opts.LogoAssetID, opts.FaviconAssetID, opts.CustomDomain, opts.DefaultProjectRoleID, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, opts.CreatedByUserID, opts.BillingPlanName, opts.BillingPlanDisplayName, id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("org", err)
 	}
@@ -1376,6 +1376,15 @@ func (c *connection) DeleteExpiredAuthorizationCodes(ctx context.Context, retent
 	return parseErr("authorization code", err)
 }
 
+func (c *connection) FindOrganizationRoles(ctx context.Context) ([]*database.OrganizationRole, error) {
+	var res []*database.OrganizationRole
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM org_roles")
+	if err != nil {
+		return nil, parseErr("org roles", err)
+	}
+	return res, nil
+}
+
 func (c *connection) FindOrganizationRole(ctx context.Context, name string) (*database.OrganizationRole, error) {
 	role := &database.OrganizationRole{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM org_roles WHERE lower(name)=lower($1)", name).StructScan(role)
@@ -1383,6 +1392,15 @@ func (c *connection) FindOrganizationRole(ctx context.Context, name string) (*da
 		return nil, parseErr("org role", err)
 	}
 	return role, nil
+}
+
+func (c *connection) FindProjectRoles(ctx context.Context) ([]*database.ProjectRole, error) {
+	var res []*database.ProjectRole
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM project_roles")
+	if err != nil {
+		return nil, parseErr("project roles", err)
+	}
+	return res, nil
 }
 
 func (c *connection) FindProjectRole(ctx context.Context, name string) (*database.ProjectRole, error) {

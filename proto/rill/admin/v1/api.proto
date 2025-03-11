@@ -162,6 +162,11 @@ service AdminService {
     };
   }
 
+  // ListRoles lists all the roles available for orgs and projects.
+  rpc ListRoles(ListRolesRequest) returns (ListRolesResponse) {
+    option (google.api.http) = {get: "/v1/roles"};
+  }
+
   // ListOrganizationMemberUsers lists all the org members
   rpc ListOrganizationMemberUsers(ListOrganizationMemberUsersRequest) returns (ListOrganizationMemberUsersResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization}/members"};
@@ -911,6 +916,7 @@ message UpdateOrganizationRequest {
   optional string display_name = 5;
   optional string logo_asset_id = 6;
   optional string favicon_asset_id = 7;
+  optional string default_project_role = 8;
   optional string billing_email = 4 [(validate.rules).string.email = true];
 }
 
@@ -1254,6 +1260,13 @@ message ProvisionRequest {
 
 message ProvisionResponse {
   ProvisionerResource resource = 1;
+}
+
+message ListRolesRequest {}
+
+message ListRolesResponse {
+  repeated OrganizationRole organization_roles = 1;
+  repeated ProjectRole project_roles = 2;
 }
 
 message ListOrganizationMemberUsersRequest {
@@ -2244,6 +2257,7 @@ message Organization {
   string logo_url = 12;
   string favicon_url = 13;
   string custom_domain = 10;
+  string default_project_role_id = 16;
   OrganizationQuotas quotas = 4;
   string billing_customer_id = 7;
   string payment_customer_id = 8;
@@ -2363,6 +2377,18 @@ message ProjectPermissions {
   bool manage_alerts = 14;
   bool create_bookmarks = 17;
   bool manage_bookmarks = 18;
+}
+
+message OrganizationRole {
+  string id = 1;
+  string name = 2;
+  OrganizationPermissions permissions = 3;
+}
+
+message ProjectRole {
+  string id = 1;
+  string name = 2;
+  ProjectPermissions permissions = 3;
 }
 
 message MemberUser {
