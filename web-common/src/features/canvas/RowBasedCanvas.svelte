@@ -240,8 +240,6 @@
   function handleDragStart(metadata: DragItem) {
     dragItemInfo = metadata;
 
-    // initialMousePosition = mousePosition;
-
     const id = getId(metadata.position?.row, metadata.position?.column);
     const element = document.querySelector("#" + id);
     if (!element) return;
