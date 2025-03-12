@@ -26,15 +26,6 @@
 
   $: options = [
     {
-      value: LeaderboardContextColumn.PERCENT,
-      label: "Percent of total",
-      description: "Summable metrics only",
-      icon: PercentOfTotal,
-      tooltipText: "Only available for metrics marked as summable",
-      disabled: !atLeastOneValidPercentOfTotal,
-      suppressTooltip: atLeastOneValidPercentOfTotal,
-    },
-    {
       value: LeaderboardContextColumn.DELTA_ABSOLUTE,
       label: "Change",
       icon: DeltaChange,
@@ -49,6 +40,15 @@
       tooltipText: "Only available when time comparison is enabled",
       disabled: !isTimeComparisonActive,
       suppressTooltip: isTimeComparisonActive,
+    },
+    {
+      value: LeaderboardContextColumn.PERCENT,
+      label: "Percent of total",
+      description: "Summable metrics only",
+      icon: PercentOfTotal,
+      tooltipText: "Only available for metrics marked as summable",
+      disabled: !atLeastOneValidPercentOfTotal,
+      suppressTooltip: atLeastOneValidPercentOfTotal,
     },
   ];
 
