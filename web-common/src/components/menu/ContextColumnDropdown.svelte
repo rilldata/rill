@@ -24,33 +24,32 @@
 
   let active = false;
 
-  function shouldSuppress(option) {
-    const isPercentOption = option.value === LeaderboardContextColumn.PERCENT;
-    const isDisabled = !atLeastOneValidPercentOfTotal;
-    return !(isPercentOption && isDisabled);
-  }
-
   $: options = [
     {
       value: LeaderboardContextColumn.PERCENT,
       label: "Percent of total",
       description: "Summable metrics only",
       icon: PercentOfTotal,
+      tooltipText: "Only available for metrics marked as summable",
+      disabled: !atLeastOneValidPercentOfTotal,
+      suppressTooltip: atLeastOneValidPercentOfTotal,
     },
-    ...(isTimeComparisonActive
-      ? [
-          {
-            value: LeaderboardContextColumn.DELTA_ABSOLUTE,
-            label: "Change",
-            icon: DeltaChange,
-          },
-          {
-            value: LeaderboardContextColumn.DELTA_PERCENT,
-            label: "Percent change",
-            icon: DeltaChangePercentage,
-          },
-        ]
-      : []),
+    {
+      value: LeaderboardContextColumn.DELTA_ABSOLUTE,
+      label: "Change",
+      icon: DeltaChange,
+      tooltipText: "Only available when time comparison is enabled",
+      disabled: !isTimeComparisonActive,
+      suppressTooltip: isTimeComparisonActive,
+    },
+    {
+      value: LeaderboardContextColumn.DELTA_PERCENT,
+      label: "Percent change",
+      icon: DeltaChangePercentage,
+      tooltipText: "Only available when time comparison is enabled",
+      disabled: !isTimeComparisonActive,
+      suppressTooltip: isTimeComparisonActive,
+    },
   ];
 
   function getLabelFromValue(value: string) {
@@ -126,15 +125,14 @@
             {#each options as option}
               <Tooltip
                 distance={8}
-                suppress={shouldSuppress(option)}
+                suppress={option.suppressTooltip}
                 location="right"
                 alignment="middle"
               >
                 <DropdownMenu.CheckboxItem
                   checked={contextColumns?.includes(option.value)}
                   onCheckedChange={() => toggleContextColumn(option.value)}
-                  disabled={!atLeastOneValidPercentOfTotal &&
-                    option.value === LeaderboardContextColumn.PERCENT}
+                  disabled={option.disabled}
                 >
                   <div class="flex items-center">
                     {#if option.value === LeaderboardContextColumn.DELTA_ABSOLUTE}
@@ -161,7 +159,7 @@
                   </div>
                 </DropdownMenu.CheckboxItem>
                 <TooltipContent maxWidth="400px" slot="tooltip-content">
-                  Only available for metrics marked as summable
+                  {option.tooltipText}
                 </TooltipContent>
               </Tooltip>
             {/each}
