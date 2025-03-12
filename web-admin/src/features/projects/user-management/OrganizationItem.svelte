@@ -32,9 +32,9 @@
   $: userGroupMemberUsersCount = userGroupMemberUsers?.length ?? 0;
 
   $: managedGroupNames = {
-    "all-users": `${organization} (everyone)`,
-    "all-members": `${organization} (members)`,
-    "all-guests": `${organization} (guests)`,
+    "autogroup:users": `${organization} (everyone)`,
+    "autogroup:members": `${organization} (members)`,
+    "autogroup:guests": `${organization} (guests)`,
   };
 </script>
 

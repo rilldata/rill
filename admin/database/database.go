@@ -606,9 +606,9 @@ type InsertUsergroupOptions struct {
 // These are created and managed automatically by the system.
 // They will have managed==true and should not be editable by users.
 const (
-	ManagedUsergroupNameAllUsers   = "all-users"   // Everyone in the org
-	ManagedUsergroupNameAllMembers = "all-members" // Everyone in the org who is not a guest
-	ManagedUsergroupNameAllGuests  = "all-guests"  // Everyone in the org who is a guest
+	UsergroupNameAutogroupUsers   = "autogroup:users"   // Everyone in the org
+	UsergroupNameAutogroupMembers = "autogroup:members" // Everyone in the org who is not a guest
+	UsergroupNameAutogroupGuests  = "autogroup:guests"  // Everyone in the org who is a guest
 )
 
 // UserAuthToken is a persistent API token for a user.

@@ -786,7 +786,7 @@ func (c *connection) InsertManagedUsergroups(ctx context.Context, orgID string) 
 		($1, $2, true),
 		($1, $3, true),
 		($1, $4, true)
-	`, orgID, database.ManagedUsergroupNameAllUsers, database.ManagedUsergroupNameAllMembers, database.ManagedUsergroupNameAllGuests)
+	`, orgID, database.UsergroupNameAutogroupUsers, database.UsergroupNameAutogroupMembers, database.UsergroupNameAutogroupGuests)
 	if err != nil {
 		return parseErr("managed usergroup", err)
 	}
@@ -894,7 +894,7 @@ func (c *connection) InsertManagedUsergroupsMemberUser(ctx context.Context, orgI
 		SELECT $1::UUID, ug.id FROM usergroups ug WHERE ug.org_id = $2 AND ug.name = $4
 		UNION ALL SELECT $1::UUID, ug.id FROM usergroups ug WHERE ug.org_id = $2 AND ug.name = $5 AND EXISTS (SELECT 1 FROM org_roles ors WHERE ors.id = $3 AND NOT ors.guest)
 		UNION ALL SELECT $1::UUID, ug.id FROM usergroups ug WHERE ug.org_id = $2 AND ug.name = $6 AND EXISTS (SELECT 1 FROM org_roles ors WHERE ors.id = $3 AND ors.guest)
-	`, userID, orgID, roleID, database.ManagedUsergroupNameAllUsers, database.ManagedUsergroupNameAllMembers, database.ManagedUsergroupNameAllGuests)
+	`, userID, orgID, roleID, database.UsergroupNameAutogroupUsers, database.UsergroupNameAutogroupMembers, database.UsergroupNameAutogroupGuests)
 	if err != nil {
 		return parseErr("managed usergroup member", err)
 	}
