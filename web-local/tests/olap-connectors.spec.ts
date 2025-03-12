@@ -50,6 +50,9 @@ test.describe("ClickHouse connector", () => {
       .getByRole("button", { name: "Add data" })
       .click();
 
+    // Wait for navigation to the new file
+    await page.waitForURL(`**/files/connectors/clickhouse.yaml`);
+
     // Assert that the file contains key properties
     const codeEditor = page.getByLabel("Code editor").getByRole("textbox");
     await expect(codeEditor).toContainText("type: connector");
@@ -90,6 +93,9 @@ test.describe("ClickHouse connector", () => {
       .getByRole("dialog", { name: "ClickHouse" })
       .getByRole("button", { name: "Add data" })
       .click();
+
+    // Wait for navigation to the new file
+    await page.waitForURL(`**/files/connectors/clickhouse.yaml`);
 
     // Assert that the file contains key properties
     const codeEditor = page.getByLabel("Code editor").getByRole("textbox");
