@@ -95,7 +95,7 @@
 
       <ContextColumnDropdown
         tooltipText="Choose context columns to display"
-        isValidPercentOfTotal={validPercentOfTotal}
+        atLeastOneValidPercentOfTotal={validPercentOfTotal}
         isTimeComparisonActive={!!comparisonTimeRange}
         contextColumns={$contextColumns}
         dimensionShowAllMeasures={$dimensionShowAllMeasures}

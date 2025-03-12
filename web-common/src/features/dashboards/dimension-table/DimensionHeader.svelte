@@ -158,7 +158,7 @@
   <div class="flex items-center gap-x-1 cursor-pointer h-9">
     <ContextColumnDropdown
       tooltipText="Choose context columns to display"
-      isValidPercentOfTotal={validPercentOfTotal}
+      atLeastOneValidPercentOfTotal={validPercentOfTotal}
       isTimeComparisonActive={!!comparisonTimeRange}
       contextColumns={$contextColumns}
       dimensionShowAllMeasures={$dimensionShowAllMeasures}
