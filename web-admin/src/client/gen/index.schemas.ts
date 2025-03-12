@@ -138,6 +138,7 @@ export type AdminServiceListUsergroupsForOrganizationAndUserParams = {
 };
 
 export type AdminServiceListOrganizationMemberUsergroupsParams = {
+  role?: string;
   pageSize?: number;
   pageToken?: string;
 };
@@ -204,6 +205,7 @@ export type AdminServiceAddProjectMemberUserBody = {
 };
 
 export type AdminServiceListProjectMemberUsersParams = {
+  role?: string;
   pageSize?: number;
   pageToken?: string;
 };
@@ -279,6 +281,7 @@ export type AdminServiceListProjectsForOrganizationAndUserParams = {
 };
 
 export type AdminServiceListProjectMemberUsergroupsParams = {
+  role?: string;
   pageSize?: number;
   pageToken?: string;
 };
@@ -290,6 +293,7 @@ export type AdminServiceAddOrganizationMemberUserBody = {
 };
 
 export type AdminServiceListOrganizationMemberUsersParams = {
+  role?: string;
   pageSize?: number;
   pageToken?: string;
 };

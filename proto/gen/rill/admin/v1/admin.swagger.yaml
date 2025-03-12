@@ -592,6 +592,11 @@ paths:
           in: path
           required: true
           type: string
+        - name: role
+          description: Optionally filter by role
+          in: query
+          required: false
+          type: string
         - name: pageSize
           in: query
           required: false
@@ -730,6 +735,11 @@ paths:
         - name: project
           in: path
           required: true
+          type: string
+        - name: role
+          description: Optionally filter by role
+          in: query
+          required: false
           type: string
         - name: pageSize
           in: query
@@ -1220,6 +1230,11 @@ paths:
         - name: project
           in: path
           required: true
+          type: string
+        - name: role
+          description: Optionally filter by role
+          in: query
+          required: false
           type: string
         - name: pageSize
           in: query
@@ -2028,6 +2043,11 @@ paths:
         - name: organization
           in: path
           required: true
+          type: string
+        - name: role
+          description: Optionally filter by role
+          in: query
+          required: false
           type: string
         - name: pageSize
           in: query

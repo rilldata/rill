@@ -3397,6 +3397,13 @@ export class ListOrganizationMemberUsersRequest extends Message<ListOrganization
   organization = "";
 
   /**
+   * Optionally filter by role
+   *
+   * @generated from field: string role = 4;
+   */
+  role = "";
+
+  /**
    * @generated from field: uint32 page_size = 2;
    */
   pageSize = 0;
@@ -3415,6 +3422,7 @@ export class ListOrganizationMemberUsersRequest extends Message<ListOrganization
   static readonly typeName = "rill.admin.v1.ListOrganizationMemberUsersRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 3, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
@@ -4928,6 +4936,13 @@ export class ListProjectMemberUsersRequest extends Message<ListProjectMemberUser
   project = "";
 
   /**
+   * Optionally filter by role
+   *
+   * @generated from field: string role = 5;
+   */
+  role = "";
+
+  /**
    * @generated from field: uint32 page_size = 3;
    */
   pageSize = 0;
@@ -4947,6 +4962,7 @@ export class ListProjectMemberUsersRequest extends Message<ListProjectMemberUser
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 4, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
@@ -5715,6 +5731,13 @@ export class ListOrganizationMemberUsergroupsRequest extends Message<ListOrganiz
   organization = "";
 
   /**
+   * Optionally filter by role
+   *
+   * @generated from field: string role = 4;
+   */
+  role = "";
+
+  /**
    * @generated from field: uint32 page_size = 2;
    */
   pageSize = 0;
@@ -5733,6 +5756,7 @@ export class ListOrganizationMemberUsergroupsRequest extends Message<ListOrganiz
   static readonly typeName = "rill.admin.v1.ListOrganizationMemberUsergroupsRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 3, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
@@ -5910,6 +5934,13 @@ export class ListProjectMemberUsergroupsRequest extends Message<ListProjectMembe
   project = "";
 
   /**
+   * Optionally filter by role
+   *
+   * @generated from field: string role = 5;
+   */
+  role = "";
+
+  /**
    * @generated from field: uint32 page_size = 3;
    */
   pageSize = 0;
@@ -5929,6 +5960,7 @@ export class ListProjectMemberUsergroupsRequest extends Message<ListProjectMembe
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 4, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);

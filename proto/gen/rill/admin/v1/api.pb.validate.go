@@ -8471,7 +8471,18 @@ func (m *ListOrganizationMemberUsersRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Organization
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := ListOrganizationMemberUsersRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for Role
 
 	if m.GetPageSize() != 0 {
 
@@ -13275,6 +13286,8 @@ func (m *ListProjectMemberUsersRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	// no validation rules for Role
+
 	if m.GetPageSize() != 0 {
 
 		if m.GetPageSize() > 1000 {
@@ -15716,6 +15729,8 @@ func (m *ListOrganizationMemberUsergroupsRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	// no validation rules for Role
+
 	if m.GetPageSize() != 0 {
 
 		if m.GetPageSize() > 1000 {
@@ -16289,6 +16304,8 @@ func (m *ListProjectMemberUsergroupsRequest) validate(all bool) error {
 		}
 		errors = append(errors, err)
 	}
+
+	// no validation rules for Role
 
 	if m.GetPageSize() != 0 {
 

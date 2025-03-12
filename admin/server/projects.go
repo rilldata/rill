@@ -812,7 +812,7 @@ func (s *Server) ListProjectMemberUsers(ctx context.Context, req *adminv1.ListPr
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -826,9 +826,18 @@ func (s *Server) ListProjectMemberUsers(ctx context.Context, req *adminv1.ListPr
 	}
 	pageSize := validPageSize(req.PageSize)
 
-	members, err := s.admin.DB.FindProjectMemberUsers(ctx, proj.ID, token.Val, pageSize)
+	var roleID string
+	if req.Role != "" {
+		role, err := s.admin.DB.FindProjectRole(ctx, req.Role)
+		if err != nil {
+			return nil, err
+		}
+		roleID = role.ID
+	}
+
+	members, err := s.admin.DB.FindProjectMemberUsers(ctx, proj.ID, roleID, token.Val, pageSize)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	nextToken := ""

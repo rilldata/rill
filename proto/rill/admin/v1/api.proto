@@ -1293,7 +1293,8 @@ message ListRolesResponse {
 }
 
 message ListOrganizationMemberUsersRequest {
-  string organization = 1;
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string role = 4; // Optionally filter by role
   uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 3;
 }
@@ -1464,8 +1465,9 @@ message SudoTriggerBillingRepairResponse {}
 message ListProjectMemberUsersRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
+  string role = 5; // Optionally filter by role
   uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
-  string page_token = 4 ;
+  string page_token = 4;
 }
 
 message ListProjectMemberUsersResponse {
@@ -1552,6 +1554,7 @@ message EditUsergroupResponse {}
 
 message ListOrganizationMemberUsergroupsRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
+  string role = 4; // Optionally filter by role
   uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 3;
 }
@@ -1576,6 +1579,7 @@ message ListUsergroupsForOrganizationAndUserResponse {
 message ListProjectMemberUsergroupsRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
+  string role = 5; // Optionally filter by role
   uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 4;
 }

@@ -382,13 +382,13 @@ func testOrgsMembersPagination(t *testing.T, db database.DB) {
 	require.NoError(t, db.InsertOrganizationInvite(ctx, &database.InsertOrganizationInviteOptions{Email: "test3@rilldata.com", InviterID: adminUser.ID, OrgID: org.ID, RoleID: viewer.ID}))
 
 	// fetch members without name filter
-	users, err := db.FindOrganizationMemberUsers(ctx, org.ID, "", 1)
+	users, err := db.FindOrganizationMemberUsers(ctx, org.ID, "", "", 1)
 	require.NoError(t, err)
 	require.Equal(t, len(users), 1)
 	require.Equal(t, "test1@rilldata.com", users[0].Email)
 
 	// fetch members with name filter
-	users, err = db.FindOrganizationMemberUsers(ctx, org.ID, users[0].Email, 1)
+	users, err = db.FindOrganizationMemberUsers(ctx, org.ID, "", users[0].Email, 1)
 	require.NoError(t, err)
 	require.Equal(t, len(users), 1)
 	require.Equal(t, "test2@rilldata.com", users[0].Email)

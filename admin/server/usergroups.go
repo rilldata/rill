@@ -187,7 +187,16 @@ func (s *Server) ListOrganizationMemberUsergroups(ctx context.Context, req *admi
 	}
 	pageSize := validPageSize(req.PageSize)
 
-	members, err := s.admin.DB.FindOrganizationMemberUsergroups(ctx, org.ID, token.Val, pageSize)
+	var roleID string
+	if req.Role != "" {
+		role, err := s.admin.DB.FindOrganizationRole(ctx, req.Role)
+		if err != nil {
+			return nil, err
+		}
+		roleID = role.ID
+	}
+
+	members, err := s.admin.DB.FindOrganizationMemberUsergroups(ctx, org.ID, roleID, token.Val, pageSize)
 	if err != nil {
 		return nil, err
 	}
@@ -230,7 +239,16 @@ func (s *Server) ListProjectMemberUsergroups(ctx context.Context, req *adminv1.L
 	}
 	pageSize := validPageSize(req.PageSize)
 
-	members, err := s.admin.DB.FindProjectMemberUsergroups(ctx, proj.ID, token.Val, pageSize)
+	var roleID string
+	if req.Role != "" {
+		role, err := s.admin.DB.FindProjectRole(ctx, req.Role)
+		if err != nil {
+			return nil, err
+		}
+		roleID = role.ID
+	}
+
+	members, err := s.admin.DB.FindProjectMemberUsergroups(ctx, proj.ID, roleID, token.Val, pageSize)
 	if err != nil {
 		return nil, err
 	}

@@ -278,7 +278,7 @@ func (s *Server) ListOrganizationMemberUsers(ctx context.Context, req *adminv1.L
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -292,9 +292,18 @@ func (s *Server) ListOrganizationMemberUsers(ctx context.Context, req *adminv1.L
 	}
 	pageSize := validPageSize(req.PageSize)
 
-	members, err := s.admin.DB.FindOrganizationMemberUsers(ctx, org.ID, token.Val, pageSize)
+	var roleID string
+	if req.Role != "" {
+		role, err := s.admin.DB.FindOrganizationRole(ctx, req.Role)
+		if err != nil {
+			return nil, err
+		}
+		roleID = role.ID
+	}
+
+	members, err := s.admin.DB.FindOrganizationMemberUsers(ctx, org.ID, roleID, token.Val, pageSize)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	nextToken := ""

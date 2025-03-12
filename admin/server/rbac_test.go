@@ -132,6 +132,106 @@ func TestRBAC(t *testing.T) {
 		require.Error(t, err)
 	})
 
+	t.Run("Ability to filter by role in member listings", func(t *testing.T) {
+		// Create org, project and usergroup
+		_, c1 := newTestUser(t, svr)
+		r1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
+		require.NoError(t, err)
+		r2, err := c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
+			OrganizationName: r1.Organization.Name,
+			Name:             "proj1",
+			ProdSlots:        1,
+			SkipDeploy:       true,
+		})
+		require.NoError(t, err)
+		r3, err := c1.CreateUsergroup(ctx, &adminv1.CreateUsergroupRequest{
+			Organization: r1.Organization.Name,
+			Name:         "group1",
+		})
+		require.NoError(t, err)
+
+		// Add a user as viewer to the org and project, and to the usergroup
+		u2, _ := newTestUser(t, svr)
+		_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
+			Organization: r1.Organization.Name,
+			Email:        u2.Email,
+			Role:         database.OrganizationRoleNameViewer,
+		})
+		require.NoError(t, err)
+		_, err = c1.AddProjectMemberUser(ctx, &adminv1.AddProjectMemberUserRequest{
+			Organization: r1.Organization.Name,
+			Project:      r2.Project.Name,
+			Email:        u2.Email,
+			Role:         database.ProjectRoleNameViewer,
+		})
+		require.NoError(t, err)
+		_, err = c1.AddUsergroupMemberUser(ctx, &adminv1.AddUsergroupMemberUserRequest{
+			Organization: r1.Organization.Name,
+			Usergroup:    r3.Usergroup.GroupName,
+			Email:        u2.Email,
+		})
+		require.NoError(t, err)
+
+		// Add the usergroup as viewer on the org and project
+		_, err = c1.AddOrganizationMemberUsergroup(ctx, &adminv1.AddOrganizationMemberUsergroupRequest{
+			Organization: r1.Organization.Name,
+			Usergroup:    r3.Usergroup.GroupName,
+			Role:         database.OrganizationRoleNameViewer,
+		})
+		require.NoError(t, err)
+		_, err = c1.AddProjectMemberUsergroup(ctx, &adminv1.AddProjectMemberUsergroupRequest{
+			Organization: r1.Organization.Name,
+			Project:      r2.Project.Name,
+			Usergroup:    r3.Usergroup.GroupName,
+			Role:         database.ProjectRoleNameViewer,
+		})
+		require.NoError(t, err)
+
+		// Check listing counts for various role filters
+		cases := []struct {
+			roleName           string
+			orgUserCount       int
+			projUserCount      int
+			orgUsergroupCount  int
+			projUsergroupCount int
+		}{
+			{"", 2, 2, 4, 2},
+			{database.OrganizationRoleNameAdmin, 1, 1, 0, 0},
+			{database.OrganizationRoleNameEditor, 0, 0, 0, 0},
+			{database.OrganizationRoleNameViewer, 1, 1, 1, 2},
+		}
+		for _, c := range cases {
+			t.Run(c.roleName, func(t *testing.T) {
+				r4, err := c1.ListOrganizationMemberUsers(ctx, &adminv1.ListOrganizationMemberUsersRequest{
+					Organization: r1.Organization.Name,
+					Role:         c.roleName,
+				})
+				require.NoError(t, err)
+				require.Len(t, r4.Members, c.orgUserCount)
+				r5, err := c1.ListProjectMemberUsers(ctx, &adminv1.ListProjectMemberUsersRequest{
+					Organization: r1.Organization.Name,
+					Project:      r2.Project.Name,
+					Role:         c.roleName,
+				})
+				require.NoError(t, err)
+				require.Len(t, r5.Members, c.projUserCount)
+				r6, err := c1.ListOrganizationMemberUsergroups(ctx, &adminv1.ListOrganizationMemberUsergroupsRequest{
+					Organization: r1.Organization.Name,
+					Role:         c.roleName,
+				})
+				require.NoError(t, err)
+				require.Len(t, r6.Members, c.orgUsergroupCount)
+				r7, err := c1.ListProjectMemberUsergroups(ctx, &adminv1.ListProjectMemberUsergroupsRequest{
+					Organization: r1.Organization.Name,
+					Project:      r2.Project.Name,
+					Role:         c.roleName,
+				})
+				require.NoError(t, err)
+				require.Len(t, r7.Members, c.projUsergroupCount)
+			})
+		}
+	})
+
 	t.Run("Visibility of public projects", func(t *testing.T) {
 		// Create users
 		_, c1 := newTestUser(t, svr)
