@@ -38,7 +38,7 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			Required:    false,
 			DisplayName: "Connection string",
-			Placeholder: "clickhouse://localhost:9000?username=default&password=",
+			Placeholder: "http://localhost:9000?username=default&password=password",
 			Secret:      true,
 			NoPrompt:    true,
 		},

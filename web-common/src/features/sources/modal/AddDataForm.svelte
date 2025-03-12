@@ -9,8 +9,13 @@
     type RpcStatus,
     type V1ConnectorDriver,
   } from "@rilldata/web-common/runtime-client";
+  import type { ActionResult } from "@sveltejs/kit";
   import { slide } from "svelte/transition";
-  import { defaults, superForm } from "sveltekit-superforms";
+  import {
+    defaults,
+    superForm,
+    type SuperValidated,
+  } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { ButtonGroup, SubButton } from "../../../components/button-group";
   import { inferSourceName } from "../sourceUtils";
@@ -26,19 +31,17 @@
   export let onBack: () => void;
   export let onClose: () => void;
 
-  let useDsn = false;
+  const isSourceForm = formType === "source";
+  const isConnectorForm = formType === "connector";
 
-  $: formId = `add-data-${connector.name}-form`;
-  $: dsnFormId = `add-data-${connector.name}-dsn-form`;
-
-  $: isSourceForm = formType === "source";
-  $: isConnectorForm = formType === "connector";
-
-  $: hasDsnFormOption =
-    isConnectorForm &&
-    connector.configProperties?.some((property) => property.key === "dsn");
-
-  // Form 1
+  // Form 1: Individual parameters
+  const formId = `add-data-${connector.name}-form`;
+  const properties =
+    (isSourceForm
+      ? connector.sourceProperties
+      : connector.configProperties?.filter(
+          (property) => property.key !== "dsn",
+        )) ?? [];
   const schema = yup(getYupSchema[connector.name as keyof typeof getYupSchema]);
   const { form, errors, enhance, tainted, submit, submitting } = superForm(
     defaults(schema),
@@ -49,15 +52,17 @@
     },
   );
   let rpcError: RpcStatus | null = null;
-  $: properties =
-    (isSourceForm
-      ? connector.sourceProperties
-      : connector.configProperties?.filter(
-          (property) => property.key !== "dsn",
-        )) ?? [];
 
-  // Form 2
+  // Form 2: DSN
   // SuperForms are not meant to have dynamic schemas, so we use a different form instance for the DSN form
+  let useDsn = false;
+  const hasDsnFormOption =
+    isConnectorForm &&
+    connector.configProperties?.some((property) => property.key === "dsn");
+  const dsnFormId = `add-data-${connector.name}-dsn-form`;
+  const dsnProperties =
+    connector.configProperties?.filter((property) => property.key === "dsn") ??
+    [];
   const dsnYupSchema = yup(dsnSchema);
   const {
     form: dsnForm,
@@ -70,9 +75,6 @@
     validators: dsnYupSchema,
     onUpdate: handleOnUpdate,
   });
-  const dsnProperties =
-    connector.configProperties?.filter((property) => property.key === "dsn") ??
-    [];
 
   function handleConnectionTypeChange(e: CustomEvent<any>): void {
     useDsn = e.detail === "dsn";
@@ -96,20 +98,19 @@
     }
   }
 
-  async function handleOnUpdate({ form }) {
-    if (!form.valid) return;
-    const values = form.data;
-    if (isSourceForm) {
-      try {
-        await submitAddDataForm(queryClient, formType, connector, values);
-        onClose();
-      } catch (e) {
-        rpcError = e?.response?.data;
-      }
-      return;
-    }
+  async function handleOnUpdate<
+    T extends Record<string, unknown>,
+    M = any,
+    In extends Record<string, unknown> = T,
+  >(event: {
+    form: SuperValidated<T, M, In>;
+    formEl: HTMLFormElement;
+    cancel: () => void;
+    result: Extract<ActionResult, { type: "success" | "failure" }>;
+  }) {
+    if (!event.form.valid) return;
+    const values = event.form.data;
 
-    // Connectors
     try {
       await submitAddDataForm(queryClient, formType, connector, values);
       onClose();
@@ -146,8 +147,8 @@
     </div>
   {/if}
 
-  <!-- Form 1 -->
   {#if !useDsn}
+    <!-- Form 1: Individual parameters -->
     <form
       id={formId}
       class="pb-5 flex-grow overflow-y-auto"
@@ -203,10 +204,8 @@
         </div>
       {/each}
     </form>
-  {/if}
-
-  <!-- Form 2 -->
-  {#if useDsn}
+  {:else}
+    <!-- Form 2: DSN -->
     <form
       id={dsnFormId}
       class="pb-5 flex-grow overflow-y-auto"
