@@ -370,12 +370,12 @@
 
   th {
     @apply p-0 m-0 text-xs;
-    @apply border-b relative;
+    @apply relative;
   }
 
-  /* thead tr:last-of-type th {
+  thead tr:last-of-type th {
     @apply border-b;
-  } */
+  }
 
   th:last-of-type,
   td:last-of-type {

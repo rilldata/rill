@@ -231,7 +231,7 @@
   class="table-wrapper relative"
   style:--row-height="{ROW_HEIGHT}px"
   style:--header-height="{HEADER_HEIGHT}px"
-  style:--total-header-height="{totalHeaderHeight + headerGroups.length}px"
+  style:--total-header-height="{totalHeaderHeight + 1}px"
   bind:this={containerRefElement}
   on:scroll={() => handleScroll(containerRefElement)}
 >
