@@ -4732,6 +4732,8 @@ definitions:
   v1OrganizationPermissions:
     type: object
     properties:
+      admin:
+        type: boolean
       guest:
         type: boolean
       readOrg:
@@ -4747,6 +4749,8 @@ definitions:
       readOrgMembers:
         type: boolean
       manageOrgMembers:
+        type: boolean
+      manageOrgAdmins:
         type: boolean
   v1OrganizationQuotas:
     type: object
@@ -4844,6 +4848,8 @@ definitions:
   v1ProjectPermissions:
     type: object
     properties:
+      admin:
+        type: boolean
       readProject:
         type: boolean
       manageProject:
@@ -4867,6 +4873,8 @@ definitions:
       readProjectMembers:
         type: boolean
       manageProjectMembers:
+        type: boolean
+      manageProjectAdmins:
         type: boolean
       createMagicAuthTokens:
         type: boolean

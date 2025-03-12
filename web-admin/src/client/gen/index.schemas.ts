@@ -783,6 +783,7 @@ If empty, the variable is shared for all environments. */
 }
 
 export interface V1ProjectPermissions {
+  admin?: boolean;
   readProject?: boolean;
   manageProject?: boolean;
   readProd?: boolean;
@@ -795,6 +796,7 @@ export interface V1ProjectPermissions {
   manageProvisionerResources?: boolean;
   readProjectMembers?: boolean;
   manageProjectMembers?: boolean;
+  manageProjectAdmins?: boolean;
   createMagicAuthTokens?: boolean;
   manageMagicAuthTokens?: boolean;
   createReports?: boolean;
@@ -854,6 +856,7 @@ export interface V1OrganizationQuotas {
 }
 
 export interface V1OrganizationPermissions {
+  admin?: boolean;
   guest?: boolean;
   readOrg?: boolean;
   manageOrg?: boolean;
@@ -862,6 +865,7 @@ export interface V1OrganizationPermissions {
   manageProjects?: boolean;
   readOrgMembers?: boolean;
   manageOrgMembers?: boolean;
+  manageOrgAdmins?: boolean;
 }
 
 export interface V1OrganizationRole {

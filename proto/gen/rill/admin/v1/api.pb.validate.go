@@ -34709,6 +34709,8 @@ func (m *OrganizationPermissions) validate(all bool) error {
 
 	var errors []error
 
+	// no validation rules for Admin
+
 	// no validation rules for Guest
 
 	// no validation rules for ReadOrg
@@ -34724,6 +34726,8 @@ func (m *OrganizationPermissions) validate(all bool) error {
 	// no validation rules for ReadOrgMembers
 
 	// no validation rules for ManageOrgMembers
+
+	// no validation rules for ManageOrgAdmins
 
 	if len(errors) > 0 {
 		return OrganizationPermissionsMultiError(errors)
@@ -34827,6 +34831,8 @@ func (m *ProjectPermissions) validate(all bool) error {
 
 	var errors []error
 
+	// no validation rules for Admin
+
 	// no validation rules for ReadProject
 
 	// no validation rules for ManageProject
@@ -34850,6 +34856,8 @@ func (m *ProjectPermissions) validate(all bool) error {
 	// no validation rules for ReadProjectMembers
 
 	// no validation rules for ManageProjectMembers
+
+	// no validation rules for ManageProjectAdmins
 
 	// no validation rules for CreateMagicAuthTokens
 

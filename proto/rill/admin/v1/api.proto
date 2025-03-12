@@ -2346,6 +2346,7 @@ message ProvisionerResource {
 }
 
 message OrganizationPermissions {
+  bool admin = 9;
   bool guest = 8;
   bool read_org = 1;
   bool manage_org = 2;
@@ -2354,9 +2355,11 @@ message OrganizationPermissions {
   bool manage_projects = 5;
   bool read_org_members = 6;
   bool manage_org_members = 7;
+  bool manage_org_admins = 10;
 }
 
 message ProjectPermissions {
+  bool admin = 21;
   bool read_project = 1;
   bool manage_project = 2;
   bool read_prod = 3;
@@ -2369,6 +2372,7 @@ message ProjectPermissions {
   bool manage_provisioner_resources = 20;
   bool read_project_members = 9;
   bool manage_project_members = 10;
+  bool manage_project_admins = 22;
   bool create_magic_auth_tokens = 15;
   bool manage_magic_auth_tokens = 16;
   bool create_reports = 11;

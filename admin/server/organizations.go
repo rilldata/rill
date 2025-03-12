@@ -385,6 +385,9 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+	if role.Admin && !claims.OrganizationPermissions(ctx, org.ID).ManageOrgAdmins && !forceAccess {
+		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
+	}
 
 	var invitedByUserID, invitedByName string
 	if claims.OwnerType() == auth.OwnerTypeUser {
@@ -519,16 +522,15 @@ func (s *Server) RemoveOrganizationMemberUser(ctx context.Context, req *adminv1.
 		return nil, status.Error(codes.InvalidArgument, "this user is the billing email for the organization, please update the billing email before removing")
 	}
 
-	// Check that the user is not the last admin
-	role, err := s.admin.DB.FindOrganizationRole(ctx, database.OrganizationRoleNameAdmin)
+	// Check admin status edge cases
+	isAdmin, isLastAdmin, err := s.admin.DB.FindOrganizationMemberUserAdminStatus(ctx, org.ID, user.ID)
 	if err != nil {
 		return nil, err
 	}
-	users, err := s.admin.DB.FindOrganizationMemberUsersByRole(ctx, org.ID, role.ID)
-	if err != nil {
-		return nil, err
+	if isAdmin && !claims.OrganizationPermissions(ctx, org.ID).ManageOrgAdmins {
+		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to remove an admin member")
 	}
-	if len(users) == 1 && users[0].ID == user.ID {
+	if isLastAdmin {
 		return nil, status.Error(codes.InvalidArgument, "cannot remove the last admin member")
 	}
 
@@ -560,6 +562,9 @@ func (s *Server) SetOrganizationMemberUserRole(ctx context.Context, req *adminv1
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+	if role.Admin && !claims.OrganizationPermissions(ctx, org.ID).ManageOrgAdmins {
+		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
+	}
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
@@ -578,19 +583,16 @@ func (s *Server) SetOrganizationMemberUserRole(ctx context.Context, req *adminv1
 		return &adminv1.SetOrganizationMemberUserRoleResponse{}, nil
 	}
 
-	// Check if the user is the last owner
-	if role.Name != database.OrganizationRoleNameAdmin {
-		adminRole, err := s.admin.DB.FindOrganizationRole(ctx, database.OrganizationRoleNameAdmin)
-		if err != nil {
-			return nil, err
-		}
-		users, err := s.admin.DB.FindOrganizationMemberUsersByRole(ctx, org.ID, adminRole.ID)
-		if err != nil {
-			return nil, err
-		}
-		if len(users) == 1 && users[0].ID == user.ID {
-			return nil, status.Error(codes.InvalidArgument, "cannot change role of the last owner")
-		}
+	// Check admin status edge cases
+	isAdmin, isLastAdmin, err := s.admin.DB.FindOrganizationMemberUserAdminStatus(ctx, org.ID, user.ID)
+	if err != nil {
+		return nil, err
+	}
+	if isAdmin && !claims.OrganizationPermissions(ctx, org.ID).ManageOrgAdmins {
+		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to remove an admin member")
+	}
+	if isLastAdmin {
+		return nil, status.Error(codes.InvalidArgument, "cannot remove the last admin member")
 	}
 
 	err = s.admin.UpdateOrganizationMemberUserRole(ctx, org.ID, user.ID, role.ID)
@@ -630,17 +632,13 @@ func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrgani
 		return nil, status.Error(codes.InvalidArgument, "this user is the billing email for the organization, please update the billing email before leaving")
 	}
 
-	// check if the user is the last owner
-	role, err := s.admin.DB.FindOrganizationRole(ctx, database.OrganizationRoleNameAdmin)
+	// check if the user is the last admin
+	_, isLastAdmin, err := s.admin.DB.FindOrganizationMemberUserAdminStatus(ctx, org.ID, user.ID)
 	if err != nil {
 		return nil, err
 	}
-	users, err := s.admin.DB.FindOrganizationMemberUsersByRole(ctx, org.ID, role.ID)
-	if err != nil {
-		return nil, err
-	}
-	if len(users) == 1 && users[0].ID == claims.OwnerID() {
-		return nil, status.Error(codes.InvalidArgument, "cannot remove the last owner")
+	if isLastAdmin {
+		return nil, status.Error(codes.InvalidArgument, "cannot leave because you are the last admin")
 	}
 
 	err = s.admin.DeleteOrganizationMemberUser(ctx, org.ID, user.ID)
@@ -669,6 +667,8 @@ func (s *Server) CreateWhitelistedDomain(ctx context.Context, req *adminv1.Creat
 	}
 
 	if !claims.Superuser(ctx) {
+		// NOTE: Purposefully checking for ManageOrg permission instead of ManageOrgMembers.
+		// Only real admins should be able to add whitelisted domains.
 		if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg {
 			return nil, status.Error(codes.PermissionDenied, "only org admins can add whitelisted domain")
 		}
@@ -680,7 +680,6 @@ func (s *Server) CreateWhitelistedDomain(ctx context.Context, req *adminv1.Creat
 		if !strings.HasSuffix(user.Email, "@"+req.Domain) {
 			return nil, status.Error(codes.PermissionDenied, "Domain name doesn’t match verified email domain. Please contact Rill support.")
 		}
-
 		if publicemail.IsPublic(req.Domain) {
 			return nil, status.Errorf(codes.InvalidArgument, "Public Domain %s cannot be whitelisted", req.Domain)
 		}
@@ -689,6 +688,9 @@ func (s *Server) CreateWhitelistedDomain(ctx context.Context, req *adminv1.Creat
 	role, err := s.admin.DB.FindOrganizationRole(ctx, req.Role)
 	if err != nil {
 		return nil, err
+	}
+	if role.Admin && !claims.OrganizationPermissions(ctx, org.ID).ManageOrgAdmins {
+		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
 	}
 
 	// find existing users belonging to the whitelisted domain to the org

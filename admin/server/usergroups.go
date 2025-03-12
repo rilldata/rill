@@ -262,6 +262,9 @@ func (s *Server) AddOrganizationMemberUsergroup(ctx context.Context, req *adminv
 	if err != nil {
 		return nil, err
 	}
+	if role.Admin && !claims.OrganizationPermissions(ctx, usergroup.OrgID).ManageOrgAdmins {
+		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
+	}
 
 	err = s.admin.DB.InsertOrganizationMemberUsergroup(ctx, usergroup.ID, usergroup.OrgID, role.ID)
 	if err != nil {
@@ -296,6 +299,17 @@ func (s *Server) SetOrganizationMemberUsergroupRole(ctx context.Context, req *ad
 	if err != nil {
 		return nil, err
 	}
+	if role.Admin && !claims.OrganizationPermissions(ctx, usergroup.OrgID).ManageOrgAdmins {
+		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
+	}
+
+	currentRole, err := s.admin.DB.FindOrganizationMemberUsergroupRole(ctx, usergroup.ID, usergroup.OrgID)
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
+		return nil, err
+	}
+	if currentRole != nil && currentRole.Admin && !claims.OrganizationPermissions(ctx, usergroup.OrgID).ManageOrgAdmins {
+		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to remove an admin role")
+	}
 
 	err = s.admin.DB.UpdateOrganizationMemberUsergroup(ctx, usergroup.ID, usergroup.OrgID, role.ID)
 	if err != nil {
@@ -323,6 +337,14 @@ func (s *Server) RemoveOrganizationMemberUsergroup(ctx context.Context, req *adm
 
 	if usergroup.Managed {
 		return nil, status.Error(codes.InvalidArgument, "cannot edit managed user group")
+	}
+
+	currentRole, err := s.admin.DB.FindOrganizationMemberUsergroupRole(ctx, usergroup.ID, usergroup.OrgID)
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
+		return nil, err
+	}
+	if currentRole != nil && currentRole.Admin && !claims.OrganizationPermissions(ctx, usergroup.OrgID).ManageOrgAdmins {
+		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to remove an admin role")
 	}
 
 	err = s.admin.DB.DeleteOrganizationMemberUsergroup(ctx, usergroup.ID, usergroup.OrgID)
@@ -354,6 +376,9 @@ func (s *Server) AddProjectMemberUsergroup(ctx context.Context, req *adminv1.Add
 	role, err := s.admin.DB.FindProjectRole(ctx, req.Role)
 	if err != nil {
 		return nil, err
+	}
+	if role.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectAdmins {
+		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
 	}
 
 	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Organization, req.Usergroup)
@@ -391,10 +416,21 @@ func (s *Server) SetProjectMemberUsergroupRole(ctx context.Context, req *adminv1
 	if err != nil {
 		return nil, err
 	}
+	if role.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectAdmins {
+		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
+	}
 
 	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Organization, req.Usergroup)
 	if err != nil {
 		return nil, err
+	}
+
+	currentRole, err := s.admin.DB.FindProjectMemberUsergroupRole(ctx, usergroup.ID, proj.ID)
+	if err != nil {
+		return nil, err
+	}
+	if currentRole.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectAdmins {
+		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to remove an admin role")
 	}
 
 	err = s.admin.DB.UpdateProjectMemberUsergroup(ctx, usergroup.ID, proj.ID, role.ID)
@@ -427,6 +463,14 @@ func (s *Server) RemoveProjectMemberUsergroup(ctx context.Context, req *adminv1.
 		return nil, err
 	}
 
+	currentRole, err := s.admin.DB.FindProjectMemberUsergroupRole(ctx, usergroup.ID, proj.ID)
+	if err != nil {
+		return nil, err
+	}
+	if currentRole.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectAdmins {
+		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to remove an admin role")
+	}
+
 	err = s.admin.DB.DeleteProjectMemberUsergroup(ctx, usergroup.ID, proj.ID)
 	if err != nil {
 		return nil, err
@@ -454,6 +498,16 @@ func (s *Server) AddUsergroupMemberUser(ctx context.Context, req *adminv1.AddUse
 	if group.Managed {
 		return nil, status.Error(codes.InvalidArgument, "cannot edit managed user group")
 	}
+
+	currentRole, err := s.admin.DB.FindOrganizationMemberUsergroupRole(ctx, group.ID, group.OrgID)
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
+		return nil, err
+	}
+	if currentRole != nil && currentRole.Admin && !claims.OrganizationPermissions(ctx, group.OrgID).ManageOrgAdmins {
+		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to edit a group that has an admin role")
+	}
+	// NOTE: In theory, the group could be admin on a project that the current user is not admin on.
+	// We don't check for that because it's complicated and not a big leak of permissions.
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {

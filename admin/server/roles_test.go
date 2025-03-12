@@ -29,6 +29,8 @@ func TestListRoles(t *testing.T) {
 		}
 		require.NotNil(t, orgAdminRole)
 		require.NotEmpty(t, orgAdminRole.Id)
+		require.True(t, orgAdminRole.Permissions.Admin)
+		require.False(t, orgAdminRole.Permissions.Guest)
 		require.True(t, orgAdminRole.Permissions.ManageOrg)
 
 		var projViewerRole *adminv1.ProjectRole
@@ -40,7 +42,9 @@ func TestListRoles(t *testing.T) {
 		}
 		require.NotNil(t, projViewerRole)
 		require.NotEmpty(t, projViewerRole.Id)
+		require.False(t, projViewerRole.Permissions.Admin)
 		require.False(t, projViewerRole.Permissions.ManageProject)
+		require.True(t, projViewerRole.Permissions.ReadProd)
 	})
 
 	t.Run("Default project role", func(t *testing.T) {
