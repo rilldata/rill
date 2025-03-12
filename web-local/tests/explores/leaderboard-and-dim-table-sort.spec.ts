@@ -67,7 +67,6 @@ test.describe("leaderboard and dimension table sorting", () => {
       name: "Choose context columns to display",
     });
     await contextColumnsMenu.click();
-    await page.getByRole("menuitem", { name: "Change" }).click();
     await page.getByRole("menuitem", { name: "Percent change" }).click();
 
     // to close the context columns menu
