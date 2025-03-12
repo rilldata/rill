@@ -27,6 +27,7 @@
       cell: ({ row }) =>
         flexRender(OrgGroupsTableRoleCell, {
           name: row.original.groupName,
+          managed: row.original.groupManaged,
           role: row.original.roleName,
         }),
       meta: {
@@ -41,6 +42,7 @@
       cell: ({ row }) =>
         flexRender(OrgGroupsTableActionsCell, {
           name: row.original.groupName,
+          managed: row.original.groupManaged,
           currentUserEmail: currentUserEmail,
           searchUsersList: searchUsersList,
         }),

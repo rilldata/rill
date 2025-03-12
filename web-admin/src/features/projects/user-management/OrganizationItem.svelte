@@ -30,6 +30,12 @@
 
   $: userGroupMemberUsers = $listUsergroupMemberUsers.data?.members ?? [];
   $: userGroupMemberUsersCount = userGroupMemberUsers?.length ?? 0;
+
+  $: managedGroupNames = {
+    "autogroup:users": `${organization} (everyone)`,
+    "autogroup:members": `${organization} (members)`,
+    "autogroup:guests": `${organization} (guests)`,
+  };
 </script>
 
 {#if group}
@@ -46,7 +52,7 @@
     >
       <AvatarListItem
         shape="square"
-        name={organization}
+        name={managedGroupNames[group.groupName] || group.groupName}
         count={userGroupMemberUsersCount}
       />
       <UserManagementOrganizationSetRole {organization} {project} {group} />

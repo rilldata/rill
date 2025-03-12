@@ -61,7 +61,7 @@ test.describe("Metrics editor", () => {
     await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/metrics/AdBids_metrics.yaml");
 
-    await page.getByLabel("code").click();
+    await page.getByRole("button", { name: "switch to code editor" }).click();
 
     await updateCodeEditor(page, "");
 

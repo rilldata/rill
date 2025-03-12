@@ -94,7 +94,9 @@ dimensions:
     - rill-WTD // Week-To-date
     ```
 
-**`time_zones`** — Refers to the time zones that should be pinned to the top of the time zone selector. It should be a list of [IANA time zone identifiers](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones). By adding one or more time zones will make the dashboard time zone aware and allow users to change current time zone within the dashboard _(optional)_.
+**`time_zones`** — Refers to the time zones that should be pinned to the top of the time zone selector. It should be a list of [IANA time zone identifiers](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones). When not specified, Rill will display a set of commonly used timezones by default. _(optional)_.
+
+**`lock_time_zone`** — When `true`, the dashboard will be locked to the first time provided in the `time_zones` list. When no `time_zones` are provided, the dashboard will be locked to UTC. _(optional)_.
 
 **`theme`** — Refers to the default theme to apply to the dashboard. A valid theme must be defined in the project. Read this [page](./themes.md) for more detailed information about themes _(optional)_.
 ```yaml

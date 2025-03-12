@@ -162,6 +162,11 @@ service AdminService {
     };
   }
 
+  // ListRoles lists all the roles available for orgs and projects.
+  rpc ListRoles(ListRolesRequest) returns (ListRolesResponse) {
+    option (google.api.http) = {get: "/v1/roles"};
+  }
+
   // ListOrganizationMemberUsers lists all the org members
   rpc ListOrganizationMemberUsers(ListOrganizationMemberUsersRequest) returns (ListOrganizationMemberUsersResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization}/members"};
@@ -911,6 +916,7 @@ message UpdateOrganizationRequest {
   optional string display_name = 5;
   optional string logo_asset_id = 6;
   optional string favicon_asset_id = 7;
+  optional string default_project_role = 8;
   optional string billing_email = 4 [(validate.rules).string.email = true];
 }
 
@@ -1149,6 +1155,7 @@ message CreateProjectRequest {
   // archive_asset_id is set for projects whose project files are not stored in github but are managed by rill.
   string archive_asset_id = 14;
   string prod_version = 13;
+  bool skip_deploy = 15;
 }
 
 message CreateProjectResponse {
@@ -1255,6 +1262,13 @@ message ProvisionResponse {
   ProvisionerResource resource = 1;
 }
 
+message ListRolesRequest {}
+
+message ListRolesResponse {
+  repeated OrganizationRole organization_roles = 1;
+  repeated ProjectRole project_roles = 2;
+}
+
 message ListOrganizationMemberUsersRequest {
   string organization = 1;
   uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
@@ -1291,7 +1305,6 @@ message AddOrganizationMemberUserResponse {
 message RemoveOrganizationMemberUserRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string email = 2 [(validate.rules).string.email = true];
-  bool keep_project_roles = 3;
 }
 
 message RemoveOrganizationMemberUserResponse {}
@@ -1482,7 +1495,9 @@ message CreateUsergroupRequest {
   string name = 2 [(validate.rules).string.min_len = 1];
 }
 
-message CreateUsergroupResponse {}
+message CreateUsergroupResponse {
+  Usergroup usergroup = 1;
+}
 
 message GetUsergroupRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
@@ -2242,6 +2257,7 @@ message Organization {
   string logo_url = 12;
   string favicon_url = 13;
   string custom_domain = 10;
+  string default_project_role_id = 16;
   OrganizationQuotas quotas = 4;
   string billing_customer_id = 7;
   string payment_customer_id = 8;
@@ -2330,6 +2346,8 @@ message ProvisionerResource {
 }
 
 message OrganizationPermissions {
+  bool admin = 9;
+  bool guest = 8;
   bool read_org = 1;
   bool manage_org = 2;
   bool read_projects = 3;
@@ -2337,9 +2355,11 @@ message OrganizationPermissions {
   bool manage_projects = 5;
   bool read_org_members = 6;
   bool manage_org_members = 7;
+  bool manage_org_admins = 10;
 }
 
 message ProjectPermissions {
+  bool admin = 21;
   bool read_project = 1;
   bool manage_project = 2;
   bool read_prod = 3;
@@ -2352,6 +2372,7 @@ message ProjectPermissions {
   bool manage_provisioner_resources = 20;
   bool read_project_members = 9;
   bool manage_project_members = 10;
+  bool manage_project_admins = 22;
   bool create_magic_auth_tokens = 15;
   bool manage_magic_auth_tokens = 16;
   bool create_reports = 11;
@@ -2360,6 +2381,18 @@ message ProjectPermissions {
   bool manage_alerts = 14;
   bool create_bookmarks = 17;
   bool manage_bookmarks = 18;
+}
+
+message OrganizationRole {
+  string id = 1;
+  string name = 2;
+  OrganizationPermissions permissions = 3;
+}
+
+message ProjectRole {
+  string id = 1;
+  string name = 2;
+  ProjectPermissions permissions = 3;
 }
 
 message MemberUser {
@@ -2501,6 +2534,7 @@ message Usergroup {
   string group_id = 1;
   string group_name = 2;
   string group_description = 3;
+  bool managed = 6;
   google.protobuf.Timestamp created_on = 4;
   google.protobuf.Timestamp updated_on = 5;
 }
@@ -2508,6 +2542,7 @@ message Usergroup {
 message MemberUsergroup {
   string group_id = 1;
   string group_name = 2;
+  bool group_managed = 6;
   string role_name = 3;
   google.protobuf.Timestamp created_on = 4;
   google.protobuf.Timestamp updated_on = 5;

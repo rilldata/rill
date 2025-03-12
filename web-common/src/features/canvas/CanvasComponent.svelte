@@ -12,6 +12,8 @@
 </script>
 
 <script lang="ts">
+  import Toolbar from "./Toolbar.svelte";
+
   export let canvasItem: V1CanvasItem | null;
   export let selected = false;
   export let id: string;
@@ -19,12 +21,16 @@
   export let allowPointerEvents = true;
   export let editable = false;
   export let onMouseDown: (e: MouseEvent) => void = () => {};
+  export let onDuplicate: () => void = () => {};
+  export let onDelete: () => void = () => {};
 
   const {
     canvasEntity: {
       spec: { getComponentResourceFromName },
     },
   } = getCanvasStateManagers();
+
+  let open = false;
 
   $: componentName = canvasItem?.component ?? "";
 
@@ -45,23 +51,32 @@
   class:editable
   class:opacity-20={ghost}
   style:pointer-events={!allowPointerEvents ? "none" : "auto"}
-  class:outline={!hideBorder.has(renderer)}
-  class:shadow-sm={!hideBorder.has(renderer)}
+  class:outline={!hideBorder.has(renderer) || open}
+  class:shadow-sm={!hideBorder.has(renderer) || open}
   class="group component-card size-full flex flex-col cursor-pointer z-10 p-0 relative outline-[1px] outline-gray-200 bg-white overflow-hidden rounded-sm"
-  on:mousedown={onMouseDown}
 >
-  {#if componentName}
-    {#if !isChartType}
-      <ComponentHeader {title} {description} filters={componentFilters} />
-    {/if}
-    {#if renderer && rendererProperties}
-      <ComponentRenderer {renderer} {rendererProperties} {componentName} />
-    {/if}
-  {:else}
-    <div class="size-full grid place-content-center">
-      <LoadingSpinner size="36px" />
-    </div>
+  {#if editable}
+    <Toolbar {onDelete} {onDuplicate} bind:dropdownOpen={open} />
   {/if}
+
+  <div
+    role="presentation"
+    class="size-full grow flex flex-col"
+    on:mousedown={onMouseDown}
+  >
+    {#if componentName}
+      {#if !isChartType}
+        <ComponentHeader {title} {description} filters={componentFilters} />
+      {/if}
+      {#if renderer && rendererProperties}
+        <ComponentRenderer {renderer} {rendererProperties} {componentName} />
+      {/if}
+    {:else}
+      <div class="size-full grid place-content-center">
+        <LoadingSpinner size="36px" />
+      </div>
+    {/if}
+  </div>
 </article>
 
 <style lang="postcss">

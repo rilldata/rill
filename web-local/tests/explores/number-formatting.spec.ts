@@ -66,7 +66,7 @@ dimensions:
   description: ""
 `;
 
-    await page.getByLabel("code").click();
+    await page.getByRole("button", { name: "switch to code editor" }).click();
     // update the code editor with the new spec
     await watcher.updateAndWaitForDashboard(formatterFlowDashboard);
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");

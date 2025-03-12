@@ -1,6 +1,7 @@
 package org
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -31,6 +32,20 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 			org := res.Organization
 
+			var defaultProjectRole string
+			if org.DefaultProjectRoleId != "" {
+				rolesRes, err := client.ListRoles(cmd.Context(), &adminv1.ListRolesRequest{})
+				if err != nil {
+					return fmt.Errorf("failed to list roles: %w", err)
+				}
+				for _, role := range rolesRes.ProjectRoles {
+					if role.Id == org.DefaultProjectRoleId {
+						defaultProjectRole = role.Name
+						break
+					}
+				}
+			}
+
 			ch.Printf("Id: %s\n", org.Id)
 			ch.Printf("Name: %s\n", org.Name)
 			ch.Printf("Display Name: %s\n", org.DisplayName)
@@ -38,6 +53,7 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 			ch.Printf("Custom Logo: %s\n", org.LogoUrl)
 			ch.Printf("Custom Favicon: %s\n", org.FaviconUrl)
 			ch.Printf("Custom Domain: %s\n", org.CustomDomain)
+			ch.Printf("Default Project Role: %s\n", defaultProjectRole)
 			ch.Printf("Billing Email: %s\n", org.BillingEmail)
 			ch.Printf("Created On: %s\n", org.CreatedOn.AsTime().Format(time.RFC3339Nano))
 			ch.Printf("Updated On: %s\n", org.UpdatedOn.AsTime().Format(time.RFC3339Nano))
