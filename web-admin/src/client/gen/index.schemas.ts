@@ -295,6 +295,7 @@ export type AdminServiceUpdateOrganizationBody = {
   displayName?: string;
   logoAssetId?: string;
   faviconAssetId?: string;
+  defaultProjectRole?: string;
   billingEmail?: string;
 };
 
@@ -804,6 +805,12 @@ export interface V1ProjectPermissions {
   manageBookmarks?: boolean;
 }
 
+export interface V1ProjectRole {
+  id?: string;
+  name?: string;
+  permissions?: V1ProjectPermissions;
+}
+
 export type V1ProjectAnnotations = { [key: string]: string };
 
 export interface V1Project {
@@ -857,6 +864,12 @@ export interface V1OrganizationPermissions {
   manageOrgMembers?: boolean;
 }
 
+export interface V1OrganizationRole {
+  id?: string;
+  name?: string;
+  permissions?: V1OrganizationPermissions;
+}
+
 export interface V1Organization {
   id?: string;
   name?: string;
@@ -865,6 +878,7 @@ export interface V1Organization {
   logoUrl?: string;
   faviconUrl?: string;
   customDomain?: string;
+  defaultProjectRoleId?: string;
   quotas?: V1OrganizationQuotas;
   billingCustomerId?: string;
   paymentCustomerId?: string;
@@ -953,6 +967,11 @@ export interface V1ListServicesResponse {
 
 export interface V1ListServiceAuthTokensResponse {
   tokens?: V1ServiceToken[];
+}
+
+export interface V1ListRolesResponse {
+  organizationRoles?: V1OrganizationRole[];
+  projectRoles?: V1ProjectRole[];
 }
 
 export interface V1ListPublicBillingPlansResponse {

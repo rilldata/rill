@@ -16,7 +16,7 @@ func (s *Service) OrganizationPermissionsForUser(ctx context.Context, orgID, use
 
 	composite := &adminv1.OrganizationPermissions{}
 	for _, role := range roles {
-		composite = unionOrgRoles(composite, role)
+		composite = UnionOrgRoles(composite, role)
 	}
 
 	// If the org has a public project, all users get read access to it.
@@ -125,7 +125,7 @@ func (s *Service) ProjectPermissionsForUser(ctx context.Context, projectID, user
 
 	composite := &adminv1.ProjectPermissions{}
 	for _, role := range roles {
-		composite = unionProjectRoles(composite, role)
+		composite = UnionProjectRoles(composite, role)
 	}
 
 	return composite, nil
@@ -231,7 +231,8 @@ func (s *Service) ProjectPermissionsForMagicAuthToken(ctx context.Context, proje
 	}, nil
 }
 
-func unionOrgRoles(a *adminv1.OrganizationPermissions, b *database.OrganizationRole) *adminv1.OrganizationPermissions {
+// UnionOrgRoles merges an organization role's permissions into the given permissions object.
+func UnionOrgRoles(a *adminv1.OrganizationPermissions, b *database.OrganizationRole) *adminv1.OrganizationPermissions {
 	return &adminv1.OrganizationPermissions{
 		Guest:            a.Guest || b.Guest,
 		ReadOrg:          a.ReadOrg || b.ReadOrg,
@@ -244,7 +245,8 @@ func unionOrgRoles(a *adminv1.OrganizationPermissions, b *database.OrganizationR
 	}
 }
 
-func unionProjectRoles(a *adminv1.ProjectPermissions, b *database.ProjectRole) *adminv1.ProjectPermissions {
+// UnionProjectRoles merges a project role's permissions into the given permissions object.
+func UnionProjectRoles(a *adminv1.ProjectPermissions, b *database.ProjectRole) *adminv1.ProjectPermissions {
 	return &adminv1.ProjectPermissions{
 		ReadProject:                a.ReadProject || b.ReadProject,
 		ManageProject:              a.ManageProject || b.ManageProject,

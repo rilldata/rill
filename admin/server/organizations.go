@@ -204,6 +204,19 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		}
 	}
 
+	defaultProjectRoleID := org.DefaultProjectRoleID
+	if req.DefaultProjectRole != nil {
+		if *req.DefaultProjectRole == "" {
+			defaultProjectRoleID = nil
+		} else {
+			role, err := s.admin.DB.FindProjectRole(ctx, *req.DefaultProjectRole)
+			if err != nil {
+				return nil, fmt.Errorf("failed to find role %q: %w", *req.DefaultProjectRole, err)
+			}
+			defaultProjectRoleID = &role.ID
+		}
+	}
+
 	nameChanged := req.NewName != nil && *req.NewName != org.Name
 	emailChanged := req.BillingEmail != nil && *req.BillingEmail != org.BillingEmail
 	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
@@ -213,6 +226,7 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		LogoAssetID:                         logoAssetID,
 		FaviconAssetID:                      faviconAssetID,
 		CustomDomain:                        org.CustomDomain,
+		DefaultProjectRoleID:                defaultProjectRoleID,
 		QuotaProjects:                       org.QuotaProjects,
 		QuotaDeployments:                    org.QuotaDeployments,
 		QuotaSlotsTotal:                     org.QuotaSlotsTotal,
@@ -822,6 +836,7 @@ func (s *Server) SudoUpdateOrganizationQuotas(ctx context.Context, req *adminv1.
 		LogoAssetID:                         org.LogoAssetID,
 		FaviconAssetID:                      org.FaviconAssetID,
 		CustomDomain:                        org.CustomDomain,
+		DefaultProjectRoleID:                org.DefaultProjectRoleID,
 		QuotaProjects:                       int(valOrDefault(req.Projects, int32(org.QuotaProjects))),
 		QuotaDeployments:                    int(valOrDefault(req.Deployments, int32(org.QuotaDeployments))),
 		QuotaSlotsTotal:                     int(valOrDefault(req.SlotsTotal, int32(org.QuotaSlotsTotal))),
@@ -869,6 +884,7 @@ func (s *Server) SudoUpdateOrganizationCustomDomain(ctx context.Context, req *ad
 		LogoAssetID:                         org.LogoAssetID,
 		FaviconAssetID:                      org.FaviconAssetID,
 		CustomDomain:                        req.CustomDomain,
+		DefaultProjectRoleID:                org.DefaultProjectRoleID,
 		QuotaProjects:                       org.QuotaProjects,
 		QuotaDeployments:                    org.QuotaDeployments,
 		QuotaSlotsTotal:                     org.QuotaSlotsTotal,
@@ -902,14 +918,20 @@ func (s *Server) organizationToDTO(o *database.Organization, privileged bool) *a
 		faviconURL = s.admin.URLs.WithCustomDomain(o.CustomDomain).Asset(*o.FaviconAssetID)
 	}
 
+	var defaultProjectRoleID string
+	if o.DefaultProjectRoleID != nil {
+		defaultProjectRoleID = *o.DefaultProjectRoleID
+	}
+
 	res := &adminv1.Organization{
-		Id:           o.ID,
-		Name:         o.Name,
-		DisplayName:  o.DisplayName,
-		Description:  o.Description,
-		LogoUrl:      logoURL,
-		FaviconUrl:   faviconURL,
-		CustomDomain: o.CustomDomain,
+		Id:                   o.ID,
+		Name:                 o.Name,
+		DisplayName:          o.DisplayName,
+		Description:          o.Description,
+		LogoUrl:              logoURL,
+		FaviconUrl:           faviconURL,
+		CustomDomain:         o.CustomDomain,
+		DefaultProjectRoleId: defaultProjectRoleID,
 		Quotas: &adminv1.OrganizationQuotas{
 			Projects:                       int32(o.QuotaProjects),
 			Deployments:                    int32(o.QuotaDeployments),
