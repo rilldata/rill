@@ -1,22 +1,23 @@
 import { describe, it, expect } from "vitest";
 import { getAbbreviationForIANA, addZoneOffset } from "./index";
+import { DateTime } from "luxon";
 
 const getAbbreviationForIANATestCases = [
   {
     test: "returns the abbreviation for the Indian timezone",
-    now: new Date("2022-01-01T00:00:00.000Z"),
+    now: DateTime.fromISO("2022-01-01T00:00:00.000Z"),
     iana: "Asia/Kolkata",
     expected: "IST",
   },
   {
     test: "returns the abbreviation for the Pacific timezone",
-    now: new Date("2022-01-01T00:00:00.000Z"),
+    now: DateTime.fromISO("2022-01-01T00:00:00.000Z"),
     iana: "America/Los_Angeles",
     expected: "PST",
   },
   {
     test: "returns the abbreviation accounting for Daylight Savings Time",
-    now: new Date("2022-06-01T00:00:00.000Z"),
+    now: DateTime.fromISO("2022-06-01T00:00:00.000Z"),
     iana: "America/Los_Angeles",
     expected: "PDT",
   },

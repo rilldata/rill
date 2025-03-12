@@ -300,6 +300,35 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	return handler, nil
 }
 
+// AwaitServing waits for both the HTTP and gRPC servers to be reachable on their localhost ports.
+func (s *Server) AwaitServing(ctx context.Context) error {
+	// Since the HTTP server proxies the ping endpoint to the gRPC server,
+	// it is sufficient to check that endpoint on the HTTP server.
+	client := &http.Client{}
+	pingURL := fmt.Sprintf("http://localhost:%d/v1/ping", s.opts.HTTPPort)
+
+	// Check every 100ms for 15s
+	ticker := time.NewTicker(100 * time.Millisecond)
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-ticker.C:
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, pingURL, http.NoBody)
+			if err != nil {
+				return err
+			}
+			resp, err := client.Do(req)
+			if err == nil {
+				resp.Body.Close()
+				return nil
+			}
+		}
+	}
+}
+
 // Ping implements AdminService
 func (s *Server) Ping(ctx context.Context, req *adminv1.PingRequest) (*adminv1.PingResponse, error) {
 	resp := &adminv1.PingResponse{

@@ -75,16 +75,6 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 	}
 
 	beforeCreateFn := func(ctx context.Context, conn *sqlx.Conn) error {
-		_, err := conn.ExecContext(ctx, "INSTALL 'motherduck'; LOAD 'motherduck';")
-		if err != nil {
-			return fmt.Errorf("failed to load motherduck extension %w", err)
-		}
-
-		_, err = conn.ExecContext(ctx, fmt.Sprintf("SET motherduck_token='%s'", token))
-		if err != nil {
-			return fmt.Errorf("failed to set motherduck token %w", err)
-		}
-
 		_, err = conn.ExecContext(ctx, fmt.Sprintf("ATTACH '%s'", srcConfig.DSN))
 		if err != nil {
 			return fmt.Errorf("failed to attach motherduck DSN: %w", err)
@@ -102,6 +92,10 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 	}()
 	_, err = db.CreateTableAsSelect(ctx, sinkCfg.Table, userQuery, &rduckdb.CreateTableOptions{
 		BeforeCreateFn: beforeCreateFn,
+		InitQueries: []string{
+			"INSTALL 'motherduck'; LOAD 'motherduck';",
+			fmt.Sprintf("SET motherduck_token='%s'", token),
+		},
 	})
 	return err
 }

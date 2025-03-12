@@ -12,7 +12,6 @@ import {
   AD_BIDS_MIRROR_NAME,
   AD_BIDS_NAME,
   AD_BIDS_SCHEMA,
-  AD_BIDS_TIME_RANGE_SUMMARY,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
@@ -38,22 +37,24 @@ export function resetDashboardStore() {
 export function initAdBidsInStore() {
   metricsExplorerStore.init(
     AD_BIDS_EXPLORE_NAME,
-    getInitExploreStateForTest(
-      AD_BIDS_METRICS_INIT,
-      AD_BIDS_EXPLORE_INIT,
-      AD_BIDS_TIME_RANGE_SUMMARY,
-    ),
+    getInitExploreStateForTest(AD_BIDS_METRICS_INIT, AD_BIDS_EXPLORE_INIT, {
+      timeRangeSummary: {
+        min: "2022-01-01",
+        max: "2022-03-31",
+      },
+    }),
   );
 }
 
 export function initAdBidsMirrorInStore() {
   metricsExplorerStore.init(
     AD_BIDS_MIRROR_NAME,
-    getInitExploreStateForTest(
-      AD_BIDS_METRICS_INIT,
-      AD_BIDS_EXPLORE_INIT,
-      AD_BIDS_TIME_RANGE_SUMMARY,
-    ),
+    getInitExploreStateForTest(AD_BIDS_METRICS_INIT, AD_BIDS_EXPLORE_INIT, {
+      timeRangeSummary: {
+        min: "2022-01-01",
+        max: "2022-03-31",
+      },
+    }),
   );
 }
 
@@ -64,6 +65,7 @@ export function getInitExploreStateForTest(
 ) {
   const defaultExplorePreset = getDefaultExplorePreset(
     exploreSpec,
+    metricsViewSpec,
     timeRangeSummary,
   );
   const { partialExploreState } = convertPresetToExploreState(

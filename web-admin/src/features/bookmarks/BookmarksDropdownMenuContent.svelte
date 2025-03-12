@@ -54,6 +54,7 @@
   );
   $: defaultExplorePreset = getDefaultExplorePreset(
     exploreSpec,
+    metricsViewSpec,
     $metricsViewTimeRange.data,
   );
   $: schemaResp = createQueryServiceMetricsViewSchema(

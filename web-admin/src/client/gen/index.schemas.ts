@@ -101,6 +101,7 @@ Either github_url or archive_asset_id should be set. */
   /** archive_asset_id is set for projects whose project files are not stored in github but are managed by rill. */
   archiveAssetId?: string;
   prodVersion?: string;
+  skipDeploy?: boolean;
 };
 
 export type AdminServiceListProjectsForOrganizationParams = {
@@ -270,10 +271,6 @@ export type AdminServiceListProjectMemberUsergroupsParams = {
   pageToken?: string;
 };
 
-export type AdminServiceRemoveOrganizationMemberUserParams = {
-  keepProjectRoles?: boolean;
-};
-
 export type AdminServiceAddOrganizationMemberUserBody = {
   email?: string;
   role?: string;
@@ -371,6 +368,7 @@ export interface V1Usergroup {
   groupId?: string;
   groupName?: string;
   groupDescription?: string;
+  managed?: boolean;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -849,6 +847,7 @@ export interface V1OrganizationQuotas {
 }
 
 export interface V1OrganizationPermissions {
+  guest?: boolean;
   readOrg?: boolean;
   manageOrg?: boolean;
   readProjects?: boolean;
@@ -898,6 +897,7 @@ export const V1Operation = {
 export interface V1MemberUsergroup {
   groupId?: string;
   groupName?: string;
+  groupManaged?: boolean;
   roleName?: string;
   createdOn?: string;
   updatedOn?: string;
@@ -1312,7 +1312,7 @@ export interface V1CreateWhitelistedDomainResponse {
 }
 
 export interface V1CreateUsergroupResponse {
-  [key: string]: any;
+  usergroup?: V1Usergroup;
 }
 
 export interface V1CreateServiceResponse {

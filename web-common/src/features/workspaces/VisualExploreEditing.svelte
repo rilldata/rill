@@ -36,6 +36,7 @@
   import MultiSelectInput from "../visual-editing/MultiSelectInput.svelte";
   import SidebarWrapper from "../visual-editing/SidebarWrapper.svelte";
   import ThemeInput from "../visual-editing/ThemeInput.svelte";
+  import { allTimeZones } from "@rilldata/web-common/lib/time/timezone";
 
   const itemTypes = ["measures", "dimensions"] as const;
 
@@ -457,7 +458,7 @@
       label="Time zones"
       id="visual-explore-zone"
       hint="Time zones selectable via the dashboard filter bar"
-      searchableItems={Intl.supportedValuesOf("timeZone")}
+      searchableItems={allTimeZones}
       defaultItems={DEFAULT_TIMEZONES}
       keyNotSet={!rawTimeZones}
       selectedItems={timeZones}
