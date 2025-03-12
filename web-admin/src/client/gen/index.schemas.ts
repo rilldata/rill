@@ -294,6 +294,7 @@ export type AdminServiceAddOrganizationMemberUserBody = {
 
 export type AdminServiceListOrganizationMemberUsersParams = {
   role?: string;
+  includeCounts?: boolean;
   pageSize?: number;
   pageToken?: string;
 };

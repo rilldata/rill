@@ -232,6 +232,87 @@ func TestRBAC(t *testing.T) {
 		}
 	})
 
+	t.Run("Ability to include project and usergroup counts in org member listings", func(t *testing.T) {
+		// Create org, two projects and two usergroup
+		u1, c1 := newTestUser(t, svr)
+		r1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
+		require.NoError(t, err)
+		r2, err := c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
+			OrganizationName: r1.Organization.Name,
+			Name:             "proj1",
+			ProdSlots:        1,
+			SkipDeploy:       true,
+		})
+		require.NoError(t, err)
+		_, err = c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
+			OrganizationName: r1.Organization.Name,
+			Name:             "proj2",
+			ProdSlots:        1,
+			SkipDeploy:       true,
+		})
+		require.NoError(t, err)
+		r4, err := c1.CreateUsergroup(ctx, &adminv1.CreateUsergroupRequest{
+			Organization: r1.Organization.Name,
+			Name:         "group1",
+		})
+		require.NoError(t, err)
+		_, err = c1.CreateUsergroup(ctx, &adminv1.CreateUsergroupRequest{
+			Organization: r1.Organization.Name,
+			Name:         "group2",
+		})
+		require.NoError(t, err)
+
+		// Add a user to the org, one of the usergroups, and one of the projects
+		u2, _ := newTestUser(t, svr)
+		_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
+			Organization: r1.Organization.Name,
+			Email:        u2.Email,
+			Role:         database.OrganizationRoleNameViewer,
+		})
+		require.NoError(t, err)
+		_, err = c1.AddProjectMemberUser(ctx, &adminv1.AddProjectMemberUserRequest{
+			Organization: r1.Organization.Name,
+			Project:      r2.Project.Name,
+			Email:        u2.Email,
+			Role:         database.ProjectRoleNameViewer,
+		})
+		require.NoError(t, err)
+		_, err = c1.AddUsergroupMemberUser(ctx, &adminv1.AddUsergroupMemberUserRequest{
+			Organization: r1.Organization.Name,
+			Usergroup:    r4.Usergroup.GroupName,
+			Email:        u2.Email,
+		})
+		require.NoError(t, err)
+
+		// Check the counts for the user
+		r6, err := c1.ListOrganizationMemberUsers(ctx, &adminv1.ListOrganizationMemberUsersRequest{
+			Organization:  r1.Organization.Name,
+			IncludeCounts: true,
+		})
+		require.NoError(t, err)
+		require.Len(t, r6.Members, 2)
+		for _, m := range r6.Members {
+			m.CreatedOn = nil
+			m.UpdatedOn = nil
+		}
+		require.Contains(t, r6.Members, &adminv1.OrganizationMemberUser{
+			UserId:          u1.ID,
+			UserEmail:       u1.Email,
+			UserName:        u1.DisplayName,
+			RoleName:        database.OrganizationRoleNameAdmin,
+			ProjectsCount:   2,
+			UsergroupsCount: 2, // The autogroups
+		})
+		require.Contains(t, r6.Members, &adminv1.OrganizationMemberUser{
+			UserId:          u2.ID,
+			UserEmail:       u2.Email,
+			UserName:        u2.DisplayName,
+			RoleName:        database.OrganizationRoleNameViewer,
+			ProjectsCount:   2, // Through the autogroup:member being added by default
+			UsergroupsCount: 3, // The autogroups and the one added
+		})
+	})
+
 	t.Run("Visibility of public projects", func(t *testing.T) {
 		// Create users
 		_, c1 := newTestUser(t, svr)

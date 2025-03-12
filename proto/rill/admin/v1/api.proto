@@ -1295,6 +1295,7 @@ message ListRolesResponse {
 message ListOrganizationMemberUsersRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string role = 4; // Optionally filter by role
+  bool include_counts = 5; // Optionally include counts
   uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 3;
 }

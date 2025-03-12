@@ -274,6 +274,8 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 func (s *Server) ListOrganizationMemberUsers(ctx context.Context, req *adminv1.ListOrganizationMemberUsersRequest) (*adminv1.ListOrganizationMemberUsersResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
+		attribute.String("args.role", req.Role),
+		attribute.Bool("include_counts", req.IncludeCounts),
 	)
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
@@ -301,7 +303,7 @@ func (s *Server) ListOrganizationMemberUsers(ctx context.Context, req *adminv1.L
 		roleID = role.ID
 	}
 
-	members, err := s.admin.DB.FindOrganizationMemberUsers(ctx, org.ID, roleID, token.Val, pageSize)
+	members, err := s.admin.DB.FindOrganizationMemberUsers(ctx, org.ID, roleID, req.IncludeCounts, token.Val, pageSize)
 	if err != nil {
 		return nil, err
 	}

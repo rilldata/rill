@@ -3404,6 +3404,13 @@ export class ListOrganizationMemberUsersRequest extends Message<ListOrganization
   role = "";
 
   /**
+   * Optionally include counts
+   *
+   * @generated from field: bool include_counts = 5;
+   */
+  includeCounts = false;
+
+  /**
    * @generated from field: uint32 page_size = 2;
    */
   pageSize = 0;
@@ -3423,6 +3430,7 @@ export class ListOrganizationMemberUsersRequest extends Message<ListOrganization
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "include_counts", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 2, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 3, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);

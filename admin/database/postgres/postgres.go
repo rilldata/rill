@@ -1466,14 +1466,28 @@ func (c *connection) ResolveProjectRolesForUser(ctx context.Context, userID, pro
 	return res, nil
 }
 
-func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID, afterEmail string, limit int) ([]*database.OrganizationMemberUser, error) {
+func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID string, withCounts bool, afterEmail string, limit int) ([]*database.OrganizationMemberUser, error) {
 	args := []any{orgID, afterEmail, limit}
 	var qry strings.Builder
+	qry.WriteString("SELECT u.id, u.email, u.display_name, u.photo_url, u.created_on, u.updated_on, r.name as role_name")
+	if withCounts {
+		qry.WriteString(`,
+			(
+				SELECT COUNT(*) FROM projects p WHERE p.org_id = $1 AND p.id IN (
+					SELECT upr.project_id FROM users_projects_roles upr WHERE upr.user_id = u.id
+					UNION
+					SELECT ugpr.project_id FROM usergroups_projects_roles ugpr JOIN usergroups_users uug ON ugpr.usergroup_id = uug.usergroup_id WHERE uug.user_id = u.id
+				)
+			) as projects_count,
+			(
+				SELECT COUNT(*)
+				FROM usergroups_users uus
+				JOIN usergroups ugu ON uus.usergroup_id = ugu.id
+				WHERE ugu.org_id = $1 AND uus.user_id = u.id
+			) as usergroups_count
+		`)
+	}
 	qry.WriteString(`
-		SELECT
-			u.id, u.email, u.display_name, u.photo_url, u.created_on, u.updated_on, r.name as role_name
-			() as projects_count,
-			(SELECT COUNT(*) FROM ) as usergroups_count
 		FROM users u
 		JOIN users_orgs_roles uor ON u.id = uor.user_id
 		JOIN org_roles r ON r.id = uor.org_role_id

@@ -597,6 +597,11 @@ paths:
           in: query
           required: false
           type: string
+        - name: includeCounts
+          description: Optionally include counts
+          in: query
+          required: false
+          type: boolean
         - name: pageSize
           in: query
           required: false
