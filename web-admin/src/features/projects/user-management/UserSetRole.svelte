@@ -124,6 +124,15 @@
       </DropdownMenu.CheckboxItem>
       <DropdownMenu.CheckboxItem
         class="font-normal flex items-center"
+        checked={user.roleName === "editor"}
+        on:click={() => {
+          handleSetRole(user.userEmail, "editor");
+        }}
+      >
+        <span>Editor</span>
+      </DropdownMenu.CheckboxItem>
+      <DropdownMenu.CheckboxItem
+        class="font-normal flex items-center"
         checked={user.roleName === "viewer"}
         on:click={() => {
           handleSetRole(user.userEmail, "viewer");

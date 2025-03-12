@@ -22,4 +22,6 @@ func UserCmd(ch *cmdutil.Helper) *cobra.Command {
 	return userCmd
 }
 
-var userRoles = []string{"admin", "viewer"}
+var orgRoles = []string{"admin", "editor", "viewer", "guest"}
+
+var projectRoles = []string{"admin", "editor", "viewer"}

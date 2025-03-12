@@ -85,9 +85,10 @@
         setItems(items);
       }}
       let:item
+      let:selected
       type={label.toLowerCase()}
     >
-      <slot {item} />
+      <slot {item} {selected} />
     </SelectionDropdown>
   {/if}
 </div>

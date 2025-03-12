@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -504,7 +503,6 @@ func (c *connection) reopenDB(ctx context.Context) error {
 	if !c.config.AllowHostAccess {
 		dbInitQueries = append(dbInitQueries,
 			"SET GLOBAL preserve_insertion_order TO false",
-			fmt.Sprintf("SET GLOBAL secret_directory = %s", safeSQLString(filepath.Join(dataDir, ".duckdb", "secrets"))),
 		)
 	}
 

@@ -1149,6 +1149,7 @@ message CreateProjectRequest {
   // archive_asset_id is set for projects whose project files are not stored in github but are managed by rill.
   string archive_asset_id = 14;
   string prod_version = 13;
+  bool skip_deploy = 15;
 }
 
 message CreateProjectResponse {
@@ -1291,7 +1292,6 @@ message AddOrganizationMemberUserResponse {
 message RemoveOrganizationMemberUserRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string email = 2 [(validate.rules).string.email = true];
-  bool keep_project_roles = 3;
 }
 
 message RemoveOrganizationMemberUserResponse {}
@@ -1482,7 +1482,9 @@ message CreateUsergroupRequest {
   string name = 2 [(validate.rules).string.min_len = 1];
 }
 
-message CreateUsergroupResponse {}
+message CreateUsergroupResponse {
+  Usergroup usergroup = 1;
+}
 
 message GetUsergroupRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
@@ -2330,6 +2332,7 @@ message ProvisionerResource {
 }
 
 message OrganizationPermissions {
+  bool guest = 8;
   bool read_org = 1;
   bool manage_org = 2;
   bool read_projects = 3;
@@ -2501,6 +2504,7 @@ message Usergroup {
   string group_id = 1;
   string group_name = 2;
   string group_description = 3;
+  bool managed = 6;
   google.protobuf.Timestamp created_on = 4;
   google.protobuf.Timestamp updated_on = 5;
 }
@@ -2508,6 +2512,7 @@ message Usergroup {
 message MemberUsergroup {
   string group_id = 1;
   string group_name = 2;
+  bool group_managed = 6;
   string role_name = 3;
   google.protobuf.Timestamp created_on = 4;
   google.protobuf.Timestamp updated_on = 5;

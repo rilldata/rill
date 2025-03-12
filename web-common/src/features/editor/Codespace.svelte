@@ -170,7 +170,7 @@
   bind:this={parent}
   class="size-full overflow-hidden"
   role="textbox"
-  aria-label="Code editor"
+  aria-label="codemirror editor"
   tabindex="0"
   on:click={() => {
     /** give the editor focus no matter where we click */

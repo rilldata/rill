@@ -28,4 +28,4 @@ func UsergroupCmd(ch *cmdutil.Helper) *cobra.Command {
 	return userCmd
 }
 
-var usergroupRoles = []string{"admin", "viewer"}
+var usergroupRoles = []string{"admin", "editor", "viewer"}

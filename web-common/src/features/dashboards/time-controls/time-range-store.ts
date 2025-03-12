@@ -13,13 +13,11 @@ import {
 } from "@rilldata/web-common/lib/time/config";
 import { getChildTimeRanges } from "@rilldata/web-common/lib/time/ranges";
 import { isoDurationToTimeRangeMeta } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
-import type {
-  DashboardTimeControls,
-  TimeRangeOption,
-} from "@rilldata/web-common/lib/time/types";
 import {
+  type DashboardTimeControls,
   TimeComparisonOption,
   type TimeRange,
+  type TimeRangeOption,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
 import {
@@ -224,8 +222,11 @@ export function getValidComparisonOption(
   allTimeRange: TimeRange,
 ) {
   if (!timeRanges?.length) {
-    return DEFAULT_TIME_RANGES[selectedTimeRange.name as TimeRangePreset]
-      ?.defaultComparison as TimeComparisonOption;
+    return (
+      (DEFAULT_TIME_RANGES[selectedTimeRange.name as TimeRangePreset]
+        ?.defaultComparison as TimeComparisonOption) ??
+      TimeComparisonOption.CONTIGUOUS
+    );
   }
 
   const timeRange = timeRanges.find(
