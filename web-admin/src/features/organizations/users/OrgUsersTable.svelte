@@ -1,6 +1,6 @@
 <script lang="ts">
   import { writable } from "svelte/store";
-  import type { V1MemberUser, V1UserInvite } from "@rilldata/web-admin/client";
+  import type { V1OrganizationMemberUser, V1UserInvite } from "@rilldata/web-admin/client";
   import OrgUsersTableUserCompositeCell from "./OrgUsersTableUserCompositeCell.svelte";
   import OrgUsersTableActionsCell from "./OrgUsersTableActionsCell.svelte";
   import OrgUsersTableRoleCell from "./OrgUsersTableRoleCell.svelte";
@@ -20,7 +20,7 @@
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import type { InfiniteQueryObserverResult } from "@tanstack/svelte-query";
 
-  interface OrgUser extends V1MemberUser, V1UserInvite {
+  interface OrgUser extends V1OrganizationMemberUser, V1UserInvite {
     invitedBy?: string;
   }
 
