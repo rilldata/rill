@@ -393,7 +393,7 @@
   }
 
   .header-cell {
-    @apply px-2 bg-white size-full;
+    @apply px-2 size-full;
     @apply flex items-center gap-x-1 w-full truncate;
     @apply text-gray-800 font-medium;
     height: var(--header-height);
@@ -418,9 +418,9 @@
     @apply bg-white;
   }
 
-  /* tr > td:first-of-type:not(:last-of-type) {
-    @apply border-r;
-  } */
+  .with-row-dimension.with-col-dimension tr > th:first-of-type {
+    @apply bg-gray-50;
+  }
 
   /* The totals row */
   tbody > tr:nth-of-type(2) {
