@@ -2,6 +2,7 @@ package duckdb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -123,6 +124,16 @@ func (c *connection) Delete(ctx context.Context, res *drivers.ModelResult) error
 	}
 
 	_ = olap.DropTable(ctx, stagingTableNameFor(res.Table))
+
+	_, err := olap.InformationSchema().Lookup(ctx, "", "", res.Table)
+	if err != nil {
+		if errors.Is(err, drivers.ErrNotFound) {
+			// the table can be absent if model was not reconciled and got deleted later
+			return nil
+		}
+		return err
+	}
+
 	return olap.DropTable(ctx, res.Table)
 }
 

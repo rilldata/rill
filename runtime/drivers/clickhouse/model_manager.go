@@ -2,6 +2,7 @@ package clickhouse
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -218,6 +219,10 @@ func (c *connection) Delete(ctx context.Context, res *drivers.ModelResult) error
 
 	table, err := olap.InformationSchema().Lookup(ctx, c.config.Database, "", res.Table)
 	if err != nil {
+		if errors.Is(err, drivers.ErrNotFound) {
+			// the table can be absent if model was not reconciled and got deleted later
+			return nil
+		}
 		return err
 	}
 
