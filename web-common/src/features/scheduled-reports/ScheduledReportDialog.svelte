@@ -118,7 +118,7 @@
               ? (((reportSpec?.annotations as V1ReportSpecAnnotations)[
                   "web_open_mode"
                 ] as ReportOptionsOpenMode) ??
-                ReportOptionsOpenMode.OPEN_MODE_LEGACY) // Backwards compatibility
+                ReportOptionsOpenMode.OPEN_MODE_RECIPIENT) // Backwards compatibility
               : ReportOptionsOpenMode.OPEN_MODE_CREATOR,
           },
         },
