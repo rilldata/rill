@@ -59,7 +59,6 @@ test.describe("ClickHouse connector", () => {
     await expect(codeEditor).toContainText('username: "default"');
 
     // Assert that the connector explorer now has a ClickHouse connector
-    await page.pause();
     await expect(
       page
         .getByRole("region", { name: "Connector explorer" })
