@@ -304,10 +304,10 @@ func (s *Server) SetOrganizationMemberUsergroupRole(ctx context.Context, req *ad
 	}
 
 	currentRole, err := s.admin.DB.FindOrganizationMemberUsergroupRole(ctx, usergroup.ID, usergroup.OrgID)
-	if err != nil {
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
 		return nil, err
 	}
-	if currentRole.Admin && !claims.OrganizationPermissions(ctx, usergroup.OrgID).ManageOrgAdmins {
+	if currentRole != nil && currentRole.Admin && !claims.OrganizationPermissions(ctx, usergroup.OrgID).ManageOrgAdmins {
 		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to remove an admin role")
 	}
 
@@ -340,10 +340,10 @@ func (s *Server) RemoveOrganizationMemberUsergroup(ctx context.Context, req *adm
 	}
 
 	currentRole, err := s.admin.DB.FindOrganizationMemberUsergroupRole(ctx, usergroup.ID, usergroup.OrgID)
-	if err != nil {
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
 		return nil, err
 	}
-	if currentRole.Admin && !claims.OrganizationPermissions(ctx, usergroup.OrgID).ManageOrgAdmins {
+	if currentRole != nil && currentRole.Admin && !claims.OrganizationPermissions(ctx, usergroup.OrgID).ManageOrgAdmins {
 		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to remove an admin role")
 	}
 
@@ -500,10 +500,10 @@ func (s *Server) AddUsergroupMemberUser(ctx context.Context, req *adminv1.AddUse
 	}
 
 	currentRole, err := s.admin.DB.FindOrganizationMemberUsergroupRole(ctx, group.ID, group.OrgID)
-	if err != nil {
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
 		return nil, err
 	}
-	if currentRole.Admin && !claims.OrganizationPermissions(ctx, group.OrgID).ManageOrgAdmins {
+	if currentRole != nil && currentRole.Admin && !claims.OrganizationPermissions(ctx, group.OrgID).ManageOrgAdmins {
 		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to edit a group that has an admin role")
 	}
 	// NOTE: In theory, the group could be admin on a project that the current user is not admin on.
