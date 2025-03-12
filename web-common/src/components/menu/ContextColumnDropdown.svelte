@@ -1,9 +1,9 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { fly } from "svelte/transition";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import DeltaChange from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChange.svelte";
@@ -12,7 +12,7 @@
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import { cn } from "@rilldata/web-common/lib/shadcn";
 
-  export let isValidPercentOfTotal: boolean;
+  export let atLeastOneValidPercentOfTotal: boolean;
   export let isTimeComparisonActive: boolean;
   export let tooltipText: string;
   export let contextColumns: string[] | undefined;
@@ -25,16 +25,12 @@
   let active = false;
 
   $: options = [
-    ...(isValidPercentOfTotal
-      ? [
-          {
-            value: LeaderboardContextColumn.PERCENT,
-            label: "Percent of total",
-            description: "Summable metrics only",
-            icon: PercentOfTotal,
-          },
-        ]
-      : []),
+    {
+      value: LeaderboardContextColumn.PERCENT,
+      label: "Percent of total",
+      description: "Summable metrics only",
+      icon: PercentOfTotal,
+    },
     ...(isTimeComparisonActive
       ? [
           {
@@ -122,34 +118,46 @@
         {#if options.length > 0}
           <div class="px-1 pb-1 pt-1">
             {#each options as option}
-              <DropdownMenu.CheckboxItem
-                checked={contextColumns?.includes(option.value)}
-                onCheckedChange={() => toggleContextColumn(option.value)}
+              <Tooltip
+                distance={8}
+                suppress={option.value !== LeaderboardContextColumn.PERCENT}
+                location="right"
+                alignment="middle"
               >
-                <div class="flex items-center">
-                  {#if option.value === LeaderboardContextColumn.DELTA_ABSOLUTE}
-                    <div class="flex items-center justify-start w-[26px]">
-                      <svelte:component this={option.icon} />
-                    </div>
-                    <span>{option.label}</span>
-                  {:else if option.value === LeaderboardContextColumn.DELTA_PERCENT}
-                    <div class="flex items-center justify-start w-[26px]">
-                      <svelte:component this={option.icon} />
-                    </div>
-                    <span>{option.label}</span>
-                  {:else if option.value === LeaderboardContextColumn.PERCENT}
-                    <div class="flex flex-col">
-                      <div class="flex flex-row gap-x-1">
+                <DropdownMenu.CheckboxItem
+                  checked={contextColumns?.includes(option.value)}
+                  onCheckedChange={() => toggleContextColumn(option.value)}
+                  disabled={!atLeastOneValidPercentOfTotal &&
+                    option.value === LeaderboardContextColumn.PERCENT}
+                >
+                  <div class="flex items-center">
+                    {#if option.value === LeaderboardContextColumn.DELTA_ABSOLUTE}
+                      <div class="flex items-center justify-start w-[26px]">
                         <svelte:component this={option.icon} />
-                        <span>{option.label}</span>
                       </div>
-                      <span class="ui-copy-muted text-[11px]">
-                        {option.description}
-                      </span>
-                    </div>
-                  {/if}
-                </div>
-              </DropdownMenu.CheckboxItem>
+                      <span>{option.label}</span>
+                    {:else if option.value === LeaderboardContextColumn.DELTA_PERCENT}
+                      <div class="flex items-center justify-start w-[26px]">
+                        <svelte:component this={option.icon} />
+                      </div>
+                      <span>{option.label}</span>
+                    {:else if option.value === LeaderboardContextColumn.PERCENT}
+                      <div class="flex flex-col">
+                        <div class="flex flex-row gap-x-1">
+                          <svelte:component this={option.icon} />
+                          <span>{option.label}</span>
+                        </div>
+                        <span class="ui-copy-muted text-[11px]">
+                          {option.description}
+                        </span>
+                      </div>
+                    {/if}
+                  </div>
+                </DropdownMenu.CheckboxItem>
+                <TooltipContent maxWidth="400px" slot="tooltip-content">
+                  Only available for metrics marked as summable
+                </TooltipContent>
+              </Tooltip>
             {/each}
           </div>
         {/if}
