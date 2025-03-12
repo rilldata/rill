@@ -62,6 +62,17 @@ test.describe("leaderboard and dimension table sorting", () => {
     // add time comparison and select Pct change
     await page.getByLabel("Toggle time comparison").click();
 
+    // select context columns
+    const contextColumnsMenu = page.getByRole("button", {
+      name: "Choose context columns to display",
+    });
+    await contextColumnsMenu.click();
+    await page.getByRole("menuitem", { name: "Change" }).click();
+    await page.getByRole("menuitem", { name: "Percent change" }).click();
+
+    // to close the context columns menu
+    await contextColumnsMenu.click();
+
     // need a slight delay for the time range to update
     // and the "Pct change" option to be available
     // in the context column dropdown
