@@ -397,6 +397,8 @@ paths:
                 type: string
               faviconAssetId:
                 type: string
+              defaultProjectRole:
+                type: string
               billingEmail:
                 type: string
       tags:
@@ -654,10 +656,6 @@ paths:
           in: path
           required: true
           type: string
-        - name: keepProjectRoles
-          in: query
-          required: false
-          type: boolean
       tags:
         - AdminService
     put:
@@ -2535,6 +2533,8 @@ paths:
                 description: archive_asset_id is set for projects whose project files are not stored in github but are managed by rill.
               prodVersion:
                 type: string
+              skipDeploy:
+                type: boolean
       tags:
         - AdminService
   /v1/organizations/{organizationName}/projects/{name}:
@@ -3067,6 +3067,21 @@ paths:
                   $ref: '#/definitions/v1ResourceName'
               webOpenMode:
                 $ref: '#/definitions/ReportOptionsOpenMode'
+      tags:
+        - AdminService
+  /v1/roles:
+    get:
+      summary: ListRoles lists all the roles available for orgs and projects.
+      operationId: AdminService_ListRoles
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListRolesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       tags:
         - AdminService
   /v1/services/tokens/{tokenId}:
@@ -4084,6 +4099,9 @@ definitions:
         $ref: '#/definitions/v1Service'
   v1CreateUsergroupResponse:
     type: object
+    properties:
+      usergroup:
+        $ref: '#/definitions/v1Usergroup'
   v1CreateWhitelistedDomainResponse:
     type: object
   v1DeleteAlertResponse:
@@ -4559,6 +4577,19 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1BillingPlan'
+  v1ListRolesResponse:
+    type: object
+    properties:
+      organizationRoles:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1OrganizationRole'
+      projectRoles:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ProjectRole'
   v1ListServiceAuthTokensResponse:
     type: object
     properties:
@@ -4672,6 +4703,8 @@ definitions:
         type: string
       groupName:
         type: string
+      groupManaged:
+        type: boolean
       roleName:
         type: string
       createdOn:
@@ -4715,6 +4748,8 @@ definitions:
         type: string
       customDomain:
         type: string
+      defaultProjectRoleId:
+        type: string
       quotas:
         $ref: '#/definitions/v1OrganizationQuotas'
       billingCustomerId:
@@ -4736,6 +4771,10 @@ definitions:
   v1OrganizationPermissions:
     type: object
     properties:
+      admin:
+        type: boolean
+      guest:
+        type: boolean
       readOrg:
         type: boolean
       manageOrg:
@@ -4749,6 +4788,8 @@ definitions:
       readOrgMembers:
         type: boolean
       manageOrgMembers:
+        type: boolean
+      manageOrgAdmins:
         type: boolean
   v1OrganizationQuotas:
     type: object
@@ -4771,6 +4812,15 @@ definitions:
       storageLimitBytesPerDeployment:
         type: string
         format: int64
+  v1OrganizationRole:
+    type: object
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      permissions:
+        $ref: '#/definitions/v1OrganizationPermissions'
   v1PingResponse:
     type: object
     properties:
@@ -4837,6 +4887,8 @@ definitions:
   v1ProjectPermissions:
     type: object
     properties:
+      admin:
+        type: boolean
       readProject:
         type: boolean
       manageProject:
@@ -4861,6 +4913,8 @@ definitions:
         type: boolean
       manageProjectMembers:
         type: boolean
+      manageProjectAdmins:
+        type: boolean
       createMagicAuthTokens:
         type: boolean
       manageMagicAuthTokens:
@@ -4877,6 +4931,15 @@ definitions:
         type: boolean
       manageBookmarks:
         type: boolean
+  v1ProjectRole:
+    type: object
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      permissions:
+        $ref: '#/definitions/v1ProjectPermissions'
   v1ProjectVariable:
     type: object
     properties:
@@ -5432,6 +5495,8 @@ definitions:
         type: string
       groupDescription:
         type: string
+      managed:
+        type: boolean
       createdOn:
         type: string
         format: date-time

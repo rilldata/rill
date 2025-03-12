@@ -152,7 +152,7 @@ func (w *TrialEndCheckWorker) trialEndCheck(ctx context.Context) error {
 			zap.Int("count_of_projects", projects),
 		)
 
-		cctx, tx, err := w.admin.DB.NewTx(ctx)
+		cctx, tx, err := w.admin.DB.NewTx(ctx, false)
 		if err != nil {
 			return fmt.Errorf("failed to start transaction: %w", err)
 		}
@@ -279,6 +279,7 @@ func (w *TrialGracePeriodCheckWorker) trialGracePeriodCheck(ctx context.Context)
 			LogoAssetID:                         org.LogoAssetID,
 			FaviconAssetID:                      org.FaviconAssetID,
 			CustomDomain:                        org.CustomDomain,
+			DefaultProjectRoleID:                org.DefaultProjectRoleID,
 			QuotaProjects:                       0,
 			QuotaDeployments:                    0,
 			QuotaSlotsTotal:                     0,

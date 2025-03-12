@@ -356,6 +356,7 @@ func (w *PlanChangedWorker) Work(ctx context.Context, job *river.Job[PlanChanged
 			LogoAssetID:                         org.LogoAssetID,
 			FaviconAssetID:                      org.FaviconAssetID,
 			CustomDomain:                        org.CustomDomain,
+			DefaultProjectRoleID:                org.DefaultProjectRoleID,
 			QuotaProjects:                       org.QuotaProjects,
 			QuotaDeployments:                    org.QuotaDeployments,
 			QuotaSlotsTotal:                     org.QuotaSlotsTotal,

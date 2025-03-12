@@ -1,25 +1,41 @@
 <script lang="ts">
-  import { getAbbreviationForIANA } from "@rilldata/web-common/lib/time/timezone";
-  import { IANAZone } from "luxon";
+  import { formatIANA } from "@rilldata/web-common/lib/time/timezone";
+  import { DateTime } from "luxon";
 
-  export let watermark = new Date();
   export let iana: string;
-
-  $: zone = new IANAZone(iana);
-
-  $: watermarkTs = watermark.getTime();
+  export let isBrowserTime = false;
+  export let abbreviation: string | undefined = undefined;
+  export let offset: string = formatIANA(iana, DateTime.now()).offset;
 </script>
 
-<div class="flex items-center gap-x-1 text-xs cursor-pointer overflow-hidden">
-  <b class="min-w-12 max-w-12">
-    {getAbbreviationForIANA(watermark, iana)}
-  </b>
+<div
+  class="flex items-baseline text-xs w-full cursor-pointer justify-between overflow-hidden"
+>
+  <div class="flex gap-x-1 w-full overflow-hidden items-baseline">
+    {#if abbreviation}
+      <p class="w-12 truncate overflow-hidden">
+        {abbreviation}
+      </p>
+    {/if}
 
-  <p class="inline-block italic min-w-20 max-w-20">
-    GMT {zone.formatOffset(watermarkTs, "short")}
-  </p>
+    <p class="truncate font-normal">
+      {#if isBrowserTime}
+        Browser Time
+      {:else}
+        {iana}
+      {/if}
+    </p>
+  </div>
 
-  <p class="truncate">
-    {iana}
-  </p>
+  <span
+    class="self-end text-slate-500 rounded-sm line-clamp-1 w-fit flex-none text-[11px]"
+  >
+    {offset}
+  </span>
 </div>
+
+<style>
+  span {
+    font-family: "Source Code Variable";
+  }
+</style>
