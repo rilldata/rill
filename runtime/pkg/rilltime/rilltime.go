@@ -15,6 +15,8 @@ import (
 var (
 	infPattern      = regexp.MustCompile("^(?i)inf$")
 	durationPattern = regexp.MustCompile(`^P((?P<year>\d+)Y)?((?P<month>\d+)M)?((?P<week>\d+)W)?((?P<day>\d+)D)?(T((?P<hour>\d+)H)?((?P<minute>\d+)M)?((?P<second>\d+)S)?)?$`)
+	isoTimePattern  = `(?P<year>\d{4})(-(?P<month>\d{2})(-(?P<day>\d{2})(T(?P<hour>\d{2})(:(?P<minute>\d{2})(:(?P<second>\d{2})Z)?)?)?)?)?`
+	isoTimeRegex    = regexp.MustCompile(isoTimePattern)
 	// nolint:govet // This is suggested usage by the docs.
 	rillTimeLexer = lexer.MustSimple([]lexer.SimpleRule{
 		{"Earliest", "earliest"},
@@ -27,10 +29,16 @@ var (
 		{"TimeZone", `{.+?}`},
 		{"AbsoluteTime", `\d{4}-\d{2}-\d{2} \d{2}:\d{2}`},
 		{"AbsoluteDate", `\d{4}-\d{2}-\d{2}`},
+		{"ISOTime", isoTimePattern},
+		{"AnchorPrefix", `[+\-<>]`},
 		{"Sign", `[+-]`},
+		{"Current", "[~]"},
 		{"Number", `\d+`},
+		{"To", `(?i)to`},
+		{"By", `(?i)by`},
+		{"Of", `(?i)of`},
 		// needed for misc. direct character references used
-		{"Punct", `[-[!@#$%^&*()+_={}\|:;"'<,>.?/]|]`},
+		{"Punct", `[-[!@#$%^&*()+_={}\|:;"'<,>.?/]]`},
 		{"Whitespace", `[ \t\n\r]+`},
 	})
 	daxNotations = map[string]string{
@@ -57,6 +65,10 @@ var (
 		participle.Lexer(rillTimeLexer),
 		participle.Elide("Whitespace"),
 	)
+	rillTimeV2Parser = participle.MustBuild[ExpressionV2](
+		participle.Lexer(rillTimeLexer),
+		participle.Elide("Whitespace"),
+	)
 	grainMap = map[string]timeutil.TimeGrain{
 		"s": timeutil.TimeGrainSecond,
 		"S": timeutil.TimeGrainSecond,
@@ -73,11 +85,30 @@ var (
 		"y": timeutil.TimeGrainYear,
 		"Y": timeutil.TimeGrainYear,
 	}
+	higherOrderMap = map[timeutil.TimeGrain]timeutil.TimeGrain{
+		timeutil.TimeGrainSecond:  timeutil.TimeGrainMinute,
+		timeutil.TimeGrainMinute:  timeutil.TimeGrainHour,
+		timeutil.TimeGrainHour:    timeutil.TimeGrainDay,
+		timeutil.TimeGrainDay:     timeutil.TimeGrainWeek,
+		timeutil.TimeGrainWeek:    timeutil.TimeGrainMonth,
+		timeutil.TimeGrainMonth:   timeutil.TimeGrainYear,
+		timeutil.TimeGrainQuarter: timeutil.TimeGrainYear,
+	}
+	lowerOrderMap = map[timeutil.TimeGrain]timeutil.TimeGrain{
+		timeutil.TimeGrainSecond:  timeutil.TimeGrainMillisecond,
+		timeutil.TimeGrainMinute:  timeutil.TimeGrainSecond,
+		timeutil.TimeGrainHour:    timeutil.TimeGrainMinute,
+		timeutil.TimeGrainDay:     timeutil.TimeGrainHour,
+		timeutil.TimeGrainWeek:    timeutil.TimeGrainDay,
+		timeutil.TimeGrainMonth:   timeutil.TimeGrainWeek,
+		timeutil.TimeGrainQuarter: timeutil.TimeGrainMonth,
+		timeutil.TimeGrainYear:    timeutil.TimeGrainMonth,
+	}
 )
 
 type Expression struct {
-	Start         *TimeAnchor  `parser:"  @@"`
-	End           *TimeAnchor  `parser:"(',' @@)?"`
+	Start         *TA          `parser:"  @@"`
+	End           *TA          `parser:"(',' @@)?"`
 	Modifiers     *Modifiers   `parser:"(':' @@)?"`
 	AtModifiers   *AtModifiers `parser:"('@' @@)?"`
 	isNewFormat   bool
@@ -87,7 +118,7 @@ type Expression struct {
 	timeZone      *time.Location
 }
 
-type TimeAnchor struct {
+type TA struct {
 	Grain       *Grain  `parser:"( @@"`
 	AbsDate     *string `parser:"| @AbsoluteDate"`
 	AbsTime     *string `parser:"| @AbsoluteTime"`
@@ -112,8 +143,8 @@ type Grain struct {
 }
 
 type AtModifiers struct {
-	AnchorOverride *TimeAnchor `parser:"@@?"`
-	TimeZone       *string     `parser:"@TimeZone?"`
+	AnchorOverride *TA     `parser:"@@?"`
+	TimeZone       *string `parser:"@TimeZone?"`
 }
 
 // ParseOptions allows for additional options that could probably not be added to the time range itself
@@ -213,7 +244,7 @@ func (e *Expression) Eval(evalOpts EvalOptions) (time.Time, time.Time, error) {
 	return start, end, nil
 }
 
-func (e *Expression) modify(evalOpts EvalOptions, ta *TimeAnchor, tm time.Time) time.Time {
+func (e *Expression) modify(evalOpts EvalOptions, ta *TA, tm time.Time) time.Time {
 	isTruncate := true
 	truncateGrain := e.truncateGrain
 	isBoundary := false
@@ -295,7 +326,7 @@ func (e *Expression) modify(evalOpts EvalOptions, ta *TimeAnchor, tm time.Time) 
 	return modifiedTime
 }
 
-func (e *Expression) getAnchor(evalOpts EvalOptions) (time.Time, *TimeAnchor) {
+func (e *Expression) getAnchor(evalOpts EvalOptions) (time.Time, *TA) {
 	if e.AtModifiers != nil && e.AtModifiers.AnchorOverride != nil {
 		if e.AtModifiers.AnchorOverride.Now {
 			return evalOpts.Now, e.AtModifiers.AnchorOverride
@@ -317,7 +348,7 @@ func (e *Expression) getAnchor(evalOpts EvalOptions) (time.Time, *TimeAnchor) {
 	}
 
 	if e.End == nil {
-		return evalOpts.Watermark, &TimeAnchor{
+		return evalOpts.Watermark, &TA{
 			Watermark: true,
 		}
 	}
@@ -337,8 +368,8 @@ func parseISO(from string, parseOpts ParseOptions) (*Expression, error) {
 	// Try parsing for "inf"
 	if infPattern.MatchString(from) {
 		return &Expression{
-			Start: &TimeAnchor{Earliest: true},
-			End:   &TimeAnchor{Latest: true},
+			Start: &TA{Earliest: true},
+			End:   &TA{Latest: true},
 		}, nil
 	}
 
@@ -357,8 +388,8 @@ func parseISO(from string, parseOpts ParseOptions) (*Expression, error) {
 	}
 
 	rt := &Expression{
-		Start: &TimeAnchor{},
-		End:   &TimeAnchor{Latest: true},
+		Start: &TA{},
+		End:   &TA{Latest: true},
 		// mirrors old UI behaviour
 		isComplete: false,
 	}

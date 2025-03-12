@@ -1,0 +1,50 @@
+package rilltime
+
+import (
+	"fmt"
+	"testing"
+
+	"github.com/rilldata/rill/runtime/pkg/timeutil"
+	"github.com/stretchr/testify/require"
+)
+
+func Test_Eval(t *testing.T) {
+	now := parseTestTime(t, "2025-03-12T10:32:36Z")
+	minTime := parseTestTime(t, "2020-01-01T00:32:36Z")
+	maxTime := parseTestTime(t, "2025-03-11T06:32:36Z")
+	watermark := parseTestTime(t, "2025-03-10T06:32:36Z")
+	testCases := []struct {
+		timeRange string
+		start     string
+		end       string
+		grain     timeutil.TimeGrain
+	}{
+		{"m", "2025-03-10T06:31:00Z", "2025-03-10T06:32:00Z", timeutil.TimeGrainSecond},
+		{"m~", "2025-03-10T06:32:00Z", "2025-03-10T06:32:36Z", timeutil.TimeGrainSecond},
+
+		{"-1d", "2025-03-09T00:00:00Z", "2025-03-10T00:00:00Z", timeutil.TimeGrainHour},
+
+		{"m of -1d", "2025-03-09T06:31:00Z", "2025-03-09T06:32:00Z", timeutil.TimeGrainSecond},
+		{"m~ of -1d", "2025-03-09T06:32:00Z", "2025-03-09T06:32:36Z", timeutil.TimeGrainSecond},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.timeRange, func(t *testing.T) {
+			rt, err := ParseV2(testCase.timeRange, ParseOptions{})
+			require.NoError(t, err)
+
+			start, end, grain := rt.Eval(EvalOptions{
+				Now:        now,
+				MinTime:    minTime,
+				MaxTime:    maxTime,
+				Watermark:  watermark,
+				FirstDay:   1,
+				FirstMonth: 1,
+			})
+			fmt.Println(testCase.timeRange, start, end)
+			require.Equal(t, parseTestTime(t, testCase.start), start)
+			require.Equal(t, parseTestTime(t, testCase.end), end)
+			require.Equal(t, testCase.grain, grain)
+		})
+	}
+}

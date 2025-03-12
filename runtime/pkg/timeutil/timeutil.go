@@ -2,11 +2,10 @@ package timeutil
 
 import (
 	"time"
-
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-
 	// Load IANA time zone data
 	_ "time/tzdata"
+
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
 // TimeGrain is extension of std time package with Week and Quarter added
@@ -183,4 +182,31 @@ func AddTimeProto(to time.Time, tg runtimev1.TimeGrain, count int) time.Time {
 	}
 
 	return to
+}
+
+func OffsetTime(tm time.Time, tg TimeGrain, n int) time.Time {
+	switch tg {
+	case TimeGrainUnspecified:
+		return tm
+	case TimeGrainMillisecond:
+		return tm.Add(time.Duration(n) * time.Millisecond)
+	case TimeGrainSecond:
+		return tm.Add(time.Duration(n) * time.Second)
+	case TimeGrainMinute:
+		return tm.Add(time.Duration(n) * time.Minute)
+	case TimeGrainHour:
+		return tm.Add(time.Duration(n) * time.Hour)
+	case TimeGrainDay:
+		return tm.AddDate(0, 0, n)
+	case TimeGrainWeek:
+		return tm.AddDate(0, 0, n*7)
+	case TimeGrainMonth:
+		return tm.AddDate(0, n, 0)
+	case TimeGrainQuarter:
+		return tm.AddDate(0, n*3, 0)
+	case TimeGrainYear:
+		return tm.AddDate(n, 0, 0)
+	}
+
+	return tm
 }
