@@ -13213,42 +13213,42 @@ export class OrganizationMemberUser extends Message<OrganizationMemberUser> {
   userId = "";
 
   /**
-   * @generated from field: string user_email = 2;
+   * @generated from field: string user_email = 3;
    */
   userEmail = "";
 
   /**
-   * @generated from field: string user_name = 3;
+   * @generated from field: string user_name = 2;
    */
   userName = "";
 
   /**
-   * @generated from field: string user_photo_url = 4;
+   * @generated from field: string user_photo_url = 7;
    */
   userPhotoUrl = "";
 
   /**
-   * @generated from field: string role_name = 5;
+   * @generated from field: string role_name = 4;
    */
   roleName = "";
 
   /**
-   * @generated from field: uint32 projects_count = 6;
+   * @generated from field: uint32 projects_count = 8;
    */
   projectsCount = 0;
 
   /**
-   * @generated from field: uint32 usergroups_count = 7;
+   * @generated from field: uint32 usergroups_count = 9;
    */
   usergroupsCount = 0;
 
   /**
-   * @generated from field: google.protobuf.Timestamp created_on = 8;
+   * @generated from field: google.protobuf.Timestamp created_on = 5;
    */
   createdOn?: Timestamp;
 
   /**
-   * @generated from field: google.protobuf.Timestamp updated_on = 9;
+   * @generated from field: google.protobuf.Timestamp updated_on = 6;
    */
   updatedOn?: Timestamp;
 
@@ -13261,14 +13261,14 @@ export class OrganizationMemberUser extends Message<OrganizationMemberUser> {
   static readonly typeName = "rill.admin.v1.OrganizationMemberUser";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "user_email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "user_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "user_photo_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "projects_count", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 7, name: "usergroups_count", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 8, name: "created_on", kind: "message", T: Timestamp },
-    { no: 9, name: "updated_on", kind: "message", T: Timestamp },
+    { no: 3, name: "user_email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "user_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "user_photo_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "projects_count", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 9, name: "usergroups_count", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 5, name: "created_on", kind: "message", T: Timestamp },
+    { no: 6, name: "updated_on", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): OrganizationMemberUser {
@@ -13298,32 +13298,32 @@ export class ProjectMemberUser extends Message<ProjectMemberUser> {
   userId = "";
 
   /**
-   * @generated from field: string user_email = 2;
+   * @generated from field: string user_email = 3;
    */
   userEmail = "";
 
   /**
-   * @generated from field: string user_name = 3;
+   * @generated from field: string user_name = 2;
    */
   userName = "";
 
   /**
-   * @generated from field: string user_photo_url = 4;
+   * @generated from field: string user_photo_url = 7;
    */
   userPhotoUrl = "";
 
   /**
-   * @generated from field: string role_name = 5;
+   * @generated from field: string role_name = 4;
    */
   roleName = "";
 
   /**
-   * @generated from field: google.protobuf.Timestamp created_on = 6;
+   * @generated from field: google.protobuf.Timestamp created_on = 5;
    */
   createdOn?: Timestamp;
 
   /**
-   * @generated from field: google.protobuf.Timestamp updated_on = 7;
+   * @generated from field: google.protobuf.Timestamp updated_on = 6;
    */
   updatedOn?: Timestamp;
 
@@ -13336,12 +13336,12 @@ export class ProjectMemberUser extends Message<ProjectMemberUser> {
   static readonly typeName = "rill.admin.v1.ProjectMemberUser";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "user_email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "user_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "user_photo_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "created_on", kind: "message", T: Timestamp },
-    { no: 7, name: "updated_on", kind: "message", T: Timestamp },
+    { no: 3, name: "user_email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "user_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "user_photo_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "created_on", kind: "message", T: Timestamp },
+    { no: 6, name: "updated_on", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ProjectMemberUser {
@@ -13371,17 +13371,17 @@ export class UsergroupMemberUser extends Message<UsergroupMemberUser> {
   userId = "";
 
   /**
-   * @generated from field: string user_email = 2;
+   * @generated from field: string user_email = 3;
    */
   userEmail = "";
 
   /**
-   * @generated from field: string user_name = 3;
+   * @generated from field: string user_name = 2;
    */
   userName = "";
 
   /**
-   * @generated from field: string user_photo_url = 4;
+   * @generated from field: string user_photo_url = 7;
    */
   userPhotoUrl = "";
 
@@ -13404,9 +13404,9 @@ export class UsergroupMemberUser extends Message<UsergroupMemberUser> {
   static readonly typeName = "rill.admin.v1.UsergroupMemberUser";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "user_email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "user_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "user_photo_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "user_email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "user_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "user_photo_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "created_on", kind: "message", T: Timestamp },
     { no: 6, name: "updated_on", kind: "message", T: Timestamp },
   ]);

@@ -2438,31 +2438,31 @@ message ProjectRole {
 
 message OrganizationMemberUser {
   string user_id = 1;
-  string user_email = 2;
-  string user_name = 3;
-  string user_photo_url = 4;
-  string role_name = 5;
-  uint32 projects_count = 6;
-  uint32 usergroups_count = 7;
-  google.protobuf.Timestamp created_on = 8;
-  google.protobuf.Timestamp updated_on = 9;
+  string user_email = 3;
+  string user_name = 2;
+  string user_photo_url = 7;
+  string role_name = 4;
+  uint32 projects_count = 8;
+  uint32 usergroups_count = 9;
+  google.protobuf.Timestamp created_on = 5;
+  google.protobuf.Timestamp updated_on = 6;
 }
 
 message ProjectMemberUser {
   string user_id = 1;
-  string user_email = 2;
-  string user_name = 3;
-  string user_photo_url = 4;
-  string role_name = 5;
-  google.protobuf.Timestamp created_on = 6;
-  google.protobuf.Timestamp updated_on = 7;
+  string user_email = 3;
+  string user_name = 2;
+  string user_photo_url = 7;
+  string role_name = 4;
+  google.protobuf.Timestamp created_on = 5;
+  google.protobuf.Timestamp updated_on = 6;
 }
 
 message UsergroupMemberUser {
   string user_id = 1;
-  string user_email = 2;
-  string user_name = 3;
-  string user_photo_url = 4;
+  string user_email = 3;
+  string user_name = 2;
+  string user_photo_url = 7;
   google.protobuf.Timestamp created_on = 5;
   google.protobuf.Timestamp updated_on = 6;
 }
