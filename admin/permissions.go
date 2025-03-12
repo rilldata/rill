@@ -55,6 +55,7 @@ func (s *Service) OrganizationPermissionsForService(ctx context.Context, orgID, 
 			ManageProjects:   true,
 			ReadOrgMembers:   true,
 			ManageOrgMembers: true,
+			ManageOrgAdmins:  true,
 		}, nil
 	}
 
@@ -86,6 +87,7 @@ func (s *Service) OrganizationPermissionsForMagicAuthToken(ctx context.Context, 
 			ManageProjects:   false,
 			ReadOrgMembers:   false,
 			ManageOrgMembers: false,
+			ManageOrgAdmins:  false,
 		}, nil
 	}
 
@@ -110,6 +112,7 @@ func (s *Service) ProjectPermissionsForUser(ctx context.Context, projectID, user
 			ManageProvisionerResources: true,
 			ReadProjectMembers:         true,
 			ManageProjectMembers:       true,
+			ManageProjectAdmins:        true,
 			CreateMagicAuthTokens:      true,
 			ManageMagicAuthTokens:      true,
 			CreateReports:              true,
@@ -152,6 +155,7 @@ func (s *Service) ProjectPermissionsForService(ctx context.Context, projectID, s
 			ManageProvisionerResources: true,
 			ReadProjectMembers:         true,
 			ManageProjectMembers:       true,
+			ManageProjectAdmins:        true,
 			CreateMagicAuthTokens:      true,
 			ManageMagicAuthTokens:      true,
 			CreateReports:              true,
@@ -190,6 +194,7 @@ func (s *Service) ProjectPermissionsForDeployment(ctx context.Context, projectID
 			ManageProvisionerResources: true,
 			ReadProjectMembers:         true,
 			ManageProjectMembers:       false,
+			ManageProjectAdmins:        false,
 			CreateMagicAuthTokens:      false,
 			ManageMagicAuthTokens:      false,
 			CreateReports:              false,
@@ -226,6 +231,7 @@ func (s *Service) ProjectPermissionsForMagicAuthToken(ctx context.Context, proje
 		ManageProvisionerResources: false,
 		ReadProjectMembers:         false,
 		ManageProjectMembers:       false,
+		ManageProjectAdmins:        false,
 		CreateMagicAuthTokens:      false,
 		ManageMagicAuthTokens:      false,
 		CreateReports:              false,
@@ -249,6 +255,7 @@ func UnionOrgRoles(a *adminv1.OrganizationPermissions, b *database.OrganizationR
 		ManageProjects:   a.ManageProjects || b.ManageProjects,
 		ReadOrgMembers:   a.ReadOrgMembers || b.ReadOrgMembers,
 		ManageOrgMembers: a.ManageOrgMembers || b.ManageOrgMembers,
+		ManageOrgAdmins:  a.ManageOrgAdmins || b.ManageOrgAdmins,
 	}
 }
 
@@ -268,6 +275,7 @@ func UnionProjectRoles(a *adminv1.ProjectPermissions, b *database.ProjectRole) *
 		ManageProvisionerResources: a.ManageProvisionerResources || b.ManageProvisionerResources,
 		ReadProjectMembers:         a.ReadProjectMembers || b.ReadProjectMembers,
 		ManageProjectMembers:       a.ManageProjectMembers || b.ManageProjectMembers,
+		ManageProjectAdmins:        a.ManageProjectAdmins || b.ManageProjectAdmins,
 		CreateMagicAuthTokens:      a.CreateMagicAuthTokens || b.CreateMagicAuthTokens,
 		ManageMagicAuthTokens:      a.ManageMagicAuthTokens || b.ManageMagicAuthTokens,
 		CreateReports:              a.CreateReports || b.CreateReports,

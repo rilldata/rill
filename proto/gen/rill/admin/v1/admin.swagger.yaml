@@ -4750,6 +4750,8 @@ definitions:
         type: boolean
       manageOrgMembers:
         type: boolean
+      manageOrgAdmins:
+        type: boolean
   v1OrganizationQuotas:
     type: object
     properties:
@@ -4871,6 +4873,8 @@ definitions:
       readProjectMembers:
         type: boolean
       manageProjectMembers:
+        type: boolean
+      manageProjectAdmins:
         type: boolean
       createMagicAuthTokens:
         type: boolean

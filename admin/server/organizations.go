@@ -385,7 +385,7 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	if role.Admin && !claims.OrganizationPermissions(ctx, org.ID).Admin && !forceAccess {
+	if role.Admin && !claims.OrganizationPermissions(ctx, org.ID).ManageOrgAdmins && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
 	}
 
@@ -527,7 +527,7 @@ func (s *Server) RemoveOrganizationMemberUser(ctx context.Context, req *adminv1.
 	if err != nil {
 		return nil, err
 	}
-	if isAdmin && !claims.OrganizationPermissions(ctx, org.ID).Admin {
+	if isAdmin && !claims.OrganizationPermissions(ctx, org.ID).ManageOrgAdmins {
 		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to remove an admin member")
 	}
 	if isLastAdmin {
@@ -562,7 +562,7 @@ func (s *Server) SetOrganizationMemberUserRole(ctx context.Context, req *adminv1
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	if role.Admin && !claims.OrganizationPermissions(ctx, org.ID).Admin {
+	if role.Admin && !claims.OrganizationPermissions(ctx, org.ID).ManageOrgAdmins {
 		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
 	}
 
@@ -588,7 +588,7 @@ func (s *Server) SetOrganizationMemberUserRole(ctx context.Context, req *adminv1
 	if err != nil {
 		return nil, err
 	}
-	if isAdmin && !claims.OrganizationPermissions(ctx, org.ID).Admin {
+	if isAdmin && !claims.OrganizationPermissions(ctx, org.ID).ManageOrgAdmins {
 		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to remove an admin member")
 	}
 	if isLastAdmin {
@@ -689,7 +689,7 @@ func (s *Server) CreateWhitelistedDomain(ctx context.Context, req *adminv1.Creat
 	if err != nil {
 		return nil, err
 	}
-	if role.Admin && !claims.OrganizationPermissions(ctx, org.ID).Admin {
+	if role.Admin && !claims.OrganizationPermissions(ctx, org.ID).ManageOrgAdmins {
 		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
 	}
 

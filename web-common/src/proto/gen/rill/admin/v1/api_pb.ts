@@ -12656,6 +12656,11 @@ export class OrganizationPermissions extends Message<OrganizationPermissions> {
    */
   manageOrgMembers = false;
 
+  /**
+   * @generated from field: bool manage_org_admins = 10;
+   */
+  manageOrgAdmins = false;
+
   constructor(data?: PartialMessage<OrganizationPermissions>) {
     super();
     proto3.util.initPartial(data, this);
@@ -12673,6 +12678,7 @@ export class OrganizationPermissions extends Message<OrganizationPermissions> {
     { no: 5, name: "manage_projects", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 6, name: "read_org_members", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "manage_org_members", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 10, name: "manage_org_admins", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): OrganizationPermissions {
@@ -12762,6 +12768,11 @@ export class ProjectPermissions extends Message<ProjectPermissions> {
   manageProjectMembers = false;
 
   /**
+   * @generated from field: bool manage_project_admins = 22;
+   */
+  manageProjectAdmins = false;
+
+  /**
    * @generated from field: bool create_magic_auth_tokens = 15;
    */
   createMagicAuthTokens = false;
@@ -12822,6 +12833,7 @@ export class ProjectPermissions extends Message<ProjectPermissions> {
     { no: 20, name: "manage_provisioner_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 9, name: "read_project_members", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 10, name: "manage_project_members", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 22, name: "manage_project_admins", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 15, name: "create_magic_auth_tokens", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 16, name: "manage_magic_auth_tokens", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 11, name: "create_reports", kind: "scalar", T: 8 /* ScalarType.BOOL */ },

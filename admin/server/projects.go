@@ -883,7 +883,7 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	if role.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).Admin {
+	if role.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectAdmins {
 		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
 	}
 
@@ -1010,7 +1010,7 @@ func (s *Server) RemoveProjectMemberUser(ctx context.Context, req *adminv1.Remov
 		if err != nil {
 			return nil, err
 		}
-		if currentRole.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).Admin {
+		if currentRole.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectAdmins {
 			return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to remove an admin")
 		}
 	}
@@ -1044,7 +1044,7 @@ func (s *Server) SetProjectMemberUserRole(ctx context.Context, req *adminv1.SetP
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	if role.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).Admin {
+	if role.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectAdmins {
 		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
 	}
 
@@ -1069,7 +1069,7 @@ func (s *Server) SetProjectMemberUserRole(ctx context.Context, req *adminv1.SetP
 	if err != nil {
 		return nil, err
 	}
-	if currentRole.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).Admin {
+	if currentRole.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectAdmins {
 		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to remove an admin")
 	}
 
@@ -1258,7 +1258,7 @@ func (s *Server) ApproveProjectAccess(ctx context.Context, req *adminv1.ApproveP
 	if err != nil {
 		return nil, err
 	}
-	if role.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).Admin {
+	if role.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectAdmins {
 		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
 	}
 
@@ -1457,7 +1457,7 @@ func (s *Server) CreateProjectWhitelistedDomain(ctx context.Context, req *adminv
 	if err != nil {
 		return nil, err
 	}
-	if role.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).Admin {
+	if role.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectAdmins {
 		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
 	}
 

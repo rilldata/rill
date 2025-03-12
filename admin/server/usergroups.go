@@ -262,7 +262,7 @@ func (s *Server) AddOrganizationMemberUsergroup(ctx context.Context, req *adminv
 	if err != nil {
 		return nil, err
 	}
-	if role.Admin && !claims.OrganizationPermissions(ctx, usergroup.OrgID).Admin {
+	if role.Admin && !claims.OrganizationPermissions(ctx, usergroup.OrgID).ManageOrgAdmins {
 		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
 	}
 
@@ -299,7 +299,7 @@ func (s *Server) SetOrganizationMemberUsergroupRole(ctx context.Context, req *ad
 	if err != nil {
 		return nil, err
 	}
-	if role.Admin && !claims.OrganizationPermissions(ctx, usergroup.OrgID).Admin {
+	if role.Admin && !claims.OrganizationPermissions(ctx, usergroup.OrgID).ManageOrgAdmins {
 		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
 	}
 
@@ -307,7 +307,7 @@ func (s *Server) SetOrganizationMemberUsergroupRole(ctx context.Context, req *ad
 	if err != nil {
 		return nil, err
 	}
-	if currentRole.Admin && !claims.OrganizationPermissions(ctx, usergroup.OrgID).Admin {
+	if currentRole.Admin && !claims.OrganizationPermissions(ctx, usergroup.OrgID).ManageOrgAdmins {
 		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to remove an admin role")
 	}
 
@@ -343,7 +343,7 @@ func (s *Server) RemoveOrganizationMemberUsergroup(ctx context.Context, req *adm
 	if err != nil {
 		return nil, err
 	}
-	if currentRole.Admin && !claims.OrganizationPermissions(ctx, usergroup.OrgID).Admin {
+	if currentRole.Admin && !claims.OrganizationPermissions(ctx, usergroup.OrgID).ManageOrgAdmins {
 		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to remove an admin role")
 	}
 
@@ -377,7 +377,7 @@ func (s *Server) AddProjectMemberUsergroup(ctx context.Context, req *adminv1.Add
 	if err != nil {
 		return nil, err
 	}
-	if role.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).Admin {
+	if role.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectAdmins {
 		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
 	}
 
@@ -416,7 +416,7 @@ func (s *Server) SetProjectMemberUsergroupRole(ctx context.Context, req *adminv1
 	if err != nil {
 		return nil, err
 	}
-	if role.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).Admin {
+	if role.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectAdmins {
 		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
 	}
 
@@ -429,7 +429,7 @@ func (s *Server) SetProjectMemberUsergroupRole(ctx context.Context, req *adminv1
 	if err != nil {
 		return nil, err
 	}
-	if currentRole.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).Admin {
+	if currentRole.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectAdmins {
 		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to remove an admin role")
 	}
 
@@ -467,7 +467,7 @@ func (s *Server) RemoveProjectMemberUsergroup(ctx context.Context, req *adminv1.
 	if err != nil {
 		return nil, err
 	}
-	if currentRole.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).Admin {
+	if currentRole.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectAdmins {
 		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to remove an admin role")
 	}
 
@@ -503,7 +503,7 @@ func (s *Server) AddUsergroupMemberUser(ctx context.Context, req *adminv1.AddUse
 	if err != nil {
 		return nil, err
 	}
-	if currentRole.Admin && !claims.OrganizationPermissions(ctx, group.OrgID).Admin {
+	if currentRole.Admin && !claims.OrganizationPermissions(ctx, group.OrgID).ManageOrgAdmins {
 		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to edit a group that has an admin role")
 	}
 	// NOTE: In theory, the group could be admin on a project that the current user is not admin on.

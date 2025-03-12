@@ -19,15 +19,16 @@ Organization and project level roles are managed separately, but are connected i
 
 There are four roles available at the organization-level: **Admin**, **Editor**, **Viewer** and **Guest**.
 
-| Permission           | Description                                         | Admin | Editor | Viewer | Guest |
-| :------------------- | :-------------------------------------------------- | ----: | -----: | -----: | ----: |
-| `read_org`           | View basic info about the organization              |     ✔ |      ✔ |      ✔ |     ✔ |
-| `manage_org`         | Change organization settings                        |     ✔ |        |        |       |
-| `read_projects`      | Act as a viewer on all projects in the organization |     ✔ |      ✔ |      ✔ |     ✔ |
-| `create_projects`    | Create new projects in the organization             |     ✔ |      ✔ |        |       |
-| `manage_projects`    | Act as an admin on all projects in the organization |     ✔ |        |        |       |
-| `read_org_members`   | View members of the organization                    |     ✔ |      ✔ |        |       |
-| `manage_org_members` | Add, remove or change roles of organization members |     ✔ |      ✔ |        |       |
+| Permission           | Description                                          | Admin | Editor | Viewer | Guest |
+| :------------------- | :--------------------------------------------------- | ----: | -----: | -----: | ----: |
+| `read_org`           | View basic info about the organization               |     ✔ |      ✔ |      ✔ |     ✔ |
+| `manage_org`         | Change organization settings                         |     ✔ |        |        |       |
+| `read_projects`      | View projects you're a member of in the organization |     ✔ |      ✔ |      ✔ |     ✔ |
+| `create_projects`    | Create new projects in the organization              |     ✔ |      ✔ |        |       |
+| `manage_projects`    | Act as an admin on all projects in the organization  |     ✔ |        |        |       |
+| `read_org_members`   | View members of the organization                     |     ✔ |      ✔ |        |       |
+| `manage_org_members` | Add and edit non-admin organization members          |     ✔ |      ✔ |        |       |
+| `manage_org_admins`  | Add and edit organization admins                     |     ✔ |        |        |       |
 
 ## Project-level permissions
 
@@ -38,12 +39,13 @@ There are three roles available at the project-level: **Admin**, **Editor**, and
 | `read_project`                 | View basic info about the project                          |     ✔ |      ✔ |      ✔ |
 | `manage_project`               | Change project settings                                    |     ✔ |        |        |
 | `read_prod`                    | View dashboards deployed from the production (main) branch |     ✔ |      ✔ |      ✔ |
-| `read_prod_status`             | View logs for the production deployment                    |     ✔ |        |        |
+| `read_prod_status`             | View logs for the production deployment                    |     ✔ |      ✔ |        |
 | `manage_prod`                  | Trigger actions on the production deployment               |     ✔ |        |        |
 | `read_provisioner_resources`   | View managed resources for the project                     |     ✔ |        |        |
 | `manage_provisioner_resources` | Add or remove managed resources for the project            |     ✔ |        |        |
 | `read_project_members`         | View members of the project                                |     ✔ |      ✔ |        |
-| `manage_project_members`       | Add, remove or change roles of project members             |     ✔ |      ✔ |        |
+| `manage_project_members`       | Add and edit non-admin project members                     |     ✔ |      ✔ |        |
+| `manage_project_admins`        | Add and edit project admins                                |     ✔ |        |        |
 | `create_magic_auth_tokens`     | Create shareable URLs                                      |     ✔ |      ✔ |        |
 | `manage_magic_auth_tokens`     | Remove shareable URLs created by others                    |     ✔ |      ✔ |        |
 | `create_reports`               | Create and edit new scheduled reports                      |     ✔ |      ✔ |      ✔ |

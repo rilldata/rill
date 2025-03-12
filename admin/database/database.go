@@ -818,6 +818,7 @@ type OrganizationRole struct {
 	ManageProjects   bool `db:"manage_projects"`
 	ReadOrgMembers   bool `db:"read_org_members"`
 	ManageOrgMembers bool `db:"manage_org_members"`
+	ManageOrgAdmins  bool `db:"manage_org_admins"`
 }
 
 // ProjectRole represents roles for projects.
@@ -837,6 +838,7 @@ type ProjectRole struct {
 	ManageProvisionerResources bool `db:"manage_provisioner_resources"`
 	ReadProjectMembers         bool `db:"read_project_members"`
 	ManageProjectMembers       bool `db:"manage_project_members"`
+	ManageProjectAdmins        bool `db:"manage_project_admins"`
 	CreateMagicAuthTokens      bool `db:"create_magic_auth_tokens"`
 	ManageMagicAuthTokens      bool `db:"manage_magic_auth_tokens"`
 	CreateReports              bool `db:"create_reports"`
