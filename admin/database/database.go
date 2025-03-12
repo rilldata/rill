@@ -79,7 +79,7 @@ type DB interface {
 	FindProjectsForUser(ctx context.Context, userID string) ([]*Project, error)
 	FindProjectsForOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*Project, error)
 	// FindProjectsForOrgAndUser lists the public projects in the org and the projects where user is added as an external user
-	FindProjectsForOrgAndUser(ctx context.Context, orgID, userID, afterProjectName string, limit int) ([]*Project, error)
+	FindProjectsForOrgAndUser(ctx context.Context, orgID, userID string, includePublic bool, afterProjectName string, limit int) ([]*Project, error)
 	FindPublicProjectsInOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*Project, error)
 	FindProjectsByGithubURL(ctx context.Context, githubURL string) ([]*Project, error)
 	FindProjectsByGithubInstallationID(ctx context.Context, id int64) ([]*Project, error)
@@ -132,6 +132,7 @@ type DB interface {
 	GetCurrentTrialOrgCount(ctx context.Context, userID string) (int, error)
 	IncrementCurrentTrialOrgCount(ctx context.Context, userID string) error
 
+	FindUsergroupsForOrganizationAndUser(ctx context.Context, orgID, userID, afterName string, limit int) ([]*Usergroup, error)
 	FindUsergroupByName(ctx context.Context, orgName, name string) (*Usergroup, error)
 	CheckUsergroupExists(ctx context.Context, groupID string) (bool, error)
 	InsertManagedUsergroups(ctx context.Context, orgID string) error

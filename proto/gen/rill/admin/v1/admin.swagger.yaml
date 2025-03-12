@@ -711,7 +711,7 @@ paths:
         - AdminService
   /v1/organizations/{organization}/project/{project}/usergroups:
     get:
-      summary: ListProjectMemberUsergroups lists the org's user groups
+      summary: ListProjectMemberUsergroups lists the project's user groups
       operationId: AdminService_ListProjectMemberUsergroups
       responses:
         "200":
@@ -730,6 +730,41 @@ paths:
         - name: project
           in: path
           required: true
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/projects-for-user:
+    get:
+      summary: |-
+        ListProjectsForOrganizationAndUser lists all the projects that an organization member user has access to.
+        It does not include projects that the user has access to through a usergroup.
+      operationId: AdminService_ListProjectsForOrganizationAndUser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListProjectsForOrganizationAndUserResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: userId
+          in: query
+          required: false
           type: string
         - name: pageSize
           in: query
@@ -2032,6 +2067,39 @@ paths:
                 type: string
       tags:
         - AdminService
+  /v1/organizations/{organization}/usergroups-for-user:
+    get:
+      summary: ListUsergroupsForOrganizationAndUser lists the user groups that an organization member user has access to.
+      operationId: AdminService_ListUsergroupsForOrganizationAndUser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListUsergroupsForOrganizationAndUserResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: userId
+          in: query
+          required: false
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
   /v1/organizations/{organization}/usergroups/{usergroup}:
     get:
       summary: GetUsergroups returns the user group details
@@ -2443,7 +2511,7 @@ paths:
         - AdminService
   /v1/organizations/{organizationName}/projects:
     get:
-      summary: ListProjectsForOrganization lists all the projects currently available for given organizations
+      summary: ListProjectsForOrganization lists all the projects currently available for given organizations.
       operationId: AdminService_ListProjectsForOrganization
       responses:
         "200":
@@ -4525,6 +4593,16 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1WhitelistedDomain'
+  v1ListProjectsForOrganizationAndUserResponse:
+    type: object
+    properties:
+      projects:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Project'
+      nextPageToken:
+        type: string
   v1ListProjectsForOrganizationResponse:
     type: object
     properties:
@@ -4588,6 +4666,16 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1MemberUser'
+      nextPageToken:
+        type: string
+  v1ListUsergroupsForOrganizationAndUserResponse:
+    type: object
+    properties:
+      usergroups:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Usergroup'
       nextPageToken:
         type: string
   v1ListWhitelistedDomainsResponse:

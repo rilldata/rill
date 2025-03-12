@@ -131,6 +131,12 @@ export type AdminServiceGetUsergroupParams = {
   pageToken?: string;
 };
 
+export type AdminServiceListUsergroupsForOrganizationAndUserParams = {
+  userId?: string;
+  pageSize?: number;
+  pageToken?: string;
+};
+
 export type AdminServiceListOrganizationMemberUsergroupsParams = {
   pageSize?: number;
   pageToken?: string;
@@ -264,6 +270,12 @@ export type AdminServiceConnectProjectToGithubBody = {
   branch?: string;
   subpath?: string;
   force?: boolean;
+};
+
+export type AdminServiceListProjectsForOrganizationAndUserParams = {
+  userId?: string;
+  pageSize?: number;
+  pageToken?: string;
 };
 
 export type AdminServiceListProjectMemberUsergroupsParams = {
@@ -956,6 +968,11 @@ export interface V1ListWhitelistedDomainsResponse {
   domains?: V1WhitelistedDomain[];
 }
 
+export interface V1ListUsergroupsForOrganizationAndUserResponse {
+  usergroups?: V1Usergroup[];
+  nextPageToken?: string;
+}
+
 export interface V1ListUsergroupMemberUsersResponse {
   members?: V1MemberUser[];
   nextPageToken?: string;
@@ -983,6 +1000,11 @@ export interface V1ListPublicBillingPlansResponse {
 }
 
 export interface V1ListProjectsForOrganizationResponse {
+  projects?: V1Project[];
+  nextPageToken?: string;
+}
+
+export interface V1ListProjectsForOrganizationAndUserResponse {
   projects?: V1Project[];
   nextPageToken?: string;
 }

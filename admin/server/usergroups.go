@@ -15,6 +15,48 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+func (s *Server) ListUsergroupsForOrganizationAndUser(ctx context.Context, req *adminv1.ListUsergroupsForOrganizationAndUserRequest) (*adminv1.ListUsergroupsForOrganizationAndUserResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Organization),
+		attribute.String("args.user_id", req.UserId),
+	)
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	if err != nil {
+		return nil, err
+	}
+
+	if !auth.GetClaims(ctx).OrganizationPermissions(ctx, org.ID).ReadOrgMembers {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to list user groups for user")
+	}
+
+	pageToken, err := unmarshalPageToken(req.PageToken)
+	if err != nil {
+		return nil, err
+	}
+	pageSize := validPageSize(req.PageSize)
+
+	usergroups, err := s.admin.DB.FindUsergroupsForOrganizationAndUser(ctx, org.ID, req.UserId, pageToken.Val, pageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	nextToken := ""
+	if len(usergroups) >= pageSize {
+		nextToken = marshalPageToken(usergroups[len(usergroups)-1].Name)
+	}
+
+	dtos := make([]*adminv1.Usergroup, len(usergroups))
+	for i, group := range usergroups {
+		dtos[i] = usergroupToPB(group)
+	}
+
+	return &adminv1.ListUsergroupsForOrganizationAndUserResponse{
+		Usergroups:    dtos,
+		NextPageToken: nextToken,
+	}, nil
+}
+
 func (s *Server) CreateUsergroup(ctx context.Context, req *adminv1.CreateUsergroupRequest) (*adminv1.CreateUsergroupResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),

@@ -295,16 +295,21 @@ func (c *connection) FindProjectsForOrganization(ctx context.Context, orgID, aft
 	return c.projectsFromDTOs(res)
 }
 
-func (c *connection) FindProjectsForOrgAndUser(ctx context.Context, orgID, userID, afterProjectName string, limit int) ([]*database.Project, error) {
+func (c *connection) FindProjectsForOrgAndUser(ctx context.Context, orgID, userID string, includePublic bool, afterProjectName string, limit int) ([]*database.Project, error) {
+	var qry strings.Builder
+	qry.WriteString("SELECT p.* FROM projects p WHERE p.org_id = $1 AND lower(p.name) > lower($2) AND (")
+	if includePublic {
+		qry.WriteString("p.public = true OR ")
+	}
+	qry.WriteString(`p.id IN (
+		SELECT upr.project_id FROM users_projects_roles upr WHERE upr.user_id = $3
+		UNION
+		SELECT ugpr.project_id FROM usergroups_projects_roles ugpr JOIN usergroups_users uug ON ugpr.usergroup_id = uug.usergroup_id WHERE uug.user_id = $3
+	)`)
+	qry.WriteString(") ORDER BY lower(p.name) LIMIT $4")
+
 	var res []*projectDTO
-	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT p.* FROM projects p
-		WHERE p.org_id = $1 AND lower(p.name) > lower($2) AND (p.public = true OR p.id IN (
-			SELECT upr.project_id FROM users_projects_roles upr WHERE upr.user_id = $3
-			UNION
-			SELECT ugpr.project_id FROM usergroups_projects_roles ugpr JOIN usergroups_users uug ON ugpr.usergroup_id = uug.usergroup_id WHERE uug.user_id = $3
-		))  ORDER BY lower(p.name) LIMIT $4
-	`, orgID, afterProjectName, userID, limit)
+	err := c.getDB(ctx).SelectContext(ctx, &res, qry.String(), orgID, afterProjectName, userID, limit)
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
@@ -757,6 +762,21 @@ func (c *connection) IncrementCurrentTrialOrgCount(ctx context.Context, userID s
 		return parseErr("org count", err)
 	}
 	return nil
+}
+
+func (c *connection) FindUsergroupsForOrganizationAndUser(ctx context.Context, orgID, userID, afterName string, limit int) ([]*database.Usergroup, error) {
+	var res []*database.Usergroup
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT ug.* FROM usergroups ug
+		WHERE ug.org_id = $1 AND ug.id IN (
+			SELECT uug.usergroup_id FROM usergroups_users uug WHERE uug.user_id = $2
+		) AND lower(ug.name) > lower($3)
+		ORDER BY lower(ug.name) LIMIT $4
+	`, orgID, userID, afterName, limit)
+	if err != nil {
+		return nil, parseErr("usergroups", err)
+	}
+	return res, nil
 }
 
 func (c *connection) FindUsergroupByName(ctx context.Context, orgName, name string) (*database.Usergroup, error) {
