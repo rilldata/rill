@@ -9,13 +9,17 @@ export function memoizeMetricsStore<Store extends Readable<any>>(
 ) {
   const cache = new Map<string, Store>();
   return (ctx: StateManagers): Store => {
-    return derived([ctx.metricsViewName], ([name], set) => {
-      let store = cache.get(name);
-      if (!store) {
-        store = storeGetter(ctx);
-        cache.set(name, store);
-      }
-      return store.subscribe(set);
-    }) as Store;
+    return derived(
+      [ctx.metricsViewName, ctx.exploreName],
+      ([metricsName, exploreName], set) => {
+        const key = metricsName + exploreName;
+        let store = cache.get(key);
+        if (!store) {
+          store = storeGetter(ctx);
+          cache.set(key, store);
+        }
+        return store.subscribe(set);
+      },
+    ) as Store;
   };
 }

@@ -8,6 +8,7 @@
   import type { V1MemberUser } from "@rilldata/web-admin/client";
 
   export let name: string;
+  export let managed: boolean;
   export let currentUserEmail: string;
   export let searchUsersList: V1MemberUser[];
 
@@ -16,8 +17,8 @@
   let isEditDialogOpen = false;
 </script>
 
-<!-- `all-users` is a special group that cannot be deleted or edited -->
-{#if name !== "all-users"}
+<!-- Managed groups cannot be deleted or edited -->
+{#if !managed}
   <DropdownMenu.Root bind:open={isDropdownOpen}>
     <DropdownMenu.Trigger class="flex-none">
       <IconButton rounded active={isDropdownOpen}>

@@ -63,18 +63,17 @@
     <div class="p-3 pb-1">
       <Search bind:value={searchValue} autofocus={false} />
     </div>
-    <div class="max-h-64 overflow-y-auto">
+    <div class="max-h-64 overflow-y-auto px-2">
       {#if !searchValue}
         {#each selectedProxy as item (item)}
           <DropdownMenu.CheckboxItem
             showXForSelected={excludeMode}
             checked={selectedItems.has(item)}
-            class="mx-1 cursor-pointer"
             on:click={() => {
               onSelect(item);
             }}
           >
-            <slot {item}>
+            <slot {item} selected={selectedItems.has(item)}>
               {item}
             </slot>
           </DropdownMenu.CheckboxItem>
@@ -89,12 +88,11 @@
         <DropdownMenu.CheckboxItem
           showXForSelected={excludeMode}
           checked={selectedItems.has(item)}
-          class="pl-8 mx-1"
           on:click={() => {
             onSelect(item);
           }}
         >
-          <slot {item}>
+          <slot {item} selected={selectedItems.has(item)}>
             {item}
           </slot>
         </DropdownMenu.CheckboxItem>

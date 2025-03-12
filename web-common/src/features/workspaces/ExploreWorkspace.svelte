@@ -1,7 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
-  import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import {
@@ -41,8 +40,6 @@
   $: query = createRuntimeServiceGetExplore(instanceId, { name: exploreName });
 
   $: ({ data: resources } = $query);
-
-  $: initLocalUserPreferenceStore(exploreName);
 
   $: exploreResource = resources?.explore;
   $: metricsViewResource = resources?.metricsView;

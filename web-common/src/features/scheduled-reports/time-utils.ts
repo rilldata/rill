@@ -127,7 +127,7 @@ export function getDayOfMonthFromCronExpression(cronExpr: string): number {
 export function makeTimeZoneOptions(availableTimeZones: string[] | undefined) {
   const userLocalIANA = getLocalIANA();
   const UTCIana = getUTCIANA();
-  const currentDate = new Date();
+  const currentDate = DateTime.now();
 
   if (!availableTimeZones) {
     return [

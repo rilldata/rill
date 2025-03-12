@@ -32,6 +32,7 @@
   );
   $: defaultExplorePreset = getDefaultExplorePreset(
     exploreSpec,
+    metricsViewSpec,
     $metricsViewTimeRange.data,
   );
   $: ({ partialExploreState: exploreStateFromYAMLConfig } =

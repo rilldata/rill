@@ -209,7 +209,7 @@ export async function getExplorePageUrlSearchParams(
       fullTimeRange?.timeRangeSummary,
       exploreState,
     ),
-    getDefaultExplorePreset(exploreSpec, fullTimeRange),
+    getDefaultExplorePreset(exploreSpec, metricsViewSpec, fullTimeRange),
     url,
   );
 
