@@ -123,7 +123,6 @@ Unexpected " ".`,
     entity: {
       // defaults to 1st measure
       leaderboardMeasureName: "impressions",
-      leaderboardMeasureCount: 1,
     },
   },
   {
