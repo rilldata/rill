@@ -32,9 +32,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         
-      - name: Start Tmate Session
-        uses: mxschmitt/action-tmate@v3
-        
       - name: Filter modified codepaths
         uses: dorny/paths-filter@v3
         id: filter
@@ -160,7 +157,11 @@ jobs:
         run: |-
           npm run build -w web-admin
           npm run test -w web-admin
-
+          
+      - name: Start Tmate Session on Failure
+        if: failure() && matrix.name == 'web-admin'
+        uses: mxschmitt/action-tmate@v3
+      
       - uses: actions/upload-artifact@v4
         if: always()
         with:
