@@ -54,7 +54,9 @@ test.describe("ClickHouse connector", () => {
     await page.waitForURL(`**/files/connectors/clickhouse.yaml`);
 
     // Assert that the file contains key properties
-    const codeEditor = page.getByLabel("Code editor").getByRole("textbox");
+    const codeEditor = page
+      .getByLabel("codemirror editor")
+      .getByRole("textbox");
     await expect(codeEditor).toContainText("type: connector");
     await expect(codeEditor).toContainText("driver: clickhouse");
     await expect(codeEditor).toContainText('host: "localhost"');
@@ -73,6 +75,7 @@ test.describe("ClickHouse connector", () => {
   });
 
   test("Create connector using DSN", async ({ page }) => {
+    test.setTimeout(10000);
     // Open the Add Data modal
     await page.getByRole("button", { name: "Add Asset" }).click();
     await page.getByRole("menuitem", { name: "Add Data" }).click();
@@ -98,7 +101,9 @@ test.describe("ClickHouse connector", () => {
     await page.waitForURL(`**/files/connectors/clickhouse.yaml`);
 
     // Assert that the file contains key properties
-    const codeEditor = page.getByLabel("Code editor").getByRole("textbox");
+    const codeEditor = page
+      .getByLabel("codemirror editor")
+      .getByRole("textbox");
     await expect(codeEditor).toContainText("type: connector");
     await expect(codeEditor).toContainText("driver: clickhouse");
     await expect(codeEditor).toContainText(
@@ -107,14 +112,16 @@ test.describe("ClickHouse connector", () => {
 
     // Go to the `.env` file and verify the connector.clickhouse.dsn is set
     await page.getByRole("link", { name: ".env" }).click();
-    const envEditor = page.getByLabel("Code editor").getByRole("textbox");
+    const envEditor = page.getByLabel("codemirror editor").getByRole("textbox");
     await expect(envEditor).toContainText(
       "connector.clickhouse.dsn=http://localhost:8123?username=default&password=password",
     );
 
     // Go to the `rill.yaml` and verify the OLAP connector is set
     await page.getByRole("link", { name: "rill.yaml" }).click();
-    const rillYamlEditor = page.getByLabel("Code editor").getByRole("textbox");
+    const rillYamlEditor = page
+      .getByLabel("codemirror editor")
+      .getByRole("textbox");
     await expect(rillYamlEditor).toContainText("olap_connector: clickhouse");
 
     // Assert that the connector explorer now has a ClickHouse connector
