@@ -137,7 +137,7 @@ func (c *catalogCache) flush(ctx context.Context) error {
 // Unlike other catalog functions, it is safe to call get concurrently with calls to list and flush (i.e. under a read lock).
 func (c *catalogCache) get(n *runtimev1.ResourceName, withDeleted, clone bool) (*runtimev1.Resource, error) {
 	// sources are now internally parsed and stored as models.
-	// this could be removed when UI deprecate the concept of sources.
+	// this can be removed when UI deprecate the concept of sources.
 	if n.Kind == ResourceKindSource {
 		n.Kind = ResourceKindModel
 	}
@@ -165,7 +165,7 @@ func (c *catalogCache) get(n *runtimev1.ResourceName, withDeleted, clone bool) (
 // Unlike other catalog functions, it is safe to call list concurrently with calls to get and flush (i.e. under a read lock).
 func (c *catalogCache) list(kind, path string, withDeleted, clone bool) []*runtimev1.Resource {
 	// sources are now internally parsed and stored as models.
-	// this could be removed when UI deprecate the concept of sources.
+	// this can be removed when UI deprecate the concept of sources.
 	if kind == ResourceKindSource {
 		kind = ResourceKindModel
 	}

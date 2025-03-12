@@ -9,7 +9,6 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/robfig/cron/v3"
-	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v3"
 
 	// Load IANA time zone data
@@ -165,19 +164,4 @@ func parseDuration(v any) (time.Duration, error) {
 	default:
 		return 0, fmt.Errorf("invalid time duration value <%v>", v)
 	}
-}
-
-// mergeStructPB merges two structpb.Structs, with b taking precedence over a.
-// It overwrites a in place and returns it.
-func mergeStructPB(a, b *structpb.Struct) *structpb.Struct {
-	if a == nil || a.Fields == nil {
-		return b
-	}
-	if b == nil || b.Fields == nil {
-		return a
-	}
-	for k, v := range b.Fields {
-		a.Fields[k] = v
-	}
-	return a
 }
