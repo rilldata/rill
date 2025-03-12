@@ -193,11 +193,11 @@ func objectStoreSecretSQL(ctx context.Context, path, model, inputConnector strin
 		sb.WriteString("CREATE OR REPLACE TEMPORARY SECRET ")
 		sb.WriteString(safeSecretName)
 		sb.WriteString(" (TYPE AZURE")
-		if azureConfig.AllowHostAccess {
-			sb.WriteString(", PROVIDER CREDENTIAL_CHAIN")
-		}
+		// if connection string is set then use that and fall back to env credentials only if host access is allowed and connection string is not set
 		if azureConfig.ConnectionString != "" {
 			fmt.Fprintf(&sb, ", CONNECTION_STRING %s", safeSQLString(azureConfig.ConnectionString))
+		} else if azureConfig.AllowHostAccess {
+			sb.WriteString(", PROVIDER CREDENTIAL_CHAIN")
 		}
 		if azureConfig.Account != "" {
 			fmt.Fprintf(&sb, ", ACCOUNT_NAME %s", safeSQLString(azureConfig.Account))

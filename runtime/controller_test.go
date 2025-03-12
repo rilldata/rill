@@ -58,7 +58,7 @@ measures:
 				Spec: &runtimev1.ModelSpec{
 					InputConnector:   "local_file",
 					OutputConnector:  "duckdb",
-					InputProperties:  must(structpb.NewStruct(map[string]any{"path": "data/foo.csv"})),
+					InputProperties:  must(structpb.NewStruct(map[string]any{"path": "data/foo.csv", "local_files_hash": localFileHash(t, rt, id, []string{"data/foo.csv"})})),
 					OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
 					RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
 					DefinedAsSource:  true,
@@ -222,7 +222,7 @@ path: data/foo.csv
 				Spec: &runtimev1.ModelSpec{
 					InputConnector:   "local_file",
 					OutputConnector:  "duckdb",
-					InputProperties:  must(structpb.NewStruct(map[string]any{"path": "data/foo.csv"})),
+					InputProperties:  must(structpb.NewStruct(map[string]any{"path": "data/foo.csv", "local_files_hash": localFileHash(t, rt, id, []string{"data/foo.csv"})})),
 					OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
 					RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
 					DefinedAsSource:  true,
@@ -295,7 +295,7 @@ path: data/foo.csv
 				Spec: &runtimev1.ModelSpec{
 					InputConnector:   "local_file",
 					OutputConnector:  "duckdb",
-					InputProperties:  must(structpb.NewStruct(map[string]any{"path": "data/foo.csv"})),
+					InputProperties:  must(structpb.NewStruct(map[string]any{"path": "data/foo.csv", "local_files_hash": localFileHash(t, rt, id, []string{"data/foo.csv"})})),
 					OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
 					RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
 					DefinedAsSource:  true,
@@ -384,6 +384,7 @@ func TestSourceRefreshSchedule(t *testing.T) {
 		"/sources/foo.yaml": `
 connector: local_file
 path: data/foo.csv
+invalidate_on_change: false
 refresh:
   every: 1
 `,
@@ -1087,7 +1088,7 @@ path: data/foo.csv
 	awaitIdle()
 	testruntime.RequireReconcileState(t, rt, id, 2, 0, 0)
 	testruntime.RequireOLAPTable(t, rt, id, "foo")
-	_, sourceRes := newSource("foo", "data/foo.csv")
+	_, sourceRes := newSource("foo", "data/foo.csv", localFileHash(t, rt, id, []string{"data/foo.csv"}))
 	testruntime.RequireResource(t, rt, id, sourceRes)
 
 	testruntime.PutFiles(t, rt, id, map[string]string{
@@ -1148,12 +1149,12 @@ measures:
 	testruntime.RequireResource(t, rt, id, metricsRes)
 }
 
-func newSource(name, path string) (*runtimev1.ModelV2, *runtimev1.Resource) {
+func newSource(name, path, localFileHash string) (*runtimev1.ModelV2, *runtimev1.Resource) {
 	source := &runtimev1.ModelV2{
 		Spec: &runtimev1.ModelSpec{
 			InputConnector:   "local_file",
 			OutputConnector:  "duckdb",
-			InputProperties:  must(structpb.NewStruct(map[string]any{"path": path})),
+			InputProperties:  must(structpb.NewStruct(map[string]any{"path": path, "local_files_hash": localFileHash})),
 			OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
 			RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
 			DefinedAsSource:  true,
@@ -1327,4 +1328,15 @@ func must[T any](v T, err error) T {
 		panic(err)
 	}
 	return v
+}
+
+func localFileHash(t *testing.T, rt *runtime.Runtime, id string, paths []string) string {
+	repo, release, err := rt.Repo(context.Background(), id)
+	require.NoError(t, err)
+	defer func() {
+		release()
+	}()
+	localFileHash, err := repo.FileHash(context.Background(), paths)
+	require.NoError(t, err)
+	return localFileHash
 }

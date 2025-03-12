@@ -27,6 +27,9 @@ type SourceYAML struct {
 func (p *Parser) parseSource(ctx context.Context, node *Node) error {
 	// Parse YAML
 	tmp := make(map[string]any)
+	if node.YAML == nil {
+		node.YAML = &yaml.Node{}
+	}
 	err := node.YAML.Decode(tmp)
 	if err != nil {
 		return err
@@ -46,6 +49,7 @@ func (p *Parser) parseSource(ctx context.Context, node *Node) error {
 		"materialize": true,
 	}
 	tmp["type"] = "model"
+	tmp["defined_as_source"] = true
 
 	// Backward compatibility: when the default connector is "olap", and it's a DuckDB connector, a source with connector "duckdb" should run on it
 	if p.DefaultOLAPConnector == "olap" && node.Connector == "duckdb" {
