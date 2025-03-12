@@ -266,8 +266,8 @@ export function prepareVirtualizedDimTableColumns(
     allMeasures.some((am) => am.name === m),
   );
 
-  // don't add context columns if sorting by dimension
-  if (selectedMeasure && sortType !== SortType.DIMENSION) {
+  // Show context columns based on selected context columns and time comparison settings
+  if (selectedMeasure) {
     // If activeMeasures is provided, add context columns for each active measure
     if (activeMeasures?.length) {
       activeMeasures.forEach((measureName) => {
@@ -290,6 +290,7 @@ export function prepareVirtualizedDimTableColumns(
       );
     }
   }
+
   // Make dimension the first column
   columnNames.unshift(dimensionColumn);
 
