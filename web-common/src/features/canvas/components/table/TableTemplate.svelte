@@ -16,7 +16,13 @@
   import { onDestroy } from "svelte";
   import { writable, type Readable } from "svelte/store";
   import { validateTableSchema } from "./selector";
-  import { clearTableCache, getTableConfig, usePivotForCanvas } from "./util";
+  import {
+    clearTableCache,
+    getTableConfig,
+    getTableKey,
+    tableStoreCache,
+    usePivotForCanvas,
+  } from "./util";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
   export let timeAndFilterStore: Readable<TimeAndFilterStore>;
@@ -38,23 +44,28 @@
   });
 
   let pivotDataStore: PivotDataStore | undefined;
+  let previousTableKey: string | undefined;
 
   $: tableSpec = rendererProperties as TableSpec;
-  $: tableSpecStore.set(tableSpec);
-
-  $: measures = tableSpec.measures || [];
-  $: colDimensions = tableSpec.col_dimensions || [];
-  $: rowDimensions = tableSpec.row_dimensions || [];
+  $: currentTableKey = getTableKey(tableSpec);
 
   $: schema = validateTableSchema(ctx, tableSpec);
 
-  $: if (tableSpec && $schema.isValid) {
+  $: if (currentTableKey !== previousTableKey && tableSpec && $schema.isValid) {
+    previousTableKey = currentTableKey;
+    const {
+      measures,
+      col_dimensions: colDimensions,
+      row_dimensions: rowDimensions,
+    } = tableSpec;
+
+    tableSpecStore.set(tableSpec);
     pivotState.update((state) => ({
       ...state,
       sorting: [],
       expanded: {},
       columns: [
-        ...colDimensions.map((dimension) => ({
+        ...(colDimensions || []).map((dimension) => ({
           id: dimension,
           title: dimension,
           type: PivotChipType.Dimension,
@@ -65,7 +76,7 @@
           type: PivotChipType.Measure,
         })),
       ],
-      rows: rowDimensions.map((dimension) => ({
+      rows: (rowDimensions || []).map((dimension) => ({
         id: dimension,
         title: dimension,
         type: PivotChipType.Dimension,
@@ -73,6 +84,7 @@
     }));
   }
 
+  $: console.log($tableStoreCache);
   $: pivotConfig = getTableConfig(
     ctx,
     tableSpec.metrics_view,
@@ -86,9 +98,7 @@
       ctx,
       componentName,
       tableSpec.metrics_view,
-      pivotState,
-      tableSpecStore,
-      timeAndFilterStore,
+      pivotConfig,
     );
   } else {
     pivotDataStore = undefined;

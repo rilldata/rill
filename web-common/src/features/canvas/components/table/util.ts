@@ -19,7 +19,7 @@ type CacheEntry = {
   unsubscribe: () => void;
 };
 
-const tableStoreCache = writable<Map<string, CacheEntry>>(new Map());
+export const tableStoreCache = writable<Map<string, CacheEntry>>(new Map());
 export function clearTableCache(componentName?: string) {
   tableStoreCache.update(
     (cache: Map<string, CacheEntry>): Map<string, CacheEntry> => {
@@ -128,27 +128,18 @@ export const usePivotForCanvas = (
   ctx: StateManagers,
   componentName: string,
   metricsViewName: string,
-  pivotState: Readable<PivotState>,
-  tableSpecStore: Readable<TableSpec>,
-  timeAndFilterStore: Readable<TimeAndFilterStore>,
+  pivotConfig: Readable<PivotDataStoreConfig>,
 ) => {
   const cachedEntry = get(tableStoreCache).get(
     `${componentName}-${metricsViewName}`,
   );
 
   if (cachedEntry) {
+    console.log("RETURNING CACHED STORE");
     return cachedEntry.store;
   } else {
     clearTableCache(componentName);
   }
-
-  const pivotConfig = getTableConfig(
-    ctx,
-    metricsViewName,
-    tableSpecStore,
-    pivotState,
-    timeAndFilterStore,
-  );
 
   const pivotDashboardContext: PivotDashboardContext = {
     metricsViewName: readable(metricsViewName),
@@ -175,3 +166,11 @@ export const usePivotForCanvas = (
 
   return pivotDataStore;
 };
+
+export function getTableKey(tableSpec: TableSpec) {
+  const rowDimensions = tableSpec.row_dimensions?.join("-");
+  const colDimensions = tableSpec.col_dimensions?.join("-");
+  const measures = tableSpec.measures?.join("-");
+  const metricsView = tableSpec.metrics_view;
+  return `${metricsView}-${rowDimensions}-${colDimensions}-${measures}`;
+}
