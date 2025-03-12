@@ -106,7 +106,7 @@
       location="bottom"
       suppress={active}
     >
-      <Button builders={[builder]} type="text" on:click>
+      <Button builders={[builder]} type="text" label={tooltipText} on:click>
         <div
           class="flex items-center gap-x-1 px-1 text-gray-700 hover:text-inherit font-normal"
         >
