@@ -31,7 +31,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
+        
+      - name: Start Tmate Session
+        uses: mxschmitt/action-tmate@v3
+        
       - name: Filter modified codepaths
         uses: dorny/paths-filter@v3
         id: filter
