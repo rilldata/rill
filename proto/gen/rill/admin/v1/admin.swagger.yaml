@@ -4562,7 +4562,7 @@ definitions:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1MemberUser'
+          $ref: '#/definitions/v1OrganizationMemberUser'
       nextPageToken:
         type: string
   v1ListOrganizationsResponse:
@@ -4602,7 +4602,7 @@ definitions:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1MemberUser'
+          $ref: '#/definitions/v1ProjectMemberUser'
       nextPageToken:
         type: string
   v1ListProjectWhitelistedDomainsResponse:
@@ -4685,7 +4685,7 @@ definitions:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1MemberUser'
+          $ref: '#/definitions/v1UsergroupMemberUser'
       nextPageToken:
         type: string
   v1ListUsergroupsForOrganizationAndUserResponse:
@@ -4746,25 +4746,6 @@ definitions:
         type: string
       displayName:
         type: string
-  v1MemberUser:
-    type: object
-    properties:
-      userId:
-        type: string
-      userEmail:
-        type: string
-      userName:
-        type: string
-      userPhotoUrl:
-        type: string
-      roleName:
-        type: string
-      createdOn:
-        type: string
-        format: date-time
-      updatedOn:
-        type: string
-        format: date-time
   v1MemberUsergroup:
     type: object
     properties:
@@ -4831,6 +4812,31 @@ definitions:
         type: string
       billingPlanDisplayName:
         type: string
+      createdOn:
+        type: string
+        format: date-time
+      updatedOn:
+        type: string
+        format: date-time
+  v1OrganizationMemberUser:
+    type: object
+    properties:
+      userId:
+        type: string
+      userEmail:
+        type: string
+      userName:
+        type: string
+      userPhotoUrl:
+        type: string
+      roleName:
+        type: string
+      projectsCount:
+        type: integer
+        format: int64
+      usergroupsCount:
+        type: integer
+        format: int64
       createdOn:
         type: string
         format: date-time
@@ -4946,6 +4952,25 @@ definitions:
         additionalProperties:
           type: string
       prodVersion:
+        type: string
+      createdOn:
+        type: string
+        format: date-time
+      updatedOn:
+        type: string
+        format: date-time
+  v1ProjectMemberUser:
+    type: object
+    properties:
+      userId:
+        type: string
+      userEmail:
+        type: string
+      userName:
+        type: string
+      userPhotoUrl:
+        type: string
+      roleName:
         type: string
       createdOn:
         type: string
@@ -5549,6 +5574,23 @@ definitions:
         type: string
       managed:
         type: boolean
+      createdOn:
+        type: string
+        format: date-time
+      updatedOn:
+        type: string
+        format: date-time
+  v1UsergroupMemberUser:
+    type: object
+    properties:
+      userId:
+        type: string
+      userEmail:
+        type: string
+      userName:
+        type: string
+      userPhotoUrl:
+        type: string
       createdOn:
         type: string
         format: date-time

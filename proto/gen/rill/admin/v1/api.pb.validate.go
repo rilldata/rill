@@ -35812,22 +35812,196 @@ var _ interface {
 	ErrorName() string
 } = ProjectRoleValidationError{}
 
-// Validate checks the field values on MemberUser with the rules defined in the
-// proto definition for this message. If any rules are violated, the first
-// error encountered is returned, or nil if there are no violations.
-func (m *MemberUser) Validate() error {
+// Validate checks the field values on OrganizationMemberUser with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *OrganizationMemberUser) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on MemberUser with the rules defined in
-// the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in MemberUserMultiError, or
-// nil if none found.
-func (m *MemberUser) ValidateAll() error {
+// ValidateAll checks the field values on OrganizationMemberUser with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// OrganizationMemberUserMultiError, or nil if none found.
+func (m *OrganizationMemberUser) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *MemberUser) validate(all bool) error {
+func (m *OrganizationMemberUser) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for UserId
+
+	// no validation rules for UserEmail
+
+	// no validation rules for UserName
+
+	// no validation rules for UserPhotoUrl
+
+	// no validation rules for RoleName
+
+	// no validation rules for ProjectsCount
+
+	// no validation rules for UsergroupsCount
+
+	if all {
+		switch v := interface{}(m.GetCreatedOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, OrganizationMemberUserValidationError{
+					field:  "CreatedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, OrganizationMemberUserValidationError{
+					field:  "CreatedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetCreatedOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return OrganizationMemberUserValidationError{
+				field:  "CreatedOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetUpdatedOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, OrganizationMemberUserValidationError{
+					field:  "UpdatedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, OrganizationMemberUserValidationError{
+					field:  "UpdatedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetUpdatedOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return OrganizationMemberUserValidationError{
+				field:  "UpdatedOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return OrganizationMemberUserMultiError(errors)
+	}
+
+	return nil
+}
+
+// OrganizationMemberUserMultiError is an error wrapping multiple validation
+// errors returned by OrganizationMemberUser.ValidateAll() if the designated
+// constraints aren't met.
+type OrganizationMemberUserMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m OrganizationMemberUserMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m OrganizationMemberUserMultiError) AllErrors() []error { return m }
+
+// OrganizationMemberUserValidationError is the validation error returned by
+// OrganizationMemberUser.Validate if the designated constraints aren't met.
+type OrganizationMemberUserValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e OrganizationMemberUserValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e OrganizationMemberUserValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e OrganizationMemberUserValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e OrganizationMemberUserValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e OrganizationMemberUserValidationError) ErrorName() string {
+	return "OrganizationMemberUserValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e OrganizationMemberUserValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sOrganizationMemberUser.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = OrganizationMemberUserValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = OrganizationMemberUserValidationError{}
+
+// Validate checks the field values on ProjectMemberUser with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *ProjectMemberUser) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ProjectMemberUser with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ProjectMemberUserMultiError, or nil if none found.
+func (m *ProjectMemberUser) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ProjectMemberUser) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -35848,7 +36022,7 @@ func (m *MemberUser) validate(all bool) error {
 		switch v := interface{}(m.GetCreatedOn()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, MemberUserValidationError{
+				errors = append(errors, ProjectMemberUserValidationError{
 					field:  "CreatedOn",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -35856,7 +36030,7 @@ func (m *MemberUser) validate(all bool) error {
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, MemberUserValidationError{
+				errors = append(errors, ProjectMemberUserValidationError{
 					field:  "CreatedOn",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -35865,7 +36039,7 @@ func (m *MemberUser) validate(all bool) error {
 		}
 	} else if v, ok := interface{}(m.GetCreatedOn()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return MemberUserValidationError{
+			return ProjectMemberUserValidationError{
 				field:  "CreatedOn",
 				reason: "embedded message failed validation",
 				cause:  err,
@@ -35877,7 +36051,7 @@ func (m *MemberUser) validate(all bool) error {
 		switch v := interface{}(m.GetUpdatedOn()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, MemberUserValidationError{
+				errors = append(errors, ProjectMemberUserValidationError{
 					field:  "UpdatedOn",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -35885,7 +36059,7 @@ func (m *MemberUser) validate(all bool) error {
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, MemberUserValidationError{
+				errors = append(errors, ProjectMemberUserValidationError{
 					field:  "UpdatedOn",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -35894,7 +36068,7 @@ func (m *MemberUser) validate(all bool) error {
 		}
 	} else if v, ok := interface{}(m.GetUpdatedOn()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return MemberUserValidationError{
+			return ProjectMemberUserValidationError{
 				field:  "UpdatedOn",
 				reason: "embedded message failed validation",
 				cause:  err,
@@ -35903,18 +36077,19 @@ func (m *MemberUser) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return MemberUserMultiError(errors)
+		return ProjectMemberUserMultiError(errors)
 	}
 
 	return nil
 }
 
-// MemberUserMultiError is an error wrapping multiple validation errors
-// returned by MemberUser.ValidateAll() if the designated constraints aren't met.
-type MemberUserMultiError []error
+// ProjectMemberUserMultiError is an error wrapping multiple validation errors
+// returned by ProjectMemberUser.ValidateAll() if the designated constraints
+// aren't met.
+type ProjectMemberUserMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m MemberUserMultiError) Error() string {
+func (m ProjectMemberUserMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -35923,11 +36098,11 @@ func (m MemberUserMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m MemberUserMultiError) AllErrors() []error { return m }
+func (m ProjectMemberUserMultiError) AllErrors() []error { return m }
 
-// MemberUserValidationError is the validation error returned by
-// MemberUser.Validate if the designated constraints aren't met.
-type MemberUserValidationError struct {
+// ProjectMemberUserValidationError is the validation error returned by
+// ProjectMemberUser.Validate if the designated constraints aren't met.
+type ProjectMemberUserValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -35935,22 +36110,24 @@ type MemberUserValidationError struct {
 }
 
 // Field function returns field value.
-func (e MemberUserValidationError) Field() string { return e.field }
+func (e ProjectMemberUserValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e MemberUserValidationError) Reason() string { return e.reason }
+func (e ProjectMemberUserValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e MemberUserValidationError) Cause() error { return e.cause }
+func (e ProjectMemberUserValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e MemberUserValidationError) Key() bool { return e.key }
+func (e ProjectMemberUserValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e MemberUserValidationError) ErrorName() string { return "MemberUserValidationError" }
+func (e ProjectMemberUserValidationError) ErrorName() string {
+	return "ProjectMemberUserValidationError"
+}
 
 // Error satisfies the builtin error interface
-func (e MemberUserValidationError) Error() string {
+func (e ProjectMemberUserValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -35962,14 +36139,14 @@ func (e MemberUserValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sMemberUser.%s: %s%s",
+		"invalid %sProjectMemberUser.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = MemberUserValidationError{}
+var _ error = ProjectMemberUserValidationError{}
 
 var _ interface {
 	Field() string
@@ -35977,7 +36154,175 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = MemberUserValidationError{}
+} = ProjectMemberUserValidationError{}
+
+// Validate checks the field values on UsergroupMemberUser with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *UsergroupMemberUser) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UsergroupMemberUser with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// UsergroupMemberUserMultiError, or nil if none found.
+func (m *UsergroupMemberUser) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UsergroupMemberUser) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for UserId
+
+	// no validation rules for UserEmail
+
+	// no validation rules for UserName
+
+	// no validation rules for UserPhotoUrl
+
+	if all {
+		switch v := interface{}(m.GetCreatedOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, UsergroupMemberUserValidationError{
+					field:  "CreatedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, UsergroupMemberUserValidationError{
+					field:  "CreatedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetCreatedOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return UsergroupMemberUserValidationError{
+				field:  "CreatedOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetUpdatedOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, UsergroupMemberUserValidationError{
+					field:  "UpdatedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, UsergroupMemberUserValidationError{
+					field:  "UpdatedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetUpdatedOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return UsergroupMemberUserValidationError{
+				field:  "UpdatedOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return UsergroupMemberUserMultiError(errors)
+	}
+
+	return nil
+}
+
+// UsergroupMemberUserMultiError is an error wrapping multiple validation
+// errors returned by UsergroupMemberUser.ValidateAll() if the designated
+// constraints aren't met.
+type UsergroupMemberUserMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UsergroupMemberUserMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UsergroupMemberUserMultiError) AllErrors() []error { return m }
+
+// UsergroupMemberUserValidationError is the validation error returned by
+// UsergroupMemberUser.Validate if the designated constraints aren't met.
+type UsergroupMemberUserValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UsergroupMemberUserValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UsergroupMemberUserValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UsergroupMemberUserValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UsergroupMemberUserValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UsergroupMemberUserValidationError) ErrorName() string {
+	return "UsergroupMemberUserValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UsergroupMemberUserValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUsergroupMemberUser.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UsergroupMemberUserValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UsergroupMemberUserValidationError{}
 
 // Validate checks the field values on UserInvite with the rules defined in the
 // proto definition for this message. If any rules are violated, the first

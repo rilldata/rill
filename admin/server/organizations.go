@@ -311,9 +311,9 @@ func (s *Server) ListOrganizationMemberUsers(ctx context.Context, req *adminv1.L
 		nextToken = marshalPageToken(members[len(members)-1].Email)
 	}
 
-	dtos := make([]*adminv1.MemberUser, len(members))
+	dtos := make([]*adminv1.OrganizationMemberUser, len(members))
 	for i, user := range members {
-		dtos[i] = memberUserToPB(user)
+		dtos[i] = orgMemberUserToPB(user)
 	}
 
 	return &adminv1.ListOrganizationMemberUsersResponse{

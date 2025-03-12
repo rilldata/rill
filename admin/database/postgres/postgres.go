@@ -871,8 +871,8 @@ func (c *connection) FindUsergroupsForUser(ctx context.Context, userID, orgID st
 	return res, nil
 }
 
-func (c *connection) FindUsergroupMemberUsers(ctx context.Context, groupID, afterEmail string, limit int) ([]*database.MemberUser, error) {
-	var res []*database.MemberUser
+func (c *connection) FindUsergroupMemberUsers(ctx context.Context, groupID, afterEmail string, limit int) ([]*database.UsergroupMemberUser, error) {
+	var res []*database.UsergroupMemberUser
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 		SELECT uug.user_id as "id", u.email, u.display_name, u.photo_url FROM usergroups_users uug
 		JOIN users u ON uug.user_id = u.id
@@ -1466,12 +1466,16 @@ func (c *connection) ResolveProjectRolesForUser(ctx context.Context, userID, pro
 	return res, nil
 }
 
-func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID, afterEmail string, limit int) ([]*database.MemberUser, error) {
+func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID, afterEmail string, limit int) ([]*database.OrganizationMemberUser, error) {
 	args := []any{orgID, afterEmail, limit}
 	var qry strings.Builder
 	qry.WriteString(`
-	SELECT u.id, u.email, u.display_name, u.photo_url, u.created_on, u.updated_on, r.name FROM users u
-	JOIN users_orgs_roles uor ON u.id = uor.user_id
+		SELECT
+			u.id, u.email, u.display_name, u.photo_url, u.created_on, u.updated_on, r.name as role_name
+			() as projects_count,
+			(SELECT COUNT(*) FROM ) as usergroups_count
+		FROM users u
+		JOIN users_orgs_roles uor ON u.id = uor.user_id
 		JOIN org_roles r ON r.id = uor.org_role_id
 		WHERE uor.org_id=$1
 	`)
@@ -1481,7 +1485,7 @@ func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID, fil
 	}
 	qry.WriteString(" AND lower(u.email) > lower($2) ORDER BY lower(u.email) LIMIT $3")
 
-	var res []*database.MemberUser
+	var res []*database.OrganizationMemberUser
 	err := c.getDB(ctx).SelectContext(ctx, &res, qry.String(), args...)
 	if err != nil {
 		return nil, parseErr("org members", err)
@@ -1573,11 +1577,12 @@ func (c *connection) CountSingleuserOrganizationsForMemberUser(ctx context.Conte
 	return count, nil
 }
 
-func (c *connection) FindOrganizationMembersWithManageUsersRole(ctx context.Context, orgID string) ([]*database.MemberUser, error) {
-	var res []*database.MemberUser
+func (c *connection) FindOrganizationMembersWithManageUsersRole(ctx context.Context, orgID string) ([]*database.OrganizationMemberUser, error) {
+	var res []*database.OrganizationMemberUser
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT u.id, u.email, u.display_name, u.photo_url, u.created_on, u.updated_on, r.name FROM users u
-			JOIN users_orgs_roles uor ON u.id = uor.user_id
+		SELECT u.id, u.email, u.display_name, u.photo_url, u.created_on, u.updated_on, r.name as role_name
+		FROM users u
+		JOIN users_orgs_roles uor ON u.id = uor.user_id
 		JOIN org_roles r ON r.id = uor.org_role_id
 		WHERE uor.org_id=$1 AND r.manage_org_members=true
 		ORDER BY lower(u.email)
@@ -1588,7 +1593,7 @@ func (c *connection) FindOrganizationMembersWithManageUsersRole(ctx context.Cont
 	return res, nil
 }
 
-func (c *connection) FindProjectMemberUsers(ctx context.Context, projectID, filterRoleID, afterEmail string, limit int) ([]*database.MemberUser, error) {
+func (c *connection) FindProjectMemberUsers(ctx context.Context, projectID, filterRoleID, afterEmail string, limit int) ([]*database.ProjectMemberUser, error) {
 	args := []any{projectID, afterEmail, limit}
 	var qry strings.Builder
 	qry.WriteString(`
@@ -1603,7 +1608,7 @@ func (c *connection) FindProjectMemberUsers(ctx context.Context, projectID, filt
 	}
 	qry.WriteString(" AND lower(u.email) > lower($2) ORDER BY lower(u.email) LIMIT $3")
 
-	var res []*database.MemberUser
+	var res []*database.ProjectMemberUser
 	err := c.getDB(ctx).SelectContext(ctx, &res, qry.String(), args...)
 	if err != nil {
 		return nil, parseErr("project members", err)

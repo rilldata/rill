@@ -643,14 +643,9 @@ func (s *Server) ListUsergroupMemberUsers(ctx context.Context, req *adminv1.List
 		nextToken = marshalPageToken(members[len(members)-1].Email)
 	}
 
-	dtos := make([]*adminv1.MemberUser, len(members))
+	dtos := make([]*adminv1.UsergroupMemberUser, len(members))
 	for i, member := range members {
-		dtos[i] = &adminv1.MemberUser{
-			UserId:       member.ID,
-			UserEmail:    member.Email,
-			UserName:     member.DisplayName,
-			UserPhotoUrl: member.PhotoURL,
-		}
+		dtos[i] = usergroupMemberUserToPB(member)
 	}
 
 	return &adminv1.ListUsergroupMemberUsersResponse{

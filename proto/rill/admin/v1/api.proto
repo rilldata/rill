@@ -1300,7 +1300,7 @@ message ListOrganizationMemberUsersRequest {
 }
 
 message ListOrganizationMemberUsersResponse {
-  repeated MemberUser members = 1;
+  repeated OrganizationMemberUser members = 1;
   string next_page_token = 2;
 }
 
@@ -1471,7 +1471,7 @@ message ListProjectMemberUsersRequest {
 }
 
 message ListProjectMemberUsersResponse {
-  repeated MemberUser members = 1;
+  repeated ProjectMemberUser members = 1;
   string next_page_token = 2;
 }
 
@@ -1661,7 +1661,7 @@ message ListUsergroupMemberUsersRequest {
 }
 
 message ListUsergroupMemberUsersResponse {
-  repeated MemberUser members = 1;
+  repeated UsergroupMemberUser members = 1;
   string next_page_token = 2;
 }
 
@@ -2434,12 +2434,33 @@ message ProjectRole {
   ProjectPermissions permissions = 3;
 }
 
-message MemberUser {
+message OrganizationMemberUser {
   string user_id = 1;
-  string user_email = 3;
-  string user_name = 2;
-  string user_photo_url = 7;
-  string role_name = 4;
+  string user_email = 2;
+  string user_name = 3;
+  string user_photo_url = 4;
+  string role_name = 5;
+  uint32 projects_count = 6;
+  uint32 usergroups_count = 7;
+  google.protobuf.Timestamp created_on = 8;
+  google.protobuf.Timestamp updated_on = 9;
+}
+
+message ProjectMemberUser {
+  string user_id = 1;
+  string user_email = 2;
+  string user_name = 3;
+  string user_photo_url = 4;
+  string role_name = 5;
+  google.protobuf.Timestamp created_on = 6;
+  google.protobuf.Timestamp updated_on = 7;
+}
+
+message UsergroupMemberUser {
+  string user_id = 1;
+  string user_email = 2;
+  string user_name = 3;
+  string user_photo_url = 4;
   google.protobuf.Timestamp created_on = 5;
   google.protobuf.Timestamp updated_on = 6;
 }

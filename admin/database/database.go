@@ -142,7 +142,7 @@ type DB interface {
 	DeleteUsergroup(ctx context.Context, groupID string) error
 
 	FindUsergroupsForUser(ctx context.Context, userID, orgID string) ([]*Usergroup, error)
-	FindUsergroupMemberUsers(ctx context.Context, groupID, afterEmail string, limit int) ([]*MemberUser, error)
+	FindUsergroupMemberUsers(ctx context.Context, groupID, afterEmail string, limit int) ([]*UsergroupMemberUser, error)
 	InsertUsergroupMemberUser(ctx context.Context, groupID, userID string) error
 	DeleteUsergroupMemberUser(ctx context.Context, groupID, userID string) error
 	DeleteUsergroupsMemberUser(ctx context.Context, orgID, userID string) error
@@ -209,16 +209,16 @@ type DB interface {
 	ResolveOrganizationRolesForUser(ctx context.Context, userID, orgID string) ([]*OrganizationRole, error)
 	ResolveProjectRolesForUser(ctx context.Context, userID, projectID string) ([]*ProjectRole, error)
 
-	FindOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID, afterEmail string, limit int) ([]*MemberUser, error)
+	FindOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID, afterEmail string, limit int) ([]*OrganizationMemberUser, error)
 	FindOrganizationMemberUsersByRole(ctx context.Context, orgID, roleID string) ([]*User, error)
 	FindOrganizationMemberUserAdminStatus(ctx context.Context, orgID, userID string) (isAdmin, isLastAdmin bool, err error)
 	InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string, ifNotExists bool) (bool, error)
 	DeleteOrganizationMemberUser(ctx context.Context, orgID, userID string) error
 	UpdateOrganizationMemberUserRole(ctx context.Context, orgID, userID, roleID string) error
 	CountSingleuserOrganizationsForMemberUser(ctx context.Context, userID string) (int, error)
-	FindOrganizationMembersWithManageUsersRole(ctx context.Context, orgID string) ([]*MemberUser, error)
+	FindOrganizationMembersWithManageUsersRole(ctx context.Context, orgID string) ([]*OrganizationMemberUser, error)
 
-	FindProjectMemberUsers(ctx context.Context, projectID, filterRoleID, afterEmail string, limit int) ([]*MemberUser, error)
+	FindProjectMemberUsers(ctx context.Context, projectID, filterRoleID, afterEmail string, limit int) ([]*ProjectMemberUser, error)
 	FindProjectMemberUserRole(ctx context.Context, projectID, userID string) (*ProjectRole, error)
 	InsertProjectMemberUser(ctx context.Context, projectID, userID, roleID string) error
 	DeleteProjectMemberUser(ctx context.Context, projectID, userID string) error
@@ -850,8 +850,21 @@ type ProjectRole struct {
 	ManageBookmarks            bool `db:"manage_bookmarks"`
 }
 
-// MemberUser is a convenience type used for display-friendly representation of an org or project member.
-type MemberUser struct {
+// OrganizationMemberUser is a convenience type used for display-friendly representation of an org member
+type OrganizationMemberUser struct {
+	ID              string
+	Email           string
+	DisplayName     string    `db:"display_name"`
+	PhotoURL        string    `db:"photo_url"`
+	RoleName        string    `db:"role_name"`
+	ProjectsCount   int       `db:"projects_count"`
+	UsergroupsCount int       `db:"usergroups_count"`
+	CreatedOn       time.Time `db:"created_on"`
+	UpdatedOn       time.Time `db:"updated_on"`
+}
+
+// ProjectMemberUser is a convenience type used for display-friendly representation of a project member
+type ProjectMemberUser struct {
 	ID          string
 	Email       string
 	DisplayName string    `db:"display_name"`
@@ -861,6 +874,18 @@ type MemberUser struct {
 	UpdatedOn   time.Time `db:"updated_on"`
 }
 
+// UsergroupMemberUser is a convenience type used for display-friendly representation of a usergroup member
+type UsergroupMemberUser struct {
+	ID          string
+	Email       string
+	DisplayName string    `db:"display_name"`
+	PhotoURL    string    `db:"photo_url"`
+	RoleName    string    `db:"name"`
+	CreatedOn   time.Time `db:"created_on"`
+	UpdatedOn   time.Time `db:"updated_on"`
+}
+
+// MemberUsergroup is a convenience type used for display-friendly representation of an org or project member that is a usergroup.
 type MemberUsergroup struct {
 	ID        string    `db:"id"`
 	Name      string    `db:"name" validate:"slug"`

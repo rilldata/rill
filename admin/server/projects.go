@@ -845,9 +845,9 @@ func (s *Server) ListProjectMemberUsers(ctx context.Context, req *adminv1.ListPr
 		nextToken = marshalPageToken(members[len(members)-1].Email)
 	}
 
-	dtos := make([]*adminv1.MemberUser, len(members))
+	dtos := make([]*adminv1.ProjectMemberUser, len(members))
 	for i, member := range members {
-		dtos[i] = memberUserToPB(member)
+		dtos[i] = projMemberUserToPB(member)
 	}
 
 	return &adminv1.ListProjectMemberUsersResponse{

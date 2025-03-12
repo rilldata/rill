@@ -3449,9 +3449,9 @@ export class ListOrganizationMemberUsersRequest extends Message<ListOrganization
  */
 export class ListOrganizationMemberUsersResponse extends Message<ListOrganizationMemberUsersResponse> {
   /**
-   * @generated from field: repeated rill.admin.v1.MemberUser members = 1;
+   * @generated from field: repeated rill.admin.v1.OrganizationMemberUser members = 1;
    */
-  members: MemberUser[] = [];
+  members: OrganizationMemberUser[] = [];
 
   /**
    * @generated from field: string next_page_token = 2;
@@ -3466,7 +3466,7 @@ export class ListOrganizationMemberUsersResponse extends Message<ListOrganizatio
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.ListOrganizationMemberUsersResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "members", kind: "message", T: MemberUser, repeated: true },
+    { no: 1, name: "members", kind: "message", T: OrganizationMemberUser, repeated: true },
     { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
@@ -4989,9 +4989,9 @@ export class ListProjectMemberUsersRequest extends Message<ListProjectMemberUser
  */
 export class ListProjectMemberUsersResponse extends Message<ListProjectMemberUsersResponse> {
   /**
-   * @generated from field: repeated rill.admin.v1.MemberUser members = 1;
+   * @generated from field: repeated rill.admin.v1.ProjectMemberUser members = 1;
    */
-  members: MemberUser[] = [];
+  members: ProjectMemberUser[] = [];
 
   /**
    * @generated from field: string next_page_token = 2;
@@ -5006,7 +5006,7 @@ export class ListProjectMemberUsersResponse extends Message<ListProjectMemberUse
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.ListProjectMemberUsersResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "members", kind: "message", T: MemberUser, repeated: true },
+    { no: 1, name: "members", kind: "message", T: ProjectMemberUser, repeated: true },
     { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
@@ -6725,9 +6725,9 @@ export class ListUsergroupMemberUsersRequest extends Message<ListUsergroupMember
  */
 export class ListUsergroupMemberUsersResponse extends Message<ListUsergroupMemberUsersResponse> {
   /**
-   * @generated from field: repeated rill.admin.v1.MemberUser members = 1;
+   * @generated from field: repeated rill.admin.v1.UsergroupMemberUser members = 1;
    */
-  members: MemberUser[] = [];
+  members: UsergroupMemberUser[] = [];
 
   /**
    * @generated from field: string next_page_token = 2;
@@ -6742,7 +6742,7 @@ export class ListUsergroupMemberUsersResponse extends Message<ListUsergroupMembe
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.ListUsergroupMemberUsersResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "members", kind: "message", T: MemberUser, repeated: true },
+    { no: 1, name: "members", kind: "message", T: UsergroupMemberUser, repeated: true },
     { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
@@ -13188,33 +13188,186 @@ export class ProjectRole extends Message<ProjectRole> {
 }
 
 /**
- * @generated from message rill.admin.v1.MemberUser
+ * @generated from message rill.admin.v1.OrganizationMemberUser
  */
-export class MemberUser extends Message<MemberUser> {
+export class OrganizationMemberUser extends Message<OrganizationMemberUser> {
   /**
    * @generated from field: string user_id = 1;
    */
   userId = "";
 
   /**
-   * @generated from field: string user_email = 3;
+   * @generated from field: string user_email = 2;
    */
   userEmail = "";
 
   /**
-   * @generated from field: string user_name = 2;
+   * @generated from field: string user_name = 3;
    */
   userName = "";
 
   /**
-   * @generated from field: string user_photo_url = 7;
+   * @generated from field: string user_photo_url = 4;
    */
   userPhotoUrl = "";
 
   /**
-   * @generated from field: string role_name = 4;
+   * @generated from field: string role_name = 5;
    */
   roleName = "";
+
+  /**
+   * @generated from field: uint32 projects_count = 6;
+   */
+  projectsCount = 0;
+
+  /**
+   * @generated from field: uint32 usergroups_count = 7;
+   */
+  usergroupsCount = 0;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp created_on = 8;
+   */
+  createdOn?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp updated_on = 9;
+   */
+  updatedOn?: Timestamp;
+
+  constructor(data?: PartialMessage<OrganizationMemberUser>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.OrganizationMemberUser";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "user_email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "user_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "user_photo_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "projects_count", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 7, name: "usergroups_count", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 8, name: "created_on", kind: "message", T: Timestamp },
+    { no: 9, name: "updated_on", kind: "message", T: Timestamp },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): OrganizationMemberUser {
+    return new OrganizationMemberUser().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): OrganizationMemberUser {
+    return new OrganizationMemberUser().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): OrganizationMemberUser {
+    return new OrganizationMemberUser().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: OrganizationMemberUser | PlainMessage<OrganizationMemberUser> | undefined, b: OrganizationMemberUser | PlainMessage<OrganizationMemberUser> | undefined): boolean {
+    return proto3.util.equals(OrganizationMemberUser, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.ProjectMemberUser
+ */
+export class ProjectMemberUser extends Message<ProjectMemberUser> {
+  /**
+   * @generated from field: string user_id = 1;
+   */
+  userId = "";
+
+  /**
+   * @generated from field: string user_email = 2;
+   */
+  userEmail = "";
+
+  /**
+   * @generated from field: string user_name = 3;
+   */
+  userName = "";
+
+  /**
+   * @generated from field: string user_photo_url = 4;
+   */
+  userPhotoUrl = "";
+
+  /**
+   * @generated from field: string role_name = 5;
+   */
+  roleName = "";
+
+  /**
+   * @generated from field: google.protobuf.Timestamp created_on = 6;
+   */
+  createdOn?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp updated_on = 7;
+   */
+  updatedOn?: Timestamp;
+
+  constructor(data?: PartialMessage<ProjectMemberUser>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ProjectMemberUser";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "user_email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "user_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "user_photo_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "created_on", kind: "message", T: Timestamp },
+    { no: 7, name: "updated_on", kind: "message", T: Timestamp },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ProjectMemberUser {
+    return new ProjectMemberUser().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ProjectMemberUser {
+    return new ProjectMemberUser().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ProjectMemberUser {
+    return new ProjectMemberUser().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ProjectMemberUser | PlainMessage<ProjectMemberUser> | undefined, b: ProjectMemberUser | PlainMessage<ProjectMemberUser> | undefined): boolean {
+    return proto3.util.equals(ProjectMemberUser, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.UsergroupMemberUser
+ */
+export class UsergroupMemberUser extends Message<UsergroupMemberUser> {
+  /**
+   * @generated from field: string user_id = 1;
+   */
+  userId = "";
+
+  /**
+   * @generated from field: string user_email = 2;
+   */
+  userEmail = "";
+
+  /**
+   * @generated from field: string user_name = 3;
+   */
+  userName = "";
+
+  /**
+   * @generated from field: string user_photo_url = 4;
+   */
+  userPhotoUrl = "";
 
   /**
    * @generated from field: google.protobuf.Timestamp created_on = 5;
@@ -13226,37 +13379,36 @@ export class MemberUser extends Message<MemberUser> {
    */
   updatedOn?: Timestamp;
 
-  constructor(data?: PartialMessage<MemberUser>) {
+  constructor(data?: PartialMessage<UsergroupMemberUser>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.MemberUser";
+  static readonly typeName = "rill.admin.v1.UsergroupMemberUser";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "user_email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "user_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 7, name: "user_photo_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "user_email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "user_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "user_photo_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "created_on", kind: "message", T: Timestamp },
     { no: 6, name: "updated_on", kind: "message", T: Timestamp },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MemberUser {
-    return new MemberUser().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UsergroupMemberUser {
+    return new UsergroupMemberUser().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MemberUser {
-    return new MemberUser().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UsergroupMemberUser {
+    return new UsergroupMemberUser().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MemberUser {
-    return new MemberUser().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UsergroupMemberUser {
+    return new UsergroupMemberUser().fromJsonString(jsonString, options);
   }
 
-  static equals(a: MemberUser | PlainMessage<MemberUser> | undefined, b: MemberUser | PlainMessage<MemberUser> | undefined): boolean {
-    return proto3.util.equals(MemberUser, a, b);
+  static equals(a: UsergroupMemberUser | PlainMessage<UsergroupMemberUser> | undefined, b: UsergroupMemberUser | PlainMessage<UsergroupMemberUser> | undefined): boolean {
+    return proto3.util.equals(UsergroupMemberUser, a, b);
   }
 }
 
