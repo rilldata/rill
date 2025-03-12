@@ -20,7 +20,13 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 		Short: "Add user to a project, organization or group",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if group == "" {
-				err := cmdutil.SelectPromptIfEmpty(&role, "Select role", userRoles, "")
+				var options []string
+				if projectName != "" {
+					options = projectRoles
+				} else {
+					options = orgRoles
+				}
+				err := cmdutil.SelectPromptIfEmpty(&role, "Select role", options, "")
 				if err != nil {
 					return err
 				}
@@ -129,7 +135,7 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 	addCmd.Flags().StringVar(&projectName, "project", "", "Project")
 	addCmd.Flags().StringVar(&group, "group", "", "User group")
 	addCmd.Flags().StringVar(&email, "email", "", "Email of the user")
-	addCmd.Flags().StringVar(&role, "role", "", fmt.Sprintf("Role of the user (options: %s)", strings.Join(userRoles, ", ")))
+	addCmd.Flags().StringVar(&role, "role", "", fmt.Sprintf("Role of the user (options: %s)", strings.Join(orgRoles, ", ")))
 
 	return addCmd
 }

@@ -5601,6 +5601,8 @@ func (m *CreateProjectRequest) validate(all bool) error {
 
 	// no validation rules for ProdVersion
 
+	// no validation rules for SkipDeploy
+
 	if len(errors) > 0 {
 		return CreateProjectRequestMultiError(errors)
 	}
@@ -8745,8 +8747,6 @@ func (m *RemoveOrganizationMemberUserRequest) validate(all bool) error {
 		}
 		errors = append(errors, err)
 	}
-
-	// no validation rules for KeepProjectRoles
 
 	if len(errors) > 0 {
 		return RemoveOrganizationMemberUserRequestMultiError(errors)
@@ -14271,6 +14271,35 @@ func (m *CreateUsergroupResponse) validate(all bool) error {
 	}
 
 	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetUsergroup()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, CreateUsergroupResponseValidationError{
+					field:  "Usergroup",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, CreateUsergroupResponseValidationError{
+					field:  "Usergroup",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetUsergroup()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return CreateUsergroupResponseValidationError{
+				field:  "Usergroup",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	if len(errors) > 0 {
 		return CreateUsergroupResponseMultiError(errors)
@@ -34404,6 +34433,8 @@ func (m *OrganizationPermissions) validate(all bool) error {
 
 	var errors []error
 
+	// no validation rules for Guest
+
 	// no validation rules for ReadOrg
 
 	// no validation rules for ManageOrg
@@ -36303,6 +36334,8 @@ func (m *Usergroup) validate(all bool) error {
 
 	// no validation rules for GroupDescription
 
+	// no validation rules for Managed
+
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {
 		case interface{ ValidateAll() error }:
@@ -36463,6 +36496,8 @@ func (m *MemberUsergroup) validate(all bool) error {
 	// no validation rules for GroupId
 
 	// no validation rules for GroupName
+
+	// no validation rules for GroupManaged
 
 	// no validation rules for RoleName
 

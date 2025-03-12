@@ -17,7 +17,7 @@ rill user add [flags]
       --group string     User group
       --org string       Organization
       --project string   Project
-      --role string      Role of the user (options: admin, viewer)
+      --role string      Role of the user (options: admin, editor, viewer, guest)
 ```
 
 ### Global flags

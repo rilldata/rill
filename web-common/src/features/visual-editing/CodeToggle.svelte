@@ -18,18 +18,12 @@
 </script>
 
 <div class="radio relative">
-  <span
-    style:left={selectedView === "code" ? "2px" : "24px"}
-    class="toggle size-[22px] absolute rounded-[4px] z-0 transition-all"
-  />
   {#each viewOptions as { view, icon: Icon } (view)}
     <Tooltip activeDelay={700} distance={8}>
       <button
-        aria-label={view}
-        id={view}
-        name="view"
+        aria-label="Switch to {view === 'viz' ? 'visual' : view} editor"
+        id="{view}-toggle"
         class="size-[22px] z-10 hover:brightness-75"
-        value={view}
         on:click={() => {
           if (selectedView === "code") {
             selectedView = "viz";
@@ -50,6 +44,10 @@
       </TooltipContent>
     </Tooltip>
   {/each}
+  <span
+    style:left={selectedView === "code" ? "2px" : "24px"}
+    class="toggle size-[22px] pointer-events-none absolute rounded-[4px] z-0 transition-all"
+  />
 </div>
 
 <style lang="postcss">

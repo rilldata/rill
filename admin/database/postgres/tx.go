@@ -8,10 +8,14 @@ import (
 )
 
 // NewTx starts a new database transaction. See database.Tx for details.
-func (c *connection) NewTx(ctx context.Context) (context.Context, database.Tx, error) {
-	// Check there's not already a tx in the context
+func (c *connection) NewTx(ctx context.Context, allowNested bool) (context.Context, database.Tx, error) {
+	// Check if there's already a tx in the context
 	if txFromContext(ctx) != nil {
-		panic("postgres: NewTx called in an existing transaction")
+		if !allowNested {
+			panic("postgres: NewTx called in an existing transaction")
+		}
+		// We return a no-op tx because the actual tx must be committed/rolled back by the outermost acquirer.
+		return ctx, noopTx{}, nil
 	}
 
 	// Start a new tx
@@ -57,4 +61,16 @@ func (c *connection) getDB(ctx context.Context) dbHandle {
 		return c.db
 	}
 	return tx
+}
+
+// noopTx implements a database.Tx that does nothing on Commit/Rollback.
+// It is used in nested transactions to avoid committing too early.
+type noopTx struct{}
+
+func (noopTx) Commit() error {
+	return nil
+}
+
+func (noopTx) Rollback() error {
+	return nil
 }

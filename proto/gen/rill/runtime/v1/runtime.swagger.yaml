@@ -4436,6 +4436,9 @@ definitions:
       banner:
         type: string
         description: Banner text that can be displayed in Rill Cloud.
+      lockTimeZone:
+        type: boolean
+        title: When set to true, dashboard will be locked to the first time zone in the time_zones key (or UTC)
   v1ExploreState:
     type: object
     properties:
@@ -5795,6 +5798,10 @@ definitions:
         title: unsupported_columns are columns having datatypes which are not supported by Rill
       view:
         type: boolean
+      physicalSizeBytes:
+        type: string
+        format: int64
+        description: physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
   v1OLAPListTablesResponse:
     type: object
     properties:
@@ -6503,6 +6510,10 @@ definitions:
       hasUnsupportedDataTypes:
         type: boolean
         title: has_unsupported_data_types indicates if the underlying table has any column with an unsupported OLAP engine datatype
+      physicalSizeBytes:
+        type: string
+        format: int64
+        description: physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
   v1TableRowsRequest:
     type: object
     properties:
