@@ -24,6 +24,12 @@
 
   let active = false;
 
+  function shouldSuppress(option) {
+    const isPercentOption = option.value === LeaderboardContextColumn.PERCENT;
+    const isDisabled = !atLeastOneValidPercentOfTotal;
+    return !(isPercentOption && isDisabled);
+  }
+
   $: options = [
     {
       value: LeaderboardContextColumn.PERCENT,
@@ -120,7 +126,7 @@
             {#each options as option}
               <Tooltip
                 distance={8}
-                suppress={option.value !== LeaderboardContextColumn.PERCENT}
+                suppress={shouldSuppress(option)}
                 location="right"
                 alignment="middle"
               >
