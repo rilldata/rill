@@ -228,16 +228,26 @@ func (t *TimeAnchor) getTime(evalOpts EvalOptions, start, end time.Time, tz *tim
 				end = timeutil.OffsetTime(end, curTg, -num)
 			}
 
+		case "+":
+			end = timeutil.OffsetTime(end, curTg, num)
+			if isFinal {
+				start = timeutil.OffsetTime(start, curTg, num-1)
+				start = timeutil.CeilTime(start, curTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+				end = timeutil.CeilTime(end, curTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+			} else {
+				start = timeutil.OffsetTime(start, curTg, num)
+			}
+
 		case "<":
 			start = timeutil.TruncateTime(start, higherTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 
-			end = timeutil.OffsetTime(start, higherTg, num)
+			end = timeutil.OffsetTime(start, curTg, num)
 			end = timeutil.TruncateTime(end, curTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 
 		case ">":
 			end = timeutil.CeilTime(end, higherTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 
-			start = timeutil.OffsetTime(end, higherTg, -num)
+			start = timeutil.OffsetTime(end, curTg, -num)
 			start = timeutil.TruncateTime(start, curTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 		}
 	}

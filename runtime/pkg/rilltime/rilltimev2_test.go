@@ -21,11 +21,23 @@ func Test_Eval(t *testing.T) {
 	}{
 		{"m", "2025-03-10T06:31:00Z", "2025-03-10T06:32:00Z", timeutil.TimeGrainSecond},
 		{"m~", "2025-03-10T06:32:00Z", "2025-03-10T06:32:36Z", timeutil.TimeGrainSecond},
+		{"<m", "2025-03-10T06:00:00Z", "2025-03-10T06:01:00Z", timeutil.TimeGrainSecond},
+		{">m", "2025-03-10T06:59:00Z", "2025-03-10T07:00:00Z", timeutil.TimeGrainSecond},
 
-		{"-1d", "2025-03-09T00:00:00Z", "2025-03-10T00:00:00Z", timeutil.TimeGrainHour},
+		{"-2d", "2025-03-08T00:00:00Z", "2025-03-09T00:00:00Z", timeutil.TimeGrainHour},
+		{"+2d", "2025-03-12T00:00:00Z", "2025-03-13T00:00:00Z", timeutil.TimeGrainHour},
+		{"<2d", "2025-03-10T00:00:00Z", "2025-03-12T00:00:00Z", timeutil.TimeGrainHour},
+		{">2d", "2025-03-15T00:00:00Z", "2025-03-17T00:00:00Z", timeutil.TimeGrainHour},
 
-		{"m of -1d", "2025-03-09T06:31:00Z", "2025-03-09T06:32:00Z", timeutil.TimeGrainSecond},
-		{"m~ of -1d", "2025-03-09T06:32:00Z", "2025-03-09T06:32:36Z", timeutil.TimeGrainSecond},
+		{"m of -2d", "2025-03-08T06:31:00Z", "2025-03-08T06:32:00Z", timeutil.TimeGrainSecond},
+		{"m~ of -2d", "2025-03-08T06:32:00Z", "2025-03-08T06:32:36Z", timeutil.TimeGrainSecond},
+		{"<m of -2d", "2025-03-08T00:00:00Z", "2025-03-08T00:01:00Z", timeutil.TimeGrainSecond},
+		{">m of -2d", "2025-03-08T23:59:00Z", "2025-03-09T00:00:00Z", timeutil.TimeGrainSecond},
+
+		{"m of +2d", "2025-03-12T06:31:00Z", "2025-03-12T06:32:00Z", timeutil.TimeGrainSecond},
+		{"m~ of +2d", "2025-03-12T06:32:00Z", "2025-03-12T06:32:36Z", timeutil.TimeGrainSecond},
+		{"<m of +2d", "2025-03-12T00:00:00Z", "2025-03-12T00:01:00Z", timeutil.TimeGrainSecond},
+		{">m of +2d", "2025-03-12T23:59:00Z", "2025-03-13T00:00:00Z", timeutil.TimeGrainSecond},
 	}
 
 	for _, testCase := range testCases {
