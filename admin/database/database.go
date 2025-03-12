@@ -225,7 +225,7 @@ type DB interface {
 	DeleteAllProjectMemberUserForOrganization(ctx context.Context, orgID, userID string) error
 	UpdateProjectMemberUserRole(ctx context.Context, projectID, userID, roleID string) error
 
-	FindOrganizationMemberUsergroups(ctx context.Context, orgID, filterRoleID, afterName string, limit int) ([]*MemberUsergroup, error)
+	FindOrganizationMemberUsergroups(ctx context.Context, orgID, filterRoleID string, withCounts bool, afterName string, limit int) ([]*MemberUsergroup, error)
 	FindOrganizationMemberUsergroupRole(ctx context.Context, groupID, orgID string) (*OrganizationRole, error)
 	InsertOrganizationMemberUsergroup(ctx context.Context, groupID, orgID, roleID string) error
 	UpdateOrganizationMemberUsergroup(ctx context.Context, groupID, orgID, roleID string) error
@@ -887,12 +887,13 @@ type UsergroupMemberUser struct {
 
 // MemberUsergroup is a convenience type used for display-friendly representation of an org or project member that is a usergroup.
 type MemberUsergroup struct {
-	ID        string    `db:"id"`
-	Name      string    `db:"name" validate:"slug"`
-	Managed   bool      `db:"managed"`
-	RoleName  string    `db:"role_name"`
-	CreatedOn time.Time `db:"created_on"`
-	UpdatedOn time.Time `db:"updated_on"`
+	ID         string    `db:"id"`
+	Name       string    `db:"name" validate:"slug"`
+	Managed    bool      `db:"managed"`
+	RoleName   string    `db:"role_name"`
+	UsersCount int       `db:"users_count"`
+	CreatedOn  time.Time `db:"created_on"`
+	UpdatedOn  time.Time `db:"updated_on"`
 }
 
 // OrganizationInvite represents an outstanding invitation to join an org.

@@ -2054,6 +2054,11 @@ paths:
           in: query
           required: false
           type: string
+        - name: includeCounts
+          description: Optionally include counts
+          in: query
+          required: false
+          type: boolean
         - name: pageSize
           in: query
           required: false
@@ -4762,6 +4767,9 @@ definitions:
         type: boolean
       roleName:
         type: string
+      usersCount:
+        type: integer
+        format: int64
       createdOn:
         type: string
         format: date-time

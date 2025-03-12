@@ -1516,6 +1516,18 @@ message SetProjectMemberUserRoleRequest {
 
 message SetProjectMemberUserRoleResponse {}
 
+message ListUsergroupsForOrganizationAndUserRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string user_id = 2 [(validate.rules).string.min_len = 1];
+  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
+  string page_token = 4;
+}
+
+message ListUsergroupsForOrganizationAndUserResponse {
+  repeated Usergroup usergroups = 1;
+  string next_page_token = 2;
+}
+
 message CreateUsergroupRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string name = 2 [(validate.rules).string.min_len = 1];
@@ -1556,24 +1568,13 @@ message EditUsergroupResponse {}
 message ListOrganizationMemberUsergroupsRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string role = 4; // Optionally filter by role
+  bool include_counts = 5; // Optionally include counts
   uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 3;
 }
 
 message ListOrganizationMemberUsergroupsResponse {
   repeated MemberUsergroup members = 1;
-  string next_page_token = 2;
-}
-
-message ListUsergroupsForOrganizationAndUserRequest {
-  string organization = 1 [(validate.rules).string.min_len = 1];
-  string user_id = 2 [(validate.rules).string.min_len = 1];
-  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
-  string page_token = 4;
-}
-
-message ListUsergroupsForOrganizationAndUserResponse {
-  repeated Usergroup usergroups = 1;
   string next_page_token = 2;
 }
 
@@ -2605,6 +2606,7 @@ message MemberUsergroup {
   string group_name = 2;
   bool group_managed = 6;
   string role_name = 3;
+  uint32 users_count = 7;
   google.protobuf.Timestamp created_on = 4;
   google.protobuf.Timestamp updated_on = 5;
 }

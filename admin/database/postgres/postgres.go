@@ -1674,11 +1674,19 @@ func (c *connection) InsertProjectMemberUser(ctx context.Context, projectID, use
 
 // FindOrganizationMemberUsergroups returns org user groups as a collection of MemberUsergroup.
 // If a user group has no org role then RoleName is empty.
-func (c *connection) FindOrganizationMemberUsergroups(ctx context.Context, orgID, filterRoleID, afterName string, limit int) ([]*database.MemberUsergroup, error) {
+func (c *connection) FindOrganizationMemberUsergroups(ctx context.Context, orgID, filterRoleID string, withCounts bool, afterName string, limit int) ([]*database.MemberUsergroup, error) {
 	args := []any{orgID, afterName, limit}
 	var qry strings.Builder
+	qry.WriteString("SELECT ug.id, ug.name, ug.managed, ug.created_on, ug.updated_on, COALESCE(r.name, '') as role_name")
+	if withCounts {
+		qry.WriteString(`,
+			(
+				SELECT COUNT(*) FROM usergroups_users uug WHERE uug.usergroup_id = ug.id
+			) as users_count
+		`)
+	}
 	qry.WriteString(`
-		SELECT ug.id, ug.name, ug.managed, ug.created_on, ug.updated_on, COALESCE(r.name, '') as "role_name" FROM usergroups ug
+		FROM usergroups ug
 		LEFT JOIN usergroups_orgs_roles uor ON ug.id = uor.usergroup_id
 		LEFT JOIN org_roles r ON uor.org_role_id = r.id
 		WHERE ug.org_id=$1

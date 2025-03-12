@@ -313,6 +313,66 @@ func TestRBAC(t *testing.T) {
 		})
 	})
 
+	t.Run("Ability to include users counts in usergroup listings", func(t *testing.T) {
+		// Create org and usergroup
+		_, c1 := newTestUser(t, svr)
+		r1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
+		require.NoError(t, err)
+		r2, err := c1.CreateUsergroup(ctx, &adminv1.CreateUsergroupRequest{
+			Organization: r1.Organization.Name,
+			Name:         "group1",
+		})
+		require.NoError(t, err)
+
+		// Add a user to the usergroup
+		u2, _ := newTestUser(t, svr)
+		_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
+			Organization: r1.Organization.Name,
+			Email:        u2.Email,
+			Role:         database.OrganizationRoleNameGuest,
+		})
+		require.NoError(t, err)
+		_, err = c1.AddUsergroupMemberUser(ctx, &adminv1.AddUsergroupMemberUserRequest{
+			Organization: r1.Organization.Name,
+			Usergroup:    r2.Usergroup.GroupName,
+			Email:        u2.Email,
+		})
+		require.NoError(t, err)
+
+		// Check the counts for the usergroup
+		r3, err := c1.ListOrganizationMemberUsergroups(ctx, &adminv1.ListOrganizationMemberUsergroupsRequest{
+			Organization:  r1.Organization.Name,
+			IncludeCounts: true,
+		})
+		require.NoError(t, err)
+		require.Len(t, r3.Members, 4) // There are three system-managed autogroups and the one we added
+		for _, m := range r3.Members {
+			m.GroupId = ""
+			m.CreatedOn = nil
+			m.UpdatedOn = nil
+		}
+		require.Contains(t, r3.Members, &adminv1.MemberUsergroup{
+			GroupName:    database.UsergroupNameAutogroupUsers,
+			GroupManaged: true,
+			UsersCount:   2,
+		})
+		require.Contains(t, r3.Members, &adminv1.MemberUsergroup{
+			GroupName:    database.UsergroupNameAutogroupMembers,
+			GroupManaged: true,
+			UsersCount:   1,
+		})
+		require.Contains(t, r3.Members, &adminv1.MemberUsergroup{
+			GroupName:    database.UsergroupNameAutogroupGuests,
+			GroupManaged: true,
+			UsersCount:   1,
+		})
+		require.Contains(t, r3.Members, &adminv1.MemberUsergroup{
+			GroupName:    r2.Usergroup.GroupName,
+			GroupManaged: false,
+			UsersCount:   1,
+		})
+	})
+
 	t.Run("Visibility of public projects", func(t *testing.T) {
 		// Create users
 		_, c1 := newTestUser(t, svr)

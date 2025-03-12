@@ -5392,6 +5392,104 @@ export class SetProjectMemberUserRoleResponse extends Message<SetProjectMemberUs
 }
 
 /**
+ * @generated from message rill.admin.v1.ListUsergroupsForOrganizationAndUserRequest
+ */
+export class ListUsergroupsForOrganizationAndUserRequest extends Message<ListUsergroupsForOrganizationAndUserRequest> {
+  /**
+   * @generated from field: string organization = 1;
+   */
+  organization = "";
+
+  /**
+   * @generated from field: string user_id = 2;
+   */
+  userId = "";
+
+  /**
+   * @generated from field: uint32 page_size = 3;
+   */
+  pageSize = 0;
+
+  /**
+   * @generated from field: string page_token = 4;
+   */
+  pageToken = "";
+
+  constructor(data?: PartialMessage<ListUsergroupsForOrganizationAndUserRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ListUsergroupsForOrganizationAndUserRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 4, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListUsergroupsForOrganizationAndUserRequest {
+    return new ListUsergroupsForOrganizationAndUserRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListUsergroupsForOrganizationAndUserRequest {
+    return new ListUsergroupsForOrganizationAndUserRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListUsergroupsForOrganizationAndUserRequest {
+    return new ListUsergroupsForOrganizationAndUserRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListUsergroupsForOrganizationAndUserRequest | PlainMessage<ListUsergroupsForOrganizationAndUserRequest> | undefined, b: ListUsergroupsForOrganizationAndUserRequest | PlainMessage<ListUsergroupsForOrganizationAndUserRequest> | undefined): boolean {
+    return proto3.util.equals(ListUsergroupsForOrganizationAndUserRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.ListUsergroupsForOrganizationAndUserResponse
+ */
+export class ListUsergroupsForOrganizationAndUserResponse extends Message<ListUsergroupsForOrganizationAndUserResponse> {
+  /**
+   * @generated from field: repeated rill.admin.v1.Usergroup usergroups = 1;
+   */
+  usergroups: Usergroup[] = [];
+
+  /**
+   * @generated from field: string next_page_token = 2;
+   */
+  nextPageToken = "";
+
+  constructor(data?: PartialMessage<ListUsergroupsForOrganizationAndUserResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ListUsergroupsForOrganizationAndUserResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "usergroups", kind: "message", T: Usergroup, repeated: true },
+    { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListUsergroupsForOrganizationAndUserResponse {
+    return new ListUsergroupsForOrganizationAndUserResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListUsergroupsForOrganizationAndUserResponse {
+    return new ListUsergroupsForOrganizationAndUserResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListUsergroupsForOrganizationAndUserResponse {
+    return new ListUsergroupsForOrganizationAndUserResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListUsergroupsForOrganizationAndUserResponse | PlainMessage<ListUsergroupsForOrganizationAndUserResponse> | undefined, b: ListUsergroupsForOrganizationAndUserResponse | PlainMessage<ListUsergroupsForOrganizationAndUserResponse> | undefined): boolean {
+    return proto3.util.equals(ListUsergroupsForOrganizationAndUserResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.CreateUsergroupRequest
  */
 export class CreateUsergroupRequest extends Message<CreateUsergroupRequest> {
@@ -5746,6 +5844,13 @@ export class ListOrganizationMemberUsergroupsRequest extends Message<ListOrganiz
   role = "";
 
   /**
+   * Optionally include counts
+   *
+   * @generated from field: bool include_counts = 5;
+   */
+  includeCounts = false;
+
+  /**
    * @generated from field: uint32 page_size = 2;
    */
   pageSize = 0;
@@ -5765,6 +5870,7 @@ export class ListOrganizationMemberUsergroupsRequest extends Message<ListOrganiz
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "include_counts", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 2, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 3, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
@@ -5826,104 +5932,6 @@ export class ListOrganizationMemberUsergroupsResponse extends Message<ListOrgani
 
   static equals(a: ListOrganizationMemberUsergroupsResponse | PlainMessage<ListOrganizationMemberUsergroupsResponse> | undefined, b: ListOrganizationMemberUsergroupsResponse | PlainMessage<ListOrganizationMemberUsergroupsResponse> | undefined): boolean {
     return proto3.util.equals(ListOrganizationMemberUsergroupsResponse, a, b);
-  }
-}
-
-/**
- * @generated from message rill.admin.v1.ListUsergroupsForOrganizationAndUserRequest
- */
-export class ListUsergroupsForOrganizationAndUserRequest extends Message<ListUsergroupsForOrganizationAndUserRequest> {
-  /**
-   * @generated from field: string organization = 1;
-   */
-  organization = "";
-
-  /**
-   * @generated from field: string user_id = 2;
-   */
-  userId = "";
-
-  /**
-   * @generated from field: uint32 page_size = 3;
-   */
-  pageSize = 0;
-
-  /**
-   * @generated from field: string page_token = 4;
-   */
-  pageToken = "";
-
-  constructor(data?: PartialMessage<ListUsergroupsForOrganizationAndUserRequest>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.ListUsergroupsForOrganizationAndUserRequest";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 4, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListUsergroupsForOrganizationAndUserRequest {
-    return new ListUsergroupsForOrganizationAndUserRequest().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListUsergroupsForOrganizationAndUserRequest {
-    return new ListUsergroupsForOrganizationAndUserRequest().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListUsergroupsForOrganizationAndUserRequest {
-    return new ListUsergroupsForOrganizationAndUserRequest().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: ListUsergroupsForOrganizationAndUserRequest | PlainMessage<ListUsergroupsForOrganizationAndUserRequest> | undefined, b: ListUsergroupsForOrganizationAndUserRequest | PlainMessage<ListUsergroupsForOrganizationAndUserRequest> | undefined): boolean {
-    return proto3.util.equals(ListUsergroupsForOrganizationAndUserRequest, a, b);
-  }
-}
-
-/**
- * @generated from message rill.admin.v1.ListUsergroupsForOrganizationAndUserResponse
- */
-export class ListUsergroupsForOrganizationAndUserResponse extends Message<ListUsergroupsForOrganizationAndUserResponse> {
-  /**
-   * @generated from field: repeated rill.admin.v1.Usergroup usergroups = 1;
-   */
-  usergroups: Usergroup[] = [];
-
-  /**
-   * @generated from field: string next_page_token = 2;
-   */
-  nextPageToken = "";
-
-  constructor(data?: PartialMessage<ListUsergroupsForOrganizationAndUserResponse>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.ListUsergroupsForOrganizationAndUserResponse";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "usergroups", kind: "message", T: Usergroup, repeated: true },
-    { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListUsergroupsForOrganizationAndUserResponse {
-    return new ListUsergroupsForOrganizationAndUserResponse().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListUsergroupsForOrganizationAndUserResponse {
-    return new ListUsergroupsForOrganizationAndUserResponse().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListUsergroupsForOrganizationAndUserResponse {
-    return new ListUsergroupsForOrganizationAndUserResponse().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: ListUsergroupsForOrganizationAndUserResponse | PlainMessage<ListUsergroupsForOrganizationAndUserResponse> | undefined, b: ListUsergroupsForOrganizationAndUserResponse | PlainMessage<ListUsergroupsForOrganizationAndUserResponse> | undefined): boolean {
-    return proto3.util.equals(ListUsergroupsForOrganizationAndUserResponse, a, b);
   }
 }
 
@@ -14340,6 +14348,11 @@ export class MemberUsergroup extends Message<MemberUsergroup> {
   roleName = "";
 
   /**
+   * @generated from field: uint32 users_count = 7;
+   */
+  usersCount = 0;
+
+  /**
    * @generated from field: google.protobuf.Timestamp created_on = 4;
    */
   createdOn?: Timestamp;
@@ -14361,6 +14374,7 @@ export class MemberUsergroup extends Message<MemberUsergroup> {
     { no: 2, name: "group_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "group_managed", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 3, name: "role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "users_count", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 4, name: "created_on", kind: "message", T: Timestamp },
     { no: 5, name: "updated_on", kind: "message", T: Timestamp },
   ]);

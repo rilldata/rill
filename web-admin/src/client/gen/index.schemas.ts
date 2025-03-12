@@ -139,6 +139,7 @@ export type AdminServiceListUsergroupsForOrganizationAndUserParams = {
 
 export type AdminServiceListOrganizationMemberUsergroupsParams = {
   role?: string;
+  includeCounts?: boolean;
   pageSize?: number;
   pageToken?: string;
 };
@@ -965,6 +966,7 @@ export interface V1MemberUsergroup {
   groupName?: string;
   groupManaged?: boolean;
   roleName?: string;
+  usersCount?: number;
   createdOn?: string;
   updatedOn?: string;
 }

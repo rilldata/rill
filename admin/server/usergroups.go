@@ -196,7 +196,7 @@ func (s *Server) ListOrganizationMemberUsergroups(ctx context.Context, req *admi
 		roleID = role.ID
 	}
 
-	members, err := s.admin.DB.FindOrganizationMemberUsergroups(ctx, org.ID, roleID, token.Val, pageSize)
+	members, err := s.admin.DB.FindOrganizationMemberUsergroups(ctx, org.ID, roleID, req.IncludeCounts, token.Val, pageSize)
 	if err != nil {
 		return nil, err
 	}
@@ -704,6 +704,7 @@ func memberUsergroupToPB(member *database.MemberUsergroup) *adminv1.MemberUsergr
 		GroupName:    member.Name,
 		GroupManaged: member.Managed,
 		RoleName:     member.RoleName,
+		UsersCount:   uint32(member.UsersCount),
 		CreatedOn:    timestamppb.New(member.CreatedOn),
 		UpdatedOn:    timestamppb.New(member.UpdatedOn),
 	}
