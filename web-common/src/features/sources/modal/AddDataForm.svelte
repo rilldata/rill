@@ -75,6 +75,7 @@
     validators: dsnYupSchema,
     onUpdate: handleOnUpdate,
   });
+  let dsnRpcError: RpcStatus | null = null;
 
   function handleConnectionTypeChange(e: CustomEvent<any>): void {
     useDsn = e.detail === "dsn";
@@ -115,7 +116,11 @@
       await submitAddDataForm(queryClient, formType, connector, values);
       onClose();
     } catch (e) {
-      rpcError = e?.response?.data;
+      if (useDsn) {
+        dsnRpcError = e?.response?.data;
+      } else {
+        rpcError = e?.response?.data;
+      }
     }
   }
 </script>
@@ -213,6 +218,16 @@
       on:submit|preventDefault={dsnSubmit}
       transition:slide={{ duration: FORM_TRANSITION_DURATION }}
     >
+      {#if dsnRpcError}
+        <SubmissionError
+          message={humanReadableErrorMessage(
+            connector.name,
+            dsnRpcError.code,
+            dsnRpcError.message,
+          )}
+        />
+      {/if}
+
       {#each dsnProperties as property (property.key)}
         {@const propertyKey = property.key ?? ""}
         <div class="py-1.5">
