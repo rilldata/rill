@@ -5,16 +5,16 @@
 
 <script lang="ts">
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
-  import {
-    calculateColumnWidth,
-    calculateMeasureWidth,
-    COLUMN_WIDTH_CONSTANTS as WIDTHS,
-  } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-width-utils";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
   import type { Cell, HeaderGroup, Row } from "@tanstack/svelte-table";
   import { flexRender } from "@tanstack/svelte-table";
   import type { MeasureColumnProps } from "./pivot-column-definition";
+  import {
+    calculateMeasureWidth,
+    calculateRowDimensionWidth,
+    COLUMN_WIDTH_CONSTANTS as WIDTHS,
+  } from "./pivot-column-width-utils";
   import type { PivotDataRow } from "./types";
 
   // State props
@@ -59,7 +59,7 @@
 
   $: rowDimensionWidth =
     hasRowDimension && rowDimensionName
-      ? calculateColumnWidth(rowDimensionName, timeDimension, dataRows)
+      ? calculateRowDimensionWidth(rowDimensionName, timeDimension, dataRows)
       : 0;
 
   $: measures.forEach(({ name, label, formatter }) => {
