@@ -1,6 +1,9 @@
 <script lang="ts">
   import { writable } from "svelte/store";
-  import type { V1OrganizationMemberUser, V1UserInvite } from "@rilldata/web-admin/client";
+  import type {
+    V1OrganizationMemberUser,
+    V1UserInvite,
+  } from "@rilldata/web-admin/client";
   import OrgUsersTableUserCompositeCell from "./OrgUsersTableUserCompositeCell.svelte";
   import OrgUsersTableActionsCell from "./OrgUsersTableActionsCell.svelte";
   import OrgUsersTableRoleCell from "./OrgUsersTableRoleCell.svelte";
