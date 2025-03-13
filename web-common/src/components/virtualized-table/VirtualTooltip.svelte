@@ -41,7 +41,7 @@
           {:else}
             <FormattedDataType
               dark
-              type={hovering?.type}
+              type={hovering?.type ?? "VARCHAR"}
               value={hovering?.value}
             />
           {/if}
