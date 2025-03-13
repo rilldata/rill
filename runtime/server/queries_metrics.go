@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -426,12 +427,19 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 		return nil, err
 	}
 
+	var tz *time.Location
+	if req.TimeZone != nil {
+		tz, err = time.LoadLocation(strings.Trim(*req.TimeZone, "{}"))
+	}
+
 	// to keep results consistent
 	now := time.Now()
 
 	timeRanges := make([]*runtimev1.TimeRange, len(req.Expressions))
 	for i, tr := range req.Expressions {
-		rillTime, err := rilltime.Parse(tr, rilltime.ParseOptions{})
+		rillTime, err := rilltime.Parse(tr, rilltime.ParseOptions{
+			TimeZoneOverride: tz,
+		})
 		if err != nil {
 			return nil, fmt.Errorf("error parsing time range %s: %w", tr, err)
 		}

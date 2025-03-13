@@ -106,6 +106,7 @@ type Expression struct {
 	To             *Link            `parser:"(To @@)?"`
 	Grain          *string          `parser:"(By @Grain)?"`
 	AnchorOverride *HardcodedAnchor `parser:"('@' @@)?"`
+	TimeZone       *string          `parser:"('@' @TimeZone)?"`
 
 	isNewFormat bool
 	timeZone    *time.Location
@@ -165,7 +166,8 @@ type AbsoluteTime struct {
 
 // ParseOptions allows for additional options that could probably not be added to the time range itself
 type ParseOptions struct {
-	DefaultTimeZone *time.Location
+	DefaultTimeZone  *time.Location
+	TimeZoneOverride *time.Location
 }
 
 type EvalOptions struct {
@@ -220,7 +222,11 @@ func Parse(from string, parseOpts ParseOptions) (*Expression, error) {
 	}
 
 	rt.timeZone = time.UTC
-	if parseOpts.DefaultTimeZone != nil {
+	if parseOpts.TimeZoneOverride != nil {
+		rt.timeZone = parseOpts.TimeZoneOverride
+	} else if rt.TimeZone != nil {
+		rt.timeZone, err = time.LoadLocation(strings.Trim(*rt.TimeZone, "{}"))
+	} else if parseOpts.DefaultTimeZone != nil {
 		rt.timeZone = parseOpts.DefaultTimeZone
 	}
 
@@ -252,7 +258,7 @@ func ParseCompatibility(timeRange, offset string) error {
 func (e *Expression) Eval(evalOpts EvalOptions) (time.Time, time.Time, timeutil.TimeGrain) {
 	anchor := evalOpts.Watermark
 	if e.AnchorOverride != nil {
-		anchor = e.AnchorOverride.anchor(evalOpts, e.timeZone)
+		anchor = e.AnchorOverride.anchor(evalOpts)
 	}
 
 	if e.isoDuration != nil {
@@ -302,13 +308,13 @@ func (l *LinkPart) time(evalOpts EvalOptions, start, end time.Time, tz *time.Loc
 	} else if l.AbsoluteTime != nil {
 		return l.AbsoluteTime.time(tz, isFinal)
 	} else if l.HardcodedAnchor != nil {
-		tm := l.HardcodedAnchor.anchor(evalOpts, tz)
+		tm := l.HardcodedAnchor.anchor(evalOpts)
 		return tm, tm, tg
 	}
 	return time.Time{}, time.Time{}, tg
 }
 
-func (a *HardcodedAnchor) anchor(evalOpts EvalOptions, tz *time.Location) time.Time {
+func (a *HardcodedAnchor) anchor(evalOpts EvalOptions) time.Time {
 	if a.Earliest {
 		return evalOpts.MinTime
 	} else if a.Now {

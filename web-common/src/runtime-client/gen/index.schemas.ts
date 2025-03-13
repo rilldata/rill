@@ -260,6 +260,7 @@ export type QueryServiceMetricsViewTimeSeriesBody = {
 export type QueryServiceMetricsViewTimeRangesBody = {
   expressions?: string[];
   priority?: number;
+  timeZone?: string;
 };
 
 export type QueryServiceMetricsViewTimeRangeBody = {
