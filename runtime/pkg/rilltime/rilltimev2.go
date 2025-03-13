@@ -1,6 +1,7 @@
 package rilltime
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -102,7 +103,7 @@ func ParseV2(from string, parseOpts ParseOptions) (*ExpressionV2, error) {
 			}
 		}
 	} else {
-		// TODO: return error
+		return nil, errors.New("invalid range: missing from")
 	}
 
 	if rt.To != nil {
@@ -134,12 +135,12 @@ func ParseV2(from string, parseOpts ParseOptions) (*ExpressionV2, error) {
 func (e *ExpressionV2) Eval(evalOpts EvalOptions) (time.Time, time.Time, timeutil.TimeGrain) {
 	anchor := evalOpts.Watermark
 	if e.AnchorOverride != nil {
-		anchor = e.AnchorOverride.getAnchor(evalOpts, e.timeZone)
+		anchor = e.AnchorOverride.anchor(evalOpts, e.timeZone)
 	}
 
-	start, end, tg := e.From.getTime(evalOpts, anchor, anchor, e.timeZone)
+	start, end, tg := e.From.time(evalOpts, anchor, anchor, e.timeZone)
 	if e.To != nil {
-		_, end, tg = e.To.getTime(evalOpts, anchor, anchor, e.timeZone)
+		_, end, _ = e.To.time(evalOpts, anchor, anchor, e.timeZone)
 	}
 
 	if e.Grain != nil {
@@ -151,29 +152,29 @@ func (e *ExpressionV2) Eval(evalOpts EvalOptions) (time.Time, time.Time, timeuti
 	return start, end, tg
 }
 
-func (l *Link) getTime(evalOpts EvalOptions, start, end time.Time, tz *time.Location) (time.Time, time.Time, timeutil.TimeGrain) {
+func (l *Link) time(evalOpts EvalOptions, start, end time.Time, tz *time.Location) (time.Time, time.Time, timeutil.TimeGrain) {
 	tg := timeutil.TimeGrainUnspecified
 	i := len(l.Parts) - 1
 	for i >= 0 {
-		start, end, tg = l.Parts[i].getTime(evalOpts, start, end, tz, tg, i == 0)
+		start, end, tg = l.Parts[i].time(evalOpts, start, end, tz, tg, i == 0)
 		i--
 	}
 
 	return start, end, tg
 }
 
-func (l *LinkPart) getTime(evalOpts EvalOptions, start, end time.Time, tz *time.Location, tg timeutil.TimeGrain, isFinal bool) (time.Time, time.Time, timeutil.TimeGrain) {
+func (l *LinkPart) time(evalOpts EvalOptions, start, end time.Time, tz *time.Location, tg timeutil.TimeGrain, isFinal bool) (time.Time, time.Time, timeutil.TimeGrain) {
 	if l.Anchor != nil {
-		return l.Anchor.getTime(evalOpts, start, end, tz, tg, isFinal)
+		return l.Anchor.time(evalOpts, start, end, tz, tg, isFinal)
 	} else if l.Ordinal != nil {
-		return l.Ordinal.getTime(evalOpts, start, end, tz, tg)
+		return l.Ordinal.time(evalOpts, start, end, tz, tg)
 	} else if l.AbsoluteTime != nil {
-		return l.AbsoluteTime.getTime(tz, isFinal)
+		return l.AbsoluteTime.time(tz, isFinal)
 	}
 	return time.Time{}, time.Time{}, tg
 }
 
-func (a *AnchorOverride) getAnchor(evalOpts EvalOptions, tz *time.Location) time.Time {
+func (a *AnchorOverride) anchor(evalOpts EvalOptions, tz *time.Location) time.Time {
 	if a.Earliest {
 		return evalOpts.MinTime
 	} else if a.Now {
@@ -183,12 +184,12 @@ func (a *AnchorOverride) getAnchor(evalOpts EvalOptions, tz *time.Location) time
 	} else if a.Watermark {
 		return evalOpts.Watermark
 	} else {
-		tm, _, _ := a.AbsoluteTime.getTime(tz, false)
+		tm, _, _ := a.AbsoluteTime.time(tz, false)
 		return tm
 	}
 }
 
-func (t *TimeAnchor) getTime(evalOpts EvalOptions, start, end time.Time, tz *time.Location, higherTg timeutil.TimeGrain, isFinal bool) (time.Time, time.Time, timeutil.TimeGrain) {
+func (t *TimeAnchor) time(evalOpts EvalOptions, start, end time.Time, tz *time.Location, higherTg timeutil.TimeGrain, isFinal bool) (time.Time, time.Time, timeutil.TimeGrain) {
 	num := 1
 	if t.Num != nil {
 		num = *t.Num
@@ -212,6 +213,8 @@ func (t *TimeAnchor) getTime(evalOpts EvalOptions, start, end time.Time, tz *tim
 
 		if !t.IsCurrent {
 			end = timeutil.TruncateTime(end, curTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+		} else if isFinal {
+			end = timeutil.OffsetTime(end, timeutil.TimeGrainSecond, 1)
 		}
 	} else {
 		switch *t.Prefix {
@@ -261,7 +264,7 @@ func (t *TimeAnchor) getTime(evalOpts EvalOptions, start, end time.Time, tz *tim
 	return start, end, curTg
 }
 
-func (o *Ordinal) getTime(evalOpts EvalOptions, start, end time.Time, tz *time.Location, higherTg timeutil.TimeGrain) (time.Time, time.Time, timeutil.TimeGrain) {
+func (o *Ordinal) time(evalOpts EvalOptions, start, end time.Time, tz *time.Location, higherTg timeutil.TimeGrain) (time.Time, time.Time, timeutil.TimeGrain) {
 	curTg := grainMap[o.Grain]
 	if higherTg == timeutil.TimeGrainUnspecified {
 		higherTg = higherOrderMap[curTg]
@@ -337,7 +340,7 @@ func (a *AbsoluteTime) parse() error {
 	return nil
 }
 
-func (a *AbsoluteTime) getTime(tz *time.Location, isFinal bool) (time.Time, time.Time, timeutil.TimeGrain) {
+func (a *AbsoluteTime) time(tz *time.Location, isFinal bool) (time.Time, time.Time, timeutil.TimeGrain) {
 	start := time.Date(a.year, time.Month(a.month), a.day, a.hour, a.minute, a.second, 0, tz)
 	end := start
 
