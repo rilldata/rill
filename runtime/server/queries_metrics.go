@@ -436,7 +436,7 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 			return nil, fmt.Errorf("error parsing time range %s: %w", tr, err)
 		}
 
-		start, end, err := rillTime.Eval(rilltime.EvalOptions{
+		start, end, grain := rillTime.Eval(rilltime.EvalOptions{
 			Now:        now,
 			MinTime:    ts.Min,
 			MaxTime:    ts.Max,
@@ -444,13 +444,11 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 			FirstDay:   int(mv.ValidSpec.FirstDayOfWeek),
 			FirstMonth: int(mv.ValidSpec.FirstMonthOfYear),
 		})
-		if err != nil {
-			return nil, err
-		}
 
 		timeRanges[i] = &runtimev1.TimeRange{
-			Start: timestamppb.New(start),
-			End:   timestamppb.New(end),
+			Start:        timestamppb.New(start),
+			End:          timestamppb.New(end),
+			RoundToGrain: queries.ConvToAPITimeGrain(grain),
 			// for a reference
 			Expression: tr,
 		}

@@ -87,7 +87,8 @@ func (e *Executor) resolveTimeRange(ctx context.Context, tr *TimeRange, tz *time
 		return err
 	}
 
-	tr.Start, tr.End, err = rillTime.Eval(rilltime.EvalOptions{
+	// TODO: use grain when we have timeseries from metrics_view_aggregation
+	tr.Start, tr.End, _ = rillTime.Eval(rilltime.EvalOptions{
 		Now:        ts.Now,
 		MinTime:    ts.Min,
 		MaxTime:    ts.Max,
@@ -95,9 +96,6 @@ func (e *Executor) resolveTimeRange(ctx context.Context, tr *TimeRange, tz *time
 		FirstDay:   int(e.metricsView.FirstDayOfWeek),
 		FirstMonth: int(e.metricsView.FirstMonthOfYear),
 	})
-	if err != nil {
-		return err
-	}
 
 	// Clear all other fields than Start and End
 	tr.Expression = ""
