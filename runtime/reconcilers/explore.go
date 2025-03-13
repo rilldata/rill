@@ -135,8 +135,8 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 			}
 		}
 	} else {
-		securityRules := append(mv.SecurityRules, spec.SecurityRules...)
-		access := mergeConditionRules(securityRules)
+		mv.SecurityRules = append(mv.SecurityRules, spec.SecurityRules...)
+		access := mergeConditionRules(mv.SecurityRules)
 		if access != nil {
 			spec.SecurityRules = []*runtimev1.SecurityRule{access}
 		}
