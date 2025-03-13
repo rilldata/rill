@@ -27,9 +27,9 @@ var (
 		{"Grain", `[sSmhHdDwWqQMyY]`},
 		// this has to be at the end
 		{"TimeZone", `{.+?}`},
+		{"ISOTime", isoTimePattern},
 		{"AbsoluteTime", `\d{4}-\d{2}-\d{2} \d{2}:\d{2}`},
 		{"AbsoluteDate", `\d{4}-\d{2}-\d{2}`},
-		{"ISOTime", isoTimePattern},
 		{"AnchorPrefix", `[+\-<>]`},
 		{"Sign", `[+-]`},
 		{"Current", "[~]"},

@@ -168,7 +168,7 @@ func (l *LinkPart) getTime(evalOpts EvalOptions, start, end time.Time, tz *time.
 	} else if l.Ordinal != nil {
 		return l.Ordinal.getTime(evalOpts, start, end, tz, tg)
 	} else if l.AbsoluteTime != nil {
-		return l.AbsoluteTime.getTime(tz)
+		return l.AbsoluteTime.getTime(tz, isFinal)
 	}
 	return time.Time{}, time.Time{}, tg
 }
@@ -183,7 +183,7 @@ func (a *AnchorOverride) getAnchor(evalOpts EvalOptions, tz *time.Location) time
 	} else if a.Watermark {
 		return evalOpts.Watermark
 	} else {
-		tm, _, _ := a.AbsoluteTime.getTime(tz)
+		tm, _, _ := a.AbsoluteTime.getTime(tz, false)
 		return tm
 	}
 }
@@ -228,6 +228,8 @@ func (t *TimeAnchor) getTime(evalOpts EvalOptions, start, end time.Time, tz *tim
 				end = timeutil.OffsetTime(end, curTg, -num)
 			}
 
+		// Same with +<grain> is used as an offset.
+		// So we add <num-1> to start and <num> to end.
 		case "+":
 			end = timeutil.OffsetTime(end, curTg, num)
 			if isFinal {
@@ -238,12 +240,16 @@ func (t *TimeAnchor) getTime(evalOpts EvalOptions, start, end time.Time, tz *tim
 				start = timeutil.OffsetTime(start, curTg, num)
 			}
 
+		// Anchor the range to the beginning of the higher order grain
+		// EG: <4d of M : gives 1st 4 days of the current month regardless of current date.
 		case "<":
 			start = timeutil.TruncateTime(start, higherTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 
 			end = timeutil.OffsetTime(start, curTg, num)
 			end = timeutil.TruncateTime(end, curTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 
+		// Anchor the range to the end of the higher order grain
+		// EG: >4d of M : gives last 4 days of the current month regardless of current date.
 		case ">":
 			end = timeutil.CeilTime(end, higherTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 
@@ -320,11 +326,24 @@ func (a *AbsoluteTime) parse() error {
 		}
 	}
 
+	// Since we use this to build a time, month and day cannot be zero
+	if a.month == 0 {
+		a.month = 1
+	}
+	if a.day == 0 {
+		a.day = 1
+	}
+
 	return nil
 }
 
-func (a *AbsoluteTime) getTime(tz *time.Location) (time.Time, time.Time, timeutil.TimeGrain) {
-	tm := time.Date(a.year, time.Month(a.month), a.day, a.hour, a.minute, a.second, 0, tz)
-	// TODO: should start and end be any different?
-	return tm, tm, a.tg
+func (a *AbsoluteTime) getTime(tz *time.Location, isFinal bool) (time.Time, time.Time, timeutil.TimeGrain) {
+	start := time.Date(a.year, time.Month(a.month), a.day, a.hour, a.minute, a.second, 0, tz)
+	end := start
+
+	if isFinal {
+		end = timeutil.OffsetTime(start, a.tg, 1)
+	}
+
+	return start, end, a.tg
 }

@@ -44,6 +44,15 @@ func Test_Eval(t *testing.T) {
 		{"D3 of W1 of -3Y", "2022-01-05T00:00:00Z", "2022-01-06T00:00:00Z", timeutil.TimeGrainHour},
 		{"W2 of M11 of +3Y", "2028-11-06T00:00:00Z", "2028-11-13T00:00:00Z", timeutil.TimeGrainDay},
 		{"<3m of H2 of -6D of -1M", "2025-02-04T01:00:00Z", "2025-02-04T01:03:00Z", timeutil.TimeGrainSecond},
+
+		{"2025-03-09T09:30:15Z", "2025-03-09T09:30:15Z", "2025-03-09T09:30:16Z", timeutil.TimeGrainMillisecond},
+		{"2025-03-09T09:30", "2025-03-09T09:30:00Z", "2025-03-09T09:31:00Z", timeutil.TimeGrainSecond},
+		{"2025-03-09T09", "2025-03-09T09:00:00Z", "2025-03-09T10:00:00Z", timeutil.TimeGrainMinute},
+		{"2025-03-09", "2025-03-09T00:00:00Z", "2025-03-10T00:00:00Z", timeutil.TimeGrainHour},
+		{"2025-03", "2025-03-01T00:00:00Z", "2025-04-01T00:00:00Z", timeutil.TimeGrainWeek},
+		{"2025", "2025-01-01T00:00:00Z", "2026-01-01T00:00:00Z", timeutil.TimeGrainMonth},
+		{"D3 of W1 of 2022", "2022-01-05T00:00:00Z", "2022-01-06T00:00:00Z", timeutil.TimeGrainHour},
+		{"<3m of H2 of 2025-02-04", "2025-02-04T01:00:00Z", "2025-02-04T01:03:00Z", timeutil.TimeGrainSecond},
 	}
 
 	for _, testCase := range testCases {
