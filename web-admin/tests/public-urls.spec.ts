@@ -8,12 +8,12 @@ test.describe.serial("Public URLs", () => {
     await page.goto("/e2e/openrtb/explore/auction_explore");
 
     // Add a filter on "Pub Name"
-    await page.locator('[id="filter-add-btn"]').click();
+    await page.getByLabel("Add Filter Button").click();
     await page.getByRole("menuitem", { name: "Pub Name" }).click();
     await page.getByLabel("Pub Name").getByPlaceholder("Search").click();
     await page.getByLabel("Pub Name").getByPlaceholder("Search").fill("disney");
     await page.getByRole("menuitem", { name: "Disney" }).first().click();
-    await page.getByLabel("View filter").first().click(); // Hides the popover
+    await page.getByLabel("pub_name view filter").first().click(); // Hides the popover
 
     // Check the Big Number
     await expect(

@@ -1,3 +1,7 @@
+<script context="module">
+  const BulkValueSplitRegex = /\s*[,\n]\s*/;
+</script>
+
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
   import { Chip } from "@rilldata/web-common/components/chip";
@@ -71,6 +75,17 @@
   }
   $: updateBasedOnFilterSettings(isMatchList, sanitisedSearchText);
 
+  function checkSearchText(searchText: string) {
+    const values = searchText.split(BulkValueSplitRegex);
+    if (values.length <= 1) {
+      return;
+    }
+    console.log(values);
+    searchedBulkValues = values;
+    mode = SearchMode.Bulk;
+  }
+  $: checkSearchText(curSearchText);
+
   let searchedBulkValues: string[] = isMatchList ? selectedValues : [];
   $: searchResultsQuery = useDimensionSearch(
     instanceId,
@@ -123,16 +138,6 @@
 
   $: showExtraInfo = mode !== SearchMode.Select || curSearchText.length > 0;
 
-  function checkSearchText(searchText: string) {
-    const values = searchText.split(/\s*,\s*/);
-    if (values.length <= 1) {
-      return;
-    }
-    searchedBulkValues = values;
-    mode = SearchMode.Bulk;
-  }
-  $: checkSearchText(curSearchText);
-
   $: allSelected = Boolean(
     selectedValues.length && searchResults?.length === selectedValues.length,
   );
@@ -143,7 +148,7 @@
     if (newMode !== SearchMode.Bulk) {
       searchedBulkValues = [];
     } else {
-      searchedBulkValues = curSearchText.split(/\s*,\s*/);
+      searchedBulkValues = curSearchText.split(BulkValueSplitRegex);
     }
   }
 
@@ -180,7 +185,7 @@
     }
   }
 
-  $: console.log(mode, curSearchText, searchedBulkValues);
+  $: console.log(mode);
 </script>
 
 <DropdownMenu.Root
@@ -202,7 +207,7 @@
         type="dimension"
         active={open}
         exclude={excludeMode}
-        label="View filter"
+        label={`${name} view filter`}
         on:remove={onRemove}
         removable={!readOnly}
         {readOnly}
@@ -267,10 +272,11 @@
             },
           ]}
           onChange={handleModeChange}
+          size="md"
         />
         <Search
           bind:value={curSearchText}
-          label="Search list"
+          label={`${name} search list`}
           showBorderOnFocus={false}
           retailValueOnMount
           placeholder="Enter search term or paste list of values"
@@ -281,12 +287,14 @@
           {#if mode === SearchMode.Search}
             <DropdownMenu.Label
               class="pb-0 uppercase text-[10px] text-gray-500"
+              aria-label={`${name} results`}
             >
               {allSearchResultsCount} results
             </DropdownMenu.Label>
           {:else if mode === SearchMode.Bulk}
             <DropdownMenu.Label
               class="pb-0 uppercase text-[10px] text-gray-500"
+              aria-label={`${name} results`}
             >
               {allSearchResultsCount} of {searchedBulkValues.length} matched
             </DropdownMenu.Label>

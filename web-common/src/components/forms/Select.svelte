@@ -38,6 +38,12 @@
 
   let searchText = "";
 
+  const HeightBySize = {
+    sm: "h-6",
+    md: "h-7",
+    lg: "",
+  };
+
   $: selected = options.find((option) => option.value === value);
   $: filteredOptions = enableSearch
     ? options.filter((option) =>
@@ -90,7 +96,7 @@
       {lockable}
       {lockTooltip}
       bind:el={selectElement}
-      class="flex px-3 gap-x-2 max-w-full {size === 'sm' ? 'h-6' : ''} {width &&
+      class="flex px-3 gap-x-2 max-w-full {HeightBySize[size]} {width &&
         `w-[${width}px]`}  {ringFocus &&
         'focus:ring-2 focus:ring-primary-100'} {truncate
         ? 'break-all overflow-hidden'

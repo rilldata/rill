@@ -46,13 +46,14 @@
 </script>
 
 <DropdownMenu.Root bind:open typeahead={false}>
-  <DropdownMenu.Trigger asChild let:builder id="filter-add-btn">
+  <DropdownMenu.Trigger asChild let:builder>
     <Tooltip distance={8} suppress={open}>
       <button
         class:addBorder
         class:active={open}
         use:builder.action
         {...builder}
+        aria-label="Add filter button"
       >
         <Add size="17px" />
       </button>

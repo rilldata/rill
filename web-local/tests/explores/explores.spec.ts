@@ -229,7 +229,7 @@ time_ranges:
     await expect(page.getByText("Total records 80,659")).toBeVisible();
 
     // Clear the filter from filter bar
-    await page.getByLabel("View filter").getByLabel("Remove").click();
+    await page.getByLabel("publisher view filter").getByLabel("Remove").click();
 
     // Apply a different filter
     await page.getByRole("row", { name: "google.com 15.1k" }).click();
@@ -467,7 +467,7 @@ dimensions:
 
     // Check that filter was applied
     await expect(
-      page.getByLabel("View filter").getByText("Publisher Microsoft"),
+      page.getByLabel("publisher view filter").getByText("Publisher Microsoft"),
     ).toBeVisible();
 
     // go back to the leaderboards.
