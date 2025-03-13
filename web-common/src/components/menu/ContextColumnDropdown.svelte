@@ -38,7 +38,8 @@
       value: LeaderboardContextColumn.DELTA_ABSOLUTE,
       label: "Change",
       icon: DeltaChange,
-      tooltipText: "Only available when time comparison is present",
+      tooltipText:
+        "To view comparison context columns, toggle comparison on in the filter section above this dashboard",
       disabled: !isTimeComparisonActive,
       suppressTooltip: isTimeComparisonActive,
     },
@@ -46,7 +47,8 @@
       value: LeaderboardContextColumn.DELTA_PERCENT,
       label: "Percent change",
       icon: DeltaChangePercentage,
-      tooltipText: "Only available when time comparison is present",
+      tooltipText:
+        "To view comparison context columns, toggle comparison on in the filter section above this dashboard",
       disabled: !isTimeComparisonActive,
       suppressTooltip: isTimeComparisonActive,
     },
