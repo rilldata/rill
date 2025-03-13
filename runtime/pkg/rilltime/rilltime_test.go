@@ -1,7 +1,6 @@
 package rilltime
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -86,7 +85,6 @@ func Test_Eval(t *testing.T) {
 				FirstDay:   1,
 				FirstMonth: 1,
 			})
-			fmt.Println(start, end)
 			require.Equal(t, parseTestTime(t, testCase.start), start)
 			require.Equal(t, parseTestTime(t, testCase.end), end)
 			require.Equal(t, testCase.grain, grain)

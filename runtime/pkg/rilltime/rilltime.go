@@ -146,7 +146,7 @@ type TimeAnchor struct {
 
 // Ordinal represent a particular sequence of a grain in the next order grain.
 // EG: W2 - week 2 of the month.
-//     M5 - month 5 of the year.
+// EG: M5 - month 5 of the year.
 type Ordinal struct {
 	Grain string `parser:"@Grain"`
 	Num   int    `parser:"@Number"`
@@ -226,6 +226,9 @@ func Parse(from string, parseOpts ParseOptions) (*Expression, error) {
 		rt.timeZone = parseOpts.TimeZoneOverride
 	} else if rt.TimeZone != nil {
 		rt.timeZone, err = time.LoadLocation(strings.Trim(*rt.TimeZone, "{}"))
+		if err != nil {
+			return nil, err
+		}
 	} else if parseOpts.DefaultTimeZone != nil {
 		rt.timeZone = parseOpts.DefaultTimeZone
 	}

@@ -430,6 +430,9 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 	var tz *time.Location
 	if req.TimeZone != nil {
 		tz, err = time.LoadLocation(strings.Trim(*req.TimeZone, "{}"))
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// to keep results consistent
