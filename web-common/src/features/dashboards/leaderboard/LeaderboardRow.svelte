@@ -253,7 +253,7 @@
     );
   }}
 >
-  <td>
+  <td data-comparison-cell>
     <LeaderboardItemFilterIcon
       {excluded}
       {isBeingCompared}
@@ -261,6 +261,7 @@
     />
   </td>
   <td
+    data-dimension-cell
     style:background={dimensionGradients}
     class:ui-copy={!atLeastOneActive}
     class:ui-copy-disabled={excluded}
@@ -416,25 +417,17 @@
     @apply bg-gray-100;
   }
 
-  td:first-of-type {
+  td[data-comparison-cell] {
     @apply p-0 bg-surface;
   }
 
-  /* 
-  td:nth-of-type(3) {
-    @apply sticky left-0 z-20;
-    
-  } */
+  td[data-dimension-cell] {
+    @apply sticky left-0 z-30 bg-surface;
+  }
 
-  /* tr:hover td:nth-of-type(2) {
+  td[data-dimension-cell]:hover {
     @apply bg-gray-100;
-  } */
-
-  /* 
-  td:nth-of-type(2)::after {
-    content: "";
-    @apply absolute right-0 top-0 bottom-0 w-px bg-gray-200;
-  } */
+  }
 
   a {
     @apply absolute right-0 z-50 h-[22px] w-[32px];

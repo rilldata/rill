@@ -67,7 +67,7 @@
       {/if}
     </th>
 
-    <th>
+    <th data-dimension-header>
       <Tooltip distance={16} location="top">
         <button
           class="ui-header-primary"
@@ -234,8 +234,8 @@
     @apply p-0 text-right h-8;
   }
 
-  th:first-of-type {
-    @apply text-left;
+  th[data-dimension-header] {
+    @apply sticky left-0 z-30 bg-surface text-left;
   }
 
   th:not(:first-of-type) {
