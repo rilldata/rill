@@ -57,4 +57,3 @@ SELECT
 FROM usergroups ug
 JOIN users_orgs_roles uor ON ug.org_id = uor.org_id
 WHERE ug.name = 'all-guests' AND uor.org_role_id = (SELECT ors.id FROM org_roles ors WHERE ors.name = 'guest');
->>>>>>> main
