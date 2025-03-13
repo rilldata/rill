@@ -38,6 +38,12 @@ func Test_Eval(t *testing.T) {
 		{"m~ of +2d", "2025-03-12T06:32:00Z", "2025-03-12T06:32:36Z", timeutil.TimeGrainSecond},
 		{"<m of +2d", "2025-03-12T00:00:00Z", "2025-03-12T00:01:00Z", timeutil.TimeGrainSecond},
 		{">m of +2d", "2025-03-12T23:59:00Z", "2025-03-13T00:00:00Z", timeutil.TimeGrainSecond},
+
+		{"W1", "2025-03-03T00:00:00Z", "2025-03-10T00:00:00Z", timeutil.TimeGrainDay},
+		{"W1 of -2M", "2024-12-30T00:00:00Z", "2025-01-06T00:00:00Z", timeutil.TimeGrainDay},
+		{"D3 of W1 of -3Y", "2022-01-05T00:00:00Z", "2022-01-06T00:00:00Z", timeutil.TimeGrainHour},
+		{"W2 of M11 of +3Y", "2028-11-06T00:00:00Z", "2028-11-13T00:00:00Z", timeutil.TimeGrainDay},
+		{"<3m of H2 of -6D of -1M", "2025-02-04T01:00:00Z", "2025-02-04T01:03:00Z", timeutil.TimeGrainSecond},
 	}
 
 	for _, testCase := range testCases {

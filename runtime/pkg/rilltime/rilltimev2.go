@@ -27,8 +27,8 @@ type Link struct {
 type LinkPart struct {
 	Pos lexer.Position
 
-	Anchor       *TimeAnchor   `parser:"( @@"`
-	Ordinal      *Ordinal      `parser:"| @@"`
+	Ordinal      *Ordinal      `parser:"( @@"`
+	Anchor       *TimeAnchor   `parser:"| @@"`
 	AbsoluteTime *AbsoluteTime `parser:"| @@)"`
 }
 
@@ -256,7 +256,27 @@ func (t *TimeAnchor) getTime(evalOpts EvalOptions, start, end time.Time, tz *tim
 }
 
 func (o *Ordinal) getTime(evalOpts EvalOptions, start, end time.Time, tz *time.Location, higherTg timeutil.TimeGrain) (time.Time, time.Time, timeutil.TimeGrain) {
-	return time.Time{}, time.Time{}, higherTg
+	curTg := grainMap[o.Grain]
+	if higherTg == timeutil.TimeGrainUnspecified {
+		higherTg = higherOrderMap[curTg]
+	}
+
+	start = timeutil.TruncateTime(start, higherTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+
+	offset := o.Num - 1
+	if curTg == timeutil.TimeGrainWeek {
+		// https://en.wikipedia.org/wiki/ISO_week_date#First_week
+		if start.Weekday() >= 5 {
+			offset++
+		}
+
+		start = timeutil.TruncateTime(start, timeutil.TimeGrainWeek, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+	}
+
+	start = timeutil.OffsetTime(start, curTg, offset)
+	end = timeutil.OffsetTime(start, curTg, 1)
+
+	return start, end, curTg
 }
 
 // TODO: reuse code from duration.ParseISO8601
