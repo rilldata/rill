@@ -425,7 +425,7 @@
     @apply sticky left-0 z-30 bg-surface;
   }
 
-  td[data-dimension-cell]:hover {
+  tr:hover td[data-dimension-cell] {
     @apply bg-gray-100;
   }
 
