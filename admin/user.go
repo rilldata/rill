@@ -272,7 +272,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		// NOTE: Not deleting the project invite because its already been deleted by the CASCADE from the org invite delete.
 		// As a sanity check, let's ensure an org invite was processed for this project invite.
 		if !addedToOrgIDs[project.OrganizationID] {
-			return nil, fmt.Errorf("project invite processed without a matching org invite for project_id=%s", project.ID)
+			s.Logger.Error("project invite processed without a matching org invite", zap.String("project_id", project.ID))
 		}
 	}
 
