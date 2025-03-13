@@ -12,7 +12,7 @@ import {
   type MutationFunction,
 } from "@rilldata/svelte-query";
 import {
-  type AdminServiceTriggerReconcileBodyBody,
+  type AdminServiceUnsubscribeReportBody,
   type RpcStatus,
   type V1UnsubscribeReportResponse,
 } from "@rilldata/web-admin/client";
@@ -22,13 +22,13 @@ const adminServiceUnsubscribeReportWithToken = (
   organization: string,
   project: string,
   name: string,
+  adminServiceUnsubscribeReportBody: AdminServiceUnsubscribeReportBody,
   token: string,
-  adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody,
 ) => {
   return httpClient<V1UnsubscribeReportResponse>({
     url: `/v1/organizations/${organization}/projects/${project}/reports/${name}/unsubscribe`,
     method: "post",
-    data: adminServiceTriggerReconcileBodyBody,
+    data: adminServiceUnsubscribeReportBody,
     // We use the bearer token to authenticate the request
     headers: {
       Authorization: `Bearer ${token}`,
@@ -49,8 +49,8 @@ export const createAdminServiceUnsubscribeReportUsingToken = <
       organization: string;
       project: string;
       name: string;
+      data: AdminServiceUnsubscribeReportBody;
       token: string;
-      data: AdminServiceTriggerReconcileBodyBody;
     },
     TContext
   >;
@@ -63,8 +63,8 @@ export const createAdminServiceUnsubscribeReportUsingToken = <
       organization: string;
       project: string;
       name: string;
+      data: AdminServiceUnsubscribeReportBody;
       token: string;
-      data: AdminServiceTriggerReconcileBodyBody;
     }
   > = (props) => {
     const { organization, project, name, token, data } = props ?? {};
@@ -73,8 +73,8 @@ export const createAdminServiceUnsubscribeReportUsingToken = <
       organization,
       project,
       name,
-      token,
       data,
+      token,
     );
   };
 
@@ -85,8 +85,8 @@ export const createAdminServiceUnsubscribeReportUsingToken = <
       organization: string;
       project: string;
       name: string;
+      data: AdminServiceUnsubscribeReportBody;
       token: string;
-      data: AdminServiceTriggerReconcileBodyBody;
     },
     TContext
   >(mutationFn, mutationOptions);

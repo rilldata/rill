@@ -22,7 +22,6 @@
   export let includeScheduledReport = false;
   export let getQuery: (isScheduled: boolean) => V1Query | undefined;
   export let exploreName: string | undefined = undefined;
-  export let metricsViewProto: string | undefined = undefined;
 
   let showScheduledReportDialog = false;
   let open = false;
@@ -107,7 +106,6 @@
   <svelte:component
     this={ScheduledReportDialog}
     query={getQuery(true)}
-    {metricsViewProto}
     {exploreName}
     bind:open={showScheduledReportDialog}
   />

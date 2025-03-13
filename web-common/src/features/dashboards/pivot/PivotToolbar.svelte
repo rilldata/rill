@@ -15,10 +15,10 @@
   const { adminServer, exports } = featureFlags;
 
   const stateManagers = getStateManagers();
-  const { exploreName, dashboardStore } = stateManagers;
+  const { exploreName, dashboardStore, timeRangeSummaryStore } = stateManagers;
 
   $: expanded = $dashboardStore?.pivot?.expanded ?? {};
-  $: metricsViewProto = $dashboardStore.proto;
+  $: exploreHasTimeDimension = !!$timeRangeSummaryStore.data;
 
   // function expandVisible() {
   //   // const lowestVisibleRow = 0;
@@ -91,11 +91,10 @@
   {#if $exports}
     <ExportMenu
       label="Export pivot data"
-      includeScheduledReport={$adminServer}
+      includeScheduledReport={$adminServer && exploreHasTimeDimension}
       getQuery={(isScheduled) =>
         getPivotExportQuery(stateManagers, isScheduled)}
       exploreName={$exploreName}
-      {metricsViewProto}
     />
   {/if}
 </div>
