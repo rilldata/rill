@@ -131,6 +131,36 @@
       </th>
 
       {#if shouldShowComparisonForMeasure(measureName)}
+        {#if showPercentOfTotal}
+          <th>
+            <button
+              aria-label="Toggle sort leaderboards by percent of total"
+              on:click={() => toggleSort(SortType.PERCENT, measureName)}
+            >
+              <PercentOfTotal />
+              {#if sortType === SortType.PERCENT && measureName === sortBy}
+                <div class="ui-copy-icon">
+                  {#if sortedAscending}
+                    <div
+                      in:fly|global={{ duration: 200, y: 8 }}
+                      style:opacity={1}
+                    >
+                      <ArrowDown flip />
+                    </div>
+                  {:else}
+                    <div
+                      in:fly|global={{ duration: 200, y: -8 }}
+                      style:opacity={1}
+                    >
+                      <ArrowDown />
+                    </div>
+                  {/if}
+                </div>
+              {/if}
+            </button>
+          </th>
+        {/if}
+
         {#if showDeltaAbsolute}
           <th>
             <button
@@ -169,36 +199,6 @@
             >
               <DeltaChangePercentage />
               {#if sortType === SortType.DELTA_PERCENT && measureName === sortBy}
-                <div class="ui-copy-icon">
-                  {#if sortedAscending}
-                    <div
-                      in:fly|global={{ duration: 200, y: 8 }}
-                      style:opacity={1}
-                    >
-                      <ArrowDown flip />
-                    </div>
-                  {:else}
-                    <div
-                      in:fly|global={{ duration: 200, y: -8 }}
-                      style:opacity={1}
-                    >
-                      <ArrowDown />
-                    </div>
-                  {/if}
-                </div>
-              {/if}
-            </button>
-          </th>
-        {/if}
-
-        {#if showPercentOfTotal}
-          <th>
-            <button
-              aria-label="Toggle sort leaderboards by percent of total"
-              on:click={() => toggleSort(SortType.PERCENT, measureName)}
-            >
-              <PercentOfTotal />
-              {#if sortType === SortType.PERCENT && measureName === sortBy}
                 <div class="ui-copy-icon">
                   {#if sortedAscending}
                     <div
