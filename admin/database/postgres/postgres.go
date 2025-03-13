@@ -1936,7 +1936,9 @@ func (c *connection) InsertProjectInvite(ctx context.Context, opts *database.Ins
 		return err
 	}
 
-	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO project_invites (email, invited_by_user_id, project_id, project_role_id) VALUES ($1, $2, $3, $4)", opts.Email, opts.InviterID, opts.ProjectID, opts.RoleID)
+	_, err := c.getDB(ctx).ExecContext(ctx,
+		`INSERT INTO project_invites (email, org_invite_id, project_id, project_role_id, invited_by_user_id) VALUES ($1, $2, $3, $4)`,
+		opts.Email, opts.OrgInviteID, opts.ProjectID, opts.RoleID, opts.InviterID)
 	if err != nil {
 		return parseErr("project invite", err)
 	}

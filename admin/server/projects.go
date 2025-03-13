@@ -954,12 +954,40 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 			return nil, err
 		}
 
-		// Invite user to join the project
-		err := s.admin.DB.InsertProjectInvite(ctx, &database.InsertProjectInviteOptions{
+		// Find the guest role
+		guestRole, err := s.admin.DB.FindOrganizationRole(ctx, database.OrganizationRoleNameGuest)
+		if err != nil {
+			return nil, err
+		}
+
+		// Insert an organization guest invite (will fail with a constraint error if an org-level invite already exists).
+		// NOTE: Not using a transaction here for simplicity. The operation is idempotent and worst-case the user becomes a guest member with no access.
+		err = s.admin.DB.InsertOrganizationInvite(ctx, &database.InsertOrganizationInviteOptions{
 			Email:     req.Email,
+			OrgID:     proj.OrganizationID,
+			RoleID:    guestRole.ID,
 			InviterID: invitedByUserID,
-			ProjectID: proj.ID,
-			RoleID:    role.ID,
+		})
+		if err != nil && !errors.Is(err, database.ErrNotUnique) {
+			return nil, err
+		}
+
+		// Find the organization invite
+		orgInvite, err := s.admin.DB.FindOrganizationInvite(ctx, proj.OrganizationID, req.Email)
+		if err != nil {
+			if errors.Is(err, ctx.Err()) {
+				return nil, err
+			}
+			return nil, fmt.Errorf("expected but failed to find organization invite: %w", err)
+		}
+
+		// Invite user to join the project
+		err = s.admin.DB.InsertProjectInvite(ctx, &database.InsertProjectInviteOptions{
+			Email:       req.Email,
+			OrgInviteID: orgInvite.ID,
+			ProjectID:   proj.ID,
+			RoleID:      role.ID,
+			InviterID:   invitedByUserID,
 		})
 		// continue sending an email if an invitation entry already exists
 		if err != nil && !errors.Is(err, database.ErrNotUnique) {
