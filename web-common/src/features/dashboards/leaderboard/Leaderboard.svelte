@@ -127,10 +127,6 @@
         undefined,
       );
 
-  $: if (activeMeasureNames) {
-    valueColumn.reset();
-  }
-
   function shouldShowComparisonForMeasure(measureName: string): boolean {
     return dimensionShowAllMeasures || measureName === activeMeasureName;
   }
