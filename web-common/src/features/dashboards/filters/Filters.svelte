@@ -37,9 +37,13 @@
   } from "../stores/dashboard-stores";
   import type { TimeRange } from "@rilldata/web-common/lib/time/types";
   import { DateTime, Interval } from "luxon";
-  import { initLocalUserPreferenceStore } from "../user-preferences";
+
   import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
   import { getValidComparisonOption } from "../time-controls/time-range-store";
+  import { Tooltip } from "bits-ui";
+  import Timestamp from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/Timestamp.svelte";
+  import Metadata from "../time-controls/super-pill/components/Metadata.svelte";
+  import { getPinnedTimeZones } from "../url-state/getDefaultExplorePreset";
 
   export let readOnly = false;
   export let timeRanges: V1ExploreTimeRange[];
@@ -140,7 +144,7 @@
 
   $: isComplexFilter = isExpressionUnsupported($dashboardStore.whereFilter);
 
-  $: availableTimeZones = exploreSpec.timeZones ?? [];
+  $: availableTimeZones = getPinnedTimeZones(exploreSpec);
 
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(
@@ -150,8 +154,6 @@
     : allTimeRange
       ? Interval.fromDateTimes(allTimeRange.start, allTimeRange.end)
       : Interval.invalid("Invalid interval");
-
-  $: localUserPreferences = initLocalUserPreferenceStore($exploreName);
 
   $: baseTimeRange = selectedTimeRange?.start &&
     selectedTimeRange?.end && {
@@ -291,7 +293,6 @@
     }
 
     metricsExplorerStore.setTimeZone($exploreName, timeZone);
-    localUserPreferences.set({ timeZone });
   }
 
   function onTimeGrainSelect(timeGrain: V1TimeGrain) {
@@ -320,7 +321,9 @@
           {timeRanges}
           complete={false}
           {interval}
+          context={$exploreName}
           {timeStart}
+          lockTimeZone={exploreSpec.lockTimeZone}
           {timeEnd}
           {activeTimeGrain}
           {activeTimeZone}
@@ -340,6 +343,29 @@
           showTimeComparison={!!showTimeComparison}
           {selectedComparisonTimeRange}
         />
+      {/if}
+
+      {#if interval.end?.isValid}
+        <Tooltip.Root openDelay={0}>
+          <Tooltip.Trigger>
+            <span class="text-gray-600 italic">
+              as of latest <Timestamp
+                italic
+                suppress
+                showDate={false}
+                date={interval.end}
+                zone={activeTimeZone}
+              />
+            </span>
+          </Tooltip.Trigger>
+          <Tooltip.Content side="bottom" sideOffset={10}>
+            <Metadata
+              timeZone={activeTimeZone}
+              timeStart={allTimeRange?.start}
+              timeEnd={allTimeRange?.end}
+            />
+          </Tooltip.Content>
+        </Tooltip.Root>
       {/if}
     </div>
   {/if}

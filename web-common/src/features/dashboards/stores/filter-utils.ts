@@ -426,3 +426,8 @@ export function buildValidMetricsViewFilter(
     undefined,
   );
 }
+
+export function wrapNonJoinerExpression(expr: V1Expression): V1Expression {
+  if (isJoinerExpression(expr)) return expr;
+  return createAndExpression([expr]);
+}

@@ -14,7 +14,6 @@ import {
   type TimeControlStore,
   createTimeControlStore,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import {
   TimeComparisonOption,
   TimeRangePreset,
@@ -24,16 +23,12 @@ import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { render } from "@testing-library/svelte";
 import { get } from "svelte/store";
-import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.stubEnv("TZ", "UTC");
 
 describe("time-control-store", () => {
   const dashboardFetchMocks = DashboardFetchMocks.useDashboardFetchMocks();
-
-  beforeAll(() => {
-    initLocalUserPreferenceStore(AD_BIDS_EXPLORE_NAME);
-  });
 
   beforeEach(() => {
     metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
@@ -66,9 +61,9 @@ describe("time-control-store", () => {
     assertStartAndEnd(
       get(timeControlsStore),
       "2022-01-01T00:00:00.000Z",
-      "2022-03-31T00:00:00.001Z",
-      "2021-12-31T00:00:00.000Z",
       "2022-04-01T00:00:00.000Z",
+      "2021-12-20T00:00:00.000Z",
+      "2022-04-04T00:00:00.000Z",
     );
 
     dashboardFetchMocks.mockTimeRangeSummary(AD_BIDS_NAME, {
@@ -84,9 +79,9 @@ describe("time-control-store", () => {
     assertStartAndEnd(
       get(timeControlsStore),
       "2023-01-01T00:00:00.000Z",
-      "2023-03-31T00:00:00.001Z",
-      "2022-12-31T00:00:00.000Z",
       "2023-04-01T00:00:00.000Z",
+      "2022-12-19T00:00:00.000Z",
+      "2023-04-03T00:00:00.000Z",
     );
 
     unmount();
@@ -234,15 +229,16 @@ describe("time-control-store", () => {
     const { unmount, timeControlsStore } = initTimeControlStoreTest(
       AD_BIDS_METRICS_INIT_WITH_TIME,
     );
+
     await waitForUpdate(timeControlsStore, "2022-01-01T00:00:00.000Z");
 
     metricsExplorerStore.setTimeZone(AD_BIDS_EXPLORE_NAME, "IST");
     assertStartAndEnd(
       get(timeControlsStore),
-      "2022-01-01T00:00:00.000Z",
-      "2022-03-31T00:00:00.001Z",
-      "2021-12-30T18:30:00.000Z",
+      "2021-12-31T18:30:00.000Z",
       "2022-03-31T18:30:00.000Z",
+      "2021-12-19T18:30:00.000Z",
+      "2022-04-03T18:30:00.000Z",
     );
 
     metricsExplorerStore.displayTimeComparison(AD_BIDS_EXPLORE_NAME, true);
@@ -290,7 +286,7 @@ describe("time-control-store", () => {
     metricsExplorerStore.setSelectedComparisonRange(
       AD_BIDS_EXPLORE_NAME,
       {
-        name: TimeComparisonOption.MONTH,
+        name: TimeComparisonOption.QUARTER,
       } as any,
       AD_BIDS_METRICS_INIT_WITH_TIME,
     );
@@ -303,18 +299,18 @@ describe("time-control-store", () => {
     assertStartAndEnd(
       get(timeControlsStore),
       "2022-01-01T00:00:00.000Z",
-      "2022-03-31T00:00:00.001Z",
-      "2021-12-31T00:00:00.000Z",
       "2022-04-01T00:00:00.000Z",
+      "2021-12-20T00:00:00.000Z",
+      "2022-04-04T00:00:00.000Z",
     );
     assertComparisonStartAndEnd(
       get(timeControlsStore),
       // Sets to default comparison
-      "rill-PM",
-      "2021-12-01T00:00:00.000Z",
-      "2022-02-28T00:00:00.001Z",
-      "2021-11-30T00:00:00.000Z",
-      "2022-03-01T00:00:00.000Z",
+      "rill-PQ",
+      "2021-10-01T00:00:00.000Z",
+      "2022-01-01T00:00:00.000Z",
+      "2021-09-20T00:00:00.000Z",
+      "2022-01-03T00:00:00.000Z",
     );
 
     metricsExplorerStore.setSelectedScrubRange(AD_BIDS_EXPLORE_NAME, {
@@ -326,17 +322,17 @@ describe("time-control-store", () => {
       get(timeControlsStore),
       "2022-02-01T00:00:00.000Z",
       "2022-02-10T00:00:00.000Z",
-      "2021-12-31T00:00:00.000Z",
-      "2022-04-01T00:00:00.000Z",
+      "2021-12-20T00:00:00.000Z",
+      "2022-04-04T00:00:00.000Z",
     );
     assertComparisonStartAndEnd(
       get(timeControlsStore),
       // Sets to default comparison
-      "rill-PM",
+      "rill-PQ",
+      "2021-10-01T00:00:00.000Z",
       "2022-01-01T00:00:00.000Z",
-      "2022-01-10T00:00:00.000Z",
-      "2021-11-30T00:00:00.000Z",
-      "2022-03-01T00:00:00.000Z",
+      "2021-09-20T00:00:00.000Z",
+      "2022-01-03T00:00:00.000Z",
     );
 
     unmount();
@@ -347,15 +343,21 @@ describe("time-control-store", () => {
       min: "2022-01-01",
       max: "2022-03-31",
     });
+
     const { unmount, timeControlsStore, queryClient } =
       initTimeControlStoreTest(AD_BIDS_METRICS_INIT_WITH_TIME);
     await waitForUpdate(timeControlsStore, "2022-01-01T00:00:00.000Z");
+
+    expect(get(timeControlsStore).selectedTimeRange?.name).toEqual(
+      TimeRangePreset.QUARTER_TO_DATE,
+    );
+
     assertStartAndEnd(
       get(timeControlsStore),
       "2022-01-01T00:00:00.000Z",
-      "2022-03-31T00:00:00.001Z",
-      "2021-12-31T00:00:00.000Z",
       "2022-04-01T00:00:00.000Z",
+      "2021-12-20T00:00:00.000Z",
+      "2022-04-04T00:00:00.000Z",
     );
 
     dashboardFetchMocks.mockMetricsExplore(

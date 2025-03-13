@@ -58,7 +58,7 @@
     class:bg-slate-50={background}
     class:border
     class:border-gray-200={border}
-    class="outline-none rounded-sm block w-full pl-8 p-1"
+    class="outline-none rounded-[2px] block w-full pl-8 p-1"
     class:h-full={large}
     {disabled}
     {placeholder}

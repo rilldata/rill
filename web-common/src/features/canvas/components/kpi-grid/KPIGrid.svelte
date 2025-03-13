@@ -7,6 +7,7 @@
   import type { KPISpec } from "../kpi";
   import KPI from "../kpi/KPI.svelte";
   import { validateKPIGridSchema } from "./selector";
+  import { getMinWidth } from "../kpi";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
   export let timeAndFilterStore: Readable<TimeAndFilterStore>;
@@ -25,17 +26,28 @@
     dimension_filters: kpiGridProperties.dimension_filters,
     time_filters: kpiGridProperties.time_filters,
   }));
+
+  $: sparkline = kpiGridProperties.sparkline;
+
+  $: minWidth = getMinWidth(sparkline);
 </script>
 
 {#if schema.isValid}
-  <div class="grid-wrapper h-fit" style:--item-count={kpis.length}>
-    {#each kpis as kpi, i (i)}
-      <div
-        class="kpi-wrapper border-gray-200 size-full min-h-52 p-4 overflow-hidden"
-      >
-        <KPI rendererProperties={kpi} {timeAndFilterStore} />
-      </div>
-    {/each}
+  <div class="h-fit p-0 grow relative" class:!p-0={kpis.length === 1}>
+    <span class="border-overlay" />
+    <div
+      style:grid-template-columns="repeat(auto-fit, minmax(min({minWidth}px,
+      100%), 1fr))"
+      class="grid-wrapper gap-px overflow-hidden size-full"
+    >
+      {#each kpis as kpi, i (i)}
+        <div
+          class="min-h-32 kpi-wrapper before:absolute before:z-20 before:top-full before:h-px before:w-full before:bg-gray-200 after:absolute after:left-full after:h-full after:w-px after:bg-gray-200"
+        >
+          <KPI rendererProperties={kpi} {timeAndFilterStore} />
+        </div>
+      {/each}
+    </div>
   </div>
 {:else}
   <ComponentError error={schema.error} />
@@ -44,57 +56,20 @@
 <style lang="postcss">
   .grid-wrapper {
     @apply size-full grid;
-    @apply px-0;
-    grid-template-columns: repeat(var(--item-count), 1fr);
+    grid-auto-rows: auto;
   }
 
   .kpi-wrapper {
-    @apply w-full;
-    @apply border-r border-b;
+    @apply relative p-4 grid;
   }
 
-  .kpi-wrapper:last-of-type {
-    border-right-width: 0px;
-  }
-
-  .kpi-wrapper {
-    border-bottom-width: 0px;
-  }
-
-  @container component-container (inline-size < 600px) {
-    .grid-wrapper {
-      grid-template-columns: repeat(min(2, var(--item-count)), 1fr);
-    }
-
-    .kpi-wrapper {
-      border-bottom-width: 1px;
-    }
-
-    .kpi-wrapper:last-of-type,
-    .kpi-wrapper:nth-last-of-type(2):not(:nth-of-type(2)) {
-      border-bottom-width: 0px;
-    }
-
-    .kpi-wrapper:nth-child(2n) {
-      border-right-width: 0px;
-    }
-
-    .kpi-wrapper:nth-child(3) {
-      border-right-width: 1px;
-    }
+  .border-overlay {
+    @apply border-[16px] pointer-events-none border-white absolute size-full z-50;
   }
 
   @container component-container (inline-size < 440px) {
     .grid-wrapper {
-      grid-template-columns: repeat(1, 1fr);
-    }
-
-    .kpi-wrapper {
-      border-right-width: 0px !important;
-    }
-
-    .kpi-wrapper:not(:last-of-type) {
-      border-bottom-width: 1px !important;
+      grid-template-columns: repeat(1, 1fr) !important;
     }
   }
 </style>

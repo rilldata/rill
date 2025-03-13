@@ -1,9 +1,6 @@
-<script lang="ts" context="module">
-</script>
-
 <script lang="ts">
   import type { Extension } from "@codemirror/state";
-  import { EditorState, Compartment } from "@codemirror/state";
+  import { EditorState, Compartment, EditorSelection } from "@codemirror/state";
   import { EditorView, type ViewUpdate } from "@codemirror/view";
   import { onMount } from "svelte";
   import { base as baseExtensions } from "../../components/editor/presets/base";
@@ -11,6 +8,7 @@
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { underlineSelection } from "./highlight-field";
   import { MergeView } from "@codemirror/merge";
+  import { beforeNavigate } from "$app/navigation";
 
   export let fileArtifact: FileArtifact;
   export let extensions: Extension[] = [];
@@ -23,8 +21,10 @@
     editorContent,
     remoteContent,
     merging,
+    snapshot,
     updateEditorContent,
     onEditorContentChange,
+    saveSnapshot,
   } = fileArtifact;
 
   let parent: HTMLElement;
@@ -57,6 +57,11 @@
     };
   });
 
+  beforeNavigate(() => {
+    if (!editor) return;
+    saveSnapshot(editor);
+  });
+
   function mountMergeView() {
     editor?.destroy();
 
@@ -87,18 +92,37 @@
   function mountEditor() {
     mergeView?.destroy();
 
+    const { selection, scroll } = $snapshot;
+
     editor = new EditorView({
       state: EditorState.create({
         doc: $editorContent ?? "",
         extensions: [
           baseExtensions(),
-
           extensionCompartment.of([extensions]),
           EditorView.updateListener.of(listener),
         ],
+        selection: EditorSelection.create(
+          [
+            EditorSelection.range(
+              Math.min(
+                $editorContent?.length ?? Infinity,
+                selection?.ranges[0].anchor ?? 0,
+              ),
+              Math.min(
+                $editorContent?.length ?? Infinity,
+                selection?.ranges[0].head ?? 0,
+              ),
+            ),
+          ],
+          0,
+        ),
       }),
       parent,
+      scrollTo: scroll,
     });
+
+    if (selection) editor?.focus();
   }
 
   function updateEditorExtensions(newExtensions: Extension[]) {
@@ -144,7 +168,10 @@
 
 <div
   bind:this={parent}
-  class="size-full overflow-y-auto"
+  class="size-full overflow-hidden"
+  role="textbox"
+  aria-label="codemirror editor"
+  tabindex="0"
   on:click={() => {
     /** give the editor focus no matter where we click */
     if (!editor?.hasFocus) editor?.focus();
@@ -152,9 +179,6 @@
   on:keydown={() => {
     /** no op for now */
   }}
-  role="textbox"
-  aria-label="Code editor"
-  tabindex="0"
 />
 
 <style lang="postcss">

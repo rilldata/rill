@@ -13,11 +13,10 @@ rill user remove [flags]
 ### Flags
 
 ```
-      --email string         Email of the user
-      --group string         User group
-      --keep-project-roles   Keep roles granted directly on projects in the org
-      --org string           Organization
-      --project string       Project
+      --email string     Email of the user
+      --group string     User group
+      --org string       Organization
+      --project string   Project
 ```
 
 ### Global flags

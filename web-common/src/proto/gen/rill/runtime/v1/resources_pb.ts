@@ -1752,6 +1752,11 @@ export class MetricsViewSpec_MeasureV2 extends Message<MetricsViewSpec_MeasureV2
    */
   validPercentOfTotal = false;
 
+  /**
+   * @generated from field: string treat_nulls_as = 14;
+   */
+  treatNullsAs = "";
+
   constructor(data?: PartialMessage<MetricsViewSpec_MeasureV2>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1773,6 +1778,7 @@ export class MetricsViewSpec_MeasureV2 extends Message<MetricsViewSpec_MeasureV2
     { no: 7, name: "format_d3", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "format_d3_locale", kind: "message", T: Struct },
     { no: 6, name: "valid_percent_of_total", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 14, name: "treat_nulls_as", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_MeasureV2 {
@@ -2305,6 +2311,13 @@ export class ExploreSpec extends Message<ExploreSpec> {
    */
   banner = "";
 
+  /**
+   * When set to true, dashboard will be locked to the first time zone in the time_zones key (or UTC)
+   *
+   * @generated from field: bool lock_time_zone = 19;
+   */
+  lockTimeZone = false;
+
   constructor(data?: PartialMessage<ExploreSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2328,6 +2341,7 @@ export class ExploreSpec extends Message<ExploreSpec> {
     { no: 16, name: "embeds_hide_pivot", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 12, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
     { no: 18, name: "banner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 19, name: "lock_time_zone", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExploreSpec {

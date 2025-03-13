@@ -101,6 +101,7 @@ Either github_url or archive_asset_id should be set. */
   /** archive_asset_id is set for projects whose project files are not stored in github but are managed by rill. */
   archiveAssetId?: string;
   prodVersion?: string;
+  skipDeploy?: boolean;
 };
 
 export type AdminServiceListProjectsForOrganizationParams = {
@@ -270,10 +271,6 @@ export type AdminServiceListProjectMemberUsergroupsParams = {
   pageToken?: string;
 };
 
-export type AdminServiceRemoveOrganizationMemberUserParams = {
-  keepProjectRoles?: boolean;
-};
-
 export type AdminServiceAddOrganizationMemberUserBody = {
   email?: string;
   role?: string;
@@ -298,6 +295,7 @@ export type AdminServiceUpdateOrganizationBody = {
   displayName?: string;
   logoAssetId?: string;
   faviconAssetId?: string;
+  defaultProjectRole?: string;
   billingEmail?: string;
 };
 
@@ -371,6 +369,7 @@ export interface V1Usergroup {
   groupId?: string;
   groupName?: string;
   groupDescription?: string;
+  managed?: boolean;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -784,6 +783,7 @@ If empty, the variable is shared for all environments. */
 }
 
 export interface V1ProjectPermissions {
+  admin?: boolean;
   readProject?: boolean;
   manageProject?: boolean;
   readProd?: boolean;
@@ -796,6 +796,7 @@ export interface V1ProjectPermissions {
   manageProvisionerResources?: boolean;
   readProjectMembers?: boolean;
   manageProjectMembers?: boolean;
+  manageProjectAdmins?: boolean;
   createMagicAuthTokens?: boolean;
   manageMagicAuthTokens?: boolean;
   createReports?: boolean;
@@ -804,6 +805,12 @@ export interface V1ProjectPermissions {
   manageAlerts?: boolean;
   createBookmarks?: boolean;
   manageBookmarks?: boolean;
+}
+
+export interface V1ProjectRole {
+  id?: string;
+  name?: string;
+  permissions?: V1ProjectPermissions;
 }
 
 export type V1ProjectAnnotations = { [key: string]: string };
@@ -849,6 +856,8 @@ export interface V1OrganizationQuotas {
 }
 
 export interface V1OrganizationPermissions {
+  admin?: boolean;
+  guest?: boolean;
   readOrg?: boolean;
   manageOrg?: boolean;
   readProjects?: boolean;
@@ -856,6 +865,13 @@ export interface V1OrganizationPermissions {
   manageProjects?: boolean;
   readOrgMembers?: boolean;
   manageOrgMembers?: boolean;
+  manageOrgAdmins?: boolean;
+}
+
+export interface V1OrganizationRole {
+  id?: string;
+  name?: string;
+  permissions?: V1OrganizationPermissions;
 }
 
 export interface V1Organization {
@@ -866,6 +882,7 @@ export interface V1Organization {
   logoUrl?: string;
   faviconUrl?: string;
   customDomain?: string;
+  defaultProjectRoleId?: string;
   quotas?: V1OrganizationQuotas;
   billingCustomerId?: string;
   paymentCustomerId?: string;
@@ -898,6 +915,7 @@ export const V1Operation = {
 export interface V1MemberUsergroup {
   groupId?: string;
   groupName?: string;
+  groupManaged?: boolean;
   roleName?: string;
   createdOn?: string;
   updatedOn?: string;
@@ -953,6 +971,11 @@ export interface V1ListServicesResponse {
 
 export interface V1ListServiceAuthTokensResponse {
   tokens?: V1ServiceToken[];
+}
+
+export interface V1ListRolesResponse {
+  organizationRoles?: V1OrganizationRole[];
+  projectRoles?: V1ProjectRole[];
 }
 
 export interface V1ListPublicBillingPlansResponse {
@@ -1312,7 +1335,7 @@ export interface V1CreateWhitelistedDomainResponse {
 }
 
 export interface V1CreateUsergroupResponse {
-  [key: string]: any;
+  usergroup?: V1Usergroup;
 }
 
 export interface V1CreateServiceResponse {

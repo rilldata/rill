@@ -8,6 +8,7 @@ import {
   AD_BIDS_EXPLORE_NAME,
   AD_BIDS_IMPRESSIONS_MEASURE,
   AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+  AD_BIDS_METRICS_INIT,
   AD_BIDS_NAME,
   AD_BIDS_TIME_RANGE_SUMMARY,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
@@ -41,7 +42,6 @@ import {
   applyURLToExploreState,
   getCleanMetricsExploreForAssertion,
 } from "@rilldata/web-common/features/dashboards/url-state/url-state-variations.spec";
-import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
 import {
@@ -192,7 +192,6 @@ describe.skip("ExploreWebViewStore", () => {
       url: new URL("http://localhost/explore/" + AD_BIDS_EXPLORE_NAME),
     });
     pageMock.subscribe = subscribe as any;
-    initLocalUserPreferenceStore(AD_BIDS_EXPLORE_NAME);
 
     dashboardFetchMocks.mockMetricsExplore(
       AD_BIDS_EXPLORE_NAME,
@@ -239,6 +238,7 @@ describe.skip("ExploreWebViewStore", () => {
       });
       const defaultExplorePreset = getDefaultExplorePreset(
         AD_BIDS_EXPLORE_INIT,
+        AD_BIDS_METRICS_INIT,
         AD_BIDS_TIME_RANGE_SUMMARY,
       );
 

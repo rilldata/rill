@@ -11,7 +11,7 @@ import (
 )
 
 func EditCmd(ch *cmdutil.Helper) *cobra.Command {
-	var orgName, displayName, description, billingEmail string
+	var orgName, displayName, description, defaultProjectRole, billingEmail string
 
 	editCmd := &cobra.Command{
 		Use:   "edit [<org-name>]",
@@ -89,6 +89,13 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
+			if cmd.Flags().Changed("default-project-role") {
+				if defaultProjectRole == "none" {
+					defaultProjectRole = ""
+				}
+				req.DefaultProjectRole = &defaultProjectRole
+			}
+
 			if cmd.Flags().Changed("billing-email") {
 				req.BillingEmail = &billingEmail
 			} else if ch.Interactive {
@@ -120,6 +127,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	editCmd.Flags().StringVar(&orgName, "org", ch.Org, "Organization name")
 	editCmd.Flags().StringVar(&displayName, "display-name", "", "Display name")
 	editCmd.Flags().StringVar(&description, "description", "", "Description")
+	editCmd.Flags().StringVar(&defaultProjectRole, "default-project-role", "", "Default role for members on new projects (options: admin, editor, viewer, none)")
 	editCmd.Flags().StringVar(&billingEmail, "billing-email", "", "Billing email")
 
 	return editCmd

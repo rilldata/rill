@@ -57,17 +57,12 @@
   ];
 
   $: showOrganizationSection = projectMemberUserGroupsList.some(
-    (group) => group.groupName === "all-users",
+    (group) => group.groupManaged,
   );
 
-  $: showAllUsersGroup = projectMemberUserGroupsList.find(
-    (group) => group.groupName === "all-users",
+  $: showGroupsSection = projectMemberUserGroupsList.some(
+    (group) => !group.groupManaged,
   );
-
-  $: showGroupsSection =
-    projectMemberUserGroupsList.length > 0 &&
-    projectMemberUserGroupsList.length === 1 &&
-    projectMemberUserGroupsList[0].groupName !== "all-users";
 </script>
 
 <Popover bind:open>
@@ -87,12 +82,12 @@
           <div class="text-xs text-gray-500 font-semibold uppercase">
             Org Users
           </div>
-          <div class="flex flex-col gap-y-1">
-            <OrganizationItem
-              {organization}
-              {project}
-              group={showAllUsersGroup ?? null}
-            />
+          <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[260px]">
+            {#each projectMemberUserGroupsList as group}
+              {#if group.groupManaged}
+                <OrganizationItem {organization} {project} {group} />
+              {/if}
+            {/each}
           </div>
         </div>
       {/if}
@@ -104,7 +99,9 @@
           <!-- 52 * 5 = 260px -->
           <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[260px]">
             {#each projectMemberUserGroupsList as group}
-              <UsergroupItem {organization} {project} {group} />
+              {#if !group.groupManaged}
+                <UsergroupItem {organization} {project} {group} />
+              {/if}
             {/each}
           </div>
         </div>
