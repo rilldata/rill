@@ -320,15 +320,15 @@
       {#each activeMeasureNames as measureName, index (index)}
         <col style:width="{$valueColumn}px" data-index={index} />
         {#if shouldShowComparisonForMeasure(measureName)}
+          {#if showPercentOfTotal}
+            <col style:width="{DEFAULT_CONTEXT_COLUMN_WIDTH}px" />
+          {/if}
           {#if showDeltaAbsolute}
             <col style:width="{DEFAULT_CONTEXT_COLUMN_WIDTH}px" />
             {#if showDeltaPercent}
               <col style:width="{DEFAULT_CONTEXT_COLUMN_WIDTH}px" />
             {/if}
           {:else if showDeltaPercent}
-            <col style:width="{DEFAULT_CONTEXT_COLUMN_WIDTH}px" />
-          {/if}
-          {#if showPercentOfTotal}
             <col style:width="{DEFAULT_CONTEXT_COLUMN_WIDTH}px" />
           {/if}
         {/if}
