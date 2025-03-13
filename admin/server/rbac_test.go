@@ -590,6 +590,69 @@ func TestRBAC(t *testing.T) {
 		require.Len(t, allUsers.Members, 2)
 	})
 
+	t.Run("Project invites are connected to org invites", func(t *testing.T) {
+		// Create an org and project
+		_, c1 := newTestUser(t, svr)
+		org1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
+		require.NoError(t, err)
+		proj1, err := c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
+			OrganizationName: org1.Organization.Name,
+			Name:             "proj1",
+			ProdSlots:        1,
+			SkipDeploy:       true,
+		})
+		require.NoError(t, err)
+
+		// Invite a user to the project
+		userEmail := randomName() + "@example.com"
+		_, err = c1.AddProjectMemberUser(ctx, &adminv1.AddProjectMemberUserRequest{
+			Organization: org1.Organization.Name,
+			Project:      proj1.Project.Name,
+			Email:        userEmail,
+			Role:         database.ProjectRoleNameAdmin,
+		})
+		require.NoError(t, err)
+
+		// Check invites were created for both the org and project
+		orgInvites, err := c1.ListOrganizationInvites(ctx, &adminv1.ListOrganizationInvitesRequest{Organization: org1.Organization.Name})
+		require.NoError(t, err)
+		require.Len(t, orgInvites.Invites, 1)
+		require.Equal(t, userEmail, orgInvites.Invites[0].Email)
+		require.Equal(t, database.OrganizationRoleNameGuest, orgInvites.Invites[0].Role)
+		projInvites, err := c1.ListProjectInvites(ctx, &adminv1.ListProjectInvitesRequest{
+			Organization: org1.Organization.Name,
+			Project:      proj1.Project.Name,
+		})
+		require.NoError(t, err)
+		require.Len(t, projInvites.Invites, 1)
+		require.Equal(t, userEmail, projInvites.Invites[0].Email)
+		require.Equal(t, database.ProjectRoleNameAdmin, projInvites.Invites[0].Role)
+
+		// Delete the org invite
+		_, err = c1.RemoveOrganizationMemberUser(ctx, &adminv1.RemoveOrganizationMemberUserRequest{
+			Organization: org1.Organization.Name,
+			Email:        userEmail,
+		})
+		require.NoError(t, err)
+
+		// Check that both invites were deleted
+		orgInvites, err = c1.ListOrganizationInvites(ctx, &adminv1.ListOrganizationInvitesRequest{Organization: org1.Organization.Name})
+		require.NoError(t, err)
+		require.Len(t, orgInvites.Invites, 0)
+		projInvites, err = c1.ListProjectInvites(ctx, &adminv1.ListProjectInvitesRequest{
+			Organization: org1.Organization.Name,
+			Project:      proj1.Project.Name,
+		})
+		require.NoError(t, err)
+		require.Len(t, projInvites.Invites, 0)
+
+		// Signup the user and check they are not added to the org
+		_, c2 := newTestUserWithEmail(t, svr, userEmail)
+		orgs, err := c2.ListOrganizations(ctx, &adminv1.ListOrganizationsRequest{})
+		require.NoError(t, err)
+		require.Len(t, orgs.Organizations, 0)
+	})
+
 	t.Run("Whitelisting domains on orgs", func(t *testing.T) {
 		// Create admin user with four orgs
 		u1, c1 := newTestUserWithDomain(t, svr, "whitelist-orgs.test")
