@@ -135,12 +135,20 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 			}
 		}
 	} else {
+		for _, rule := range spec.SecurityRules {
+			if rule.GetAccess() == nil {
+				return nil, fmt.Errorf("security rule %v is not an access rule", rule)
+			}
+		}
+
+		// Merge access rules into a single rule
 		mv.SecurityRules = append(mv.SecurityRules, spec.SecurityRules...)
-		access := mergeConditionRules(mv.SecurityRules)
+		access := mergeAccessRules(mv.SecurityRules)
 		if access != nil {
 			spec.SecurityRules = []*runtimev1.SecurityRule{access}
 		}
 
+		// Copy field access rules
 		for _, rule := range mv.SecurityRules {
 			if rule.GetFieldAccess() != nil {
 				spec.SecurityRules = append(spec.SecurityRules, rule)
@@ -216,8 +224,8 @@ func (r *ExploreReconciler) resolveFields(selected []string, selector *runtimev1
 	return res, nil
 }
 
-// Merges a list of security condition rules into a single rule.
-func mergeConditionRules(rules []*runtimev1.SecurityRule) *runtimev1.SecurityRule {
+// mergeAccessRules combines Access rule conditions into a single rule
+func mergeAccessRules(rules []*runtimev1.SecurityRule) *runtimev1.SecurityRule {
 	ruleCount := len(rules)
 	// If there are no rules, return nil
 	if ruleCount == 0 {
