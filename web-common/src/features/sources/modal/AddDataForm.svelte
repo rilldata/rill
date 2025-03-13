@@ -6,7 +6,6 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import {
     ConnectorDriverPropertyType,
-    type RpcStatus,
     type V1ConnectorDriver,
   } from "@rilldata/web-common/runtime-client";
   import type { ActionResult } from "@sveltejs/kit";
@@ -35,7 +34,7 @@
   const isConnectorForm = formType === "connector";
 
   // Form 1: Individual parameters
-  const formId = `add-data-${connector.name}-form`;
+  const paramsFormId = `add-data-${connector.name}-form`;
   const properties =
     (isSourceForm
       ? connector.sourceProperties
@@ -43,15 +42,20 @@
           (property) => property.key !== "dsn",
         )) ?? [];
   const schema = yup(getYupSchema[connector.name as keyof typeof getYupSchema]);
-  const { form, errors, enhance, tainted, submit, submitting } = superForm(
-    defaults(schema),
-    {
-      SPA: true,
-      validators: schema,
-      onUpdate: handleOnUpdate,
-    },
-  );
-  let rpcError: RpcStatus | null = null;
+  const {
+    form: paramsForm,
+    errors: paramsErrors,
+    enhance: paramsEnhance,
+    tainted: paramsTainted,
+    submit: paramsSubmit,
+    submitting: paramsSubmitting,
+  } = superForm(defaults(schema), {
+    SPA: true,
+    validators: schema,
+    onUpdate: handleOnUpdate,
+    resetForm: false,
+  });
+  let paramsError: string | null = null;
 
   // Form 2: DSN
   // SuperForms are not meant to have dynamic schemas, so we use a different form instance for the DSN form
@@ -74,8 +78,13 @@
     SPA: true,
     validators: dsnYupSchema,
     onUpdate: handleOnUpdate,
+    resetForm: false,
   });
-  let dsnRpcError: RpcStatus | null = null;
+  let dsnError: string | null = null;
+
+  // Active form
+  $: formId = useDsn ? dsnFormId : paramsFormId;
+  $: submitting = useDsn ? dsnSubmitting : paramsSubmitting;
 
   function handleConnectionTypeChange(e: CustomEvent<any>): void {
     useDsn = e.detail === "dsn";
@@ -86,10 +95,10 @@
     const { name, value } = target;
 
     if (name === "path") {
-      if ($tainted?.name) return;
+      if ($paramsTainted?.name) return;
       const name = inferSourceName(connector, value);
       if (name)
-        form.update(
+        paramsForm.update(
           ($form) => {
             $form.name = name;
             return $form;
@@ -116,10 +125,26 @@
       await submitAddDataForm(queryClient, formType, connector, values);
       onClose();
     } catch (e) {
-      if (useDsn) {
-        dsnRpcError = e?.response?.data;
+      let error: string;
+
+      // Handle different error types
+      if (e instanceof Error) {
+        error = e.message;
+      } else if (e?.response?.data) {
+        error = humanReadableErrorMessage(
+          connector.name,
+          e.response.data.code,
+          e.response.data.message,
+        );
       } else {
-        rpcError = e?.response?.data;
+        error = "Unknown error";
+      }
+
+      // Keep error state for each form
+      if (useDsn) {
+        dsnError = error;
+      } else {
+        paramsError = error;
       }
     }
   }
@@ -155,20 +180,14 @@
   {#if !useDsn}
     <!-- Form 1: Individual parameters -->
     <form
-      id={formId}
+      id={paramsFormId}
       class="pb-5 flex-grow overflow-y-auto"
-      use:enhance
-      on:submit|preventDefault={submit}
+      use:paramsEnhance
+      on:submit|preventDefault={paramsSubmit}
       transition:slide={{ duration: FORM_TRANSITION_DURATION }}
     >
-      {#if rpcError}
-        <SubmissionError
-          message={humanReadableErrorMessage(
-            connector.name,
-            rpcError.code,
-            rpcError.message,
-          )}
-        />
+      {#if paramsError}
+        <SubmissionError message={paramsError} />
       {/if}
 
       {#each properties as property (property.key)}
@@ -184,8 +203,8 @@
               optional={!property.required}
               secret={property.secret}
               hint={property.hint}
-              errors={$errors[propertyKey]}
-              bind:value={$form[propertyKey]}
+              errors={$paramsErrors[propertyKey]}
+              bind:value={$paramsForm[propertyKey]}
               onInput={(_, e) => onStringInputChange(e)}
               alwaysShowError
             />
@@ -194,7 +213,7 @@
               <input
                 id={propertyKey}
                 type="checkbox"
-                bind:checked={$form[propertyKey]}
+                bind:checked={$paramsForm[propertyKey]}
                 class="h-5 w-5"
               />
               <span class="ml-2 text-sm">{label}</span>
@@ -218,14 +237,8 @@
       on:submit|preventDefault={dsnSubmit}
       transition:slide={{ duration: FORM_TRANSITION_DURATION }}
     >
-      {#if dsnRpcError}
-        <SubmissionError
-          message={humanReadableErrorMessage(
-            connector.name,
-            dsnRpcError.code,
-            dsnRpcError.message,
-          )}
-        />
+      {#if dsnError}
+        <SubmissionError message={dsnError} />
       {/if}
 
       {#each dsnProperties as property (property.key)}
@@ -248,13 +261,16 @@
 
   <div class="flex items-center space-x-2 ml-auto">
     <Button on:click={onBack} type="secondary">Back</Button>
-    <Button
-      disabled={useDsn ? $dsnSubmitting : $submitting}
-      form={useDsn ? dsnFormId : formId}
-      submitForm
-      type="primary"
-    >
-      Add data
+    <Button disabled={$submitting} form={formId} submitForm type="primary">
+      {#if isConnectorForm}
+        {#if $submitting}
+          Testing connection...
+        {:else}
+          Connect
+        {/if}
+      {:else}
+        Add data
+      {/if}
     </Button>
   </div>
 </div>

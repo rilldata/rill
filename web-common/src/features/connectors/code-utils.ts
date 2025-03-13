@@ -144,6 +144,20 @@ export function replaceOrAddEnvVariable(
   return newBlob;
 }
 
+export function deleteEnvVariable(
+  existingEnvBlob: string,
+  key: string,
+): string {
+  const lines = existingEnvBlob.split("\n");
+  const updatedLines = lines.filter((line) => !line.startsWith(`${key}=`));
+  const newBlob = updatedLines
+    .filter((line, index) => !(line === "" && index === 0))
+    .join("\n")
+    .trim();
+
+  return newBlob;
+}
+
 export function makeDotEnvConnectorKey(connectorName: string, key: string) {
   // Note: The connector name, not driver, is used. This enables configuring multiple connectors that use the same driver.
   return `connector.${connectorName}.${key}`;
