@@ -17,38 +17,30 @@ export const setPrimaryDimension = (
 export const toggleDimensionVisibility = (
   { dashboard }: DashboardMutables,
   allDimensions: string[],
-  dimensionName?: string,
+  dimensionName: string,
 ) => {
-  if (dimensionName) {
-    const index = dashboard.visibleDimensions.indexOf(dimensionName);
-    if (index !== -1) {
-      dashboard.visibleDimensions.splice(index, 1);
-    } else {
-      // TODO: should this be appended to end or in relative order?
-      dashboard.visibleDimensions.push(dimensionName);
-    }
+  const index = dashboard.visibleDimensions.indexOf(dimensionName);
+  if (index !== -1) {
+    dashboard.visibleDimensions.splice(index, 1);
   } else {
-    const allSelected =
-      dashboard.visibleDimensions.length === allDimensions.length;
-
-    dashboard.visibleDimensions = allSelected
-      ? allDimensions.slice(0, 1)
-      : [...allDimensions];
+    dashboard.visibleDimensions.push(dimensionName);
   }
 
   dashboard.allDimensionsVisible =
     dashboard.visibleDimensions.length === allDimensions.length;
 };
 
-export const setDimensionVisibility = (
+export const toggleAllDimensionsVisibility = (
   { dashboard }: DashboardMutables,
-  dimensions?: string[],
-  allDimensions?: string[],
+  allDimensions: string[],
 ) => {
-  dashboard.visibleDimensionKeys = new Set(dimensions);
+  const allSelected =
+    dashboard.visibleDimensions.length === allDimensions.length;
 
-  dashboard.allDimensionsVisible =
-    dashboard.visibleDimensionKeys.size === allDimensions?.length;
+  dashboard.visibleDimensions = allSelected
+    ? allDimensions.slice(0, 1)
+    : [...allDimensions];
+  dashboard.allDimensionsVisible = !dashboard.allDimensionsVisible;
 };
 
 export const dimensionActions = {
@@ -59,5 +51,5 @@ export const dimensionActions = {
    */
   setPrimaryDimension,
   toggleDimensionVisibility,
-  setDimensionVisibility,
+  toggleAllDimensionsVisibility,
 };

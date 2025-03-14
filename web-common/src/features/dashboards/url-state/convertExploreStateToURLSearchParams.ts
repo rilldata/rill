@@ -22,10 +22,7 @@ import {
   ToURLParamViewMap,
 } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
-import {
-  arrayOrderedEquals,
-  arrayUnorderedEquals,
-} from "@rilldata/web-common/lib/arrayUtils";
+import { arrayOrderedEquals } from "@rilldata/web-common/lib/arrayUtils";
 import {
   TimeComparisonOption,
   type TimeRange,

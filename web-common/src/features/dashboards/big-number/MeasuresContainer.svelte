@@ -37,7 +37,7 @@
       activeMeasure: { selectedMeasureNames },
     },
     actions: {
-      measures: { toggleMeasureVisibility },
+      measures: { toggleMeasureVisibility, toggleAllMeasuresVisibility },
     },
   } = getStateManagers();
 
@@ -178,7 +178,7 @@
         }))}
         selectedItems={visibleMeasureNames}
         onToggleSelectAll={() => {
-          toggleMeasureVisibility(allMeasureNames);
+          toggleAllMeasuresVisibility(allMeasureNames);
         }}
       />
     </div>
