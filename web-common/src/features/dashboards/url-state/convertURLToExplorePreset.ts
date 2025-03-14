@@ -438,15 +438,6 @@ function fromExploreUrlParams(
     }
   }
 
-  if (searchParams.has(ExploreStateURLParams.LeaderboardContextColumns)) {
-    const columns = searchParams.get(
-      ExploreStateURLParams.LeaderboardContextColumns,
-    );
-    if (columns) {
-      preset.exploreLeaderboardContextColumns = columns.split(",");
-    }
-  }
-
   return { preset, errors };
 }
 
