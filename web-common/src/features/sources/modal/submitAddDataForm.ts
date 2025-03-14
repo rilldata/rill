@@ -10,15 +10,21 @@ import {
 import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
 import {
   type V1ConnectorDriver,
+  getRuntimeServiceGetFileQueryKey,
+  runtimeServiceDeleteFile,
+  runtimeServiceGetFile,
   runtimeServicePutFile,
   runtimeServiceUnpackEmpty,
 } from "../../../runtime-client";
 import { runtime } from "../../../runtime-client/runtime-store";
 import {
   compileConnectorYAML,
+  deleteEnvVariable,
+  makeDotEnvConnectorKey,
   updateDotEnvWithSecrets,
   updateRillYAMLWithOlapConnector,
 } from "../../connectors/code-utils";
+import { testConnectorConnection } from "../../connectors/olap/test-connection";
 import { getFileAPIPathFromNameAndType } from "../../entity-management/entity-mappers";
 import { fileArtifacts } from "../../entity-management/file-artifacts";
 import { getName } from "../../entity-management/name-utils";
@@ -28,7 +34,6 @@ import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
 import { isProjectInitialized } from "../../welcome/is-project-initialized";
 import { compileSourceYAML, maybeRewriteToDuckDb } from "../sourceUtils";
 import type { AddDataFormType } from "./types";
-import { fromYupFriendlyKey } from "./yupSchemas";
 
 interface AddDataFormValues {
   // name: string; // Commenting out until we add user-provided names for Connectors
@@ -39,7 +44,7 @@ export async function submitAddDataForm(
   queryClient: QueryClient,
   formType: AddDataFormType,
   connector: V1ConnectorDriver,
-  values: AddDataFormValues,
+  formValues: AddDataFormValues,
 ): Promise<void> {
   const instanceId = get(runtime).instanceId;
 
@@ -64,23 +69,6 @@ export async function submitAddDataForm(
     await invalidate("init");
   }
 
-  // Convert the form values to Source YAML
-  // TODO: Quite a few adhoc code is being added. We should revisit the way we generate the yaml.
-  const formValues = Object.fromEntries(
-    Object.entries(values).map(([key, value]) => {
-      switch (key) {
-        case "project_id":
-        case "account":
-        case "output_location":
-        case "workgroup":
-        case "database_url":
-          return [key, value];
-        default:
-          return [fromYupFriendlyKey(key), value];
-      }
-    }),
-  );
-
   /**
    * Sources
    */
@@ -93,7 +81,7 @@ export async function submitAddDataForm(
 
     // Make a new <source>.yaml file
     const newSourceFilePath = getFileAPIPathFromNameAndType(
-      values.name as string,
+      formValues.name as string,
       EntityType.Table,
     );
     await runtimeServicePutFile(instanceId, {
@@ -103,7 +91,7 @@ export async function submitAddDataForm(
       createOnly: false, // The modal might be opened from a YAML file with placeholder text, so the file might already exist
     });
 
-    // Update the `.env` file
+    // Create or update the `.env` file
     await runtimeServicePutFile(instanceId, {
       path: ".env",
       blob: await updateDotEnvWithSecrets(
@@ -141,13 +129,81 @@ export async function submitAddDataForm(
     createOnly: false,
   });
 
-  // Update the `.env` file
+  // Check if .env file exists before we update it
+  let envFileExisted = false;
+  try {
+    const envFile = await queryClient.fetchQuery({
+      queryKey: getRuntimeServiceGetFileQueryKey(instanceId, { path: ".env" }),
+      queryFn: () => runtimeServiceGetFile(instanceId, { path: ".env" }),
+    });
+    envFileExisted = !!envFile.blob;
+  } catch (error) {
+    // If file doesn't exist, envFileExisted remains false
+    if (!error?.response?.data?.message?.includes("no such file")) {
+      throw error; // Re-throw if it's a different error
+    }
+  }
+
+  // Create or update the `.env` file
+  const newEnvBlob = await updateDotEnvWithSecrets(
+    queryClient,
+    connector,
+    formValues,
+  );
   await runtimeServicePutFile(instanceId, {
     path: ".env",
-    blob: await updateDotEnvWithSecrets(queryClient, connector, formValues),
+    blob: newEnvBlob,
     create: true,
     createOnly: false,
   });
+
+  // Test the connection
+  const result = await testConnectorConnection(
+    instanceId,
+    newConnectorFilePath,
+    newConnectorName,
+  );
+
+  // If the connection test fails, clean-up the files
+  if (!result.success) {
+    // Clean-up the `connector.yaml` file
+    await runtimeServiceDeleteFile(instanceId, {
+      path: newConnectorFilePath,
+    });
+
+    // Clean-up the `.env` file
+    if (!envFileExisted) {
+      // If .env file didn't exist before, delete it
+      await runtimeServiceDeleteFile(instanceId, {
+        path: ".env",
+      });
+    } else {
+      // If .env file existed before, remove only the secrets we added
+      const secretKeys =
+        connector.configProperties
+          ?.filter((property) => property.secret)
+          .map((property) => property.key) || [];
+
+      let updatedEnvBlob = newEnvBlob;
+      for (const key of secretKeys) {
+        if (key) {
+          const envKey = makeDotEnvConnectorKey(connector.name as string, key);
+          updatedEnvBlob = deleteEnvVariable(updatedEnvBlob, envKey);
+        }
+      }
+
+      await runtimeServicePutFile(instanceId, {
+        path: ".env",
+        blob: updatedEnvBlob,
+        create: true,
+        createOnly: false,
+      });
+    }
+
+    throw new Error(result.error || "Unable to establish a connection");
+  }
+
+  // The connection test passed
 
   // Update the `rill.yaml` file
   await runtimeServicePutFile(instanceId, {

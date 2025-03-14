@@ -10,6 +10,8 @@
 </script>
 
 <script lang="ts">
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import { connectorExplorerStore } from "@rilldata/web-common/features/connectors/connector-explorer-store";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { writable } from "svelte/store";
   import ConnectorExplorer from "../../features/connectors/ConnectorExplorer.svelte";
@@ -19,8 +21,6 @@
   import { DEFAULT_NAV_WIDTH, MAX_NAV_WIDTH, MIN_NAV_WIDTH } from "../config";
   import Footer from "./Footer.svelte";
   import SurfaceControlButton from "./SurfaceControlButton.svelte";
-  import { connectorExplorerStore } from "@rilldata/web-common/features/connectors/connector-explorer-store";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
 
   const DEFAULT_PERCENTAGE = 0.4;
 
@@ -149,6 +149,8 @@
 
             <div
               class="connector-wrapper"
+              role="region"
+              aria-label="Connector explorer"
               bind:this={connectorWrapper}
               style:height="{showConnectors ? connectorSectionHeight : 0}px"
             >
