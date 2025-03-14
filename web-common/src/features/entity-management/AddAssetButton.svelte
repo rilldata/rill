@@ -175,7 +175,7 @@
   <DropdownMenu.Content align="start" class="w-[240px]">
     {#if $isModelingSupportedForDefaultOlapDriver}
       <DropdownMenu.Item
-        aria-label="Add Source"
+        aria-label="Add Data"
         class="flex gap-x-2"
         on:click={handleAddSource}
       >

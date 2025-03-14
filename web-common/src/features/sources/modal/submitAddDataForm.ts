@@ -28,7 +28,6 @@ import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
 import { isProjectInitialized } from "../../welcome/is-project-initialized";
 import { compileSourceYAML, maybeRewriteToDuckDb } from "../sourceUtils";
 import type { AddDataFormType } from "./types";
-import { fromYupFriendlyKey } from "./yupSchemas";
 
 interface AddDataFormValues {
   // name: string; // Commenting out until we add user-provided names for Connectors
@@ -39,7 +38,7 @@ export async function submitAddDataForm(
   queryClient: QueryClient,
   formType: AddDataFormType,
   connector: V1ConnectorDriver,
-  values: AddDataFormValues,
+  formValues: AddDataFormValues,
 ): Promise<void> {
   const instanceId = get(runtime).instanceId;
 
@@ -64,23 +63,6 @@ export async function submitAddDataForm(
     await invalidate("init");
   }
 
-  // Convert the form values to Source YAML
-  // TODO: Quite a few adhoc code is being added. We should revisit the way we generate the yaml.
-  const formValues = Object.fromEntries(
-    Object.entries(values).map(([key, value]) => {
-      switch (key) {
-        case "project_id":
-        case "account":
-        case "output_location":
-        case "workgroup":
-        case "database_url":
-          return [key, value];
-        default:
-          return [fromYupFriendlyKey(key), value];
-      }
-    }),
-  );
-
   /**
    * Sources
    */
@@ -93,7 +75,7 @@ export async function submitAddDataForm(
 
     // Make a new <source>.yaml file
     const newSourceFilePath = getFileAPIPathFromNameAndType(
-      values.name as string,
+      formValues.name as string,
       EntityType.Table,
     );
     await runtimeServicePutFile(instanceId, {
