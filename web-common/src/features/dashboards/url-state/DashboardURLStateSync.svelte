@@ -69,14 +69,17 @@
   }
 
   let prevUrl = "";
+  let mounted = false;
+  let navigatedFromWithin = false;
   let initializing = false;
 
   onMount(() => {
+    mounted = true;
     // in some cases afterNavigate is not always triggered
     // so this is the escape hatch to make sure dashboard store gets initialised
     setTimeout(() => {
       if (!$dashboardStore) {
-        void handleExploreInit(true);
+        void handleExploreInit(!navigatedFromWithin);
       }
     });
   });
@@ -89,6 +92,7 @@
   });
 
   afterNavigate(({ from, to, type }) => {
+    navigatedFromWithin = true;
     if (
       // null checks
       !metricsSpec ||
@@ -178,6 +182,12 @@
     if (initializing || doNotInitYet) return;
     initializing = true;
 
+    // time range summary query has `enabled` based on `metricsSpec.timeDimension`
+    // isLoading will never be true when the query is disabled, so we need this check before waiting for it.
+    if (metricsSpec.timeDimension) {
+      await waitUntil(() => !timeRangeSummaryIsLoading);
+    }
+
     let initState: Partial<MetricsExplorerEntity> | undefined;
     let shouldUpdateUrl = false;
     if (exploreStateFromSessionStorage && !isManualUrlChange) {
@@ -203,11 +213,6 @@
       };
     }
 
-    // time range summary query has `enabled` based on `metricsSpec.timeDimension`
-    // isLoading will never be true when the query is disabled, so we need this check before waiting for it.
-    if (metricsSpec.timeDimension) {
-      await waitUntil(() => !timeRangeSummaryIsLoading);
-    }
     metricsExplorerStore.init(exploreName, initState);
     timeControlsState ??= getTimeControlState(
       metricsSpec,
@@ -279,13 +284,18 @@
     void gotoNewState();
   }
 
+  function initFromReactiveStatement() {
+    if (!mounted) return;
+    void handleExploreInit(!navigatedFromWithin);
+  }
+
   // reactive statement to try re-init if not already initialised
   // this can happen during the initial deploy of project and the user is on dashboard page while it completes reconcile
   $: if (
     !$dashboardStore &&
     exploreStateFromYAMLConfig.activePage !== undefined
   ) {
-    void handleExploreInit(true);
+    initFromReactiveStatement();
   }
 </script>
 
