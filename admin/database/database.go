@@ -908,9 +908,11 @@ type OrganizationInvite struct {
 }
 
 // ProjectInvite represents an outstanding invitation to join a project.
+// A ProjectInvite must have a corresponding OrganizationInvite.
 type ProjectInvite struct {
 	ID              string
 	Email           string
+	OrgInviteID     string    `db:"org_invite_id"`
 	ProjectID       string    `db:"project_id"`
 	ProjectRoleID   string    `db:"project_role_id"`
 	InvitedByUserID string    `db:"invited_by_user_id"`
@@ -979,10 +981,11 @@ type InsertOrganizationInviteOptions struct {
 }
 
 type InsertProjectInviteOptions struct {
-	Email     string `validate:"email"`
-	InviterID string
-	ProjectID string `validate:"required"`
-	RoleID    string `validate:"required"`
+	Email       string `validate:"email"`
+	OrgInviteID string `validate:"required"`
+	ProjectID   string `validate:"required"`
+	RoleID      string `validate:"required"`
+	InviterID   string
 }
 
 type ProjectAccessRequest struct {
