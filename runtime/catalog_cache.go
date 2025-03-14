@@ -136,6 +136,11 @@ func (c *catalogCache) flush(ctx context.Context) error {
 // get returns a resource from the catalog.
 // Unlike other catalog functions, it is safe to call get concurrently with calls to list and flush (i.e. under a read lock).
 func (c *catalogCache) get(n *runtimev1.ResourceName, withDeleted, clone bool) (*runtimev1.Resource, error) {
+	// sources are now internally parsed and stored as models.
+	// this can be removed when UI deprecate the concept of sources.
+	if n.Kind == ResourceKindSource {
+		n.Kind = ResourceKindModel
+	}
 	rs := c.resources[n.Kind]
 	if rs == nil {
 		return nil, drivers.ErrResourceNotFound
@@ -159,6 +164,11 @@ func (c *catalogCache) get(n *runtimev1.ResourceName, withDeleted, clone bool) (
 // The returned list is always safe to manipulate (e.g. sort/filter), but the resource pointers must not be edited unless clone=true.
 // Unlike other catalog functions, it is safe to call list concurrently with calls to get and flush (i.e. under a read lock).
 func (c *catalogCache) list(kind, path string, withDeleted, clone bool) []*runtimev1.Resource {
+	// sources are now internally parsed and stored as models.
+	// this can be removed when UI deprecate the concept of sources.
+	if kind == ResourceKindSource {
+		kind = ResourceKindModel
+	}
 	// Estimate number of resources to list
 	n := 0
 	if path != "" {
