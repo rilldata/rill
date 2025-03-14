@@ -40,10 +40,9 @@
 
   $: activeLeaderboardMeasure = $getMeasureByName($leaderboardMeasureName);
 
-  // If any measure has validPercentOfTotal, then the percent of total context column is valid
-  $: validPercentOfTotal = $visibleMeasures.some(
-    (measure) => measure.validPercentOfTotal,
-  );
+  $: validPercentOfTotal = leaderboardMeasureCountFeatureFlag
+    ? $visibleMeasures.some((measure) => measure.validPercentOfTotal)
+    : activeLeaderboardMeasure?.validPercentOfTotal || false;
 
   $: visibleDimensionsNames = $visibleDimensions
     .map(({ name }) => name)
