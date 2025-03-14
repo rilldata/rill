@@ -18,7 +18,7 @@ func (p *Parser) parseDotEnv(ctx context.Context, path string) error {
 	}
 	envMap, err := godotenv.Unmarshal(data)
 	if err != nil {
-		p.addParseError(path, err, false)
+		return err
 	}
 
 	p.DotEnv[path] = envMap
