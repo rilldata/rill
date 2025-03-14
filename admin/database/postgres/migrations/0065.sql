@@ -17,14 +17,14 @@ INSERT INTO org_invites (email, org_id, org_role_id, invited_by_user_id, created
 SELECT pi.email, p.org_id, (SELECT id FROM org_roles WHERE name = 'guest'), pi.invited_by_user_id, pi.created_on
 FROM project_invites pi
 JOIN projects p ON pi.project_id = p.id
-WHERE NOT EXISTS (SELECT 1 FROM org_invites oi WHERE oi.email = pi.email AND oi.org_id = p.org_id);
+WHERE NOT EXISTS (SELECT 1 FROM org_invites oi WHERE lower(oi.email) = lower(pi.email) AND oi.org_id = p.org_id);
 
 -- Update the project invites with the org invite ids
 UPDATE project_invites pi
 SET org_invite_id = oi.id
 FROM org_invites oi
 JOIN projects p ON oi.org_id = p.org_id
-WHERE pi.email = oi.email AND p.id = pi.project_id;
+WHERE lower(pi.email) = lower(oi.email) AND p.id = pi.project_id;
 
 -- Add the not null constraint
 ALTER TABLE project_invites ALTER COLUMN org_invite_id SET NOT NULL;
