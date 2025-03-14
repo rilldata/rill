@@ -26,7 +26,10 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 			if len(args) > 0 {
 				project = args[0]
 			}
-			if !local && !cmd.Flags().Changed("project") && len(args) == 0 && ch.Interactive {
+			if !local && project == "" {
+				if !ch.Interactive {
+					return fmt.Errorf("project not specified and could not be inferred from context")
+				}
 				var err error
 				project, err = ch.InferProjectName(cmd.Context(), ch.Org, path)
 				if err != nil {
