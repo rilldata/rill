@@ -206,7 +206,7 @@ func (r *Runtime) UpdateInstanceConnector(ctx context.Context, instanceID, name 
 		ConfigFromVariables: connector.PropertiesFromVariables,
 	})
 
-	return r.EditInstance(ctx, inst, false)
+	return r.EditInstance(ctx, inst, true)
 }
 
 func instanceAnnotationsToAttribs(instance *drivers.Instance) []attribute.KeyValue {
