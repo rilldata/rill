@@ -226,7 +226,7 @@ function fromExploreUrlParams(
 
     partialExploreState.allMeasuresVisible =
       selectedMeasures.length === explore.measures?.length;
-    partialExploreState.visibleMeasureKeys = new Set(selectedMeasures);
+    partialExploreState.visibleMeasures = [...selectedMeasures];
   }
 
   if (preset.dimensions?.length) {
@@ -243,7 +243,7 @@ function fromExploreUrlParams(
 
     partialExploreState.allDimensionsVisible =
       selectedDimensions.length === explore.dimensions?.length;
-    partialExploreState.visibleDimensionKeys = new Set(selectedDimensions);
+    partialExploreState.visibleDimensions = [...selectedDimensions];
   }
 
   if (preset.exploreSortBy) {
