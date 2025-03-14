@@ -4,6 +4,7 @@ import { test } from "./setup/base";
 import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/exploreInteractions";
 
 test.describe("Bookmarks", () => {
+  // TODO: use a separate explore to isolate bookmarks
   test("Create and verify home bookmark", async ({ page }) => {
     await page.goto("/e2e/openrtb/explore/auction_explore");
 

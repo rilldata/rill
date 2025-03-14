@@ -102,7 +102,7 @@ test.describe("leaderboard context column", () => {
       await page.getByRole("menuitem", { name: "Last 6 Hours" }).click();
     });
     // enable comparisons which should automatically enable a time comparison (including context column)
-    await page.getByRole("button", { name: "Comparing" }).click();
+    await page.getByLabel("Toggle time comparison").click();
 
     // This regex matches a line that:
     // - starts with "Facebook"

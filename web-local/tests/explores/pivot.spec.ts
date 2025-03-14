@@ -643,7 +643,7 @@ test.describe("pivot run through", () => {
     await timeWeek.dragTo(columnZone);
 
     // enable time comparison
-    await page.getByRole("button", { name: "Comparing" }).click();
+    await page.getByLabel("Toggle time comparison").click();
     await expect(page.locator(".status.running")).toHaveCount(0);
     await validateTableContents(page, "table", expectedTimeComparison);
 

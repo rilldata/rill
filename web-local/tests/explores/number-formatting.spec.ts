@@ -138,7 +138,7 @@ dimensions:
     await interactWithTimeRangeMenu(page, async () => {
       await page.getByRole("menuitem", { name: "Last 4 Weeks" }).click();
     });
-    await page.getByRole("button", { name: "Comparing" }).click();
+    await page.getByLabel("Toggle time comparison").click();
 
     await expect(
       page.getByRole("row", { name: "null 27 s -4.3 s -14%" }),

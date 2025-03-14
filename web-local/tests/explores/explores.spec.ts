@@ -123,7 +123,7 @@ time_ranges:
       await page.getByRole("menuitem", { name: "Last 6 Hours" }).click();
     });
 
-    await page.getByRole("button", { name: "Comparing" }).click();
+    await page.getByLabel("Toggle time comparison").click();
 
     // Check that the total records are 272 and have comparisons
     await expect(page.getByText("272 -23 -8%")).toBeVisible();
@@ -174,13 +174,13 @@ time_ranges:
     expect(parquetRegex.test(downloadParquet.suggestedFilename())).toBe(true);
 
     // Turn off comparison
-    await page.getByRole("button", { name: "Comparing" }).click();
+    await page.getByLabel("Toggle time comparison").click();
 
     // Check number
     await expect(page.getByText("272", { exact: true })).toBeVisible();
 
     // Add comparison back
-    await page.getByRole("button", { name: "Comparing" }).click();
+    await page.getByLabel("Toggle time comparison").click();
 
     /*
       There is a bug where if you programmatically click the Time Range Selector button right after clicking the "Previous Period" menu item,
@@ -514,7 +514,7 @@ dimensions:
     await page
       .getByRole("menuitem", { name: "No comparison dimension" })
       .click();
-    await page.getByRole("button", { name: "Comparing" }).click();
+    await page.getByLabel("Toggle time comparison").click();
 
     await expect(page.getByText("~0%")).toBeVisible();
 
