@@ -166,20 +166,6 @@ export function convertURLToExplorePreset(
     }
   }
 
-  if (searchParams.has(ExploreStateURLParams.LeaderboardMeasureCount)) {
-    const count = searchParams.get(
-      ExploreStateURLParams.LeaderboardMeasureCount,
-    );
-    const parsedCount = parseInt(count ?? "", 10);
-    if (!isNaN(parsedCount) && parsedCount > 0) {
-      preset.exploreLeaderboardMeasureCount = parsedCount;
-    } else {
-      errors.push(
-        getSingleFieldError("leaderboard measure count", count ?? ""),
-      );
-    }
-  }
-
   return { preset, errors };
 }
 
@@ -448,22 +434,6 @@ function fromExploreUrlParams(
     }
   }
 
-  if (
-    searchParams.has(ExploreStateURLParams.SortBy) &&
-    !searchParams.has(ExploreStateURLParams.LeaderboardMeasureCount)
-  ) {
-    // Gracefully remove sort_by from the URL
-    preset.exploreSortBy = undefined;
-
-    // Error because sort_by is not a valid option without
-    // leaderboard_measure_count
-    errors.push(
-      new Error(
-        "This sort_by requires leaderboard_measure_count to be set to view the leaderboard.",
-      ),
-    );
-  }
-
   if (searchParams.has(ExploreStateURLParams.SortDirection)) {
     preset.exploreSortAsc =
       (searchParams.get(ExploreStateURLParams.SortDirection) as string) ===
@@ -476,20 +446,6 @@ function fromExploreUrlParams(
       preset.exploreSortType = FromURLParamsSortTypeMap[sortType];
     } else {
       errors.push(getSingleFieldError("sort type", sortType));
-    }
-  }
-
-  if (searchParams.has(ExploreStateURLParams.LeaderboardMeasureCount)) {
-    const count = searchParams.get(
-      ExploreStateURLParams.LeaderboardMeasureCount,
-    );
-    const parsedCount = parseInt(count ?? "", 10);
-    if (!isNaN(parsedCount) && parsedCount > 0) {
-      preset.exploreLeaderboardMeasureCount = parsedCount;
-    } else {
-      errors.push(
-        getSingleFieldError("leaderboard measure count", count ?? ""),
-      );
     }
   }
 

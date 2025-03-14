@@ -314,18 +314,6 @@ function toExploreUrl(
 
   if (
     shouldSetParam(
-      preset.exploreLeaderboardMeasureCount,
-      exploreState.leaderboardMeasureCount,
-    )
-  ) {
-    searchParams.set(
-      ExploreStateURLParams.LeaderboardMeasureCount,
-      exploreState.leaderboardMeasureCount?.toString(),
-    );
-  }
-
-  if (
-    shouldSetParam(
       preset.exploreLeaderboardContextColumns,
       exploreState.leaderboardContextColumns,
     )
