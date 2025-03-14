@@ -2041,8 +2041,6 @@ If not found in `time_ranges`, it should be added to the list. */
   exploreSortAsc?: boolean;
   exploreSortType?: V1ExploreSortType;
   exploreExpandedDimension?: string;
-  exploreLeaderboardMeasureCount?: number;
-  exploreLeaderboardContextColumns?: string[];
   timeDimensionMeasure?: string;
   timeDimensionChartType?: string;
   timeDimensionPin?: boolean;

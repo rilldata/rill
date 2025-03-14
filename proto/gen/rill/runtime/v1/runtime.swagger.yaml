@@ -4345,12 +4345,6 @@ definitions:
         $ref: '#/definitions/v1ExploreSortType'
       exploreExpandedDimension:
         type: string
-      exploreLeaderboardMeasureCount:
-        type: number
-      exploreLeaderboardContextColumns:
-        type: array
-        items:
-          type: string
       timeDimensionMeasure:
         type: string
       timeDimensionChartType:
