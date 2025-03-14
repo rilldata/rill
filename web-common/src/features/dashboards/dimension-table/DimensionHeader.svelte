@@ -23,7 +23,6 @@
   import { getStateManagers } from "../state-managers/state-managers";
   import SelectAllButton from "./SelectAllButton.svelte";
   import { getDimensionTableExportQuery } from "./dimension-table-export";
-  import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
 
   export let dimensionName: string;
   export let isFetching: boolean;

@@ -114,7 +114,6 @@ export function computePercentOfTotal(
 export function getComparisonProperties(
   measureName: string,
   selectedMeasure: MetricsViewSpecMeasureV2,
-  contextColumns: string[] = [],
 ): {
   component: typeof SvelteComponent<any>;
   type: string;
