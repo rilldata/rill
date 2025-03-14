@@ -312,22 +312,6 @@ function toExploreUrl(
     );
   }
 
-  if (
-    shouldSetParam(
-      preset.exploreLeaderboardContextColumns,
-      exploreState.leaderboardContextColumns,
-    )
-  ) {
-    if (exploreState.leaderboardContextColumns.length === 0) {
-      searchParams.delete(ExploreStateURLParams.LeaderboardContextColumns);
-    } else {
-      searchParams.set(
-        ExploreStateURLParams.LeaderboardContextColumns,
-        exploreState.leaderboardContextColumns.join(","),
-      );
-    }
-  }
-
   return searchParams;
 }
 
