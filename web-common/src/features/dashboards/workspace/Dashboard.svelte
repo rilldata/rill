@@ -38,18 +38,25 @@
     dashboardStore,
   } = StateManagers;
 
-  // TODO(@lovincyrus): move this elsewhere
-  // Get top k (leaderboardMeasureCount) of visible measures
-  $: activeMeasureNames = $visibleMeasures
+  const {
+    cloudDataViewer,
+    readOnly,
+    leaderboardMeasureCount: leaderboardMeasureCountFeatureFlag,
+  } = featureFlags;
+
+  const timeControlsStore = useTimeControlStore(StateManagers);
+
+  let exploreContainerWidth: number;
+
+  // FIXME: move to activeMeasure selectors
+  $: activeMeasureNamesFromMeasureCount = $visibleMeasures
     .slice(0, $leaderboardMeasureCount)
     .map(({ name }) => name)
     .filter(isDefined);
 
-  const timeControlsStore = useTimeControlStore(StateManagers);
-
-  const { cloudDataViewer, readOnly } = featureFlags;
-
-  let exploreContainerWidth: number;
+  $: leaderboardMeasureNames = $leaderboardMeasureCountFeatureFlag
+    ? activeMeasureNamesFromMeasureCount
+    : [$activeMeasureName];
 
   $: ({ instanceId } = $runtime);
 
@@ -230,7 +237,7 @@
             <LeaderboardDisplay
               {metricsViewName}
               activeMeasureName={$activeMeasureName}
-              {activeMeasureNames}
+              activeMeasureNames={leaderboardMeasureNames}
               {whereFilter}
               {dimensionThresholdFilters}
               {timeRange}
