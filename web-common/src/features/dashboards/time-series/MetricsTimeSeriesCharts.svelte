@@ -64,7 +64,7 @@
       dimensionFilters: { includedDimensionValues },
     },
     actions: {
-      measures: { toggleMeasureVisibility },
+      measures: { toggleMeasureVisibility, toggleAllMeasuresVisibility },
     },
     validSpecStore,
   } = getStateManagers();
@@ -313,7 +313,7 @@
         }))}
         selectedItems={visibleMeasureNames}
         onToggleSelectAll={() => {
-          toggleMeasureVisibility(allMeasureNames);
+          toggleAllMeasuresVisibility(allMeasureNames);
         }}
       />
 
