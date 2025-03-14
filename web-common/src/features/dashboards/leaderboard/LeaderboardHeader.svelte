@@ -25,6 +25,7 @@
   export let sortType: SortType;
   export let activeMeasureNames: string[] = [];
   export let sortBy: string | null;
+  export let leaderboardMeasureCountFeatureFlag: boolean;
   export let toggleSort: (sortType: SortType, measureName?: string) => void;
   export let setPrimaryDimension: (dimensionName: string) => void;
   export let toggleComparisonDimension: (
@@ -92,7 +93,11 @@
             class="measure-label line-clamp-2"
             title={measureLabel(measureName)}
           >
-            {measureLabel(measureName)}
+            {#if leaderboardMeasureCountFeatureFlag}
+              {measureLabel(measureName)}
+            {:else}
+              #
+            {/if}
           </span>
           {#if measureName === sortBy && sortType === SortType.VALUE}
             <div class="ui-copy-icon">
