@@ -127,7 +127,7 @@ function getExploreFields(
       DashboardState_LeaderboardSortDirection.ASCENDING;
   }
 
-  if (exploreState.leaderboardContextColumns !== undefined) {
+  if (exploreState.leaderboardContextColumn !== undefined) {
     // TODO: is this still used?
   }
 

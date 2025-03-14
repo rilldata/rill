@@ -1,7 +1,6 @@
 /**
  * This enum determines the state of the context column in the leaderboard
  */
-// FIXME: this should technically be LeaderboardContextColumnSortType
 export enum LeaderboardContextColumn {
   // show percent-of-total
   PERCENT = "percent",

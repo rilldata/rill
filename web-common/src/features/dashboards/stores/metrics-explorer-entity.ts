@@ -100,6 +100,7 @@ export interface MetricsExplorerEntity {
   /**
    * Whether to show all measures for a dimension in dimension detail.
    */
+  // @deprecated
   dimensionShowAllMeasures: boolean;
 
   /**
@@ -145,13 +146,7 @@ export interface MetricsExplorerEntity {
    * state of context column in the leaderboard
    */
   // @deprecated
-  // FIXME: to be removed once we fully migrate to leaderboardContextColumns
   leaderboardContextColumn: LeaderboardContextColumn;
-
-  /**
-   * Array of context columns to be shown in the leaderboard
-   */
-  leaderboardContextColumns: string[];
 
   /**
    * Width of each context column. Needs to be reset to default

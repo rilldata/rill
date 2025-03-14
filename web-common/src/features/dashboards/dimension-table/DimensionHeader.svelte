@@ -23,7 +23,6 @@
   import { getStateManagers } from "../state-managers/state-managers";
   import SelectAllButton from "./SelectAllButton.svelte";
   import { getDimensionTableExportQuery } from "./dimension-table-export";
-  import ContextColumnDropdown from "@rilldata/web-common/components/menu/ContextColumnDropdown.svelte";
   import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
 
   export let dimensionName: string;
@@ -39,16 +38,14 @@
   const {
     selectors: {
       sorting: { sortedByDimensionValue },
-      dimensions: { getDimensionDisplayName, dimensionShowAllMeasures },
+      dimensions: { getDimensionDisplayName },
       dimensionFilters: { isFilterExcludeMode },
       measures: { visibleMeasures },
-      contextColumn: { contextColumns },
     },
     actions: {
       sorting: { toggleSort },
-      dimensions: { setPrimaryDimension, toggleDimensionShowAllMeasures },
+      dimensions: { setPrimaryDimension },
       dimensionsFilter: { toggleDimensionFilterMode },
-      contextColumn: { setContextColumns },
     },
     timeRangeSummaryStore,
     dashboardStore,
@@ -156,15 +153,6 @@
 
   <!-- We fix the height to avoid a layout shift when the Search component is expanded. -->
   <div class="flex items-center gap-x-1 cursor-pointer h-9">
-    <ContextColumnDropdown
-      tooltipText="Choose context columns to display"
-      atLeastOneValidPercentOfTotal={validPercentOfTotal}
-      isTimeComparisonActive={!!comparisonTimeRange}
-      contextColumns={$contextColumns}
-      dimensionShowAllMeasures={$dimensionShowAllMeasures}
-      onContextColumnChange={setContextColumns}
-      onShowForAllMeasures={toggleDimensionShowAllMeasures}
-    />
     {#if !isRowsEmpty}
       <SelectAllButton
         {areAllTableRowsSelected}

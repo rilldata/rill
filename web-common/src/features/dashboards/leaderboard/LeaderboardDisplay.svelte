@@ -84,7 +84,7 @@
 
 <div class="flex flex-col overflow-hidden size-full" aria-label="Leaderboards">
   <div class="pl-2.5 pb-3">
-    <LeaderboardControls exploreName={$exploreName} {comparisonTimeRange} />
+    <LeaderboardControls exploreName={$exploreName} />
   </div>
   <div
     bind:this={parentElement}
