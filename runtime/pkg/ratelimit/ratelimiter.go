@@ -2,8 +2,10 @@ package ratelimit
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
+	"net"
 
 	"github.com/go-redis/redis_rate/v10"
 	"github.com/redis/go-redis/v9"
@@ -42,11 +44,13 @@ func (l *Redis) Limit(ctx context.Context, limitKey string, limit redis_rate.Lim
 
 	rateResult, err := l.Allow(ctx, limitKey, limit)
 	if err != nil {
-		// Check if the error is a 5xx like error
-		if isServerError(err) {
-			// Allow the request to proceed without rate limiting
+		// If the error is a server connection error, we should not return an error.
+		// This is because the server may be temporarily unavailable, and we should not block the request.
+		// The client should retry the request.
+		if isServerConnError(err) {
 			return nil
 		}
+
 		return err
 	}
 
@@ -107,12 +111,16 @@ func AnonLimitKey(methodName, peer string) string {
 	return fmt.Sprintf("anon:%s:%s", methodName, peer)
 }
 
-// isServerError checks if the error is a server-side error (5xx)
-func isServerError(err error) bool {
-	// go-redis server errors are typically returned as redis.Error
-	if _, ok := err.(redis.Error); ok {
-		// implement additional logic here to check for specific error messages
-		return true
+// isServerError checks if the error is a server connection error.
+func isServerConnError(err error) bool {
+	var netErr net.Error
+	if errors.As(err, &netErr) {
+		return netErr.Timeout()
 	}
+
+	if httpErr, ok := err.(interface{ StatusCode() int }); ok {
+		return httpErr.StatusCode() >= 500 && httpErr.StatusCode() < 600
+	}
+
 	return false
 }
