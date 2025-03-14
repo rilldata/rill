@@ -42,6 +42,11 @@ func (l *Redis) Limit(ctx context.Context, limitKey string, limit redis_rate.Lim
 
 	rateResult, err := l.Allow(ctx, limitKey, limit)
 	if err != nil {
+		// Check if the error is a 5xx like error
+		if isServerError(err) {
+			// Allow the request to proceed without rate limiting
+			return nil
+		}
 		return err
 	}
 
@@ -100,4 +105,14 @@ func AuthLimitKey(methodName, authID string) string {
 
 func AnonLimitKey(methodName, peer string) string {
 	return fmt.Sprintf("anon:%s:%s", methodName, peer)
+}
+
+// isServerError checks if the error is a server-side error (5xx)
+func isServerError(err error) bool {
+	// go-redis server errors are typically returned as redis.Error
+	if _, ok := err.(redis.Error); ok {
+		// implement additional logic here to check for specific error messages
+		return true
+	}
+	return false
 }
