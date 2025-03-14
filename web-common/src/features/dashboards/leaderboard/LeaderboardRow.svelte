@@ -13,7 +13,7 @@
   import LeaderboardTooltipContent from "./LeaderboardTooltipContent.svelte";
   import LongBarZigZag from "./LongBarZigZag.svelte";
   import {
-    DEFAULT_COL_WIDTH,
+    DEFAULT_COLUMN_WIDTH,
     deltaColumn,
     valueColumn,
   } from "./leaderboard-widths";
@@ -48,8 +48,8 @@
   export let suppressTooltip: boolean;
 
   let hovered = false;
-  let valueRect = new DOMRect(0, 0, DEFAULT_COL_WIDTH);
-  let deltaRect = new DOMRect(0, 0, DEFAULT_COL_WIDTH);
+  let valueRect = new DOMRect(0, 0, DEFAULT_COLUMN_WIDTH);
+  let deltaRect = new DOMRect(0, 0, DEFAULT_COLUMN_WIDTH);
   let parent: HTMLTableRowElement;
 
   $: ({
@@ -123,7 +123,7 @@
           ? clamp(
               0,
               length - dimensionColumnWidth - $valueColumn,
-              DEFAULT_COL_WIDTH,
+              DEFAULT_COLUMN_WIDTH,
             )
           : 0,
     ]),
@@ -138,7 +138,7 @@
           dimensionColumnWidth -
           $valueColumn -
           (thirdCellBarLengths[name] || 0),
-        DEFAULT_COL_WIDTH,
+        DEFAULT_COLUMN_WIDTH,
       ),
     ]),
   );
@@ -153,7 +153,7 @@
           $valueColumn -
           (thirdCellBarLengths[name] || 0) -
           (fourthCellBarLengths[name] || 0),
-        DEFAULT_COL_WIDTH,
+        DEFAULT_COLUMN_WIDTH,
       ),
     ]),
   );
