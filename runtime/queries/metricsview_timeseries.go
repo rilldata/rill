@@ -221,7 +221,7 @@ func (q *MetricsViewTimeSeries) populateResult(rows *drivers.Result, tsAlias str
 
 		if zeroTime.Equal(start) {
 			if q.TimeStart != nil {
-				start = timeutil.TruncateTime(q.TimeStart.AsTime(), convTimeGrain(q.TimeGranularity), tz, int(fdow), int(fmoy))
+				start = timeutil.TruncateTime(q.TimeStart.AsTime(), convFromAPITimeGrain(q.TimeGranularity), tz, int(fdow), int(fmoy))
 				data = addNulls(data, nullRecords, start, t, dur, tz)
 			}
 		} else {
