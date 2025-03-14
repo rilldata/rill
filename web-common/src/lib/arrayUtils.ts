@@ -28,9 +28,10 @@ export function createBatches<T>(array: T[], batchSize: number): T[][] {
 }
 
 export function arrayUnorderedEquals<T>(src: T[], tar: T[]) {
-  if (src.length !== tar.length) return false;
-  const set = new Set<T>(src);
-  return tar.every((t) => set.has(t));
+  const srcSet = new Set<T>(src);
+  const tarSet = new Set<T>(tar);
+  if (srcSet.size !== tarSet.size) return false;
+  return tar.every((t) => srcSet.has(t));
 }
 
 export function arrayOrderedEquals<T>(src: T[], tar: T[]) {
