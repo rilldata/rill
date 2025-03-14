@@ -4,14 +4,11 @@
   import { getSimpleMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { getStateManagers } from "../state-managers/state-managers";
-  import ContextColumnDropdown from "@rilldata/web-common/components/menu/ContextColumnDropdown.svelte";
   import LeaderboardMeasureCountSelector from "@rilldata/web-common/components/menu/LeaderboardMeasureCountSelector.svelte";
-  import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
   import { featureFlags } from "../../feature-flags";
   import LeaderboardActiveMeasureDropdown from "@rilldata/web-common/components/menu/LeaderboardActiveMeasureDropdown.svelte";
 
   export let exploreName: string;
-  export let comparisonTimeRange: V1TimeRange | undefined;
 
   const StateManagers = getStateManagers();
   const {
@@ -23,17 +20,12 @@
         leaderboardMeasureName,
         getMeasureByName,
       },
-      dimensions: {
-        visibleDimensions,
-        allDimensions,
-        dimensionShowAllMeasures,
-      },
-      contextColumn: { contextColumns },
+      dimensions: { visibleDimensions, allDimensions },
       sorting: { sortByMeasure },
     },
     actions: {
-      dimensions: { toggleDimensionVisibility, toggleDimensionShowAllMeasures },
-      contextColumn: { setContextColumn, setContextColumns },
+      dimensions: { toggleDimensionVisibility },
+      contextColumn: { setContextColumn },
       setLeaderboardMeasureCount,
       setLeaderboardMeasureName,
       sorting: { setDefaultSort },
@@ -65,9 +57,8 @@
   // but it is not valid for this measure, then turn it off
   $: if (
     !validPercentOfTotal &&
-    metricsExplorer?.leaderboardContextColumns?.includes(
-      LeaderboardContextColumn.PERCENT,
-    )
+    metricsExplorer?.leaderboardContextColumn ===
+      LeaderboardContextColumn.PERCENT
   ) {
     setContextColumn(LeaderboardContextColumn.HIDDEN);
   }
@@ -117,16 +108,6 @@
           sortByMeasure={$sortByMeasure}
         />
       {/if}
-
-      <ContextColumnDropdown
-        tooltipText="Choose context columns to display"
-        atLeastOneValidPercentOfTotal={validPercentOfTotal}
-        isTimeComparisonActive={!!comparisonTimeRange}
-        contextColumns={$contextColumns}
-        dimensionShowAllMeasures={$dimensionShowAllMeasures}
-        onContextColumnChange={setContextColumns}
-        onShowForAllMeasures={toggleDimensionShowAllMeasures}
-      />
     </div>
   {/if}
 </div>
