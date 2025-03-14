@@ -16,7 +16,6 @@
       measures: {
         leaderboardMeasureCount,
         visibleMeasures,
-        allMeasures,
         leaderboardMeasureName,
         getMeasureByName,
       },
@@ -99,7 +98,7 @@
 
       {#if $leaderboardMeasureCountFeatureFlag}
         <LeaderboardMeasureCountSelector
-          measures={$allMeasures}
+          measures={$visibleMeasures}
           count={$leaderboardMeasureCount}
           onMeasureCountChange={(count) => {
             setLeaderboardMeasureCount(count);
