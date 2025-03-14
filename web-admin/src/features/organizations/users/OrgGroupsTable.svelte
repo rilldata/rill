@@ -1,6 +1,6 @@
 <script lang="ts">
   import type {
-    V1MemberUser,
+    V1OrganizationMemberUser,
     V1MemberUsergroup,
   } from "@rilldata/web-admin/client";
   import { flexRender } from "@tanstack/svelte-table";
@@ -11,7 +11,7 @@
 
   export let data: V1MemberUsergroup[];
   export let currentUserEmail: string;
-  export let searchUsersList: V1MemberUser[];
+  export let searchUsersList: V1OrganizationMemberUser[];
 
   const columns: ColumnDef<V1MemberUsergroup, any>[] = [
     {
@@ -27,6 +27,7 @@
       cell: ({ row }) =>
         flexRender(OrgGroupsTableRoleCell, {
           name: row.original.groupName,
+          managed: row.original.groupManaged,
           role: row.original.roleName,
         }),
       meta: {
@@ -41,6 +42,7 @@
       cell: ({ row }) =>
         flexRender(OrgGroupsTableActionsCell, {
           name: row.original.groupName,
+          managed: row.original.groupManaged,
           currentUserEmail: currentUserEmail,
           searchUsersList: searchUsersList,
         }),

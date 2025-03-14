@@ -34,6 +34,7 @@ import {
 import { mergeSearchParams } from "@rilldata/web-common/lib/url-utils";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
+  V1ExploreComparisonMode,
   type V1ExplorePreset,
   type V1ExploreSpec,
 } from "@rilldata/web-common/runtime-client";
@@ -101,7 +102,7 @@ export function convertExploreStateToURLSearchParams(
   // timeControlsState will be undefined for dashboards without timeseries
   if (timeControlsState) {
     mergeSearchParams(
-      toTimeRangesUrl(exploreState, exploreSpec, timeControlsState, preset),
+      toTimeRangesUrl(exploreState, timeControlsState, preset),
       urlCopy.searchParams,
     );
   }
@@ -154,7 +155,6 @@ export function convertExploreStateToURLSearchParams(
 
 function toTimeRangesUrl(
   exploreState: MetricsExplorerEntity,
-  exploreSpec: V1ExploreSpec,
   timeControlsState: TimeControlState,
   preset: V1ExplorePreset,
 ) {
@@ -169,10 +169,7 @@ function toTimeRangesUrl(
     );
   }
 
-  if (
-    exploreSpec.timeZones?.length &&
-    shouldSetParam(preset.timezone, exploreState.selectedTimezone)
-  ) {
+  if (shouldSetParam(preset.timezone, exploreState.selectedTimezone)) {
     searchParams.set(
       ExploreStateURLParams.TimeZone,
       exploreState.selectedTimezone,
@@ -191,12 +188,19 @@ function toTimeRangesUrl(
       ExploreStateURLParams.ComparisonTimeRange,
       toTimeRangeParam(timeControlsState.selectedComparisonTimeRange),
     );
+  } else if (
+    !exploreState.showTimeComparison &&
+    preset.comparisonMode ===
+      V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
+  ) {
+    searchParams.set(ExploreStateURLParams.ComparisonTimeRange, "");
   }
 
   const mappedTimeGrain =
     ToURLParamTimeGrainMapMap[
       timeControlsState.selectedTimeRange?.interval ?? ""
     ] ?? "";
+
   if (mappedTimeGrain && shouldSetParam(preset.timeGrain, mappedTimeGrain)) {
     searchParams.set(ExploreStateURLParams.TimeGrain, mappedTimeGrain);
   }
@@ -406,6 +410,7 @@ function toPivotUrlParams(
     sort?.id in ToURLParamTimeDimensionMap
       ? ToURLParamTimeDimensionMap[sort?.id]
       : sort?.id;
+
   if (shouldSetParam(preset.pivotSortBy, sortId)) {
     searchParams.set(ExploreStateURLParams.SortBy, sortId ?? "");
   }

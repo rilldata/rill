@@ -13,6 +13,7 @@
     type PivotState,
   } from "@rilldata/web-common/features/dashboards/pivot/types";
   import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
+  import { onDestroy } from "svelte";
   import { writable, type Readable } from "svelte/store";
   import { validateTableSchema } from "./selector";
   import { clearTableCache, getTableConfig, usePivotForCanvas } from "./util";
@@ -98,6 +99,10 @@
 
   $: hasColumnAndNoMeasure =
     pivotColumns.dimension.length > 0 && pivotColumns.measure.length === 0;
+
+  onDestroy(() => {
+    clearTableCache();
+  });
 </script>
 
 <div class="size-full overflow-hidden" style:max-height="inherit">

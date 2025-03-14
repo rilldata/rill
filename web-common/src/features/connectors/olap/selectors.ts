@@ -1,6 +1,5 @@
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
-import { TableInfo } from "../../../proto/gen/rill/runtime/v1/connectors_pb";
 import {
   type V1TableInfo,
   createConnectorServiceOLAPListTables,
@@ -74,7 +73,7 @@ export function useDatabases(instanceId: string, connector: string) {
           // Get the unique databases
           return (
             data.tables
-              ?.map((tableInfo: TableInfo) => tableInfo.database)
+              ?.map((table) => table.database)
               .filter((value, index, self) => self.indexOf(value) === index) ??
             []
           );

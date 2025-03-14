@@ -41,6 +41,8 @@ export function generateVLLineChartSpec(
       type: config.x?.type,
       ...(config.x.type === "temporal" && { format: "%b %d, %Y %H:%M" }),
     });
+
+    multiValueTooltipChannel = multiValueTooltipChannel.slice(0, 50);
   }
 
   spec.encoding = { x: createXEncoding(config, data) };
@@ -59,7 +61,7 @@ export function generateVLLineChartSpec(
             type: "point",
             filled: true,
             opacity: 1,
-            size: 40,
+            size: 50,
             clip: true,
             stroke: "white",
             strokeWidth: 1,

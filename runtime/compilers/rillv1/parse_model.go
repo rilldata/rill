@@ -34,7 +34,8 @@ type ModelYAML struct {
 		Connector  string         `yaml:"connector"`
 		Properties map[string]any `yaml:",inline" mapstructure:",remain"`
 	} `yaml:"output"`
-	Materialize *bool `yaml:"materialize"`
+	Materialize     *bool `yaml:"materialize"`
+	DefinedAsSource bool  `yaml:"defined_as_source"`
 }
 
 // parseModel parses a model definition and adds the resulting resource to p.Resources.
@@ -176,6 +177,8 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	if timeout > 0 {
 		r.ModelSpec.TimeoutSeconds = uint32(timeout.Seconds())
 	}
+
+	r.ModelSpec.DefinedAsSource = tmp.DefinedAsSource
 
 	r.ModelSpec.Incremental = tmp.Incremental
 

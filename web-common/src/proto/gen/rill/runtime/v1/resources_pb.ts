@@ -957,6 +957,13 @@ export class ModelSpec extends Message<ModelSpec> {
    */
   triggerFull = false;
 
+  /**
+   * defined_as_source is true if it was defined by user as a source but converted internally to a model.
+   *
+   * @generated from field: bool defined_as_source = 23;
+   */
+  definedAsSource = false;
+
   constructor(data?: PartialMessage<ModelSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -982,6 +989,7 @@ export class ModelSpec extends Message<ModelSpec> {
     { no: 12, name: "output_properties", kind: "message", T: Struct },
     { no: 9, name: "trigger", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 22, name: "trigger_full", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 23, name: "defined_as_source", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelSpec {
@@ -2311,6 +2319,13 @@ export class ExploreSpec extends Message<ExploreSpec> {
    */
   banner = "";
 
+  /**
+   * When set to true, dashboard will be locked to the first time zone in the time_zones key (or UTC)
+   *
+   * @generated from field: bool lock_time_zone = 19;
+   */
+  lockTimeZone = false;
+
   constructor(data?: PartialMessage<ExploreSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2334,6 +2349,7 @@ export class ExploreSpec extends Message<ExploreSpec> {
     { no: 16, name: "embeds_hide_pivot", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 12, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
     { no: 18, name: "banner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 19, name: "lock_time_zone", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExploreSpec {

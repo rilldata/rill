@@ -47,7 +47,7 @@ func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.L
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	token, err := unmarshalPageToken(req.PageToken)
@@ -62,9 +62,8 @@ func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.L
 	if claims.OrganizationPermissions(ctx, org.ID).ManageProjects {
 		projs, err = s.admin.DB.FindProjectsForOrganization(ctx, org.ID, token.Val, pageSize)
 	} else if claims.OwnerType() == auth.OwnerTypeUser {
-		// Get projects the user is a (direct or group) member of (note: the user can be a member of a project in the org, without being a member of org - we call this an "outside member")
-		// plus all public projects
-		projs, err = s.admin.DB.FindProjectsForOrgAndUser(ctx, org.ID, claims.OwnerID(), token.Val, pageSize)
+		// Get projects the user is a (direct or group) member of, plus all public projects.
+		projs, err = s.admin.DB.FindProjectsForOrgAndUser(ctx, org.ID, claims.OwnerID(), true, token.Val, pageSize)
 	} else {
 		projs, err = s.admin.DB.FindPublicProjectsInOrganization(ctx, org.ID, token.Val, pageSize)
 	}
@@ -89,6 +88,49 @@ func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.L
 	}
 
 	return &adminv1.ListProjectsForOrganizationResponse{
+		Projects:      dtos,
+		NextPageToken: nextToken,
+	}, nil
+}
+
+func (s *Server) ListProjectsForOrganizationAndUser(ctx context.Context, req *adminv1.ListProjectsForOrganizationAndUserRequest) (*adminv1.ListProjectsForOrganizationAndUserResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.organization", req.Organization),
+		attribute.String("args.user_id", req.UserId),
+	)
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	if err != nil {
+		return nil, err
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ReadOrgMembers {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to read org members")
+	}
+
+	pageToken, err := unmarshalPageToken(req.PageToken)
+	if err != nil {
+		return nil, err
+	}
+	pageSize := validPageSize(req.PageSize)
+
+	projects, err := s.admin.DB.FindProjectsForOrgAndUser(ctx, org.ID, req.UserId, false, pageToken.Val, pageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	nextToken := ""
+	if len(projects) >= pageSize {
+		nextToken = marshalPageToken(projects[len(projects)-1].Name)
+	}
+
+	dtos := make([]*adminv1.Project, len(projects))
+	for i, p := range projects {
+		dtos[i] = s.projToDTO(p, org.Name)
+	}
+
+	return &adminv1.ListProjectsForOrganizationAndUserResponse{
 		Projects:      dtos,
 		NextPageToken: nextToken,
 	}, nil
@@ -380,6 +422,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		attribute.String("args.prod_branch", req.ProdBranch),
 		attribute.String("args.github_url", req.GithubUrl),
 		attribute.String("args.archive_asset_id", req.ArchiveAssetId),
+		attribute.Bool("args.skip_deploy", req.SkipDeploy),
 	)
 
 	// Find parent org
@@ -440,6 +483,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		userID = &tmp
 	}
 
+	// Prepare the project options
 	opts := &database.InsertProjectOptions{
 		OrganizationID:       org.ID,
 		Name:                 req.Name,
@@ -459,7 +503,11 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		ProdTTLSeconds:       prodTTL,
 	}
 
-	if req.GithubUrl != "" {
+	// Check and validate the project file source.
+	// NOTE: It is allowed to create a project without a source. It will then error later when creating the deployment (which can be skipped by passing skip_deploy).
+	if req.GithubUrl != "" && req.ArchiveAssetId != "" {
+		return nil, status.Error(codes.InvalidArgument, "cannot set both github_url and archive_asset_id")
+	} else if req.GithubUrl != "" {
 		// Github projects must be configured by a user so we can ensure that they're allowed to access the repo.
 		if userID == nil {
 			return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
@@ -474,10 +522,8 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		opts.GithubURL = &req.GithubUrl
 		opts.ProdBranch = req.ProdBranch
 		opts.Subpath = req.Subpath
-	} else {
-		if req.ArchiveAssetId == "" {
-			return nil, status.Error(codes.InvalidArgument, "either github_url or archive_asset_id must be set")
-		}
+	} else if req.ArchiveAssetId != "" {
+		// Check access to the archive asset
 		if !s.hasAssetUsagePermission(ctx, req.ArchiveAssetId, org.ID, claims.OwnerID()) {
 			return nil, status.Error(codes.PermissionDenied, "archive_asset_id is not accessible to this org")
 		}
@@ -508,7 +554,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	}
 
 	// Create the project
-	proj, err := s.admin.CreateProject(ctx, org, opts)
+	proj, err := s.admin.CreateProject(ctx, org, opts, !req.SkipDeploy)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -766,7 +812,7 @@ func (s *Server) ListProjectMemberUsers(ctx context.Context, req *adminv1.ListPr
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -780,9 +826,18 @@ func (s *Server) ListProjectMemberUsers(ctx context.Context, req *adminv1.ListPr
 	}
 	pageSize := validPageSize(req.PageSize)
 
-	members, err := s.admin.DB.FindProjectMemberUsers(ctx, proj.ID, token.Val, pageSize)
+	var roleID string
+	if req.Role != "" {
+		role, err := s.admin.DB.FindProjectRole(ctx, req.Role)
+		if err != nil {
+			return nil, err
+		}
+		roleID = role.ID
+	}
+
+	members, err := s.admin.DB.FindProjectMemberUsers(ctx, proj.ID, roleID, token.Val, pageSize)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	nextToken := ""
@@ -790,9 +845,9 @@ func (s *Server) ListProjectMemberUsers(ctx context.Context, req *adminv1.ListPr
 		nextToken = marshalPageToken(members[len(members)-1].Email)
 	}
 
-	dtos := make([]*adminv1.MemberUser, len(members))
+	dtos := make([]*adminv1.ProjectMemberUser, len(members))
 	for i, member := range members {
-		dtos[i] = memberUserToPB(member)
+		dtos[i] = projMemberUserToPB(member)
 	}
 
 	return &adminv1.ListProjectMemberUsersResponse{
@@ -879,6 +934,9 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+	if role.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectAdmins {
+		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
+	}
 
 	var invitedByUserID, invitedByName string
 	if claims.OwnerType() == auth.OwnerTypeUser {
@@ -927,10 +985,13 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 		}, nil
 	}
 
-	err = s.admin.DB.InsertProjectMemberUser(ctx, proj.ID, user.ID, role.ID)
-	// continue sending an email if the user already exists
-	if err != nil && !errors.Is(err, database.ErrNotUnique) {
-		return nil, err
+	// Add the user to the project.
+	err = s.admin.InsertProjectMemberUser(ctx, proj.OrganizationID, proj.ID, user.ID, role.ID)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotUnique) {
+			return nil, err
+		}
+		// Even if the user is already a member, we continue to send the email again. Maybe they missed it the first time.
 	}
 
 	err = s.admin.Email.SendProjectAddition(&email.ProjectAddition{
@@ -995,6 +1056,15 @@ func (s *Server) RemoveProjectMemberUser(ctx context.Context, req *adminv1.Remov
 	if !isManager && !isSelf {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to remove project members")
 	}
+	if !isSelf {
+		currentRole, err := s.admin.DB.FindProjectMemberUserRole(ctx, proj.ID, user.ID)
+		if err != nil {
+			return nil, err
+		}
+		if currentRole.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectAdmins {
+			return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to remove an admin")
+		}
+	}
 
 	err = s.admin.DB.DeleteProjectMemberUser(ctx, proj.ID, user.ID)
 	if err != nil {
@@ -1025,6 +1095,9 @@ func (s *Server) SetProjectMemberUserRole(ctx context.Context, req *adminv1.SetP
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+	if role.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectAdmins {
+		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
+	}
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
@@ -1041,6 +1114,14 @@ func (s *Server) SetProjectMemberUserRole(ctx context.Context, req *adminv1.SetP
 			return nil, err
 		}
 		return &adminv1.SetProjectMemberUserRoleResponse{}, nil
+	}
+
+	currentRole, err := s.admin.DB.FindProjectMemberUserRole(ctx, proj.ID, user.ID)
+	if err != nil {
+		return nil, err
+	}
+	if currentRole.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectAdmins {
+		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to remove an admin")
 	}
 
 	err = s.admin.DB.UpdateProjectMemberUserRole(ctx, proj.ID, user.ID, role.ID)
@@ -1228,14 +1309,17 @@ func (s *Server) ApproveProjectAccess(ctx context.Context, req *adminv1.ApproveP
 	if err != nil {
 		return nil, err
 	}
+	if role.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectAdmins {
+		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
+	}
 
-	// add the user
-	err = s.admin.DB.InsertProjectMemberUser(ctx, proj.ID, user.ID, role.ID)
+	// Add the user as a project member.
+	err = s.admin.InsertProjectMemberUser(ctx, proj.OrganizationID, proj.ID, user.ID, role.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	// remove the invitation
+	// Remove the access request.
 	err = s.admin.DB.DeleteProjectAccessRequest(ctx, req.Id)
 	if err != nil {
 		return nil, err
@@ -1424,6 +1508,9 @@ func (s *Server) CreateProjectWhitelistedDomain(ctx context.Context, req *adminv
 	if err != nil {
 		return nil, err
 	}
+	if role.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectAdmins {
+		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
+	}
 
 	// find existing users belonging to the whitelisted domain to the project
 	users, err := s.admin.DB.FindUsersByEmailPattern(ctx, "%@"+req.Domain, "", math.MaxInt)
@@ -1444,7 +1531,7 @@ func (s *Server) CreateProjectWhitelistedDomain(ctx context.Context, req *adminv
 		}
 	}
 
-	ctx, tx, err := s.admin.DB.NewTx(ctx)
+	ctx, tx, err := s.admin.DB.NewTx(ctx, false)
 	if err != nil {
 		return nil, err
 	}
@@ -1460,7 +1547,8 @@ func (s *Server) CreateProjectWhitelistedDomain(ctx context.Context, req *adminv
 	}
 
 	for _, user := range newUsers {
-		err = s.admin.DB.InsertProjectMemberUser(ctx, proj.ID, user.ID, role.ID)
+		// Add the user to the project.
+		err = s.admin.InsertProjectMemberUser(ctx, proj.OrganizationID, proj.ID, user.ID, role.ID)
 		if err != nil {
 			return nil, err
 		}

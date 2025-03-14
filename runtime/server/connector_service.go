@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/bigquery"
 	"github.com/rilldata/rill/runtime/drivers/gcs"
 	"github.com/rilldata/rill/runtime/drivers/s3"
@@ -52,7 +53,7 @@ func (s *Server) S3GetBucketMetadata(ctx context.Context, req *runtimev1.S3GetBu
 	}
 	defer release()
 
-	region, err := s3Conn.GetBucketMetadata(ctx, req)
+	region, err := s3Conn.GetBucketRegion(ctx, req.Bucket)
 	if err != nil {
 		return nil, err
 	}
@@ -141,10 +142,12 @@ func (s *Server) OLAPListTables(ctx context.Context, req *runtimev1.OLAPListTabl
 	}
 	defer release()
 
-	tables, err := olap.InformationSchema().All(ctx, req.SearchPattern)
+	i := olap.InformationSchema()
+	tables, err := i.All(ctx, req.SearchPattern)
 	if err != nil {
 		return nil, err
 	}
+	_ = i.LoadPhysicalSize(ctx, tables)
 
 	res := make([]*runtimev1.TableInfo, len(tables))
 	for i, table := range tables {
@@ -155,6 +158,7 @@ func (s *Server) OLAPListTables(ctx context.Context, req *runtimev1.OLAPListTabl
 			IsDefaultDatabaseSchema: table.IsDefaultDatabaseSchema,
 			Name:                    table.Name,
 			HasUnsupportedDataTypes: len(table.UnsupportedCols) != 0,
+			PhysicalSizeBytes:       table.PhysicalSizeBytes,
 		}
 	}
 	return &runtimev1.OLAPListTablesResponse{
@@ -173,11 +177,13 @@ func (s *Server) OLAPGetTable(ctx context.Context, req *runtimev1.OLAPGetTableRe
 	if err != nil {
 		return nil, err
 	}
+	_ = olap.InformationSchema().LoadPhysicalSize(ctx, []*drivers.Table{table})
 
 	return &runtimev1.OLAPGetTableResponse{
 		Schema:             table.Schema,
 		UnsupportedColumns: table.UnsupportedCols,
 		View:               table.View,
+		PhysicalSizeBytes:  table.PhysicalSizeBytes,
 	}, nil
 }
 

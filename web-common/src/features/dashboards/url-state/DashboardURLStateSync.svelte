@@ -14,7 +14,6 @@
     getUpdatedUrlForExploreState,
   } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
   import {
-    clearExploreSessionStore,
     hasSessionStorageData,
     updateExploreSessionStore,
   } from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-store";
@@ -90,10 +89,6 @@
       // routing to the same path but probably different url params
       return;
     }
-
-    // session store is only used to save state for different views and not keep other params url
-    // so, we clear the store when we navigate away
-    clearExploreSessionStore(exploreName, extraKeyPrefix);
   });
 
   afterNavigate(({ from, to, type }) => {
@@ -259,6 +254,7 @@
     if (!exploreSpec) return;
 
     const u = new URL($page.url);
+
     u.search = convertExploreStateToURLSearchParams(
       $dashboardStore,
       exploreSpec,

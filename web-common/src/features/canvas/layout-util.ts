@@ -14,9 +14,9 @@ export const initialHeights: Record<CanvasComponentType, number> = {
   stacked_bar: 320,
   stacked_bar_normalized: 320,
   markdown: 80,
-  kpi: 200,
-  kpi_grid: 200,
-  image: 300,
+  kpi: 128,
+  kpi_grid: 128,
+  image: 80,
   table: 300,
 };
 
@@ -78,6 +78,7 @@ export function moveToRow<T extends YAMLRow | V1CanvasRow>(
   dropPosition?: {
     column?: number;
     row: number;
+    copy?: boolean;
   },
   defaultMetrics?: {
     metricsViewName: string;
@@ -135,6 +136,13 @@ export function moveToRow<T extends YAMLRow | V1CanvasRow>(
               definedInCanvas: true,
             },
       );
+    } else if (dropPosition?.copy && item.position) {
+      const row = rowsClone[item.position.row];
+      if (!row) return;
+      const component = row.items?.[item.position.column];
+      if (!component) return;
+
+      movedComponents.push(structuredClone(component));
     } else if (item.position) {
       const row = rowsClone[item.position.row];
       if (!row) return;

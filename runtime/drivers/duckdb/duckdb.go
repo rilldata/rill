@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -390,6 +389,8 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 			return &sqlStoreToSelfExecutor{c}, true
 		case "https":
 			return &httpsToSelfExecutor{c}, true
+		case "motherduck":
+			return &mdToSelfExecutor{c}, true
 		}
 		if _, ok := opts.InputHandle.AsObjectStore(); ok {
 			return &objectStoreToSelfExecutor{c}, true
@@ -502,7 +503,6 @@ func (c *connection) reopenDB(ctx context.Context) error {
 	if !c.config.AllowHostAccess {
 		dbInitQueries = append(dbInitQueries,
 			"SET GLOBAL preserve_insertion_order TO false",
-			fmt.Sprintf("SET GLOBAL secret_directory = %s", safeSQLString(filepath.Join(dataDir, ".duckdb", "secrets"))),
 		)
 	}
 

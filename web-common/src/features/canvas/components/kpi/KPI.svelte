@@ -22,6 +22,7 @@
   import type { Readable } from "svelte/motion";
   import type { KPISpec } from ".";
   import { validateKPISchema } from "./selector";
+  import { BIG_NUMBER_MIN_WIDTH } from ".";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
   export let timeAndFilterStore: Readable<TimeAndFilterStore>;
@@ -186,6 +187,8 @@
     DateTime.fromISO(end ?? "").setZone(timeZone),
   );
 
+  $: adjustment = 30 - (comparisonOptions?.length ?? 0) * 10;
+
   function getFormattedDiff(comparisonValue: number, currentValue: number) {
     const delta = currentValue - comparisonValue;
     return `${delta >= 0 ? "+" : ""}${measureValueFormatter(delta)}`;
@@ -194,40 +197,32 @@
 
 {#if isValid}
   {#if measure && !primaryTotalIsFetching}
-    <div
-      class:flex-col={!isSparkRight}
-      class="flex gap-0 items-center justify-center size-full"
-    >
+    <div class="wrapper" class:spark-right={isSparkRight}>
       <div
-        class:!items-start={isSparkRight}
-        class="flex flex-col items-center w-full"
+        class="data-wrapper"
+        style:min-width="{BIG_NUMBER_MIN_WIDTH - adjustment}px"
       >
-        <h2
-          class:text-center={!isSparkRight}
-          class="font-medium text-sm text-gray-600 line-clamp-1 truncate"
-        >
+        <h2 class="measure-name">
           {measure?.displayName || measureName}
         </h2>
-        <span
-          class="text-3xl font-medium text-gray-600 flex gap-x-0.5 items-end"
-        >
+
+        <span class="big-number">
           {#if hoveredPoints?.[0]?.value != null}
-            <span class="text-primary-500">
+            <span class="hovered-value">
               {measureValueFormatter(currentValue)}
             </span>
-            <span class="text-lg">/</span>
-            <span class="text-gray-600 text-lg">
+
+            <span class="slash">/</span>
+            <span class="primary-value-on-hover">
               {measureValueFormatter(primaryTotal)}
             </span>
           {:else}
             {measureValueFormatter(primaryTotal)}
           {/if}
         </span>
-      </div>
 
-      <div class="flex flex-col items-center">
         {#if showComparison}
-          <div class="flex items-baseline gap-x-2 text-sm -mb-[3px]">
+          <div class="comparison-value-wrapper">
             {#if comparisonOptions?.includes("previous")}
               <span class="comparison-value">
                 {measureValueFormatter(comparisonVal)}
@@ -253,7 +248,7 @@
             {/if}
 
             {#if comparisonOptions?.includes("percent_change") && comparisonPercChange != null && !measureIsPercentage}
-              <div
+              <span
                 class="w-fit font-semibold ui-copy-inactive"
                 class:text-red-500={primaryTotal && primaryTotal < 0}
               >
@@ -265,20 +260,20 @@
                     comparisonPercChange,
                   )}
                 />
-              </div>
+              </span>
             {/if}
           </div>
 
           {#if comparisonLabel}
-            <div class="comparison-range">
+            <p class="text-sm text-gray-400 break-words">
               vs {comparisonLabel?.toLowerCase()}
-            </div>
+            </p>
           {/if}
         {/if}
       </div>
 
       {#if showSparkline}
-        <div class="size-full flex items-center justify-center mt-2">
+        <div class="sparkline-wrapper">
           {#if primaryDataIsFetching}
             <Spinner status={EntityStatus.Running} />
           {:else if timeGrain && timeZone}
@@ -309,12 +304,85 @@
 {/if}
 
 <style lang="postcss">
-  .comparison-range {
-    @apply text-sm text-gray-400;
+  .wrapper {
+    @apply flex items-center justify-center size-full gap-2 flex-col;
+  }
+
+  .wrapper.spark-right {
+    @apply flex-row;
+  }
+
+  .data-wrapper {
+    @apply flex flex-col w-full h-fit justify-center  items-center;
+    @apply overflow-hidden text-ellipsis;
+    flex: 1 0 auto;
+  }
+
+  .spark-right .data-wrapper {
+    @apply items-start h-full;
+    flex: 0 4 20%;
+  }
+
+  .measure-name {
+    @apply flex-none text-center font-medium text-sm text-gray-600 break-words line-clamp-1;
+  }
+
+  .spark-right .measure-name {
+    @apply line-clamp-2 text-left max-w-40;
+  }
+
+  .big-number {
+    @apply text-3xl font-medium text-gray-600 flex gap-x-0.5 items-end;
+  }
+
+  .hovered-value {
+    @apply text-primary-500;
+  }
+
+  .slash {
+    @apply text-lg;
+  }
+
+  .primary-value-on-hover {
+    @apply text-gray-600 text-lg;
+  }
+
+  .spark-right .slash,
+  .spark-right .primary-value-on-hover {
+    display: none;
+  }
+
+  .comparison-value-wrapper {
+    @apply flex items-baseline gap-x-2 text-sm -mb-[3px] truncate flex-none;
+  }
+
+  .sparkline-wrapper {
+    @apply size-full flex items-center justify-center flex-shrink;
+  }
+
+  .spark-right .sparkline-wrapper {
+    @apply mt-2;
+    flex: 4 1 80%;
   }
 
   .comparison-value {
     @apply w-fit max-w-full overflow-hidden;
     @apply font-medium text-ellipsis text-gray-500;
+  }
+
+  @container component-container (inline-size < 300px) {
+    .spark-right .sparkline-wrapper {
+      display: none;
+    }
+
+    .spark-right .data-wrapper {
+      align-items: center !important;
+      flex: 0 2 auto !important;
+    }
+
+    .spark-right .measure-name {
+      max-width: 100% !important;
+      text-align: center !important;
+    }
   }
 </style>

@@ -19,25 +19,22 @@ import (
 // TODO: The functions in this file are not truly fault tolerant. They should be refactored to run as idempotent, retryable background tasks.
 
 // CreateProject creates a new project and provisions and reconciles a prod deployment for it.
-func (s *Service) CreateProject(ctx context.Context, org *database.Organization, opts *database.InsertProjectOptions) (*database.Project, error) {
-	isGitInfoEmpty := opts.GithubURL == nil || opts.GithubInstallationID == nil || opts.ProdBranch == ""
-	if (opts.ArchiveAssetID == nil) == isGitInfoEmpty {
-		return nil, fmt.Errorf("either github info or archive_asset_id must be set")
-	}
-
+func (s *Service) CreateProject(ctx context.Context, org *database.Organization, opts *database.InsertProjectOptions, deploy bool) (*database.Project, error) {
 	// Get roles for initial setup
 	adminRole, err := s.DB.FindProjectRole(ctx, database.ProjectRoleNameAdmin)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	viewerRole, err := s.DB.FindProjectRole(ctx, database.ProjectRoleNameViewer)
+
+	// Get the autogroup:members group
+	allMembers, err := s.DB.FindUsergroupByName(ctx, org.Name, database.UsergroupNameAutogroupMembers)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	// Create the project and add initial members using a transaction.
 	// The transaction is not used for provisioning and deployments, since they involve external services.
-	txCtx, tx, err := s.DB.NewTx(ctx)
+	txCtx, tx, err := s.DB.NewTx(ctx, false)
 	if err != nil {
 		return nil, err
 	}
@@ -50,21 +47,46 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 
 	// The creating user becomes project admin
 	if opts.CreatedByUserID != nil {
-		err = s.DB.InsertProjectMemberUser(txCtx, proj.ID, *opts.CreatedByUserID, adminRole.ID)
+		err = s.InsertProjectMemberUser(txCtx, org.ID, proj.ID, *opts.CreatedByUserID, adminRole.ID)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	// All org members as a group get viewer role
-	err = s.DB.InsertProjectMemberUsergroup(txCtx, *org.AllUsergroupID, proj.ID, viewerRole.ID)
-	if err != nil {
-		return nil, err
+	// Add the system-managed autogroup:members group to the project with the org.DefaultProjectRoleID role (if configured)
+	if org.DefaultProjectRoleID != nil {
+		err = s.DB.InsertProjectMemberUsergroup(txCtx, allMembers.ID, proj.ID, *org.DefaultProjectRoleID)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	err = tx.Commit()
 	if err != nil {
 		return nil, err
+	}
+
+	var createdByID, createdByEmail string
+	if opts.CreatedByUserID != nil {
+		user, err := s.DB.FindUser(ctx, *proj.CreatedByUserID)
+		if err == nil {
+			createdByID = user.ID
+			createdByEmail = user.Email
+		}
+	}
+
+	s.Logger.Info("created project", zap.String("id", proj.ID), zap.String("name", proj.Name), zap.String("org", org.Name), zap.String("user_id", createdByID), zap.String("user_email", createdByEmail))
+
+	// Exit early if not deploying
+	if !deploy {
+		return proj, nil
+	}
+
+	// Check if the project has an archive or git info
+	hasArchive := opts.ArchiveAssetID != nil
+	hasGitInfo := opts.GithubURL != nil && opts.GithubInstallationID != nil && opts.ProdBranch != ""
+	if !hasArchive && !hasGitInfo {
+		return nil, fmt.Errorf("failed to deploy project: either an archive or git info must be provided")
 	}
 
 	// Provision prod deployment.
@@ -104,17 +126,6 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 	if err != nil {
 		return nil, err
 	}
-
-	var createdByID, createdByEmail string
-	if opts.CreatedByUserID != nil {
-		user, err := s.DB.FindUser(ctx, *proj.CreatedByUserID)
-		if err == nil {
-			createdByID = user.ID
-			createdByEmail = user.Email
-		}
-	}
-
-	s.Logger.Info("created project", zap.String("id", proj.ID), zap.String("name", proj.Name), zap.String("org", org.Name), zap.String("user_id", createdByID), zap.String("user_email", createdByEmail))
 
 	return res, nil
 }
@@ -215,7 +226,7 @@ func (s *Service) UpdateProjectVariables(ctx context.Context, project *database.
 	if len(vars) == 0 && len(unsetVars) == 0 {
 		return nil
 	}
-	txCtx, tx, err := s.DB.NewTx(ctx)
+	txCtx, tx, err := s.DB.NewTx(ctx, false)
 	if err != nil {
 		return err
 	}

@@ -397,6 +397,8 @@ paths:
                 type: string
               faviconAssetId:
                 type: string
+              defaultProjectRole:
+                type: string
               billingEmail:
                 type: string
       tags:
@@ -590,6 +592,16 @@ paths:
           in: path
           required: true
           type: string
+        - name: role
+          description: Optionally filter by role
+          in: query
+          required: false
+          type: string
+        - name: includeCounts
+          description: Optionally include counts
+          in: query
+          required: false
+          type: boolean
         - name: pageSize
           in: query
           required: false
@@ -654,10 +666,6 @@ paths:
           in: path
           required: true
           type: string
-        - name: keepProjectRoles
-          in: query
-          required: false
-          type: boolean
       tags:
         - AdminService
     put:
@@ -713,7 +721,7 @@ paths:
         - AdminService
   /v1/organizations/{organization}/project/{project}/usergroups:
     get:
-      summary: ListProjectMemberUsergroups lists the org's user groups
+      summary: ListProjectMemberUsergroups lists the project's user groups
       operationId: AdminService_ListProjectMemberUsergroups
       responses:
         "200":
@@ -732,6 +740,46 @@ paths:
         - name: project
           in: path
           required: true
+          type: string
+        - name: role
+          description: Optionally filter by role
+          in: query
+          required: false
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/projects-for-user:
+    get:
+      summary: |-
+        ListProjectsForOrganizationAndUser lists all the projects that an organization member user has access to.
+        It does not include projects that the user has access to through a usergroup.
+      operationId: AdminService_ListProjectsForOrganizationAndUser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListProjectsForOrganizationAndUserResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: userId
+          in: query
+          required: false
           type: string
         - name: pageSize
           in: query
@@ -1187,6 +1235,11 @@ paths:
         - name: project
           in: path
           required: true
+          type: string
+        - name: role
+          description: Optionally filter by role
+          in: query
+          required: false
           type: string
         - name: pageSize
           in: query
@@ -1996,6 +2049,16 @@ paths:
           in: path
           required: true
           type: string
+        - name: role
+          description: Optionally filter by role
+          in: query
+          required: false
+          type: string
+        - name: includeCounts
+          description: Optionally include counts
+          in: query
+          required: false
+          type: boolean
         - name: pageSize
           in: query
           required: false
@@ -2032,6 +2095,39 @@ paths:
             properties:
               name:
                 type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/usergroups-for-user:
+    get:
+      summary: ListUsergroupsForOrganizationAndUser lists the user groups that an organization member user has access to.
+      operationId: AdminService_ListUsergroupsForOrganizationAndUser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListUsergroupsForOrganizationAndUserResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: userId
+          in: query
+          required: false
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
       tags:
         - AdminService
   /v1/organizations/{organization}/usergroups/{usergroup}:
@@ -2445,7 +2541,7 @@ paths:
         - AdminService
   /v1/organizations/{organizationName}/projects:
     get:
-      summary: ListProjectsForOrganization lists all the projects currently available for given organizations
+      summary: ListProjectsForOrganization lists all the projects currently available for given organizations.
       operationId: AdminService_ListProjectsForOrganization
       responses:
         "200":
@@ -2524,6 +2620,8 @@ paths:
                 description: archive_asset_id is set for projects whose project files are not stored in github but are managed by rill.
               prodVersion:
                 type: string
+              skipDeploy:
+                type: boolean
       tags:
         - AdminService
   /v1/organizations/{organizationName}/projects/{name}:
@@ -3047,6 +3145,21 @@ paths:
                 type: array
                 items:
                   type: string
+      tags:
+        - AdminService
+  /v1/roles:
+    get:
+      summary: ListRoles lists all the roles available for orgs and projects.
+      operationId: AdminService_ListRoles
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListRolesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       tags:
         - AdminService
   /v1/services/tokens/{tokenId}:
@@ -4048,6 +4161,9 @@ definitions:
         $ref: '#/definitions/v1Service'
   v1CreateUsergroupResponse:
     type: object
+    properties:
+      usergroup:
+        $ref: '#/definitions/v1Usergroup'
   v1CreateWhitelistedDomainResponse:
     type: object
   v1DeleteAlertResponse:
@@ -4456,7 +4572,7 @@ definitions:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1MemberUser'
+          $ref: '#/definitions/v1OrganizationMemberUser'
       nextPageToken:
         type: string
   v1ListOrganizationsResponse:
@@ -4496,7 +4612,7 @@ definitions:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1MemberUser'
+          $ref: '#/definitions/v1ProjectMemberUser'
       nextPageToken:
         type: string
   v1ListProjectWhitelistedDomainsResponse:
@@ -4507,6 +4623,16 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1WhitelistedDomain'
+  v1ListProjectsForOrganizationAndUserResponse:
+    type: object
+    properties:
+      projects:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Project'
+      nextPageToken:
+        type: string
   v1ListProjectsForOrganizationResponse:
     type: object
     properties:
@@ -4525,6 +4651,19 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1BillingPlan'
+  v1ListRolesResponse:
+    type: object
+    properties:
+      organizationRoles:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1OrganizationRole'
+      projectRoles:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ProjectRole'
   v1ListServiceAuthTokensResponse:
     type: object
     properties:
@@ -4556,7 +4695,17 @@ definitions:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1MemberUser'
+          $ref: '#/definitions/v1UsergroupMemberUser'
+      nextPageToken:
+        type: string
+  v1ListUsergroupsForOrganizationAndUserResponse:
+    type: object
+    properties:
+      usergroups:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Usergroup'
       nextPageToken:
         type: string
   v1ListWhitelistedDomainsResponse:
@@ -4607,25 +4756,6 @@ definitions:
         type: string
       displayName:
         type: string
-  v1MemberUser:
-    type: object
-    properties:
-      userId:
-        type: string
-      userEmail:
-        type: string
-      userName:
-        type: string
-      userPhotoUrl:
-        type: string
-      roleName:
-        type: string
-      createdOn:
-        type: string
-        format: date-time
-      updatedOn:
-        type: string
-        format: date-time
   v1MemberUsergroup:
     type: object
     properties:
@@ -4633,8 +4763,13 @@ definitions:
         type: string
       groupName:
         type: string
+      groupManaged:
+        type: boolean
       roleName:
         type: string
+      usersCount:
+        type: integer
+        format: int64
       createdOn:
         type: string
         format: date-time
@@ -4676,6 +4811,8 @@ definitions:
         type: string
       customDomain:
         type: string
+      defaultProjectRoleId:
+        type: string
       quotas:
         $ref: '#/definitions/v1OrganizationQuotas'
       billingCustomerId:
@@ -4694,9 +4831,38 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+  v1OrganizationMemberUser:
+    type: object
+    properties:
+      userId:
+        type: string
+      userEmail:
+        type: string
+      userName:
+        type: string
+      userPhotoUrl:
+        type: string
+      roleName:
+        type: string
+      projectsCount:
+        type: integer
+        format: int64
+      usergroupsCount:
+        type: integer
+        format: int64
+      createdOn:
+        type: string
+        format: date-time
+      updatedOn:
+        type: string
+        format: date-time
   v1OrganizationPermissions:
     type: object
     properties:
+      admin:
+        type: boolean
+      guest:
+        type: boolean
       readOrg:
         type: boolean
       manageOrg:
@@ -4710,6 +4876,8 @@ definitions:
       readOrgMembers:
         type: boolean
       manageOrgMembers:
+        type: boolean
+      manageOrgAdmins:
         type: boolean
   v1OrganizationQuotas:
     type: object
@@ -4732,6 +4900,15 @@ definitions:
       storageLimitBytesPerDeployment:
         type: string
         format: int64
+  v1OrganizationRole:
+    type: object
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      permissions:
+        $ref: '#/definitions/v1OrganizationPermissions'
   v1PingResponse:
     type: object
     properties:
@@ -4795,9 +4972,30 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+  v1ProjectMemberUser:
+    type: object
+    properties:
+      userId:
+        type: string
+      userEmail:
+        type: string
+      userName:
+        type: string
+      userPhotoUrl:
+        type: string
+      roleName:
+        type: string
+      createdOn:
+        type: string
+        format: date-time
+      updatedOn:
+        type: string
+        format: date-time
   v1ProjectPermissions:
     type: object
     properties:
+      admin:
+        type: boolean
       readProject:
         type: boolean
       manageProject:
@@ -4822,6 +5020,8 @@ definitions:
         type: boolean
       manageProjectMembers:
         type: boolean
+      manageProjectAdmins:
+        type: boolean
       createMagicAuthTokens:
         type: boolean
       manageMagicAuthTokens:
@@ -4838,6 +5038,15 @@ definitions:
         type: boolean
       manageBookmarks:
         type: boolean
+  v1ProjectRole:
+    type: object
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      permissions:
+        $ref: '#/definitions/v1ProjectPermissions'
   v1ProjectVariable:
     type: object
     properties:
@@ -5375,6 +5584,25 @@ definitions:
       groupName:
         type: string
       groupDescription:
+        type: string
+      managed:
+        type: boolean
+      createdOn:
+        type: string
+        format: date-time
+      updatedOn:
+        type: string
+        format: date-time
+  v1UsergroupMemberUser:
+    type: object
+    properties:
+      userId:
+        type: string
+      userEmail:
+        type: string
+      userName:
+        type: string
+      userPhotoUrl:
         type: string
       createdOn:
         type: string

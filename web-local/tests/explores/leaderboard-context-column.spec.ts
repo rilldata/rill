@@ -47,7 +47,7 @@ test.describe("leaderboard context column", () => {
       description: ""
       `;
 
-    await page.getByLabel("code").click();
+    await page.getByRole("button", { name: "switch to code editor" }).click();
     await watcher.updateAndWaitForDashboard(metricsWithValidPercentOfTotal);
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
 

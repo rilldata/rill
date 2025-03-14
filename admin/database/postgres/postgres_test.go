@@ -108,13 +108,15 @@ func testOrgsWithPagination(t *testing.T, db database.DB) {
 	org, err := db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "alpha"})
 	require.NoError(t, err)
 	require.Equal(t, "alpha", org.Name)
-	require.NoError(t, db.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID))
+	_, err = db.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID, false)
+	require.NoError(t, err)
 
 	// add org and give user permission
 	org, err = db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "beta"})
 	require.NoError(t, err)
 	require.Equal(t, "beta", org.Name)
-	require.NoError(t, db.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID))
+	_, err = db.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID, false)
+	require.NoError(t, err)
 
 	// add org only
 	org, err = db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "gamma"})
@@ -304,7 +306,7 @@ func testProjectsForUserWithPagination(t *testing.T, db database.DB) {
 	require.Equal(t, "test@rilldata.com", user.Email)
 
 	// fetch role
-	role, err := db.FindProjectRole(ctx, database.ProjectRoleNameCollaborator)
+	role, err := db.FindProjectRole(ctx, database.ProjectRoleNameEditor)
 	require.NoError(t, err)
 
 	// add org
@@ -335,14 +337,14 @@ func testProjectsForUserWithPagination(t *testing.T, db database.DB) {
 	require.Equal(t, "internal", proj3.Name)
 
 	// fetch projects without name filter
-	projs, err := db.FindProjectsForOrgAndUser(ctx, org.ID, user.ID, "", 2)
+	projs, err := db.FindProjectsForOrgAndUser(ctx, org.ID, user.ID, true, "", 2)
 	require.NoError(t, err)
 	require.Equal(t, len(projs), 2)
 	require.Equal(t, "alpha", projs[0].Name)
 	require.Equal(t, "beta", projs[1].Name)
 
 	// fetch project with name filter
-	projs, err = db.FindProjectsForOrgAndUser(ctx, org.ID, user.ID, projs[1].Name, 2)
+	projs, err = db.FindProjectsForOrgAndUser(ctx, org.ID, user.ID, true, projs[1].Name, 2)
 	require.NoError(t, err)
 	require.Equal(t, len(projs), 1)
 	require.Equal(t, "gamma", projs[0].Name)
@@ -373,18 +375,20 @@ func testOrgsMembersPagination(t *testing.T, db database.DB) {
 	// add org and give user permission
 	org, err := db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "alpha"})
 	require.NoError(t, err)
-	require.NoError(t, db.InsertOrganizationMemberUser(ctx, org.ID, adminUser.ID, admin.ID))
-	require.NoError(t, db.InsertOrganizationMemberUser(ctx, org.ID, viewerUser.ID, viewer.ID))
+	_, err = db.InsertOrganizationMemberUser(ctx, org.ID, adminUser.ID, admin.ID, false)
+	require.NoError(t, err)
+	_, err = db.InsertOrganizationMemberUser(ctx, org.ID, viewerUser.ID, viewer.ID, false)
+	require.NoError(t, err)
 	require.NoError(t, db.InsertOrganizationInvite(ctx, &database.InsertOrganizationInviteOptions{Email: "test3@rilldata.com", InviterID: adminUser.ID, OrgID: org.ID, RoleID: viewer.ID}))
 
 	// fetch members without name filter
-	users, err := db.FindOrganizationMemberUsers(ctx, org.ID, "", 1)
+	users, err := db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 1)
 	require.NoError(t, err)
 	require.Equal(t, len(users), 1)
 	require.Equal(t, "test1@rilldata.com", users[0].Email)
 
 	// fetch members with name filter
-	users, err = db.FindOrganizationMemberUsers(ctx, org.ID, users[0].Email, 1)
+	users, err = db.FindOrganizationMemberUsers(ctx, org.ID, "", true, users[0].Email, 1)
 	require.NoError(t, err)
 	require.Equal(t, len(users), 1)
 	require.Equal(t, "test2@rilldata.com", users[0].Email)
@@ -480,7 +484,8 @@ func seed(t *testing.T, db database.DB) (orgID, projectID, userID string) {
 	// add org and give user permission
 	org, err := db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "alpha"})
 	require.NoError(t, err)
-	require.NoError(t, db.InsertOrganizationMemberUser(ctx, org.ID, adminUser.ID, admin.ID))
+	_, err = db.InsertOrganizationMemberUser(ctx, org.ID, adminUser.ID, admin.ID, false)
+	require.NoError(t, err)
 
 	proj, err := db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org.ID, Name: "alpha", Public: true})
 	require.NoError(t, err)
