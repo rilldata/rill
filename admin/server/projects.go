@@ -47,7 +47,7 @@ func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.L
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	token, err := unmarshalPageToken(req.PageToken)
@@ -62,9 +62,8 @@ func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.L
 	if claims.OrganizationPermissions(ctx, org.ID).ManageProjects {
 		projs, err = s.admin.DB.FindProjectsForOrganization(ctx, org.ID, token.Val, pageSize)
 	} else if claims.OwnerType() == auth.OwnerTypeUser {
-		// Get projects the user is a (direct or group) member of (note: the user can be a member of a project in the org, without being a member of org - we call this an "outside member")
-		// plus all public projects
-		projs, err = s.admin.DB.FindProjectsForOrgAndUser(ctx, org.ID, claims.OwnerID(), token.Val, pageSize)
+		// Get projects the user is a (direct or group) member of, plus all public projects.
+		projs, err = s.admin.DB.FindProjectsForOrgAndUser(ctx, org.ID, claims.OwnerID(), true, token.Val, pageSize)
 	} else {
 		projs, err = s.admin.DB.FindPublicProjectsInOrganization(ctx, org.ID, token.Val, pageSize)
 	}
@@ -89,6 +88,49 @@ func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.L
 	}
 
 	return &adminv1.ListProjectsForOrganizationResponse{
+		Projects:      dtos,
+		NextPageToken: nextToken,
+	}, nil
+}
+
+func (s *Server) ListProjectsForOrganizationAndUser(ctx context.Context, req *adminv1.ListProjectsForOrganizationAndUserRequest) (*adminv1.ListProjectsForOrganizationAndUserResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.organization", req.Organization),
+		attribute.String("args.user_id", req.UserId),
+	)
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	if err != nil {
+		return nil, err
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ReadOrgMembers {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to read org members")
+	}
+
+	pageToken, err := unmarshalPageToken(req.PageToken)
+	if err != nil {
+		return nil, err
+	}
+	pageSize := validPageSize(req.PageSize)
+
+	projects, err := s.admin.DB.FindProjectsForOrgAndUser(ctx, org.ID, req.UserId, false, pageToken.Val, pageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	nextToken := ""
+	if len(projects) >= pageSize {
+		nextToken = marshalPageToken(projects[len(projects)-1].Name)
+	}
+
+	dtos := make([]*adminv1.Project, len(projects))
+	for i, p := range projects {
+		dtos[i] = s.projToDTO(p, org.Name)
+	}
+
+	return &adminv1.ListProjectsForOrganizationAndUserResponse{
 		Projects:      dtos,
 		NextPageToken: nextToken,
 	}, nil
@@ -770,7 +812,7 @@ func (s *Server) ListProjectMemberUsers(ctx context.Context, req *adminv1.ListPr
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -784,9 +826,18 @@ func (s *Server) ListProjectMemberUsers(ctx context.Context, req *adminv1.ListPr
 	}
 	pageSize := validPageSize(req.PageSize)
 
-	members, err := s.admin.DB.FindProjectMemberUsers(ctx, proj.ID, token.Val, pageSize)
+	var roleID string
+	if req.Role != "" {
+		role, err := s.admin.DB.FindProjectRole(ctx, req.Role)
+		if err != nil {
+			return nil, err
+		}
+		roleID = role.ID
+	}
+
+	members, err := s.admin.DB.FindProjectMemberUsers(ctx, proj.ID, roleID, token.Val, pageSize)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	nextToken := ""
@@ -794,9 +845,9 @@ func (s *Server) ListProjectMemberUsers(ctx context.Context, req *adminv1.ListPr
 		nextToken = marshalPageToken(members[len(members)-1].Email)
 	}
 
-	dtos := make([]*adminv1.MemberUser, len(members))
+	dtos := make([]*adminv1.ProjectMemberUser, len(members))
 	for i, member := range members {
-		dtos[i] = memberUserToPB(member)
+		dtos[i] = projMemberUserToPB(member)
 	}
 
 	return &adminv1.ListProjectMemberUsersResponse{

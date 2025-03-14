@@ -27,14 +27,14 @@
   import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
   import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
   import Combobox from "@rilldata/web-common/components/combobox/Combobox.svelte";
-  import type { V1MemberUser } from "@rilldata/web-admin/client";
+  import type { V1OrganizationMemberUser } from "@rilldata/web-admin/client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
   export let open = false;
   export let groupName: string;
   export let currentUserEmail: string;
-  export let searchUsersList: V1MemberUser[];
+  export let searchUsersList: V1OrganizationMemberUser[];
 
   let searchText = "";
 
