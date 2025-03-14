@@ -18,7 +18,6 @@
     valueColumn,
   } from "./leaderboard-widths";
   import FloatingElement from "@rilldata/web-common/components/floating-element/FloatingElement.svelte";
-  import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 
   export let itemData: LeaderboardItemData;
   export let dimensionName: string;
