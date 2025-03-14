@@ -50,10 +50,14 @@ export const dimensionTableColumnName = (
   };
 };
 
+// @deprecated
+// FIXME
 export const dimensionShowAllMeasures = (
   dashData: DashboardDataSources,
 ): boolean => {
-  return Boolean(dashData.dashboard.dimensionShowAllMeasures);
+  // Setting true to show all comparison measures in leaderboard
+  // To be removed
+  return true;
 };
 
 export const getDimensionByName = (

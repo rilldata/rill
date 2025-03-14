@@ -87,15 +87,6 @@
         }}
       />
 
-      {#if !$leaderboardMeasureCountFeatureFlag}
-        <LeaderboardActiveMeasureDropdown
-          leaderboardMeasureName={$leaderboardMeasureName}
-          {setLeaderboardMeasureName}
-          {measures}
-          {activeLeaderboardMeasure}
-        />
-      {/if}
-
       {#if $leaderboardMeasureCountFeatureFlag}
         <LeaderboardMeasureCountSelector
           measures={$visibleMeasures}
@@ -105,6 +96,13 @@
           }}
           setSort={() => setDefaultSort()}
           sortByMeasure={$sortByMeasure}
+        />
+      {:else}
+        <LeaderboardActiveMeasureDropdown
+          leaderboardMeasureName={$leaderboardMeasureName}
+          {setLeaderboardMeasureName}
+          {measures}
+          {activeLeaderboardMeasure}
         />
       {/if}
     </div>

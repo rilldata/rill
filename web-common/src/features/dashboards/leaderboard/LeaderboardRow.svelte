@@ -31,10 +31,7 @@
   export let atLeastOneActive: boolean;
   export let isValidPercentOfTotal: boolean;
   export let isTimeComparisonActive: boolean;
-  export let contextColumns: string[] = [];
   export let activeMeasureNames: string[] = [];
-  export let activeMeasureName: string;
-  export let dimensionShowAllMeasures: boolean;
   export let toggleDimensionValueSelection: (
     dimensionName: string,
     dimensionValue: string,
@@ -206,23 +203,7 @@
     ]),
   );
 
-  $: showPercentOfTotal =
-    isValidPercentOfTotal &&
-    contextColumns.includes(LeaderboardContextColumn.PERCENT);
-
-  $: showDeltaAbsolute =
-    isTimeComparisonActive &&
-    contextColumns.includes(LeaderboardContextColumn.DELTA_ABSOLUTE);
-
-  $: showDeltaPercent =
-    isTimeComparisonActive &&
-    contextColumns.includes(LeaderboardContextColumn.DELTA_PERCENT);
-
   $: showTooltip = hovered && !suppressTooltip;
-
-  function shouldShowComparisonForMeasure(measureName: string): boolean {
-    return dimensionShowAllMeasures || measureName === activeMeasureName;
-  }
 
   function shiftClickHandler(label: string) {
     let truncatedLabel = label?.toString();
@@ -314,70 +295,68 @@
       {/if}
     </td>
 
-    {#if shouldShowComparisonForMeasure(measureName)}
-      {#if showPercentOfTotal}
-        <td
-          style:background={percentOfTotalGradients[measureName]}
-          on:click={modified({
-            shift: () =>
-              shiftClickHandler(pctOfTotals[measureName]?.toString() || ""),
-          })}
-        >
+    {#if isValidPercentOfTotal}
+      <td
+        style:background={percentOfTotalGradients[measureName]}
+        on:click={modified({
+          shift: () =>
+            shiftClickHandler(pctOfTotals[measureName]?.toString() || ""),
+        })}
+      >
+        <PercentageChange value={pctOfTotals[measureName]} />
+        {#if showZigZags[measureName]}
+          <LongBarZigZag />
+        {/if}
+      </td>
+    {/if}
+
+    {#if isTimeComparisonActive}
+      <td
+        style:background={deltaAbsoluteGradients[measureName]}
+        on:click={modified({
+          shift: () =>
+            shiftClickHandler(deltaAbsMap[measureName]?.toString() || ""),
+        })}
+      >
+        {#if isTimeComparisonActive}
+          <div class="w-fit ml-auto" bind:contentRect={deltaRect}>
+            <FormattedDataType
+              type="INTEGER"
+              value={deltaAbsMap[measureName]
+                ? formatter(deltaAbsMap[measureName])
+                : null}
+              customStyle={deltaAbsMap[measureName] !== null &&
+              deltaAbsMap[measureName] < 0
+                ? "text-red-500"
+                : ""}
+            />
+          </div>
+        {:else}
           <PercentageChange value={pctOfTotals[measureName]} />
           {#if showZigZags[measureName]}
             <LongBarZigZag />
           {/if}
-        </td>
-      {/if}
+        {/if}
+      </td>
+    {/if}
 
-      {#if showDeltaAbsolute}
-        <td
-          style:background={deltaAbsoluteGradients[measureName]}
-          on:click={modified({
-            shift: () =>
-              shiftClickHandler(deltaAbsMap[measureName]?.toString() || ""),
-          })}
-        >
-          {#if isTimeComparisonActive}
-            <div class="w-fit ml-auto" bind:contentRect={deltaRect}>
-              <FormattedDataType
-                type="INTEGER"
-                value={deltaAbsMap[measureName]
-                  ? formatter(deltaAbsMap[measureName])
-                  : null}
-                customStyle={deltaAbsMap[measureName] !== null &&
-                deltaAbsMap[measureName] < 0
-                  ? "text-red-500"
-                  : ""}
-              />
-            </div>
-          {:else}
-            <PercentageChange value={pctOfTotals[measureName]} />
-            {#if showZigZags[measureName]}
-              <LongBarZigZag />
-            {/if}
-          {/if}
-        </td>
-      {/if}
-
-      {#if showDeltaPercent}
-        <td
-          style:background={deltaPercentGradients[measureName]}
-          on:click={modified({
-            shift: () =>
-              shiftClickHandler(deltaRels[measureName]?.toString() || ""),
-          })}
-        >
-          <PercentageChange
-            value={deltaRels[measureName]
-              ? formatMeasurePercentageDifference(deltaRels[measureName])
-              : null}
-          />
-          {#if showZigZags[measureName]}
-            <LongBarZigZag />
-          {/if}
-        </td>
-      {/if}
+    {#if isTimeComparisonActive}
+      <td
+        style:background={deltaPercentGradients[measureName]}
+        on:click={modified({
+          shift: () =>
+            shiftClickHandler(deltaRels[measureName]?.toString() || ""),
+        })}
+      >
+        <PercentageChange
+          value={deltaRels[measureName]
+            ? formatMeasurePercentageDifference(deltaRels[measureName])
+            : null}
+        />
+        {#if showZigZags[measureName]}
+          <LongBarZigZag />
+        {/if}
+      </td>
     {/if}
   {/each}
 </tr>

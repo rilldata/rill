@@ -37,12 +37,6 @@ export const toggleDimensionVisibility = (
     dashboard.visibleDimensionKeys.size === allDimensions.length;
 };
 
-export const toggleDimensionShowAllMeasures = ({
-  dashboard,
-}: DashboardMutables) => {
-  dashboard.dimensionShowAllMeasures = !dashboard.dimensionShowAllMeasures;
-};
-
 export const dimensionActions = {
   /**
    * Sets the primary dimension for the dashboard, which
@@ -51,5 +45,4 @@ export const dimensionActions = {
    */
   setPrimaryDimension,
   toggleDimensionVisibility,
-  toggleDimensionShowAllMeasures,
 };
