@@ -42,7 +42,6 @@
 
   const {
     selectors: {
-      dimensions: { dimensionShowAllMeasures },
       dimensionFilters: { unselectedDimensionValues },
       dimensionTable: {
         virtualizedTableColumns,
@@ -94,37 +93,26 @@
     },
   );
 
-  $: unfilteredTotal = $dimensionShowAllMeasures
-    ? visibleMeasureNames.reduce(
-        (acc, measureName) => {
-          acc[measureName] = $totalsQuery?.data?.data?.[0]?.[measureName] ?? 0;
-          return acc;
-        },
-        {} as { [key: string]: number },
-      )
-    : ($totalsQuery?.data?.data?.[0]?.[activeMeasureName] ?? 0);
+  $: unfilteredTotal = $totalsQuery?.data?.data?.[0]?.[activeMeasureName] ?? 0;
 
-  $: columns = $virtualizedTableColumns(
-    $totalsQuery,
-    $dimensionShowAllMeasures ? visibleMeasureNames : undefined,
-  );
+  $: columns = $virtualizedTableColumns($totalsQuery);
 
-  $: measures = [
-    // Get base measures
-    ...getMeasuresForDimensionTable(
-      $dimensionShowAllMeasures ? null : activeMeasureName,
-      dimensionThresholdFilters,
-      visibleMeasureNames,
-    ).map((name) => ({ name }) as V1MetricsViewAggregationMeasure),
-
-    // Add comparison measures if comparison time range exists
-    ...(comparisonTimeRange
-      ? ($dimensionShowAllMeasures
-          ? visibleMeasureNames
-          : [activeMeasureName]
-        ).flatMap((name) => getComparisonRequestMeasures(name))
-      : []),
-  ];
+  $: measures = getMeasuresForDimensionTable(
+    activeMeasureName,
+    dimensionThresholdFilters,
+    visibleMeasureNames,
+  )
+    .map(
+      (n) =>
+        ({
+          name: n,
+        }) as V1MetricsViewAggregationMeasure,
+    )
+    .concat(
+      ...(comparisonTimeRange
+        ? getComparisonRequestMeasures(activeMeasureName)
+        : []),
+    );
 
   $: sort = getSort(
     $sortedAscending,
