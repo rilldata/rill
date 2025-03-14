@@ -32,7 +32,6 @@
   export let searchText: string;
   export let onToggleSearchItems: () => void;
   export let hideStartPivotButton = false;
-  export let comparisonTimeRange: V1TimeRange | undefined;
 
   const stateManagers = getStateManagers();
   const {
@@ -52,11 +51,6 @@
   } = stateManagers;
 
   const { adminServer, exports } = featureFlags;
-
-  // If any measure has validPercentOfTotal, then the percent of total context column is valid
-  $: validPercentOfTotal = $visibleMeasures.some(
-    (measure) => measure.validPercentOfTotal,
-  );
 
   $: excludeMode = $isFilterExcludeMode(dimensionName);
 

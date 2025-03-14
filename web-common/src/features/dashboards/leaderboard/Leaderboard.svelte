@@ -19,7 +19,10 @@
   } from "../dashboard-utils";
   import { mergeDimensionAndMeasureFilters } from "../filters/measure-filters/measure-filter-utils";
   import { SortType } from "../proto-state/derived-types";
-  import { getFiltersForOtherDimensions } from "../selectors";
+  import {
+    additionalMeasures,
+    getFiltersForOtherDimensions,
+  } from "../selectors";
   import {
     createAndExpression,
     createOrExpression,
@@ -36,7 +39,6 @@
     prepareLeaderboardItemData,
   } from "./leaderboard-utils";
   import { valueColumn, COMPARISON_COLUMN_WIDTH } from "./leaderboard-widths";
-  import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import DelayedLoadingRows from "./DelayedLoadingRows.svelte";
 
   const slice = 7;
@@ -67,6 +69,7 @@
   export let isBeingCompared: boolean;
   export let parentElement: HTMLElement;
   export let suppressTooltip = false;
+  export let leaderboardMeasureCountFeatureFlag: boolean;
   export let measureLabel: (measureName: string) => string;
   export let toggleDimensionValueSelection: (
     dimensionName: string,
@@ -121,13 +124,19 @@
       );
 
   $: measures = [
-    // Get base measures - always include all measures
-    ...activeMeasureNames.map(
-      (name) =>
-        ({
-          name,
-        }) as V1MetricsViewAggregationMeasure,
-    ),
+    ...(leaderboardMeasureCountFeatureFlag
+      ? activeMeasureNames.map(
+          (name) =>
+            ({
+              name,
+            }) as V1MetricsViewAggregationMeasure,
+        )
+      : additionalMeasures(activeMeasureName, dimensionThresholdFilters).map(
+          (n) =>
+            ({
+              name: n,
+            }) as V1MetricsViewAggregationMeasure,
+        )),
 
     // Add comparison measures if there's a comparison time range
     ...(comparisonTimeRange
@@ -170,7 +179,13 @@
     instanceId,
     metricsViewName,
     {
-      measures: activeMeasureNames.map((name) => ({ name })),
+      ...(leaderboardMeasureCountFeatureFlag
+        ? {
+            measures: activeMeasureNames.map((name) => ({ name })),
+          }
+        : {
+            measures: [{ name: activeMeasureName }],
+          }),
       where,
       timeStart: timeRange.start,
       timeEnd: timeRange.end,
@@ -185,6 +200,9 @@
   $: ({ data: sortedData, isFetching } = $sortedQuery);
   $: ({ data: totalsData } = $totalsQuery);
 
+  // $: leaderboardTotal = totalsData?.data?.[0]?.[activeMeasureName] as
+  //   | number
+  //   | null;
   $: leaderboardTotals = totalsData?.data?.[0]
     ? Object.fromEntries(
         activeMeasureNames.map((name) => [
@@ -227,10 +245,11 @@
       ),
       sort,
       timeRange,
-      comparisonTimeRange:
-        comparisonTimeRange && isBeingCompared
-          ? comparisonTimeRange
-          : undefined,
+      comparisonTimeRange,
+      // comparisonTimeRange:
+      //   comparisonTimeRange && isBeingCompared
+      //     ? comparisonTimeRange
+      //     : undefined,
       measures,
       limit: belowTheFoldDataLimit.toString(),
     },
@@ -251,7 +270,8 @@
     ? data?.data
     : belowTheFoldValues.map((value) => ({
         [dimensionName]: value,
-        ...Object.fromEntries(activeMeasureNames.map((name) => [name, null])),
+        [activeMeasureName]: null,
+        // ...Object.fromEntries(activeMeasureNames.map((name) => [name, null])),
       }));
 
   $: belowTheFoldRows = belowTheFoldData.map((item) =>
@@ -319,6 +339,7 @@
       {toggleComparisonDimension}
       {sortBy}
       {measureLabel}
+      {leaderboardMeasureCountFeatureFlag}
     />
 
     <tbody>

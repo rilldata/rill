@@ -38,7 +38,6 @@ import { getFiltersForOtherDimensions } from "../selectors";
 import type { MetricsExplorerEntity } from "../stores/metrics-explorer-entity";
 import type { DimensionTableRow } from "./dimension-table-types";
 import type { DimensionTableConfig } from "./DimensionTableConfig";
-import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 
 /** Returns an updated filter set for a given dimension on search */
 export function updateFilterOnSearch(

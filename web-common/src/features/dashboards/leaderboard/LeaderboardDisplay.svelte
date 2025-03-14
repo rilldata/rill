@@ -13,6 +13,7 @@
     deltaColumn,
     valueColumn,
   } from "./leaderboard-widths";
+  import { featureFlags } from "../../feature-flags";
 
   export let metricsViewName: string;
   export let whereFilter: V1Expression;
@@ -49,6 +50,9 @@
 
   let parentElement: HTMLDivElement;
   let suppressTooltip = false;
+
+  const { leaderboardMeasureCount: leaderboardMeasureCountFeatureFlag } =
+    featureFlags;
 
   $: ({ instanceId } = $runtime);
 
@@ -121,6 +125,7 @@
               {toggleComparisonDimension}
               sortBy={$sortByMeasure}
               measureLabel={$measureLabel}
+              leaderboardMeasureCountFeatureFlag={$leaderboardMeasureCountFeatureFlag}
             />
           {/if}
         {/each}
