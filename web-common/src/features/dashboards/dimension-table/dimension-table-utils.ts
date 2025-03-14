@@ -121,7 +121,6 @@ export function getComparisonProperties(
   type: string;
   format: string;
   description: string;
-  visible: boolean;
 } {
   if (measureName.includes("_delta_perc")) {
     return {
@@ -129,7 +128,6 @@ export function getComparisonProperties(
       type: "RILL_PERCENTAGE_CHANGE",
       format: FormatPreset.PERCENTAGE,
       description: "Percentage change over comparison period",
-      visible: contextColumns.includes(LeaderboardContextColumn.DELTA_PERCENT),
     };
   } else if (measureName.includes("_delta")) {
     return {
@@ -137,7 +135,6 @@ export function getComparisonProperties(
       type: "RILL_CHANGE",
       format: selectedMeasure.formatPreset ?? FormatPreset.HUMANIZE,
       description: "Change over comparison period",
-      visible: contextColumns.includes(LeaderboardContextColumn.DELTA_ABSOLUTE),
     };
   } else if (measureName.includes("_percent_of_total")) {
     return {
@@ -145,7 +142,6 @@ export function getComparisonProperties(
       type: "RILL_PERCENTAGE_CHANGE",
       format: FormatPreset.PERCENTAGE,
       description: "Percent of total",
-      visible: contextColumns.includes(LeaderboardContextColumn.PERCENT),
     };
   }
   throw new Error(
@@ -251,7 +247,6 @@ export function prepareVirtualizedDimTableColumns(
 ): VirtualizedTableColumns[] {
   const sortType = dash.dashboardSortType;
   const sortDirection = dash.sortDirection;
-  const contextColumns = dash.leaderboardContextColumns;
 
   const measureNames = allMeasures.map((m) => m.name);
   const leaderboardMeasureName = dash.leaderboardMeasureName;
@@ -363,23 +358,17 @@ export function prepareVirtualizedDimTableColumns(
         };
       } else if (selectedMeasure !== undefined) {
         // Handle delta, delta_perc, and percent_of_total columns
-        const comparison = getComparisonProperties(
+        const comparison = getComparisonProperties(name, selectedMeasure);
+        columnOut = {
           name,
-          selectedMeasure,
-          contextColumns,
-        );
-        if (comparison.visible) {
-          columnOut = {
-            name,
-            type: comparison.type,
-            label: comparison.component,
-            description: comparison.description,
-            enableResize: false,
-            format: comparison.format,
-            highlight,
-            sorted,
-          };
-        }
+          type: comparison.type,
+          label: comparison.component,
+          description: comparison.description,
+          enableResize: false,
+          format: comparison.format,
+          highlight,
+          sorted,
+        };
       }
       return columnOut;
     })
