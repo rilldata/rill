@@ -48,7 +48,8 @@ func (i informationSchema) All(ctx context.Context, like string) ([]*drivers.Tab
 			C.position AS ORDINAL_POSITION
 		FROM system.tables T
 		JOIN system.columns C ON T.database = C.database AND T.name = C.table
-		WHERE lower(T.database) NOT IN ('information_schema', 'system')
+		-- allow fetching tables from system or information_schema if it is current database
+		WHERE (T.database == currentDatabase() OR lower(T.database) NOT IN ('information_schema', 'system'))
 		%s
 		ORDER BY SCHEMA, NAME, TABLE_TYPE, ORDINAL_POSITION
 	`, likeClause)
