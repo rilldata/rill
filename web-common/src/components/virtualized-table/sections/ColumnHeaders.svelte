@@ -13,7 +13,7 @@
   export let virtualColumnItems;
   export let noPin = false;
   export let showDataIcon = false;
-  export let selectedColumn: string | null = null;
+  export let sortByMeasure: string | null = null;
 
   const config: VirtualizedTableConfig = getContext("config");
 
@@ -33,14 +33,13 @@
       type: column.type,
       description: column.description || "",
       pinned: pinnedColumns.some((pinCol) => pinCol.name === column.name),
-      isSelected: selectedColumn === column.name,
-      highlight: column.highlight,
+      isSelected: sortByMeasure === column.name,
       sorted: column.sorted,
     };
   };
 </script>
 
-<div class="w-full sticky relative top-0 z-10">
+<div class="w-full sticky top-0 z-10">
   {#each virtualColumnItems as header (header.key)}
     {@const props = getColumnHeaderProps(header)}
     <ColumnHeader

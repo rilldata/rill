@@ -114,6 +114,19 @@
         : []),
     );
 
+  $: sort = getSort(
+    $sortedAscending,
+    $sortType,
+    activeMeasureName,
+    dimensionName,
+    !!comparisonTimeRange,
+  );
+
+  $: where = sanitiseExpression(
+    mergeDimensionAndMeasureFilters(filterSet, dimensionThresholdFilters),
+    undefined,
+  );
+
   $: sortedQuery = createQueryServiceMetricsViewAggregation(
     instanceId,
     metricsViewName,
@@ -122,17 +135,8 @@
       measures,
       timeRange,
       comparisonTimeRange,
-      sort: getSort(
-        $sortedAscending,
-        $sortType,
-        activeMeasureName,
-        dimensionName,
-        !!comparisonTimeRange,
-      ),
-      where: sanitiseExpression(
-        mergeDimensionAndMeasureFilters(filterSet, dimensionThresholdFilters),
-        undefined,
-      ),
+      sort,
+      where,
       limit: queryLimit.toString(),
       offset: "0",
     },
@@ -205,9 +209,9 @@
         {areAllTableRowsSelected}
         isRowsEmpty={!tableRows.length}
         isFetching={$sortedQuery?.isFetching}
+        {hideStartPivotButton}
         bind:searchText={$dimensionSearchText}
         onToggleSearchItems={toggleAllSearchItems}
-        {hideStartPivotButton}
       />
     </div>
 

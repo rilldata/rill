@@ -80,7 +80,7 @@ export const prepareDimTableRows =
       V1MetricsViewAggregationResponse,
       RpcStatus
     >,
-    unfilteredTotal: number,
+    unfilteredTotal: number | { [key: string]: number },
   ) => DimensionTableRow[]) =>
   (sortedQuery, unfilteredTotal) => {
     const dimension = primaryDimension(dashData);
