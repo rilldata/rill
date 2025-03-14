@@ -7,6 +7,7 @@
   import ContextColumnDropdown from "@rilldata/web-common/components/menu/ContextColumnDropdown.svelte";
   import LeaderboardMeasureCountSelector from "@rilldata/web-common/components/menu/LeaderboardMeasureCountSelector.svelte";
   import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
+  import { featureFlags } from "../../feature-flags";
 
   export let exploreName: string;
   export let comparisonTimeRange: V1TimeRange | undefined;
@@ -30,6 +31,9 @@
       sorting: { setDefaultSort },
     },
   } = StateManagers;
+
+  const { leaderboardMeasureCount: leaderboardMeasureCountFeatureFlag } =
+    featureFlags;
 
   $: measures = getSimpleMeasures($visibleMeasures);
 
@@ -83,15 +87,17 @@
         }}
       />
 
-      <LeaderboardMeasureCountSelector
-        measures={$allMeasures}
-        count={$leaderboardMeasureCount}
-        onMeasureCountChange={(count) => {
-          setLeaderboardMeasureCount(count);
-        }}
-        setSort={() => setDefaultSort()}
-        sortByMeasure={$sortByMeasure}
-      />
+      {#if $leaderboardMeasureCountFeatureFlag}
+        <LeaderboardMeasureCountSelector
+          measures={$allMeasures}
+          count={$leaderboardMeasureCount}
+          onMeasureCountChange={(count) => {
+            setLeaderboardMeasureCount(count);
+          }}
+          setSort={() => setDefaultSort()}
+          sortByMeasure={$sortByMeasure}
+        />
+      {/if}
 
       <ContextColumnDropdown
         tooltipText="Choose context columns to display"
