@@ -1,4 +1,6 @@
 import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
+import DeltaChange from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChange.svelte";
+import DeltaChangePercentage from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChangePercentage.svelte";
 import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
 import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
@@ -9,6 +11,8 @@ import {
 } from "@rilldata/web-common/lib/time/timezone";
 import type { ColumnDef } from "@tanstack/svelte-table";
 import { timeFormat } from "d3-time-format";
+import type { ComponentType, SvelteComponent } from "svelte";
+import PivotDeltaCell from "./PivotDeltaCell.svelte";
 import PivotExpandableCell from "./PivotExpandableCell.svelte";
 import PivotMeasureCell from "./PivotMeasureCell.svelte";
 import {
@@ -123,10 +127,11 @@ function createColumnDefinitionForDimensions(
   let rowTotalsColumns: ColumnDef<PivotDataRow>[] = [];
   if (config.rowDimensionNames.length && config.colDimensionNames.length) {
     rowTotalsColumns = colDimensions.reverse().reduce((acc, dimension) => {
-      const { label, name } = dimension;
+      const { name } = dimension;
 
       const headColumn = {
-        header: sanitizeHeaderValue(label || name),
+        id: name,
+        header: "",
         columns: acc,
       };
 
@@ -178,6 +183,7 @@ function formatDimensionValue(
 
 export type MeasureColumnProps = Array<{
   label: string;
+  icon?: ComponentType<SvelteComponent>;
   formatter: (
     value: string | number | null | undefined,
   ) => string | (null | undefined);
@@ -191,12 +197,15 @@ export function getMeasureColumnProps(
   return measureNames.map((m) => {
     let measureName = m;
     let label: string = "";
+    let icon: ComponentType<SvelteComponent> | undefined;
     let type: MeasureType = "measure";
     if (m.endsWith(COMPARISON_DELTA)) {
+      icon = DeltaChange;
       label = "Δ";
       type = "comparison_delta";
       measureName = m.replace(COMPARISON_DELTA, "");
     } else if (m.endsWith(COMPARISON_PERCENT)) {
+      icon = DeltaChangePercentage;
       label = "Δ %";
       type = "comparison_percent";
       measureName = m.replace(COMPARISON_PERCENT, "");
@@ -216,11 +225,12 @@ export function getMeasureColumnProps(
         : (v: string | number | null | undefined) => v?.toString(),
       name: m,
       type,
+      icon,
     };
   });
 }
 
-function getDimensionColumnProps(
+export function getDimensionColumnProps(
   dimensionNames: string[],
   config: PivotDataStoreConfig,
 ) {
@@ -298,16 +308,25 @@ function getFlatColumnDef(
       accessorKey: m.name,
       header: m.label || m.name,
       name: m.name,
+      meta: {
+        icon: m.icon,
+      },
       cell: (info) => {
         const measureValue = info.getValue() as number | null | undefined;
         if (m.type === "comparison_percent") {
           return cellComponent(PercentageChange, {
             isNull: measureValue == null,
+            color: "text-gray-500",
             value:
               measureValue !== null && measureValue !== undefined
                 ? formatMeasurePercentageDifference(measureValue)
                 : null,
             inTable: true,
+          });
+        } else if (m.type === "comparison_delta") {
+          return cellComponent(PivotDeltaCell, {
+            formattedValue: m.formatter(measureValue),
+            value: measureValue,
           });
         }
         const value = m.formatter(measureValue);
@@ -375,6 +394,12 @@ function getFlatColumnDef(
   return orderedColumnDefs;
 }
 
+export function getRowNestedLabel(
+  rowDimensions: Array<{ label: string; name: string }>,
+) {
+  return rowDimensions.map((d) => d.label || d.name).join(" > ");
+}
+
 function getNestedColumnDef(
   config: PivotDataStoreConfig,
   measures: MeasureColumnProps,
@@ -386,7 +411,7 @@ function getNestedColumnDef(
 ): ColumnDef<PivotDataRow>[] {
   // For nested tables, we only use the first row dimension in the column definition
   const rowDimensionsForColumnDef = rowDimensions.slice(0, 1);
-  const nestedLabel = rowDimensions.map((d) => d.label || d.name).join(" > ");
+  const nestedLabel = getRowNestedLabel(rowDimensions);
 
   // Create row dimension columns
   const rowDefinitions: ColumnDef<PivotDataRow>[] =
@@ -411,6 +436,21 @@ function getNestedColumnDef(
       };
     });
 
+  let firstDimensionColumns: ColumnDef<PivotDataRow>[] = rowDefinitions;
+  if (config.rowDimensionNames.length && config.colDimensionNames.length) {
+    firstDimensionColumns = colDimensions.reverse().reduce((acc, dimension) => {
+      const { label, name } = dimension;
+
+      const headColumn = {
+        id: name,
+        header: label || name,
+        columns: acc,
+      };
+
+      return [headColumn];
+    }, rowDefinitions);
+  }
+
   // Create measure columns
   const leafColumns: (ColumnDef<PivotDataRow> & { name: string })[] =
     measures.map((m) => {
@@ -418,16 +458,25 @@ function getNestedColumnDef(
         accessorKey: m.name,
         header: m.label || m.name,
         name: m.name,
+        meta: {
+          icon: m.icon,
+        },
         cell: (info) => {
           const measureValue = info.getValue() as number | null | undefined;
           if (m.type === "comparison_percent") {
             return cellComponent(PercentageChange, {
               isNull: measureValue == null,
+              color: "text-gray-500",
               value:
                 measureValue !== null && measureValue !== undefined
                   ? formatMeasurePercentageDifference(measureValue)
                   : null,
               inTable: true,
+            });
+          } else if (m.type === "comparison_delta") {
+            return cellComponent(PivotDeltaCell, {
+              formattedValue: m.formatter(measureValue),
+              value: measureValue,
             });
           }
           const value = m.formatter(measureValue);
@@ -447,5 +496,5 @@ function getNestedColumnDef(
     totals,
   );
 
-  return [...rowDefinitions, ...groupedColDef];
+  return [...firstDimensionColumns, ...groupedColDef];
 }
