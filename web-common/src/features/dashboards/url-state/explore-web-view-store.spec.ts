@@ -48,7 +48,6 @@ import {
   type V1ExplorePreset,
   V1ExploreWebView,
 } from "@rilldata/web-common/runtime-client";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { Page } from "@sveltejs/kit";
 import { render } from "@testing-library/svelte";
 import { get, type Readable, readable } from "svelte/store";
@@ -174,10 +173,6 @@ const TestCases: {
 
 // TODO: add tests by wrapping DashboardURLStateSync.svelte
 describe.skip("ExploreWebViewStore", () => {
-  runtime.set({
-    host: "http://localhost",
-    instanceId: "default",
-  });
   const dashboardFetchMocks = DashboardFetchMocks.useDashboardFetchMocks();
   const queryClient = new QueryClient({
     defaultOptions: {

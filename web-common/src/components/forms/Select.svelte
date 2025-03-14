@@ -16,6 +16,7 @@
   export let options: {
     value: string;
     label: string;
+    description?: string;
     type?: string;
     disabled?: boolean;
     tooltip?: string;
@@ -36,6 +37,12 @@
   export let onChange: (value: string) => void = () => {};
 
   let searchText = "";
+
+  const HeightBySize = {
+    sm: "h-6",
+    md: "h-7",
+    lg: "",
+  };
 
   $: selected = options.find((option) => option.value === value);
   $: filteredOptions = enableSearch
@@ -89,7 +96,7 @@
       {lockable}
       {lockTooltip}
       bind:el={selectElement}
-      class="flex px-3 gap-x-2 max-w-full {size === 'sm' ? 'h-6' : ''} {width &&
+      class="flex px-3 gap-x-2 max-w-full {HeightBySize[size]} {width &&
         `w-[${width}px]`}  {ringFocus &&
         'focus:ring-2 focus:ring-primary-100'} {truncate
         ? 'break-all overflow-hidden'
@@ -109,12 +116,13 @@
           <Search bind:value={searchText} showBorderOnFocus={false} />
         </div>
       {/if}
-      {#each filteredOptions as { type, value, label, disabled, tooltip } (value)}
+      {#each filteredOptions as { type, value, label, description, disabled, tooltip } (value)}
         <Select.Item
           {value}
           {label}
+          {description}
           {disabled}
-          class="text-[{fontSize}px] gap-x-2"
+          class="text-[{fontSize}px] gap-x-2 items-start"
         >
           {#if tooltip}
             <Tooltip.Root portal="body">

@@ -1,6 +1,13 @@
+<script context="module">
+  const BulkValueSplitRegex = /\s*[,\n]\s*/;
+</script>
+
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
   import { Chip } from "@rilldata/web-common/components/chip";
+  import Label from "@rilldata/web-common/components/forms/Label.svelte";
+  import Select from "@rilldata/web-common/components/forms/Select.svelte";
+  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import RemovableListBody from "@rilldata/web-common/components/chip/removable-list-chip/RemovableListBody.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
@@ -10,12 +17,17 @@
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { fly } from "svelte/transition";
-  import { useDimensionSearch } from "./dimensionFilterValues";
+  import {
+    useDimensionSearch,
+    useAllSearchResultsCount,
+  } from "./dimensionFilterValues";
 
   export let name: string;
   export let metricsViewNames: string[];
   export let label: string;
   export let selectedValues: string[];
+  export let searchText: string | undefined;
+  export let isMatchList: boolean | undefined;
   export let excludeMode: boolean;
   export let openOnMount: boolean = true;
   export let readOnly: boolean = false;
@@ -24,54 +36,163 @@
   export let timeControlsReady: boolean | undefined;
   export let smallChip = false;
   export let onRemove: () => void;
+  export let onBulkSelect: (values: string[]) => void;
   export let onSelect: (value: string) => void;
+  export let onSearch: (searchText: string) => void = () => {};
   export let onToggleFilterMode: () => void;
 
-  let open = openOnMount && !selectedValues.length;
-  let searchText = "";
-  let allValues: string[] = [];
+  let open = openOnMount && !selectedValues.length && !searchText;
+  $: sanitisedSearchText = searchText?.replace(/^%/, "").replace(/%$/, "");
+  let curSearchText = "";
 
   $: ({ instanceId } = $runtime);
 
-  $: searchValues = useDimensionSearch(
+  enum SearchMode {
+    Select = "Select",
+    Search = "Search",
+    Bulk = "Bulk",
+  }
+  let mode: SearchMode = isMatchList
+    ? SearchMode.Bulk
+    : searchText?.length
+      ? SearchMode.Search
+      : SearchMode.Select;
+
+  function updateBasedOnFilterSettings(
+    isMatchList: boolean | undefined,
+    sanitisedSearchText: string | undefined,
+  ) {
+    if (isMatchList) {
+      mode = SearchMode.Bulk;
+      curSearchText = selectedValues.join(",");
+    } else if (sanitisedSearchText) {
+      mode = SearchMode.Search;
+      curSearchText = sanitisedSearchText ?? "";
+    } else {
+      mode = SearchMode.Select;
+      curSearchText = "";
+    }
+  }
+  $: updateBasedOnFilterSettings(isMatchList, sanitisedSearchText);
+
+  function checkSearchText(searchText: string) {
+    const values = searchText.split(BulkValueSplitRegex);
+    if (values.length <= 1) {
+      return;
+    }
+    console.log(values);
+    searchedBulkValues = values;
+    mode = SearchMode.Bulk;
+  }
+  $: checkSearchText(curSearchText);
+
+  let searchedBulkValues: string[] = isMatchList ? selectedValues : [];
+  $: searchResultsQuery = useDimensionSearch(
     instanceId,
     metricsViewNames,
     name,
-    searchText,
-    timeStart,
-    timeEnd,
-    Boolean(timeControlsReady && open),
+    {
+      ...(mode === SearchMode.Bulk
+        ? {
+            values: searchedBulkValues,
+          }
+        : {
+            searchText: curSearchText,
+          }),
+      timeStart,
+      timeEnd,
+      enabled: Boolean(timeControlsReady && open),
+    },
   );
-  $: ({ error, isFetching } = $searchValues);
+  $: ({
+    data: searchResults,
+    error: errorFromSearchResults,
+    isFetching: isFetchingFromSearchResults,
+  } = $searchResultsQuery);
+  $: allSearchResultsCountQuery = useAllSearchResultsCount(
+    instanceId,
+    metricsViewNames,
+    name,
+    {
+      ...(mode === SearchMode.Bulk
+        ? {
+            values: searchedBulkValues,
+          }
+        : {
+            searchText: curSearchText,
+          }),
+      timeStart,
+      timeEnd,
+      enabled: Boolean(timeControlsReady) && mode !== SearchMode.Select,
+    },
+  );
+  $: ({
+    data: allSearchResultsCount,
+    error: errorFromAllSearchResultsCount,
+    isFetching: isFetchingFromAllSearchResultsCount,
+  } = $allSearchResultsCountQuery);
 
-  $: allValues = $searchValues?.data ?? allValues;
+  $: error = errorFromSearchResults ?? errorFromAllSearchResultsCount;
+  $: isFetching =
+    isFetchingFromSearchResults ?? isFetchingFromAllSearchResultsCount;
+
+  $: showExtraInfo = mode !== SearchMode.Select || curSearchText.length > 0;
 
   $: allSelected = Boolean(
-    selectedValues.length && allValues?.length === selectedValues.length,
+    selectedValues.length && searchResults?.length === selectedValues.length,
   );
+  $: effectiveSelectedValues =
+    mode !== SearchMode.Bulk ? selectedValues : (searchResults ?? []);
+
+  function handleModeChange(newMode: SearchMode) {
+    if (newMode !== SearchMode.Bulk) {
+      searchedBulkValues = [];
+    } else {
+      searchedBulkValues = curSearchText.split(BulkValueSplitRegex);
+    }
+  }
+
+  function handleOpenChange(open: boolean) {
+    console.log("handleOpenChange", open);
+    if (open) {
+      curSearchText = isMatchList
+        ? selectedValues.join(",")
+        : (sanitisedSearchText ?? "");
+    } else {
+      if (selectedValues.length === 0 && !searchText) {
+        onRemove();
+      }
+    }
+  }
 
   function onToggleSelectAll() {
-    allValues?.forEach((dimensionValue) => {
+    searchResults?.forEach((dimensionValue) => {
       if (!allSelected && selectedValues.includes(dimensionValue)) return;
 
       onSelect(dimensionValue);
     });
   }
+
+  function onApply() {
+    if (mode === SearchMode.Bulk) {
+      onBulkSelect(searchedBulkValues);
+      isMatchList = true;
+      open = false;
+    } else {
+      onSearch(curSearchText);
+      searchText = curSearchText;
+      open = false;
+    }
+  }
+
+  $: console.log(mode);
 </script>
 
 <DropdownMenu.Root
   bind:open
   typeahead={false}
   closeOnItemClick={false}
-  onOpenChange={(open) => {
-    if (open) {
-      searchText = "";
-    } else {
-      if (selectedValues.length === 0) {
-        onRemove();
-      }
-    }
-  }}
+  onOpenChange={handleOpenChange}
 >
   <DropdownMenu.Trigger asChild let:builder>
     <Tooltip
@@ -86,7 +207,7 @@
         type="dimension"
         active={open}
         exclude={excludeMode}
-        label="View filter"
+        label={`${name} view filter`}
         on:remove={onRemove}
         removable={!readOnly}
         {readOnly}
@@ -103,7 +224,12 @@
           label={excludeMode ? `Exclude ${label}` : label}
           show={1}
           {smallChip}
-          values={selectedValues}
+          values={mode === SearchMode.Bulk
+            ? searchedBulkValues
+            : effectiveSelectedValues}
+          matchedCount={allSearchResultsCount}
+          loading={isFetchingFromAllSearchResultsCount}
+          search={sanitisedSearchText}
         />
       </Chip>
       <div slot="tooltip-content" transition:fly={{ duration: 100, y: 4 }}>
@@ -121,15 +247,73 @@
   <!-- There will be some custom controls for this. Until we have the full design have a custom dropdown here. -->
   <DropdownMenu.Content
     align="start"
-    class="flex flex-col max-h-96 w-72 overflow-hidden p-0"
+    class="flex flex-col max-h-96 w-[400px] overflow-hidden p-0"
   >
-    <div class="px-3 pt-3 pb-1">
-      <Search
-        bind:value={searchText}
-        label="Search list"
-        showBorderOnFocus={false}
-      />
+    <div class="flex flex-col px-3 pt-3">
+      <div class="flex flex-row">
+        <Select
+          id="search-mode"
+          bind:value={mode}
+          options={[
+            {
+              value: SearchMode.Select,
+              label: "Select",
+              description: "Manually select values for this filter",
+            },
+            {
+              value: SearchMode.Search,
+              label: "Contains",
+              description: "Create a dynamic filter based on a search term",
+            },
+            {
+              value: SearchMode.Bulk,
+              label: "In List",
+              description: "Create a filter based on a list of values",
+            },
+          ]}
+          onChange={handleModeChange}
+          size="md"
+        />
+        <Search
+          bind:value={curSearchText}
+          label={`${name} search list`}
+          showBorderOnFocus={false}
+          retailValueOnMount
+          placeholder="Enter search term or paste list of values"
+        />
+      </div>
+      {#if showExtraInfo}
+        <div class="flex flex-row items-center justify-between pt-2 pb-1">
+          {#if mode === SearchMode.Search}
+            <DropdownMenu.Label
+              class="pb-0 uppercase text-[10px] text-gray-500"
+              aria-label={`${name} results`}
+            >
+              {allSearchResultsCount} results
+            </DropdownMenu.Label>
+          {:else if mode === SearchMode.Bulk}
+            <DropdownMenu.Label
+              class="pb-0 uppercase text-[10px] text-gray-500"
+              aria-label={`${name} results`}
+            >
+              {allSearchResultsCount} of {searchedBulkValues.length} matched
+            </DropdownMenu.Label>
+          {/if}
+
+          <a
+            href="https://docs.rilldata.com/"
+            target="_blank"
+            class="text-primary-600 font-medium justify-end"
+          >
+            Learn more
+          </a>
+        </div>
+      {/if}
     </div>
+
+    {#if showExtraInfo}
+      <DropdownMenu.Separator class="bg-slate-200" />
+    {/if}
 
     <div class="flex flex-col flex-1 overflow-y-auto w-full h-fit pb-1">
       {#if isFetching}
@@ -140,25 +324,27 @@
         <div class="min-h-9 p-3 text-center text-red-600 text-xs">
           {error}
         </div>
-      {:else if allValues}
+      {:else if searchResults}
         <DropdownMenu.Group class="px-1">
-          {#each allValues as name (name)}
-            {@const selected = selectedValues.includes(name)}
+          {#each searchResults as name (name)}
+            {@const selected = effectiveSelectedValues.includes(name)}
+            {@const label = name ?? "null"}
 
             <DropdownMenu.CheckboxItem
-              class="text-xs cursor-pointer"
+              class="text-xs cursor-pointer {mode !== SearchMode.Select
+                ? 'pl-3'
+                : ''}"
               role="menuitem"
-              checked={selected}
+              checked={mode === SearchMode.Select && selected}
               showXForSelected={excludeMode}
+              disabled={mode !== SearchMode.Select}
               on:click={() => onSelect(name)}
             >
               <span>
-                {#if name === null}
-                  null
-                {:else if name.length > 240}
-                  {name.slice(0, 240)}...
+                {#if label.length > 240}
+                  {label.slice(0, 240)}...
                 {:else}
-                  {name}
+                  {label}
                 {/if}
               </span>
             </DropdownMenu.CheckboxItem>
@@ -172,20 +358,28 @@
     </div>
 
     <footer>
-      <Button on:click={onToggleSelectAll} type="plain">
-        {#if allSelected}
-          Deselect all
-        {:else}
-          Select all
-        {/if}
-      </Button>
-      <Button on:click={onToggleFilterMode} type="secondary">
-        {#if excludeMode}
-          Include
-        {:else}
-          Exclude
-        {/if}
-      </Button>
+      <div class="flex items-center gap-x-1.5">
+        <Switch
+          checked={excludeMode}
+          id="include-exclude"
+          small
+          on:click={onToggleFilterMode}
+        />
+        <Label class="font-normal text-xs" for="include-exclude">Exclude</Label>
+      </div>
+      {#if mode === SearchMode.Select}
+        <Button on:click={onToggleSelectAll} type="plain" class="justify-end">
+          {#if allSelected}
+            Deselect all
+          {:else}
+            Select all
+          {/if}
+        </Button>
+      {:else}
+        <Button on:click={onApply} type="plain" class="justify-end">
+          Apply
+        </Button>
+      {/if}
     </footer>
   </DropdownMenu.Content>
 </DropdownMenu.Root>
@@ -195,7 +389,7 @@
     height: 42px;
     @apply border-t border-slate-300;
     @apply bg-slate-100;
-    @apply flex flex-row flex-none items-center justify-end;
+    @apply flex flex-row flex-none items-center justify-between;
     @apply gap-x-2 p-2 px-3.5;
   }
 

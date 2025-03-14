@@ -47,7 +47,6 @@
     class:compact
     class:fullWidth
     class:pointer-events-none={readOnly && !allowPointerEvents}
-    aria-label={label}
     {...getAttrs(builders)}
     use:builderActions={{ builders }}
   >
@@ -79,8 +78,8 @@
       <button
         on:click
         on:mousedown
-        aria-label={label}
         class="text-inherit w-full select-none flex items-center justify-between gap-x-1 px-0.5"
+        aria-label={label}
       >
         <slot name="body" />
 

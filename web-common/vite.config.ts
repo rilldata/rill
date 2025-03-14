@@ -37,6 +37,8 @@ export default defineConfig(({ mode }) => {
       // This alias fixes `onMount` not getting called during vitest unit tests.
       // See: https://stackoverflow.com/questions/76577665/vitest-and-svelte-components-onmount
       alias: [{ find: /^svelte$/, replacement: "svelte/internal" }],
+      setupFiles: ["./vitest-setup.js"],
+      globals: true,
       coverage: {
         provider: "v8",
         src: ["./src"],
