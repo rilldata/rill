@@ -12,7 +12,7 @@
 
   $: if ($allProjectsHibernating.data) {
     // we have a generic banner for viewers when org is defunct for some reason and projects are hibernating
-    eventBus.emit("banner", {
+    eventBus.emit("add-banner", {
       id: BillingBannerID,
       priority: BillingBannerPriority,
       message: {

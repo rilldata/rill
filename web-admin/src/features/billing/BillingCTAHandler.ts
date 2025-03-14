@@ -56,7 +56,7 @@ export class BillingCTAHandler {
 
       case "wake-projects":
         this.wakingProjects.set(true);
-        eventBus.emit("banner", {
+        eventBus.emit("add-banner", {
           id: BillingBannerID,
           priority: BillingBannerPriority,
           message: {
@@ -67,7 +67,7 @@ export class BillingCTAHandler {
         });
         await wakeAllProjects(this.organization);
         this.wakingProjects.set(false);
-        eventBus.emit("banner", {
+        eventBus.emit("add-banner", {
           id: BillingBannerID,
           priority: BillingBannerPriority,
           message: {

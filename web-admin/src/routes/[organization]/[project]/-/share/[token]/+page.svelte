@@ -33,7 +33,7 @@
   $: cookieProjectQuery = createAdminServiceGetProject(organization, project);
   $: ({ data: cookieProject } = $cookieProjectQuery);
   $: if (cookieProject) {
-    eventBus.emit("banner", {
+    eventBus.emit("add-banner", {
       id: TokenBannerID,
       priority: TokenBannerPriority,
       message: {
@@ -57,11 +57,7 @@
     const currentPath = from?.url.pathname;
     const newPath = to?.url.pathname;
     if (newPath !== currentPath) {
-      eventBus.emit("banner", {
-        id: TokenBannerID,
-        priority: TokenBannerPriority,
-        message: null,
-      });
+      eventBus.emit("remove-banner", TokenBannerID);
     }
   });
 </script>

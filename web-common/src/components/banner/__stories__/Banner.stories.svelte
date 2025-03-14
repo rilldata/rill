@@ -30,7 +30,7 @@
   );
 
   function showBanner() {
-    eventBus.emit("banner", {
+    eventBus.emit("add-banner", {
       id: BillingBannerID,
       priority: BillingBannerPriority,
       message: {

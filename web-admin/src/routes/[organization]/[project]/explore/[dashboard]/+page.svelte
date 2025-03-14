@@ -77,7 +77,7 @@
 
   // Display a dashboard banner
   $: if (hasBanner) {
-    eventBus.emit("banner", {
+    eventBus.emit("add-banner", {
       id: DashboardBannerID,
       priority: DashboardBannerPriority,
       message: {
@@ -96,11 +96,7 @@
       !from || !to || from.params.dashboard !== to.params.dashboard;
     // Clear out any dashboard banners
     if (hasBanner && changedDashboard) {
-      eventBus.emit("banner", {
-        id: DashboardBannerID,
-        priority: DashboardBannerPriority,
-        message: null,
-      });
+      eventBus.emit("remove-banner", DashboardBannerID);
     }
   });
 

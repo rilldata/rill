@@ -5,26 +5,26 @@
   import Banner from "./Banner.svelte";
 
   let banners: BannerEvent[] = [];
-  const unsubscribe = eventBus.on("banner", (newBanner) => {
+  const unsubscribeAddBanner = eventBus.on("add-banner", (newBanner) => {
     const existingIdx = banners.findIndex((b) => b.id === newBanner.id);
-    if (existingIdx === -1 && newBanner.message) {
-      console.log("New banner", newBanner);
+    if (existingIdx === -1) {
       banners.push(newBanner);
     } else if (existingIdx >= 0) {
-      console.log("Replace banner", newBanner);
-      if (newBanner.message) {
-        banners[existingIdx] = newBanner;
-      } else {
-        banners.splice(existingIdx, 1);
-      }
+      banners[existingIdx] = newBanner;
     }
     banners = banners.sort((a, b) => a.priority - b.priority);
   });
-
-  $: console.log(banners);
+  const unsubscribeRemoveBanner = eventBus.on("remove-banner", (bannerId) => {
+    const existingIdx = banners.findIndex((b) => b.id === bannerId);
+    if (existingIdx === -1) return;
+    banners.splice(existingIdx, 1);
+  });
 
   onMount(() => {
-    return unsubscribe;
+    return () => {
+      unsubscribeAddBanner();
+      unsubscribeRemoveBanner();
+    };
   });
 </script>
 

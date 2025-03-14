@@ -20,15 +20,11 @@
 
   function showBillingIssueBanner(message: BillingIssueMessage | undefined) {
     if (!message) {
-      eventBus.emit("banner", {
-        id: BillingBannerID,
-        priority: BillingBannerPriority,
-        message: null,
-      });
+      eventBus.emit("remove-banner", BillingBannerID);
       return;
     }
 
-    eventBus.emit("banner", {
+    eventBus.emit("add-banner", {
       id: BillingBannerID,
       priority: BillingBannerPriority,
       message: {

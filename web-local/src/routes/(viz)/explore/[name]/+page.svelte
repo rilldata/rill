@@ -61,7 +61,7 @@
   $: hasBanner = !!$exploreQuery.data?.explore?.banner;
 
   $: if (hasBanner) {
-    eventBus.emit("banner", {
+    eventBus.emit("add-banner", {
       id: DashboardBannerID,
       priority: DashboardBannerPriority,
       message: {
@@ -81,11 +81,7 @@
 
   onNavigate(() => {
     if (hasBanner) {
-      eventBus.emit("banner", {
-        id: DashboardBannerID,
-        priority: DashboardBannerPriority,
-        message: null,
-      });
+      eventBus.emit("remove-banner", DashboardBannerID);
     }
   });
 </script>

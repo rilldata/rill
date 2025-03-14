@@ -16,21 +16,13 @@ interface NotificationOptions {
   timeout?: number;
 }
 
-export enum BannerSlot {
-  Billing,
-  Dashboard,
-  // Catch all slot when none is provided.
-  // Make sure this is at the end
-  Other,
-}
 export interface BannerEvent {
   // Unique identifier used to set/unset for particular feature.
   id: string;
   // Determines the order in which the banner is shown.
   // Lower values means the banner is shown higher in the stack.
   priority: number;
-  // null here means the slot is being cleared.
-  message: BannerMessage | null;
+  message: BannerMessage;
 }
 export interface BannerMessage {
   type: "default" | "success" | "info" | "warning" | "error";
