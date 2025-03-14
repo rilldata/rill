@@ -104,17 +104,6 @@ test.describe("leaderboard context column", () => {
     // enable comparisons which should automatically enable a time comparison (including context column)
     await page.getByLabel("Toggle time comparison").click();
 
-    // select context columns
-    const contextColumnsMenu = page.getByRole("button", {
-      name: "Choose context columns to display",
-    });
-    await contextColumnsMenu.click();
-    await page.getByRole("menuitem", { name: "Change", exact: true }).click();
-    await page
-      .getByRole("menuitem", { name: "Percent change", exact: true })
-      .click();
-    await contextColumnsMenu.click();
-
     // This regex matches a line that:
     // - starts with "Facebook"
     // - has two white space separated sets of characters (the number and the percent change)
