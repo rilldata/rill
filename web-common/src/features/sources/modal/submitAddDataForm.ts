@@ -33,84 +33,59 @@ import { EntityType } from "../../entity-management/types";
 import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
 import { isProjectInitialized } from "../../welcome/is-project-initialized";
 import { compileSourceYAML, maybeRewriteToDuckDb } from "../sourceUtils";
-import type { AddDataFormType } from "./types";
 
 interface AddDataFormValues {
   // name: string; // Commenting out until we add user-provided names for Connectors
   [key: string]: unknown;
 }
 
-export async function submitAddDataForm(
+export async function submitAddSourceForm(
   queryClient: QueryClient,
-  formType: AddDataFormType,
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
 ): Promise<void> {
   const instanceId = get(runtime).instanceId;
+  await beforeSubmitForm(instanceId);
 
-  // Emit telemetry
-  await behaviourEvent?.fireSourceTriggerEvent(
-    BehaviourEventAction.SourceAdd,
-    BehaviourEventMedium.Button,
-    getScreenNameFromPage(),
-    MetricsEventSpace.Modal,
+  const [rewrittenConnector, rewrittenFormValues] = maybeRewriteToDuckDb(
+    connector,
+    formValues,
   );
 
-  // If project is uninitialized, initialize an empty project
-  const projectInitialized = await isProjectInitialized(instanceId);
-  if (!projectInitialized) {
-    await runtimeServiceUnpackEmpty(instanceId, {
-      displayName: EMPTY_PROJECT_TITLE,
-    });
+  // Make a new <source>.yaml file
+  const newSourceFilePath = getFileAPIPathFromNameAndType(
+    formValues.name as string,
+    EntityType.Table,
+  );
+  await runtimeServicePutFile(instanceId, {
+    path: newSourceFilePath,
+    blob: compileSourceYAML(rewrittenConnector, rewrittenFormValues),
+    create: true,
+    createOnly: false, // The modal might be opened from a YAML file with placeholder text, so the file might already exist
+  });
 
-    // Race condition: invalidate("init") must be called before we navigate to
-    // `/files/${newFilePath}`. invalidate("init") is also called in the
-    // `WatchFilesClient`, but there it's not guaranteed to get invoked before we need it.
-    await invalidate("init");
-  }
+  // Create or update the `.env` file
+  await runtimeServicePutFile(instanceId, {
+    path: ".env",
+    blob: await updateDotEnvWithSecrets(
+      queryClient,
+      rewrittenConnector,
+      rewrittenFormValues,
+    ),
+    create: true,
+    createOnly: false,
+  });
 
-  /**
-   * Sources
-   */
+  await goto(`/files/${newSourceFilePath}`);
+}
 
-  if (formType === "source") {
-    const [rewrittenConnector, rewrittenFormValues] = maybeRewriteToDuckDb(
-      connector,
-      formValues,
-    );
-
-    // Make a new <source>.yaml file
-    const newSourceFilePath = getFileAPIPathFromNameAndType(
-      formValues.name as string,
-      EntityType.Table,
-    );
-    await runtimeServicePutFile(instanceId, {
-      path: newSourceFilePath,
-      blob: compileSourceYAML(rewrittenConnector, rewrittenFormValues),
-      create: true,
-      createOnly: false, // The modal might be opened from a YAML file with placeholder text, so the file might already exist
-    });
-
-    // Create or update the `.env` file
-    await runtimeServicePutFile(instanceId, {
-      path: ".env",
-      blob: await updateDotEnvWithSecrets(
-        queryClient,
-        rewrittenConnector,
-        rewrittenFormValues,
-      ),
-      create: true,
-      createOnly: false,
-    });
-
-    await goto(`/files/${newSourceFilePath}`);
-
-    return;
-  }
-
-  /**
-   * Connectors
-   */
+export async function submitAddOLAPConnectorForm(
+  queryClient: QueryClient,
+  connector: V1ConnectorDriver,
+  formValues: AddDataFormValues,
+): Promise<void> {
+  const instanceId = get(runtime).instanceId;
+  await beforeSubmitForm(instanceId);
 
   const newConnectorName = getName(
     connector.name as string,
@@ -215,4 +190,27 @@ export async function submitAddDataForm(
 
   // Go to the new connector file
   await goto(`/files/${newConnectorFilePath}`);
+}
+
+async function beforeSubmitForm(instanceId: string) {
+  // Emit telemetry
+  await behaviourEvent?.fireSourceTriggerEvent(
+    BehaviourEventAction.SourceAdd,
+    BehaviourEventMedium.Button,
+    getScreenNameFromPage(),
+    MetricsEventSpace.Modal,
+  );
+
+  // If project is uninitialized, initialize an empty project
+  const projectInitialized = await isProjectInitialized(instanceId);
+  if (!projectInitialized) {
+    await runtimeServiceUnpackEmpty(instanceId, {
+      displayName: EMPTY_PROJECT_TITLE,
+    });
+
+    // Race condition: invalidate("init") must be called before we navigate to
+    // `/files/${newFilePath}`. invalidate("init") is also called in the
+    // `WatchFilesClient`, but there it's not guaranteed to get invoked before we need it.
+    await invalidate("init");
+  }
 }

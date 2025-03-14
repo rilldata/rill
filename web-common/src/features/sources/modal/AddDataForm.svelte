@@ -19,7 +19,10 @@
   import { ButtonGroup, SubButton } from "../../../components/button-group";
   import { inferSourceName } from "../sourceUtils";
   import { humanReadableErrorMessage } from "./errors";
-  import { submitAddDataForm } from "./submitAddDataForm";
+  import {
+    submitAddOLAPConnectorForm,
+    submitAddSourceForm,
+  } from "./submitAddDataForm";
   import type { AddDataFormType } from "./types";
   import { dsnSchema, getYupSchema } from "./yupSchemas";
 
@@ -122,7 +125,11 @@
     const values = event.form.data;
 
     try {
-      await submitAddDataForm(queryClient, formType, connector, values);
+      if (formType === "source") {
+        await submitAddSourceForm(queryClient, connector, values);
+      } else {
+        await submitAddOLAPConnectorForm(queryClient, connector, values);
+      }
       onClose();
     } catch (e) {
       let error: string;
