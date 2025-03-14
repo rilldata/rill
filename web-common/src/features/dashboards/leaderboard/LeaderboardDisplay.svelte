@@ -10,7 +10,7 @@
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardControls from "./LeaderboardControls.svelte";
   import {
-    DEFAULT_CONTEXT_COLUMN_WIDTH,
+    COMPARISON_COLUMN_WIDTH,
     deltaColumn,
     valueColumn,
   } from "./leaderboard-widths";
@@ -76,9 +76,9 @@
     dimensionColumnWidth +
     $valueColumn +
     (comparisonTimeRange
-      ? DEFAULT_CONTEXT_COLUMN_WIDTH * (showDeltaPercent ? 2 : 1)
+      ? COMPARISON_COLUMN_WIDTH * (showDeltaPercent ? 2 : 1)
       : showPercentOfTotal
-        ? DEFAULT_CONTEXT_COLUMN_WIDTH
+        ? COMPARISON_COLUMN_WIDTH
         : 0);
 </script>
 

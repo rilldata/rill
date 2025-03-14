@@ -36,10 +36,7 @@
     getSort,
     prepareLeaderboardItemData,
   } from "./leaderboard-utils";
-  import {
-    valueColumn,
-    DEFAULT_CONTEXT_COLUMN_WIDTH,
-  } from "./leaderboard-widths";
+  import { valueColumn, COMPARISON_COLUMN_WIDTH } from "./leaderboard-widths";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import DelayedLoadingRows from "./DelayedLoadingRows.svelte";
 
@@ -321,15 +318,15 @@
         <col style:width="{$valueColumn}px" data-index={index} />
         {#if shouldShowComparisonForMeasure(measureName)}
           {#if showPercentOfTotal}
-            <col style:width="{DEFAULT_CONTEXT_COLUMN_WIDTH}px" />
+            <col style:width="{COMPARISON_COLUMN_WIDTH}px" />
           {/if}
           {#if showDeltaAbsolute}
-            <col style:width="{DEFAULT_CONTEXT_COLUMN_WIDTH}px" />
+            <col style:width="{COMPARISON_COLUMN_WIDTH}px" />
             {#if showDeltaPercent}
-              <col style:width="{DEFAULT_CONTEXT_COLUMN_WIDTH}px" />
+              <col style:width="{COMPARISON_COLUMN_WIDTH}px" />
             {/if}
           {:else if showDeltaPercent}
-            <col style:width="{DEFAULT_CONTEXT_COLUMN_WIDTH}px" />
+            <col style:width="{COMPARISON_COLUMN_WIDTH}px" />
           {/if}
         {/if}
       {/each}
