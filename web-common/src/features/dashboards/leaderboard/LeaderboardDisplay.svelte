@@ -13,7 +13,6 @@
     deltaColumn,
     valueColumn,
   } from "./leaderboard-widths";
-  import { LeaderboardContextColumn } from "../leaderboard-context-column";
 
   export let metricsViewName: string;
   export let whereFilter: V1Expression;
@@ -34,10 +33,9 @@
         atLeastOneSelection,
         isFilterExcludeMode,
       },
-      dimensions: { visibleDimensions, dimensionShowAllMeasures },
+      dimensions: { visibleDimensions },
       comparison: { isBeingCompared: isBeingComparedReadable },
       sorting: { sortedAscending, sortType, sortByMeasure },
-      contextColumn: { contextColumns },
       measures: { measureLabel },
     },
     actions: {
@@ -62,13 +60,8 @@
 
   $: dimensionColumnWidth = 164;
 
-  $: showPercentOfTotal =
-    isValidPercentOfTotal &&
-    $contextColumns?.includes(LeaderboardContextColumn.PERCENT);
-
-  $: showDeltaPercent =
-    !!comparisonTimeRange &&
-    $contextColumns?.includes(LeaderboardContextColumn.DELTA_PERCENT);
+  $: showPercentOfTotal = isValidPercentOfTotal;
+  $: showDeltaPercent = !!comparisonTimeRange;
 
   $: tableWidth =
     dimensionColumnWidth +
@@ -100,8 +93,6 @@
           {#if dimension.name}
             <Leaderboard
               isValidPercentOfTotal={$isValidPercentOfTotal}
-              contextColumns={$contextColumns}
-              dimensionShowAllMeasures={$dimensionShowAllMeasures}
               {metricsViewName}
               {activeMeasureName}
               {activeMeasureNames}

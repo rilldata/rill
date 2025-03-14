@@ -8,7 +8,6 @@
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import DimensionCompareMenu from "./DimensionCompareMenu.svelte";
-  import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import DeltaChangePercentage from "../dimension-table/DeltaChangePercentage.svelte";
   import DeltaChange from "../dimension-table/DeltaChange.svelte";
   import PercentOfTotal from "../dimension-table/PercentOfTotal.svelte";
@@ -16,41 +15,22 @@
 
   export let dimensionName: string;
   export let isFetching: boolean;
-  export let isTimeComparisonActive: boolean;
   export let isValidPercentOfTotal: boolean;
+  export let isTimeComparisonActive: boolean;
   export let dimensionDescription: string;
   export let isBeingCompared: boolean;
   export let sortedAscending: boolean;
   export let displayName: string;
   export let hovered: boolean;
   export let sortType: SortType;
-  export let contextColumns: string[] = [];
   export let activeMeasureNames: string[] = [];
   export let sortBy: string | null;
-  export let dimensionShowAllMeasures: boolean;
-  export let activeMeasureName: string;
   export let toggleSort: (sortType: SortType, measureName?: string) => void;
   export let setPrimaryDimension: (dimensionName: string) => void;
   export let toggleComparisonDimension: (
     dimensionName: string | undefined,
   ) => void;
   export let measureLabel: (measureName: string) => string;
-
-  $: showPercentOfTotal =
-    isValidPercentOfTotal &&
-    contextColumns.includes(LeaderboardContextColumn.PERCENT);
-
-  $: showDeltaAbsolute =
-    isTimeComparisonActive &&
-    contextColumns.includes(LeaderboardContextColumn.DELTA_ABSOLUTE);
-
-  $: showDeltaPercent =
-    isTimeComparisonActive &&
-    contextColumns.includes(LeaderboardContextColumn.DELTA_PERCENT);
-
-  function shouldShowComparisonForMeasure(measureName: string): boolean {
-    return dimensionShowAllMeasures || measureName === activeMeasureName;
-  }
 </script>
 
 <thead>
@@ -130,96 +110,94 @@
         </button>
       </th>
 
-      {#if shouldShowComparisonForMeasure(measureName)}
-        {#if showPercentOfTotal}
-          <th>
-            <button
-              aria-label="Toggle sort leaderboards by percent of total"
-              on:click={() => toggleSort(SortType.PERCENT, measureName)}
-            >
-              <PercentOfTotal />
-              {#if sortType === SortType.PERCENT && measureName === sortBy}
-                <div class="ui-copy-icon">
-                  {#if sortedAscending}
-                    <div
-                      in:fly|global={{ duration: 200, y: 8 }}
-                      style:opacity={1}
-                    >
-                      <ArrowDown flip />
-                    </div>
-                  {:else}
-                    <div
-                      in:fly|global={{ duration: 200, y: -8 }}
-                      style:opacity={1}
-                    >
-                      <ArrowDown />
-                    </div>
-                  {/if}
-                </div>
-              {/if}
-            </button>
-          </th>
-        {/if}
+      {#if isValidPercentOfTotal}
+        <th>
+          <button
+            aria-label="Toggle sort leaderboards by percent of total"
+            on:click={() => toggleSort(SortType.PERCENT, measureName)}
+          >
+            <PercentOfTotal />
+            {#if sortType === SortType.PERCENT && measureName === sortBy}
+              <div class="ui-copy-icon">
+                {#if sortedAscending}
+                  <div
+                    in:fly|global={{ duration: 200, y: 8 }}
+                    style:opacity={1}
+                  >
+                    <ArrowDown flip />
+                  </div>
+                {:else}
+                  <div
+                    in:fly|global={{ duration: 200, y: -8 }}
+                    style:opacity={1}
+                  >
+                    <ArrowDown />
+                  </div>
+                {/if}
+              </div>
+            {/if}
+          </button>
+        </th>
+      {/if}
 
-        {#if showDeltaAbsolute}
-          <th>
-            <button
-              aria-label="Toggle sort leaderboards by absolute change"
-              on:click={() => toggleSort(SortType.DELTA_ABSOLUTE, measureName)}
-            >
-              <DeltaChange />
-              {#if sortType === SortType.DELTA_ABSOLUTE && measureName === sortBy}
-                <div class="ui-copy-icon">
-                  {#if sortedAscending}
-                    <div
-                      in:fly|global={{ duration: 200, y: 8 }}
-                      style:opacity={1}
-                    >
-                      <ArrowDown flip />
-                    </div>
-                  {:else}
-                    <div
-                      in:fly|global={{ duration: 200, y: -8 }}
-                      style:opacity={1}
-                    >
-                      <ArrowDown />
-                    </div>
-                  {/if}
-                </div>
-              {/if}
-            </button>
-          </th>
-        {/if}
+      {#if isTimeComparisonActive}
+        <th>
+          <button
+            aria-label="Toggle sort leaderboards by absolute change"
+            on:click={() => toggleSort(SortType.DELTA_ABSOLUTE, measureName)}
+          >
+            <DeltaChange />
+            {#if sortType === SortType.DELTA_ABSOLUTE && measureName === sortBy}
+              <div class="ui-copy-icon">
+                {#if sortedAscending}
+                  <div
+                    in:fly|global={{ duration: 200, y: 8 }}
+                    style:opacity={1}
+                  >
+                    <ArrowDown flip />
+                  </div>
+                {:else}
+                  <div
+                    in:fly|global={{ duration: 200, y: -8 }}
+                    style:opacity={1}
+                  >
+                    <ArrowDown />
+                  </div>
+                {/if}
+              </div>
+            {/if}
+          </button>
+        </th>
+      {/if}
 
-        {#if showDeltaPercent}
-          <th>
-            <button
-              aria-label="Toggle sort leaderboards by percent change"
-              on:click={() => toggleSort(SortType.DELTA_PERCENT, measureName)}
-            >
-              <DeltaChangePercentage />
-              {#if sortType === SortType.DELTA_PERCENT && measureName === sortBy}
-                <div class="ui-copy-icon">
-                  {#if sortedAscending}
-                    <div
-                      in:fly|global={{ duration: 200, y: 8 }}
-                      style:opacity={1}
-                    >
-                      <ArrowDown flip />
-                    </div>
-                  {:else}
-                    <div
-                      in:fly|global={{ duration: 200, y: -8 }}
-                      style:opacity={1}
-                    >
-                      <ArrowDown />
-                    </div>
-                  {/if}
-                </div>
-              {/if}
-            </button>
-          </th>
-        {/if}
+      {#if isTimeComparisonActive}
+        <th>
+          <button
+            aria-label="Toggle sort leaderboards by percent change"
+            on:click={() => toggleSort(SortType.DELTA_PERCENT, measureName)}
+          >
+            <DeltaChangePercentage />
+            {#if sortType === SortType.DELTA_PERCENT && measureName === sortBy}
+              <div class="ui-copy-icon">
+                {#if sortedAscending}
+                  <div
+                    in:fly|global={{ duration: 200, y: 8 }}
+                    style:opacity={1}
+                  >
+                    <ArrowDown flip />
+                  </div>
+                {:else}
+                  <div
+                    in:fly|global={{ duration: 200, y: -8 }}
+                    style:opacity={1}
+                  >
+                    <ArrowDown />
+                  </div>
+                {/if}
+              </div>
+            {/if}
+          </button>
+        </th>
       {/if}
     {/each}
   </tr>
