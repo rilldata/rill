@@ -98,12 +98,6 @@ export interface MetricsExplorerEntity {
   dimensionFilterExcludeMode: Map<string, boolean>;
 
   /**
-   * Whether to show all measures for a dimension in dimension detail.
-   */
-  // @deprecated
-  dimensionShowAllMeasures: boolean;
-
-  /**
    * Used to add a dropdown for newly added dimension/measure filters.
    * Such filter will not have an entry in where/having expression objects.
    */

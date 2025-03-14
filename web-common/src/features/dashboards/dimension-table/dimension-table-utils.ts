@@ -243,7 +243,6 @@ export function prepareVirtualizedDimTableColumns(
   dimension: MetricsViewSpecDimensionV2,
   timeComparison: boolean,
   validPercentOfTotal: boolean,
-  activeMeasures?: string[],
 ): VirtualizedTableColumns[] {
   const sortType = dash.dashboardSortType;
   const sortDirection = dash.sortDirection;
@@ -261,73 +260,48 @@ export function prepareVirtualizedDimTableColumns(
     allMeasures.some((am) => am.name === m),
   );
 
-  // Show context columns based on selected context columns and time comparison settings
-  if (selectedMeasure) {
-    // If activeMeasures is provided, add context columns for each active measure
-    if (activeMeasures?.length) {
-      activeMeasures.forEach((measureName) => {
-        const measure = allMeasures.find((m) => m.name === measureName);
-        if (measure) {
-          addContextColumnNames(
-            columnNames,
-            timeComparison,
-            validPercentOfTotal,
-            measure,
-          );
-        }
-      });
-    } else {
-      addContextColumnNames(
-        columnNames,
-        timeComparison,
-        validPercentOfTotal,
-        selectedMeasure,
-      );
-    }
+  // don't add context columns if sorting by dimension
+  if (selectedMeasure && sortType !== SortType.DIMENSION) {
+    addContextColumnNames(
+      columnNames,
+      timeComparison,
+      validPercentOfTotal,
+      selectedMeasure,
+    );
   }
-
   // Make dimension the first column
   columnNames.unshift(dimensionColumn);
 
   const columns = columnNames
     .map((name) => {
-      // Determine if this column is related to the selected measure
-      const isSelectedMeasureColumn = name === selectedMeasure?.name;
-      const isSelectedMeasureDelta = name === `${selectedMeasure?.name}_delta`;
-      const isSelectedMeasureDeltaPerc =
-        name === `${selectedMeasure?.name}_delta_perc`;
-      const isSelectedMeasurePercent =
-        name === `${selectedMeasure?.name}_percent_of_total`;
-
-      // Determine highlighting
       let highlight = false;
       if (sortType === SortType.DIMENSION) {
         highlight = name === dimensionColumn;
       } else {
         highlight =
-          isSelectedMeasureColumn ||
-          isSelectedMeasureDelta ||
-          isSelectedMeasureDeltaPerc ||
-          isSelectedMeasurePercent;
+          name === selectedMeasure?.name ||
+          name.endsWith("_delta") ||
+          name.endsWith("_delta_perc") ||
+          name.endsWith("_percent_of_total");
       }
 
-      // Determine sorting
       let sorted;
-      if (sortType === SortType.DIMENSION && name === dimensionColumn) {
-        sorted = sortDirection;
-      } else if (sortType === SortType.VALUE && isSelectedMeasureColumn) {
+      if (name.endsWith("_delta") && sortType === SortType.DELTA_ABSOLUTE) {
         sorted = sortDirection;
       } else if (
-        sortType === SortType.DELTA_ABSOLUTE &&
-        isSelectedMeasureDelta
+        name.endsWith("_delta_perc") &&
+        sortType === SortType.DELTA_PERCENT
       ) {
         sorted = sortDirection;
       } else if (
-        sortType === SortType.DELTA_PERCENT &&
-        isSelectedMeasureDeltaPerc
+        name.endsWith("_percent_of_total") &&
+        sortType === SortType.PERCENT
       ) {
         sorted = sortDirection;
-      } else if (sortType === SortType.PERCENT && isSelectedMeasurePercent) {
+      } else if (
+        name === selectedMeasure?.name &&
+        sortType === SortType.VALUE
+      ) {
         sorted = sortDirection;
       }
 
