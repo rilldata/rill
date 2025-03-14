@@ -8,6 +8,7 @@
   import LeaderboardMeasureCountSelector from "@rilldata/web-common/components/menu/LeaderboardMeasureCountSelector.svelte";
   import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
   import { featureFlags } from "../../feature-flags";
+  import LeaderboardActiveMeasureDropdown from "@rilldata/web-common/components/menu/LeaderboardActiveMeasureDropdown.svelte";
 
   export let exploreName: string;
   export let comparisonTimeRange: V1TimeRange | undefined;
@@ -15,7 +16,13 @@
   const StateManagers = getStateManagers();
   const {
     selectors: {
-      measures: { leaderboardMeasureCount, visibleMeasures, allMeasures },
+      measures: {
+        leaderboardMeasureCount,
+        visibleMeasures,
+        allMeasures,
+        leaderboardMeasureName,
+        getMeasureByName,
+      },
       dimensions: {
         visibleDimensions,
         allDimensions,
@@ -28,6 +35,7 @@
       dimensions: { toggleDimensionVisibility, toggleDimensionShowAllMeasures },
       contextColumn: { setContextColumn, setContextColumns },
       setLeaderboardMeasureCount,
+      setLeaderboardMeasureName,
       sorting: { setDefaultSort },
     },
   } = StateManagers;
@@ -38,6 +46,8 @@
   $: measures = getSimpleMeasures($visibleMeasures);
 
   $: metricsExplorer = $metricsExplorerStore.entities[exploreName];
+
+  $: activeLeaderboardMeasure = $getMeasureByName($leaderboardMeasureName);
 
   // If any measure has validPercentOfTotal, then the percent of total context column is valid
   $: validPercentOfTotal = $visibleMeasures.some(
@@ -86,6 +96,15 @@
           toggleDimensionVisibility(allDimensionNames);
         }}
       />
+
+      {#if !$leaderboardMeasureCountFeatureFlag}
+        <LeaderboardActiveMeasureDropdown
+          leaderboardMeasureName={$leaderboardMeasureName}
+          {setLeaderboardMeasureName}
+          {measures}
+          {activeLeaderboardMeasure}
+        />
+      {/if}
 
       {#if $leaderboardMeasureCountFeatureFlag}
         <LeaderboardMeasureCountSelector
