@@ -52,9 +52,15 @@ service AdminService {
     };
   }
 
-  // ListProjectsForOrganization lists all the projects currently available for given organizations
+  // ListProjectsForOrganization lists all the projects currently available for given organizations.
   rpc ListProjectsForOrganization(ListProjectsForOrganizationRequest) returns (ListProjectsForOrganizationResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects"};
+  }
+
+  // ListProjectsForOrganizationAndUser lists all the projects that an organization member user has access to.
+  // It does not include projects that the user has access to through a usergroup.
+  rpc ListProjectsForOrganizationAndUser(ListProjectsForOrganizationAndUserRequest) returns (ListProjectsForOrganizationAndUserResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization}/projects-for-user"};
   }
 
   // GetProject returns information about a specific project
@@ -234,6 +240,11 @@ service AdminService {
     };
   }
 
+  // ListUsergroupsForOrganizationAndUser lists the user groups that an organization member user has access to.
+  rpc ListUsergroupsForOrganizationAndUser(ListUsergroupsForOrganizationAndUserRequest) returns (ListUsergroupsForOrganizationAndUserResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization}/usergroups-for-user"};
+  }
+
   // CreateUsergroup creates a user group in the organization
   rpc CreateUsergroup(CreateUsergroupRequest) returns (CreateUsergroupResponse) {
     option (google.api.http) = {
@@ -268,7 +279,7 @@ service AdminService {
     option (google.api.http) = {get: "/v1/organizations/{organization}/usergroups"};
   }
 
-  // ListProjectMemberUsergroups lists the org's user groups
+  // ListProjectMemberUsergroups lists the project's user groups
   rpc ListProjectMemberUsergroups(ListProjectMemberUsergroupsRequest) returns (ListProjectMemberUsergroupsResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization}/project/{project}/usergroups"};
   }
@@ -935,6 +946,18 @@ message ListProjectsForOrganizationResponse {
   string next_page_token = 2;
 }
 
+message ListProjectsForOrganizationAndUserRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string user_id = 2 [(validate.rules).string.min_len = 1];
+  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
+  string page_token = 4;
+}
+
+message ListProjectsForOrganizationAndUserResponse {
+  repeated Project projects = 1;
+  string next_page_token = 2;
+}
+
 message GetProjectRequest {
   string organization_name = 1;
   string name = 2;
@@ -1270,13 +1293,15 @@ message ListRolesResponse {
 }
 
 message ListOrganizationMemberUsersRequest {
-  string organization = 1;
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string role = 4; // Optionally filter by role
+  bool include_counts = 5; // Optionally include counts
   uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 3;
 }
 
 message ListOrganizationMemberUsersResponse {
-  repeated MemberUser members = 1;
+  repeated OrganizationMemberUser members = 1;
   string next_page_token = 2;
 }
 
@@ -1441,12 +1466,13 @@ message SudoTriggerBillingRepairResponse {}
 message ListProjectMemberUsersRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
+  string role = 5; // Optionally filter by role
   uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
-  string page_token = 4 ;
+  string page_token = 4;
 }
 
 message ListProjectMemberUsersResponse {
-  repeated MemberUser members = 1;
+  repeated ProjectMemberUser members = 1;
   string next_page_token = 2;
 }
 
@@ -1490,6 +1516,18 @@ message SetProjectMemberUserRoleRequest {
 
 message SetProjectMemberUserRoleResponse {}
 
+message ListUsergroupsForOrganizationAndUserRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string user_id = 2 [(validate.rules).string.min_len = 1];
+  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
+  string page_token = 4;
+}
+
+message ListUsergroupsForOrganizationAndUserResponse {
+  repeated Usergroup usergroups = 1;
+  string next_page_token = 2;
+}
+
 message CreateUsergroupRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string name = 2 [(validate.rules).string.min_len = 1];
@@ -1529,6 +1567,8 @@ message EditUsergroupResponse {}
 
 message ListOrganizationMemberUsergroupsRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
+  string role = 4; // Optionally filter by role
+  bool include_counts = 5; // Optionally include counts
   uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 3;
 }
@@ -1541,6 +1581,7 @@ message ListOrganizationMemberUsergroupsResponse {
 message ListProjectMemberUsergroupsRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
+  string role = 5; // Optionally filter by role
   uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 4;
 }
@@ -1622,7 +1663,7 @@ message ListUsergroupMemberUsersRequest {
 }
 
 message ListUsergroupMemberUsersResponse {
-  repeated MemberUser members = 1;
+  repeated UsergroupMemberUser members = 1;
   string next_page_token = 2;
 }
 
@@ -2408,12 +2449,33 @@ message ProjectRole {
   ProjectPermissions permissions = 3;
 }
 
-message MemberUser {
+message OrganizationMemberUser {
   string user_id = 1;
   string user_email = 3;
   string user_name = 2;
   string user_photo_url = 7;
   string role_name = 4;
+  uint32 projects_count = 8;
+  uint32 usergroups_count = 9;
+  google.protobuf.Timestamp created_on = 5;
+  google.protobuf.Timestamp updated_on = 6;
+}
+
+message ProjectMemberUser {
+  string user_id = 1;
+  string user_email = 3;
+  string user_name = 2;
+  string user_photo_url = 7;
+  string role_name = 4;
+  google.protobuf.Timestamp created_on = 5;
+  google.protobuf.Timestamp updated_on = 6;
+}
+
+message UsergroupMemberUser {
+  string user_id = 1;
+  string user_email = 3;
+  string user_name = 2;
+  string user_photo_url = 7;
   google.protobuf.Timestamp created_on = 5;
   google.protobuf.Timestamp updated_on = 6;
 }
@@ -2568,6 +2630,7 @@ message MemberUsergroup {
   string group_name = 2;
   bool group_managed = 6;
   string role_name = 3;
+  uint32 users_count = 7;
   google.protobuf.Timestamp created_on = 4;
   google.protobuf.Timestamp updated_on = 5;
 }

@@ -79,7 +79,7 @@ type DB interface {
 	FindProjectsForUser(ctx context.Context, userID string) ([]*Project, error)
 	FindProjectsForOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*Project, error)
 	// FindProjectsForOrgAndUser lists the public projects in the org and the projects where user is added as an external user
-	FindProjectsForOrgAndUser(ctx context.Context, orgID, userID, afterProjectName string, limit int) ([]*Project, error)
+	FindProjectsForOrgAndUser(ctx context.Context, orgID, userID string, includePublic bool, afterProjectName string, limit int) ([]*Project, error)
 	FindPublicProjectsInOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*Project, error)
 	FindProjectsByGithubURL(ctx context.Context, githubURL string) ([]*Project, error)
 	FindProjectsByGithubInstallationID(ctx context.Context, id int64) ([]*Project, error)
@@ -132,6 +132,7 @@ type DB interface {
 	GetCurrentTrialOrgCount(ctx context.Context, userID string) (int, error)
 	IncrementCurrentTrialOrgCount(ctx context.Context, userID string) error
 
+	FindUsergroupsForOrganizationAndUser(ctx context.Context, orgID, userID, afterName string, limit int) ([]*Usergroup, error)
 	FindUsergroupByName(ctx context.Context, orgName, name string) (*Usergroup, error)
 	CheckUsergroupExists(ctx context.Context, groupID string) (bool, error)
 	InsertManagedUsergroups(ctx context.Context, orgID string) error
@@ -141,7 +142,7 @@ type DB interface {
 	DeleteUsergroup(ctx context.Context, groupID string) error
 
 	FindUsergroupsForUser(ctx context.Context, userID, orgID string) ([]*Usergroup, error)
-	FindUsergroupMemberUsers(ctx context.Context, groupID, afterEmail string, limit int) ([]*MemberUser, error)
+	FindUsergroupMemberUsers(ctx context.Context, groupID, afterEmail string, limit int) ([]*UsergroupMemberUser, error)
 	InsertUsergroupMemberUser(ctx context.Context, groupID, userID string) error
 	DeleteUsergroupMemberUser(ctx context.Context, groupID, userID string) error
 	DeleteUsergroupsMemberUser(ctx context.Context, orgID, userID string) error
@@ -208,29 +209,29 @@ type DB interface {
 	ResolveOrganizationRolesForUser(ctx context.Context, userID, orgID string) ([]*OrganizationRole, error)
 	ResolveProjectRolesForUser(ctx context.Context, userID, projectID string) ([]*ProjectRole, error)
 
-	FindOrganizationMemberUsers(ctx context.Context, orgID, afterEmail string, limit int) ([]*MemberUser, error)
+	FindOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID string, withCounts bool, afterEmail string, limit int) ([]*OrganizationMemberUser, error)
 	FindOrganizationMemberUsersByRole(ctx context.Context, orgID, roleID string) ([]*User, error)
 	FindOrganizationMemberUserAdminStatus(ctx context.Context, orgID, userID string) (isAdmin, isLastAdmin bool, err error)
 	InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string, ifNotExists bool) (bool, error)
 	DeleteOrganizationMemberUser(ctx context.Context, orgID, userID string) error
 	UpdateOrganizationMemberUserRole(ctx context.Context, orgID, userID, roleID string) error
 	CountSingleuserOrganizationsForMemberUser(ctx context.Context, userID string) (int, error)
-	FindOrganizationMembersWithManageUsersRole(ctx context.Context, orgID string) ([]*MemberUser, error)
+	FindOrganizationMembersWithManageUsersRole(ctx context.Context, orgID string) ([]*OrganizationMemberUser, error)
 
-	FindProjectMemberUsers(ctx context.Context, projectID, afterEmail string, limit int) ([]*MemberUser, error)
+	FindProjectMemberUsers(ctx context.Context, projectID, filterRoleID, afterEmail string, limit int) ([]*ProjectMemberUser, error)
 	FindProjectMemberUserRole(ctx context.Context, projectID, userID string) (*ProjectRole, error)
 	InsertProjectMemberUser(ctx context.Context, projectID, userID, roleID string) error
 	DeleteProjectMemberUser(ctx context.Context, projectID, userID string) error
 	DeleteAllProjectMemberUserForOrganization(ctx context.Context, orgID, userID string) error
 	UpdateProjectMemberUserRole(ctx context.Context, projectID, userID, roleID string) error
 
-	FindOrganizationMemberUsergroups(ctx context.Context, orgID, afterName string, limit int) ([]*MemberUsergroup, error)
+	FindOrganizationMemberUsergroups(ctx context.Context, orgID, filterRoleID string, withCounts bool, afterName string, limit int) ([]*MemberUsergroup, error)
 	FindOrganizationMemberUsergroupRole(ctx context.Context, groupID, orgID string) (*OrganizationRole, error)
 	InsertOrganizationMemberUsergroup(ctx context.Context, groupID, orgID, roleID string) error
 	UpdateOrganizationMemberUsergroup(ctx context.Context, groupID, orgID, roleID string) error
 	DeleteOrganizationMemberUsergroup(ctx context.Context, groupID, orgID string) error
 
-	FindProjectMemberUsergroups(ctx context.Context, projectID, afterName string, limit int) ([]*MemberUsergroup, error)
+	FindProjectMemberUsergroups(ctx context.Context, projectID, filterRoleID, afterName string, limit int) ([]*MemberUsergroup, error)
 	FindProjectMemberUsergroupRole(ctx context.Context, groupID, projectID string) (*ProjectRole, error)
 	InsertProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error
 	UpdateProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error
@@ -852,8 +853,21 @@ type ProjectRole struct {
 	ManageBookmarks            bool `db:"manage_bookmarks"`
 }
 
-// MemberUser is a convenience type used for display-friendly representation of an org or project member.
-type MemberUser struct {
+// OrganizationMemberUser is a convenience type used for display-friendly representation of an org member
+type OrganizationMemberUser struct {
+	ID              string
+	Email           string
+	DisplayName     string    `db:"display_name"`
+	PhotoURL        string    `db:"photo_url"`
+	RoleName        string    `db:"role_name"`
+	ProjectsCount   int       `db:"projects_count"`
+	UsergroupsCount int       `db:"usergroups_count"`
+	CreatedOn       time.Time `db:"created_on"`
+	UpdatedOn       time.Time `db:"updated_on"`
+}
+
+// ProjectMemberUser is a convenience type used for display-friendly representation of a project member
+type ProjectMemberUser struct {
 	ID          string
 	Email       string
 	DisplayName string    `db:"display_name"`
@@ -863,13 +877,26 @@ type MemberUser struct {
 	UpdatedOn   time.Time `db:"updated_on"`
 }
 
+// UsergroupMemberUser is a convenience type used for display-friendly representation of a usergroup member
+type UsergroupMemberUser struct {
+	ID          string
+	Email       string
+	DisplayName string    `db:"display_name"`
+	PhotoURL    string    `db:"photo_url"`
+	RoleName    string    `db:"name"`
+	CreatedOn   time.Time `db:"created_on"`
+	UpdatedOn   time.Time `db:"updated_on"`
+}
+
+// MemberUsergroup is a convenience type used for display-friendly representation of an org or project member that is a usergroup.
 type MemberUsergroup struct {
-	ID        string    `db:"id"`
-	Name      string    `db:"name" validate:"slug"`
-	Managed   bool      `db:"managed"`
-	RoleName  string    `db:"role_name"`
-	CreatedOn time.Time `db:"created_on"`
-	UpdatedOn time.Time `db:"updated_on"`
+	ID         string    `db:"id"`
+	Name       string    `db:"name" validate:"slug"`
+	Managed    bool      `db:"managed"`
+	RoleName   string    `db:"role_name"`
+	UsersCount int       `db:"users_count"`
+	CreatedOn  time.Time `db:"created_on"`
+	UpdatedOn  time.Time `db:"updated_on"`
 }
 
 // OrganizationInvite represents an outstanding invitation to join an org.
@@ -884,9 +911,11 @@ type OrganizationInvite struct {
 }
 
 // ProjectInvite represents an outstanding invitation to join a project.
+// A ProjectInvite must have a corresponding OrganizationInvite.
 type ProjectInvite struct {
 	ID              string
 	Email           string
+	OrgInviteID     string    `db:"org_invite_id"`
 	ProjectID       string    `db:"project_id"`
 	ProjectRoleID   string    `db:"project_role_id"`
 	InvitedByUserID string    `db:"invited_by_user_id"`
@@ -955,10 +984,11 @@ type InsertOrganizationInviteOptions struct {
 }
 
 type InsertProjectInviteOptions struct {
-	Email     string `validate:"email"`
-	InviterID string
-	ProjectID string `validate:"required"`
-	RoleID    string `validate:"required"`
+	Email       string `validate:"email"`
+	OrgInviteID string `validate:"required"`
+	ProjectID   string `validate:"required"`
+	RoleID      string `validate:"required"`
+	InviterID   string
 }
 
 type ProjectAccessRequest struct {

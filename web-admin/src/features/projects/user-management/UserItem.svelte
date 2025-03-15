@@ -2,10 +2,10 @@
   import AvatarListItem from "@rilldata/web-admin/features/organizations/users/AvatarListItem.svelte";
   import UserSetRole from "./UserSetRole.svelte";
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
-  import type { V1MemberUser } from "@rilldata/web-admin/client";
+  import type { V1ProjectMemberUser } from "@rilldata/web-admin/client";
 
   type User =
-    | V1MemberUser
+    | V1ProjectMemberUser
     | {
         userName: any;
         userEmail: string;

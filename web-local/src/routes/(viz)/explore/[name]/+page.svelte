@@ -1,5 +1,9 @@
 <script lang="ts">
   import { onNavigate } from "$app/navigation";
+  import {
+    DashboardBannerID,
+    DashboardBannerPriority,
+  } from "@rilldata/web-common/components/banner/constants";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
@@ -57,10 +61,14 @@
   $: hasBanner = !!$exploreQuery.data?.explore?.banner;
 
   $: if (hasBanner) {
-    eventBus.emit("banner", {
-      type: "default",
-      message: $exploreQuery.data?.explore?.banner ?? "",
-      iconType: "alert",
+    eventBus.emit("add-banner", {
+      id: DashboardBannerID,
+      priority: DashboardBannerPriority,
+      message: {
+        type: "default",
+        message: $exploreQuery.data?.explore?.banner ?? "",
+        iconType: "alert",
+      },
     });
   }
 
@@ -73,7 +81,7 @@
 
   onNavigate(() => {
     if (hasBanner) {
-      eventBus.emit("banner", null);
+      eventBus.emit("remove-banner", DashboardBannerID);
     }
   });
 </script>

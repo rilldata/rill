@@ -134,7 +134,15 @@ export type AdminServiceGetUsergroupParams = {
   pageToken?: string;
 };
 
+export type AdminServiceListUsergroupsForOrganizationAndUserParams = {
+  userId?: string;
+  pageSize?: number;
+  pageToken?: string;
+};
+
 export type AdminServiceListOrganizationMemberUsergroupsParams = {
+  role?: string;
+  includeCounts?: boolean;
   pageSize?: number;
   pageToken?: string;
 };
@@ -208,6 +216,7 @@ export type AdminServiceAddProjectMemberUserBody = {
 };
 
 export type AdminServiceListProjectMemberUsersParams = {
+  role?: string;
   pageSize?: number;
   pageToken?: string;
 };
@@ -276,7 +285,14 @@ export type AdminServiceConnectProjectToGithubBody = {
   force?: boolean;
 };
 
+export type AdminServiceListProjectsForOrganizationAndUserParams = {
+  userId?: string;
+  pageSize?: number;
+  pageToken?: string;
+};
+
 export type AdminServiceListProjectMemberUsergroupsParams = {
+  role?: string;
   pageSize?: number;
   pageToken?: string;
 };
@@ -288,6 +304,8 @@ export type AdminServiceAddOrganizationMemberUserBody = {
 };
 
 export type AdminServiceListOrganizationMemberUsersParams = {
+  role?: string;
+  includeCounts?: boolean;
   pageSize?: number;
   pageToken?: string;
 };
@@ -372,6 +390,15 @@ export interface V1VirtualFile {
   path?: string;
   data?: string;
   deleted?: boolean;
+  updatedOn?: string;
+}
+
+export interface V1UsergroupMemberUser {
+  userId?: string;
+  userEmail?: string;
+  userName?: string;
+  userPhotoUrl?: string;
+  createdOn?: string;
   updatedOn?: string;
 }
 
@@ -832,6 +859,16 @@ export interface V1ProjectRole {
   permissions?: V1ProjectPermissions;
 }
 
+export interface V1ProjectMemberUser {
+  userId?: string;
+  userEmail?: string;
+  userName?: string;
+  userPhotoUrl?: string;
+  roleName?: string;
+  createdOn?: string;
+  updatedOn?: string;
+}
+
 export type V1ProjectAnnotations = { [key: string]: string };
 
 export interface V1Project {
@@ -893,6 +930,18 @@ export interface V1OrganizationRole {
   permissions?: V1OrganizationPermissions;
 }
 
+export interface V1OrganizationMemberUser {
+  userId?: string;
+  userEmail?: string;
+  userName?: string;
+  userPhotoUrl?: string;
+  roleName?: string;
+  projectsCount?: number;
+  usergroupsCount?: number;
+  createdOn?: string;
+  updatedOn?: string;
+}
+
 export interface V1Organization {
   id?: string;
   name?: string;
@@ -936,16 +985,7 @@ export interface V1MemberUsergroup {
   groupName?: string;
   groupManaged?: boolean;
   roleName?: string;
-  createdOn?: string;
-  updatedOn?: string;
-}
-
-export interface V1MemberUser {
-  userId?: string;
-  userEmail?: string;
-  userName?: string;
-  userPhotoUrl?: string;
-  roleName?: string;
+  usersCount?: number;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -976,8 +1016,13 @@ export interface V1ListWhitelistedDomainsResponse {
   domains?: V1WhitelistedDomain[];
 }
 
+export interface V1ListUsergroupsForOrganizationAndUserResponse {
+  usergroups?: V1Usergroup[];
+  nextPageToken?: string;
+}
+
 export interface V1ListUsergroupMemberUsersResponse {
-  members?: V1MemberUser[];
+  members?: V1UsergroupMemberUser[];
   nextPageToken?: string;
 }
 
@@ -1007,12 +1052,17 @@ export interface V1ListProjectsForOrganizationResponse {
   nextPageToken?: string;
 }
 
+export interface V1ListProjectsForOrganizationAndUserResponse {
+  projects?: V1Project[];
+  nextPageToken?: string;
+}
+
 export interface V1ListProjectWhitelistedDomainsResponse {
   domains?: V1WhitelistedDomain[];
 }
 
 export interface V1ListProjectMemberUsersResponse {
-  members?: V1MemberUser[];
+  members?: V1ProjectMemberUser[];
   nextPageToken?: string;
 }
 
@@ -1032,7 +1082,7 @@ export interface V1ListOrganizationsResponse {
 }
 
 export interface V1ListOrganizationMemberUsersResponse {
-  members?: V1MemberUser[];
+  members?: V1OrganizationMemberUser[];
   nextPageToken?: string;
 }
 
