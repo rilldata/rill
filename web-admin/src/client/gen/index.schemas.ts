@@ -41,7 +41,7 @@ export type AdminServiceGetReportMetaBody = {
   emailRecipients?: string[];
   anonRecipients?: boolean;
   resources?: V1ResourceName[];
-  webOpenMode?: ReportOptionsOpenMode;
+  webOpenMode?: string;
 };
 
 export type AdminServicePullVirtualRepoParams = {
@@ -693,7 +693,7 @@ export interface V1ReportOptions {
   webOpenState?: string;
   explore?: string;
   canvas?: string;
-  webOpenMode?: ReportOptionsOpenMode;
+  webOpenMode?: string;
   filter?: V1Expression;
 }
 
@@ -1635,18 +1635,6 @@ export interface ProtobufAny {
   "@type"?: string;
   [key: string]: unknown;
 }
-
-export type ReportOptionsOpenMode =
-  (typeof ReportOptionsOpenMode)[keyof typeof ReportOptionsOpenMode];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const ReportOptionsOpenMode = {
-  OPEN_MODE_UNSPECIFIED: "OPEN_MODE_UNSPECIFIED",
-  OPEN_MODE_RECIPIENT: "OPEN_MODE_RECIPIENT",
-  OPEN_MODE_CREATOR: "OPEN_MODE_CREATOR",
-  OPEN_MODE_NONE: "OPEN_MODE_NONE",
-  OPEN_MODE_FILTERED: "OPEN_MODE_FILTERED",
-} as const;
 
 export interface ListGithubUserReposResponseRepo {
   name?: string;

@@ -37,6 +37,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		attribute.String("args.execution_time", req.ExecutionTime.String()),
 		attribute.Bool("args.anon_recipients", req.AnonRecipients),
 		attribute.String("args.owner_id", req.OwnerId),
+		attribute.String("args.web_open_mode", req.WebOpenMode),
 	)
 
 	proj, err := s.admin.DB.FindProject(ctx, req.ProjectId)
@@ -51,6 +52,14 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 
 	if proj.ProdBranch != req.Branch {
 		return nil, status.Error(codes.InvalidArgument, "branch not found")
+	}
+
+	webOpenMode := WebOpenMode(req.WebOpenMode)
+	if webOpenMode == "" {
+		webOpenMode = WebOpenModeRecipient // Backwards compatibility
+	}
+	if !webOpenMode.Valid() {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid web open mode %q", req.WebOpenMode)
 	}
 
 	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
@@ -73,7 +82,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 	}
 
 	externalEmailSet := make(map[string]bool)
-	if req.WebOpenMode == adminv1.ReportOptions_OPEN_MODE_RECIPIENT {
+	if webOpenMode == WebOpenModeRecipient {
 		for _, email := range req.EmailRecipients {
 			_, err := s.admin.DB.FindUserByEmail(ctx, email)
 			if err != nil {
@@ -100,9 +109,9 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 			ExportUrl:      s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, tokens[recipient]),
 			UnsubscribeUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportUnsubscribe(org.Name, proj.Name, req.Report, tokens[recipient], recipient),
 		}
-		if req.WebOpenMode == adminv1.ReportOptions_OPEN_MODE_CREATOR {
+		if webOpenMode == WebOpenModeCreator {
 			urls[recipient].OpenUrl = s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, tokens[recipient], req.ExecutionTime.AsTime())
-		} else if req.WebOpenMode == adminv1.ReportOptions_OPEN_MODE_RECIPIENT && !externalEmailSet[recipient] {
+		} else if webOpenMode == WebOpenModeRecipient && !externalEmailSet[recipient] {
 			urls[recipient].OpenUrl = s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, "", req.ExecutionTime.AsTime())
 		}
 	}
@@ -295,16 +304,16 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 		}
 
 		if reportTkn.RecipientEmail == "" {
-			if req.Email != nil {
+			if req.Email != "" {
 				return nil, status.Error(codes.InvalidArgument, "anon token cannot be used for unsubscribing email recipients")
 			}
-			if req.SlackUser == nil {
+			if req.SlackUser == "" {
 				return nil, status.Error(codes.InvalidArgument, "no slack user provided for unsubscribing")
 			}
-			slackEmail = *req.SlackUser
+			slackEmail = req.SlackUser
 		} else {
 			userEmail = reportTkn.RecipientEmail
-			if req.Email != nil && !strings.EqualFold(userEmail, *req.Email) {
+			if req.Email != "" && !strings.EqualFold(userEmail, req.Email) {
 				return nil, status.Error(codes.InvalidArgument, "email does not match token")
 			}
 		}
@@ -503,17 +512,12 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID s
 	res.Annotations.AdminNonce = time.Now().Format(time.RFC3339Nano)
 	res.Annotations.WebOpenPath = opts.WebOpenPath
 	res.Annotations.WebOpenState = opts.WebOpenState
-	switch opts.WebOpenMode {
-	case adminv1.ReportOptions_OPEN_MODE_RECIPIENT, adminv1.ReportOptions_OPEN_MODE_UNSPECIFIED: // backwards compatibility
-		res.Annotations.WebOpenMode = WebOpenModeRecipient
-	case adminv1.ReportOptions_OPEN_MODE_CREATOR:
-		res.Annotations.WebOpenMode = WebOpenModeCreator
-	case adminv1.ReportOptions_OPEN_MODE_NONE:
-		res.Annotations.WebOpenMode = WebOpenModeNone
-	case adminv1.ReportOptions_OPEN_MODE_FILTERED:
-		res.Annotations.WebOpenMode = WebOpenModeFiltered
-	default:
-		return nil, fmt.Errorf("unknown open mode: %v", opts.WebOpenMode)
+	res.Annotations.WebOpenMode = WebOpenMode(opts.WebOpenMode)
+	if res.Annotations.WebOpenMode == "" {
+		res.Annotations.WebOpenMode = WebOpenModeRecipient // Backwards compatibility
+	}
+	if !res.Annotations.WebOpenMode.Valid() {
+		return nil, fmt.Errorf("invalid web open mode %q", opts.WebOpenMode)
 	}
 	if opts.Explore != "" && opts.Canvas != "" {
 		return nil, fmt.Errorf("cannot set both explore and canvas")
@@ -562,18 +566,12 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 	res.Notify.Slack.Users = opts.SlackUsers
 	res.Notify.Slack.Webhooks = opts.SlackWebhooks
 	res.Annotations.WebOpenPath = opts.WebOpenPath
-	res.Annotations.WebOpenState = opts.WebOpenState
-	switch opts.WebOpenMode {
-	case adminv1.ReportOptions_OPEN_MODE_RECIPIENT, adminv1.ReportOptions_OPEN_MODE_UNSPECIFIED: // backwards compatibility
-		res.Annotations.WebOpenMode = WebOpenModeRecipient
-	case adminv1.ReportOptions_OPEN_MODE_CREATOR:
-		res.Annotations.WebOpenMode = WebOpenModeCreator
-	case adminv1.ReportOptions_OPEN_MODE_NONE:
-		res.Annotations.WebOpenMode = WebOpenModeNone
-	case adminv1.ReportOptions_OPEN_MODE_FILTERED:
-		res.Annotations.WebOpenMode = WebOpenModeFiltered
-	default:
-		return nil, fmt.Errorf("unknown open mode: %v", opts.WebOpenMode)
+	res.Annotations.WebOpenMode = WebOpenMode(opts.WebOpenMode)
+	if res.Annotations.WebOpenMode == "" {
+		res.Annotations.WebOpenMode = WebOpenModeRecipient // Backwards compatibility
+	}
+	if !res.Annotations.WebOpenMode.Valid() {
+		return nil, fmt.Errorf("invalid web open mode %q", opts.WebOpenMode)
 	}
 	return yaml.Marshal(res)
 }
@@ -743,13 +741,13 @@ func recreateReportOptionsFromSpec(spec *runtimev1.ReportSpec) (*adminv1.ReportO
 	opts.WebOpenState = annotations.WebOpenState
 	switch annotations.WebOpenMode {
 	case WebOpenModeRecipient:
-		opts.WebOpenMode = adminv1.ReportOptions_OPEN_MODE_RECIPIENT
+		opts.WebOpenMode = "recipient"
 	case WebOpenModeCreator:
-		opts.WebOpenMode = adminv1.ReportOptions_OPEN_MODE_CREATOR
+		opts.WebOpenMode = "creator"
 	case WebOpenModeNone:
-		opts.WebOpenMode = adminv1.ReportOptions_OPEN_MODE_NONE
+		opts.WebOpenMode = "none"
 	case WebOpenModeFiltered:
-		opts.WebOpenMode = adminv1.ReportOptions_OPEN_MODE_FILTERED
+		opts.WebOpenMode = "filtered"
 	default:
 		return nil, fmt.Errorf("unknown web open mode: %s", annotations.WebOpenMode)
 	}
@@ -810,6 +808,14 @@ const (
 	WebOpenModeNone      WebOpenMode = "none"
 	WebOpenModeFiltered  WebOpenMode = "filtered"
 )
+
+func (m WebOpenMode) Valid() bool {
+	switch m {
+	case WebOpenModeRecipient, WebOpenModeCreator, WebOpenModeNone, WebOpenModeFiltered:
+		return true
+	}
+	return false
+}
 
 func parseReportAnnotations(annotations map[string]string) reportAnnotations {
 	if annotations == nil {

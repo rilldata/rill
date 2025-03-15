@@ -27905,7 +27905,7 @@ func (m *UnsubscribeReportRequest) validate(all bool) error {
 
 	// no validation rules for Name
 
-	if m.Email != nil {
+	if m.GetEmail() != "" {
 
 		if err := m._validateEmail(m.GetEmail()); err != nil {
 			err = UnsubscribeReportRequestValidationError{
@@ -27921,7 +27921,7 @@ func (m *UnsubscribeReportRequest) validate(all bool) error {
 
 	}
 
-	if m.SlackUser != nil {
+	if m.GetSlackUser() != "" {
 
 		if err := m._validateEmail(m.GetSlackUser()); err != nil {
 			err = UnsubscribeReportRequestValidationError{
@@ -36643,37 +36643,33 @@ func (m *ReportOptions) validate(all bool) error {
 
 	// no validation rules for WebOpenMode
 
-	if m.Filter != nil {
-
-		if all {
-			switch v := interface{}(m.GetFilter()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, ReportOptionsValidationError{
-						field:  "Filter",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, ReportOptionsValidationError{
-						field:  "Filter",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetFilter()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return ReportOptionsValidationError{
+	if all {
+		switch v := interface{}(m.GetFilter()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ReportOptionsValidationError{
 					field:  "Filter",
 					reason: "embedded message failed validation",
 					cause:  err,
-				}
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ReportOptionsValidationError{
+					field:  "Filter",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
 			}
 		}
-
+	} else if v, ok := interface{}(m.GetFilter()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ReportOptionsValidationError{
+				field:  "Filter",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
 	}
 
 	if len(errors) > 0 {

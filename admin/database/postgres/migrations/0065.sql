@@ -6,6 +6,6 @@ SET resources = jsonb_build_array(
                 'type', resource_type,
                 'name', resource_name
         )
-                );
+);
 
 ALTER TABLE magic_auth_tokens DROP COLUMN resource_name, DROP COLUMN resource_type;

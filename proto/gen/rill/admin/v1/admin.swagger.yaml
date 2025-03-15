@@ -3066,7 +3066,7 @@ paths:
                   type: object
                   $ref: '#/definitions/v1ResourceName'
               webOpenMode:
-                $ref: '#/definitions/ReportOptionsOpenMode'
+                type: string
       tags:
         - AdminService
   /v1/roles:
@@ -3709,20 +3709,6 @@ definitions:
         type: string
       defaultBranch:
         type: string
-  ReportOptionsOpenMode:
-    type: string
-    enum:
-      - OPEN_MODE_UNSPECIFIED
-      - OPEN_MODE_RECIPIENT
-      - OPEN_MODE_CREATOR
-      - OPEN_MODE_NONE
-      - OPEN_MODE_FILTERED
-    default: OPEN_MODE_UNSPECIFIED
-    title: |-
-      - OPEN_MODE_RECIPIENT: send this for older reports
-       - OPEN_MODE_CREATOR: send this for reports that should be opened with creators permissions
-       - OPEN_MODE_NONE: send this for reports that should not be opened or older reports which do not have any web_open_path
-       - OPEN_MODE_FILTERED: send this for reports that should be opened with creators permissions but with locked filters
   protobufAny:
     type: object
     properties:
@@ -5097,7 +5083,13 @@ definitions:
       canvas:
         type: string
       webOpenMode:
-        $ref: '#/definitions/ReportOptionsOpenMode'
+        type: string
+        title: |-
+          web_open_mode is used to determine how to create or disable open link for the report
+          - send "recipient" for older reports (old behaviour)
+          - send "creator" for reports that should be opened with creators permissions
+          - send "none" for reports that should not be opened or older reports which do not have any web_open_path
+          - send "filtered" for reports that should be opened with creators permissions but with locked filters
       filter:
         $ref: '#/definitions/v1Expression'
         title: use with OPEN_MODE_FILTERED

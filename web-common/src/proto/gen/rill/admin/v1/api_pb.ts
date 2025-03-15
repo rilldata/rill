@@ -9622,9 +9622,9 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
   resources: ResourceName[] = [];
 
   /**
-   * @generated from field: rill.admin.v1.ReportOptions.OpenMode web_open_mode = 10;
+   * @generated from field: string web_open_mode = 10;
    */
-  webOpenMode = ReportOptions_OpenMode.UNSPECIFIED;
+  webOpenMode = "";
 
   constructor(data?: PartialMessage<GetReportMetaRequest>) {
     super();
@@ -9642,7 +9642,7 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
     { no: 7, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 8, name: "anon_recipients", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 9, name: "resources", kind: "message", T: ResourceName, repeated: true },
-    { no: 10, name: "web_open_mode", kind: "enum", T: proto3.getEnumType(ReportOptions_OpenMode) },
+    { no: 10, name: "web_open_mode", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetReportMetaRequest {
@@ -10069,14 +10069,14 @@ export class UnsubscribeReportRequest extends Message<UnsubscribeReportRequest> 
   name = "";
 
   /**
-   * @generated from field: optional string email = 4;
+   * @generated from field: string email = 4;
    */
-  email?: string;
+  email = "";
 
   /**
-   * @generated from field: optional string slack_user = 5;
+   * @generated from field: string slack_user = 5;
    */
-  slackUser?: string;
+  slackUser = "";
 
   constructor(data?: PartialMessage<UnsubscribeReportRequest>) {
     super();
@@ -10089,8 +10089,8 @@ export class UnsubscribeReportRequest extends Message<UnsubscribeReportRequest> 
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 5, name: "slack_user", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 4, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "slack_user", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UnsubscribeReportRequest {
@@ -13640,14 +13640,20 @@ export class ReportOptions extends Message<ReportOptions> {
   canvas = "";
 
   /**
-   * @generated from field: rill.admin.v1.ReportOptions.OpenMode web_open_mode = 18;
+   * web_open_mode is used to determine how to create or disable open link for the report
+   * - send "recipient" for older reports (old behaviour)
+   * - send "creator" for reports that should be opened with creators permissions
+   * - send "none" for reports that should not be opened or older reports which do not have any web_open_path
+   * - send "filtered" for reports that should be opened with creators permissions but with locked filters
+   *
+   * @generated from field: string web_open_mode = 18;
    */
-  webOpenMode = ReportOptions_OpenMode.UNSPECIFIED;
+  webOpenMode = "";
 
   /**
    * use with OPEN_MODE_FILTERED
    *
-   * @generated from field: optional rill.runtime.v1.Expression filter = 19;
+   * @generated from field: rill.runtime.v1.Expression filter = 19;
    */
   filter?: Expression;
 
@@ -13675,8 +13681,8 @@ export class ReportOptions extends Message<ReportOptions> {
     { no: 14, name: "web_open_state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 16, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 17, name: "canvas", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 18, name: "web_open_mode", kind: "enum", T: proto3.getEnumType(ReportOptions_OpenMode) },
-    { no: 19, name: "filter", kind: "message", T: Expression, opt: true },
+    { no: 18, name: "web_open_mode", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 19, name: "filter", kind: "message", T: Expression },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReportOptions {
@@ -13695,52 +13701,6 @@ export class ReportOptions extends Message<ReportOptions> {
     return proto3.util.equals(ReportOptions, a, b);
   }
 }
-
-/**
- * @generated from enum rill.admin.v1.ReportOptions.OpenMode
- */
-export enum ReportOptions_OpenMode {
-  /**
-   * @generated from enum value: OPEN_MODE_UNSPECIFIED = 0;
-   */
-  UNSPECIFIED = 0,
-
-  /**
-   * send this for older reports
-   *
-   * @generated from enum value: OPEN_MODE_RECIPIENT = 1;
-   */
-  RECIPIENT = 1,
-
-  /**
-   * send this for reports that should be opened with creators permissions
-   *
-   * @generated from enum value: OPEN_MODE_CREATOR = 2;
-   */
-  CREATOR = 2,
-
-  /**
-   * send this for reports that should not be opened or older reports which do not have any web_open_path
-   *
-   * @generated from enum value: OPEN_MODE_NONE = 3;
-   */
-  NONE = 3,
-
-  /**
-   * send this for reports that should be opened with creators permissions but with locked filters
-   *
-   * @generated from enum value: OPEN_MODE_FILTERED = 4;
-   */
-  FILTERED = 4,
-}
-// Retrieve enum metadata with: proto3.getEnumType(ReportOptions_OpenMode)
-proto3.util.setEnumType(ReportOptions_OpenMode, "rill.admin.v1.ReportOptions.OpenMode", [
-  { no: 0, name: "OPEN_MODE_UNSPECIFIED" },
-  { no: 1, name: "OPEN_MODE_RECIPIENT" },
-  { no: 2, name: "OPEN_MODE_CREATOR" },
-  { no: 3, name: "OPEN_MODE_NONE" },
-  { no: 4, name: "OPEN_MODE_FILTERED" },
-]);
 
 /**
  * @generated from message rill.admin.v1.AlertOptions

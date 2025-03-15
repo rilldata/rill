@@ -1986,7 +1986,7 @@ message GetReportMetaRequest {
   repeated string email_recipients = 7;
   bool anon_recipients = 8;
   repeated ResourceName resources = 9;
-  ReportOptions.OpenMode web_open_mode = 10;
+  string web_open_mode = 10;
   reserved 4;
 }
 
@@ -2042,8 +2042,8 @@ message UnsubscribeReportRequest {
   string organization = 1;
   string project = 2;
   string name = 3;
-  optional string email = 4 [(validate.rules).string.email = true];
-  optional string slack_user = 5 [(validate.rules).string.email = true];
+  string email = 4 [(validate.rules).string = {email: true, ignore_empty: true}];
+  string slack_user = 5 [(validate.rules).string = {email: true, ignore_empty: true}];
 }
 
 message UnsubscribeReportResponse {}
@@ -2494,15 +2494,14 @@ message ReportOptions {
   string web_open_state = 14; // Annotation for the base64-encoded UI state to open for the report.
   string explore = 16; // either canvas or explore should be set
   string canvas = 17;
-  enum OpenMode {
-    OPEN_MODE_UNSPECIFIED = 0;
-    OPEN_MODE_RECIPIENT = 1; // send this for older reports
-    OPEN_MODE_CREATOR = 2; // send this for reports that should be opened with creators permissions
-    OPEN_MODE_NONE = 3; // send this for reports that should not be opened or older reports which do not have any web_open_path
-    OPEN_MODE_FILTERED = 4; // send this for reports that should be opened with creators permissions but with locked filters
-  }
-  OpenMode web_open_mode = 18;
-  optional rill.runtime.v1.Expression filter = 19; // use with OPEN_MODE_FILTERED
+  /* web_open_mode is used to determine how to create or disable open link for the report
+    - send "recipient" for older reports (old behaviour)
+    - send "creator" for reports that should be opened with creators permissions
+    - send "none" for reports that should not be opened or older reports which do not have any web_open_path
+    - send "filtered" for reports that should be opened with creators permissions but with locked filters
+   */
+  string web_open_mode = 18;
+  rill.runtime.v1.Expression filter = 19; // use with OPEN_MODE_FILTERED
 }
 
 message AlertOptions {
