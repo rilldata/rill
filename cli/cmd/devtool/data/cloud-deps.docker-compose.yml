@@ -28,6 +28,17 @@ services:
     restart: always
     ports:
       - "9411:9411"
+  mailpit:
+    container_name: mailpit
+    image: axllent/mailpit
+    restart: always
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    environment:
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+      MP_UI_BIND_ADDR: 0.0.0.0:8025
+      MP_SMTP_AUTH: "user:passwd"
   prometheus:
     container_name: prometheus
     image: prom/prometheus:v2.55.1
