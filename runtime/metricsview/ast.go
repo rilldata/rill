@@ -1314,7 +1314,10 @@ func (a *AST) sqlForExpressionAdjustedByComparisonTimeRangeOffset(expr string, g
 
 		// DATE_TRUNC('year', t - INTERVAL (DATE_DIFF(start, end)) day)
 		tc := a.dialect.EscapeIdentifier(a.metricsView.TimeDimension)
-		expr := fmt.Sprintf("(%s - INTERVAL (%s) %s)", tc, dateDiff, a.dialect.ConvertToDateTruncSpecifier(mg.ToProto()))
+		expr, err := a.dialect.IntervalSubtract(tc, dateDiff, mg.ToProto())
+		if err != nil {
+			return "", err
+		}
 		dim := &runtimev1.MetricsViewSpec_DimensionV2{
 			Expression: expr,
 		}
@@ -1325,7 +1328,7 @@ func (a *AST) sqlForExpressionAdjustedByComparisonTimeRangeOffset(expr string, g
 		return expr, nil
 	}
 
-	return fmt.Sprintf("(%s - INTERVAL (%s) %s)", expr, dateDiff, a.dialect.ConvertToDateTruncSpecifier(g.ToProto())), nil
+	return a.dialect.IntervalSubtract(expr, dateDiff, g.ToProto())
 }
 
 // convertToCTE util func that sets IsCTE and only adds to a.CTEs if IsCTE was false
