@@ -106,8 +106,8 @@ describe("expression", () => {
       },
 
       {
-        expr: "country MATCH ('US','IN')",
-        expectedExprString: "country MATCH ('US','IN')",
+        expr: "country IN LIST ('US','IN')",
+        expectedExprString: "country IN LIST ('US','IN')",
         expectedExprObject: {
           ...createInExpression("country", ["US", "IN"]),
           isMatchList: true,

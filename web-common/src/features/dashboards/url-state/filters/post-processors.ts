@@ -35,10 +35,11 @@ export const inPostprocessor = ([column, _1, op, _2, _3, values]: [
   any[],
 ]) => {
   const lowerCaseOperator = op.toLowerCase();
-  const isInclude = lowerCaseOperator === "in" || lowerCaseOperator === "match";
+  const isInclude =
+    lowerCaseOperator === "in" || lowerCaseOperator === "in list";
   const expr = createInExpression(column, values, !isInclude);
   const isMatchList =
-    lowerCaseOperator === "match" || lowerCaseOperator === "not match";
+    lowerCaseOperator === "in list" || lowerCaseOperator === "not in list";
   if (isMatchList) {
     (expr as any).isMatchList = isMatchList;
   }

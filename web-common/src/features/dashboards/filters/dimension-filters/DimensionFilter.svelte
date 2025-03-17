@@ -153,6 +153,13 @@
       : `${allSearchResultsCount} of ${searchedBulkValues.length} matched`
     : "0 results";
 
+  $: searchPlaceholder =
+    mode === SearchMode.Select
+      ? "Enter search term or paste list of values"
+      : mode === SearchMode.Bulk
+        ? "Paste a list separated by commas or \\n"
+        : "Enter a search term";
+
   $: error = errorFromSearchResults ?? errorFromAllSearchResultsCount;
   $: isFetching =
     isFetchingFromSearchResults ?? isFetchingFromAllSearchResultsCount;
@@ -203,7 +210,7 @@
       onBulkSelect(searchedBulkValues);
       isMatchList = true;
       open = false;
-    } else {
+    } else if (mode === SearchMode.Search) {
       onSearch(curSearchText);
       searchText = curSearchText;
       open = false;
@@ -304,7 +311,8 @@
           label={`${name} search list`}
           showBorderOnFocus={false}
           retailValueOnMount
-          placeholder="Enter search term or paste list of values"
+          placeholder={searchPlaceholder}
+          on:submit={onApply}
         />
       </div>
       {#if showExtraInfo}

@@ -30,21 +30,19 @@
   on:pointermove
   on:focusin
 >
-  <div class="flex flex-row items-center">
+  <div class="flex flex-row items-center justify-between w-full">
     <slot>
       {label ? label : value}
     </slot>
 
-    <span
-      class="ml-auto flex flex-none h-3.5 w-3.5 items-center justify-center"
-    >
+    <span class="ml-auto flex h-3.5 w-3.5 justify-end">
       <SelectPrimitive.ItemIndicator>
         <Check class="size-3.5 " />
       </SelectPrimitive.ItemIndicator>
     </span>
   </div>
   {#if description}
-    <div>
+    <div class="text-gray-500">
       {description}
     </div>
   {/if}

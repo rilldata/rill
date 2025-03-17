@@ -70,7 +70,8 @@ function convertInExpressionToFilterParam(expr: V1Expression, depth: number) {
   let joiner = expr.cond?.op === V1Operation.OPERATION_IN ? "IN" : "NIN";
   const isMatchList = !!(expr as any).isMatchList;
   if (isMatchList) {
-    joiner = expr.cond?.op === V1Operation.OPERATION_IN ? "MATCH" : "NOT MATCH";
+    joiner =
+      expr.cond?.op === V1Operation.OPERATION_IN ? "IN LIST" : "NOT IN LIST";
   }
 
   const column = expr.cond.exprs[0]?.ident;
