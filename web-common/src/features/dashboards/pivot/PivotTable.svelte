@@ -194,7 +194,7 @@
 
     const rowId = e.target.dataset.rowid;
     const columnId = e.target.dataset.columnid;
-    console.log(e.target);
+
     if (rowId === undefined || columnId === undefined) return;
 
     setPivotActiveCell(rowId, columnId);
@@ -234,6 +234,7 @@
   }
 
   function handleTooltip(e: MouseEvent) {
+    console.log(e.target);
     // Element is not a cell or we haven't left the cell for the current tooltip
     if (!leftCell || !(e.target instanceof HTMLElement)) return;
 
@@ -324,6 +325,6 @@
 <style lang="postcss">
   .table-wrapper {
     @apply overflow-auto h-fit max-h-full w-fit max-w-full;
-    @apply rounded-md z-40;
+    @apply rounded-md z-40 select-none;
   }
 </style>
