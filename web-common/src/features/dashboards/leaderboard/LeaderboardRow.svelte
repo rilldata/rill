@@ -410,7 +410,7 @@
   }
 
   td[data-comparison-cell] {
-    @apply bg-surface px-1;
+    @apply bg-surface px-1 truncate;
   }
 
   td[data-dimension-cell] {
