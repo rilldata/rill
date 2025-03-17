@@ -28,6 +28,7 @@
     | PERC_DIFF = undefined;
   export let customStyle = "";
   export let truncate = false;
+  export let color = "";
 
   let dataType;
   $: {
@@ -51,9 +52,9 @@ so instantiating these directly clears a ton of warnings
 about unknown props.
 -->
 {#if type === "RILL_PERCENTAGE_CHANGE" && typeof value !== "boolean"}
-  <PercentageChange {value} {isNull} {inTable} {customStyle} {dark} />
+  <PercentageChange {value} {isNull} {inTable} {customStyle} {dark} {color} />
 {:else if type === "RILL_CHANGE"}
-  <MeasureChange {value} {inTable} {customStyle} {dark} />
+  <MeasureChange {value} {inTable} {customStyle} {dark} {color} />
 {:else}
   <svelte:component
     this={dataType}
@@ -64,5 +65,6 @@ about unknown props.
     {type}
     {value}
     {truncate}
+    {color}
   />
 {/if}

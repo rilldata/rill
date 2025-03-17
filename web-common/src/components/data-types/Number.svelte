@@ -8,6 +8,7 @@
   export let type: string;
   export let value;
   export let truncate = false;
+  export let color = "";
 </script>
 
 <Base
@@ -16,6 +17,7 @@
   classes="ui-copy-number font-normal {customStyle} {inTable &&
     'block text-right'}"
   {dark}
+  {color}
 >
   <slot name="value">
     {formatDataType(value, type)}

@@ -4,6 +4,7 @@
   export let inTable = false;
   export let dark = false;
   export let customStyle = "";
+  export let color = "";
   export let value;
 
   let isNull = false;
@@ -17,6 +18,7 @@
   classes="ui-copy-number w-full font-normal {customStyle} {inTable &&
     'block text-right'}"
   {dark}
+  {color}
 >
   {value}
 </Base>

@@ -9,6 +9,7 @@
   export let type: string;
   export let value;
   export let truncate: boolean;
+  export let color = "";
 </script>
 
 <Base
@@ -18,6 +19,7 @@
     ? 'text-slate-200'
     : 'text-slate-800'} {inTable && 'text-left'}"
   {dark}
+  {color}
 >
   <slot name="value">
     {formatDataType(value, type)}
