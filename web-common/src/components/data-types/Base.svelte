@@ -4,6 +4,7 @@
   export let dark = false;
   export let truncate = false;
   export let color = "text-gray-900";
+
   $: color = dark ? "" : color;
 </script>
 
