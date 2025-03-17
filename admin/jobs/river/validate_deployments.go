@@ -31,8 +31,15 @@ func (w *ValidateDeploymentsWorker) validateDeployments(ctx context.Context) err
 	var wg sync.WaitGroup
 	ch := make(chan *database.Project)
 
+	concurrency := 30
+	if w.admin.ProvisionerMaxConcurrency > 0 {
+		concurrency = w.admin.ProvisionerMaxConcurrency
+	} else {
+		w.admin.Logger.Warn("validate deployments: provisioner max concurrency invalid, using default concurrency of 30", zap.Int("provisioner_max_concurrency", w.admin.ProvisionerMaxConcurrency), observability.ZapCtx(ctx))
+	}
+
 	// Setup concurrent workers
-	for range w.admin.ProvisionerMaxConcurrency {
+	for range concurrency {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
