@@ -93,7 +93,7 @@
           onMeasureCountChange={(count) => {
             setLeaderboardMeasureCount(count);
           }}
-          setSort={() => setDefaultSort()}
+          setSort={setDefaultSort}
           sortByMeasure={$sortByMeasure}
         />
       {:else}

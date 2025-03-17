@@ -22,14 +22,25 @@
   function handleDecrement() {
     if (count > 1) {
       onMeasureCountChange(Math.max(count - 1, 1));
-
-      // FIXME: if there is better abstraction for this, please refactor
-      // WORKAROUND: Reset the sort when decrementing the measure count, but only if we're currently
-      // sorted by a measure (since that measure might no longer be visible)
-      if (sortByMeasure) {
-        setSort();
-      }
     }
+  }
+
+  function getFilteredMeasuresByMeasureCount(
+    measures: MetricsViewSpecMeasureV2[],
+    count: number,
+  ) {
+    return measures.slice(0, count);
+  }
+
+  $: filteredMeasures = getFilteredMeasuresByMeasureCount(measures, count);
+
+  // Workaround for feature flag `leaderboardMeasureCount`
+  // If the sortByMeasure isn't in the filtered measures, we need to reset the sort
+  $: if (
+    sortByMeasure &&
+    !filteredMeasures.some((measure) => measure.name === sortByMeasure)
+  ) {
+    setSort();
   }
 </script>
 
