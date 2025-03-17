@@ -100,7 +100,7 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 
 	periodicJobs := []*river.PeriodicJob{
 		// NOTE: Add new periodic jobs here
-		newPeriodicJob(&ValidateDeploymentsArgs{}, "* */6 * * *", true),
+		newPeriodicJob(&ValidateDeploymentsArgs{}, "*/30 * * * *", true),         // half-hourly
 		newPeriodicJob(&PaymentFailedGracePeriodCheckArgs{}, "0 1 * * *", true),  // daily at 1am UTC
 		newPeriodicJob(&TrialEndingSoonArgs{}, "5 1 * * *", true),                // daily at 1:05am UTC
 		newPeriodicJob(&TrialEndCheckArgs{}, "10 1 * * *", true),                 // daily at 1:10am UTC
