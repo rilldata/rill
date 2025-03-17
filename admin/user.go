@@ -220,6 +220,8 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 			}
 		}
 
+		// NOTE: This cascades to deleting all project invites in the org.
+		// That's alright because we already loaded the project invites to apply, but we must not reference them in the database after this.
 		err = s.DB.DeleteOrganizationInvite(ctx, invite.ID)
 		if err != nil {
 			return nil, err
@@ -264,12 +266,14 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		if err != nil {
 			return nil, err
 		}
-		err = s.DB.DeleteProjectInvite(ctx, invite.ID)
-		if err != nil {
-			return nil, err
-		}
 		addedToProjectIDs[project.ID] = true
 		addedToProjectNames = append(addedToProjectNames, project.Name)
+
+		// NOTE: Not deleting the project invite because its already been deleted by the CASCADE from the org invite delete.
+		// As a sanity check, let's ensure an org invite was processed for this project invite.
+		if !addedToOrgIDs[project.OrganizationID] {
+			s.Logger.Error("project invite processed without a matching org invite", zap.String("project_id", project.ID))
+		}
 	}
 
 	// check if users email domain is whitelisted for some projects

@@ -21,6 +21,7 @@
   export let assembled: boolean;
   export let measures: MeasureColumnProps;
   export let dataRows: PivotDataRow[];
+  export let hasMeasureContextColumns: boolean;
   export let canShowDataViewer = false;
   export let activeCell: { rowId: string; columnId: string } | null | undefined;
 
@@ -87,6 +88,14 @@
       cell.column.id === activeCell?.columnId
     );
   }
+
+  function hasBorderRight(columnId: string): boolean {
+    if (!hasMeasureContextColumns) return true;
+    const measureIndex = measures.findIndex((m) => m.name === columnId);
+    if (measureIndex === -1) return true;
+    //  Every third column is the last in its group
+    return (measureIndex + 1) % 3 === 0;
+  }
 </script>
 
 <div
@@ -137,19 +146,24 @@
       <tr>
         {#each headerGroup.headers as header (header.id)}
           {@const sortDirection = header.column.getIsSorted()}
-
+          {@const icon = header.column.columnDef.meta?.icon}
           <th>
             <button
               class="header-cell"
               class:cursor-pointer={header.column.getCanSort()}
               class:select-none={header.column.getCanSort()}
               class:flex-row-reverse={!!getMeasureColumn(header.column)}
+              class:border-r={hasBorderRight(header.column.id)}
               on:click={header.column.getToggleSortingHandler()}
             >
               {#if !header.isPlaceholder}
-                <p class="truncate">
-                  {header.column.columnDef.header}
-                </p>
+                {#if icon}
+                  <svelte:component this={icon} />
+                {:else}
+                  <p class="truncate">
+                    {header.column.columnDef.header}
+                  </p>
+                {/if}
                 {#if sortDirection}
                   <span
                     class="transition-transform -mr-1"
@@ -187,7 +201,11 @@
             on:mouseleave={onCellLeave}
             data-value={cell.getValue()}
           >
-            <div class="cell pointer-events-none truncate" role="presentation">
+            <div
+              class="cell pointer-events-none truncate"
+              role="presentation"
+              class:border-r={hasBorderRight(cell.column.id)}
+            >
               {#if result?.component && result?.props}
                 <svelte:component
                   this={result.component}
@@ -240,7 +258,7 @@
 
   th {
     @apply p-0 m-0 text-xs;
-    @apply border-r border-b relative;
+    @apply border-b relative;
   }
 
   th:last-of-type,
@@ -260,27 +278,22 @@
   .header-cell {
     @apply px-2 bg-white size-full;
     @apply flex items-center gap-x-1 w-full truncate;
-    @apply font-medium;
+    @apply text-gray-800 font-medium;
     height: var(--header-height);
   }
 
   .cell {
-    @apply size-full p-1 px-2;
+    @apply size-full p-1 px-2 text-gray-800;
   }
 
   tr > td {
-    @apply border-r font-normal;
+    @apply font-normal;
   }
 
   /* The totals row */
-  :global(.with-measure) tbody > tr:nth-of-type(2) {
-    @apply bg-slate-50 sticky z-20 font-semibold;
+  .with-measure tbody > tr:nth-of-type(2) {
+    @apply bg-white sticky z-20;
     top: var(--total-header-height);
-  }
-
-  /* The totals row header */
-  :global(.with-measure) tbody > tr:nth-of-type(2) > td {
-    @apply font-semibold;
   }
 
   tr:hover,

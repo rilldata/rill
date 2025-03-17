@@ -2,6 +2,10 @@
   import { onNavigate } from "$app/navigation";
   import { page } from "$app/stores";
   import { createAdminServiceGetProject } from "@rilldata/web-admin/client";
+  import {
+    TokenBannerID,
+    TokenBannerPriority,
+  } from "@rilldata/web-common/components/banner/constants";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
   import DashboardURLStateSync from "@rilldata/web-common/features/dashboards/url-state/DashboardURLStateSync.svelte";
@@ -29,11 +33,15 @@
   $: cookieProjectQuery = createAdminServiceGetProject(organization, project);
   $: ({ data: cookieProject } = $cookieProjectQuery);
   $: if (cookieProject) {
-    eventBus.emit("banner", {
-      type: "default",
-      message: `Limited view. For full access and features, visit the <a href='/${organization}/${project}/explore/${resourceName}'>original dashboard</a>.`,
-      includesHtml: true,
-      iconType: "alert",
+    eventBus.emit("add-banner", {
+      id: TokenBannerID,
+      priority: TokenBannerPriority,
+      message: {
+        type: "default",
+        message: `Limited view. For full access and features, visit the <a href='/${organization}/${project}/explore/${resourceName}'>original dashboard</a>.`,
+        includesHtml: true,
+        iconType: "alert",
+      },
     });
   }
 
@@ -49,7 +57,7 @@
     const currentPath = from?.url.pathname;
     const newPath = to?.url.pathname;
     if (newPath !== currentPath) {
-      eventBus.emit("banner", null);
+      eventBus.emit("remove-banner", TokenBannerID);
     }
   });
 </script>

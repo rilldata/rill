@@ -1,5 +1,6 @@
 <script lang="ts">
   import ChevronRight from "@rilldata/web-common/components/icons/ChevronRight.svelte";
+  import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
   import type { Row } from "@tanstack/svelte-table";
   import type { PivotDataRow } from "./types";
 
@@ -8,22 +9,20 @@
   export let assembled = true;
 </script>
 
-<div
-  class="flex gap-x-1"
-  style:padding-left={`${row.depth * 2}rem`}
-  class:font-normal={row.depth >= 1}
->
+<div class="flex gap-x-1" style:padding-left={`${row.depth * 14}px`}>
   {#if value === "LOADING_CELL"}
     <span class="loading-cell" />
   {:else if assembled && row.getCanExpand()}
     <button
       on:click|stopPropagation={row.getToggleExpandedHandler()}
-      class="cursor-pointer p-1 -m-1 pointer-events-auto"
+      class="cursor-pointer px-0.5 -m-1 pointer-events-auto"
     >
       <div class:rotate={row.getIsExpanded()} class="transition-transform">
         <ChevronRight size="16px" color="#9CA3AF" />
       </div>
     </button>
+  {:else if row.depth >= 1}
+    <Spacer size="16px" />
   {/if}
 
   <span class="truncate">
