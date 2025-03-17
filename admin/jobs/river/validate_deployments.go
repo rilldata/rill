@@ -28,16 +28,27 @@ func (w *ValidateDeploymentsWorker) Work(ctx context.Context, job *river.Job[Val
 const validateDeploymentsForProjectTimeout = 5 * time.Minute
 
 func (w *ValidateDeploymentsWorker) validateDeployments(ctx context.Context) error {
-	// Resolve batch size from config
-	limit := 100
-	if w.admin.ProvisionerMaxConcurrency <= 100 {
-		limit = w.admin.ProvisionerMaxConcurrency
-	} else {
-		w.admin.Logger.Warn("validate deployments: provisioner max concurrency set too high, using maximum concurrency of 100", zap.Int("provisioner_max_concurrency", w.admin.ProvisionerMaxConcurrency), observability.ZapCtx(ctx))
+	var wg sync.WaitGroup
+	ch := make(chan *database.Project)
+
+	// Setup concurrent workers
+	for range w.admin.ProvisionerMaxConcurrency {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			// Read projects from shared channel
+			for proj := range ch {
+				err := w.validateDeploymentsForProject(ctx, proj)
+				if err != nil {
+					// We log the error, but continue to the next project
+					w.admin.Logger.Error("validate deployments: failed to validate project deployments", zap.String("project_id", proj.ID), zap.Error(err), observability.ZapCtx(ctx))
+				}
+			}
+		}()
 	}
 
-	// Iterate over batches of projects
-	var wg sync.WaitGroup
+	// Iterate over batches of projects and add them to the shared channel
+	limit := 100
 	afterName := ""
 	stop := false
 	for !stop {
@@ -53,21 +64,13 @@ func (w *ValidateDeploymentsWorker) validateDeployments(ctx context.Context) err
 			afterName = projs[len(projs)-1].Name
 		}
 
-		// Process batch concurrently
 		for _, proj := range projs {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				err := w.validateDeploymentsForProject(ctx, proj)
-				if err != nil {
-					// We log the error, but continue to the next project
-					w.admin.Logger.Error("validate deployments: failed to validate project deployments", zap.String("project_id", proj.ID), zap.Error(err), observability.ZapCtx(ctx))
-				}
-			}()
+			ch <- proj
 		}
-
-		wg.Wait()
 	}
+
+	close(ch)
+	wg.Wait()
 
 	return nil
 }
