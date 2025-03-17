@@ -525,7 +525,6 @@ func (d Dialect) IntervalSubtract(tsExpr, unitExpr string, grain runtimev1.TimeG
 	default:
 		return "", fmt.Errorf("unsupported dialect %q", d)
 	}
-
 }
 
 func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeGrain, alias string) (string, []any, error) {
