@@ -49,15 +49,3 @@ export function formatMeasurePercentageDifference(value: number): NumberParts {
 
   return factory["partsFormat"](value);
 }
-
-export function formatPercentage(value: number, precision: number): string {
-  if (value === 0) {
-    return "0%";
-  } else if (value < 0.005 && value > 0) {
-    return "0%";
-  } else if (value > -0.005 && value < 0) {
-    return "-0%";
-  } else {
-    return (value * 100).toFixed(precision) + "%";
-  }
-}
