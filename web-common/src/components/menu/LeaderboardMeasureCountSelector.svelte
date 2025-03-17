@@ -58,6 +58,7 @@
           <MinusIcon size="14" color={count <= 1 ? "#94A3B8" : "#475569"} />
         </IconButton>
         <span class="text-gray-700">
+          <!-- FIXME: must show the correct number of visible measures -->
           <strong>{count} measure{count === 1 ? "" : "s"}</strong>
         </span>
         <IconButton
