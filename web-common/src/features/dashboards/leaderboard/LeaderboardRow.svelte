@@ -251,7 +251,7 @@
     })}
     class="relative size-full flex flex-none justify-between items-center leaderboard-label"
   >
-    <FormattedDataType value={dimensionValue} truncate />
+    <FormattedDataType value={dimensionValue} truncate color="text-gray-500" />
 
     {#if previousValueString && hovered}
       <span
@@ -327,6 +327,7 @@
         {#if isTimeComparisonActive}
           <div class="w-fit ml-auto" bind:contentRect={deltaRect}>
             <FormattedDataType
+              color="text-gray-500"
               type="INTEGER"
               value={deltaAbsMap[measureName]
                 ? formatter(deltaAbsMap[measureName])
@@ -338,7 +339,10 @@
             />
           </div>
         {:else}
-          <PercentageChange value={pctOfTotals[measureName]} />
+          <PercentageChange
+            value={pctOfTotals[measureName]}
+            color="text-gray-500"
+          />
           {#if showZigZags[measureName]}
             <LongBarZigZag />
           {/if}
@@ -360,6 +364,7 @@
           value={deltaRels[measureName]
             ? formatMeasurePercentageDifference(deltaRels[measureName])
             : null}
+          color="text-gray-500"
         />
         {#if showZigZags[measureName]}
           <LongBarZigZag />

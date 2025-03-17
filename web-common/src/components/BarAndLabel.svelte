@@ -60,9 +60,9 @@
     --width: 0%;
     content: "";
     display: inline-block;
-    width: calc((100% - 32px) * var(--width));
+    width: calc(100% * var(--width));
     position: absolute;
-    left: 16px;
+    left: 0;
     top: 0;
     height: 100%;
     pointer-events: none;
