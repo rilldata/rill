@@ -778,6 +778,13 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindTheme, Name: tmp.DefaultTheme})
 	}
 
+	// Infer refs from security rules
+	securityRefs, err := inferRefsFromSecurityRules(securityRules)
+	if err != nil {
+		return err
+	}
+	node.Refs = append(node.Refs, securityRefs...)
+
 	var cacheTTLDuration time.Duration
 	if tmp.Cache.KeyTTL != "" {
 		cacheTTLDuration, err = time.ParseDuration(tmp.Cache.KeyTTL)
@@ -874,13 +881,6 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	if tmp.DefaultTheme != "" {
 		refs = append(refs, ResourceName{Kind: ResourceKindTheme, Name: tmp.DefaultTheme})
 	}
-
-	// Infer refs from security rules
-	securityRefs, err := inferRefsFromSecurityRules(securityRules)
-	if err != nil {
-		return err
-	}
-	refs = append(refs, securityRefs...)
 
 	e, err := p.insertResource(ResourceKindExplore, node.Name, node.Paths, refs...)
 	if err != nil {
@@ -989,6 +989,9 @@ var validationTemplateData = TemplateData{
 		"domain": "example.org",
 		"groups": []interface{}{"all"},
 		"admin":  false,
+	},
+	Resolve: func(ref ResourceName) (string, error) {
+		return ref.Name, nil
 	},
 }
 

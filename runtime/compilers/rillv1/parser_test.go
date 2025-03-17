@@ -2276,6 +2276,88 @@ metrics_view: missing
 	requireResourcesAndErrors(t, p, resources, nil)
 }
 
+func TestSecurityPolicyWithRef(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`models/mappings.sql`: `
+SELECT * FROM domain_mappings
+`,
+		`metrics/d1.yaml`: `
+version: 1
+type: metrics_view
+table: t1
+dimensions:
+  - name: foo
+    column: foo
+measures:
+  - name: a
+    expression: count(*)
+security:
+  access: true
+  row_filter: partner_id IN (SELECT partner_id FROM {{ ref "mappings" }} WHERE domain = '{{ .user.domain }}')
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindModel, Name: "mappings"},
+			Paths: []string{"/models/mappings.sql"},
+			ModelSpec: &runtimev1.ModelSpec{
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+				InputConnector:  "duckdb",
+				InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM domain_mappings"})),
+				OutputConnector: "duckdb",
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "d1"},
+			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "mappings"}},
+			Paths: []string{"/metrics/d1.yaml"},
+			MetricsViewSpec: &runtimev1.MetricsViewSpec{
+				Connector:   "duckdb",
+				Table:       "t1",
+				DisplayName: "D1",
+				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
+					{Name: "foo", DisplayName: "Foo", Column: "foo"},
+				},
+				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
+					{Name: "a", DisplayName: "A", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+				},
+				SecurityRules: []*runtimev1.SecurityRule{
+					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
+						Condition: "true",
+						Allow:     true,
+					}}},
+					{Rule: &runtimev1.SecurityRule_RowFilter{RowFilter: &runtimev1.SecurityRuleRowFilter{
+						Sql: "partner_id IN (SELECT partner_id FROM {{ ref \"mappings\" }} WHERE domain = '{{ .user.domain }}')",
+					}}},
+				},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", "duckdb")
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+
+	putRepo(t, repo, map[string]string{
+		`models/mappings.sql`: `
+SELECT * FROM domain_mappings WHERE active = true
+`,
+	})
+
+	resources[0].ModelSpec.InputProperties = must(structpb.NewStruct(map[string]any{
+		"sql": "SELECT * FROM domain_mappings WHERE active = true",
+	}))
+
+	diff, err := p.Reparse(ctx, []string{"/models/mappings.sql"})
+	require.NoError(t, err)
+	require.Contains(t, diff.Modified, resources[0].Name, "mappings model should be marked as modified")
+	require.Contains(t, diff.Modified, resources[1].Name, "metrics view with security ref should be marked as modified when referenced model changes")
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
 func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resource, wantErrors []*runtimev1.ParseError) {
 	// Check errors
 	// NOTE: Assumes there's at most one parse error per file path

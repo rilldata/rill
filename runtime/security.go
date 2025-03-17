@@ -234,6 +234,9 @@ func (p *securityEngine) resolveSecurity(instanceID, environment string, vars ma
 		User:        attrs,
 		Variables:   vars,
 		Self:        rillv1.TemplateResource{Meta: r.Meta},
+		Resolve: func(ref rillv1.ResourceName) (string, error) {
+			return ref.Name, nil
+		},
 	}
 
 	// Apply rules
