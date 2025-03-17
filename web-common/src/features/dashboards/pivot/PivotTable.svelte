@@ -234,7 +234,6 @@
   }
 
   function handleTooltip(e: MouseEvent) {
-    console.log(e.target);
     // Element is not a cell or we haven't left the cell for the current tooltip
     if (!leftCell || !(e.target instanceof HTMLElement)) return;
 
