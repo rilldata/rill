@@ -13,8 +13,8 @@ export function renderFilterComponent() {
       metricsViewName: AD_BIDS_METRICS_NAME,
     },
     context: new Map([
-      [DEFAULT_STORE_KEY as unknown as string, stateManagers],
-      ["$$_queryClient", queryClient],
+      [DEFAULT_STORE_KEY as unknown as string, stateManagers as unknown],
+      ["$$_queryClient", queryClient as unknown],
     ]),
   });
 

@@ -304,6 +304,8 @@
       );
     }
   }
+
+  console.log("RENDER");
 </script>
 
 <div class="flex flex-col gap-y-2 size-full">

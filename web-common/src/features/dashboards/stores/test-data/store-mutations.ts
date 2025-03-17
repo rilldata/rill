@@ -12,6 +12,7 @@ import {
   setPrimaryDimension,
   toggleDimensionVisibility,
 } from "@rilldata/web-common/features/dashboards/state-managers/actions/dimensions";
+import { clearAllFilters } from "@rilldata/web-common/features/dashboards/state-managers/actions/filters";
 import {
   removeMeasureFilter,
   setMeasureFilter,
@@ -88,6 +89,9 @@ export const AD_BIDS_APPLY_BP_MEASURE_FILTER: TestDashboardMutation = (mut) =>
     value1: "10",
     value2: "",
   });
+
+export const AD_BIDS_CLEAR_FILTERS: TestDashboardMutation = (mut) =>
+  clearAllFilters(mut);
 
 export const AD_BIDS_SET_P7D_TIME_RANGE_FILTER: TestDashboardMutation = () =>
   metricsExplorerStore.selectTimeRange(

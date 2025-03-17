@@ -25,6 +25,7 @@
   export let optional: boolean = false;
   export let tooltip: string = "";
   export let width: number | null = null;
+  export let minWidth: number | null = null;
   export let disabled = false;
   export let selectElement: HTMLButtonElement | undefined = undefined;
   export let full = false;
@@ -97,7 +98,7 @@
       {lockTooltip}
       bind:el={selectElement}
       class="flex px-3 gap-x-2 max-w-full {HeightBySize[size]} {width &&
-        `w-[${width}px]`}  {ringFocus &&
+        `w-[${width}px]`} {minWidth && `min-w-[${minWidth}px]`} {ringFocus &&
         'focus:ring-2 focus:ring-primary-100'} {truncate
         ? 'break-all overflow-hidden'
         : ''}"

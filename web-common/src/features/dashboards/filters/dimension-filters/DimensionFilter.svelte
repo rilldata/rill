@@ -76,17 +76,28 @@
   $: updateBasedOnFilterSettings(isMatchList, sanitisedSearchText);
 
   function checkSearchText(searchText: string) {
-    const values = searchText.split(BulkValueSplitRegex);
+    let values = searchText.split(BulkValueSplitRegex);
+    if (values.length > 0 && values[values.length - 1] === "") {
+      values = values.slice(0, values.length - 1);
+    }
+
     if (values.length <= 1) {
+      if (mode === SearchMode.Bulk) {
+        searchedBulkValues = searchText === "" ? [] : values;
+      }
       return;
     }
-    console.log(values);
     searchedBulkValues = values;
     mode = SearchMode.Bulk;
   }
   $: checkSearchText(curSearchText);
 
   let searchedBulkValues: string[] = isMatchList ? selectedValues : [];
+  $: enableSearchQuery =
+    Boolean(timeControlsReady && open) &&
+    (mode === SearchMode.Select ||
+      (mode === SearchMode.Search && curSearchText.length > 0) ||
+      (mode === SearchMode.Bulk && searchedBulkValues.length > 0));
   $: searchResultsQuery = useDimensionSearch(
     instanceId,
     metricsViewNames,
@@ -101,7 +112,7 @@
           }),
       timeStart,
       timeEnd,
-      enabled: Boolean(timeControlsReady && open),
+      enabled: enableSearchQuery,
     },
   );
   $: ({
@@ -109,6 +120,11 @@
     error: errorFromSearchResults,
     isFetching: isFetchingFromSearchResults,
   } = $searchResultsQuery);
+  $: correctedSearchResults = enableSearchQuery ? searchResults : [];
+  $: enableSearchCountQuery =
+    Boolean(timeControlsReady) &&
+    ((mode === SearchMode.Search && curSearchText.length > 0) ||
+      (mode === SearchMode.Bulk && searchedBulkValues.length > 0));
   $: allSearchResultsCountQuery = useAllSearchResultsCount(
     instanceId,
     metricsViewNames,
@@ -123,7 +139,7 @@
           }),
       timeStart,
       timeEnd,
-      enabled: Boolean(timeControlsReady) && mode !== SearchMode.Select,
+      enabled: enableSearchCountQuery,
     },
   );
   $: ({
@@ -131,6 +147,11 @@
     error: errorFromAllSearchResultsCount,
     isFetching: isFetchingFromAllSearchResultsCount,
   } = $allSearchResultsCountQuery);
+  $: searchResultCountText = enableSearchCountQuery
+    ? mode === SearchMode.Search
+      ? `${allSearchResultsCount} results`
+      : `${allSearchResultsCount} of ${searchedBulkValues.length} matched`
+    : "0 results";
 
   $: error = errorFromSearchResults ?? errorFromAllSearchResultsCount;
   $: isFetching =
@@ -139,28 +160,32 @@
   $: showExtraInfo = mode !== SearchMode.Select || curSearchText.length > 0;
 
   $: allSelected = Boolean(
-    selectedValues.length && searchResults?.length === selectedValues.length,
+    selectedValues.length &&
+      correctedSearchResults?.length === selectedValues.length,
   );
   $: effectiveSelectedValues =
-    mode !== SearchMode.Bulk ? selectedValues : (searchResults ?? []);
+    mode !== SearchMode.Bulk ? selectedValues : (correctedSearchResults ?? []);
 
   function handleModeChange(newMode: SearchMode) {
     if (newMode !== SearchMode.Bulk) {
       searchedBulkValues = [];
     } else {
-      searchedBulkValues = curSearchText.split(BulkValueSplitRegex);
+      checkSearchText(curSearchText);
     }
   }
 
   function handleOpenChange(open: boolean) {
-    console.log("handleOpenChange", open);
     if (open) {
       curSearchText = isMatchList
         ? selectedValues.join(",")
         : (sanitisedSearchText ?? "");
     } else {
       if (selectedValues.length === 0 && !searchText) {
+        // filter was cleared. so remove the filter
         onRemove();
+      } else {
+        // reset the settings on unmount
+        updateBasedOnFilterSettings(isMatchList, sanitisedSearchText);
       }
     }
   }
@@ -184,8 +209,6 @@
       open = false;
     }
   }
-
-  $: console.log(mode);
 </script>
 
 <DropdownMenu.Root
@@ -229,7 +252,7 @@
             : effectiveSelectedValues}
           matchedCount={allSearchResultsCount}
           loading={isFetchingFromAllSearchResultsCount}
-          search={sanitisedSearchText}
+          search={mode === SearchMode.Search ? curSearchText : undefined}
         />
       </Chip>
       <div slot="tooltip-content" transition:fly={{ duration: 100, y: 4 }}>
@@ -251,6 +274,7 @@
   >
     <div class="flex flex-col px-3 pt-3">
       <div class="flex flex-row">
+        <!-- min-w-[82px] -->
         <Select
           id="search-mode"
           bind:value={mode}
@@ -273,6 +297,7 @@
           ]}
           onChange={handleModeChange}
           size="md"
+          minWidth={82}
         />
         <Search
           bind:value={curSearchText}
@@ -284,20 +309,15 @@
       </div>
       {#if showExtraInfo}
         <div class="flex flex-row items-center justify-between pt-2 pb-1">
-          {#if mode === SearchMode.Search}
+          {#if mode !== SearchMode.Select}
             <DropdownMenu.Label
               class="pb-0 uppercase text-[10px] text-gray-500"
-              aria-label={`${name} results`}
+              aria-label={`${name} result count`}
             >
-              {allSearchResultsCount} results
+              {searchResultCountText}
             </DropdownMenu.Label>
-          {:else if mode === SearchMode.Bulk}
-            <DropdownMenu.Label
-              class="pb-0 uppercase text-[10px] text-gray-500"
-              aria-label={`${name} results`}
-            >
-              {allSearchResultsCount} of {searchedBulkValues.length} matched
-            </DropdownMenu.Label>
+          {:else}
+            <div class="grow" />
           {/if}
 
           <a
@@ -315,7 +335,9 @@
       <DropdownMenu.Separator class="bg-slate-200" />
     {/if}
 
-    <div class="flex flex-col flex-1 overflow-y-auto w-full h-fit pb-1">
+    <div
+      class="flex flex-col flex-1 overflow-y-auto w-full h-fit min-h-24 pb-1"
+    >
       {#if isFetching}
         <div class="min-h-9 flex flex-row items-center mx-auto">
           <LoadingSpinner />
@@ -324,9 +346,9 @@
         <div class="min-h-9 p-3 text-center text-red-600 text-xs">
           {error}
         </div>
-      {:else if searchResults}
-        <DropdownMenu.Group class="px-1">
-          {#each searchResults as name (name)}
+      {:else if correctedSearchResults}
+        <DropdownMenu.Group class="px-1" aria-label={`${name} results`}>
+          {#each correctedSearchResults as name (name)}
             {@const selected = effectiveSelectedValues.includes(name)}
             {@const label = name ?? "null"}
 
@@ -376,7 +398,12 @@
           {/if}
         </Button>
       {:else}
-        <Button on:click={onApply} type="plain" class="justify-end">
+        <Button
+          on:click={onApply}
+          type="primary"
+          class="justify-end"
+          disabled={!enableSearchCountQuery}
+        >
           Apply
         </Button>
       {/if}
