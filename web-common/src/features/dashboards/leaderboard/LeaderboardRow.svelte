@@ -277,6 +277,7 @@
 
   {#each Object.keys(values) as measureName}
     <td
+      data-measure-cell
       style:background={measureGradients[measureName]}
       on:click={modified({
         shift: () => shiftClickHandler(values[measureName]?.toString() || ""),
@@ -324,29 +325,19 @@
         })}
         title={deltaAbsMap[measureName]?.toString() || ""}
       >
-        {#if isTimeComparisonActive}
-          <div class="w-fit ml-auto" bind:contentRect={deltaRect}>
-            <FormattedDataType
-              color="text-gray-500"
-              type="INTEGER"
-              value={deltaAbsMap[measureName]
-                ? formatter(deltaAbsMap[measureName])
-                : null}
-              customStyle={deltaAbsMap[measureName] !== null &&
-              deltaAbsMap[measureName] < 0
-                ? "text-red-500"
-                : ""}
-            />
-          </div>
-        {:else}
-          <PercentageChange
-            value={pctOfTotals[measureName]}
+        <div class="w-fit ml-auto" bind:contentRect={deltaRect}>
+          <FormattedDataType
             color="text-gray-500"
+            type="INTEGER"
+            value={deltaAbsMap[measureName]
+              ? formatter(deltaAbsMap[measureName])
+              : null}
+            customStyle={deltaAbsMap[measureName] !== null &&
+            deltaAbsMap[measureName] < 0
+              ? "text-red-500"
+              : ""}
           />
-          {#if showZigZags[measureName]}
-            <LongBarZigZag />
-          {/if}
-        {/if}
+        </div>
       </td>
     {/if}
 

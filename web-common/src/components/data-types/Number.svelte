@@ -1,6 +1,7 @@
 <script lang="ts">
   import { formatDataType } from "../../lib/formatters";
   import Base from "./Base.svelte";
+
   export let isNull = false;
   export let inTable = false;
   export let dark = false;
