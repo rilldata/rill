@@ -181,7 +181,7 @@ export function getBreadcrumbOptions(
     const label = canvasResource?.canvas?.spec?.displayName || name;
 
     if (label && name)
-      map.set(name.toLowerCase(), { label, section: "custom", depth: 0 });
+      map.set(name.toLowerCase(), { label, section: "canvas", depth: 0 });
 
     return map;
   }, new Map<string, PathOption>());
