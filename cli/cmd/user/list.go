@@ -98,7 +98,7 @@ func listUsergroupMembers(cmd *cobra.Command, ch *cmdutil.Helper, org, group, pa
 		return err
 	}
 
-	ch.PrintUsergroupMembers(members.Members)
+	ch.PrintUsergroupMemberUsers(members.Members)
 
 	if members.NextPageToken != "" {
 		cmd.Println()
@@ -124,7 +124,7 @@ func listProjectMembers(cmd *cobra.Command, ch *cmdutil.Helper, org, project, pa
 		return err
 	}
 
-	ch.PrintMemberUsers(members.Members)
+	ch.PrintProjectMemberUsers(members.Members)
 
 	if members.NextPageToken != "" {
 		cmd.Println()
@@ -184,7 +184,7 @@ func listOrgMembers(cmd *cobra.Command, ch *cmdutil.Helper, org, pageToken strin
 		return err
 	}
 
-	ch.PrintMemberUsers(members.Members)
+	ch.PrintOrganizationMemberUsers(members.Members)
 
 	if members.NextPageToken != "" {
 		cmd.Println()

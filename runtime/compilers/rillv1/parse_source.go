@@ -4,13 +4,12 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/robfig/cron/v3"
-	"google.golang.org/protobuf/types/known/structpb"
+	"gopkg.in/yaml.v3"
 
 	// Load IANA time zone data
 	_ "time/tzdata"
@@ -27,48 +26,30 @@ type SourceYAML struct {
 // parseSource parses a source definition and adds the resulting resource to p.Resources.
 func (p *Parser) parseSource(ctx context.Context, node *Node) error {
 	// Parse YAML
-	tmp := &SourceYAML{}
-	err := p.decodeNodeYAML(node, false, tmp)
+	tmp := make(map[string]any)
+	if node.YAML == nil {
+		node.YAML = &yaml.Node{}
+	}
+	err := node.YAML.Decode(tmp)
 	if err != nil {
 		return err
 	}
 
 	// Backwards compatibility: "type:" was previously used instead of "connector:".
 	// So if "type:" is not a valid resource kind, we treat it as a connector.
-	if tmp.Type != nil {
-		if _, err := ParseResourceKind(*tmp.Type); err != nil {
-			node.Connector = *tmp.Type
+	if typ, ok := tmp["type"].(string); ok {
+		if _, err := ParseResourceKind(typ); err != nil {
+			node.Connector = typ
 			node.ConnectorInferred = false
 		}
 	}
 
-	// If the source has SQL and hasn't specified a connector, we treat it as a model
-	if node.SQL != "" && node.ConnectorInferred {
-		return p.parseModel(ctx, node)
+	tmp["output"] = map[string]any{
+		"connector":   p.defaultOLAPConnector(),
+		"materialize": true,
 	}
-
-	// Add SQL as a property
-	if node.SQL != "" {
-		if tmp.Properties == nil {
-			tmp.Properties = map[string]any{}
-		}
-		tmp.Properties["sql"] = strings.TrimSpace(node.SQL)
-	}
-
-	// Parse timeout
-	var timeout time.Duration
-	if tmp.Timeout != "" {
-		timeout, err = parseDuration(tmp.Timeout)
-		if err != nil {
-			return err
-		}
-	}
-
-	// Parse refresh schedule
-	schedule, err := p.parseScheduleYAML(tmp.Refresh)
-	if err != nil {
-		return err
-	}
+	tmp["type"] = "model"
+	tmp["defined_as_source"] = true
 
 	// Backward compatibility: when the default connector is "olap", and it's a DuckDB connector, a source with connector "duckdb" should run on it
 	if p.DefaultOLAPConnector == "olap" && node.Connector == "duckdb" {
@@ -80,31 +61,20 @@ func (p *Parser) parseSource(ctx context.Context, node *Node) error {
 		return fmt.Errorf("must explicitly specify a connector for sources")
 	}
 
-	props, err := structpb.NewStruct(tmp.Properties)
-	if err != nil {
-		return fmt.Errorf("encountered invalid property type: %w", err)
-	}
-
-	// Track source
-	r, err := p.insertResource(ResourceKindSource, node.Name, node.Paths, node.Refs...)
+	// Convert back to YAML
+	err = node.YAML.Encode(tmp)
 	if err != nil {
 		return err
 	}
-	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
+	bytes, err := yaml.Marshal(node.YAML)
+	if err != nil {
+		return err
+	}
+	node.YAMLRaw = string(bytes)
 
-	r.SourceSpec.Properties = mergeStructPB(r.SourceSpec.Properties, props)
-	r.SourceSpec.SinkConnector = p.defaultOLAPConnector() // Sink connector not currently configurable
-	if node.Connector != "" {
-		r.SourceSpec.SourceConnector = node.Connector // Source connector
-	}
-	if timeout != 0 {
-		r.SourceSpec.TimeoutSeconds = uint32(timeout.Seconds())
-	}
-	if schedule != nil {
-		r.SourceSpec.RefreshSchedule = schedule
-	}
-
-	return nil
+	// We allowed a special resource type (source) to ingest data from external connector.
+	// After the unification of sources and models everything is a model.
+	return p.parseModel(ctx, node)
 }
 
 // ScheduleYAML is the raw structure of a refresh schedule clause defined in YAML.
@@ -198,19 +168,4 @@ func parseDuration(v any) (time.Duration, error) {
 	default:
 		return 0, fmt.Errorf("invalid time duration value <%v>", v)
 	}
-}
-
-// mergeStructPB merges two structpb.Structs, with b taking precedence over a.
-// It overwrites a in place and returns it.
-func mergeStructPB(a, b *structpb.Struct) *structpb.Struct {
-	if a == nil || a.Fields == nil {
-		return b
-	}
-	if b == nil || b.Fields == nil {
-		return a
-	}
-	for k, v := range b.Fields {
-		a.Fields[k] = v
-	}
-	return a
 }

@@ -104,3 +104,10 @@ On macOS, you can also install Rill using Homebrew. To avoid conflicts, don't mi
 ```bash
 brew install rilldata/tap/rill 
 ```
+
+## Uninstall Rill
+
+To uninstall Rill, you can use the following command:
+```bash
+rill uninstall
+```

@@ -1,39 +1,40 @@
 connectors:
   - clickhouse
   - gcs
+  - gcs_s3_compat
 project_files:
   all_datatypes_clickhouse_csv.yaml:
     type: model
     connector: clickhouse
     materialize: true
-    sql: "SELECT * FROM gcs('gs://integration-test.rilldata.com/csv_test/all_datatypes.csv', '{{.env.connector.gcs.key_id}}', '{{.env.connector.gcs.secret}}', 'CSVWithNames')"
+    sql: "SELECT * FROM gcs('gs://integration-test.rilldata.com/csv_test/all_datatypes.csv', '{{.env.connector.gcs_s3_compat.key_id}}', '{{.env.connector.gcs_s3_compat.secret}}', 'CSVWithNames')"
   all_datatypes_clickhouse_glob.yaml:
     type: model
     connector: clickhouse
     materialize: true
-    sql: "SELECT * FROM gcs('gs://integration-test.rilldata.com/glob_test/y=202*/a*.csv', '{{.env.connector.gcs.key_id}}', '{{.env.connector.gcs.secret}}', 'CSVWithNames')"
+    sql: "SELECT * FROM gcs('gs://integration-test.rilldata.com/glob_test/y=202*/a*.csv', '{{.env.connector.gcs_s3_compat.key_id}}', '{{.env.connector.gcs_s3_compat.secret}}', 'CSVWithNames')"
   all_datatypes_clickhouse_parquet.yaml:
     type: model
     connector: clickhouse
     materialize: true
-    sql: "SELECT * FROM gcs('gs://integration-test.rilldata.com/parquet_test/all_datatypes.parquet', '{{.env.connector.gcs.key_id}}', '{{.env.connector.gcs.secret}}', 'Parquet')"
+    sql: "SELECT * FROM gcs('gs://integration-test.rilldata.com/parquet_test/all_datatypes.parquet', '{{.env.connector.gcs_s3_compat.key_id}}', '{{.env.connector.gcs_s3_compat.secret}}', 'Parquet')"
   all_datatypes_duckdb_model_csv.yaml:
     type: model
     connector: duckdb
     materialize: true
-    pre_exec: "CREATE SECRET secret1 (TYPE gcs, KEY_ID '{{.env.connector.gcs.key_id}}', SECRET '{{.env.connector.gcs.secret}}', REGION 'us-east-1')"
+    pre_exec: "CREATE SECRET secret1 (TYPE gcs, KEY_ID '{{.env.connector.gcs_s3_compat.key_id}}', SECRET '{{.env.connector.gcs_s3_compat.secret}}', REGION 'us-east-1')"
     sql: "select * from read_csv('gs://integration-test.rilldata.com/csv_test/all_datatypes.csv', auto_detect=true, ignore_errors=1, header=true)"
   all_datatypes_duckdb_model_glob.yaml:
     type: model
     connector: duckdb
     materialize: true
-    pre_exec: "CREATE SECRET secret1 (TYPE gcs, KEY_ID '{{.env.connector.gcs.key_id}}', SECRET '{{.env.connector.gcs.secret}}', REGION 'us-east-1')"
+    pre_exec: "CREATE SECRET secret1 (TYPE gcs, KEY_ID '{{.env.connector.gcs_s3_compat.key_id}}', SECRET '{{.env.connector.gcs_s3_compat.secret}}', REGION 'us-east-1')"
     sql: "select * from read_csv('gs://integration-test.rilldata.com/glob_test/y=202*/a*.csv', auto_detect=true, ignore_errors=1, header=true)"
   all_datatypes_duckdb_model_parquet.yaml:
     type: model
     connector: duckdb
     materialize: true
-    pre_exec: "CREATE SECRET secret1 (TYPE gcs, KEY_ID '{{.env.connector.gcs.key_id}}', SECRET '{{.env.connector.gcs.secret}}', REGION 'us-east-1')"
+    pre_exec: "CREATE SECRET secret1 (TYPE gcs, KEY_ID '{{.env.connector.gcs_s3_compat.key_id}}', SECRET '{{.env.connector.gcs_s3_compat.secret}}', REGION 'us-east-1')"
     sql: "select * from read_parquet('gs://integration-test.rilldata.com/parquet_test/all_datatypes.parquet')"
   all_datatypes_duckdb_source_csv.yaml:
     type: source

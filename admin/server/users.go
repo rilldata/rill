@@ -409,13 +409,38 @@ func userToPB(u *database.User) *adminv1.User {
 	}
 }
 
-func memberUserToPB(m *database.MemberUser) *adminv1.MemberUser {
-	return &adminv1.MemberUser{
+func orgMemberUserToPB(m *database.OrganizationMemberUser) *adminv1.OrganizationMemberUser {
+	return &adminv1.OrganizationMemberUser{
+		UserId:          m.ID,
+		UserEmail:       m.Email,
+		UserName:        m.DisplayName,
+		UserPhotoUrl:    m.PhotoURL,
+		RoleName:        m.RoleName,
+		ProjectsCount:   uint32(m.ProjectsCount),
+		UsergroupsCount: uint32(m.UsergroupsCount),
+		CreatedOn:       timestamppb.New(m.CreatedOn),
+		UpdatedOn:       timestamppb.New(m.UpdatedOn),
+	}
+}
+
+func projMemberUserToPB(m *database.ProjectMemberUser) *adminv1.ProjectMemberUser {
+	return &adminv1.ProjectMemberUser{
 		UserId:       m.ID,
 		UserEmail:    m.Email,
 		UserName:     m.DisplayName,
 		UserPhotoUrl: m.PhotoURL,
 		RoleName:     m.RoleName,
+		CreatedOn:    timestamppb.New(m.CreatedOn),
+		UpdatedOn:    timestamppb.New(m.UpdatedOn),
+	}
+}
+
+func usergroupMemberUserToPB(m *database.UsergroupMemberUser) *adminv1.UsergroupMemberUser {
+	return &adminv1.UsergroupMemberUser{
+		UserId:       m.ID,
+		UserEmail:    m.Email,
+		UserName:     m.DisplayName,
+		UserPhotoUrl: m.PhotoURL,
 		CreatedOn:    timestamppb.New(m.CreatedOn),
 		UpdatedOn:    timestamppb.New(m.UpdatedOn),
 	}
