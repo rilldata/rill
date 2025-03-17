@@ -26,6 +26,7 @@ var (
 		{"Latest", "latest"},
 		{"Watermark", "watermark"},
 		// this needs to be after Now and Latest to match to them
+		{"PeriodToGrain", `[sSmhHdDwWqQMyY]T[sSmhHdDwWqQMyY]`},
 		{"Grain", `[sSmhHdDwWqQMyY]`},
 		// this has to be at the end
 		{"TimeZone", `{.+?}`},
@@ -38,15 +39,15 @@ var (
 		{"Of", `(?i)of`},
 		// needed for misc. direct character references used
 		{"Punct", `[-[!@#$%^&*()+_={}\|:;"'<,>.?/]]`},
-		{"Whitespace", `[ \t\n\r]+`},
+		{"Whitespace", `[ \t]+`},
 	})
 	daxNotations = map[string]string{
 		// Mapping for our old rill-<DAX> syntax
 		"TD":  "D~",
-		"WTD": "W~",
-		"MTD": "M~",
-		"QTD": "Q~",
-		"YTD": "Y~",
+		"WTD": "WTD",
+		"MTD": "MTD",
+		"QTD": "QTD",
+		"YTD": "YTD",
 		"PDC": "D",
 		"PWC": "W",
 		"PMC": "M",
@@ -138,10 +139,14 @@ type HardcodedAnchor struct {
 type TimeAnchor struct {
 	Pos lexer.Position
 
-	Prefix    *string `parser:"@AnchorPrefix?"`
-	Num       *int    `parser:"@Number?"`
-	Grain     string  `parser:"@Grain"`
-	IsCurrent bool    `parser:"@Current?"`
+	Prefix         *string `parser:"@AnchorPrefix?"`
+	Num            *int    `parser:"@Number?"`
+	Grain          *string `parser:"( @Grain"`
+	PeriodToGrain  *string `parser:"| @PeriodToGrain)"`
+	IncludeCurrent bool    `parser:"@Current?"`
+
+	from timeutil.TimeGrain
+	to   timeutil.TimeGrain
 }
 
 // Ordinal represent a particular sequence of a grain in the next order grain.
@@ -199,11 +204,9 @@ func Parse(from string, parseOpts ParseOptions) (*Expression, error) {
 	// TODO: validation per link and link-part
 	if rt.From != nil {
 		for _, part := range rt.From.Parts {
-			if part.AbsoluteTime != nil {
-				err = part.AbsoluteTime.parse()
-				if err != nil {
-					return nil, err
-				}
+			err = part.parse()
+			if err != nil {
+				return nil, err
 			}
 		}
 	} else if rt.isoDuration == nil {
@@ -212,11 +215,9 @@ func Parse(from string, parseOpts ParseOptions) (*Expression, error) {
 
 	if rt.To != nil {
 		for _, part := range rt.To.Parts {
-			if part.AbsoluteTime != nil {
-				err = part.AbsoluteTime.parse()
-				if err != nil {
-					return nil, err
-				}
+			err = part.parse()
+			if err != nil {
+				return nil, err
 			}
 		}
 	}
@@ -303,6 +304,15 @@ func (l *Link) time(evalOpts EvalOptions, start, end time.Time, tz *time.Locatio
 	return start, end, tg
 }
 
+func (l *LinkPart) parse() error {
+	if l.Anchor != nil {
+		return l.Anchor.parse()
+	} else if l.AbsoluteTime != nil {
+		return l.AbsoluteTime.parse()
+	}
+	return nil
+}
+
 func (l *LinkPart) time(evalOpts EvalOptions, start, end time.Time, tz *time.Location, tg timeutil.TimeGrain, isFinal bool) (time.Time, time.Time, timeutil.TimeGrain) {
 	if l.Anchor != nil {
 		return l.Anchor.time(evalOpts, start, end, tz, tg, isFinal)
@@ -330,17 +340,50 @@ func (a *HardcodedAnchor) anchor(evalOpts EvalOptions) time.Time {
 	return time.Time{}
 }
 
+func (t *TimeAnchor) parse() error {
+	if t.PeriodToGrain == nil {
+		return nil
+	}
+
+	grains := strings.Split(*t.PeriodToGrain, "T")
+	if len(grains) != 2 {
+		return fmt.Errorf("invalid period grain format: %s", *t.PeriodToGrain)
+	}
+	t.from = grainMap[grains[0]]
+	t.to = grainMap[grains[1]]
+	// TODO: from should be smaller than to
+
+	return nil
+}
+
 func (t *TimeAnchor) time(evalOpts EvalOptions, start, end time.Time, tz *time.Location, higherTg timeutil.TimeGrain, isFinal bool) (time.Time, time.Time, timeutil.TimeGrain) {
 	num := 1
 	if t.Num != nil {
 		num = *t.Num
 	}
 
-	if t.IsCurrent {
+	if t.IncludeCurrent {
 		num--
 	}
 
-	curTg := grainMap[t.Grain]
+	if t.PeriodToGrain != nil {
+		ptgStart := timeutil.TruncateTime(start, t.from, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+		if num > 1 {
+			if t.Prefix != nil {
+				switch *t.Prefix {
+				case "-":
+					ptgStart = timeutil.OffsetTime(ptgStart, t.from, -num+1)
+
+				case "+":
+					ptgStart = timeutil.OffsetTime(ptgStart, t.from, num-1)
+				}
+			}
+		}
+		ptgEnd := timeutil.CeilTime(start, t.to, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+		return ptgStart, ptgEnd, t.to
+	}
+
+	curTg := grainMap[*t.Grain]
 	if higherTg == timeutil.TimeGrainUnspecified {
 		higherTg = higherOrderMap[curTg]
 	}
@@ -352,10 +395,10 @@ func (t *TimeAnchor) time(evalOpts EvalOptions, start, end time.Time, tz *time.L
 
 		start = timeutil.TruncateTime(start, curTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 
-		if !t.IsCurrent {
+		if !t.IncludeCurrent {
 			end = timeutil.TruncateTime(end, curTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
-		} else if isFinal {
-			end = timeutil.OffsetTime(end, timeutil.TimeGrainSecond, 1)
+		} else {
+			end = timeutil.CeilTime(end, curTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 		}
 	} else {
 		switch *t.Prefix {

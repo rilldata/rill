@@ -796,7 +796,7 @@ message MetricsViewTimeRangesRequest {
   repeated string expressions = 3;
   int32 priority = 4;
   // Optional timezone param to easily override time-range expressions
-  optional string time_zone = 5;
+  string time_zone = 5;
 }
 
 message MetricsViewTimeRangesResponse {
