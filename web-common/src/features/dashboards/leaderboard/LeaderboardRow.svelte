@@ -296,13 +296,18 @@
 
     {#if isValidPercentOfTotal}
       <td
+        data-comparison-cell
         style:background={percentOfTotalGradients[measureName]}
         on:click={modified({
           shift: () =>
             shiftClickHandler(pctOfTotals[measureName]?.toString() || ""),
         })}
+        title={pctOfTotals[measureName]?.toString() || ""}
       >
-        <PercentageChange value={pctOfTotals[measureName]} />
+        <PercentageChange
+          value={pctOfTotals[measureName]}
+          color="text-gray-500"
+        />
         {#if showZigZags[measureName]}
           <LongBarZigZag />
         {/if}
@@ -311,11 +316,13 @@
 
     {#if isTimeComparisonActive}
       <td
+        data-comparison-cell
         style:background={deltaAbsoluteGradients[measureName]}
         on:click={modified({
           shift: () =>
             shiftClickHandler(deltaAbsMap[measureName]?.toString() || ""),
         })}
+        title={deltaAbsMap[measureName]?.toString() || ""}
       >
         {#if isTimeComparisonActive}
           <div class="w-fit ml-auto" bind:contentRect={deltaRect}>
@@ -341,11 +348,13 @@
 
     {#if isTimeComparisonActive}
       <td
+        data-comparison-cell
         style:background={deltaPercentGradients[measureName]}
         on:click={modified({
           shift: () =>
             shiftClickHandler(deltaRels[measureName]?.toString() || ""),
         })}
+        title={deltaRels[measureName]?.toString() || ""}
       >
         <PercentageChange
           value={deltaRels[measureName]
@@ -396,14 +405,15 @@
   }
 
   td[data-comparison-cell] {
-    @apply p-0 bg-surface;
+    @apply bg-surface px-1;
   }
 
   td[data-dimension-cell] {
     @apply sticky left-0 z-30 bg-surface;
   }
 
-  tr:hover td[data-dimension-cell] {
+  tr:hover td[data-dimension-cell],
+  tr:hover td[data-comparison-cell] {
     @apply bg-gray-100;
   }
 
