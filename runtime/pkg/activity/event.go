@@ -51,6 +51,7 @@ const (
 const (
 	BehavioralEventInstallSuccess         = "install-success"
 	BehavioralEventAppStart               = "app-start"
+	BehavioralEventAppStop                = "app-stop"
 	BehavioralEventLoginStart             = "login-start"
 	BehavioralEventLoginSuccess           = "login-success"
 	BehavioralEventDeployStart            = "deploy-start"

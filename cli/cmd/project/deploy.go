@@ -213,6 +213,8 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 		return nil
 	}
 
+	ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventDeployStart)
+
 	// create a tar archive of the project and upload it
 	ch.Printer.Println("Starting upload.")
 	assetID, err := cmdutil.UploadRepo(ctx, repo, ch, ch.Org, opts.Name)
