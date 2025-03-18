@@ -5,6 +5,7 @@
   export let dark = false;
   export let customStyle = "";
   export let value;
+  export let truncate = false;
 
   let isNull = false;
   $: if (isPercDiff(value)) {
@@ -16,9 +17,11 @@
 <Base
   {isNull}
   color="!text-gray-500"
-  classes="ui-copy-number w-full font-normal {customStyle} {inTable &&
-    'block text-right'}"
+  classes="ui-copy-number w-full font-normal {customStyle} {inTable
+    ? 'text-right'
+    : ''}"
   {dark}
+  {truncate}
 >
   {value}
 </Base>
