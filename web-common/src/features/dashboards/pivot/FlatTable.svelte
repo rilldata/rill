@@ -198,6 +198,8 @@
             class:text-right={getMeasureColumn(cell.column)}
             class:border-r={hasBorderRight(cell.column.id)}
             data-value={cell.getValue()}
+            data-rowid={cell.row.id}
+            data-columnid={cell.column.id}
           >
             {#if result?.component && result?.props}
               <svelte:component
