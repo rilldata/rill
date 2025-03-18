@@ -9,7 +9,7 @@ export const DIMENSION_TABLE_CONFIG: DimensionTableConfig = {
   maxColumnWidth: 320,
   minColumnWidth: 104,
   minHeaderWidthWhenColumsAreSmall: 160,
-  comparisonColumnWidth: 64,
+  comparisonColumnWidth: 50,
   rowHeight: 24,
   columnHeaderHeight: 28,
   indexWidth: 24,
