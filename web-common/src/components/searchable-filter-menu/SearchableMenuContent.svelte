@@ -74,11 +74,11 @@
   </div>
 
   <div class="flex flex-col flex-1 overflow-y-auto w-full h-fit pb-1">
-    {#each filteredGroups as { name, items }, index (name)}
+    {#each filteredGroups as { name, label, items }, index (name)}
       <DropdownMenu.Group class="px-1">
         {#if filteredGroups.length > 1}
           <DropdownMenu.Label>
-            {name}
+            {label ?? name}
           </DropdownMenu.Label>
         {/if}
         {#each items as { name, label } (name)}

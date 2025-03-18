@@ -29,7 +29,8 @@
     ...(types.includes("measure")
       ? [
           <SearchableFilterSelectableGroup>{
-            name: "MEASURES",
+            name: "measure",
+            label: "MEASURES",
             items: $fieldData.items
               .filter((item) => $fieldData.displayMap[item]?.type === "measure")
               .map((item) => ({
@@ -42,7 +43,8 @@
     ...(types.includes("time")
       ? [
           <SearchableFilterSelectableGroup>{
-            name: "TIME",
+            name: "time",
+            label: "TIME",
             items: $fieldData.items
               .filter((item) => $fieldData.displayMap[item]?.type === "time")
               .map((item) => ({
@@ -55,7 +57,8 @@
     ...(types.includes("dimension")
       ? [
           <SearchableFilterSelectableGroup>{
-            name: "DIMENSIONS",
+            name: "dimension",
+            label: "DIMENSIONS",
             items: $fieldData.items
               .filter(
                 (item) => $fieldData.displayMap[item]?.type === "dimension",
@@ -106,7 +109,11 @@
 
     <SearchableMenuContent
       {selectableGroups}
-      selectedItems={[localSelectedItems]}
+      selectedItems={selectableGroups.map((group) =>
+        localSelectedItems.filter(
+          (item) => $fieldData.displayMap[item]?.type === group.name,
+        ),
+      )}
       allowMultiSelect={true}
       searchText={searchValue}
       allowSelectAll={false}
