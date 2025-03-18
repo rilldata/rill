@@ -77,7 +77,7 @@
       <button
         {...builder}
         use:builder.action
-        class="shadow-lg flex group hover:rounded-3xl w-fit p-2 absolute bottom-3 right-3 items-center justify-center z-50 rounded-full backdrop-blur-md bg-primary-600 !text-white hover:opacity-100"
+        class="shadow-lg flex group hover:rounded-3xl w-fit p-2 absolute bottom-3 right-3 items-center justify-center z-50 rounded-full bg-primary-600 text-white hover:bg-primary-500"
       >
         <Plus size="20px" />
         <span
