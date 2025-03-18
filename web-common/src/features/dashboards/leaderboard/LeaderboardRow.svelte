@@ -325,19 +325,19 @@
         })}
         title={deltaAbsMap[measureName]?.toString() || ""}
       >
-        <div class="w-fit ml-auto" bind:contentRect={deltaRect}>
-          <FormattedDataType
-            color="text-gray-500"
-            type="INTEGER"
-            value={deltaAbsMap[measureName]
-              ? formatter(deltaAbsMap[measureName])
-              : null}
-            customStyle={deltaAbsMap[measureName] !== null &&
-            deltaAbsMap[measureName] < 0
-              ? "text-red-500"
-              : ""}
-          />
-        </div>
+        <FormattedDataType
+          bind:contentRect={deltaRect}
+          color="text-gray-500"
+          type="INTEGER"
+          value={deltaAbsMap[measureName]
+            ? formatter(deltaAbsMap[measureName])
+            : null}
+          customStyle={deltaAbsMap[measureName] !== null &&
+          deltaAbsMap[measureName] < 0
+            ? "text-red-500"
+            : ""}
+          truncate={true}
+        />
       </td>
     {/if}
 
