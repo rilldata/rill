@@ -432,7 +432,7 @@ export function getSortForAccessor(
     sortPivotBy = [
       {
         desc: config.pivot.sorting[0].desc,
-        name: measureNames[parseInt(measureIndex)],
+        name: measureName,
       },
     ];
   }
