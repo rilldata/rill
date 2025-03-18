@@ -7,6 +7,8 @@ import type { FileArtifact } from "@rilldata/web-common/features/entity-manageme
 import { derived } from "svelte/store";
 import { parseDocument } from "yaml";
 
+export type FieldType = "measure" | "dimension" | "time";
+
 export function getParsedDocument(fileArtifact: FileArtifact) {
   const { editorContent } = fileArtifact;
   return derived([editorContent], ([$localContent]) => {
@@ -17,41 +19,61 @@ export function getParsedDocument(fileArtifact: FileArtifact) {
 export function useMetricFieldData(
   ctx: StateManagers,
   metricViewName: string,
-  type: "measure" | "dimension",
-  searchableItems: string[] | undefined,
-  searchValue: string,
+  type: FieldType[],
+  searchableItems: string[] | undefined = undefined,
+  searchValue = "",
 ) {
   const { spec } = ctx.canvasEntity;
-  const allDimensions = spec.getDimensionsForMetricView(metricViewName);
-  const allMeasures = spec.getSimpleMeasuresForMetricView(metricViewName);
 
-  return derived([allDimensions, allMeasures], ([dimensions, measures]) => {
+  const metricViewSpec = spec.getMetricsViewFromName(metricViewName);
+
+  return derived([metricViewSpec], ([metricViewSpec]) => {
     let items: string[] = [];
-    let displayMap: Record<string, string> = {};
+    const displayMap: Record<string, { label: string; type: FieldType }> = {};
 
-    if (type === "measure") {
-      items = measures?.map((m) => m.name as string) ?? [];
-      displayMap = Object.fromEntries(
-        measures.map((item) => [
-          item.name as string,
-          getMeasureDisplayName(item),
-        ]),
-      );
-    } else {
-      items = dimensions?.map((d) => d.name || (d.column as string)) ?? [];
-      displayMap = Object.fromEntries(
-        dimensions.map((item) => [
-          item.name || (item.column as string),
-          getDimensionDisplayName(item),
-        ]),
+    const measures = metricViewSpec?.measures ?? [];
+    const dimensions = metricViewSpec?.dimensions ?? [];
+    const timeDimension = metricViewSpec?.timeDimension;
+
+    if (type.includes("measure")) {
+      items = measures.map((m) => m.name as string);
+      Object.assign(
+        displayMap,
+        Object.fromEntries(
+          measures.map((item) => [
+            item.name as string,
+            { label: getMeasureDisplayName(item), type: "measure" },
+          ]),
+        ),
       );
     }
-
+    if (type.includes("dimension")) {
+      items = items.concat(
+        dimensions?.map((d) => d.name || (d.column as string)) ?? [],
+      );
+      Object.assign(
+        displayMap,
+        Object.fromEntries(
+          dimensions.map((item) => [
+            item.name || (item.column as string),
+            { label: getDimensionDisplayName(item), type: "dimension" },
+          ]),
+        ),
+      );
+    }
+    if (type.includes("time") && timeDimension) {
+      items.push(timeDimension);
+      Object.assign(displayMap, {
+        [timeDimension]: { label: "Time", type: "time" },
+      });
+    }
     const filteredItems = (
       searchableItems && searchValue ? searchableItems : items
     ).filter((item) => {
       const matches =
-        displayMap[item]?.toLowerCase().includes(searchValue.toLowerCase()) ||
+        displayMap[item]?.label
+          ?.toLowerCase()
+          .includes(searchValue.toLowerCase()) ||
         item.toLowerCase().includes(searchValue.toLowerCase());
       return matches;
     });

@@ -92,7 +92,9 @@
             label={config.label ?? key}
             metricName={metricsView}
             id={key}
-            type={config.type === "multi_measures" ? "measure" : "dimension"}
+            type={config.type === "multi_measures"
+              ? ["measure"]
+              : ["dimension"]}
             selectedItems={localParamValues[key]}
             onMultiSelect={async (field) => {
               component.updateProperty(key, field);
