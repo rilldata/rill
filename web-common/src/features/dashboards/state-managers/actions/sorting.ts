@@ -82,23 +82,4 @@ export const sortActions = {
    * Sets the sort direction to descending.
    */
   setSortDescending,
-
-  /**
-   * Sets the sort to its default state (dimension sort, descending)
-   */
-  setDefaultSort: ({ dashboard }: DashboardMutables) => {
-    dashboard.dashboardSortType = SortType.DIMENSION;
-    dashboard.sortDirection = SortDirection.DESCENDING;
-  },
-
-  /**
-   * Toggles the sort direction for the dashboard.
-   */
-  toggleSortDirection: (generalArgs: DashboardMutables) => {
-    const { dashboard } = generalArgs;
-    dashboard.sortDirection =
-      dashboard.sortDirection === SortDirection.ASCENDING
-        ? SortDirection.DESCENDING
-        : SortDirection.ASCENDING;
-  },
 };
