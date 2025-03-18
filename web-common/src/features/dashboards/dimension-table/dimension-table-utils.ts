@@ -38,6 +38,7 @@ import { getFiltersForOtherDimensions } from "../selectors";
 import type { MetricsExplorerEntity } from "../stores/metrics-explorer-entity";
 import type { DimensionTableRow } from "./dimension-table-types";
 import type { DimensionTableConfig } from "./DimensionTableConfig";
+import { isSummableMeasure } from "../dashboard-utils";
 
 /** Returns an updated filter set for a given dimension on search */
 export function updateFilterOnSearch(
@@ -396,7 +397,11 @@ export function addContextColumnNames(
   let nextIndex = sortByColumnIndex + 1;
 
   // 1. Add percent of total first (if applicable)
-  if (validPercentOfTotal && !isPercent) {
+  if (
+    validPercentOfTotal &&
+    !isPercent &&
+    selectedMeasure.validPercentOfTotal
+  ) {
     columnNames.splice(nextIndex, 0, `${name}_percent_of_total`);
     nextIndex++;
   }
