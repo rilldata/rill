@@ -117,7 +117,7 @@
               ? ((reportSpec?.annotations as V1ReportSpecAnnotations)[
                   "web_open_mode"
                 ] ?? "recipient") // Backwards compatibility
-              : "creator",
+              : "recipient", // To be changed to "filtered" once support is added
           },
         },
       });
