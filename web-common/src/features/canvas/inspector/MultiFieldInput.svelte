@@ -110,7 +110,7 @@
     <SearchableMenuContent
       {selectableGroups}
       selectedItems={selectableGroups.map((group) =>
-        localSelectedItems.filter(
+        localSelectedItems?.filter(
           (item) => $fieldData.displayMap[item]?.type === group.name,
         ),
       )}
