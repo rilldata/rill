@@ -1,17 +1,21 @@
 ---
 title: Incremental Partitioned Models
-description: C
+description: create incremental partitioned models
 sidebar_label: Incremental Partitioned Models
 sidebar_position: 05
 ---
 
 
-Putting the two concepts together, it is possible to create a incremental partitioned model. Doing so will allow you to not only partition the model but refresh only the partition that you need and incrementally ingest partitions 
+Putting the two concepts together, it is possible to create a incremental partitioned model. Doing so will allow you to not only partition the model but refresh only the partition that you need and incrementally ingest partitions.
 
-:::note
+:::note Need help?
 If you need any assistance with setting up a incremental partitioned model, [reach out](contact.md) to us for assistance! 
+:::
+
+:::tip Looking for an example?
 
 If you're looking for a working example, take a look at [my-rill-tutorial in our examples repository](https://github.com/rilldata/rill-examples).
+
 :::
 
 
@@ -37,9 +41,13 @@ sql: |
 
 ### Refreshing Partitions in Incremental Models
 
-When this model loads, you will be able to both view the partitions and select a specific partition to refresh via the UI in Rill Developer. Unlike **only partitioned** models, a new button is added in each of the partitons. 
+When this model loads, you will be able to both view the partitions and select a specific partition to refresh via the UI in Rill Developer. Unlike **partitioned only** models, a new button is added in each of the partitons. 
 
-![img](/img/build/advanced-models/incremental-partitioned-model.png)
+
+
+<img src = '/img/build/advanced-models/incremental-partitions-developer.png' class='rounded-gif' />
+<br />
+
 
 Likewise, if you refresh using the **CLI**.
 

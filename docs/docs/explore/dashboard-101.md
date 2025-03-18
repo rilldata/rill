@@ -25,8 +25,8 @@ After logging into [Rill Cloud](https://ui.rilldata.com), you should see all pro
 The main screen of any Rill dashboard is called the _Explore_ page. As seen above, this is divided into three section. 
 
 - Navigation Bar
-- Metrics panel
-- Dimensions leaderboard
+- Measures panel (Left)
+- Dimensions Leaderboard (Right)
 
 ### Navigation Bar
 
@@ -39,14 +39,19 @@ The main screen of any Rill dashboard is called the _Explore_ page. As seen abov
 - _**Alerts, Bookmarks and Sharing:**_ You can create an [alert](./alerts/alerts.md) by selecting the bell, customizing the default view of the dashboard (see `purple` box) to a predefined set of metrics, dimensions, and filters by selecting the [bookmark](bookmarks.md), or share the dashboard ([internally by clicking the `Share` button](/manage/user-management#admin-invites-user-from-rill-cloud) or [externally via Public URLs](./public-url.md)) .
 
 
-### Metrics Panel
+### Measures Panel
 
-- _**Measures:**_  All _**metrics**_ that are available in the underlying model \ are viewable on the left-hand side, broken out with summary numbers (e.g. eCPM) and timeseries visualizations (based on your configured `timeseries` column in your [dashboard YAML](/reference/project-files/explore-dashboards.md)). You can add or remove any metric from the page by simply selecting them from the dropdown above the charts (see `yellow` box). If you select any specific measure, you will be navigating to the [Time Dimension Detail](https://docs.rilldata.com/explore/filters/tdd).
+- _**Measures:**_  All _**metrics**_ that are available in the underlying model \ are viewable on the left-hand side, broken out with summary numbers (e.g. eCPM) and timeseries visualizations (based on your configured `timeseries` column in your [dashboard YAML](/reference/project-files/explore-dashboards.md)). You can add or remove any metric from the page by simply selecting them from the dropdown above the charts (see `yellow` box). If you select any specific measure, you will be navigating to the [Time Dimension Detail](../explore/filters/tdd).
+
+- _**Time Dimension Detail:**_ A detailed view of a single specific measure that can be further drilled down to understand minute details in your data. As with the Explore page, you can add comparison dimensions to visualize the value for several specific dimension values. For more information see: [Time Dimension Detail](../explore/filters/tdd).
 
 ### Dimensions Leaderboard Panel
 
 - _**Dimensions:**_  All _**dimensions**_ available in the underlying model on the right-hand side via leaderboard / toplist charts. You can add or remove any dimension from the page by simply selecting them from the dropdown above the charts (see `green` boxes). You can also drill into leaderboards further (see `blue` box) to see all corresponding metrics for a specific dimension. Within that drilldown, you can also then sort by metric, search your dimensions, and/or [export data](exports.md). 
+
+
 :::info Search for individual attributes
+
 
 After drilling into a leaderboard (or what we sometimes refer to as a _toplist_ chart), rather than scrolling and finding an individual attribute (especially if the list is very long), you can also quickly search for a value and select / apply it to your dashboard by using the upper-right search box.
 

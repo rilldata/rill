@@ -60,7 +60,7 @@ You can easily check the version of Rill that you are using in Rill Developer by
 rill --version
 ```
 
-If you are on an older version of Rill, it is **strongly recommended** to [upgrade](home/install.md#upgrade-to-the-newest-version) to the latest version.
+If you are on an older version of Rill, it is **strongly recommended** to [upgrade](home/install.md#upgrade-to-the-newest-version-of-rill-developer) to the latest version.
 
 :::
 

@@ -44,7 +44,7 @@ When developing access policies, you can leverage a fixed set of user attributes
 
 Note: Rill requires users to confirm their email address before letting them interact with the platform so a user cannot fake an email address or email domain.
 
-If you require additional user attributes to enforce access policies, see the [example for custom attributes below](#advanced-example-custom-attributes) for more details.
+If you require additional user attributes to enforce access policies, see the [example for custom attributes below](#advanced-example-custom-attributes-embed-dashboards) for more details.
 
 ## Templating and expression evaluation
 

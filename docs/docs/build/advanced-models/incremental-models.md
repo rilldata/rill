@@ -16,17 +16,8 @@ Rill supports incremental models on either cloud storage or data warehouses but 
 
 See [our reference documentation](/reference/project-files/advanced-models) for more information.
 
-:::tip Support Paths for Incremental Models
-Incremental Modeling is in ongoing development, while we do have support for the following, please reach out to us if you have any specific requirements.
-
-Snowflake --> ClickHouse via [Staging Model](staging.md)
-
-S3 --> ClickHouse
-
-Snowflake/Athena/Redshift/Big Query --> DuckDB
-
-S3/GCS/Azure --> DuckDB
-
+:::tip Need help with getting Incremental Models set up?
+Please [reach out to us](contact.md) if you have any questions regarding incremental modeling! 
 :::
 
 ## Creating an Incremental Model
@@ -50,7 +41,7 @@ If you have late arriving data, you will need to keep this in mind when designin
 
 ### Incremental Models with State defined (*Optional*)
 
-If your data is not [partitioned](#what-are-partitions), you can define the incremental model with a predefined `state` parameter. This is only useful for mutli-connector incremental ingestion such as BigQuery to DuckDB.
+If your data is not [partitioned](./partitions.md), you can define the incremental model with a predefined `state` parameter. This is only useful for mutli-connector incremental ingestion such as BigQuery to DuckDB.
 
 ```yaml
 type: model

@@ -61,12 +61,13 @@ sql: SELECT * FROM read_parquet('{{ .partition.uri }}')
 
 Once `partitions:` is defined in your model, a new button will appear in the right hand panel, `View Partitions`. When selecting this, a new UI will appear with all of your partitions and more information on each. Note that these can be sorted on all, pending, and errors.
 
-![img](/img/tutorials/302/partitions-refresh-ui.png)
+<img src = '/img/build/advanced-models/partitions-developer.png' class='rounded-gif' />
+<br />
 
-You can sort the view on `all partitions`, `pending partitions` and `error partitions`. For any of these paritions, you can select 'Refresh Partition' to refresh. (This is only available for incremental partitioned models.)
-- all partitions will show all the available paritions in the model.
-- pending partitions will show the partitions that are waiting to be processed.
-- error partitions will display any partitions that errored during ingestion. 
+You can sort the view on `all partitions`, `pending partitions` and `error partitions`. 
+- **all partitions**: shows all the available paritions in the model.
+- **pending partitions**: shows the partitions that are waiting to be processed.
+- **error partitions**: displays any partitions that errored during ingestion. 
 
 
 ### Viewing Partitions in the CLI
@@ -99,6 +100,7 @@ rill project partitions model_name [--local]
   ...
 ```
 
+### Refreshing Partitions via the CLI 
 :::note  Incremental not enabled
 If you try to refresh a partition using the following command on a partitioned but not incremental model, you will experience the following error:
 ```
@@ -107,21 +109,4 @@ Error: can't refresh partitions on model "model_name" because it is not incremen
 ```
 :::
 
-
-You can manage partitions via the CLI using the `rill project partitions` command.
-```bash
-rill project partitions 
-List partitions for a model
-
-Usage:
-  rill project partitions [<project>] <model> [flags]
-
-Flags:
-      --project string      Project Name
-      --path string         Project directory (default ".")
-      --model string        Model Name
-      --pending             Only fetch pending partitions
-      --errored             Only fetch errored partitions
-      --local               Target locally running Rill
-      --page-size uint32    Number of partitions to return 
-```
+You will need to enable [incremental modeling](incremental-partitioned-models.md) in order to individually refresh a partition. 
