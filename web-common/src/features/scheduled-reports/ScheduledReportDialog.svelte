@@ -4,7 +4,6 @@
     createAdminServiceCreateReport,
     createAdminServiceEditReport,
     createAdminServiceGetCurrentUser,
-    ReportOptionsOpenMode,
   } from "@rilldata/web-admin/client";
   import * as Dialog from "@rilldata/web-common/components/dialog-v2";
   import {
@@ -115,11 +114,10 @@
                 ]
               : currentProtobufState,
             webOpenMode: isEdit
-              ? (((reportSpec?.annotations as V1ReportSpecAnnotations)[
+              ? ((reportSpec?.annotations as V1ReportSpecAnnotations)[
                   "web_open_mode"
-                ] as ReportOptionsOpenMode) ??
-                ReportOptionsOpenMode.OPEN_MODE_RECIPIENT) // Backwards compatibility
-              : ReportOptionsOpenMode.OPEN_MODE_CREATOR,
+                ] ?? "recipient") // Backwards compatibility
+              : "creator",
           },
         },
       });
