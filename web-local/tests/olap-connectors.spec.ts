@@ -1,14 +1,20 @@
 import { expect } from "@playwright/test";
 import { test } from "./setup/base";
-
-/**
- * These tests focus on form validation and YAML generation for OLAP connectors.
- * They don't test connections to live OLAP databases - that's handled by runtime integration tests.
- * Future work: Add tests using ClickHouse testcontainers for end-to-end validation.
- */
+import { ClickHouseTestContainer } from "./utils/clickhouse";
 
 test.describe("ClickHouse connector", () => {
   test.use({ project: "Blank" });
+
+  const clickhouse = new ClickHouseTestContainer();
+
+  test.beforeAll(async () => {
+    await clickhouse.start();
+    await clickhouse.seed();
+  });
+
+  test.afterAll(async () => {
+    await clickhouse.stop();
+  });
 
   test("Create connector using individual fields", async ({ page }) => {
     // Open the Add Data modal
@@ -22,7 +28,8 @@ test.describe("ClickHouse connector", () => {
     await page
       .getByRole("dialog", { name: "ClickHouse" })
       .getByRole("button", {
-        name: "Add data",
+        name: "Connect",
+        exact: true,
       })
       .click();
     await expect(page.getByText("Host is required")).toBeVisible();
@@ -36,9 +43,13 @@ test.describe("ClickHouse connector", () => {
     ).toBeVisible();
 
     // Now, fill in the form correctly
-    await page.getByRole("textbox", { name: "Host" }).fill("localhost");
+    await page
+      .getByRole("textbox", { name: "Host" })
+      .fill(clickhouse.getHost());
     await page.getByRole("textbox", { name: "Host" }).press("Tab");
-    await page.getByRole("textbox", { name: "Port (optional)" }).fill("8123");
+    await page
+      .getByRole("textbox", { name: "Port (optional)" })
+      .fill(clickhouse.getPort().toString());
     await page.getByRole("textbox", { name: "Port (optional)" }).press("Tab");
     await page
       .getByRole("textbox", { name: "Username (optional)" })
@@ -47,7 +58,7 @@ test.describe("ClickHouse connector", () => {
     // Submit the form
     await page
       .getByRole("dialog", { name: "ClickHouse" })
-      .getByRole("button", { name: "Add data" })
+      .getByRole("button", { name: "Connect", exact: true })
       .click();
 
     // Wait for navigation to the new file
@@ -59,8 +70,10 @@ test.describe("ClickHouse connector", () => {
       .getByRole("textbox");
     await expect(codeEditor).toContainText("type: connector");
     await expect(codeEditor).toContainText("driver: clickhouse");
-    await expect(codeEditor).toContainText('host: "localhost"');
-    await expect(codeEditor).toContainText("port: 8123");
+    await expect(codeEditor).toContainText(`host: "${clickhouse.getHost()}"`);
+    await expect(codeEditor).toContainText(
+      `port: ${clickhouse.getPort().toString()}`,
+    );
     await expect(codeEditor).toContainText('username: "default"');
 
     // Assert that the connector explorer now has a ClickHouse connector
@@ -89,12 +102,14 @@ test.describe("ClickHouse connector", () => {
     // Fill in the form correctly
     await page
       .getByRole("textbox", { name: "Connection string" })
-      .fill("http://localhost:8123?username=default&password=password");
+      .fill(
+        `http://${clickhouse.getHost()}:${clickhouse.getPort().toString()}?username=default`,
+      );
 
     // Submit the form
     await page
       .getByRole("dialog", { name: "ClickHouse" })
-      .getByRole("button", { name: "Add data" })
+      .getByRole("button", { name: "Connect", exact: true })
       .click();
 
     // Wait for navigation to the new file
@@ -114,7 +129,7 @@ test.describe("ClickHouse connector", () => {
     await page.getByRole("link", { name: ".env" }).click();
     const envEditor = page.getByLabel("codemirror editor").getByRole("textbox");
     await expect(envEditor).toContainText(
-      "connector.clickhouse.dsn=http://localhost:8123?username=default&password=password",
+      `connector.clickhouse.dsn=http://${clickhouse.getHost()}:${clickhouse.getPort().toString()}?username=default`,
     );
 
     // Go to the `rill.yaml` and verify the OLAP connector is set
