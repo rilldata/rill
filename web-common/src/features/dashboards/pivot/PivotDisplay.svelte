@@ -67,6 +67,7 @@
       {:else}
         <PivotTable
           {pivotDataStore}
+          overscan={60}
           config={pivotConfig}
           pivotState={pivotExploreState}
           setPivotExpanded={(expanded) =>

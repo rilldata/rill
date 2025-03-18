@@ -72,7 +72,8 @@
   {color}
   classes="{tabularNumber
     ? 'ui-copy-number'
-    : ''} w-full {customStyle} {inTable && 'block text-right'}"
+    : ''} w-full {customStyle} {inTable &&
+    'block text-right'} pointer-events-none"
   {dark}
 >
   <slot name="value">

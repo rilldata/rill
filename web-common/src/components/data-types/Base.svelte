@@ -8,7 +8,11 @@
   $: color = dark ? "" : color;
 </script>
 
-<span class:truncate class="{classes} {color}">
+<span
+  class:truncate
+  class:inline-block={!truncate}
+  class="whitespace-nowrap {classes} {color} break-normal pointer-events-none"
+>
   {#if isNull}
     <span class="text-gray-400">-</span>
   {:else}

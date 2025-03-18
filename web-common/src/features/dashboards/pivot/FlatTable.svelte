@@ -35,11 +35,9 @@
   export let totalRowSize: number;
 
   // Event handlers
-  export let onCellClick: (cell: Cell<PivotDataRow, unknown>) => void;
-  export let onCellHover: (
-    e: MouseEvent & { currentTarget: EventTarget & HTMLElement },
-  ) => void;
-  export let onCellLeave: () => void;
+  export let onCellClick: (e: MouseEvent) => void;
+  export let onMouseMove: (e: MouseEvent) => void;
+  export let onTableLeave: () => void;
   export let onCellCopy: (e: MouseEvent) => void;
 
   const HEADER_HEIGHT = 30;
@@ -131,7 +129,9 @@
   role="presentation"
   style:width="{totalLength}px"
   class:with-measure={measures.length > 0}
-  on:click={modified({ shift: onCellCopy })}
+  on:click={modified({ shift: onCellCopy, click: onCellClick })}
+  on:mousemove={onMouseMove}
+  on:mouseleave={onTableLeave}
 >
   <colgroup>
     {#each headers as header (header.id)}
@@ -191,38 +191,29 @@
               : cell.column.columnDef.cell}
           {@const isActive = isCellActive(cell)}
           <td
-            class="ui-copy-number"
+            class="ui-copy-number cell truncate"
             class:active-cell={isActive}
             class:interactive-cell={canShowDataViewer &&
               cell.getValue() !== undefined}
             class:text-right={getMeasureColumn(cell.column)}
-            on:click={() => onCellClick(cell)}
-            on:mouseenter={onCellHover}
-            on:mouseleave={onCellLeave}
+            class:border-r={hasBorderRight(cell.column.id)}
             data-value={cell.getValue()}
+            data-rowid={cell.row.id}
+            data-columnid={cell.column.id}
           >
-            <div
-              class="cell pointer-events-none truncate"
-              role="presentation"
-              class:border-r={hasBorderRight(cell.column.id)}
-            >
-              {#if result?.component && result?.props}
-                <svelte:component
-                  this={result.component}
-                  {...result.props}
-                  {assembled}
-                />
-              {:else if typeof result === "string" || typeof result === "number"}
-                {result}
-              {:else}
-                <svelte:component
-                  this={flexRender(
-                    cell.column.columnDef.cell,
-                    cell.getContext(),
-                  )}
-                />
-              {/if}
-            </div>
+            {#if result?.component && result?.props}
+              <svelte:component
+                this={result.component}
+                {...result.props}
+                {assembled}
+              />
+            {:else if typeof result === "string" || typeof result === "number"}
+              {result}
+            {:else}
+              <svelte:component
+                this={flexRender(cell.column.columnDef.cell, cell.getContext())}
+              />
+            {/if}
           </td>
         {/each}
       </tr>
