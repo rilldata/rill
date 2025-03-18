@@ -6,6 +6,7 @@
   export let inTable = false;
   export let dark = false;
   export let showPosSign = false;
+  export let color = "!text-gray-500";
   export let customStyle = "";
   export let value:
     | string
@@ -68,7 +69,7 @@
 <!-- FIXME: !color to override the .ui-copy class -->
 <Base
   {isNull}
-  color="!text-gray-500"
+  {color}
   classes="{tabularNumber
     ? 'ui-copy-number'
     : ''} w-full {customStyle} {inTable &&
