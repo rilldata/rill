@@ -113,7 +113,7 @@
       on:mouseleave={() => {
         if (!menuOpen) hoveredDivider.reset();
       }}
-      on:mouseenter={hover}
+      on:mouseenter={() => hover()}
     >
       <AddComponentDropdown
         {dividerId}
