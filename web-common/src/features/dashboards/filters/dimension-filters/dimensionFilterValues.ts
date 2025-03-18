@@ -2,6 +2,7 @@ import {
   type CompoundQueryResult,
   getCompoundAggregationQuery,
 } from "@rilldata/web-common/features/compound-query-result";
+import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-mode";
 import {
   createInExpression,
   createLikeExpression,
@@ -12,8 +13,9 @@ import {
 } from "@rilldata/web-common/runtime-client";
 
 type DimensionSearchArgs = {
-  searchText?: string;
-  values?: string[];
+  mode: DimensionFilterMode;
+  searchText: string;
+  values: string[];
   timeStart?: string;
   timeEnd?: string;
   enabled?: boolean;
@@ -22,9 +24,20 @@ export function useDimensionSearch(
   instanceId: string,
   metricsViewNames: string[],
   dimensionName: string,
-  { searchText, values, timeStart, timeEnd, enabled }: DimensionSearchArgs,
+  {
+    mode,
+    searchText,
+    values,
+    timeStart,
+    timeEnd,
+    enabled,
+  }: DimensionSearchArgs,
 ): CompoundQueryResult<string[]> {
-  const where = getFilterForSearchArgs(dimensionName, { searchText, values });
+  const where = getFilterForSearchArgs(dimensionName, {
+    mode,
+    searchText,
+    values,
+  });
 
   const queries = metricsViewNames.map((mvName) =>
     createQueryServiceMetricsViewAggregation(
@@ -58,9 +71,20 @@ export function useAllSearchResultsCount(
   instanceId: string,
   metricsViewNames: string[],
   dimensionName: string,
-  { searchText, values, timeStart, timeEnd, enabled }: DimensionSearchArgs,
+  {
+    mode,
+    searchText,
+    values,
+    timeStart,
+    timeEnd,
+    enabled,
+  }: DimensionSearchArgs,
 ): CompoundQueryResult<number | undefined> {
-  const where = getFilterForSearchArgs(dimensionName, { searchText, values });
+  const where = getFilterForSearchArgs(dimensionName, {
+    mode,
+    searchText,
+    values,
+  });
 
   const queries = metricsViewNames.map((mvName) =>
     createQueryServiceMetricsViewAggregation(
@@ -100,16 +124,14 @@ export function useAllSearchResultsCount(
 
 function getFilterForSearchArgs(
   dimensionName: string,
-  { searchText, values }: DimensionSearchArgs,
+  { mode, searchText, values }: DimensionSearchArgs,
 ) {
-  if (searchText) {
-    const addNull = searchText.length !== 0 && "null".includes(searchText);
-    return addNull
-      ? createInExpression(dimensionName, [null])
-      : createLikeExpression(dimensionName, `%${searchText}%`);
-  } else if (values?.length) {
+  if (mode === DimensionFilterMode.InList) {
     return createInExpression(dimensionName, values);
   }
 
-  return undefined;
+  const addNull = searchText.length !== 0 && "null".includes(searchText);
+  return addNull
+    ? createInExpression(dimensionName, [null])
+    : createLikeExpression(dimensionName, `%${searchText}%`);
 }

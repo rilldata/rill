@@ -8,12 +8,21 @@ import {
   mergeDimensionAndMeasureFilters,
   splitWhereFilter,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
-import type { DimensionFilterItem } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
+import {
+  applyDimensionBulkSearch,
+  applyDimensionSearch,
+} from "@rilldata/web-common/features/dashboards/state-managers/actions/dimension-filters";
+import {
+  type DimensionFilterItem,
+  getDimensionFilters,
+  getWhereFilterExpressionIndex,
+} from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import { filterItemsSortFunction } from "@rilldata/web-common/features/dashboards/state-managers/selectors/filters";
 import type { MeasureFilterItem } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measure-filters";
 import {
   createAndExpression,
   createInExpression,
+  createLikeExpression,
   forEachIdentifier,
   getValueIndexInExpression,
   getValuesInExpression,
@@ -246,25 +255,15 @@ export class Filters {
 
     this.getDimensionFilterItems = derived(this.whereFilter, ($whereFilter) => {
       return (dimensionIdMap: Map<string, MetricsViewSpecDimensionV2>) => {
-        if (!$whereFilter) return [];
-        const filteredDimensions: DimensionFilterItem[] = [];
-        const addedDimension = new Set<string>();
-
-        forEachIdentifier($whereFilter, (e, ident) => {
-          if (addedDimension.has(ident) || !dimensionIdMap.has(ident)) return;
-          const dim = dimensionIdMap.get(ident);
-          if (!dim) return;
-          addedDimension.add(ident);
-          const metricsViewNames = spec.getMetricsViewNamesForDimension(ident);
-          filteredDimensions.push({
-            name: ident,
-            label: getDimensionDisplayName(dim),
-            selectedValues: getValuesInExpression(e),
-            isInclude: e.cond?.op === V1Operation.OPERATION_IN,
-            metricsViewNames,
-          });
+        const dimensionFilters = getDimensionFilters(
+          dimensionIdMap,
+          $whereFilter,
+        );
+        dimensionFilters.forEach((dimensionFilter) => {
+          dimensionFilter.metricsViewNames =
+            spec.getMetricsViewNamesForDimension(dimensionFilter.name);
         });
-        return filteredDimensions.sort(filterItemsSortFunction);
+        return dimensionFilters;
       };
     });
 
@@ -441,6 +440,16 @@ export class Filters {
 
     const expr = wf.cond?.exprs?.[exprIndex];
     if (!expr?.cond?.exprs) return;
+    if (
+      expr.cond?.op === V1Operation.OPERATION_LIKE ||
+      expr.cond?.op === V1Operation.OPERATION_NLIKE
+    ) {
+      wf.cond?.exprs?.push(
+        createInExpression(dimensionName, [dimensionValue], !isInclude),
+      );
+      this.whereFilter.set(wf);
+      return;
+    }
 
     const inIdx = getValueIndexInExpression(expr, dimensionValue) as number;
     if (inIdx === -1) {
@@ -459,6 +468,50 @@ export class Filters {
           this.temporaryFilterName.set(dimensionName);
         }
       }
+    }
+    this.whereFilter.set(wf);
+  };
+
+  applyDimensionBulkSearch = (dimensionName: string, values: string[]) => {
+    const tempFilter = get(this.temporaryFilterName);
+    if (tempFilter !== null) {
+      this.temporaryFilterName.set(null);
+    }
+    const excludeMode = get(this.dimensionFilterExcludeMode);
+    const isInclude = !excludeMode.get(dimensionName);
+    const wf = get(this.whereFilter);
+
+    const expr = createInExpression(dimensionName, values, !isInclude);
+    (expr as any).isMatchList = true;
+
+    const exprIndex = get(this.getWhereFilterExpressionIndex)(dimensionName);
+    if (exprIndex === undefined || exprIndex === -1) {
+      wf.cond!.exprs!.push(expr);
+    } else {
+      wf.cond!.exprs![exprIndex] = expr;
+    }
+    this.whereFilter.set(wf);
+  };
+
+  applyDimensionSearch = (dimensionName: string, searchText: string) => {
+    const tempFilter = get(this.temporaryFilterName);
+    if (tempFilter !== null) {
+      this.temporaryFilterName.set(null);
+    }
+    const excludeMode = get(this.dimensionFilterExcludeMode);
+    const isInclude = !excludeMode.get(dimensionName);
+    const wf = get(this.whereFilter);
+
+    const expr = createLikeExpression(
+      dimensionName,
+      `%${searchText}%`,
+      !isInclude,
+    );
+    const exprIndex = get(this.getWhereFilterExpressionIndex)(dimensionName);
+    if (exprIndex === undefined || exprIndex === -1) {
+      wf.cond!.exprs!.push(expr);
+    } else {
+      wf.cond!.exprs![exprIndex] = expr;
     }
     this.whereFilter.set(wf);
   };

@@ -1,4 +1,5 @@
 import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
+import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-mode";
 import { useDimensionSearch } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimensionFilterValues";
 import { getDimensionDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
 import { filterItemsSortFunction } from "@rilldata/web-common/features/dashboards/state-managers/selectors/filters";
@@ -84,7 +85,9 @@ export const selectedDimensionValuesV2 = (
     dimExpr.cond.op === V1Operation.OPERATION_NLIKE
   ) {
     return useDimensionSearch(instanceId, metricsViewNames, dimensionName, {
+      mode: DimensionFilterMode.Contains,
       searchText: (dimExpr.cond?.exprs?.[1]?.val as string) ?? "",
+      values: [],
       timeStart,
       timeEnd,
       enabled: true,

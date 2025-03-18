@@ -35,6 +35,7 @@
   export let truncate = false;
   export let enableSearch = false;
   export let lockable = false;
+  export let noRightBorder = false;
   export let onChange: (value: string) => void = () => {};
 
   let searchText = "";
@@ -101,7 +102,7 @@
         `w-[${width}px]`} {minWidth && `min-w-[${minWidth}px]`} {ringFocus &&
         'focus:ring-2 focus:ring-primary-100'} {truncate
         ? 'break-all overflow-hidden'
-        : ''}"
+        : ''} {noRightBorder ? 'rounded-r-none border-r-0' : ''}"
     >
       <Select.Value
         {placeholder}

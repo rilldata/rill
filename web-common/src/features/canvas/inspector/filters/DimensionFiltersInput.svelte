@@ -36,6 +36,8 @@
   $: ({
     whereFilter,
     toggleDimensionValueSelection,
+    applyDimensionBulkSearch,
+    applyDimensionSearch,
     removeDimensionFilter,
     toggleDimensionFilterMode,
     setMeasureFilter,
@@ -145,7 +147,7 @@
         {#if isComplexFilter}
           <AdvancedFilter advancedFilter={$whereFilter} />
         {:else if allDimensionFilters.length || allMeasureFilters.length}
-          {#each allDimensionFilters as { name, label, selectedValues } (name)}
+          {#each allDimensionFilters as { name, label, selectedValues, isMatchList, searchText } (name)}
             {@const dimension = $allDimensions.find(
               (d) => d.name === name || d.column === name,
             )}
@@ -159,6 +161,8 @@
                   {name}
                   {label}
                   {selectedValues}
+                  {isMatchList}
+                  {searchText}
                   timeStart={new Date(0).toISOString()}
                   timeEnd={new Date().toISOString()}
                   timeControlsReady
@@ -167,6 +171,10 @@
                   onToggleFilterMode={() => toggleDimensionFilterMode(name)}
                   onSelect={(value) =>
                     toggleDimensionValueSelection(name, value, true)}
+                  onBulkSelect={(values) =>
+                    applyDimensionBulkSearch(name, values)}
+                  onSearch={(searchText) =>
+                    applyDimensionSearch(name, searchText)}
                 />
               {/if}
             </div>

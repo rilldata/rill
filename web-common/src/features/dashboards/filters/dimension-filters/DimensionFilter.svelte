@@ -15,6 +15,10 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
+  import {
+    DimensionFilterMode,
+    DimensionFilterModeOptions,
+  } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-mode";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { fly } from "svelte/transition";
   import {
@@ -47,69 +51,64 @@
 
   $: ({ instanceId } = $runtime);
 
-  enum SearchMode {
-    Select = "Select",
-    Search = "Search",
-    Bulk = "Bulk",
-  }
-  let mode: SearchMode = isMatchList
-    ? SearchMode.Bulk
+  let mode: DimensionFilterMode = isMatchList
+    ? DimensionFilterMode.InList
     : searchText?.length
-      ? SearchMode.Search
-      : SearchMode.Select;
+      ? DimensionFilterMode.Contains
+      : DimensionFilterMode.Select;
 
-  function updateBasedOnFilterSettings(
+  /**
+   * Reset filter settings based on params to the component.
+   */
+  function resetFilterSettings(
     isMatchList: boolean | undefined,
     sanitisedSearchText: string | undefined,
   ) {
     if (isMatchList) {
-      mode = SearchMode.Bulk;
+      mode = DimensionFilterMode.InList;
       curSearchText = selectedValues.join(",");
     } else if (sanitisedSearchText) {
-      mode = SearchMode.Search;
+      mode = DimensionFilterMode.Contains;
       curSearchText = sanitisedSearchText ?? "";
     } else {
-      mode = SearchMode.Select;
+      mode = DimensionFilterMode.Select;
       curSearchText = "";
     }
   }
-  $: updateBasedOnFilterSettings(isMatchList, sanitisedSearchText);
+  $: resetFilterSettings(isMatchList, sanitisedSearchText);
 
   function checkSearchText(searchText: string) {
     let values = searchText.split(BulkValueSplitRegex);
     if (values.length > 0 && values[values.length - 1] === "") {
+      // Remove the last empty value when the last character is a comma/newline
       values = values.slice(0, values.length - 1);
     }
 
     if (values.length <= 1) {
-      if (mode === SearchMode.Bulk) {
+      if (mode === DimensionFilterMode.InList) {
         searchedBulkValues = searchText === "" ? [] : values;
       }
       return;
     }
     searchedBulkValues = values;
-    mode = SearchMode.Bulk;
+    mode = DimensionFilterMode.InList;
   }
   $: checkSearchText(curSearchText);
 
   let searchedBulkValues: string[] = isMatchList ? selectedValues : [];
   $: enableSearchQuery =
     Boolean(timeControlsReady && open) &&
-    (mode === SearchMode.Select ||
-      (mode === SearchMode.Search && curSearchText.length > 0) ||
-      (mode === SearchMode.Bulk && searchedBulkValues.length > 0));
+    (mode === DimensionFilterMode.Select ||
+      (mode === DimensionFilterMode.Contains && curSearchText.length > 0) ||
+      (mode === DimensionFilterMode.InList && searchedBulkValues.length > 0));
   $: searchResultsQuery = useDimensionSearch(
     instanceId,
     metricsViewNames,
     name,
     {
-      ...(mode === SearchMode.Bulk
-        ? {
-            values: searchedBulkValues,
-          }
-        : {
-            searchText: curSearchText,
-          }),
+      mode,
+      values: searchedBulkValues,
+      searchText: curSearchText,
       timeStart,
       timeEnd,
       enabled: enableSearchQuery,
@@ -123,20 +122,16 @@
   $: correctedSearchResults = enableSearchQuery ? searchResults : [];
   $: enableSearchCountQuery =
     Boolean(timeControlsReady) &&
-    ((mode === SearchMode.Search && curSearchText.length > 0) ||
-      (mode === SearchMode.Bulk && searchedBulkValues.length > 0));
+    ((mode === DimensionFilterMode.Contains && curSearchText.length > 0) ||
+      (mode === DimensionFilterMode.InList && searchedBulkValues.length > 0));
   $: allSearchResultsCountQuery = useAllSearchResultsCount(
     instanceId,
     metricsViewNames,
     name,
     {
-      ...(mode === SearchMode.Bulk
-        ? {
-            values: searchedBulkValues,
-          }
-        : {
-            searchText: curSearchText,
-          }),
+      mode,
+      values: searchedBulkValues,
+      searchText: curSearchText,
       timeStart,
       timeEnd,
       enabled: enableSearchCountQuery,
@@ -148,15 +143,15 @@
     isFetching: isFetchingFromAllSearchResultsCount,
   } = $allSearchResultsCountQuery);
   $: searchResultCountText = enableSearchCountQuery
-    ? mode === SearchMode.Search
+    ? mode === DimensionFilterMode.Contains
       ? `${allSearchResultsCount} results`
       : `${allSearchResultsCount} of ${searchedBulkValues.length} matched`
     : "0 results";
 
   $: searchPlaceholder =
-    mode === SearchMode.Select
+    mode === DimensionFilterMode.Select
       ? "Enter search term or paste list of values"
-      : mode === SearchMode.Bulk
+      : mode === DimensionFilterMode.InList
         ? "Paste a list separated by commas or \\n"
         : "Enter a search term";
 
@@ -164,17 +159,20 @@
   $: isFetching =
     isFetchingFromSearchResults ?? isFetchingFromAllSearchResultsCount;
 
-  $: showExtraInfo = mode !== SearchMode.Select || curSearchText.length > 0;
+  $: showExtraInfo =
+    mode !== DimensionFilterMode.Select || curSearchText.length > 0;
 
   $: allSelected = Boolean(
     selectedValues.length &&
       correctedSearchResults?.length === selectedValues.length,
   );
   $: effectiveSelectedValues =
-    mode !== SearchMode.Bulk ? selectedValues : (correctedSearchResults ?? []);
+    mode !== DimensionFilterMode.InList
+      ? selectedValues
+      : (correctedSearchResults ?? []);
 
-  function handleModeChange(newMode: SearchMode) {
-    if (newMode !== SearchMode.Bulk) {
+  function handleModeChange(newMode: DimensionFilterMode) {
+    if (newMode !== DimensionFilterMode.InList) {
       searchedBulkValues = [];
     } else {
       checkSearchText(curSearchText);
@@ -192,7 +190,7 @@
         onRemove();
       } else {
         // reset the settings on unmount
-        updateBasedOnFilterSettings(isMatchList, sanitisedSearchText);
+        resetFilterSettings(isMatchList, sanitisedSearchText);
       }
     }
   }
@@ -206,17 +204,37 @@
   }
 
   function onApply() {
-    if (mode === SearchMode.Bulk) {
+    if (mode === DimensionFilterMode.InList) {
       onBulkSelect(searchedBulkValues);
       isMatchList = true;
       open = false;
-    } else if (mode === SearchMode.Search) {
+    } else if (mode === DimensionFilterMode.Contains) {
       onSearch(curSearchText);
       searchText = curSearchText;
       open = false;
     }
   }
+
+  // Pasting a text with new line is not supported in input element.
+  // So we need to manually replace newlines to commas.
+  function onPaste(e: ClipboardEvent) {
+    e.stopPropagation();
+    e.preventDefault();
+
+    const pastedData = e.clipboardData?.getData("Text");
+    if (!pastedData) return;
+
+    curSearchText = pastedData.replace(/[\n\r]/g, ",");
+  }
 </script>
+
+<svelte:window
+  on:keydown={(e) => {
+    if (e.key === "Enter") {
+      onApply();
+    }
+  }}
+/>
 
 <DropdownMenu.Root
   bind:open
@@ -254,12 +272,14 @@
           label={excludeMode ? `Exclude ${label}` : label}
           show={1}
           {smallChip}
-          values={mode === SearchMode.Bulk
+          values={mode === DimensionFilterMode.InList
             ? searchedBulkValues
             : effectiveSelectedValues}
           matchedCount={allSearchResultsCount}
           loading={isFetchingFromAllSearchResultsCount}
-          search={mode === SearchMode.Search ? curSearchText : undefined}
+          search={mode === DimensionFilterMode.Contains
+            ? curSearchText
+            : undefined}
         />
       </Chip>
       <div slot="tooltip-content" transition:fly={{ duration: 100, y: 4 }}>
@@ -274,50 +294,38 @@
     </Tooltip>
   </DropdownMenu.Trigger>
 
-  <!-- There will be some custom controls for this. Until we have the full design have a custom dropdown here. -->
+  <!-- This has significant differences with SearchableMenuContent with how search text is handled.
+       So we have a custom implementation here to not overload SearchableMenuContent unnecessarily. -->
   <DropdownMenu.Content
     align="start"
     class="flex flex-col max-h-96 w-[400px] overflow-hidden p-0"
   >
     <div class="flex flex-col px-3 pt-3">
       <div class="flex flex-row">
-        <!-- min-w-[82px] -->
+        <!-- min-w-[82px] We need this since the select component is adding ellipsis unnecessarily when label has a space. -->
         <Select
           id="search-mode"
           bind:value={mode}
-          options={[
-            {
-              value: SearchMode.Select,
-              label: "Select",
-              description: "Manually select values for this filter",
-            },
-            {
-              value: SearchMode.Search,
-              label: "Contains",
-              description: "Create a dynamic filter based on a search term",
-            },
-            {
-              value: SearchMode.Bulk,
-              label: "In List",
-              description: "Create a filter based on a list of values",
-            },
-          ]}
+          options={DimensionFilterModeOptions}
           onChange={handleModeChange}
           size="md"
           minWidth={82}
+          noRightBorder
         />
         <Search
           bind:value={curSearchText}
           label={`${name} search list`}
           showBorderOnFocus={false}
-          retailValueOnMount
+          noLeftBorder
+          retainValueOnMount
           placeholder={searchPlaceholder}
           on:submit={onApply}
+          on:paste={onPaste}
         />
       </div>
       {#if showExtraInfo}
         <div class="flex flex-row items-center justify-between pt-2 pb-1">
-          {#if mode !== SearchMode.Select}
+          {#if mode !== DimensionFilterMode.Select}
             <DropdownMenu.Label
               class="pb-0 uppercase text-[10px] text-gray-500"
               aria-label={`${name} result count`}
@@ -360,14 +368,17 @@
             {@const selected = effectiveSelectedValues.includes(name)}
             {@const label = name ?? "null"}
 
-            <DropdownMenu.CheckboxItem
-              class="text-xs cursor-pointer {mode !== SearchMode.Select
+            <svelte:component
+              this={mode === DimensionFilterMode.Select
+                ? DropdownMenu.CheckboxItem
+                : DropdownMenu.Item}
+              class="text-xs cursor-pointer {mode !== DimensionFilterMode.Select
                 ? 'pl-3'
                 : ''}"
               role="menuitem"
-              checked={mode === SearchMode.Select && selected}
+              checked={mode === DimensionFilterMode.Select && selected}
               showXForSelected={excludeMode}
-              disabled={mode !== SearchMode.Select}
+              disabled={mode !== DimensionFilterMode.Select}
               on:click={() => onSelect(name)}
             >
               <span>
@@ -377,7 +388,7 @@
                   {label}
                 {/if}
               </span>
-            </DropdownMenu.CheckboxItem>
+            </svelte:component>
           {:else}
             <div class="ui-copy-disabled text-center p-2 w-full">
               no results
@@ -397,7 +408,7 @@
         />
         <Label class="font-normal text-xs" for="include-exclude">Exclude</Label>
       </div>
-      {#if mode === SearchMode.Select}
+      {#if mode === DimensionFilterMode.Select}
         <Button on:click={onToggleSelectAll} type="plain" class="justify-end">
           {#if allSelected}
             Deselect all
