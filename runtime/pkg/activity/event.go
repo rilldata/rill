@@ -59,4 +59,11 @@ const (
 	BehavioralEventGithubConnectedSuccess = "ghconnected-success"
 	BehavioralEventDataAccessStart        = "dataaccess-start"
 	BehavioralEventDataAccessSuccess      = "dataaccess-success"
+
+// AI-related Behavioral Events
+// Note: This lists format will remain snake_case for consistency with the existing metrics.
+const (
+	BehavioralEventAIGeneratedRenderer    = "ai_generated_renderer"
+	BehavioralEventAIGeneratedMetricsView = "ai_generated_metrics_view_yaml"
+	BehavioralEventAIGeneratedResolver    = "ai_generated_resolver"
 )

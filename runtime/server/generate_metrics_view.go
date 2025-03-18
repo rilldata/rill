@@ -163,7 +163,8 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 		if err != nil {
 			attrs = append(attrs, attribute.String("error", err.Error()))
 		}
-		s.activity.Record(ctx, activity.EventTypeLog, "ai_generated_metrics_view_yaml", attrs...)
+		// Emit the event
+		s.activity.Record(ctx, activity.EventTypeLog, activity.BehavioralEventAIGeneratedMetricsView, attrs...)
 	}
 
 	// If we didn't manage to generate the YAML using AI, we fall back to the simple generator

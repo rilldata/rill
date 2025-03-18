@@ -54,7 +54,7 @@ func (s *Server) GenerateRenderer(ctx context.Context, req *runtimev1.GenerateRe
 		propsPB, err = structpb.NewStruct(props)
 	}
 
-	s.activity.Record(ctx, activity.EventTypeLog, "ai_generated_renderer",
+	s.activity.Record(ctx, activity.EventTypeLog, activity.BehavioralEventAIGeneratedRenderer,
 		attribute.Int("table_column_count", len(res.Schema().Fields)),
 		attribute.Int64("elapsed_ms", time.Since(start).Milliseconds()),
 		attribute.Bool("succeeded", err == nil),
