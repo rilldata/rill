@@ -36,7 +36,6 @@
 
   $: filteredMeasures = getFilteredMeasuresByMeasureCount(measures, count);
   $: visibleMeasuresCount = measures.length;
-  $: filteredMeasuresCount = filteredMeasures.length;
 
   // Workaround for feature flag `leaderboardMeasureCount`
   // If the sortByMeasure isn't in the filtered measures, we need to reset the sort
@@ -48,11 +47,13 @@
   }
 
   // Update count to match visible measures when filtered count is greater
-  $: if (visibleMeasuresCount < filteredMeasuresCount) {
+  $: if (visibleMeasuresCount < count) {
     onMeasureCountChange(visibleMeasuresCount);
   }
 
-  $: copyText = `Showing ${Math.min(count, visibleMeasuresCount)} measure${Math.min(count, visibleMeasuresCount) === 1 ? "" : "s"}`;
+  $: copyText = isHovered
+    ? `${Math.min(count, visibleMeasuresCount)} measure${Math.min(count, visibleMeasuresCount) === 1 ? "" : "s"}`
+    : `Showing ${Math.min(count, visibleMeasuresCount)} measure${Math.min(count, visibleMeasuresCount) === 1 ? "" : "s"}`;
 </script>
 
 <Button type="text" forcedStyle="width: 133px;">
