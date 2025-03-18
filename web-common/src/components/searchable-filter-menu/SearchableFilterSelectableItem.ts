@@ -1,6 +1,6 @@
 export interface SearchableFilterSelectableGroup {
   name: string;
-  label: string;
+  label?: string;
   items: SearchableFilterSelectableItem[];
 }
 
