@@ -1187,7 +1187,7 @@ func (c *connection) FindMagicAuthTokensWithUser(ctx context.Context, projectID 
 
 	where += " AND (t.expires_on IS NULL OR t.expires_on > now()) AND t.internal=false"
 
-	qry := fmt.Sprintf("SELECT t.*, u.email AS created_by_user_email FROM magic_auth_tokens t LEFT JOIN users u ON t.created_by_user_id=u.id WHERE %s ORDER BY t.id LIMIT $%d", where, n)
+	qry := fmt.Sprintf("SELECT t.*, COALESCE(u.email, '') AS created_by_user_email FROM magic_auth_tokens t LEFT JOIN users u ON t.created_by_user_id=u.id WHERE %s ORDER BY t.id LIMIT $%d", where, n)
 	args = append(args, limit)
 
 	var dtos []*magicAuthTokenWithUserDTO
@@ -1218,7 +1218,7 @@ func (c *connection) FindMagicAuthToken(ctx context.Context, id string, withSecr
 
 func (c *connection) FindMagicAuthTokenWithUser(ctx context.Context, id string) (*database.MagicAuthTokenWithUser, error) {
 	res := &magicAuthTokenWithUserDTO{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT t.*, u.email AS created_by_user_email FROM magic_auth_tokens t LEFT JOIN users u ON t.created_by_user_id=u.id WHERE t.id=$1 AND t.internal=false", id).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT t.*, COALESCE(u.email, '') AS created_by_user_email FROM magic_auth_tokens t LEFT JOIN users u ON t.created_by_user_id=u.id WHERE t.id=$1 AND t.internal=false", id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("magic auth token", err)
 	}
@@ -1936,7 +1936,9 @@ func (c *connection) InsertProjectInvite(ctx context.Context, opts *database.Ins
 		return err
 	}
 
-	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO project_invites (email, invited_by_user_id, project_id, project_role_id) VALUES ($1, $2, $3, $4)", opts.Email, opts.InviterID, opts.ProjectID, opts.RoleID)
+	_, err := c.getDB(ctx).ExecContext(ctx,
+		`INSERT INTO project_invites (email, org_invite_id, project_id, project_role_id, invited_by_user_id) VALUES ($1, $2, $3, $4, $5)`,
+		opts.Email, opts.OrgInviteID, opts.ProjectID, opts.RoleID, opts.InviterID)
 	if err != nil {
 		return parseErr("project invite", err)
 	}
