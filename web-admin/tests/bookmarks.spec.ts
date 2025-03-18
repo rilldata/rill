@@ -10,17 +10,17 @@ test.describe("Bookmarks", () => {
   test.describe.serial("Home bookmarks", () => {
     test("Should create a home bookmark", async ({ page }) => {
       // This would ideally be done in a beforeAll hook. But page fixture is not supported in that hook.
-      await page.goto("/e2e/openrtb/explore/auction_explore");
+      await page.goto("/e2e/openrtb/explore/auction_explore_bookmarks");
 
-      // Select "Last 14 days" as time range
+      // Select "Last 24 Hours" as time range
       await interactWithTimeRangeMenu(page, async () => {
-        await page.getByRole("menuitem", { name: "Last 14 Days" }).click();
+        await page.getByRole("menuitem", { name: "Last 24 Hours" }).click();
       });
 
       // Filter to "Not Available" "App Site Domain" via leaderboard
-      await page.getByRole("row", { name: "Not Available 158.5M" }).click();
+      await page.getByRole("row", { name: "Not Available 197.0k" }).click();
       // Filter to "Not Available" "Pub Name" via leaderboard
-      await page.getByRole("row", { name: "Not Available 98.7M" }).click();
+      await page.getByRole("row", { name: "Not Available 128.4k" }).click();
 
       // Open the bookmarks dropdown
       await page.getByLabel("Bookmark dropdown").click();
@@ -36,12 +36,12 @@ test.describe("Bookmarks", () => {
       await page.goto("/e2e/openrtb");
       // Navigate to the explore
       await page
-        .getByRole("link", { name: "Programmatic Ads Auction" })
+        .getByRole("link", { name: "Programmatic Ads Auction For Bookmarks" })
         .first()
         .click();
 
       // saved home bookmark is restored
-      await expect(page.getByText("Last 14 Days")).toBeVisible();
+      await expect(page.getByText("Last 24 Hours")).toBeVisible();
       await expect(
         page.getByText("App Site Domain Not Available"),
       ).toBeVisible();
@@ -49,7 +49,7 @@ test.describe("Bookmarks", () => {
       // make sure the url has the correct params
       assertUrlParams(
         page,
-        `tr=P14D&f=app_site_domain IN ('Not Available') AND pub_name IN ('Not Available')`,
+        `tr=PT24H&grain=hour&f=app_site_domain IN ('Not Available') AND pub_name IN ('Not Available')`,
       );
 
       // Open the bookmarks dropdown
@@ -69,7 +69,7 @@ test.describe("Bookmarks", () => {
     }) => {
       // Add random params. Home bookmark shouldnt apply
       await page.goto(
-        "/e2e/openrtb/explore/auction_explore?compare_tr=rill-PW&expand_dim=app_site_name",
+        "/e2e/openrtb/explore/auction_explore_bookmarks?compare_tr=rill-PW&expand_dim=app_site_name",
       );
       // Default time range is present
       await expect(page.getByText("Last 7 Days")).toBeVisible();
@@ -83,7 +83,7 @@ test.describe("Bookmarks", () => {
 
       // Remove all filters. Home Bookmarks shouldn't apply.
       // This is as per requirement where clearing filters should take the user to the default set of values.
-      await page.goto("/e2e/openrtb/explore/auction_explore");
+      await page.goto("/e2e/openrtb/explore/auction_explore_bookmarks");
       await expect(page.getByText("Last 7 Days")).toBeVisible();
       await expect(page.getByText("No filters selected")).toBeVisible();
       await expect(page.getByText("no comparison period")).toBeVisible();
@@ -98,16 +98,16 @@ test.describe("Bookmarks", () => {
   test.describe.serial("Filter-only bookmark", () => {
     test("Create filter-only bookmark", async ({ page }) => {
       // This would ideally be done in a beforeAll hook. But page fixture is not supported in that hook.
-      await page.goto("/e2e/openrtb/explore/auction_explore");
+      await page.goto("/e2e/openrtb/explore/auction_explore_bookmarks");
 
-      // Select "Last 4 weeks" as time range
+      // Select "Last 6 Hours" as time range
       await interactWithTimeRangeMenu(page, async () => {
-        await page.getByRole("menuitem", { name: "Last 4 weeks" }).click();
+        await page.getByRole("menuitem", { name: "Last 6 Hours" }).click();
       });
 
-      // Filter to "FuboTV" and "Sling" "App Site Name" via leaderboard
-      await page.getByRole("row", { name: "FuboTV 8.0M" }).click();
-      await page.getByRole("row", { name: "Sling 5.1M" }).click();
+      // Filter to "FuboTV" and "Philo" "App Site Name" via leaderboard
+      await page.getByRole("row", { name: "FuboTV 2.6k" }).click();
+      await page.getByRole("row", { name: "Philo 2.2k" }).click();
 
       // Enter dimension table "App Site Name"
       await page.getByText("App Site Domain").click();
@@ -123,7 +123,7 @@ test.describe("Bookmarks", () => {
 
       // Assert the selected filters
       await expect(page.getByLabel("Readonly Filter Chips")).toHaveText(
-        ` Last 4 Weeks    App Site Name FuboTV  +1 other   `,
+        ` Last 6 Hours    App Site Name FuboTV  +1 other   `,
       );
       // Create a personal bookmark
       await enterBookmarkDetails(
@@ -142,10 +142,10 @@ test.describe("Bookmarks", () => {
     test("Applying filter-only bookmark should not change other settings", async ({
       page,
     }) => {
-      await page.goto("/e2e/openrtb/explore/auction_explore");
+      await page.goto("/e2e/openrtb/explore/auction_explore_bookmarks");
 
       // Visit TDD
-      await page.getByRole("button", { name: "Requests 610M" }).click();
+      await page.getByRole("button", { name: "Requests 6.60M" }).click();
 
       // Open the bookmarks dropdown
       await page.getByLabel("Bookmark dropdown").click();
@@ -163,7 +163,7 @@ test.describe("Bookmarks", () => {
       await filterOnlyBookmarkLocator.click();
 
       // saved bookmark is restored
-      await expect(page.getByText("Last 4 Weeks")).toBeVisible();
+      await expect(page.getByText("Last 6 Hours")).toBeVisible();
       await expect(
         page.getByText("App Site Name FuboTV +1 other"),
       ).toBeVisible();
@@ -175,7 +175,7 @@ test.describe("Bookmarks", () => {
       // NOTE: comparison time range is not added for filter-only as per requirement
       assertUrlParams(
         page,
-        `view=tdd&tr=P4W&tz=UTC&f=app_site_name IN ('FuboTV','Sling')&measure=requests`,
+        `view=tdd&tr=PT6H&grain=hour&f=app_site_name IN ('FuboTV','Philo')&measure=requests`,
       );
     });
   });
@@ -183,16 +183,16 @@ test.describe("Bookmarks", () => {
   test.describe.serial("Complete bookmarks", () => {
     test("Create a complete bookmark.", async ({ page }) => {
       // This would ideally be done in a beforeAll hook. But page fixture is not supported in that hook.
-      await page.goto("/e2e/openrtb/explore/auction_explore");
+      await page.goto("/e2e/openrtb/explore/auction_explore_bookmarks");
 
-      // Select "Last 4 weeks" as time range
+      // Select "Last 6 Hours" as time range
       await interactWithTimeRangeMenu(page, async () => {
-        await page.getByRole("menuitem", { name: "Last 4 weeks" }).click();
+        await page.getByRole("menuitem", { name: "Last 6 Hours" }).click();
       });
 
-      // Filter to "FuboTV" and "Sling" "App Site Name" via leaderboard
-      await page.getByRole("row", { name: "FuboTV 8.0M" }).click();
-      await page.getByRole("row", { name: "Sling 5.1M" }).click();
+      // Filter to "FuboTV" and "Philo" "App Site Name" via leaderboard
+      await page.getByRole("row", { name: "FuboTV 2.6k" }).click();
+      await page.getByRole("row", { name: "Philo 2.2k" }).click();
 
       // Enter dimension table "App Site Name"
       await page.getByText("App Site Domain").click();
@@ -208,7 +208,7 @@ test.describe("Bookmarks", () => {
 
       // Assert the selected filters
       await expect(page.getByLabel("Readonly Filter Chips")).toHaveText(
-        ` Last 4 Weeks    App Site Name FuboTV  +1 other   `,
+        ` Last 6 Hours    App Site Name FuboTV  +1 other   `,
       );
       // Create a personal bookmark
       await enterBookmarkDetails(
@@ -227,10 +227,10 @@ test.describe("Bookmarks", () => {
     test("Applying complete bookmark replaces every setting", async ({
       page,
     }) => {
-      await page.goto("/e2e/openrtb/explore/auction_explore");
+      await page.goto("/e2e/openrtb/explore/auction_explore_bookmarks");
 
       // Visit TDD
-      await page.getByRole("button", { name: "Requests 610M" }).click();
+      await page.getByRole("button", { name: "Requests 6.60M" }).click();
 
       // Open the bookmarks dropdown
       await page.getByLabel("Bookmark dropdown").click();
@@ -248,7 +248,7 @@ test.describe("Bookmarks", () => {
       await filterOnlyBookmarkLocator.click();
 
       // saved bookmark is restored
-      await expect(page.getByText("Last 4 Weeks")).toBeVisible();
+      await expect(page.getByText("Last 6 Hours")).toBeVisible();
       await expect(page.getByText("Previous period")).toBeVisible();
       await expect(
         page.getByText("App Site Name FuboTV +1 other"),
@@ -263,7 +263,7 @@ test.describe("Bookmarks", () => {
       // make sure the url has the correct params
       assertUrlParams(
         page,
-        `tr=P4W&compare_tr=rill-PP&f=app_site_name IN ('FuboTV','Sling')&expand_dim=app_site_domain`,
+        `tr=PT6H&compare_tr=rill-PP&grain=hour&f=app_site_name IN ('FuboTV','Philo')&expand_dim=app_site_domain`,
       );
     });
   });

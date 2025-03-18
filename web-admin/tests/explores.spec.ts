@@ -7,13 +7,13 @@ test.describe("Explores", () => {
 
     // Navigate to the explore
     await page
-      .getByRole("link", { name: "Programmatic Ads Bids" })
+      .getByRole("link", { name: "Programmatic Ads Auction" })
       .first()
       .click();
 
     // Check the Big Number
     await expect(
-      page.getByRole("button", { name: "Advertising Spend Overall $1.41M" }),
+      page.getByRole("button", { name: "Requests 6.60M" }),
     ).toBeVisible();
   });
 });
