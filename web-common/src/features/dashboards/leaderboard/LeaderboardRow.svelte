@@ -251,7 +251,7 @@
     })}
     class="relative size-full flex flex-none justify-between items-center leaderboard-label"
   >
-    <FormattedDataType value={dimensionValue} truncate color="text-gray-500" />
+    <FormattedDataType value={dimensionValue} truncate />
 
     {#if previousValueString && hovered}
       <span
