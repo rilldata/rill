@@ -9,6 +9,7 @@
     type V1ConnectorDriver,
   } from "@rilldata/web-common/runtime-client";
   import type { ActionResult } from "@sveltejs/kit";
+  import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
   import {
     defaults,
@@ -27,6 +28,7 @@
   import { dsnSchema, getYupSchema } from "./yupSchemas";
 
   const FORM_TRANSITION_DURATION = 150;
+  const dispatch = createEventDispatcher();
 
   export let connector: V1ConnectorDriver;
   export let formType: AddDataFormType;
@@ -87,7 +89,10 @@
 
   // Active form
   $: formId = useDsn ? dsnFormId : paramsFormId;
-  $: submitting = useDsn ? dsnSubmitting : paramsSubmitting;
+  $: submitting = useDsn ? $dsnSubmitting : $paramsSubmitting;
+
+  // Emit the submitting state to the parent
+  $: dispatch("submitting", { submitting });
 
   function handleConnectionTypeChange(e: CustomEvent<any>): void {
     useDsn = e.detail === "dsn";
@@ -268,9 +273,9 @@
 
   <div class="flex items-center space-x-2 ml-auto">
     <Button on:click={onBack} type="secondary">Back</Button>
-    <Button disabled={$submitting} form={formId} submitForm type="primary">
+    <Button disabled={submitting} form={formId} submitForm type="primary">
       {#if isConnectorForm}
-        {#if $submitting}
+        {#if submitting}
           Testing connection...
         {:else}
           Connect
