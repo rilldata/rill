@@ -1,10 +1,14 @@
 import type { StateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
 import { createPivotDataStore } from "@rilldata/web-common/features/dashboards/pivot/pivot-data-store";
-import { canEnablePivotComparison } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
+import {
+  canEnablePivotComparison,
+  isTimeDimension,
+} from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
 import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
+  PivotChipType,
   type PivotDashboardContext,
   type PivotDataStoreConfig,
   type PivotState,
@@ -175,3 +179,23 @@ export const usePivotForCanvas = (
 
   return pivotDataStore;
 };
+
+export function tableFieldMapper(
+  fields: string[],
+  timeDimension: string | undefined,
+) {
+  return fields.map((field) => {
+    if (timeDimension && isTimeDimension(field, timeDimension)) {
+      return {
+        id: field,
+        title: field,
+        type: PivotChipType.Time,
+      };
+    }
+    return {
+      id: field,
+      title: field,
+      type: PivotChipType.Dimension,
+    };
+  });
+}

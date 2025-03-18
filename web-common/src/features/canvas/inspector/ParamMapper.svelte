@@ -86,15 +86,13 @@
             }}
           />
 
-          <!-- MULTIPLE MEASURE / MULTIPLE DIMENSION -->
-        {:else if metricsView && (config.type === "multi_measures" || config.type === "multi_dimensions")}
+          <!-- MULTIPLE MEASURE / MULTIPLE DIMENSION / MULTIPLE FIELDS -->
+        {:else if metricsView && config.type === "multi_fields"}
           <MultiFieldInput
             label={config.label ?? key}
             metricName={metricsView}
             id={key}
-            type={config.type === "multi_measures"
-              ? ["measure"]
-              : ["dimension"]}
+            types={config.meta?.allowedTypes ?? ["measure", "dimension"]}
             selectedItems={localParamValues[key]}
             onMultiSelect={async (field) => {
               component.updateProperty(key, field);

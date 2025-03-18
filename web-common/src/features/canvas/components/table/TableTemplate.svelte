@@ -8,7 +8,6 @@
   import PivotError from "@rilldata/web-common/features/dashboards/pivot/PivotError.svelte";
   import PivotTable from "@rilldata/web-common/features/dashboards/pivot/PivotTable.svelte";
   import {
-    PivotChipType,
     type PivotDataStore,
     type PivotState,
   } from "@rilldata/web-common/features/dashboards/pivot/types";
@@ -16,7 +15,12 @@
   import { onDestroy } from "svelte";
   import { writable, type Readable } from "svelte/store";
   import { validateTableSchema } from "./selector";
-  import { clearTableCache, getTableConfig, usePivotForCanvas } from "./util";
+  import {
+    clearTableCache,
+    getTableConfig,
+    tableFieldMapper,
+    usePivotForCanvas,
+  } from "./util";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
   export let timeAndFilterStore: Readable<TimeAndFilterStore>;
@@ -37,6 +41,7 @@
     activeCell: null,
   });
 
+  const { getMetricsViewFromName } = ctx.canvasEntity.spec;
   let pivotDataStore: PivotDataStore | undefined;
 
   $: tableSpec = rendererProperties as TableSpec;
@@ -46,6 +51,8 @@
   $: colDimensions = tableSpec.col_dimensions || [];
   $: rowDimensions = tableSpec.row_dimensions || [];
 
+  $: metricViewSpec = getMetricsViewFromName(tableSpec.metrics_view);
+
   $: schema = validateTableSchema(ctx, tableSpec);
 
   $: if (tableSpec && $schema.isValid) {
@@ -54,22 +61,10 @@
       sorting: [],
       expanded: {},
       columns: [
-        ...colDimensions.map((dimension) => ({
-          id: dimension,
-          title: dimension,
-          type: PivotChipType.Dimension,
-        })),
-        ...measures.map((measure) => ({
-          id: measure,
-          title: measure,
-          type: PivotChipType.Measure,
-        })),
+        ...tableFieldMapper(colDimensions, $metricViewSpec?.timeDimension),
+        ...tableFieldMapper(measures, $metricViewSpec?.timeDimension),
       ],
-      rows: rowDimensions.map((dimension) => ({
-        id: dimension,
-        title: dimension,
-        type: PivotChipType.Dimension,
-      })),
+      rows: tableFieldMapper(rowDimensions, $metricViewSpec?.timeDimension),
     }));
   }
 

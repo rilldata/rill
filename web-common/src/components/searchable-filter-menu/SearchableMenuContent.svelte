@@ -14,6 +14,7 @@
   export let fadeUnselected = false;
   export let showXForSelected = false;
   export let showSelection = false;
+  export let allowSelectAll = true;
   export let searchText = "";
   export let showHiddenSelectionsCount = false;
   export let onSelect: (name: string) => void;
@@ -128,7 +129,7 @@
     {/each}
   </div>
 
-  {#if allowMultiSelect}
+  {#if allowSelectAll && allowMultiSelect}
     <footer>
       <Button on:click={onToggleSelectAll} type="plain">
         {#if allSelected}

@@ -49,12 +49,21 @@ export class TableCanvasComponent extends BaseCanvasComponent<TableSpec> {
     return {
       options: {
         metrics_view: { type: "metrics", label: "Metrics view" },
-        measures: { type: "multi_measures", label: "Measures" },
-        col_dimensions: {
-          type: "multi_dimensions",
-          label: "Column dimensions",
+        measures: {
+          type: "multi_fields",
+          label: "Measures",
+          meta: { allowedTypes: ["measure"] },
         },
-        row_dimensions: { type: "multi_dimensions", label: "Row dimensions" },
+        col_dimensions: {
+          type: "multi_fields",
+          label: "Column dimensions",
+          meta: { allowedTypes: ["time", "dimension"] },
+        },
+        row_dimensions: {
+          type: "multi_fields",
+          label: "Row dimensions",
+          meta: { allowedTypes: ["time", "dimension"] },
+        },
         ...commonOptions,
       },
       filter: getFilterOptions(true, false),

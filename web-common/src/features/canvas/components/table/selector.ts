@@ -4,6 +4,7 @@ import {
   validateMeasures,
 } from "@rilldata/web-common/features/canvas/components/validators";
 import type { StateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+import { isTimeDimension } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
 import { type Readable, derived } from "svelte/store";
 
 export function validateTableSchema(
@@ -43,9 +44,17 @@ export function validateTableSchema(
         };
       }
 
+      const allDimensions = rowDimensions
+        .concat(colDimensions)
+        .filter(
+          (d) =>
+            !metricsView.timeDimension ||
+            !isTimeDimension(d, metricsView.timeDimension),
+        );
+
       const validateDimensionsRes = validateDimensions(
         metricsView,
-        rowDimensions.concat(colDimensions),
+        allDimensions,
       );
 
       if (!validateDimensionsRes.isValid) {

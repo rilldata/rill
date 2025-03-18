@@ -5,18 +5,15 @@
   import type { SearchableFilterSelectableGroup } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
   import SearchableMenuContent from "@rilldata/web-common/components/searchable-filter-menu/SearchableMenuContent.svelte";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-  import {
-    getDimensionDisplayName,
-    getMeasureDisplayName,
-  } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
   import { PlusIcon } from "lucide-svelte";
-  import { useMetricFieldData, type FieldType } from "./selectors";
-
+  import { useMetricFieldData } from "./selectors";
+  import type { FieldType } from "./types";
   export let metricName: string;
   export let label: string;
   export let id: string;
   export let selectedItems: string[] = [];
-  export let type: FieldType[];
+  export let types: FieldType[];
+
   export let onMultiSelect: (items: string[]) => void = () => {};
 
   let open = false;
@@ -26,33 +23,47 @@
 
   const ctx = getCanvasStateManagers();
 
-  const metricViewSpec =
-    ctx.canvasEntity.spec.getMetricsViewFromName(metricName);
-
-  $: fieldData = useMetricFieldData(ctx, metricName, type);
+  $: fieldData = useMetricFieldData(ctx, metricName, types);
 
   $: selectableGroups = [
-    ...(type.includes("measure")
+    ...(types.includes("measure")
       ? [
           <SearchableFilterSelectableGroup>{
             name: "MEASURES",
-            items:
-              $metricViewSpec?.measures?.map((m) => ({
-                name: m.name as string,
-                label: getMeasureDisplayName(m),
-              })) ?? [],
+            items: $fieldData.items
+              .filter((item) => $fieldData.displayMap[item]?.type === "measure")
+              .map((item) => ({
+                name: item,
+                label: $fieldData.displayMap[item].label,
+              })),
           },
         ]
       : []),
-    ...(type.includes("dimension")
+    ...(types.includes("time")
+      ? [
+          <SearchableFilterSelectableGroup>{
+            name: "TIME",
+            items: $fieldData.items
+              .filter((item) => $fieldData.displayMap[item]?.type === "time")
+              .map((item) => ({
+                name: item,
+                label: $fieldData.displayMap[item].label,
+              })),
+          },
+        ]
+      : []),
+    ...(types.includes("dimension")
       ? [
           <SearchableFilterSelectableGroup>{
             name: "DIMENSIONS",
-            items:
-              $metricViewSpec?.dimensions?.map((d) => ({
-                name: (d.name || d.column) as string,
-                label: getDimensionDisplayName(d),
-              })) ?? [],
+            items: $fieldData.items
+              .filter(
+                (item) => $fieldData.displayMap[item]?.type === "dimension",
+              )
+              .map((item) => ({
+                name: item,
+                label: $fieldData.displayMap[item].label,
+              })),
           },
         ]
       : []),
@@ -97,8 +108,8 @@
       {selectableGroups}
       selectedItems={[localSelectedItems]}
       allowMultiSelect={true}
-      requireSelection
       searchText={searchValue}
+      allowSelectAll={false}
       onSelect={handleSelect}
     />
   </DropdownMenu.Root>
