@@ -93,11 +93,7 @@ export function mapQueryToDashboard(
       ),
     ],
     ([validSpecResp, timeRangeSummary], set) => {
-      if (
-        !validSpecResp.data?.metricsView ||
-        !validSpecResp.data?.explore ||
-        !timeRangeSummary.data
-      ) {
+      if (validSpecResp.isFetching || timeRangeSummary.isFetching) {
         set({
           isFetching: true,
           error: "",
@@ -106,11 +102,33 @@ export function mapQueryToDashboard(
       }
 
       if (validSpecResp.error || timeRangeSummary.error) {
-        // error state
         set({
           isFetching: false,
           error:
-            validSpecResp.error?.message ?? timeRangeSummary.error?.message,
+            validSpecResp.error?.response?.data?.message ??
+            timeRangeSummary.error?.response?.data?.message,
+        });
+        return;
+      }
+
+      // Type guard
+      if (
+        !validSpecResp.data ||
+        !validSpecResp.data.explore ||
+        !validSpecResp.data.metricsView
+      ) {
+        set({
+          isFetching: false,
+          error: "Failed to fetch explore.",
+        });
+        return;
+      }
+
+      // Type guard
+      if (!timeRangeSummary.data) {
+        set({
+          isFetching: false,
+          error: "Failed to fetch time range summary.",
         });
         return;
       }

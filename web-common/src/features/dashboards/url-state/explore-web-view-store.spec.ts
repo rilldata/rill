@@ -340,6 +340,6 @@ function getUrlForWebView(
       ),
       defaultExplorePreset,
       newUrl,
-    ) + (additionalParams ?? "");
+    ).toString() + (additionalParams ?? "");
   return newUrl;
 }

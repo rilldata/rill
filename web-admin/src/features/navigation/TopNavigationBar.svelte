@@ -24,8 +24,6 @@
   import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
   import { useDashboardsV2 } from "../dashboards/listing/selectors";
   import PageTitle from "../public-urls/PageTitle.svelte";
-  import { createAdminServiceGetMagicAuthToken } from "../public-urls/get-magic-auth-token";
-  import { usePublicURLExplore } from "../public-urls/selectors";
   import { useReports } from "../scheduled-reports/selectors";
   import {
     isMetricsExplorerPage,
@@ -45,14 +43,7 @@
 
   // These can be undefined
   $: ({
-    params: {
-      organization,
-      project,
-      dashboard: dashboardParam,
-      alert,
-      report,
-      token,
-    },
+    params: { organization, project, dashboard, alert, report },
   } = $page);
 
   $: onProjectPage = isProjectPage($page);
@@ -150,26 +141,15 @@
     report ? reportPaths : alert ? alertPaths : null,
   ];
 
-  $: dashboardQuery = useExplore(instanceId, dashboardParam, {
-    enabled: !!instanceId && onMetricsExplorerPage,
+  $: exploreQuery = useExplore(instanceId, dashboard, {
+    enabled: !!instanceId && !!dashboard,
   });
-  $: exploreSpec = $dashboardQuery.data?.explore?.explore?.state?.validSpec;
+  $: exploreSpec = $exploreQuery.data?.explore?.explore?.state?.validSpec;
   $: isDashboardValid = !!exploreSpec;
 
-  // Public URLs do not have the resource name in the URL. However, the magic token's metadata includes the resource name.
-  $: tokenQuery = createAdminServiceGetMagicAuthToken(token);
-  $: dashboard = onPublicURLPage
-    ? $tokenQuery?.data?.token?.resourceName
-    : dashboardParam;
-
-  // If on a Public URL, get the dashboard title
-  $: exploreQuery = usePublicURLExplore(
-    instanceId,
-    $tokenQuery?.data?.token?.resourceName,
-    onPublicURLPage,
-  );
   $: publicURLDashboardTitle =
-    $exploreQuery.data?.explore?.spec?.displayName || dashboard || "";
+    $exploreQuery.data?.explore?.explore?.state?.validSpec?.displayName ||
+    dashboard;
 
   $: currentPath = [organization, project, dashboard, report || alert];
 </script>
@@ -205,7 +185,7 @@
     {#if onProjectPage && manageProjectMembers}
       <ShareProjectPopover {organization} {project} />
     {/if}
-    {#if (onMetricsExplorerPage && isDashboardValid) || onPublicURLPage}
+    {#if onMetricsExplorerPage && isDashboardValid}
       {#if exploreSpec}
         {#key dashboard}
           <StateManagersProvider
