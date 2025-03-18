@@ -52,9 +52,9 @@ so instantiating these directly clears a ton of warnings
 about unknown props.
 -->
 {#if type === "RILL_PERCENTAGE_CHANGE" && typeof value !== "boolean"}
-  <PercentageChange {value} {isNull} {inTable} {customStyle} {dark} {color} />
+  <PercentageChange {value} {isNull} {inTable} {customStyle} {dark} />
 {:else if type === "RILL_CHANGE"}
-  <MeasureChange {value} {inTable} {customStyle} {dark} {color} />
+  <MeasureChange {value} {inTable} {customStyle} {dark} />
 {:else}
   <svelte:component
     this={dataType}

@@ -4,7 +4,6 @@
   export let inTable = false;
   export let dark = false;
   export let customStyle = "";
-  export let color = "";
   export let value;
 
   let isNull = false;
@@ -13,12 +12,13 @@
   }
 </script>
 
+<!-- FIXME: !color to override the .ui-copy class -->
 <Base
   {isNull}
+  color="!text-gray-500"
   classes="ui-copy-number w-full font-normal {customStyle} {inTable &&
     'block text-right'}"
   {dark}
-  {color}
 >
   {value}
 </Base>
