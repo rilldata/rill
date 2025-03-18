@@ -14,7 +14,7 @@ There are two ways to define an OLAP engine within Rill.
 
 The OLAP engine set on the dashboard will take precedence over the project-level defined OLAP engine.
 
-## Available OLAP Engines
+## Supported OLAP Engines
 
 Rill supports the use of several different OLAP engines to power your dashboards in Rill, including:
 - [DuckDB](/reference/olap-engines/duckdb.md)
@@ -25,6 +25,13 @@ Rill supports the use of several different OLAP engines to power your dashboards
 :::note Additional OLAP Engines
 Rill is continually evaluating additional OLAP engines that can be added. For a full list of OLAP engines that we support, you can refer to our [OLAP Engines](/reference/olap-engines) page. If you don't see an OLAP engine that you'd like to use, please don't hesitate to [reach out](contact.md)!
 :::
+
+## Multiple OLAP Engines in a single project
+
+Rill supports the use of multiple OLAP engines in a single project with some limitations. For more detailed information, see our reference on [multiple olap engines](../../reference/olap-engines/multiple-olap). The basic use cases for multiple engines in a single project is: 
+
+1. Using Rill on top of already created and optimized tables from different OLAP sources.
+2. Separating data based on size as performance on different engines differ based on the size of the data.
 
 ## Externally Hosted Services
 If you have a firewall in front of your externally hosted service, you will need to whitelist the below IP addresses. This will allow you to connect to/from your service once your project is deployed to Rill Cloud. 

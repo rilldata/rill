@@ -26,7 +26,11 @@ These limits can be configured in the `.yaml` file for the source. To modify the
 
 For example, to set the limit on the total bytes downloaded to 1GB, you would add the following line to the `source.yaml` file:
 ```yaml
+type: "duckdb"
+sql: "select * from table"
+
 glob.max_total_size: 1073741824
+glob.max_objects_matched: 100000000
 ```
 
 ## Extract policies

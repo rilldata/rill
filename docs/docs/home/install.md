@@ -1,18 +1,18 @@
 ---
-title: How to install Rill
+title: How to install Rill Developer
 sidebar_label: Install Rill
 sidebar_position: 15
 ---
 
-## Install Rill
+## Quick Install
 
-You can install `rill` using our installation script:
+You can install `rill` using our installation script on both macOS and Linux:
 
 ```bash
 curl https://rill.sh | sh
 ```
 
-Verify that the installation succeeded:
+To verify that the installation succeeded, run the following command. You will see an output of various commnds that you can run via the CLI.
 ```bash
 rill --help
 ```
@@ -23,16 +23,22 @@ If you plan to share your dashboards, it is helpful to start by creating a repo 
 More details on deploying Rill via Git in our [Deploy section](../deploy/deploy-dashboard/).
 :::
 
-### Rill Version
+:::warning MacOS users
 
-You can check the current version of rill from the CLI by running:
+If you previously installed Rill using `brew`, *the brew-managed binary will take precedent*. You can remove it by running `brew uninstall rill`.
+
+:::
+
+### Checking Rill Version
+
+You can check the current version of rill from the CLI by running the following command:
 ```bash
 rill version
 ```
 
-### Upgrade to the newest version
+### Upgrade to the newest version of Rill Developer
 
-To ensure you're on the latest version of Rill, you can upgrade Rill Developer easily via the command line.
+To ensure you're on the latest version of Rill and enjoying all of our newest features, you can upgrade Rill Developer easily via the command line.
 
 ```bash
 rill upgrade
@@ -51,14 +57,9 @@ On both macOS and Linux, you can install the latest nightly build using the inst
 curl https://rill.sh | sh -s -- --nightly
 ```
 
-:::warning MacOS users
-
-If you previously installed Rill using `brew`, *the brew-managed binary will take precedent*. You can remove it by running `brew uninstall rill`.
-
-:::
 
 ### What is nightly release?
-The nightly release will give you the most up-to-date version of Rill without having to wait for the official release. As these releases are not fully ready for production, you may encounter some issues.
+The nightly release will give you the most up-to-date version of Rill without having to wait for the official release. As these releases are not fully ready for production, you may encounter some issues. Also, version mismatching from Rill Developer to Rill Cloud may result in broken components as Rill Cloud is on the previous stable release. 
 
 
 ## Installing a specific version of Rill
@@ -83,13 +84,13 @@ We have verified that Rill runs on Ubuntu 22.04 LTS. Other distributions and ver
 wsl --install -d Ubuntu-22.04
 ```
 
-Once you have installed WSL and logged in to your Linux instance, you just need to install the `unzip` package to use Rill's `curl` installer. This can be done from the Linux command line with the following commands:
+Once you have installed WSL and logged in to your Linux instance, you just need to install the `unzip` package to use Rill's `curl` installer. This can be done from the **Linux command line** with the following commands:
 ```bash
 sudo apt-get update
 sudo apt-get install unzip
 ```
 
-With `unzip` installed, you're ready to install Rill. Just run:
+With `unzip` installed, you're ready to install Rill Developer by running the following command:
 ```bash
 curl https://rill.sh | sh
 ```

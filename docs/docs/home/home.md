@@ -21,10 +21,10 @@ If you're looking for a in-depth tutorial that walks you through our available f
 
 Some of the Tutorials include:
 
-- [From Source to Deployment in 5 steps!](../tutorials/rill_basics/launch) : Data Import, Transformation, Dashboard, to Deployment!
+- [From Source to Deployment in 6 steps!](../tutorials/rill_basics/launch) : Data Import, Transformation, Dashboard, to Deployment!
 - [How to Administrate Rill](../tutorials/administration/) : Administrative tasks from the CLI and UI that an administrator would need to know to be a Rill Administrator
 - [Rill and ClickHouse](../tutorials/rill_clickhouse/r_ch_launch) : For our friends coming from ClickHouse, get started in **4 steps**.
-- Rill's Advanced Features : Coming soon!
+- [Rill's Advanced Features](../tutorials/rill_advanced_features/overview) : Customize your Rill Experience with our advanced features! 
 
 The final project is available on our [example repository](https://github.com/rilldata/rill-examples/tree/main/my-rill-tutorial). 
 

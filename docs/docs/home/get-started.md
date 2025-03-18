@@ -7,7 +7,6 @@ import Video from '@site/src/components/Video';
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
-## Quickstart
 
 Run the following from the CLI to install and start Rill. Select a sample project from the UI or add your own data.
 ```
@@ -42,9 +41,7 @@ rill start my-rill-project
 
 ## Example Projects Repository
 
-We have created several example projects that highlight common use cases for Rill. 
-
-The monorepo for these examples can be found at: https://github.com/rilldata/rill-examples/
+Take a look at our [public repository](https://github.com/rilldata/rill-examples/) for examples on getting started with Rill! 
 
 Each example project includes a ReadMe with more details on:
 

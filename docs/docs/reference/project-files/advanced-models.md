@@ -46,7 +46,21 @@ partitions:
     path: [s3/gs]://path/to/file/**/*.parquet[.csv]
 ```
 
+**`pre_exec`** - refers to a SQL querys to run before the main query, avaialble for DuckDB based models _(optional)_. 
+
+**`post_exec`** - refers to a SQL query that is run after the main query, available for DuckDB based models _(optional)_. 
+
 **`sql`** - refers to the SQL query for your model. _(required)_.
+
+
+```yaml
+pre_exec: ATTACH 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES);
+
+sql: SELECT * FROM postgres_query('postgres_db', 'SELECT * FROM USERS')
+
+post_exec: DETACH postgres_db 
+```
+
 
 **`partitions_watermark`** - refers to a customizable timestamp that can be set to check if an object has been updated _(optional)_. 
 

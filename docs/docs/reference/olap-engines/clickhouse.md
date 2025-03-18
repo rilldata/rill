@@ -22,12 +22,14 @@ Rill supports connecting to an existing ClickHouse instance and using it as an O
 Rill supports connecting to ClickHouse v22.7 or newer versions.
 :::
 
-## Configuring Rill Developer
+## Configuring Rill Developer with ClickHouse
 
-When using Rill for local development, there are a few options to configure Rill to enable ClickHouse as an OLAP engine:
-1. Connect to an OLAP engine via Add Data. This will automatically create the `clickhouse.yaml` file in your `connectors` folder and populate the `.env` file with `connector.clickhouse.password`.
+When using ClickHouse for local development, you can connect via connection parameters or using the DSN. Both local instances of ClickHouse and Cloud are supported. 
 
-![img](/img/reference/olap-engines/clickhouse/connect-clickhouse.png)
+1. Connect to an OLAP engine via Add Data. This will automatically create the `clickhouse.yaml` file in your `connectors` folder and populate the `.env` file with `connector.clickhouse.password` or `connector.clickhouse.dsn` depending on which you select in the UI. 
+
+<img src = '/img/reference/olap-engines/clickhouse/clickhouse-parameters.png' class='rounded-gif' />
+<br />
 
 ```yaml
 # Connector YAML
@@ -38,10 +40,15 @@ type: connector
 driver: clickhouse
 host: <HOSTNAME>
 port: <PORT>
-username: "default"
+username: <USERNAME>
 password: "{{ .env.connector.clickhouse.password }}"
 ssl: true #required for ClickHouse Cloud
+
+#or 
+
+dsn: "{{ .env.connector.clickhouse.dsn }}"
 ```
+
 2. You can create/edit the `.env` file manually in the project directory and add [`connector.clickhouse.dsn`](#connection-string-dsn)
 3. If this project has already been deployed to Rill Cloud, you can  try pulling existing credentials locally using `rill env pull`.
 4. You can pass in `connector.clickhouse.dsn` as a variable to `rill start` directly (e.g. `rill start --env connector.clickhouse.dsn=...`)
@@ -53,6 +60,9 @@ If you are facing issues related to DSN connection errors in your dashboards eve
 :::
 
 ## Connection string (DSN)
+
+<img src = '/img/reference/olap-engines/clickhouse/clickhouse-dsn.png' class='rounded-gif' />
+<br />
 
 Rill is able to connect to ClickHouse using the [ClickHouse Go Driver](https://clickhouse.com/docs/en/integrations/go). An appropriate connection string (DSN) will need to be set through the `connector.clickhouse.dsn` property in Rill.
 
@@ -100,16 +110,21 @@ If you would like to connect Rill to an existing ClickHouse instance, please don
 ## Configuring Rill Cloud
 
 When deploying a ClickHouse-backed project to Rill Cloud, you have the following options to pass the appropriate connection string to Rill Cloud:
-1.  If you have followed the UI to create your ClickHouse connector, the password should already exist in the .env file. During the deployment process, this `.env` file is automatically pushed with the deployment.
+1.  If you have followed the UI to create your ClickHouse connector, the password or dsn should already exist in the .env file. During the deployment process, this `.env` file is automatically pushed with the deployment.
 2.  If `connector.clickhouse.dsn` has already been set in your project `.env`, you can push and update these variables directly in your cloud deployment by using the `rill env push` command.
 3. If you manually passed the connector when running `rill start`, you will need to use the `rill env configure` command to set `connector.clickhouse.dsn` onto Rill Cloud, as well. 
+
+:::warning Local ClickHouse Server
+
+If you are developing on a locally running ClickHouse server, this will not be deployed with you project. You will either need to use ClickHouse Cloud or Managed ClickHouse.
+:::
 
 :::info
 Note that you must `cd` into the Git repository that your project was deployed from before running `rill env configure`.
 :::
 
 ## Setting the default OLAP connection
-Creating a connection to a OLAP engine will automatically add the `olap_connector` property in your project's [rill.YAML](../project-files/rill-yaml.md) and change the default OLAP engine to ClickHouse:
+Creating a connection to a OLAP engine will automatically add the `olap_connector` property in your project's [rill.yaml](../project-files/rill-yaml.md) and change the default OLAP engine to ClickHouse. Once this is changed, you'll notice that some of the UI features are removed as we currently do not support modeling and direct source ingestion in ClickHouse. 
 
 ```yaml
 olap_connector: clickhouse
@@ -123,7 +138,7 @@ Please see our [Using Multiple OLAP Engines](multiple-olap.md) page.
 
 ## Reading from multiple schemas
 
-Rill supports reading from multiple schemas in ClickHouse from within the same project in Rill Developer and all accessible tables (given the permission set of the underlying user) should automatically be listed in the left-hand tab, which can then be used to [create dashboards](/build/dashboards/).
+Rill supports reading from multiple schemas in ClickHouse from within the same project in Rill Developer and all accessible tables (given the permission set of the underlying user) should automatically be listed in the lower left-hand tab, which can then be used to [create dashboards](/build/dashboards/).
 
 ![ClickHouse multiple schemas](/img/reference/olap-engines/clickhouse/clickhouse-multiple-schemas.png)
 
@@ -131,6 +146,6 @@ Rill supports reading from multiple schemas in ClickHouse from within the same p
 
 ## Additional Notes
 
-- At the moment, we do not officially support modeling with ClickHouse. If this is something you're interested in, please [contact us](../../contact.md).
+- At the moment, we do not officially support modeling with ClickHouse, however this is available via a feature flag. If this is something you're interested in, please [contact us](../../contact.md).
 - For dashboards powered by ClickHouse, [measure definitions](/build/metrics-view/metrics-view.md#measures) are required to follow standard [ClickHouse SQL](https://clickhouse.com/docs/en/sql-reference) syntax.
 - Because string columns in ClickHouse can theoretically contain [arbitrary binary data](https://github.com/ClickHouse/ClickHouse/issues/2976#issuecomment-416694860), if your column contains invalid UTF-8 characters, you may want to first cast the column by applying the `toValidUTF8` function ([see ClickHouse documentation](https://clickhouse.com/docs/en/sql-reference/functions/string-functions#tovalidutf8)) before reading the table into Rill to avoid any downstream issues.

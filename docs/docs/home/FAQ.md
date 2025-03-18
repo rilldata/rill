@@ -29,11 +29,12 @@ Rill is optimized for Google Chrome. While other browsers may work, we recommend
 ![dev](/img/concepts/rcvsrd/empty-project.png)
 
 ### What is Rill Developer?
-Rill Developer is a local application used to preview your project and make any necessary changes before deploying to Rill Cloud. For more information, please review [our documentation](https://docs.rilldata.com/concepts/developerVsCloud#rill-developer).
+Rill Developer is a local application used to preview your project and make any necessary changes before deploying to Rill Cloud. For more information, please review [our documentation](https://docs.rilldata.com/concepts/developerVsCloud#rill-developer). Within Rill Developer, you can ingest new datasets, transform the sources into models, build a metrics layer and finally visualize your data in an explore dashboard. This preview allows you to develop your project before deploying or updating an existing deployment in Rill Cloud.
 
-### I'm having issues with Rill Developer...
+### How do I do XXX in Rill Developer? 
 
-Please refer to [our tutorials](/tutorials) to get started using Rill. If you still have any questions, please [contact us!](/contact)
+Please refer to [our tutorials](/tutorials) to get started using Rill. In the tutorials, we walk you through first project creation, modeling, creating a metrics view and explore dashboard and finally deploying to Rill Cloud. From there, we go through making local changes in Rill Developer and pushing your changes. In more advanced topics we discuss custom APIs, Embed Dashboards, and more! 
+If you still have any questions, please [contact us!](/contact)
 
 
 ### How do I start more than one instance of Rill Developer?
@@ -50,7 +51,7 @@ rill start --port 10010 --port-grpc 10011
 
 ### How do I share my dashboard with my colleagues?
 
-You need to [deploy your dashboard to Rill Cloud](https://docs.rilldata.com/deploy/existing-project/) to share your dashboard.
+To share your dashboards with your colleageus, you need to [deploy your dashboard to Rill Cloud](https://docs.rilldata.com/deploy/existing-project/). Once deployed, you have various ways to share this dashbord to your team. Since Rill does not charge by number of users, you can simply [add them to your orgnization](../manage/user-management#how-to-add-an-organization-user) and have them sign up to view the dashboard! Other ways to share the dashboard includes, [public URLs](../explore/public-url.md) for a limited view and [project invites](../manage/user-management#how-to-add-a-project-user).
 
 ## Rill Cloud
 
@@ -58,10 +59,10 @@ You need to [deploy your dashboard to Rill Cloud](https://docs.rilldata.com/depl
 
 
 ### What is Rill Cloud?
-Rill Cloud is where your deployed Rill project exists and can be shared to your colleagues, or end-users. For more information, please review [our documentation](https://docs.rilldata.com/concepts/developerVsCloud#rill-cloud).
+Rill Cloud is where your deployed Rill project exists and can be shared to your colleagues, or end-users. For more information, please review [our documentation](https://docs.rilldata.com/concepts/developerVsCloud#rill-cloud). Unlike Rill Developer, which is developer based, Rill Cloud is where your dashboards are consumed by your end users. Additional features include bookmarks, public URLs, reporting, alerts and more! 
 
 ### How do I deploy to Rill Cloud?
-You can deploy your project directly from the UI by selecting [the Deploy button](/deploy/deploy-dashboard/#deploying-a-project-from-rill-developer).
+You can deploy your project directly from the UI by selecting [the Deploy button](/deploy/deploy-dashboard/#deploying-a-project-from-rill-developer). Upon deployment an organization will be automatically created with your rill project inside. Each organzation can have mulitple projects that house multiple source, models, metrics views and dashboards. Note that sources are not cross project compatible. When creating your first project, we will automatically start your 30 day free trial. In order to extend usage, you will need to sign up for a [Team Plan](#rill-team-plan).
 
 <img src = '/img/deploy/existing-project/deploy-ui.gif' class='rounded-gif' />
 <br />
@@ -69,21 +70,21 @@ You can deploy your project directly from the UI by selecting [the Deploy button
 
 ### How do I make changes to my dashboard in Rill Cloud?
 
-You can follow the same steps as above. The button will have changed from `deploy` to `update`. After selecting this, the objects in your Rill project will be updated. Or, after syncing your Rill project to Github, simply push changes directly to the repository and this will automatically update your project on Rill Cloud.
+You can follow the same steps as above. After deploying to Rill Cloud, if you return to Rill Developer the button will have changed from `deploy` to `update`. When selecting `update`, the objects in your Rill project will be automatically updated. Or, after syncing your Rill project to GitHub, simply push changes directly to the repository and this will automatically update your project on Rill Cloud.
 
 ### How do I share my dashboard to other users?
 
-You will need to [invite users to your organization/project](https://docs.rilldata.com/manage/user-management#option-1---admin-invites-user) or send them a URL for them to [request access to your dashboard](https://docs.rilldata.com/manage/user-management#option-2---user-requests-access). If you just want them to see the contents of your dashboard, you can look into using [public URLs](https://docs.rilldata.com/explore/share-url).
+You will need to [invite users to your organization](../manage/user-management.md#how-to-add-an-organization-user) or [project](../manage/user-management#how-to-add-a-project-user), send them a URL for them to [request access to your dashboard](../manage/user-management#user-requests-access-via-url) or if you just want them to see the contents of your dashboard, you can look into using [public URLs](https://docs.rilldata.com/explore/share-url).
 
 
 ## Rill Cloud Trial
 ### What is Rill Cloud Trial?
-We offer a free 30 day trial to any one interested in testing out our online platform. Simply create an account and deploy your project from Rill Developer. If you haven't already created and account and logged in, you will be prompted during the deployment process. 
+We offer a free 30 day trial to any one interested in testing out Rill Cloud. Simply create an account and deploy your project from Rill Developer. If you haven't already created and account and logged in, you will be prompted during the deployment process. 
 
 There are no feature limitations in a free trial but we have set the limit for imported data to 10GB per project with two projects per deployment. You can check the data usage in the settings page. 
 
 :::note 
-The banner will show you the remaining days for your trial and will update as the expiration gets closer! Upgrade to a Teams plan and input your payment method to continue using Rill!
+The banner will show you the remaining days for your trial and will update as the expiration gets closer! Upgrade to a Teams plan to continue using Rill!
 :::
 ![img](/img/FAQ/rill-trial-banner.png)
 

@@ -11,10 +11,30 @@ sidebar_position: 4
 
 Rill supports connecting to an existing Pinot cluster and using it as an OLAP engine to power Rill dashboards built against [external tables](../../concepts/OLAP#external-olap-tables).
 
+## Configuring Rill Developer with Pinot
+
+When using Rill for local development, there are a few options to configure Rill to enable Pinot as an OLAP engine:
+1. Connect to an OLAP engine via Add Data. This will automatically create the `druid.yaml` file in your `connectors` folder and populate the `.env` file with `connector.druid.password` or `connector.druid.dsn` depending on which you select in the UI. 
+
+<img src = '/img/reference/olap-engines/pinot/pinot-parameters.png' class='rounded-gif' />
+<br />
+
+2. You can set `connector.pinot.dsn` in your project's `.env` file or try pulling existing credentials locally using `rill env pull` if the project has already been deployed to Rill Cloud
+3. You can pass in `connector.pinot.dsn` as a variable to `rill start` directly (e.g. `rill start --env connector.pinot.dsn=...`)
+
+:::tip Getting DSN errors in dashboards after setting `.env`?
+
+If you are facing issues related to DSN connection errors in your dashboards even after setting the connection string via the project's `.env` file, try restarting Rill using the `rill start --reset` command.
+
+:::
+
 ## Connection string (DSN)
 
 Rill connects to Pinot using the [Pinot Golang Client](https://docs.pinot.apache.org/users/clients/golang) and requires a connection string of the following format: `http://<user>:<password>@<broker_host>:<port>?controller=<controller_host>:<port>`. 
 `host`and `port` should be of the Pinot Controller server. If `user` or `password` contain special characters they should be URL encoded (i.e. `p@ssword` -> `p%40ssword`). This should be set in the `connector.pinot.dsn` property in Rill.
+
+<img src = '/img/reference/olap-engines/pinot/pinot-dsn.png' class='rounded-gif' />
+<br />
 
 As an example, this typically looks something like:
 
@@ -50,23 +70,14 @@ Please see our [Using Multiple OLAP Engines](multiple-olap.md) page.
 
 :::
 
-## Configuring Rill Developer
 
-When using Rill for local development, there are two options to configure Rill to enable Pinot as an OLAP engine:
-- You can set `connector.pinot.dsn` in your project's `.env` file or try pulling existing credentials locally using `rill env pull` if the project has already been deployed to Rill Cloud
-- You can pass in `connector.pinot.dsn` as a variable to `rill start` directly (e.g. `rill start --env connector.pinot.dsn=...`)
-
-:::tip Getting DSN errors in dashboards after setting `.env`?
-
-If you are facing issues related to DSN connection errors in your dashboards even after setting the connection string via the project's `.env` file, try restarting Rill using the `rill start --reset` command.
-
-:::
 
 ## Configuring Rill Cloud
 
 When deploying a Pinot-backed project to Rill Cloud, you have the following options to pass the appropriate connection string to Rill Cloud:
-- Use the `rill env configure` command to set `connector.pinot.dsn` after deploying the project
-- If `connector.pinot.dsn` has already been set in your project `.env`, you can push and update these variables directly in your cloud deployment by using the `rill env push` command
+1.  If you have followed the UI to create your Pinot connector, the password or dsn should already exist in the .env file. During the deployment process, this `.env` file is automatically pushed with the deployment.
+2. Use the `rill env configure` command to set `connector.pinot.dsn` after deploying the project
+3. If `connector.pinot.dsn` has already been set in your project `.env`, you can push and update these variables directly in your cloud deployment by using the `rill env push` command
 
 :::info
 
