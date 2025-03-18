@@ -13,6 +13,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/openapiutil"
@@ -33,6 +34,13 @@ func (s *Server) apiHandler(w http.ResponseWriter, req *http.Request) error {
 		attribute.String("args.name", apiName),
 	)
 	s.addInstanceRequestAttributes(ctx, instanceID)
+
+	s.activity.Record(ctx,
+		activity.EventTypeLog,
+		activity.BehavioralEventAPIQueryStart,
+		attribute.String("api_name", apiName),
+		attribute.String("instance_id", instanceID),
+	)
 
 	// Check if user has access to query for API data
 	if !auth.GetClaims(ctx).CanInstance(instanceID, auth.ReadAPI) {
@@ -93,6 +101,13 @@ func (s *Server) apiHandler(w http.ResponseWriter, req *http.Request) error {
 	if err != nil {
 		return httputil.Error(http.StatusInternalServerError, err)
 	}
+
+	s.activity.Record(ctx,
+		activity.EventTypeLog,
+		activity.BehavioralEventAPIQuerySuccess,
+		attribute.String("api_name", apiName),
+		attribute.String("instance_id", instanceID),
+	)
 
 	return nil
 }

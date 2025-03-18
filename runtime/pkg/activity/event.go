@@ -60,6 +60,8 @@ const (
 	BehavioralEventGithubConnectedSuccess = "ghconnected-success"
 	BehavioralEventDataAccessStart        = "dataaccess-start"
 	BehavioralEventDataAccessSuccess      = "dataaccess-success"
+	BehavioralEventAPIQueryStart          = "api-query-start"
+	BehavioralEventAPIQuerySuccess        = "api-query-success"
 
 // AI-related Behavioral Events
 // Note: This lists format will remain snake_case for consistency with the existing metrics.
