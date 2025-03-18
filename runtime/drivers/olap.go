@@ -510,7 +510,18 @@ func (d Dialect) DateDiff(grain runtimev1.TimeGrain, t1, t2 time.Time) (string, 
 	case DialectDuckDB:
 		return fmt.Sprintf("DATEDIFF('%s', TIMESTAMP '%s', TIMESTAMP '%s')", unit, t1.Format(time.RFC3339), t2.Format(time.RFC3339)), nil
 	case DialectPinot:
-		return fmt.Sprintf("CAST(DATEDIFF('%s', %d, %d) AS TIMESTAMP)", unit, t1.UnixMilli(), t2.UnixMilli()), nil
+		return fmt.Sprintf("DATEDIFF('%s', %d, %d)", unit, t1.UnixMilli(), t2.UnixMilli()), nil
+	default:
+		return "", fmt.Errorf("unsupported dialect %q", d)
+	}
+}
+
+func (d Dialect) IntervalSubtract(tsExpr, unitExpr string, grain runtimev1.TimeGrain) (string, error) {
+	switch d {
+	case DialectClickHouse, DialectDruid, DialectDuckDB:
+		return fmt.Sprintf("(%s - INTERVAL (%s) %s)", tsExpr, unitExpr, d.ConvertToDateTruncSpecifier(grain)), nil
+	case DialectPinot:
+		return fmt.Sprintf("(dateAdd('%s', -1 * %s, %s))", d.ConvertToDateTruncSpecifier(grain), unitExpr, tsExpr), nil
 	default:
 		return "", fmt.Errorf("unsupported dialect %q", d)
 	}
