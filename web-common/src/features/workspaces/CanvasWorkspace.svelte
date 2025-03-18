@@ -13,7 +13,6 @@
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import { mapParseErrorsToLines } from "@rilldata/web-common/features/metrics-views/errors";
-  import ViewSelector from "@rilldata/web-common/features/visual-editing/ViewSelector.svelte";
   import {
     WorkspaceContainer,
     WorkspaceHeader,
