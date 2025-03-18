@@ -148,7 +148,6 @@ export class DashboardFetchMocks {
       ok: true,
       json: () => {
         if (body && parts[2] === "aggregation") {
-          console.log(body);
           for (const { regex, response } of this.aggregationRequestMocks) {
             if (!regex.test(body)) continue;
             return response;

@@ -53,7 +53,7 @@ export function toggleDimensionValueSelection(
     return;
   }
 
-  delete (expr as any).isMatchList;
+  delete dashboard.metadata.dimensionInListFilter![dimensionName];
 
   const inIdx = getValueIndexInExpression(expr, dimensionValue) as number;
   if (inIdx === -1) {
@@ -93,7 +93,7 @@ export function applyDimensionBulkSearch(
 
   const isInclude = !dashboard.dimensionFilterExcludeMode.get(dimensionName);
   const expr = createInExpression(dimensionName, values, !isInclude);
-  (expr as any).isMatchList = true;
+  dashboard.metadata.dimensionInListFilter![dimensionName] = true;
   const exprIdx = getWhereFilterExpressionIndex({ dashboard })(dimensionName);
   if (exprIdx === undefined || exprIdx === -1) {
     dashboard.whereFilter.cond.exprs.push(expr);

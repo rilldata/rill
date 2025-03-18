@@ -1,5 +1,7 @@
+import { forEachIdentifier } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { BinaryOperationReverseMap } from "@rilldata/web-common/features/dashboards/url-state/filters/post-processors";
 import {
+  type ExplorePresetExpressionMetadata,
   type V1Expression,
   V1Operation,
 } from "@rilldata/web-common/runtime-client";
@@ -10,12 +12,25 @@ const compiledGrammar = nearley.Grammar.fromCompiled(grammar);
 export function convertFilterParamToExpression(filter: string) {
   const parser = new nearley.Parser(compiledGrammar);
   parser.feed(filter);
-  return parser.results[0] as V1Expression;
+  const expr = parser.results[0] as V1Expression;
+
+  const metadata: ExplorePresetExpressionMetadata = {
+    dimensionInListFilter: {},
+  };
+  forEachIdentifier(expr, (e, ident) => {
+    if ((e as any).isMatchList) {
+      metadata.dimensionInListFilter![ident] = true;
+      delete (e as any).isMatchList;
+    }
+  });
+
+  return { expr, metadata };
 }
 
 const NonStandardName = /^[a-zA-Z][a-zA-Z0-9_]*$/;
 export function convertExpressionToFilterParam(
   expr: V1Expression,
+  metadata: ExplorePresetExpressionMetadata = {},
   depth = 0,
 ): string {
   if (!expr) return "";
@@ -29,14 +44,14 @@ export function convertExpressionToFilterParam(
   switch (expr.cond?.op) {
     case V1Operation.OPERATION_AND:
     case V1Operation.OPERATION_OR:
-      return convertJoinerExpressionToFilterParam(expr, depth);
+      return convertJoinerExpressionToFilterParam(expr, metadata, depth);
 
     case V1Operation.OPERATION_IN:
     case V1Operation.OPERATION_NIN:
-      return convertInExpressionToFilterParam(expr, depth);
+      return convertInExpressionToFilterParam(expr, metadata, depth);
 
     default:
-      return convertBinaryExpressionToFilterParam(expr, depth);
+      return convertBinaryExpressionToFilterParam(expr, metadata, depth);
   }
 }
 
@@ -49,12 +64,13 @@ export function stripParserError(err: Error) {
 
 function convertJoinerExpressionToFilterParam(
   expr: V1Expression,
+  metadata: ExplorePresetExpressionMetadata,
   depth: number,
 ) {
   const joiner = expr.cond?.op === V1Operation.OPERATION_AND ? " AND " : " OR ";
 
   const parts = expr.cond?.exprs
-    ?.map((e) => convertExpressionToFilterParam(e, depth + 1))
+    ?.map((e) => convertExpressionToFilterParam(e, metadata, depth + 1))
     .filter(Boolean);
   if (!parts?.length) return "";
   const exprParam = parts.join(joiner);
@@ -65,23 +81,28 @@ function convertJoinerExpressionToFilterParam(
   return `(${exprParam})`;
 }
 
-function convertInExpressionToFilterParam(expr: V1Expression, depth: number) {
+function convertInExpressionToFilterParam(
+  expr: V1Expression,
+  metadata: ExplorePresetExpressionMetadata,
+  depth: number,
+) {
   if (!expr.cond?.exprs?.length) return "";
+  const column = expr.cond.exprs[0]?.ident;
+  if (!column) return "";
+  const safeColumn = escapeColumnName(column);
+
   let joiner = expr.cond?.op === V1Operation.OPERATION_IN ? "IN" : "NIN";
-  const isMatchList = !!(expr as any).isMatchList;
+  const isMatchList = !!metadata.dimensionInListFilter?.[column];
   if (isMatchList) {
     joiner =
       expr.cond?.op === V1Operation.OPERATION_IN ? "IN LIST" : "NOT IN LIST";
   }
 
-  const column = expr.cond.exprs[0]?.ident;
-  if (!column) return "";
-  const safeColumn = escapeColumnName(column);
-
   if (expr.cond.exprs[1]?.subquery?.having) {
     // TODO: support `NIN <subquery>`
     const having = convertExpressionToFilterParam(
       expr.cond.exprs[1]?.subquery?.having,
+      metadata,
       0,
     );
     if (having) return `${safeColumn} having (${having})`;
@@ -90,7 +111,7 @@ function convertInExpressionToFilterParam(expr: V1Expression, depth: number) {
   if (expr.cond.exprs.length > 1) {
     const vals = expr.cond.exprs
       .slice(1)
-      .map((e) => convertExpressionToFilterParam(e, depth + 1));
+      .map((e) => convertExpressionToFilterParam(e, metadata, depth + 1));
     return `${safeColumn} ${joiner} (${vals.join(",")})`;
   }
 
@@ -99,14 +120,23 @@ function convertInExpressionToFilterParam(expr: V1Expression, depth: number) {
 
 function convertBinaryExpressionToFilterParam(
   expr: V1Expression,
+  metadata: ExplorePresetExpressionMetadata,
   depth: number,
 ) {
   if (!expr.cond?.op || !(expr.cond?.op in BinaryOperationReverseMap))
     return "";
   const op = BinaryOperationReverseMap[expr.cond.op];
   if (!expr.cond?.exprs?.length) return "";
-  const left = convertExpressionToFilterParam(expr.cond.exprs[0], depth + 1);
-  const right = convertExpressionToFilterParam(expr.cond.exprs[1], depth + 1);
+  const left = convertExpressionToFilterParam(
+    expr.cond.exprs[0],
+    metadata,
+    depth + 1,
+  );
+  const right = convertExpressionToFilterParam(
+    expr.cond.exprs[1],
+    metadata,
+    depth + 1,
+  );
   if (!left || !right) return "";
 
   return `${left} ${op?.toUpperCase()} ${right}`;

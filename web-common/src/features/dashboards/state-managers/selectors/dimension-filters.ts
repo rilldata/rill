@@ -10,6 +10,7 @@ import {
   matchExpressionByName,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type {
+  ExplorePresetExpressionMetadata,
   MetricsViewSpecDimensionV2,
   V1Expression,
 } from "@rilldata/web-common/runtime-client";
@@ -154,13 +155,18 @@ export function getDimensionFilterItems(
   dashData: AtLeast<DashboardDataSources, "dashboard">,
 ) {
   return (dimensionIdMap: Map<string, MetricsViewSpecDimensionV2>) => {
-    return getDimensionFilters(dimensionIdMap, dashData.dashboard.whereFilter);
+    return getDimensionFilters(
+      dimensionIdMap,
+      dashData.dashboard.whereFilter,
+      dashData.dashboard.metadata.dimensionInListFilter,
+    );
   };
 }
 
 export function getDimensionFilters(
   dimensionIdMap: Map<string, MetricsViewSpecDimensionV2>,
   filter: V1Expression | undefined,
+  dimensionInListFilter: ExplorePresetExpressionMetadata["dimensionInListFilter"],
 ) {
   if (!filter) return [];
   const filteredDimensions: DimensionFilterItem[] = [];
@@ -179,7 +185,7 @@ export function getDimensionFilters(
         name: ident,
         label: getDimensionDisplayName(dim),
         selectedValues: getValuesInExpression(e),
-        isMatchList: (e as any).isMatchList,
+        isMatchList: dimensionInListFilter?.[ident],
         isInclude: e.cond?.op === V1Operation.OPERATION_IN,
       });
     } else if (

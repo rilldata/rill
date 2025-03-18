@@ -146,10 +146,8 @@ export function forEachExpression(
   cb: (e: V1Expression, depth: number) => void,
   depth = 0,
 ) {
-  if (!expr.cond?.exprs) {
-    cb(expr, depth);
-    return;
-  }
+  cb(expr, depth);
+  if (!expr.cond?.exprs) return;
 
   for (const subExpr of expr.cond.exprs) {
     cb(subExpr, depth);
@@ -162,7 +160,7 @@ export function forEachIdentifier(
   cb: (e: V1Expression, ident: string) => void,
 ) {
   forEachExpression(expr, (e) => {
-    const ident = e.cond?.exprs?.[0].ident;
+    const ident = e.cond?.exprs?.[0]?.ident;
     if (ident === undefined) {
       return;
     }

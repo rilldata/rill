@@ -9,13 +9,8 @@ import {
   splitWhereFilter,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import {
-  applyDimensionBulkSearch,
-  applyDimensionSearch,
-} from "@rilldata/web-common/features/dashboards/state-managers/actions/dimension-filters";
-import {
   type DimensionFilterItem,
   getDimensionFilters,
-  getWhereFilterExpressionIndex,
 } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import { filterItemsSortFunction } from "@rilldata/web-common/features/dashboards/state-managers/selectors/filters";
 import type { MeasureFilterItem } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measure-filters";
@@ -23,7 +18,6 @@ import {
   createAndExpression,
   createInExpression,
   createLikeExpression,
-  forEachIdentifier,
   getValueIndexInExpression,
   getValuesInExpression,
   isExpressionUnsupported,
@@ -482,7 +476,6 @@ export class Filters {
     const wf = get(this.whereFilter);
 
     const expr = createInExpression(dimensionName, values, !isInclude);
-    (expr as any).isMatchList = true;
 
     const exprIndex = get(this.getWhereFilterExpressionIndex)(dimensionName);
     if (exprIndex === undefined || exprIndex === -1) {
@@ -609,7 +602,7 @@ export class Filters {
   };
 
   getFiltersFromText = (filterText: string) => {
-    let expr = convertFilterParamToExpression(filterText);
+    let { expr } = convertFilterParamToExpression(filterText);
     if (
       expr?.cond?.op !== V1Operation.OPERATION_AND &&
       expr?.cond?.op !== V1Operation.OPERATION_OR

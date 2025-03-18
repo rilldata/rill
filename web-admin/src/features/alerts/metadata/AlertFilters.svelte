@@ -47,7 +47,11 @@
     (measure) => measure.name,
   );
 
-  $: currentDimensionFilters = getDimensionFilters(dimensionIdMap, whereFilter);
+  $: currentDimensionFilters = getDimensionFilters(
+    dimensionIdMap,
+    whereFilter,
+    {},
+  );
   $: currentMeasureFilters = getMeasureFilters(measureIdMap, havingFilter);
 </script>
 

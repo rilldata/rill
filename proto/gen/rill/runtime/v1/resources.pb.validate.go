@@ -4999,6 +4999,39 @@ func (m *ExplorePreset) validate(all bool) error {
 
 	}
 
+	if m.Metadata != nil {
+
+		if all {
+			switch v := interface{}(m.GetMetadata()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ExplorePresetValidationError{
+						field:  "Metadata",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ExplorePresetValidationError{
+						field:  "Metadata",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetMetadata()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ExplorePresetValidationError{
+					field:  "Metadata",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
 	if m.TimeRange != nil {
 		// no validation rules for TimeRange
 	}
@@ -13467,3 +13500,110 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = MetricsViewSpec_AvailableTimeRangeValidationError{}
+
+// Validate checks the field values on ExplorePreset_ExpressionMetadata with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *ExplorePreset_ExpressionMetadata) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ExplorePreset_ExpressionMetadata with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// ExplorePreset_ExpressionMetadataMultiError, or nil if none found.
+func (m *ExplorePreset_ExpressionMetadata) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ExplorePreset_ExpressionMetadata) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for DimensionInListFilter
+
+	if len(errors) > 0 {
+		return ExplorePreset_ExpressionMetadataMultiError(errors)
+	}
+
+	return nil
+}
+
+// ExplorePreset_ExpressionMetadataMultiError is an error wrapping multiple
+// validation errors returned by
+// ExplorePreset_ExpressionMetadata.ValidateAll() if the designated
+// constraints aren't met.
+type ExplorePreset_ExpressionMetadataMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ExplorePreset_ExpressionMetadataMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ExplorePreset_ExpressionMetadataMultiError) AllErrors() []error { return m }
+
+// ExplorePreset_ExpressionMetadataValidationError is the validation error
+// returned by ExplorePreset_ExpressionMetadata.Validate if the designated
+// constraints aren't met.
+type ExplorePreset_ExpressionMetadataValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ExplorePreset_ExpressionMetadataValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ExplorePreset_ExpressionMetadataValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ExplorePreset_ExpressionMetadataValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ExplorePreset_ExpressionMetadataValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ExplorePreset_ExpressionMetadataValidationError) ErrorName() string {
+	return "ExplorePreset_ExpressionMetadataValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ExplorePreset_ExpressionMetadataValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sExplorePreset_ExpressionMetadata.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ExplorePreset_ExpressionMetadataValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ExplorePreset_ExpressionMetadataValidationError{}

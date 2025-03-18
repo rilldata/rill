@@ -2539,6 +2539,11 @@ export class ExplorePreset extends Message<ExplorePreset> {
   where?: Expression;
 
   /**
+   * @generated from field: optional rill.runtime.v1.ExplorePreset.ExpressionMetadata metadata = 29;
+   */
+  metadata?: ExplorePreset_ExpressionMetadata;
+
+  /**
    * Time range for the explore.
    * It corresponds to the `range` property of the explore's `time_ranges`.
    * If not found in `time_ranges`, it should be added to the list.
@@ -2659,6 +2664,7 @@ export class ExplorePreset extends Message<ExplorePreset> {
     { no: 4, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 10, name: "measures_selector", kind: "message", T: FieldSelector },
     { no: 11, name: "where", kind: "message", T: Expression, opt: true },
+    { no: 29, name: "metadata", kind: "message", T: ExplorePreset_ExpressionMetadata, opt: true },
     { no: 6, name: "time_range", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 12, name: "timezone", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 13, name: "time_grain", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
@@ -2695,6 +2701,43 @@ export class ExplorePreset extends Message<ExplorePreset> {
 
   static equals(a: ExplorePreset | PlainMessage<ExplorePreset> | undefined, b: ExplorePreset | PlainMessage<ExplorePreset> | undefined): boolean {
     return proto3.util.equals(ExplorePreset, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ExplorePreset.ExpressionMetadata
+ */
+export class ExplorePreset_ExpressionMetadata extends Message<ExplorePreset_ExpressionMetadata> {
+  /**
+   * @generated from field: map<string, bool> dimension_in_list_filter = 1;
+   */
+  dimensionInListFilter: { [key: string]: boolean } = {};
+
+  constructor(data?: PartialMessage<ExplorePreset_ExpressionMetadata>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ExplorePreset.ExpressionMetadata";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "dimension_in_list_filter", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 8 /* ScalarType.BOOL */} },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExplorePreset_ExpressionMetadata {
+    return new ExplorePreset_ExpressionMetadata().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ExplorePreset_ExpressionMetadata {
+    return new ExplorePreset_ExpressionMetadata().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ExplorePreset_ExpressionMetadata {
+    return new ExplorePreset_ExpressionMetadata().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ExplorePreset_ExpressionMetadata | PlainMessage<ExplorePreset_ExpressionMetadata> | undefined, b: ExplorePreset_ExpressionMetadata | PlainMessage<ExplorePreset_ExpressionMetadata> | undefined): boolean {
+    return proto3.util.equals(ExplorePreset_ExpressionMetadata, a, b);
   }
 }
 

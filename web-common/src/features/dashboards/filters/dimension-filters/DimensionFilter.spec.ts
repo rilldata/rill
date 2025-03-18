@@ -13,13 +13,7 @@ import {
   AD_BIDS_PUBLISHER_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import { describe, it, expect } from "vitest";
-import {
-  screen,
-  waitFor,
-  fireEvent,
-  act,
-  waitForElementToBeRemoved,
-} from "@testing-library/svelte";
+import { screen, waitFor, fireEvent, act } from "@testing-library/svelte";
 import { get } from "svelte/store";
 
 describe("DimensionFilter", () => {
@@ -190,15 +184,18 @@ describe("DimensionFilter", () => {
 
     await act(() => screen.getByRole("button", { name: "Apply" }).click());
 
-    const inExpr = createInExpression(AD_BIDS_PUBLISHER_DIMENSION, [
-      "Facebook",
-      "Google",
-      "Apple",
-    ]);
-    (inExpr as any).isMatchList = true;
     expect(get(stateManagers.dashboardStore).whereFilter).toEqual(
-      createAndExpression([inExpr]),
+      createAndExpression([
+        createInExpression(AD_BIDS_PUBLISHER_DIMENSION, [
+          "Facebook",
+          "Google",
+          "Apple",
+        ]),
+      ]),
     );
+    expect(get(stateManagers.dashboardStore).metadata).toEqual({
+      dimensionInListFilter: { publisher: true },
+    });
     expect(screen.getByLabelText("publisher view filter")).toHaveTextContent(
       "publisher In list (2 of 3)",
     );
@@ -227,15 +224,18 @@ describe("DimensionFilter", () => {
     );
     await act(() => screen.getByRole("button", { name: "Apply" }).click());
 
-    const inExpr = createInExpression(AD_BIDS_PUBLISHER_DIMENSION, [
-      "Facebook",
-      "Google",
-      "Apple",
-    ]);
-    (inExpr as any).isMatchList = true;
     expect(get(stateManagers.dashboardStore).whereFilter).toEqual(
-      createAndExpression([inExpr]),
+      createAndExpression([
+        createInExpression(AD_BIDS_PUBLISHER_DIMENSION, [
+          "Facebook",
+          "Google",
+          "Apple",
+        ]),
+      ]),
     );
+    expect(get(stateManagers.dashboardStore).metadata).toEqual({
+      dimensionInListFilter: { publisher: true },
+    });
     expect(screen.getByLabelText("publisher view filter")).toHaveTextContent(
       "publisher In list (2 of 3)",
     );
@@ -252,7 +252,7 @@ async function addFilter(name: string) {
   await act(() => {
     screen.getByRole("menuitem", { name }).click();
   });
-  await waitForElementToBeRemoved(() =>
-    screen.queryByRole("menuitem", { name }),
+  await waitFor(() =>
+    expect(screen.queryByRole("menuitem", { name })).toBeNull(),
   );
 }

@@ -31,6 +31,7 @@ import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
 import { validateISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import { DashboardState } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
+  type ExplorePresetExpressionMetadata,
   type MetricsViewSpecDimensionV2,
   type MetricsViewSpecMeasureV2,
   V1ExploreComparisonMode,
@@ -100,13 +101,18 @@ export function convertURLToExplorePreset(
   }
 
   if (searchParams.has(ExploreStateURLParams.Filters)) {
-    const { expr, errors: filterErrors } = fromFilterUrlParam(
+    const {
+      expr,
+      metadata,
+      errors: filterErrors,
+    } = fromFilterUrlParam(
       searchParams.get(ExploreStateURLParams.Filters) as string,
       measures,
       dimensions,
     );
     if (filterErrors) errors.push(...filterErrors);
     if (expr) preset.where = expr;
+    if (metadata) preset.metadata = metadata;
   }
 
   const { preset: trPreset, errors: trErrors } = fromTimeRangesParams(
@@ -188,10 +194,13 @@ function fromFilterUrlParam(
   dimensions: Map<string, MetricsViewSpecDimensionV2>,
 ): {
   expr?: V1Expression;
+  metadata?: ExplorePresetExpressionMetadata;
   errors?: Error[];
 } {
   try {
-    let expr = convertFilterParamToExpression(filter);
+    const { expr: exprFromFilter, metadata } =
+      convertFilterParamToExpression(filter);
+    let expr = exprFromFilter;
     if (!expr) {
       return {
         expr: createAndExpression([]),
@@ -241,7 +250,7 @@ function fromFilterUrlParam(
     if (missingFields.length) {
       errors.push(getMultiFieldError("filter field", missingFields));
     }
-    return { expr, errors };
+    return { expr, metadata, errors };
   } catch (e) {
     return {
       errors: [new Error("Selected filter is invalid: " + stripParserError(e))],

@@ -38,7 +38,7 @@ The main feature-set component for dashboard filters
     dimensions,
     (dimension) => dimension.name as string,
   );
-  $: dimensionFilters = getDimensionFilters(dimensionIdMap, filters);
+  $: dimensionFilters = getDimensionFilters(dimensionIdMap, filters, {});
 
   // Get measure filters
   $: measures = allMeasures({

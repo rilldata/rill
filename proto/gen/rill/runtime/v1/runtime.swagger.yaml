@@ -3011,6 +3011,13 @@ definitions:
       - TYPE_INFORMATIONAL
     default: TYPE_UNSPECIFIED
     title: Type of the property
+  ExplorePresetExpressionMetadata:
+    type: object
+    properties:
+      dimensionInListFilter:
+        type: object
+        additionalProperties:
+          type: boolean
   MetricsViewFilterCond:
     type: object
     properties:
@@ -4310,6 +4317,8 @@ definitions:
         description: Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
       where:
         $ref: '#/definitions/v1Expression'
+      metadata:
+        $ref: '#/definitions/ExplorePresetExpressionMetadata'
       timeRange:
         type: string
         description: |-

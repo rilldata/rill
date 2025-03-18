@@ -80,6 +80,9 @@ export function convertPresetToExploreState(
     partialExploreState.whereFilter = dimensionFilters;
     partialExploreState.dimensionThresholdFilters = dimensionThresholdFilters;
   }
+  if (preset.metadata) {
+    partialExploreState.metadata = preset.metadata;
+  }
 
   const { partialExploreState: trPartialState, errors: trErrors } =
     fromTimeRangesParams(preset, dimensions);
