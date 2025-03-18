@@ -94,7 +94,7 @@
           onMeasureCountChange={(count) => {
             setLeaderboardMeasureCount(count);
           }}
-          setSort={() => {
+          resetSort={() => {
             // Fallback to the first visible measure if sort_by measure is not in the context
             toggleSort(SortType.VALUE, $visibleMeasures[0].name);
             setSortDescending();
