@@ -24,6 +24,10 @@ export class ClickHouseTestContainer {
             target: "/var/lib/clickhouse/user_files",
           },
         ])
+        .withEnvironment({
+          CLICKHOUSE_USER: "default",
+          CLICKHOUSE_PASSWORD: "password",
+        })
         .start();
     } catch (error) {
       console.error("Failed to start ClickHouse server:", error);
@@ -48,6 +52,8 @@ export class ClickHouseTestContainer {
       const port = this.container.getMappedPort(this.httpPort);
       this.client = createClient({
         url: `http://${host}:${port}`,
+        username: "default",
+        password: "password",
       });
     }
     return this.client;

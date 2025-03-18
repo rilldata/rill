@@ -54,6 +54,9 @@ test.describe("ClickHouse connector", () => {
     await page
       .getByRole("textbox", { name: "Username (optional)" })
       .fill("default");
+    await page
+      .getByRole("textbox", { name: "Password (optional)" })
+      .fill("password");
 
     // Submit the form
     await page
@@ -75,6 +78,9 @@ test.describe("ClickHouse connector", () => {
       `port: ${clickhouse.getPort().toString()}`,
     );
     await expect(codeEditor).toContainText('username: "default"');
+    await expect(codeEditor).toContainText(
+      'password: "{{ .env.connector.clickhouse.password }}"',
+    );
 
     // Assert that the connector explorer now has a ClickHouse connector
     await expect(
@@ -103,7 +109,7 @@ test.describe("ClickHouse connector", () => {
     await page
       .getByRole("textbox", { name: "Connection string" })
       .fill(
-        `http://${clickhouse.getHost()}:${clickhouse.getPort().toString()}?username=default`,
+        `http://${clickhouse.getHost()}:${clickhouse.getPort().toString()}?username=default&password=password`,
       );
 
     // Submit the form
@@ -129,7 +135,7 @@ test.describe("ClickHouse connector", () => {
     await page.getByRole("link", { name: ".env" }).click();
     const envEditor = page.getByLabel("codemirror editor").getByRole("textbox");
     await expect(envEditor).toContainText(
-      `connector.clickhouse.dsn=http://${clickhouse.getHost()}:${clickhouse.getPort().toString()}?username=default`,
+      `connector.clickhouse.dsn=http://${clickhouse.getHost()}:${clickhouse.getPort().toString()}?username=default&password=password`,
     );
 
     // Go to the `rill.yaml` and verify the OLAP connector is set
