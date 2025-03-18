@@ -121,34 +121,65 @@ type user struct {
 	Email string `header:"email" json:"email"`
 }
 
-func (p *Printer) PrintMemberUsers(members []*adminv1.MemberUser) {
+func (p *Printer) PrintOrganizationMemberUsers(members []*adminv1.OrganizationMemberUser) {
 	if len(members) == 0 {
 		p.PrintfWarn("No members found\n")
 		return
 	}
 
-	p.PrintData(toMemberTable(members))
-}
-
-func toMemberTable(members []*adminv1.MemberUser) []*memberUser {
-	allMembers := make([]*memberUser, 0, len(members))
-
+	allMembers := make([]*memberUserWithRole, 0, len(members))
 	for _, m := range members {
-		allMembers = append(allMembers, toMemberRow(m))
+		allMembers = append(allMembers, &memberUserWithRole{
+			Email:    m.UserEmail,
+			Name:     m.UserName,
+			RoleName: m.RoleName,
+		})
 	}
 
-	return allMembers
+	p.PrintData(allMembers)
 }
 
-func toMemberRow(m *adminv1.MemberUser) *memberUser {
-	return &memberUser{
-		Email:    m.UserEmail,
-		Name:     m.UserName,
-		RoleName: m.RoleName,
+func (p *Printer) PrintProjectMemberUsers(members []*adminv1.ProjectMemberUser) {
+	if len(members) == 0 {
+		p.PrintfWarn("No members found\n")
+		return
 	}
+
+	allMembers := make([]*memberUserWithRole, 0, len(members))
+	for _, m := range members {
+		allMembers = append(allMembers, &memberUserWithRole{
+			Email:    m.UserEmail,
+			Name:     m.UserName,
+			RoleName: m.RoleName,
+		})
+	}
+
+	p.PrintData(allMembers)
+}
+
+func (p *Printer) PrintUsergroupMemberUsers(members []*adminv1.UsergroupMemberUser) {
+	if len(members) == 0 {
+		p.PrintfWarn("No members found\n")
+		return
+	}
+
+	allMembers := make([]*memberUser, 0, len(members))
+	for _, m := range members {
+		allMembers = append(allMembers, &memberUser{
+			Email: m.UserEmail,
+			Name:  m.UserName,
+		})
+	}
+
+	p.PrintData(allMembers)
 }
 
 type memberUser struct {
+	Email string `header:"email" json:"email"`
+	Name  string `header:"name" json:"display_name"`
+}
+
+type memberUserWithRole struct {
 	Email    string `header:"email" json:"email"`
 	Name     string `header:"name" json:"display_name"`
 	RoleName string `header:"role" json:"role_name"`
@@ -427,37 +458,6 @@ type memberUsergroup struct {
 	Role      string `header:"role" json:"role"`
 	CreatedOn string `header:"created_on,timestamp(ms|utc|human)" json:"created_at"`
 	UpdatedOn string `header:"updated_on,timestamp(ms|utc|human)" json:"updated_at"`
-}
-
-func (p *Printer) PrintUsergroupMembers(members []*adminv1.MemberUser) {
-	if len(members) == 0 {
-		p.PrintfWarn("No members found\n")
-		return
-	}
-
-	p.PrintData(toUsergroupMembersTable(members))
-}
-
-func toUsergroupMembersTable(members []*adminv1.MemberUser) []*usergroupMember {
-	allMembers := make([]*usergroupMember, 0, len(members))
-
-	for _, m := range members {
-		allMembers = append(allMembers, toUsergroupMemberRow(m))
-	}
-
-	return allMembers
-}
-
-func toUsergroupMemberRow(m *adminv1.MemberUser) *usergroupMember {
-	return &usergroupMember{
-		Name:  m.UserName,
-		Email: m.UserEmail,
-	}
-}
-
-type usergroupMember struct {
-	Name  string `header:"name" json:"name"`
-	Email string `header:"email" json:"email"`
 }
 
 func (p *Printer) PrintModelPartitions(partitions []*runtimev1.ModelPartition) {

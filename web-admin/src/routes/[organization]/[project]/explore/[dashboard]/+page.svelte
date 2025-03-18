@@ -5,6 +5,10 @@
   import DashboardBuilding from "@rilldata/web-admin/features/dashboards/DashboardBuilding.svelte";
   import DashboardErrored from "@rilldata/web-admin/features/dashboards/DashboardErrored.svelte";
   import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
+  import {
+    DashboardBannerID,
+    DashboardBannerPriority,
+  } from "@rilldata/web-common/components/banner/constants";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
@@ -73,10 +77,14 @@
 
   // Display a dashboard banner
   $: if (hasBanner) {
-    eventBus.emit("banner", {
-      type: "default",
-      message: $explore.data.explore.explore.state.validSpec.banner,
-      iconType: "alert",
+    eventBus.emit("add-banner", {
+      id: DashboardBannerID,
+      priority: DashboardBannerPriority,
+      message: {
+        type: "default",
+        message: $explore.data.explore.explore.state.validSpec.banner,
+        iconType: "alert",
+      },
     });
   }
 
@@ -88,7 +96,7 @@
       !from || !to || from.params.dashboard !== to.params.dashboard;
     // Clear out any dashboard banners
     if (hasBanner && changedDashboard) {
-      eventBus.emit("banner", null);
+      eventBus.emit("remove-banner", DashboardBannerID);
     }
   });
 
