@@ -141,6 +141,7 @@
       justify="left"
       showBackground={false}
       value={barValue}
+      compact={true}
     >
       <button
         aria-label={label}

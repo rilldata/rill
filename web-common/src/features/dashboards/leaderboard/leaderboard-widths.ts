@@ -2,7 +2,7 @@ import { clamp } from "@rilldata/web-common/lib/clamp";
 import { get, writable, type Writable } from "svelte/store";
 
 export const DEFAULT_COLUMN_WIDTH = 110;
-export const COMPARISON_COLUMN_WIDTH = 50;
+export const COMPARISON_COLUMN_WIDTH = 56;
 
 const MIN_COL_WIDTH = 56;
 const MAX_COL_WIDTH = 164;
