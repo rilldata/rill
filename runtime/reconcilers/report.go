@@ -408,11 +408,15 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	}
 	if w, ok := rep.Spec.Annotations["web_open_mode"]; ok {
 		webOpenMode = w
-	} else {
-		webOpenMode = "none" // for older reports if web_open_path is not set
+		if webOpenMode == "" { // backwards compatibility
+			webOpenMode = "recipient"
+		}
+	}
+
+	if webOpenMode != "none" && explore == "" { // backwards compatibility, try to find explore
 		if path, ok := rep.Spec.Annotations["web_open_path"]; ok {
 			// parse path, extract explore name, it will be like /explore/{explore}
-			if explore == "" && strings.HasPrefix(path, "/explore/") {
+			if strings.HasPrefix(path, "/explore/") {
 				explore = path[9:]
 				if explore[len(explore)-1] == '/' {
 					explore = explore[:len(explore)-1]
@@ -433,8 +437,8 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 				}
 			}
 		}
-		if explore != "" {
-			webOpenMode = "recipient"
+		if explore == "" { // still not found
+			webOpenMode = "none"
 		}
 	}
 

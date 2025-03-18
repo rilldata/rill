@@ -56,7 +56,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 
 	webOpenMode := WebOpenMode(req.WebOpenMode)
 	if webOpenMode == "" {
-		webOpenMode = WebOpenModeRecipient // Backwards compatibility
+		webOpenMode = WebOpenModeRecipient // Backwards compatibility during rollout
 	}
 	if !webOpenMode.Valid() {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid web open mode %q", req.WebOpenMode)
