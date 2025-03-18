@@ -7,6 +7,7 @@
   import LeaderboardMeasureCountSelector from "@rilldata/web-common/components/menu/LeaderboardMeasureCountSelector.svelte";
   import { featureFlags } from "../../feature-flags";
   import LeaderboardActiveMeasureDropdown from "@rilldata/web-common/components/menu/LeaderboardActiveMeasureDropdown.svelte";
+  import { SortType } from "../proto-state/derived-types";
 
   export let exploreName: string;
 
@@ -25,9 +26,9 @@
     actions: {
       dimensions: { toggleDimensionVisibility },
       contextColumn: { setContextColumn },
+      sorting: { toggleSort, setSortDescending },
       setLeaderboardMeasureCount,
       setLeaderboardMeasureName,
-      sorting: { setDefaultSort },
     },
   } = StateManagers;
 
@@ -93,7 +94,11 @@
           onMeasureCountChange={(count) => {
             setLeaderboardMeasureCount(count);
           }}
-          setSort={setDefaultSort}
+          setSort={() => {
+            // Fallback to the first visible measure if sort_by measure is not in the context
+            toggleSort(SortType.VALUE, $visibleMeasures[0].name);
+            setSortDescending();
+          }}
           sortByMeasure={$sortByMeasure}
         />
       {:else}
