@@ -8,17 +8,17 @@ import {
 import { fileArtifacts } from "../../entity-management/file-artifacts";
 import { humanReadableErrorMessage } from "../../sources/modal/errors";
 
-interface ConnectionTestResult {
+interface TestConnectorResult {
   success: boolean;
   error?: string;
 }
 
-export async function testConnectorConnection(
+export async function testOLAPConnector(
   instanceId: string,
   newConnectorFilePath: string,
   newConnectorName: string,
-): Promise<ConnectionTestResult> {
-  // Wait a sec
+): Promise<TestConnectorResult> {
+  // Wait a sec – give the runtime time to start reconciling the file
   await new Promise((resolve) => setTimeout(resolve, 1000));
 
   // Wait for the file to reconcile

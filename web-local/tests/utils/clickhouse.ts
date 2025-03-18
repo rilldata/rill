@@ -5,6 +5,8 @@ import { fileURLToPath } from "url";
 
 export class ClickHouseTestContainer {
   private httpPort = 8123;
+  private user = "default";
+  private password = "password";
   private container: StartedTestContainer;
   private client: ClickHouseClient;
 
@@ -25,8 +27,8 @@ export class ClickHouseTestContainer {
           },
         ])
         .withEnvironment({
-          CLICKHOUSE_USER: "default",
-          CLICKHOUSE_PASSWORD: "password",
+          CLICKHOUSE_USER: this.user,
+          CLICKHOUSE_PASSWORD: this.password,
         })
         .start();
     } catch (error) {
@@ -52,13 +54,16 @@ export class ClickHouseTestContainer {
       const port = this.container.getMappedPort(this.httpPort);
       this.client = createClient({
         url: `http://${host}:${port}`,
-        username: "default",
-        password: "password",
+        username: this.user,
+        password: this.password,
       });
     }
     return this.client;
   }
 
+  /**
+   * Seeds the ClickHouse server with an AdBids table.
+   */
   async seed(): Promise<void> {
     const client = this.getClient();
 

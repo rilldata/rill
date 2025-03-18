@@ -24,7 +24,7 @@ import {
   updateDotEnvWithSecrets,
   updateRillYAMLWithOlapConnector,
 } from "../../connectors/code-utils";
-import { testConnectorConnection } from "../../connectors/olap/test-connection";
+import { testOLAPConnector } from "../../connectors/olap/test-connection";
 import { getFileAPIPathFromNameAndType } from "../../entity-management/entity-mappers";
 import { fileArtifacts } from "../../entity-management/file-artifacts";
 import { getName } from "../../entity-management/name-utils";
@@ -71,6 +71,7 @@ export async function submitAddSourceForm(
       queryClient,
       rewrittenConnector,
       rewrittenFormValues,
+      "source",
     ),
     create: true,
     createOnly: false,
@@ -91,6 +92,12 @@ export async function submitAddOLAPConnectorForm(
     connector.name as string,
     fileArtifacts.getNamesForKind(ResourceKind.Connector),
   );
+
+  /**
+   * Optimistic updates:
+   * 1. Make a new `<connector>.yaml` file
+   * 2. Create/update the `.env` file with connector secrets
+   */
 
   // Make a new `<connector>.yaml` file
   const newConnectorFilePath = getFileAPIPathFromNameAndType(
@@ -124,6 +131,7 @@ export async function submitAddOLAPConnectorForm(
     queryClient,
     connector,
     formValues,
+    "connector",
   );
   await runtimeServicePutFile(instanceId, {
     path: ".env",
@@ -132,14 +140,18 @@ export async function submitAddOLAPConnectorForm(
     createOnly: false,
   });
 
-  // Test the connection
-  const result = await testConnectorConnection(
+  /**
+   * Test the connection to validate the connector configuration
+   */
+  const result = await testOLAPConnector(
     instanceId,
     newConnectorFilePath,
     newConnectorName,
   );
 
-  // If the connection test fails, clean-up the files
+  /**
+   * Rollback all changes if the connection test fails
+   */
   if (!result.success) {
     // Clean-up the `connector.yaml` file
     await runtimeServiceDeleteFile(instanceId, {
@@ -178,7 +190,10 @@ export async function submitAddOLAPConnectorForm(
     throw new Error(result.error || "Unable to establish a connection");
   }
 
-  // The connection test passed
+  /**
+   * Connection successful: Complete the setup
+   * Update the project configuration and navigate to the new connector
+   */
 
   // Update the `rill.yaml` file
   await runtimeServicePutFile(instanceId, {
