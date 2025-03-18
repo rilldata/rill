@@ -31,6 +31,7 @@ import {
   convertFilterParamToExpression,
 } from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
 import type {
+  ExplorePresetExpressionMetadata,
   MetricsViewSpecDimensionV2,
   V1Expression,
 } from "@rilldata/web-common/runtime-client";
@@ -52,6 +53,9 @@ export class Filters {
   // STORES (writable)
   // -------------------
   whereFilter: Writable<V1Expression>;
+  dimensionInListFilter: Writable<
+    ExplorePresetExpressionMetadata["dimensionInListFilter"]
+  >;
   dimensionThresholdFilters: Writable<Array<DimensionThresholdFilter>>;
   dimensionFilterExcludeMode: Writable<Map<string, boolean>>;
   temporaryFilterName: Writable<string | null>;
@@ -109,6 +113,7 @@ export class Filters {
         exprs: [],
       },
     });
+    this.dimensionInListFilter = writable({});
     this.dimensionThresholdFilters = writable([]);
 
     // -------------------------------
@@ -247,19 +252,23 @@ export class Filters {
       },
     );
 
-    this.getDimensionFilterItems = derived(this.whereFilter, ($whereFilter) => {
-      return (dimensionIdMap: Map<string, MetricsViewSpecDimensionV2>) => {
-        const dimensionFilters = getDimensionFilters(
-          dimensionIdMap,
-          $whereFilter,
-        );
-        dimensionFilters.forEach((dimensionFilter) => {
-          dimensionFilter.metricsViewNames =
-            spec.getMetricsViewNamesForDimension(dimensionFilter.name);
-        });
-        return dimensionFilters;
-      };
-    });
+    this.getDimensionFilterItems = derived(
+      [this.whereFilter, this.dimensionInListFilter],
+      ([$whereFilter, $dimensionInListFilter]) => {
+        return (dimensionIdMap: Map<string, MetricsViewSpecDimensionV2>) => {
+          const dimensionFilters = getDimensionFilters(
+            dimensionIdMap,
+            $whereFilter,
+            $dimensionInListFilter,
+          );
+          dimensionFilters.forEach((dimensionFilter) => {
+            dimensionFilter.metricsViewNames =
+              spec.getMetricsViewNamesForDimension(dimensionFilter.name);
+          });
+          return dimensionFilters;
+        };
+      },
+    );
 
     this.unselectedDimensionValues = derived(
       this.whereFilter,
@@ -434,6 +443,12 @@ export class Filters {
 
     const expr = wf.cond?.exprs?.[exprIndex];
     if (!expr?.cond?.exprs) return;
+    this.dimensionInListFilter.update((dimensionInListFilter) => {
+      if (dimensionInListFilter) {
+        delete dimensionInListFilter[dimensionName];
+      }
+      return dimensionInListFilter;
+    });
     if (
       expr.cond?.op === V1Operation.OPERATION_LIKE ||
       expr.cond?.op === V1Operation.OPERATION_NLIKE
@@ -476,6 +491,12 @@ export class Filters {
     const wf = get(this.whereFilter);
 
     const expr = createInExpression(dimensionName, values, !isInclude);
+    this.dimensionInListFilter.update((dimensionInListFilter) => {
+      return {
+        ...(dimensionInListFilter ?? {}),
+        [dimensionName]: true,
+      };
+    });
 
     const exprIndex = get(this.getWhereFilterExpressionIndex)(dimensionName);
     if (exprIndex === undefined || exprIndex === -1) {
@@ -603,9 +624,11 @@ export class Filters {
 
   getFiltersFromText = (filterText: string) => {
     let { expr } = convertFilterParamToExpression(filterText);
-    if (
-      expr?.cond?.op !== V1Operation.OPERATION_AND &&
-      expr?.cond?.op !== V1Operation.OPERATION_OR
+    if (!expr) {
+      expr = createAndExpression([]);
+    } else if (
+      expr.cond?.op !== V1Operation.OPERATION_AND &&
+      expr.cond?.op !== V1Operation.OPERATION_OR
     ) {
       expr = createAndExpression([expr]);
     }

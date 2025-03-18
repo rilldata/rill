@@ -255,7 +255,7 @@
         type="dimension"
         active={open}
         exclude={excludeMode}
-        label={`${name} view filter`}
+        label={`${name} filter`}
         on:remove={onRemove}
         removable={!readOnly}
         {readOnly}
@@ -302,7 +302,7 @@
   >
     <div class="flex flex-col px-3 pt-3">
       <div class="flex flex-row">
-        <!-- min-w-[82px] We need this since the select component is adding ellipsis unnecessarily when label has a space. -->
+        <!-- min-w-[82px] We need the min width since the select component is adding ellipsis unnecessarily when label has a space. -->
         <Select
           id="search-mode"
           bind:value={mode}
@@ -405,6 +405,7 @@
           id="include-exclude"
           small
           on:click={onToggleFilterMode}
+          aria-label="Include exclude toggle"
         />
         <Label class="font-normal text-xs" for="include-exclude">Exclude</Label>
       </div>

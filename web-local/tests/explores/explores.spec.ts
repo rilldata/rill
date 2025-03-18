@@ -222,14 +222,14 @@ time_ranges:
 
     // Change filter to excluded
     await page.getByText("Publisher Facebook").click();
-    await page.getByRole("button", { name: "Exclude" }).click();
+    await page.getByLabel("Include exclude toggle").click();
     await page.getByText("Exclude Publisher Facebook").click();
 
     // Check number
     await expect(page.getByText("Total records 80,659")).toBeVisible();
 
     // Clear the filter from filter bar
-    await page.getByLabel("publisher view filter").getByLabel("Remove").click();
+    await page.getByLabel("publisher filter").getByLabel("Remove").click();
 
     // Apply a different filter
     await page.getByRole("row", { name: "google.com 15.1k" }).click();
@@ -467,7 +467,7 @@ dimensions:
 
     // Check that filter was applied
     await expect(
-      page.getByLabel("publisher view filter").getByText("Publisher Microsoft"),
+      page.getByLabel("publisher filter").getByText("Publisher Microsoft"),
     ).toBeVisible();
 
     // go back to the leaderboards.
@@ -500,7 +500,7 @@ dimensions:
 
     await page.getByRole("cell", { name: "Total rows" }).locator("div").click();
 
-    await page.getByRole("button", { name: "Total rows", exact: true }).click();
+    await page.getByLabel("Total rows").getByLabel("Open").click();
     await page.getByRole("menuitem", { name: "Avg Bid Price" }).click();
 
     await expect(page.getByText(" Avg Bid Price $3.02")).toBeVisible();

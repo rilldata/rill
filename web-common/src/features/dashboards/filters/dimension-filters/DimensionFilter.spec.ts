@@ -1,5 +1,8 @@
-import { useDashboardFetchMocksForComponentTests } from "@rilldata/web-common/features/dashboards/filters/test/component-test-data";
-import { renderFilterComponent } from "@rilldata/web-common/features/dashboards/filters/test/renderFilterComponent";
+import {
+  addFilter,
+  useDashboardFetchMocksForComponentTests,
+} from "@rilldata/web-common/features/dashboards/filters/test/filter-test-utils";
+import { renderFilterComponent } from "@rilldata/web-common/features/dashboards/filters/test/render-filter-component";
 import {
   createAndExpression,
   createInExpression,
@@ -12,9 +15,16 @@ import {
   AD_BIDS_METRICS_NAME,
   AD_BIDS_PUBLISHER_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
-import { describe, it, expect } from "vitest";
-import { screen, waitFor, fireEvent, act } from "@testing-library/svelte";
+import { mockAnimationsForComponentTesting } from "@rilldata/web-common/lib/test/mock-animations";
+import {
+  act,
+  fireEvent,
+  getByLabelText,
+  screen,
+  waitFor,
+} from "@testing-library/svelte";
 import { get } from "svelte/store";
+import { describe, expect, it } from "vitest";
 
 describe("DimensionFilter", () => {
   const mocks = useDashboardFetchMocksForComponentTests();
@@ -25,11 +35,14 @@ describe("DimensionFilter", () => {
     AD_BIDS_EXPLORE_INIT,
   );
 
+  mockAnimationsForComponentTesting();
+
   it("Select mode filter", async () => {
     const { stateManagers } = renderFilterComponent();
 
     await addFilter("publisher");
 
+    await waitFor(() => expect(screen.getByText("Facebook")).toBeVisible());
     await act(() => {
       screen.getByText("Facebook").click();
       screen.getByText("Google").click();
@@ -54,14 +67,18 @@ describe("DimensionFilter", () => {
     );
 
     // "Contains" mode does not persist since Apply was not clicked
-    await act(() => screen.getByLabelText("publisher view filter").click());
+    await act(() =>
+      getByLabelText(screen.getByLabelText("publisher filter"), "Open").click(),
+    );
     await waitFor(() =>
-      expect(screen.getByLabelText("publisher view filter")).toHaveTextContent(
-        "publisher Facebook +1 other",
-      ),
+      expect(
+        getByLabelText(screen.getByLabelText("publisher filter"), "Open"),
+      ).toHaveTextContent("publisher Facebook +1 other"),
     );
 
-    await act(() => screen.getByLabelText("publisher view filter").click());
+    await act(() =>
+      getByLabelText(screen.getByLabelText("publisher filter"), "Open").click(),
+    );
     await act(() => screen.getByRole("combobox").click());
     await act(() => screen.getByRole("option", { name: /In List/ }).click());
     await act(() =>
@@ -77,16 +94,18 @@ describe("DimensionFilter", () => {
     expect(screen.getByLabelText("publisher results")).toHaveTextContent(
       "Facebook Google",
     );
-    expect(screen.getByLabelText("publisher view filter")).toHaveTextContent(
-      "publisher In list (2 of 3)",
-    );
+    expect(
+      getByLabelText(screen.getByLabelText("publisher filter"), "Open"),
+    ).toHaveTextContent("publisher In list (2 of 3)");
 
     // "In List" mode does not persist since Apply was not clicked
-    await act(() => screen.getByLabelText("publisher view filter").click());
+    await act(() =>
+      getByLabelText(screen.getByLabelText("publisher filter"), "Open").click(),
+    );
     await waitFor(() =>
-      expect(screen.getByLabelText("publisher view filter")).toHaveTextContent(
-        "publisher Facebook +1 other",
-      ),
+      expect(
+        getByLabelText(screen.getByLabelText("publisher filter"), "Open"),
+      ).toHaveTextContent("publisher Facebook +1 other"),
     );
   });
 
@@ -119,9 +138,9 @@ describe("DimensionFilter", () => {
     expect(screen.getByLabelText("publisher results")).toHaveTextContent(
       "Facebook Google Yahoo",
     );
-    expect(screen.getByLabelText("publisher view filter")).toHaveTextContent(
-      "publisher Contains oo (3)",
-    );
+    expect(
+      getByLabelText(screen.getByLabelText("publisher filter"), "Open"),
+    ).toHaveTextContent("publisher Contains oo (3)");
     await act(() => screen.getByRole("button", { name: "Apply" }).click());
 
     expect(get(stateManagers.dashboardStore).whereFilter).toEqual(
@@ -129,9 +148,9 @@ describe("DimensionFilter", () => {
         createLikeExpression(AD_BIDS_PUBLISHER_DIMENSION, "%oo%"),
       ]),
     );
-    expect(screen.getByLabelText("publisher view filter")).toHaveTextContent(
-      "publisher Contains oo (3)",
-    );
+    expect(
+      getByLabelText(screen.getByLabelText("publisher filter"), "Open"),
+    ).toHaveTextContent("publisher Contains oo (3)");
   });
 
   it("Bulk mode filter using dropdown", async () => {
@@ -163,9 +182,9 @@ describe("DimensionFilter", () => {
     expect(screen.getByLabelText("publisher results")).toHaveTextContent(
       "Facebook Google",
     );
-    expect(screen.getByLabelText("publisher view filter")).toHaveTextContent(
-      "publisher In list (2 of 3)",
-    );
+    expect(
+      getByLabelText(screen.getByLabelText("publisher filter"), "Open"),
+    ).toHaveTextContent("publisher In list (2 of 3)");
 
     // Adding a comma at the end doesnt add an extra element
     await act(() =>
@@ -196,9 +215,9 @@ describe("DimensionFilter", () => {
     expect(get(stateManagers.dashboardStore).metadata).toEqual({
       dimensionInListFilter: { publisher: true },
     });
-    expect(screen.getByLabelText("publisher view filter")).toHaveTextContent(
-      "publisher In list (2 of 3)",
-    );
+    expect(
+      getByLabelText(screen.getByLabelText("publisher filter"), "Open"),
+    ).toHaveTextContent("publisher In list (2 of 3)");
   });
 
   it("Bulk mode filter using search text", async () => {
@@ -219,9 +238,9 @@ describe("DimensionFilter", () => {
     expect(screen.getByLabelText("publisher results")).toHaveTextContent(
       "Facebook Google",
     );
-    expect(screen.getByLabelText("publisher view filter")).toHaveTextContent(
-      "publisher In list (2 of 3)",
-    );
+    expect(
+      getByLabelText(screen.getByLabelText("publisher filter"), "Open"),
+    ).toHaveTextContent("publisher In list (2 of 3)");
     await act(() => screen.getByRole("button", { name: "Apply" }).click());
 
     expect(get(stateManagers.dashboardStore).whereFilter).toEqual(
@@ -236,23 +255,8 @@ describe("DimensionFilter", () => {
     expect(get(stateManagers.dashboardStore).metadata).toEqual({
       dimensionInListFilter: { publisher: true },
     });
-    expect(screen.getByLabelText("publisher view filter")).toHaveTextContent(
-      "publisher In list (2 of 3)",
-    );
+    expect(
+      getByLabelText(screen.getByLabelText("publisher filter"), "Open"),
+    ).toHaveTextContent("publisher In list (2 of 3)");
   });
 });
-
-async function addFilter(name: string) {
-  await act(() => {
-    screen.getByLabelText("Add filter button").click();
-  });
-  await waitFor(() =>
-    expect(screen.getByRole("menuitem", { name })).toBeVisible(),
-  );
-  await act(() => {
-    screen.getByRole("menuitem", { name }).click();
-  });
-  await waitFor(() =>
-    expect(screen.queryByRole("menuitem", { name })).toBeNull(),
-  );
-}

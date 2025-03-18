@@ -41,6 +41,7 @@ export function toggleDimensionValueSelection(
     // should never happen since getWhereFilterExpressionIndex runs a find
     return;
   }
+  delete dashboard.metadata.dimensionInListFilter![dimensionName];
   if (
     expr.cond?.op === V1Operation.OPERATION_LIKE ||
     expr.cond?.op === V1Operation.OPERATION_NLIKE
@@ -52,8 +53,6 @@ export function toggleDimensionValueSelection(
     );
     return;
   }
-
-  delete dashboard.metadata.dimensionInListFilter![dimensionName];
 
   const inIdx = getValueIndexInExpression(expr, dimensionValue) as number;
   if (inIdx === -1) {

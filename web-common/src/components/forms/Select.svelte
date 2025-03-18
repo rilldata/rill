@@ -102,7 +102,7 @@
         `w-[${width}px]`} {minWidth && `min-w-[${minWidth}px]`} {ringFocus &&
         'focus:ring-2 focus:ring-primary-100'} {truncate
         ? 'break-all overflow-hidden'
-        : ''} {noRightBorder ? 'rounded-r-none border-r-0' : ''}"
+        : ''} {noRightBorder ? 'rounded-r-none' : ''}"
     >
       <Select.Value
         {placeholder}

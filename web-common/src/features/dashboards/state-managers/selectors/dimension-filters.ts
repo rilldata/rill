@@ -196,7 +196,7 @@ export function getDimensionFilters(
         name: ident,
         label: getDimensionDisplayName(dim),
         selectedValues: [],
-        searchText: e.cond?.exprs?.[1]?.val,
+        searchText: e.cond?.exprs?.[1]?.val?.toString?.() ?? "",
         isInclude: e.cond?.op === V1Operation.OPERATION_IN,
       });
     }

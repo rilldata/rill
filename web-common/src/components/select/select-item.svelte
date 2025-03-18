@@ -5,7 +5,7 @@
   import { Check } from "lucide-svelte";
 
   type $$Props = SelectPrimitive.ItemProps & {
-    description: string | undefined;
+    description?: string;
   };
   // type $$Events = Required<SelectPrimitive.ItemEvents>;
 

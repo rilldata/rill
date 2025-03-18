@@ -108,10 +108,7 @@ describe("expression", () => {
       {
         expr: "country IN LIST ('US','IN')",
         expectedExprString: "country IN LIST ('US','IN')",
-        expectedExprObject: {
-          ...createInExpression("country", ["US", "IN"]),
-          isMatchList: true,
-        },
+        expectedExprObject: createInExpression("country", ["US", "IN"]),
       },
 
       {
@@ -132,7 +129,7 @@ describe("expression", () => {
         const { expr: exprObject, metadata } =
           convertFilterParamToExpression(expr);
         expect(exprObject).to.deep.eq(expectedExprObject);
-        expect(convertExpressionToFilterParam(exprObject, metadata)).toEqual(
+        expect(convertExpressionToFilterParam(exprObject!, metadata)).toEqual(
           expectedExprString,
         );
       });

@@ -9,10 +9,17 @@ import grammar from "./expression.cjs";
 import nearley from "nearley";
 
 const compiledGrammar = nearley.Grammar.fromCompiled(grammar);
-export function convertFilterParamToExpression(filter: string) {
+export function convertFilterParamToExpression(filter: string): {
+  expr: V1Expression | undefined;
+  metadata: ExplorePresetExpressionMetadata;
+} {
   const parser = new nearley.Parser(compiledGrammar);
   parser.feed(filter);
   const expr = parser.results[0] as V1Expression;
+
+  if (!expr) {
+    return { expr: undefined, metadata: {} };
+  }
 
   const metadata: ExplorePresetExpressionMetadata = {
     dimensionInListFilter: {},
