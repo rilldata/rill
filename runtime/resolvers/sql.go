@@ -264,7 +264,7 @@ func resolveTemplate(sqlTemplate string, args map[string]any, inst *drivers.Inst
 			// TODO: As of now it is using `DialectDuckDB` in all cases since in certain cases like metrics_sql it is not possible to identify OLAP connector before template resolution.
 			return drivers.DialectDuckDB.EscapeIdentifier(ref.Name), nil
 		},
-	})
+	}, false)
 	if err != nil {
 		return "", nil, err
 	}

@@ -1445,7 +1445,7 @@ func (r *ModelReconciler) resolveTemplatedProps(ctx context.Context, self *runti
 		},
 	}
 
-	val, err := compilerv1.ResolveTemplateRecursively(props, td)
+	val, err := compilerv1.ResolveTemplateRecursively(props, td, false)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve template: %w", err)
 	}

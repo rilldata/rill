@@ -143,7 +143,7 @@ func (r *MigrationReconciler) executeMigration(ctx context.Context, self *runtim
 				State: res.Resource.(*runtimev1.Resource_Model).Model.State,
 			}, nil
 		},
-	})
+	}, false)
 	if err != nil {
 		return fmt.Errorf("failed to resolve template: %w", err)
 	}

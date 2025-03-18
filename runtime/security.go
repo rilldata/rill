@@ -472,7 +472,7 @@ func (p *securityEngine) applySecurityRuleAccess(res *ResolvedSecurity, _ *runti
 	}
 
 	if rule.Condition != "" {
-		expr, err := rillv1.ResolveTemplate(rule.Condition, td)
+		expr, err := rillv1.ResolveTemplate(rule.Condition, td, false)
 		if err != nil {
 			return err
 		}
@@ -528,7 +528,7 @@ func (p *securityEngine) applySecurityRuleFieldAccess(res *ResolvedSecurity, r *
 
 	// Determine if the rule should be applied
 	if rule.Condition != "" {
-		expr, err := rillv1.ResolveTemplate(rule.Condition, td)
+		expr, err := rillv1.ResolveTemplate(rule.Condition, td, false)
 		if err != nil {
 			return err
 		}
@@ -566,7 +566,7 @@ func (p *securityEngine) applySecurityRuleFieldAccess(res *ResolvedSecurity, r *
 func (p *securityEngine) applySecurityRuleRowFilter(res *ResolvedSecurity, _ *runtimev1.Resource, rule *runtimev1.SecurityRuleRowFilter, td rillv1.TemplateData) error {
 	// Determine if the rule should be applied
 	if rule.Condition != "" {
-		expr, err := rillv1.ResolveTemplate(rule.Condition, td)
+		expr, err := rillv1.ResolveTemplate(rule.Condition, td, false)
 		if err != nil {
 			return err
 		}
@@ -582,7 +582,7 @@ func (p *securityEngine) applySecurityRuleRowFilter(res *ResolvedSecurity, _ *ru
 
 	// Handle raw SQL row filters
 	if rule.Sql != "" {
-		sql, err := rillv1.ResolveTemplate(rule.Sql, td)
+		sql, err := rillv1.ResolveTemplate(rule.Sql, td, false)
 		if err != nil {
 			return err
 		}

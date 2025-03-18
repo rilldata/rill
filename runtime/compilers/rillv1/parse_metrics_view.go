@@ -222,7 +222,7 @@ func (p *SecurityPolicyYAML) Proto() ([]*runtimev1.SecurityRule, error) {
 	}
 
 	if p.Access != "" {
-		tmp, err := ResolveTemplate(p.Access, validationTemplateData)
+		tmp, err := ResolveTemplate(p.Access, validationTemplateData, false)
 		if err != nil {
 			return nil, fmt.Errorf(`invalid 'security': 'access' templating is not valid: %w`, err)
 		}
@@ -251,7 +251,7 @@ func (p *SecurityPolicyYAML) Proto() ([]*runtimev1.SecurityRule, error) {
 	}
 
 	if p.RowFilter != "" {
-		_, err := ResolveTemplate(p.RowFilter, validationTemplateData)
+		_, err := ResolveTemplate(p.RowFilter, validationTemplateData, false)
 		if err != nil {
 			return nil, fmt.Errorf(`invalid 'security': 'row_filter' templating is not valid: %w`, err)
 		}
@@ -270,7 +270,7 @@ func (p *SecurityPolicyYAML) Proto() ([]*runtimev1.SecurityRule, error) {
 			continue
 		}
 
-		tmp, err := ResolveTemplate(inc.Condition, validationTemplateData)
+		tmp, err := ResolveTemplate(inc.Condition, validationTemplateData, false)
 		if err != nil {
 			return nil, fmt.Errorf(`invalid 'security': 'if' condition templating is not valid: %w`, err)
 		}
@@ -318,7 +318,7 @@ func (p *SecurityPolicyYAML) Proto() ([]*runtimev1.SecurityRule, error) {
 			continue
 		}
 
-		tmp, err := ResolveTemplate(exc.Condition, validationTemplateData)
+		tmp, err := ResolveTemplate(exc.Condition, validationTemplateData, false)
 		if err != nil {
 			return nil, fmt.Errorf(`invalid 'security': 'if' condition templating is not valid: %w`, err)
 		}
@@ -377,7 +377,7 @@ type SecurityRuleYAML struct {
 func (r *SecurityRuleYAML) Proto() (*runtimev1.SecurityRule, error) {
 	condition := r.If
 	if condition != "" {
-		tmp, err := ResolveTemplate(condition, validationTemplateData)
+		tmp, err := ResolveTemplate(condition, validationTemplateData, false)
 		if err != nil {
 			return nil, fmt.Errorf(`invalid 'if': templating is not valid: %w`, err)
 		}
