@@ -1,5 +1,5 @@
 import { expect } from "@playwright/test";
-import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/exploreInteractions";
+import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions";
 import {
   createExploreFromModel,
   createExploreFromSource,
