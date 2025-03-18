@@ -18,7 +18,7 @@ export interface TableSpec
   columns: string[];
 }
 
-export { default as Table } from "./FlatTableDisplay.svelte";
+export { default as Table } from "./CanvasTableDisplay.svelte";
 
 export class TableCanvasComponent extends BaseCanvasComponent<TableSpec> {
   minSize = { width: 2, height: 2 };

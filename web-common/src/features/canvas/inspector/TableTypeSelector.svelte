@@ -3,15 +3,21 @@
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import type { CanvasComponentType } from "@rilldata/web-common/features/canvas/components/types";
   import type { CanvasComponentObj } from "@rilldata/web-common/features/canvas/components/util";
+  import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 
   export let component: CanvasComponentObj;
   export let componentType: CanvasComponentType;
+  export let metricsViewName: string;
+
+  const ctx = getCanvasStateManagers();
+  const { getMetricsViewFromName } = ctx.canvasEntity.spec;
 
   $: selected = componentType === "table" ? 0 : 1;
+  $: metricsView = getMetricsViewFromName(metricsViewName);
 
-  function onChange(tableType: "pivot" | "table") {
+  async function onChange(tableType: "pivot" | "table") {
     if (tableType !== componentType) {
-      component.updateTableType(tableType);
+      component.updateTableType(tableType, $metricsView);
     }
   }
 </script>
@@ -20,6 +26,7 @@
   <InputLabel small label="Table type" id="table-type-selector" />
   <FieldSwitcher
     small
+    expand
     fields={["Flat", "Pivot"]}
     {selected}
     onClick={(_, field) => {

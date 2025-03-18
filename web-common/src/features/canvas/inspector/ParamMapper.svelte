@@ -48,8 +48,12 @@
   <ChartTypeSelector {component} {componentType} />
 {/if}
 
-{#if isTableComponentType(componentType)}
-  <TableTypeSelector {component} {componentType} />
+{#if metricsView && isTableComponentType(componentType)}
+  <TableTypeSelector
+    {component}
+    {componentType}
+    metricsViewName={metricsView}
+  />
 {/if}
 
 <div>

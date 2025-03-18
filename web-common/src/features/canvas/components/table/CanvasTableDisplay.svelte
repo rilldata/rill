@@ -8,17 +8,18 @@
   import PivotTable from "@rilldata/web-common/features/dashboards/pivot/PivotTable.svelte";
   import {
     type PivotDataStore,
+    type PivotDataStoreConfig,
     type PivotState,
   } from "@rilldata/web-common/features/dashboards/pivot/types";
   import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
   import { onDestroy } from "svelte";
   import { writable, type Readable } from "svelte/store";
+  import type { TableSpec } from ".";
   import {
     clearTableCache,
     tableFieldMapper,
     usePivotForCanvas,
   } from "../pivot/util";
-  import type { TableSpec } from "./";
   import { validateTableSchema } from "./selector";
   import { getTableConfig } from "./util";
 
@@ -43,6 +44,7 @@
 
   const { getMetricsViewFromName } = ctx.canvasEntity.spec;
   let pivotDataStore: PivotDataStore | undefined;
+  let tableConfig: Readable<PivotDataStoreConfig> | undefined;
 
   $: tableSpec = rendererProperties as TableSpec;
   $: tableSpecStore.set(tableSpec);
@@ -62,15 +64,15 @@
     }));
   }
 
-  $: tableConfig = getTableConfig(
-    ctx,
-    tableSpec.metrics_view,
-    tableSpecStore,
-    pivotState,
-    timeAndFilterStore,
-  );
-
   $: if ($schema.isValid && tableSpec.metrics_view) {
+    tableConfig = getTableConfig(
+      ctx,
+      tableSpec.metrics_view,
+      tableSpecStore,
+      pivotState,
+      timeAndFilterStore,
+    );
+
     pivotDataStore = usePivotForCanvas(
       ctx,
       componentName,

@@ -1,6 +1,9 @@
 import type { StateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
-import { canEnablePivotComparison } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
+import {
+  canEnablePivotComparison,
+  getPivotConfigKey,
+} from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
 import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
@@ -9,14 +12,16 @@ import {
   type PivotTimeConfig,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import { type Readable, derived } from "svelte/store";
+import { type Readable, type Writable, derived } from "svelte/store";
 import type { TableSpec } from "./";
+
+let lastKey: string | undefined = undefined;
 
 export function getTableConfig(
   ctx: StateManagers,
   metricsViewName: string,
   tableSpecStore: Readable<TableSpec>,
-  pivotState: Readable<PivotState>,
+  pivotState: Writable<PivotState>,
   timeAndFilterStore: Readable<TimeAndFilterStore>,
 ): Readable<PivotDataStoreConfig> {
   const {
@@ -52,13 +57,12 @@ export function getTableConfig(
         };
       }
 
+      const columns = $tableSpec?.columns || [];
       const allMeasureNames =
         metricsView?.measures?.map((m) => m.name as string) || [];
 
-      const measures =
-        $tableSpec?.columns?.filter((c) => allMeasureNames.includes(c)) || [];
-      const dimensions =
-        $tableSpec?.columns?.filter((c) => !measures.includes(c)) || [];
+      const measures = columns.filter((c) => allMeasureNames.includes(c)) || [];
+      const dimensions = columns.filter((c) => !measures.includes(c)) || [];
 
       const enableComparison =
         canEnablePivotComparison($pivotState, comparisonTimeRange?.start) &&
@@ -95,6 +99,19 @@ export function getTableConfig(
           timeDimension: metricsView?.timeDimension || "",
         },
       };
+
+      const currentKey = getPivotConfigKey(config);
+
+      if (lastKey !== currentKey) {
+        // Reset rowPage when pivot config changes
+        lastKey = currentKey;
+        if (config.pivot.rowPage !== 1) {
+          pivotState.update((state) => ({
+            ...state,
+            rowPage: 1,
+          }));
+        }
+      }
 
       return config;
     },

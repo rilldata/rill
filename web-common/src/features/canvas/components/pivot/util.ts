@@ -3,6 +3,8 @@ import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/st
 import { createPivotDataStore } from "@rilldata/web-common/features/dashboards/pivot/pivot-data-store";
 import {
   canEnablePivotComparison,
+  getPivotConfigKey,
+  getTimeGrainFromDimension,
   isTimeDimension,
 } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
 import {
@@ -16,7 +18,14 @@ import {
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
-import { type Readable, derived, get, readable, writable } from "svelte/store";
+import {
+  type Readable,
+  type Writable,
+  derived,
+  get,
+  readable,
+  writable,
+} from "svelte/store";
 import type { PivotSpec } from "./";
 
 type CacheEntry = {
@@ -47,12 +56,13 @@ export function clearTableCache(componentName?: string) {
     },
   );
 }
+let lastKey: string | undefined = undefined;
 
 export function getPivotConfig(
   ctx: StateManagers,
   metricsViewName: string,
   tableSpecStore: Readable<PivotSpec>,
-  pivotState: Readable<PivotState>,
+  pivotState: Writable<PivotState>,
   timeAndFilterStore: Readable<TimeAndFilterStore>,
 ): Readable<PivotDataStoreConfig> {
   const {
@@ -124,6 +134,19 @@ export function getPivotConfig(
         },
       };
 
+      const currentKey = getPivotConfigKey(config);
+
+      if (lastKey !== currentKey) {
+        // Reset rowPage when pivot config changes
+        lastKey = currentKey;
+        if (config.pivot.rowPage !== 1) {
+          pivotState.update((state) => ({
+            ...state,
+            rowPage: 1,
+          }));
+        }
+      }
+
       return config;
     },
   );
@@ -179,9 +202,10 @@ export function tableFieldMapper(
   const measures = metricViewSpec?.measures?.map((m) => m.name as string) || [];
   return fields.map((field) => {
     if (timeDimension && isTimeDimension(field, timeDimension)) {
+      const grain = getTimeGrainFromDimension(field);
       return {
-        id: field,
-        title: field,
+        id: grain,
+        title: `Time ${grain}`,
         type: PivotChipType.Time,
       };
     }
