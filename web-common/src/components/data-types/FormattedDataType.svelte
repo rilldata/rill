@@ -55,7 +55,7 @@ about unknown props.
 {#if type === "RILL_PERCENTAGE_CHANGE" && typeof value !== "boolean"}
   <PercentageChange {value} {isNull} {inTable} {customStyle} {dark} />
 {:else if type === "RILL_CHANGE"}
-  <MeasureChange {value} {inTable} {customStyle} {dark} />
+  <MeasureChange {value} {inTable} {customStyle} {dark} {truncate} />
 {:else}
   <svelte:component
     this={dataType}
