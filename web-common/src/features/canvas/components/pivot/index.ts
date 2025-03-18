@@ -11,16 +11,18 @@ import type {
   ComponentFilterProperties,
 } from "../types";
 
-export interface TableSpec
+export interface PivotSpec
   extends ComponentCommonProperties,
     ComponentFilterProperties {
   metrics_view: string;
-  columns: string[];
+  measures: string[];
+  row_dimensions?: string[];
+  col_dimensions?: string[];
 }
 
-export { default as Table } from "./FlatTableDisplay.svelte";
+export { default as Pivot } from "./CanvasPivotDisplay.svelte";
 
-export class TableCanvasComponent extends BaseCanvasComponent<TableSpec> {
+export class PivotCanvasComponent extends BaseCanvasComponent<PivotSpec> {
   minSize = { width: 2, height: 2 };
   defaultSize = { width: 4, height: 10 };
   resetParams = ["measures", "row_dimensions", "col_dimensions"];
@@ -28,27 +30,39 @@ export class TableCanvasComponent extends BaseCanvasComponent<TableSpec> {
   constructor(
     fileArtifact: FileArtifact | undefined = undefined,
     path: (string | number)[] = [],
-    initialSpec: Partial<TableSpec> = {},
+    initialSpec: Partial<PivotSpec> = {},
   ) {
-    const defaultSpec: TableSpec = {
+    const defaultSpec: PivotSpec = {
       metrics_view: "",
-      columns: [],
+      measures: [],
+      row_dimensions: [],
+      col_dimensions: [],
     };
     super(fileArtifact, path, defaultSpec, initialSpec);
   }
 
-  isValid(spec: TableSpec): boolean {
+  isValid(spec: PivotSpec): boolean {
     return typeof spec.metrics_view === "string";
   }
 
-  inputParams(): InputParams<TableSpec> {
+  inputParams(): InputParams<PivotSpec> {
     return {
       options: {
         metrics_view: { type: "metrics", label: "Metrics view" },
-        columns: {
+        measures: {
           type: "multi_fields",
-          label: "Columns",
-          meta: { allowedTypes: ["time", "dimension", "measure"] },
+          meta: { allowedTypes: ["measure"] },
+          label: "Measures",
+        },
+        col_dimensions: {
+          type: "multi_fields",
+          meta: { allowedTypes: ["time", "dimension"] },
+          label: "Column dimensions",
+        },
+        row_dimensions: {
+          type: "multi_fields",
+          meta: { allowedTypes: ["time", "dimension"] },
+          label: "Row dimensions",
         },
         ...commonOptions,
       },
@@ -59,18 +73,17 @@ export class TableCanvasComponent extends BaseCanvasComponent<TableSpec> {
   newComponentSpec(
     metricsViewName: string,
     metricsViewSpec: V1MetricsViewSpec | undefined,
-  ): TableSpec {
-    const measures =
-      metricsViewSpec?.measures?.slice(0, 3).map((m) => m.name as string) ?? [];
-
-    const dimensions =
-      metricsViewSpec?.dimensions
-        ?.slice(0, 3)
-        .map((d) => d.name || (d.column as string)) ?? [];
+  ): PivotSpec {
+    const firstDimension = metricsViewSpec?.dimensions?.[0]?.name;
+    const secondDimension = metricsViewSpec?.dimensions?.[1]?.name;
 
     return {
       metrics_view: metricsViewName,
-      columns: [...measures, ...dimensions],
+      measures:
+        metricsViewSpec?.measures?.slice(0, 3).map((m) => m.name as string) ??
+        [],
+      row_dimensions: firstDimension ? [firstDimension] : [],
+      col_dimensions: secondDimension ? [secondDimension] : undefined,
     };
   }
 }

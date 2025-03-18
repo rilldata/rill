@@ -1,51 +1,16 @@
 import type { StateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
-import { createPivotDataStore } from "@rilldata/web-common/features/dashboards/pivot/pivot-data-store";
-import {
-  canEnablePivotComparison,
-  isTimeDimension,
-} from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
+import { canEnablePivotComparison } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
 import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
-  PivotChipType,
-  type PivotDashboardContext,
   type PivotDataStoreConfig,
   type PivotState,
   type PivotTimeConfig,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import { type Readable, derived, get, readable, writable } from "svelte/store";
+import { type Readable, derived } from "svelte/store";
 import type { TableSpec } from "./";
-
-type CacheEntry = {
-  store: ReturnType<typeof createPivotDataStore>;
-  unsubscribe: () => void;
-};
-
-const tableStoreCache = writable<Map<string, CacheEntry>>(new Map());
-export function clearTableCache(componentName?: string) {
-  tableStoreCache.update(
-    (cache: Map<string, CacheEntry>): Map<string, CacheEntry> => {
-      if (!componentName) {
-        // Clear all cache entries if componentName is undefined
-        for (const entry of cache.values()) {
-          entry.unsubscribe();
-        }
-        cache.clear();
-      } else {
-        // Clear only entries matching componentName
-        for (const [key, entry] of cache.entries()) {
-          if (key.startsWith(componentName)) {
-            entry.unsubscribe();
-            cache.delete(key);
-          }
-        }
-      }
-      return cache;
-    },
-  );
-}
 
 export function getTableConfig(
   ctx: StateManagers,
@@ -83,16 +48,24 @@ export function getTableConfig(
           comparisonTime: undefined,
           enableComparison: false,
           searchText: "",
-          isFlat: false,
+          isFlat: true,
         };
       }
+
+      const allMeasureNames =
+        metricsView?.measures?.map((m) => m.name as string) || [];
+
+      const measures =
+        $tableSpec?.columns?.filter((c) => allMeasureNames.includes(c)) || [];
+      const dimensions =
+        $tableSpec?.columns?.filter((c) => !measures.includes(c)) || [];
 
       const enableComparison =
         canEnablePivotComparison($pivotState, comparisonTimeRange?.start) &&
         $timeAndFilterStore.showTimeComparison;
 
       const config: PivotDataStoreConfig = {
-        measureNames: ($tableSpec?.measures || []).flatMap((name) => {
+        measureNames: (measures || []).flatMap((name) => {
           const group = [name];
           if (enableComparison) {
             group.push(
@@ -102,13 +75,13 @@ export function getTableConfig(
           }
           return group;
         }),
-        rowDimensionNames: $tableSpec?.row_dimensions || [],
-        colDimensionNames: $tableSpec?.col_dimensions || [],
+        rowDimensionNames: dimensions || [],
+        colDimensionNames: [],
         allMeasures: metricsView?.measures || [],
         allDimensions: metricsView?.dimensions || [],
         whereFilter: where ?? createAndExpression([]),
         searchText: "",
-        isFlat: false,
+        isFlat: true,
         pivot: $pivotState,
         enableComparison,
         comparisonTime: {
@@ -126,76 +99,4 @@ export function getTableConfig(
       return config;
     },
   );
-}
-
-export const usePivotForCanvas = (
-  ctx: StateManagers,
-  componentName: string,
-  metricsViewName: string,
-  pivotState: Readable<PivotState>,
-  tableSpecStore: Readable<TableSpec>,
-  timeAndFilterStore: Readable<TimeAndFilterStore>,
-) => {
-  const cachedEntry = get(tableStoreCache).get(
-    `${componentName}-${metricsViewName}`,
-  );
-
-  if (cachedEntry) {
-    return cachedEntry.store;
-  } else {
-    clearTableCache(componentName);
-  }
-
-  const pivotConfig = getTableConfig(
-    ctx,
-    metricsViewName,
-    tableSpecStore,
-    pivotState,
-    timeAndFilterStore,
-  );
-
-  const pivotDashboardContext: PivotDashboardContext = {
-    metricsViewName: readable(metricsViewName),
-    queryClient: ctx.queryClient,
-    enabled: !!ctx.canvasEntity.spec.canvasSpec,
-  };
-
-  const pivotDataStore = createPivotDataStore(
-    pivotDashboardContext,
-    pivotConfig,
-  );
-
-  const unsubscribe = pivotDataStore.subscribe(() => {});
-
-  tableStoreCache.update(
-    (cache: Map<string, CacheEntry>): Map<string, CacheEntry> => {
-      cache.set(`${componentName}-${metricsViewName}`, {
-        store: pivotDataStore,
-        unsubscribe,
-      });
-      return cache;
-    },
-  );
-
-  return pivotDataStore;
-};
-
-export function tableFieldMapper(
-  fields: string[],
-  timeDimension: string | undefined,
-) {
-  return fields.map((field) => {
-    if (timeDimension && isTimeDimension(field, timeDimension)) {
-      return {
-        id: field,
-        title: field,
-        type: PivotChipType.Time,
-      };
-    }
-    return {
-      id: field,
-      title: field,
-      type: PivotChipType.Dimension,
-    };
-  });
 }

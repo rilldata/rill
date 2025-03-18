@@ -1,6 +1,5 @@
 <script lang="ts">
   import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
-  import type { TableSpec } from "@rilldata/web-common/features/canvas/components/table";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
@@ -14,13 +13,14 @@
   import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
   import { onDestroy } from "svelte";
   import { writable, type Readable } from "svelte/store";
-  import { validateTableSchema } from "./selector";
   import {
     clearTableCache,
-    getTableConfig,
     tableFieldMapper,
     usePivotForCanvas,
-  } from "./util";
+  } from "../pivot/util";
+  import type { TableSpec } from "./";
+  import { validateTableSchema } from "./selector";
+  import { getTableConfig } from "./util";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
   export let timeAndFilterStore: Readable<TimeAndFilterStore>;
@@ -47,9 +47,7 @@
   $: tableSpec = rendererProperties as TableSpec;
   $: tableSpecStore.set(tableSpec);
 
-  $: measures = tableSpec.measures || [];
-  $: colDimensions = tableSpec.col_dimensions || [];
-  $: rowDimensions = tableSpec.row_dimensions || [];
+  $: columns = tableSpec?.columns || [];
 
   $: metricViewSpec = getMetricsViewFromName(tableSpec.metrics_view);
 
@@ -60,15 +58,11 @@
       ...state,
       sorting: [],
       expanded: {},
-      columns: [
-        ...tableFieldMapper(colDimensions, $metricViewSpec?.timeDimension),
-        ...tableFieldMapper(measures, $metricViewSpec?.timeDimension),
-      ],
-      rows: tableFieldMapper(rowDimensions, $metricViewSpec?.timeDimension),
+      columns: tableFieldMapper(columns, $metricViewSpec),
     }));
   }
 
-  $: pivotConfig = getTableConfig(
+  $: tableConfig = getTableConfig(
     ctx,
     tableSpec.metrics_view,
     tableSpecStore,
@@ -81,9 +75,7 @@
       ctx,
       componentName,
       tableSpec.metrics_view,
-      pivotState,
-      tableSpecStore,
-      timeAndFilterStore,
+      tableConfig,
     );
   } else {
     pivotDataStore = undefined;
@@ -103,7 +95,7 @@
 <div class="size-full overflow-hidden" style:max-height="inherit">
   {#if !$schema.isValid}
     <ComponentError error={$schema.error} />
-  {:else if pivotDataStore && $pivotDataStore && pivotConfig && $pivotConfig}
+  {:else if pivotDataStore && $pivotDataStore && tableConfig && $tableConfig}
     {#if $pivotDataStore?.error?.length}
       <PivotError errors={$pivotDataStore.error} />
     {:else if !$pivotDataStore?.data || $pivotDataStore?.data?.length === 0}
@@ -116,7 +108,7 @@
       <PivotTable
         border={false}
         {pivotDataStore}
-        config={pivotConfig}
+        config={tableConfig}
         {pivotState}
         setPivotExpanded={(expanded) => {
           pivotState.update((state) => ({
