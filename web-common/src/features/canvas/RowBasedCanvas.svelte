@@ -33,7 +33,7 @@
   import RowWrapper from "./RowWrapper.svelte";
   import { useDefaultMetrics } from "./selector";
   import { getCanvasStateManagers } from "./state-managers/state-managers";
-  import { activeDivider, dropZone } from "./stores/ui-stores";
+  import { hoveredDivider, dropZone } from "./stores/ui-stores";
   import ComponentError from "./components/ComponentError.svelte";
 
   const activelyEditing = writable(false);
@@ -207,6 +207,7 @@
   }
 
   function onColumnResizeEnd() {
+    hoveredDivider.reset();
     window.removeEventListener("mousemove", onColumnResize);
     window.removeEventListener("mouseup", onColumnResizeEnd);
 
@@ -290,6 +291,7 @@
     if (dragTimeout) {
       clearTimeout(dragTimeout);
     }
+
     if (resizeRow !== -1) {
       onRowResizeEnd();
     }
@@ -303,11 +305,11 @@
       openSidebarAfterSelection = false;
     }
 
-    activeDivider.set(null);
     dropZone.clear();
   }
 
   function onRowResizeEnd() {
+    hoveredDivider.reset();
     const height = specCanvasRows[resizeRow]?.height;
 
     if (!height) return;
@@ -441,6 +443,12 @@
     const newSpecRows = moveToRow(specCanvasRows, [{ type }], { row });
 
     updateAssets(newSpecRows, newYamlRows);
+
+    const id = getId(row, 0);
+
+    selected = new Set([id]);
+
+    setSelectedComponent({ column: 0, row });
   }
 
   function onDrop(row: number, column: number | null) {
@@ -466,6 +474,13 @@
   function resetSelection() {
     setSelectedComponent(null);
     selected = new Set();
+  }
+
+  function scrollToBottom() {
+    const element = document.querySelector("#canvas-scroll-container");
+    if (element) {
+      element.scrollTop = element.scrollHeight;
+    }
   }
 </script>
 
@@ -540,6 +555,8 @@
             onMouseDown={onColumResizeStart}
             columnWidth={width}
             {rowIndex}
+            resizingColumn={resizeColumnInfo?.row === rowIndex &&
+              resizeColumnInfo?.column === columnIndex}
             dragging={!!dragItemInfo}
             resizeIndex={columnIndex}
             addIndex={columnIndex + 1}
@@ -612,6 +629,7 @@
         allowDrop={!!dragItemInfo}
         resizeIndex={rowIndex}
         dropIndex={rowIndex + 1}
+        resizingRow={resizeRow === rowIndex}
         onRowResizeStart={(e) => {
           onRowResizeStart(e, rowIndex, types);
         }}
@@ -632,31 +650,41 @@
         />
       {/if}
     </RowWrapper>
+  {:else}
+    <RowWrapper
+      gridTemplate="12fr"
+      zIndex={0}
+      {maxWidth}
+      rowIndex={specCanvasRows.length}
+    >
+      <ItemWrapper zIndex={0}>
+        {#if defaultMetrics}
+          <AddComponentDropdown
+            componentForm
+            onMouseEnter={() => {
+              if (timeout) clearTimeout(timeout);
+            }}
+            onItemClick={(type) => {
+              initializeRow(specCanvasRows.length, type);
+            }}
+          />
+        {:else}
+          <ComponentError error="No valid metrics view in project" />
+        {/if}
+      </ItemWrapper>
+    </RowWrapper>
   {/each}
-
-  <RowWrapper
-    gridTemplate="12fr"
-    zIndex={0}
-    {maxWidth}
-    rowIndex={specCanvasRows.length}
-  >
-    <ItemWrapper zIndex={0}>
-      {#if defaultMetrics}
-        <AddComponentDropdown
-          componentForm
-          onMouseEnter={() => {
-            if (timeout) clearTimeout(timeout);
-          }}
-          onItemClick={(type) => {
-            initializeRow(specCanvasRows.length, type);
-          }}
-        />
-      {:else}
-        <ComponentError error="No valid metrics view in project" />
-      {/if}
-    </ItemWrapper>
-  </RowWrapper>
 </CanvasDashboardWrapper>
+
+{#if specCanvasRows.length}
+  <AddComponentDropdown
+    floatingForm
+    onItemClick={(type) => {
+      initializeRow(specCanvasRows.length, type);
+      setTimeout(() => scrollToBottom(), 500);
+    }}
+  />
+{/if}
 
 {#if dragItemInfo && dragItemInfo.position}
   {@const item =

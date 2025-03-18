@@ -2,14 +2,16 @@
   import { ArrowLeftRight } from "lucide-svelte";
   import AddComponentDropdown from "./AddComponentDropdown.svelte";
   import type { CanvasComponentType } from "./components/types";
-  import { dropZone, hoveredDivider, activeDivider } from "./stores/ui-stores";
+  import { dropZone, hoveredDivider } from "./stores/ui-stores";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import Divider from "./Divider.svelte";
 
   export let resizeIndex: number;
   export let addIndex: number;
   export let rowLength: number;
   export let rowIndex: number;
+  export let resizingColumn = false;
   export let columnWidth: number | undefined = undefined;
   export let isSpreadEvenly: boolean;
   export let dragging: boolean;
@@ -21,20 +23,29 @@
   export let spreadEvenly: (rowIndex: number) => void;
   export let onMouseEnter = () => {};
 
+  let menuOpen = false;
+
   $: firstElement = addIndex === 0;
   $: lastElement = addIndex === rowLength;
 
   $: dividerId = `row:${rowIndex}::column:${resizeIndex}`;
 
-  $: isActiveDivider = $activeDivider === dividerId;
-  $: isHoveredDivider = $hoveredDivider === dividerId;
+  const { id, isActive } = hoveredDivider;
+
+  $: hoveredId = $id;
+  $: active = $isActive;
+
+  $: isHoveredDivider = hoveredId === dividerId;
+  $: isActiveDivider = isHoveredDivider && active;
 
   $: dropId = `row:${rowIndex}::column:${addIndex}`;
   $: isDropZone = $dropZone === dropId;
 
-  $: notActiveDivider = !!$activeDivider && !isActiveDivider;
+  $: notActiveDivider = active && !isHoveredDivider;
 
-  $: showAddComponent = isHoveredDivider && !isActiveDivider;
+  $: showAddComponent = menuOpen || (isHoveredDivider && !active);
+
+  $: showDivider = isHoveredDivider || menuOpen || resizingColumn || isDropZone;
 
   $: if (isActiveDivider) {
     document.body.style.cursor = "col-resize";
@@ -48,19 +59,16 @@
     resizeIndex === -1 || rowLength >= 4 || resizeIndex === rowLength - 1;
 
   function onItemClick(type: CanvasComponentType) {
-    activeDivider.reset();
+    hoveredDivider.setActive(dividerId, false);
 
     if (type) {
       addItems({ row: rowIndex, column: addIndex }, [type]);
     }
   }
 
-  function focus() {
-    activeDivider.set(dividerId);
-  }
-
-  function hover() {
-    hoveredDivider.set(dividerId);
+  function hover(bool = true) {
+    if (bool) hoveredDivider.set(dividerId);
+    else hoveredDivider.reset();
   }
 </script>
 
@@ -76,22 +84,22 @@
     style:pointer-events={notActiveDivider || dragging ? "none" : "auto"}
     style:height="calc(100% - 16px)"
     class:!opacity-100={isDropZone}
-    class="absolute top-2 flex items-center justify-center w-4 disabled:opacity-60 z-10 disabled:cursor-default cursor-col-resize"
+    class="absolute group top-2 flex items-center justify-center w-4 disabled:opacity-60 z-10 disabled:cursor-default cursor-col-resize"
     on:mousedown={(e) => {
       if (onMouseDown) onMouseDown(e);
-      focus();
+      hoveredDivider.setActive(dividerId, true);
     }}
     on:mouseenter={() => {
+      // menuOpen = false;
       onMouseEnter();
 
       hover();
     }}
-    on:mouseleave={hoveredDivider.reset}
+    on:mouseleave={() => {
+      if (!isActiveDivider) hover(false);
+    }}
   >
-    <span
-      class:bg-primary-300={isActiveDivider || isHoveredDivider || isDropZone}
-      class="pointer-events-none flex-none z-10 w-[3px] h-full rounded-full"
-    />
+    <Divider vertical show={showDivider} />
   </button>
 
   {#if showAddComponent}
@@ -102,15 +110,21 @@
       class:nudge-right={firstElement}
       class:nudge-left={lastElement}
       class="flex flex-col pointer-events-auto shadow-sm absolute top-1/2 w-fit z-20 bg-white -translate-y-1/2 border rounded-sm"
-      on:mouseleave={hoveredDivider.reset}
+      on:mouseleave={() => {
+        if (!menuOpen) hoveredDivider.reset();
+      }}
       on:mouseenter={hover}
     >
       <AddComponentDropdown
+        {dividerId}
         onItemClick={(e) => {
           onItemClick(e);
           hoveredDivider.reset();
         }}
-        onMouseEnter={hover}
+        bind:open={menuOpen}
+        onMouseEnter={() => {
+          if (!open) hover();
+        }}
         disabled={rowLength >= 4}
       />
 

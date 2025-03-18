@@ -1,9 +1,10 @@
-import { derived, writable } from "svelte/store";
+import { derived, get, writable } from "svelte/store";
 
 const MIN_DELTA = 12;
 
 export const dropZone = (() => {
   const zoneId = writable<string | null>(null);
+
   const mouseDelta = writable(0);
 
   return {
@@ -27,17 +28,28 @@ export const dropZone = (() => {
 })();
 
 export const hoveredDivider = (() => {
-  const { subscribe, set } = writable<string | null>(null);
+  const idStore = writable<string | null>(null);
   let timeout: ReturnType<typeof setTimeout> | null = null;
+  const active = writable(false);
 
   return {
-    subscribe,
+    id: idStore,
+    isActive: active,
     set: (id: string) => {
       if (timeout) clearTimeout(timeout);
-      set(id);
+      idStore.set(id);
     },
-    reset: () => {
-      timeout = setTimeout(() => set(null), 50);
+    reset: (timeoutLength = 50) => {
+      console.log("reset called");
+      // if (!get(active)) return;
+      timeout = setTimeout(() => {
+        active.set(false);
+        idStore.set(null);
+      }, timeoutLength);
+    },
+    setActive: (dividerId: string, value: boolean) => {
+      if (dividerId !== get(idStore)) return;
+      active.set(value);
     },
   };
 })();

@@ -89,7 +89,8 @@
   }
 
   .selected {
-    @apply outline-2 outline-primary-300;
+    @apply shadow-md outline-primary-400 outline-[1.5px];
+    /* border: solid 1px gray !important; */
     outline-style: solid !important;
   }
 </style>

@@ -87,6 +87,7 @@
           resource={data}
           hasUnsavedChanges={$hasUnsavedChanges}
           titleInput={fileName}
+          codeToggle
           onTitleChange={onChangeCallback}
           resourceKind={ResourceKind.Canvas}
         >
@@ -95,12 +96,6 @@
               href="/canvas/{canvasName}"
               disabled={allErrors.length > 0 || resourceIsReconciling}
               reconciling={resourceIsReconciling}
-            />
-
-            <!-- <AddComponentMenu {addComponent} /> -->
-            <ViewSelector
-              allowSplit={false}
-              bind:selectedView={$selectedViewStore}
             />
           </div>
         </WorkspaceHeader>
