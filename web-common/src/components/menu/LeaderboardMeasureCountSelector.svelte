@@ -9,7 +9,7 @@
   export let count: number = 1;
   export let sortByMeasure: string | null;
   export let onMeasureCountChange: (count: number) => void;
-  export let setSort: () => void;
+  export let resetSort: () => void;
 
   let isHovered = false;
 
@@ -35,6 +35,8 @@
   }
 
   $: filteredMeasures = getFilteredMeasuresByMeasureCount(measures, count);
+  $: visibleMeasuresCount = measures.length;
+  $: filteredMeasuresCount = filteredMeasures.length;
 
   // Workaround for feature flag `leaderboardMeasureCount`
   // If the sortByMeasure isn't in the filtered measures, we need to reset the sort
@@ -42,8 +44,15 @@
     sortByMeasure &&
     !filteredMeasures.some((measure) => measure.name === sortByMeasure)
   ) {
-    setSort();
+    resetSort();
   }
+
+  // Update count to match visible measures when filtered count is greater
+  $: if (visibleMeasuresCount < filteredMeasuresCount) {
+    onMeasureCountChange(visibleMeasuresCount);
+  }
+
+  $: copyText = `Showing ${Math.min(count, visibleMeasuresCount)} measure${Math.min(count, visibleMeasuresCount) === 1 ? "" : "s"}`;
 </script>
 
 <Button type="text" forcedStyle="width: 133px;">
@@ -60,7 +69,7 @@
           <MinusIcon size="14" color={count <= 1 ? "#94A3B8" : "#475569"} />
         </IconButton>
         <span class="text-gray-700">
-          <strong>{count} measure{count === 1 ? "" : "s"}</strong>
+          <strong>{copyText}</strong>
         </span>
         <IconButton
           rounded
@@ -74,7 +83,7 @@
         </IconButton>
       {:else}
         <span class="text-gray-700">
-          Showing <strong>{count} measure{count === 1 ? "" : "s"}</strong>
+          <strong>{copyText}</strong>
         </span>
       {/if}
     </div>
