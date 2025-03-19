@@ -6,7 +6,6 @@
   export let dark = false;
   export let customStyle = "";
   export let value: string | number | undefined | null | NumberParts;
-  export let truncate = false;
 
   let isNull = false;
   let isValueNegative = false;
