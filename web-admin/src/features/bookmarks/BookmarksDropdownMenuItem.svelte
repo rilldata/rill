@@ -40,6 +40,7 @@
     on:mouseleave={() => (hovered = false)}
     role="menuitem"
     tabindex="-1"
+    aria-label={`${bookmark.resource.displayName ?? ""} Bookmark Entry`}
   >
     <a href={bookmark.url} class="flex flex-row gap-x-2 w-full min-h-7">
       {#if bookmark.resource.default}
@@ -47,7 +48,7 @@
       {:else if bookmark.filtersOnly}
         <Filter size="16px" />
       {:else}
-        <BookmarkIcon size="16px" />
+        <BookmarkIcon size="16px" aria-label="Bookmark Icon" />
       {/if}
       <div class="flex flex-col gap-y-0.5">
         <div

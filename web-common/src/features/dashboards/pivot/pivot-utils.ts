@@ -426,12 +426,16 @@ export function getSortForAccessor(
     columnDimensionAxes,
   );
 
-  sortPivotBy = [
-    {
-      desc: config.pivot.sorting[0].desc,
-      name: measureNames[parseInt(measureIndex)],
-    },
-  ];
+  const measureName = measureNames[parseInt(measureIndex)];
+
+  if (measureName) {
+    sortPivotBy = [
+      {
+        desc: config.pivot.sorting[0].desc,
+        name: measureName,
+      },
+    ];
+  }
 
   return {
     where: filters,
