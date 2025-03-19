@@ -16,6 +16,7 @@
     COLUMN_WIDTH_CONSTANTS as WIDTHS,
   } from "./pivot-column-width-utils";
   import type { PivotDataRow } from "./types";
+  import FormattedValue from "./FormattedValue.svelte";
 
   // State props
   export let hasRowDimension: boolean;
@@ -291,22 +292,29 @@
       {@const cells = rows[row.index].getVisibleCells()}
       <tr>
         {#each cells as cell, i (cell.id)}
-          {@const result =
-            typeof cell.column.columnDef.cell === "function"
-              ? cell.column.columnDef.cell(cell.getContext())
-              : cell.column.columnDef.cell}
           {@const isActive = isCellActive(cell)}
-          <td
+
+          <!-- <td
             class="ui-copy-number cell truncate"
             class:active-cell={isActive}
             class:interactive-cell={canShowDataViewer}
             class:border-r={shouldShowRightBorder(i)}
-            data-value={cell.getValue()}
+            data-value={value}
             data-rowid={cell.row.id}
             data-columnid={cell.column.id}
             class:totals-column={i > 0 && i <= measureCount}
-          >
-            {#if result?.component && result?.props}
+          > -->
+
+          <FormattedValue
+            formattedValue={cell.row.original[cell.column.id + "__f"]}
+            rawValue={cell.row.original[cell.column.id]}
+            type={cell.column.columnDef.meta?.type}
+            rowId={cell.row.id}
+            columnId={cell.column.id}
+            showRightBorder={shouldShowRightBorder(i)}
+            formatter={cell.column.columnDef.meta?.formatter}
+          />
+          <!-- {#if result?.component && result?.props}
               <svelte:component
                 this={result.component}
                 {...result.props}
@@ -318,8 +326,8 @@
               <svelte:component
                 this={flexRender(cell.column.columnDef.cell, cell.getContext())}
               />
-            {/if}
-          </td>
+            {/if} -->
+          <!-- </td> -->
         {/each}
       </tr>
     {/each}
@@ -356,9 +364,9 @@
     @apply flex-row;
   }
 
-  tbody .cell {
+  /* tbody .cell {
     height: var(--row-height);
-  }
+  } */
 
   th {
     @apply p-0 m-0 text-xs;
@@ -369,20 +377,18 @@
     @apply border-b;
   }
 
-  th:last-of-type,
-  td:last-of-type {
+  th:last-of-type {
     @apply border-r-0;
   }
 
-  th,
-  td {
+  th {
     @apply whitespace-nowrap text-xs;
   }
-
+  /* 
   td {
     @apply text-right;
     @apply p-0 m-0;
-  }
+  } */
 
   .header-cell {
     @apply px-2 size-full;
@@ -390,10 +396,10 @@
     @apply text-gray-800 font-medium;
     height: var(--header-height);
   }
-
+  /* 
   .cell {
     @apply size-full p-1 px-2 text-gray-800;
-  }
+  } */
 
   /* The leftmost header cells have no bottom border unless they're the last row */
   .with-row-dimension thead > tr:not(:last-of-type) > th:first-of-type {
@@ -405,10 +411,10 @@
     @apply bg-white;
   }
 
-  .with-row-dimension tr > td:first-of-type {
+  /* .with-row-dimension tr > td:first-of-type {
     @apply sticky left-0 z-10;
     @apply bg-white;
-  }
+  } */
 
   .with-row-dimension.with-col-dimension tr > th:first-of-type {
     @apply bg-gray-50;
@@ -422,12 +428,11 @@
   }
 
   /* The totals row header */
-  tbody > tr:nth-of-type(2) > td:first-of-type {
+  /* tbody > tr:nth-of-type(2) > td:first-of-type {
     @apply font-semibold;
-  }
+  } */
 
-  tr:hover,
-  tr:hover .cell {
+  tbody tr:hover {
     @apply bg-slate-100;
   }
 

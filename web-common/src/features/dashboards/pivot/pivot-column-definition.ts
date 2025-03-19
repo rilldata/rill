@@ -304,36 +304,38 @@ function getFlatColumnDef(
   );
 
   const leafColumns: ColumnDef<PivotDataRow>[] = measures.map((m) => {
+    const formatter = m.formatter;
     return {
-      accessorKey: m.name,
+      // accessorKey: m.name,
+      accessorFn: (row) => formatter(row[m.name]),
       header: m.label || m.name,
       name: m.name,
       meta: {
         icon: m.icon,
       },
-      cell: (info) => {
-        const measureValue = info.getValue() as number | null | undefined;
-        if (m.type === "comparison_percent") {
-          return cellComponent(PercentageChange, {
-            isNull: measureValue == null,
-            color: "text-gray-500",
-            value:
-              measureValue !== null && measureValue !== undefined
-                ? formatMeasurePercentageDifference(measureValue)
-                : null,
-            inTable: true,
-          });
-        } else if (m.type === "comparison_delta") {
-          return cellComponent(PivotDeltaCell, {
-            formattedValue: m.formatter(measureValue),
-            value: measureValue,
-          });
-        }
-        const value = m.formatter(measureValue);
+      // cell: (info) => {
+      //   const measureValue = info.getValue() as number | null | undefined;
+      //   if (m.type === "comparison_percent") {
+      //     return cellComponent(PercentageChange, {
+      //       isNull: measureValue == null,
+      //       color: "text-gray-500",
+      //       value:
+      //         measureValue !== null && measureValue !== undefined
+      //           ? formatMeasurePercentageDifference(measureValue)
+      //           : null,
+      //       inTable: true,
+      //     });
+      //   } else if (m.type === "comparison_delta") {
+      //     return cellComponent(PivotDeltaCell, {
+      //       formattedValue: m.formatter(measureValue),
+      //       value: measureValue,
+      //     });
+      //   }
+      //   const value = m.formatter(measureValue);
 
-        if (value == null) return cellComponent(PivotMeasureCell, {});
-        return value;
-      },
+      //   if (value == null) return cellComponent(PivotMeasureCell, {});
+      //   return value;
+      // },
     };
   });
 
@@ -454,36 +456,47 @@ function getNestedColumnDef(
   // Create measure columns
   const leafColumns: (ColumnDef<PivotDataRow> & { name: string })[] =
     measures.map((m) => {
+      const formatter = m.formatter;
       return {
         accessorKey: m.name,
+        // accessorFn: (row) => {
+        //   const value = row[m.name];
+        //   console.log({ value });
+        //   return {
+        //     value,
+        //     formattedValue: formatter(value),
+        //   };
+        // },
         header: m.label || m.name,
         name: m.name,
         meta: {
           icon: m.icon,
+          type: m.type,
+          formatter: m?.formatter,
         },
-        cell: (info) => {
-          const measureValue = info.getValue() as number | null | undefined;
-          if (m.type === "comparison_percent") {
-            return cellComponent(PercentageChange, {
-              isNull: measureValue == null,
-              color: "text-gray-500",
-              value:
-                measureValue !== null && measureValue !== undefined
-                  ? formatMeasurePercentageDifference(measureValue)
-                  : null,
-              inTable: true,
-            });
-          } else if (m.type === "comparison_delta") {
-            return cellComponent(PivotDeltaCell, {
-              formattedValue: m.formatter(measureValue),
-              value: measureValue,
-            });
-          }
-          const value = m.formatter(measureValue);
+        // cell: (info) => {
+        //   const measureValue = info.getValue() as number | null | undefined;
+        //   if (m.type === "comparison_percent") {
+        //     return cellComponent(PercentageChange, {
+        //       isNull: measureValue == null,
+        //       color: "text-gray-500",
+        //       value:
+        //         measureValue !== null && measureValue !== undefined
+        //           ? formatMeasurePercentageDifference(measureValue)
+        //           : null,
+        //       inTable: true,
+        //     });
+        //   } else if (m.type === "comparison_delta") {
+        //     return cellComponent(PivotDeltaCell, {
+        //       formattedValue: m.formatter(measureValue),
+        //       value: measureValue,
+        //     });
+        //   }
+        //   const value = m.formatter(measureValue);
 
-          if (value == null) return cellComponent(PivotMeasureCell, {});
-          return value;
-        },
+        //   if (value == null) return cellComponent(PivotMeasureCell, {});
+        //   return value;
+        // },
       };
     });
 

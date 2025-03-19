@@ -45,7 +45,7 @@
   export let pivotState: Readable<PivotState>;
   export let canShowDataViewer = false;
   export let border = true;
-  export let overscan = 20;
+  export let overscan = 100;
   export let setPivotExpanded: (expanded: ExpandedState) => void;
   export let setPivotSort: (sorting: SortingState) => void;
   export let setPivotRowPage: (page: number) => void;
@@ -60,6 +60,7 @@
       if (pivotData.totalsRowData) {
         tableData = [pivotData.totalsRowData, ...pivotData.data];
       }
+      console.log({ tableData });
       return {
         data: tableData,
         columns: pivotData.columnDef,

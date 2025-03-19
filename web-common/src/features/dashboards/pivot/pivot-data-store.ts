@@ -60,6 +60,7 @@ import {
   type PivotDataStoreConfig,
   type PivotFilter,
 } from "./types";
+import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
 
 /**
  * Returns a query for cell data for the initial table.
@@ -220,8 +221,18 @@ export function createPivotDataStore(
    */
 
   return derived(configStore, (config, configSet) => {
-    const { rowDimensionNames, colDimensionNames, measureNames, isFlat } =
-      config;
+    const {
+      rowDimensionNames,
+      colDimensionNames,
+      measureNames,
+      isFlat,
+      allMeasures,
+    } = config;
+
+    const formatters = allMeasures.reduce((map, m) => {
+      map.set(m.name ?? "", createMeasureValueFormatter(m));
+      return map;
+    }, new Map<string, ReturnType<typeof createMeasureValueFormatter>>());
 
     if (
       (!rowDimensionNames.length && !measureNames.length) ||
@@ -556,6 +567,7 @@ export function createPivotDataStore(
                       columnDimensionAxes?.data || {},
                       pivotSkeleton,
                       cellData,
+                      formatters,
                     );
                   }
                   pivotData = structuredClone(tableDataWithCells);

@@ -2,6 +2,7 @@ import { NUM_ROWS_PER_PAGE } from "@rilldata/web-common/features/dashboards/pivo
 import type { V1MetricsViewAggregationResponseDataItem } from "@rilldata/web-common/runtime-client";
 import { createIndexMap, getAccessorForCell } from "./pivot-utils";
 import type { PivotDataRow, PivotDataStoreConfig } from "./types";
+import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
 
 /**
  * During the phase when queries are still being resolved, we don't have enough
@@ -49,6 +50,10 @@ export function reduceTableCellDataIntoRows(
   columnDimensionAxes: Record<string, string[]>,
   tableData: PivotDataRow[],
   cellData: V1MetricsViewAggregationResponseDataItem[],
+  formatters: Map<
+    string,
+    (value: string | number | null | undefined) => string | null | undefined
+  >,
   isExpanded = false,
 ) {
   const colDimensionNames = config.colDimensionNames;
@@ -85,7 +90,27 @@ export function reduceTableCellDataIntoRows(
 
       if (row) {
         accessors.forEach((accessor, i) => {
-          row[accessor] = cell[config.measureNames[i]] as string | number;
+          const measureName = config.measureNames[i];
+          let formatter = formatters.get(measureName);
+
+          console.log({ measureName });
+
+          if (!formatter) {
+            if (measureName.endsWith("percent")) {
+              console.log("percentage formatter");
+              formatter = percentageFormatter;
+            } else if (measureName.endsWith("delta")) {
+              console.log("delta");
+              formatter = formatters.get(
+                measureName.replace("__comparison_delta", ""),
+              );
+            }
+          }
+
+          const value = cell[measureName] as string | number;
+
+          row[accessor] = value;
+          row[accessor + "__f"] = formatter ? formatter(value) : undefined;
         });
       }
     } else {
@@ -97,7 +122,24 @@ export function reduceTableCellDataIntoRows(
       const row = tableData[0];
 
       accessors.forEach((accessor, i) => {
-        row[accessor] = cell[config.measureNames[i]] as string | number;
+        const measureName = config.measureNames[i];
+        let formatter = formatters.get(measureName);
+
+        if (!formatter) {
+          if (measureName.endsWith("percent")) {
+            formatter = percentageFormatter;
+          } else if (measureName.endsWith("delta")) {
+            formatter = formatters.get(
+              measureName.replace("__comparison_delta", ""),
+            );
+          }
+        }
+
+        const value = cell[measureName] as string | number;
+
+        row[accessor] = value;
+
+        row[accessor + "__f"] = formatter ? formatter(value) : undefined;
       });
 
       return;
@@ -114,6 +156,11 @@ export function getTotalsRowSkeleton(
   const { rowDimensionNames, measureNames } = config;
   const anchorDimensionName = rowDimensionNames[0];
 
+  const formatters = config.allMeasures.reduce((map, m) => {
+    map.set(m.name ?? "", createMeasureValueFormatter(m));
+    return map;
+  }, new Map<string, ReturnType<typeof createMeasureValueFormatter>>());
+
   let totalsRow: PivotDataRow = {};
   if (measureNames.length) {
     const totalsRowTable = reduceTableCellDataIntoRows(
@@ -123,6 +170,7 @@ export function getTotalsRowSkeleton(
       columnDimensionAxes || {},
       [],
       [],
+      formatters,
     );
 
     totalsRow = totalsRowTable[0] || {};
@@ -144,6 +192,11 @@ export function getTotalsRow(
   const { rowDimensionNames, measureNames } = config;
   const anchorDimensionName = rowDimensionNames[0];
 
+  const formatters = config.allMeasures.reduce((map, m) => {
+    map.set(m.name ?? "", createMeasureValueFormatter(m));
+    return map;
+  }, new Map<string, ReturnType<typeof createMeasureValueFormatter>>());
+
   let totalsRow: PivotDataRow = {};
   if (measureNames.length) {
     const totalsRowTable = reduceTableCellDataIntoRows(
@@ -153,6 +206,7 @@ export function getTotalsRow(
       columnDimensionAxes || {},
       [],
       totalsRowData || [],
+      formatters,
     );
 
     totalsRow = totalsRowTable[0] || {};
@@ -199,4 +253,15 @@ export function mergeRowTotalsInOrder(
     .filter((rowTotal) => rowTotal !== NOT_AVAILABLE);
 
   return orderedRowTotals;
+}
+
+export function percentageFormatter(value: number | null | undefined) {
+  if (value === null || value === undefined) return undefined;
+  if (value === 0) return "0.0%";
+
+  if (value < 0.005 && value > -0.005) return "~0%";
+  console.log({ value });
+  return `${value < 0 ? "-" : ""}${(Math.abs(value) * 100).toFixed(2)}%`;
+
+  // return `${value.toFixed(2)}%`;
 }
