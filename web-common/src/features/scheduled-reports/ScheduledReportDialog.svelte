@@ -37,26 +37,22 @@
   export let exploreName: string | undefined = undefined;
   export let reportSpec: V1ReportSpec | undefined = undefined;
 
+  const user = createAdminServiceGetCurrentUser();
+
+  $: ({ organization, project, report: reportName } = $page.params);
   $: ({ instanceId } = $runtime);
 
   $: isEdit = !!reportSpec;
-
-  const user = createAdminServiceGetCurrentUser();
-
-  $: if (!exploreName) {
-    exploreName = getDashboardNameFromReport(reportSpec) ?? "";
-  }
-
-  $: queryName = query ? getQueryNameFromQuery(query) : undefined;
-  $: queryArgs = query ? getQueryArgsFromQuery(query) : undefined;
-
-  $: ({ organization, project, report: reportName } = $page.params);
-
   $: mutation = isEdit
     ? createAdminServiceEditReport()
     : createAdminServiceCreateReport();
 
-  const initialValues = getInitialValues(reportSpec, $user.data?.user?.email);
+  $: if (!exploreName) {
+    exploreName = getDashboardNameFromReport(reportSpec) ?? "";
+  }
+  $: queryName = query ? getQueryNameFromQuery(query) : undefined;
+  $: queryArgs = query ? getQueryArgsFromQuery(query) : undefined;
+
   const schema = yup(
     object({
       title: string().required("Required"),
@@ -65,6 +61,22 @@
       slackUsers: array().of(string().email("Invalid email")),
     }),
   ) as ValidationAdapter<ReportValues>;
+
+  $: initialValues = getInitialValues(reportSpec, $user.data?.user?.email);
+  $: ({ form, errors, enhance, submit, submitting } = superForm(
+    defaults(initialValues, schema),
+    {
+      SPA: true,
+      validators: schema,
+      async onUpdate({ form }) {
+        if (!form.valid) return;
+        const values = form.data;
+        return handleSubmit(values);
+      },
+      validationMethod: "oninput",
+      invalidateAll: false,
+    },
+  ));
 
   async function handleSubmit(values: ReportValues) {
     const refreshCron = convertFormValuesToCronExpression(
@@ -138,21 +150,6 @@
       // showing error below
     }
   }
-
-  const { form, errors, enhance, submit, submitting } = superForm(
-    defaults(initialValues, schema),
-    {
-      SPA: true,
-      validators: schema,
-      async onUpdate({ form }) {
-        if (!form.valid) return;
-        const values = form.data;
-        return handleSubmit(values);
-      },
-      validationMethod: "oninput",
-      invalidateAll: false,
-    },
-  );
 </script>
 
 <Dialog.Root bind:open>
