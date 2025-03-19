@@ -148,7 +148,7 @@
         class="
           {isTextColumn ? 'text-left' : 'text-right'}
           {isDimensionTable ? '' : 'px-4'}
-          w-full text-ellipsis overflow-x-hidden whitespace-nowrap
+          w-full truncate
           "
         on:click={modified({
           shift: shiftClick,

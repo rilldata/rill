@@ -36,7 +36,6 @@
     ? 'text-right'
     : ''}"
   {dark}
-  {truncate}
 >
   {#if isValueNegative}
     <span class="text-red-500">
