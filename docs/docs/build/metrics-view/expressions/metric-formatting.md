@@ -42,7 +42,7 @@ As explained in the introduction, you'll notice that in each of the screenshot t
 If you have any quesitons, please review our [reference documentation.](/reference/project-files/metrics-view)
 
 ### Format a measure to include specific amount of decimals
-<img src = '/img/build/metrics-view/decimal-example.png' class='rounded-gif' />
+<img src = '/img/build/metrics-view/examples/decimal-example.png' class='rounded-gif' />
 <br />
 
 In the case that you need to view more granular values of your data, you can set the decimal places to whatever value you need. In the above example, we are setting the average voltage measure to 4 decimals spots to get a more accurate representation for each dimension.
@@ -53,7 +53,7 @@ format_d3: ".4f"
 
 
 ### Format currency with different ',' locations. IE: Indian Rupee 
-<img src = '/img/build/metrics-view/currency-example.png' class='rounded-gif' />
+<img src = '/img/build/metrics-view/examples/currency-example.png' class='rounded-gif' />
 <br />
 
 
@@ -66,7 +66,7 @@ format_d3_locale:
 As Indian Rupees are formatted in a different way than USD and EUR, you'll need to use the `format_d3_locale` parameter to set the exact grouping and currency. Likewise if the currency symbol is written after the numeric value, you can set the currency to `["". "$"]`. 
 
 ### Percentages 
-<img src = '/img/build/metrics-view/percent-example.png' class='rounded-gif' />
+<img src = '/img/build/metrics-view/examples/percent-example.png' class='rounded-gif' />
 <br />
 
 ```yaml
