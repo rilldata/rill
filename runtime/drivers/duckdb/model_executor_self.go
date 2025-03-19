@@ -76,9 +76,9 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 	if scheme, secretSQL, ast, ok := objectStoreRef(ctx, inputProps, opts); ok {
 		if secretSQL != "" {
 			inputProps.PreExec = secretSQL
-		} else if scheme == "gcs" || scheme == "gs" {
+		} else if scheme == "gcs" {
 			// rewrite duckdb sql with locally downloaded files
-			handle, release, err := opts.Env.AcquireConnector(ctx, "gcs")
+			handle, release, err := opts.Env.AcquireConnector(ctx, scheme)
 			if err != nil {
 				return nil, err
 			}
