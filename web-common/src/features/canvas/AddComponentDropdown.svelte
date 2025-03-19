@@ -1,5 +1,7 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { chartMetadata } from "@rilldata/web-common/features/canvas/components/charts/util";
   import { Plus, PlusCircle } from "lucide-svelte";
   import type { ComponentType, SvelteComponent } from "svelte";
@@ -9,8 +11,6 @@
   import ChartIcon from "./icons/ChartIcon.svelte";
   import TableIcon from "./icons/TableIcon.svelte";
   import TextIcon from "./icons/TextIcon.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
   type MenuItem = {
     id: CanvasComponentType;
@@ -20,7 +20,9 @@
 
   // Function to get a random chart type
   function getRandomChartType(): ChartType {
-    const chartTypes = chartMetadata.map((chart) => chart.type);
+    const chartTypes = chartMetadata
+      .map((chart) => chart.type)
+      .filter((t) => t !== "stacked_bar_normalized");
     const randomIndex = Math.floor(Math.random() * chartTypes.length);
     return chartTypes[randomIndex];
   }

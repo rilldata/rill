@@ -56,6 +56,9 @@ export function generateVLAreaChartSpec(
       layer: [
         { mark: "area" },
         {
+          mark: { type: "line", opacity: 0.5 },
+        },
+        {
           transform: [{ filter: { param: "hover", empty: false } }],
           mark: {
             type: "point",
@@ -66,9 +69,6 @@ export function generateVLAreaChartSpec(
             stroke: "white",
             strokeWidth: 1,
           },
-        },
-        {
-          mark: { type: "line", opacity: 0.5 },
         },
       ],
     },
