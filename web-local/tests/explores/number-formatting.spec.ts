@@ -140,11 +140,8 @@ dimensions:
     });
     await page.getByLabel("Toggle time comparison").click();
 
-    await page
-      .getByRole("row", { name: "null 27 s -4.3 s -14%" })
-      .waitFor({ timeout: 6_000 });
     await expect(
-      page.getByRole("row", { name: "null 27 s -4.3 s -14%" }),
+      page.getByRole("row", { name: "null 27 s 33% -4.3 s -14%" }),
     ).toBeVisible();
 
     // try No Format...
