@@ -9,18 +9,27 @@
   export let assembled = true;
 </script>
 
-<div class="flex gap-x-1" style:padding-left={`${row.depth * 14}px`}>
+<div
+  role="presentation"
+  class="flex gap-x-0.5 group"
+  style:padding-left={`${row.depth * 14}px`}
+  class:-ml-1={assembled && row.getCanExpand()}
+  class:cursor-pointer={assembled && row.getCanExpand()}
+  on:click|stopPropagation={assembled && row.getCanExpand()
+    ? row.getToggleExpandedHandler()
+    : undefined}
+>
   {#if value === "LOADING_CELL"}
     <span class="loading-cell" />
   {:else if assembled && row.getCanExpand()}
-    <button
-      on:click|stopPropagation={row.getToggleExpandedHandler()}
-      class="cursor-pointer px-0.5 -m-1 pointer-events-auto"
+    <div
+      class:opacity-0={!row.getIsExpanded()}
+      class:group-hover:opacity-100={!row.getIsExpanded()}
     >
       <div class:rotate={row.getIsExpanded()} class="transition-transform">
         <ChevronRight size="16px" color="#9CA3AF" />
       </div>
-    </button>
+    </div>
   {:else if row.depth >= 1}
     <Spacer size="16px" />
   {/if}

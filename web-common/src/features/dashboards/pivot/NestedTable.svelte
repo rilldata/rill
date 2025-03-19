@@ -9,7 +9,11 @@
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
   import type { Cell, HeaderGroup, Row } from "@tanstack/svelte-table";
   import { flexRender } from "@tanstack/svelte-table";
-  import type { MeasureColumnProps } from "./pivot-column-definition";
+  import {
+    getRowNestedLabel,
+    type DimensionColumnProps,
+    type MeasureColumnProps,
+  } from "./pivot-column-definition";
   import {
     calculateMeasureWidth,
     calculateRowDimensionWidth,
@@ -18,11 +22,10 @@
   import type { PivotDataRow } from "./types";
 
   // State props
-  export let hasRowDimension: boolean;
   export let hasColumnDimension: boolean;
   export let timeDimension: string;
-  export let rowDimensionLabel: string;
   export let assembled: boolean;
+  export let rowDimensions: DimensionColumnProps;
   export let dataRows: PivotDataRow[];
   export let measures: MeasureColumnProps;
   export let totalsRow: PivotDataRow | undefined;
@@ -51,6 +54,9 @@
   let initScrollOnResize = 0;
   let percentOfChangeDuringResize = 0;
 
+  $: hasRowDimension = rowDimensions.length > 0;
+  $: hasExpandableRows = rowDimensions.length > 1;
+  $: rowDimensionLabel = getRowNestedLabel(rowDimensions);
   $: rowDimensionName = rowDimensionLabel ? rowDimensionLabel : null;
 
   $: rowDimensionWidth =
@@ -224,6 +230,7 @@
 <table
   class:with-row-dimension={hasRowDimension}
   class:with-col-dimension={hasColumnDimension}
+  class:with-expandable-rows={hasExpandableRows}
   role="presentation"
   style:width="{totalLength + rowDimensionWidth}px"
   on:click={modified({ shift: onCellCopy, click: onCellClick })}
@@ -410,6 +417,10 @@
     @apply bg-white;
   }
 
+  .with-row-dimension tr:hover > td:first-of-type {
+    @apply bg-slate-100;
+  }
+
   .with-row-dimension.with-col-dimension tr > th:first-of-type {
     @apply bg-gray-50;
   }
@@ -422,8 +433,12 @@
   }
 
   /* The totals row header */
-  tbody > tr:nth-of-type(2) > td:first-of-type {
+  .with-row-dimension tbody > tr:nth-of-type(2) > td:first-of-type {
     @apply font-semibold;
+  }
+
+  .with-expandable-rows tbody > tr:nth-of-type(2) > td:first-of-type {
+    @apply pl-5;
   }
 
   tr:hover,
