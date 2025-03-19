@@ -46,18 +46,18 @@
       dimensions: { setPrimaryDimension },
       dimensionsFilter: { toggleDimensionFilterMode },
     },
+    timeRangeSummaryStore,
     dashboardStore,
     exploreName,
   } = stateManagers;
 
   const { adminServer, exports } = featureFlags;
 
+  $: exploreHasTimeDimension = !!$timeRangeSummaryStore.data;
   $: excludeMode = $isFilterExcludeMode(dimensionName);
 
   $: filterKey = excludeMode ? "exclude" : "include";
   $: otherFilterKey = excludeMode ? "include" : "exclude";
-
-  $: metricsViewProto = $dashboardStore.proto;
 
   let searchBarOpen = false;
 
@@ -194,11 +194,10 @@
     {#if $exports}
       <ExportMenu
         label="Export dimension table data"
-        includeScheduledReport={$adminServer}
+        includeScheduledReport={$adminServer && exploreHasTimeDimension}
         getQuery={(isScheduled) =>
           getDimensionTableExportQuery(stateManagers, isScheduled)}
         exploreName={$exploreName}
-        {metricsViewProto}
       />
     {/if}
     {#if !hideStartPivotButton}

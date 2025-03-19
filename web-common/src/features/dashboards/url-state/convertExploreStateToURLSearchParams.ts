@@ -31,7 +31,7 @@ import {
   type TimeRange,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
-import { mergeSearchParams } from "@rilldata/web-common/lib/url-utils";
+import { copyParamsToTarget } from "@rilldata/web-common/lib/url-utils";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   V1ExploreComparisonMode,
@@ -49,28 +49,28 @@ export function getUpdatedUrlForExploreState(
   defaultExplorePreset: V1ExplorePreset,
   partialExploreState: Partial<MetricsExplorerEntity>,
   url: URL,
-) {
-  const newUrlSearchParams = new URLSearchParams(
-    convertExploreStateToURLSearchParams(
-      partialExploreState as MetricsExplorerEntity,
-      exploreSpec,
-      timeControlsState,
-      defaultExplorePreset,
-      url,
-    ),
+): string {
+  // Create params from the explore state
+  const stateParams = convertExploreStateToURLSearchParams(
+    partialExploreState as MetricsExplorerEntity,
+    exploreSpec,
+    timeControlsState,
+    defaultExplorePreset,
+    url,
   );
+
+  // Filter out the default view parameter if needed
   url.searchParams.forEach((value, key) => {
     if (
       key === ExploreStateURLParams.WebView &&
       FromURLParamViewMap[value] === defaultExplorePreset.view
     ) {
-      // ignore default view.
-      // since we do not add params equal to default this will append to the end of the URL breaking the param order.
-      return;
+      return; // Skip this parameter
     }
-    newUrlSearchParams.set(key, value);
+    stateParams.set(key, value);
   });
-  return newUrlSearchParams.toString();
+
+  return stateParams.toString();
 }
 
 export function convertExploreStateToURLSearchParams(
@@ -84,16 +84,14 @@ export function convertExploreStateToURLSearchParams(
   // Used to decide whether to compress or not based on the full url length
   url: URL,
   disableCompression = false,
-) {
-  const urlCopy = new URL(url);
-  // clear any existing search params
-  urlCopy.search = "";
+): URLSearchParams {
+  const searchParams = new URLSearchParams();
 
-  if (!exploreState) return urlCopy.searchParams.toString();
+  if (!exploreState) return searchParams;
 
   const currentView = FromActivePageMap[exploreState.activePage];
   if (shouldSetParam(preset.view, currentView)) {
-    urlCopy.searchParams.set(
+    searchParams.set(
       ExploreStateURLParams.WebView,
       ToURLParamViewMap[currentView] as string,
     );
@@ -101,9 +99,9 @@ export function convertExploreStateToURLSearchParams(
 
   // timeControlsState will be undefined for dashboards without timeseries
   if (timeControlsState) {
-    mergeSearchParams(
+    copyParamsToTarget(
       toTimeRangesUrl(exploreState, timeControlsState, preset),
-      urlCopy.searchParams,
+      searchParams,
     );
   }
 
@@ -112,7 +110,7 @@ export function convertExploreStateToURLSearchParams(
     exploreState.dimensionThresholdFilters,
   );
   if (expr && expr?.cond?.exprs?.length) {
-    urlCopy.searchParams.set(
+    searchParams.set(
       ExploreStateURLParams.Filters,
       convertExpressionToFilterParam(expr),
     );
@@ -122,35 +120,37 @@ export function convertExploreStateToURLSearchParams(
     case DashboardState_ActivePage.UNSPECIFIED:
     case DashboardState_ActivePage.DEFAULT:
     case DashboardState_ActivePage.DIMENSION_TABLE:
-      mergeSearchParams(
+      copyParamsToTarget(
         toExploreUrl(exploreState, exploreSpec, preset),
-        urlCopy.searchParams,
+        searchParams,
       );
       break;
 
     case DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL:
-      mergeSearchParams(
+      copyParamsToTarget(
         toTimeDimensionUrlParams(exploreState, preset),
-        urlCopy.searchParams,
+        searchParams,
       );
       break;
 
     case DashboardState_ActivePage.PIVOT:
-      mergeSearchParams(
-        toPivotUrlParams(exploreState, preset),
-        urlCopy.searchParams,
-      );
+      copyParamsToTarget(toPivotUrlParams(exploreState, preset), searchParams);
       break;
   }
 
-  if (disableCompression || !shouldCompressParams(urlCopy))
-    return urlCopy.searchParams.toString();
+  if (disableCompression) return searchParams;
+
+  const urlCopy = new URL(url);
+  urlCopy.search = searchParams.toString();
+  const shouldCompress = shouldCompressParams(urlCopy);
+  if (!shouldCompress) return searchParams;
+
   const compressedUrlParams = new URLSearchParams();
   compressedUrlParams.set(
     ExploreStateURLParams.GzippedParams,
-    compressUrlParams(urlCopy.search),
+    compressUrlParams(searchParams.toString()),
   );
-  return compressedUrlParams.toString();
+  return compressedUrlParams;
 }
 
 function toTimeRangesUrl(

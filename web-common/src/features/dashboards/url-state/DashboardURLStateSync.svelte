@@ -254,14 +254,14 @@
     if (!exploreSpec) return;
 
     const u = new URL($page.url);
-
-    u.search = convertExploreStateToURLSearchParams(
+    const exploreStateParams = convertExploreStateToURLSearchParams(
       $dashboardStore,
       exploreSpec,
       timeControlsState,
       defaultExplorePreset,
       u,
     );
+    u.search = exploreStateParams.toString();
     const newUrl = u.toString();
     if (!prevUrl || prevUrl === newUrl) return;
 
