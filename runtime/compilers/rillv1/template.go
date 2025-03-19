@@ -200,7 +200,7 @@ func AnalyzeTemplateRecursively(val any, res map[string]string) error {
 }
 
 // ResolveTemplate resolves a template to a string using the given data.
-func ResolveTemplate(tmpl string, data TemplateData) (string, error) {
+func ResolveTemplate(tmpl string, data TemplateData, errOnMissingTemplKeys bool) (string, error) {
 	// Base func map
 	funcMap := newFuncMap(data.Environment, data.State)
 
@@ -255,7 +255,13 @@ func ResolveTemplate(tmpl string, data TemplateData) (string, error) {
 
 	// Parse template (error on missing keys)
 	// TODO: missingkey=error may be problematic for claims.
-	t, err := template.New("").Funcs(funcMap).Option("missingkey=default").Parse(tmpl)
+	var opt string
+	if errOnMissingTemplKeys {
+		opt = "missingkey=error"
+	} else {
+		opt = "missingkey=default"
+	}
+	t, err := template.New("").Funcs(funcMap).Option(opt).Parse(tmpl)
 	if err != nil {
 		return "", err
 	}
@@ -334,13 +340,13 @@ func ResolveTemplate(tmpl string, data TemplateData) (string, error) {
 
 // ResolveTemplateRecursively recursively traverses the provided value and applies ResolveTemplate to any string it encounters.
 // It may overwrite the provided value in-place.
-func ResolveTemplateRecursively(val any, data TemplateData) (any, error) {
+func ResolveTemplateRecursively(val any, data TemplateData, errOnMissingTemplKeys bool) (any, error) {
 	switch val := val.(type) {
 	case string:
-		return ResolveTemplate(val, data)
+		return ResolveTemplate(val, data, errOnMissingTemplKeys)
 	case map[string]any:
 		for k, v := range val {
-			v, err := ResolveTemplateRecursively(v, data)
+			v, err := ResolveTemplateRecursively(v, data, errOnMissingTemplKeys)
 			if err != nil {
 				return nil, err
 			}
@@ -349,7 +355,7 @@ func ResolveTemplateRecursively(val any, data TemplateData) (any, error) {
 		return val, nil
 	case []any:
 		for i, v := range val {
-			v, err := ResolveTemplateRecursively(v, data)
+			v, err := ResolveTemplateRecursively(v, data, errOnMissingTemplKeys)
 			if err != nil {
 				return nil, err
 			}

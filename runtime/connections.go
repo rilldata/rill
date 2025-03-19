@@ -329,7 +329,7 @@ func ResolveConnectorProperties(environment string, vars map[string]string, c *r
 		v, err := rillv1.ResolveTemplate(v, rillv1.TemplateData{
 			Environment: environment,
 			Variables:   vars,
-		})
+		}, true)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve templated property %q: %w", k, err)
 		}
