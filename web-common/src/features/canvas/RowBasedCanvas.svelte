@@ -33,7 +33,7 @@
   import RowWrapper from "./RowWrapper.svelte";
   import { useDefaultMetrics } from "./selector";
   import { getCanvasStateManagers } from "./state-managers/state-managers";
-  import { hoveredDivider, dropZone } from "./stores/ui-stores";
+  import { dropZone } from "./stores/ui-stores";
   import ComponentError from "./components/ComponentError.svelte";
 
   const activelyEditing = writable(false);
@@ -207,7 +207,6 @@
   }
 
   function onColumnResizeEnd() {
-    hoveredDivider.reset();
     window.removeEventListener("mousemove", onColumnResize);
     window.removeEventListener("mouseup", onColumnResizeEnd);
 
@@ -309,7 +308,6 @@
   }
 
   function onRowResizeEnd() {
-    hoveredDivider.reset();
     const height = specCanvasRows[resizeRow]?.height;
 
     if (!height) return;

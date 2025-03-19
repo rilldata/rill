@@ -9,9 +9,6 @@
   import ChartIcon from "./icons/ChartIcon.svelte";
   import TableIcon from "./icons/TableIcon.svelte";
   import TextIcon from "./icons/TextIcon.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { hoveredDivider } from "./stores/ui-stores";
 
   type MenuItem = {
     id: CanvasComponentType;
@@ -39,21 +36,9 @@
   export let componentForm = false;
   export let floatingForm = false;
   export let open = false;
-  export let dividerId: string | null = null;
-
   export let onItemClick: (type: CanvasComponentType) => void;
   export let onMouseEnter: () => void = () => {};
-
-  function onOpenChange(isOpen: boolean) {
-    if (!dividerId) return;
-    if (isOpen) {
-      console.log("claiming active");
-      hoveredDivider.setActive(dividerId, true);
-    } else {
-      console.log("resetttinggg");
-      hoveredDivider.reset(0);
-    }
-  }
+  export let onOpenChange: (isOpen: boolean) => void = () => {};
 
   // Wrapper function to handle chart item click with randomization
   function handleChartItemClick() {
@@ -77,31 +62,30 @@
       <button
         {...builder}
         use:builder.action
-        class="shadow-lg flex group hover:rounded-3xl w-fit p-2 absolute bottom-3 right-3 items-center justify-center z-50 rounded-full bg-primary-600 text-white hover:bg-primary-500"
+        class:pr-3.5={open}
+        class="shadow-lg flex group hover:rounded-3xl w-fit gap-x-1 p-2 hover:pr-3.5 absolute bottom-3 right-3 items-center justify-center z-50 rounded-full bg-primary-600 text-white hover:bg-primary-500"
       >
         <Plus size="20px" />
+
         <span
-          class:w-[80px]={open}
-          class:opacity-100={open}
-          class="w-0 overflow-hidden text-clip line-clamp-1 font-semibold opacity-0 group-hover:opacity-100 group-hover:w-[80px] transition-[width]"
+          class:not-sr-only={open}
+          class="sr-only group-hover:not-sr-only font-semibold w-fit"
         >
           Add widget
         </span>
       </button>
     {:else}
-      <Tooltip distance={8} location="top" suppress={open}>
-        <button
-          {disabled}
-          {...builder}
-          use:builder.action
-          on:mouseenter={onMouseEnter}
-          class="pointer-events-auto disabled:pointer-events-none h-7 px-2 grid place-content-center z-50 hover:bg-gray-100 text-slate-500 disabled:opacity-50"
-        >
-          <PlusCircle size="15px" />
-        </button>
-
-        <TooltipContent slot="tooltip-content">Insert widget</TooltipContent>
-      </Tooltip>
+      <button
+        {disabled}
+        use:builder.action
+        {...builder}
+        title="Insert widget"
+        class:bg-gray-50={open}
+        class="pointer-events-auto active:bg-gray-100 disabled:pointer-events-none h-7 px-2 grid place-content-center z-50 hover:bg-gray-50 text-slate-500 disabled:opacity-50"
+        on:mouseenter={onMouseEnter}
+      >
+        <PlusCircle size="15px" />
+      </button>
     {/if}
   </DropdownMenu.Trigger>
 
