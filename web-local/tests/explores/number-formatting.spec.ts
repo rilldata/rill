@@ -151,7 +151,7 @@ dimensions:
 
     await expect(
       page.getByRole("row", {
-        name: "null 26,643 -4,349 -14%",
+        name: "null 26,643 33% -4,349 -14%",
       }),
     ).toBeVisible();
 
