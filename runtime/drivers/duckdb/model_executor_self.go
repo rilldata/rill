@@ -303,7 +303,12 @@ func rewriteDuckDBSQL(ctx context.Context, props *ModelInputProperties, inputHan
 		return nil, err
 	}
 	defer func() {
-		_ = iter.Close()
+		// closing the iterator deletes the files
+		// only delete the files if there was an error
+		// the caller will call release once the files are no longer needed
+		if retErr != nil {
+			_ = iter.Close()
+		}
 	}()
 	for {
 		localFiles, err := iter.Next()
