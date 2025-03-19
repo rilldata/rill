@@ -47,7 +47,7 @@ func resolveDuckDBExpression(expr string, all []string) ([]string, error) {
 			return err
 		}
 
-		return nil
+		return rows.Err()
 	})
 	if err != nil {
 		return nil, err

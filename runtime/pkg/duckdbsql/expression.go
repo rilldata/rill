@@ -33,11 +33,14 @@ func queryBoolPair(qry string, args ...any) (bool, bool, error) {
 	defer func() { _ = rows.Close() }()
 
 	var a, b bool
-	if rows.Next() {
+	for rows.Next() {
 		err := rows.Scan(&a, &b)
 		if err != nil {
 			return false, false, err
 		}
+	}
+	if rows.Err() != nil {
+		return false, false, rows.Err()
 	}
 
 	return a, b, nil

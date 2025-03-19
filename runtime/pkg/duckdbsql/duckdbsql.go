@@ -20,11 +20,14 @@ func queryString(qry string, args ...any) ([]byte, error) {
 	defer func() { _ = rows.Close() }()
 
 	var res []byte
-	if rows.Next() {
+	for rows.Next() {
 		err := rows.Scan(&res)
 		if err != nil {
 			return nil, err
 		}
+	}
+	if rows.Err() != nil {
+		return nil, rows.Err()
 	}
 
 	return res, nil
