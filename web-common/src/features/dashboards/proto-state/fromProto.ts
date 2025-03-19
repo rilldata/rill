@@ -5,8 +5,8 @@ import {
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import {
-  PivotChipType,
   type PivotChipData,
+  PivotChipType,
   type PivotState,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import {
@@ -176,7 +176,10 @@ export function getDashboardStateFromProto(
       chartType: chartTypeMap(dashboard.chartType),
       expandedMeasureName: dashboard.expandedMeasure,
     };
-  } else if (dashboard.activePage !== undefined) {
+  } else if (
+    dashboard.activePage !== undefined &&
+    dashboard.activePage !== DashboardState_ActivePage.UNSPECIFIED
+  ) {
     entity.tdd = {
       pinIndex: -1,
       chartType: TDDChart.DEFAULT,
