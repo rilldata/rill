@@ -34,6 +34,8 @@ export function withinProject(page: Page): boolean {
 export function isMetricsExplorerPage(page: Page): boolean {
   return (
     page.route.id === "/[organization]/[project]/explore/[dashboard]" ||
+    page.route.id ===
+      "/[organization]/[project]/-/share/[token]/explore/[dashboard]" ||
     page.route.id === "/-/embed"
   );
 }
@@ -66,8 +68,10 @@ export function isReportExportPage(page: Page): boolean {
 }
 
 export function isPublicURLPage(page: Page): boolean {
+  if (!page.route.id) return false;
+
   return (
-    page.route.id === "/[organization]/[project]/-/share/[token]" ||
+    page.route.id.startsWith("/[organization]/[project]/-/share/[token]") ||
     isPublicReportPage(page)
   );
 }

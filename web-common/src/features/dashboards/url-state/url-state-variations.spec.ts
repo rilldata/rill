@@ -401,7 +401,7 @@ describe("Human readable URL state variations", () => {
           ),
           defaultExplorePreset,
           url,
-        );
+        ).toString();
         expect(url.toString()).to.eq(expectedUrl);
 
         // load empty url into metrics
@@ -510,7 +510,7 @@ describe("Human readable URL state variations", () => {
       ),
       defaultExplorePreset,
       url,
-    );
+    ).toString();
 
     // reset the explore state
     applyURLToExploreState(

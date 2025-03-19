@@ -1570,6 +1570,11 @@ paths:
           required: true
           schema:
             type: object
+            properties:
+              email:
+                type: string
+              slackUser:
+                type: string
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/request-access:
@@ -1668,7 +1673,7 @@ paths:
                 description: TTL for the token in minutes. Set to 0 for no expiry. Defaults to no expiry.
               resourceType:
                 type: string
-                description: Type of resource to grant access to. Currently only supports "rill.runtime.v1.Explore".
+                description: Type of resource to grant access to.
               resourceName:
                 type: string
                 description: Name of the resource to grant access to.
@@ -1690,6 +1695,12 @@ paths:
               displayName:
                 type: string
                 description: Optional display name to store with the token.
+              resources:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1ResourceName'
+                description: list of resources to grant access to.
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/upload-assets:
@@ -3145,6 +3156,15 @@ paths:
                 type: array
                 items:
                   type: string
+              anonRecipients:
+                type: boolean
+              resources:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1ResourceName'
+              webOpenMode:
+                type: string
       tags:
         - AdminService
   /v1/roles:
@@ -3771,6 +3791,8 @@ definitions:
       exportUrl:
         type: string
       editUrl:
+        type: string
+      unsubscribeUrl:
         type: string
   ListGithubUserReposResponseRepo:
     type: object
@@ -4457,8 +4479,6 @@ definitions:
   v1GetReportMetaResponse:
     type: object
     properties:
-      baseUrls:
-        $ref: '#/definitions/GetReportMetaResponseURLs'
       recipientUrls:
         type: object
         additionalProperties:
@@ -4742,6 +4762,11 @@ definitions:
         type: string
       attributes:
         type: object
+      resources:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ResourceName'
       resourceType:
         type: string
       resourceName:
@@ -5198,8 +5223,31 @@ definitions:
       webOpenState:
         type: string
         description: Annotation for the base64-encoded UI state to open for the report.
+      explore:
+        type: string
+        title: either canvas or explore should be set
+      canvas:
+        type: string
+      webOpenMode:
+        type: string
+        title: |-
+          web_open_mode is used to determine how to create or disable open link for the report
+          - send "recipient" for older reports (old behaviour)
+          - send "creator" for reports that should be opened with creators permissions
+          - send "none" for reports that should not be opened or older reports which do not have any web_open_path
+          - send "filtered" for reports that should be opened with creators permissions but with locked filters
+      filter:
+        $ref: '#/definitions/v1Expression'
+        title: use with OPEN_MODE_FILTERED
   v1RequestProjectAccessResponse:
     type: object
+  v1ResourceName:
+    type: object
+    properties:
+      type:
+        type: string
+      name:
+        type: string
   v1RevokeCurrentAuthTokenResponse:
     type: object
     properties:
