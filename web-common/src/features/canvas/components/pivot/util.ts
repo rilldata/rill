@@ -1,3 +1,4 @@
+import type { TableSpec } from "@rilldata/web-common/features/canvas/components/table";
 import type { StateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
 import { createPivotDataStore } from "@rilldata/web-common/features/dashboards/pivot/pivot-data-store";
@@ -223,3 +224,41 @@ export function tableFieldMapper(
     };
   });
 }
+
+export function memoizePivotConfig<
+  Store extends Readable<PivotDataStoreConfig>,
+>(
+  storeGetter: (
+    ctx: StateManagers,
+    metricsViewName: string,
+    tableSpecStore: Readable<TableSpec | PivotSpec>,
+    pivotState: Writable<PivotState>,
+    timeAndFilterStore: Readable<TimeAndFilterStore>,
+  ) => Store,
+) {
+  const cache = new Map<string, Store>();
+  return (
+    ctx: StateManagers,
+    metricsViewName: string,
+    tableSpecStore: Readable<TableSpec | PivotSpec>,
+    pivotState: Writable<PivotState>,
+    timeAndFilterStore: Readable<TimeAndFilterStore>,
+  ): Store => {
+    return derived(tableSpecStore, ($tableSpec, set) => {
+      const key = JSON.stringify($tableSpec);
+      let store = cache.get(key);
+      if (!store) {
+        store = storeGetter(
+          ctx,
+          metricsViewName,
+          tableSpecStore,
+          pivotState,
+          timeAndFilterStore,
+        );
+        cache.set(key, store);
+      }
+      return store.subscribe(set);
+    }) as Store;
+  };
+}
+export const usePivotConfig = memoizePivotConfig(getPivotConfig);

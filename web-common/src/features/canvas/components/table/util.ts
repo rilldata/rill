@@ -1,3 +1,4 @@
+import { memoizePivotConfig } from "@rilldata/web-common/features/canvas/components/pivot/util";
 import type { StateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
 import {
@@ -17,7 +18,7 @@ import type { TableSpec } from "./";
 
 let lastKey: string | undefined = undefined;
 
-export function getTableConfig(
+function getTableConfig(
   ctx: StateManagers,
   metricsViewName: string,
   tableSpecStore: Readable<TableSpec>,
@@ -117,3 +118,5 @@ export function getTableConfig(
     },
   );
 }
+
+export const useTableConfig = memoizePivotConfig(getTableConfig);

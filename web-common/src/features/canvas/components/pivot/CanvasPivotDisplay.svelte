@@ -1,24 +1,21 @@
 <script lang="ts">
-  import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
   import type { PivotSpec } from "@rilldata/web-common/features/canvas/components/pivot";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
-  import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
-  import PivotEmpty from "@rilldata/web-common/features/dashboards/pivot/PivotEmpty.svelte";
-  import PivotError from "@rilldata/web-common/features/dashboards/pivot/PivotError.svelte";
-  import PivotTable from "@rilldata/web-common/features/dashboards/pivot/PivotTable.svelte";
   import {
     type PivotDataStore,
+    type PivotDataStoreConfig,
     type PivotState,
   } from "@rilldata/web-common/features/dashboards/pivot/types";
   import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
   import { onDestroy } from "svelte";
   import { writable, type Readable } from "svelte/store";
+  import CanvasPivotRenderer from "./CanvasPivotRenderer.svelte";
   import { validateTableSchema } from "./selector";
   import {
     clearTableCache,
-    getPivotConfig,
     tableFieldMapper,
+    usePivotConfig,
     usePivotForCanvas,
   } from "./util";
 
@@ -43,6 +40,7 @@
 
   const { getMetricsViewFromName } = ctx.canvasEntity.spec;
   let pivotDataStore: PivotDataStore | undefined;
+  let pivotConfig: Readable<PivotDataStoreConfig> | undefined;
 
   $: tableSpec = rendererProperties as PivotSpec;
   $: tableSpecStore.set(tableSpec);
@@ -68,15 +66,15 @@
     }));
   }
 
-  $: pivotConfig = getPivotConfig(
-    ctx,
-    tableSpec.metrics_view,
-    tableSpecStore,
-    pivotState,
-    timeAndFilterStore,
-  );
-
   $: if ($schema.isValid && tableSpec.metrics_view) {
+    pivotConfig = usePivotConfig(
+      ctx,
+      tableSpec.metrics_view,
+      tableSpecStore,
+      pivotState,
+      timeAndFilterStore,
+    );
+
     pivotDataStore = usePivotForCanvas(
       ctx,
       componentName,
@@ -88,55 +86,9 @@
     clearTableCache(componentName);
   }
 
-  $: pivotColumns = splitPivotChips($pivotState.columns);
-
-  $: hasColumnAndNoMeasure =
-    pivotColumns.dimension.length > 0 && pivotColumns.measure.length === 0;
-
   onDestroy(() => {
     clearTableCache();
   });
 </script>
 
-<div class="size-full overflow-hidden" style:max-height="inherit">
-  {#if !$schema.isValid}
-    <ComponentError error={$schema.error} />
-  {:else if pivotDataStore && $pivotDataStore && pivotConfig && $pivotConfig}
-    {#if $pivotDataStore?.error?.length}
-      <PivotError errors={$pivotDataStore.error} />
-    {:else if !$pivotDataStore?.data || $pivotDataStore?.data?.length === 0}
-      <PivotEmpty
-        assembled={$pivotDataStore.assembled}
-        isFetching={$pivotDataStore.isFetching}
-        {hasColumnAndNoMeasure}
-      />
-    {:else}
-      <PivotTable
-        border={false}
-        {pivotDataStore}
-        config={pivotConfig}
-        {pivotState}
-        setPivotExpanded={(expanded) => {
-          pivotState.update((state) => ({
-            ...state,
-            expanded,
-          }));
-        }}
-        setPivotSort={(sorting) => {
-          pivotState.update((state) => ({
-            ...state,
-            sorting,
-            rowPage: 1,
-            expanded: {},
-          }));
-        }}
-        setPivotRowPage={(page) => {
-          pivotState.update((state) => ({
-            ...state,
-            rowPage: page,
-          }));
-        }}
-      />
-    {/if}
-  {/if}
-</div>
+<CanvasPivotRenderer {schema} {pivotDataStore} {pivotConfig} {pivotState} />
