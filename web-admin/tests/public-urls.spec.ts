@@ -7,6 +7,7 @@ test.describe.serial("Public URLs", () => {
   test("should be able to create a public URL", async ({ page }) => {
     await page.goto("/e2e/openrtb/explore/auction_explore");
 
+    // (Tests that the filtered column is hidden in the public URL)
     // Add a filter on "Pub Name"
     await page.getByLabel("Add Filter Button").click();
     await page.getByRole("menuitem", { name: "Pub Name" }).click();
@@ -14,6 +15,11 @@ test.describe.serial("Public URLs", () => {
     await page.getByLabel("Pub Name").getByPlaceholder("Search").fill("disney");
     await page.getByRole("menuitem", { name: "Disney" }).first().click();
     await page.getByLabel("pub_name view filter").first().click(); // Hides the popover
+
+    // Change the time grain to hour
+    // (Tests that non-default state propagates to the public URL)
+    await page.getByLabel("Select a time grain").click();
+    await page.getByRole("menuitem", { name: "hour" }).click();
 
     // Check the Big Number
     await expect(
@@ -61,6 +67,11 @@ test.describe.serial("Public URLs", () => {
     // Check that the Big Number reflects the filtered data
     await expect(
       page.getByRole("button", { name: "Requests 87,000" }),
+    ).toBeVisible();
+
+    // Check that the original dashboard state is reflected in the public URL
+    await expect(
+      page.getByLabel("Select a time grain").getByText("Hour"),
     ).toBeVisible();
   });
 
