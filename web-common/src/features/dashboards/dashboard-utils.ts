@@ -180,8 +180,6 @@ export function getBreadcrumbOptions(
     const name = canvasResource.meta?.name?.name ?? "";
     const label = canvasResource?.canvas?.spec?.displayName || name;
 
-    console.log({ canvasResource });
-
     if (label && name)
       map.set(name.toLowerCase(), { label, section: "custom", depth: 0 });
 
