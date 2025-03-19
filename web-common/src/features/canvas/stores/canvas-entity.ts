@@ -186,9 +186,8 @@ export class CanvasEntity {
               timeZone,
             };
 
-            if (!localShowTimeComparison) {
-              showTimeComparison = false;
-            }
+            showTimeComparison = localShowTimeComparison;
+
             timeGrain = localTimeRangeState?.selectedTimeRange?.interval;
 
             timeRangeState = localTimeRangeState;
