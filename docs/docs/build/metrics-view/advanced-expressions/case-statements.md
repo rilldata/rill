@@ -10,7 +10,7 @@ One of the most common advanced measure expressions are [`case`](https://duckdb.
 <img src = '/img/build/metrics-view/examples/case-example.png' class='rounded-gif' />
 <br />
 
-
+Please review the reference documentation, [here.](/reference/project-files/metrics-view)
 
 ## Examples
 
@@ -75,3 +75,6 @@ Similar to the above case statements, you can use the filter expression to filte
     expression: SUM(value) FILTER (WHERE user_id != '' OR  used_id IS NOT NULL)
     format_preset: humanize
     valid_percent_of_total: true
+```
+    ## Demo
+[See this project live in our demo!](https://ui.rilldata.com/demo/rill-kaggle-elec-consumption/explore/household_power_consumption_metrics_explore)

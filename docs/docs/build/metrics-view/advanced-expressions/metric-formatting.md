@@ -22,6 +22,7 @@ If an invalid format string is supplied, measures will be formatted with `format
 :::warning Cannot have both
  Measures cannot have both `format_preset` and `format_d3` entries.
 :::
+Please review the reference documentation, [here.](/reference/project-files/metrics-view)
 
 ## Customization
 
@@ -74,3 +75,7 @@ format_d3: '.4%'
 ```
 While our `format_preset: percentage` will automatically apply `.2%`, you can manually set the value in format_d3 if you are looking for a more specific measure format.
 
+
+
+## Demo
+[See this project live in our demo!](https://ui.rilldata.com/demo/rill-kaggle-elec-consumption/explore/household_power_consumption_metrics_explore)

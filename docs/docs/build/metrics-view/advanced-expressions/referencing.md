@@ -11,6 +11,7 @@ Within a metrics view, it is possible for a measure to reference another by usin
 <img src = '/img/build/metrics-view/examples/requires-example.png' class='rounded-gif' />
 <br />
 
+Please review the reference documentation, [here.](/reference/project-files/metrics-view)
 
 ## Examples
 
@@ -30,6 +31,7 @@ In the following example, `percentage_reactive_to_active_measure` uses the alrea
 
 ### Window Function
 If using a [window function](./windows), you'll need to define the measure that you are building the window for. In this example, we are getting the rolling sum of average voltage measurements for all time, that's a lot of volts! You can modify the frame to include less rows based on the order column. 
+
 <img src = '/img/build/metrics-view/examples/explore-percent.png' class='rounded-gif' />
 <br /> update this photo
 
@@ -44,3 +46,6 @@ If using a [window function](./windows), you'll need to define the measure that 
     treat_nulls_as: -1
 ```
 
+
+## Demo
+[See this project live in our demo!](https://ui.rilldata.com/demo/rill-kaggle-elec-consumption/explore/household_power_consumption_metrics_explore)
