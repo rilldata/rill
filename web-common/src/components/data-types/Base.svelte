@@ -22,12 +22,7 @@
   });
 </script>
 
-<span
-  bind:this={element}
-  class:truncate
-  class:inline-block={!truncate}
-  class="whitespace-nowrap {classes} {color} break-normal pointer-events-none"
->
+<span bind:this={element} class:truncate class="{classes} {color}">
   {#if isNull}
     <span class="text-gray-400">-</span>
   {:else}
