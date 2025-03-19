@@ -778,7 +778,6 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindTheme, Name: tmp.DefaultTheme})
 	}
 
-	// Infer refs from security rules
 	securityRefs, err := inferRefsFromSecurityRules(securityRules)
 	if err != nil {
 		return err
@@ -874,14 +873,11 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		}
 	}
 
-	// Build refs
 	refs := []ResourceName{{Kind: ResourceKindMetricsView, Name: node.Name}}
 
-	// Add the theme ref
 	if tmp.DefaultTheme != "" {
 		refs = append(refs, ResourceName{Kind: ResourceKindTheme, Name: tmp.DefaultTheme})
 	}
-
 	e, err := p.insertResource(ResourceKindExplore, node.Name, node.Paths, refs...)
 	if err != nil {
 		// We mustn't error because we have already emitted one resource.
