@@ -4,6 +4,7 @@ const MIN_DELTA = 12;
 
 export const dropZone = (() => {
   const zoneId = writable<string | null>(null);
+
   const mouseDelta = writable(0);
 
   return {
@@ -22,22 +23,6 @@ export const dropZone = (() => {
     },
     clear: () => {
       zoneId.set(null);
-    },
-  };
-})();
-
-export const hoveredDivider = (() => {
-  const { subscribe, set } = writable<string | null>(null);
-  let timeout: ReturnType<typeof setTimeout> | null = null;
-
-  return {
-    subscribe,
-    set: (id: string) => {
-      if (timeout) clearTimeout(timeout);
-      set(id);
-    },
-    reset: () => {
-      timeout = setTimeout(() => set(null), 50);
     },
   };
 })();
