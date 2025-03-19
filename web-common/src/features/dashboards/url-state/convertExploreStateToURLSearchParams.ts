@@ -141,14 +141,19 @@ export function convertExploreStateToURLSearchParams(
       break;
   }
 
-  if (disableCompression || !shouldCompressParams(urlCopy))
-    return urlCopy.searchParams.toString();
+  if (disableCompression) return searchParams;
+
+  const urlCopy = new URL(url);
+  urlCopy.search = searchParams.toString();
+  const shouldCompress = shouldCompressParams(urlCopy);
+  if (!shouldCompress) return searchParams;
+
   const compressedUrlParams = new URLSearchParams();
   compressedUrlParams.set(
     ExploreStateURLParams.GzippedParams,
-    compressUrlParams(urlCopy.search),
+    compressUrlParams(searchParams.toString()),
   );
-  return compressedUrlParams.toString();
+  return compressedUrlParams;
 }
 
 function toTimeRangesUrl(

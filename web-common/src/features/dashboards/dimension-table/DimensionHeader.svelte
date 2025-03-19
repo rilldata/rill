@@ -54,16 +54,10 @@
 
   $: exploreHasTimeDimension = !!$timeRangeSummaryStore.data;
 
-  $: activeLeaderboardMeasure = $getMeasureByName($leaderboardMeasureName);
-  $: validPercentOfTotal =
-    activeLeaderboardMeasure?.validPercentOfTotal || false;
-
   $: excludeMode = $isFilterExcludeMode(dimensionName);
 
   $: filterKey = excludeMode ? "exclude" : "include";
   $: otherFilterKey = excludeMode ? "include" : "exclude";
-
-  $: metricsViewProto = $dashboardStore.proto;
 
   let searchBarOpen = false;
 
