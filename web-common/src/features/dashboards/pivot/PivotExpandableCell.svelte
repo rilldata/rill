@@ -7,6 +7,12 @@
   export let row: Row<PivotDataRow>;
   export let value: string;
   export let assembled = true;
+
+  function handleClick() {
+    if (row.getCanExpand()) {
+      row.getToggleExpandedHandler()();
+    }
+  }
 </script>
 
 <div
@@ -15,9 +21,7 @@
   style:padding-left={`${row.depth * 14}px`}
   class:-ml-1={assembled && row.getCanExpand()}
   class:cursor-pointer={assembled && row.getCanExpand()}
-  on:click|stopPropagation={assembled && row.getCanExpand()
-    ? row.getToggleExpandedHandler()
-    : undefined}
+  on:click|stopPropagation={handleClick}
 >
   {#if value === "LOADING_CELL"}
     <span class="loading-cell" />
