@@ -198,6 +198,7 @@ func Test_connection_InsertTableAsSelect_WithMergeStrategy(t *testing.T) {
 		require.NoError(t, res.Scan(&r.Range, &r.Strategy))
 		results = append(results, r)
 	}
+	require.NoError(t, res.Err())
 	require.NoError(t, res.Close())
 
 	exptected := []struct {

@@ -7,7 +7,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"github.com/rilldata/rill/runtime/server"
 
-	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/testruntime"
@@ -130,16 +129,6 @@ func getTableTestServerWithSql(t *testing.T, sql string) (*server.Server, string
 	require.NoError(t, err)
 
 	return server, instanceID
-}
-
-func getSingleValue(t *testing.T, rows *sqlx.Rows) int {
-	var val int
-	if rows.Next() {
-		err := rows.Scan(&val)
-		require.NoError(t, err)
-	}
-	rows.Close()
-	return val
 }
 
 func getTableTestServerWithEmptyModel(t *testing.T) (*server.Server, string) {

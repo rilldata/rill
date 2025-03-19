@@ -194,6 +194,7 @@ func testInsertTableAsSelect_WithAppend(t *testing.T, olap drivers.OLAPStore) {
 		require.NoError(t, res.Scan(&r.ID, &r.Planet))
 		result = append(result, r)
 	}
+	require.NoError(t, err)
 
 	expected := []struct {
 		ID     int
@@ -258,6 +259,7 @@ func testInsertTableAsSelect_WithMerge(t *testing.T, olap drivers.OLAPStore) {
 		require.NoError(t, res.Scan(&r.ID, &r.Value))
 		result = append(result, r)
 	}
+	require.NoError(t, err)
 
 	expected := map[int]string{
 		0: "insert",
@@ -328,6 +330,7 @@ func testInsertTableAsSelect_WithPartitionOverwrite(t *testing.T, olap drivers.O
 		require.NoError(t, res.Scan(&r.ID, &r.Value))
 		result = append(result, r)
 	}
+	require.NoError(t, err)
 
 	expected := []struct {
 		ID    int
@@ -394,6 +397,7 @@ func testInsertTableAsSelect_WithPartitionOverwrite_DatePartition(t *testing.T, 
 		require.NoError(t, res.Scan(&r.DT, &r.Value))
 		result = append(result, r)
 	}
+	require.NoError(t, err)
 
 	expected := []struct {
 		DT    string
