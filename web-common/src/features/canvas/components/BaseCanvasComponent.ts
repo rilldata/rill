@@ -180,29 +180,33 @@ export abstract class BaseCanvasComponent<T> {
     if (newTableType === "pivot") {
       // Switch to pivot table spec
       const flatTableSpec = currentSpec as TableSpec;
+      const { columns = [], ...restFlatTableSpec } = flatTableSpec || {};
 
       const row_dimensions =
-        flatTableSpec?.columns?.filter((c) => allDimensions.includes(c)) || [];
-      const measures =
-        flatTableSpec?.columns?.filter((c) => allMeasures.includes(c)) || [];
+        columns?.filter((c) => allDimensions.includes(c)) || [];
+      const measures = columns?.filter((c) => allMeasures.includes(c)) || [];
 
       newSpec = {
-        metrics_view: flatTableSpec?.metrics_view,
+        ...restFlatTableSpec,
         row_dimensions,
         measures,
       };
     } else {
       // Switch to flat table spec
-
       const pivotTableSpec = currentSpec as PivotSpec;
 
-      const row_dimensions = pivotTableSpec.row_dimensions || [];
-      const col_dimensions = pivotTableSpec.col_dimensions || [];
-      const measures = pivotTableSpec.measures || [];
+      const {
+        row_dimensions = [],
+        col_dimensions = [],
+        measures = [],
+        ...restPivotTableSpec
+      } = pivotTableSpec || {};
+
+      const columns = [...row_dimensions, ...col_dimensions, ...measures];
 
       newSpec = {
-        metrics_view: pivotTableSpec?.metrics_view,
-        columns: [...row_dimensions, ...col_dimensions, ...measures],
+        ...restPivotTableSpec,
+        columns,
       };
     }
 
