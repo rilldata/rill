@@ -147,7 +147,7 @@
         {#if isComplexFilter}
           <AdvancedFilter advancedFilter={$whereFilter} />
         {:else if allDimensionFilters.length || allMeasureFilters.length}
-          {#each allDimensionFilters as { name, label, selectedValues, isMatchList, searchText } (name)}
+          {#each allDimensionFilters as { name, label, mode, selectedValues, inputText } (name)}
             {@const dimension = $allDimensions.find(
               (d) => d.name === name || d.column === name,
             )}
@@ -160,9 +160,9 @@
                   smallChip
                   {name}
                   {label}
+                  {mode}
                   {selectedValues}
-                  {isMatchList}
-                  {searchText}
+                  {inputText}
                   timeStart={new Date(0).toISOString()}
                   timeEnd={new Date().toISOString()}
                   timeControlsReady

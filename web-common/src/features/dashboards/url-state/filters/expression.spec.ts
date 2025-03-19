@@ -126,12 +126,15 @@ describe("expression", () => {
         // assert that there is only match. this ensures unambiguous grammar.
         expect(parser.results).length(1);
 
-        const { expr: exprObject, metadata } =
+        const { expr: exprObject, dimensionsWithInlistFilter } =
           convertFilterParamToExpression(expr);
         expect(exprObject).to.deep.eq(expectedExprObject);
-        expect(convertExpressionToFilterParam(exprObject!, metadata)).toEqual(
-          expectedExprString,
-        );
+        expect(
+          convertExpressionToFilterParam(
+            exprObject!,
+            dimensionsWithInlistFilter,
+          ),
+        ).toEqual(expectedExprString);
       });
     }
   });

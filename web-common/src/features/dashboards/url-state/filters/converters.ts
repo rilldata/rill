@@ -1,7 +1,6 @@
 import { forEachIdentifier } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { BinaryOperationReverseMap } from "@rilldata/web-common/features/dashboards/url-state/filters/post-processors";
 import {
-  type ExplorePresetExpressionMetadata,
   type V1Expression,
   V1Operation,
 } from "@rilldata/web-common/runtime-client";
@@ -11,33 +10,31 @@ import nearley from "nearley";
 const compiledGrammar = nearley.Grammar.fromCompiled(grammar);
 export function convertFilterParamToExpression(filter: string): {
   expr: V1Expression | undefined;
-  metadata: ExplorePresetExpressionMetadata;
+  dimensionsWithInlistFilter: string[];
 } {
   const parser = new nearley.Parser(compiledGrammar);
   parser.feed(filter);
   const expr = parser.results[0] as V1Expression;
+  const dimensionsWithInlistFilter: string[] = [];
 
   if (!expr) {
-    return { expr: undefined, metadata: {} };
+    return { expr: undefined, dimensionsWithInlistFilter };
   }
 
-  const metadata: ExplorePresetExpressionMetadata = {
-    dimensionInListFilter: {},
-  };
   forEachIdentifier(expr, (e, ident) => {
-    if ((e as any).isMatchList) {
-      metadata.dimensionInListFilter![ident] = true;
-      delete (e as any).isMatchList;
+    if ((e as any).isInListMode) {
+      dimensionsWithInlistFilter.push(ident);
+      delete (e as any).isInListMode;
     }
   });
 
-  return { expr, metadata };
+  return { expr, dimensionsWithInlistFilter };
 }
 
 const NonStandardName = /^[a-zA-Z][a-zA-Z0-9_]*$/;
 export function convertExpressionToFilterParam(
   expr: V1Expression,
-  metadata: ExplorePresetExpressionMetadata = {},
+  dimensionsWithInlistFilter: string[] = [],
   depth = 0,
 ): string {
   if (!expr) return "";
@@ -51,14 +48,26 @@ export function convertExpressionToFilterParam(
   switch (expr.cond?.op) {
     case V1Operation.OPERATION_AND:
     case V1Operation.OPERATION_OR:
-      return convertJoinerExpressionToFilterParam(expr, metadata, depth);
+      return convertJoinerExpressionToFilterParam(
+        expr,
+        dimensionsWithInlistFilter,
+        depth,
+      );
 
     case V1Operation.OPERATION_IN:
     case V1Operation.OPERATION_NIN:
-      return convertInExpressionToFilterParam(expr, metadata, depth);
+      return convertInExpressionToFilterParam(
+        expr,
+        dimensionsWithInlistFilter,
+        depth,
+      );
 
     default:
-      return convertBinaryExpressionToFilterParam(expr, metadata, depth);
+      return convertBinaryExpressionToFilterParam(
+        expr,
+        dimensionsWithInlistFilter,
+        depth,
+      );
   }
 }
 
@@ -71,13 +80,15 @@ export function stripParserError(err: Error) {
 
 function convertJoinerExpressionToFilterParam(
   expr: V1Expression,
-  metadata: ExplorePresetExpressionMetadata,
+  dimensionsWithInlistFilter: string[],
   depth: number,
 ) {
   const joiner = expr.cond?.op === V1Operation.OPERATION_AND ? " AND " : " OR ";
 
   const parts = expr.cond?.exprs
-    ?.map((e) => convertExpressionToFilterParam(e, metadata, depth + 1))
+    ?.map((e) =>
+      convertExpressionToFilterParam(e, dimensionsWithInlistFilter, depth + 1),
+    )
     .filter(Boolean);
   if (!parts?.length) return "";
   const exprParam = parts.join(joiner);
@@ -90,7 +101,7 @@ function convertJoinerExpressionToFilterParam(
 
 function convertInExpressionToFilterParam(
   expr: V1Expression,
-  metadata: ExplorePresetExpressionMetadata,
+  dimensionsWithInlistFilter: string[],
   depth: number,
 ) {
   if (!expr.cond?.exprs?.length) return "";
@@ -99,8 +110,8 @@ function convertInExpressionToFilterParam(
   const safeColumn = escapeColumnName(column);
 
   let joiner = expr.cond?.op === V1Operation.OPERATION_IN ? "IN" : "NIN";
-  const isMatchList = !!metadata.dimensionInListFilter?.[column];
-  if (isMatchList) {
+  const isInListFilter = dimensionsWithInlistFilter.includes(column);
+  if (isInListFilter) {
     joiner =
       expr.cond?.op === V1Operation.OPERATION_IN ? "IN LIST" : "NOT IN LIST";
   }
@@ -109,7 +120,7 @@ function convertInExpressionToFilterParam(
     // TODO: support `NIN <subquery>`
     const having = convertExpressionToFilterParam(
       expr.cond.exprs[1]?.subquery?.having,
-      metadata,
+      dimensionsWithInlistFilter,
       0,
     );
     if (having) return `${safeColumn} having (${having})`;
@@ -118,7 +129,13 @@ function convertInExpressionToFilterParam(
   if (expr.cond.exprs.length > 1) {
     const vals = expr.cond.exprs
       .slice(1)
-      .map((e) => convertExpressionToFilterParam(e, metadata, depth + 1));
+      .map((e) =>
+        convertExpressionToFilterParam(
+          e,
+          dimensionsWithInlistFilter,
+          depth + 1,
+        ),
+      );
     return `${safeColumn} ${joiner} (${vals.join(",")})`;
   }
 
@@ -127,7 +144,7 @@ function convertInExpressionToFilterParam(
 
 function convertBinaryExpressionToFilterParam(
   expr: V1Expression,
-  metadata: ExplorePresetExpressionMetadata,
+  dimensionsWithInlistFilter: string[],
   depth: number,
 ) {
   if (!expr.cond?.op || !(expr.cond?.op in BinaryOperationReverseMap))
@@ -136,12 +153,12 @@ function convertBinaryExpressionToFilterParam(
   if (!expr.cond?.exprs?.length) return "";
   const left = convertExpressionToFilterParam(
     expr.cond.exprs[0],
-    metadata,
+    dimensionsWithInlistFilter,
     depth + 1,
   );
   const right = convertExpressionToFilterParam(
     expr.cond.exprs[1],
-    metadata,
+    dimensionsWithInlistFilter,
     depth + 1,
   );
   if (!left || !right) return "";

@@ -1,3 +1,4 @@
+import { page } from "$app/stores";
 import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import {
   createInExpression,
@@ -6,12 +7,14 @@ import {
   getValuesInExpression,
   negateExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import {
   type V1Expression,
   V1Operation,
 } from "@rilldata/web-common/runtime-client";
 import { getWhereFilterExpressionIndex } from "../selectors/dimension-filters";
 import type { DashboardMutables } from "./types";
+import { get } from "svelte/store";
 
 export function toggleDimensionValueSelection(
   { dashboard }: DashboardMutables,
@@ -41,11 +44,32 @@ export function toggleDimensionValueSelection(
     // should never happen since getWhereFilterExpressionIndex runs a find
     return;
   }
-  delete dashboard.metadata.dimensionInListFilter![dimensionName];
-  if (
+
+  const wasInListFilter =
+    dashboard.dimensionsWithInlistFilter.includes(dimensionName);
+  const wasLikeFilter =
     expr.cond?.op === V1Operation.OPERATION_LIKE ||
-    expr.cond?.op === V1Operation.OPERATION_NLIKE
-  ) {
+    expr.cond?.op === V1Operation.OPERATION_NLIKE;
+  if (wasInListFilter || wasLikeFilter) {
+    eventBus.emit("notification", {
+      message: "Converted filter type to Select",
+      link: {
+        text: "Undo",
+        href: get(page).url.href,
+      },
+    });
+  }
+
+  dashboard.dimensionsWithInlistFilter =
+    dashboard.dimensionsWithInlistFilter.filter((d) => d !== dimensionName);
+  if (wasLikeFilter) {
+    eventBus.emit("notification", {
+      message: "Converted filter type to Select",
+      link: {
+        text: "Undo",
+        href: get(page).url.href,
+      },
+    });
     dashboard.whereFilter.cond!.exprs![exprIdx] = createInExpression(
       dimensionName,
       [dimensionValue],
@@ -92,7 +116,9 @@ export function applyDimensionBulkSearch(
 
   const isInclude = !dashboard.dimensionFilterExcludeMode.get(dimensionName);
   const expr = createInExpression(dimensionName, values, !isInclude);
-  dashboard.metadata.dimensionInListFilter![dimensionName] = true;
+  if (!dashboard.dimensionsWithInlistFilter.includes(dimensionName)) {
+    dashboard.dimensionsWithInlistFilter.push(dimensionName);
+  }
   const exprIdx = getWhereFilterExpressionIndex({ dashboard })(dimensionName);
   if (exprIdx === undefined || exprIdx === -1) {
     dashboard.whereFilter.cond.exprs.push(expr);

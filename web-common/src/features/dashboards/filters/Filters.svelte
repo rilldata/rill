@@ -386,7 +386,7 @@
           No filters selected
         </div>
       {:else}
-        {#each allDimensionFilters as { name, label, selectedValues, isMatchList, searchText } (name)}
+        {#each allDimensionFilters as { name, label, mode, selectedValues, inputText } (name)}
           {@const dimension = dimensions.find(
             (d) => d.name === name || d.column === name,
           )}
@@ -398,9 +398,9 @@
                 {readOnly}
                 {name}
                 {label}
+                {mode}
                 {selectedValues}
-                {isMatchList}
-                {searchText}
+                {inputText}
                 {timeStart}
                 {timeEnd}
                 {timeControlsReady}

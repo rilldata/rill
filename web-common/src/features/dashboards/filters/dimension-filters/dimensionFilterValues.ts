@@ -1,6 +1,6 @@
 import {
   type CompoundQueryResult,
-  getCompoundAggregationQuery,
+  getCompoundQuery,
 } from "@rilldata/web-common/features/compound-query-result";
 import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-mode";
 import {
@@ -57,7 +57,7 @@ export function useDimensionSearch(
     ),
   );
 
-  return getCompoundAggregationQuery(queries, (responses) => {
+  return getCompoundQuery(queries, (responses) => {
     const values = responses
       .filter((r) => !!r?.data)
       .map((r) => r!.data!.map((i) => i[dimensionName] as string))
@@ -109,7 +109,7 @@ export function useAllSearchResultsCount(
     ),
   );
 
-  return getCompoundAggregationQuery(queries, (responses) => {
+  return getCompoundQuery(queries, (responses) => {
     if (!enabled) return undefined;
 
     const values = responses

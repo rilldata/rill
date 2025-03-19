@@ -398,10 +398,6 @@ message ExploreComparisonTimeRange {
 }
 
 message ExplorePreset {
-  message ExpressionMetadata {
-    map<string, bool> dimension_in_list_filter = 1;
-  }
-
   // Dimensions to show. If `dimensions_selector` is set, this will only be set in `state.valid_spec`.
   repeated string dimensions = 2;
   // Dynamic selector for `dimensions`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
@@ -412,7 +408,8 @@ message ExplorePreset {
   FieldSelector measures_selector = 10;
 
   optional Expression where = 11;
-  optional ExpressionMetadata metadata = 29;
+  // Temporary to differentiate between "select" and "in list" modes. Expression will be replaced with UI specific state in the future.
+  repeated string dimensions_with_inlist_filter = 29;
 
   // Time range for the explore.
   // It corresponds to the `range` property of the explore's `time_ranges`.

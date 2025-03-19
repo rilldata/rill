@@ -77,6 +77,7 @@ export interface MetricsExplorerEntity {
   sortDirection: SortDirection;
 
   whereFilter: V1Expression;
+  dimensionsWithInlistFilter: string[];
   metadata: ExplorePresetExpressionMetadata;
   dimensionThresholdFilters: Array<DimensionThresholdFilter>;
 

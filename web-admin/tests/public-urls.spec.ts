@@ -14,7 +14,7 @@ test.describe.serial("Public URLs", () => {
     await page.getByLabel("Pub Name").getByPlaceholder("Search").click();
     await page.getByLabel("Pub Name").getByPlaceholder("Search").fill("disney");
     await page.getByRole("menuitem", { name: "Disney" }).first().click();
-    await page.getByLabel("pub_name view filter").first().click(); // Hides the popover
+    await page.getByLabel("pub_name filter").click(); // Hides the popover
 
     // Change the time grain to hour
     // (Tests that non-default state propagates to the public URL)

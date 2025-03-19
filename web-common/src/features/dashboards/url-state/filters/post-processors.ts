@@ -38,10 +38,10 @@ export const inPostprocessor = ([column, _1, op, _2, _3, values]: [
   const isInclude =
     lowerCaseOperator === "in" || lowerCaseOperator === "in list";
   const expr = createInExpression(column, values, !isInclude);
-  const isMatchList =
+  const isInListMode =
     lowerCaseOperator === "in list" || lowerCaseOperator === "not in list";
-  if (isMatchList) {
-    (expr as any).isMatchList = isMatchList;
+  if (isInListMode) {
+    (expr as any).isInListMode = isInListMode;
   }
   return expr;
 };

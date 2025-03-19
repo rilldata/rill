@@ -206,9 +206,6 @@ export function filterExpressions(
         .filter((e) => e !== undefined && checker(e)) as V1Expression[],
     },
   };
-  if ((expr as any).isMatchList) {
-    (newExpr as any).isMatchList = (expr as any).isMatchList;
-  }
 
   switch (expr.cond.op) {
     // and/or will have only sub expressions

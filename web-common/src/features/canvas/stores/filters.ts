@@ -31,7 +31,6 @@ import {
   convertFilterParamToExpression,
 } from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
 import type {
-  ExplorePresetExpressionMetadata,
   MetricsViewSpecDimensionV2,
   V1Expression,
 } from "@rilldata/web-common/runtime-client";
@@ -53,9 +52,7 @@ export class Filters {
   // STORES (writable)
   // -------------------
   whereFilter: Writable<V1Expression>;
-  dimensionInListFilter: Writable<
-    ExplorePresetExpressionMetadata["dimensionInListFilter"]
-  >;
+  dimensionsWithInlistFilter: Writable<string[]>;
   dimensionThresholdFilters: Writable<Array<DimensionThresholdFilter>>;
   dimensionFilterExcludeMode: Writable<Map<string, boolean>>;
   temporaryFilterName: Writable<string | null>;
@@ -113,7 +110,7 @@ export class Filters {
         exprs: [],
       },
     });
-    this.dimensionInListFilter = writable({});
+    this.dimensionsWithInlistFilter = writable([]);
     this.dimensionThresholdFilters = writable([]);
 
     // -------------------------------
@@ -253,13 +250,13 @@ export class Filters {
     );
 
     this.getDimensionFilterItems = derived(
-      [this.whereFilter, this.dimensionInListFilter],
-      ([$whereFilter, $dimensionInListFilter]) => {
+      [this.whereFilter, this.dimensionsWithInlistFilter],
+      ([$whereFilter, $dimensionsWithInlistFilter]) => {
         return (dimensionIdMap: Map<string, MetricsViewSpecDimensionV2>) => {
           const dimensionFilters = getDimensionFilters(
             dimensionIdMap,
             $whereFilter,
-            $dimensionInListFilter,
+            $dimensionsWithInlistFilter,
           );
           dimensionFilters.forEach((dimensionFilter) => {
             dimensionFilter.metricsViewNames =
@@ -310,8 +307,12 @@ export class Filters {
     );
 
     this.filterText = derived(
-      [this.whereFilter, this.dimensionThresholdFilters],
-      ([$whereFilter, $dtf]) => {
+      [
+        this.whereFilter,
+        this.dimensionThresholdFilters,
+        this.dimensionsWithInlistFilter,
+      ],
+      ([$whereFilter, $dtf, $dimensionsWithInlistFilter]) => {
         const mergedFilters =
           sanitiseExpression(
             mergeDimensionAndMeasureFilters(
@@ -321,7 +322,10 @@ export class Filters {
             undefined,
           ) ?? createAndExpression([]);
 
-        return convertExpressionToFilterParam(mergedFilters);
+        return convertExpressionToFilterParam(
+          mergedFilters,
+          $dimensionsWithInlistFilter,
+        );
       },
     );
   }
@@ -443,12 +447,9 @@ export class Filters {
 
     const expr = wf.cond?.exprs?.[exprIndex];
     if (!expr?.cond?.exprs) return;
-    this.dimensionInListFilter.update((dimensionInListFilter) => {
-      if (dimensionInListFilter) {
-        delete dimensionInListFilter[dimensionName];
-      }
-      return dimensionInListFilter;
-    });
+    this.dimensionsWithInlistFilter.update((dimensionsWithInlistFilter) =>
+      dimensionsWithInlistFilter.filter((d) => d !== dimensionName),
+    );
     if (
       expr.cond?.op === V1Operation.OPERATION_LIKE ||
       expr.cond?.op === V1Operation.OPERATION_NLIKE
@@ -491,11 +492,8 @@ export class Filters {
     const wf = get(this.whereFilter);
 
     const expr = createInExpression(dimensionName, values, !isInclude);
-    this.dimensionInListFilter.update((dimensionInListFilter) => {
-      return {
-        ...(dimensionInListFilter ?? {}),
-        [dimensionName]: true,
-      };
+    this.dimensionsWithInlistFilter.update((dimensionsWithInlistFilter) => {
+      return [...dimensionsWithInlistFilter, dimensionName];
     });
 
     const exprIndex = get(this.getWhereFilterExpressionIndex)(dimensionName);
@@ -623,7 +621,7 @@ export class Filters {
   };
 
   getFiltersFromText = (filterText: string) => {
-    let { expr } = convertFilterParamToExpression(filterText);
+    let { expr } = convertFilterParamToExpression(filterText); // TODO: use dimensionsWithInlistFilter
     if (!expr) {
       expr = createAndExpression([]);
     } else if (

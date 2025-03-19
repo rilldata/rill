@@ -13,15 +13,12 @@
   export let active = false;
   export let disableTooltip = false;
   export let disableHover = false;
-  export let size: number | undefined = undefined;
 
   export let tooltipDistance = 8;
   export let tooltipLocation: Location = "bottom";
   export let tooltipAlignment: Alignment = "middle";
   export let marginClasses = "";
   export let ariaLabel = "";
-
-  $: buttonSize = size ? size : compact ? 20 : 24;
 </script>
 
 <Tooltip
@@ -44,8 +41,8 @@
         ? 'hover:bg-gray-600'
         : 'hover:bg-gray-50'}"
     class:bg-gray-100={active}
-    style:width="{buttonSize}px"
-    style:height="{buttonSize}px"
+    style:width="{compact ? 20 : 24}px"
+    style:height="{compact ? 20 : 24}px"
     style:font-size="18px"
   >
     <slot />

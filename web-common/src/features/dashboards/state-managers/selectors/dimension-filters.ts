@@ -10,7 +10,6 @@ import {
   matchExpressionByName,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type {
-  ExplorePresetExpressionMetadata,
   MetricsViewSpecDimensionV2,
   V1Expression,
 } from "@rilldata/web-common/runtime-client";
@@ -56,6 +55,7 @@ export const selectedDimensionValuesV2 = (
   if (!whereFilter || isExpressionUnsupported(whereFilter))
     return readable({
       isFetching: false,
+      isLoading: false,
       error: undefined,
       data: [],
     });
@@ -66,6 +66,7 @@ export const selectedDimensionValuesV2 = (
   if (!dimExpr?.cond?.op)
     return readable({
       isFetching: false,
+      isLoading: false,
       error: undefined,
       data: [],
     });
@@ -76,6 +77,7 @@ export const selectedDimensionValuesV2 = (
   ) {
     return readable({
       isFetching: false,
+      isLoading: false,
       error: undefined,
       data: [...new Set(getValuesInExpression(dimExpr) as string[])],
     });
@@ -97,6 +99,7 @@ export const selectedDimensionValuesV2 = (
 
   return readable({
     isFetching: false,
+    isLoading: false,
     error: undefined,
     data: [],
   });
@@ -145,9 +148,9 @@ export const getWhereFilterExpressionIndex = (
 export type DimensionFilterItem = {
   name: string;
   label: string;
+  mode: DimensionFilterMode;
   selectedValues: string[];
-  searchText?: string;
-  isMatchList?: boolean;
+  inputText?: string;
   isInclude: boolean;
   metricsViewNames?: string[];
 };
@@ -158,7 +161,7 @@ export function getDimensionFilterItems(
     return getDimensionFilters(
       dimensionIdMap,
       dashData.dashboard.whereFilter,
-      dashData.dashboard.metadata.dimensionInListFilter,
+      dashData.dashboard.dimensionsWithInlistFilter,
     );
   };
 }
@@ -166,7 +169,7 @@ export function getDimensionFilterItems(
 export function getDimensionFilters(
   dimensionIdMap: Map<string, MetricsViewSpecDimensionV2>,
   filter: V1Expression | undefined,
-  dimensionInListFilter: ExplorePresetExpressionMetadata["dimensionInListFilter"],
+  dimensionsWithInlistFilter: string[],
 ) {
   if (!filter) return [];
   const filteredDimensions: DimensionFilterItem[] = [];
@@ -181,11 +184,14 @@ export function getDimensionFilters(
 
     const op = e.cond?.op;
     if (op === V1Operation.OPERATION_IN || op === V1Operation.OPERATION_NIN) {
+      const isInListMode = dimensionsWithInlistFilter.includes(ident);
       filteredDimensions.push({
         name: ident,
         label: getDimensionDisplayName(dim),
+        mode: isInListMode
+          ? DimensionFilterMode.InList
+          : DimensionFilterMode.Select,
         selectedValues: getValuesInExpression(e),
-        isMatchList: dimensionInListFilter?.[ident],
         isInclude: e.cond?.op === V1Operation.OPERATION_IN,
       });
     } else if (
@@ -195,8 +201,9 @@ export function getDimensionFilters(
       filteredDimensions.push({
         name: ident,
         label: getDimensionDisplayName(dim),
+        mode: DimensionFilterMode.Contains,
         selectedValues: [],
-        searchText: e.cond?.exprs?.[1]?.val?.toString?.() ?? "",
+        inputText: e.cond?.exprs?.[1]?.val?.toString?.() ?? "",
         isInclude: e.cond?.op === V1Operation.OPERATION_IN,
       });
     }
@@ -225,6 +232,7 @@ export const getAllDimensionFilterItems = (
         label: getDimensionDisplayName(
           dimensionIdMap.get(dashData.dashboard.temporaryFilterName),
         ),
+        mode: DimensionFilterMode.Select,
         selectedValues: [],
         isInclude: true,
       });

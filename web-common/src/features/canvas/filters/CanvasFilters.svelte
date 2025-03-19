@@ -327,7 +327,7 @@
           No filters selected
         </div>
       {:else}
-        {#each allDimensionFilters as { name, label, selectedValues, isMatchList, searchText, metricsViewNames } (name)}
+        {#each allDimensionFilters as { name, label, mode, selectedValues, inputText, metricsViewNames } (name)}
           {@const dimension = $allDimensions.find(
             (d) => d.name === name || d.column === name,
           )}
@@ -339,9 +339,9 @@
                 {readOnly}
                 {name}
                 {label}
+                {mode}
                 {selectedValues}
-                {isMatchList}
-                {searchText}
+                {inputText}
                 {timeStart}
                 {timeEnd}
                 timeControlsReady={!!$timeRangeStateStore}
