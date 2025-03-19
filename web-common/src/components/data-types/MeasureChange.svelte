@@ -28,7 +28,6 @@
   }
 </script>
 
-<!-- FIXME: !color to override the .ui-copy class -->
 <Base
   {isNull}
   classes="ui-copy-number w-full font-normal {customStyle} {inTable
