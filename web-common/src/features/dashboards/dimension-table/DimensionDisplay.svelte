@@ -198,7 +198,11 @@
 </script>
 
 {#if $sortedQuery}
-  <div class="h-full flex flex-col w-full" style:min-width="365px">
+  <div
+    class="h-full flex flex-col w-full"
+    style:min-width="365px"
+    aria-label="Dimension Display"
+  >
     <div class="flex-none" style:height="50px">
       <DimensionHeader
         {dimensionName}
