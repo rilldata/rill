@@ -78,7 +78,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 			inputProps.PreExec = secretSQL
 		} else if scheme == "gcs" || scheme == "gs" {
 			// rewrite duckdb sql with locally downloaded files
-			handle, release, err := opts.Env.AcquireConnector(ctx, scheme)
+			handle, release, err := opts.Env.AcquireConnector(ctx, "gcs")
 			if err != nil {
 				return nil, err
 			}
@@ -269,6 +269,9 @@ func objectStoreRef(ctx context.Context, props *ModelInputProperties, opts *driv
 	}
 
 	if uri.Scheme == "s3" || uri.Scheme == "azure" || uri.Scheme == "gcs" || uri.Scheme == "gs" {
+		if uri.Scheme == "gs" {
+			uri.Scheme = "gcs"
+		}
 		// for s3 and azure we can just set a duckdb secret and ingest data using duckdb's native support for s3 and azure
 		handle, release, err := opts.Env.AcquireConnector(ctx, uri.Scheme)
 		if err != nil {
