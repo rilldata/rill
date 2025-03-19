@@ -1,3 +1,5 @@
+import type { ComponentAlignment } from "@rilldata/web-common/features/canvas/components/types";
+
 type NativeInputTypes = "text" | "number" | "boolean" | "textArea";
 type SemanticInputTypes =
   | "metrics"
@@ -24,7 +26,10 @@ export interface ComponentInputParam {
   showInUI?: boolean; // If not specified, can assume true
   optional?: boolean;
   description?: string; // Tooltip description for the input
-  meta?: Record<string, string>; // Any additional metadata
+  meta?: {
+    defaultAlignment?: ComponentAlignment;
+    [key: string]: any;
+  };
 }
 
 export interface FilterInputParam {
