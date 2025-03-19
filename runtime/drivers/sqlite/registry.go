@@ -129,6 +129,9 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 
 		res = append(res, i)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
 	return res, nil
 }

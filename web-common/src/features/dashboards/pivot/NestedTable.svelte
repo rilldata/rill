@@ -453,10 +453,10 @@
   .interactive-cell {
     @apply cursor-pointer;
   }
-  .interactive-cell:hover {
+  .interactive-cell.cell:hover {
     @apply bg-primary-100;
   }
-  .active-cell {
+  .active-cell.cell {
     @apply bg-primary-50;
   }
 </style>
