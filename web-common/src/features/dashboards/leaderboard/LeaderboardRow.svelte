@@ -303,7 +303,9 @@
           shift: () =>
             shiftClickHandler(pctOfTotals[measureName]?.toString() || ""),
         })}
-        title={pctOfTotals[measureName]?.toString() || ""}
+        title={pctOfTotals[measureName]
+          ? formatter(pctOfTotals[measureName])
+          : null}
       >
         <PercentageChange
           value={pctOfTotals[measureName]}
@@ -323,7 +325,9 @@
           shift: () =>
             shiftClickHandler(deltaAbsMap[measureName]?.toString() || ""),
         })}
-        title={deltaAbsMap[measureName]?.toString() || ""}
+        title={deltaAbsMap[measureName]
+          ? formatter(deltaAbsMap[measureName])
+          : null}
       >
         <FormattedDataType
           bind:contentRect={deltaRect}
@@ -349,7 +353,9 @@
           shift: () =>
             shiftClickHandler(deltaRels[measureName]?.toString() || ""),
         })}
-        title={deltaRels[measureName]?.toString() || ""}
+        title={deltaRels[measureName]
+          ? formatMeasurePercentageDifference(deltaRels[measureName]).toString()
+          : null}
       >
         <PercentageChange
           value={deltaRels[measureName]
