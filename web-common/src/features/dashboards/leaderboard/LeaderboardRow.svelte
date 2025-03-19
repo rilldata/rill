@@ -77,8 +77,8 @@
 
   $: href = makeHref(uri, dimensionValue);
 
-  $: deltaElementWidth = deltaRect.width;
-  $: valueElementWith = valueRect.width;
+  $: deltaElementWidth = deltaRect?.width;
+  $: valueElementWith = valueRect?.width;
 
   $: valueColumn.update(valueElementWith);
   $: deltaColumn.update(deltaElementWidth);
