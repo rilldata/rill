@@ -39,8 +39,8 @@ func queryBoolPair(qry string, args ...any) (bool, bool, error) {
 			return false, false, err
 		}
 	}
-	if rows.Err() != nil {
-		return false, false, rows.Err()
+	if err := rows.Err(); err != nil {
+		return false, false, err
 	}
 
 	return a, b, nil

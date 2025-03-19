@@ -234,8 +234,9 @@ func (q *MetricsViewTimeSeries) populateResult(rows *drivers.Result, tsAlias str
 		})
 		start = addTo(t, dur, tz)
 	}
-	if rows.Err() != nil {
-		return rows.Err()
+	err := rows.Err()
+	if err != nil {
+		return err
 	}
 	if q.TimeEnd != nil && nullRecords != nil {
 		if start.Equal(zeroTime) && q.TimeStart != nil {

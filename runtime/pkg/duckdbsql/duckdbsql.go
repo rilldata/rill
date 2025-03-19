@@ -26,8 +26,8 @@ func queryString(qry string, args ...any) ([]byte, error) {
 			return nil, err
 		}
 	}
-	if rows.Err() != nil {
-		return nil, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return res, nil
