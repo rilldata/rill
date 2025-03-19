@@ -17,6 +17,10 @@
   export let onConfirm: () => void;
 
   let open = false;
+  function onRedeploy() {
+    open = false;
+    onConfirm();
+  }
 </script>
 
 <AlertDialog bind:open>
@@ -50,7 +54,7 @@
       >
         Cancel
       </Button>
-      <Button type="primary" on:click={onConfirm}>Yes, update</Button>
+      <Button type="primary" on:click={onRedeploy}>Yes, update</Button>
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>
