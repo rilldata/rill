@@ -74,6 +74,7 @@ func TestClickHouseStatic(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, count, 1)
 	}
+	require.NoError(t, err)
 	rows.Close()
 
 	// Get the name of the first connection's database
@@ -93,6 +94,7 @@ func TestClickHouseStatic(t *testing.T) {
 	for rows.Next() {
 		require.Fail(t, "unexpected visible table in information schema")
 	}
+	require.NoError(t, err)
 	rows.Close()
 
 	// Deprovision the resources

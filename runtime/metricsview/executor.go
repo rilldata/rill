@@ -117,7 +117,7 @@ func (e *Executor) CacheKey(ctx context.Context) ([]byte, bool, error) {
 			return nil, false, err
 		}
 	}
-	if res.Err() != nil {
+	if err := res.Err(); err != nil {
 		return nil, false, err
 	}
 
@@ -523,8 +523,9 @@ func (e *Executor) Search(ctx context.Context, qry *SearchQuery, executionTime *
 		}
 		searchResult = append(searchResult, row)
 	}
-	if res.Err() != nil {
-		return nil, res.Err()
+	err = res.Err()
+	if err != nil {
+		return nil, err
 	}
 	return searchResult, nil
 }

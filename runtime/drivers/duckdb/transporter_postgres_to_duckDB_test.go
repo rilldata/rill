@@ -90,6 +90,7 @@ func allDataTypesTest(t *testing.T, db *sql.DB, dbURL string) {
 		require.NoError(t, err)
 		require.Equal(t, 1, count)
 	}
+	require.NoError(t, res.Err())
 	require.NoError(t, res.Close())
 	require.NoError(t, to.Close())
 }
@@ -141,6 +142,7 @@ func pgxToDuckDB(t *testing.T, pgdb *sql.DB, dbURL string) {
 		require.NoError(t, err)
 		require.Equal(t, 1, count)
 	}
+	require.NoError(t, res.Err())
 	require.NoError(t, res.Close())
 
 	// ingest some more data in postges
@@ -165,6 +167,7 @@ func pgxToDuckDB(t *testing.T, pgdb *sql.DB, dbURL string) {
 		require.NoError(t, err)
 		require.Equal(t, 2, count)
 	}
+	require.NoError(t, res.Err())
 	require.NoError(t, res.Close())
 
 	require.NoError(t, duckDB.Close())
