@@ -500,6 +500,9 @@ func (q *ColumnTimeseries) CreateTimestampRollupReduction(
 
 			results = append(results, tsv)
 		}
+		if rows.Err() != nil {
+			return nil, rows.Err()
+		}
 
 		return results, nil
 	}
@@ -591,6 +594,9 @@ func (q *ColumnTimeseries) CreateTimestampRollupReduction(
 			i := len(results)
 			results[i-3], results[i-2] = results[i-2], results[i-3]
 		}
+	}
+	if rows.Err() != nil {
+		return nil, rows.Err()
 	}
 
 	return results, nil
