@@ -28,9 +28,9 @@ jobs:
           fetch-tags: true
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
-          go-version: 1.23
+          go-version-file: go.mod
 
       - name: Authenticate GCloud
         uses: google-github-actions/auth@v2
