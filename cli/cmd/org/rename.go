@@ -37,8 +37,16 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Build update request
 			req := &adminv1.UpdateOrganizationRequest{Name: org.Name}
 
-			if req.NewName != nil && req.DisplayName == nil && org.DisplayName != "" {
-				ch.PrintfWarn("\nWarn: Changing org name will invalidate dashboard URLs.\n")
+			if req.NewName != nil {
+				ch.PrintfWarn("Changing the name will invalidate dashboard URLs.\n")
+				ok, err := cmdutil.ConfirmPrompt("Do you want to continue?", "", false)
+				if err != nil {
+					return err
+				}
+				if !ok {
+					ch.PrintfWarn("Aborted\n")
+					return nil
+				}
 			}
 
 			var flagSet bool
@@ -63,11 +71,13 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			// Print results
-			ch.PrintfSuccess("Updated organization\n")
 			if req.NewName != nil {
-				ch.Printf("Updated name: %s to %s\n", name, updatedOrg.Organization.Name)
+				ch.Printf("Updated name %q to %q\n", name, updatedOrg.Organization.Name)
+				if org.DisplayName != "" && req.DisplayName == nil {
+					ch.PrintfWarn("You updated the org's unique name, but not its display name; use --display-name to update the display name\n")
+				}
 			}
+
 			if req.DisplayName != nil {
 				ch.Printf("Updated display name: %s to %s\n", org.DisplayName, updatedOrg.Organization.DisplayName)
 			}
