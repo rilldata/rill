@@ -3,12 +3,13 @@ import {
   validateMeasures,
 } from "@rilldata/web-common/features/canvas/components/validators";
 import type { StateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+import { isTimeDimension } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
 import { type Readable, derived } from "svelte/store";
-import type { TableSpec } from "./";
+import type { PivotSpec } from "./";
 
 export function validateTableSchema(
   ctx: StateManagers,
-  tableSpec: TableSpec,
+  tableSpec: PivotSpec,
 ): Readable<{
   isValid: boolean;
   error?: string;
@@ -17,16 +18,9 @@ export function validateTableSchema(
   return derived(
     ctx.canvasEntity.spec.getMetricsViewFromName(metrics_view),
     (metricsView) => {
-      const allMeasures =
-        metricsView?.measures?.map((m) => m.name as string) || [];
-      const allDimensions =
-        metricsView?.dimensions?.map((d) => d.name || (d.column as string)) ||
-        [];
-
-      const columns = tableSpec?.columns || [];
-
-      const measures = columns.filter((c) => allMeasures.includes(c));
-      const dimensions = columns.filter((c) => allDimensions.includes(c));
+      const measures = tableSpec.measures || [];
+      const rowDimensions = tableSpec.row_dimensions || [];
+      const colDimensions = tableSpec.col_dimensions || [];
 
       if (!metricsView) {
         return {
@@ -35,7 +29,7 @@ export function validateTableSchema(
         };
       }
 
-      if (!columns.length) {
+      if (!measures.length && !rowDimensions.length && !colDimensions.length) {
         return {
           isValid: false,
           error: "Select at least one measure or dimension for the table",
@@ -50,7 +44,18 @@ export function validateTableSchema(
         };
       }
 
-      const validateDimensionsRes = validateDimensions(metricsView, dimensions);
+      const allDimensions = rowDimensions
+        .concat(colDimensions)
+        .filter(
+          (d) =>
+            !metricsView.timeDimension ||
+            !isTimeDimension(d, metricsView.timeDimension),
+        );
+
+      const validateDimensionsRes = validateDimensions(
+        metricsView,
+        allDimensions,
+      );
 
       if (!validateDimensionsRes.isValid) {
         const invalidDimensions =

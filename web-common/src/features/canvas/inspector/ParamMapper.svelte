@@ -4,20 +4,22 @@
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import {
     isChartComponentType,
+    isTableComponentType,
     type CanvasComponentObj,
   } from "@rilldata/web-common/features/canvas/components/util";
-  import AlignmentInput from "@rilldata/web-common/features/canvas/inspector/AlignmentInput.svelte";
-  import ComparisonInput from "@rilldata/web-common/features/canvas/inspector/ComparisonInput.svelte";
-  import MetricSelectorDropdown from "@rilldata/web-common/features/canvas/inspector/MetricSelectorDropdown.svelte";
-  import MultiFieldInput from "@rilldata/web-common/features/canvas/inspector/MultiFieldInput.svelte";
-  import SingleFieldInput from "@rilldata/web-common/features/canvas/inspector/SingleFieldInput.svelte";
-  import SparklineInput from "@rilldata/web-common/features/canvas/inspector/SparklineInput.svelte";
   import { type V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
   import type { CanvasComponentType } from "../components/types";
+  import AlignmentInput from "./AlignmentInput.svelte";
   import ChartTypeSelector from "./chart/ChartTypeSelector.svelte";
   import MarkSelector from "./chart/MarkSelector.svelte";
   import PositionalFieldConfig from "./chart/PositionalFieldConfig.svelte";
+  import ComparisonInput from "./ComparisonInput.svelte";
+  import MetricSelectorDropdown from "./MetricSelectorDropdown.svelte";
+  import MultiFieldInput from "./MultiFieldInput.svelte";
+  import SingleFieldInput from "./SingleFieldInput.svelte";
+  import SparklineInput from "./SparklineInput.svelte";
+  import TableTypeSelector from "./TableTypeSelector.svelte";
 
   export let component: CanvasComponentObj;
   export let componentType: CanvasComponentType;
@@ -44,6 +46,14 @@
 
 {#if isChartComponentType(componentType)}
   <ChartTypeSelector {component} {componentType} />
+{/if}
+
+{#if metricsView && isTableComponentType(componentType)}
+  <TableTypeSelector
+    {component}
+    {componentType}
+    metricsViewName={metricsView}
+  />
 {/if}
 
 <div>
@@ -86,13 +96,13 @@
             }}
           />
 
-          <!-- MULTIPLE MEASURE / MULTIPLE DIMENSION -->
-        {:else if metricsView && (config.type === "multi_measures" || config.type === "multi_dimensions")}
+          <!-- MULTIPLE MEASURE / MULTIPLE DIMENSION / MULTIPLE FIELDS -->
+        {:else if metricsView && config.type === "multi_fields"}
           <MultiFieldInput
             label={config.label ?? key}
             metricName={metricsView}
             id={key}
-            type={config.type === "multi_measures" ? "measure" : "dimension"}
+            types={config.meta?.allowedTypes ?? ["measure", "dimension"]}
             selectedItems={localParamValues[key]}
             onMultiSelect={async (field) => {
               component.updateProperty(key, field);

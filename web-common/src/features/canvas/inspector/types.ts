@@ -1,12 +1,7 @@
 import type { ComponentAlignment } from "@rilldata/web-common/features/canvas/components/types";
 
 type NativeInputTypes = "text" | "number" | "boolean" | "textArea";
-type SemanticInputTypes =
-  | "metrics"
-  | "measure"
-  | "dimension"
-  | "multi_measures"
-  | "multi_dimensions";
+type SemanticInputTypes = "metrics" | "measure" | "dimension" | "multi_fields";
 type ChartInputTypes = "positional" | "mark" | "tooltip" | "config";
 type CustomInputTypes = "rill_time" | "sparkline" | "comparison_options";
 type PositionalInputTypes = "alignment";
@@ -20,6 +15,8 @@ export type InputType =
 
 export type FilterInputTypes = "time_filters" | "dimension_filters";
 
+export type FieldType = "measure" | "dimension" | "time";
+
 export interface ComponentInputParam {
   type: InputType;
   label?: string;
@@ -27,6 +24,7 @@ export interface ComponentInputParam {
   optional?: boolean;
   description?: string; // Tooltip description for the input
   meta?: {
+    allowedTypes?: FieldType[]; // Specify which field types are allowed for multi-field selection
     defaultAlignment?: ComponentAlignment;
     [key: string]: any;
   };
