@@ -84,7 +84,6 @@ func newTestServer(t *testing.T) *Server {
 
 	// Sender
 	sender := email.NewTestSender()
-	require.NoError(t, err)
 	emailClient := email.New(sender)
 
 	// Application-managed column encryption keyring
