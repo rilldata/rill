@@ -448,22 +448,6 @@ function fromExploreUrlParams(
     }
   }
 
-  if (
-    searchParams.has(ExploreStateURLParams.SortBy) &&
-    !searchParams.has(ExploreStateURLParams.LeaderboardMeasureCount)
-  ) {
-    // Gracefully remove sort_by from the URL
-    preset.exploreSortBy = undefined;
-
-    // Error because sort_by is not a valid option without
-    // leaderboard_measure_count
-    errors.push(
-      new Error(
-        "This sort_by requires leaderboard_measure_count to be set to view the leaderboard.",
-      ),
-    );
-  }
-
   if (searchParams.has(ExploreStateURLParams.SortDirection)) {
     preset.exploreSortAsc =
       (searchParams.get(ExploreStateURLParams.SortDirection) as string) ===
@@ -490,15 +474,6 @@ function fromExploreUrlParams(
       errors.push(
         getSingleFieldError("leaderboard measure count", count ?? ""),
       );
-    }
-  }
-
-  if (searchParams.has(ExploreStateURLParams.LeaderboardContextColumns)) {
-    const columns = searchParams.get(
-      ExploreStateURLParams.LeaderboardContextColumns,
-    );
-    if (columns) {
-      preset.exploreLeaderboardContextColumns = columns.split(",");
     }
   }
 
