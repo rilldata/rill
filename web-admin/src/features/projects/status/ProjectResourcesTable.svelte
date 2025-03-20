@@ -90,7 +90,9 @@
 </script>
 
 <BasicTable
-  {data}
+  data={data.filter(
+    (resource) => resource.meta.name.kind !== ResourceKind.Component,
+  )}
   {columns}
   columnLayout="minmax(95px, 108px) minmax(100px, 3fr) 48px minmax(80px, 2fr) minmax(100px, 2fr) 56px"
 />
