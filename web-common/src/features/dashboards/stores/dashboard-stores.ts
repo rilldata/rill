@@ -170,6 +170,10 @@ function syncDimensions(
 const metricsViewReducers = {
   init(name: string, initState: Partial<MetricsExplorerEntity> = {}) {
     update((state) => {
+      // TODO: revisit this during the url state / restore user refactor
+      initState.dimensionFilterExcludeMode = includeExcludeModeFromFilters(
+        initState.whereFilter,
+      );
       state.entities[name] = getFullInitExploreState(name, initState);
 
       updateMetricsExplorerProto(state.entities[name]);

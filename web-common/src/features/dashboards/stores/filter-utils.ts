@@ -150,7 +150,6 @@ export function forEachExpression(
   if (!expr.cond?.exprs) return;
 
   for (const subExpr of expr.cond.exprs) {
-    cb(subExpr, depth);
     forEachExpression(subExpr, cb, depth + 1);
   }
 }

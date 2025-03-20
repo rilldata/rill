@@ -98,7 +98,6 @@
               sortedAscending={$sortedAscending}
               sortType={$sortType}
               filterExcludeMode={$isFilterExcludeMode(dimension.name)}
-              atLeastOneActive={$atLeastOneSelection(dimension.name)}
               {comparisonTimeRange}
               {dimension}
               isSummableMeasure={$isSummableMeasure}

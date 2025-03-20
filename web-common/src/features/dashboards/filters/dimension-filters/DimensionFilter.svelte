@@ -49,6 +49,7 @@
   $: sanitisedSearchText = inputText?.replace(/^%/, "").replace(/%$/, "");
   let curMode = mode;
   let curSearchText = "";
+  let curExcludeMode = excludeMode;
 
   $: ({ instanceId } = $runtime);
 
@@ -142,6 +143,7 @@
     mode: DimensionFilterMode,
     sanitisedSearchText: string | undefined,
   ) {
+    curExcludeMode = excludeMode;
     switch (mode) {
       case DimensionFilterMode.Select:
         curMode = DimensionFilterMode.Select;
@@ -185,6 +187,9 @@
       searchedBulkValues = [];
     } else {
       checkSearchText(curSearchText);
+      if (newMode === DimensionFilterMode.Select) {
+        curExcludeMode = excludeMode;
+      }
     }
   }
 
@@ -205,8 +210,13 @@
     }
   }
 
+  function handleToggleExcludeMode() {
+    curExcludeMode = !curExcludeMode;
+    const shouldToggleImmediately = mode === curMode;
+    if (shouldToggleImmediately) onToggleFilterMode();
+  }
+
   function onToggleSelectAll() {
-    console.log(correctedSearchResults, allSelected, selectedValues);
     correctedSearchResults?.forEach((dimensionValue) => {
       if (!allSelected && selectedValues.includes(dimensionValue)) return;
 
@@ -222,10 +232,12 @@
         break;
       case DimensionFilterMode.InList:
         onBulkSelect(searchedBulkValues);
+        if (curExcludeMode !== excludeMode) onToggleFilterMode();
         open = false;
         break;
       case DimensionFilterMode.Contains:
         onSearch(curSearchText);
+        if (curExcludeMode !== excludeMode) onToggleFilterMode();
         open = false;
         break;
     }
@@ -270,7 +282,7 @@
         builders={[builder]}
         type="dimension"
         active={open}
-        exclude={excludeMode}
+        exclude={curExcludeMode}
         label={`${name} filter`}
         on:remove={onRemove}
         removable={!readOnly}
@@ -285,7 +297,7 @@
 
         <RemovableListBody
           slot="body"
-          label={excludeMode ? `Exclude ${label}` : label}
+          label={curExcludeMode ? `Exclude ${label}` : label}
           show={1}
           {smallChip}
           values={curMode === DimensionFilterMode.InList
@@ -395,7 +407,7 @@
                 : ''}"
               role="menuitem"
               checked={curMode === DimensionFilterMode.Select && selected}
-              showXForSelected={excludeMode}
+              showXForSelected={curExcludeMode}
               disabled={curMode !== DimensionFilterMode.Select}
               on:click={() => onSelect(name)}
             >
@@ -419,10 +431,10 @@
     <footer>
       <div class="flex items-center gap-x-1.5">
         <Switch
-          checked={excludeMode}
+          checked={curExcludeMode}
           id="include-exclude"
           small
-          on:click={onToggleFilterMode}
+          on:click={handleToggleExcludeMode}
           label="Include exclude toggle"
         />
         <Label class="font-normal text-xs" for="include-exclude">Exclude</Label>

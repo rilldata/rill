@@ -131,7 +131,7 @@
       queryArgsJson,
       $metricsViewSpec.data,
       $timeRange.data,
-      dashboardState,
+      $dashboardState.data,
     );
     for (const fk in formValues) {
       $form[fk] = formValues[fk];

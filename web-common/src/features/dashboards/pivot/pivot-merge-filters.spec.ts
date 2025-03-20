@@ -51,8 +51,7 @@ describe("mergeFilters", () => {
         )!,
       ),
     ).toEqual(
-      // Support for LIKE is in another PR. Enable this before that PR is merged.
-      `publisher IN ('Facebook') AND publisher having (impressions gt 2)`,
+      `publisher IN ('Facebook') AND publisher having (impressions GT 2) AND publisher LIKE '%oo%'`,
     );
   });
 

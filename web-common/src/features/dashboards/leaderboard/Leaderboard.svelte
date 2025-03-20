@@ -68,7 +68,6 @@
   export let firstColumnWidth: number;
   export let isSummableMeasure: boolean;
   export let filterExcludeMode: boolean;
-  export let atLeastOneActive: boolean;
   export let isBeingCompared: boolean;
   export let parentElement: HTMLElement;
   export let suppressTooltip = false;
@@ -112,6 +111,8 @@
     displayName = "",
     uri,
   } = dimension);
+
+  $: atLeastOneActive = Boolean($selectedValues.data?.length);
 
   $: isComplexFilter = isExpressionUnsupported(whereFilter);
   $: where = isComplexFilter
