@@ -1,4 +1,6 @@
 import type { ChartType } from "@rilldata/web-common/features/canvas/components/charts/types";
+import type { PivotSpec } from "@rilldata/web-common/features/canvas/components/pivot";
+import type { TableSpec } from "@rilldata/web-common/features/canvas/components/table";
 import type { ComponentSize } from "@rilldata/web-common/features/canvas/components/types";
 import { getParsedDocument } from "@rilldata/web-common/features/canvas/inspector/selectors";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
@@ -150,6 +152,67 @@ export abstract class BaseCanvasComponent<T> {
     const width = parsedDocument.getIn([...parentPath, "width"]);
 
     parsedDocument.setIn(parentPath, { [key]: currentSpec, width });
+
+    // Save the updated document
+    updateEditorContent(parsedDocument.toString(), true);
+    await saveLocalContent();
+  }
+
+  async updateTableType(
+    newTableType: "pivot" | "table",
+    metricsViewSpec: V1MetricsViewSpec | undefined,
+  ) {
+    if (!this.fileArtifact) return;
+    const parentPath = this.pathInYAML.slice(0, -1);
+    const parseDocumentStore = getParsedDocument(this.fileArtifact);
+    const parsedDocument = get(parseDocumentStore);
+    const { updateEditorContent, saveLocalContent } = this.fileArtifact;
+
+    const currentSpec = get(this.specStore);
+
+    const allMeasures =
+      metricsViewSpec?.measures?.map((m) => m.name as string) || [];
+    const allDimensions =
+      metricsViewSpec?.dimensions?.map((d) => d.name || (d.column as string)) ||
+      [];
+
+    let newSpec: PivotSpec | TableSpec;
+    if (newTableType === "pivot") {
+      // Switch to pivot table spec
+      const flatTableSpec = currentSpec as TableSpec;
+      const { columns = [], ...restFlatTableSpec } = flatTableSpec || {};
+
+      const row_dimensions =
+        columns?.filter((c) => allDimensions.includes(c)) || [];
+      const measures = columns?.filter((c) => allMeasures.includes(c)) || [];
+
+      newSpec = {
+        ...restFlatTableSpec,
+        row_dimensions,
+        measures,
+      };
+    } else {
+      // Switch to flat table spec
+      const pivotTableSpec = currentSpec as PivotSpec;
+
+      const {
+        row_dimensions = [],
+        col_dimensions = [],
+        measures = [],
+        ...restPivotTableSpec
+      } = pivotTableSpec || {};
+
+      const columns = [...row_dimensions, ...col_dimensions, ...measures];
+
+      newSpec = {
+        ...restPivotTableSpec,
+        columns,
+      };
+    }
+
+    const width = parsedDocument.getIn([...parentPath, "width"]);
+
+    parsedDocument.setIn(parentPath, { [newTableType]: newSpec, width });
 
     // Save the updated document
     updateEditorContent(parsedDocument.toString(), true);

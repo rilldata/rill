@@ -18,6 +18,7 @@ export const initialHeights: Record<CanvasComponentType, number> = {
   kpi_grid: 128,
   image: 80,
   table: 300,
+  pivot: 300,
 };
 
 const componentRegistry = getComponentRegistry();

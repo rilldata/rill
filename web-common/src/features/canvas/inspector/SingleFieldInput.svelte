@@ -27,7 +27,7 @@
   $: fieldData = useMetricFieldData(
     ctx,
     metricName,
-    type,
+    [type],
     searchableItems,
     searchValue,
   );
@@ -52,7 +52,7 @@
           {#if isTimeSelected}
             Time
           {:else if selectedItem}
-            {$fieldData.displayMap[selectedItem] || selectedItem}
+            {$fieldData.displayMap[selectedItem]?.label || selectedItem}
           {:else}
             Select a {type} field
           {/if}
@@ -83,12 +83,12 @@
             <DropdownMenu.Item
               class="pl-8 mx-1"
               on:click={() => {
-                onSelect(item, $fieldData.displayMap[item] || item);
+                onSelect(item, $fieldData.displayMap[item]?.label || item);
                 open = false;
               }}
             >
               <slot {item}>
-                {$fieldData.displayMap[item] || item}
+                {$fieldData.displayMap[item]?.label || item}
               </slot>
             </DropdownMenu.Item>
           {/if}
