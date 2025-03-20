@@ -17,7 +17,7 @@ Verify that the installation succeeded:
 rill --help
 ```
 
-:::tip sharing dashboards in Rill cloud? clone your git repo first
+:::tip sharing dashboards in Rill cloud? Clone your git repo first
 If you plan to share your dashboards, it is helpful to start by creating a repo in Git. Go to https://github.com/new to create a new repo. Then, run the [Rill install script](#install-rill) in your cloned location locally to make deployment easier. 
 
 More details on deploying Rill via Git in our [Deploy section](../deploy/deploy-dashboard/).
@@ -51,26 +51,26 @@ On both macOS and Linux, you can install the latest nightly build using the inst
 curl https://rill.sh | sh -s -- --nightly
 ```
 
-:::warning MacOS users
+:::warning macOS users
 
 If you previously installed Rill using `brew`, *the brew-managed binary will take precedent*. You can remove it by running `brew uninstall rill`.
 
 :::
 
-### What is nightly release?
+### What is nightly released
 The nightly release will give you the most up-to-date version of Rill without having to wait for the official release. As these releases are not fully ready for production, you may encounter some issues.
 
 
 ## Installing a specific version of Rill
 
-Rather than installing the latest version of Rill automatically, you can also install a specific version through the installation script by using the following command (e.g. `v0.40.1`):
+Rather than installing the latest version of Rill automatically, you can also install a specific version through the installation script by using the following command (e.g., `v0.40.1`):
 ```bash
 curl https://rill.sh | sh -s -- --version <insert_version_number>
 ```
 
 :::info Checking the Rill version
 
-To check the precise version of available releases, you can navigate to the [**Releases**](https://github.com/rilldata/rill/releases) page of our [Rill repo](https://github.com/rilldata/rill). Note that if an invalid or incorrect version is passed to the install script, you will get prompted with an error to specify a correct version.
+To check the precise version of available releases, you can navigate to the [**Releases'**](https://github.com/rilldata/rill/releases) page of our [Rill repo](https://github.com/rilldata/rill). Note that if an invalid or incorrect version is passed to the installation script, you will get prompted with an error to specify a correct version.
 
 :::
 
@@ -88,6 +88,12 @@ Once you have installed WSL and logged in to your Linux instance, you just need 
 sudo apt-get update
 sudo apt-get install unzip
 ```
+:::tip Where should Rill be running? 
+Please check that you are running the commands in your Linux instance not from your Windows Command Prompt. 
+
+If you are seeing strange behavior in Rill Developer, run the following command from the CLI to see where your project files are being save `echo "$PWD"`. If they are mounted from your Windows drive, you'll need to bring them into the WSL environment. 
+
+:::
 
 With `unzip` installed, you're ready to install Rill. Just run:
 ```bash
@@ -96,7 +102,7 @@ curl https://rill.sh | sh
 
 ## Manual Install
 
-You can download platform-specific binaries from our [releases page on Github](https://github.com/rilldata/rill/releases). A manual download will not make Rill Developer globally accessible, so you'll need to reference the full path of the binary when executing CLI commands.
+You can download platform-specific binaries from our [releases page on GitHub](https://github.com/rilldata/rill/releases). A manual download will not make Rill Developer globally accessible, so you'll need to reference the full path of the binary when executing CLI commands.
 
 ## Brew Install
 

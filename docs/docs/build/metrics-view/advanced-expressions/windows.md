@@ -11,7 +11,7 @@ Please review the reference documentation, [here.](/reference/project-files/metr
 
 
 ## Example
-In the below example, bids is another measure defined in the metrics view and we are getting the previous week and current date's values and averaging them. This allows us to remove any short term trends to detect real patterms. You'll need to add the [`requires`](./referencing) array parameter to use reference another measure.
+In the below example, bids is another measure defined in the metrics view, and we are getting the previous week and current date's values and averaging them. This allows us to remove any short term trends to detect real patterns. You'll need to add the [`requires`](./referencing) array parameter to use reference another measure.
 
 <img src = '/img/build/metrics-view/examples/explore-percent.png' class='rounded-gif' />
 <br /> update this photo
@@ -27,7 +27,7 @@ In the below example, bids is another measure defined in the metrics view and we
 ```
 
 
-Another example is using a rolling sum with no bounding preceding rows, aka your whole data. This will be a cumilative sum of all of your measures data, in this case it is the average voltage measure.
+Another example is using a rolling sum with no bounding preceding rows, aka your whole data. This will be a cumulative sum of all of your measure's data, in this case it is the average voltage measure.
 
 <img src = '/img/build/metrics-view/examples/window-example.png' class='rounded-gif' />
 <br /> 
