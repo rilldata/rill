@@ -3,7 +3,6 @@
   import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
-  import DashboardVisibilityDropdown from "@rilldata/web-common/components/menu/DashboardVisibilityDropdown.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
@@ -48,8 +47,6 @@
     updateChartInteractionStore,
   } from "./utils";
   import DraggableSelector from "@rilldata/web-common/components/menu/DraggableSelector.svelte";
-  import { page } from "$app/stores";
-  import { goto } from "$app/navigation";
 
   export let exploreName: string;
   export let workspaceWidth: number;
@@ -67,7 +64,7 @@
       dimensionFilters: { includedDimensionValues },
     },
     actions: {
-      measures: { toggleMeasureVisibility, setMeasureVisibility },
+      measures: { setMeasureVisibility },
     },
     validSpecStore,
   } = getStateManagers();
@@ -109,8 +106,6 @@
   $: isAlternateChart = tddChartType !== TDDChart.DEFAULT;
 
   $: expandedMeasure = $getMeasureByName(expandedMeasureName);
-  // List of measures which will be shown on the dashboard
-  // List of measures which will be shown on the dashboard
   let renderedMeasures: MetricsViewSpecMeasureV2[];
   $: {
     renderedMeasures = expandedMeasure ? [expandedMeasure] : $visibleMeasures;
@@ -306,6 +301,7 @@
         chartType={tddChartType}
       />
     {:else}
+      <!-- FIXME: rename this, used to be DashboardVisibilityDropdown -->
       <DraggableSelector
         onSelectedChange={(items) =>
           setMeasureVisibility(

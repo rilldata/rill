@@ -73,6 +73,7 @@
       class="flex flex-row items-center ui-copy-muted gap-x-1"
       style:max-width="768px"
     >
+      <!-- FIXME: draggable -->
       <DashboardVisibilityDropdown
         category="Dimensions"
         tooltipText="Choose dimensions to display"
