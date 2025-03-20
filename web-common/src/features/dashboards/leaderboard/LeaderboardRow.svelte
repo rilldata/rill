@@ -16,6 +16,7 @@
     COMPARISON_COLUMN_WIDTH,
     DEFAULT_COLUMN_WIDTH,
     valueColumn,
+    deltaColumn,
   } from "./leaderboard-widths";
   import FloatingElement from "@rilldata/web-common/components/floating-element/FloatingElement.svelte";
 
@@ -45,7 +46,7 @@
 
   let hovered = false;
   let valueRect = new DOMRect(0, 0, DEFAULT_COLUMN_WIDTH);
-  let deltaRect = new DOMRect(0, 0, DEFAULT_COLUMN_WIDTH);
+  let deltaRect = new DOMRect(0, 0, COMPARISON_COLUMN_WIDTH);
   let parent: HTMLTableRowElement;
 
   $: ({
@@ -81,6 +82,7 @@
   $: valueElementWith = valueRect?.width;
 
   $: valueColumn.update(valueElementWith);
+  $: deltaColumn.update(deltaElementWidth);
 
   $: barColor = excluded
     ? "rgb(243 244 246)"
@@ -329,7 +331,6 @@
         title={deltaAbsMap[measureName]?.toString() || ""}
       >
         <FormattedDataType
-          bind:contentRect={deltaRect}
           color="text-gray-500"
           type="INTEGER"
           value={deltaAbsMap[measureName]
