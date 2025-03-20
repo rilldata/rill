@@ -6,16 +6,22 @@
   import { getSimpleMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { getStateManagers } from "../state-managers/state-managers";
+  import DashboardDraggableSelector from "@rilldata/web-common/components/menu/DashboardDraggableSelector.svelte";
 
   export let exploreName: string;
 
   const {
     selectors: {
-      measures: { leaderboardMeasureName, getMeasureByName, visibleMeasures },
+      measures: {
+        leaderboardMeasureName,
+        getMeasureByName,
+        visibleMeasures,
+        allMeasures,
+      },
       dimensions: { visibleDimensions, allDimensions },
     },
     actions: {
-      dimensions: { toggleDimensionVisibility },
+      dimensions: { setDimensionVisibility },
       contextCol: { setContextColumn },
       setLeaderboardMeasureName,
     },
@@ -31,6 +37,12 @@
 
   $: validPercentOfTotal =
     activeLeaderboardMeasure?.validPercentOfTotal || false;
+
+  $: allMeasureNames = $allMeasures.map(({ name }) => name).filter(isDefined);
+
+  $: visibleMeasureNames = $visibleMeasures
+    .map(({ name }) => name)
+    .filter(isDefined);
 
   $: visibleDimensionsNames = $visibleDimensions
     .map(({ name }) => name)
@@ -60,8 +72,14 @@
       class="flex flex-row items-center ui-copy-muted gap-x-1"
       style:max-width="450px"
     >
-      <!-- FIXME: draggable -->
-      <DashboardVisibilityDropdown
+      <DashboardDraggableSelector
+        type="dimension"
+        onSelectedChange={(items) =>
+          setDimensionVisibility(items, allDimensionNames)}
+        allItems={$allDimensions}
+        selectedItems={visibleDimensionsNames}
+      />
+      <!-- <DashboardVisibilityDropdown
         category="Dimensions"
         tooltipText="Choose dimensions to display"
         onSelect={(name) => toggleDimensionVisibility(allDimensionNames, name)}
@@ -73,7 +91,7 @@
         onToggleSelectAll={() => {
           toggleDimensionVisibility(allDimensionNames);
         }}
-      />
+      /> -->
 
       <Select.Root
         bind:open={active}

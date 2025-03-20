@@ -29,7 +29,7 @@
   let dragContainer: HTMLDivElement;
   let dropIndex: number | null = null;
   let clone: HTMLElement | null = null;
-  let dragId: string | null = null; // {all|visible}-measures-{measure-name}
+  let dragId: string | null = null; // {all|visible}-{measure|dimension}-{measure-name}
   let dragIndex = -1;
   let dragItemInitialTop = 0;
   let threshold = 0;
