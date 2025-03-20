@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as Dialog from "@rilldata/web-common/components/dialog-v2";
   import AmazonAthena from "@rilldata/web-common/components/icons/connectors/AmazonAthena.svelte";
   import AmazonRedshift from "@rilldata/web-common/components/icons/connectors/AmazonRedshift.svelte";
   import MySQL from "@rilldata/web-common/components/icons/connectors/MySQL.svelte";
@@ -34,11 +35,11 @@
   import DuplicateSource from "./DuplicateSource.svelte";
   import LocalSourceUpload from "./LocalSourceUpload.svelte";
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
-  import * as Dialog from "@rilldata/web-common/components/dialog-v2";
 
   let step = 0;
   let selectedConnector: null | V1ConnectorDriver = null;
   let requestConnector = false;
+  let isSubmittingForm = false;
 
   const SOURCES = [
     "gcs",
@@ -143,10 +144,15 @@
     window.history.back();
   }
 
+  function handleSubmittingChange(event: CustomEvent) {
+    isSubmittingForm = event.detail.submitting;
+  }
+
   function resetModal() {
     const state = { step: 0, selectedConnector: null, requestConnector: false };
     window.history.pushState(state, "", "");
     dispatchEvent(new PopStateEvent("popstate", { state: state }));
+    isSubmittingForm = false;
   }
 
   async function onCancelDialog() {
@@ -169,6 +175,8 @@
         await onCancelDialog();
       }
     }}
+    closeOnEscape={!isSubmittingForm}
+    closeOnOutsideClick={!isSubmittingForm}
   >
     <Dialog.Content noClose>
       <section class="mb-1">
@@ -215,6 +223,7 @@
                 : "source"}
               onClose={resetModal}
               onBack={back}
+              on:submitting={handleSubmittingChange}
             />
           {/if}
         {/if}
