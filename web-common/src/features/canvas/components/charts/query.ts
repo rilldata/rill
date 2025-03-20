@@ -64,7 +64,6 @@ export function createChartDataQuery(
       } else if (config.x?.type === "temporal" && timeGrain) {
         dimensions = [{ name: config.x?.field, timeGrain }];
       }
-      console.log(outerWhere, where);
 
       if (typeof config.color === "object" && config.color?.field) {
         dimensions = [...dimensions, { name: config.color.field }];
