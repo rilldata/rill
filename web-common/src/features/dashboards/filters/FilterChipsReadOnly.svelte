@@ -21,6 +21,7 @@ The main feature-set component for dashboard filters
 
   export let exploreName: string;
   export let filters: V1Expression | undefined;
+  export let dimensionsWithInlistFilter: string[];
   export let dimensionThresholdFilters: DimensionThresholdFilter[];
   export let timeRange: V1TimeRange | undefined;
   export let comparisonTimeRange: V1TimeRange | undefined = undefined;
@@ -28,6 +29,7 @@ The main feature-set component for dashboard filters
   $: ({ instanceId } = $runtime);
 
   $: validExploreSpecs = useExploreValidSpec(instanceId, exploreName);
+  $: metricsViewName = $validExploreSpecs.data?.explore?.metricsView ?? "";
 
   // Get dimension filters
   $: dimensions = allDimensions({
@@ -38,7 +40,11 @@ The main feature-set component for dashboard filters
     dimensions,
     (dimension) => dimension.name as string,
   );
-  $: dimensionFilters = getDimensionFilters(dimensionIdMap, filters, {});
+  $: dimensionFilters = getDimensionFilters(
+    dimensionIdMap,
+    filters,
+    dimensionsWithInlistFilter,
+  );
 
   // Get measure filters
   $: measures = allMeasures({
@@ -63,14 +69,20 @@ The main feature-set component for dashboard filters
     <TimeRangeReadOnly {timeRange} {comparisonTimeRange} />
   {/if}
   {#if dimensionFilters.length > 0}
-    {#each dimensionFilters as { name, label, selectedValues, isInclude } (name)}
+    {#each dimensionFilters as { name, label, mode, selectedValues, inputText, isInclude } (name)}
       {@const dimension = dimensions.find((d) => d.name === name)}
       <div animate:flip={{ duration: 200 }}>
         {#if dimension?.column || dimension?.expression}
           <DimensionFilterReadOnlyChip
+            {name}
+            metricsViewNames={[metricsViewName]}
+            {mode}
             label={label || name}
             values={selectedValues}
+            {inputText}
             {isInclude}
+            timeStart={timeRange?.start}
+            timeEnd={timeRange?.end}
           />
         {/if}
       </div>

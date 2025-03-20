@@ -9,6 +9,7 @@
   import {
     useAlert,
     useAlertDashboardName,
+    useAlertDashboardState,
     useIsAlertCreatedByCode,
   } from "@rilldata/web-admin/features/alerts/selectors";
   import ProjectAccessControls from "@rilldata/web-admin/features/projects/ProjectAccessControls.svelte";
@@ -22,6 +23,7 @@
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import {
     getRuntimeServiceListResourcesQueryKey,
@@ -54,6 +56,8 @@
       alertSpec?.queryArgsJson ||
       "{}",
   ) as V1MetricsViewAggregationRequest;
+
+  $: dashboardState = useAlertDashboardState(instanceId, alertSpec);
 
   $: snoozeLabel = humaniseAlertSnoozeOption(alertSpec);
 
@@ -177,6 +181,8 @@
     <AlertFilters
       {metricsViewName}
       filters={metricsViewAggregationRequest?.where}
+      dimensionsWithInlistFilter={$dashboardState.data
+        ?.dimensionsWithInlistFilter ?? []}
       timeRange={metricsViewAggregationRequest?.timeRange}
       comparisonTimeRange={metricsViewAggregationRequest?.comparisonTimeRange}
     />

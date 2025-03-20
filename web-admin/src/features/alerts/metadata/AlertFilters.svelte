@@ -19,6 +19,7 @@
 
   export let metricsViewName: string;
   export let filters: V1Expression | undefined;
+  export let dimensionsWithInlistFilter: string[];
   export let timeRange: V1TimeRange | undefined;
   export let comparisonTimeRange: V1TimeRange | undefined;
 
@@ -50,9 +51,10 @@
   $: currentDimensionFilters = getDimensionFilters(
     dimensionIdMap,
     whereFilter,
-    {},
+    dimensionsWithInlistFilter,
   );
   $: currentMeasureFilters = getMeasureFilters(measureIdMap, havingFilter);
+  $: console.log(currentDimensionFilters);
 </script>
 
 <div class="flex flex-col gap-y-3">
@@ -62,14 +64,20 @@
       {#if hasTimeRange}
         <TimeRangeReadOnly {timeRange} {comparisonTimeRange} />
       {/if}
-      {#each currentDimensionFilters as { name, label, selectedValues, isInclude } (name)}
+      {#each currentDimensionFilters as { name, label, mode, selectedValues, inputText, isInclude } (name)}
         {@const dimension = dimensionIdMap.get(name)}
         <div animate:flip={{ duration: 200 }}>
           {#if dimension?.column}
             <DimensionFilterReadOnlyChip
+              {name}
+              metricsViewNames={[metricsViewName]}
+              {mode}
               label={label || name}
               values={selectedValues}
+              {inputText}
               {isInclude}
+              timeStart={timeRange?.start}
+              timeEnd={timeRange?.end}
             />
           {/if}
         </div>

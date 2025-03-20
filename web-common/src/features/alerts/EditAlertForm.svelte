@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { createAdminServiceEditAlert } from "@rilldata/web-admin/client";
+  import { useAlertDashboardState } from "@rilldata/web-admin/features/alerts/selectors";
   import { getExploreName } from "@rilldata/web-admin/features/dashboards/query-mappers/utils";
   import {
     extractAlertFormValues,
@@ -55,6 +56,8 @@
   const exploreName = getExploreName(
     alertSpec.annotations?.web_open_path ?? "",
   );
+  const webState = alertSpec.annotations?.web_open_state ?? "";
+  $: dashboardState = useAlertDashboardState(instanceId, alertSpec);
 
   const formState = createForm<AlertFormValues>({
     initialValues: {
@@ -67,6 +70,7 @@
         queryArgsJson,
         $metricsViewSpec?.data ?? {},
         $timeRange?.data ?? {},
+        $dashboardState.data ?? {},
       ),
     },
     validationSchema: alertFormValidationSchema,
@@ -96,6 +100,9 @@
               renotify: !!values.snooze,
               renotifyAfterSeconds: values.snooze ? Number(values.snooze) : 0,
               webOpenPath: exploreName ? `/explore/${exploreName}` : undefined,
+              // TODO: if we ever allow users to update the dashboard filters in edit then we need to update this
+              //       it would involve getting fields from "values" and converting to proto
+              webOpenState: webState,
             },
           },
         });
@@ -124,6 +131,7 @@
       queryArgsJson,
       $metricsViewSpec.data,
       $timeRange.data,
+      dashboardState,
     );
     for (const fk in formValues) {
       $form[fk] = formValues[fk];

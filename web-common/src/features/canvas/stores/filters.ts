@@ -1,4 +1,5 @@
 import type { CanvasResolvedSpec } from "@rilldata/web-common/features/canvas/stores/spec";
+import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-mode";
 import {
   getDimensionDisplayName,
   getMeasureDisplayName,
@@ -35,14 +36,14 @@ import type {
   V1Expression,
 } from "@rilldata/web-common/runtime-client";
 import {
-  V1Operation,
   type MetricsViewSpecMeasureV2,
+  V1Operation,
 } from "@rilldata/web-common/runtime-client";
 import {
   derived,
   get,
-  writable,
   type Readable,
+  writable,
   type Writable,
 } from "svelte/store";
 
@@ -176,6 +177,7 @@ export class Filters {
             const metricsViewNames =
               spec.getMetricsViewNamesForDimension(tempFilter);
             merged.push({
+              mode: DimensionFilterMode.Select,
               name: tempFilter,
               label: getDimensionDisplayName(dimensionIdMap.get(tempFilter)),
               selectedValues: [],

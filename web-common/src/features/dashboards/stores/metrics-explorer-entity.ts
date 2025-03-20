@@ -11,10 +11,7 @@ import type {
   ScrubRange,
 } from "@rilldata/web-common/lib/time/types";
 import type { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
-import type {
-  ExplorePresetExpressionMetadata,
-  V1Expression,
-} from "@rilldata/web-common/runtime-client";
+import type { V1Expression } from "@rilldata/web-common/runtime-client";
 
 export interface DimensionThresholdFilter {
   name: string;
@@ -78,7 +75,6 @@ export interface MetricsExplorerEntity {
 
   whereFilter: V1Expression;
   dimensionsWithInlistFilter: string[];
-  metadata: ExplorePresetExpressionMetadata;
   dimensionThresholdFilters: Array<DimensionThresholdFilter>;
 
   /**

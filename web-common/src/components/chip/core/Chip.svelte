@@ -79,7 +79,7 @@
       <button
         on:click
         on:mousedown
-        aria-label="Open"
+        aria-label={`Open ${label}`}
         class="text-inherit w-full select-none flex items-center justify-between gap-x-1 px-0.5"
       >
         <slot name="body" />

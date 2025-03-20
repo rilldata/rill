@@ -204,7 +204,7 @@ export function getDimensionFilters(
         mode: DimensionFilterMode.Contains,
         selectedValues: [],
         inputText: e.cond?.exprs?.[1]?.val?.toString?.() ?? "",
-        isInclude: e.cond?.op === V1Operation.OPERATION_IN,
+        isInclude: e.cond?.op === V1Operation.OPERATION_LIKE,
       });
     }
   });

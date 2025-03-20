@@ -498,7 +498,7 @@ dimensions:
 
     await page.getByRole("cell", { name: "Total rows" }).locator("div").click();
 
-    await page.getByLabel("Total rows").getByLabel("Open").click();
+    await page.getByLabel("Open Total rows").click();
     await page.getByRole("menuitem", { name: "Avg Bid Price" }).click();
 
     await expect(page.getByText(" Avg Bid Price $3.02")).toBeVisible();

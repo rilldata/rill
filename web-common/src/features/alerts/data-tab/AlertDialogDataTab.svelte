@@ -53,6 +53,7 @@
     <FilterChipsReadOnly
       dimensionThresholdFilters={$form["dimensionThresholdFilters"]}
       filters={$form["whereFilter"]}
+      dimensionsWithInlistFilter={$form["dimensionsWithInlistFilter"]}
       exploreName={$form["exploreName"]}
       timeRange={$form["timeRange"]}
       comparisonTimeRange={$form["comparisonTimeRange"]}

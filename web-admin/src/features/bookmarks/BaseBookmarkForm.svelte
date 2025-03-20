@@ -73,6 +73,7 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
     </Label>
     <FilterChipsReadOnly
       dimensionThresholdFilters={$exploreState.dimensionThresholdFilters}
+      dimensionsWithInlistFilter={$exploreState.dimensionsWithInlistFilter}
       filters={$exploreState.whereFilter}
       {exploreName}
       {timeRange}

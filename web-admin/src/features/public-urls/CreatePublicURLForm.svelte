@@ -242,6 +242,7 @@
             <FilterChipsReadOnly
               exploreName={$exploreName}
               filters={$dashboardStore.whereFilter}
+              dimensionsWithInlistFilter={$dashboardStore.dimensionsWithInlistFilter}
               dimensionThresholdFilters={$dashboardStore.dimensionThresholdFilters}
               timeRange={undefined}
               comparisonTimeRange={undefined}

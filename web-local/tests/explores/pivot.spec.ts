@@ -570,11 +570,13 @@ test.describe("pivot run through", () => {
     const columnZone = page.locator(".dnd-zone.horizontal").nth(1);
 
     // measures buttons
-    const totalRecords = page.getByLabel("Total records pivot chip");
+    const totalRecords = page.getByLabel("Total records pivot chip", {
+      exact: true,
+    });
 
     // dimensions buttons
-    const publisher = page.getByLabel("Publisher pivot chip");
-    const domain = page.getByLabel("Domain pivot chip");
+    const publisher = page.getByLabel("Publisher pivot chip", { exact: true });
+    const domain = page.getByLabel("Domain pivot chip", { exact: true });
 
     // single measure
     await totalRecords.dragTo(columnZone);
@@ -612,7 +614,7 @@ test.describe("pivot run through", () => {
     await expect(page.locator(".status.running")).toHaveCount(0);
     await validateTableContents(page, "table", expectedOneMeasureColDim);
 
-    const timeMonth = page.getByLabel("month pivot chip");
+    const timeMonth = page.getByLabel("month pivot chip", { exact: true });
     await timeMonth.dragTo(rowZone);
 
     const addRowField = page.getByRole("button", { name: "add-field" }).nth(0);
@@ -638,7 +640,7 @@ test.describe("pivot run through", () => {
     });
 
     // add measure and time week to column
-    const timeWeek = page.getByLabel("week pivot chip");
+    const timeWeek = page.getByLabel("week pivot chip", { exact: true });
     await totalRecords.dragTo(columnZone);
     await timeWeek.dragTo(columnZone);
 

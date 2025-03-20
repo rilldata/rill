@@ -5,6 +5,7 @@ import {
   type MeasureFilterEntry,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
   type V1AlertSpec,
@@ -21,6 +22,7 @@ export type AlertFormValuesSubset = Pick<
   AlertFormValues,
   | "metricsViewName"
   | "whereFilter"
+  | "dimensionsWithInlistFilter"
   | "dimensionThresholdFilters"
   | "timeRange"
   | "comparisonTimeRange"
@@ -34,6 +36,7 @@ export function extractAlertFormValues(
   queryArgs: V1MetricsViewAggregationRequest,
   metricsViewSpec: V1MetricsViewSpec,
   allTimeRange: V1MetricsViewTimeRangeResponse,
+  partialExploreState: Partial<MetricsExplorerEntity>,
 ): AlertFormValuesSubset {
   if (!queryArgs) return {} as AlertFormValuesSubset;
 
@@ -77,6 +80,8 @@ export function extractAlertFormValues(
     // These are not part of the form, but are used to track the state of the form
     metricsViewName: queryArgs.metricsView as string,
     whereFilter: dimensionFilters,
+    dimensionsWithInlistFilter:
+      partialExploreState.dimensionsWithInlistFilter ?? [],
     dimensionThresholdFilters,
     timeRange,
     comparisonTimeRange,
