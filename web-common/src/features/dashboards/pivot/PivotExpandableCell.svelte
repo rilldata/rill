@@ -17,7 +17,7 @@
 
 <div
   role="presentation"
-  class="flex gap-x-0.5 group"
+  class="dimension-cell"
   style:padding-left={`${row.depth * 14}px`}
   class:-ml-1={assembled && row.getCanExpand()}
   class:cursor-pointer={assembled && row.getCanExpand()}
@@ -26,11 +26,8 @@
   {#if value === "LOADING_CELL"}
     <span class="loading-cell" />
   {:else if assembled && row.getCanExpand()}
-    <div
-      class:opacity-0={!row.getIsExpanded()}
-      class:group-hover:opacity-100={!row.getIsExpanded()}
-    >
-      <div class:rotate={row.getIsExpanded()} class="transition-transform">
+    <div class="caret" class:expanded={row.getIsExpanded()}>
+      <div class:rotate={row.getIsExpanded()}>
         <ChevronRight size="16px" color="#9CA3AF" />
       </div>
     </div>
@@ -56,5 +53,20 @@
 
   .rotate {
     @apply transform rotate-90;
+  }
+
+  .dimension-cell {
+    @apply flex gap-x-0.5;
+  }
+
+  .caret {
+    @apply opacity-0;
+  }
+  .dimension-cell:hover .caret {
+    @apply opacity-100;
+  }
+
+  .caret.expanded {
+    @apply opacity-100;
   }
 </style>
