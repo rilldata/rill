@@ -317,6 +317,34 @@ function toExploreUrl(
     );
   }
 
+  if (
+    shouldSetParam(
+      preset.exploreLeaderboardMeasureCount,
+      exploreState.leaderboardMeasureCount,
+    )
+  ) {
+    searchParams.set(
+      ExploreStateURLParams.LeaderboardMeasureCount,
+      exploreState.leaderboardMeasureCount?.toString(),
+    );
+  }
+
+  if (
+    shouldSetParam(
+      preset.exploreLeaderboardContextColumns,
+      exploreState.leaderboardContextColumns,
+    )
+  ) {
+    if (exploreState.leaderboardContextColumns.length === 0) {
+      searchParams.delete(ExploreStateURLParams.LeaderboardContextColumns);
+    } else {
+      searchParams.set(
+        ExploreStateURLParams.LeaderboardContextColumns,
+        exploreState.leaderboardContextColumns.join(","),
+      );
+    }
+  }
+
   return searchParams;
 }
 
