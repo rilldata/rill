@@ -142,18 +142,25 @@ func writeCSV(res *drivers.Result, fw io.Writer) error {
 		for i, v := range vals {
 			v := *(v.(*any))
 
-			v, err := jsonval.ToValue(v, res.Schema.Fields[i].Type)
+			val, err := jsonval.ToValue(v, res.Schema.Fields[i].Type)
 			if err != nil {
 				return fmt.Errorf("failed to convert to JSON value: %w", err)
 			}
 
 			var s string
-			if v != nil {
-				tmp, err := json.Marshal(v)
-				if err != nil {
-					return fmt.Errorf("failed to marshal JSON value: %w", err)
+			if val != nil {
+				switch tval := val.(type) {
+				case string:
+					s = tval
+				case time.Time:
+					s = tval.In(time.UTC).Format(time.DateTime) // this format is also auto convert to datetime in excel
+				default:
+					mres, err := json.Marshal(tval)
+					if err != nil {
+						return fmt.Errorf("failed to marshal JSON value: %w", err)
+					}
+					s = jsonval.TrimQuotes(string(mres))
 				}
-				s = string(tmp)
 			}
 
 			strs[i] = s
