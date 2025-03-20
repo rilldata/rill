@@ -1,12 +1,9 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import { extractFileName } from "@rilldata/web-common/features/entity-management/file-path-utils";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
@@ -16,24 +13,16 @@
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { useQueryClient } from "@tanstack/svelte-query";
-  import { WandIcon } from "lucide-svelte";
-  import { createEventDispatcher } from "svelte";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { createAndPreviewExplore } from "./create-and-preview-explore";
 
   export let filePath: string;
 
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
-  $: metricsView = extractFileName(filePath);
-
-  const dispatch = createEventDispatcher();
-  const queryClient = useQueryClient();
-  const { canvasDashboards, ai } = featureFlags;
 
   $: ({ instanceId } = $runtime);
   $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
   $: resource = $resourceQuery.data;
-  $: hasErrors = fileArtifact.getHasErrors(queryClient, instanceId);
 
   /**
    * Get the name of the dashboard's underlying model (if any).
@@ -75,29 +64,5 @@
   >
     <ExploreIcon slot="icon" />
     Generate dashboard
-  </NavigationMenuItem>
-{/if}
-{#if $canvasDashboards}
-  <NavigationMenuItem
-    on:click={() => {
-      dispatch("generate-chart", {
-        metricsView,
-      });
-    }}
-    disabled={$hasErrors}
-  >
-    <Explore slot="icon" />
-    <div class="flex gap-x-2 items-center">
-      Generate chart
-      {#if $ai}
-        with AI
-        <WandIcon class="w-3 h-3" />
-      {/if}
-    </div>
-    <svelte:fragment slot="description">
-      {#if $hasErrors}
-        Dashboard has errors
-      {/if}
-    </svelte:fragment>
   </NavigationMenuItem>
 {/if}
