@@ -5,6 +5,7 @@
   import Banner from "./Banner.svelte";
 
   let banners: BannerEvent[] = [];
+
   const unsubscribeAddBanner = eventBus.on("add-banner", (newBanner) => {
     const existingIdx = banners.findIndex((b) => b.id === newBanner.id);
     if (existingIdx === -1) {
@@ -14,10 +15,9 @@
     }
     banners = banners.sort((a, b) => a.priority - b.priority);
   });
+
   const unsubscribeRemoveBanner = eventBus.on("remove-banner", (bannerId) => {
-    const existingIdx = banners.findIndex((b) => b.id === bannerId);
-    if (existingIdx === -1) return;
-    banners.splice(existingIdx, 1);
+    banners = banners.filter((banner) => banner.id !== bannerId);
   });
 
   onMount(() => {
