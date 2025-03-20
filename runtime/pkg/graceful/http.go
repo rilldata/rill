@@ -2,6 +2,7 @@ package graceful
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -55,7 +56,7 @@ func ServeHTTP(ctx context.Context, server *http.Server, options ServeOptions) e
 			// Otherwise use HTTP
 			err = server.Serve(lis)
 		}
-		if err != http.ErrServerClosed {
+		if errors.Is(err, http.ErrServerClosed) {
 			serverError <- err
 		}
 	}()

@@ -2,6 +2,7 @@ package graceful
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"strings"
@@ -42,7 +43,7 @@ func ServeGRPC(ctx context.Context, server *grpc.Server, port int) error {
 	// Start server in a goroutine
 	go func() {
 		defer close(serverStopped)
-		if err := server.Serve(lis); err != nil && err != grpc.ErrServerStopped {
+		if err := server.Serve(lis); err != nil && errors.Is(err, grpc.ErrServerStopped) {
 			serverError <- err
 		}
 	}()
