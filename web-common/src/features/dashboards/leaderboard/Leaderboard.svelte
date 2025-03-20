@@ -307,16 +307,25 @@
 >
   <table style:width="{tableWidth + gutterWidth}px">
     <colgroup>
-      <col style:width="{gutterWidth}px" />
-      <col style:width="{dimensionColumnWidth}px" />
+      <col data-gutter-column style:width="{gutterWidth}px" />
+      <col data-dimension-column style:width="{dimensionColumnWidth}px" />
       {#each activeMeasureNames as _, index (index)}
-        <col style:width="{$valueColumn}px" data-index={index} />
+        <col data-measure-column style:width="{$valueColumn}px" />
         {#if isValidPercentOfTotal}
-          <col style:width="{COMPARISON_COLUMN_WIDTH}px" />
+          <col
+            data-percent-of-total-column
+            style:width="{COMPARISON_COLUMN_WIDTH}px"
+          />
         {/if}
         {#if isTimeComparisonActive}
-          <col style:width="{COMPARISON_COLUMN_WIDTH}px" />
-          <col style:width="{COMPARISON_COLUMN_WIDTH}px" />
+          <col
+            data-absolute-change-column
+            style:width="{COMPARISON_COLUMN_WIDTH}px"
+          />
+          <col
+            data-percent-change-column
+            style:width="{COMPARISON_COLUMN_WIDTH}px"
+          />
         {/if}
       {/each}
     </colgroup>

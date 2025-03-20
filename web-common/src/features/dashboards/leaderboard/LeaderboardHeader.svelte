@@ -81,7 +81,7 @@
     </th>
 
     {#each activeMeasureNames as measureName, index (index)}
-      <th>
+      <th data-measure-header>
         <button
           aria-label="Toggle sort leaderboards by value"
           on:click={() => {
@@ -116,7 +116,7 @@
       </th>
 
       {#if isValidPercentOfTotal}
-        <th>
+        <th data-percent-of-total-header>
           <button
             aria-label="Toggle sort leaderboards by percent of total"
             on:click={() => toggleSort(SortType.PERCENT, measureName)}
@@ -146,7 +146,7 @@
       {/if}
 
       {#if isTimeComparisonActive}
-        <th>
+        <th data-absolute-change-header>
           <button
             aria-label="Toggle sort leaderboards by absolute change"
             on:click={() => toggleSort(SortType.DELTA_ABSOLUTE, measureName)}
@@ -176,7 +176,7 @@
       {/if}
 
       {#if isTimeComparisonActive}
-        <th>
+        <th data-percent-change-header>
           <button
             aria-label="Toggle sort leaderboards by percent change"
             on:click={() => toggleSort(SortType.DELTA_PERCENT, measureName)}

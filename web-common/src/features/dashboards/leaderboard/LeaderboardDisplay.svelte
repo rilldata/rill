@@ -9,11 +9,7 @@
   import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardControls from "./LeaderboardControls.svelte";
-  import {
-    COMPARISON_COLUMN_WIDTH,
-    deltaColumn,
-    valueColumn,
-  } from "./leaderboard-widths";
+  import { COMPARISON_COLUMN_WIDTH, valueColumn } from "./leaderboard-widths";
   import { featureFlags } from "../../feature-flags";
 
   export let metricsViewName: string;
@@ -61,7 +57,6 @@
   // Reset column widths when the measure changes
   $: if (activeMeasureName) {
     valueColumn.reset();
-    deltaColumn.reset();
   }
 
   $: dimensionColumnWidth = 164;
