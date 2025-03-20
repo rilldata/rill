@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -19,9 +20,15 @@ type ServeOptions struct {
 
 // ServeHTTP serves a HTTP server and performs a graceful shutdown if/when ctx is cancelled.
 func ServeHTTP(ctx context.Context, server *http.Server, options ServeOptions) error {
+	var mu sync.Mutex
+	var lis net.Listener
+	var err error
+
 	// Calling net.Listen("tcp", ...) will succeed if the port is blocked on IPv4 but not on IPv6.
 	// This workaround ensures we get the port on IPv4 (and most likely also on IPv6).
-	lis, err := net.Listen("tcp4", fmt.Sprintf(":%d", options.Port))
+	mu.Lock()
+	lis, err = net.Listen("tcp4", fmt.Sprintf(":%d", options.Port))
+	mu.Unlock()
 	if err == nil {
 		lis.Close()
 		lis, err = net.Listen("tcp", fmt.Sprintf(":%d", options.Port))
@@ -33,26 +40,46 @@ func ServeHTTP(ctx context.Context, server *http.Server, options ServeOptions) e
 		return err
 	}
 
-	cctx, cancel := context.WithCancel(ctx)
-	var serveErr error
-	go func() {
-		if options.CertPath != "" && options.KeyPath != "" {
-			serveErr = server.ServeTLS(lis, options.CertPath, options.KeyPath)
-		} else {
-			serveErr = server.Serve(lis)
-		}
+	// Channel to signal server has stopped
+	serverStopped := make(chan struct{})
+	serverError := make(chan error, 1)
 
-		cancel()
+	// Start server in a goroutine
+	go func() {
+		defer close(serverStopped)
+		var err error
+		if options.CertPath != "" && options.KeyPath != "" {
+			// Use HTTPS if cert and key are provided
+			err = server.ServeTLS(lis, options.CertPath, options.KeyPath)
+		} else {
+			// Otherwise use HTTP
+			err = server.Serve(lis)
+		}
+		if err != http.ErrServerClosed {
+			serverError <- err
+		}
 	}()
 
-	<-cctx.Done()
-	if serveErr == nil {
-		// server.Serve always returns a non-nil err, so this must be a cancel on the parent ctx.
-		// We perform a graceful shutdown.
-		ctx, cancel := context.WithTimeout(context.Background(), httpShutdownTimeout)
+	// Wait for context cancellation or server stopped
+	select {
+	case <-ctx.Done():
+		// Shutdown the server with a timeout context
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), httpShutdownTimeout)
 		defer cancel()
-		serveErr = server.Shutdown(ctx)
-	}
 
-	return serveErr
+		mu.Lock()
+		err = server.Shutdown(shutdownCtx)
+		mu.Unlock()
+
+		// Wait for the server to stop or the shutdown timeout
+		select {
+		case <-serverStopped:
+		case <-shutdownCtx.Done():
+		}
+		return err
+	case err := <-serverError:
+		return err
+	case <-serverStopped:
+		return nil
+	}
 }
