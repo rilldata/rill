@@ -122,8 +122,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	if err != nil {
 		return nil, err
 	}
-	// very roughly approximating num queries required for a typical page load
-	db.SetMaxOpenConns(20)
+	db.SetMaxOpenConns(10) // based on observations
 
 	err = otelsql.RegisterDBStatsMetrics(db, otelsql.WithAttributes(attribute.String("instance_id", instanceID)))
 	if err != nil {

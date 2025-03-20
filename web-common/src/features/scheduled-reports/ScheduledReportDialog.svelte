@@ -15,6 +15,7 @@
   } from "@rilldata/web-common/features/scheduled-reports/utils";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { get } from "svelte/store";
   import { defaults, superForm } from "sveltekit-superforms";
   import { type ValidationAdapter, yup } from "sveltekit-superforms/adapters";
   import { array, object, string } from "yup";
@@ -27,13 +28,13 @@
     type V1ReportSpecAnnotations,
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
+  import { getStateManagers } from "../dashboards/state-managers/state-managers";
   import { ResourceKind } from "../entity-management/resource-selectors";
   import BaseScheduledReportForm from "./BaseScheduledReportForm.svelte";
   import { convertFormValuesToCronExpression } from "./time-utils";
 
   export let open: boolean;
   export let query: V1Query | undefined = undefined;
-  export let metricsViewProto: string | undefined = undefined;
   export let exploreName: string | undefined = undefined;
   export let reportSpec: V1ReportSpec | undefined = undefined;
 
@@ -49,6 +50,13 @@
 
   $: queryName = query ? getQueryNameFromQuery(query) : undefined;
   $: queryArgs = query ? getQueryArgsFromQuery(query) : undefined;
+
+  let currentProtobufState: string | undefined = undefined;
+  if (open && !isEdit) {
+    const stateManagers = getStateManagers();
+    const { dashboardStore } = stateManagers;
+    currentProtobufState = get(dashboardStore).proto;
+  }
 
   $: ({ organization, project, report: reportName } = $page.params);
 
@@ -84,6 +92,7 @@
             displayName: values.title,
             refreshCron: refreshCron, // for testing: "* * * * *"
             refreshTimeZone: values.timeZone,
+            explore: exploreName,
             queryName: reportSpec?.queryName ?? queryName,
             queryArgsJson: JSON.stringify(
               reportSpec?.queryArgsJson
@@ -103,8 +112,12 @@
               ? (reportSpec.annotations as V1ReportSpecAnnotations)[
                   "web_open_state"
                 ]
-              : metricsViewProto,
-            webOpenPath: exploreName ? `/explore/${exploreName}` : undefined,
+              : currentProtobufState,
+            webOpenMode: isEdit
+              ? ((reportSpec?.annotations as V1ReportSpecAnnotations)[
+                  "web_open_mode"
+                ] ?? "recipient") // Backwards compatibility
+              : "recipient", // To be changed to "filtered" once support is added
           },
         },
       });

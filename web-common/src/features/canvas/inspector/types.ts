@@ -1,3 +1,5 @@
+import type { ComponentAlignment } from "@rilldata/web-common/features/canvas/components/types";
+
 type NativeInputTypes = "text" | "number" | "boolean" | "textArea";
 type SemanticInputTypes = "metrics" | "measure" | "dimension" | "multi_fields";
 type ChartInputTypes = "positional" | "mark" | "tooltip" | "config";
@@ -23,6 +25,7 @@ export interface ComponentInputParam {
   description?: string; // Tooltip description for the input
   meta?: {
     allowedTypes?: FieldType[]; // Specify which field types are allowed for multi-field selection
+    defaultAlignment?: ComponentAlignment;
     [key: string]: any;
   };
 }

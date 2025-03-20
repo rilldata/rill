@@ -615,6 +615,7 @@ func getColumnTestServerWithModel(t *testing.T, sql string, expectation int) (*s
 		err := res.Scan(&n)
 		require.NoError(t, err)
 	}
+	require.NoError(t, res.Err())
 	if expectation >= 0 {
 		require.Equal(t, expectation, n)
 	}

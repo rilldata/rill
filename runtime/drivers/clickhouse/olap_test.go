@@ -122,6 +122,7 @@ func testRenameView(t *testing.T, olap drivers.OLAPStore) {
 	var id int
 	require.NoError(t, res.Scan(&id))
 	require.Equal(t, 1, id)
+	require.NoError(t, res.Close())
 }
 
 func testRenameTable(t *testing.T, olap drivers.OLAPStore) {
@@ -145,6 +146,7 @@ func notExists(t *testing.T, olap drivers.OLAPStore, tbl string) {
 	var exist bool
 	require.NoError(t, result.Scan(&exist))
 	require.False(t, exist)
+	require.NoError(t, result.Close())
 }
 
 func testCreateTableAsSelect(t *testing.T, olap drivers.OLAPStore) {
@@ -194,6 +196,8 @@ func testInsertTableAsSelect_WithAppend(t *testing.T, olap drivers.OLAPStore) {
 		require.NoError(t, res.Scan(&r.ID, &r.Planet))
 		result = append(result, r)
 	}
+	require.NoError(t, err)
+	require.NoError(t, res.Close())
 
 	expected := []struct {
 		ID     int
@@ -258,6 +262,8 @@ func testInsertTableAsSelect_WithMerge(t *testing.T, olap drivers.OLAPStore) {
 		require.NoError(t, res.Scan(&r.ID, &r.Value))
 		result = append(result, r)
 	}
+	require.NoError(t, err)
+	require.NoError(t, res.Close())
 
 	expected := map[int]string{
 		0: "insert",
@@ -328,6 +334,8 @@ func testInsertTableAsSelect_WithPartitionOverwrite(t *testing.T, olap drivers.O
 		require.NoError(t, res.Scan(&r.ID, &r.Value))
 		result = append(result, r)
 	}
+	require.NoError(t, err)
+	require.NoError(t, res.Close())
 
 	expected := []struct {
 		ID    int
@@ -394,6 +402,8 @@ func testInsertTableAsSelect_WithPartitionOverwrite_DatePartition(t *testing.T, 
 		require.NoError(t, res.Scan(&r.DT, &r.Value))
 		result = append(result, r)
 	}
+	require.NoError(t, err)
+	require.NoError(t, res.Close())
 
 	expected := []struct {
 		DT    string
@@ -440,6 +450,7 @@ func testDictionary(t *testing.T, olap drivers.OLAPStore) {
 	require.NoError(t, res.Scan(&id, &planet))
 	require.Equal(t, 1, id)
 	require.Equal(t, "Earth", planet)
+	require.NoError(t, res.Close())
 
 	require.NoError(t, olap.DropTable(context.Background(), "dict1"))
 }

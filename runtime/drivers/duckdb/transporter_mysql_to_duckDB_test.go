@@ -129,6 +129,7 @@ func allMySQLDataTypesTest(t *testing.T, db *sql.DB, dsn string) {
 		require.NoError(t, err)
 		require.Equal(t, count, 2)
 	}
+	require.NoError(t, res.Err())
 	require.NoError(t, res.Close())
 	require.NoError(t, to.Close())
 }
@@ -180,6 +181,7 @@ func mysqlToDuckDB(t *testing.T, dsn string) {
 		require.NoError(t, err)
 		require.Equal(t, 2, count)
 	}
+	require.NoError(t, res.Err())
 	require.NoError(t, res.Close())
 	tbl, err := olap.InformationSchema().Lookup(context.Background(), "", "", "sink")
 	require.NoError(t, err)

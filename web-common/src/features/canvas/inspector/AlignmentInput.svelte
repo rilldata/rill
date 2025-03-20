@@ -1,7 +1,6 @@
 <script lang="ts">
   import IconSwitcher from "@rilldata/web-common/components/forms/IconSwitcher.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
-  import { defaultAlignment } from "@rilldata/web-common/features/canvas/components/markdown";
   import type {
     ComponentAlignment,
     HoritzontalAlignment,
@@ -18,6 +17,10 @@
 
   export let key: string;
   export let label: string;
+  export let defaultAlignment: ComponentAlignment = {
+    horizontal: "center",
+    vertical: "middle",
+  };
   export let position: ComponentAlignment | undefined;
   export let onChange: (updatedPosition: ComponentAlignment) => void;
 

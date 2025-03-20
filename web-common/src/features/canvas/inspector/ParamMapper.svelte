@@ -177,6 +177,7 @@
             {key}
             label={config.label ?? key}
             position={localParamValues[key]}
+            defaultAlignment={config.meta?.defaultAlignment}
             onChange={(updatedPosition) => {
               localParamValues[key] = updatedPosition;
               component.updateProperty(key, updatedPosition);
