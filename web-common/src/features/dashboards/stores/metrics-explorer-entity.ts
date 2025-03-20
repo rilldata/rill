@@ -70,12 +70,6 @@ export interface MetricsExplorerEntity {
   leaderboardMeasureCount: number;
 
   /**
-   * The name of the measure that the dashboard is currently sorted by.
-   * This is used to track which measure is being sorted when multiple measures are selected.
-   */
-  // sortedMeasureName?: string;
-
-  /**
    * This is the sort type that will be used for the leaderboard
    * and dimension detail table. See SortType for more details.
    */
