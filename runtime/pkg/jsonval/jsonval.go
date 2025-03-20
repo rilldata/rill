@@ -268,7 +268,7 @@ func toMapCoerceKeys(v map[any]any, t *runtimev1.MapType) (map[string]any, error
 			}
 
 			// Remove surrounding quotes returned by MarshalJSON for strings
-			k2 = trimQuotes(string(data))
+			k2 = TrimQuotes(string(data))
 		}
 
 		var err error
@@ -318,7 +318,7 @@ func toMapCoerceKeysUnknown(s any, t *runtimev1.MapType) (map[string]any, error)
 			}
 
 			// Remove surrounding quotes returned by MarshalJSON for strings
-			k2 = trimQuotes(string(data))
+			k2 = TrimQuotes(string(data))
 		}
 
 		var err error
@@ -374,9 +374,9 @@ func toSliceUnknown(s any, t *runtimev1.Type) ([]any, error) {
 	return x, nil
 }
 
-// trimQuotes removes surrounding double quotes from a string, if present.
+// TrimQuotes removes surrounding double quotes from a string, if present.
 // Examples: `"10"` -> `10` and `10` -> `10`.
-func trimQuotes(s string) string {
+func TrimQuotes(s string) string {
 	if len(s) >= 2 {
 		if s[0] == '"' && s[len(s)-1] == '"' {
 			return s[1 : len(s)-1]
