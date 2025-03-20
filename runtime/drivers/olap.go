@@ -681,6 +681,10 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, []any, erro
 
 		rows++
 	}
+	err := result.Err()
+	if err != nil {
+		return "", nil, nil, err
+	}
 
 	if d == DialectDruid || d == DialectDuckDB || d == DialectPinot {
 		prefix += ") "

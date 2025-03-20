@@ -202,7 +202,7 @@
         class="data-wrapper"
         style:min-width="{BIG_NUMBER_MIN_WIDTH - adjustment}px"
       >
-        <h2 class="measure-name">
+        <h2 class="measure-name" title={measure?.displayName || measureName}>
           {measure?.displayName || measureName}
         </h2>
 

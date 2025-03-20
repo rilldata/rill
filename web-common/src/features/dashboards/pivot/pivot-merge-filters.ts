@@ -22,21 +22,33 @@ export function mergeFilters(
   // IN and NIN are merged separately. So maintain separate references
   const inExprMap = new Map<string, V1Expression>();
   const notInExprMap = new Map<string, V1Expression>();
-  const likeExprMap = new Map<string, V1Expression>();
+  // Expressions with `like`/`nlike` and subquery expressions cannot be merged right now.
+  // We may need that support in the future.
+  const otherExprMap = new Map<string, V1Expression[]>();
+  const addToOtherExprMap = (e: V1Expression, ident: string) => {
+    if (!otherExprMap.has(ident)) {
+      otherExprMap.set(ident, []);
+    }
+    otherExprMap.get(ident)?.push(e);
+  };
 
   // build a map of identifier to IN and LIKE expressions separately
   forEachIdentifier(filter1, (e, ident) => {
+    if (e.cond?.exprs?.[1]?.subquery) {
+      addToOtherExprMap(e, ident);
+      return;
+    }
+
     if (
       e.cond?.op === V1Operation.OPERATION_LIKE ||
       e.cond?.op === V1Operation.OPERATION_NLIKE
     ) {
-      if (likeExprMap.has(ident)) return;
-      likeExprMap.set(ident, e);
+      addToOtherExprMap(e, ident);
     } else if (e.cond?.op === V1Operation.OPERATION_IN) {
-      if (inExprMap.has(ident) || !!e.cond?.exprs?.[1]?.subquery) return;
+      if (inExprMap.has(ident)) return;
       inExprMap.set(ident, e);
     } else if (e.cond?.op === V1Operation.OPERATION_NIN) {
-      if (notInExprMap.has(ident) || !!e.cond?.exprs?.[1]?.subquery) return;
+      if (notInExprMap.has(ident)) return;
       notInExprMap.set(ident, e);
     }
   });
@@ -47,10 +59,11 @@ export function mergeFilters(
     // ignore like expressions since those need individual expressions and cannot be merged
     if (
       e.cond?.op === V1Operation.OPERATION_LIKE ||
-      e.cond?.op === V1Operation.OPERATION_NLIKE
-    )
+      e.cond?.op === V1Operation.OPERATION_NLIKE ||
+      e.cond?.exprs?.[1]?.subquery
+    ) {
       return;
-    if (e.cond?.exprs?.[1]?.subquery) return;
+    }
 
     if (inExprMap.has(ident) && e.cond?.op === V1Operation.OPERATION_IN) {
       /**
@@ -90,12 +103,12 @@ export function mergeFilters(
     }
     filter2.cond?.exprs?.push(copyFilterExpression(ie));
   });
-  // add all like expressions
-  likeExprMap.forEach((ie) => {
+  // add all the other expressions that couldnt be merged
+  otherExprMap.forEach((otherExprs) => {
     if (!filter2.cond?.exprs) {
-      filter2.cond!.exprs = [copyFilterExpression(ie)];
+      filter2.cond!.exprs = otherExprs.map(copyFilterExpression);
     }
-    filter2.cond?.exprs?.push(copyFilterExpression(ie));
+    filter2.cond?.exprs?.push(...otherExprs.map(copyFilterExpression));
   });
 
   return filter2;

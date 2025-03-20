@@ -45,7 +45,7 @@ func RequireOLAPTableCount(t testing.TB, rt *runtime.Runtime, id, name string, c
 		err := rows.Scan(&n)
 		require.NoError(t, err)
 	}
-
+	require.NoError(t, rows.Err())
 	require.Equal(t, count, n)
 }
 

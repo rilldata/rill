@@ -2,8 +2,12 @@ import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/piv
 import {
   createInExpression,
   createAndExpression,
+  createSubQueryExpression,
+  createBinaryExpression,
+  createLikeExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
+import { V1Operation } from "@rilldata/web-common/runtime-client";
 import { describe, it, expect } from "vitest";
 
 describe("mergeFilters", () => {
@@ -22,6 +26,34 @@ describe("mergeFilters", () => {
         )!,
       ),
     ).toEqual(`publisher IN ('Facebook') AND publisher NIN ('Google',null)`);
+  });
+
+  it("merge like and subquery filters", () => {
+    expect(
+      convertExpressionToFilterParam(
+        mergeFilters(
+          createAndExpression([
+            createInExpression("publisher", ["Facebook", "Yahoo"]),
+            createLikeExpression("publisher", "%oo%"),
+          ]),
+          createAndExpression([
+            createInExpression("publisher", ["Facebook", "Microsoft"]),
+            createSubQueryExpression(
+              "publisher",
+              ["impressions"],
+              createBinaryExpression(
+                "impressions",
+                V1Operation.OPERATION_GT,
+                2,
+              ),
+            ),
+          ]),
+        )!,
+      ),
+    ).toEqual(
+      // Support for LIKE is in another PR. Enable this before that PR is merged.
+      `publisher IN ('Facebook') AND publisher having (impressions gt 2)`,
+    );
   });
 
   it("merge filters without wrappers", () => {
