@@ -93,14 +93,10 @@ export function reduceTableCellDataIntoRows(
           const measureName = config.measureNames[i];
           let formatter = formatters.get(measureName);
 
-          console.log({ measureName });
-
           if (!formatter) {
             if (measureName.endsWith("percent")) {
-              console.log("percentage formatter");
               formatter = percentageFormatter;
             } else if (measureName.endsWith("delta")) {
-              console.log("delta");
               formatter = formatters.get(
                 measureName.replace("__comparison_delta", ""),
               );
@@ -260,8 +256,6 @@ export function percentageFormatter(value: number | null | undefined) {
   if (value === 0) return "0.0%";
 
   if (value < 0.005 && value > -0.005) return "~0%";
-  console.log({ value });
-  return `${value < 0 ? "-" : ""}${(Math.abs(value) * 100).toFixed(2)}%`;
 
-  // return `${value.toFixed(2)}%`;
+  return `${value < 0 ? "-" : ""}${(Math.abs(value) * 100).toFixed(2)}%`;
 }

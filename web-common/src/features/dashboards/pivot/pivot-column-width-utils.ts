@@ -64,7 +64,7 @@ export function calculateMeasureWidth(
   if (totalsRow) {
     const isPercent = measureName.endsWith(COMPARISON_PERCENT);
     if (isPercent) {
-      maxValueLength = 5;
+      maxValueLength = 8;
     } else {
       const value = totalsRow[measureName];
       if (typeof value === "string" || typeof value === "number") {

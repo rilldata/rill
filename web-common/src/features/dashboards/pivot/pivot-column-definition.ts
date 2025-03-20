@@ -456,23 +456,14 @@ function getNestedColumnDef(
   // Create measure columns
   const leafColumns: (ColumnDef<PivotDataRow> & { name: string })[] =
     measures.map((m) => {
-      const formatter = m.formatter;
       return {
         accessorKey: m.name,
-        // accessorFn: (row) => {
-        //   const value = row[m.name];
-        //   console.log({ value });
-        //   return {
-        //     value,
-        //     formattedValue: formatter(value),
-        //   };
-        // },
         header: m.label || m.name,
         name: m.name,
         meta: {
           icon: m.icon,
           type: m.type,
-          formatter: m?.formatter,
+          comparisonType: m.type.includes("comparison_"),
         },
         // cell: (info) => {
         //   const measureValue = info.getValue() as number | null | undefined;

@@ -16,7 +16,7 @@
     COLUMN_WIDTH_CONSTANTS as WIDTHS,
   } from "./pivot-column-width-utils";
   import type { PivotDataRow } from "./types";
-  import FormattedValue from "./FormattedValue.svelte";
+  import RenderedCell from "./RenderedCell.svelte";
 
   // State props
   export let hasRowDimension: boolean;
@@ -288,46 +288,25 @@
   </thead>
   <tbody>
     <tr style:height="{before}px" />
-    {#each virtualRows as row (row.index)}
-      {@const cells = rows[row.index].getVisibleCells()}
+    {#each virtualRows as { index } (index)}
+      {@const row = rows[index]}
+      {@const expandable = row.getCanExpand()}
+      {@const cells = row.getVisibleCells()}
       <tr>
         {#each cells as cell, i (cell.id)}
-          {@const isActive = isCellActive(cell)}
-
-          <!-- <td
-            class="ui-copy-number cell truncate"
-            class:active-cell={isActive}
-            class:interactive-cell={canShowDataViewer}
-            class:border-r={shouldShowRightBorder(i)}
-            data-value={value}
-            data-rowid={cell.row.id}
-            data-columnid={cell.column.id}
-            class:totals-column={i > 0 && i <= measureCount}
-          > -->
-
-          <FormattedValue
+          <RenderedCell
+            {assembled}
+            row={expandable && i === 0 ? row : null}
+            active={isCellActive(cell)}
+            interactive={canShowDataViewer}
+            comparisonType={cell.column.columnDef.meta?.comparisonType}
             formattedValue={cell.row.original[cell.column.id + "__f"]}
             rawValue={cell.row.original[cell.column.id]}
-            type={cell.column.columnDef.meta?.type}
             rowId={cell.row.id}
             columnId={cell.column.id}
             showRightBorder={shouldShowRightBorder(i)}
             formatter={cell.column.columnDef.meta?.formatter}
           />
-          <!-- {#if result?.component && result?.props}
-              <svelte:component
-                this={result.component}
-                {...result.props}
-                {assembled}
-              />
-            {:else if typeof result === "string" || typeof result === "number"}
-              {result}
-            {:else}
-              <svelte:component
-                this={flexRender(cell.column.columnDef.cell, cell.getContext())}
-              />
-            {/if} -->
-          <!-- </td> -->
         {/each}
       </tr>
     {/each}
@@ -436,17 +415,7 @@
     @apply bg-slate-100;
   }
 
-  tr:hover .active-cell .cell {
-    @apply bg-primary-100;
-  }
-
-  .interactive-cell {
-    @apply cursor-pointer;
-  }
-  .interactive-cell.cell:hover {
-    @apply bg-primary-100;
-  }
-  .active-cell.cell {
+  /* .active-cell.cell {
     @apply bg-primary-50;
-  }
+  } */
 </style>
