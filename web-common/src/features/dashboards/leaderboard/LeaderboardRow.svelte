@@ -13,8 +13,8 @@
   import LeaderboardTooltipContent from "./LeaderboardTooltipContent.svelte";
   import LongBarZigZag from "./LongBarZigZag.svelte";
   import {
+    COMPARISON_COLUMN_WIDTH,
     DEFAULT_COLUMN_WIDTH,
-    deltaColumn,
     valueColumn,
   } from "./leaderboard-widths";
   import FloatingElement from "@rilldata/web-common/components/floating-element/FloatingElement.svelte";
@@ -81,7 +81,6 @@
   $: valueElementWith = valueRect?.width;
 
   $: valueColumn.update(valueElementWith);
-  $: deltaColumn.update(deltaElementWidth);
 
   $: barColor = excluded
     ? "rgb(243 244 246)"
@@ -114,7 +113,11 @@
     Object.entries(barLengths).map(([name, length]) => [
       name,
       isTimeComparisonActive
-        ? clamp(0, length - dimensionColumnWidth - $valueColumn, $deltaColumn)
+        ? clamp(
+            0,
+            length - dimensionColumnWidth - $valueColumn,
+            COMPARISON_COLUMN_WIDTH,
+          )
         : isValidPercentOfTotal
           ? clamp(
               0,
