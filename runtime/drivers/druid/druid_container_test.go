@@ -179,6 +179,7 @@ func testTimeFloor(t *testing.T, olap drivers.OLAPStore) {
 		require.Equal(t, 15, tm.Minute())
 		count += 1
 	}
+	require.NoError(t, rows.Err())
 	require.Equal(t, 9, count)
 }
 

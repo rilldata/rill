@@ -13,11 +13,12 @@ export const initialHeights: Record<CanvasComponentType, number> = {
   area_chart: 320,
   stacked_bar: 320,
   stacked_bar_normalized: 320,
-  markdown: 80,
+  markdown: 40,
   kpi: 128,
   kpi_grid: 128,
   image: 80,
   table: 300,
+  pivot: 300,
 };
 
 const componentRegistry = getComponentRegistry();

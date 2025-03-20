@@ -11,7 +11,7 @@
   $: positionClasses = getPositionClasses(markdownProperties.alignment);
 </script>
 
-<div class="size-full p-2 bg-white overflow-y-auto">
+<div class="size-full px-2 bg-white overflow-y-auto">
   <div class="canvas-markdown {positionClasses} h-full flex flex-col min-h-min">
     {#await marked(markdownProperties.content) then content}
       {@html DOMPurify.sanitize(content)}

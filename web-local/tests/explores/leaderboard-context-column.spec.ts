@@ -1,5 +1,5 @@
 import { expect } from "@playwright/test";
-import { interactWithTimeRangeMenu } from "../utils/metricsViewHelpers";
+import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions";
 import { ResourceWatcher } from "../utils/ResourceWatcher";
 import { gotoNavEntry } from "../utils/waitHelpers";
 import { clickMenuButton } from "../utils/commonHelpers";
@@ -102,7 +102,7 @@ test.describe("leaderboard context column", () => {
       await page.getByRole("menuitem", { name: "Last 6 Hours" }).click();
     });
     // enable comparisons which should automatically enable a time comparison (including context column)
-    await page.getByRole("button", { name: "Comparing" }).click();
+    await page.getByLabel("Toggle time comparison").click();
 
     // This regex matches a line that:
     // - starts with "Facebook"

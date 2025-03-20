@@ -1,10 +1,10 @@
-import type { TableSpec } from "@rilldata/web-common/features/canvas/components/table";
 import {
   validateDimensions,
   validateMeasures,
 } from "@rilldata/web-common/features/canvas/components/validators";
 import type { StateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import { type Readable, derived } from "svelte/store";
+import type { TableSpec } from "./";
 
 export function validateTableSchema(
   ctx: StateManagers,
@@ -17,9 +17,16 @@ export function validateTableSchema(
   return derived(
     ctx.canvasEntity.spec.getMetricsViewFromName(metrics_view),
     (metricsView) => {
-      const measures = tableSpec.measures || [];
-      const rowDimensions = tableSpec.row_dimensions || [];
-      const colDimensions = tableSpec.col_dimensions || [];
+      const allMeasures =
+        metricsView?.measures?.map((m) => m.name as string) || [];
+      const allDimensions =
+        metricsView?.dimensions?.map((d) => d.name || (d.column as string)) ||
+        [];
+
+      const columns = tableSpec?.columns || [];
+
+      const measures = columns.filter((c) => allMeasures.includes(c));
+      const dimensions = columns.filter((c) => allDimensions.includes(c));
 
       if (!metricsView) {
         return {
@@ -28,7 +35,7 @@ export function validateTableSchema(
         };
       }
 
-      if (!measures.length && !rowDimensions.length && !colDimensions.length) {
+      if (!columns.length) {
         return {
           isValid: false,
           error: "Select at least one measure or dimension for the table",
@@ -43,10 +50,7 @@ export function validateTableSchema(
         };
       }
 
-      const validateDimensionsRes = validateDimensions(
-        metricsView,
-        rowDimensions.concat(colDimensions),
-      );
+      const validateDimensionsRes = validateDimensions(metricsView, dimensions);
 
       if (!validateDimensionsRes.isValid) {
         const invalidDimensions =

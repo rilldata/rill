@@ -76,7 +76,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 	if scheme, secretSQL, ast, ok := objectStoreRef(ctx, inputProps, opts); ok {
 		if secretSQL != "" {
 			inputProps.PreExec = secretSQL
-		} else if scheme == "gcs" || scheme == "gs" {
+		} else if scheme == "gcs" {
 			// rewrite duckdb sql with locally downloaded files
 			handle, release, err := opts.Env.AcquireConnector(ctx, scheme)
 			if err != nil {
@@ -269,6 +269,9 @@ func objectStoreRef(ctx context.Context, props *ModelInputProperties, opts *driv
 	}
 
 	if uri.Scheme == "s3" || uri.Scheme == "azure" || uri.Scheme == "gcs" || uri.Scheme == "gs" {
+		if uri.Scheme == "gs" {
+			uri.Scheme = "gcs"
+		}
 		// for s3 and azure we can just set a duckdb secret and ingest data using duckdb's native support for s3 and azure
 		handle, release, err := opts.Env.AcquireConnector(ctx, uri.Scheme)
 		if err != nil {
@@ -303,7 +306,12 @@ func rewriteDuckDBSQL(ctx context.Context, props *ModelInputProperties, inputHan
 		return nil, err
 	}
 	defer func() {
-		_ = iter.Close()
+		// closing the iterator deletes the files
+		// only delete the files if there was an error
+		// the caller will call release once the files are no longer needed
+		if retErr != nil {
+			_ = iter.Close()
+		}
 	}()
 	for {
 		localFiles, err := iter.Next()

@@ -55,7 +55,10 @@ The main feature-set component for dashboard filters
   );
 </script>
 
-<div class="relative flex flex-row flex-wrap gap-x-2 gap-y-2 items-center">
+<div
+  class="relative flex flex-row flex-wrap gap-x-2 gap-y-2 items-center"
+  aria-label="Readonly Filter Chips"
+>
   {#if timeRange}
     <TimeRangeReadOnly {timeRange} {comparisonTimeRange} />
   {/if}

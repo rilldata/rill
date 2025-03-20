@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test";
+import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions";
 import { test } from "../setup/base";
 import { clickMenuButton } from "../utils/commonHelpers";
-import { interactWithTimeRangeMenu } from "../utils/metricsViewHelpers";
 import { ResourceWatcher } from "../utils/ResourceWatcher";
 import { validateTableContents } from "../utils/tableHelpers";
 import { gotoNavEntry } from "../utils/waitHelpers";
@@ -643,7 +643,7 @@ test.describe("pivot run through", () => {
     await timeWeek.dragTo(columnZone);
 
     // enable time comparison
-    await page.getByRole("button", { name: "Comparing" }).click();
+    await page.getByLabel("Toggle time comparison").click();
     await expect(page.locator(".status.running")).toHaveCount(0);
     await validateTableContents(page, "table", expectedTimeComparison);
 

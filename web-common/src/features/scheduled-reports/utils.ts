@@ -81,9 +81,14 @@ export function getInitialValues(
 export function getDashboardNameFromReport(
   reportSpec: V1ReportSpec | undefined,
 ): string | null {
-  if (!reportSpec?.queryArgsJson) return null;
+  if (!reportSpec) return null;
+
+  if (reportSpec.annotations?.explore) return reportSpec.annotations.explore;
+
   if (reportSpec.annotations?.web_open_path)
     return getExploreName(reportSpec.annotations.web_open_path);
+
+  if (!reportSpec?.queryArgsJson) return null;
 
   const queryArgsJson = JSON.parse(reportSpec.queryArgsJson);
   return (
