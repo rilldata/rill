@@ -32,8 +32,8 @@ In the following example, `percentage_reactive_to_active_measure` uses the alrea
 ### Window Function
 If using a [window function](./windows), you'll need to define the measure that you are building the window for. In this example, we are getting the rolling sum of average voltage measurements for all time, that's a lot of volts! You can modify the frame to include less rows based on the order column. 
 
-<img src = '/img/build/metrics-view/examples/explore-percent.png' class='rounded-gif' />
-<br /> update this photo
+<img src = '/img/build/metrics-view/examples/window-example.png' class='rounded-gif' />
+<br /> 
 
 ```yaml
   - name: rolling_sum_avg_voltage_all_time
