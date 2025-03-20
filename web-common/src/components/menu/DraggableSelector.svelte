@@ -59,6 +59,7 @@
   $: filteredHiddenItems = searchText
     ? Array.from(allItemsMap.entries()).filter(
         ([id, measure]) =>
+          id &&
           !selectedItems.includes(id) &&
           (measure.displayName
             ?.toLowerCase()
@@ -66,7 +67,7 @@
             false),
       )
     : Array.from(allItemsMap.entries()).filter(
-        ([id]) => !selectedItems.includes(id),
+        ([id]) => id && !selectedItems.includes(id),
       );
 
   function handleMouseDown(e: MouseEvent) {
@@ -198,7 +199,6 @@
       bind:contentRect
       class="flex flex-col relative"
       role="presentation"
-      on:mousedown={handleMouseDown}
     >
       <div class="px-3 pt-3 pb-0">
         <Search
@@ -211,9 +211,10 @@
       <div
         role="presentation"
         class="flex flex-col pointer-events-none p-1.5 pt-0"
+        on:mousedown={handleMouseDown}
       >
         <header
-          class="flex w-full pt-1.5 pb-1 justify-between px-2 sticky top-0 from-white from-80% to-transparent bg-gradient-to-b"
+          class="flex w-full py-1.5 pb-1 justify-between px-2 sticky top-0 from-white from-80% to-transparent bg-gradient-to-b"
         >
           <h3 class="uppercase text-gray-500 font-semibold">Shown Measures</h3>
           {#if selectedItems.length > 1}
@@ -280,7 +281,7 @@
         <span class="h-px bg-slate-200 w-full" />
         <div class="flex flex-col max-h-52 overflow-y-auto p-1.5 pt-0">
           <header
-            class="flex pt-1.5 justify-between px-2 sticky top-0 from-white from-80% to-transparent bg-gradient-to-b"
+            class="flex py-1.5 justify-between px-2 sticky top-0 from-white from-80% to-transparent bg-gradient-to-b"
           >
             <h3
               class="uppercase text-xs text-gray-500 font-semibold from-white from-80% to-transparent bg-gradient-to-b"
@@ -315,7 +316,7 @@
                 class:z-50={isDragItem}
                 class:opacity-0={isDragItem}
                 style:height="{ITEM_HEIGHT}px"
-                class="w-full flex gap-x-1 px-2 pr-1 justify-between pointer-events-auto cursor-grab items-center p-1 hover:bg-slate-100 rounded-sm"
+                class="w-full flex gap-x-1 px-2 pr-1 justify-between pointer-events-auto items-center p-1 hover:bg-slate-100 rounded-sm"
               >
                 {measure.displayName}
 
