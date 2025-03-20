@@ -200,9 +200,6 @@
   $: ({ data: sortedData, isFetching } = $sortedQuery);
   $: ({ data: totalsData } = $totalsQuery);
 
-  // $: leaderboardTotal = totalsData?.data?.[0]?.[activeMeasureName] as
-  //   | number
-  //   | null;
   $: leaderboardTotals = totalsData?.data?.[0]
     ? Object.fromEntries(
         activeMeasureNames.map((name) => [
@@ -246,10 +243,6 @@
       sort,
       timeRange,
       comparisonTimeRange,
-      // comparisonTimeRange:
-      //   comparisonTimeRange && isBeingCompared
-      //     ? comparisonTimeRange
-      //     : undefined,
       measures,
       limit: belowTheFoldDataLimit.toString(),
     },
@@ -271,7 +264,6 @@
     : belowTheFoldValues.map((value) => ({
         [dimensionName]: value,
         [activeMeasureName]: null,
-        // ...Object.fromEntries(activeMeasureNames.map((name) => [name, null])),
       }));
 
   $: belowTheFoldRows = belowTheFoldData.map((item) =>
