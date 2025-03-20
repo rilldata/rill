@@ -304,10 +304,7 @@
       <!-- FIXME: rename this, used to be DashboardVisibilityDropdown -->
       <DraggableSelector
         onSelectedChange={(items) =>
-          setMeasureVisibility(
-            items,
-            $allMeasures.map(({ name }) => name),
-          )}
+          setMeasureVisibility(items, allMeasureNames)}
         allItems={$allMeasures}
         selectedItems={visibleMeasureNames}
       />

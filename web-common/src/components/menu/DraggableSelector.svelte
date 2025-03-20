@@ -44,6 +44,31 @@
 
   $: tooltipText = `Choose ${category.toLowerCase()} to display`;
 
+  // Filter items based on search text
+  $: filteredSelectedItems = searchText
+    ? selectedItems.filter((id) => {
+        const measure = allItemsMap.get(id);
+        return (
+          measure?.displayName
+            ?.toLowerCase()
+            .includes(searchText.toLowerCase()) ?? false
+        );
+      })
+    : selectedItems;
+
+  $: filteredHiddenItems = searchText
+    ? Array.from(allItemsMap.entries()).filter(
+        ([id, measure]) =>
+          !selectedItems.includes(id) &&
+          (measure.displayName
+            ?.toLowerCase()
+            .includes(searchText.toLowerCase()) ??
+            false),
+      )
+    : Array.from(allItemsMap.entries()).filter(
+        ([id]) => !selectedItems.includes(id),
+      );
+
   function handleMouseDown(e: MouseEvent) {
     e.preventDefault();
 
@@ -203,47 +228,53 @@
             </button>
           {/if}
         </header>
-        {#each selectedItems as id, i (i)}
-          {@const elementId = `visible-measures-${id}`}
-          {@const isDragItem = dragId === elementId}
-          <div
-            role="presentation"
-            data-index={i}
-            data-measure-name={id}
-            id={elementId}
-            class:sr-only={isDragItem}
-            class:transition-margin={dragIndex !== -1 &&
-              dropIndex !== dragIndex}
-            class:mt-7={dropIndex !== null &&
-              !isDragItem &&
-              i === dropIndex + (i > dragIndex ? 1 : 0)}
-            class:mb-7={dropIndex === selectedItems.length - 1 &&
-              i ===
-                selectedItems.length -
-                  1 -
-                  (dragIndex === selectedItems.length - 1 ? 1 : 0)}
-            style:pointer-events={isDragItem || selectedItems.length === 1
-              ? "none"
-              : "auto"}
-            style:height="{ITEM_HEIGHT}px"
-            class="w-full flex gap-x-1 flex-none px-1 pointer-events-auto cursor-grab items-center p-1 hover:bg-slate-100 rounded-sm"
-          >
-            <DragHandle size="16px" className="text-gray-400" />
-
-            {allItemsMap.get(id)?.displayName ?? "Unknown measure"}
-            {#if selectedItems.length > 1}
-              <button
-                class="ml-auto hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
-                on:click={() => {
-                  selectedItems = selectedItems.filter((_, j) => j !== i);
-                  onSelectedChange(selectedItems);
-                }}
-              >
-                <EyeIcon size="14px" />
-              </button>
-            {/if}
+        {#if filteredSelectedItems.length === 0}
+          <div class="px-2 py-2 text-xs text-gray-500">
+            {searchText ? "No matching measures shown" : "No measures shown"}
           </div>
-        {/each}
+        {:else}
+          {#each filteredSelectedItems as id, i (i)}
+            {@const elementId = `visible-measures-${id}`}
+            {@const isDragItem = dragId === elementId}
+            <div
+              role="presentation"
+              data-index={i}
+              data-measure-name={id}
+              id={elementId}
+              class:sr-only={isDragItem}
+              class:transition-margin={dragIndex !== -1 &&
+                dropIndex !== dragIndex}
+              class:mt-7={dropIndex !== null &&
+                !isDragItem &&
+                i === dropIndex + (i > dragIndex ? 1 : 0)}
+              class:mb-7={dropIndex === selectedItems.length - 1 &&
+                i ===
+                  selectedItems.length -
+                    1 -
+                    (dragIndex === selectedItems.length - 1 ? 1 : 0)}
+              style:pointer-events={isDragItem || selectedItems.length === 1
+                ? "none"
+                : "auto"}
+              style:height="{ITEM_HEIGHT}px"
+              class="w-full flex gap-x-1 flex-none px-1 pointer-events-auto cursor-grab items-center p-1 hover:bg-slate-100 rounded-sm"
+            >
+              <DragHandle size="16px" className="text-gray-400" />
+
+              {allItemsMap.get(id)?.displayName ?? "Unknown measure"}
+              {#if selectedItems.length > 1}
+                <button
+                  class="ml-auto hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
+                  on:click={() => {
+                    selectedItems = selectedItems.filter((_, j) => j !== i);
+                    onSelectedChange(selectedItems);
+                  }}
+                >
+                  <EyeIcon size="14px" />
+                </button>
+              {/if}
+            </div>
+          {/each}
+        {/if}
       </div>
       {#if selectedItems.length < allItems.length}
         <span class="h-px bg-slate-200 w-full" />
@@ -267,10 +298,16 @@
             </button>
           </header>
 
-          {#each allItemsMap as [id = "", measure], i (i)}
-            {@const elementId = `all-measures-${id}`}
-            {@const isDragItem = dragId === elementId}
-            {#if !selectedItems.includes(id)}
+          {#if filteredHiddenItems.length === 0}
+            <div class="px-2 py-2 text-xs text-gray-500">
+              {searchText
+                ? "No matching hidden measures"
+                : "No hidden measures"}
+            </div>
+          {:else}
+            {#each filteredHiddenItems as [id = "", measure], i (i)}
+              {@const elementId = `all-measures-${id}`}
+              {@const isDragItem = dragId === elementId}
               <div
                 data-index={i + selectedItems.length - 1}
                 id={elementId}
@@ -292,8 +329,8 @@
                   <EyeOffIcon size="14px" />
                 </button>
               </div>
-            {/if}
-          {/each}
+            {/each}
+          {/if}
         </div>
       {/if}
     </div>
