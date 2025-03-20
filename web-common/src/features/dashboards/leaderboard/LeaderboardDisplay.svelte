@@ -57,7 +57,7 @@
   $: ({ instanceId } = $runtime);
 
   // Reset column widths when the measure changes
-  $: if (activeMeasureNames) {
+  $: if (activeMeasureName) {
     valueColumn.reset();
     deltaColumn.reset();
   }
