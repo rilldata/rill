@@ -26,6 +26,7 @@
   role="presentation"
   id="canvas-scroll-container"
   class="size-full overflow-hidden overflow-y-auto p-2 pb-48 flex flex-col items-center bg-white select-none"
+  on:click|self={onClick}
   class:!cursor-grabbing={showGrabCursor}
 >
   <div
