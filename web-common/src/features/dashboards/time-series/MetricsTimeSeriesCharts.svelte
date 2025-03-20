@@ -47,6 +47,9 @@
     getOrderedStartEnd,
     updateChartInteractionStore,
   } from "./utils";
+  import DraggableSelector from "@rilldata/web-common/components/menu/DraggableSelector.svelte";
+  import { page } from "$app/stores";
+  import { goto } from "$app/navigation";
 
   export let exploreName: string;
   export let workspaceWidth: number;
@@ -64,7 +67,7 @@
       dimensionFilters: { includedDimensionValues },
     },
     actions: {
-      measures: { toggleMeasureVisibility },
+      measures: { toggleMeasureVisibility, setMeasureVisibility },
     },
     validSpecStore,
   } = getStateManagers();
@@ -303,7 +306,16 @@
         chartType={tddChartType}
       />
     {:else}
-      <DashboardVisibilityDropdown
+      <DraggableSelector
+        onSelectedChange={(items) =>
+          setMeasureVisibility(
+            items,
+            $allMeasures.map(({ name }) => name),
+          )}
+        allItems={$allMeasures}
+        selectedItems={visibleMeasureNames}
+      />
+      <!-- <DashboardVisibilityDropdown
         category="Measures"
         tooltipText="Choose measures to display"
         onSelect={(name) => toggleMeasureVisibility(allMeasureNames, name)}
@@ -315,7 +327,7 @@
         onToggleSelectAll={() => {
           toggleMeasureVisibility(allMeasureNames);
         }}
-      />
+      /> -->
 
       {#if !hideStartPivotButton}
         <button
