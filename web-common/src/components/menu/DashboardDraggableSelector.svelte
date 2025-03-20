@@ -82,9 +82,9 @@
 
     dragId = dragItem?.id ?? null;
 
-    const { index, measureName } = dragItem.dataset;
+    const { index, itemName } = dragItem.dataset;
 
-    if (!measureName || index === undefined || index === null || index === "")
+    if (!itemName || index === undefined || index === null || index === "")
       return;
 
     clone = dragItem.cloneNode(true) as HTMLElement;
@@ -126,7 +126,7 @@
       "mouseup",
       () => {
         if (dropIndex !== null && dragIndex > selectedItems.length - 1) {
-          selectedItems.splice(dropIndex, 0, measureName);
+          selectedItems.splice(dropIndex, 0, itemName);
           selectedItems = selectedItems;
         } else if (dropIndex !== null && dropIndex > selectedItems.length) {
           selectedItems = selectedItems.filter((_, i) => i !== dragIndex);
@@ -247,7 +247,7 @@
             <div
               role="presentation"
               data-index={i}
-              data-measure-name={id}
+              data-item-name={id}
               id={elementId}
               class:sr-only={isDragItem}
               class:transition-margin={dragIndex !== -1 &&
@@ -320,7 +320,7 @@
               <div
                 data-index={i + selectedItems.length - 1}
                 id={elementId}
-                data-measure-name={id}
+                data-item-name={id}
                 class:z-50={isDragItem}
                 class:opacity-0={isDragItem}
                 style:height="{ITEM_HEIGHT}px"

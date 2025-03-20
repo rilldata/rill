@@ -42,7 +42,10 @@ export const setDimensionVisibility = (
   dimensions?: string[],
   allDimensions?: string[],
 ) => {
-  dashboard.visibleDimensionKeys = new Set(dimensions);
+  // Maintain the order of dimensions as they appear in allDimensions
+  const orderedDimensions =
+    dimensions?.filter((dim) => allDimensions?.includes(dim)) ?? [];
+  dashboard.visibleDimensionKeys = new Set(orderedDimensions);
 
   dashboard.allDimensionsVisible =
     dashboard.visibleDimensionKeys.size === allDimensions?.length;
