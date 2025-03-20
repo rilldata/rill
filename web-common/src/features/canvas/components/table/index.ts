@@ -70,7 +70,7 @@ export class TableCanvasComponent extends BaseCanvasComponent<TableSpec> {
 
     return {
       metrics_view: metricsViewName,
-      columns: [...measures, ...dimensions],
+      columns: [...dimensions, ...measures],
     };
   }
 }
