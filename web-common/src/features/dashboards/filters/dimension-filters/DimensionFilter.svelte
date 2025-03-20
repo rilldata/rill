@@ -161,6 +161,9 @@
   }
 
   function checkSearchText(inputText: string) {
+    // Do not check search text and possibly switch to InList when mode is Contains
+    if (curMode === DimensionFilterMode.Contains) return;
+
     let values = inputText.split(BulkValueSplitRegex);
     if (values.length > 0 && values[values.length - 1] === "") {
       // Remove the last empty value when the last character is a comma/newline
@@ -203,7 +206,8 @@
   }
 
   function onToggleSelectAll() {
-    searchResults?.forEach((dimensionValue) => {
+    console.log(correctedSearchResults, allSelected, selectedValues);
+    correctedSearchResults?.forEach((dimensionValue) => {
       if (!allSelected && selectedValues.includes(dimensionValue)) return;
 
       onSelect(dimensionValue);
@@ -211,14 +215,19 @@
   }
 
   function onApply() {
-    if (curMode === DimensionFilterMode.InList) {
-      onBulkSelect(searchedBulkValues);
-      // mode = DimensionFilterMode.InList;
-      open = false;
-    } else if (curMode === DimensionFilterMode.Contains) {
-      onSearch(curSearchText);
-      // inputText = curSearchText;
-      open = false;
+    switch (curMode) {
+      case DimensionFilterMode.Select:
+        onToggleSelectAll();
+        // Do not close the dropdown.
+        break;
+      case DimensionFilterMode.InList:
+        onBulkSelect(searchedBulkValues);
+        open = false;
+        break;
+      case DimensionFilterMode.Contains:
+        onSearch(curSearchText);
+        open = false;
+        break;
     }
   }
 

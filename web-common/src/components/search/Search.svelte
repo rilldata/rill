@@ -25,6 +25,7 @@
   function handleKeyDown(event) {
     if (event.code == "Enter") {
       event.preventDefault();
+      event.stopPropagation();
       dispatch("submit");
       return false;
     }
