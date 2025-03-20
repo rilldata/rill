@@ -46,7 +46,7 @@
     getOrderedStartEnd,
     updateChartInteractionStore,
   } from "./utils";
-  import DraggableSelector from "@rilldata/web-common/components/menu/DraggableSelector.svelte";
+  import DashboardDraggableSelector from "@rilldata/web-common/components/menu/DashboardDraggableSelector.svelte";
 
   export let exploreName: string;
   export let workspaceWidth: number;
@@ -301,8 +301,8 @@
         chartType={tddChartType}
       />
     {:else}
-      <!-- FIXME: rename this, used to be DashboardVisibilityDropdown -->
-      <DraggableSelector
+      <DashboardDraggableSelector
+        type="measure"
         onSelectedChange={(items) =>
           setMeasureVisibility(items, allMeasureNames)}
         allItems={$allMeasures}

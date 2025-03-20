@@ -12,11 +12,15 @@
   const UPPER_BOUND = 12 + 28 + 25;
   const ITEM_HEIGHT = 28;
 
+  type SelectableItem =
+    | MetricsViewSpecMeasureV2
+    | { name: string; displayName?: string };
+
   export let selectedItems: string[];
-  export let allItems: MetricsViewSpecMeasureV2[] = [];
+  export let allItems: SelectableItem[] = [];
   export let onSelectedChange: (items: string[]) => void;
   export let disabled = false;
-  export let category: string = "Measures";
+  export let type: "measure" | "dimension" = "measure";
 
   let searchText = "";
   let active = false;
@@ -42,28 +46,25 @@
   $: numShownString =
     numAvailable === numShown ? "All" : `${numShown} of ${numAvailable}`;
 
-  $: tooltipText = `Choose ${category.toLowerCase()} to display`;
+  $: tooltipText = `Choose ${type === "measure" ? "measures" : "dimensions"} to display`;
 
   // Filter items based on search text
   $: filteredSelectedItems = searchText
     ? selectedItems.filter((id) => {
-        const measure = allItemsMap.get(id);
+        const item = allItemsMap.get(id);
         return (
-          measure?.displayName
-            ?.toLowerCase()
-            .includes(searchText.toLowerCase()) ?? false
+          item?.displayName?.toLowerCase().includes(searchText.toLowerCase()) ??
+          false
         );
       })
     : selectedItems;
 
   $: filteredHiddenItems = searchText
     ? Array.from(allItemsMap.entries()).filter(
-        ([id, measure]) =>
+        ([id, item]) =>
           id &&
           !selectedItems.includes(id) &&
-          (measure.displayName
-            ?.toLowerCase()
-            .includes(searchText.toLowerCase()) ??
+          (item.displayName?.toLowerCase().includes(searchText.toLowerCase()) ??
             false),
       )
     : Array.from(allItemsMap.entries()).filter(
@@ -182,7 +183,9 @@
       <div
         class="flex items-center gap-x-0.5 px-1 text-gray-700 hover:text-inherit"
       >
-        <strong>{`${numShownString} ${category}`}</strong>
+        <strong
+          >{`${numShownString} ${type === "measure" ? "Measures" : "Dimensions"}`}</strong
+        >
         <span
           class="transition-transform"
           class:hidden={disabled}
@@ -216,7 +219,9 @@
         <header
           class="flex w-full py-1.5 pb-1 justify-between px-2 sticky top-0 from-white from-80% to-transparent bg-gradient-to-b"
         >
-          <h3 class="uppercase text-gray-500 font-semibold">Shown Measures</h3>
+          <h3 class="uppercase text-gray-500 font-semibold">
+            Shown {type === "measure" ? "Measures" : "Dimensions"}
+          </h3>
           {#if selectedItems.length > 1}
             <button
               class="text-primary-500 pointer-events-auto hover:text-primary-600 font-medium text-[10px]"
@@ -231,11 +236,13 @@
         </header>
         {#if filteredSelectedItems.length === 0}
           <div class="px-2 py-2 text-xs text-gray-500">
-            {searchText ? "No matching measures shown" : "No measures shown"}
+            {searchText
+              ? `No matching ${type === "measure" ? "measures" : "dimensions"} shown`
+              : `No ${type === "measure" ? "measures" : "dimensions"} shown`}
           </div>
         {:else}
           {#each filteredSelectedItems as id, i (i)}
-            {@const elementId = `visible-measures-${id}`}
+            {@const elementId = `visible-${type === "measure" ? "measures" : "dimensions"}-${id}`}
             {@const isDragItem = dragId === elementId}
             <div
               role="presentation"
@@ -261,7 +268,8 @@
             >
               <DragHandle size="16px" className="text-gray-400" />
 
-              {allItemsMap.get(id)?.displayName ?? "Unknown measure"}
+              {allItemsMap.get(id)?.displayName ??
+                `Unknown ${type === "measure" ? "measure" : "dimension"}`}
               {#if selectedItems.length > 1}
                 <button
                   class="ml-auto hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
@@ -286,7 +294,7 @@
             <h3
               class="uppercase text-xs text-gray-500 font-semibold from-white from-80% to-transparent bg-gradient-to-b"
             >
-              Hidden Measures
+              Hidden {type === "measure" ? "Measures" : "Dimensions"}
             </h3>
             <button
               class="pointer-events-auto text-primary-500 text-[10px] font-medium"
@@ -302,12 +310,12 @@
           {#if filteredHiddenItems.length === 0}
             <div class="px-2 py-2 text-xs text-gray-500">
               {searchText
-                ? "No matching hidden measures"
-                : "No hidden measures"}
+                ? `No matching hidden ${type === "measure" ? "measures" : "dimensions"}`
+                : `No hidden ${type === "measure" ? "measures" : "dimensions"}`}
             </div>
           {:else}
-            {#each filteredHiddenItems as [id = "", measure], i (i)}
-              {@const elementId = `all-measures-${id}`}
+            {#each filteredHiddenItems as [id = "", item], i (i)}
+              {@const elementId = `all-${type === "measure" ? "measures" : "dimensions"}-${id}`}
               {@const isDragItem = dragId === elementId}
               <div
                 data-index={i + selectedItems.length - 1}
@@ -318,7 +326,7 @@
                 style:height="{ITEM_HEIGHT}px"
                 class="w-full flex gap-x-1 px-2 pr-1 justify-between pointer-events-auto items-center p-1 hover:bg-slate-100 rounded-sm"
               >
-                {measure.displayName}
+                {item.displayName}
 
                 <button
                   class="hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
