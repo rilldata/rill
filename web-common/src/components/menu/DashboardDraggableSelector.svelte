@@ -252,6 +252,7 @@
               class:sr-only={isDragItem}
               class:transition-margin={dragIndex !== -1 &&
                 dropIndex !== dragIndex}
+              class:drag-transition={dragIndex !== -1}
               class:mt-7={dropIndex !== null &&
                 !isDragItem &&
                 i === dropIndex + (i > dragIndex ? 1 : 0)}
@@ -351,6 +352,12 @@
     transition-property: margin-top, margin-bottom;
     transition-duration: 150ms;
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: margin-top, margin-bottom;
+  }
+
+  .drag-transition {
+    transition: transform 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform;
   }
 
   h3 {
