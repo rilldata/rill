@@ -10,10 +10,12 @@ import (
 )
 
 type ModelInputProperties struct {
-	SQL      string `mapstructure:"sql"`
-	Args     []any  `mapstructure:"args"`
-	PreExec  string `mapstructure:"pre_exec"`
-	PostExec string `mapstructure:"post_exec"`
+	SQL  string `mapstructure:"sql"`
+	Args []any  `mapstructure:"args"`
+	// InitQueries are queries that are run during initialisation of write handle before model is created of any pre_exec queries are run.
+	InitQueries string `mapstructure:"init_queries"`
+	PreExec     string `mapstructure:"pre_exec"`
+	PostExec    string `mapstructure:"post_exec"`
 	// Database is set if sql is to be run against an external database
 	Database string `mapstructure:"db"`
 }

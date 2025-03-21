@@ -42,7 +42,7 @@ func TestDB(t *testing.T) {
 	require.Error(t, err)
 
 	// insert into table
-	_, err = db.MutateTable(ctx, "test2", func(ctx context.Context, conn *sqlx.Conn) error {
+	_, err = db.MutateTable(ctx, "test2", nil, func(ctx context.Context, conn *sqlx.Conn) error {
 		_, err := conn.ExecContext(ctx, "INSERT INTO test2 (id, country) VALUES (2, 'USA')")
 		return err
 	})
@@ -58,7 +58,7 @@ func TestDB(t *testing.T) {
 	require.NoError(t, release())
 
 	// Add column
-	_, err = db.MutateTable(ctx, "test2", func(ctx context.Context, conn *sqlx.Conn) error {
+	_, err = db.MutateTable(ctx, "test2", nil, func(ctx context.Context, conn *sqlx.Conn) error {
 		_, err := conn.ExecContext(ctx, "ALTER TABLE test2 ADD COLUMN city TEXT")
 		return err
 	})
@@ -157,7 +157,7 @@ func TestMutateTable(t *testing.T) {
 	require.NoError(t, err)
 
 	// insert into table
-	_, err = db.MutateTable(ctx, "test", func(ctx context.Context, conn *sqlx.Conn) error {
+	_, err = db.MutateTable(ctx, "test", nil, func(ctx context.Context, conn *sqlx.Conn) error {
 		_, err := conn.ExecContext(ctx, "INSERT INTO test (id, city) VALUES (2, 'NY')")
 		return err
 	})
@@ -170,7 +170,7 @@ func TestMutateTable(t *testing.T) {
 	testDone := make(chan struct{})
 
 	go func() {
-		db.MutateTable(ctx, "test", func(ctx context.Context, conn *sqlx.Conn) error {
+		db.MutateTable(ctx, "test", nil, func(ctx context.Context, conn *sqlx.Conn) error {
 			_, err := conn.ExecContext(ctx, "ALTER TABLE test ADD COLUMN country TEXT")
 			require.NoError(t, err)
 			_, err = conn.ExecContext(ctx, "UPDATE test SET country = 'USA' WHERE id = 2")

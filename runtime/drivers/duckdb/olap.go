@@ -195,7 +195,7 @@ func (c *connection) AddTableColumn(ctx context.Context, tableName, columnName, 
 		_ = release()
 	}()
 
-	_, err = db.MutateTable(ctx, tableName, func(ctx context.Context, conn *sqlx.Conn) error {
+	_, err = db.MutateTable(ctx, tableName, nil, func(ctx context.Context, conn *sqlx.Conn) error {
 		_, err := conn.ExecContext(ctx, fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", safeSQLName(tableName), safeSQLName(columnName), typ))
 		return err
 	})
@@ -212,7 +212,7 @@ func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName
 		_ = release()
 	}()
 
-	_, err = db.MutateTable(ctx, tableName, func(ctx context.Context, conn *sqlx.Conn) error {
+	_, err = db.MutateTable(ctx, tableName, nil, func(ctx context.Context, conn *sqlx.Conn) error {
 		_, err := conn.ExecContext(ctx, fmt.Sprintf("ALTER TABLE %s ALTER %s TYPE %s", safeSQLName(tableName), safeSQLName(columnName), newType))
 		return err
 	})
@@ -242,7 +242,12 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, 
 			return err
 		}
 	}
-	res, err := db.CreateTableAsSelect(ctx, name, sql, &rduckdb.CreateTableOptions{View: opts.View, BeforeCreateFn: beforeCreateFn, AfterCreateFn: afterCreateFn})
+	res, err := db.CreateTableAsSelect(ctx, name, sql, &rduckdb.CreateTableOptions{
+		View:           opts.View,
+		InitQueries:    opts.InitQueries,
+		BeforeCreateFn: beforeCreateFn,
+		AfterCreateFn:  afterCreateFn,
+	})
 	if err != nil {
 		return nil, c.checkErr(err)
 	}
@@ -266,7 +271,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 	}
 
 	if opts.Strategy == drivers.IncrementalStrategyAppend {
-		res, err := db.MutateTable(ctx, name, func(ctx context.Context, conn *sqlx.Conn) error {
+		res, err := db.MutateTable(ctx, name, opts.InitQueries, func(ctx context.Context, conn *sqlx.Conn) error {
 			if opts.BeforeInsert != "" {
 				_, err := conn.ExecContext(ctx, opts.BeforeInsert)
 				if err != nil {
@@ -289,7 +294,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 	}
 
 	if opts.Strategy == drivers.IncrementalStrategyMerge {
-		res, err := db.MutateTable(ctx, name, func(ctx context.Context, conn *sqlx.Conn) (mutate error) {
+		res, err := db.MutateTable(ctx, name, opts.InitQueries, func(ctx context.Context, conn *sqlx.Conn) (mutate error) {
 			// Execute the pre-init SQL first
 			if opts.BeforeInsert != "" {
 				_, err := conn.ExecContext(ctx, opts.BeforeInsert)

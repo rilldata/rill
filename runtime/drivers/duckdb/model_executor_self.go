@@ -135,6 +135,9 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 				BeforeCreate: inputProps.PreExec,
 				AfterCreate:  inputProps.PostExec,
 			}
+			if inputProps.InitQueries != "" {
+				createTableOpts.InitQueries = []string{inputProps.InitQueries}
+			}
 			res, err := olap.CreateTableAsSelect(ctx, stagingTableName, inputProps.SQL, createTableOpts)
 			if err != nil {
 				_ = olap.DropTable(ctx, stagingTableName)
@@ -159,6 +162,9 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 			InPlace:      true,
 			Strategy:     outputProps.IncrementalStrategy,
 			UniqueKey:    outputProps.UniqueKey,
+		}
+		if inputProps.InitQueries != "" {
+			insertTableOpts.InitQueries = []string{inputProps.InitQueries}
 		}
 		res, err := olap.InsertTableAsSelect(ctx, tableName, inputProps.SQL, insertTableOpts)
 		if err != nil {
