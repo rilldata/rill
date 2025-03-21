@@ -80,7 +80,9 @@ On the dashboard page (provided you've added a policy) you'll see a "View as" bu
 
 In case you want to test what your users are seeing in Rill Cloud after deploying, you can find this in the dropdown of your account. You will see the actual users in the dropdown of this list, not the mock users defined in the rill.yaml file. 
 
-![rc_view_as](/img/manage/access-policies/rill-cloud-view-as.png)
+<img src = '/img/manage/access-policies/rill-cloud-view-as.png' class='rounded-gif' />
+<br />
+
 
 ## Examples
 

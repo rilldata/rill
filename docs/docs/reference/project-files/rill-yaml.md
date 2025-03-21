@@ -172,8 +172,8 @@ mock_users:
 ```
 
 
-![View as User](/img/reference/project-files/View-as.png)
-
+<img src = '/img/reference/project-files/View-as.png' class='centered' />
+<br />
 
 :::info The View as selector is not visible in my dashboard, why?
 

@@ -23,7 +23,9 @@ As a general best practice, it is strongly recommended to use service accounts a
 
 If you have defined your connector's credentials in your `.env` file, these will be deployed along with your project. You should see the credentials in [your project's settings page.](/manage/project-management/variables-and-credentials#modifying-variables-and-credentials-via-the-settings-page)
 
-![img](/img/tutorials/admin/env-var-ui.png)
+<img src = '/img/tutorials/admin/env-var-ui.png' class='rounded-gif' />
+<br />
+
 
 If not, after deploying to Rill Cloud, you can run the following in the CLI to configure all of your required credentials: `rill env configure`. When running this command, Rill will detect any connectors that are being used by the project and prompt you to fill in the required fields. When completed, this will be pushed to your Rill Cloud Deployment and automatically refresh the required objects. Once completed, you will see these in your project's environmental variables settings page. 
 

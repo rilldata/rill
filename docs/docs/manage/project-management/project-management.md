@@ -9,7 +9,9 @@ Once an organization is created, you can populate it with projects. Each project
 
 ## Project
 
-![project](/img/manage/project-management/project-view.png) 
+<img src = '/img/manage/project-management/project-view.png' class='rounded-gif' />
+<br />
+
 
 A project is a single deployed instance from Rill Developer (or what we refer to as a Rill project). Each project can be connected to one GitHub repository. Once you have deployed a project to Rill Cloud, you can make changes to it via the CLI or via Rill Cloud.
 
@@ -21,13 +23,17 @@ After deploying to Rill Cloud, if your projects are not quite ready to view yet,
 You can select the `Refresh all sources and models` in the Status page or run a full project refresh. 
 :::
 
-![img](/img/manage/project-management/status.png)
+<img src = '/img/manage/project-management/status.png' class='rounded-gif' />
+<br />
+
 
 ### Connect to GitHub Repository 
 
 On first deployment your project , if you've deployed via the UI, will not be connected to a GitHub repository. You will need to manually select the `Connect to GitHub` in the Status page and following the steps to `write` your current project to the repository.
 
-![img](/img/deploy/existing-project/select-repo.png)
+<img src = '/img/deploy/existing-project/select-repo.png' class='rounded-gif' />
+<br />
+
 
 :::note WRITING ONLY
 If the repository that you select is not empty, Rill will prompt you to `overwrite` the contents of the repository with your project file contents. You will see a commit in your repository as "Auto committed by Rill".
@@ -36,7 +42,9 @@ If the repository that you select is not empty, Rill will prompt you to `overwri
 
 In some cases, you will need to change the repsitory that your project is synced to. You can do this by selecting the dropdown and disconnecting your Rill project. This action has no effect on your current deployment and will not require a source reingest.
 
-![img](/img/manage/project-management/disconnect-github.png)
+<img src = '/img/manage/project-management/disconnect-github.png' class='rounded-gif' />
+<br />
+
 
 From there, you can follow the same steps as [above](#connect-to-github-repository) to re-connect your project to a new repository.
 
@@ -44,13 +52,16 @@ From there, you can follow the same steps as [above](#connect-to-github-reposito
 ### Deploying from a branch other than `main`
 If you have already [setup your connection to GitHub](/deploy/deploy-dashboard/#syncing-your-github-repository), you can edit the branch from where the project is deployed from.
 
-![img](/img/manage/project-management/main-branch.png)
+<img src = '/img/manage/project-management/main-branch.png' class='rounded-gif' />
+<br />
 
 
 ### Managing Project settings
 You can also manage project objects in the settings page including public URLs (created in an explore dashboard) and environmental variables. For more information on managing variables, see [variables and credentials](/manage/project-management/variables-and-credentials).
 
-![img](/img/manage/project-management/project-settings.png)
+<img src = '/img/manage/project-management/project-settings.png' class='rounded-gif' />
+<br />
+
 
 ## Managing Rill project from CLI
 Managing a project includes the project itself and all components or resources that belong to the project. Via the CLI, you can make changes to the project's properties such as description, GitHub branch, etc. Run `rill project -h` for an overview of available commands.

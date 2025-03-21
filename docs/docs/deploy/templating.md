@@ -70,7 +70,9 @@ sql: "select * from <table_name> {{if dev}} limit 1 {{end}}"
 dsn: "{{if dev}}SUPPORT_TEST{{else}}PROD_USER{{end}}@<account_identifier>/<database>/<schema>?warehouse=<warehouse>&role=<role>N&authenticator=SNOWFLAKE_JWT&privateKey=..."
 ```
 
-![Dynamically changing the Snowflake user based on environment](/img/deploy/templating/snowflake-env-example.png)
+<img src = '/img/deploy/templating/snowflake-env-example.png' class='rounded-gif' />
+<br />
+
 
 ### Changing the bucket location based on dev / prod
 
@@ -82,7 +84,8 @@ connector: "duckdb"
 sql: "select * from read_csv('gs://{{if dev}}<test_bucket>{{else}}<prod_bucket>{{end}}/201306-citibike-tripdata.csv', auto_detect=true, ignore_errors=1, header=true)"
 ```
 
-![Dynamically changing the bucket used based on environment](/img/deploy/templating/gcs-env-example.png)
+<img src = '/img/deploy/templating/gcs-env-example.png' class='rounded-gif' />
+<br />
 
 
 ### Applying a one week sample to the source bucket for local development
@@ -148,7 +151,9 @@ If you use templating in SQL models, you must replace references to tables / mod
 
 If we simply run Rill Developer using `rill start`, our model will look like the following (this will also reflect our data model in production, i.e. Rill Cloud, after we've [pushed the changes for the project to Github](./deploy-dashboard/)):
 
-![Using templating logic with variables to create custom SQL](/img/deploy/templating/vars-example.png)
+<img src = '/img/deploy/templating/vars-example.png' class='rounded-gif' />
+<br />
+
 
 **Now**, just to illustrate what a local override might look like, let's say we stop Rill Developer and then restart Rill via the CLI with the following command:
 ```bash
@@ -157,7 +162,9 @@ rill start --env language="es" --env local_limit=100
 
 Even though we have defaults set in `rill.yaml` (and this will be used by any downstream models and dashboards on Rill Cloud), we will instead see these local overrides come into effect with our templated logic to return Spanish movies and the model limit is now 100 rows.
 
-![Using templating logic with local variable overrides for our model SQL](/img/deploy/templating/vars-override-example.png)
+<img src = '/img/deploy/templating/vars-override-example.png' class='rounded-gif' />
+<br />
+
 
 Voila!
 

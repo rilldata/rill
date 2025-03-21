@@ -24,9 +24,8 @@ Check [here](https://www.rilldata.com/case-studies) to see examples of use cases
 
 Rill supports creating and powering dashboards using existing tables from alternative [OLAP engines](../reference/olap-engines/olap-engines.md) that have been configured in a particular project. These tables are not managed by Rill, hence external, but allows users to bring in separate tables or datasets that might already exist in another preferred OLAP database of choice. This prevents the need of unnecessarily ingesting this data into Rill, especially if the table is already optimized for use by this other OLAP engine, and allows Rill to connect to the data directly (and submit analytical queries).
 
-<div className="center-content">
-![Connecting to an external table](/img/build/connect/external-tables/external-olap-db.png)
-</div>
+<img src = '/img/build/connect/external-tables/external-olap-db.png' class='rounded-gif' />
+<br />
 
 
 ## Supported OLAP Engines

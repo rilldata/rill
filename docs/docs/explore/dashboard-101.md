@@ -14,12 +14,15 @@ Depending on whether you are opening Rill Developer or logging into Rill Cloud, 
 
 After logging into [Rill Cloud](https://ui.rilldata.com), you should see all projects within your [organization](/manage/organization-management#organization) that is available and/or has been granted permissions to your user profile. Within each project, you'll then be able to access the corresponding individual dashboards that belong to a particular Rill project. 
 
-![Rill Cloud landing page](../../static/img/explore/dashboard101/rill-cloud-landing-page.png)
+<img src = '/img/explore/dashboard101/rill-cloud-landing-page.png' class='rounded-gif' />
+<br />
 
 
 ## Navigating the Dashboard
 
-![quickstart](../../static/img/explore/dashboard101/quickstart.png)
+<img src = '/img/explore/dashboard101/quickstart.png' class='rounded-gif' />
+<br />
+
 
 **Explore** 
 The main screen of any Rill dashboard is called the _Explore_ page. As seen above, this is divided into three section. 
@@ -56,6 +59,7 @@ The main screen of any Rill dashboard is called the _Explore_ page. As seen abov
 After drilling into a leaderboard (or what we sometimes refer to as a _toplist_ chart), rather than scrolling and finding an individual attribute (especially if the list is very long), you can also quickly search for a value and select / apply it to your dashboard by using the upper-right search box.
 
 ![Using the search box within a leaderboard](../../static/img/explore/dashboard101/search-box.png)
+
 
 :::
 

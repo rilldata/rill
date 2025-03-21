@@ -49,8 +49,8 @@ If you have a firewall in front of your externally hosted service, you will need
 
 DuckDB is unique in that it can act as both a [source](../../reference/connectors/motherduck.md) and [OLAP engine](../../reference/olap-engines/duckdb.md) for Rill. If you wish to connect to existing tables in DuckDB though, you can simply use the [DuckDB connector](../../reference/connectors/motherduck.md#connecting-to-external-duckdb-as-a-source) to read a specific table or view from an accessible DuckDB database file and ingest the data into Rill.
 
-![ch](/img/build/connect/duckdb.png)
-
+<img src = '/img/build/connect/duckdb.png' class='rounded-gif' />
+<br />
 
 :::warning
 
@@ -63,15 +63,15 @@ Rill will use DuckDB by default as an embedded OLAP engine but it is **not** cur
 
 When Druid has been configured as the [default OLAP engine](../../reference/project-files/rill-yaml.md#configuring-the-default-olap-engine) for your project, any existing external tables that Rill can read and query should be shown through the Rill Developer UI. You can then create dashboards using these external Druid tables.
 
-<div className="center-content">
-![External Druid tables](/img/build/connect/external-tables/external-druid-table.png)
-</div>
+<img src = '/img/build/connect/external-tables/external-druid-table.png' class='rounded-gif' />
+<br />
 
 ## ClickHouse
 
 When ClickHouse has been configured as the [default OLAP engine](../../reference/project-files/rill-yaml.md#configuring-the-default-olap-engine) for your project, any existing external tables that Rill can read and query should be shown through the Rill Developer UI. You can then create dashboards using these external ClickHouse tables.
 
-![ch](/img/build/connect/clickhouse.png)
+<img src = '/img/build/connect/clickhouse.png' class='rounded-gif' />
+<br />
 
 :::note No Source Folder in ClickHouse
 There is no source folder in a ClickHouse based project as all of the tables exist on your ClickHouse Database and is read into Rill at start up. If you try to import data into a ClickHouse based project, you will likely result in errors stating that importing from XXX to ClickHouse is not supported.
@@ -81,6 +81,5 @@ There is no source folder in a ClickHouse based project as all of the tables exi
 
 When Pinot has been configured as the [default OLAP engine](../../reference/project-files/rill-yaml.md#configuring-the-default-olap-engine) for your project, any existing external tables that Rill can read and query should be shown through the Rill Developer UI under `Tables` section in left pane. You can then create dashboards using these external Pinot tables.
 
-<div className="center-content">
-![External Pinot tables](/img/build/connect/external-tables/external-pinot-table.png)
-</div>
+<img src = '/img/build/connect/external-tables/external-pinot-table.png' class='rounded-gif' />
+<br />

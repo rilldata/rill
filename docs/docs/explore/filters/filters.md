@@ -19,7 +19,9 @@ With the release of v0.52, we have introduced an easy way to craft specific view
 
 Users can add or hide dimensions and metrics to a subset of fields they wish to see at any given time. At the top left, above the time series and above the top left leaderboard, you'll find the Measures & Dimensions selectors to add or hide from the page. In the example below, `network` and `country` are deselected so would be hidden from view.
 
-![hidedims](../../../static/img/explore/filters/hide.png)
+<img src = '/img/explore/filters/hide.png' class='rounded-gif' />
+<br />
+
 
 :::tip hiding metrics and dimensions by default
 You can also change settings in the dashboard configuration to hide certain fields by default. You may want to do this to make dashboards easier to use (less complicated, narrowed to most commonly used) and to improve performance (hide high cardinality dimensions or complicated expressions in metrics). For more details, check out [dashboard customizations](/build/dashboards/customize.md#setting-default-views-for-dashboards).
@@ -38,7 +40,9 @@ You can also expand each dimension table to see all metrics and full list of tho
 
 Any filter applied in the Leaderboard will also show up in the filter bar at next to the time picker. You can apply the same search capabilities and select features in the filter bar as well.
 
-![dimension-filter](../../../static/img/explore/filters/filter.gif)
+<img src = '/img/explore/filters/filter.gif' class='rounded-gif' />
+<br />
+
 
 ### Filter by Metrics
 
@@ -53,7 +57,10 @@ These metric filters can be applied from the filter bar. To apply a metric filte
 - Select your Threshold Type (e.g. Great Than)
 - Input your Threshold amount and Click Enter
 
-![metric-filter](../../../static/img/explore/filters/image.png)
+
+<img src = '/img/explore/filters/image.png' class='centered' />
+<br />
+
 
 :::tip
 Metric filters are a good way to "sort" by two different metrics. First, apply your metric threshold. Then, sort by your metrics within the Leaderboard to do multi-metric sorting. 
@@ -73,7 +80,9 @@ This allows the ability for a more detailed view into your time series without h
 
 ## Time & Dimension Comparisons
 
-![img](/img/explore/filters/time-series.png)
+<img src = '/img/explore/filters/time-series.png' class='rounded-gif' />
+<br />
+
 
 ### Time Comparisons
 Time comparison is a key feature of Rill and recommended to find insights quicker by highlighting differences between periods. To compare different periods, first select your time period for analysis - either a predefined period or a custom range in top left time picker. After selecting that range, select the toggle to enable Time Comparisons.

@@ -26,7 +26,9 @@ Rill is optimized for Google Chrome. While other browsers may work, we recommend
 
 ## Rill Developer
 
-![dev](/img/concepts/rcvsrd/empty-project.png)
+<img src = '/img/concepts/rcvsrd/empty-project.png' class='rounded-gif' />
+<br />
+
 
 ### What is Rill Developer?
 Rill Developer is a local application used to preview your project and make any necessary changes before deploying to Rill Cloud. For more information, please review [our documentation](https://docs.rilldata.com/concepts/developerVsCloud#rill-developer). Within Rill Developer, you can ingest new datasets, transform the sources into models, build a metrics layer and finally visualize your data in an explore dashboard. This preview allows you to develop your project before deploying or updating an existing deployment in Rill Cloud.
@@ -55,7 +57,9 @@ To share your dashboards with your colleagues, you need to [deploy your dashboar
 
 ## Rill Cloud
 
-![dev](/img/concepts/rcvsrd/Rill-Cloud.png)
+<img src = '/img/concepts/rcvsrd/Rill-Cloud.png' class='rounded-gif' />
+<br />
+
 
 
 ### What is Rill Cloud?
@@ -86,7 +90,9 @@ There are no feature limitations in a free trial, but we have set the limit for 
 :::note 
 The banner will show you the remaining days for your trial and will update as the expiration gets closer! Upgrade to a Teams plan to continue using Rill!
 :::
-![img](/img/FAQ/rill-trial-banner.png)
+<img src = '/img/FAQ/rill-trial-banner.png' class='rounded-gif' />
+<br />
+
 
 ### When does my trial start?
 Your trial will start when you deploy a project to Rill Cloud from Rill Developer. An Organization will be automatically created during this process using your email and the project will be the folder that your Rill project exists in. You can change the name using [CLI commands](https://docs.rilldata.com/reference/cli/project/rename). 
@@ -100,7 +106,9 @@ The free trial is locked at 2 projects and up to 10 GB of data each. You can in
 ### What happens to my project if I do not upgrade to a Team plan?
 Your projects will hibernate. Your project metadata will still be available once you've activated your team plan. If you'd like to delete your deployment from Rill Cloud, you can do so via the [CLI commands.](https://docs.rilldata.com/reference/cli/org/delete)
 
-![expired](/img/FAQ/expired-project.png)
+<img src = '/img/FAQ/expired-project.png' class='rounded-gif' />
+<br />
+
 
 ### What is project hibernation?
 When a project is inactive for a specific number of days or your trial has expired, we automatically hibernate the project. What this means is that all of your information and metadata is saved, and resource consumption will be zero. You will need to unhibernate the project to gain access to the dashboard again. 

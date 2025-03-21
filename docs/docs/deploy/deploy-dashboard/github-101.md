@@ -19,8 +19,10 @@ In this section, we will outline:
 - Setting up your repository (repo) and cloning to your local
 - Pushing changes to Git
 - Deploying Rill to your new org to share dashboards, set up alerts and receive scheduled reports
+- 
+<img src = '/img/deploy/github-101/process.png' class='rounded-gif' />
+<br />
 
-![process](/img/deploy/github-101/process.png)
 
 ## Installing Git
 
@@ -37,15 +39,23 @@ If you do not already have a GitHub account, you'll need to create one as part o
 
 Once you have downloaded GitHub and connected your account, you'll be able to create a new repository. Think of the repository as a shared cloud drive for the configuration files (sources, models, dashboards) that power Rill.
 
-- First, go to GitHub.com and create a new repository - clicking the ```New``` button on the homepage
-![new](/img/deploy/github-101/new.png)
+- First, go to GitHub.com and create a new repository - clicking the ```New``` button on the homepage\
+  
+<img src = '/img/deploy/github-101/new.png' class='rounded-gif' />
+<br />
 
-- After you name your respository and click save, you'll see the option to ```Set up in Desktop```. This will open the GitHub desktop app directly to "clone" the repo to your local computer
-![repo](/img/deploy/github-101/repo.png)
+
+- After you name your respository and click save, you'll see the option to ```Set up in Desktop```. This will open the GitHub desktop app directly to "clone" the repo to your local computer.
+- 
+<img src = '/img/deploy/github-101/repo.png' class='rounded-gif' />
+<br />
+
 
 - Select the folder on your computer where you'd like to build with Rill. Confirm the location you cloned for the next step.
 
-![clone](/img/deploy/github-101/clone.png)
+<img src = '/img/deploy/github-101/clone.png' class='rounded-gif' />
+<br />
+
 
 - Open the Terminal and go to your local copy of the repo (e.g. the above would be ```cd Documents/GitHub/rill-poc/testrepo```)
 
@@ -59,7 +69,10 @@ After installing Rill and adding sources, your local project will now contain a 
 
 First, open the GitHub app and select your repo. You should now see a variety of new changes (that can then be committed):
 
-![commit](/img/deploy/github-101/commit.png)
+
+<img src = '/img/deploy/github-101/commit.png' class='rounded-gif' />
+<br />
+
 
 Now, in order to actually commit these changes to your repo, you can take the following steps:
 - On the bottom left, you can describe the changes (or add something like "initial commit")

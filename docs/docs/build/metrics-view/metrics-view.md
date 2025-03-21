@@ -55,7 +55,8 @@ Whether you prefer the UI or YAML artifacts, Rill supports both methods for upda
 
 ### Using the Visual Metrics Editor
 
-![visual-metric-editor](/img/build/metrics-view/visual-metrics-editor.png)
+<img src = '/img/build/metrics-view/visual-metrics-editor.png' class='rounded-gif' />
+<br />
 
 When you add a metrics definition using the UI, a code definition will automatically be created as a YAML file in your Rill project within the metrics directory by default. 
 
@@ -96,4 +97,5 @@ For more information about available metrics view properties, feel free to check
 
 Rill Developer is meant to be developer friendly and has been built around the idea of keystroke-by-keystroke feedback when modeling your data, allowing live interactivity and a real-time feedback loop to iterate quickly (or make adjustments as necessary) with your models and dashboards. Additionally, Rill Developer has support for the concept of "hot reloading", which means that you can keep two windows of Rill open at the same time and/or use a preferred editor of choice, such as VSCode, side-by-side with the dashboard that you're actively developing!
 
-![hot-reload-0-36](https://cdn.rilldata.com/docs/release-notes/36_hot_reload.gif)
+<img src = 'https://cdn.rilldata.com/docs/release-notes/36_hot_reload.gif' class='rounded-gif' />
+<br />

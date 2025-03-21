@@ -20,7 +20,9 @@ Assuming that you have the ' * ', select all, in your dashboard configurations, 
 ## Introducing Metrics View
 Within Rill, we refer to Metrics layers as a metrics view. It's a single view or file that contains all of your measures and dimensions that will be used to display the data in various ways. The metrics view also contains some configurations settings that are required to ensure that the data being displayed is as accurate as you need. 
 
-![img](/img/tutorials/102/new-viz-editor.png)
+
+<img src = '/img/tutorials/102/new-viz-editor.png' class='rounded-gif' />
+<br />
 
 :::tip
 It is possible to develop the metrics layer in a traditional BI-as-code manner as well as via the UI. To switch between the two, select the toggle in the top right corner.
@@ -30,5 +32,6 @@ It is possible to develop the metrics layer in a traditional BI-as-code manner a
 
 A metrics view on its own does not have any visualization capabilities. Instead, the metrics view is the building block for all the visualization and components within Rill. Please see below for the currently available and soon to be released features of Rill!
 
-![img](/img/concepts/metrics-view/metrics-view-components.png)
+<img src = '/img/concepts/metrics-view/metrics-view-components.png' class='rounded-gif' />
+<br />
 

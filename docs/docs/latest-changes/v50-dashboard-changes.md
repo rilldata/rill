@@ -19,13 +19,17 @@ Splitting the metrics view into its own component allows us more freedom to cont
 
 ### New Metrics View as an independent object in Rill 
 
-![img](/img/concepts/metrics-view/metrics-view-components.png)
+<img src = '/img/concepts/metrics-view/metrics-view-components.png' class='rounded-gif' />
+<br />
+
 
 ### (Explore) Dashboard
 
 With the split of metrics view, dashboard configurations experienced an overhaul. Instead of defining measure and dimensions, you will now reference the object into your dashboard. What this allows is creating customized dashboards for specific viewers and reusability of a single metrics view in multiple dashboards!
 
-![img](/img/concepts/metrics-view/explore-dashboard.png)
+<img src = '/img/concepts/metrics-view/explore-dashboard.png' class='rounded-gif' />
+<br />
+
 
 ## How to migrate your current Dashboards
 

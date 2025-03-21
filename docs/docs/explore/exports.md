@@ -45,4 +45,5 @@ Reports are managed from your home screen. To navigate to the report admin page,
 - **Unsubscribe Option:** Recipients have the option to unsubscribe by clicking the provided link within the report delivery email.
 
 
-![report-admin](<../../static/img/explore/exports/admin.gif>)
+<img src = '/img/explore/exports/admin.gif' class='rounded-gif' />
+<br />

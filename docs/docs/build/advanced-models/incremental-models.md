@@ -73,7 +73,8 @@ You can verify the current value of your state in the left hand panel under Incr
 
 When you are testing with incremental models in Rill Developer, you will notice a change in the refresh functionality. Instead of a full refresh, you are given the option for `incremental refresh`.
 
-![img](/img/tutorials/302/now-incremental.png)
+<img src = '/img/tutorials/302/now-incremental.png' class='rounded-gif' />
+<br />
 
 :::tip What's the difference?
 Once increments are enabled on a model, this grants you the ability to refresh the model in increments, instead of loading the full data each time. This is handy when your data is massive and re-ingesting the data may take time. For a project on production, this allows for less downtime when needing to update your dashboards when the source data is updated. 
