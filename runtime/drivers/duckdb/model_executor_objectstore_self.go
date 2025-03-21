@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"maps"
+	"net/url"
 	"strings"
 
 	"github.com/mitchellh/mapstructure"
@@ -136,8 +137,18 @@ func objectStoreSecretSQL(ctx context.Context, path, model, inputConnector strin
 			fmt.Fprintf(&sb, ", SESSION_TOKEN %s", safeSQLString(s3Config.SessionToken))
 		}
 		if s3Config.Endpoint != "" {
+			uri, err := url.Parse(s3Config.Endpoint)
+			if err == nil && uri.Scheme != "" { // let duckdb raise an error if the endpoint is invalid
+				// for duckdb the endpoint should not have a scheme
+				s3Config.Endpoint = strings.TrimPrefix(s3Config.Endpoint, uri.Scheme+"://")
+				if uri.Scheme == "http" {
+					sb.WriteString(", USE_SSL false")
+				}
+			}
+
 			sb.WriteString(", ENDPOINT ")
 			sb.WriteString(safeSQLString(s3Config.Endpoint))
+			sb.WriteString(", URL_STYLE path")
 		}
 		if s3Config.Region != "" {
 			sb.WriteString(", REGION ")
