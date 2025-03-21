@@ -6,7 +6,7 @@
   import { getSimpleMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { getStateManagers } from "../state-managers/state-managers";
-  import DashboardDraggableSelector from "@rilldata/web-common/components/menu/DashboardDraggableSelector.svelte";
+  import DashboardDraggableList from "@rilldata/web-common/components/menu/DashboardDraggableList.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
 
   export let exploreName: string;
@@ -76,7 +76,7 @@
       style:max-width="450px"
     >
       {#if $reorderMeasuresDimensions}
-        <DashboardDraggableSelector
+        <DashboardDraggableList
           type="dimension"
           onSelectedChange={(items) =>
             setDimensionVisibility(items, allDimensionNames)}
