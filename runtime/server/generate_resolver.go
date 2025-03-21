@@ -81,12 +81,12 @@ func (s *Server) GenerateResolver(ctx context.Context, req *runtimev1.GenerateRe
 		attrs = append(attrs, attribute.Int64("elapsed_ms", time.Since(start).Milliseconds()))
 		if err != nil {
 			attrs = append(attrs, attribute.Bool("succeeded", false))
-			s.activity.Record(ctx, activity.EventTypeLog, "ai_generated_resolver", attrs...)
+			s.activity.Record(ctx, activity.EventTypeLog, activity.BehavioralEventAIGeneratedResolver, attrs...)
 			return nil, err
 		}
 
 		attrs = append(attrs, attribute.Bool("succeeded", true))
-		s.activity.Record(ctx, activity.EventTypeLog, "ai_generated_resolver", attrs...)
+		s.activity.Record(ctx, activity.EventTypeLog, activity.BehavioralEventAIGeneratedResolver, attrs...)
 	} else if req.MetricsView != "" {
 		res, err := ctrl.Get(ctx, &runtimev1.ResourceName{Name: req.MetricsView, Kind: runtime.ResourceKindMetricsView}, true)
 		if err != nil {
@@ -114,12 +114,12 @@ func (s *Server) GenerateResolver(ctx context.Context, req *runtimev1.GenerateRe
 		attrs = append(attrs, attribute.Int64("elapsed_ms", time.Since(start).Milliseconds()))
 		if err != nil {
 			attrs = append(attrs, attribute.Bool("succeeded", false))
-			s.activity.Record(ctx, activity.EventTypeLog, "ai_generated_resolver", attrs...)
+			s.activity.Record(ctx, activity.EventTypeLog, activity.BehavioralEventAIGeneratedResolver, attrs...)
 			return nil, err
 		}
 
 		attrs = append(attrs, attribute.Bool("succeeded", true))
-		s.activity.Record(ctx, activity.EventTypeLog, "ai_generated_resolver", attrs...)
+		s.activity.Record(ctx, activity.EventTypeLog, activity.BehavioralEventAIGeneratedResolver, attrs...)
 	} else {
 		return nil, errors.New("one of table or metrics_view should be provided")
 	}

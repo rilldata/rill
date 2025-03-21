@@ -8,6 +8,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
@@ -22,6 +23,14 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.canvas", req.Canvas),
+	)
+
+	s.activity.Record(
+		ctx,
+		activity.EventTypeLog,
+		activity.BehavioralEventCanvasResolveStart,
+		attribute.String("canvas", req.Canvas),
+		attribute.String("instance_id", req.InstanceId),
 	)
 
 	// Check if user has access to query for canvas data (we use the ReadAPI permission for this for now)
@@ -142,6 +151,16 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 		// Add to map.
 		metricsViews[mvName] = mv
 	}
+
+	s.activity.Record(
+		ctx,
+		activity.EventTypeLog,
+		activity.BehavioralEventCanvasResolveSuccess,
+		attribute.String("canvas", req.Canvas),
+		attribute.String("instance_id", req.InstanceId),
+		attribute.Int("components", len(components)),
+		attribute.Int("metrics_views", len(metricsViews)),
+	)
 
 	// Return the response
 	return &runtimev1.ResolveCanvasResponse{
