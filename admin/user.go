@@ -330,7 +330,7 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, email, 
 	defaultQuotas := s.Biller.DefaultQuotas()
 	org, err := s.DB.InsertOrganization(txCtx, &database.InsertOrganizationOptions{
 		Name:                                orgName,
-		DisplayName:                         orgName,
+		DisplayName:                         "", // Populated later
 		Description:                         description,
 		LogoAssetID:                         nil,
 		FaviconAssetID:                      nil,
