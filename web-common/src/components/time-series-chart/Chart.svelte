@@ -166,16 +166,6 @@
       on:mousemove={(e) => {
         offsetPosition = { x: e.offsetX, y: e.offsetY };
         clientPosition = { x: e.clientX, y: e.clientY };
-        console.log("x", offsetPosition.x, "y", offsetPosition.y);
-        console.log("length", mappedData?.[0]?.length);
-        console.log(
-          "width",
-          width,
-          offsetPosition.x / width,
-          Math.round(
-            (offsetPosition.x / width) * ((mappedData?.[0]?.length ?? 1) - 1),
-          ),
-        );
       }}
       on:mouseleave={() => {
         offsetPosition = null;

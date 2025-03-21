@@ -21,6 +21,7 @@
   export let rendererProperties: V1ComponentSpecRendererProperties;
   export let timeAndFilterStore: Readable<TimeAndFilterStore>;
   export let componentName: string;
+  export let hasHeader = false;
 
   const ctx = getCanvasStateManagers();
   const tableSpecStore = writable(rendererProperties as TableSpec);
@@ -105,7 +106,12 @@
   });
 </script>
 
-<div class="size-full overflow-hidden" style:max-height="inherit">
+<div
+  class:p-4={hasHeader}
+  class:pt-1={hasHeader}
+  class="size-full overflow-hidden"
+  style:max-height="inherit"
+>
   {#if !$schema.isValid}
     <ComponentError error={$schema.error} />
   {:else if pivotDataStore && $pivotDataStore && pivotConfig && $pivotConfig}
@@ -120,6 +126,7 @@
     {:else}
       <PivotTable
         border={false}
+        rounded={false}
         {pivotDataStore}
         config={pivotConfig}
         {pivotState}

@@ -34,6 +34,7 @@
 
 {#if schema.isValid}
   <div class="h-fit p-0 grow relative" class:!p-0={kpis.length === 1}>
+    <span class="border-overlay" />
     <div
       style:grid-template-columns="repeat(auto-fit, minmax(min({minWidth}px,
       100%), 1fr))"
@@ -44,7 +45,6 @@
           <KPI rendererProperties={kpi} {timeAndFilterStore} />
         </div>
       {/each}
-      <span class="border-overlay" />
     </div>
   </div>
 {:else}
