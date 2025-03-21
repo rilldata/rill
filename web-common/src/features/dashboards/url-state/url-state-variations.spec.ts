@@ -598,6 +598,7 @@ export function getCleanMetricsExploreForAssertion() {
   // TODO
   delete cleanedState.selectedScrubRange;
   delete cleanedState.leaderboardContextColumn;
+  delete cleanedState.leaderboardMeasureCount;
 
   return cleanedState;
 }
