@@ -32,6 +32,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 
 export const AD_BIDS_NAME = "AdBids";
+export const AD_BIDS_METRICS_NAME = AD_BIDS_NAME + "_metrics";
 export const AD_BIDS_EXPLORE_NAME = AD_BIDS_NAME + "_explore";
 export const AD_BIDS_SOURCE_NAME = "AdBids_Source";
 export const AD_BIDS_MIRROR_NAME = "AdBids_mirror";

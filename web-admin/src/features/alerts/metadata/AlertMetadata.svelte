@@ -9,6 +9,7 @@
   import {
     useAlert,
     useAlertDashboardName,
+    useAlertDashboardState,
     useIsAlertCreatedByCode,
   } from "@rilldata/web-admin/features/alerts/selectors";
   import ProjectAccessControls from "@rilldata/web-admin/features/projects/ProjectAccessControls.svelte";
@@ -54,6 +55,8 @@
       alertSpec?.queryArgsJson ||
       "{}",
   ) as V1MetricsViewAggregationRequest;
+
+  $: dashboardState = useAlertDashboardState(instanceId, alertSpec);
 
   $: snoozeLabel = humaniseAlertSnoozeOption(alertSpec);
 
@@ -177,6 +180,8 @@
     <AlertFilters
       {metricsViewName}
       filters={metricsViewAggregationRequest?.where}
+      dimensionsWithInlistFilter={$dashboardState.data
+        ?.dimensionsWithInlistFilter ?? []}
       timeRange={metricsViewAggregationRequest?.timeRange}
       comparisonTimeRange={metricsViewAggregationRequest?.comparisonTimeRange}
     />

@@ -80,6 +80,10 @@ export function convertPresetToExploreState(
     partialExploreState.whereFilter = dimensionFilters;
     partialExploreState.dimensionThresholdFilters = dimensionThresholdFilters;
   }
+  if (preset.dimensionsWithInlistFilter) {
+    partialExploreState.dimensionsWithInlistFilter =
+      preset.dimensionsWithInlistFilter;
+  }
 
   const { partialExploreState: trPartialState, errors: trErrors } =
     fromTimeRangesParams(preset, dimensions);

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { selectedDimensionValuesV2 } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import type {
     V1Expression,
@@ -27,11 +28,7 @@
     selectors: {
       activeMeasure: { isValidPercentOfTotal, isSummableMeasure },
       numberFormat: { activeMeasureFormatter },
-      dimensionFilters: {
-        selectedDimensionValues,
-        atLeastOneSelection,
-        isFilterExcludeMode,
-      },
+      dimensionFilters: { isFilterExcludeMode },
       dimensions: { visibleDimensions },
       comparison: { isBeingCompared: isBeingComparedReadable },
       sorting: { sortedAscending, sortType },
@@ -43,6 +40,7 @@
       comparison: { toggleComparisonDimension },
     },
     exploreName,
+    dashboardStore,
   } = StateManagers;
 
   let parentElement: HTMLDivElement;
@@ -100,14 +98,20 @@
               sortedAscending={$sortedAscending}
               sortType={$sortType}
               filterExcludeMode={$isFilterExcludeMode(dimension.name)}
-              atLeastOneActive={$atLeastOneSelection(dimension.name)}
               {comparisonTimeRange}
               {dimension}
               isSummableMeasure={$isSummableMeasure}
               {parentElement}
               {suppressTooltip}
               {timeControlsReady}
-              selectedValues={$selectedDimensionValues(dimension.name)}
+              selectedValues={selectedDimensionValuesV2(
+                $runtime.instanceId,
+                [metricsViewName],
+                $dashboardStore.whereFilter,
+                dimension.name,
+                timeRange.start,
+                timeRange.end,
+              )}
               isBeingCompared={$isBeingComparedReadable(dimension.name)}
               formatter={$activeMeasureFormatter}
               {setPrimaryDimension}

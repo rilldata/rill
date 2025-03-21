@@ -68,7 +68,11 @@ function includeExcludeModeFromFilters(filters: V1Expression | undefined) {
   const map = new Map<string, boolean>();
   if (!filters) return map;
   forEachIdentifier(filters, (e, ident) => {
-    if (e.cond?.op === V1Operation.OPERATION_NIN) {
+    if (
+      e.cond?.op === V1Operation.OPERATION_NIN ||
+      e.cond?.op === V1Operation.OPERATION_NLIKE ||
+      e.cond?.op === V1Operation.OPERATION_NEQ
+    ) {
       map.set(ident, true);
     }
   });
@@ -166,6 +170,10 @@ function syncDimensions(
 const metricsViewReducers = {
   init(name: string, initState: Partial<MetricsExplorerEntity> = {}) {
     update((state) => {
+      // TODO: revisit this during the url state / restore user refactor
+      initState.dimensionFilterExcludeMode = includeExcludeModeFromFilters(
+        initState.whereFilter,
+      );
       state.entities[name] = getFullInitExploreState(name, initState);
 
       updateMetricsExplorerProto(state.entities[name]);

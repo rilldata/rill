@@ -408,6 +408,8 @@ message ExplorePreset {
   FieldSelector measures_selector = 10;
 
   optional Expression where = 11;
+  // Temporary to differentiate between "select" and "in list" modes. Expression will be replaced with UI specific state in the future.
+  repeated string dimensions_with_inlist_filter = 29;
 
   // Time range for the explore.
   // It corresponds to the `range` property of the explore's `time_ranges`.

@@ -1,6 +1,7 @@
 <script lang="ts">
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
   import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
   import type {
     MetricsViewSpecDimensionV2,
@@ -53,7 +54,7 @@
   export let dimension: MetricsViewSpecDimensionV2;
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
-  export let selectedValues: string[];
+  export let selectedValues: CompoundQueryResult<string[]>;
   export let instanceId: string;
   export let whereFilter: V1Expression;
   export let dimensionThresholdFilters: DimensionThresholdFilter[];
@@ -67,7 +68,6 @@
   export let firstColumnWidth: number;
   export let isSummableMeasure: boolean;
   export let filterExcludeMode: boolean;
-  export let atLeastOneActive: boolean;
   export let isBeingCompared: boolean;
   export let parentElement: HTMLElement;
   export let suppressTooltip = false;
@@ -111,6 +111,8 @@
     displayName = "",
     uri,
   } = dimension);
+
+  $: atLeastOneActive = Boolean($selectedValues.data?.length);
 
   $: isComplexFilter = isExpressionUnsupported(whereFilter);
   $: where = isComplexFilter
@@ -194,7 +196,7 @@
       dimensionName,
       activeMeasureName,
       slice,
-      selectedValues,
+      $selectedValues.data ?? [],
       leaderboardTotal,
     ));
 
@@ -251,9 +253,9 @@
       dimensionName,
       activeMeasureName,
       leaderboardTotal,
-      selectedValues.findIndex((value) =>
+      $selectedValues.data?.findIndex((value) =>
         compareLeaderboardValues(value, item[dimensionName]),
-      ),
+      ) ?? -1,
     ),
   );
 

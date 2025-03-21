@@ -24,6 +24,7 @@
   <FilterChipsReadOnly
     dimensionThresholdFilters={$exploreState.dimensionThresholdFilters}
     filters={$exploreState.whereFilter}
+    dimensionsWithInlistFilter={$exploreState.dimensionsWithInlistFilter}
     {exploreName}
     {timeRange}
   />

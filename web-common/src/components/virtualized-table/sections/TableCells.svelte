@@ -16,7 +16,11 @@
 
   $: atLeastOneSelected = !!selectedIndex?.length;
 
-  const getCellProps = (virtRow: VirtualItem, virtCol: VirtualItem) => {
+  const getCellProps = (
+    virtRow: VirtualItem,
+    virtCol: VirtualItem,
+    selectedIndex: number[],
+  ) => {
     const column = columns[virtCol.index];
     const columnName = column.name;
     const value = rows[virtRow.index][columnName];
@@ -42,7 +46,7 @@
         {excludeMode}
         {rowActive}
         suppressTooltip={scrolling}
-        {...getCellProps(row, column)}
+        {...getCellProps(row, column, selectedIndex)}
         on:inspect
         on:select-item
         label={cellLabel}

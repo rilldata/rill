@@ -100,13 +100,19 @@ export function convertURLToExplorePreset(
   }
 
   if (searchParams.has(ExploreStateURLParams.Filters)) {
-    const { expr, errors: filterErrors } = fromFilterUrlParam(
+    const {
+      expr,
+      dimensionsWithInlistFilter,
+      errors: filterErrors,
+    } = fromFilterUrlParam(
       searchParams.get(ExploreStateURLParams.Filters) as string,
       measures,
       dimensions,
     );
     if (filterErrors) errors.push(...filterErrors);
     if (expr) preset.where = expr;
+    if (dimensionsWithInlistFilter)
+      preset.dimensionsWithInlistFilter = dimensionsWithInlistFilter;
   }
 
   const { preset: trPreset, errors: trErrors } = fromTimeRangesParams(
@@ -188,10 +194,13 @@ function fromFilterUrlParam(
   dimensions: Map<string, MetricsViewSpecDimensionV2>,
 ): {
   expr?: V1Expression;
+  dimensionsWithInlistFilter?: string[];
   errors?: Error[];
 } {
   try {
-    let expr = convertFilterParamToExpression(filter);
+    const { expr: exprFromFilter, dimensionsWithInlistFilter } =
+      convertFilterParamToExpression(filter);
+    let expr = exprFromFilter;
     if (!expr) {
       return {
         expr: createAndExpression([]),
@@ -241,7 +250,7 @@ function fromFilterUrlParam(
     if (missingFields.length) {
       errors.push(getMultiFieldError("filter field", missingFields));
     }
-    return { expr, errors };
+    return { expr, dimensionsWithInlistFilter, errors };
   } catch (e) {
     return {
       errors: [new Error("Selected filter is invalid: " + stripParserError(e))],

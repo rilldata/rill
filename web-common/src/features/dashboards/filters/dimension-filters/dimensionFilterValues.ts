@@ -1,21 +1,43 @@
-import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
+import {
+  type CompoundQueryResult,
+  getCompoundQuery,
+} from "@rilldata/web-common/features/compound-query-result";
+import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-mode";
 import {
   createInExpression,
   createLikeExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client";
-import { derived } from "svelte/store";
+import {
+  createQueryServiceMetricsViewAggregation,
+  V1BuiltinMeasure,
+} from "@rilldata/web-common/runtime-client";
 
+type DimensionSearchArgs = {
+  mode: DimensionFilterMode;
+  searchText: string;
+  values: string[];
+  timeStart?: string;
+  timeEnd?: string;
+  enabled?: boolean;
+};
 export function useDimensionSearch(
   instanceId: string,
   metricsViewNames: string[],
   dimensionName: string,
-  searchText: string,
-  timeStart?: string,
-  timeEnd?: string,
-  enabled?: boolean,
+  {
+    mode,
+    searchText,
+    values,
+    timeStart,
+    timeEnd,
+    enabled,
+  }: DimensionSearchArgs,
 ): CompoundQueryResult<string[]> {
-  const addNull = searchText.length !== 0 && "null".includes(searchText);
+  const where = getFilterForSearchArgs(dimensionName, {
+    mode,
+    searchText,
+    values,
+  });
 
   const queries = metricsViewNames.map((mvName) =>
     createQueryServiceMetricsViewAggregation(
@@ -24,12 +46,10 @@ export function useDimensionSearch(
       {
         dimensions: [{ name: dimensionName }],
         timeRange: { start: timeStart, end: timeEnd },
-        limit: "100",
+        limit: "250",
         offset: "0",
         sort: [{ name: dimensionName }],
-        where: addNull
-          ? createInExpression(dimensionName, [null])
-          : createLikeExpression(dimensionName, `%${searchText}%`),
+        where,
       },
       {
         query: { enabled },
@@ -37,32 +57,81 @@ export function useDimensionSearch(
     ),
   );
 
-  return derived(queries, ($queries) => {
-    const someQueryFetching = $queries.some((q) => q.isFetching);
-    if (someQueryFetching) {
-      return {
-        data: undefined,
-        error: undefined,
-        isFetching: true,
-      };
-    }
-    const errors = $queries.filter((q) => q.isError).map((q) => q.error);
-    if (errors.length > 0) {
-      return {
-        data: undefined,
-        // TODO: merge multiple errors
-        error: errors[0]?.response?.data.message,
-        isFetching: false,
-      };
-    }
-
-    const items = $queries.flatMap((query) => query.data?.data || []);
-    const values = items.map((item) => item[dimensionName] as string);
+  return getCompoundQuery(queries, (responses) => {
+    const values = responses
+      .filter((r) => !!r?.data)
+      .map((r) => r!.data!.map((i) => i[dimensionName] as string))
+      .flat();
     const dedupedValues = new Set(values);
-    return {
-      data: [...dedupedValues],
-      error: undefined,
-      isFetching: false,
-    };
+    return [...dedupedValues];
   });
+}
+
+export function useAllSearchResultsCount(
+  instanceId: string,
+  metricsViewNames: string[],
+  dimensionName: string,
+  {
+    mode,
+    searchText,
+    values,
+    timeStart,
+    timeEnd,
+    enabled,
+  }: DimensionSearchArgs,
+): CompoundQueryResult<number | undefined> {
+  const where = getFilterForSearchArgs(dimensionName, {
+    mode,
+    searchText,
+    values,
+  });
+
+  const queries = metricsViewNames.map((mvName) =>
+    createQueryServiceMetricsViewAggregation(
+      instanceId,
+      mvName,
+      {
+        measures: [
+          {
+            name: dimensionName + "__distinct_count",
+            builtinMeasure: V1BuiltinMeasure.BUILTIN_MEASURE_COUNT_DISTINCT,
+            builtinMeasureArgs: [dimensionName],
+          },
+        ],
+        timeRange: { start: timeStart, end: timeEnd },
+        limit: "250",
+        offset: "0",
+        where,
+      },
+      {
+        query: { enabled },
+      },
+    ),
+  );
+
+  return getCompoundQuery(queries, (responses) => {
+    if (!enabled) return undefined;
+
+    const values = responses
+      .filter((r) => !!r?.data)
+      .map((r) =>
+        r!.data!.map((i) => i[dimensionName + "__distinct_count"] as number),
+      )
+      .flat();
+    return values.reduce((s, v) => s + v, 0);
+  });
+}
+
+function getFilterForSearchArgs(
+  dimensionName: string,
+  { mode, searchText, values }: DimensionSearchArgs,
+) {
+  if (mode === DimensionFilterMode.InList) {
+    return createInExpression(dimensionName, values);
+  }
+
+  const addNull = searchText.length !== 0 && "null".includes(searchText);
+  return addNull
+    ? createInExpression(dimensionName, [null])
+    : createLikeExpression(dimensionName, `%${searchText}%`);
 }

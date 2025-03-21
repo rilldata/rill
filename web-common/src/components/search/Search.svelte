@@ -11,9 +11,11 @@
   export let label = "Search";
   export let placeholder = "Search";
   export let border = true;
+  export let noLeftBorder = false;
   export let background = true;
   export let large = false;
   export let disabled = false;
+  export let retainValueOnMount = false;
 
   /* Reference of input DOM element */
   let ref: HTMLInputElement;
@@ -23,13 +25,14 @@
   function handleKeyDown(event) {
     if (event.code == "Enter") {
       event.preventDefault();
+      event.stopPropagation();
       dispatch("submit");
       return false;
     }
   }
 
   onMount(() => {
-    value = "";
+    if (!retainValueOnMount) value = "";
     // Keep ref optional here. If component is unmounted before this animation frame runs, ref will be null and throw a TypeError
     if (autofocus) window.requestAnimationFrame(() => ref?.focus());
   });
@@ -57,13 +60,14 @@
     class:bg-slate-50={background}
     class:border
     class:border-gray-200={border}
-    class="outline-none rounded-[2px] block w-full pl-8 p-1 {large
-      ? 'h-full'
-      : ''}"
+    class:rounded-l-none={noLeftBorder}
+    class="outline-none rounded-[2px] block w-full pl-8 p-1"
+    class:h-full={large}
     {disabled}
     {placeholder}
     bind:value
     on:input
+    on:paste
     on:keydown={handleKeyDown}
     aria-label={label}
   />

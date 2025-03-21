@@ -37,6 +37,13 @@ export class DashboardState extends Message<DashboardState> {
   where?: Expression;
 
   /**
+   * Temporary to differentiate between "select" and "in list" modes. Expression will be replaced with UI specific state in the future.
+   *
+   * @generated from field: repeated string dimensions_with_inlist_filter = 37;
+   */
+  dimensionsWithInlistFilter: string[] = [];
+
+  /**
    * Expression format for measure filters
    *
    * @generated from field: repeated rill.ui.v1.DashboardDimensionFilter having = 21;
@@ -255,6 +262,7 @@ export class DashboardState extends Message<DashboardState> {
     { no: 1, name: "time_range", kind: "message", T: DashboardTimeRange },
     { no: 2, name: "filters", kind: "message", T: MetricsViewFilter },
     { no: 20, name: "where", kind: "message", T: Expression },
+    { no: 37, name: "dimensions_with_inlist_filter", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 21, name: "having", kind: "message", T: DashboardDimensionFilter, repeated: true },
     { no: 3, name: "time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 4, name: "compare_time_range", kind: "message", T: DashboardTimeRange },

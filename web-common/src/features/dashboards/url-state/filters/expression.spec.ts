@@ -2,6 +2,7 @@ import {
   createAndExpression,
   createBinaryExpression,
   createInExpression,
+  createLikeExpression,
   createOrExpression,
   createSubQueryExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
@@ -25,7 +26,7 @@ describe("expression", () => {
       },
       {
         expr: "country IN ('US','IN') and state eq 'ABC'",
-        expectedExprString: "country IN ('US','IN') AND state eq 'ABC'",
+        expectedExprString: "country IN ('US','IN') AND state EQ 'ABC'",
         expectedExprObject: createAndExpression([
           createInExpression("country", ["US", "IN"]),
           createBinaryExpression("state", V1Operation.OPERATION_EQ, "ABC"),
@@ -34,7 +35,7 @@ describe("expression", () => {
       {
         expr: "country IN ('US','IN') and state eq 'ABC' and lat gte 12.56",
         expectedExprString:
-          "country IN ('US','IN') AND state eq 'ABC' AND lat gte 12.56",
+          "country IN ('US','IN') AND state EQ 'ABC' AND lat GTE 12.56",
         expectedExprObject: createAndExpression([
           createInExpression("country", ["US", "IN"]),
           createBinaryExpression("state", V1Operation.OPERATION_EQ, "ABC"),
@@ -44,7 +45,7 @@ describe("expression", () => {
       {
         expr: "country IN ('US','IN') AND state eq 'ABC' OR lat gte 12.56",
         expectedExprString:
-          "country IN ('US','IN') AND (state eq 'ABC' OR lat gte 12.56)",
+          "country IN ('US','IN') AND (state EQ 'ABC' OR lat GTE 12.56)",
         expectedExprObject: createAndExpression([
           createInExpression("country", ["US", "IN"]),
           createOrExpression([
@@ -56,7 +57,7 @@ describe("expression", () => {
       {
         expr: "country not in ('US','IN') and (state eq 'ABC' or lat gte 12.56)",
         expectedExprString:
-          "country NIN ('US','IN') AND (state eq 'ABC' OR lat gte 12.56)",
+          "country NIN ('US','IN') AND (state EQ 'ABC' OR lat GTE 12.56)",
         expectedExprObject: createAndExpression([
           createInExpression("country", ["US", "IN"], true),
           createOrExpression([
@@ -68,7 +69,7 @@ describe("expression", () => {
       {
         expr: "country NIN ('US','IN') and state having (lat gte 12.56)",
         expectedExprString:
-          "country NIN ('US','IN') AND state having (lat gte 12.56)",
+          "country NIN ('US','IN') AND state having (lat GTE 12.56)",
         expectedExprObject: createAndExpression([
           createInExpression("country", ["US", "IN"], true),
           createSubQueryExpression(
@@ -80,7 +81,7 @@ describe("expression", () => {
       },
       {
         expr: `"coun tr.y" IN ('U\\'S','I\\nN') and "st ate" having ("la t" gte 12.56)`,
-        expectedExprString: `"coun tr.y" IN ('U\\'S','I\\nN') AND "st ate" having ("la t" gte 12.56)`,
+        expectedExprString: `"coun tr.y" IN ('U\\'S','I\\nN') AND "st ate" having ("la t" GTE 12.56)`,
         expectedExprObject: createAndExpression([
           // values converted to V1Expression do not have escaped chars
           createInExpression("coun tr.y", ["U'S", "I\nN"]),
@@ -103,6 +104,18 @@ describe("expression", () => {
           { US: ["SF", "LA"], IN: ["BLR", "DLH"], UK: "London" },
         ]),
       },
+
+      {
+        expr: "country IN LIST ('US','IN')",
+        expectedExprString: "country IN LIST ('US','IN')",
+        expectedExprObject: createInExpression("country", ["US", "IN"]),
+      },
+
+      {
+        expr: "country like '%oo%'",
+        expectedExprString: "country LIKE '%oo%'",
+        expectedExprObject: createLikeExpression("country", "%oo%"),
+      },
     ];
 
     const compiledGrammar = nearley.Grammar.fromCompiled(grammar);
@@ -113,11 +126,15 @@ describe("expression", () => {
         // assert that there is only match. this ensures unambiguous grammar.
         expect(parser.results).length(1);
 
-        const exprObject = convertFilterParamToExpression(expr);
+        const { expr: exprObject, dimensionsWithInlistFilter } =
+          convertFilterParamToExpression(expr);
         expect(exprObject).to.deep.eq(expectedExprObject);
-        expect(convertExpressionToFilterParam(exprObject)).toEqual(
-          expectedExprString,
-        );
+        expect(
+          convertExpressionToFilterParam(
+            exprObject!,
+            dimensionsWithInlistFilter,
+          ),
+        ).toEqual(expectedExprString);
       });
     }
   });

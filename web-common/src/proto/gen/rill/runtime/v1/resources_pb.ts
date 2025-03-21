@@ -2539,6 +2539,13 @@ export class ExplorePreset extends Message<ExplorePreset> {
   where?: Expression;
 
   /**
+   * Temporary to differentiate between "select" and "in list" modes. Expression will be replaced with UI specific state in the future.
+   *
+   * @generated from field: repeated string dimensions_with_inlist_filter = 29;
+   */
+  dimensionsWithInlistFilter: string[] = [];
+
+  /**
    * Time range for the explore.
    * It corresponds to the `range` property of the explore's `time_ranges`.
    * If not found in `time_ranges`, it should be added to the list.
@@ -2659,6 +2666,7 @@ export class ExplorePreset extends Message<ExplorePreset> {
     { no: 4, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 10, name: "measures_selector", kind: "message", T: FieldSelector },
     { no: 11, name: "where", kind: "message", T: Expression, opt: true },
+    { no: 29, name: "dimensions_with_inlist_filter", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 6, name: "time_range", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 12, name: "timezone", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 13, name: "time_grain", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },

@@ -112,7 +112,10 @@ export function convertExploreStateToURLSearchParams(
   if (expr && expr?.cond?.exprs?.length) {
     searchParams.set(
       ExploreStateURLParams.Filters,
-      convertExpressionToFilterParam(expr),
+      convertExpressionToFilterParam(
+        expr,
+        exploreState.dimensionsWithInlistFilter,
+      ),
     );
   }
 
