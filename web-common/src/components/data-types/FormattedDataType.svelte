@@ -28,6 +28,8 @@
     | PERC_DIFF = undefined;
   export let customStyle = "";
   export let truncate = false;
+  export let color = "";
+  export let contentRect: DOMRect | undefined = undefined;
 
   let dataType;
   $: {
@@ -52,7 +54,7 @@ about unknown props.
 -->
 {#if type === "RILL_PERCENTAGE_CHANGE" && typeof value !== "boolean"}
   <PercentageChange {value} {isNull} {inTable} {customStyle} {dark} />
-{:else if type === "RILL_CHANGE"}
+{:else if type === "RILL_CHANGE" && typeof value !== "boolean"}
   <MeasureChange {value} {inTable} {customStyle} {dark} />
 {:else}
   <svelte:component
@@ -64,5 +66,7 @@ about unknown props.
     {type}
     {value}
     {truncate}
+    {color}
+    bind:contentRect
   />
 {/if}

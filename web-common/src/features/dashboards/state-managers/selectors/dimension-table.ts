@@ -42,8 +42,9 @@ export const virtualizedTableColumns =
       V1MetricsViewAggregationResponse,
       RpcStatus
     >,
+    activeMeasures?: string[],
   ) => VirtualizedTableColumns[]) =>
-  (totalsQuery) => {
+  (totalsQuery, activeMeasures) => {
     const dimension = primaryDimension(dashData);
 
     if (!dimension) return [];
@@ -69,6 +70,7 @@ export const virtualizedTableColumns =
       dimension,
       isTimeComparisonActive(dashData),
       isValidPercentOfTotal(dashData),
+      activeMeasures,
     );
   };
 
@@ -80,7 +82,7 @@ export const prepareDimTableRows =
       V1MetricsViewAggregationResponse,
       RpcStatus
     >,
-    unfilteredTotal: number,
+    unfilteredTotal: number | { [key: string]: number },
   ) => DimensionTableRow[]) =>
   (sortedQuery, unfilteredTotal) => {
     const dimension = primaryDimension(dashData);

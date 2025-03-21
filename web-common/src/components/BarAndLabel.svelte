@@ -30,7 +30,7 @@
     text-right grid items-center
     {justify ? `justify-${justify}` : ''} 
     {justify ? `justify-items-${justify}` : ''} relative w-full
-    {showHover ? 'hover:bg-gray-100 ' : undefined}
+    {showHover ? 'hover:bg-gray-100 ' : ''}
     {customBackgroundColor !== ''
     ? customBackgroundColor
     : showBackground
@@ -60,9 +60,9 @@
     --width: 0%;
     content: "";
     display: inline-block;
-    width: calc(100% * var(--width));
+    width: calc((100% - 32px) * var(--width));
     position: absolute;
-    left: 0;
+    left: 16px;
     top: 0;
     height: 100%;
     pointer-events: none;

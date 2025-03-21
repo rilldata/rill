@@ -141,7 +141,7 @@ dimensions:
     await page.getByLabel("Toggle time comparison").click();
 
     await expect(
-      page.getByRole("row", { name: "null 27 s -4.3 s -14%" }),
+      page.getByRole("row", { name: "null 27 s 33% -4.3 s -14%" }),
     ).toBeVisible();
 
     // try No Format...
@@ -151,7 +151,7 @@ dimensions:
 
     await expect(
       page.getByRole("row", {
-        name: "null 26,643 -4,349 -14%",
+        name: "null 26,643 33% -4,349 -14%",
       }),
     ).toBeVisible();
 

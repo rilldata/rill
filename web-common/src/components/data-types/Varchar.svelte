@@ -8,9 +8,15 @@
   export let type: string;
   export let value;
   export let truncate = false;
+  export let color = "";
 </script>
 
-<Base {truncate} classes="{customStyle} {inTable && 'text-left'}" {dark}>
+<Base
+  {truncate}
+  classes="{customStyle} {inTable && 'text-left'}"
+  {dark}
+  {color}
+>
   <slot name="value">
     {#if isNull}
       <span class="opacity-60 italic">null</span>
