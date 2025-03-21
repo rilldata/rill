@@ -232,12 +232,14 @@ export function getValidComparisonOption(
   const timeRange = timeRanges.find(
     (tr) => tr.range === selectedTimeRange.name,
   );
-  if (!timeRange) return undefined;
 
   // If comparisonOffsets are not defined get default from presets.
-  if (!timeRange.comparisonTimeRanges?.length) {
-    return DEFAULT_TIME_RANGES[selectedTimeRange.name as TimeRangePreset]
-      ?.defaultComparison as TimeComparisonOption;
+  // This does not handle time ranges like P7M that are not in our defaults
+  if (!timeRange?.comparisonTimeRanges?.length) {
+    return (
+      DEFAULT_TIME_RANGES[selectedTimeRange.name as TimeRangePreset]
+        ?.defaultComparison ?? TimeComparisonOption.CONTIGUOUS
+    );
   }
 
   const existing = timeRange.comparisonTimeRanges?.find(
