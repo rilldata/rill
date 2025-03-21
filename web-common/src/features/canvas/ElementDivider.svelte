@@ -98,9 +98,12 @@
       <AddComponentDropdown
         {onItemClick}
         onOpenChange={(isOpen) => {
+          console.log({ isOpen });
           if (!isOpen) {
+            console.log("clearing");
             activeDivider.set(null);
           } else {
+            console.log("dividerId", dividerId);
             activeDivider.set(dividerId);
           }
         }}
