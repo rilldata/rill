@@ -64,8 +64,8 @@ If you are making changes to an already deployed instance from Rill Cloud, it is
 
 For projects that have been deployed to Rill Cloud, an added benefit of our Rill Developer-Cloud architecture is that credentials that have been configured can be pulled locally for easier reuse (instead of having to manually reconfigure these credentials in Rill Developer). To do this, you can run `rill env pull` from your project's root directory to retrieve the latest credentials (after cloning the project's git repository to your local environment).
 
-<img src = '/img/build/credentials/rill-env-pull.png' class='rounded-gif' />
-<br />
+![img](/img/build/credentials/rill-env-pull.png)
+
 :::info Overriding local credentials
 
 Please note when you run `rill env pull`, Rill will *automatically override any existing credentials or variables* that have been configured in your project's `.env` file if there is a match in the key name. This may result in unexpected behavior if you are using different credentials locally.
@@ -82,9 +82,8 @@ As a project admin, you can either use `rill env configure` after deploying a pr
 :::warning Overriding Cloud credentials
 
 If a credential and/or variable has already been configured in Rill Cloud, Rill will warn you about overriding if you attempt to push a new value in your `.env` file. This is because overriding credentials can impact your deployed project and/or other users (if they pull these credentials locally).
+![img](/img/build/credentials/rill-env-push.png)
 
-<img src = '/img/build/credentials/rill-env-push.png' class='rounded-gif' />
-<br />
 
 :::
 
