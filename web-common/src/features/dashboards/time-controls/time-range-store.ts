@@ -220,7 +220,7 @@ export function getValidComparisonOption(
   selectedTimeRange: TimeRange,
   prevComparisonOption: TimeComparisonOption | undefined,
   allTimeRange: TimeRange,
-) {
+): TimeComparisonOption {
   if (!timeRanges?.length) {
     return (
       (DEFAULT_TIME_RANGES[selectedTimeRange.name as TimeRangePreset]
@@ -238,7 +238,8 @@ export function getValidComparisonOption(
   if (!timeRange?.comparisonTimeRanges?.length) {
     return (
       DEFAULT_TIME_RANGES[selectedTimeRange.name as TimeRangePreset]
-        ?.defaultComparison ?? TimeComparisonOption.CONTIGUOUS
+        ?.defaultComparison ??
+      (TimeComparisonOption.CONTIGUOUS as TimeComparisonOption)
     );
   }
 
@@ -255,7 +256,7 @@ export function getValidComparisonOption(
   );
   // if currently selected comparison option is in allowed list and is valid select it
   if (existing && existingComparison.isComparisonRangeAvailable) {
-    return prevComparisonOption;
+    return prevComparisonOption ?? TimeComparisonOption.CONTIGUOUS;
   }
 
   return timeRange.comparisonTimeRanges[0].offset as TimeComparisonOption;
