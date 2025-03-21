@@ -79,6 +79,9 @@
 
     if (e.button !== 0) return;
 
+    // If only one item is selected, don't allow dragging
+    if (selectedItems.length === 1) return;
+
     const dragItem = e.target;
 
     if (!(dragItem instanceof HTMLElement)) return;
@@ -251,7 +254,8 @@
               distance={12}
               location="right"
               activeDelay={200}
-              suppress={!allItemsMap.get(id)?.description}
+              suppress={!allItemsMap.get(id)?.description &&
+                selectedItems.length > 1}
             >
               <div
                 role="presentation"
@@ -270,31 +274,38 @@
                     selectedItems.length -
                       1 -
                       (dragIndex === selectedItems.length - 1 ? 1 : 0)}
-                style:pointer-events={isDragItem || selectedItems.length === 1
-                  ? "none"
-                  : "auto"}
+                style:pointer-events={isDragItem ? "none" : "auto"}
                 style:height="{ITEM_HEIGHT}px"
                 class="w-full flex gap-x-1 flex-none px-2 py-1 pointer-events-auto cursor-grab items-center hover:bg-slate-50 rounded-sm"
+                class:cursor-not-allowed={selectedItems.length === 1}
               >
                 <DragHandle size="16px" className="text-gray-400" />
 
                 {allItemsMap.get(id)?.displayName ??
                   `Unknown ${type === "measure" ? "measure" : "dimension"}`}
-                {#if selectedItems.length > 1}
-                  <button
-                    class="ml-auto hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
-                    on:click={() => {
-                      selectedItems = selectedItems.filter((_, j) => j !== i);
-                      onSelectedChange(selectedItems);
-                    }}
-                  >
-                    <EyeIcon size="14px" color="#6b7280" />
-                  </button>
-                {/if}
+
+                <button
+                  class="ml-auto hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
+                  on:click={() => {
+                    selectedItems = selectedItems.filter((_, j) => j !== i);
+                    onSelectedChange(selectedItems);
+                  }}
+                  disabled={selectedItems.length === 1}
+                  class:pointer-events-none={selectedItems.length === 1}
+                  class:opacity-50={selectedItems.length === 1}
+                >
+                  <EyeIcon size="14px" color="#6b7280" />
+                </button>
               </div>
 
               <TooltipContent slot="tooltip-content">
-                {allItemsMap.get(id)?.description}
+                {#if selectedItems.length === 1}
+                  Must show at least one {type === "measure"
+                    ? "measure"
+                    : "dimension"}
+                {:else}
+                  {allItemsMap.get(id)?.description}
+                {/if}
               </TooltipContent>
             </Tooltip>
           {/each}
