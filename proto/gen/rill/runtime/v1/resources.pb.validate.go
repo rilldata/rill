@@ -5043,6 +5043,10 @@ func (m *ExplorePreset) validate(all bool) error {
 		// no validation rules for ExploreExpandedDimension
 	}
 
+	if m.ExploreLeaderboardMeasureCount != nil {
+		// no validation rules for ExploreLeaderboardMeasureCount
+	}
+
 	if m.TimeDimensionMeasure != nil {
 		// no validation rules for TimeDimensionMeasure
 	}

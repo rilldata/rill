@@ -4341,7 +4341,8 @@ definitions:
       exploreExpandedDimension:
         type: string
       exploreLeaderboardMeasureCount:
-        type: number
+        type: integer
+        format: int64
       timeDimensionMeasure:
         type: string
       timeDimensionChartType:
