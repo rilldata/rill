@@ -47,6 +47,8 @@
     updateChartInteractionStore,
   } from "./utils";
   import DashboardDraggableSelector from "@rilldata/web-common/components/menu/DashboardDraggableSelector.svelte";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import DashboardVisibilityDropdown from "@rilldata/web-common/components/menu/shadcn/DashboardVisibilityDropdown.svelte";
 
   export let exploreName: string;
   export let workspaceWidth: number;
@@ -64,10 +66,12 @@
       dimensionFilters: { includedDimensionValues },
     },
     actions: {
-      measures: { setMeasureVisibility },
+      measures: { setMeasureVisibility, toggleMeasureVisibility },
     },
     validSpecStore,
   } = getStateManagers();
+
+  const { reorderMeasuresDimensions } = featureFlags;
 
   const timeControlsStore = useTimeControlStore(getStateManagers());
   const timeSeriesDataStore = useTimeSeriesDataStore(getStateManagers());
@@ -301,26 +305,29 @@
         chartType={tddChartType}
       />
     {:else}
-      <DashboardDraggableSelector
-        type="measure"
-        onSelectedChange={(items) =>
-          setMeasureVisibility(items, allMeasureNames)}
-        allItems={$allMeasures}
-        selectedItems={visibleMeasureNames}
-      />
-      <!-- <DashboardVisibilityDropdown
-        category="Measures"
-        tooltipText="Choose measures to display"
-        onSelect={(name) => toggleMeasureVisibility(allMeasureNames, name)}
-        selectableItems={$allMeasures.map(({ name, displayName }) => ({
-          name: name || "",
-          label: displayName || name || "",
-        }))}
-        selectedItems={visibleMeasureNames}
-        onToggleSelectAll={() => {
-          toggleMeasureVisibility(allMeasureNames);
-        }}
-      /> -->
+      {#if $reorderMeasuresDimensions}
+        <DashboardDraggableSelector
+          type="measure"
+          onSelectedChange={(items) =>
+            setMeasureVisibility(items, allMeasureNames)}
+          allItems={$allMeasures}
+          selectedItems={visibleMeasureNames}
+        />
+      {:else}
+        <DashboardVisibilityDropdown
+          category="Measures"
+          tooltipText="Choose measures to display"
+          onSelect={(name) => toggleMeasureVisibility(allMeasureNames, name)}
+          selectableItems={$allMeasures.map(({ name, displayName }) => ({
+            name: name || "",
+            label: displayName || name || "",
+          }))}
+          selectedItems={visibleMeasureNames}
+          onToggleSelectAll={() => {
+            toggleMeasureVisibility(allMeasureNames);
+          }}
+        />
+      {/if}
 
       {#if !hideStartPivotButton}
         <button
