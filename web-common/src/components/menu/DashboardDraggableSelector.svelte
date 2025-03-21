@@ -224,7 +224,7 @@
           </h3>
           {#if selectedItems.length > 1}
             <button
-              class="text-primary-500 pointer-events-auto hover:text-primary-600 font-medium text-[10px]"
+              class="text-primary-500 pointer-events-auto hover:text-primary-600 font-medium text-[11px]"
               on:click={() => {
                 selectedItems = [selectedItems[0]];
                 onSelectedChange(selectedItems);
@@ -265,7 +265,7 @@
                 ? "none"
                 : "auto"}
               style:height="{ITEM_HEIGHT}px"
-              class="w-full flex gap-x-1 flex-none px-1 pointer-events-auto cursor-grab items-center p-1 hover:bg-slate-100 rounded-sm"
+              class="w-full flex gap-x-1 flex-none px-2 py-1 pointer-events-auto cursor-grab items-center hover:bg-slate-50 rounded-sm"
             >
               <DragHandle size="16px" className="text-gray-400" />
 
@@ -298,7 +298,7 @@
               Hidden {type === "measure" ? "Measures" : "Dimensions"}
             </h3>
             <button
-              class="pointer-events-auto text-primary-500 text-[10px] font-medium"
+              class="pointer-events-auto text-primary-500 text-[11px] font-medium"
               on:click={() => {
                 selectedItems = allItems.map((item) => item.name ?? "");
                 onSelectedChange(selectedItems);
@@ -325,7 +325,7 @@
                 class:z-50={isDragItem}
                 class:opacity-0={isDragItem}
                 style:height="{ITEM_HEIGHT}px"
-                class="w-full flex gap-x-1 px-2 pr-1 justify-between pointer-events-auto items-center p-1 hover:bg-slate-100 rounded-sm"
+                class="w-full flex gap-x-1 px-2 py-1 justify-between pointer-events-auto items-center p-1 rounded-sm"
               >
                 {item.displayName}
 
@@ -361,6 +361,6 @@
   }
 
   h3 {
-    @apply text-[10px] text-gray-500;
+    @apply text-[11px] text-gray-500;
   }
 </style>
