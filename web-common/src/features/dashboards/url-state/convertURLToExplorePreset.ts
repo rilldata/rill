@@ -157,15 +157,6 @@ export function convertURLToExplorePreset(
     }
   }
 
-  if (searchParams.has(ExploreStateURLParams.SortType)) {
-    const sortType = searchParams.get(ExploreStateURLParams.SortType) as string;
-    if (sortType in FromURLParamsSortTypeMap) {
-      preset.exploreSortType = FromURLParamsSortTypeMap[sortType];
-    } else {
-      errors.push(getSingleFieldError("sort type", sortType));
-    }
-  }
-
   if (searchParams.has(ExploreStateURLParams.LeaderboardMeasureCount)) {
     const count = searchParams.get(
       ExploreStateURLParams.LeaderboardMeasureCount,
