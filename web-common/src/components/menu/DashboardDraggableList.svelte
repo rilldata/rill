@@ -216,7 +216,7 @@
 
       <div
         role="presentation"
-        class="flex flex-col pointer-events-none p-1.5 pt-0 max-h-52 overflow-y-auto"
+        class="flex flex-col pointer-events-none p-1.5 pt-0 min-h-[120px] max-h-56 overflow-y-auto"
         on:mousedown={handleMouseDown}
       >
         <header
