@@ -31,7 +31,7 @@ On the bookmark screen, you'll then be able to set the options related to the sa
 - **Absolute Dates:** use this option if you have a saved time period and return exactly to that period versus using the time period filter  
 
 
-<img src = '/img/explore/bookmarks/setbookmark.png' class='rounded-gif' />
+<img src = '/img/explore/bookmarks/setbookmark.png' class='centered' />
 <br />
 
 

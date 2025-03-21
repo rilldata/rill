@@ -133,6 +133,9 @@ Please see our [Configuring Credentials](../credentials/credentials.md) and [Dep
 
 :::
 
+### Templating 
+When creating your sources, you can template the YAML file to ensure that locally you are only using `dev` data but when pushing to Rill Cloud, use `prod` data. Doing so will simplify the deployment process. For more information, see [templating](/deploy/templating).
+
 ## External OLAP tables
 
 Rill also has the ability to set up a "live connection" with an [OLAP engine](../olap/olap.md) to discover existing tables and execute OLAP queries directly on the engine without having to transfer data to another OLAP engine. By default, the embedded OLAP engine that comes with Rill is [DuckDB](/reference/olap-engines/duckdb.md).

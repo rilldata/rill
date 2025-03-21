@@ -32,7 +32,9 @@ Follow these simple steps to schedule an email report:
 3. **Configure Report Settings:** Choose a frequency and set a time to receive the output. Choose a report format (csv/excel/parquet) and specify a list of recipients.
 4. **Complete and Enjoy:** Click "Done." User-created reports will be delivered directly to your inbox 🎉.
 
-![export-overview](../../static/img/explore/exports/scheduled.png)
+
+<img src = '/img/explore/exports/scheduled.png' class='centered' />
+<br />
 
 ## Managing Scheduled Reports
 

@@ -1,7 +1,7 @@
 ---
-title: "Pivot Tables"
+title: "Pivot and Flat Tables"
 description: Pivot
-sidebar_label: "Pivot Tables"
+sidebar_label: "Pivot and Flat Tables"
 sidebar_position: 30
 ---
 
@@ -31,5 +31,9 @@ As new dimensions are added to the table, the comparison will aggregated by defa
 <img src = '/img/explore/pivot/pivot.gif' class='rounded-gif' />
 <br />
 
+## Flat Tables
 
+While Pivot tables are a powerful tool to splice and dice your data into different configurations, sometimes a simple flat table is all you need. By selecting the toggle next to `Columns` you can swap between pivot and flat tables. Unlike Pivot, where it gives you options to add both row and columns dimensions, a flat table will only allow you to add columns.
 
+<img src = '/img/explore/pivot/flat-table.png' class='rounded-gif' />
+<br />
