@@ -288,7 +288,7 @@
                       onSelectedChange(selectedItems);
                     }}
                   >
-                    <EyeIcon size="14px" />
+                    <EyeIcon size="14px" color="#6b7280" />
                   </button>
                 {/if}
               </div>
@@ -350,7 +350,7 @@
                     onSelectedChange(selectedItems);
                   }}
                 >
-                  <EyeOffIcon size="14px" />
+                  <EyeOffIcon size="14px" color="#9ca3af" />
                 </button>
               </div>
             {/each}
