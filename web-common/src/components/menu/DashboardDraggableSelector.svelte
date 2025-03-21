@@ -2,19 +2,22 @@
   import * as Popover from "@rilldata/web-common/components/popover";
   import DragHandle from "@rilldata/web-common/components/icons/DragHandle.svelte";
   import { clamp } from "@rilldata/web-common/lib/clamp";
-  import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
+  import type {
+    MetricsViewSpecMeasureV2,
+    MetricsViewSpecDimensionV2,
+  } from "@rilldata/web-common/runtime-client";
   import { Button } from "../button";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import EyeOffIcon from "@rilldata/web-common/components/icons/EyeInvisible.svelte";
   import EyeIcon from "@rilldata/web-common/components/icons/Eye.svelte";
   import Search from "../search/Search.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
   const UPPER_BOUND = 12 + 28 + 25;
   const ITEM_HEIGHT = 28;
 
-  type SelectableItem =
-    | MetricsViewSpecMeasureV2
-    | { name: string; displayName?: string };
+  type SelectableItem = MetricsViewSpecMeasureV2 | MetricsViewSpecDimensionV2;
 
   export let selectedItems: string[];
   export let allItems: SelectableItem[] = [];
@@ -244,45 +247,56 @@
           {#each filteredSelectedItems as id, i (i)}
             {@const elementId = `visible-${type === "measure" ? "measures" : "dimensions"}-${id}`}
             {@const isDragItem = dragId === elementId}
-            <div
-              role="presentation"
-              data-index={i}
-              data-item-name={id}
-              id={elementId}
-              class:sr-only={isDragItem}
-              class:transition-margin={dragIndex !== -1 &&
-                dropIndex !== dragIndex}
-              class:drag-transition={dragIndex !== -1}
-              class:mt-7={dropIndex !== null &&
-                !isDragItem &&
-                i === dropIndex + (i > dragIndex ? 1 : 0)}
-              class:mb-7={dropIndex === selectedItems.length - 1 &&
-                i ===
-                  selectedItems.length -
-                    1 -
-                    (dragIndex === selectedItems.length - 1 ? 1 : 0)}
-              style:pointer-events={isDragItem || selectedItems.length === 1
-                ? "none"
-                : "auto"}
-              style:height="{ITEM_HEIGHT}px"
-              class="w-full flex gap-x-1 flex-none px-2 py-1 pointer-events-auto cursor-grab items-center hover:bg-slate-50 rounded-sm"
+            <Tooltip
+              distance={12}
+              location="right"
+              activeDelay={200}
+              suppress={!allItemsMap.get(id)?.description}
             >
-              <DragHandle size="16px" className="text-gray-400" />
+              <div
+                role="presentation"
+                data-index={i}
+                data-item-name={id}
+                id={elementId}
+                class:sr-only={isDragItem}
+                class:transition-margin={dragIndex !== -1 &&
+                  dropIndex !== dragIndex}
+                class:drag-transition={dragIndex !== -1}
+                class:mt-7={dropIndex !== null &&
+                  !isDragItem &&
+                  i === dropIndex + (i > dragIndex ? 1 : 0)}
+                class:mb-7={dropIndex === selectedItems.length - 1 &&
+                  i ===
+                    selectedItems.length -
+                      1 -
+                      (dragIndex === selectedItems.length - 1 ? 1 : 0)}
+                style:pointer-events={isDragItem || selectedItems.length === 1
+                  ? "none"
+                  : "auto"}
+                style:height="{ITEM_HEIGHT}px"
+                class="w-full flex gap-x-1 flex-none px-2 py-1 pointer-events-auto cursor-grab items-center hover:bg-slate-50 rounded-sm"
+              >
+                <DragHandle size="16px" className="text-gray-400" />
 
-              {allItemsMap.get(id)?.displayName ??
-                `Unknown ${type === "measure" ? "measure" : "dimension"}`}
-              {#if selectedItems.length > 1}
-                <button
-                  class="ml-auto hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
-                  on:click={() => {
-                    selectedItems = selectedItems.filter((_, j) => j !== i);
-                    onSelectedChange(selectedItems);
-                  }}
-                >
-                  <EyeIcon size="14px" />
-                </button>
-              {/if}
-            </div>
+                {allItemsMap.get(id)?.displayName ??
+                  `Unknown ${type === "measure" ? "measure" : "dimension"}`}
+                {#if selectedItems.length > 1}
+                  <button
+                    class="ml-auto hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
+                    on:click={() => {
+                      selectedItems = selectedItems.filter((_, j) => j !== i);
+                      onSelectedChange(selectedItems);
+                    }}
+                  >
+                    <EyeIcon size="14px" />
+                  </button>
+                {/if}
+              </div>
+
+              <TooltipContent slot="tooltip-content">
+                {allItemsMap.get(id)?.description}
+              </TooltipContent>
+            </Tooltip>
           {/each}
         {/if}
       </div>
