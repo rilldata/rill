@@ -67,9 +67,9 @@ User "<email here>" added to the user group "<group name>"
 
 ### Automatically add members by email domain
 
-You can automatically add users to your organization by their email domain. During the deployment process and in the Organization settings page, you can input the domain to whitelist.
+You can automatically add users to your organization by their email domain. During the deployment process and in the Organization settings page. This is limited to the same domain of your user email. If you want to whitelist other domains, contact us! 
 
-<img src = '/img/manage/user-management/domain.png' class='rounded-gif' />
+<img src = '/img/manage/user-management/rill-org-settings.png' class='rounded-gif' />
 <br />
 
 
