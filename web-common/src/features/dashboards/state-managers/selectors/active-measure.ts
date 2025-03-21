@@ -22,7 +22,7 @@ export const activeMeasureName = (dashData: DashboardDataSources): string => {
 export const selectedMeasureNames = (
   dashData: DashboardDataSources,
 ): string[] => {
-  return [...dashData.dashboard.visibleMeasureKeys];
+  return dashData.dashboard.visibleMeasures;
 };
 
 export const isValidPercentOfTotal = (

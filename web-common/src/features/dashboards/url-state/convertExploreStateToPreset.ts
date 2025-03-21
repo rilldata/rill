@@ -107,14 +107,14 @@ function getExploreFields(
 
   if (exploreState.allMeasuresVisible) {
     preset.measures = explore.measures ?? [];
-  } else if (exploreState.visibleMeasureKeys) {
-    preset.measures = [...exploreState.visibleMeasureKeys];
+  } else if (exploreState.visibleMeasures) {
+    preset.measures = [...exploreState.visibleMeasures];
   }
 
   if (exploreState.allDimensionsVisible) {
     preset.dimensions = explore.dimensions ?? [];
-  } else if (exploreState.visibleDimensionKeys) {
-    preset.dimensions = [...exploreState.visibleDimensionKeys];
+  } else if (exploreState.visibleDimensions) {
+    preset.dimensions = [...exploreState.visibleDimensions];
   }
 
   if (exploreState.leaderboardMeasureName !== undefined) {
