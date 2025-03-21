@@ -5,9 +5,9 @@ title: Contact us
 
 Rill has a globally distributed team and we'd love to hear from you, whether you're a customer, prospect, or simply a Rill enthusiast alike. There are a few different ways to get in touch with the Rill team and engage the community, which you can find described below.
 
-## Github
+## GitHub
 
-Rill is part of the open source community and you can find the source code of our Rill Developer project in Github [here](https://github.com/rilldata/rill). We'd welcome any contributions but if you simply want to report a bug, file an issue, or raise a feature request, you can do so on [this page](https://github.com/rilldata/rill/issues).
+Rill is part of the open source community and you can find the source code of our Rill Developer project in GitHub [here](https://github.com/rilldata/rill). We'd welcome any contributions but if you simply want to report a bug, file an issue, or raise a feature request, you can do so on [this page](https://github.com/rilldata/rill/issues).
 
 ## Discord
 

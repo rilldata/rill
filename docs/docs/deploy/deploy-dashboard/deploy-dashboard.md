@@ -66,7 +66,7 @@ If you are on an older version of Rill, it is **strongly recommended** to [upgra
 
 ### Syncing your GitHub Repository
 :::note GitHub app permissions
-This assumes that the installed Github app in your organization has write access. If unsure, please check with your Github admin.
+This assumes that the installed GitHub app in your organization has write access. If unsure, please check with your GitHub admin.
 
 The required permissions are:
  - Read access to metadata and pull requests
@@ -78,11 +78,13 @@ At this point, you have the option to connect your Rill project to a GitHub Repo
 
 Navigating to the Status page and selecting `Connect to GitHub` will prompt you to login and create a repository for your project. If you've already created a repository, check the box 'I've created a GitHub Repo' and add the permissions for Rill to access the repository.
 
-:::info Check with your Github organization admin
+:::info Check with your GitHub organization admin
 
-If you're not the admin of your Github organization, they will likely need to first install the Rill Cloud app in your organization before you can proceed with deploying a project. After the Rill Cloud app is installed, it should have the following privileges:
-
+If you're not the admin of your GitHub organization, they will likely need to first install the Rill Cloud app in your organization before you can proceed with deploying a project. After the Rill Cloud app is installed, it should have the following privileges:
 :::
+
+
+
 <img src = '/img/deploy/existing-project/install-rill-cloud.png' class='rounded-gif' />
 <br />
 
@@ -98,7 +100,9 @@ Once completed, you'll see the newly updated repository on the UI of your status
 <br />
 
 
-
+:::warning Still unable to connect?
+If you encounter issues, check that the app installation is not pending. Go to your organization's settings and click on Installed GitHub Apps. You will see a section of Pending GitHub Apps installation requests. If you're an Owner or App Manager, grant access to the Rill app if it is pending."
+:::
 
 
 ## Deploying a project via the CLI
@@ -154,7 +158,7 @@ If you do not set any parameters, Rill will infer the project name based on the 
 rill project connect-github
 No git remote was found.
 ? Do you want to create a repo? Yes
-? Select a Github account for the new repository royendo
+? Select a GitHub account for the new repository royendo
 Repository name "my-rill-tutorial" is already taken
 ? Please provide alternate name my-rill-tutorial-cli
 
@@ -162,15 +166,15 @@ Request submitted for creating repository. Checking completion status
 
 Successfully created repository on "https://github.com/royendo/my-rill-tutorial-cli"
 
-Pushing local project to Github
+Pushing local project to GitHub
 
-Successfully pushed your local project to Github
+Successfully pushed your local project to GitHub
 
 Using org "Rill_Learn".
 
 Created project "Rill_Learn/my-rill-tutorial-cli". Use `rill project rename` to change name if required.
 
-Rill projects deploy continuously when you push changes to Github.
+Rill projects deploy continuously when you push changes to GitHub.
 
 ...
 
@@ -187,7 +191,7 @@ Once completed, you will see the following the in the status page. Note that the
 
 ## Continuous Deployment 
 
-Whether you decide to manage your Rill projects using Github or re-running `rill project deploy`, Rill should automatically detect changes that you have pushed locally and update your deployed project accordingly. Depending on the changes, this may results in a project reconcile to occur. If you are experiencing some issues with the project after pushing changes to the CLI, please refer the the project's status page for more information or you can run via the CLI:
+Whether you decide to manage your Rill projects using GitHub or re-running `rill project deploy`, Rill should automatically detect changes that you have pushed locally and update your deployed project accordingly. Depending on the changes, this may results in a project reconcile to occur. If you are experiencing some issues with the project after pushing changes to the CLI, please refer the the project's status page for more information or you can run via the CLI:
 
 ```
 rill project status

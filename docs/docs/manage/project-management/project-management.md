@@ -5,7 +5,7 @@ sidebar_label: "Project Management"
 sidebar_position: 20
 ---
 
-Once an organization is created, you can populate it with projects. Each project is connected to a [single Github repository](https://docs.rilldata.com/deploy/deploy-dashboard/#syncing-your-github-repository) and has its own set or sources, models, metric views, and explore dashboards. A defined object in a project cannot be shared to another project. 
+Once an organization is created, you can populate it with projects. Each project is connected to a [single GitHub repository](https://docs.rilldata.com/deploy/deploy-dashboard/#syncing-your-github-repository) and has its own set or sources, models, metric views, and explore dashboards. A defined object in a project cannot be shared to another project. 
 
 ## Project
 
@@ -38,7 +38,7 @@ On first deployment your project , if you've deployed via the UI, will not be co
 :::note WRITING ONLY
 If the repository that you select is not empty, Rill will prompt you to `overwrite` the contents of the repository with your project file contents. You will see a commit in your repository as "Auto committed by Rill".
 :::
-### Modifying Github Repository
+### Modifying GitHub Repository
 
 In some cases, you will need to change the repsitory that your project is synced to. You can do this by selecting the dropdown and disconnecting your Rill project. This action has no effect on your current deployment and will not require a source reingest.
 
@@ -68,7 +68,7 @@ Managing a project includes the project itself and all components or resources t
 
 ### Refreshing the deployment
 
-Your project on Rill Cloud will automatically redeploy every time you git push changes to Github. To manually refresh data sources without pushing code changes (or redeploying your project), run the following command:
+Your project on Rill Cloud will automatically redeploy every time you git push changes to GitHub. To manually refresh data sources without pushing code changes (or redeploying your project), run the following command:
 
 ```
 rill project refresh [--source/model] (source_name or model_name) [--local]

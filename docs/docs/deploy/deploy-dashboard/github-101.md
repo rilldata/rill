@@ -84,7 +84,7 @@ During the commit process, make sure to **uncheck** files you do not wish to syn
 :::
 
 :::tip Make small changes directly in github
-For any larger changes, we would strongly suggest developing locally to see the effects of that change. However, for smaller changes (add a simple metric, changing the name of a dimension, etc.), some users _may_ prefer to edit directly inline on [Github](https://github.com) directly.
+For any larger changes, we would strongly suggest developing locally to see the effects of that change. However, for smaller changes (add a simple metric, changing the name of a dimension, etc.), some users _may_ prefer to edit directly inline on [GitHub](https://github.com) directly.
 :::
 
 ## Deploying Rill

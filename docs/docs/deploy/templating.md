@@ -175,7 +175,7 @@ If you use templating in SQL models, you must replace references to tables / mod
 
 :::
 
-If we simply run Rill Developer using `rill start`, our model will look like the following (this will also reflect our data model in production, i.e. Rill Cloud, after we've [pushed the changes for the project to Github](./deploy-dashboard/)):
+If we simply run Rill Developer using `rill start`, our model will look like the following (this will also reflect our data model in production, i.e. Rill Cloud, after we've [pushed the changes for the project to GitHub](./deploy-dashboard/)):
 
 <img src = '/img/deploy/templating/vars-example.png' class='rounded-gif' />
 <br />
