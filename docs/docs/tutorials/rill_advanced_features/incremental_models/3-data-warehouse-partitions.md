@@ -5,7 +5,7 @@ sidebar_label: "Data Warehouse: Incremental Stage Models"
 sidebar_position: 12
 ---
 
-Another advanced concept within Rill is using [Incremental Models](/build/incremental-models/#what-is-an-incremental-model) with a state defined. 
+Another advanced concept within Rill is using [Incremental Models](/build/advanced-models/incremental-models)  with a state defined. 
 
 :::tip requirements
 You will need to setup the connection to your data warehouse, depending on the connection please refer to [our documentation](https://docs.rilldata.com/reference/connectors/). 

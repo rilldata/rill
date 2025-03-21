@@ -13,7 +13,7 @@ sidebar_position: 7
 
 [MotherDuck](https://motherduck.com/docs/getting-started/), on the other hand, is a managed DuckDB-in-the-cloud service, providing enhanced features for scalability, security, and collaboration within larger organizations. It offers advanced management tools, security features like access control and encryption, and support for concurrent access, enabling teams to leverage DuckDB's analytical capabilities at scale while ensuring data governance and security. Similarly, Rill supports natively connecting to and reading from Motherduck as a source by utilizing the [DuckDB Go driver](https://duckdb.org/docs/api/go.html)
 
-<img src = '/img/reference/connectors/motherduck/motherduck.png' class='rounded-png' />
+<img src = '/img/reference/connectors/motherduck/motherduck.png' class='centered' />
 <br />
 
 ## Connecting to External DuckDB as a Source

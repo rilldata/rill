@@ -14,7 +14,7 @@ sidebar_position: 3
 azure://<BUCKET>/<GLOB_PATTERN>
 ```
 
-<img src = '/img/reference/connectors/azure/abs.png' class='rounded-png' />
+<img src = '/img/reference/connectors/azure/abs.png' class='centered' />
 <br />
 
 ## Local credentials

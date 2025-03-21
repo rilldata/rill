@@ -10,7 +10,7 @@ sidebar_position: 10
 Rill is particularly suited for exploratory analysis - to be able to slice & dice data quickly. As such, there are a variety of filter types and filter mechanisms throughout the app. The goal for each Rill dashboard is to provide users with as all metrics and dimensions required for each use case and create an interactive experience to cut data in any form.
 
 :::tip Human readable URL
-With the release of v0.52, we have introduced an easy way to craft specific views by modifying the URL directly. As you select filters, time ranges, and default dimension and measures, the URL will change accordinglty. 
+With the release of v0.52, we have introduced an easy way to craft specific views by modifying the URL directly. As you select filters, time ranges, and default dimension and measures, the URL will change accordingly. 
 
 .../explore/explore_dashboard?tr=P3M&compare_tr=rill-PP&f=dimension in ('exampleA', 'exampleB')
 :::
@@ -19,7 +19,9 @@ With the release of v0.52, we have introduced an easy way to craft specific view
 
 Users can add or hide dimensions and metrics to a subset of fields they wish to see at any given time. At the top left, above the time series and above the top left leaderboard, you'll find the Measures & Dimensions selectors to add or hide from the page. In the example below, `network` and `country` are deselected so would be hidden from view.
 
-![hidedims](../../../static/img/explore/filters/hide.png)
+<img src = '/img/explore/filters/hide.png' class='rounded-gif' />
+<br />
+
 
 :::tip hiding metrics and dimensions by default
 You can also change settings in the dashboard configuration to hide certain fields by default. You may want to do this to make dashboards easier to use (less complicated, narrowed to most commonly used) and to improve performance (hide high cardinality dimensions or complicated expressions in metrics). For more details, check out [dashboard customizations](/build/dashboards/customize.md#setting-default-views-for-dashboards).
@@ -38,7 +40,9 @@ You can also expand each dimension table to see all metrics and full list of tho
 
 Any filter applied in the Leaderboard will also show up in the filter bar at next to the time picker. You can apply the same search capabilities and select features in the filter bar as well.
 
-![dimension-filter](../../../static/img/explore/filters/filter.gif)
+<img src = '/img/explore/filters/filter.gif' class='rounded-gif' />
+<br />
+
 
 ### Filter by Metrics
 
@@ -53,7 +57,10 @@ These metric filters can be applied from the filter bar. To apply a metric filte
 - Select your Threshold Type (e.g. Great Than)
 - Input your Threshold amount and Click Enter
 
-![metric-filter](../../../static/img/explore/filters/image.png)
+
+<img src = '/img/explore/filters/image.png' class='centered' />
+<br />
+
 
 :::tip
 Metric filters are a good way to "sort" by two different metrics. First, apply your metric threshold. Then, sort by your metrics within the Leaderboard to do multi-metric sorting. 
@@ -73,7 +80,9 @@ This allows the ability for a more detailed view into your time series without h
 
 ## Time & Dimension Comparisons
 
-![img](/img/explore/filters/time-series.png)
+<img src = '/img/explore/filters/time-series.png' class='rounded-gif' />
+<br />
+
 
 ### Time Comparisons
 Time comparison is a key feature of Rill and recommended to find insights quicker by highlighting differences between periods. To compare different periods, first select your time period for analysis - either a predefined period or a custom range in top left time picker. After selecting that range, select the toggle to enable Time Comparisons.
@@ -97,11 +106,11 @@ For the latter, you can compare the full period looking with options like last 2
 ### Dimension Comparisons
 In addition to time comparisons, you can select multiple dimension values to compare trends of those specific data points. Select the comparison option on the top left of any leaderboard and select multiple dimensions
 
-De-select the comparison option or clear the filter bar to remove your comparisons.
+Deselect the comparison option or clear the filter bar to remove your comparisons.
 
 <img src = '/img/explore/filters/comparison.gif' class='rounded-gif' />
 <br />
 :::note
-For more advanced time and dimension comparisons, visit the [Time Dimension Detail](tdd.md) page.
+For more advanced time and dimension comparisons, visit the [Time Dimension Detail](/explore/dashboard-101/tdd) page.
 :::
 

@@ -396,4 +396,4 @@ export default function RillDashboard() {
 
 ### Next.js Example
 
-You can find a different end-to-end example of embedding a Rill dashboard in a **Next.js** project in this sample [Github repo](https://github.com/rilldata/rill-embedding-example).
+You can find a different end-to-end example of embedding a Rill dashboard in a **Next.js** project in this sample [GitHub repo](https://github.com/rilldata/rill-embedding-example).

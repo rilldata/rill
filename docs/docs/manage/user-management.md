@@ -17,7 +17,7 @@ For a detailed breakdown of access permissions at different levels, see the [Rol
 
 :::tip More Rill Cloud workflows coming
 
-We have begun releasing new features around user managment via Rill Cloud. If you'd like to learn more, please feel free to [reach out](contact.md)!
+We have begun releasing new features around user management via Rill Cloud. If you'd like to learn more, please feel free to [reach out](contact.md)!
 
 :::
 
@@ -38,7 +38,9 @@ Admins can be invited to an organization from the *users* page, or via the CLI.
 #### From Rill Cloud User page
 From the organization page, you can manage users under the *Users* tab. Adding users from this page will add the user to the organization.
 
-![img](/img/manage/user-management/add-user-cloud.png)
+<img src = '/img/manage/user-management/add-user-cloud.png' class='rounded-gif' />
+<br />
+
 
 #### Via the CLI
 ```
@@ -65,9 +67,11 @@ User "<email here>" added to the user group "<group name>"
 
 ### Automatically add members by email domain
 
-You can automatically add users to your organization by their email domain. During the deployment process and in the Organization settings page, you can input the domain to whitelist.
+You can automatically add users to your organization by their email domain. During the deployment process and in the Organization settings page. This is limited to the same domain of your user email. If you want to whitelist other domains, contact us! 
 
-![img](/img/manage/user-management/domain.png)
+<img src = '/img/manage/user-management/rill-org-settings.png' class='rounded-gif' />
+<br />
+
 
  For example, if you whitelist `yourdomain.com`, new and existing users with an email address ending on `@yourdomain.com` will automatically be added to your organization.
 
@@ -101,27 +105,33 @@ For a detailed list of permissions, please refer to the [Roles and Permissions](
 There are a few ways to add a project user to Rill Cloud.
 1. Admin invites user to the project using `Share`.
 2. User requests access via the project URL.`https://ui.rilldata.com/<project_name>`
-3. Adminstrator invites user via the CLI with `--project <project_name>` flag.
+3. Administrator invites user via the CLI with `--project <project_name>` flag.
 
 ### Admin invites user from Rill Cloud
 
 From the project's splash screen, please select share and type the email[s] along with the type of permissions.
 
-![img](/img/manage/user-management/share-project.png)
+<img src = '/img/manage/user-management/share-project.png' class='rounded-gif' />
+<br />
 
 Once sent, your invited users will receive this email and will need to accept it to view the project.
 
-![img](/img/manage/user-management/email-invite.png)
+<img src = '/img/manage/user-management/email-invite.png' class='rounded-gif' />
+<br />
 
 ### User requests access via URL
 
 Alternatively, if you provide the project URL to your users, they can request access to the group admin. Users can request access via the page below:
 
-![img](/img/manage/user-management/request-access.png)
+<img src = '/img/manage/user-management/request-access.png' class='rounded-gif' />
+<br />
+
 
 The admin would receive an email to allow access, and can set the permission after accepting the request via the UI.
 
-![img](/img/manage/user-management/admin-reply.png)
+<img src = '/img/manage/user-management/admin-reply.png' class='rounded-gif' />
+<br />
+
 
 ---
 
@@ -158,7 +168,9 @@ import ComingSoon from '@site/src/components/ComingSoon';
 <ComingSoon />
 
 <div class='contents_to_overlay'>
-![img] Update this image
+<img src = '' class='rounded-gif' />
+<br />
+
 </div>
 
 #### Adds a user to a user group with the Rill CLI
@@ -203,7 +215,9 @@ Rill Cloud **does** support SAML authentication for our enterprise customers. If
 
 If this is the first time you are accessing Rill Cloud, you will want to sign up instead.
 
-![Signing Up](/img/manage/user-management/sign-up.png)
+<img src = '/img/manage/user-management/sign-up.png' class='rounded-gif' />
+<br />
+
 
 :::tip Signing up with basic auth
 
@@ -213,16 +227,8 @@ If you are unsure which option to select, select `Continue with Email` and set u
 
 Afterwards, you should receive an email verification to complete the sign up process. 
 
-![Verification Email](/img/manage/user-management/verification-email.png)
+<img src = '/img/manage/user-management/verification-email.png' class='rounded-gif' />
+<br />
 
 You should now be authenticated with Rill Cloud and be able to sign-in directly going forward!
-
-
-## Reference: Walking through access levels
-
-
-In the following example, you can see the different levels of access to Rill via the organization, project-specific access, user group and user privileges.
-
-
-<img src = '/img/manage/project-management/project-access.png' class='rounded-gif' />
 

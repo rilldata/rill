@@ -46,7 +46,21 @@ partitions:
     path: [s3/gs]://path/to/file/**/*.parquet[.csv]
 ```
 
+**`pre_exec`** - refers to a SQL queries to run before the main query, available for DuckDB based models _(optional)_. 
+
+**`post_exec`** - refers to a SQL query that is run after the main query, available for DuckDB based models _(optional)_. 
+
 **`sql`** - refers to the SQL query for your model. _(required)_.
+
+
+```yaml
+pre_exec: ATTACH 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES);
+
+sql: SELECT * FROM postgres_query('postgres_db', 'SELECT * FROM USERS')
+
+post_exec: DETACH postgres_db 
+```
+
 
 **`partitions_watermark`** - refers to a customizable timestamp that can be set to check if an object has been updated _(optional)_. 
 
@@ -59,7 +73,7 @@ partitions:
 **`output`** - in the case of staging models, where the output needs to be defined where the staging table will write the temporary data _(optional)_. 
   - **`connector`** - refers to the connector type for the staging table  _(optional)_.
   - **`incremental_strategy`** - refers to how the incremental refresh will behave, (merge or append)  _(optional)_.
-  - **`unique_key`** - required if incremental_stategy is defined, refers to the unique column to use to merge  _(optional)_.
+  - **`unique_key`** - required if incremental_strategy is defined, refers to the unique column to use to merge  _(optional)_.
   - **`materialize`** - refers to the output table being materialized  _(optional)_.
   - **`columns`** - refers to a list of columns if you required to manually define column name and types  _(optional)_.
   - **`engine_full`** - refers to the ClickHouse engine specifications, (ENGINE = ... PARTITION BY ... ORDER BY ... SETTINGS ...) _(optional)_.

@@ -22,6 +22,7 @@ The decoupling of BI applications and database servers served a purpose at one p
 
 ![architecture](../../static/img/concepts/architecture/architecture.png)
 
+
 Engineering teams frequently get ad hoc requests from product, finance, and operations for insights into data sets that are readily available in object storage. Over time, writing complex SQL or Python reports against the data lake can become a burden and a distraction. With Rill, engineering teams can write SQL to design and deploy a small set of data models to answer a broad range of inquiries. Rill’s architecture automatically turns SQL-based data models into interactive, exploratory dashboards with no additional design effort. Engineers can focus on defining expressions for core business metrics in SQL, and Rill takes care of the rest.
 
 Building analytics directly on data storage reduces complexity, because there are fewer moving pieces to manage, and it also lowers costs, because data can be transformed in place without duplication. Rill achieves performance that end users love by serving dashboards from in-memory data models fed by data lake sources.

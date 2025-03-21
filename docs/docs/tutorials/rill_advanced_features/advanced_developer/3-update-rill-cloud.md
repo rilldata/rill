@@ -62,7 +62,7 @@ git commit -m "Adding new files"
 ```
 
 :::tip
-It's probably not best practice to push your changes directly onto your `main` branch and instead push your changes to another branch then after confirming everything, merge the branches in Github.
+It's probably not best practice to push your changes directly onto your `main` branch and instead push your changes to another branch then after confirming everything, merge the branches in GitHub.
 
 :::
 

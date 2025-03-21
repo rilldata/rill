@@ -16,7 +16,6 @@ Ultimately, the output of operational and business intelligence are decisions. O
 
 ![operationalcomparison](../../static/img/concepts/operational/comparison.png)
 
-
 ## Why Operational BI requires new tools
 
 Operational intelligence provides a set of decision-making capabilities that are complementary to business intelligence.  But its unique performance requirements also demand a novel stack of distinct technologies which are complementary and sit adjacent to existing business intelligence stacks.

@@ -21,7 +21,7 @@ Select + Add -> Data -> Connect an OLAP engine
 **`type`** - refers to the resource type and must be 'connector'
 
 **`driver`** - refers to the [OLAP engine](../olap-engines/multiple-olap.md)
-- _`clickhouse`_ link to[ Clickhouse documentation](https://clickhouse.com/docs/en/intro)
+- _`clickhouse`_ link to[ ClickHouse documentation](https://clickhouse.com/docs/en/intro)
 - _`druid`_ link to[ Druid documentation](https://druid.apache.org/docs/latest/design/)
 - _`pinot`_ link to[ Pinot documentation](https://docs.pinot.apache.org/)
 
@@ -48,7 +48,7 @@ You can also connect using a dsn parameter. You cannot use the above parameters 
 
 ---
  
-_Example #1: Connecting to a local running Clickhouse server (no security enabled)_
+_Example #1: Connecting to a local running ClickHouse server (no security enabled)_
 ```yaml
 type: connector
 driver: clickhouse

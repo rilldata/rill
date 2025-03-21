@@ -48,29 +48,29 @@ Navigating back to Terminal, we can run the following:
 rill project connect-github
 No git remote was found.
 ? Do you want to create a repo? Yes
-? Select a Github account for the new repository royendo
+? Select a GitHub account for the new repository royendo
 
 Request submitted for creating repository. Checking completion status
 
 Successfully created repository on "https://github.com/royendo/my-rill-tutorial-cli"
 
-Pushing local project to Github
+Pushing local project to GitHub
 
-Successfully pushed your local project to Github
+Successfully pushed your local project to GitHub
 
 Using org "Rill_Learn".
 
-Rill project names are derived from your Github repository name.
+Rill project names are derived from your GitHub repository name.
 Created project "Rill_Learn/my-rill-tutorial-cli". Use `rill project rename` to change name if required.
 
-Rill projects deploy continuously when you push changes to Github.
+Rill projects deploy continuously when you push changes to GitHub.
 Your project can be accessed at: https://ui.rilldata.com/Rill_Learn/my-rill-tutorial-cli
 Opening project in browser...
 ```
 
 The CLI will ask if you want to create a repo, select Yes. 
 
-If this is your first time, you will be prompted to log into Github. Once completed, you'll see this in the browser and can navigate back to the CLI.
+If this is your first time, you will be prompted to log into GitHub. Once completed, you'll see this in the browser and can navigate back to the CLI.
 
 ![img](/img/tutorials/203/git_okay.png)
 

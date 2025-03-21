@@ -26,6 +26,10 @@ Templating can be used in conjunction with variables to apply more advanced logi
 
 Variables can be set in Rill through one of the following methods:
 1. Defining the corresponding key-value pair under the top-level `env` key in `rill.yaml`
+```yaml
+env:
+  database: "default"
+```
 2. Manually passing in the variable when starting Rill (i.e. `rill start --env <var_name>=<value>`)
 3. Specifying the key-value pair for your variable in your `<RILL_PROJECT_HOME>/.env` file and/or using `rill env set` to set the variable via the CLI (and then [pushing / pulling as appropriate](../build/credentials/credentials.md#variables))
 
@@ -63,26 +67,50 @@ Let's say that we have a [Snowflake](/reference/connectors/snowflake.md) source 
 - In **production**, we want to make sure that _Rill Cloud_ is using the entire source data for our downstream models and dashboards
 
 In this hypothetical scenario, our `source.yaml` might look something like the following:
+
 ```yaml
+# Source YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/sources
+
 type: source
+
 connector: "snowflake"
-sql: "select * from <table_name> {{if dev}} limit 1 {{end}}"
-dsn: "{{if dev}}SUPPORT_TEST{{else}}PROD_USER{{end}}@<account_identifier>/<database>/<schema>?warehouse=<warehouse>&role=<role>N&authenticator=SNOWFLAKE_JWT&privateKey=..."
+dev: 
+  sql: "SELECT * FROM RILLQA.PUBLIC.HORROR_MOVIES limit 1000"
+  dsn: '{{.env.connector.snowflake_test.dsn}}'
+
+sql: "SELECT * FROM RILLQA.PUBLIC.HORROR_MOVIES"
+dsn: '{{.env.connector.snowflake.dsn}}'
+
 ```
 
-![Dynamically changing the Snowflake user based on environment](/img/deploy/templating/snowflake-env-example.png)
+<img src = '/img/deploy/templating/snowflake-env-example.png' class='rounded-gif' />
+<br />
+
 
 ### Changing the bucket location based on dev / prod
 
-Let's say that we have a [GCS](/reference/connectors/gcs.md) source created where Rill is reading in some CSV data (in this case we have some sample [Citi Bike trip data](https://citibikenyc.com/system-data) loaded onto both a "test" and "prod" GCS bucket). In this case, let's imagine that we want to connect to this "test" bucket for local development purposes but we want to make sure that our production data hosted on our "prod" bucket is what's being used to power this same source once the project has been deployed to Rill Cloud. In such a scenario, our `source.yaml` might look like:
+Let's say that we have a [GCS](/reference/connectors/gcs.md) source created where Rill is reading in some Parquet data loaded onto both a "test" and "prod" GCS bucket). In this case, let's imagine that we want to connect to this "test" bucket for local development purposes but we want to make sure that our production data hosted on our "prod" bucket is what's being used to power this same source once the project has been deployed to Rill Cloud. In such a scenario, our `source.yaml` might look like:
 
 ```yaml
-type: source
-connector: "duckdb"
-sql: "select * from read_csv('gs://{{if dev}}<test_bucket>{{else}}<prod_bucket>{{end}}/201306-citibike-tripdata.csv', auto_detect=true, ignore_errors=1, header=true)"
-```
+# Source YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/sources
 
-![Dynamically changing the bucket used based on environment](/img/deploy/templating/gcs-env-example.png)
+type: source
+
+connector: "duckdb"
+dev:
+  sql: "select * from read_parquet('gs://rilldata-public/test/github-analytics/Clickhouse/*/*/commits_*.parquet')"
+
+sql: "select * from read_parquet('gs://rilldata-public/github-analytics/Clickhouse/*/*/commits_*.parquet')"
+```
+:::info Why is the connector type duckdb and not s3 or gcs?
+
+In this case, we are using the [embedded DuckDB engine](/reference/olap-engines/duckdb.md) to execute a [SELECT](https://duckdb.org/docs/sql/statements/select.html) statement while leveraging DuckDB's native [read_parquet](https://duckdb.org/docs/data/parquet/overview.html) function. Therefore, the `connector` type ends up being `duckdb` instead of `s3`. For more details, see our [Source YAML](/reference/project-files/sources.md) reference documentation.
+
+:::
+<img src = '/img/deploy/templating/gcs-env-example.png' class='rounded-gif' />
+<br />
 
 
 ### Applying a one week sample to the source bucket for local development
@@ -91,17 +119,18 @@ In another example, let's say we had a [S3](/reference/connectors/s3.md) source 
 
 Fortunately, we can leverage DuckDB's ability to read from S3 files directly and _apply a filter post-download_ using templating logic in the SQL. In this case, because there is an existing `updated_at` timestamp column, we can use it to filter and retrieve only one week's worth of data. For example, our `source.yaml` file may end up looking something like:
 
+
+
 ```yaml
 type: source
 connector: "duckdb"
-sql: SELECT * FROM read_parquet('s3://bucket/path/*.parquet') {{ if dev }} where updated_at >= '2024-03-01' AND updated_at < '2024-03-07' {{ end }}
+sql: SELECT * FROM read_parquet('s3://bucket/path/*.parquet') {{ if dev }} where updated_at > CURRENT_DATE - INTERVAL 7 DAY {{ end }}
 ```
-
-:::info Why is the connector type duckdb and not s3?
-
-In this case, we are using the [embedded DuckDB engine](/reference/olap-engines/duckdb.md) to execute a [SELECT](https://duckdb.org/docs/sql/statements/select.html) statement while leveraging DuckDB's native [read_parquet](https://duckdb.org/docs/data/parquet/overview.html) function. Therefore, the `connector` type ends up being `duckdb` instead of `s3`. For more details, see our [Source YAML](/reference/project-files/sources.md) reference documentation.
-
+:::tip Dynamic dates
+Depending on the OLAP engine of your project, you can set the dates dynamically using `CURRENT_DATE` (DuckDB) or `now()` (ClickHouse) and subtract days.
 :::
+
+
 
 ### Limiting the number of rows in a model only for local development
 
@@ -135,7 +164,7 @@ env:
 Furthermore, our `model.sql` file contains the following SQL:
 
 ```sql
-SELECT * FROM {{ ref "data_source" }}
+SELECT * FROM {{ ref "snowflake" }}
 WHERE original_language = '{{ .env.language }}'
 {{if dev}} LIMIT {{ .env.local_limit }} {{end}}
 ```
@@ -146,20 +175,22 @@ If you use templating in SQL models, you must replace references to tables / mod
 
 :::
 
-If we simply run Rill Developer using `rill start`, our model will look like the following (this will also reflect our data model in production, i.e. Rill Cloud, after we've [pushed the changes for the project to Github](./deploy-dashboard/)):
+If we simply run Rill Developer using `rill start`, our model will look like the following (this will also reflect our data model in production, i.e. Rill Cloud, after we've [pushed the changes for the project to GitHub](./deploy-dashboard/)):
 
-![Using templating logic with variables to create custom SQL](/img/deploy/templating/vars-example.png)
+<img src = '/img/deploy/templating/vars-example.png' class='rounded-gif' />
+<br />
+
 
 **Now**, just to illustrate what a local override might look like, let's say we stop Rill Developer and then restart Rill via the CLI with the following command:
 ```bash
-rill start --env language="es" --env local_limit=100
+rill start --env language="ja" --env local_limit=100
 ```
 
 Even though we have defaults set in `rill.yaml` (and this will be used by any downstream models and dashboards on Rill Cloud), we will instead see these local overrides come into effect with our templated logic to return Spanish movies and the model limit is now 100 rows.
 
-![Using templating logic with local variable overrides for our model SQL](/img/deploy/templating/vars-override-example.png)
+<img src = '/img/deploy/templating/vars-override-example.png' class='rounded-gif' />
+<br />
 
-Voila!
 
 ## Additional resources
 

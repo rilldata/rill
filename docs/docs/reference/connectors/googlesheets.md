@@ -22,7 +22,10 @@ Make sure to replace `SPREADSHEET_ID` and `SHEET_ID` with the ID of your spreads
 
 :::
 
-![Connecting to Google Sheets](/img/reference/connectors/googlesheets/googlesheets.png)
+
+
+<img src = '/img/reference/connectors/googlesheets/googlesheets.png' class='rounded-gif' />
+<br />
 
 :::note gsheets DuckDB Community Extension
 In cases where setting the Google Sheet to `Anyone with the link` is not allowed, DuckDB has an extension that allows you to share the sheet to a Google service account. However, we have not yet implemented the DuckDB community extension in our deployment of DuckDB. Please contact us if you are interested in using this feature.

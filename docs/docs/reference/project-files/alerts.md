@@ -59,9 +59,9 @@ data:
 
 **`on_error`** - boolean, send the alert on error, defaults to false _(optional)_.
 
-**`renotify`** - boolean, enable to disable renotifcation of alert, defaults to false _(optional)_.
+**`renotify`** - boolean, enable to disable re-notifcation of alert, defaults to false _(optional)_.
 
-**`renotify_after`** - define the renotification of the alert in seconds, equiavalent to snooze duration in UI, defaults to 'Off' _(optional)_.
+**`renotify_after`** - define the re-notification of the alert in seconds, equivalent to snooze duration in UI, defaults to 'Off' _(optional)_.
 
 ```yaml
 on_recover: true
