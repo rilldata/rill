@@ -43,7 +43,7 @@ rill start my-rill-project
 
 Take a look at our [public repository](https://github.com/rilldata/rill-examples/) for examples on getting started with Rill! 
 
-Each example project includes a ReadMe with more details on:
+Each example project includes a README with more details on:
 
 - Source data in the dataset
 - Dimension and metric definitions

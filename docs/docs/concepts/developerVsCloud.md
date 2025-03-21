@@ -25,7 +25,7 @@ Please note that a common **misnomer** is that Rill Developer can be a sufficien
 
 ## Rill Developer
 
-Rill Developer is designed around developers. Using a familiar IDE-like interface, developers are able to import data, create SQL models, and create metric-views. Many of the underlying files in Rill Developer are either SQL or YAML files. Once a data in imported into Rill (and the underlying OLAP engine), developers are able to perform last mile ETL changes using one or a series of SQL models (as its own [DAG](https://en.wikipedia.org/wiki/Directed_acyclic_graph#:~:text=A%20directed%20acyclic%20graph%20is,a%20path%20with%20zero%20edges)). You can then create and materizlize your ["One Big Table"](../build/models/models.md) for your dashboard needs. Finally, any specifications for your dimensions and measures can be defined and tested in Developer's dashboard preview.
+Rill Developer is designed around developers. Using a familiar IDE-like interface, developers are able to import data, create SQL models, and create metric-views. Many of the underlying files in Rill Developer are either SQL or YAML files. Once a data in imported into Rill (and the underlying OLAP engine), developers are able to perform last mile ETL changes using one or a series of SQL models (as its own [DAG](https://en.wikipedia.org/wiki/Directed_acyclic_graph#:~:text=A%20directed%20acyclic%20graph%20is,a%20path%20with%20zero%20edges)). You can then create and materialize your ["One Big Table"](../build/models/models.md) for your dashboard needs. Finally, any specifications for your dimensions and measures can be defined and tested in Developer's dashboard preview.
 
 <img src = '/img/concepts/rcvsrd/empty-project.png' class='rounded-gif' />
 <br />
@@ -34,9 +34,9 @@ Rill Developer is designed around developers. Using a familiar IDE-like interfac
     <summary> What are some things you can do in Rill Developer?</summary>
 
     Anything from source ingestion to modeling to creating dashboards. 
-| UI  : <img src = '/img/concepts/rcvsrd/DevUI.gif' class='rounded-gif' /> | Adding Sources:  <img src = '/img/concepts/rcvsrd/Adding-Data.gif' class='rounded-gif' /> |
-|:---:|:---:|
-| **Creating Models:** <img src = '/img/concepts/rcvsrd/Add-Model.gif' class='rounded-gif' />  | **Creating Dashboards:** <img src = '/img/concepts/rcvsrd/Add-Dashboard.gif' class='rounded-gif' />  |
+|         UI  : <img src = '/img/concepts/rcvsrd/DevUI.gif' class='rounded-gif' />          |      Add Sources:  <img src = '/img/concepts/rcvsrd/Adding-Data.gif' class='rounded-gif' />       |
+| :---------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------: |
+| **Create Models:** <img src = '/img/concepts/rcvsrd/Add-Model.gif' class='rounded-gif' /> | **Create Dashboards:** <img src = '/img/concepts/rcvsrd/Add-Dashboard.gif' class='rounded-gif' /> |
 </details>
 
 
@@ -62,9 +62,9 @@ Once the dashboard has been [deployed to Rill Cloud](../deploy/deploy-dashboard/
     <summary> What are some things you can do in Rill Cloud?</summary>
 
     Anything from source ingestion to modeling to creating dashboards. 
-| Alerts: <img src = '/img/concepts/rcvsrd/alert.gif' class='rounded-gif' /> | Bookmarks:  <img src = '/img/concepts/rcvsrd/bookmark.gif' class='rounded-gif' /> |
-|:---:|:---:|
-| **Public url:** <img src = '/img/concepts/rcvsrd/public-url.gif' class='rounded-gif' />  | **Scheduled Report:** <img src = '/img/concepts/rcvsrd/scheduled-report.gif' class='rounded-gif' />  |
+|       Alerts: <img src = '/img/concepts/rcvsrd/alert.gif' class='rounded-gif' />        |          Bookmarks:  <img src = '/img/concepts/rcvsrd/bookmark.gif' class='rounded-gif' />          |
+| :-------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------: |
+| **Public URL:** <img src = '/img/concepts/rcvsrd/public-url.gif' class='rounded-gif' /> | **Scheduled Report:** <img src = '/img/concepts/rcvsrd/scheduled-report.gif' class='rounded-gif' /> |
 </details>
 
 ## Is Rill Cloud a higher offering than Rill Developer?

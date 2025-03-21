@@ -6,8 +6,9 @@ sidebar_position: 38
 ---
 
 ## Overview 
-Rill provides the ability to export data from multiple locations - leaderboards, Time Dimension detail and Pivot Tables (_coming soon_). In addition to direct downloads, you can also set up recurrning reports to your inbox. Scheduled Reports allow you to effortlessly generate and manage email reports for any exportable content within your Rill cloud dashboard. 
+Rill provides the ability to export data from multiple locations - leaderboards, Time Dimension detail and Pivot Tables (_coming soon_). In addition to direct downloads, you can also set up reoccurring reports to your inbox. Scheduled Reports allow you to effortlessly generate and manage email reports for any exportable content within your Rill cloud dashboard. 
 
+- [Overview](#overview)
 - [Exporting from Rill](#exporting-from-rill)
 - [How to Schedule an Email Report](#how-to-schedule-an-email-report)
 - [Managing Scheduled Reports](#managing-scheduled-reports)
@@ -35,7 +36,7 @@ Follow these simple steps to schedule an email report:
 
 ## Managing Scheduled Reports
 
-Reports are managed from your homescreen. To navigate to the report admin page, select the Home button on the top left and the Reports tab from your homepage.
+Reports are managed from your home screen. To navigate to the report admin page, select the Home button on the top left and the Reports tab from your homepage.
 
 - **Accessing Reports:** When browsing projects, find related assets for each project, including dashboards, reports, and logs.
 - **Permissions:** Viewers can see their own reports, while administrators can view both their own and other users' reports.

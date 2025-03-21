@@ -52,7 +52,7 @@ sql: "select * from table_B"
 ## Setting credentials for each connector when deploying to Rill Cloud
 
 Credentials that are defined in a project's `.env` file and defined in a `connector_name.yaml` will automatically be deployed with the project. 
-If you need to make changes to the DSN after deployment, you can [set the credentials via the Rill Cloud UI](/deploy/deploy-credentials#configure-environmental-variables-and-credentials-for-rill-cloud) for each connector or by running  `rill env configure`. You will be prompted to input the correct `connector.<connector_name>.dsn` connection strings.
+If you need to make changes to the DSN after deployment, you can [set the credentials via the Rill Cloud UI](/deploy/deploy-credentials#configure-environmental-variables-and-credentials-for-rill-cloud) for each connector or by running `rill env configure`. You will be prompted to input the correct `connector.<connector_name>.dsn` connection strings.
 
 ![Inputting credentials for each connector](/img/build/connect/multiple-connectors/rill-env-configure.png)
 

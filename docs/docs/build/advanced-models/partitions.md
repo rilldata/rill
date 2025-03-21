@@ -7,7 +7,7 @@ sidebar_position: 03
 
 ## What are Partitions?
 
-In Rill, partitions are a special type of state in which you can explicitly partition the model into parts. Depending on if your data is in cloud storage or a data warehouse, you can use the `glob` or `sql` parameters. This is useful when a specific partition is failing to ingest, you can specific to reload only that specific partition.
+In Rill, partitions are a special type of state in which you can explicitly partition the model into parts. Depending on if your data is in cloud storage or a data warehouse, you can use the `glob` or `sql` parameters. This is useful when a specific partition is failing to ingest, you can specify to reload only that specific partition.
 
 
 ### Defining a Partition in a Model
@@ -22,7 +22,7 @@ partitions:
   #sql: SELECT DISTINCT customer_name as cust_name from table #results in {{partition.cust_name}}
   ```
 
-:::tip Using the SQL parition in the YAML
+:::tip Using the SQL partition in the YAML
 Depending on the column name of the partition, you can reference the partition using ` {{ .partition.<column_name> }}` in the model's SQL query.
 ```YAML
 partitions:
@@ -34,7 +34,7 @@ sql: SELECT {{ .partition.num }} AS num, now() AS inserted_on
 ### glob
 
 When defining the glob pattern, you will need to consider whether you'd partition the data by folder or file. For information on glob patterns, see [glob patterns](/build/connect/glob-patterns).
-In the first example, we are paritioning by each file with the suffix data.csv.
+In the first example, we are partitioning by each file with the suffix data.csv.
 ```yaml
 partitions:
   glob: gs://my-bucket/**/*data.csv
@@ -59,13 +59,13 @@ sql: SELECT * FROM read_parquet('{{ .partition.uri }}')
 
 ### Viewing Partitions in Rill Developer
 
-Once `partitions:` is defined in your model, a new button will appear in the right hand panel, `View Partitions`. When selecting this, a new UI will appear with all of your partitions and more information on each. Note that these can be sorted on all, pending, and errors.
+Once `partitions:` is defined in your model, a new button will appear in the right-hand panel, `View Partitions`. When selecting this, a new UI will appear with all of your partitions and more information on each. Note that these can be sorted on all, pending, and errors.
 
 <img src = '/img/build/advanced-models/partitions-developer.png' class='rounded-gif' />
 <br />
 
 You can sort the view on `all partitions`, `pending partitions` and `error partitions`. 
-- **all partitions**: shows all the available paritions in the model.
+- **all partitions**: shows all the available partitions in the model.
 - **pending partitions**: shows the partitions that are waiting to be processed.
 - **error partitions**: displays any partitions that errored during ingestion. 
 
@@ -101,7 +101,7 @@ rill project partitions model_name [--local]
 ```
 
 ### Refreshing Partitions via the CLI 
-:::note  Incremental not enabled
+:::note Incremental not enabled
 If you try to refresh a partition using the following command on a partitioned but not incremental model, you will experience the following error:
 ```
 rill project refresh  --model <model_name> [--local] --partition ff7416f774dfb086006d0b4696c214e1

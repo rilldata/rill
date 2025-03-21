@@ -17,7 +17,7 @@ For a detailed breakdown of access permissions at different levels, see the [Rol
 
 :::tip More Rill Cloud workflows coming
 
-We have begun releasing new features around user managment via Rill Cloud. If you'd like to learn more, please feel free to [reach out](contact.md)!
+We have begun releasing new features around user management via Rill Cloud. If you'd like to learn more, please feel free to [reach out](contact.md)!
 
 :::
 
@@ -101,7 +101,7 @@ For a detailed list of permissions, please refer to the [Roles and Permissions](
 There are a few ways to add a project user to Rill Cloud.
 1. Admin invites user to the project using `Share`.
 2. User requests access via the project URL.`https://ui.rilldata.com/<project_name>`
-3. Adminstrator invites user via the CLI with `--project <project_name>` flag.
+3. Administrator invites user via the CLI with `--project <project_name>` flag.
 
 ### Admin invites user from Rill Cloud
 

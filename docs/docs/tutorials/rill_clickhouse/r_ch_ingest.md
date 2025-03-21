@@ -59,5 +59,5 @@ connector.s3.aws_access_key_id=""
 connector.s3.aws_secret_access_key=""
 ```
 :::note
-If you already set up clickhouse via the .env file, you will just need to add your snowflake and s3 credentials.
+If you already set up ClickHouse via the .env file, you will just need to add your snowflake and s3 credentials.
 :::

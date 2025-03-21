@@ -12,18 +12,18 @@ You can install `rill` using our installation script on both macOS and Linux:
 curl https://rill.sh | sh
 ```
 
-To verify that the installation succeeded, run the following command. You will see an output of various commnds that you can run via the CLI.
+To verify that the installation succeeded, run the following command. You will see an output of various commands that you can run via the CLI.
 ```bash
 rill --help
 ```
 
-:::tip sharing dashboards in Rill cloud? clone your git repo first
+:::tip sharing dashboards in Rill cloud? Clone your git repo first
 If you plan to share your dashboards, it is helpful to start by creating a repo in Git. Go to https://github.com/new to create a new repo. Then, run the [Rill install script](#quick-install) in your cloned location locally to make deployment easier. 
 
 More details on deploying Rill via Git in our [Deploy section](../deploy/deploy-dashboard/).
 :::
 
-:::warning MacOS users
+:::warning macOS users
 
 If you previously installed Rill using `brew`, *the brew-managed binary will take precedent*. You can remove it by running `brew uninstall rill`.
 
@@ -64,7 +64,7 @@ The nightly release will give you the most up-to-date version of Rill without ha
 
 ## Installing a specific version of Rill
 
-Rather than installing the latest version of Rill automatically, you can also install a specific version through the installation script by using the following command (e.g. `v0.40.1`):
+Rather than installing the latest version of Rill automatically, you can also install a specific version through the installation script by using the following command (e.g., `v0.40.1`):
 ```bash
 curl https://rill.sh | sh -s -- --version <insert_version_number>
 ```

@@ -17,13 +17,13 @@ When reading from a source (or using a different OLAP engine), Rill will attempt
 1. Credentials that have been configured in your local environment via the CLI (for [AWS](../../reference/connectors/s3.md#local-credentials) / [Azure](../../reference/connectors/azure.md#local-credentials) / [Google Cloud](../../reference/connectors/gcs#rill-developer-local-credentials))
 2. Credentials that have been passed in directly through the connection string or DSN (typically for databases - see [Source YAML](../../reference/project-files/sources.md) and [Connector YAML](../../reference/project-files/connectors.md) for more details)
 3. Credentials that have been passed in as a [variable](../../deploy/templating.md) when starting Rill Developer via `rill start --env key=value`
-4. Credentials that have been specified in your *`<RILL_PROJECT_HOME>/.env`* file, see  [credential naming schema](#credentials-naming-schema) for more information.
+4. Credentials that have been specified in your *`<RILL_PROJECT_HOME>/.env`* file, see [credential naming schema](#credentials-naming-schema) for more information.
 
 For more details, please refer to the corresponding [connector](../../reference/connectors/connectors.md) or [OLAP engine](../../reference/olap-engines/olap-engines.md) page.
 
 :::note Ensuring security of credentials in use
 
-If you plan to deploy a project (to Rill Cloud), it is not recommended to pass in credentials directly through the local connection string or DSN as your credentials will then be checked directly into your Git repository (and thus accessible by others). To ensure better security, credentials should be passed in as a variable / configured locally or specified in the project's local `.env` file (which is part of `.gitignore` and thus won't be included).
+If you plan to deploy a project (to Rill Cloud), it is not recommended passing in credentials directly through the local connection string or DSN as your credentials will then be checked directly into your Git repository (and thus accessible by others). To ensure better security, credentials should be passed in as a variable / configured locally or specified in the project's local `.env` file (which is part of `.gitignore` and thus won't be included).
 
 :::
 
@@ -40,7 +40,7 @@ This variable will then be usable and referenceable for [templating](../../deplo
 
 :::info Fun Fact
 
-Connector credentials are essentially a form of project variable, prefixed using the `connector.<connector_name>.<property>` syntax. For example, `connector.druid.dsn` and `connector.clickhouse.dsn` are both hardcoded project variables (that happen to correspond to the [Druid](/reference/olap-engines/druid.md) and [ClickHouse](/reference/olap-engines/clickhouse.md) OLAP engines respectively).
+Connector credentials are essentially a form of project variable, prefixed using the `connector.<connector_name>.<property>` syntax. For example, `connector.druid.dsn` and `connector.clickhouse.dsn` are both hard coded project variables (that happen to correspond to the [Druid](/reference/olap-engines/druid.md) and [ClickHouse](/reference/olap-engines/clickhouse.md) OLAP engines respectively).
 
 :::
 
@@ -89,7 +89,7 @@ If a credential and/or variable has already been configured in Rill Cloud, Rill 
 
 ### Credentials Naming Schema 
 
-Connector credentials are essentially a form of project variable, prefixed using the `connector.<connector_name>.<property>` syntax. For example, `connector.druid.dsn` and `connector.clickhouse.dsn` are both hardcoded project variables (that happen to correspond to the [Druid](/reference/olap-engines/druid.md) and [ClickHouse](/reference/olap-engines/clickhouse.md) OLAP engines respectively). Please see below for each source and its required properties. If you have any questions or need specifics, [contact us](../../contact)! 
+Connector credentials are essentially a form of project variable, prefixed using the `connector.<connector_name>.<property>` syntax. For example, `connector.druid.dsn` and `connector.clickhouse.dsn` are both hard coded project variables (that happen to correspond to the [Druid](/reference/olap-engines/druid.md) and [ClickHouse](/reference/olap-engines/clickhouse.md) OLAP engines respectively). Please see below for each source and its required properties. If you have any questions or need specifics, [contact us](../../contact)! 
 
 
 <div
@@ -103,25 +103,25 @@ Connector credentials are essentially a form of project variable, prefixed using
     alignItems: 'center'
     }}
 >
-|           **Source Name**   |        Property             |      Example         |
-| :-----------------------: | :-------------------------:  | :------------------- |
-|       **GCS**                |`GOOGLE_APPLICATION_CREDENTIALS`| `connector.gcs.google_application_credentials` |
-|                          |`GCS_BUCKET_NAME`| `connector.gcs.gcs_bucket_name` |
-| **AWS S3**                  | `AWS_ACCESS_KEY_ID`         | `connector.s3.aws_access_key_id` |
-|                          | `AWS_SECRET_ACCESS_KEY`     |`connector.s3.aws_secret_access_key` |
-|       **Azure**              |`AZURE_STORAGE_ACCOUNT`|`connector.azure.azure_storage_account`|
-|                          |`AZURE_STORAGE_KEY`|`connector.azure.azure_storage_key`|
-|                          |`AZURE_CLIENT_ID`|`connector.azure.azure_client_id`|
-|                          |`AZURE_CLIENT_SECRET`|`connector.azure.azure_client_secret`|
-|                          |`AZURE_TENANT_ID`|`connector.azure.azure_tenant_id`|
-| **Big Query**               | `GOOGLE_APPLICATION_CREDENTIALS` |`connector.bigquery.google_application_credentials` |
-|     **Snowflake**            |`DSN`|`connector.snowflake.dsn`|
-|     **ClickHouse**           |`HOST`|`connector.clickhouse.host `|
-|                          |`PORT`|`connector.clickhouse.port `|
-|                          |`USERNAME`|`connector.clickhouse.username `|
-|                          |`PASSWORD`|`connector.clickhouse.password `|
-|                          |`SSL`|`connector.clickhouse.ssl `|
-|                          |`DATABASE`|`connector.clickhouse.database `|
+| **Source Name** |             Property             | Example                                             |
+| :-------------: | :------------------------------: | :-------------------------------------------------- |
+|     **GCS**     | `GOOGLE_APPLICATION_CREDENTIALS` | `connector.gcs.google_application_credentials`      |
+|                 |        `GCS_BUCKET_NAME`         | `connector.gcs.gcs_bucket_name`                     |
+|   **AWS S3**    |       `AWS_ACCESS_KEY_ID`        | `connector.s3.aws_access_key_id`                    |
+|                 |     `AWS_SECRET_ACCESS_KEY`      | `connector.s3.aws_secret_access_key`                |
+|    **Azure**    |     `AZURE_STORAGE_ACCOUNT`      | `connector.azure.azure_storage_account`             |
+|                 |       `AZURE_STORAGE_KEY`        | `connector.azure.azure_storage_key`                 |
+|                 |        `AZURE_CLIENT_ID`         | `connector.azure.azure_client_id`                   |
+|                 |      `AZURE_CLIENT_SECRET`       | `connector.azure.azure_client_secret`               |
+|                 |        `AZURE_TENANT_ID`         | `connector.azure.azure_tenant_id`                   |
+|  **Big Query**  | `GOOGLE_APPLICATION_CREDENTIALS` | `connector.bigquery.google_application_credentials` |
+|  **Snowflake**  |              `DSN`               | `connector.snowflake.dsn`                           |
+| **ClickHouse**  |              `HOST`              | `connector.clickhouse.host `                        |
+|                 |              `PORT`              | `connector.clickhouse.port `                        |
+|                 |            `USERNAME`            | `connector.clickhouse.username `                    |
+|                 |            `PASSWORD`            | `connector.clickhouse.password `                    |
+|                 |              `SSL`               | `connector.clickhouse.ssl `                         |
+|                 |            `DATABASE`            | `connector.clickhouse.database `                    |
 ...
 
 </div>

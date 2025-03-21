@@ -15,7 +15,7 @@ gs://my-bucket/y=2023/m=01/*.parquet
 `
 
 By default, Rill can apply certain limits when using glob patterns to ingest data. The default limits are as follows:
-- **Total size of all matching files**: 100GB
+- **Total size of all matching files**: 100 GB
 - **Total file matches**: unlimited
 - **Total files listed**: unlimited
 
@@ -24,7 +24,7 @@ These limits can be configured in the `.yaml` file for the source. To modify the
 - `glob.max_objects_matched`: The total file matches allowed.
 - `glob.max_objects_listed`: The total files listed to match against the glob pattern. 
 
-For example, to set the limit on the total bytes downloaded to 1GB, you would add the following line to the `source.yaml` file:
+For example, to set the limit on the total bytes downloaded to 1 GB, you would add the following line to the `source.yaml` file:
 ```yaml
 type: "duckdb"
 sql: "select * from table"
@@ -43,15 +43,15 @@ Rill also supports extracting a subset of data matching a glob pattern. There ar
 You can apply these policies individually or in combination to control the extraction process.
   - Here are the possible combination and their semantics.
     - If only `rows` is specified, no limit on the number of files is applied. For example, getting a 1 GB `head` extract will download as many files as necessary.
-    - If only `files` is specified, each file upto limit will be fully ingested.
+    - If only `files` is specified, each file up to limit will be fully ingested.
     - If both `rows` and `files` are specified, each file matching the `files` clause will be extracted according to the `rows` clause.
 
 Each policy can be configured by specifying two parameters:
-1. **`size`**: The size of data in bytes (for rows) or number or files (for files) to fetch..
+1. **`size`**: The size of data in bytes (for rows) or number of files (for files) to fetch..
 2. **`strategy`**: The strategy to fetch data. Currently, only `head` (first n up to size) or `tail` (last n up to size) is supported.
 
-### Example 1: Extract first 100MB
-To extract first 100MB data from a source use the following extract policy in the .yaml file for source:
+### Example 1: Extract first 100 MB
+To extract first 100 MB data from a source use the following extract policy in the .yaml file for source:
 ```yaml
 extract:
   rows:
@@ -59,8 +59,8 @@ extract:
     size: 100MB
 ```
 
-### Example 2: Extract the first 100MB from each of the first 10 files
-To extract the first 100MB of data from each of the first 10 files from a source use the following extract policy in the .yaml file for source:
+### Example 2: Extract the first 100 MB from each of the first 10 files
+To extract the first 100 MB of data from each of the first 10 files from a source use the following extract policy in the .yaml file for source:
 ```yaml
 extract:
   files:

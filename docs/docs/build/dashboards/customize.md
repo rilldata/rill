@@ -54,7 +54,7 @@ Starting from version 0.50, the default views have been consolidated into a sing
 
 **`time_range`**
 
-Default time range controls the data analyzed on initial page load. Setting the default time range improves user experience by setting to most frequently used period - in particular, avoiding `all time` if you have a large datasource but only analyze more recent data.
+Default time range controls the data analyzed on initial page load. Setting the default time range improves user experience by setting to most frequently used period - in particular, avoiding `all time` if you have a large data source but only analyze more recent data.
 
 The value must be either a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) (for example, `PT12H` for 12 hours, `P1M` for 1 month, or `P26W` for 26 weeks) or one of the [Rill ISO 8601 extensions](../../reference/rill-iso-extensions.md#extensions).
 
@@ -87,7 +87,7 @@ defaults:
 
 **`security`**
 
-Defining security policies for your data is crucial for security. For more information on this, please refer to our [Dashboard Access Policies](/manage/security.md)
+Defining security policies for your data is crucial for security. For more information on this, please refer to our [Dashboard Access Policies](/manage/security.md).
 
 ## Changing Themes & Colors
 

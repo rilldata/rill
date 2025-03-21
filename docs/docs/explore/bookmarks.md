@@ -11,13 +11,13 @@ Bookmarks are useful to return to regular analyses and filter sets commonly used
 
 Common use cases for Bookmarks include:
 - Weekly/Monthly reporting
-- Setting filters for specific users/use cases (eg. teams or executives with a narrower view, an account manager's book of clietns)
+- Setting filters for specific users/use cases (eg. teams or executives with a narrower view, an account manager's book of clients)
 - Answering common troubleshooting questions by starting with a subset of problem dimensions
 
 
 ## How to set and use Bookmarks
 
-On the top right portion of the screen, you will see the Bookmark icon to bring up the option to save a bookmark. Clicking that icon brings up options to save the current page as your homescreen, create a new bookmark page, or to see your list of bookmarks (and shared bookmarks).
+On the top right portion of the screen, you will see the Bookmark icon to bring up the option to save a bookmark. Clicking that icon brings up options to save the current page as your home screen, create a new bookmark page, or to see your list of bookmarks (and shared bookmarks).
 
 <img src = '/img/tutorials/205/bookmark.gif' class='rounded-gif' />
 <br />

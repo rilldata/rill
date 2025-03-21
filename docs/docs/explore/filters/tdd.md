@@ -22,5 +22,5 @@ Similar to the filters, the Search and Exclude options from the expanded Leaders
 <br />
  
 :::tip Adjusting Time Grains
-The TDD screen will carry time dimension from your previous filters which many be more granular than needed (diplay too many columns). Change the ```Metric Trends by``` filter on the type right to switch to alernate ranges like days, weeks, etc.
+The TDD screen will carry time dimension from your previous filters which many be more granular than needed (display too many columns). Change the ```Metric Trends by``` filter on the type right to switch to alternate ranges like days, weeks, etc.
 :::

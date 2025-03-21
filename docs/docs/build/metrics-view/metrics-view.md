@@ -33,9 +33,9 @@ Measures are numeric aggregates of columns from your data model. A measure must 
 
 * Any DuckDB SQL [numeric](https://duckdb.org/docs/sql/functions/numeric) operators and functions
 * This set of DuckDB SQL [aggregates](https://duckdb.org/docs/sql/aggregates): `AVG`, `COUNT`, `FAVG`,`FIRST`, `FSUM`, `LAST`, `MAX`, `MIN`, `PRODUCT`, `SUM`, `APPROX_COUNT_DISTINCT`, `APPROX_QUANTILE`, `STDDEV_POP`, `STDDEV_SAMP`, `VAR_POP`, `VAR_SAMP`.
-* [Filtered aggregates](https://duckdb.org/docs/sql/query_syntax/filter.html) can be used to filter set of rows fed to the aggregate functions
+* [Filtered aggregates](https://duckdb.org/docs/sql/query_syntax/filter.html) can be used to filter set of rows fed to the aggregate functions.
 
-As an example, if you have a table of sales events with the sales price and customer id, you could calculate the following metrics with these aggregates and expressions:
+As an example, if you have a table of sales events with the sales price and customer ID, you could calculate the following metrics with these aggregates and expressions:
 * Number of sales: `COUNT(*)`
 * Total revenue: `SUM(sales_price)` 
 * Revenue per customer: `CAST(SUM(sales_price) AS FLOAT)/CAST(COUNT(DISTINCT customer_id) AS FLOAT)`
@@ -46,7 +46,7 @@ You can also add labels, descriptions, and your choice of number formatting to c
 
 ### Dimensions
 
-Dimensions are used for exploring segments and filtering. Valid dimensions can be any type and are selected using the drop down menu. You can also add labels and descriptions to your dimensions to customize how they are shown.
+Dimensions are used for exploring segments and filtering. Valid dimensions can be any type and are selected using the drop-down menu. You can also add labels and descriptions to your dimensions to customize how they are shown.
 
 
 ## Updating the Metrics View
@@ -87,7 +87,7 @@ measures:
 ```
 :::info Check our reference documentation
 
-For more information about available metrics view properties, feel free to check our [reference YAML documentation](/reference/project-files/metrics-view.
+For more information about available metrics view properties, feel free to check our [reference YAML documentation](/reference/project-files/metrics-view).
 
 :::
 

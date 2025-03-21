@@ -41,7 +41,7 @@ If you have late arriving data, you will need to keep this in mind when designin
 
 ### Incremental Models with State defined (*Optional*)
 
-If your data is not [partitioned](./partitions.md), you can define the incremental model with a predefined `state` parameter. This is only useful for mutli-connector incremental ingestion such as BigQuery to DuckDB.
+If your data is not [partitioned](./partitions.md), you can define the incremental model with a predefined `state` parameter. This is only useful for multi-connector incremental ingestion such as BigQuery to DuckDB.
 
 ```yaml
 type: model
@@ -76,9 +76,9 @@ When you are testing with incremental models in Rill Developer, you will notice 
 ![img](/img/tutorials/302/now-incremental.png)
 
 :::tip What's the difference?
-Once increments are enabled on a model, this grants you the ability to refresh the model in increments, instead of loading the full data each time. This is handy when you're data is massive and reingesting the data may take time. For a project on production, this allows for less downtime when needing to update your dashboards when the source data is updated. 
+Once increments are enabled on a model, this grants you the ability to refresh the model in increments, instead of loading the full data each time. This is handy when your data is massive and re-ingesting the data may take time. For a project on production, this allows for less downtime when needing to update your dashboards when the source data is updated. 
 
-There are times where a full refresh may be required. In these cases, running the full refresh is equiavalent to running a normal refresh with incremental disabled.
+There are times when a full refresh may be required. In these cases, running the full refresh is equivalent to running a normal refresh with incremental disabled.
 :::
 
 When selecting to refresh incrementally what is being run in the CLI is:

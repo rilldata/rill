@@ -4,7 +4,7 @@ description: C
 sidebar_label: Staging Models
 sidebar_position: 10
 ---
-As the name suggests, a staging model is one that uses a staging platform to ingest data from one source to one output that is not directly supported. An example of this is ingesting from Snowflake to ClickHouse. In order to support our user's varying set ups, we've devised staging models. 
+As the name suggests, a staging model is one that uses a staging platform to ingest data from one source to one output that is not directly supported. An example of this is ingesting from Snowflake to ClickHouse. In order to support our user's varying set-ups, we've devised staging models. 
 
 
 ## When to use a Staging Model?
@@ -13,7 +13,7 @@ Staging models are required for situations where the input and output type are n
 :::note Supported Paths
 Staging Models is in ongoing development, while we do have support for the following, please [reach out to us](contact.md) if you have any specific requirements.
 
-Snowflake --> S3 --> ClickHouse
+Snowflake → S3 → ClickHouse
 
 :::
 
@@ -26,7 +26,7 @@ Let's expand further on the Snowflake to ClickHouse example.
     Staging (S3) ->> Staging (S3): remove temporary data from Staging
 ```
 
-In the above example, during the ingestion from Snowflake to Clickhouse, we use the temporary staging table in S3 to write from Snowflake to S3, then from S3 to ClickHouse. Once this procedure is complete, we clear the temporary data from S3.
+In the above example, during the ingestion from Snowflake to ClickHouse, we use the temporary staging table in S3 to write from Snowflake to S3, then from S3 to ClickHouse. Once this procedure is complete, we clear the temporary data from S3.
 
 ### Sample YAML:
 

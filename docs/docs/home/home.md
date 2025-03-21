@@ -17,9 +17,9 @@ rill start my-rill-project
 
 ## Tutorials
 
-If you're looking for a in-depth tutorial that walks you through our available features, click [here](../tutorials/index.md)! 
+If you're looking for an in-depth tutorial that walks you through our available features, click [here](../tutorials/index.md)! 
 
-Some of the Tutorials include:
+Some Tutorials include:
 
 - [From Source to Deployment in 6 steps!](../tutorials/rill_basics/launch) : Data Import, Transformation, Dashboard, to Deployment!
 - [How to Administrate Rill](../tutorials/administration/) : Administrative tasks from the CLI and UI that an administrator would need to know to be a Rill Administrator
@@ -31,7 +31,7 @@ The final project is available on our [example repository](https://github.com/ri
 
 ## Quick Starts & Examples
 
-Explore our [example repository](https://github.com/rilldata/rill-examples/) to kickstart your project.
+Explore our [example repository](https://github.com/rilldata/rill-examples/) to kick start your project.
 
 Some of the included projects are:
 

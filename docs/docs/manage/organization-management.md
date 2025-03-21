@@ -12,7 +12,7 @@ Before a project can be deployed onto Rill Cloud, an organization must be create
 
 ![img](/img/manage/project-management/rill-org.png)
 
-An Organization in Rill is the parent management object and encompasses how your team  interfaces with Rill Cloud. Organizations are designed to hold the differnet components of your Rill project. Organizations consists of projects that each consist of their own source, models, metrics view, dashboards, user management, and general settings.
+An Organization in Rill is the parent management object and encompasses how your team  interfaces with Rill Cloud. Organizations are designed to hold the different components of your Rill project. Organizations consists of projects that each consist of their own source, models, metrics view, dashboards, user management, and general settings.
 
 ### User Management
 

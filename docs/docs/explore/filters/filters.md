@@ -10,7 +10,7 @@ sidebar_position: 10
 Rill is particularly suited for exploratory analysis - to be able to slice & dice data quickly. As such, there are a variety of filter types and filter mechanisms throughout the app. The goal for each Rill dashboard is to provide users with as all metrics and dimensions required for each use case and create an interactive experience to cut data in any form.
 
 :::tip Human readable URL
-With the release of v0.52, we have introduced an easy way to craft specific views by modifying the URL directly. As you select filters, time ranges, and default dimension and measures, the URL will change accordinglty. 
+With the release of v0.52, we have introduced an easy way to craft specific views by modifying the URL directly. As you select filters, time ranges, and default dimension and measures, the URL will change accordingly. 
 
 .../explore/explore_dashboard?tr=P3M&compare_tr=rill-PP&f=dimension in ('exampleA', 'exampleB')
 :::
@@ -97,7 +97,7 @@ For the latter, you can compare the full period looking with options like last 2
 ### Dimension Comparisons
 In addition to time comparisons, you can select multiple dimension values to compare trends of those specific data points. Select the comparison option on the top left of any leaderboard and select multiple dimensions
 
-De-select the comparison option or clear the filter bar to remove your comparisons.
+Deselect the comparison option or clear the filter bar to remove your comparisons.
 
 <img src = '/img/explore/filters/comparison.gif' class='rounded-gif' />
 <br />

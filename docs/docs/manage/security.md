@@ -10,7 +10,7 @@ Rill supports granular access policies for dashboards. They allow the dashboard 
 Some of the typical use cases include:
 
 - Restricting access to certain dashboards to admin users
-- Limiting dashboards to relevent fields or metrics by team for ease of use (creating a lookup and filter by role) 
+- Limiting dashboards to relevant fields or metrics by team for ease of use (creating a lookup and filter by role) 
 - Limiting access to sensitive dimensions or measures to users from a specific department
 - Partner-filtered dashboards where external users can only see the subset of data that relates to them
 

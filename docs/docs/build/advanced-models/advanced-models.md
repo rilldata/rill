@@ -8,13 +8,13 @@ sidebar_position: 00
 <img src = '/img/build/advanced-models/advanced-model.png' class='rounded-gif' />
 <br />
 
-Unlike SQL models, YAML file models allow the ability to fine tune a model to perform additional capabilities such as pre-exec, post-exec SQL, partitioning, and incremental modeling. This is an imporant addition to modeling as it allows the user to customize the model's method of building. In the case of partitions and incremental modeling, this will reduce the amount of data ingested into Rill at each interval and allow insight into specific issues per partition. Another use case is when using [multiple OLAP engines](../connect/multiple-connectors.md), this allows you to define where a SQL query is run. 
+Unlike SQL models, YAML file models allow the ability to fine tune a model to perform additional capabilities such as pre-exec, post-exec SQL, partitioning, and incremental modeling. This is an important addition to modeling as it allows the user to customize the model's method of building. In the case of partitions and incremental modeling, this will reduce the amount of data ingested into Rill at each interval and allow insight into specific issues per partition. Another use case is when using [multiple OLAP engines](../connect/multiple-connectors.md), this allows you to define where a SQL query is run. 
 
 ## When to use Advanced Models? 
 
-For the majority of users on a DuckDB backed Rill project, advanced models are not required. When a project gets larger and refreshing the whole datasets becomes a time consuming and costly task, we introduce incremental ingestion to help alleviate the problem. Along with incremental modeling, we use partitions to divide a dataset into smaller to manage datasets. When enabling partitions, you are able to refresh single sections of data if required. 
+For the majority of users on a DuckDB backed Rill project, advanced models are not required. When a project gets larger and refreshing the whole datasets becomes a time-consuming and costly task, we introduce incremental ingestion to help alleviate the problem. Along with incremental modeling, we use partitions to divide a dataset into smaller to manage datasets. When enabling partitions, you are able to refresh single sections of data if required. 
 
-Another use case is when using multiple OLAP engines. This allows you to specify where you SQL is running. While we do not officially support ClickHouse modeling, this is available behind a feature flag `clickhouseModeling`. When both DuckDB and ClickHouse are enabled in a single environment, you will need to define `connector: duckdb/clickhouse` in the yaml to tell Rill where to run the SQL query.
+Another use case is when using multiple OLAP engines. This allows you to specify where you SQL is running. While we do not officially support ClickHouse modeling, this is available behind a feature flag `clickhouseModeling`. When both DuckDB and ClickHouse are enabled in a single environment, you will need to define `connector: duckdb/clickhouse` in the YAML to tell Rill where to run the SQL query.
 
 
 ## Types of Advanced Models
@@ -42,13 +42,13 @@ Please refer to [our reference documentation](../../reference/project-files/adva
 
 :::note
 
-Currently there isn't a UI button to start off with an advanced model YAML. Creating a model in Rill will always create a model.sql file. 
+Currently, there isn't a UI button to start off with an advanced model YAML. Creating a model in Rill will always create a model.sql file. 
 
 :::
 
 
 
-## DuckDB Model's pre-exec, sql, post-exec 
+## DuckDB Model's pre-exec, SQL, post-exec 
 
 While we install a set of core libraries and extensions with our embed DuckDB, there might be specific use-cases where you might want to add a different one. In order to do this, you will need to use the pre-exec parameter to ensure that everything is loaded before running your SQL query. 
 
@@ -62,7 +62,7 @@ sql: SELECT * FROM read_gsheet('https://docs.google.com/spreadsheets/d/<your_uni
 ```
 
 :::tip Multiple queries to run? 
-Like any SQL query, you can divide the queries with a semi-colon to run multiple queries. This is available for both `pre_exec` and `post_exec`. The default `sql` parameter requires a single SELECT statement to run.
+Like any SQL query, you can divide the queries with a semicolon to run multiple queries. This is available for both `pre_exec` and `post_exec`. The default `sql` parameter requires a single SELECT statement to run.
 :::
 
 
