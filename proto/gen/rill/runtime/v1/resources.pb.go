@@ -2864,20 +2864,21 @@ type ExplorePreset struct {
 	ComparisonMode   ExploreComparisonMode `protobuf:"varint,7,opt,name=comparison_mode,json=comparisonMode,proto3,enum=rill.runtime.v1.ExploreComparisonMode" json:"comparison_mode,omitempty"`
 	CompareTimeRange *string               `protobuf:"bytes,15,opt,name=compare_time_range,json=compareTimeRange,proto3,oneof" json:"compare_time_range,omitempty"`
 	// If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use.
-	ComparisonDimension      *string          `protobuf:"bytes,8,opt,name=comparison_dimension,json=comparisonDimension,proto3,oneof" json:"comparison_dimension,omitempty"`
-	View                     *ExploreWebView  `protobuf:"varint,16,opt,name=view,proto3,enum=rill.runtime.v1.ExploreWebView,oneof" json:"view,omitempty"`
-	ExploreSortBy            *string          `protobuf:"bytes,17,opt,name=explore_sort_by,json=exploreSortBy,proto3,oneof" json:"explore_sort_by,omitempty"`
-	ExploreSortAsc           *bool            `protobuf:"varint,18,opt,name=explore_sort_asc,json=exploreSortAsc,proto3,oneof" json:"explore_sort_asc,omitempty"`
-	ExploreSortType          *ExploreSortType `protobuf:"varint,19,opt,name=explore_sort_type,json=exploreSortType,proto3,enum=rill.runtime.v1.ExploreSortType,oneof" json:"explore_sort_type,omitempty"`
-	ExploreExpandedDimension *string          `protobuf:"bytes,20,opt,name=explore_expanded_dimension,json=exploreExpandedDimension,proto3,oneof" json:"explore_expanded_dimension,omitempty"`
-	TimeDimensionMeasure     *string          `protobuf:"bytes,21,opt,name=time_dimension_measure,json=timeDimensionMeasure,proto3,oneof" json:"time_dimension_measure,omitempty"`
-	TimeDimensionChartType   *string          `protobuf:"bytes,22,opt,name=time_dimension_chart_type,json=timeDimensionChartType,proto3,oneof" json:"time_dimension_chart_type,omitempty"`
-	TimeDimensionPin         *bool            `protobuf:"varint,23,opt,name=time_dimension_pin,json=timeDimensionPin,proto3,oneof" json:"time_dimension_pin,omitempty"`
-	PivotRows                []string         `protobuf:"bytes,24,rep,name=pivot_rows,json=pivotRows,proto3" json:"pivot_rows,omitempty"`
-	PivotCols                []string         `protobuf:"bytes,25,rep,name=pivot_cols,json=pivotCols,proto3" json:"pivot_cols,omitempty"`
-	PivotSortBy              *string          `protobuf:"bytes,26,opt,name=pivot_sort_by,json=pivotSortBy,proto3,oneof" json:"pivot_sort_by,omitempty"`
-	PivotSortAsc             *bool            `protobuf:"varint,27,opt,name=pivot_sort_asc,json=pivotSortAsc,proto3,oneof" json:"pivot_sort_asc,omitempty"`
-	PivotTableMode           *string          `protobuf:"bytes,28,opt,name=pivot_table_mode,json=pivotTableMode,proto3,oneof" json:"pivot_table_mode,omitempty"`
+	ComparisonDimension            *string          `protobuf:"bytes,8,opt,name=comparison_dimension,json=comparisonDimension,proto3,oneof" json:"comparison_dimension,omitempty"`
+	View                           *ExploreWebView  `protobuf:"varint,16,opt,name=view,proto3,enum=rill.runtime.v1.ExploreWebView,oneof" json:"view,omitempty"`
+	ExploreSortBy                  *string          `protobuf:"bytes,17,opt,name=explore_sort_by,json=exploreSortBy,proto3,oneof" json:"explore_sort_by,omitempty"`
+	ExploreSortAsc                 *bool            `protobuf:"varint,18,opt,name=explore_sort_asc,json=exploreSortAsc,proto3,oneof" json:"explore_sort_asc,omitempty"`
+	ExploreSortType                *ExploreSortType `protobuf:"varint,19,opt,name=explore_sort_type,json=exploreSortType,proto3,enum=rill.runtime.v1.ExploreSortType,oneof" json:"explore_sort_type,omitempty"`
+	ExploreExpandedDimension       *string          `protobuf:"bytes,20,opt,name=explore_expanded_dimension,json=exploreExpandedDimension,proto3,oneof" json:"explore_expanded_dimension,omitempty"`
+	ExploreLeaderboardMeasureCount *uint32          `protobuf:"varint,21,opt,name=exploreLeaderboardMeasureCount,proto3,oneof" json:"exploreLeaderboardMeasureCount,omitempty"`
+	TimeDimensionMeasure           *string          `protobuf:"bytes,22,opt,name=time_dimension_measure,json=timeDimensionMeasure,proto3,oneof" json:"time_dimension_measure,omitempty"`
+	TimeDimensionChartType         *string          `protobuf:"bytes,23,opt,name=time_dimension_chart_type,json=timeDimensionChartType,proto3,oneof" json:"time_dimension_chart_type,omitempty"`
+	TimeDimensionPin               *bool            `protobuf:"varint,24,opt,name=time_dimension_pin,json=timeDimensionPin,proto3,oneof" json:"time_dimension_pin,omitempty"`
+	PivotRows                      []string         `protobuf:"bytes,25,rep,name=pivot_rows,json=pivotRows,proto3" json:"pivot_rows,omitempty"`
+	PivotCols                      []string         `protobuf:"bytes,26,rep,name=pivot_cols,json=pivotCols,proto3" json:"pivot_cols,omitempty"`
+	PivotSortBy                    *string          `protobuf:"bytes,27,opt,name=pivot_sort_by,json=pivotSortBy,proto3,oneof" json:"pivot_sort_by,omitempty"`
+	PivotSortAsc                   *bool            `protobuf:"varint,28,opt,name=pivot_sort_asc,json=pivotSortAsc,proto3,oneof" json:"pivot_sort_asc,omitempty"`
+	PivotTableMode                 *string          `protobuf:"bytes,29,opt,name=pivot_table_mode,json=pivotTableMode,proto3,oneof" json:"pivot_table_mode,omitempty"`
 }
 
 func (x *ExplorePreset) Reset() {
@@ -3036,6 +3037,13 @@ func (x *ExplorePreset) GetExploreExpandedDimension() string {
 		return *x.ExploreExpandedDimension
 	}
 	return ""
+}
+
+func (x *ExplorePreset) GetExploreLeaderboardMeasureCount() uint32 {
+	if x != nil && x.ExploreLeaderboardMeasureCount != nil {
+		return *x.ExploreLeaderboardMeasureCount
+	}
+	return 0
 }
 
 func (x *ExplorePreset) GetTimeDimensionMeasure() string {
