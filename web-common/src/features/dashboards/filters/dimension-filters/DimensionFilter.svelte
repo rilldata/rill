@@ -185,11 +185,12 @@
   function handleModeChange(newMode: DimensionFilterMode) {
     if (newMode !== DimensionFilterMode.InList) {
       searchedBulkValues = [];
-    } else {
-      checkSearchText(curSearchText);
+      // Since in select mode exclude toggle is reflected immediately, reset the mode when user switches to it.
       if (newMode === DimensionFilterMode.Select) {
         curExcludeMode = excludeMode;
       }
+    } else {
+      checkSearchText(curSearchText);
     }
   }
 

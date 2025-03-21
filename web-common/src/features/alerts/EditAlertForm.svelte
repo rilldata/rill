@@ -126,7 +126,7 @@
     },
   });
   const { form } = formState;
-  $: if ($metricsViewSpec?.data && $timeRange?.data) {
+  $: if ($metricsViewSpec?.data && $timeRange?.data && $dashboardState.data) {
     const formValues = extractAlertFormValues(
       queryArgsJson,
       $metricsViewSpec.data,
