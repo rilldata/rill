@@ -51,12 +51,6 @@
     ? $visibleMeasures.some((measure) => measure.validPercentOfTotal)
     : activeLeaderboardMeasure?.validPercentOfTotal || false;
 
-  $: allMeasureNames = $allMeasures.map(({ name }) => name).filter(isDefined);
-
-  $: visibleMeasureNames = $visibleMeasures
-    .map(({ name }) => name)
-    .filter(isDefined);
-
   $: visibleDimensionsNames = $visibleDimensions
     .map(({ name }) => name)
     .filter(isDefined);
