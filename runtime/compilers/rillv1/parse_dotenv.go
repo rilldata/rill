@@ -7,7 +7,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// parseDotEnv parses the env file present at repo root
+// parseDotEnv parses the .env file at the given path and merges it with the existing env vars
 func (p *Parser) parseDotEnv(ctx context.Context, path string) error {
 	data, err := p.Repo.Get(ctx, path)
 	if err != nil {
@@ -21,6 +21,7 @@ func (p *Parser) parseDotEnv(ctx context.Context, path string) error {
 		return err
 	}
 
-	p.DotEnv = envMap
+	p.DotEnv[path] = envMap
+
 	return nil
 }
