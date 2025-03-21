@@ -819,6 +819,7 @@ func TestRBAC(t *testing.T) {
 			Domain:       "whitelist-projs.test",
 			Role:         database.ProjectRoleNameAdmin,
 		})
+		require.NoError(t, err)
 
 		// Check we can't whitelist the same domain on the same project again
 		_, err = c1.CreateProjectWhitelistedDomain(ctx, &adminv1.CreateProjectWhitelistedDomainRequest{
