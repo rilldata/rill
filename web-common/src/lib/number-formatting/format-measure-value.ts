@@ -10,6 +10,7 @@ import {
   formatLocale as d3FormatLocale,
   type FormatLocaleDefinition,
 } from "d3-format";
+import memoize from "memoizee";
 import {
   FormatPreset,
   NumberKind,
@@ -148,6 +149,11 @@ function humanizeDataTypeUnabridged(value: number, type: FormatPreset): string {
   return value.toString();
 }
 
+const memoizedHumanizeDataType = memoize(humanizeDataType, { primitive: true });
+const memoizedHumanizeDataTypeUnabridged = memoize(humanizeDataTypeUnabridged, {
+  primitive: true,
+});
+
 /**
  * This higher-order function takes a measure spec and returns
  * a function appropriate for formatting values from that measure.
@@ -173,9 +179,10 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
 
   let humanizer: (value: number, type: FormatPreset) => string;
   if (useUnabridged) {
-    humanizer = humanizeDataTypeUnabridged;
+    humanizer = memoizedHumanizeDataTypeUnabridged;
   } else {
-    humanizer = (value, preset) => humanizeDataType(value, preset, type);
+    humanizer = (value, preset) =>
+      memoizedHumanizeDataType(value, preset, type);
   }
 
   // Return and empty string if measureSpec is not provided.

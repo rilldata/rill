@@ -150,7 +150,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	// build clickhouse options
 	var opts *clickhouse.Options
 	var embed *embedClickHouse
-	maxOpenConnections := 20 // Very roughly approximating the number of queries required for a typical page load.
+	maxOpenConnections := 10 // based on observations
 	if conf.DSN != "" {
 		opts, err = clickhouse.ParseDSN(conf.DSN)
 		if err != nil {

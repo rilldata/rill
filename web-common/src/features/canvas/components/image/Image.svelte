@@ -4,11 +4,14 @@
   import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { ImageSpec } from "./";
+  import { getImagePosition } from "./util";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
 
   const instanceId = $runtime.instanceId;
   $: imageProperties = rendererProperties as ImageSpec;
+
+  $: objectPosition = getImagePosition(imageProperties.alignment);
 
   let imageSrc: string | null = null;
   let errorMessage: string | null = null;
@@ -64,6 +67,7 @@
     src={imageSrc || ""}
     alt={"Canvas Image"}
     draggable="false"
-    class="h-full w-full object-contain overflow-hidden"
+    class="h-full w-full overflow-hidden object-contain"
+    style:object-position={objectPosition}
   />
 {/if}
