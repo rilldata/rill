@@ -44,7 +44,6 @@
   const createFolder = createRuntimeServiceCreateDirectory();
 
   $: ({ instanceId } = $runtime);
-  const { canvasDashboards } = featureFlags;
 
   $: currentFile = $page.params.file;
   $: currentDirectory = currentFile
@@ -231,25 +230,24 @@
         />
         Explore dashboard
       </DropdownMenu.Item>
-      {#if $canvasDashboards}
-        <DropdownMenu.Item
-          class="flex items-center justify-between gap-x-2"
-          on:click={async () => {
-            const newFilePath = await createResourceFile(ResourceKind.Canvas);
-            await wrapNavigation(newFilePath);
-          }}
-        >
-          <div class="flex gap-x-2">
-            <svelte:component
-              this={resourceIconMapping[ResourceKind.Canvas]}
-              color={resourceColorMapping[ResourceKind.Canvas]}
-              size="16px"
-            />
-            Canvas dashboard
-          </div>
-          <Tag height={16} color="blue">BETA</Tag>
-        </DropdownMenu.Item>
-      {/if}
+
+      <DropdownMenu.Item
+        class="flex items-center justify-between gap-x-2"
+        on:click={async () => {
+          const newFilePath = await createResourceFile(ResourceKind.Canvas);
+          await wrapNavigation(newFilePath);
+        }}
+      >
+        <div class="flex gap-x-2">
+          <svelte:component
+            this={resourceIconMapping[ResourceKind.Canvas]}
+            color={resourceColorMapping[ResourceKind.Canvas]}
+            size="16px"
+          />
+          Canvas dashboard
+        </div>
+        <Tag height={16} color="blue">BETA</Tag>
+      </DropdownMenu.Item>
     {/if}
     <DropdownMenu.Separator />
     <DropdownMenu.Sub>
