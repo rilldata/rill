@@ -111,6 +111,6 @@ Deselect the comparison option or clear the filter bar to remove your comparison
 <img src = '/img/explore/filters/comparison.gif' class='rounded-gif' />
 <br />
 :::note
-For more advanced time and dimension comparisons, visit the [Time Dimension Detail](tdd.md) page.
+For more advanced time and dimension comparisons, visit the [Time Dimension Detail](/explore/dashboard-101/tdd) page.
 :::
 

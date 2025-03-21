@@ -52,7 +52,7 @@ Once the dashboard has been [deployed to Rill Cloud](../deploy/deploy-dashboard/
 
  :::info Dashboard 101
 
- For more details about using a Rill Cloud dashboard, please refer to our [Explore section](explore/dashboard-101.md)!
+ For more details about using a Rill Cloud dashboard, please refer to our [Explore section](/explore/dashboard-101/)!
 
  :::
  
