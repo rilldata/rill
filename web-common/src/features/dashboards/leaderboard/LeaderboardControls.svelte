@@ -13,12 +13,7 @@
 
   const {
     selectors: {
-      measures: {
-        leaderboardMeasureName,
-        getMeasureByName,
-        visibleMeasures,
-        allMeasures,
-      },
+      measures: { leaderboardMeasureName, getMeasureByName, visibleMeasures },
       dimensions: { visibleDimensions, allDimensions },
     },
     actions: {
