@@ -97,8 +97,8 @@
     <div class="flex flex-col" role="presentation" on:mouseenter={onMouseEnter}>
       {#each menuItems as { id, label, icon } (id)}
         <DropdownMenu.Item
+          class="flex flex-row gap-x-2"
           on:click={() => {
-            open = false;
             if (id === "bar_chart") {
               handleChartItemClick();
             } else {
@@ -106,10 +106,8 @@
             }
           }}
         >
-          <div class="flex flex-row gap-x-2">
-            <svelte:component this={icon} />
-            {label}
-          </div>
+          <svelte:component this={icon} />
+          {label}
         </DropdownMenu.Item>
       {/each}
     </div>

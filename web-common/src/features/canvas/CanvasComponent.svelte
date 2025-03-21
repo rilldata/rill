@@ -69,7 +69,12 @@
         <ComponentHeader {title} {description} filters={componentFilters} />
       {/if}
       {#if renderer && rendererProperties}
-        <ComponentRenderer {renderer} {rendererProperties} {componentName} />
+        <ComponentRenderer
+          hasHeader={title || description}
+          {renderer}
+          {rendererProperties}
+          {componentName}
+        />
       {/if}
     {:else}
       <div class="size-full grid place-content-center">

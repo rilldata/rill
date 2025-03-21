@@ -127,6 +127,7 @@ export class CanvasEntity {
       return derived(
         [
           timeControls.timeRangeStateStore,
+
           component.localTimeControls.timeRangeStateStore,
           timeControls.comparisonRangeStateStore,
           component.localTimeControls.comparisonRangeStateStore,
@@ -135,6 +136,7 @@ export class CanvasEntity {
           filters.dimensionThresholdFilters,
           dimensionsStore,
           measuresStore,
+          timeControls.hasTimeSeries,
         ],
         ([
           globalTimeRangeState,
@@ -146,6 +148,7 @@ export class CanvasEntity {
           dtf,
           dimensions,
           measures,
+          hasTimeSeries,
         ]) => {
           // Time Filters
           let timeRange: V1TimeRange = {
@@ -220,6 +223,7 @@ export class CanvasEntity {
             timeGrain,
             timeRangeState,
             comparisonTimeRangeState,
+            hasTimeSeries,
           };
         },
       ).subscribe(set);

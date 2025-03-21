@@ -22,6 +22,7 @@
   export let rendererProperties: V1ComponentSpecRendererProperties;
   export let timeAndFilterStore: Readable<TimeAndFilterStore>;
   export let componentName: string;
+  export let hasHeader: boolean;
 
   const ctx = getCanvasStateManagers();
   const tableSpecStore = writable(rendererProperties as TableSpec);
@@ -86,6 +87,7 @@
 </script>
 
 <CanvasPivotRenderer
+  {hasHeader}
   {schema}
   {pivotDataStore}
   pivotConfig={tableConfig}
