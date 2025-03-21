@@ -2870,7 +2870,7 @@ type ExplorePreset struct {
 	ExploreSortAsc                 *bool            `protobuf:"varint,18,opt,name=explore_sort_asc,json=exploreSortAsc,proto3,oneof" json:"explore_sort_asc,omitempty"`
 	ExploreSortType                *ExploreSortType `protobuf:"varint,19,opt,name=explore_sort_type,json=exploreSortType,proto3,enum=rill.runtime.v1.ExploreSortType,oneof" json:"explore_sort_type,omitempty"`
 	ExploreExpandedDimension       *string          `protobuf:"bytes,20,opt,name=explore_expanded_dimension,json=exploreExpandedDimension,proto3,oneof" json:"explore_expanded_dimension,omitempty"`
-	ExploreLeaderboardMeasureCount *uint32          `protobuf:"varint,21,opt,name=exploreLeaderboardMeasureCount,proto3,oneof" json:"exploreLeaderboardMeasureCount,omitempty"`
+	ExploreLeaderboardMeasureCount *uint32          `protobuf:"varint,21,opt,name=explore_leaderboard_measure_count,json=exploreLeaderboardMeasureCount,proto3,oneof" json:"explore_leaderboard_measure_count,omitempty"`
 	TimeDimensionMeasure           *string          `protobuf:"bytes,22,opt,name=time_dimension_measure,json=timeDimensionMeasure,proto3,oneof" json:"time_dimension_measure,omitempty"`
 	TimeDimensionChartType         *string          `protobuf:"bytes,23,opt,name=time_dimension_chart_type,json=timeDimensionChartType,proto3,oneof" json:"time_dimension_chart_type,omitempty"`
 	TimeDimensionPin               *bool            `protobuf:"varint,24,opt,name=time_dimension_pin,json=timeDimensionPin,proto3,oneof" json:"time_dimension_pin,omitempty"`
