@@ -274,12 +274,20 @@ li.theme-doc-sidebar-item-category-level-2 .menu__list-item-collapsible {
 // CSS for GIFS, make it look better
 
 .rounded-gif {
-  border-radius:10px;
+  border-radius: 10px;  /* Rounded corners */
   display: block;
   margin-left: auto;
   margin-right: auto;
   width: 100%;
+  
+  /* Shadow effect */
+  box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.2); 
+
+  /* Outline effect */
+  outline: 2px solid rgba(0, 0, 0, 0.1);
+  outline-offset: 2px; /* Space between the outline and the gif */
 }
+
 
 .rounded-png {
   border-radius:14px;

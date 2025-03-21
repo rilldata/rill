@@ -69,7 +69,7 @@ In your Rill project directory, create a metrics view, `<metrics_view>.yaml`, fi
     - `currency_eur` —  output rounded to 2 decimal points prepended with a euro symbol: `€`
     - `percentage` — output transformed from a rate to a percentage appended with a percentage sign
     - `interval_ms` — time intervals given in milliseconds are transformed into human readable time units like hours (h), days (d), years (y), etc.
-  - **`window`** — can be used for [advanced window expressions](/build/metrics-view/expressions), cannot be used with simple measures _(optional)_ 
+  - **`window`** — can be used for [advanced window expressions](/build/metrics-view/advanced-expressions), cannot be used with simple measures _(optional)_ 
     - **`partition`** — boolean _(optional)_ 
     - **`order`** — using a value available in your metrics view to order the window _(optional)_ 
     - **`ordertime`** — boolean, sets the order only by the time dimensions _(optional)_ 

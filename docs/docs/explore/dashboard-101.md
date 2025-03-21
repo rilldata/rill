@@ -39,9 +39,14 @@ The main screen of any Rill dashboard is called the _Explore_ page. As seen abov
 - _**Alerts, Bookmarks and Sharing:**_ You can create an [alert](./alerts/alerts.md) by selecting the bell, customizing the default view of the dashboard (see `purple` box) to a predefined set of metrics, dimensions, and filters by selecting the [bookmark](bookmarks.md), or share the dashboard ([internally by clicking the `Share` button](/manage/user-management#admin-invites-user-from-rill-cloud) or [externally via Public URLs](./public-url.md)) .
 
 
-### Metrics Panel
+### Measures Panel
 
 - _**Measures:**_  All _**metrics**_ that are available in the underlying model \ are viewable on the left-hand side, broken out with summary numbers (e.g. eCPM) and timeseries visualizations (based on your configured `timeseries` column in your [dashboard YAML](/reference/project-files/explore-dashboards.md)). You can add or remove any metric from the page by simply selecting them from the dropdown above the charts (see `yellow` box). If you select any specific measure, you will be navigating to the [Time Dimension Detail](https://docs.rilldata.com/explore/filters/tdd).
+
+:::note Big Number Formatting
+
+[Formatting of your measures](/build/metrics-view/advanced-expressions/metric-formatting) will not change the granularity of the Big Number, but you'll see the formatting being applied to the TDD, Dimension Leaderboard, and Pivot tables. 
+:::
 
 ### Dimensions Leaderboard Panel
 
