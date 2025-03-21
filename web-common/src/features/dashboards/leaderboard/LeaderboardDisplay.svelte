@@ -28,7 +28,7 @@
     selectors: {
       activeMeasure: { isValidPercentOfTotal, isSummableMeasure },
       numberFormat: { activeMeasureFormatter },
-      dimensionFilters: { atLeastOneSelection, isFilterExcludeMode },
+      dimensionFilters: { isFilterExcludeMode },
       dimensions: { visibleDimensions },
       comparison: { isBeingCompared: isBeingComparedReadable },
       sorting: { sortedAscending, sortType },
