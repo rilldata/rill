@@ -45,6 +45,7 @@ import {
   AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY,
   AD_BIDS_TOGGLE_PIVOT,
   AD_BIDS_TOGGLE_PIVOT_TABLE_MODE,
+  AD_BIDS_SET_LEADERBOARD_MEASURE_COUNT,
   applyMutationsToDashboard,
   type TestDashboardMutation,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
@@ -354,6 +355,11 @@ const TestCases: {
     preset: AD_BIDS_PIVOT_PRESET,
     expectedUrl: "http://localhost/?view=explore",
     legacyNotSupported: true,
+  },
+  {
+    title: "Leaderboard measure count persists in URL",
+    mutations: [AD_BIDS_SET_LEADERBOARD_MEASURE_COUNT],
+    expectedUrl: "http://localhost/?leaderboard_measure_count=4",
   },
 ];
 
