@@ -83,9 +83,9 @@
   }
 
   /**
-   * Open the add source modal
+   * Open the Add Data modal
    */
-  async function handleAddSource() {
+  async function handleAddData() {
     addSourceModal.open();
 
     await behaviourEvent?.fireSourceTriggerEvent(
@@ -173,15 +173,15 @@
     </Button>
   </DropdownMenu.Trigger>
   <DropdownMenu.Content align="start" class="w-[240px]">
+    <DropdownMenu.Item
+      aria-label="Add Source"
+      class="flex gap-x-2"
+      on:click={handleAddData}
+    >
+      <svelte:component this={Database} color="#C026D3" size="16px" />
+      Data
+    </DropdownMenu.Item>
     {#if $isModelingSupportedForDefaultOlapDriver}
-      <DropdownMenu.Item
-        aria-label="Add Source"
-        class="flex gap-x-2"
-        on:click={handleAddSource}
-      >
-        <svelte:component this={Database} color="#C026D3" size="16px" />
-        Data
-      </DropdownMenu.Item>
       <DropdownMenu.Item
         aria-label="Add Model"
         class="flex gap-x-2"
