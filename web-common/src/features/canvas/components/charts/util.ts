@@ -105,5 +105,12 @@ export const timeGrainToVegaTimeUnitMap: Record<V1TimeGrain, string> = {
 
 export function sanitizeFieldName(fieldName: string) {
   const specialCharactersRemoved = sanitizeValueForVega(fieldName);
-  return specialCharactersRemoved.replace(" ", "__");
+  const sanitizedFieldName = specialCharactersRemoved.replace(" ", "__");
+
+  /**
+   * Add an underscore to the beginning of the field
+   * name to avoid variables starting with a special
+   * character or number.
+   */
+  return `_${sanitizedFieldName}`;
 }
