@@ -4,7 +4,6 @@
   import {
     getDimensionColumnProps,
     getMeasureColumnProps,
-    getRowNestedLabel,
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-definition";
   import { NUM_ROWS_PER_PAGE } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
   import {
@@ -95,7 +94,6 @@
   let scrollLeft = 0;
 
   $: timeDimension = $config.time.timeDimension;
-  $: hasRowDimension = $pivotState.rows.length > 0;
   $: hasColumnDimension =
     splitPivotChips($pivotState.columns).dimension.length > 0;
   $: reachedEndForRows = !!$pivotDataStore?.reachedEndForRowData;
@@ -110,7 +108,6 @@
     $config.rowDimensionNames,
     $config,
   );
-  $: rowDimensionLabel = getRowNestedLabel(rowDimensions);
 
   $: headerGroups = $table.getHeaderGroups();
   $: totalHeaderHeight = headerGroups.length * HEADER_HEIGHT;
@@ -262,11 +259,10 @@
       {virtualRows}
       {before}
       {after}
-      {hasRowDimension}
       {timeDimension}
       {totalsRow}
       {totalRowSize}
-      {rowDimensionLabel}
+      {rowDimensions}
       {hasColumnDimension}
       {dataRows}
       {measures}
