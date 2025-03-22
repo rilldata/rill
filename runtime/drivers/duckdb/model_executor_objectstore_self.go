@@ -159,11 +159,11 @@ func objectStoreSecretSQL(ctx context.Context, path, model, inputConnector strin
 			if !ok {
 				return "", fmt.Errorf("internal error: invalid input handle type")
 			}
-			url, err := globutil.ParseBucketURL(path)
+			uri, err := globutil.ParseBucketURL(path)
 			if err != nil {
 				return "", fmt.Errorf("failed to parse path %q, %w", path, err)
 			}
-			reg, err := conn.GetBucketRegion(ctx, url.Host)
+			reg, err := conn.GetBucketRegion(ctx, uri.Host)
 			if err != nil {
 				return "", fmt.Errorf("failed to get bucket region: %w. Set `region` in model yaml", err)
 			}
