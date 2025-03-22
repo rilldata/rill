@@ -242,6 +242,12 @@
         } else {
           newItem.delete("format_preset");
         }
+      } else if (label === "SQL expression" && type === "dimensions") {
+        if (key === "expression") {
+          newItem.delete("column");
+        } else {
+          newItem.delete("expression");
+        }
       }
 
       if (editingClone[key] || editingClone[key] === false)
@@ -313,7 +319,7 @@
           {optional}
           {fontFamily}
           {placeholder}
-          multiline={key === "description"}
+          multiline={key === "description" || key === "expression"}
           enableSearch={key === "column"}
           {selected}
           bind:value={editingClone[key]}
