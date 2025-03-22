@@ -142,18 +142,25 @@ func writeCSV(res *drivers.Result, fw io.Writer) error {
 		for i, v := range vals {
 			v := *(v.(*any))
 
-			v, err := jsonval.ToValue(v, res.Schema.Fields[i].Type)
+			val, err := jsonval.ToValue(v, res.Schema.Fields[i].Type)
 			if err != nil {
 				return fmt.Errorf("failed to convert to JSON value: %w", err)
 			}
 
 			var s string
-			if v != nil {
-				tmp, err := json.Marshal(v)
-				if err != nil {
-					return fmt.Errorf("failed to marshal JSON value: %w", err)
+			if val != nil {
+				switch tval := val.(type) {
+				case string:
+					s = tval
+				case time.Time:
+					s = tval.In(time.UTC).Format(time.DateTime) // this format is also auto convert to datetime in excel
+				default:
+					mres, err := json.Marshal(tval)
+					if err != nil {
+						return fmt.Errorf("failed to marshal JSON value: %w", err)
+					}
+					s = jsonval.TrimQuotes(string(mres))
 				}
-				s = string(tmp)
 			}
 
 			strs[i] = s
@@ -212,10 +219,11 @@ func writeXLSX(res *drivers.Result, fw io.Writer) error {
 			case nil:
 				res = ""
 			case []any, map[string]any:
-				res, err = json.Marshal(res)
+				mres, err := json.Marshal(res)
 				if err != nil {
 					return fmt.Errorf("failed to marshal JSON value: %w", err)
 				}
+				res = jsonval.TrimQuotes(string(mres))
 			}
 
 			row[i] = res
@@ -334,12 +342,15 @@ func writeParquet(res *drivers.Result, fw io.Writer) error {
 					return err
 				}
 				recordBuilder.Field(i).(*array.TimestampBuilder).Append(tmp)
-			case runtimev1.Type_CODE_STRING, runtimev1.Type_CODE_INTERVAL, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_ARRAY, runtimev1.Type_CODE_STRUCT, runtimev1.Type_CODE_MAP, runtimev1.Type_CODE_JSON, runtimev1.Type_CODE_UUID:
+			case runtimev1.Type_CODE_STRING, runtimev1.Type_CODE_DATE:
+				v, _ := v.(string)
+				recordBuilder.Field(i).(*array.StringBuilder).Append(v)
+			case runtimev1.Type_CODE_INTERVAL, runtimev1.Type_CODE_ARRAY, runtimev1.Type_CODE_STRUCT, runtimev1.Type_CODE_MAP, runtimev1.Type_CODE_JSON, runtimev1.Type_CODE_UUID:
 				res, err := json.Marshal(v)
 				if err != nil {
 					return fmt.Errorf("failed to convert to JSON value: %w", err)
 				}
-				recordBuilder.Field(i).(*array.StringBuilder).Append(string(res))
+				recordBuilder.Field(i).(*array.StringBuilder).Append(jsonval.TrimQuotes(string(res)))
 			case runtimev1.Type_CODE_BYTES:
 				v, _ := v.([]byte)
 				recordBuilder.Field(i).(*array.BinaryBuilder).Append(v)
