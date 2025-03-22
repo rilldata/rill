@@ -44,7 +44,7 @@
       )
     : undefined;
 
-  $: firstVisibleMonth = interval?.start ?? DateTime.now();
+  $: firstVisibleMonth = interval?.start ?? currentInterval.end;
 
   $: comparisonOption =
     (selectedComparison?.name as TimeComparisonOption | undefined) || null;

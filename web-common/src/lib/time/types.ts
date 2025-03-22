@@ -107,7 +107,7 @@ export interface TimeRangeMeta {
   label: string;
   defaultGrain?: V1TimeGrain; // Affordance for future use
   rangePreset?: RangePresetType | string;
-  defaultComparison?: TimeComparisonOption | string;
+  defaultComparison?: TimeComparisonOption;
   start?: string | RelativePointInTime;
   end?: string | RelativePointInTime;
 }
