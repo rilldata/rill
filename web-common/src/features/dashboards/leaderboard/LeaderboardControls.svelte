@@ -6,6 +6,8 @@
   import { getSimpleMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { getStateManagers } from "../state-managers/state-managers";
+  import DashboardDraggableList from "@rilldata/web-common/components/menu/DashboardDraggableList.svelte";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
 
   export let exploreName: string;
 
@@ -15,11 +17,13 @@
       dimensions: { visibleDimensions, allDimensions },
     },
     actions: {
-      dimensions: { toggleDimensionVisibility },
+      dimensions: { setDimensionVisibility, toggleDimensionVisibility },
       contextCol: { setContextColumn },
       setLeaderboardMeasureName,
     },
   } = getStateManagers();
+
+  const { reorderMeasuresDimensions } = featureFlags;
 
   let active = false;
 
@@ -60,19 +64,30 @@
       class="flex flex-row items-center ui-copy-muted gap-x-1"
       style:max-width="450px"
     >
-      <DashboardVisibilityDropdown
-        category="Dimensions"
-        tooltipText="Choose dimensions to display"
-        onSelect={(name) => toggleDimensionVisibility(allDimensionNames, name)}
-        selectableItems={$allDimensions.map(({ name, displayName }) => ({
-          name: name || "",
-          label: displayName || name || "",
-        }))}
-        selectedItems={visibleDimensionsNames}
-        onToggleSelectAll={() => {
-          toggleDimensionVisibility(allDimensionNames);
-        }}
-      />
+      {#if $reorderMeasuresDimensions}
+        <DashboardDraggableList
+          type="dimension"
+          onSelectedChange={(items) =>
+            setDimensionVisibility(items, allDimensionNames)}
+          allItems={$allDimensions}
+          selectedItems={visibleDimensionsNames}
+        />
+      {:else}
+        <DashboardVisibilityDropdown
+          category="Dimensions"
+          tooltipText="Choose dimensions to display"
+          onSelect={(name) =>
+            toggleDimensionVisibility(allDimensionNames, name)}
+          selectableItems={$allDimensions.map(({ name, displayName }) => ({
+            name: name || "",
+            label: displayName || name || "",
+          }))}
+          selectedItems={visibleDimensionsNames}
+          onToggleSelectAll={() => {
+            toggleDimensionVisibility(allDimensionNames);
+          }}
+        />
+      {/if}
 
       <Select.Root
         bind:open={active}

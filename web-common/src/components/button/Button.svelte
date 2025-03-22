@@ -235,7 +235,7 @@
   /* LINK STYLES */
 
   .link {
-    @apply text-primary-600;
+    @apply text-primary-600 p-0;
   }
 
   .link:hover {
