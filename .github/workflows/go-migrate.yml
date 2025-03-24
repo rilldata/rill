@@ -14,14 +14,36 @@ on:
   workflow_dispatch:
 
 jobs:
-  test:
+  validate-sequential:
     runs-on: ubuntu-latest
     steps:
-    - name: Check out code
+    - name: Checkout code
       uses: actions/checkout@v4
+
     - name: Check Admin Migrations
       run: |
         ./scripts/check_migrations.sh admin/database/postgres/migrations
+
     - name: Check Runtime Migrations
       run: |
         ./scripts/check_migrations.sh runtime/drivers/sqlite/migrations
+
+  validate-apply:
+    runs-on: ubuntu-latest
+    needs: validate-sequential
+    steps:
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: 1.23
+
+    - name: Set up NodeJS
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Build and embed static UI
+      run: make cli.prepare

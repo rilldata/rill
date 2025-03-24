@@ -20,7 +20,6 @@ expected=1
 
 # Loop through all .sql files sorted by name
 for file in $(ls *.sql 2>/dev/null | sort); do
-    echo "$file"
     # Extract the number from the filename
     if [[ $file =~ ^([0-9]{4})\.sql$ ]]; then
         number=${BASH_REMATCH[1]}
