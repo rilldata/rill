@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -886,17 +885,22 @@ func (s *Server) traceHandler() http.Handler {
 		for rows.Next() {
 			var span traceSpan
 			if err := rows.StructScan(&span); err != nil {
-				log.Println("struct scan error:", err)
+				s.logger.Error("struct scan error", zap.Error(err))
 				continue
 			}
 
 			// Manually decode tags string to map
 			if err := json.Unmarshal(span.TagsRaw, &span.Tags); err != nil {
-				log.Printf("failed to decode tags for span %s: %v", span.ID, err)
+				s.logger.Error("failed to decode tags for span", zap.String("id", span.ID), zap.Error(err))
 				span.Tags = map[string]string{}
 			}
 
 			spans = append(spans, span)
+		}
+		if err := rows.Err(); err != nil {
+			s.logger.Error("failed to scan trace", zap.Error(err))
+			w.WriteHeader(http.StatusInternalServerError)
+			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
