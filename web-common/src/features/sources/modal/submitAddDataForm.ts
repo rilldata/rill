@@ -74,6 +74,7 @@ export async function submitAddDataForm(
         case "output_location":
         case "workgroup":
         case "database_url":
+        case "azure_storage_account":
           return [key, value];
         default:
           return [fromYupFriendlyKey(key), value];

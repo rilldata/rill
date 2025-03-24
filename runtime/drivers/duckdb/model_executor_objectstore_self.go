@@ -7,6 +7,7 @@ import (
 	"io"
 	"maps"
 	"net/url"
+	"os"
 	"strings"
 
 	"github.com/mitchellh/mapstructure"
@@ -208,7 +209,13 @@ func objectStoreSecretSQL(ctx context.Context, path, model, inputConnector strin
 		if azureConfig.ConnectionString != "" {
 			fmt.Fprintf(&sb, ", CONNECTION_STRING %s", safeSQLString(azureConfig.ConnectionString))
 		} else if azureConfig.AllowHostAccess {
-			sb.WriteString(", PROVIDER CREDENTIAL_CHAIN")
+			// backwards compatibility for allowing azure_storage_connection_string to be set as env variable which duckdb does not (keys are different)
+			connectionString := os.Getenv("AZURE_STORAGE_CONNECTION_STRING")
+			if connectionString != "" {
+				fmt.Fprintf(&sb, ", CONNECTION_STRING %s", safeSQLString(connectionString))
+			} else {
+				sb.WriteString(", PROVIDER CREDENTIAL_CHAIN")
+			}
 		}
 		if azureConfig.Account != "" {
 			fmt.Fprintf(&sb, ", ACCOUNT_NAME %s", safeSQLString(azureConfig.Account))
