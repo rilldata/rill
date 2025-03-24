@@ -52,7 +52,11 @@ export class KPIGridComponent extends BaseCanvasComponent<KPIGridSpec> {
     return {
       options: {
         metrics_view: { type: "metrics", label: "Metrics view" },
-        measures: { type: "multi_measures", label: "Measures" },
+        measures: {
+          type: "multi_fields",
+          meta: { allowedTypes: ["measure"] },
+          label: "Measures",
+        },
         sparkline: { type: "sparkline", optional: true, label: "Sparkline" },
         comparison: { type: "comparison_options", label: "Comparison values" },
         ...commonOptions,

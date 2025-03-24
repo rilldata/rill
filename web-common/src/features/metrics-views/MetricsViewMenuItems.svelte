@@ -28,7 +28,7 @@
 
   const dispatch = createEventDispatcher();
   const queryClient = useQueryClient();
-  const { canvasDashboards, ai } = featureFlags;
+  const { ai } = featureFlags;
 
   $: ({ instanceId } = $runtime);
   $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
@@ -77,27 +77,26 @@
     Generate dashboard
   </NavigationMenuItem>
 {/if}
-{#if $canvasDashboards}
-  <NavigationMenuItem
-    on:click={() => {
-      dispatch("generate-chart", {
-        metricsView,
-      });
-    }}
-    disabled={$hasErrors}
-  >
-    <Explore slot="icon" />
-    <div class="flex gap-x-2 items-center">
-      Generate chart
-      {#if $ai}
-        with AI
-        <WandIcon class="w-3 h-3" />
-      {/if}
-    </div>
-    <svelte:fragment slot="description">
-      {#if $hasErrors}
-        Dashboard has errors
-      {/if}
-    </svelte:fragment>
-  </NavigationMenuItem>
-{/if}
+
+<NavigationMenuItem
+  on:click={() => {
+    dispatch("generate-chart", {
+      metricsView,
+    });
+  }}
+  disabled={$hasErrors}
+>
+  <Explore slot="icon" />
+  <div class="flex gap-x-2 items-center">
+    Generate chart
+    {#if $ai}
+      with AI
+      <WandIcon class="w-3 h-3" />
+    {/if}
+  </div>
+  <svelte:fragment slot="description">
+    {#if $hasErrors}
+      Dashboard has errors
+    {/if}
+  </svelte:fragment>
+</NavigationMenuItem>

@@ -1,13 +1,22 @@
 import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
-import { type ComponentCommonProperties } from "@rilldata/web-common/features/canvas/components/types";
+import {
+  type ComponentAlignment,
+  type ComponentCommonProperties,
+} from "@rilldata/web-common/features/canvas/components/types";
 import { commonOptions } from "@rilldata/web-common/features/canvas/components/util";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
 
 export { default as Image } from "./Image.svelte";
 
+export const defaultImageAlignment: ComponentAlignment = {
+  horizontal: "center",
+  vertical: "middle",
+};
+
 export interface ImageSpec extends ComponentCommonProperties {
   url: string;
+  alignment?: ComponentAlignment;
 }
 
 export class ImageComponent extends BaseCanvasComponent<ImageSpec> {
@@ -34,6 +43,11 @@ export class ImageComponent extends BaseCanvasComponent<ImageSpec> {
     return {
       options: {
         url: { type: "text", label: "URL" },
+        alignment: {
+          type: "alignment",
+          label: "Alignment",
+          meta: { defaultAlignment: defaultImageAlignment },
+        },
         ...commonOptions,
       },
       filter: {},
