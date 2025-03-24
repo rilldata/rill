@@ -153,7 +153,14 @@ func writeCSV(res *drivers.Result, fw io.Writer) error {
 				case string:
 					s = tval
 				case time.Time:
-					s = tval.In(time.UTC).Format(time.DateTime) // this format is also auto convert to datetime in excel
+					t := res.Schema.Fields[i].Type
+					if t != nil && t.Code == runtimev1.Type_CODE_DATE {
+						s = tval.In(time.UTC).Format(time.DateOnly)
+					} else if t != nil && t.Code == runtimev1.Type_CODE_TIME {
+						s = tval.In(time.UTC).Format(time.TimeOnly)
+					} else {
+						s = tval.In(time.UTC).Format(time.DateTime) // this format is auto converted to datetime in excel
+					}
 				default:
 					mres, err := json.Marshal(tval)
 					if err != nil {
@@ -162,7 +169,6 @@ func writeCSV(res *drivers.Result, fw io.Writer) error {
 					s = jsonval.TrimQuotes(string(mres))
 				}
 			}
-
 			strs[i] = s
 		}
 
@@ -210,23 +216,34 @@ func writeXLSX(res *drivers.Result, fw io.Writer) error {
 
 		for i, v := range vals {
 			v := *(v.(*any))
-			res, err := jsonval.ToValue(v, res.Schema.Fields[i].Type)
+			jval, err := jsonval.ToValue(v, res.Schema.Fields[i].Type)
 			if err != nil {
 				return fmt.Errorf("failed to convert to JSON value: %w", err)
 			}
 
-			switch res.(type) {
-			case nil:
-				res = ""
-			case []any, map[string]any:
-				mres, err := json.Marshal(res)
-				if err != nil {
-					return fmt.Errorf("failed to marshal JSON value: %w", err)
+			var s any
+			if jval != nil {
+				switch tval := jval.(type) {
+				case time.Time:
+					t := res.Schema.Fields[i].Type
+					if t != nil && t.Code == runtimev1.Type_CODE_DATE {
+						s = tval.In(time.UTC).Format(time.DateOnly)
+					} else if t != nil && t.Code == runtimev1.Type_CODE_TIME {
+						s = tval.In(time.UTC).Format(time.TimeOnly)
+					} else {
+						s = tval
+					}
+				case []any, map[string]any:
+					mres, err := json.Marshal(tval)
+					if err != nil {
+						return fmt.Errorf("failed to marshal JSON value: %w", err)
+					}
+					s = jsonval.TrimQuotes(string(mres))
+				default:
+					s = tval
 				}
-				res = jsonval.TrimQuotes(string(mres))
 			}
-
-			row[i] = res
+			row[i] = s
 		}
 
 		cell, err := excelize.CoordinatesToCellName(1, idx)
