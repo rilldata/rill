@@ -9,10 +9,7 @@
   <script src="https://d3js.org/d3.v7.min.js"></script>
 
   <style>
-    /* 
-     * 1) Global Resets & Layout
-     *    Make the page take full height and use flex for layout
-     */
+    /* 1) Make body & html fill the screen */
     html, body {
       height: 100%;
       margin: 0;
@@ -29,26 +26,18 @@
       color: #4f46e5;
     }
 
-    /* 
-     * 2) Main Container 
-     *    Flex container holding the trace visualization + details panel 
-     */
+    /* 2) Main container with two columns: left (trace) & right (details) */
     .container {
       flex: 1;
       display: flex;
       width: 100%;
-      max-width: 100%;
       padding: 20px;
       box-sizing: border-box;
-      justify-content: center;
-      align-items: stretch;
       gap: 20px;
+      align-items: stretch; /* ensure columns fill height */
     }
 
-    /* 
-     * 3) Trace Container 
-     *    Holds the input, button, and SVG area 
-     */
+    /* 3) Left side: trace container */
     .trace-container {
       flex: 3;
       background: #fff;
@@ -58,41 +47,19 @@
       display: flex;
       flex-direction: column;
       height: 100%;
-      overflow: hidden; /* Avoid scrollbars if content overflows */
+      overflow: hidden; /* no hidden scroll here; the child .svg-container handles it */
     }
 
-    /* 
-     * 4) Details Panel 
-     *    Always visible, for selected span details 
-     */
-    .details-panel {
-      flex: 1;
-      background: #fff;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      height: 100%;
-    }
-
-    /* 
-     * 5) SVG Container 
-     *    Helps the SVG scale to available space 
-     */
+    /* 4) A sub-container for the SVG so we can scroll if it grows large */
     .svg-container {
-      flex-grow: 1;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      overflow: hidden;
+      flex: 1; /* Takes remaining vertical space */
+      overflow: auto; /* Make this scrollable if the chart is tall */
       position: relative;
+      margin-top: 10px;
     }
 
-    /* 
-     * 6) SVG & Span Bars 
-     */
+    /* 5) SVG sized dynamically in JS (width & height) */
     svg {
-      width: 100%;
-      height: 100%;
       background-color: #f9fafb;
       border: 1px solid #ccc;
       border-radius: 8px;
@@ -105,9 +72,17 @@
       fill: #6366f1 !important;
     }
 
-    /* 
-     * 7) Inputs & Buttons 
-     */
+    /* 6) Right side: details panel */
+    .details-panel {
+      flex: 1;
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      height: 100%;
+    }
+
+    /* 7) Inputs & button styling */
     input, button {
       padding: 10px;
       font-size: 16px;
@@ -132,23 +107,21 @@
 
   <h2>Trace Viewer</h2>
 
-  <!-- Main Container: Left side (Trace) + Right side (Details) -->
   <div class="container">
-    
-    <!-- Left: Trace Container -->
+    <!-- LEFT: Trace Container -->
     <div class="trace-container">
-      <!-- Input & Button Row -->
       <div>
+        <!-- Two inputs: one for traceId, one for resourceName -->
         <input type="text" id="traceIdInput" placeholder="Enter Trace ID" />
-        <button id="loadTraceBtn">Load Trace</button>
+        <input type="text" id="resourceNameInput" placeholder="Enter Resource Name" />
+        <button id="loadBtn">Load Data</button>
       </div>
-      <!-- SVG Area -->
       <div class="svg-container">
         <svg></svg>
       </div>
     </div>
 
-    <!-- Right: Details Panel (always visible) -->
+    <!-- RIGHT: Always-visible Details Panel -->
     <div class="details-panel">
       <h3 id="spanName">Select a span</h3>
       <p><strong>Service:</strong> <span id="serviceName">-</span></p>
@@ -167,9 +140,11 @@
     const svg = d3.select("svg");
     const g = svg.append("g"); // Group for drawing rectangles & text
 
-    // Get references to DOM elements
+    // DOM references
     const traceIdInput = document.getElementById("traceIdInput");
-    const loadTraceBtn = document.getElementById("loadTraceBtn");
+    const resourceNameInput = document.getElementById("resourceNameInput");
+    const loadBtn = document.getElementById("loadBtn");
+
     const spanNameEl = document.getElementById("spanName");
     const serviceNameEl = document.getElementById("serviceName");
     const durationEl = document.getElementById("duration");
@@ -179,33 +154,46 @@
     // ---------------------------------------------------------
     // Initialization
     // ---------------------------------------------------------
+    document.addEventListener("DOMContentLoaded", init);
+
     function init() {
-      // Set up event listeners
-      loadTraceBtn.addEventListener("click", fetchTrace);
+      loadBtn.addEventListener("click", fetchData);
     }
 
     // ---------------------------------------------------------
-    // Fetch Trace Data
+    // Fetch Data (Trace ID or Resource Name)
     // ---------------------------------------------------------
-    async function fetchTrace() {
+    async function fetchData() {
       const traceId = traceIdInput.value.trim();
-      if (!traceId) {
-        alert("Please enter a trace ID");
+      const resourceName = resourceNameInput.value.trim();
+
+      // Validate user input
+      if (traceId && resourceName) {
+        alert("Please enter EITHER a Trace ID OR a Resource Name, not both.");
+        return;
+      }
+      if (!traceId && !resourceName) {
+        alert("Please enter a Trace ID or Resource Name.");
         return;
       }
 
-      try {
-        const url = `http://localhost:9009/local/debug/trace?id=${encodeURIComponent(traceId)}`;
-        const response = await fetch(url);
+      // Build the correct query param
+      let url = "http://localhost:9009/local/debug/trace?";
+      if (traceId) {
+        url += `trace_id=${encodeURIComponent(traceId)}`;
+      } else {
+        url += `resource_name=${encodeURIComponent(resourceName)}`;
+      }
 
+      try {
+        const response = await fetch(url);
         if (!response.ok) {
           throw new Error(`HTTP error ${response.status}`);
         }
-
         traceData = await response.json();
         renderTrace();
       } catch (err) {
-        alert("Failed to load trace: " + err.message);
+        alert("Failed to load data: " + err.message);
         console.error(err);
       }
     }
@@ -214,44 +202,54 @@
     // Render the Trace Visualization
     // ---------------------------------------------------------
     function renderTrace() {
-      // Clear previous shapes/text
+      // Clear any existing shapes
       g.selectAll("*").remove();
 
       // If no data, do nothing
       if (!traceData || traceData.length === 0) return;
 
-      // Determine the min & max time
+      // Determine min & max times
       const minTime = Math.min(...traceData.map(span => span.timestamp));
       const maxTime = Math.max(...traceData.map(span => span.timestamp + span.duration));
 
-      // Get container dimensions
-      const width = document.querySelector(".svg-container").clientWidth;
-      const height = document.querySelector(".svg-container").clientHeight;
+      // We'll create enough height for each span row
+      const barSpacing = 30;
+      const chartHeight = barSpacing * traceData.length + 50;
+
+      // Get the container width
+      const containerWidth = document.querySelector(".svg-container").clientWidth;
+
+      // Dynamically set the SVG's width & height
+      svg.attr("width", containerWidth).attr("height", chartHeight);
 
       // Create a linear scale for x-axis
       const xScale = d3.scaleLinear()
         .domain([minTime, maxTime])
-        .range([50, width - 50]);
+        .range([50, containerWidth - 50]);
 
       // Sort spans by start time
       traceData.sort((a, b) => a.timestamp - b.timestamp);
 
-      // Draw each span as a rectangle + label
+      // Draw each span
       traceData.forEach((span, index) => {
-        // Span rectangle
+        // Calculate bar width, clamp to a min so it's visible
+        const rawWidth = xScale(span.timestamp + span.duration) - xScale(span.timestamp);
+        const barWidth = Math.max(rawWidth, 5);
+
+        // Rectangle
         g.append("rect")
           .attr("x", xScale(span.timestamp))
-          .attr("y", 30 + index * 30)
-          .attr("width", xScale(span.timestamp + span.duration) - xScale(span.timestamp))
+          .attr("y", 30 + index * barSpacing)
+          .attr("width", barWidth)
           .attr("height", 20)
           .attr("fill", span.parentId ? "#6b7280" : "#8b5cf6")
           .on("click", () => showDetails(span));
 
-        // Span name label
+        // Span label (black text so it's visible on small bars)
         g.append("text")
           .attr("x", xScale(span.timestamp) + 5)
-          .attr("y", 45 + index * 30)
-          .attr("fill", "white")
+          .attr("y", 45 + index * barSpacing)
+          .attr("fill", "#000")
           .attr("font-size", "10px")
           .text(span.name);
       });
@@ -261,11 +259,12 @@
     // Show Span Details in Right Panel
     // ---------------------------------------------------------
     function showDetails(span) {
-      // Convert duration from microseconds to seconds
-      const durationInSeconds = formatDuration(span.duration);
+      // Convert microseconds to seconds
+      const durationInSeconds = (span.duration / 1_000_000).toFixed(6);
 
       // Convert timestamp (µs) to a human-readable date/time
-      const readableTime = formatTimestamp(span.timestamp);
+      const date = new Date(span.timestamp / 1_000);
+      const readableTime = date.toLocaleString();
 
       // Update DOM
       spanNameEl.innerText = span.name;
@@ -283,26 +282,6 @@
         });
       }
     }
-
-    // ---------------------------------------------------------
-    // Helper Functions
-    // ---------------------------------------------------------
-    function formatDuration(micros) {
-      // Convert microseconds to seconds, returning a fixed decimal
-      return (micros / 1_000_000).toFixed(6);
-    }
-
-    function formatTimestamp(micros) {
-      // Convert microseconds to milliseconds for JS Date
-      const date = new Date(micros / 1_000);
-      // Convert to a readable local time string
-      return date.toLocaleString();
-    }
-
-    // ---------------------------------------------------------
-    // On Page Load
-    // ---------------------------------------------------------
-    document.addEventListener("DOMContentLoaded", init);
   </script>
 </body>
 </html>

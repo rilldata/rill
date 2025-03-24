@@ -824,8 +824,13 @@ func (nameConflictRetryErrClassifier) Classify(err error) retrier.Action {
 // traceHandler returns trace information corresponding to the trace ID.
 func (s *Server) traceHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		traceID := r.URL.Query().Get("id")
-		if traceID == "" {
+		traceID := r.URL.Query().Get("trace_id")
+		resourceName := r.URL.Query().Get("resource_name")
+		if resourceName == "" && traceID == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		if resourceName != "" && traceID != "" {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -837,13 +842,39 @@ func (s *Server) traceHandler() http.Handler {
 		}
 		defer db.Close()
 
-		filepath, err := dotrill.ResolveFilename("otel_traces*.log", true)
+		fp, err := dotrill.ResolveFilename("otel_traces*.log", true)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		rows, err := db.Queryx(fmt.Sprintf("SELECT replace(traceID::VARCHAR, '-', '') as traceID, * exclude traceID FROM read_json_auto(%s) WHERE traceID = ?", escapeStringValue(filepath)), traceID)
+		var query string
+		var args []any
+		if resourceName != "" {
+			query = fmt.Sprintf(`
+				SELECT replace(traceID::VARCHAR, '-', '') AS traceID, * EXCLUDE traceID
+				FROM read_json_auto(%s)
+				WHERE traceID = (
+					SELECT traceID
+					FROM read_json_auto(%s)
+					WHERE name ILIKE '%%Reconcile%%' AND tags.name ILIKE ?
+					ORDER BY timestamp DESC
+					LIMIT 1
+				)
+			`, escapeStringValue(fp), escapeStringValue(fp))
+			args = []any{fmt.Sprintf("%%%s%%", resourceName)}
+		} else {
+			query = fmt.Sprintf(`
+				SELECT 
+					replace(traceID::VARCHAR, '-', '') AS traceID, 
+					* EXCLUDE traceID 
+				FROM 
+					read_json_auto(%s) 
+				WHERE 
+					traceID = ?`, escapeStringValue(fp))
+			args = []any{traceID}
+		}
+		rows, err := db.QueryxContext(r.Context(), query, args...)
 		if err != nil {
 			s.logger.Error("failed to scan trace", zap.Error(err))
 			w.WriteHeader(http.StatusInternalServerError)
