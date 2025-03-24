@@ -338,6 +338,8 @@ export class TimeControls {
           {},
           {
             query: {
+              enabled:
+                !!metricsViews[metricView]?.state?.validSpec?.timeDimension,
               queryClient: queryClient,
               staleTime: Infinity,
               cacheTime: Infinity,
