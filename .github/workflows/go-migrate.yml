@@ -60,13 +60,10 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Build and embed static UI
-      run: make cli.prepare
-
     - name: Apply Migrations
       env:
         RILL_ADMIN_DATABASE_DRIVER: postgres
         RILL_ADMIN_DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
         RILL_ADMIN_RIVER_DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
       run: |
-        ./rill admin start
+        go run ./cli admin start
