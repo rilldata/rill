@@ -112,6 +112,10 @@ func (q *ResourceWatermark) resolveMetricsView(ctx context.Context, rt *runtime.
 			return err
 		}
 	}
+	err = res.Err()
+	if err != nil {
+		return err
+	}
 
 	if !t.IsZero() {
 		// Hacky workaround for the following issue: the watermark is used as the *exclusive* upper bound for time ranges.

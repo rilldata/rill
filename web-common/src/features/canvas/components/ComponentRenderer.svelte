@@ -13,6 +13,7 @@
   import { Image } from "./image";
   import { KPI } from "./kpi";
   import { Markdown } from "./markdown";
+  import { Pivot } from "./pivot";
   import { Table } from "./table";
 
   export let renderer: string;
@@ -26,6 +27,7 @@
     ["kpi", KPI],
     ["kpi_grid", KPIGrid],
     ["table", Table],
+    ["pivot", Pivot],
   ]);
 
   const nonFilterableComponents = new Map([
@@ -48,6 +50,8 @@
 {#if rendererProperties && isCanvasComponentType(renderer)}
   {#if isChartComponentType(renderer) && timeAndFilterStore}
     <Chart {rendererProperties} {renderer} {timeAndFilterStore} />
+  {:else if renderer === "pivot" && timeAndFilterStore}
+    <Pivot {rendererProperties} {timeAndFilterStore} {componentName} />
   {:else if renderer === "table" && timeAndFilterStore}
     <Table {rendererProperties} {timeAndFilterStore} {componentName} />
   {:else if isFilterable && timeAndFilterStore}

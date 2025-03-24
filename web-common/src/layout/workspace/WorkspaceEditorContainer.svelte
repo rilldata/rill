@@ -10,7 +10,7 @@
 
 <div class="flex flex-col size-full gap-y-1 overflow-y-auto bg-surface">
   <div
-    class="size-full border overflow-y-hidden rounded-[2px] flex flex-col items-center justify-center"
+    class="size-full border relative overflow-y-hidden rounded-[2px] flex flex-col items-center justify-center"
     class:!border-red-500={error}
   >
     <slot />

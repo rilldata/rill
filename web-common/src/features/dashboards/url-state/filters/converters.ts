@@ -3,8 +3,9 @@ import {
   type V1Expression,
   V1Operation,
 } from "@rilldata/web-common/runtime-client";
-import grammar from "./expression.cjs";
 import nearley from "nearley";
+import { isNonStandardIdentifier } from "../../../entity-management/name-utils";
+import grammar from "./expression.cjs";
 
 const compiledGrammar = nearley.Grammar.fromCompiled(grammar);
 export function convertFilterParamToExpression(filter: string) {
@@ -13,7 +14,6 @@ export function convertFilterParamToExpression(filter: string) {
   return parser.results[0] as V1Expression;
 }
 
-const NonStandardName = /^[a-zA-Z][a-zA-Z0-9_]*$/;
 export function convertExpressionToFilterParam(
   expr: V1Expression,
   depth = 0,
@@ -108,13 +108,15 @@ function convertBinaryExpressionToFilterParam(
 }
 
 function escapeColumnName(columnName: string) {
-  // if name doesnt have any special chars do not surround it by quotes.
-  // this makes the url more readable
-  if (NonStandardName.test(columnName)) return columnName;
-  const escapedColumnName = columnName
-    .replace(/\\/g, "\\\\")
-    .replace(/"/g, '\\"');
-  return `"${escapedColumnName}"`;
+  if (isNonStandardIdentifier(columnName)) {
+    const escapedColumnName = columnName
+      .replace(/\\/g, "\\\\")
+      .replace(/"/g, '\\"');
+    return `"${escapedColumnName}"`;
+  }
+
+  // If name doesn't have any special characters, do not surround it by quotes.
+  return columnName;
 }
 
 function escapeValue(value: unknown) {

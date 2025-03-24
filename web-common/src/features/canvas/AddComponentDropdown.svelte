@@ -1,9 +1,7 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { chartMetadata } from "@rilldata/web-common/features/canvas/components/charts/util";
-  import { PlusCircle } from "lucide-svelte";
+  import { Plus, PlusCircle } from "lucide-svelte";
   import type { ComponentType, SvelteComponent } from "svelte";
   import type { ChartType } from "./components/charts/types";
   import type { CanvasComponentType } from "./components/types";
@@ -38,9 +36,11 @@
 
   export let disabled = false;
   export let componentForm = false;
+  export let floatingForm = false;
   export let open = false;
   export let onItemClick: (type: CanvasComponentType) => void;
-  export let onMouseEnter: () => void;
+  export let onMouseEnter: () => void = () => {};
+  export let onOpenChange: (isOpen: boolean) => void = () => {};
 
   // Wrapper function to handle chart item click with randomization
   function handleChartItemClick() {
@@ -49,7 +49,7 @@
   }
 </script>
 
-<DropdownMenu.Root bind:open>
+<DropdownMenu.Root bind:open {onOpenChange}>
   <DropdownMenu.Trigger asChild let:builder>
     {#if componentForm}
       <button
@@ -60,24 +60,40 @@
         <PlusCircle class="w-6 h-6 text-slate-500" />
         <span class="text-sm font-medium text-slate-500">Add widget</span>
       </button>
-    {:else}
-      <Tooltip distance={8} location="top">
-        <button
-          {disabled}
-          {...builder}
-          use:builder.action
-          on:mouseenter={onMouseEnter}
-          class="pointer-events-auto disabled:pointer-events-none h-7 px-2 grid place-content-center z-50 hover:bg-gray-100 text-slate-500 disabled:opacity-50"
-        >
-          <PlusCircle size="15px" />
-        </button>
+    {:else if floatingForm}
+      <button
+        {...builder}
+        use:builder.action
+        class:pr-3.5={open}
+        class="shadow-lg flex group hover:rounded-3xl w-fit gap-x-1 p-2 hover:pr-3.5 absolute bottom-3 right-3 items-center justify-center z-50 rounded-full bg-primary-600 text-white hover:bg-primary-500"
+      >
+        <Plus size="20px" />
 
-        <TooltipContent slot="tooltip-content">Insert widget</TooltipContent>
-      </Tooltip>
+        <span
+          class:not-sr-only={open}
+          class="sr-only group-hover:not-sr-only font-semibold w-fit"
+        >
+          Add widget
+        </span>
+      </button>
+    {:else}
+      <button
+        {disabled}
+        use:builder.action
+        {...builder}
+        title="Insert widget"
+        class:bg-gray-50={open}
+        class="pointer-events-auto active:bg-gray-100 disabled:pointer-events-none h-7 px-2 grid place-content-center z-50 hover:bg-gray-50 text-slate-500 disabled:opacity-50"
+        on:mouseenter={onMouseEnter}
+      >
+        <PlusCircle size="15px" />
+      </button>
     {/if}
   </DropdownMenu.Trigger>
 
-  <DropdownMenu.Content align={componentForm ? "center" : "start"}>
+  <DropdownMenu.Content
+    align={componentForm || floatingForm ? "center" : "start"}
+  >
     <div class="flex flex-col" role="presentation" on:mouseenter={onMouseEnter}>
       {#each menuItems as { id, label, icon } (id)}
         <DropdownMenu.Item

@@ -47,6 +47,7 @@ linters:
     - unused
     - usestdlibvars
     - whitespace
+    - rowserrcheck
 
 linters-settings:
   depguard:

@@ -33,6 +33,7 @@ type WithConnectionFunc func(wrappedCtx context.Context, ensuredCtx context.Cont
 
 type CreateTableOptions struct {
 	View         bool
+	InitQueries  []string
 	BeforeCreate string
 	AfterCreate  string
 	TableOpts    map[string]any
@@ -45,6 +46,7 @@ type TableWriteMetrics struct {
 }
 
 type InsertTableOptions struct {
+	InitQueries  []string
 	BeforeInsert string
 	AfterInsert  string
 	ByName       bool
@@ -680,6 +682,10 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, []any, erro
 		}
 
 		rows++
+	}
+	err := result.Err()
+	if err != nil {
+		return "", nil, nil, err
 	}
 
 	if d == DialectDruid || d == DialectDuckDB || d == DialectPinot {

@@ -24,9 +24,9 @@
 
 <div
   role="presentation"
+  id="canvas-scroll-container"
   class="size-full overflow-hidden overflow-y-auto p-2 pb-48 flex flex-col items-center bg-white select-none"
   class:!cursor-grabbing={showGrabCursor}
-  on:click|self={onClick}
 >
   <div
     class="w-full h-fit flex dashboard-theme-boundary flex-col items-center row-container relative"
