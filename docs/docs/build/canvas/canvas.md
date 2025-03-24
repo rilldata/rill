@@ -7,7 +7,7 @@ sidebar_position: 05
 
 > insert screenshot of openRTB canvas
 
-For a more classic dashboard creation experience, Canvas dashboards can create a first look into your data at a top level. Similar to how Explore dashbords are built on top of a metrics view, Canvas does the same but also allows you to connect to various metrics view to display in a single view. 
+For a more classic dashboard creation experience, Canvas dashboards can create a first look into your data at a top level. Similar to how Explore dashboards are built on top of a metrics view, Canvas does the same but also allows you to connect to various metrics view to display in a single view. 
 
 :::tip
 In order to enable this feature, which is in public beta, you will need to add the following to your `rill.yaml` file.
@@ -22,7 +22,7 @@ features:
 - **metrics view**: powers the different components within a single Canvas Dashboard
 - **measures**: defined in your metrics view, you can select the measure to display 
 - **dimensions**: defined in your metrics view, you can select the dimensions to display 
-- **components**: a single object within a Canvas dashbord, including KPIs, charts, tables, and more! 
+- **components**: a single object within a Canvas dashboard, including KPIs, charts, tables, and more! 
 
 
 ## A Visual Experience 
