@@ -11,11 +11,6 @@ on:
       - "admin/database/postgres/migrations/**"
   workflow_dispatch:
 
-env:
-  POSTGRES_USER: postgres
-  POSTGRES_PASSWORD: postgres
-  POSTGRES_DB: postgres
-
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -23,6 +18,8 @@ jobs:
       # Set up local Postgres instance
       postgres:
         image: postgres:14
+        env:
+            POSTGRES_PASSWORD: postgres
         ports:
           - 5432:5432
         options: >-
