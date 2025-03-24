@@ -93,33 +93,41 @@
 
     const dragItem = e.target;
 
-    if (!(dragItem instanceof HTMLElement)) return;
+    // Find the closest parent element with drag data
+    const dragElement =
+      dragItem instanceof HTMLElement
+        ? dragItem
+        : dragItem instanceof Element
+          ? (dragItem.closest("[data-item-name]") as HTMLElement)
+          : null;
 
-    dragId = dragItem?.id ?? null;
+    if (!dragElement) return;
 
-    const { index, itemName } = dragItem.dataset;
+    dragId = dragElement.id ?? null;
+
+    const { index, itemName } = dragElement.dataset;
 
     if (!itemName || index === undefined || index === null || index === "")
       return;
 
-    clone = dragItem.cloneNode(true) as HTMLElement;
+    clone = dragElement.cloneNode(true) as HTMLElement;
 
     if (+index > selectedItems.length - 1) {
       const rect = dragContainer.getBoundingClientRect();
-      dragItemInitialTop = dragItem.getBoundingClientRect().top - rect.top;
+      dragItemInitialTop = dragElement.getBoundingClientRect().top - rect.top;
 
       threshold = e.clientY - rect.bottom + ITEM_HEIGHT;
       dropIndex = null;
       dragIndex = selectedItems.length;
     } else {
-      dragItemInitialTop = dragItem.offsetTop;
+      dragItemInitialTop = dragElement.offsetTop;
       threshold = 0;
       dragIndex = +index;
       dropIndex = dragIndex;
     }
 
     clone.style.top = dragItemInitialTop + "px";
-    clone.style.width = dragItem.clientWidth + "px";
+    clone.style.width = dragElement.clientWidth + "px";
     clone.style.left = "6px";
 
     clone.classList.add(
@@ -296,6 +304,9 @@
                   on:click={() => {
                     selectedItems = selectedItems.filter((_, j) => j !== i);
                     onSelectedChange(selectedItems);
+                  }}
+                  on:mousedown|stopPropagation={() => {
+                    // NO-OP
                   }}
                   disabled={selectedItems.length === 1}
                   class:pointer-events-none={selectedItems.length === 1}
