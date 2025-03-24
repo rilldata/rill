@@ -253,7 +253,7 @@ TableCells – the cell contents.
             on:inspect={setActiveIndex}
           />
         </div>
-        {#if rows.length && $selectedValues.data}
+        {#if rows.length}
           <!-- VirtualTableBody -->
           <TableCells
             virtualColumnItems={virtualColumns}

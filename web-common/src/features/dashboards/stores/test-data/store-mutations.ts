@@ -5,8 +5,8 @@ import {
 import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { setLeaderboardMeasureName } from "@rilldata/web-common/features/dashboards/state-managers/actions/core-actions";
 import {
-  applyDimensionBulkSearch,
-  applyDimensionSearch,
+  applyDimensionInListMode,
+  applyDimensionContainsMode,
   removeDimensionFilter,
   toggleDimensionValueSelection,
 } from "@rilldata/web-common/features/dashboards/state-managers/actions/dimension-filters";
@@ -71,7 +71,7 @@ export const AD_BIDS_APPLY_LARGE_FILTERS: TestDashboardMutation = (mut) => {
 export const AD_BIDS_APPLY_PUBLISHER_INLIST_FILTER: TestDashboardMutation = (
   mut,
 ) => {
-  applyDimensionBulkSearch(mut, AD_BIDS_PUBLISHER_DIMENSION, [
+  applyDimensionInListMode(mut, AD_BIDS_PUBLISHER_DIMENSION, [
     "Facebook",
     "Google",
   ]);
@@ -79,7 +79,7 @@ export const AD_BIDS_APPLY_PUBLISHER_INLIST_FILTER: TestDashboardMutation = (
 export const AD_BIDS_APPLY_DOMAIN_CONTAINS_FILTER: TestDashboardMutation = (
   mut,
 ) => {
-  applyDimensionSearch(mut, AD_BIDS_DOMAIN_DIMENSION, "%oo%");
+  applyDimensionContainsMode(mut, AD_BIDS_DOMAIN_DIMENSION, "%oo%");
 };
 
 export const AD_BIDS_APPLY_IMP_MEASURE_FILTER: TestDashboardMutation = (mut) =>

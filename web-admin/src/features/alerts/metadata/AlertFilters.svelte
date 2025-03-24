@@ -54,7 +54,6 @@
     dimensionsWithInlistFilter,
   );
   $: currentMeasureFilters = getMeasureFilters(measureIdMap, havingFilter);
-  $: console.log(currentDimensionFilters);
 </script>
 
 <div class="flex flex-col gap-y-3">

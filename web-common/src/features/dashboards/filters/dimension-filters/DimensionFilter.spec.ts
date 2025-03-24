@@ -18,18 +18,20 @@ import {
 import { mockAnimationsForComponentTesting } from "@rilldata/web-common/lib/test/mock-animations";
 import { act, fireEvent, screen, waitFor } from "@testing-library/svelte";
 import { get } from "svelte/store";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 
 describe("DimensionFilter", () => {
-  const mocks = useDashboardFetchMocksForComponentTests();
-  mocks.mockMetricsView(AD_BIDS_METRICS_NAME, AD_BIDS_METRICS_INIT);
-  mocks.mockMetricsExplore(
-    AD_BIDS_EXPLORE_NAME,
-    AD_BIDS_METRICS_INIT,
-    AD_BIDS_EXPLORE_INIT,
-  );
-
   mockAnimationsForComponentTesting();
+  const mocks = useDashboardFetchMocksForComponentTests();
+
+  beforeAll(() => {
+    mocks.mockMetricsView(AD_BIDS_METRICS_NAME, AD_BIDS_METRICS_INIT);
+    mocks.mockMetricsExplore(
+      AD_BIDS_EXPLORE_NAME,
+      AD_BIDS_METRICS_INIT,
+      AD_BIDS_EXPLORE_INIT,
+    );
+  });
 
   it("Select mode filter", async () => {
     const { stateManagers } = renderFilterComponent();

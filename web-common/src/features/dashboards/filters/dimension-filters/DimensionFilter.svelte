@@ -24,7 +24,7 @@
   import {
     useDimensionSearch,
     useAllSearchResultsCount,
-  } from "./dimensionFilterValues";
+  } from "web-common/src/features/dashboards/filters/dimension-filters/dimension-filter-values";
 
   export let name: string;
   export let metricsViewNames: string[];
@@ -40,9 +40,9 @@
   export let timeControlsReady: boolean | undefined;
   export let smallChip = false;
   export let onRemove: () => void;
-  export let onBulkSelect: (values: string[]) => void;
+  export let onApplyInList: (values: string[]) => void;
   export let onSelect: (value: string) => void;
-  export let onSearch: (inputText: string) => void = () => {};
+  export let onApplyContainsMode: (inputText: string) => void = () => {};
   export let onToggleFilterMode: () => void;
 
   let open = openOnMount && !selectedValues.length && !inputText;
@@ -232,12 +232,12 @@
         // Do not close the dropdown.
         break;
       case DimensionFilterMode.InList:
-        onBulkSelect(searchedBulkValues);
+        onApplyInList(searchedBulkValues);
         if (curExcludeMode !== excludeMode) onToggleFilterMode();
         open = false;
         break;
       case DimensionFilterMode.Contains:
-        onSearch(curSearchText);
+        onApplyContainsMode(curSearchText);
         if (curExcludeMode !== excludeMode) onToggleFilterMode();
         open = false;
         break;
@@ -339,17 +339,17 @@
           onChange={handleModeChange}
           size="md"
           minWidth={82}
-          noRightBorder
+          forcedTriggerStyle="rounded-r-none"
         />
         <Search
           bind:value={curSearchText}
           label={`${name} search list`}
           showBorderOnFocus={false}
-          noLeftBorder
           retainValueOnMount
           placeholder={searchPlaceholder}
           on:submit={onApply}
           on:paste={onPaste}
+          forcedInputStyle="rounded-l-none"
         />
       </div>
       {#if showExtraInfo}

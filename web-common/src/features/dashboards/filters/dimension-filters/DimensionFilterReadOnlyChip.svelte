@@ -5,7 +5,7 @@
   import {
     useAllSearchResultsCount,
     useDimensionSearch,
-  } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimensionFilterValues";
+  } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-values";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   export let name: string;

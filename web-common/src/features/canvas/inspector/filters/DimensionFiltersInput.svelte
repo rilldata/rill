@@ -36,8 +36,8 @@
   $: ({
     whereFilter,
     toggleDimensionValueSelection,
-    applyDimensionBulkSearch,
-    applyDimensionSearch,
+    applyDimensionInListMode,
+    applyDimensionContainsMode,
     removeDimensionFilter,
     toggleDimensionFilterMode,
     setMeasureFilter,
@@ -171,10 +171,10 @@
                   onToggleFilterMode={() => toggleDimensionFilterMode(name)}
                   onSelect={(value) =>
                     toggleDimensionValueSelection(name, value, true)}
-                  onBulkSelect={(values) =>
-                    applyDimensionBulkSearch(name, values)}
-                  onSearch={(searchText) =>
-                    applyDimensionSearch(name, searchText)}
+                  onApplyInList={(values) =>
+                    applyDimensionInListMode(name, values)}
+                  onApplyContainsMode={(searchText) =>
+                    applyDimensionContainsMode(name, searchText)}
                 />
               {/if}
             </div>

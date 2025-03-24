@@ -103,7 +103,7 @@ export function toggleDimensionValueSelection(
   }
 }
 
-export function applyDimensionBulkSearch(
+export function applyDimensionInListMode(
   { dashboard }: DashboardMutables,
   dimensionName: string,
   values: string[],
@@ -127,7 +127,7 @@ export function applyDimensionBulkSearch(
   }
 }
 
-export function applyDimensionSearch(
+export function applyDimensionContainsMode(
   { dashboard }: DashboardMutables,
   dimensionName: string,
   searchText: string,
@@ -266,8 +266,8 @@ export const dimensionFilterActions = {
    * the include/exclude mode is a toggle for the entire dimension.
    */
   toggleDimensionValueSelection,
-  applyDimensionBulkSearch,
-  applyDimensionSearch,
+  applyDimensionInListMode,
+  applyDimensionContainsMode,
   toggleDimensionFilterMode,
   removeDimensionFilter,
   selectItemsInFilter,

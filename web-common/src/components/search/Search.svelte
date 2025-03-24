@@ -11,11 +11,11 @@
   export let label = "Search";
   export let placeholder = "Search";
   export let border = true;
-  export let noLeftBorder = false;
   export let background = true;
   export let large = false;
   export let disabled = false;
   export let retainValueOnMount = false;
+  export let forcedInputStyle = "";
 
   /* Reference of input DOM element */
   let ref: HTMLInputElement;
@@ -60,8 +60,7 @@
     class:bg-slate-50={background}
     class:border
     class:border-gray-200={border}
-    class:rounded-l-none={noLeftBorder}
-    class="outline-none rounded-[2px] block w-full pl-8 p-1"
+    class="outline-none rounded-[2px] block w-full pl-8 p-1 {forcedInputStyle}"
     class:h-full={large}
     {disabled}
     {placeholder}

@@ -433,7 +433,7 @@ export class Filters {
       this.temporaryFilterName.set(null);
     }
     const excludeMode = get(this.dimensionFilterExcludeMode);
-    const isInclude = !excludeMode.get(dimensionName);
+    const isExclude = !!excludeMode.get(dimensionName);
     const wf = get(this.whereFilter);
 
     // Use the derived selector:
@@ -441,7 +441,7 @@ export class Filters {
 
     if (exprIndex === undefined || exprIndex === -1) {
       wf.cond?.exprs?.push(
-        createInExpression(dimensionName, [dimensionValue], !isInclude),
+        createInExpression(dimensionName, [dimensionValue], isExclude),
       );
       this.whereFilter.set(wf);
       return;
@@ -457,7 +457,7 @@ export class Filters {
       expr.cond?.op === V1Operation.OPERATION_NLIKE
     ) {
       wf.cond?.exprs?.push(
-        createInExpression(dimensionName, [dimensionValue], !isInclude),
+        createInExpression(dimensionName, [dimensionValue], isExclude),
       );
       this.whereFilter.set(wf);
       return;
@@ -484,16 +484,16 @@ export class Filters {
     this.whereFilter.set(wf);
   };
 
-  applyDimensionBulkSearch = (dimensionName: string, values: string[]) => {
+  applyDimensionInListMode = (dimensionName: string, values: string[]) => {
     const tempFilter = get(this.temporaryFilterName);
     if (tempFilter !== null) {
       this.temporaryFilterName.set(null);
     }
     const excludeMode = get(this.dimensionFilterExcludeMode);
-    const isInclude = !excludeMode.get(dimensionName);
+    const isExclude = !!excludeMode.get(dimensionName);
     const wf = get(this.whereFilter);
 
-    const expr = createInExpression(dimensionName, values, !isInclude);
+    const expr = createInExpression(dimensionName, values, isExclude);
     this.dimensionsWithInlistFilter.update((dimensionsWithInlistFilter) => {
       return [...dimensionsWithInlistFilter, dimensionName];
     });
@@ -507,19 +507,19 @@ export class Filters {
     this.whereFilter.set(wf);
   };
 
-  applyDimensionSearch = (dimensionName: string, searchText: string) => {
+  applyDimensionContainsMode = (dimensionName: string, searchText: string) => {
     const tempFilter = get(this.temporaryFilterName);
     if (tempFilter !== null) {
       this.temporaryFilterName.set(null);
     }
     const excludeMode = get(this.dimensionFilterExcludeMode);
-    const isInclude = !excludeMode.get(dimensionName);
+    const isExclude = !!excludeMode.get(dimensionName);
     const wf = get(this.whereFilter);
 
     const expr = createLikeExpression(
       dimensionName,
       `%${searchText}%`,
-      !isInclude,
+      isExclude,
     );
     const exprIndex = get(this.getWhereFilterExpressionIndex)(dimensionName);
     if (exprIndex === undefined || exprIndex === -1) {
@@ -561,12 +561,12 @@ export class Filters {
 
   selectItemsInFilter = (dimensionName: string, values: (string | null)[]) => {
     const excludeMode = get(this.dimensionFilterExcludeMode);
-    const isInclude = !excludeMode.get(dimensionName);
+    const isExclude = !!excludeMode.get(dimensionName);
     const wf = get(this.whereFilter);
     const exprIdx = get(this.getWhereFilterExpressionIndex)(dimensionName);
     if (exprIdx === undefined || exprIdx === -1) {
       wf.cond?.exprs?.push(
-        createInExpression(dimensionName, values, !isInclude),
+        createInExpression(dimensionName, values, isExclude),
       );
       this.whereFilter.set(wf);
       return;
@@ -623,7 +623,10 @@ export class Filters {
   };
 
   getFiltersFromText = (filterText: string) => {
-    let { expr } = convertFilterParamToExpression(filterText); // TODO: use dimensionsWithInlistFilter
+    let { expr } = convertFilterParamToExpression(
+      filterText,
+      get(this.dimensionsWithInlistFilter),
+    );
     if (!expr) {
       expr = createAndExpression([]);
     } else if (
