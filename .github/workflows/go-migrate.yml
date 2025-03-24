@@ -66,4 +66,4 @@ jobs:
         RILL_ADMIN_DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
         RILL_ADMIN_RIVER_DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
       run: |
-        go run ./cli admin start
+        go run ./cli devtool migrate
