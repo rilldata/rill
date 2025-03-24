@@ -622,7 +622,8 @@ test.describe("pivot run through", () => {
     const expandButton = page
       .locator("td")
       .filter({ hasText: "Jan" })
-      .getByRole("button");
+      .getByRole("presentation");
+
     await expandButton.click();
     await expect(page.locator(".status.running")).toHaveCount(0);
     await validateTableContents(page, "table", expectExpandedTable);

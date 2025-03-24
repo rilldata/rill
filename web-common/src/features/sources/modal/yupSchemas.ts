@@ -84,7 +84,7 @@ export const getYupSchema = {
         "Must be an Azure URI (e.g. azure://container/path)",
       )
       .required("Path is required"),
-    account: yup.string(),
+    azure_storage_account: yup.string(),
     name: yup
       .string()
       .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)

@@ -292,7 +292,7 @@
     @apply bg-slate-100;
   }
 
-  tr:hover .active-cell .cell {
+  tr:hover .active-cell {
     @apply bg-primary-100;
   }
 

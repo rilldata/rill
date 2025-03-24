@@ -49,7 +49,7 @@ type DB interface {
 	CreateTableAsSelect(ctx context.Context, name string, sql string, opts *CreateTableOptions) (*TableWriteMetrics, error)
 
 	// MutateTable allows mutating a table in the database by calling the mutateFn.
-	MutateTable(ctx context.Context, name string, mutateFn func(ctx context.Context, conn *sqlx.Conn) error) (*TableWriteMetrics, error)
+	MutateTable(ctx context.Context, name string, initQueries []string, mutateFn func(ctx context.Context, conn *sqlx.Conn) error) (*TableWriteMetrics, error)
 
 	// DropTable removes a table from the database.
 	DropTable(ctx context.Context, name string) error
@@ -455,7 +455,7 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 	return &TableWriteMetrics{Duration: duration}, nil
 }
 
-func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx context.Context, conn *sqlx.Conn) error) (*TableWriteMetrics, error) {
+func (d *db) MutateTable(ctx context.Context, name string, initQueries []string, mutateFn func(ctx context.Context, conn *sqlx.Conn) error) (*TableWriteMetrics, error) {
 	d.logger.Debug("mutate table", zap.String("name", name), observability.ZapCtx(ctx))
 	err := d.writeSem.Acquire(ctx, 1)
 	if err != nil {
@@ -488,7 +488,7 @@ func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx con
 
 	// acquire write connection
 	// need to ignore attaching table since it is already present in the db file
-	conn, release, err := d.acquireWriteConn(ctx, d.localDBPath(name, newVersion), name, nil, false)
+	conn, release, err := d.acquireWriteConn(ctx, d.localDBPath(name, newVersion), name, initQueries, false)
 	if err != nil {
 		_ = os.RemoveAll(newDir)
 		return nil, err

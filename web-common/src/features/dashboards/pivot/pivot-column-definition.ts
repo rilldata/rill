@@ -230,6 +230,11 @@ export function getMeasureColumnProps(
   });
 }
 
+export type DimensionColumnProps = Array<{
+  label: string;
+  name: string;
+}>;
+
 export function getDimensionColumnProps(
   dimensionNames: string[],
   config: PivotDataStoreConfig,

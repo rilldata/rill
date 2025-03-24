@@ -52,7 +52,12 @@
   {#if isChartComponentType(renderer) && timeAndFilterStore}
     <Chart {rendererProperties} {renderer} {timeAndFilterStore} />
   {:else if renderer === "pivot" && timeAndFilterStore}
-    <Pivot {rendererProperties} {timeAndFilterStore} {componentName} />
+    <Pivot
+      {hasHeader}
+      {rendererProperties}
+      {timeAndFilterStore}
+      {componentName}
+    />
   {:else if renderer === "table" && timeAndFilterStore}
     <Table
       {rendererProperties}
