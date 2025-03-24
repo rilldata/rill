@@ -84,7 +84,7 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	// Init Prometheus telemetry
 	shutdown, err := observability.Start(ctx, logger, &observability.Options{
 		MetricsExporter: observability.PrometheusExporter,
-		TracesExporter:  observability.NoopExporter,
+		TracesExporter:  observability.FileBasedExporter,
 		ServiceName:     "rill-local",
 		ServiceVersion:  opts.Ch.Version.String(),
 	})

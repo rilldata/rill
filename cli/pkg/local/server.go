@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -19,6 +20,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/google/go-github/v50/github"
+	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/cli/cmd/auth"
@@ -67,6 +69,8 @@ func (s *Server) RegisterHandlers(mux *http.ServeMux, httpPort int, secure, enab
 
 	// Register telemetry proxy endpoint
 	mux.Handle("/local/track", s.trackingHandler())
+
+	mux.Handle("/local/debug/trace", s.traceHandler())
 
 	// Deprecated: use proto RPCs instead
 	mux.Handle("/local/config", s.metadataHandler())
@@ -815,4 +819,78 @@ func (nameConflictRetryErrClassifier) Classify(err error) retrier.Action {
 	}
 
 	return retrier.Fail
+}
+
+// traceHandler returns trace information corresponding to the trace ID.
+func (s *Server) traceHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		traceID := r.URL.Query().Get("id")
+		if traceID == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		db, err := sqlx.Open("duckdb", "")
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		defer db.Close()
+
+		filepath, err := dotrill.ResolveFilename("otel_traces*.log", true)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		rows, err := db.Queryx(fmt.Sprintf("SELECT replace(traceID::VARCHAR, '-', '') as traceID, * exclude traceID FROM read_json_auto(%s) WHERE traceID = ?", escapeStringValue(filepath)), traceID)
+		if err != nil {
+			s.logger.Error("failed to scan trace", zap.Error(err))
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		var spans []traceSpan
+
+		for rows.Next() {
+			var span traceSpan
+			if err := rows.StructScan(&span); err != nil {
+				log.Println("struct scan error:", err)
+				continue
+			}
+
+			// Manually decode tags string to map
+			if err := json.Unmarshal(span.TagsRaw, &span.Tags); err != nil {
+				log.Printf("failed to decode tags for span %s: %v", span.ID, err)
+				span.Tags = map[string]string{}
+			}
+
+			spans = append(spans, span)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		enc := json.NewEncoder(w)
+		err = enc.Encode(spans)
+		if err != nil {
+			s.logger.Error("failed to write trace", zap.Error(err))
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+	})
+}
+
+func escapeStringValue(s string) string {
+	return fmt.Sprintf("'%s'", strings.ReplaceAll(s, "'", "''"))
+}
+
+type traceSpan struct {
+	TraceID   string            `db:"traceID" json:"traceID"`
+	Duration  int64             `db:"duration" json:"duration"`
+	ID        string            `db:"id" json:"id"`
+	Kind      string            `db:"kind" json:"kind"`
+	Name      string            `db:"name" json:"name"`
+	ParentID  string            `db:"parentId" json:"parentId"`
+	TagsRaw   []byte            `db:"tags" json:"-"`
+	Tags      map[string]string `json:"tags,omitempty"`
+	Timestamp int64             `db:"timestamp" json:"timestamp"`
 }

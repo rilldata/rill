@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Trace Viewer</title>
+
+  <!-- D3 Library -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+
+  <style>
+    /* 
+     * 1) Global Resets & Layout
+     *    Make the page take full height and use flex for layout
+     */
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      background-color: #f3f4f6;
+      font-family: Arial, sans-serif;
+    }
+
+    h2 {
+      text-align: center;
+      margin: 20px 0;
+      color: #4f46e5;
+    }
+
+    /* 
+     * 2) Main Container 
+     *    Flex container holding the trace visualization + details panel 
+     */
+    .container {
+      flex: 1;
+      display: flex;
+      width: 100%;
+      max-width: 100%;
+      padding: 20px;
+      box-sizing: border-box;
+      justify-content: center;
+      align-items: stretch;
+      gap: 20px;
+    }
+
+    /* 
+     * 3) Trace Container 
+     *    Holds the input, button, and SVG area 
+     */
+    .trace-container {
+      flex: 3;
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden; /* Avoid scrollbars if content overflows */
+    }
+
+    /* 
+     * 4) Details Panel 
+     *    Always visible, for selected span details 
+     */
+    .details-panel {
+      flex: 1;
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      height: 100%;
+    }
+
+    /* 
+     * 5) SVG Container 
+     *    Helps the SVG scale to available space 
+     */
+    .svg-container {
+      flex-grow: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* 
+     * 6) SVG & Span Bars 
+     */
+    svg {
+      width: 100%;
+      height: 100%;
+      background-color: #f9fafb;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+    rect {
+      cursor: pointer;
+      transition: fill 0.2s ease;
+    }
+    rect:hover {
+      fill: #6366f1 !important;
+    }
+
+    /* 
+     * 7) Inputs & Buttons 
+     */
+    input, button {
+      padding: 10px;
+      font-size: 16px;
+      margin: 10px 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background-color: #4f46e5;
+      color: white;
+      cursor: pointer;
+      border: none;
+      padding: 10px 15px;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background-color: #4338ca;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Trace Viewer</h2>
+
+  <!-- Main Container: Left side (Trace) + Right side (Details) -->
+  <div class="container">
+    
+    <!-- Left: Trace Container -->
+    <div class="trace-container">
+      <!-- Input & Button Row -->
+      <div>
+        <input type="text" id="traceIdInput" placeholder="Enter Trace ID" />
+        <button id="loadTraceBtn">Load Trace</button>
+      </div>
+      <!-- SVG Area -->
+      <div class="svg-container">
+        <svg></svg>
+      </div>
+    </div>
+
+    <!-- Right: Details Panel (always visible) -->
+    <div class="details-panel">
+      <h3 id="spanName">Select a span</h3>
+      <p><strong>Service:</strong> <span id="serviceName">-</span></p>
+      <p><strong>Duration:</strong> <span id="duration">-</span></p>
+      <p><strong>Start Time:</strong> <span id="timestamp">-</span></p>
+      <p><strong>Tags:</strong></p>
+      <ul id="tagsList"></ul>
+    </div>
+  </div>
+
+  <script>
+    // ---------------------------------------------------------
+    // Global Variables & DOM References
+    // ---------------------------------------------------------
+    let traceData = [];
+    const svg = d3.select("svg");
+    const g = svg.append("g"); // Group for drawing rectangles & text
+
+    // Get references to DOM elements
+    const traceIdInput = document.getElementById("traceIdInput");
+    const loadTraceBtn = document.getElementById("loadTraceBtn");
+    const spanNameEl = document.getElementById("spanName");
+    const serviceNameEl = document.getElementById("serviceName");
+    const durationEl = document.getElementById("duration");
+    const timestampEl = document.getElementById("timestamp");
+    const tagsListEl = document.getElementById("tagsList");
+
+    // ---------------------------------------------------------
+    // Initialization
+    // ---------------------------------------------------------
+    function init() {
+      // Set up event listeners
+      loadTraceBtn.addEventListener("click", fetchTrace);
+    }
+
+    // ---------------------------------------------------------
+    // Fetch Trace Data
+    // ---------------------------------------------------------
+    async function fetchTrace() {
+      const traceId = traceIdInput.value.trim();
+      if (!traceId) {
+        alert("Please enter a trace ID");
+        return;
+      }
+
+      try {
+        const url = `http://localhost:9009/local/debug/trace?id=${encodeURIComponent(traceId)}`;
+        const response = await fetch(url);
+
+        if (!response.ok) {
+          throw new Error(`HTTP error ${response.status}`);
+        }
+
+        traceData = await response.json();
+        renderTrace();
+      } catch (err) {
+        alert("Failed to load trace: " + err.message);
+        console.error(err);
+      }
+    }
+
+    // ---------------------------------------------------------
+    // Render the Trace Visualization
+    // ---------------------------------------------------------
+    function renderTrace() {
+      // Clear previous shapes/text
+      g.selectAll("*").remove();
+
+      // If no data, do nothing
+      if (!traceData || traceData.length === 0) return;
+
+      // Determine the min & max time
+      const minTime = Math.min(...traceData.map(span => span.timestamp));
+      const maxTime = Math.max(...traceData.map(span => span.timestamp + span.duration));
+
+      // Get container dimensions
+      const width = document.querySelector(".svg-container").clientWidth;
+      const height = document.querySelector(".svg-container").clientHeight;
+
+      // Create a linear scale for x-axis
+      const xScale = d3.scaleLinear()
+        .domain([minTime, maxTime])
+        .range([50, width - 50]);
+
+      // Sort spans by start time
+      traceData.sort((a, b) => a.timestamp - b.timestamp);
+
+      // Draw each span as a rectangle + label
+      traceData.forEach((span, index) => {
+        // Span rectangle
+        g.append("rect")
+          .attr("x", xScale(span.timestamp))
+          .attr("y", 30 + index * 30)
+          .attr("width", xScale(span.timestamp + span.duration) - xScale(span.timestamp))
+          .attr("height", 20)
+          .attr("fill", span.parentId ? "#6b7280" : "#8b5cf6")
+          .on("click", () => showDetails(span));
+
+        // Span name label
+        g.append("text")
+          .attr("x", xScale(span.timestamp) + 5)
+          .attr("y", 45 + index * 30)
+          .attr("fill", "white")
+          .attr("font-size", "10px")
+          .text(span.name);
+      });
+    }
+
+    // ---------------------------------------------------------
+    // Show Span Details in Right Panel
+    // ---------------------------------------------------------
+    function showDetails(span) {
+      // Convert duration from microseconds to seconds
+      const durationInSeconds = formatDuration(span.duration);
+
+      // Convert timestamp (µs) to a human-readable date/time
+      const readableTime = formatTimestamp(span.timestamp);
+
+      // Update DOM
+      spanNameEl.innerText = span.name;
+      serviceNameEl.innerText = span.localEndpoint?.serviceName || "-";
+      durationEl.innerText = durationInSeconds + " s";
+      timestampEl.innerText = readableTime;
+
+      // Populate tags
+      tagsListEl.innerHTML = "";
+      if (span.tags) {
+        Object.entries(span.tags).forEach(([key, value]) => {
+          const li = document.createElement("li");
+          li.innerHTML = `<strong>${key}:</strong> ${value}`;
+          tagsListEl.appendChild(li);
+        });
+      }
+    }
+
+    // ---------------------------------------------------------
+    // Helper Functions
+    // ---------------------------------------------------------
+    function formatDuration(micros) {
+      // Convert microseconds to seconds, returning a fixed decimal
+      return (micros / 1_000_000).toFixed(6);
+    }
+
+    function formatTimestamp(micros) {
+      // Convert microseconds to milliseconds for JS Date
+      const date = new Date(micros / 1_000);
+      // Convert to a readable local time string
+      return date.toLocaleString();
+    }
+
+    // ---------------------------------------------------------
+    // On Page Load
+    // ---------------------------------------------------------
+    document.addEventListener("DOMContentLoaded", init);
+  </script>
+</body>
+</html>
