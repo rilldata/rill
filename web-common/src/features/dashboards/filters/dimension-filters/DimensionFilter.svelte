@@ -232,11 +232,13 @@
         // Do not close the dropdown.
         break;
       case DimensionFilterMode.InList:
+        if (searchedBulkValues.length === 0) return;
         onApplyInList(searchedBulkValues);
         if (curExcludeMode !== excludeMode) onToggleFilterMode();
         open = false;
         break;
       case DimensionFilterMode.Contains:
+        if (curSearchText.length === 0) return;
         onApplyContainsMode(curSearchText);
         if (curExcludeMode !== excludeMode) onToggleFilterMode();
         open = false;

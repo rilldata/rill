@@ -623,10 +623,8 @@ export class Filters {
   };
 
   getFiltersFromText = (filterText: string) => {
-    let { expr } = convertFilterParamToExpression(
-      filterText,
-      get(this.dimensionsWithInlistFilter),
-    );
+    let { expr, dimensionsWithInlistFilter } =
+      convertFilterParamToExpression(filterText);
     if (!expr) {
       expr = createAndExpression([]);
     } else if (
@@ -635,7 +633,7 @@ export class Filters {
     ) {
       expr = createAndExpression([expr]);
     }
-    return expr;
+    return { expr, dimensionsWithInlistFilter };
   };
 
   setTemporaryFilterName = (name: string) => {
@@ -643,7 +641,9 @@ export class Filters {
   };
 
   setFiltersFromText = (filterText: string) => {
-    const expr = this.getFiltersFromText(filterText);
+    const { expr, dimensionsWithInlistFilter } =
+      this.getFiltersFromText(filterText);
     this.setFilters(expr);
+    this.dimensionsWithInlistFilter.set(dimensionsWithInlistFilter);
   };
 }

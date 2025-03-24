@@ -17,6 +17,7 @@
   } from "@rilldata/web-common/components/popover";
   import FilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/FilterChipsReadOnly.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
@@ -47,6 +48,8 @@
   } = StateManagers;
 
   $: ({ organization, project, dashboard } = $page.params);
+
+  const timeControlStore = useTimeControlStore(StateManagers);
 
   $: isTitleEmpty = $form.title.trim() === "";
 
@@ -246,6 +249,8 @@
               dimensionThresholdFilters={$dashboardStore.dimensionThresholdFilters}
               timeRange={undefined}
               comparisonTimeRange={undefined}
+              resolvedTimeStart={$timeControlStore.timeStart}
+              resolvedTimeEnd={$timeControlStore.timeEnd}
             />
           </div>
         </div>

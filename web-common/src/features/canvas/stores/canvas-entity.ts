@@ -206,9 +206,10 @@ export class CanvasEntity {
           let where: V1Expression | undefined = globalWhere;
 
           if (componentSpec?.rendererProperties?.dimension_filters) {
-            const componentWhere = component.localFilters.getFiltersFromText(
-              componentSpec.rendererProperties.dimension_filters as string,
-            );
+            const { expr: componentWhere } =
+              component.localFilters.getFiltersFromText(
+                componentSpec.rendererProperties.dimension_filters as string,
+              );
             where = mergeFilters(globalWhere, componentWhere);
           }
 

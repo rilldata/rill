@@ -25,6 +25,10 @@ The main feature-set component for dashboard filters
   export let dimensionThresholdFilters: DimensionThresholdFilter[];
   export let timeRange: V1TimeRange | undefined;
   export let comparisonTimeRange: V1TimeRange | undefined = undefined;
+  // `timeRange` passed to this is usually a relative time range.
+  // But we need resolved start and end based on current time in dimension filters to get accurate results.
+  export let resolvedTimeStart: string | undefined = undefined;
+  export let resolvedTimeEnd: string | undefined = undefined;
 
   $: ({ instanceId } = $runtime);
 
@@ -81,8 +85,8 @@ The main feature-set component for dashboard filters
             values={selectedValues}
             {inputText}
             {isInclude}
-            timeStart={timeRange?.start}
-            timeEnd={timeRange?.end}
+            timeStart={resolvedTimeStart}
+            timeEnd={resolvedTimeEnd}
           />
         {/if}
       </div>
