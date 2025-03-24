@@ -33,6 +33,6 @@ features:
 
 
 ## Making small changes to the YAML 
-As always, while we allow our users to create and modify the dashboard via the UI, you can always change the view to a more traditional YAML text by selecting the toggle.
+As always, while we allow our users to create and modify the dashboard via the UI, you can always change the view to a more traditional YAML text by flipping the toggle.
 
 >insert image 
