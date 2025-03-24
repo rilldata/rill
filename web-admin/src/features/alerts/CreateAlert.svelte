@@ -12,6 +12,7 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { BellPlusIcon } from "lucide-svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
 
   const {
     selectors: {
@@ -19,6 +20,8 @@
     },
     metricsViewName,
   } = getStateManagers();
+
+  const { alerts } = featureFlags;
 
   $: ({ instanceId } = $runtime);
 
@@ -28,7 +31,7 @@
   let open = false;
 </script>
 
-{#if hasTimeDimension}
+{#if hasTimeDimension && $alerts}
   <GuardedDialog
     title="Close without saving?"
     description="You haven’t saved changes to this alert yet, so closing this window will lose your work."

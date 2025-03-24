@@ -5,11 +5,14 @@
     width,
     position,
   } from "@rilldata/web-admin//components/nav/Tab.svelte";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
 
   export let projectPermissions: V1ProjectPermissions;
   export let organization: string;
   export let project: string;
   export let pathname: string;
+
+  const { alerts, reports } = featureFlags;
 
   $: tabs = [
     {
@@ -20,12 +23,12 @@
     {
       route: `/${organization}/${project}/-/reports`,
       label: "Reports",
-      hasPermission: true,
+      hasPermission: $reports,
     },
     {
       route: `/${organization}/${project}/-/alerts`,
       label: "Alerts",
-      hasPermission: true,
+      hasPermission: $alerts,
     },
     {
       route: `/${organization}/${project}/-/status`,
@@ -56,28 +59,30 @@
   }
 </script>
 
-<div>
-  <nav>
-    {#each tabs as tab, i (tab.route)}
-      {#if tab.hasPermission}
-        <Tab
-          route={tab.route}
-          label={tab.label}
-          selected={selectedIndex === i}
-          {organization}
-          {project}
-        />
-      {/if}
-    {/each}
-  </nav>
+{#key `${$alerts}-${$reports}`}
+  <div>
+    <nav>
+      {#each tabs as tab, i (tab.route)}
+        {#if tab.hasPermission}
+          <Tab
+            route={tab.route}
+            label={tab.label}
+            selected={selectedIndex === i}
+            {organization}
+            {project}
+          />
+        {/if}
+      {/each}
+    </nav>
 
-  {#if $width && $position}
-    <span
-      style:width="{$width}px"
-      style:transform="translateX({$position}px) "
-    />
-  {/if}
-</div>
+    {#if $width && $position}
+      <span
+        style:width="{$width}px"
+        style:transform="translateX({$position}px) "
+      />
+    {/if}
+  </div>
+{/key}
 
 <style lang="postcss">
   div {
