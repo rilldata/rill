@@ -217,7 +217,7 @@
       dimensionName,
       activeMeasureNames,
       slice,
-      selectedValues,
+      $selectedValues?.data ?? [],
       leaderboardTotals,
     ));
 
@@ -274,7 +274,7 @@
       dimensionName,
       activeMeasureNames,
       leaderboardTotals,
-      selectedValues.findIndex((value) =>
+      $selectedValues?.data?.findIndex((value) =>
         compareLeaderboardValues(value, item[dimensionName]),
       ) ?? -1,
     ),
