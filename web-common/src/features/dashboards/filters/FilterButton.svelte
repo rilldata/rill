@@ -23,16 +23,6 @@
 
   $: selectableGroups = [
     <SearchableFilterSelectableGroup>{
-      name: "MEASURES",
-      items:
-        filteredSimpleMeasures
-          ?.map((m) => ({
-            name: m.name as string,
-            label: getMeasureDisplayName(m),
-          }))
-          .filter((m) => !measureHasFilter(m.name)) ?? [],
-    },
-    <SearchableFilterSelectableGroup>{
       name: "DIMENSIONS",
       items:
         allDimensions
@@ -42,17 +32,28 @@
           }))
           .filter((d) => !dimensionHasFilter(d.name)) ?? [],
     },
+    <SearchableFilterSelectableGroup>{
+      name: "MEASURES",
+      items:
+        filteredSimpleMeasures
+          ?.map((m) => ({
+            name: m.name as string,
+            label: getMeasureDisplayName(m),
+          }))
+          .filter((m) => !measureHasFilter(m.name)) ?? [],
+    },
   ];
 </script>
 
 <DropdownMenu.Root bind:open typeahead={false}>
-  <DropdownMenu.Trigger asChild let:builder id="filter-add-btn">
+  <DropdownMenu.Trigger asChild let:builder>
     <Tooltip distance={8} suppress={open}>
       <button
         class:addBorder
         class:active={open}
         use:builder.action
         {...builder}
+        aria-label="Add filter button"
       >
         <Add size="17px" />
       </button>

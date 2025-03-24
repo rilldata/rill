@@ -41,6 +41,8 @@
       filters: {
         whereFilter,
         toggleDimensionValueSelection,
+        applyDimensionInListMode,
+        applyDimensionContainsMode,
         removeDimensionFilter,
         toggleDimensionFilterMode,
         setMeasureFilter,
@@ -184,7 +186,7 @@
       ?.defaultComparison as TimeComparisonOption;
 
     // Get valid option for the new time range
-    const validComparison = allTimeRange && comparisonOption;
+    const validComparison = $allTimeRange && comparisonOption;
 
     makeTimeSeriesTimeRangeAndUpdateAppState(range, defaultTimeGrain, {
       name: validComparison,
@@ -325,7 +327,7 @@
           No filters selected
         </div>
       {:else}
-        {#each allDimensionFilters as { name, label, selectedValues, metricsViewNames } (name)}
+        {#each allDimensionFilters as { name, label, mode, selectedValues, inputText, metricsViewNames } (name)}
           {@const dimension = $allDimensions.find(
             (d) => d.name === name || d.column === name,
           )}
@@ -337,7 +339,9 @@
                 {readOnly}
                 {name}
                 {label}
+                {mode}
                 {selectedValues}
+                {inputText}
                 {timeStart}
                 {timeEnd}
                 timeControlsReady={!!$timeRangeStateStore}
@@ -346,6 +350,10 @@
                 onToggleFilterMode={() => toggleDimensionFilterMode(name)}
                 onSelect={(value) =>
                   toggleDimensionValueSelection(name, value, true)}
+                onApplyInList={(values) =>
+                  applyDimensionInListMode(name, values)}
+                onApplyContainsMode={(searchText) =>
+                  applyDimensionContainsMode(name, searchText)}
               />
             {/if}
           </div>
