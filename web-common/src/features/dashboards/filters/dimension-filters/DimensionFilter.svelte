@@ -124,8 +124,7 @@
   $: isFetching =
     isFetchingFromSearchResults ?? isFetchingFromAllSearchResultsCount;
 
-  $: showExtraInfo =
-    curMode !== DimensionFilterMode.Select || curSearchText.length > 0;
+  $: showExtraInfo = curMode !== DimensionFilterMode.Select; // || curSearchText.length > 0; (Add once we have docs)
 
   $: allSelected = Boolean(
     selectedValues.length &&
@@ -384,6 +383,7 @@
     {/if}
 
     <div
+      class:pt-1={!showExtraInfo}
       class="flex flex-col flex-1 overflow-y-auto w-full h-fit min-h-24 pb-1"
     >
       {#if isFetching}

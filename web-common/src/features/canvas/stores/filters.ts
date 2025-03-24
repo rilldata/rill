@@ -623,17 +623,18 @@ export class Filters {
   };
 
   getFiltersFromText = (filterText: string) => {
-    let { expr, dimensionsWithInlistFilter } =
+    const { expr, dimensionsWithInlistFilter } =
       convertFilterParamToExpression(filterText);
-    if (!expr) {
-      expr = createAndExpression([]);
+    let sanitisedExpr = expr;
+    if (!sanitisedExpr) {
+      sanitisedExpr = createAndExpression([]);
     } else if (
-      expr.cond?.op !== V1Operation.OPERATION_AND &&
-      expr.cond?.op !== V1Operation.OPERATION_OR
+      sanitisedExpr.cond?.op !== V1Operation.OPERATION_AND &&
+      sanitisedExpr.cond?.op !== V1Operation.OPERATION_OR
     ) {
-      expr = createAndExpression([expr]);
+      sanitisedExpr = createAndExpression([sanitisedExpr]);
     }
-    return { expr, dimensionsWithInlistFilter };
+    return { expr: sanitisedExpr, dimensionsWithInlistFilter };
   };
 
   setTemporaryFilterName = (name: string) => {
