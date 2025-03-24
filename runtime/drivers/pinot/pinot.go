@@ -110,6 +110,8 @@ type configProperties struct {
 	SSL bool `mapstructure:"ssl"`
 	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute.
 	LogQueries bool `mapstructure:"log_queries"`
+	// MaxOpenConns is the maximum number of open connections to the database. Set to 0 to use the default value or -1 for unlimited.
+	MaxOpenConns int `mapstructure:"max_open_conns"`
 }
 
 // Open a connection to Apache Pinot using HTTP API.
@@ -171,7 +173,11 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	if err != nil {
 		return nil, err
 	}
-	db.SetMaxOpenConns(10) // // based on observations
+
+	if conf.MaxOpenConns == 0 {
+		conf.MaxOpenConns = 20 // default value
+	}
+	db.SetMaxOpenConns(conf.MaxOpenConns)
 
 	err = otelsql.RegisterDBStatsMetrics(db, otelsql.WithAttributes(attribute.String("instance_id", instanceID)))
 	if err != nil {
