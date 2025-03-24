@@ -16,6 +16,16 @@
 
   const UPPER_BOUND = 12 + 28 + 25;
   const ITEM_HEIGHT = 28;
+  const WINDOW_OFFSET = 100; // Space to leave from window edges
+  let windowHeight = typeof window !== "undefined" ? window.innerHeight : 800;
+  let maxContentHeight = windowHeight - WINDOW_OFFSET;
+
+  if (typeof window !== "undefined") {
+    window.addEventListener("resize", () => {
+      windowHeight = window.innerHeight;
+      maxContentHeight = windowHeight - WINDOW_OFFSET;
+    });
+  }
 
   type SelectableItem = MetricsViewSpecMeasureV2 | MetricsViewSpecDimensionV2;
 
@@ -208,6 +218,7 @@
       bind:contentRect
       class="flex flex-col relative"
       role="presentation"
+      style="max-height: {maxContentHeight}px"
     >
       <div class="px-3 pt-3 pb-0">
         <Search
@@ -219,7 +230,8 @@
 
       <div
         role="presentation"
-        class="flex flex-col pointer-events-none p-1.5 pt-0 max-h-[50vh] overflow-y-auto"
+        class="flex flex-col pointer-events-none p-1.5 pt-0 overflow-y-auto"
+        style="max-height: calc({maxContentHeight}px / 2)"
         on:mousedown={handleMouseDown}
       >
         <header
@@ -313,7 +325,10 @@
       </div>
       {#if selectedItems.length < allItems.length}
         <span class="h-px bg-slate-200 w-full" />
-        <div class="flex flex-col max-h-52 overflow-y-auto p-1.5 pt-0">
+        <div
+          class="flex flex-col overflow-y-auto p-1.5 pt-0"
+          style="max-height: calc({maxContentHeight}px / 2)"
+        >
           <header
             class="flex py-1.5 justify-between px-2 sticky top-0 from-white from-80% to-transparent bg-gradient-to-b"
           >
