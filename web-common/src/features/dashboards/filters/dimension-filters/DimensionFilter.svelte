@@ -8,7 +8,7 @@
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
-  import RemovableListBody from "@rilldata/web-common/components/chip/removable-list-chip/RemovableListBody.svelte";
+  import DimensionFilterChipBody from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterChipBody.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
   import { Search } from "@rilldata/web-common/components/search";
@@ -59,12 +59,14 @@
 
   let searchedBulkValues: string[] =
     mode === DimensionFilterMode.InList ? selectedValues : [];
+
   $: enableSearchQuery =
     Boolean(timeControlsReady && open) &&
     (curMode === DimensionFilterMode.Select ||
       (curMode === DimensionFilterMode.Contains && curSearchText.length > 0) ||
       (curMode === DimensionFilterMode.InList &&
         searchedBulkValues.length > 0));
+
   $: searchResultsQuery = useDimensionSearch(
     instanceId,
     metricsViewNames,
@@ -84,11 +86,13 @@
     isFetching: isFetchingFromSearchResults,
   } = $searchResultsQuery);
   $: correctedSearchResults = enableSearchQuery ? searchResults : [];
+
   $: enableSearchCountQuery =
     Boolean(timeControlsReady) &&
     ((curMode === DimensionFilterMode.Contains && curSearchText.length > 0) ||
       (curMode === DimensionFilterMode.InList &&
         searchedBulkValues.length > 0));
+
   $: allSearchResultsCountQuery = useAllSearchResultsCount(
     instanceId,
     metricsViewNames,
@@ -297,7 +301,7 @@
           >
         </svelte:fragment>
 
-        <RemovableListBody
+        <DimensionFilterChipBody
           slot="body"
           label={curExcludeMode ? `Exclude ${label}` : label}
           show={1}

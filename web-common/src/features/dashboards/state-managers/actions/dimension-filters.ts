@@ -30,11 +30,11 @@ export function toggleDimensionValueSelection(
     dashboard.temporaryFilterName = null;
   }
 
-  const isInclude = !dashboard.dimensionFilterExcludeMode.get(dimensionName);
+  const isExclude = !!dashboard.dimensionFilterExcludeMode.get(dimensionName);
   const exprIdx = getWhereFilterExpressionIndex({ dashboard })(dimensionName);
   if (exprIdx === undefined || exprIdx === -1) {
     dashboard.whereFilter.cond?.exprs?.push(
-      createInExpression(dimensionName, [dimensionValue], !isInclude),
+      createInExpression(dimensionName, [dimensionValue], isExclude),
     );
     return;
   }
@@ -73,7 +73,7 @@ export function toggleDimensionValueSelection(
     dashboard.whereFilter.cond!.exprs![exprIdx] = createInExpression(
       dimensionName,
       [dimensionValue],
-      !isInclude,
+      isExclude,
     );
     return;
   }
@@ -114,8 +114,8 @@ export function applyDimensionInListMode(
 
   if (!dashboard.whereFilter.cond?.exprs) return;
 
-  const isInclude = !dashboard.dimensionFilterExcludeMode.get(dimensionName);
-  const expr = createInExpression(dimensionName, values, !isInclude);
+  const isExclude = !!dashboard.dimensionFilterExcludeMode.get(dimensionName);
+  const expr = createInExpression(dimensionName, values, isExclude);
   if (!dashboard.dimensionsWithInlistFilter.includes(dimensionName)) {
     dashboard.dimensionsWithInlistFilter.push(dimensionName);
   }
@@ -138,11 +138,11 @@ export function applyDimensionContainsMode(
 
   if (!dashboard.whereFilter.cond?.exprs) return;
 
-  const isInclude = !dashboard.dimensionFilterExcludeMode.get(dimensionName);
+  const isExclude = !!dashboard.dimensionFilterExcludeMode.get(dimensionName);
   const expr = createLikeExpression(
     dimensionName,
     `%${searchText}%`,
-    !isInclude,
+    isExclude,
   );
   const exprIdx = getWhereFilterExpressionIndex({ dashboard })(dimensionName);
   if (exprIdx === undefined || exprIdx === -1) {
@@ -193,11 +193,11 @@ export function selectItemsInFilter(
   dimensionName: string,
   values: (string | null)[],
 ) {
-  const isInclude = !dashboard.dimensionFilterExcludeMode.get(dimensionName);
+  const isExclude = !!dashboard.dimensionFilterExcludeMode.get(dimensionName);
   const exprIdx = getWhereFilterExpressionIndex({ dashboard })(dimensionName);
   if (exprIdx === undefined || exprIdx === -1) {
     dashboard.whereFilter.cond?.exprs?.push(
-      createInExpression(dimensionName, values, !isInclude),
+      createInExpression(dimensionName, values, isExclude),
     );
     return;
   }

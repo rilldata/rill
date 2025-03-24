@@ -82,9 +82,9 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
       dimensionsWithInlistFilter={$exploreState.dimensionsWithInlistFilter}
       filters={$exploreState.whereFilter}
       {exploreName}
-      {timeRange}
-      resolvedTimeStart={$timeControlStore.timeStart}
-      resolvedTimeEnd={$timeControlStore.timeEnd}
+      displayTimeRange={timeRange}
+      queryTimeStart={$timeControlStore.timeStart}
+      queryTimeEnd={$timeControlStore.timeEnd}
     />
   </div>
   <ProjectAccessControls

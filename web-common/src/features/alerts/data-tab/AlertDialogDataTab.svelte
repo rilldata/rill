@@ -62,10 +62,10 @@
       filters={$form["whereFilter"]}
       dimensionsWithInlistFilter={$form["dimensionsWithInlistFilter"]}
       exploreName={$form["exploreName"]}
-      timeRange={$form["timeRange"]}
-      comparisonTimeRange={$form["comparisonTimeRange"]}
-      resolvedTimeStart={$timeControlStore.timeStart}
-      resolvedTimeEnd={$timeControlStore.timeEnd}
+      displayTimeRange={$form["timeRange"]}
+      displayComparisonTimeRange={$form["comparisonTimeRange"]}
+      queryTimeStart={$timeControlStore.timeStart}
+      queryTimeEnd={$timeControlStore.timeEnd}
     />
   </FormSection>
   <FormSection

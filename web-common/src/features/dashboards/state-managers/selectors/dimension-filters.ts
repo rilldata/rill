@@ -56,6 +56,8 @@ export const selectedDimensionValuesV2 = (
     return readable({
       isFetching: false,
       isLoading: false,
+      // This will be replaced with an "Advanced Filter" pill.
+      // So do not error here to make sure leaderboards work.
       error: undefined,
       data: [],
     });
@@ -68,6 +70,7 @@ export const selectedDimensionValuesV2 = (
       isFetching: false,
       isLoading: false,
       error: undefined,
+      // No filter present. So selected values are empty
       data: [],
     });
 
@@ -100,7 +103,7 @@ export const selectedDimensionValuesV2 = (
   return readable({
     isFetching: false,
     isLoading: false,
-    error: undefined,
+    error: "Unknown dimension filter",
     data: [],
   });
 };

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import RemovableListBody from "@rilldata/web-common/components/chip/removable-list-chip/RemovableListBody.svelte";
+  import DimensionFilterChipBody from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterChipBody.svelte";
   import { Chip } from "@rilldata/web-common/components/chip";
   import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-mode";
   import {
@@ -73,7 +73,7 @@
 </script>
 
 <Chip type="dimension" label={effectiveLabel} readOnly exclude={!isInclude}>
-  <RemovableListBody
+  <DimensionFilterChipBody
     slot="body"
     label={effectiveLabel}
     values={mode === DimensionFilterMode.InList

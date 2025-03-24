@@ -20,6 +20,12 @@ type DimensionSearchArgs = {
   timeEnd?: string;
   enabled?: boolean;
 };
+/**
+ * Returns the search results from the search input in a dimension filter.
+ *
+ * 1. For Select and Contains mode, it returns the result from the search text using a `like` filter.
+ * 2. For InList mode, it returns values from selection that is actually in the data source.
+ */
 export function useDimensionSearch(
   instanceId: string,
   metricsViewNames: string[],
@@ -67,6 +73,13 @@ export function useDimensionSearch(
   });
 }
 
+/**
+ * Returns the matched search results count.
+ *
+ * 1. For Select this will be disabled.
+ * 2. For InList mode, it returns the count of values actually present in the data source.
+ * 3. For Contains mode, it returns the count of values matching the search text.
+ */
 export function useAllSearchResultsCount(
   instanceId: string,
   metricsViewNames: string[],
@@ -122,6 +135,14 @@ export function useAllSearchResultsCount(
   });
 }
 
+/**
+ * Builds the filter for dimension search results or dimension search results count.
+ * Note the difference, this is for the search results from the search input.
+ *
+ * 1. For Select mode, while the final query is an `in` filter, the search results from the search input is a `like` filter.
+ * 2. For InList mode it is an `in` filter with all the selected values.
+ * 3. For Contains mode it is a `like` filter.
+ */
 function getFilterForSearchArgs(
   dimensionName: string,
   { mode, searchText, values }: DimensionSearchArgs,

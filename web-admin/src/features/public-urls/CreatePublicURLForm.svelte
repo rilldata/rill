@@ -247,10 +247,10 @@
               filters={$dashboardStore.whereFilter}
               dimensionsWithInlistFilter={$dashboardStore.dimensionsWithInlistFilter}
               dimensionThresholdFilters={$dashboardStore.dimensionThresholdFilters}
-              timeRange={undefined}
-              comparisonTimeRange={undefined}
-              resolvedTimeStart={$timeControlStore.timeStart}
-              resolvedTimeEnd={$timeControlStore.timeEnd}
+              displayTimeRange={undefined}
+              displayComparisonTimeRange={undefined}
+              queryTimeStart={$timeControlStore.timeStart}
+              queryTimeEnd={$timeControlStore.timeEnd}
             />
           </div>
         </div>
