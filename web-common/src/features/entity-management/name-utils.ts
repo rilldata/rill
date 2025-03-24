@@ -43,3 +43,15 @@ export function isDuplicateName(
 export function sanitizeEntityName(entityName: string): string {
   return entityName.replace(INVALID_CHARS, "_");
 }
+
+/**
+ * Determines if a name doesn't follow standard identifier rules and would
+ * require escaping/quoting in SQL or other database contexts.
+ *
+ * @param name The string to check
+ * @returns true if the name doesn't follow standard identifier rules (must start with a letter and contain only letters, numbers, and underscores)
+ */
+export function isNonStandardIdentifier(name: string): boolean {
+  const standardIdentifierPattern = /^[a-zA-Z][a-zA-Z0-9_]*$/;
+  return !standardIdentifierPattern.test(name);
+}
