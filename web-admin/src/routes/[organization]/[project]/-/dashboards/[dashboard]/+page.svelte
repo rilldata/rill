@@ -23,8 +23,10 @@
   <title>{canvasTitle || `${canvasName} - Rill`}</title>
 </svelte:head>
 
-<StateManagersProvider {canvasName}>
-  <CanvasThemeProvider>
-    <CanvasDashboardEmbed resource={canvasResource} />
-  </CanvasThemeProvider>
-</StateManagersProvider>
+{#key canvasName}
+  <StateManagersProvider {canvasName}>
+    <CanvasThemeProvider>
+      <CanvasDashboardEmbed resource={canvasResource} />
+    </CanvasThemeProvider>
+  </StateManagersProvider>
+{/key}
