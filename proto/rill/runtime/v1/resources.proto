@@ -431,17 +431,17 @@ message ExplorePreset {
   optional bool explore_sort_asc = 18;
   optional ExploreSortType explore_sort_type = 19;
   optional string explore_expanded_dimension = 20;
-  optional uint32 explore_leaderboard_measure_count = 21;
+  optional uint32 explore_leaderboard_measure_count = 29;
 
-  optional string time_dimension_measure = 22;
-  optional string time_dimension_chart_type = 23;
-  optional bool time_dimension_pin = 24;
+  optional string time_dimension_measure = 21;
+  optional string time_dimension_chart_type = 22;
+  optional bool time_dimension_pin = 23;
 
-  repeated string pivot_rows = 25;
-  repeated string pivot_cols = 26;
-  optional string pivot_sort_by = 27;
-  optional bool pivot_sort_asc = 28;
-  optional string pivot_table_mode = 29; 
+  repeated string pivot_rows = 24;
+  repeated string pivot_cols = 25;
+  optional string pivot_sort_by = 26;
+  optional bool pivot_sort_asc = 27;
+  optional string pivot_table_mode = 28;
 }
 
 enum ExploreComparisonMode {

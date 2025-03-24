@@ -2614,47 +2614,47 @@ export class ExplorePreset extends Message<ExplorePreset> {
   exploreExpandedDimension?: string;
 
   /**
-   * @generated from field: optional uint32 explore_leaderboard_measure_count = 21;
+   * @generated from field: optional uint32 explore_leaderboard_measure_count = 29;
    */
   exploreLeaderboardMeasureCount?: number;
 
   /**
-   * @generated from field: optional string time_dimension_measure = 22;
+   * @generated from field: optional string time_dimension_measure = 21;
    */
   timeDimensionMeasure?: string;
 
   /**
-   * @generated from field: optional string time_dimension_chart_type = 23;
+   * @generated from field: optional string time_dimension_chart_type = 22;
    */
   timeDimensionChartType?: string;
 
   /**
-   * @generated from field: optional bool time_dimension_pin = 24;
+   * @generated from field: optional bool time_dimension_pin = 23;
    */
   timeDimensionPin?: boolean;
 
   /**
-   * @generated from field: repeated string pivot_rows = 25;
+   * @generated from field: repeated string pivot_rows = 24;
    */
   pivotRows: string[] = [];
 
   /**
-   * @generated from field: repeated string pivot_cols = 26;
+   * @generated from field: repeated string pivot_cols = 25;
    */
   pivotCols: string[] = [];
 
   /**
-   * @generated from field: optional string pivot_sort_by = 27;
+   * @generated from field: optional string pivot_sort_by = 26;
    */
   pivotSortBy?: string;
 
   /**
-   * @generated from field: optional bool pivot_sort_asc = 28;
+   * @generated from field: optional bool pivot_sort_asc = 27;
    */
   pivotSortAsc?: boolean;
 
   /**
-   * @generated from field: optional string pivot_table_mode = 29;
+   * @generated from field: optional string pivot_table_mode = 28;
    */
   pivotTableMode?: string;
 
@@ -2684,15 +2684,15 @@ export class ExplorePreset extends Message<ExplorePreset> {
     { no: 18, name: "explore_sort_asc", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 19, name: "explore_sort_type", kind: "enum", T: proto3.getEnumType(ExploreSortType), opt: true },
     { no: 20, name: "explore_expanded_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 21, name: "explore_leaderboard_measure_count", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
-    { no: 22, name: "time_dimension_measure", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 23, name: "time_dimension_chart_type", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 24, name: "time_dimension_pin", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
-    { no: 25, name: "pivot_rows", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 26, name: "pivot_cols", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 27, name: "pivot_sort_by", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 28, name: "pivot_sort_asc", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
-    { no: 29, name: "pivot_table_mode", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 29, name: "explore_leaderboard_measure_count", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
+    { no: 21, name: "time_dimension_measure", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 22, name: "time_dimension_chart_type", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 23, name: "time_dimension_pin", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 24, name: "pivot_rows", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 25, name: "pivot_cols", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 26, name: "pivot_sort_by", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 27, name: "pivot_sort_asc", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 28, name: "pivot_table_mode", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExplorePreset {
