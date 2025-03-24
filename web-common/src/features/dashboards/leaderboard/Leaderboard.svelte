@@ -217,13 +217,8 @@
       dimensionName,
       activeMeasureNames,
       slice,
-<<<<<<< HEAD
-      $selectedValues.data ?? [],
-      leaderboardTotal,
-=======
       selectedValues,
       leaderboardTotals,
->>>>>>> 3f73fe2c8 (multiple measure in not expanded leaderboard display, grid tweaks to col)
     ));
 
   $: belowTheFoldDataLimit = maxValuesToShow - aboveTheFold.length;
