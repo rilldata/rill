@@ -14,7 +14,9 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import { getInitExploreStateForTest } from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
 import {
+  AD_BIDS_APPLY_DOMAIN_CONTAINS_FILTER,
   AD_BIDS_APPLY_LARGE_FILTERS,
+  AD_BIDS_APPLY_PUBLISHER_INLIST_FILTER,
   AD_BIDS_CLOSE_DIMENSION_TABLE,
   AD_BIDS_CLOSE_TDD,
   AD_BIDS_DISABLE_COMPARE_TIME_RANGE_FILTER,
@@ -79,6 +81,16 @@ const TestCases: {
   // Closing view would retain some state of the old view in protobuf state
   legacyNotSupported?: boolean;
 }[] = [
+  {
+    title: "Different filter variations",
+    mutations: [
+      AD_BIDS_APPLY_PUBLISHER_INLIST_FILTER,
+      AD_BIDS_APPLY_DOMAIN_CONTAINS_FILTER,
+    ],
+    expectedUrl:
+      "http://localhost/?f=publisher+IN+LIST+%28%27Facebook%27%2C%27Google%27%29+AND+domain+LIKE+%27%25%25oo%25%25%27",
+  },
+
   {
     title: "Time range without preset",
     mutations: [

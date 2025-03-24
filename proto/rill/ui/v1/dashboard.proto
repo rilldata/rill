@@ -73,6 +73,8 @@ message DashboardState {
   rill.runtime.v1.MetricsViewFilter filters = 2;
   // Expression format for dimension filters
   rill.runtime.v1.Expression where = 20;
+  // Temporary to differentiate between "select" and "in list" modes. Expression will be replaced with UI specific state in the future.
+  repeated string dimensions_with_inlist_filter = 37;
   // Expression format for measure filters
   repeated DashboardDimensionFilter having = 21;
   // Selected time granularity

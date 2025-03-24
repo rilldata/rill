@@ -7,14 +7,14 @@ test.describe.serial("Public URLs", () => {
   test("should be able to create a public URL", async ({ page }) => {
     await page.goto("/e2e/openrtb/explore/auction_explore");
 
-    // Add a filter on "Pub Name"
     // (Tests that the filtered column is hidden in the public URL)
-    await page.locator('[id="filter-add-btn"]').click();
+    // Add a filter on "Pub Name"
+    await page.getByLabel("Add Filter Button").click();
     await page.getByRole("menuitem", { name: "Pub Name" }).click();
     await page.getByLabel("Pub Name").getByPlaceholder("Search").click();
     await page.getByLabel("Pub Name").getByPlaceholder("Search").fill("disney");
     await page.getByRole("menuitem", { name: "Disney" }).first().click();
-    await page.getByLabel("View filter").first().click(); // Hides the popover
+    await page.getByLabel("pub_name filter", { exact: true }).click(); // Hides the popover
 
     // Change the time grain to hour
     // (Tests that non-default state propagates to the public URL)
