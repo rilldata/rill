@@ -174,10 +174,11 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		return nil, err
 	}
 
-	if conf.MaxOpenConns == 0 {
-		conf.MaxOpenConns = 20 // default value
+	maxOpenConns := conf.MaxOpenConns
+	if maxOpenConns == 0 {
+		maxOpenConns = 20 // default value
 	}
-	db.SetMaxOpenConns(conf.MaxOpenConns)
+	db.SetMaxOpenConns(maxOpenConns)
 
 	err = otelsql.RegisterDBStatsMetrics(db, otelsql.WithAttributes(attribute.String("instance_id", instanceID)))
 	if err != nil {
