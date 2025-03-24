@@ -31,9 +31,8 @@
 
   export let selectedItems: string[];
   export let allItems: SelectableItem[] = [];
-  export let onSelectedChange: (items: string[]) => void;
-  export let disabled = false;
   export let type: "measure" | "dimension" = "measure";
+  export let onSelectedChange: (items: string[]) => void;
 
   let searchText = "";
   let active = false;
@@ -202,11 +201,7 @@
         <strong
           >{`${numShownString} ${type === "measure" ? "Measures" : "Dimensions"}`}</strong
         >
-        <span
-          class="transition-transform"
-          class:hidden={disabled}
-          class:-rotate-180={active}
-        >
+        <span class="transition-transform" class:-rotate-180={active}>
           <CaretDownIcon />
         </span>
       </div>
