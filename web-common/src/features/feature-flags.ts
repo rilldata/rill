@@ -1,6 +1,5 @@
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { writable } from "svelte/store";
-import { debounce } from "../lib/create-debouncer";
 import {
   createRuntimeServiceGetInstance,
   type V1InstanceFeatureFlags,
@@ -48,13 +47,13 @@ class FeatureFlags {
   hidePublicUrl = new FeatureFlag("user", false);
 
   constructor() {
-    const updateFlags = debounce((userFlags: V1InstanceFeatureFlags) => {
+    const updateFlags = (userFlags: V1InstanceFeatureFlags) => {
       for (const key in userFlags) {
         const flag = this[key] as FeatureFlag | undefined;
         if (!flag || flag.internalOnly) return;
         flag.set(userFlags[key]);
       }
-    }, 400);
+    };
 
     // Responsively update flags based rill.yaml
     runtime.subscribe((runtime) => {
