@@ -59,30 +59,28 @@
   }
 </script>
 
-{#key `${$alerts}-${$reports}`}
-  <div>
-    <nav>
-      {#each tabs as tab, i (tab.route)}
-        {#if tab.hasPermission}
-          <Tab
-            route={tab.route}
-            label={tab.label}
-            selected={selectedIndex === i}
-            {organization}
-            {project}
-          />
-        {/if}
-      {/each}
-    </nav>
+<div>
+  <nav>
+    {#each tabs as tab, i (tab.route)}
+      {#if tab.hasPermission}
+        <Tab
+          route={tab.route}
+          label={tab.label}
+          selected={selectedIndex === i}
+          {organization}
+          {project}
+        />
+      {/if}
+    {/each}
+  </nav>
 
-    {#if $width && $position}
-      <span
-        style:width="{$width}px"
-        style:transform="translateX({$position}px) "
-      />
-    {/if}
-  </div>
-{/key}
+  {#if $width && $position}
+    <span
+      style:width="{$width}px"
+      style:transform="translateX({$position}px) "
+    />
+  {/if}
+</div>
 
 <style lang="postcss">
   div {
