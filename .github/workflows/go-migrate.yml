@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - release-*
   pull_request:
     paths:
       - ".github/workflows/go-migrate.yml"
@@ -18,3 +19,9 @@ jobs:
     steps:
     - name: Check out code
       uses: actions/checkout@v4
+    - name: Check Admin Migrations
+      run: |
+        ./scripts/check_migrations.sh admin/database/postgres/migrations
+    - name: Check Runtime Migrations
+      run: |
+        ./scripts/check_migrations.sh runtime/drivers/sqlite/migrations
