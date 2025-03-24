@@ -43,6 +43,8 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+        ports:
+          - 5432:5432
 
     steps:
     - name: Set up Go
@@ -62,5 +64,9 @@ jobs:
       run: make cli.prepare
 
     - name: Apply Migrations
+      env:
+        RILL_ADMIN_DATABASE_DRIVER: postgres
+        RILL_ADMIN_DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+        RILL_ADMIN_RIVER_DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
       run: |
-        echo "Apply Admin Migrations"
+        ./rill admin start
