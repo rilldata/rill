@@ -60,7 +60,7 @@ func (s *Server) InstanceHealth(ctx context.Context, req *runtimev1.InstanceHeal
 		return nil, ErrForbidden
 	}
 
-	h, err := s.runtime.InstanceHealth(ctx, req.InstanceId)
+	h, err := s.runtime.InstanceHealth(ctx, req.InstanceId, true)
 	if err != nil {
 		return nil, err
 	}

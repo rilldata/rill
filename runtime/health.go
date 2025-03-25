@@ -46,7 +46,8 @@ func (r *Runtime) Health(ctx context.Context) (*Health, error) {
 
 	ih := make(map[string]*InstanceHealth, len(instances))
 	for _, inst := range instances {
-		ih[inst.ID], err = r.InstanceHealth(ctx, inst.ID)
+		// if there is a single instance hosted on this runtime then instead of returning error msgs throw error if OLAP/repo/controller are in error state
+		ih[inst.ID], err = r.InstanceHealth(ctx, inst.ID, len(instances) == 1)
 		if err != nil && !errors.Is(err, drivers.ErrNotFound) {
 			return nil, err
 		}
@@ -58,16 +59,22 @@ func (r *Runtime) Health(ctx context.Context) (*Health, error) {
 	}, nil
 }
 
-func (r *Runtime) InstanceHealth(ctx context.Context, instanceID string) (*InstanceHealth, error) {
+func (r *Runtime) InstanceHealth(ctx context.Context, instanceID string, retErr bool) (*InstanceHealth, error) {
 	res := &InstanceHealth{}
 	// check repo error
 	err := r.pingRepo(ctx, instanceID)
 	if err != nil {
+		if retErr {
+			return nil, err
+		}
 		res.Repo = err.Error()
 	}
 
 	ctrl, err := r.Controller(ctx, instanceID)
 	if err != nil {
+		if retErr {
+			return nil, err
+		}
 		res.Controller = err.Error()
 		return res, nil
 	}
@@ -98,6 +105,9 @@ func (r *Runtime) InstanceHealth(ctx context.Context, instanceID string) (*Insta
 			}
 		}
 		release()
+	}
+	if res.OLAP != "" && retErr {
+		return nil, errors.New(res.OLAP)
 	}
 
 	// check resources with reconcile errors
