@@ -2,7 +2,6 @@ package graceful
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -20,6 +19,8 @@ type ServeOptions struct {
 
 // ServeHTTP serves a HTTP server and performs a graceful shutdown if/when ctx is cancelled.
 func ServeHTTP(ctx context.Context, server *http.Server, options ServeOptions) error {
+	var err error
+
 	// Calling net.Listen("tcp", ...) will succeed if the port is blocked on IPv4 but not on IPv6.
 	// This workaround ensures we get the port on IPv4 (and most likely also on IPv6).
 	lis, err := net.Listen("tcp4", fmt.Sprintf(":%d", options.Port))
@@ -36,39 +37,35 @@ func ServeHTTP(ctx context.Context, server *http.Server, options ServeOptions) e
 
 	// Channel to signal server has stopped
 	serveErrCh := make(chan error)
+	// Start server in a goroutine
 	go func() {
-		var serveErr error
 		if options.CertPath != "" && options.KeyPath != "" {
-			serveErr = server.ServeTLS(lis, options.CertPath, options.KeyPath)
+			// Use HTTPS if cert and key are provided
+			err = server.ServeTLS(lis, options.CertPath, options.KeyPath)
+			serveErrCh <- err
 		} else {
-			serveErr = server.Serve(lis)
+			// Otherwise use HTTP
+			err = server.Serve(lis)
+			serveErrCh <- err
 		}
-		serveErrCh <- serveErr
 	}()
 
-	// Wait for context to be cancelled or failure to serve
+	// Wait for context cancellation or server stopped
 	select {
 	case err := <-serveErrCh:
 		return err
 	case <-ctx.Done():
-		// Create a separate context for shutdown with timeout
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), httpShutdownTimeout)
-		defer cancel()
+		server.Shutdown(ctx)
+	}
 
-		// Initiate graceful shutdown
-		if err := server.Shutdown(shutdownCtx); err != nil {
+	// Wait for graceful shutdown
+	select {
+	case err := <-serveErrCh:
+		return err
+	case <-time.After(httpShutdownTimeout):
+		if err := server.Close(); err != nil {
 			return err
 		}
-
-		// Wait for server to complete shutdown
-		select {
-		case err := <-serveErrCh:
-			if err != http.ErrServerClosed {
-				return err
-			}
-			return nil
-		case <-shutdownCtx.Done():
-			return errors.New("http graceful shutdown timed out")
-		}
+		return fmt.Errorf("http graceful shutdown timed out")
 	}
 }
