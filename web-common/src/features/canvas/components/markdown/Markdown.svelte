@@ -43,6 +43,14 @@
     font-size: 14px;
     @apply my-2;
   }
+
+  :global(.canvas-markdown.items-center p) {
+    @apply text-center w-full;
+  }
+
+  :global(.canvas-markdown.items-end p) {
+    @apply text-right w-full;
+  }
   :global(.canvas-markdown table) {
     @apply w-full border-collapse my-4;
   }
