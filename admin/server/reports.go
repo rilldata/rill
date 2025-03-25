@@ -89,9 +89,8 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 				if errors.Is(err, database.ErrNotFound) {
 					canOpenReport[email] = false
 					continue
-				} else {
-					return nil, fmt.Errorf("failed to find user by email: %w", err)
 				}
+				return nil, fmt.Errorf("failed to find user by email: %w", err)
 			}
 			// check user's project permissions
 			orgPerms, err := s.admin.OrganizationPermissionsForUser(ctx, proj.OrganizationID, usr.ID)
