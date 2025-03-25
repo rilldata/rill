@@ -112,15 +112,14 @@
 
     clone = dragElement.cloneNode(true) as HTMLElement;
 
-    if (+index > selectedItems.length - 1) {
-      const rect = dragContainer.getBoundingClientRect();
-      dragItemInitialTop = dragElement.getBoundingClientRect().top - rect.top;
+    const rect = dragContainer.getBoundingClientRect();
+    dragItemInitialTop = dragElement.getBoundingClientRect().top - rect.top;
 
+    if (+index > selectedItems.length - 1) {
       threshold = e.clientY - rect.bottom + ITEM_HEIGHT;
       dropIndex = null;
       dragIndex = selectedItems.length;
     } else {
-      dragItemInitialTop = dragElement.offsetTop;
       threshold = 0;
       dragIndex = +index;
       dropIndex = dragIndex;
@@ -238,7 +237,7 @@
         on:mousedown={handleMouseDown}
       >
         <header
-          class="flex w-full py-1.5 pb-1 justify-between px-2 sticky top-0 from-white from-80% to-transparent bg-gradient-to-b"
+          class="flex w-full py-1.5 pb-1 justify-between px-2 sticky top-0 from-white from-80% to-transparent bg-gradient-to-b z-10"
         >
           <h3 class="uppercase text-gray-500 font-semibold">
             Shown {type === "measure" ? "Measures" : "Dimensions"}
