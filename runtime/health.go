@@ -52,14 +52,15 @@ func (r *Runtime) Health(ctx context.Context) (*Health, error) {
 		}
 		// if there is a single instance hosted on this runtime then instead of returning error msgs throw error if OLAP/repo/controller are in error state
 		if len(instances) == 1 {
-			if ih[inst.ID].OLAP != "" {
-				return nil, errors.New(ih[inst.ID].OLAP)
+			h := ih[inst.ID]
+			if h.OLAP != "" {
+				return nil, errors.New(h.OLAP)
 			}
-			if ih[inst.ID].Repo != "" {
-				return nil, errors.New(ih[inst.ID].Repo)
+			if h.Repo != "" {
+				return nil, errors.New(h.Repo)
 			}
-			if ih[inst.ID].Controller != "" {
-				return nil, errors.New(ih[inst.ID].Controller)
+			if h.Controller != "" {
+				return nil, errors.New(h.Controller)
 			}
 		}
 	}
