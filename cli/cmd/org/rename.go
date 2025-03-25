@@ -37,18 +37,6 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Build update request
 			req := &adminv1.UpdateOrganizationRequest{Name: org.Name}
 
-			if req.NewName != nil {
-				ch.PrintfWarn("Changing the name will invalidate dashboard URLs.\n")
-				ok, err := cmdutil.ConfirmPrompt("Do you want to continue?", "", false)
-				if err != nil {
-					return err
-				}
-				if !ok {
-					ch.PrintfWarn("Aborted\n")
-					return nil
-				}
-			}
-
 			var flagSet bool
 			if cmd.Flags().Changed("new-name") {
 				flagSet = true
@@ -63,6 +51,18 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 			if !flagSet {
 				ch.PrintfError("no changes requested please specify --new-name or --display-name\n")
 				return nil
+			}
+
+			if req.NewName != nil {
+				ch.PrintfWarn("Changing the name will invalidate dashboard URLs.\n")
+				ok, err := cmdutil.ConfirmPrompt("Do you want to continue?", "", false)
+				if err != nil {
+					return err
+				}
+				if !ok {
+					ch.PrintfWarn("Aborted\n")
+					return nil
+				}
 			}
 
 			// Update org
