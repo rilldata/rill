@@ -24,8 +24,9 @@ Now that the model is created, we can create a metrics view. There are two ways 
 
 Let's go ahead and create a simple metrics layer via the UI and build onto it. 
 
+<img src = '/img/tutorials/102/create-metrics-view-ui.png' class='rounded-gif' />
+<br />
 
-![img](/img/tutorials/102/create-metrics-view-ui.png)
 
 As you can see, the default dashboard YAML is as follows:
 
@@ -60,7 +61,8 @@ Starting from version 0.50, we have introduced the [visual-metric-editor](/build
 ## Via the Visual Metrics Editor
 In the top right of the UI, select the viz button to navigate to the visual metrics editor. The below is an example of a completed visual metrics editor. We will make some modifcations to our current file to build something similar.
 
-![img](/img/tutorials/102/new-viz-editor.png)
+<img src = '/img/tutorials/102/new-viz-editor.png' class='rounded-gif' />
+<br />
 
 We can go ahead and change the following components as directed in the UI:
 
@@ -69,8 +71,8 @@ We can go ahead and change the following components as directed in the UI:
 - `measures`: sum(added_lines)
 - `dimensions`: author_name
 
-
-![img](/img/tutorials/102/basic-viz-editor.png)
+<img src = '/img/tutorials/102/basic-viz-editor.png' class='rounded-gif' />
+<br />
 
 Once finished, the red border will disappear and your explore dashboard is ready to be created. If you need further information on each component see the next section, via the YAML.
 
@@ -153,7 +155,8 @@ From our dataset, we can add more dimensions to allow more filtering and explora
 
 You may need to reference the <a href='https://docs.rilldata.com/reference/project-files/explore-dashboards' target="_blank">metrics view YAML </a> reference guide to figure out the above. Your final output should look something like this! 
 
-![finished](/img/tutorials/103/Completed-100-dashboard.png)
+<img src = '/img/tutorials/103/Completed-100-dashboard.png' class='rounded-gif' />
+<br />
 
 
 <details>

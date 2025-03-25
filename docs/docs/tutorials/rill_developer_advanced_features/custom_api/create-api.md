@@ -59,5 +59,5 @@ Once you have confirmed that the local running APIs work as expected, we can sel
 If the `update` button is not available on your current UI, you can find this on the dashboard page!
 :::
 
-![my-rill-project](/img/tutorials/303/api-status.png)
-
+<img src = '/img/tutorials/303/api-status.png' class='rounded-gif' />
+<br />

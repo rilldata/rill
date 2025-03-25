@@ -64,8 +64,9 @@ output:
 - when selecting a full refresh, only 10 rows should be returned. 
 - when selecting incremental refresh, it will **append** values to the inital 10 values in the full refresh. 
 
-![img](/img/tutorials/302/data-warehouse-refresh.png)
 
+<img src = '/img/tutorials/302/data-warehouse-refresh.png' class='rounded-gif' />
+<br />
 :::note Partition vs. State
 Unlike partitions, states do not paritition the dataset per refresh so you will not be able to via the UI or CLI, see if there is a specific partition that errored and manually refresh this. In the cases of data disrecpancies in a state incremented model, please run a full refresh. 
 :::

@@ -4,7 +4,8 @@ description:  "Start with basics"
 sidebar_label: "Basic Partition Models"
 sidebar_position: 2
 ---
-
+<img src = '/img/tutorials/302/partitions.png' class='rounded-gif' />
+<br />
 Partitioned models are a special state of incremental models. Partitioned models are defined by defining a partition in the `partitions` key.
 Let's look at the following example.
 
