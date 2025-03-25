@@ -91,14 +91,14 @@ const sidebars = {
                 'tutorials/rill_developer_advanced_features/incremental_models/staging-connectors'
               ]
             },
-            {
-              type: 'category',
-              label: 'Advanced Measures and Dimensions',
-              description: "Define and Aggregate Measures in the Metrics View ",
-              items: [
-                'tutorials/rill_developer_advanced_features/advanced_measures/advanced_measures'
-              ]
-            },
+            // {
+            //   type: 'category',
+            //   label: 'Advanced Measures and Dimensions',
+            //   description: "Define and Aggregate Measures in the Metrics View ",
+            //   items: [
+            //     'tutorials/rill_developer_advanced_features/advanced_measures/advanced_measures'
+            //   ]
+            // },
 
             {
               type: 'category',
