@@ -21,8 +21,8 @@
   import { DateTime, Interval } from "luxon";
   import type { Readable } from "svelte/motion";
   import type { KPISpec } from ".";
-  import { validateKPISchema } from "./selector";
   import { BIG_NUMBER_MIN_WIDTH } from ".";
+  import { validateKPISchema } from "./selector";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
   export let timeAndFilterStore: Readable<TimeAndFilterStore>;
@@ -197,7 +197,7 @@
 </script>
 
 {#if isValid}
-  {#if measure && !primaryTotalIsFetching}
+  {#if measure && primaryTotalData && !primaryTotalIsFetching}
     <div class="wrapper" class:spark-right={isSparkRight}>
       <div
         class="data-wrapper"
