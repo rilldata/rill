@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"net"
 	"net/http"
 
@@ -60,9 +61,19 @@ func (s *Server) InstanceHealth(ctx context.Context, req *runtimev1.InstanceHeal
 		return nil, ErrForbidden
 	}
 
-	h, err := s.runtime.InstanceHealth(ctx, req.InstanceId, true)
+	h, err := s.runtime.InstanceHealth(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
+	}
+	// throw error if OLAP/repo/controller are in error state
+	if h.OLAP != "" {
+		return nil, errors.New(h.OLAP)
+	}
+	if h.Repo != "" {
+		return nil, errors.New(h.Repo)
+	}
+	if h.Controller != "" {
+		return nil, errors.New(h.Controller)
 	}
 	return &runtimev1.InstanceHealthResponse{
 		InstanceHealth: h.To(),
