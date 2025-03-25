@@ -51,15 +51,24 @@ func ServeHTTP(ctx context.Context, server *http.Server, options ServeOptions) e
 	case err := <-serveErrCh:
 		return err
 	case <-ctx.Done():
-		server.Shutdown(ctx)
-	}
+		// Create a separate context for shutdown with timeout
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), httpShutdownTimeout)
+		defer cancel()
 
-	// Wait for graceful shutdown
-	select {
-	case err := <-serveErrCh:
-		return err
-	case <-time.After(httpShutdownTimeout):
-		server.Shutdown(ctx)
-		return errors.New("http graceful shutdown timed out")
+		// Initiate graceful shutdown
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			return err
+		}
+
+		// Wait for server to complete shutdown
+		select {
+		case err := <-serveErrCh:
+			if err != http.ErrServerClosed {
+				return err
+			}
+			return nil
+		case <-shutdownCtx.Done():
+			return errors.New("http graceful shutdown timed out")
+		}
 	}
 }
