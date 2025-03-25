@@ -81,17 +81,28 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		return nil, fmt.Errorf("failed to issue magic auth tokens: %w", err)
 	}
 
-	externalEmailSet := make(map[string]bool)
+	canOpenReport := make(map[string]bool)
 	if webOpenMode == WebOpenModeRecipient {
 		for _, email := range req.EmailRecipients {
-			_, err := s.admin.DB.FindUserByEmail(ctx, email)
+			usr, err := s.admin.DB.FindUserByEmail(ctx, email)
 			if err != nil {
 				if errors.Is(err, database.ErrNotFound) {
-					externalEmailSet[email] = true
-				} else {
-					return nil, fmt.Errorf("failed to find user by email: %w", err)
+					canOpenReport[email] = false
+					continue
 				}
+				return nil, fmt.Errorf("failed to find user by email: %w", err)
 			}
+			// check user's project permissions
+			orgPerms, err := s.admin.OrganizationPermissionsForUser(ctx, proj.OrganizationID, usr.ID)
+			if err != nil {
+				return nil, fmt.Errorf("failed to get organization permissions for user: %w", err)
+			}
+			projectPermissions, err := s.admin.ProjectPermissionsForUser(ctx, proj.ID, usr.ID, orgPerms)
+			if err != nil {
+				return nil, fmt.Errorf("failed to get project permissions for user: %w", err)
+			}
+			canOpenReport[email] = projectPermissions.ReadProject && projectPermissions.ReadProd
+			// there's still an edge case where user has access to project but not to the metrics view because of security policy but report creator needs to take care of this consistency
 		}
 	}
 
@@ -111,7 +122,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		}
 		if webOpenMode == WebOpenModeCreator {
 			urls[recipient].OpenUrl = s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, tokens[recipient], req.ExecutionTime.AsTime())
-		} else if webOpenMode == WebOpenModeRecipient && !externalEmailSet[recipient] {
+		} else if webOpenMode == WebOpenModeRecipient && canOpenReport[recipient] {
 			urls[recipient].OpenUrl = s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, "", req.ExecutionTime.AsTime())
 		}
 	}
