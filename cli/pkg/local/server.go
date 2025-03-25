@@ -879,6 +879,7 @@ func (s *Server) traceHandler() http.Handler {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+		defer rows.Close()
 
 		var spans []traceSpan
 
