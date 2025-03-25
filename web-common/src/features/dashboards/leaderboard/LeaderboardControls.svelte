@@ -20,7 +20,6 @@
         leaderboardMeasureName,
         getMeasureByName,
         visibleMeasures,
-        allMeasures,
       },
       dimensions: { visibleDimensions, allDimensions },
       sorting: { sortByMeasure },
@@ -38,8 +37,6 @@
     leaderboardMeasureCount: leaderboardMeasureCountFeatureFlag,
     reorderMeasuresDimensions,
   } = featureFlags;
-
-  let active = false;
 
   $: measures = getSimpleMeasures($visibleMeasures);
 
