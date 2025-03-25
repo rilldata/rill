@@ -149,10 +149,12 @@ export function getFiltersForOtherDimensions(
 }
 
 export function additionalMeasures(
-  activeMeasureName: string,
+  activeMeasureName: string | null,
   dimensionThresholdFilters: DimensionThresholdFilter[],
 ) {
-  const measures = new Set<string>([activeMeasureName]);
+  const measures = new Set<string>(
+    activeMeasureName ? [activeMeasureName] : [],
+  );
   dimensionThresholdFilters.forEach(({ filters }) => {
     filters.forEach((filter) => {
       measures.add(filter.measure);

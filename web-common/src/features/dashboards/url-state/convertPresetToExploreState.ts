@@ -273,6 +273,11 @@ function fromExploreUrlParams(
       DashboardState_LeaderboardSortType.UNSPECIFIED;
   }
 
+  if (preset.exploreLeaderboardMeasureCount !== undefined) {
+    partialExploreState.leaderboardMeasureCount =
+      preset.exploreLeaderboardMeasureCount;
+  }
+
   if (preset.exploreExpandedDimension !== undefined) {
     if (preset.exploreExpandedDimension === "") {
       partialExploreState.selectedDimensionName = "";

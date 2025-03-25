@@ -1,6 +1,7 @@
 <script lang="ts">
   import { formatDataType } from "../../lib/formatters";
   import Base from "./Base.svelte";
+
   export let isNull = false;
   export let inTable = false;
   export let dark = false;
@@ -8,14 +9,19 @@
   export let type: string;
   export let value;
   export let truncate = false;
+  export let color = "";
+  export let contentRect: DOMRect | undefined = undefined;
 </script>
 
 <Base
   {truncate}
   {isNull}
-  classes="ui-copy-number font-normal {customStyle} {inTable &&
-    'block text-right'}"
+  classes="ui-copy-number font-normal {inTable
+    ? 'block text-right'
+    : ''} {customStyle}"
   {dark}
+  {color}
+  bind:contentRect
 >
   <slot name="value">
     {formatDataType(value, type)}
