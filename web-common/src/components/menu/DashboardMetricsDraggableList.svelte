@@ -136,6 +136,10 @@
       "outline",
       "outline-gray-300",
       "outline-1",
+      "opacity-60",
+      "transition-all",
+      "duration-150",
+      "ease-in-out",
     );
 
     clone.style.position = "absolute";
@@ -395,9 +399,7 @@
 <style lang="postcss">
   .transition-margin {
     transition-property: margin-top, margin-bottom;
-    transition-duration: 150ms;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    will-change: margin-top, margin-bottom;
+    transition-duration: 100ms;
   }
 
   .drag-transition {
