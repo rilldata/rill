@@ -31,6 +31,7 @@ Over time, we'll make this the default Line implementation, but it's not quite t
   import { interpolatePath } from "d3-interpolate-path";
   import { getContext } from "svelte";
   import { cubicOut } from "svelte/easing";
+
   export let data;
   export let xAccessor: string;
   export let yAccessor: string;
@@ -70,7 +71,8 @@ Over time, we'll make this the default Line implementation, but it's not quite t
   const yScale = getContext(contexts.scale("y")) as ScaleStore;
 
   let lineFunction;
-  let areaFunction;
+  let areaFunction: ((yAccessor: string) => (data: any[]) => string) | null =
+    null;
 
   const curveType = "curveLinear";
 
@@ -157,7 +159,7 @@ Over time, we'll make this the default Line implementation, but it's not quite t
         style="clip-path: url(#path-segments-{id})"
       />
     </WithTween>
-    {#if gradientColors !== null}
+    {#if gradientColors && areaFunction}
       <WithTween
         value={areaFunction(yAccessor)(delayedFilteredData)}
         tweenProps={{
