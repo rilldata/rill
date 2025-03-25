@@ -37,6 +37,8 @@
    */
   initializeNodeStoreContexts();
 
+  const { rillDevCloudFeatures } = featureFlags;
+
   const appBuildMetaStore: Writable<ApplicationBuildMetadata> =
     getContext("rill:app:metadata");
 
@@ -97,7 +99,9 @@
       >
         {#if data.initialized}
           <BannerCenter />
-          <RepresentingUserBanner />
+          {#if $rillDevCloudFeatures}
+            <RepresentingUserBanner />
+          {/if}
           <ApplicationHeader {mode} />
         {/if}
 

@@ -71,3 +71,7 @@ func (n *noop) DeleteOrg(ctx context.Context, orgID string) (*InsertResult, erro
 func (n *noop) PlanChanged(ctx context.Context, billingCustomerID string) (*InsertResult, error) {
 	return nil, nil
 }
+
+func (n *noop) HibernateInactiveOrgs(ctx context.Context) (*InsertResult, error) {
+	return nil, nil
+}

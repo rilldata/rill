@@ -33,6 +33,7 @@
     organizationPermissions,
     organizationLogoUrl,
     organizationFaviconUrl,
+    planDisplayName,
   } = data);
   $: ({
     params: { organization },
@@ -111,10 +112,10 @@
       {/if}
       {#if !isEmbed && !hideTopBar}
         <TopNavigationBar
-          manageOrganization={organizationPermissions?.manageOrg}
           createMagicAuthTokens={projectPermissions?.createMagicAuthTokens}
           manageProjectMembers={projectPermissions?.manageProjectMembers}
           {organizationLogoUrl}
+          {planDisplayName}
         />
 
         {#if withinOnlyOrg}

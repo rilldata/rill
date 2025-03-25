@@ -30,15 +30,15 @@ func New(sender Sender) *Client {
 }
 
 type ScheduledReport struct {
-	ToEmail        string
-	ToName         string
-	DisplayName    string
-	ReportTime     time.Time
-	DownloadFormat string
-	OpenLink       string
-	DownloadLink   string
-	EditLink       string
-	External       bool
+	ToEmail         string
+	ToName          string
+	DisplayName     string
+	ReportTime      time.Time
+	DownloadFormat  string
+	OpenLink        string
+	DownloadLink    string
+	EditLink        string
+	UnsubscribeLink string
 }
 
 type scheduledReportData struct {
@@ -48,7 +48,7 @@ type scheduledReportData struct {
 	OpenLink         template.URL
 	DownloadLink     template.URL
 	EditLink         template.URL
-	External         bool
+	UnsubscribeLink  template.URL
 }
 
 func (c *Client) SendScheduledReport(opts *ScheduledReport) error {
@@ -60,7 +60,7 @@ func (c *Client) SendScheduledReport(opts *ScheduledReport) error {
 		OpenLink:         template.URL(opts.OpenLink),
 		DownloadLink:     template.URL(opts.DownloadLink),
 		EditLink:         template.URL(opts.EditLink),
-		External:         opts.External,
+		UnsubscribeLink:  template.URL(opts.UnsubscribeLink),
 	}
 
 	// Build subject
@@ -532,7 +532,12 @@ func (c *Client) SendTrialStarted(opts *TrialStarted) error {
 		Subject:     fmt.Sprintf("A 30-day free trial for %s has started", opts.OrgName),
 		FrontendURL: opts.FrontendURL,
 		WelcomeText: template.HTML(fmt.Sprintf(`
-You now have access to Rill Cloud until <b>%s</b> to explore all features. Let us know if you need any help along the way!
+You now have access to Rill Cloud until <b>%s</b> to explore all features including:
+<ul>
+<li>User management (RBAC)</li>
+<li>Embedded dashboards</li>
+<li>Alerts and scheduled reports</li> 
+</ul>
 `, opts.TrialEndDate.Format(dateFormat))),
 	})
 }
@@ -690,6 +695,13 @@ func (c *Client) SendTeamPlanStarted(opts *TeamPlan) error {
 Thank you! You’ve successfully upgraded %s to the %s plan.
 <br /><br />
 Your next billing cycle starts on <b>%s</b>.
+<br /><br />
+As part of a paid plan, enjoy a complimentary 30-minute consultation call with our product experts 
+who can help optimize your setup (we can help tweak your data models/metrics, provide recommendations on setting up incremental refreshes, 
+help with work on security policies, or any other features and also share best practices. 
+<br /><br />
+Interested inscheduling a call?
+<a href="https://calendly.com/roy-endo-rilldata/30min" style="color:#4736F5">Book a time slot here</a>
 `, opts.OrgName, opts.PlanName, opts.BillingStartDate.Format(dateFormat))),
 	})
 }

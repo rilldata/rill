@@ -1,16 +1,16 @@
-import { LeaderboardContextColumn } from "../../leaderboard-context-column";
-import { sortTypeForContextColumnType } from "../../stores/dashboard-stores";
 import {
-  type ContextColWidths,
   contextColWidthDefaults,
-} from "../../stores/metrics-explorer-entity";
+  LeaderboardContextColumn,
+  type ContextColWidths,
+} from "../../leaderboard-context-column";
+import { sortTypeForContextColumnType } from "../../stores/dashboard-stores";
+
 import type { DashboardMutables } from "./types";
 
 export const CONTEXT_COL_MAX_WIDTH = 100;
 
 export const setContextColumn = (
-  { dashboard, persistentDashboardStore }: DashboardMutables,
-
+  { dashboard }: DashboardMutables,
   contextColumn: LeaderboardContextColumn,
 ) => {
   const initialSort = sortTypeForContextColumnType(
@@ -40,9 +40,6 @@ export const setContextColumn = (
   // the sort type to match the new context column
   if (dashboard.dashboardSortType === initialSort) {
     dashboard.dashboardSortType = sortTypeForContextColumnType(contextColumn);
-    persistentDashboardStore.updateDashboardSortType(
-      dashboard.dashboardSortType,
-    );
   }
 };
 

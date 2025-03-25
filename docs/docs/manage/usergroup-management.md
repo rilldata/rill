@@ -59,7 +59,7 @@ rill usergroup add --project <project_name>
       --group string     User group
       --org string       Organization (default "Rill_Learn")
       --project string   Project
-      --role string      Role of the user group (options: admin, viewer)
+      --role string      Role of the user group (options: admin, editor, viewer)
 ```
 You will be prompted for the role and the name of the group you are editing. If you want to specify a specific project, please use the --project flag. If no project flag is defined, you will be setting permission on the organization level.
 
@@ -82,18 +82,11 @@ rill user list --group <group_name>
 
 ## Reference: Walking through access levels
 
-
 In the following example, you can see the different levels of access to Rill via the organization, project-specific access, user group and user privileges.
-
 
 <img src = '/img/manage/project-management/project-access.png' class='rounded-gif' />
 
-
 ### Key things to note
-1. There are **three** levels of access: organizations, projects, and groups.
+1. There are **three** kinds of access: organization, project, and group.
 2. User groups can _only exist_ within an organization.
     - In the case of adding a user who is not part of the organization to a user group, you will prompted to add them first.
-3. User groups permissions can either be added for the organization as a whole, or specific projects.
-    - `rill usergroup create [--project project_name]`    
-4. All users added to an organization must have at least `viewer` privilege. 
-    - In the above diagram, `User 5` is redundant as there's already `viewer` access.

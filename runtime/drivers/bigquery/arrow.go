@@ -74,7 +74,7 @@ func (rs *arrowRecordReader) Retain() {
 // Release may be called simultaneously from multiple goroutines.
 func (rs *arrowRecordReader) Release() {
 	if rs.refCount.Load() <= 0 {
-		rs.logger.Warn("too many releases")
+		rs.logger.Warn("too many releases", observability.ZapCtx(rs.ctx))
 		return
 	}
 

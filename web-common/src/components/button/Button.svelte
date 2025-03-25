@@ -44,6 +44,7 @@
   export let loadingCopy = "Loading";
   // needed to set certain style that could be overridden by the style block in this component
   export let forcedStyle = "";
+  export let dataAttributes: Record<`data-${string}`, string> = {};
 
   let className: string | undefined = undefined;
   export { className as class };
@@ -87,6 +88,7 @@
   on:click={handleClick}
   style={forcedStyle}
   {...href ? { "data-sveltekit-preload-data": preload } : {}}
+  {...dataAttributes}
 >
   {#if loading}
     <LoadingSpinner size="15px" />

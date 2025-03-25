@@ -1,27 +1,24 @@
 import { expect } from "@playwright/test";
-import { useDashboardFlowTestSetup } from "web-local/tests/explores/dashboard-flow-test-setup";
-import {
-  AD_BIDS_EXPLORE_PATH,
-  AD_BIDS_METRICS_PATH,
-} from "web-local/tests/utils/dataSpecifcHelpers";
-import { interactWithTimeRangeMenu } from "web-local/tests/utils/metricsViewHelpers";
-import { ResourceWatcher } from "web-local/tests/utils/ResourceWatcher";
-import { gotoNavEntry } from "web-local/tests/utils/waitHelpers";
-import { test } from "../utils/test";
+import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions";
+import { ResourceWatcher } from "../utils/ResourceWatcher";
+import { gotoNavEntry } from "../utils/waitHelpers";
+import { test } from "../setup/base";
 
 test.describe("smoke tests for number formatting", () => {
-  useDashboardFlowTestSetup();
+  test.use({ project: "AdBids" });
 
   test("smoke tests for number formatting", async ({ page }) => {
     const watcher = new ResourceWatcher(page);
 
-    await gotoNavEntry(page, AD_BIDS_METRICS_PATH);
+    await page.getByLabel("/metrics").click();
+    await page.getByLabel("/dashboards").click();
+    await gotoNavEntry(page, "/metrics/AdBids_metrics.yaml");
 
     // This is a metrics spec with all available formatting options
     const formatterFlowDashboard = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 kind: metrics_view
-title: "AdBids_model_dashboard"
-model: "AdBids_model"
+title: "AdBids_dashboard"
+table: "AdBids"
 timeseries: "timestamp"
 measures:
 - label: no preset format
@@ -69,10 +66,10 @@ dimensions:
   description: ""
 `;
 
-    await page.getByLabel("code").click();
+    await page.getByRole("button", { name: "switch to code editor" }).click();
     // update the code editor with the new spec
     await watcher.updateAndWaitForDashboard(formatterFlowDashboard);
-    await gotoNavEntry(page, AD_BIDS_EXPLORE_PATH);
+    await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
 
     const previewButton = page.getByRole("button", { name: "Preview" });
 
@@ -141,10 +138,10 @@ dimensions:
     await interactWithTimeRangeMenu(page, async () => {
       await page.getByRole("menuitem", { name: "Last 4 Weeks" }).click();
     });
-    await page.getByRole("button", { name: "Comparing" }).click();
+    await page.getByLabel("Toggle time comparison").click();
 
     await expect(
-      page.getByRole("row", { name: "null 27 s -4.3 s -14%" }),
+      page.getByRole("row", { name: "null 27 s 33% -4.3 s -14%" }),
     ).toBeVisible();
 
     // try No Format...
@@ -154,7 +151,7 @@ dimensions:
 
     await expect(
       page.getByRole("row", {
-        name: "null 26,643 -4,349 -14%",
+        name: "null 26,643 33% -4,349 -14%",
       }),
     ).toBeVisible();
 

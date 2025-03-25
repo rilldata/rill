@@ -19,10 +19,15 @@ export enum ExploreStateURLParams {
   SortType = "sort_type",
   SortDirection = "sort_dir",
 
+  LeaderboardMeasureCount = "leaderboard_measure_count",
+
   ExpandedMeasure = "measure",
   ChartType = "chart_type",
   Pin = "pin",
 
   PivotRows = "rows",
   PivotColumns = "cols",
+  PivotTableMode = "table_mode",
+
+  GzippedParams = "gzipped_state",
 }

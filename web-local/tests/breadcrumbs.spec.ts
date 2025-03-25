@@ -1,8 +1,10 @@
 import { expect } from "playwright/test";
-import { test } from "./utils/test";
+import { test } from "./setup/base";
 import { uploadFile } from "./utils/sourceHelpers";
 
 test.describe("Breadcrumbs", () => {
+  test.use({ project: "Blank" });
+
   test.describe("Breadcrumb interactions", () => {
     test("breadcrumb navigation", async ({ page }) => {
       await uploadFile(page, "AdBids.csv");
@@ -19,21 +21,11 @@ test.describe("Breadcrumbs", () => {
       await expect(link).toBeVisible();
       await expect(link).toHaveClass(/selected/g);
 
-      await page.getByText("Create model").click();
-
-      link = page.getByRole("link", {
-        name: "AdBids_model",
-        exact: true,
-      });
-
-      await expect(link).toBeVisible();
-      await expect(link).toHaveClass(/selected/g);
-
       await page.getByText("Generate metrics view").click();
       await page.getByText("Start simple").click();
 
       link = page.getByRole("link", {
-        name: "AdBids_model_metrics",
+        name: "AdBids_metrics",
         exact: true,
       });
 
@@ -42,12 +34,10 @@ test.describe("Breadcrumbs", () => {
 
       await page.getByText("Create explore dashboard").click();
 
-      await page.waitForURL(
-        "**/files/dashboards/AdBids_model_metrics_explore.yaml",
-      );
+      await page.waitForURL("**/files/dashboards/AdBids_metrics_explore.yaml");
 
       link = page.getByRole("link", {
-        name: "AdBids_model_metrics_explore",
+        name: "AdBids_metrics_explore",
         exact: true,
       });
 
@@ -56,16 +46,16 @@ test.describe("Breadcrumbs", () => {
 
       await page
         .getByRole("link", {
-          name: "AdBids_model_metrics",
+          name: "AdBids_metrics",
           exact: true,
         })
         .click();
 
-      await page.getByText("Go to dashboard").click();
-      await page.getByText("Create dashboard").click();
+      await page.getByRole("button", { name: "Create resource menu" }).click();
+      await page.getByRole("menuitem", { name: "Create dashboard" }).click();
 
       await page.waitForURL(
-        "**/files/dashboards/AdBids_model_metrics_explore_1.yaml",
+        "**/files/dashboards/AdBids_metrics_explore_1.yaml",
       );
 
       await page.getByRole("link", { name: "AdBids", exact: true }).click();
@@ -81,14 +71,7 @@ test.describe("Breadcrumbs", () => {
 
       await expect(
         page.getByRole("link", {
-          name: "AdBids_model",
-          exact: true,
-        }),
-      ).toBeVisible();
-
-      await expect(
-        page.getByRole("link", {
-          name: "AdBids_model_metrics",
+          name: "AdBids_metrics",
           exact: true,
         }),
       ).toBeVisible();
@@ -101,33 +84,22 @@ test.describe("Breadcrumbs", () => {
       ).toBeVisible();
 
       await page
-        .getByRole("link", {
-          name: "AdBids_model",
-          exact: true,
-        })
+        .getByRole("link", { name: "AdBids_metrics", exact: true })
         .click();
 
-      await page.waitForURL("**/files/models/AdBids_model.sql");
-
-      await page
-        .getByRole("link", { name: "AdBids_model_metrics", exact: true })
-        .click();
-
-      await page.waitForURL("**/files/metrics/AdBids_model_metrics.yaml");
+      await page.waitForURL("**/files/metrics/AdBids_metrics.yaml");
 
       await page
         .getByRole("button", { name: "2 dashboards", exact: true })
         .click();
       await page
         .getByRole("menuitem", {
-          name: "AdBids_model_metrics_explore",
+          name: "AdBids_metrics_explore",
           exact: true,
         })
         .click();
 
-      await page.waitForURL(
-        "**/files/dashboards/AdBids_model_metrics_explore.yaml",
-      );
+      await page.waitForURL("**/files/dashboards/AdBids_metrics_explore.yaml");
     });
   });
 });

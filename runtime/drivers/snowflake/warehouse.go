@@ -212,7 +212,7 @@ func (f *fileIterator) Next() ([]string, error) {
 	// the following iteration might be memory intensive
 	// since batches are organized as a slice and every batch caches its content
 	f.logger.Debug("starting to fetch and process arrow batches",
-		zap.Int("batches", len(f.batches)), zap.Int("parallel_fetch_limit", f.parallelFetchLimit))
+		zap.Int("batches", len(f.batches)), zap.Int("parallel_fetch_limit", f.parallelFetchLimit), observability.ZapCtx(f.ctx))
 
 	// Fetch batches async
 	errGrp, _ := errgroup.WithContext(f.ctx)
@@ -239,7 +239,7 @@ func (f *fileIterator) Next() ([]string, error) {
 						"starting writing to new parquet row group",
 						zap.Float64("progress", float64(len(f.batches)-batchesLeft)/float64(len(f.batches))*100),
 						zap.Int("total_records", int(f.totalRecords)),
-						zap.Duration("elapsed", time.Since(start)),
+						zap.Duration("elapsed", time.Since(start)), observability.ZapCtx(f.ctx),
 					)
 				}
 				if err := writer.WriteBuffered(rec); err != nil {

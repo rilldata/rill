@@ -35,6 +35,8 @@ import {
 import { inferResourceKind } from "./infer-resource-kind";
 import { debounce } from "@rilldata/web-common/lib/create-debouncer";
 import { AsyncSaveState } from "./async-save-state";
+import type { EditorSelection } from "@codemirror/state";
+import type { EditorView } from "@codemirror/view";
 
 const UNSUPPORTED_EXTENSIONS = [
   // Data formats
@@ -84,6 +86,10 @@ export class FileArtifact {
   readonly fileName: string;
   readonly disableAutoSave: boolean;
   readonly autoSave: Writable<boolean>;
+  readonly snapshot: Writable<{
+    scroll?: ReturnType<EditorView["scrollSnapshot"]>;
+    selection?: EditorSelection;
+  }> = writable({ scroll: undefined, selection: undefined });
 
   private editorCallback: (content: string) => void = () => {};
 
@@ -147,6 +153,7 @@ export class FileArtifact {
 
     const remoteContentHasChanged = currentRemoteContent !== fetchedContent;
     const isSaveConfirmation = editorContent === fetchedContent;
+    const fileUntouched = !get(this.hasUnsavedChanges);
 
     this.saveState.resolve();
 
@@ -166,11 +173,7 @@ export class FileArtifact {
 
       if (inferred) this.inferredResourceKind.set(inferred);
 
-      if (
-        editorContent === null ||
-        get(this.autoSave) ||
-        !get(this.hasUnsavedChanges)
-      ) {
+      if (editorContent === null || fileUntouched) {
         this.updateEditorContent(fetchedContent, false, false, true);
       } else if (!isSaveConfirmation) {
         // This is the secondary sequence wherein a file is saved in an external editor
@@ -254,6 +257,13 @@ export class FileArtifact {
   resetConflictState = () => {
     this.merging.set(false);
     this.inConflict.set(false);
+  };
+
+  saveSnapshot = (editor: EditorView) => {
+    this.snapshot.set({
+      scroll: editor.scrollSnapshot(),
+      selection: editor.state.selection,
+    });
   };
 
   revertChanges = () => {

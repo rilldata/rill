@@ -1,15 +1,21 @@
+import type { QueryObserverResult } from "@rilldata/svelte-query";
 import { KPIGridComponent } from "@rilldata/web-common/features/canvas/components/kpi-grid";
 import type {
   ComponentInputParam,
   FilterInputParam,
   FilterInputTypes,
 } from "@rilldata/web-common/features/canvas/inspector/types";
+import type { CanvasResponse } from "@rilldata/web-common/features/canvas/selector";
 import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
-import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
+import type {
+  RpcStatus,
+  V1ComponentSpecRendererProperties,
+} from "@rilldata/web-common/runtime-client";
 import { ChartComponent } from "./charts";
 import { ImageComponent } from "./image";
 import { KPIComponent } from "./kpi";
 import { MarkdownCanvasComponent } from "./markdown";
+import { PivotCanvasComponent } from "./pivot";
 import { TableCanvasComponent } from "./table";
 import type {
   CanvasComponentType,
@@ -40,29 +46,23 @@ export const commonOptions: Record<
 };
 
 export function getFilterOptions(
-  includeComparisonRange = true,
+  hasComparison = true,
+  hasGrain = true,
 ): Partial<Record<FilterInputTypes, FilterInputParam>> {
   return {
-    time_range: { type: "time_range", label: "Time Range" },
-    ...(includeComparisonRange
-      ? {
-          comparison_range: {
-            type: "comparison_range",
-            label: "Comparison Range",
-          },
-        }
-      : {}),
+    time_filters: { type: "time_filters", meta: { hasComparison, hasGrain } },
     dimension_filters: {
       type: "dimension_filters",
-      label: "Filters",
     },
   };
 }
 
+const TABLE_TYPES = ["table", "pivot"] as const;
 const CHART_TYPES = [
   "line_chart",
   "bar_chart",
   "stacked_bar",
+  "stacked_bar_normalized",
   "area_chart",
 ] as const;
 const NON_CHART_TYPES = [
@@ -71,10 +71,12 @@ const NON_CHART_TYPES = [
   "kpi_grid",
   "image",
   "table",
+  "pivot",
 ] as const;
 const ALL_COMPONENT_TYPES = [...CHART_TYPES, ...NON_CHART_TYPES] as const;
 
 type ChartType = (typeof CHART_TYPES)[number];
+type TableType = (typeof TABLE_TYPES)[number];
 
 // Component type to class mapping
 const COMPONENT_CLASS_MAP = {
@@ -83,6 +85,7 @@ const COMPONENT_CLASS_MAP = {
   kpi_grid: KPIGridComponent,
   image: ImageComponent,
   table: TableCanvasComponent,
+  pivot: PivotCanvasComponent,
 } as const;
 
 // Component display names mapping
@@ -91,10 +94,12 @@ const DISPLAY_MAP: Record<CanvasComponentType, string> = {
   kpi_grid: "KPI Grid",
   markdown: "Markdown",
   table: "Table",
+  pivot: "Pivot",
   image: "Image",
   bar_chart: "Chart",
   line_chart: "Chart",
   stacked_bar: "Chart",
+  stacked_bar_normalized: "Chart",
   area_chart: "Chart",
 } as const;
 
@@ -128,6 +133,13 @@ export function isChartComponentType(
   return CHART_TYPES.includes(value as ChartType);
 }
 
+export function isTableComponentType(
+  value: string | undefined,
+): value is TableType {
+  if (!value) return false;
+  return TABLE_TYPES.includes(value as TableType);
+}
+
 export function getComponentFilterProperties(
   rendererProperties: V1ComponentSpecRendererProperties | undefined,
 ): ComponentFilterProperties {
@@ -135,10 +147,7 @@ export function getComponentFilterProperties(
     dimension_filters: rendererProperties?.dimension_filters as
       | string
       | undefined,
-    time_range: rendererProperties?.time_range as string | undefined,
-    comparison_range: rendererProperties?.comparison_range as
-      | string
-      | undefined,
+    time_filters: rendererProperties?.time_filters as string | undefined,
   };
 }
 
@@ -160,4 +169,19 @@ export function getHeaderForComponent(
 ) {
   if (!componentType) return "Component";
   return DISPLAY_MAP[componentType] || "Component";
+}
+
+export function getComponentMetricsViewFromSpec(
+  componentName: string | undefined,
+  spec: QueryObserverResult<CanvasResponse, RpcStatus>,
+): string | undefined {
+  if (!componentName) return undefined;
+  const resource = spec.data?.components?.[componentName]?.component;
+
+  if (resource) {
+    return resource?.state?.validSpec?.rendererProperties?.metrics_view as
+      | string
+      | undefined;
+  }
+  return undefined;
 }

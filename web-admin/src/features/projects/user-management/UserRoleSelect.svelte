@@ -14,6 +14,7 @@
 
   const Options = [
     { value: "admin", label: "Admin" },
+    { value: "editor", label: "Editor" },
     { value: "viewer", label: "Viewer" },
   ];
   function onSelect(val: string) {

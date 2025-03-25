@@ -274,3 +274,112 @@ dimensions: ['doesnt_exist']
 	require.NotNil(t, e1.GetExplore().State.ValidSpec)
 	require.NotEmpty(t, e1.Meta.ReconcileError)
 }
+
+func TestExploreDerivedSecurity(t *testing.T) {
+	rt, id := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"models/m1.sql": `SELECT 'foo' as foo, 'bar' as bar, 'int' as internal, 1 as x, 2 as y`,
+		"metrics_views/mv1.yaml": `
+version: 1
+type: metrics_view
+model: m1
+dimensions:
+- column: foo
+- column: bar
+- column: internal
+measures:
+- name: x
+  expression: sum(x)
+- name: y
+  expression: sum(y)
+security:
+  access: true
+  row_filter: true
+  exclude:
+    - if: "{{ not .user.admin }}"
+      names: ['internal']
+`,
+		"explores/e1.yaml": `
+type: explore
+display_name: Hello
+metrics_view: mv1
+dimensions:
+  exclude: ['internal']
+measures: '*'
+time_zones: ['UTC', 'America/Los_Angeles']
+defaults:
+  measures: ['x']
+  comparison_mode: time
+security:
+  access: "{{ .user.admin }} OR '{{ .user.domain }}' == 'rilldata.com'"
+`,
+	})
+
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+	testruntime.RequireResource(t, rt, id, &runtimev1.Resource{
+		Meta: &runtimev1.ResourceMeta{
+			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindExplore, Name: "e1"},
+			Refs:      []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: "mv1"}},
+			Owner:     runtime.GlobalProjectParserName,
+			FilePaths: []string{"/explores/e1.yaml"},
+		},
+		Resource: &runtimev1.Resource_Explore{
+			Explore: &runtimev1.Explore{
+				Spec: &runtimev1.ExploreSpec{
+					DisplayName: "Hello",
+					MetricsView: "mv1",
+					Dimensions:  nil,
+					DimensionsSelector: &runtimev1.FieldSelector{
+						Invert:   true,
+						Selector: &runtimev1.FieldSelector_Fields{Fields: &runtimev1.StringListValue{Values: []string{"internal"}}},
+					},
+					Measures:         nil,
+					MeasuresSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+					TimeZones:        []string{"UTC", "America/Los_Angeles"},
+					DefaultPreset: &runtimev1.ExplorePreset{
+						DimensionsSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+						Measures:           []string{"x"},
+						ComparisonMode:     runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_TIME,
+					},
+					SecurityRules: []*runtimev1.SecurityRule{
+						{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
+							Condition: "{{ .user.admin }} OR '{{ .user.domain }}' == 'rilldata.com'",
+							Allow:     true,
+						}}},
+					},
+				},
+				State: &runtimev1.ExploreState{
+					ValidSpec: &runtimev1.ExploreSpec{
+						DisplayName: "Hello",
+						MetricsView: "mv1",
+						Dimensions:  []string{"foo", "bar"},
+						Measures:    []string{"x", "y"},
+						TimeZones:   []string{"UTC", "America/Los_Angeles"},
+						DefaultPreset: &runtimev1.ExplorePreset{
+							Dimensions:     []string{"foo", "bar"},
+							Measures:       []string{"x"},
+							ComparisonMode: runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_TIME,
+						},
+						SecurityRules: []*runtimev1.SecurityRule{
+							// Derived from metrics_view and explore
+							{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
+								Condition: "(true) AND ({{ .user.admin }} OR '{{ .user.domain }}' == 'rilldata.com')",
+								Allow:     true,
+							}}},
+							// Inherited from metrics_view
+							{Rule: &runtimev1.SecurityRule_FieldAccess{FieldAccess: &runtimev1.SecurityRuleFieldAccess{
+								Allow:     true,
+								AllFields: true,
+							}}},
+							{Rule: &runtimev1.SecurityRule_FieldAccess{FieldAccess: &runtimev1.SecurityRuleFieldAccess{
+								Condition: "{{ not .user.admin }}",
+								Fields:    []string{"internal"},
+							}}},
+						},
+					},
+				},
+			},
+		},
+	})
+}

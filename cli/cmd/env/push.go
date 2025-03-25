@@ -72,8 +72,7 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 			added := 0
 			changed := 0
 			changedVars := make(map[string]string)
-
-			for k, v := range parser.DotEnv {
+			for k, v := range parser.GetDotEnv() {
 				if _, ok := vars[k]; !ok {
 					added++
 					changedVars[k] = v

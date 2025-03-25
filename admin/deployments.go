@@ -405,6 +405,13 @@ func (s *Service) CheckProvisionerResource(ctx context.Context, pr *database.Pro
 }
 
 func (s *Service) OpenRuntimeClient(depl *database.Deployment) (*client.Client, error) {
+	if depl.RuntimeHost == "" {
+		if depl.Status == database.DeploymentStatusError {
+			return nil, fmt.Errorf("deployment %q has no runtime host: %s", depl.ID, depl.StatusMessage)
+		}
+		return nil, fmt.Errorf("deployment %q has no runtime host", depl.ID)
+	}
+
 	jwt, err := s.IssueRuntimeManagementToken(depl.RuntimeAudience)
 	if err != nil {
 		return nil, err
@@ -433,34 +440,41 @@ func (s *Service) IssueRuntimeManagementToken(aud string) (string, error) {
 }
 
 func (s *Service) NewDeploymentAnnotations(org *database.Organization, proj *database.Project) DeploymentAnnotations {
+	var orgBillingPlanName string
+	if org.BillingPlanName != nil {
+		orgBillingPlanName = *org.BillingPlanName
+	}
 	return DeploymentAnnotations{
-		orgID:           org.ID,
-		orgName:         org.Name,
-		projID:          proj.ID,
-		projName:        proj.Name,
-		projProdSlots:   fmt.Sprint(proj.ProdSlots),
-		projProvisioner: proj.Provisioner,
-		projAnnotations: proj.Annotations,
+		orgID:              org.ID,
+		orgName:            org.Name,
+		orgBillingPlanName: orgBillingPlanName,
+		projID:             proj.ID,
+		projName:           proj.Name,
+		projProdSlots:      fmt.Sprint(proj.ProdSlots),
+		projProvisioner:    proj.Provisioner,
+		projAnnotations:    proj.Annotations,
 	}
 }
 
 type DeploymentAnnotations struct {
-	orgID           string
-	orgName         string
-	projID          string
-	projName        string
-	projProdSlots   string
-	projProvisioner string
-	projAnnotations map[string]string
+	orgID              string
+	orgName            string
+	orgBillingPlanName string
+	projID             string
+	projName           string
+	projProdSlots      string
+	projProvisioner    string
+	projAnnotations    map[string]string
 }
 
 func (da *DeploymentAnnotations) ToMap() map[string]string {
-	res := make(map[string]string, len(da.projAnnotations)+4)
+	res := make(map[string]string, len(da.projAnnotations)+7)
 	for k, v := range da.projAnnotations {
 		res[k] = v
 	}
 	res["organization_id"] = da.orgID
 	res["organization_name"] = da.orgName
+	res["organization_plan"] = da.orgBillingPlanName
 	res["project_id"] = da.projID
 	res["project_name"] = da.projName
 	res["project_prod_slots"] = da.projProdSlots

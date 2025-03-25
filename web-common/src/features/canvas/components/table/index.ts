@@ -5,25 +5,25 @@ import {
 } from "@rilldata/web-common/features/canvas/components/util";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
+import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 import type {
   ComponentCommonProperties,
   ComponentFilterProperties,
 } from "../types";
 
-export { default as Table } from "./TableTemplate.svelte";
-
 export interface TableSpec
   extends ComponentCommonProperties,
     ComponentFilterProperties {
   metrics_view: string;
-  measures: string[];
-  row_dimensions?: string[];
-  col_dimensions?: string[];
+  columns: string[];
 }
+
+export { default as Table } from "./CanvasTableDisplay.svelte";
 
 export class TableCanvasComponent extends BaseCanvasComponent<TableSpec> {
   minSize = { width: 2, height: 2 };
   defaultSize = { width: 4, height: 10 };
+  resetParams = ["measures", "row_dimensions", "col_dimensions"];
 
   constructor(
     fileArtifact: FileArtifact | undefined = undefined,
@@ -32,9 +32,7 @@ export class TableCanvasComponent extends BaseCanvasComponent<TableSpec> {
   ) {
     const defaultSpec: TableSpec = {
       metrics_view: "",
-      measures: [],
-      row_dimensions: [],
-      col_dimensions: [],
+      columns: [],
     };
     super(fileArtifact, path, defaultSpec, initialSpec);
   }
@@ -47,27 +45,32 @@ export class TableCanvasComponent extends BaseCanvasComponent<TableSpec> {
     return {
       options: {
         metrics_view: { type: "metrics", label: "Metrics view" },
-        measures: { type: "multi_measures", label: "Measures" },
-        col_dimensions: {
-          type: "multi_dimensions",
-          label: "Column dimensions",
+        columns: {
+          type: "multi_fields",
+          label: "Columns",
+          meta: { allowedTypes: ["time", "dimension", "measure"] },
         },
-        row_dimensions: { type: "multi_dimensions", label: "Row dimensions" },
         ...commonOptions,
       },
-      filter: getFilterOptions(),
+      filter: getFilterOptions(true, false),
     };
   }
 
   newComponentSpec(
-    metrics_view: string,
-    measure: string,
-    dimension: string,
+    metricsViewName: string,
+    metricsViewSpec: V1MetricsViewSpec | undefined,
   ): TableSpec {
+    const measures =
+      metricsViewSpec?.measures?.slice(0, 3).map((m) => m.name as string) ?? [];
+
+    const dimensions =
+      metricsViewSpec?.dimensions
+        ?.slice(0, 3)
+        .map((d) => d.name || (d.column as string)) ?? [];
+
     return {
-      metrics_view,
-      measures: [measure],
-      row_dimensions: [dimension],
+      metrics_view: metricsViewName,
+      columns: [...dimensions, ...measures],
     };
   }
 }

@@ -1,17 +1,17 @@
 import { protoBase64, type Timestamp } from "@bufbuild/protobuf";
 import {
-  type MeasureFilterEntry,
   mapExprToMeasureFilter,
+  type MeasureFilterEntry,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import {
-  PivotChipType,
   type PivotChipData,
+  PivotChipType,
   type PivotState,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import {
   FromProtoOperationMap,
-  FromProtoPivotRowJoinTypeMap,
+  FromProtoPivotTableModeMap,
   FromProtoTimeGrainMap,
 } from "@rilldata/web-common/features/dashboards/proto-state/enum-maps";
 import { convertFilterToExpression } from "@rilldata/web-common/features/dashboards/proto-state/filter-converter";
@@ -42,7 +42,7 @@ import {
   DashboardState,
   DashboardState_ActivePage,
   DashboardState_LeaderboardContextColumn,
-  DashboardState_PivotRowJoinType,
+  DashboardState_PivotTableMode,
   DashboardTimeRange,
   PivotElement,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
@@ -118,6 +118,9 @@ export function getDashboardStateFromProto(
   } else if (dashboard.where) {
     entity.whereFilter = fromExpressionProto(dashboard.where);
   }
+  if (dashboard.dimensionsWithInlistFilter) {
+    entity.dimensionsWithInlistFilter = dashboard.dimensionsWithInlistFilter;
+  }
   if (dashboard.having) {
     entity.dimensionThresholdFilters = dashboard.having.map((h) => {
       const expr = fromExpressionProto(h.filter as Expression);
@@ -176,7 +179,10 @@ export function getDashboardStateFromProto(
       chartType: chartTypeMap(dashboard.chartType),
       expandedMeasureName: dashboard.expandedMeasure,
     };
-  } else if (dashboard.activePage !== undefined) {
+  } else if (
+    dashboard.activePage !== undefined &&
+    dashboard.activePage !== DashboardState_ActivePage.UNSPECIFIED
+  ) {
     entity.tdd = {
       pinIndex: -1,
       chartType: TDDChart.DEFAULT,
@@ -212,6 +218,9 @@ export function getDashboardStateFromProto(
   }
   if (dashboard.leaderboardSortType) {
     entity.dashboardSortType = dashboard.leaderboardSortType;
+  }
+  if (dashboard.leaderboardMeasureCount) {
+    entity.leaderboardMeasureCount = dashboard.leaderboardMeasureCount;
   }
 
   if (dashboard.pivotIsActive !== undefined) {
@@ -408,22 +417,20 @@ function fromPivotProto(
 
   return {
     active: dashboard.pivotIsActive ?? false,
-    rows: {
-      dimension: rowDimensions,
-    },
-    columns: {
-      dimension: colDimensions,
-      measure: dashboard.pivotColumnMeasures.map(mapMeasure),
-    },
+    rows: rowDimensions,
+    columns: [
+      ...colDimensions,
+      ...dashboard.pivotColumnMeasures.map(mapMeasure),
+    ],
     expanded: dashboard.pivotExpanded,
     sorting: dashboard.pivotSort ?? [],
     columnPage: dashboard.pivotColumnPage ?? 1,
     rowPage: 1,
     enableComparison: dashboard.pivotEnableComparison ?? true,
     activeCell: null,
-    rowJoinType:
-      FromProtoPivotRowJoinTypeMap[
-        dashboard.pivotRowJoinType || DashboardState_PivotRowJoinType.NEST
+    tableMode:
+      FromProtoPivotTableModeMap[
+        dashboard.pivotTableMode || DashboardState_PivotTableMode.NEST
       ],
   };
 }

@@ -1,4 +1,4 @@
-import { createAdminServiceGetBillingSubscription } from "@rilldata/web-admin/client";
+import { createAdminServiceGetOrganization } from "@rilldata/web-admin/client";
 import { getMessageForPaymentIssues } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
 import { getMessageForCancelledIssue } from "@rilldata/web-admin/features/billing/issues/getMessageForCancelledIssue";
 import { getMessageForTrialPlan } from "@rilldata/web-admin/features/billing/issues/getMessageForTrialPlan";
@@ -30,30 +30,32 @@ export function useBillingIssueMessage(
 ): CompoundQueryResult<BillingIssueMessage> {
   return derived(
     [
-      createAdminServiceGetBillingSubscription(organization),
+      createAdminServiceGetOrganization(organization),
       useCategorisedOrganizationBillingIssues(organization),
       areAllProjectsHibernating(organization),
     ],
-    ([subscriptionResp, categorisedIssuesResp, allProjectsHibernatingResp]) => {
+    ([orgResp, categorisedIssuesResp, allProjectsHibernatingResp]) => {
       if (
-        subscriptionResp.isFetching ||
-        categorisedIssuesResp.isFetching ||
-        allProjectsHibernatingResp.isFetching
+        orgResp.isLoading ||
+        categorisedIssuesResp.isLoading ||
+        allProjectsHibernatingResp.isLoading
       ) {
         return {
           isFetching: true,
+          isLoading: true,
           error: undefined,
         };
       }
       if (
-        subscriptionResp.error ||
+        orgResp.error ||
         categorisedIssuesResp.error ||
         allProjectsHibernatingResp.error
       ) {
         return {
           isFetching: false,
+          isLoading: false,
           error:
-            subscriptionResp.error ??
+            orgResp.error ??
             categorisedIssuesResp.error ??
             allProjectsHibernatingResp.error,
         };
@@ -62,6 +64,7 @@ export function useBillingIssueMessage(
       if (categorisedIssuesResp.data?.cancelled) {
         return {
           isFetching: false,
+          isLoading: false,
           error: undefined,
           data: getMessageForCancelledIssue(
             categorisedIssuesResp.data.cancelled,
@@ -72,6 +75,7 @@ export function useBillingIssueMessage(
       if (categorisedIssuesResp.data?.trial) {
         return {
           isFetching: false,
+          isLoading: false,
           error: undefined,
           data: getMessageForTrialPlan(categorisedIssuesResp.data.trial),
         };
@@ -79,17 +83,17 @@ export function useBillingIssueMessage(
 
       if (
         categorisedIssuesResp.data?.payment.length &&
-        subscriptionResp.data?.subscription
+        orgResp.data?.organization?.billingPlanName
       ) {
         const paymentIssue = getMessageForPaymentIssues(
-          !!subscriptionResp.data.subscription.plan &&
-            !isTeamPlan(subscriptionResp.data.subscription.plan),
+          !isTeamPlan(orgResp.data.organization.billingPlanName),
           categorisedIssuesResp.data.payment,
         );
         // if we do not have any payment related message to show, skip it
         if (paymentIssue)
           return {
             isFetching: false,
+            isLoading: false,
             error: undefined,
             data: paymentIssue,
           };
@@ -98,6 +102,7 @@ export function useBillingIssueMessage(
       if (allProjectsHibernatingResp.data) {
         return {
           isFetching: false,
+          isLoading: false,
           error: undefined,
           data: <BillingIssueMessage>{
             type: "default",
@@ -114,6 +119,7 @@ export function useBillingIssueMessage(
 
       return {
         isFetching: false,
+        isLoading: false,
         error: undefined,
       };
     },

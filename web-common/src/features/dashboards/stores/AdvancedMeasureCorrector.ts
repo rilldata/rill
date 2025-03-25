@@ -1,3 +1,4 @@
+import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
@@ -107,10 +108,11 @@ export class AdvancedMeasureCorrector {
   }
 
   private correctPivot() {
-    this.dashboard.pivot.columns.measure =
-      this.dashboard.pivot.columns.measure.filter(
-        (m) => !this.measureIsValidForComponent(m.id, true, false),
-      );
+    this.dashboard.pivot.columns = this.dashboard.pivot.columns.filter(
+      (m) =>
+        m.type !== PivotChipType.Measure ||
+        !this.measureIsValidForComponent(m.id, true, false),
+    );
     this.dashboard.pivot.sorting = this.dashboard.pivot.sorting.filter(
       (s) =>
         !this.measuresMap.has(s.id) ||

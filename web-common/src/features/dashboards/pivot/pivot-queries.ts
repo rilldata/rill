@@ -274,6 +274,7 @@ export function getTotalsRowQuery(
 
   const colFilters = colDimensionNames
     .filter((d) => !isTimeDimension(d, time.timeDimension))
+    .filter((d) => colDimensionAxes[d]?.length > 0)
     .map((dimension) =>
       createInExpression(dimension, colDimensionAxes[dimension]),
     );

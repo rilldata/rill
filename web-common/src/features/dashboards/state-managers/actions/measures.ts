@@ -1,7 +1,7 @@
 import type { DashboardMutables } from "./types";
 
 export const toggleMeasureVisibility = (
-  { dashboard, persistentDashboardStore }: DashboardMutables,
+  { dashboard }: DashboardMutables,
   allMeasures: string[],
   measureName?: string,
 ) => {
@@ -28,10 +28,6 @@ export const toggleMeasureVisibility = (
 
   dashboard.allMeasuresVisible =
     dashboard.visibleMeasureKeys.size === allMeasures.length;
-
-  persistentDashboardStore.updateVisibleMeasures(
-    Array.from(dashboard.visibleMeasureKeys),
-  );
 };
 
 export const measureActions = {

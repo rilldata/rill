@@ -53,51 +53,7 @@ You can also manage project objects in the settings page including public URLs (
 ![img](/img/manage/project-management/project-settings.png)
 
 ## Managing Rill project from CLI
-Managing a project includes the project itself and all components or resources that belong to the project. Via the CLI, you can make changes to the project's properties such as description, GitHub branch, etc using the following:
-
-
-```
-rill project
-Manage projects
-
-Usage:
-  rill project [command]
-
-Available Commands:
-  list           List all the projects
-  show           Show project details
-  edit           Edit the project details
-  rename         Rename project
-  hibernate      Hibernate project
-  delete         Delete the project
-  status         Project deployment status
-  splits         List splits for a model
-  logs           Show project logs
-  describe       Retrieve detailed state for a resource
-  refresh        Refresh one or more resources
-  connect-github Deploy project to Rill Cloud by pulling project files from a git repository
-  deploy         Deploy project to Rill Cloud by uploading the project files
-
-Flags:
-      --org string   Organization Name (default "your_org")
-
-Global Flags:
-      --api-token string   Token for authenticating with the cloud API
-      --format string      Output format (options: "human", "json", "csv") (default "human")
-  -h, --help               Print usage
-      --interactive        Prompt for missing required parameters (default true)
-
-Use "rill project [command] --help" for more information about a command.
-```
-
-:::note 
-There are still some actions within Rill that require CLI commands:
-- refreshing source on Rill Cloud
-- delete / hibernate project
-- reading Rill Cloud logs
-- renaming projects,
-- etc.
-:::
+Managing a project includes the project itself and all components or resources that belong to the project. Via the CLI, you can make changes to the project's properties such as description, GitHub branch, etc. Run `rill project -h` for an overview of available commands.
 
 ### Refreshing the deployment
 
@@ -137,21 +93,3 @@ rill project edit --public=true
 
 :::
 
-
-## Reference: Walking through access levels
-
-
-In the following example, you can see the different levels of access to Rill via the organization, project-specific access, user group and user privileges.
-
-
-<img src = '/img/manage/project-management/project-access.png' class='rounded-gif' />
-
-
-### Key things to note
-1. There are **three** levels of access: organizations, projects, and groups.
-2. User groups can _only exist_ within an organization.
-    - In the case of adding a user who is not part of the organization to a user group, you will prompted to add them first.
-3. User groups permissions can either be added for the organization as a whole, or specific projects.
-    - `rill usergroup create [--project project_name]`    
-4. All users added to an organization must have at least `viewer` privilege. 
-    - In the above diagram, `User 5` is redundant as there's already `viewer` access.

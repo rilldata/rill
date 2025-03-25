@@ -130,7 +130,7 @@ export async function deleteFile(page: Page, filePath: string) {
 }
 
 export async function updateCodeEditor(page: Page, code: string) {
-  await page.getByRole("textbox", { name: "Code editor" }).click();
+  await page.getByRole("textbox", { name: "codemirror editor" }).click();
   if (process.platform === "darwin") {
     await page.keyboard.press("Meta+A");
   } else {

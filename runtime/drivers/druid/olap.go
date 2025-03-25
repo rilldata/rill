@@ -11,6 +11,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/druid/druidsqldriver"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 )
 
@@ -32,13 +33,13 @@ func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName
 }
 
 // CreateTableAsSelect implements drivers.OLAPStore.
-func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, opts *drivers.CreateTableOptions) error {
-	return fmt.Errorf("druid: data transformation not yet supported")
+func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, opts *drivers.CreateTableOptions) (*drivers.TableWriteMetrics, error) {
+	return nil, fmt.Errorf("druid: data transformation not yet supported")
 }
 
 // InsertTableAsSelect implements drivers.OLAPStore.
-func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, opts *drivers.InsertTableOptions) error {
-	return fmt.Errorf("druid: data transformation not yet supported")
+func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, opts *drivers.InsertTableOptions) (*drivers.TableWriteMetrics, error) {
+	return nil, fmt.Errorf("druid: data transformation not yet supported")
 }
 
 // DropTable implements drivers.OLAPStore.
@@ -73,7 +74,7 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
 	// Log query if enabled (usually disabled)
 	if c.config.LogQueries {
-		c.logger.Info("druid query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args))
+		c.logger.Info("druid query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
 	}
 
 	if stmt.DryRun {
@@ -221,7 +222,6 @@ func (i informationSchema) All(ctx context.Context, like string) ([]*drivers.Tab
 	if err != nil {
 		return nil, err
 	}
-
 	return tables, nil
 }
 
@@ -275,6 +275,41 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 	return tables[0], nil
 }
 
+func (i informationSchema) LoadPhysicalSize(ctx context.Context, tables []*drivers.Table) error {
+	q := `SELECT
+    		datasource,
+    		SUM("size") AS total_size
+		FROM sys.segments
+		WHERE is_active = 1
+		GROUP BY 1`
+	rows, err := i.c.db.QueryxContext(ctx, q)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	res := make(map[string]uint64, len(tables))
+	var (
+		name string
+		size uint64
+	)
+	for rows.Next() {
+		if err := rows.Scan(&name, &size); err != nil {
+			return err
+		}
+		res[name] = size
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+
+	for _, t := range tables {
+		if size, ok := res[t.Name]; ok {
+			t.PhysicalSizeBytes = int64(size)
+		}
+	}
+	return nil
+}
+
 func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error) {
 	var res []*drivers.Table
 
@@ -305,6 +340,7 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 				IsDefaultDatabaseSchema: true,
 				Name:                    name,
 				Schema:                  &runtimev1.StructType{},
+				PhysicalSizeBytes:       -1,
 			}
 			res = append(res, t)
 		}

@@ -1,4 +1,4 @@
-import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { removeSomeAdvancedMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
@@ -18,7 +18,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
-import { type Writable, derived, writable, type Readable } from "svelte/store";
+import { type Readable, type Writable, derived, writable } from "svelte/store";
 import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
 import {
   type DimensionDataItem,
@@ -67,7 +67,10 @@ export function createMetricsViewTimeSeries(
         {
           measureNames: measures,
           where: sanitiseExpression(
-            mergeMeasureFilters(dashboardStore),
+            mergeDimensionAndMeasureFilters(
+              dashboardStore.whereFilter,
+              dashboardStore.dimensionThresholdFilters,
+            ),
             undefined,
           ),
           timeStart: isComparison

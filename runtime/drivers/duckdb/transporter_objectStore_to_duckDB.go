@@ -100,7 +100,7 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps 
 				return err
 			}
 
-			err = t.to.CreateTableAsSelect(ctx, sinkCfg.Table, fmt.Sprintf("SELECT * FROM %s", from), &drivers.CreateTableOptions{})
+			_, err = t.to.CreateTableAsSelect(ctx, sinkCfg.Table, fmt.Sprintf("SELECT * FROM %s", from), &drivers.CreateTableOptions{})
 			if err != nil {
 				return err
 			}
@@ -162,7 +162,7 @@ func (t *objectStoreToDuckDB) ingestDuckDBSQL(ctx context.Context, originalSQL s
 				return err
 			}
 
-			err = t.to.CreateTableAsSelect(ctx, dbSink.Table, sql, &drivers.CreateTableOptions{})
+			_, err = t.to.CreateTableAsSelect(ctx, dbSink.Table, sql, &drivers.CreateTableOptions{})
 			if err != nil {
 				return err
 			}
@@ -210,7 +210,7 @@ func (a *appender) appendData(ctx context.Context, files []string) error {
 		InPlace:  true,
 		Strategy: drivers.IncrementalStrategyAppend,
 	}
-	err = a.to.InsertTableAsSelect(ctx, a.sink.Table, sql, opts)
+	_, err = a.to.InsertTableAsSelect(ctx, a.sink.Table, sql, opts)
 	if err == nil || !a.allowSchemaRelaxation || !containsAny(err.Error(), []string{"binder error", "conversion error"}) {
 		return err
 	}
@@ -226,7 +226,8 @@ func (a *appender) appendData(ctx context.Context, files []string) error {
 		InPlace:  true,
 		Strategy: drivers.IncrementalStrategyAppend,
 	}
-	return a.to.InsertTableAsSelect(ctx, a.sink.Table, sql, opts)
+	_, err = a.to.InsertTableAsSelect(ctx, a.sink.Table, sql, opts)
+	return err
 }
 
 // updateSchema updates the schema of the table in case new file adds a new column or

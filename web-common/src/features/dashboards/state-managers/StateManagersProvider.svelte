@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { page } from "$app/stores";
   import { setContext } from "svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createStateManagers, DEFAULT_STORE_KEY } from "./state-managers";
@@ -8,16 +7,11 @@
   export let exploreName: string;
   export let visualEditing = false;
 
-  const orgName = $page.params.organization;
-  const projectName = $page.params.project;
-
   const queryClient = useQueryClient();
   const stateManagers = createStateManagers({
     queryClient,
     metricsViewName,
     exploreName,
-    extraKeyPrefix:
-      orgName && projectName ? `${orgName}__${projectName}__` : "",
   });
   setContext(DEFAULT_STORE_KEY, stateManagers);
 

@@ -7,6 +7,7 @@ import {
 } from "@bufbuild/protobuf";
 import { mapMeasureFilterToExpr } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
+import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
 import {
   type PivotChipData,
   PivotChipType,
@@ -14,7 +15,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import {
   ToProtoOperationMap,
-  ToProtoPivotRowJoinTypeMap,
+  ToProtoPivotTableModeMap,
   ToProtoTimeGrainMap,
 } from "@rilldata/web-common/features/dashboards/proto-state/enum-maps";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
@@ -74,6 +75,9 @@ export function getProtoFromDashboardState(
   if (metrics.whereFilter) {
     state.where = toExpressionProto(metrics.whereFilter);
   }
+  if (metrics.dimensionsWithInlistFilter) {
+    state.dimensionsWithInlistFilter = metrics.dimensionsWithInlistFilter;
+  }
   if (metrics.dimensionThresholdFilters?.length) {
     state.having = metrics.dimensionThresholdFilters.map(
       ({ name, filters }) =>
@@ -114,6 +118,10 @@ export function getProtoFromDashboardState(
 
   if (metrics.leaderboardMeasureName) {
     state.leaderboardMeasure = metrics.leaderboardMeasureName;
+  }
+
+  if (metrics.leaderboardMeasureCount) {
+    state.leaderboardMeasureCount = metrics.leaderboardMeasureCount;
   }
 
   if (metrics.tdd?.pinIndex !== undefined) {
@@ -290,19 +298,18 @@ const mapPivotDimensions: (
 };
 
 function toPivotProto(pivotState: PivotState): PartialMessage<DashboardState> {
+  const pivotColumns = splitPivotChips(pivotState.columns);
   return {
     pivotIsActive: pivotState.active,
-    pivotRowAllDimensions: pivotState.rows.dimension.map(mapPivotDimensions),
-    pivotColumnAllDimensions:
-      pivotState.columns.dimension.map(mapPivotDimensions),
-
-    pivotColumnMeasures: pivotState.columns.measure.map((m) => m.id),
+    pivotRowAllDimensions: pivotState.rows.map(mapPivotDimensions),
+    pivotColumnAllDimensions: pivotColumns.dimension.map(mapPivotDimensions),
+    pivotColumnMeasures: pivotColumns.measure.map((m) => m.id),
 
     // pivotExpanded: pivotState.expanded,
     pivotSort: pivotState.sorting,
     pivotColumnPage: pivotState.columnPage,
     pivotEnableComparison: pivotState.enableComparison,
-    pivotRowJoinType: ToProtoPivotRowJoinTypeMap[pivotState.rowJoinType],
+    pivotTableMode: ToProtoPivotTableModeMap[pivotState.tableMode],
   };
 }
 

@@ -4,11 +4,11 @@
 
 <script lang="ts">
   import { page } from "$app/stores";
-  import CloudIcon from "@rilldata/web-common/components/icons/CloudIcon.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { getNeverSubscribedIssue } from "@rilldata/web-common/features/billing/issues";
   import TrialDetailsDialog from "@rilldata/web-common/features/billing/TrialDetailsDialog.svelte";
+  import ProjectRedeployConfirmDialog from "@rilldata/web-common/features/project/ProjectRedeployConfirmDialog.svelte";
   import PushToGitForDeployDialog from "@rilldata/web-common/features/project/PushToGitForDeployDialog.svelte";
   import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
@@ -54,7 +54,7 @@
     deployCTAUrl = deployPageUrl;
   }
 
-  async function onShowRedeploy() {
+  async function onRedeploy() {
     void behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeployIntent);
 
     await waitUntil(() => !get(currentProject).isFetching);
@@ -80,19 +80,10 @@
 </script>
 
 {#if isDeployed}
-  <Tooltip distance={8}>
-    <Button
-      loading={$currentProject.isLoading}
-      on:click={onShowRedeploy}
-      type="secondary"
-    >
-      <CloudIcon size="16px" />
-      Update
-    </Button>
-    <TooltipContent slot="tooltip-content">
-      Push changes to Rill Cloud
-    </TooltipContent>
-  </Tooltip>
+  <ProjectRedeployConfirmDialog
+    isLoading={$currentProject.isLoading}
+    onConfirm={onRedeploy}
+  />
 {:else}
   <Tooltip distance={8}>
     <Button

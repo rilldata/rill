@@ -83,6 +83,8 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 
 	if inputProps.Format == "" {
 		inputProps.Format = fileutil.FullExt(localPaths[0])
+	} else {
+		inputProps.Format = "." + inputProps.Format
 	}
 
 	from, err := sourceReader(localPaths, inputProps.Format, inputProps.DuckDB)
@@ -91,7 +93,7 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 	}
 
 	// create the table
-	err = e.c.CreateTableAsSelect(ctx, stagingTableName, "SELECT * FROM "+from, &drivers.CreateTableOptions{View: asView})
+	metrics, err := e.c.CreateTableAsSelect(ctx, stagingTableName, "SELECT * FROM "+from, &drivers.CreateTableOptions{View: asView})
 	if err != nil {
 		_ = e.c.DropTable(ctx, stagingTableName)
 		return nil, fmt.Errorf("failed to create model: %w", err)
@@ -119,8 +121,9 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 
 	// Done
 	return &drivers.ModelResult{
-		Connector:  opts.OutputConnector,
-		Properties: resultPropsMap,
-		Table:      tableName,
+		Connector:    opts.OutputConnector,
+		Properties:   resultPropsMap,
+		Table:        tableName,
+		ExecDuration: metrics.Duration,
 	}, nil
 }

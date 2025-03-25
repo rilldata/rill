@@ -1,7 +1,9 @@
 import { expect } from "playwright/test";
-import { test } from "./utils/test";
+import { test } from "./setup/base";
 
 test.describe("File Explorer", () => {
+  test.use({ project: "Blank" });
+
   test.describe("File CRUD Operations", () => {
     test("should create, rename, edit, copy, and delete a file", async ({
       page,
@@ -11,7 +13,7 @@ test.describe("File Explorer", () => {
       await page.getByRole("menuitem", { name: "More" }).hover();
       await page.getByRole("menuitem", { name: "Blank file" }).click();
       await expect(
-        page.getByRole("link", { name: "untitled_file" }),
+        page.getByRole("link", { name: "untitled_file", exact: true }),
       ).toBeVisible();
       await expect(
         page.getByRole("heading", { name: "untitled_file", exact: true }),

@@ -2,7 +2,6 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
-  import { DEFAULT_DASHBOARD_WIDTH } from "@rilldata/web-common/features/canvas/constants";
   import { getParsedDocument } from "@rilldata/web-common/features/canvas/inspector/selectors";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
@@ -27,6 +26,8 @@
   } from "@rilldata/web-common/lib/time/config";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { YAMLMap, YAMLSeq } from "yaml";
+  import { DEFAULT_DASHBOARD_WIDTH } from "../layout-util";
+  import { allTimeZones } from "@rilldata/web-common/lib/time/timezone";
 
   export let updateProperties: (
     newRecord: Record<string, unknown>,
@@ -188,7 +189,7 @@
           id="visual-explore-zone"
           showLabel={false}
           defaultLabel="Default time zones"
-          searchableItems={Intl.supportedValuesOf("timeZone")}
+          searchableItems={allTimeZones}
           defaultItems={DEFAULT_TIMEZONES}
           keyNotSet={!rawTimeZones}
           selectedItems={timeZones}

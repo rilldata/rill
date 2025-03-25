@@ -17,7 +17,7 @@
   const stateManagers = getStateManagers();
   const {
     selectors: {
-      pivot: { measures, dimensions, columns, rows },
+      pivot: { measures, dimensions, columns, rows, isFlat },
     },
   } = stateManagers;
 
@@ -40,7 +40,7 @@
 
   $: usedTimeGrains = $columns.dimension
     .filter((m) => m.type === PivotChipType.Time)
-    .concat($rows.dimension.filter((d) => d.type === PivotChipType.Time));
+    .concat($rows.filter((d) => d.type === PivotChipType.Time));
 
   $: timeGrainOptions = allTimeGrains
     .filter((tgo) => !usedTimeGrains.some((utg) => utg.id === tgo.id))
@@ -99,6 +99,7 @@
     {extraSpace}
     {chipsPerSection}
     items={timeGrainOptions}
+    tableMode={$isFlat ? "flat" : "nest"}
     otherChipCounts={[filteredDimensions.length, filteredMeasures.length]}
   />
 
@@ -115,6 +116,7 @@
     {extraSpace}
     {chipsPerSection}
     items={filteredDimensions}
+    tableMode={$isFlat ? "flat" : "nest"}
     otherChipCounts={[timeGrainOptions.length, filteredDimensions.length]}
   />
 </div>

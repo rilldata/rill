@@ -36,9 +36,9 @@ export const load = async ({ params, depends }) => {
       queryKey,
     });
 
-    const dashboard = response.resource?.canvas;
+    const dashboard = response.resource;
 
-    if (!dashboard || !dashboard.spec) {
+    if (!dashboard || !dashboard.canvas) {
       throw error(404, "Dashboard not found");
     }
 

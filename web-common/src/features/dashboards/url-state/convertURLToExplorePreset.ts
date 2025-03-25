@@ -4,6 +4,7 @@ import {
   createAndExpression,
   filterIdentifiers,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { decompressUrlParams } from "@rilldata/web-common/features/dashboards/url-state/compression";
 import { convertLegacyStateToExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/convertLegacyStateToExplorePreset";
 import { CustomTimeRangeRegex } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import {
@@ -64,6 +65,14 @@ export function convertURLToExplorePreset(
     (d) => d.name!,
   );
 
+  if (searchParams.has(ExploreStateURLParams.GzippedParams)) {
+    searchParams = new URLSearchParams(
+      decompressUrlParams(
+        searchParams.get(ExploreStateURLParams.GzippedParams)!,
+      ),
+    );
+  }
+
   // Support legacy dashboard param.
   // This will be applied 1st so that any newer params added can be applied as well.
   if (searchParams.has(ExploreStateURLParams.LegacyProtoState)) {
@@ -91,13 +100,19 @@ export function convertURLToExplorePreset(
   }
 
   if (searchParams.has(ExploreStateURLParams.Filters)) {
-    const { expr, errors: filterErrors } = fromFilterUrlParam(
+    const {
+      expr,
+      dimensionsWithInlistFilter,
+      errors: filterErrors,
+    } = fromFilterUrlParam(
       searchParams.get(ExploreStateURLParams.Filters) as string,
       measures,
       dimensions,
     );
     if (filterErrors) errors.push(...filterErrors);
     if (expr) preset.where = expr;
+    if (dimensionsWithInlistFilter)
+      preset.dimensionsWithInlistFilter = dimensionsWithInlistFilter;
   }
 
   const { preset: trPreset, errors: trErrors } = fromTimeRangesParams(
@@ -142,6 +157,20 @@ export function convertURLToExplorePreset(
     }
   }
 
+  if (searchParams.has(ExploreStateURLParams.LeaderboardMeasureCount)) {
+    const count = searchParams.get(
+      ExploreStateURLParams.LeaderboardMeasureCount,
+    );
+    const parsedCount = parseInt(count ?? "", 10);
+    if (!isNaN(parsedCount) && parsedCount > 0) {
+      preset.exploreLeaderboardMeasureCount = parsedCount;
+    } else {
+      errors.push(
+        getSingleFieldError("leaderboard measure count", count ?? ""),
+      );
+    }
+  }
+
   return { preset, errors };
 }
 
@@ -179,10 +208,13 @@ function fromFilterUrlParam(
   dimensions: Map<string, MetricsViewSpecDimensionV2>,
 ): {
   expr?: V1Expression;
+  dimensionsWithInlistFilter?: string[];
   errors?: Error[];
 } {
   try {
-    let expr = convertFilterParamToExpression(filter);
+    const { expr: exprFromFilter, dimensionsWithInlistFilter } =
+      convertFilterParamToExpression(filter);
+    let expr = exprFromFilter;
     if (!expr) {
       return {
         expr: createAndExpression([]),
@@ -232,7 +264,7 @@ function fromFilterUrlParam(
     if (missingFields.length) {
       errors.push(getMultiFieldError("filter field", missingFields));
     }
-    return { expr, errors };
+    return { expr, dimensionsWithInlistFilter, errors };
   } catch (e) {
     return {
       errors: [new Error("Selected filter is invalid: " + stripParserError(e))],
@@ -240,7 +272,7 @@ function fromFilterUrlParam(
   }
 }
 
-function fromTimeRangesParams(
+export function fromTimeRangesParams(
   searchParams: URLSearchParams,
   dimensions: Map<string, MetricsViewSpecDimensionV2>,
 ) {
@@ -276,6 +308,8 @@ function fromTimeRangesParams(
         V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME;
     } else if (ctr == "") {
       preset.compareTimeRange = "";
+      preset.comparisonMode =
+        V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_NONE;
     } else {
       errors.push(getSingleFieldError("compare time range", ctr));
     }
@@ -420,6 +454,20 @@ function fromExploreUrlParams(
     }
   }
 
+  if (searchParams.has(ExploreStateURLParams.LeaderboardMeasureCount)) {
+    const count = searchParams.get(
+      ExploreStateURLParams.LeaderboardMeasureCount,
+    );
+    const parsedCount = parseInt(count ?? "", 10);
+    if (!isNaN(parsedCount) && parsedCount > 0) {
+      preset.exploreLeaderboardMeasureCount = parsedCount;
+    } else {
+      errors.push(
+        getSingleFieldError("leaderboard measure count", count ?? ""),
+      );
+    }
+  }
+
   return { preset, errors };
 }
 
@@ -507,6 +555,13 @@ function fromPivotUrlParams(
     preset.pivotSortAsc =
       (searchParams.get(ExploreStateURLParams.SortDirection) as string) ===
       "ASC";
+  }
+
+  if (searchParams.has(ExploreStateURLParams.PivotTableMode)) {
+    const tableMode = searchParams.get(
+      ExploreStateURLParams.PivotTableMode,
+    ) as string;
+    preset.pivotTableMode = tableMode;
   }
 
   // TODO: other fields like expanded state and pin are not supported right now

@@ -19,6 +19,7 @@
   import { useTimeControlStore } from "../time-controls/time-control-store";
   import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
   import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
+  import { onMount, tick } from "svelte";
 
   export let exploreName: string;
   export let metricsViewName: string;
@@ -29,20 +30,33 @@
   const StateManagers = getStateManagers();
   const {
     selectors: {
-      measures: { visibleMeasures },
+      measures: { visibleMeasures, leaderboardMeasureCount },
       activeMeasure: { activeMeasureName },
       dimensions: { getDimensionByName },
       pivot: { showPivot },
     },
-
     dashboardStore,
   } = StateManagers;
 
+  const {
+    cloudDataViewer,
+    readOnly,
+    leaderboardMeasureCount: leaderboardMeasureCountFeatureFlag,
+  } = featureFlags;
+
   const timeControlsStore = useTimeControlStore(StateManagers);
 
-  const { cloudDataViewer, readOnly } = featureFlags;
-
   let exploreContainerWidth: number;
+
+  // FIXME: move to activeMeasure selectors
+  $: activeMeasureNamesFromMeasureCount = $visibleMeasures
+    .slice(0, $leaderboardMeasureCount)
+    .map(({ name }) => name)
+    .filter(isDefined);
+
+  $: leaderboardMeasureNames = $leaderboardMeasureCountFeatureFlag
+    ? activeMeasureNamesFromMeasureCount
+    : [$activeMeasureName];
 
   $: ({ instanceId } = $runtime);
 
@@ -93,8 +107,36 @@
   $: exploreSpec = $explore.data?.explore;
   $: timeRanges = exploreSpec?.timeRanges ?? [];
 
+  $: visibleMeasureNames = $visibleMeasures.map(({ name }) => name ?? "");
+
   let metricsWidth = DEFAULT_TIMESERIES_WIDTH;
   let resizing = false;
+
+  let initEmbedPublicAPI;
+
+  // Hacky solution to ensure that the embed public API is initialized after the dashboard is fully loaded
+  onMount(async () => {
+    if (isEmbedded) {
+      initEmbedPublicAPI = (
+        await import(
+          "@rilldata/web-admin/features/embeds/init-embed-public-api"
+        )
+      ).default;
+    }
+    await tick();
+  });
+
+  $: if (initEmbedPublicAPI) {
+    try {
+      initEmbedPublicAPI(instanceId);
+    } catch (error) {
+      console.error("Error running initEmbedPublicAPI:", error);
+    }
+  }
+
+  function isDefined(value: string | undefined): value is string {
+    return value !== undefined;
+  }
 </script>
 
 <article
@@ -188,15 +230,14 @@
               {comparisonTimeRange}
               activeMeasureName={$activeMeasureName}
               {timeControlsReady}
-              visibleMeasureNames={$visibleMeasures.map(
-                ({ name }) => name ?? "",
-              )}
+              {visibleMeasureNames}
               hideStartPivotButton={hidePivot}
             />
           {:else}
             <LeaderboardDisplay
               {metricsViewName}
               activeMeasureName={$activeMeasureName}
+              activeMeasureNames={leaderboardMeasureNames}
               {whereFilter}
               {dimensionThresholdFilters}
               {timeRange}

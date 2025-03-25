@@ -84,8 +84,8 @@ export type RillPreviousPeriod = RillPreviousPeriodTuple[number];
 type RillLatestTuple = typeof RILL_LATEST;
 export type RillLatest = RillLatestTuple[number];
 
-export const CUSTOM_TIME_RANGE_ALIAS = "CUSTOM" as const;
-export const ALL_TIME_RANGE_ALIAS = "inf" as const;
+export const CUSTOM_TIME_RANGE_ALIAS = "CUSTOM";
+export const ALL_TIME_RANGE_ALIAS = "inf";
 export type AllTime = typeof ALL_TIME_RANGE_ALIAS;
 export type CustomRange = typeof CUSTOM_TIME_RANGE_ALIAS;
 export type ISODurationString = string;
@@ -384,6 +384,7 @@ export type RangeBuckets = {
   latest: { label: string; range: ISODurationString }[];
   previous: { range: RillPreviousPeriod; label: string }[];
   periodToDate: { range: RillPeriodToDate; label: string }[];
+  allTime: boolean;
 };
 
 const defaultBuckets = {
@@ -399,6 +400,7 @@ const defaultBuckets = {
     range,
     label: RILL_TO_LABEL[range],
   })),
+  allTime: false,
 };
 
 export function bucketYamlRanges(
@@ -418,8 +420,10 @@ export function bucketYamlRanges(
         record.periodToDate.push({ range, label: RILL_TO_LABEL[range] });
       } else if (isRillPreviousPeriod(range)) {
         record.previous.push({ range, label: RILL_TO_LABEL[range] });
-      } else {
+      } else if (isValidISODuration(range)) {
         record.latest.push({ range, label: getDurationLabel(range) });
+      } else if (range === ALL_TIME_RANGE_ALIAS) {
+        record.allTime = true;
       }
 
       return record;
@@ -428,6 +432,7 @@ export function bucketYamlRanges(
       previous: [],
       latest: [],
       periodToDate: [],
+      allTime: false,
     },
   );
 }

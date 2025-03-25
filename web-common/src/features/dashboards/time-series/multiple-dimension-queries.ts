@@ -1,4 +1,4 @@
-import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { includedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import {
   createAndExpression,
@@ -123,13 +123,13 @@ export function getDimensionValuesForComparison(
               measures: measures.map((measure) => ({ name: measure })),
               dimensions: [{ name: dimensionName }],
               where: sanitiseExpression(
-                mergeMeasureFilters(
-                  dashboardStore,
+                mergeDimensionAndMeasureFilters(
                   getDimensionFilterWithSearch(
                     dashboardStore?.whereFilter,
                     searchText,
                     dimensionName,
                   ),
+                  dashboardStore.dimensionThresholdFilters,
                 ),
                 undefined,
               ),

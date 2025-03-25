@@ -36,14 +36,11 @@ export const PreviousCompleteRangeMap: Partial<
   },
 };
 
-/**
- * Maps selectedTimeRange to V1TimeRange.
- */
-export function mapTimeRange(
+export function mapSelectedTimeRangeToV1TimeRange(
   timeControlState: TimeControlState,
   timeZone: string,
   explore: V1ExploreSpec,
-) {
+): V1TimeRange | undefined {
   if (!timeControlState.selectedTimeRange?.name) return undefined;
 
   const timeRange: V1TimeRange = {};
@@ -77,10 +74,7 @@ export function mapTimeRange(
   return timeRange;
 }
 
-/**
- * Maps selectedComparisonTimeRange to V1TimeRange if time comparison is enabled.
- */
-export function mapComparisonTimeRange(
+export function mapSelectedComparisonTimeRangeToV1TimeRange(
   timeControlState: TimeControlState,
   timeRange: V1TimeRange | undefined,
 ) {

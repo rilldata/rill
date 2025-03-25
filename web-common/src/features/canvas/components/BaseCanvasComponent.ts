@@ -1,8 +1,11 @@
 import type { ChartType } from "@rilldata/web-common/features/canvas/components/charts/types";
+import type { PivotSpec } from "@rilldata/web-common/features/canvas/components/pivot";
+import type { TableSpec } from "@rilldata/web-common/features/canvas/components/table";
 import type { ComponentSize } from "@rilldata/web-common/features/canvas/components/types";
 import { getParsedDocument } from "@rilldata/web-common/features/canvas/inspector/selectors";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
+import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 import { get, writable, type Writable } from "svelte/store";
 
 // A base class that implements all the store logic
@@ -35,6 +38,12 @@ export abstract class BaseCanvasComponent<T> {
   abstract defaultSize: ComponentSize;
 
   /**
+   * The parameters that should be reset when the metrics_view
+   * is changed
+   */
+  abstract resetParams: string[];
+
+  /**
    * The minimum condition needed for the spec to be valid
    * for the given component and to be rendered on the canvas
    */
@@ -50,9 +59,8 @@ export abstract class BaseCanvasComponent<T> {
    * Get the spec when the component is added to the canvas
    */
   abstract newComponentSpec(
-    metrics_view: string,
-    measure: string,
-    dimension: string,
+    metricsViewName: string,
+    metricsViewSpec: V1MetricsViewSpec | undefined,
   ): T;
 
   constructor(
@@ -79,7 +87,7 @@ export abstract class BaseCanvasComponent<T> {
     parsedDocument.setIn(this.pathInYAML, newSpec);
 
     // Save the updated document
-    updateEditorContent(parsedDocument.toString(), true);
+    updateEditorContent(parsedDocument.toString(), false);
     await saveLocalContent();
   }
 
@@ -105,6 +113,22 @@ export abstract class BaseCanvasComponent<T> {
     if (value === undefined || value == "") {
       delete newSpec[key];
     }
+
+    // If the metrics_view is changed, clear the time_filters and dimension_filters
+    if (key === "metrics_view") {
+      if ("time_filters" in newSpec) {
+        delete newSpec.time_filters;
+      }
+      if ("dimension_filters" in newSpec) {
+        delete newSpec.dimension_filters;
+      }
+      if (this.resetParams.length > 0) {
+        this.resetParams.forEach((param) => {
+          delete newSpec[param];
+        });
+      }
+    }
+
     if (this.isValid(newSpec)) {
       await this.updateYAML(newSpec);
     }
@@ -117,7 +141,7 @@ export abstract class BaseCanvasComponent<T> {
   async updateChartType(key: ChartType) {
     if (!this.fileArtifact) return;
     const currentSpec = get(this.specStore);
-    const parentSpec = { [key]: currentSpec };
+
     const parentPath = this.pathInYAML.slice(0, -1);
 
     const parseDocumentStore = getParsedDocument(this.fileArtifact);
@@ -125,7 +149,70 @@ export abstract class BaseCanvasComponent<T> {
 
     const { updateEditorContent, saveLocalContent } = this.fileArtifact;
 
-    parsedDocument.setIn(parentPath, parentSpec);
+    const width = parsedDocument.getIn([...parentPath, "width"]);
+
+    parsedDocument.setIn(parentPath, { [key]: currentSpec, width });
+
+    // Save the updated document
+    updateEditorContent(parsedDocument.toString(), true);
+    await saveLocalContent();
+  }
+
+  async updateTableType(
+    newTableType: "pivot" | "table",
+    metricsViewSpec: V1MetricsViewSpec | undefined,
+  ) {
+    if (!this.fileArtifact) return;
+    const parentPath = this.pathInYAML.slice(0, -1);
+    const parseDocumentStore = getParsedDocument(this.fileArtifact);
+    const parsedDocument = get(parseDocumentStore);
+    const { updateEditorContent, saveLocalContent } = this.fileArtifact;
+
+    const currentSpec = get(this.specStore);
+
+    const allMeasures =
+      metricsViewSpec?.measures?.map((m) => m.name as string) || [];
+    const allDimensions =
+      metricsViewSpec?.dimensions?.map((d) => d.name || (d.column as string)) ||
+      [];
+
+    let newSpec: PivotSpec | TableSpec;
+    if (newTableType === "pivot") {
+      // Switch to pivot table spec
+      const flatTableSpec = currentSpec as TableSpec;
+      const { columns = [], ...restFlatTableSpec } = flatTableSpec || {};
+
+      const row_dimensions =
+        columns?.filter((c) => allDimensions.includes(c)) || [];
+      const measures = columns?.filter((c) => allMeasures.includes(c)) || [];
+
+      newSpec = {
+        ...restFlatTableSpec,
+        row_dimensions,
+        measures,
+      };
+    } else {
+      // Switch to flat table spec
+      const pivotTableSpec = currentSpec as PivotSpec;
+
+      const {
+        row_dimensions = [],
+        col_dimensions = [],
+        measures = [],
+        ...restPivotTableSpec
+      } = pivotTableSpec || {};
+
+      const columns = [...row_dimensions, ...col_dimensions, ...measures];
+
+      newSpec = {
+        ...restPivotTableSpec,
+        columns,
+      };
+    }
+
+    const width = parsedDocument.getIn([...parentPath, "width"]);
+
+    parsedDocument.setIn(parentPath, { [newTableType]: newSpec, width });
 
     // Save the updated document
     updateEditorContent(parsedDocument.toString(), true);

@@ -19,26 +19,14 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import { getInitExploreStateForTest } from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
 import {
-  getLocalUserPreferences,
-  initLocalUserPreferenceStore,
-} from "@rilldata/web-common/features/dashboards/user-preferences";
-import {
   MetricsViewFilter,
   MetricsViewFilter_Cond,
 } from "@rilldata/web-common/proto/gen/rill/runtime/v1/queries_pb";
 import { DashboardState } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 
 describe("toProto/fromProto", () => {
-  beforeAll(() => {
-    initLocalUserPreferenceStore(AD_BIDS_NAME);
-  });
-
-  beforeEach(() => {
-    getLocalUserPreferences().updateTimeZone("UTC");
-  });
-
   it("backwards compatibility for time controls", () => {
     const metricsExplorer = getFullInitExploreState(
       AD_BIDS_NAME,

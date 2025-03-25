@@ -31,7 +31,6 @@ import {
   resetDashboardStore,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
 import { createValidSpecQueryMock } from "@rilldata/web-common/features/dashboards/stores/test-data/query-mocks";
-import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import { V1ExploreComparisonMode } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { get } from "svelte/store";
@@ -39,7 +38,6 @@ import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 describe("dashboard-stores", () => {
   beforeAll(() => {
-    initLocalUserPreferenceStore(AD_BIDS_EXPLORE_NAME);
     runtime.set({
       instanceId: "",
       host: "",

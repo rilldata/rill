@@ -75,7 +75,7 @@ func (w *warehouseToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps ma
 		}
 
 		if create {
-			err = w.to.CreateTableAsSelect(ctx, sinkCfg.Table, fmt.Sprintf("SELECT * FROM %s", from), &drivers.CreateTableOptions{})
+			_, err = w.to.CreateTableAsSelect(ctx, sinkCfg.Table, fmt.Sprintf("SELECT * FROM %s", from), &drivers.CreateTableOptions{})
 			create = false
 		} else {
 			insertOpts := &drivers.InsertTableOptions{
@@ -83,7 +83,7 @@ func (w *warehouseToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps ma
 				InPlace:  true,
 				Strategy: drivers.IncrementalStrategyAppend,
 			}
-			err = w.to.InsertTableAsSelect(ctx, sinkCfg.Table, fmt.Sprintf("SELECT * FROM %s", from), insertOpts)
+			_, err = w.to.InsertTableAsSelect(ctx, sinkCfg.Table, fmt.Sprintf("SELECT * FROM %s", from), insertOpts)
 		}
 		if err != nil {
 			return err

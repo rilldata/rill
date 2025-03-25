@@ -2,6 +2,7 @@ package river
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/rilldata/rill/admin"
@@ -27,7 +28,33 @@ func (w *ValidateDeploymentsWorker) Work(ctx context.Context, job *river.Job[Val
 const validateDeploymentsForProjectTimeout = 5 * time.Minute
 
 func (w *ValidateDeploymentsWorker) validateDeployments(ctx context.Context) error {
-	// Iterate over batches of projects
+	var wg sync.WaitGroup
+	ch := make(chan *database.Project)
+
+	concurrency := 30
+	if w.admin.ProvisionerMaxConcurrency > 0 {
+		concurrency = w.admin.ProvisionerMaxConcurrency
+	} else {
+		w.admin.Logger.Warn("validate deployments: provisioner max concurrency invalid, using default concurrency of 30", zap.Int("provisioner_max_concurrency", w.admin.ProvisionerMaxConcurrency), observability.ZapCtx(ctx))
+	}
+
+	// Setup concurrent workers
+	for range concurrency {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			// Read projects from shared channel
+			for proj := range ch {
+				err := w.validateDeploymentsForProject(ctx, proj)
+				if err != nil {
+					// We log the error, but continue to the next project
+					w.admin.Logger.Error("validate deployments: failed to validate project deployments", zap.String("project_id", proj.ID), zap.Error(err), observability.ZapCtx(ctx))
+				}
+			}
+		}()
+	}
+
+	// Iterate over batches of projects and add them to the shared channel
 	limit := 100
 	afterName := ""
 	stop := false
@@ -44,15 +71,13 @@ func (w *ValidateDeploymentsWorker) validateDeployments(ctx context.Context) err
 			afterName = projs[len(projs)-1].Name
 		}
 
-		// Process batch
 		for _, proj := range projs {
-			err := w.validateDeploymentsForProject(ctx, proj)
-			if err != nil {
-				// We log the error, but continue to the next project
-				w.admin.Logger.Error("validate deployments: failed to validate project deployments", zap.String("project_id", proj.ID), zap.Error(err), observability.ZapCtx(ctx))
-			}
+			ch <- proj
 		}
 	}
+
+	close(ch)
+	wg.Wait()
 
 	return nil
 }

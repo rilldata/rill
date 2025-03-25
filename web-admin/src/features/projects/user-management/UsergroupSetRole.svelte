@@ -83,7 +83,7 @@
   }
 </script>
 
-{#if group.groupName !== "all-users"}
+{#if !group.groupManaged}
   <DropdownMenu.Root bind:open={isOpen}>
     <DropdownMenu.Trigger
       class="w-18 flex flex-row gap-1 items-center rounded-sm mr-[10px] {isOpen
@@ -106,6 +106,15 @@
         }}
       >
         <span>Admin</span>
+      </DropdownMenu.CheckboxItem>
+      <DropdownMenu.CheckboxItem
+        class="font-normal flex items-center"
+        checked={group.roleName === "editor"}
+        on:click={() => {
+          handleSetRole(group.groupName, "editor");
+        }}
+      >
+        <span>Editor</span>
       </DropdownMenu.CheckboxItem>
       <DropdownMenu.CheckboxItem
         class="font-normal flex items-center"

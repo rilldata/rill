@@ -3,7 +3,6 @@ import type {
   MetricsViewSpecDimensionV2,
   RpcStatus,
   V1MetricsViewAggregationResponse,
-  V1MetricsViewTotalsResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
 import { isSummableMeasure } from "../../dashboard-utils";
@@ -39,9 +38,13 @@ export const virtualizedTableColumns =
   (
     dashData: DashboardDataSources,
   ): ((
-    totalsQuery: QueryObserverResult<V1MetricsViewTotalsResponse, RpcStatus>,
+    totalsQuery: QueryObserverResult<
+      V1MetricsViewAggregationResponse,
+      RpcStatus
+    >,
+    activeMeasures?: string[],
   ) => VirtualizedTableColumns[]) =>
-  (totalsQuery) => {
+  (totalsQuery, activeMeasures) => {
     const dimension = primaryDimension(dashData);
 
     if (!dimension) return [];
@@ -67,6 +70,7 @@ export const virtualizedTableColumns =
       dimension,
       isTimeComparisonActive(dashData),
       isValidPercentOfTotal(dashData),
+      activeMeasures,
     );
   };
 
@@ -78,7 +82,7 @@ export const prepareDimTableRows =
       V1MetricsViewAggregationResponse,
       RpcStatus
     >,
-    unfilteredTotal: number,
+    unfilteredTotal: number | { [key: string]: number },
   ) => DimensionTableRow[]) =>
   (sortedQuery, unfilteredTotal) => {
     const dimension = primaryDimension(dashData);

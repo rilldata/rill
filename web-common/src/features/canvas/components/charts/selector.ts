@@ -1,29 +1,21 @@
-import type { ChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
-import type {
-  ChartConfig,
-  ChartSortDirection,
-} from "@rilldata/web-common/features/canvas/components/charts/types";
-import { timeGrainToVegaTimeUnitMap } from "@rilldata/web-common/features/canvas/components/charts/util";
-import type { ComponentFilterProperties } from "@rilldata/web-common/features/canvas/components/types";
 import {
   validateDimensions,
   validateMeasures,
 } from "@rilldata/web-common/features/canvas/components/validators";
 import type { StateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import {
-  createQueryServiceMetricsViewAggregation,
   type MetricsViewSpecDimensionV2,
   type MetricsViewSpecMeasureV2,
-  type V1MetricsViewAggregationDimension,
-  type V1MetricsViewAggregationMeasure,
-  type V1MetricsViewAggregationResponse,
   type V1MetricsViewAggregationResponseDataItem,
-  type V1MetricsViewAggregationSort,
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
-import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, type Readable } from "svelte/store";
+import type { ChartSpec } from "./";
+import { createChartDataQuery } from "./query";
+import type { ChartConfig } from "./types";
+import { timeGrainToVegaTimeUnitMap } from "./util";
 
 export type ChartDataResult = {
   data: V1MetricsViewAggregationResponseDataItem[];
@@ -48,8 +40,9 @@ export interface TimeDimensionDefinition {
 export function getChartData(
   ctx: StateManagers,
   config: ChartConfig,
+  timeAndFilterStore: Readable<TimeAndFilterStore>,
 ): Readable<ChartDataResult> {
-  const chartDataQuery = createChartDataQuery(ctx, config);
+  const chartDataQuery = createChartDataQuery(ctx, config, timeAndFilterStore);
   const { spec } = ctx.canvasEntity;
 
   const fields: { name: string; type: "measure" | "dimension" | "time" }[] = [];
@@ -70,7 +63,7 @@ export function getChartData(
     } else if (field.type === "dimension") {
       return spec.getDimensionForMetricView(field.name, config.metrics_view);
     } else {
-      return getTimeDimensionDefinition(ctx, field.name);
+      return getTimeDimensionDefinition(field.name, timeAndFilterStore);
     }
   });
 
@@ -91,7 +84,7 @@ export function getChartData(
         >,
       );
       return {
-        data: chartData?.data?.data || [],
+        data: chartData.data || [],
         isFetching: chartData.isFetching,
         error: chartData.error,
         fields: fieldSpecMap,
@@ -100,81 +93,12 @@ export function getChartData(
   );
 }
 
-export function createChartDataQuery(
-  ctx: StateManagers,
-  config: ChartConfig & ComponentFilterProperties,
-  limit = "5000",
-  offset = "0",
-): CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> {
-  const { canvasEntity } = ctx;
-
-  const timeAndFilterStore = canvasEntity.createTimeAndFilterStore(
-    config.metrics_view,
-    {
-      componentTimeRange: config.time_range,
-      componentFilter: config.dimension_filters,
-    },
-  );
-
-  let measures: V1MetricsViewAggregationMeasure[] = [];
-  let dimensions: V1MetricsViewAggregationDimension[] = [];
-
-  if (config.y?.type === "quantitative" && config.y?.field) {
-    measures = [{ name: config.y?.field }];
-  }
-
-  let sort: V1MetricsViewAggregationSort | undefined;
-
-  return derived(
-    [ctx.runtime, timeAndFilterStore],
-    ([runtime, $timeAndFilterStore], set) => {
-      const { timeRange, where, timeGrain } = $timeAndFilterStore;
-
-      if (config.x?.type === "nominal" && config.x?.field) {
-        sort = vegaSortToAggregationSort(config.x?.sort, config);
-        dimensions = [{ name: config.x?.field }];
-      } else if (config.x?.type === "temporal" && timeGrain) {
-        dimensions = [{ name: config.x?.field, timeGrain }];
-      }
-
-      if (typeof config.color === "object" && config.color?.field) {
-        dimensions = [...dimensions, { name: config.color.field }];
-      }
-
-      return createQueryServiceMetricsViewAggregation(
-        runtime.instanceId,
-        config.metrics_view,
-        {
-          measures,
-          dimensions,
-          sort: sort ? [sort] : undefined,
-          where,
-          timeRange,
-          limit,
-          offset,
-        },
-        {
-          query: {
-            enabled:
-              !!config.time_range || (!!timeRange?.start && !!timeRange?.end),
-            queryClient: ctx.queryClient,
-            keepPreviousData: true,
-          },
-        },
-      ).subscribe(set);
-    },
-  );
-}
-
 export function getTimeDimensionDefinition(
-  ctx: StateManagers,
   field: string,
+  timeAndFilterStore: Readable<TimeAndFilterStore>,
 ): Readable<TimeDimensionDefinition> {
-  const {
-    timeControls: { selectedTimeRange },
-  } = ctx.canvasEntity;
-  return derived([selectedTimeRange], ([$selectedTimeRange]) => {
-    const grain = $selectedTimeRange?.interval;
+  return derived(timeAndFilterStore, ($timeAndFilterStore) => {
+    const grain = $timeAndFilterStore?.timeGrain;
     const displayName = "Time";
 
     if (grain) {
@@ -248,19 +172,4 @@ export function validateChartSchema(
       };
     },
   );
-}
-
-function vegaSortToAggregationSort(
-  sort: ChartSortDirection | undefined,
-  config: ChartConfig,
-): V1MetricsViewAggregationSort | undefined {
-  if (!sort) return undefined;
-  const field =
-    sort === "x" || sort === "-x" ? config.x?.field : config.y?.field;
-  if (!field) return undefined;
-
-  return {
-    name: field,
-    desc: sort === "-x" || sort === "-y",
-  };
 }

@@ -2,7 +2,9 @@ import BarChart from "@rilldata/web-common/components/icons/BarChart.svelte";
 import LineChart from "@rilldata/web-common/components/icons/LineChart.svelte";
 import StackedArea from "@rilldata/web-common/components/icons/StackedArea.svelte";
 import StackedBar from "@rilldata/web-common/components/icons/StackedBar.svelte";
+import StackedBarFull from "@rilldata/web-common/components/icons/StackedBarFull.svelte";
 import { getRillTheme } from "@rilldata/web-common/components/vega/vega-config";
+import { sanitizeValueForVega } from "@rilldata/web-common/features/templates/charts/utils";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import merge from "deepmerge";
 import type { Config } from "vega-lite";
@@ -10,7 +12,8 @@ import { generateVLAreaChartSpec } from "./area/spec";
 import { generateVLBarChartSpec } from "./bar-chart/spec";
 import { generateVLLineChartSpec } from "./line-chart/spec";
 import type { ChartDataResult } from "./selector";
-import { generateVLStackedBarChartSpec } from "./stacked-bar/spec";
+import { generateVLStackedBarChartSpec } from "./stacked-bar/default";
+import { generateVLStackedBarNormalizedSpec } from "./stacked-bar/normalized";
 import type { ChartConfig, ChartMetadata, ChartType } from "./types";
 
 export function generateSpec(
@@ -24,6 +27,8 @@ export function generateSpec(
       return generateVLBarChartSpec(chartConfig, data);
     case "stacked_bar":
       return generateVLStackedBarChartSpec(chartConfig, data);
+    case "stacked_bar_normalized":
+      return generateVLStackedBarNormalizedSpec(chartConfig, data);
     case "line_chart":
       return generateVLLineChartSpec(chartConfig, data);
     case "area_chart":
@@ -35,8 +40,17 @@ export const chartMetadata: ChartMetadata[] = [
   { type: "line_chart", title: "Line", icon: LineChart },
   { type: "bar_chart", title: "Bar", icon: BarChart },
   { type: "stacked_bar", title: "Stacked Bar", icon: StackedBar },
+  {
+    type: "stacked_bar_normalized",
+    title: "Stacked Bar Normalized",
+    icon: StackedBarFull,
+  },
   { type: "area_chart", title: "Stacked Area", icon: StackedArea },
 ];
+
+export function isChartLineLike(chartType: ChartType) {
+  return chartType === "line_chart" || chartType === "area_chart";
+}
 
 export function mergedVlConfig(config: string): Config {
   const defaultConfig = getRillTheme(true);
@@ -71,9 +85,11 @@ export function getChartTitle(config: ChartConfig, data: ChartDataResult) {
       ? data.fields[config.color.field]?.displayName || config.color.field
       : "";
 
+  const preposition = xLabel === "Time" ? "over" : "per";
+
   return colorLabel
-    ? `${yLabel} per ${xLabel} split by ${colorLabel}`
-    : `${yLabel} per ${xLabel}`;
+    ? `${yLabel} ${preposition} ${xLabel} split by ${colorLabel}`
+    : `${yLabel} ${preposition} ${xLabel}`;
 }
 
 export const timeGrainToVegaTimeUnitMap: Record<V1TimeGrain, string> = {
@@ -88,3 +104,15 @@ export const timeGrainToVegaTimeUnitMap: Record<V1TimeGrain, string> = {
   [V1TimeGrain.TIME_GRAIN_YEAR]: "year",
   [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: "yearmonthdate",
 };
+
+export function sanitizeFieldName(fieldName: string) {
+  const specialCharactersRemoved = sanitizeValueForVega(fieldName);
+  const sanitizedFieldName = specialCharactersRemoved.replace(" ", "__");
+
+  /**
+   * Add an underscore to the beginning of the field
+   * name to avoid variables starting with a special
+   * character or number.
+   */
+  return `_${sanitizedFieldName}`;
+}

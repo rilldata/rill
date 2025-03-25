@@ -1,25 +1,34 @@
-import { chromium, expect } from "@playwright/test";
+import { expect } from "@playwright/test";
+import {
+  execAsync,
+  spawnAndMatch,
+} from "@rilldata/web-common/tests/utils/spawn";
 import axios from "axios";
 import { spawn } from "child_process";
 import dotenv from "dotenv";
+import { openSync } from "fs";
+import { mkdir } from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { writeFileEnsuringDir } from "../utils/fs";
-import { execAsync, spawnAndMatch } from "../utils/spawn";
-import type { StorageState } from "../utils/storage-state";
 import { test as setup } from "./base";
 import {
   ADMIN_STORAGE_STATE,
   RILL_DEVTOOL_BACKGROUND_PROCESS_PID_FILE,
+  RILL_EMBED_SERVICE_TOKEN_FILE,
+  RILL_ORG_NAME,
+  RILL_PROJECT_NAME,
+  RILL_SERVICE_NAME,
 } from "./constants";
 import { cliLogin } from "./fixtures/cli";
 
-setup(
-  "should start services, log-in a user, and deploy a project",
-  async () => {
-    const timeout = 240_000;
-    setup.setTimeout(timeout);
+setup.describe("global setup", () => {
+  setup.describe.configure({
+    mode: "serial",
+    timeout: 180_000,
+  });
 
+  setup("should start services", async () => {
     // Get the repository root directory, the only place from which `rill devtool` is allowed to be run
     const currentDir = path.dirname(fileURLToPath(import.meta.url));
     const repoRoot = path.resolve(currentDir, "../../../");
@@ -32,7 +41,7 @@ setup(
       /All services ready/,
       {
         cwd: repoRoot,
-        timeoutMs: timeout,
+        timeoutMs: 60_000,
       },
     );
 
@@ -42,15 +51,20 @@ setup(
 
     // Check that the required environment variables are set
     // The above `rill devtool` command pulls the `.env` file with these values.
+    // Fail quickly if any of these are missing.
     if (
       !process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL ||
-      !process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_PASSWORD ||
-      !process.env.RILL_DEVTOOL_E2E_GITHUB_STORAGE_STATE_JSON
+      !process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_PASSWORD
     ) {
       throw new Error(
         "Missing required environment variables for authentication",
       );
     }
+
+    // Setup a log file to capture the output of the admin and runtime services
+    await mkdir("playwright/logs", { recursive: true });
+    const logPath = path.resolve("playwright/logs/admin-runtime.log");
+    const logFd = openSync(logPath, "w");
 
     // Start the admin and runtime services in a detached background process.
     // A detached process ensures they are not cleaned up when this setup project completes.
@@ -60,10 +74,12 @@ setup(
       ["devtool", "start", "e2e", "--only", "admin,runtime"],
       {
         detached: true,
-        stdio: "ignore",
+        stdio: ["ignore", logFd, logFd],
         cwd: repoRoot,
       },
     );
+    child.unref();
+
     // Write the pid to a file, so I can kill it later
     if (child.pid) {
       writeFileEnsuringDir(
@@ -89,21 +105,18 @@ setup(
       })
       .toBeTruthy();
     console.log("Runtime service ready");
+  });
 
-    // Launch a Chromium browser with an authenticated GitHub session
-    const browser = await chromium.launch();
-    const context = await browser.newContext({
-      storageState: JSON.parse(
-        process.env.RILL_DEVTOOL_E2E_GITHUB_STORAGE_STATE_JSON,
-      ) as StorageState,
-    });
-    const page = await context.newPage();
-
-    // Pull the repositories to be used for testing
-    const examplesRepoPath = "tests/setup/git/repos/rill-examples";
-    await execAsync(
-      `rm -rf ${examplesRepoPath} && git clone https://github.com/rilldata/rill-examples.git ${examplesRepoPath}`,
-    );
+  setup("should log in with the admin account", async ({ page }) => {
+    // Again, check that the required environment variables are set. This is for type-safety.
+    if (
+      !process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL ||
+      !process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_PASSWORD
+    ) {
+      throw new Error(
+        "Missing required environment variables for authentication",
+      );
+    }
 
     // Log in with the admin account
     await page.goto("/");
@@ -119,76 +132,100 @@ setup(
     await page.getByRole("button", { name: "Continue with Email" }).click();
     await page.waitForURL("/");
 
-    // Save auth cookies to file
-    // Subsequent tests can seed their browser with these cookies, instead of going through the log-in flow again.
+    // Save the admin's Rill auth cookies to file.
+    // Subsequent tests can seed their browser with this state, instead of needing to go through the log-in flow again.
     await page.context().storageState({ path: ADMIN_STORAGE_STATE });
+  });
 
+  setup("should create an organization and service", async ({ adminPage }) => {
     // Create an organization named "e2e"
-    await cliLogin(page);
-    const { stdout: orgCreateStdout } = await execAsync("rill org create e2e");
+    await cliLogin(adminPage);
+    const { stdout: orgCreateStdout } = await execAsync(
+      `rill org create ${RILL_ORG_NAME}`,
+    );
     expect(orgCreateStdout).toContain("Created organization");
 
-    // Go to the organization's page
-    await page.goto("/e2e");
-    await expect(page.getByRole("heading", { name: "e2e" })).toBeVisible();
+    // create service and write access token to file
+    const { stdout: orgCreateService } = await execAsync(
+      `rill service create ${RILL_SERVICE_NAME}`,
+    );
+    expect(orgCreateService).toContain("Created service");
 
+    const serviceToken = orgCreateService.match(/Access token:\s+(\S+)/);
+    writeFileEnsuringDir(RILL_EMBED_SERVICE_TOKEN_FILE, serviceToken![1]);
+
+    // Go to the organization's page
+    await adminPage.goto(`/${RILL_ORG_NAME}`);
+    await expect(
+      adminPage.getByRole("heading", { name: RILL_ORG_NAME }),
+    ).toBeVisible();
+  });
+
+  setup("should deploy the OpenRTB project", async ({ adminPage }) => {
     // Deploy the OpenRTB project
     const { match } = await spawnAndMatch(
       "rill",
       [
         "deploy",
         "--path",
-        "tests/setup/git/repos/rill-examples",
-        "--subpath",
-        "rill-openrtb-prog-ads",
+        "tests/setup/projects/openrtb",
         "--project",
-        "openrtb",
-        "--github",
+        RILL_PROJECT_NAME,
+        "--upload",
+        "--interactive=false",
       ],
       /https?:\/\/[^\s]+/,
     );
 
-    // Navigate to the GitHub auth URL
-    // (In a fresh browser, this would typically trigger a log-in to GitHub, but we've bootstrapped the Playwright browser with GitHub auth cookies.
-    // See the `save-github-cookies` project in `playwright.config.ts` for details.)
+    // Navigate to the project URL and expect to see the successful deployment
     const url = match[0];
-    await page.goto(url);
-    await page.waitForURL("/-/github/connect/success");
+    await adminPage.goto(url);
+    await expect(adminPage.getByText(RILL_ORG_NAME)).toBeVisible(); // Organization breadcrumb
+    await expect(adminPage.getByText(RILL_PROJECT_NAME)).toBeVisible(); // Project breadcrumb
 
-    // Wait for the deployment to complete
-    // TODO: Replace this with a better check. Maybe we could modify `spawnAndMatch` to match an array of regexes.
-    await page.waitForTimeout(10000);
-
-    // Expect to see the successful deployment
-    await page.goto("/e2e/openrtb");
-    await expect(page.getByText("Your trial expires in 30 days")).toBeVisible(); // Billing banner
-    await expect(page.getByText("e2e")).toBeVisible(); // Organization breadcrumb
-    await expect(page.getByText("Free trial")).toBeVisible(); // Billing status
-    await expect(page.getByText("openrtb")).toBeVisible(); // Project breadcrumb
+    // Trial is started in an async job after the 1st deploy. It is not worth the effort to re-fetch the issues list right now.
+    // So disabling this for now, we could add a re-fetch to the issues list if users start facing issues.
+    // await expect(
+    //   adminPage.getByText("Your trial expires in 30 days"),
+    // ).toBeVisible(); // Billing banner
+    // await expect(adminPage.getByText("Free trial")).toBeVisible(); // Billing status
 
     // Check that the dashboards are listed
     await expect(
-      page.getByRole("link", { name: "Programmatic Ads Auction" }).first(),
+      adminPage.getByRole("link", { name: "Programmatic Ads Auction" }).first(),
     ).toBeVisible();
     await expect(
-      page.getByRole("link", { name: "Programmatic Ads Bids" }),
+      adminPage.getByRole("link", { name: "Programmatic Ads Bids" }),
     ).toBeVisible();
 
     // Wait for the first dashboard to be ready
     await expect
       .poll(
         async () => {
-          await page.reload();
-          const listing = page.getByRole("link", {
+          await adminPage.reload();
+          const listing = adminPage.getByRole("link", {
             name: "Programmatic Ads Auction auction_explore",
           });
           return listing.textContent();
         },
-        { intervals: Array(24).fill(5_000), timeout: 180_000 },
+        { intervals: Array(36).fill(5_000), timeout: 180_000 },
       )
       .toContain("Last refreshed");
-  },
-);
+
+    await expect
+      .poll(
+        async () => {
+          await adminPage.reload();
+          const listing = adminPage.getByRole("link", {
+            name: "Programmatic Ads Bids bids_explore",
+          });
+          return listing.textContent();
+        },
+        { intervals: Array(12).fill(5_000), timeout: 60_000 },
+      )
+      .toContain("Last refreshed");
+  });
+});
 
 async function isServiceReady(url: string): Promise<boolean> {
   try {

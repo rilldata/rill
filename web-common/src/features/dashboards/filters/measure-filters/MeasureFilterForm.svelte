@@ -152,6 +152,7 @@
       errors={$errors["value1"]}
       id="value1"
       onEnter={submit}
+      alwaysShowError
       placeholder={isBetweenExpression ? "Lower Value" : "Enter a Number"}
     />
 
@@ -161,6 +162,7 @@
         errors={$errors["value2"]}
         id="value2"
         placeholder="Higher Value"
+        alwaysShowError
         onEnter={submit}
       />
     {/if}

@@ -1,82 +1,10 @@
-import type { TableSpec } from "@rilldata/web-common/features/canvas/components/table";
 import {
   validateDimensions,
   validateMeasures,
 } from "@rilldata/web-common/features/canvas/components/validators";
 import type { StateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-import { canEnablePivotComparison } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
-import {
-  COMPARISON_DELTA,
-  COMPARISON_PERCENT,
-  type PivotDataStoreConfig,
-  type PivotState,
-} from "@rilldata/web-common/features/dashboards/pivot/types";
-import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { type Readable, derived } from "svelte/store";
-
-export function getTableConfig(
-  ctx: StateManagers,
-  tableSpec: TableSpec,
-  pivotState: PivotState,
-): Readable<PivotDataStoreConfig> {
-  const { metrics_view, time_range, comparison_range, dimension_filters } =
-    tableSpec;
-  const {
-    canvasEntity: {
-      createTimeAndFilterStore,
-      spec: { getMetricsViewFromName },
-    },
-  } = ctx;
-
-  const timeAndFilterStore = createTimeAndFilterStore(metrics_view, {
-    componentTimeRange: time_range,
-    componentComparisonRange: comparison_range,
-    componentFilter: dimension_filters,
-  });
-
-  return derived(
-    [getMetricsViewFromName(metrics_view), timeAndFilterStore],
-    ([metricsView, { timeRange, comparisonRange, where }]) => {
-      const enableComparison = canEnablePivotComparison(
-        pivotState,
-        comparisonRange.start,
-      );
-
-      const config: PivotDataStoreConfig = {
-        measureNames: (tableSpec.measures || []).flatMap((name) => {
-          const group = [name];
-          if (enableComparison) {
-            group.push(
-              `${name}${COMPARISON_DELTA}`,
-              `${name}${COMPARISON_PERCENT}`,
-            );
-          }
-          return group;
-        }),
-        rowDimensionNames: tableSpec.row_dimensions || [],
-        colDimensionNames: tableSpec.col_dimensions || [],
-        allMeasures: metricsView?.measures || [],
-        allDimensions: metricsView?.dimensions || [],
-        whereFilter: where ?? createAndExpression([]),
-        searchText: "",
-        pivot: pivotState,
-        enableComparison,
-        comparisonTime: {
-          start: comparisonRange?.start,
-          end: comparisonRange?.end,
-        },
-        time: {
-          timeStart: timeRange?.start,
-          timeEnd: timeRange?.end,
-          timeZone: timeRange.timeZone || "UTC",
-          timeDimension: metricsView?.timeDimension || "",
-        },
-      };
-
-      return config;
-    },
-  );
-}
+import type { TableSpec } from "./";
 
 export function validateTableSchema(
   ctx: StateManagers,
@@ -89,9 +17,16 @@ export function validateTableSchema(
   return derived(
     ctx.canvasEntity.spec.getMetricsViewFromName(metrics_view),
     (metricsView) => {
-      const measures = tableSpec.measures || [];
-      const rowDimensions = tableSpec.row_dimensions || [];
-      const colDimensions = tableSpec.col_dimensions || [];
+      const allMeasures =
+        metricsView?.measures?.map((m) => m.name as string) || [];
+      const allDimensions =
+        metricsView?.dimensions?.map((d) => d.name || (d.column as string)) ||
+        [];
+
+      const columns = tableSpec?.columns || [];
+
+      const measures = columns.filter((c) => allMeasures.includes(c));
+      const dimensions = columns.filter((c) => allDimensions.includes(c));
 
       if (!metricsView) {
         return {
@@ -100,7 +35,7 @@ export function validateTableSchema(
         };
       }
 
-      if (!measures.length && !rowDimensions.length && !colDimensions.length) {
+      if (!columns.length) {
         return {
           isValid: false,
           error: "Select at least one measure or dimension for the table",
@@ -115,10 +50,7 @@ export function validateTableSchema(
         };
       }
 
-      const validateDimensionsRes = validateDimensions(
-        metricsView,
-        rowDimensions.concat(colDimensions),
-      );
+      const validateDimensionsRes = validateDimensions(metricsView, dimensions);
 
       if (!validateDimensionsRes.isValid) {
         const invalidDimensions =

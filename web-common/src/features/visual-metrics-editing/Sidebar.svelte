@@ -213,7 +213,9 @@
     .map(({ label }) => label);
 
   $: unsavedChanges = Object.keys(editingClone).some(
-    (key) => editingClone[key] !== item?.[key],
+    (key) =>
+      editingClone[key] !== item?.[key] ||
+      (item?.["format_preset"] && item?.["format_d3"]),
   );
 
   async function saveChanges() {
@@ -232,8 +234,22 @@
     const items = sequence.items as YAMLMap[];
     const newItem = items[index] ?? new YAMLMap();
 
-    properties[type].forEach(({ selected, fields }) => {
+    properties[type].forEach(({ selected, fields, label }) => {
       const { key } = fields[selected];
+      if (label === "Format") {
+        if (key === "format_preset") {
+          newItem.delete("format_d3");
+        } else {
+          newItem.delete("format_preset");
+        }
+      } else if (label === "SQL expression" && type === "dimensions") {
+        if (key === "expression") {
+          newItem.delete("column");
+        } else {
+          newItem.delete("expression");
+        }
+      }
+
       if (editingClone[key] || editingClone[key] === false)
         newItem.set(key, editingClone[key]);
     });
@@ -303,7 +319,7 @@
           {optional}
           {fontFamily}
           {placeholder}
-          multiline={key === "description"}
+          multiline={key === "description" || key === "expression"}
           enableSearch={key === "column"}
           {selected}
           bind:value={editingClone[key]}

@@ -15,6 +15,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duration"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/queries"
 	"go.opentelemetry.io/otel/attribute"
@@ -476,15 +477,15 @@ func (r *AlertReconciler) executeAllWrapped(ctx context.Context, self *runtimev1
 	if err != nil {
 		skipErr := &skipError{}
 		if errors.As(err, skipErr) {
-			r.C.Logger.Info("Skipped alert check", zap.String("name", self.Meta.Name.Name), zap.String("reason", skipErr.reason), zap.Time("current_watermark", watermark), zap.Time("previous_watermark", previousWatermark), zap.String("interval", a.Spec.IntervalsIsoDuration))
+			r.C.Logger.Info("Skipped alert check", zap.String("name", self.Meta.Name.Name), zap.String("reason", skipErr.reason), zap.Time("current_watermark", watermark), zap.Time("previous_watermark", previousWatermark), zap.String("interval", a.Spec.IntervalsIsoDuration), observability.ZapCtx(ctx))
 			return nil
 		}
-		r.C.Logger.Error("Internal: failed to calculate execution times", zap.String("name", self.Meta.Name.Name), zap.Error(err))
+		r.C.Logger.Error("Internal: failed to calculate execution times", zap.String("name", self.Meta.Name.Name), zap.Error(err), observability.ZapCtx(ctx))
 		return err
 	}
 	if len(ts) == 0 {
 		// This should never happen
-		r.C.Logger.Error("Internal: no execution times found", zap.String("name", self.Meta.Name.Name), zap.Error(err))
+		r.C.Logger.Error("Internal: no execution times found", zap.String("name", self.Meta.Name.Name), zap.Error(err), observability.ZapCtx(ctx))
 		return nil
 	}
 
@@ -527,7 +528,7 @@ func (r *AlertReconciler) executeSingle(ctx context.Context, self *runtimev1.Res
 			ErrorMessage: fmt.Sprintf("Alert check failed: %s", executeErr.Error()),
 		}
 
-		r.C.Logger.Info("Alert errored", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime), zap.Error(executeErr))
+		r.C.Logger.Info("Alert errored", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime), zap.Error(executeErr), observability.ZapCtx(ctx))
 	}
 
 	// Finalize and pop current execution.
@@ -543,7 +544,7 @@ func (r *AlertReconciler) executeSingle(ctx context.Context, self *runtimev1.Res
 // checkAlert runs the alert query and returns the result.
 func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, adminMeta *drivers.AlertMetadata, executionTime time.Time) (*runtimev1.AssertionResult, error) {
 	// Log
-	r.C.Logger.Info("Checking alert", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime))
+	r.C.Logger.Info("Checking alert", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime), observability.ZapCtx(ctx))
 
 	if a.Spec.Resolver == "" {
 		return nil, fmt.Errorf("alert has no resolver")
@@ -578,13 +579,13 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 	row, err := res.Next()
 	if err != nil {
 		if errors.Is(err, io.EOF) {
-			r.C.Logger.Info("Alert passed", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime))
+			r.C.Logger.Info("Alert passed", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime), observability.ZapCtx(ctx))
 			return &runtimev1.AssertionResult{Status: runtimev1.AssertionStatus_ASSERTION_STATUS_PASS}, nil
 		}
 		return nil, fmt.Errorf("failed to get row from alert resolver: %w", err)
 	}
 
-	r.C.Logger.Info("Alert failed", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime))
+	r.C.Logger.Info("Alert failed", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime), observability.ZapCtx(ctx))
 
 	// Return fail row
 	failRow, err := structpb.NewStruct(row)

@@ -11,7 +11,6 @@
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
-    createAdminServiceGetBillingSubscription,
     createAdminServiceGetCurrentUser,
     createAdminServiceListOrganizations as listOrgs,
     createAdminServiceListProjectsForOrganization as listProjects,
@@ -25,8 +24,6 @@
   import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
   import { useDashboardsV2 } from "../dashboards/listing/selectors";
   import PageTitle from "../public-urls/PageTitle.svelte";
-  import { createAdminServiceGetMagicAuthToken } from "../public-urls/get-magic-auth-token";
-  import { usePublicURLExplore } from "../public-urls/selectors";
   import { useReports } from "../scheduled-reports/selectors";
   import {
     isMetricsExplorerPage,
@@ -34,26 +31,21 @@
     isProjectPage,
     isPublicURLPage,
   } from "./nav-utils";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
 
-  export let manageOrganization: boolean;
   export let createMagicAuthTokens: boolean;
   export let manageProjectMembers: boolean;
   export let organizationLogoUrl: string | undefined = undefined;
+  export let planDisplayName: string | undefined;
 
   const user = createAdminServiceGetCurrentUser();
+  const { alerts: alertsFlag, dimensionSearch } = featureFlags;
 
   $: ({ instanceId } = $runtime);
 
   // These can be undefined
   $: ({
-    params: {
-      organization,
-      project,
-      dashboard: dashboardParam,
-      alert,
-      report,
-      token,
-    },
+    params: { organization, project, dashboard, alert, report },
   } = $page);
 
   $: onProjectPage = isProjectPage($page);
@@ -101,19 +93,11 @@
   $: alerts = $alertsQuery.data?.resources ?? [];
   $: reports = $reportsQuery.data?.resources ?? [];
 
-  $: plan = createAdminServiceGetBillingSubscription(organization, {
-    query: {
-      enabled: Boolean(
-        !!organization && manageOrganization && !onPublicURLPage,
-      ),
-      select: (data) => data.subscription?.plan,
-    },
-  });
   $: organizationPaths = organizations.reduce(
     (map, { name, displayName }) =>
       map.set(name.toLowerCase(), {
         label: displayName || name,
-        pill: $plan?.data?.displayName,
+        pill: planDisplayName,
       }),
     new Map<string, PathOption>(),
   );
@@ -132,7 +116,7 @@
         (isMetricsExplorer
           ? resource?.explore?.spec?.displayName
           : resource?.canvas?.spec?.displayName) || name,
-      section: isMetricsExplorer ? "explore" : "-/dashboards",
+      section: isMetricsExplorer ? "explore" : "canvas",
     });
   }, new Map<string, PathOption>());
 
@@ -159,26 +143,15 @@
     report ? reportPaths : alert ? alertPaths : null,
   ];
 
-  $: dashboardQuery = useExplore(instanceId, dashboardParam, {
-    enabled: !!instanceId && onMetricsExplorerPage,
+  $: exploreQuery = useExplore(instanceId, dashboard, {
+    enabled: !!instanceId && !!dashboard,
   });
-  $: exploreSpec = $dashboardQuery.data?.explore?.explore?.state?.validSpec;
+  $: exploreSpec = $exploreQuery.data?.explore?.explore?.state?.validSpec;
   $: isDashboardValid = !!exploreSpec;
 
-  // Public URLs do not have the resource name in the URL. However, the magic token's metadata includes the resource name.
-  $: tokenQuery = createAdminServiceGetMagicAuthToken(token);
-  $: dashboard = onPublicURLPage
-    ? $tokenQuery?.data?.token?.resourceName
-    : dashboardParam;
-
-  // If on a Public URL, get the dashboard title
-  $: exploreQuery = usePublicURLExplore(
-    instanceId,
-    $tokenQuery?.data?.token?.resourceName,
-    onPublicURLPage,
-  );
   $: publicURLDashboardTitle =
-    $exploreQuery.data?.explore?.spec?.displayName || dashboard || "";
+    $exploreQuery.data?.explore?.explore?.state?.validSpec?.displayName ||
+    dashboard;
 
   $: currentPath = [organization, project, dashboard, report || alert];
 </script>
@@ -214,7 +187,7 @@
     {#if onProjectPage && manageProjectMembers}
       <ShareProjectPopover {organization} {project} />
     {/if}
-    {#if (onMetricsExplorerPage && isDashboardValid) || onPublicURLPage}
+    {#if onMetricsExplorerPage && isDashboardValid}
       {#if exploreSpec}
         {#key dashboard}
           <StateManagersProvider
@@ -222,9 +195,13 @@
             exploreName={dashboard}
           >
             <LastRefreshedDate {dashboard} />
-            <GlobalDimensionSearch />
+            {#if $dimensionSearch}
+              <GlobalDimensionSearch />
+            {/if}
             {#if $user.isSuccess && $user.data.user && !onPublicURLPage}
-              <CreateAlert />
+              {#if $alertsFlag}
+                <CreateAlert />
+              {/if}
               <Bookmarks
                 metricsViewName={exploreSpec.metricsView}
                 exploreName={dashboard}

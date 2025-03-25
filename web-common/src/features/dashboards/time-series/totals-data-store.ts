@@ -1,4 +1,4 @@
-import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import {
   createAndExpression,
@@ -33,7 +33,13 @@ export function createTotalsForMeasure(
         metricsViewName,
         {
           measures: measures.map((measure) => ({ name: measure })),
-          where: sanitiseExpression(mergeMeasureFilters(dashboard), undefined),
+          where: sanitiseExpression(
+            mergeDimensionAndMeasureFilters(
+              dashboard.whereFilter,
+              dashboard.dimensionThresholdFilters,
+            ),
+            undefined,
+          ),
           timeRange: {
             start: isComparison
               ? timeControls?.comparisonTimeStart
@@ -67,7 +73,10 @@ export function createUnfilteredTotalsForMeasure(
     ],
     ([runtime, metricsViewName, timeControls, dashboard], set) => {
       const filter = sanitiseExpression(
-        mergeMeasureFilters(dashboard),
+        mergeDimensionAndMeasureFilters(
+          dashboard.whereFilter,
+          dashboard.dimensionThresholdFilters,
+        ),
         undefined,
       );
 

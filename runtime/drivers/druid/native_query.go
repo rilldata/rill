@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 )
 
@@ -47,7 +48,7 @@ func NewNativeClient(olap drivers.OLAPStore) (*NativeClient, error) {
 }
 
 func (n *NativeClient) Search(ctx context.Context, dr *NativeSearchQueryRequest) (NativeSearchQueryResponse, error) {
-	logger := n.logger.With(zap.String("query_id", dr.Context.QueryID))
+	logger := n.logger.With(zap.String("query_id", dr.Context.QueryID), observability.ZapCtx(ctx))
 	if n.logQueries {
 		logger.Info("Executing native query", zap.Any("request", dr))
 	}

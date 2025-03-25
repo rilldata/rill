@@ -113,25 +113,16 @@ export function getSanitizedDashboardStateParam(
     tdd: dashboard.tdd,
     pivot: {
       ...dashboard.pivot,
-      rows: {
-        dimension: dashboard.pivot.rows.dimension.filter(
-          (chip) =>
-            metricsViewFields?.includes(chip.id) ||
-            chip.type === PivotChipType.Time,
-        ),
-      },
-      columns: {
-        measure: dashboard.pivot.columns.measure.filter(
-          (chip) =>
-            metricsViewFields?.includes(chip.id) ||
-            chip.type === PivotChipType.Time,
-        ),
-        dimension: dashboard.pivot.columns.dimension.filter(
-          (chip) =>
-            metricsViewFields?.includes(chip.id) ||
-            chip.type === PivotChipType.Time,
-        ),
-      },
+      rows: dashboard.pivot.rows.filter(
+        (chip) =>
+          metricsViewFields?.includes(chip.id) ||
+          chip.type === PivotChipType.Time,
+      ),
+      columns: dashboard.pivot.columns.filter(
+        (chip) =>
+          metricsViewFields?.includes(chip.id) ||
+          chip.type === PivotChipType.Time,
+      ),
     },
   } as MetricsExplorerEntity;
 

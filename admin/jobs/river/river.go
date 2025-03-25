@@ -96,15 +96,17 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 	river.AddWorker(workers, &RepairOrgBillingWorker{admin: adm, logger: billingLogger})
 	river.AddWorker(workers, &StartTrialWorker{admin: adm, logger: billingLogger})
 	river.AddWorker(workers, &DeleteOrgWorker{admin: adm, logger: billingLogger})
+	river.AddWorker(workers, &HibernateInactiveOrgsWorker{admin: adm, logger: billingLogger})
 
 	periodicJobs := []*river.PeriodicJob{
 		// NOTE: Add new periodic jobs here
-		newPeriodicJob(&ValidateDeploymentsArgs{}, "* */6 * * *", true),
+		newPeriodicJob(&ValidateDeploymentsArgs{}, "*/30 * * * *", true),         // half-hourly
 		newPeriodicJob(&PaymentFailedGracePeriodCheckArgs{}, "0 1 * * *", true),  // daily at 1am UTC
 		newPeriodicJob(&TrialEndingSoonArgs{}, "5 1 * * *", true),                // daily at 1:05am UTC
 		newPeriodicJob(&TrialEndCheckArgs{}, "10 1 * * *", true),                 // daily at 1:10am UTC
 		newPeriodicJob(&TrialGracePeriodCheckArgs{}, "15 1 * * *", true),         // daily at 1:15am UTC
 		newPeriodicJob(&SubscriptionCancellationCheckArgs{}, "20 1 * * *", true), // daily at 1:20am UTC
+		newPeriodicJob(&HibernateInactiveOrgsArgs{}, "0 7 * * 1", true),          // Monday at 7:00am UTC
 	}
 
 	// Wire our zap logger to a slog logger for the river client
@@ -382,6 +384,17 @@ func (c *Client) PlanChanged(ctx context.Context, billingCustomerID string) (*jo
 		return nil, err
 	}
 
+	return &jobs.InsertResult{
+		ID:        res.Job.ID,
+		Duplicate: res.UniqueSkippedAsDuplicate,
+	}, nil
+}
+
+func (c *Client) HibernateInactiveOrgs(ctx context.Context) (*jobs.InsertResult, error) {
+	res, err := c.riverClient.Insert(ctx, HibernateInactiveOrgsArgs{}, nil)
+	if err != nil {
+		return nil, err
+	}
 	return &jobs.InsertResult{
 		ID:        res.Job.ID,
 		Duplicate: res.UniqueSkippedAsDuplicate,

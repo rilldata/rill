@@ -16,7 +16,7 @@
     fileArtifact);
 
   $: parsedDocument = parseDocument($editorContent ?? "");
-  $: selectedComponentIndex = canvasEntity.selectedComponentIndex;
+  $: selectedComponent = canvasEntity.selectedComponent;
 
   async function updateProperties(
     newRecord: Record<string, unknown>,
@@ -55,11 +55,8 @@
 </script>
 
 <Inspector minWidth={320} filePath={path}>
-  {#if $selectedComponentIndex !== null}
-    <ComponentsEditor
-      {fileArtifact}
-      selectedComponentIndex={$selectedComponentIndex}
-    />
+  {#if $selectedComponent !== null}
+    <ComponentsEditor {fileArtifact} selectedComponent={$selectedComponent} />
   {:else}
     <PageEditor {fileArtifact} {updateProperties} />
   {/if}

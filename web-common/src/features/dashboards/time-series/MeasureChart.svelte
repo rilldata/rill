@@ -10,6 +10,7 @@
     Grid,
   } from "@rilldata/web-common/components/data-graphic/guides";
   import { ScaleType } from "@rilldata/web-common/components/data-graphic/state";
+  import type { ScaleStore } from "@rilldata/web-common/components/data-graphic/state/types";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { tableInteractionStore } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
@@ -41,7 +42,6 @@
     localToTimeZoneOffset,
     niceMeasureExtents,
   } from "./utils";
-  import type { ScaleStore } from "@rilldata/web-common/components/data-graphic/state/types";
 
   export let measure: MetricsViewSpecMeasureV2;
   export let exploreName: string;
@@ -76,6 +76,11 @@
     v.toString();
 
   $: mouseoverFormat = createMeasureValueFormatter<null | undefined>(measure);
+  $: axisFormat = createMeasureValueFormatter<null | undefined>(
+    measure,
+    "axis",
+  );
+
   $: numberKind = numberKindForMeasure(measure);
 
   const tweenProps = { duration: 400, easing: cubicOut };
@@ -265,7 +270,7 @@
     yMin={internalYMin}
     yMinTweenProps={tweenProps}
   >
-    <Axis {numberKind} side="right" />
+    <Axis measureFormatter={axisFormat} side="right" />
     <Grid />
     <MeasurePan
       on:pan={(e) => updateRange(e.detail.start, e.detail.end)}

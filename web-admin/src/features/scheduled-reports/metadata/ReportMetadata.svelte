@@ -9,7 +9,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
-  import CreateScheduledReportDialog from "@rilldata/web-common/features/scheduled-reports/ScheduledReportDialog.svelte";
+  import ScheduledReportDialog from "@rilldata/web-common/features/scheduled-reports/ScheduledReportDialog.svelte";
   import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -198,7 +198,7 @@
 {/if}
 
 {#if reportSpec}
-  <CreateScheduledReportDialog
+  <ScheduledReportDialog
     bind:open={showEditReportDialog}
     {reportSpec}
     exploreName={$dashboardName.data}

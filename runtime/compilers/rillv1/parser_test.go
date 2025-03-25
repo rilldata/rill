@@ -230,24 +230,28 @@ schema: default
 		},
 		// source s1
 		{
-			Name:  ResourceName{Kind: ResourceKindSource, Name: "s1"},
+			Name:  ResourceName{Kind: ResourceKindModel, Name: "s1"},
 			Paths: []string{"/sources/s1.yaml"},
-			SourceSpec: &runtimev1.SourceSpec{
-				SourceConnector: "s3",
-				SinkConnector:   "duckdb",
-				Properties:      must(structpb.NewStruct(map[string]any{"path": "hello"})),
-				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+			ModelSpec: &runtimev1.ModelSpec{
+				InputConnector:   "s3",
+				OutputConnector:  "duckdb",
+				InputProperties:  must(structpb.NewStruct(map[string]any{"path": "hello"})),
+				OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
+				RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
+				DefinedAsSource:  true,
 			},
 		},
 		// source s2
 		{
-			Name:  ResourceName{Kind: ResourceKindSource, Name: "s2"},
+			Name:  ResourceName{Kind: ResourceKindModel, Name: "s2"},
 			Paths: []string{"/sources/s2.sql"},
-			SourceSpec: &runtimev1.SourceSpec{
-				SourceConnector: "postgres",
-				SinkConnector:   "duckdb",
-				Properties:      must(structpb.NewStruct(map[string]any{"sql": strings.TrimSpace(files["sources/s2.sql"])})),
-				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true, Cron: "0 0 * * *"},
+			ModelSpec: &runtimev1.ModelSpec{
+				InputConnector:   "postgres",
+				OutputConnector:  "duckdb",
+				InputProperties:  must(structpb.NewStruct(map[string]any{"sql": strings.TrimSpace(files["sources/s2.sql"])})),
+				OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
+				RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true, Cron: "0 0 * * *"},
+				DefinedAsSource:  true,
 			},
 		},
 		// model m1
@@ -425,47 +429,6 @@ FRO m1
 	requireResourcesAndErrors(t, p, nil, errors)
 }
 
-func TestUniqueSourceModelName(t *testing.T) {
-	files := map[string]string{
-		// rill.yaml
-		`rill.yaml`: ``,
-		// source s1
-		`sources/s1.yaml`: `
-connector: s3
-`,
-		// model s1
-		`/models/s1.sql`: `
-SELECT 1
-`,
-	}
-
-	resources := []*Resource{
-		{
-			Name:  ResourceName{Kind: ResourceKindSource, Name: "s1"},
-			Paths: []string{"/sources/s1.yaml"},
-			SourceSpec: &runtimev1.SourceSpec{
-				SourceConnector: "s3",
-				SinkConnector:   "duckdb",
-				Properties:      must(structpb.NewStruct(map[string]any{})),
-				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
-			},
-		},
-	}
-
-	errors := []*runtimev1.ParseError{
-		{
-			Message:  "model name collides with source \"s1\"",
-			FilePath: "/models/s1.sql",
-		},
-	}
-
-	ctx := context.Background()
-	repo := makeRepo(t, files)
-	p, err := Parse(ctx, repo, "", "", "duckdb")
-	require.NoError(t, err)
-	requireResourcesAndErrors(t, p, resources, errors)
-}
-
 func TestReparse(t *testing.T) {
 	// Prepare
 	ctx := context.Background()
@@ -484,13 +447,15 @@ path: hello
 `,
 	})
 	s1 := &Resource{
-		Name:  ResourceName{Kind: ResourceKindSource, Name: "s1"},
+		Name:  ResourceName{Kind: ResourceKindModel, Name: "s1"},
 		Paths: []string{"/sources/s1.yaml"},
-		SourceSpec: &runtimev1.SourceSpec{
-			SourceConnector: "s3",
-			SinkConnector:   "duckdb",
-			Properties:      must(structpb.NewStruct(map[string]any{"path": "hello"})),
-			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+		ModelSpec: &runtimev1.ModelSpec{
+			InputConnector:   "s3",
+			OutputConnector:  "duckdb",
+			InputProperties:  must(structpb.NewStruct(map[string]any{"path": "hello"})),
+			OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
+			RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
+			DefinedAsSource:  true,
 		},
 	}
 	diff, err := p.Reparse(ctx, s1.Paths)
@@ -563,11 +528,11 @@ SELECT * FROM bar
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{s1}, []*runtimev1.ParseError{
 		{
-			Message:  "model name collides with source \"s1\"",
+			Message:  "name collision",
 			FilePath: "/models/m1.sql",
 		},
 		{
-			Message:  "model name collides with source \"s1\"",
+			Message:  "name collision",
 			FilePath: "/models/m1.yaml",
 		},
 	})
@@ -639,24 +604,18 @@ path: hello
 	s1 := &Resource{
 		Name:  ResourceName{Kind: ResourceKindSource, Name: "m1"},
 		Paths: []string{"/sources/m1.yaml"},
-		SourceSpec: &runtimev1.SourceSpec{
-			SourceConnector: "s3",
-			SinkConnector:   "duckdb",
-			Properties:      must(structpb.NewStruct(map[string]any{"path": "hello"})),
-			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
-		},
 	}
 	diff, err := p.Reparse(ctx, s1.Paths)
 	require.NoError(t, err)
-	requireResourcesAndErrors(t, p, []*Resource{s1}, []*runtimev1.ParseError{
+	requireResourcesAndErrors(t, p, []*Resource{m1}, []*runtimev1.ParseError{
 		{
-			Message:  "model name collides with source \"m1\"",
-			FilePath: "/models/m1.sql",
+			Message:  "name collision",
+			FilePath: "/sources/m1.yaml",
 		},
 	})
 	require.Equal(t, &Diff{
-		Added:   []ResourceName{s1.Name},
-		Deleted: []ResourceName{m1.Name},
+		Added:   nil,
+		Deleted: nil,
 	}, diff)
 
 	// Remove colliding source, verify model is restored
@@ -665,8 +624,8 @@ path: hello
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{m1}, nil)
 	require.Equal(t, &Diff{
-		Added:   []ResourceName{m1.Name},
-		Deleted: []ResourceName{s1.Name},
+		Added:   nil,
+		Deleted: nil,
 	}, diff)
 }
 
@@ -733,70 +692,6 @@ SELECT * FROM m1
 	requireResourcesAndErrors(t, p, []*Resource{m1Nested, m2}, nil)
 	require.Equal(t, &Diff{
 		Modified: []ResourceName{m1.Name, m2.Name}, // m2 due to ref re-inference
-	}, diff)
-}
-
-func TestReparseMultiKindNameCollision(t *testing.T) {
-	ctx := context.Background()
-	repo := makeRepo(t, map[string]string{
-		`rill.yaml`:            ``,
-		`models/m1.sql`:        `SELECT 10`,
-		`models/nested/m1.sql`: `SELECT 20`,
-		`sources/m1.yaml`: `
-connector: s3
-path: hello
-`,
-	})
-	src := &Resource{
-		Name:  ResourceName{Kind: ResourceKindSource, Name: "m1"},
-		Paths: []string{"/sources/m1.yaml"},
-		SourceSpec: &runtimev1.SourceSpec{
-			SourceConnector: "s3",
-			SinkConnector:   "duckdb",
-			Properties:      must(structpb.NewStruct(map[string]any{"path": "hello"})),
-			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
-		},
-	}
-	mdl := &Resource{
-		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
-		Paths: []string{"/models/m1.sql"},
-		ModelSpec: &runtimev1.ModelSpec{
-			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
-			InputConnector:  "duckdb",
-			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 10"})),
-			OutputConnector: "duckdb",
-		},
-	}
-
-	p, err := Parse(ctx, repo, "", "", "duckdb")
-	require.NoError(t, err)
-	requireResourcesAndErrors(t, p, []*Resource{src}, []*runtimev1.ParseError{
-		{
-			Message:  "collides with source",
-			FilePath: "/models/m1.sql",
-			External: true,
-		},
-		{
-			Message:  "name collision",
-			FilePath: "/models/nested/m1.sql",
-			External: true,
-		},
-	})
-
-	// Delete source m1
-	deleteRepo(t, repo, "/sources/m1.yaml")
-	diff, err := p.Reparse(ctx, src.Paths)
-	require.NoError(t, err)
-	requireResourcesAndErrors(t, p, []*Resource{mdl}, []*runtimev1.ParseError{
-		{
-			Message:  "name collision",
-			FilePath: "/models/nested/m1.sql",
-			External: true,
-		},
-	})
-	require.Equal(t, &Diff{
-		Added:   []ResourceName{mdl.Name},
-		Deleted: []ResourceName{src.Name},
 	}, diff)
 }
 
@@ -1150,24 +1045,28 @@ dev:
 	})
 
 	s1Base := &Resource{
-		Name:  ResourceName{Kind: ResourceKindSource, Name: "s1"},
+		Name:  ResourceName{Kind: ResourceKindModel, Name: "s1"},
 		Paths: []string{"/sources/s1.yaml"},
-		SourceSpec: &runtimev1.SourceSpec{
-			SourceConnector: "s3",
-			SinkConnector:   "duckdb",
-			Properties:      must(structpb.NewStruct(map[string]any{"path": "hello", "sql": "SELECT 10"})),
-			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+		ModelSpec: &runtimev1.ModelSpec{
+			InputConnector:   "s3",
+			OutputConnector:  "duckdb",
+			InputProperties:  must(structpb.NewStruct(map[string]any{"path": "hello", "sql": "SELECT 10"})),
+			OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
+			RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
+			DefinedAsSource:  true,
 		},
 	}
 
 	s1Test := &Resource{
-		Name:  ResourceName{Kind: ResourceKindSource, Name: "s1"},
+		Name:  ResourceName{Kind: ResourceKindModel, Name: "s1"},
 		Paths: []string{"/sources/s1.yaml"},
-		SourceSpec: &runtimev1.SourceSpec{
-			SourceConnector: "s3",
-			SinkConnector:   "duckdb",
-			Properties:      must(structpb.NewStruct(map[string]any{"path": "world", "limit": 10000, "sql": "SELECT 20"})),
-			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true, Cron: "0 0 * * *"},
+		ModelSpec: &runtimev1.ModelSpec{
+			InputConnector:   "s3",
+			OutputConnector:  "duckdb",
+			InputProperties:  must(structpb.NewStruct(map[string]any{"path": "world", "limit": 10000, "sql": "SELECT 20"})),
+			OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
+			RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true, Cron: "0 0 * * *"},
+			DefinedAsSource:  true,
 		},
 	}
 
@@ -1707,18 +1606,15 @@ filters:
 defaults:
   time_range: P4W
 
-items:
-- component: c1
-- component: c2
-  width: 1
-  height: 2
-- component:
+rows:
+- items:
+  - component: c1
+- height: 100px
+  items:
+  - component: c2
+  - width: 2
     markdown:
-      content: "Hello world!"
-
-layout:
-- 1, 2, 3
-- 4, 5, 6
+      content: "Foo"
 `,
 	})
 
@@ -1752,11 +1648,11 @@ layout:
 			},
 		},
 		{
-			Name:  ResourceName{Kind: ResourceKindComponent, Name: "d1--component-2"},
+			Name:  ResourceName{Kind: ResourceKindComponent, Name: "d1--component-1-1"},
 			Paths: []string{"/canvases/d1.yaml"},
 			ComponentSpec: &runtimev1.ComponentSpec{
 				Renderer:           "markdown",
-				RendererProperties: must(structpb.NewStruct(map[string]any{"content": "Hello world!"})),
+				RendererProperties: must(structpb.NewStruct(map[string]any{"content": "Foo"})),
 				DefinedInCanvas:    true,
 			},
 		},
@@ -1766,7 +1662,7 @@ layout:
 			Refs: []ResourceName{
 				{Kind: ResourceKindComponent, Name: "c1"},
 				{Kind: ResourceKindComponent, Name: "c2"},
-				{Kind: ResourceKindComponent, Name: "d1--component-2"},
+				{Kind: ResourceKindComponent, Name: "d1--component-1-1"},
 			},
 			CanvasSpec: &runtimev1.CanvasSpec{
 				DisplayName: "D1",
@@ -1789,12 +1685,21 @@ layout:
 					TimeRange:      asPtr("P4W"),
 					ComparisonMode: runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_NONE,
 				},
-				Items: []*runtimev1.CanvasItem{
-					{Component: "c1"},
-					{Component: "c2", Width: asPtr(uint32(1)), Height: asPtr(uint32(2))},
-					{Component: "d1--component-2", DefinedInCanvas: true},
+				Rows: []*runtimev1.CanvasRow{
+					{
+						Items: []*runtimev1.CanvasItem{
+							{Component: "c1"},
+						},
+					},
+					{
+						Height:     asPtr(uint32(100)),
+						HeightUnit: "px",
+						Items: []*runtimev1.CanvasItem{
+							{Component: "c2"},
+							{Component: "d1--component-1-1", DefinedInCanvas: true, Width: asPtr(uint32(2))},
+						},
+					},
 				},
-				Layout: must(structpb.NewValue([]any{"1, 2, 3", "4, 5, 6"})),
 			},
 		},
 	}
@@ -1953,20 +1858,22 @@ select 3
 	resources := []*Resource{
 		// s1
 		{
-			Name:  ResourceName{Kind: ResourceKindSource, Name: "s1"},
+			Name:  ResourceName{Kind: ResourceKindModel, Name: "s1"},
 			Paths: []string{"/sources/s1.yaml"},
-			SourceSpec: &runtimev1.SourceSpec{
-				SourceConnector: "s3",
-				SinkConnector:   "duckdb",
-				Properties:      must(structpb.NewStruct(map[string]any{})),
-				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+			ModelSpec: &runtimev1.ModelSpec{
+				InputConnector:   "s3",
+				OutputConnector:  "duckdb",
+				InputProperties:  must(structpb.NewStruct(map[string]any{})),
+				OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
+				RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
+				DefinedAsSource:  true,
 			},
 		},
 		// a1
 		{
 			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a1"},
 			Paths: []string{"/apis/a1.yaml"},
-			Refs:  []ResourceName{{Kind: ResourceKindSource, Name: "s1"}, {Kind: ResourceKindSource, Name: "s2"}},
+			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "s1"}, {Kind: ResourceKindModel, Name: "s2"}},
 			APISpec: &runtimev1.APISpec{
 				Resolver:           "sql",
 				ResolverProperties: must(structpb.NewStruct(map[string]any{"connector": "duckdb", "sql": "select 1"})),
@@ -2267,6 +2174,88 @@ metrics_view: missing
 
 	p, err := Parse(ctx, repo, "", "", "duckdb")
 	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestSecurityPolicyWithRef(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`models/mappings.sql`: `
+SELECT * FROM domain_mappings
+`,
+		`metrics/d1.yaml`: `
+version: 1
+type: metrics_view
+table: t1
+dimensions:
+  - name: foo
+    column: foo
+measures:
+  - name: a
+    expression: count(*)
+security:
+  access: true
+  row_filter: partner_id IN (SELECT partner_id FROM {{ ref "mappings" }} WHERE domain = '{{ .user.domain }}')
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindModel, Name: "mappings"},
+			Paths: []string{"/models/mappings.sql"},
+			ModelSpec: &runtimev1.ModelSpec{
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+				InputConnector:  "duckdb",
+				InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM domain_mappings"})),
+				OutputConnector: "duckdb",
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "d1"},
+			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "mappings"}},
+			Paths: []string{"/metrics/d1.yaml"},
+			MetricsViewSpec: &runtimev1.MetricsViewSpec{
+				Connector:   "duckdb",
+				Table:       "t1",
+				DisplayName: "D1",
+				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
+					{Name: "foo", DisplayName: "Foo", Column: "foo"},
+				},
+				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
+					{Name: "a", DisplayName: "A", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+				},
+				SecurityRules: []*runtimev1.SecurityRule{
+					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
+						Condition: "true",
+						Allow:     true,
+					}}},
+					{Rule: &runtimev1.SecurityRule_RowFilter{RowFilter: &runtimev1.SecurityRuleRowFilter{
+						Sql: "partner_id IN (SELECT partner_id FROM {{ ref \"mappings\" }} WHERE domain = '{{ .user.domain }}')",
+					}}},
+				},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", "duckdb")
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+
+	putRepo(t, repo, map[string]string{
+		`models/mappings.sql`: `
+SELECT * FROM domain_mappings WHERE active = true
+`,
+	})
+
+	resources[0].ModelSpec.InputProperties = must(structpb.NewStruct(map[string]any{
+		"sql": "SELECT * FROM domain_mappings WHERE active = true",
+	}))
+
+	diff, err := p.Reparse(ctx, []string{"/models/mappings.sql"})
+	require.NoError(t, err)
+	require.Contains(t, diff.Modified, resources[0].Name, "mappings model should be marked as modified")
+	require.Contains(t, diff.Modified, resources[1].Name, "metrics view with security ref should be marked as modified when referenced model changes")
 	requireResourcesAndErrors(t, p, resources, nil)
 }
 

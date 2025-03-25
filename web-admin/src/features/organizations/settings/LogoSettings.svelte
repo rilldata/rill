@@ -27,7 +27,7 @@
     void queryClient.invalidateQueries(
       getAdminServiceGetOrganizationQueryKey(organization),
     );
-    void invalidate("root");
+    void invalidate("app:root");
   }
 
   async function onRemove() {
@@ -40,7 +40,7 @@
     void queryClient.invalidateQueries(
       getAdminServiceGetOrganizationQueryKey(organization),
     );
-    void invalidate("root");
+    void invalidate("app:root");
   }
 </script>
 
