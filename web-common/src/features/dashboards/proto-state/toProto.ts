@@ -71,6 +71,12 @@ export function getProtoFromDashboardState(
 ): string {
   if (!metrics) return "";
 
+  const dashboardState = convertExploreStateToProto(metrics);
+
+  return protoToBase64(dashboardState.toBinary());
+}
+
+export function convertExploreStateToProto(metrics: MetricsExplorerEntity) {
   const state: PartialMessage<DashboardState> = {};
   if (metrics.whereFilter) {
     state.where = toExpressionProto(metrics.whereFilter);
@@ -157,8 +163,7 @@ export function getProtoFromDashboardState(
 
   Object.assign(state, toActivePageProto(metrics));
 
-  const message = new DashboardState(state);
-  return protoToBase64(message.toBinary());
+  return new DashboardState(state);
 }
 
 function protoToBase64(proto: Uint8Array) {

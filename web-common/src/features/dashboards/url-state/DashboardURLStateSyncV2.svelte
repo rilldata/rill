@@ -13,6 +13,7 @@
     getUpdatedUrlForExploreState,
   } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
   import { updateExploreSessionStore } from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-store";
+  import { saveMostRecentExploreState } from "@rilldata/web-common/features/dashboards/url-state/most-recent-explore-state";
   import { type V1ExplorePreset } from "@rilldata/web-common/runtime-client";
   import { get } from "svelte/store";
 
@@ -21,6 +22,8 @@
   export let defaultExplorePreset: V1ExplorePreset;
   export let initExploreState: Partial<MetricsExplorerEntity>;
   export let partialExploreState: Partial<MetricsExplorerEntity>;
+
+  $: console.log(partialExploreState);
 
   const { dashboardStore, validSpecStore, timeRangeSummaryStore } =
     getStateManagers();
@@ -57,7 +60,7 @@
   }
 
   async function handleExploreInit() {
-    if (initializing || !exploreSpec || !metricsSpec) return;
+    if (initializing || !metricsSpec || !exploreSpec) return;
     initializing = true;
 
     metricsExplorerStore.init(exploreName, initExploreState);
@@ -85,6 +88,7 @@
     );
     prevUrl = redirectUrl.toString();
 
+    console.log("handleExploreInit", initExploreState, redirectUrl.search);
     if (redirectUrl.search === $page.url.search) {
       return;
     }
@@ -141,7 +145,7 @@
   }
 
   function gotoNewState() {
-    if (!exploreSpec) return;
+    if (!metricsSpec || !exploreSpec) return;
 
     const u = new URL($page.url);
     const exploreStateParams = convertExploreStateToURLSearchParams(
@@ -165,6 +169,14 @@
       $dashboardStore,
       exploreSpec,
       timeControlsState,
+    );
+    saveMostRecentExploreState(
+      exploreName,
+      extraKeyPrefix,
+      metricsSpec,
+      exploreSpec,
+      timeControlsState,
+      $dashboardStore,
     );
   }
 </script>

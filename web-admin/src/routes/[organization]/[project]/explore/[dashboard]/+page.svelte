@@ -4,7 +4,7 @@
   import { errorStore } from "@rilldata/web-admin/components/errors/error-store";
   import DashboardBuilding from "@rilldata/web-admin/features/dashboards/DashboardBuilding.svelte";
   import DashboardErrored from "@rilldata/web-admin/features/dashboards/DashboardErrored.svelte";
-  import DashboardUrlStateDataLoader from "@rilldata/web-admin/features/dashboards/url-params/DashboardURLStateDataLoader.svelte";
+  import DashboardUrlStateDataLoader from "@rilldata/web-admin/features/dashboards/DashboardURLStateDataLoader.svelte";
   import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
   import {
     DashboardBannerID,

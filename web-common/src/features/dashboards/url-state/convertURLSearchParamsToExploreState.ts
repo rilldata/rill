@@ -13,6 +13,8 @@ export function convertURLSearchParamsToExploreState(
   defaultExplorePreset: V1ExplorePreset,
 ) {
   const errors: Error[] = [];
+  if (searchParams.size === 0) return { preset: undefined, errors };
+
   const { preset, errors: errorsFromPreset } = convertURLToExplorePreset(
     searchParams,
     metricsView,

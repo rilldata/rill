@@ -134,6 +134,24 @@ export function getHomeBookmarkExploreState(
         schemaQuery.isFetching;
       const error =
         exploreSpecQuery.error ?? bookmarksQuery.error ?? schemaQuery.error;
+      console.log(
+        "exploreSpecQuery",
+        exploreSpecQuery.isLoading,
+        exploreSpecQuery.isFetching,
+        exploreSpecQuery.error,
+      );
+      console.log(
+        "bookmarksQuery",
+        bookmarksQuery.isLoading,
+        bookmarksQuery.isFetching,
+        bookmarksQuery.error,
+      );
+      console.log(
+        "schemaQuery",
+        schemaQuery.isLoading,
+        schemaQuery.isFetching,
+        schemaQuery.error,
+      );
       if (isLoading || isFetching || error) {
         return {
           isLoading,

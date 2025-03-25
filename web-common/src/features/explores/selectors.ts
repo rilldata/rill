@@ -2,7 +2,6 @@ import type { CreateQueryOptions, QueryFunction } from "@rilldata/svelte-query";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
-import { getExploreStateFromLocalStorage } from "@rilldata/web-common/features/dashboards/url-state/explore-persisted-store";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import { getExploreStateFromSessionStorage } from "@rilldata/web-common/features/dashboards/url-state/getExploreStateFromSessionStorage";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";

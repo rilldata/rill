@@ -1,18 +1,16 @@
 <script lang="ts">
-  import { afterNavigate, beforeNavigate } from "$app/navigation";
   import { page } from "$app/stores";
   import {
     createAdminServiceGetCurrentUser,
     type V1Project,
   } from "@rilldata/web-admin/client";
   import { getHomeBookmarkExploreState } from "@rilldata/web-admin/features/bookmarks/selectors";
-  import DashboardBuilding from "@rilldata/web-admin/features/dashboards/DashboardBuilding.svelte";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
   import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
-  import { getExploreStateFromLocalStorage } from "@rilldata/web-common/features/dashboards/url-state/explore-persisted-store";
+  import { getMostRecentExploreState } from "@rilldata/web-common/features/dashboards/url-state/most-recent-explore-state";
   import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
@@ -24,7 +22,6 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import DashboardURLStateSyncV2 from "@rilldata/web-common/features/dashboards/url-state/DashboardURLStateSyncV2.svelte";
   import QueriesStatus from "@rilldata/web-common/runtime-client/QueriesStatus.svelte";
-  import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
 
   export let organization: string;
   export let project: V1Project;
@@ -76,15 +73,17 @@
     instanceId,
     metricsViewName,
     exploreName,
+    true,
     Boolean($userQuery.data?.user),
   );
 
-  $: exploreStateFromLocalStorage = getExploreStateFromLocalStorage(
-    exploreName,
-    prefix,
-    metricsViewSpec,
-    exploreSpec,
-  );
+  $: ({ partialExploreState: mostRecentPartialExploreState } =
+    getMostRecentExploreState(
+      exploreName,
+      prefix,
+      metricsViewSpec,
+      exploreSpec,
+    ));
 
   $: ({ exploreStateFromSessionStorage, partialExploreStateFromUrl } =
     getExploreStates(
@@ -98,15 +97,24 @@
 
   $: initExploreState = {
     ...defaultExploreState,
-    ...(exploreStateFromSessionStorage ??
-      partialExploreStateFromUrl ??
-      exploreStateFromLocalStorage ??
+    // ...(exploreStateFromSessionStorage ??
+    //   partialExploreStateFromUrl ??
+    ...(partialExploreStateFromUrl ??
+      mostRecentPartialExploreState ??
       $exploreStateFromHomeBookmarkQuery.data ??
       exploreStateFromYAMLConfig),
   };
 
-  $: partialExploreState =
-    exploreStateFromSessionStorage ?? partialExploreStateFromUrl;
+  $: partialExploreState = partialExploreStateFromUrl;
+  // exploreStateFromSessionStorage ?? partialExploreStateFromUrl;
+
+  $: console.log(
+    // !!exploreStateFromSessionStorage,
+    !!partialExploreStateFromUrl,
+    !!mostRecentPartialExploreState,
+    !!$exploreStateFromHomeBookmarkQuery.data,
+    !!exploreStateFromYAMLConfig,
+  );
 
   $: errors = []; // TODO
   $: if (errors?.length) {
@@ -134,6 +142,9 @@
       label: "Bookmark",
     },
   ];
+  // $: console.log(
+  //   queries.map(({ query, label }) => `${label}: ${query.isLoading}`),
+  // );
 
   // beforeNavigate(({ from, to }) => {
   //   console.log("beforeNavigate", from?.url?.toString(), to?.url?.toString());
@@ -170,7 +181,7 @@
   <DashboardURLStateSyncV2
     {exploreName}
     extraKeyPrefix={prefix}
-    {defaultExplorePreset}
+    defaultExplorePreset={explorePresetFromYAMLConfig}
     {initExploreState}
     {partialExploreState}
   >
