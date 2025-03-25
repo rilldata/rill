@@ -46,7 +46,7 @@
     getOrderedStartEnd,
     updateChartInteractionStore,
   } from "./utils";
-  import DashboardDraggableList from "@rilldata/web-common/components/menu/DashboardDraggableList.svelte";
+  import DashboardMetricsDraggableList from "@rilldata/web-common/components/menu/DashboardMetricsDraggableList.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import DashboardVisibilityDropdown from "@rilldata/web-common/components/menu/DashboardVisibilityDropdown.svelte";
 
@@ -306,7 +306,7 @@
       />
     {:else}
       {#if $reorderMeasuresDimensions}
-        <DashboardDraggableList
+        <DashboardMetricsDraggableList
           type="measure"
           onSelectedChange={(items) =>
             setMeasureVisibility(items, allMeasureNames)}

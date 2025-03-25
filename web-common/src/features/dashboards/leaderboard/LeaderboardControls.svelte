@@ -7,8 +7,8 @@
   import LeaderboardMeasureCountSelector from "@rilldata/web-common/components/menu/LeaderboardMeasureCountSelector.svelte";
   import LeaderboardActiveMeasureDropdown from "@rilldata/web-common/components/menu/LeaderboardActiveMeasureDropdown.svelte";
   import { SortType } from "../proto-state/derived-types";
-  import DashboardDraggableList from "@rilldata/web-common/components/menu/DashboardDraggableList.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import DashboardMetricsDraggableList from "@rilldata/web-common/components/menu/DashboardMetricsDraggableList.svelte";
 
   export let exploreName: string;
 
@@ -77,7 +77,7 @@
       style:max-width="768px"
     >
       {#if $reorderMeasuresDimensions}
-        <DashboardDraggableList
+        <DashboardMetricsDraggableList
           type="dimension"
           onSelectedChange={(items) =>
             setDimensionVisibility(items, allDimensionNames)}
