@@ -10,7 +10,6 @@
   export let value;
   export let truncate = false;
   export let color = "";
-  export let contentRect: DOMRect | undefined = undefined;
 </script>
 
 <Base
@@ -21,7 +20,6 @@
     : ''} {customStyle}"
   {dark}
   {color}
-  bind:contentRect
 >
   <slot name="value">
     {formatDataType(value, type)}
