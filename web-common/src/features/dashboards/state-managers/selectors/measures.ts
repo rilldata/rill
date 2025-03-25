@@ -51,12 +51,6 @@ export const visibleMeasures = ({
         (m) => m.name === key,
       ) as MetricsViewSpecMeasureV2,
   );
-  // // Sort the filtered measures based on their order in validExplore.measures
-  // .sort(
-  //   (a, b) =>
-  //     validExplore.measures!.indexOf(a.name!) -
-  //     validExplore.measures!.indexOf(b.name!),
-  // )
 };
 
 export const getMeasureByName = (

@@ -29,17 +29,6 @@ export const visibleDimensions = ({
 }: DashboardDataSources): MetricsViewSpecDimensionV2[] => {
   if (!validMetricsView?.dimensions || !validExplore?.dimensions) return [];
 
-  // return (
-  //   validMetricsView.dimensions
-  //     .filter((d) => dashboard.visibleDimensionKeys.has(d.name!))
-  //     // Sort the filtered dimensions based on their order in validExplore.dimensions
-  //     .sort(
-  //       (a, b) =>
-  //         validExplore.dimensions!.indexOf(a.name!) -
-  //         validExplore.dimensions!.indexOf(b.name!),
-  //     )
-  // );
-
   return Array.from(dashboard.visibleDimensionKeys).map(
     (key) =>
       validMetricsView.dimensions?.find(
