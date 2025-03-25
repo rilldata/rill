@@ -402,11 +402,6 @@
     transition-duration: 100ms;
   }
 
-  .drag-transition {
-    transition: transform 150ms cubic-bezier(0.4, 0, 0.2, 1);
-    will-change: transform;
-  }
-
   h3 {
     @apply text-[11px] text-gray-500;
   }
