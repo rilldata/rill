@@ -11,15 +11,19 @@ In Rill, partitions are a special type of state in which you can explicitly part
 
 
 ### Defining a Partition in a Model
-Under the `partitions:` parameter, you will define the pattern in which your data is stored.
+Under the `partitions:` parameter, you will define the pattern in which your data is stored. Both SQL and glob patterns support [templating](/deploy/templating) and can be used to separate `dev` and `prod` instances. 
 
 ### SQL
 When defining your SQL, it is important to understand the data that you are querying and creating a partition that makes sense. For example, possibly selecting a distinct customer_name per partition, or possibly partition the SQL by a chronological partition, such as month.
 
 ```yaml
 partitions:
-  sql: SELECT range AS num FROM range(0,10) #num is the partition variable and can be referenced as {{partition.num}}
+  sql: SELECT range AS num FROM range(0,100) #num is the partition variable and can be referenced as {{partition.num}}
   #sql: SELECT DISTINCT customer_name as cust_name from table #results in {{partition.cust_name}}
+dev: 
+  partitions:
+    sql: SELECT range AS num FROM range(0,10)
+sql: SELECT * from table where column = {{partition.num}}
   ```
 
 :::tip Using the SQL partition in the YAML
@@ -27,7 +31,7 @@ Depending on the column name of the partition, you can reference the partition u
 ```YAML
 partitions:
   sql: SELECT range AS num FROM range(0,10)
-sql: SELECT {{ .partition.num }} AS num, now() AS inserted_on
+sql: SELECT {{ .partition.num }} AS num, now() AS inserted_on {{if dev}} limit 1000 {{end}}
 ```
 :::
 
@@ -37,8 +41,21 @@ When defining the glob pattern, you will need to consider whether you'd partitio
 In the first example, we are partitioning by each file with the suffix data.csv.
 ```yaml
 partitions:
-  glob: gs://my-bucket/**/*data.csv
+  glob: gs://my-bucket/y=2025/m=03/d=15/*data.csv
+  #glob: gs://my-bucket/{{if dev}}y=2025/m=03/d=15{{else}}**{{end}}/*data.csv
   ```
+Or, you can define each glob separate from each other.
+```yaml
+partitions:
+    glob:
+      path: 'gs://my-bucket/**/*.parquet'
+
+dev:
+  partitions:
+    glob:
+     path: 'gs://my-bucket/y=2025/m=03/d=15/*.parquet'
+  
+```
 
 If you'd prefer to partition it by folder your can add the partition parameter and define it as `directory`.
 ```yaml
