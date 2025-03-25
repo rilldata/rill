@@ -1,17 +1,10 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import {
-    createAdminServiceGetCurrentUser,
-    type V1Project,
-  } from "@rilldata/web-admin/client";
-  import { getHomeBookmarkExploreState } from "@rilldata/web-admin/features/bookmarks/selectors";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
-  import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
-  import { getMostRecentExploreState } from "@rilldata/web-common/features/dashboards/url-state/most-recent-explore-state";
-  import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
+  import { getStatesForExplore } from "@rilldata/web-common/features/dashboards/url-state/get-states-for-explore";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import {
@@ -19,12 +12,12 @@
     useExploreValidSpec,
   } from "@rilldata/web-common/features/explores/selectors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import type { V1ExplorePreset } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import DashboardURLStateSyncV2 from "@rilldata/web-common/features/dashboards/url-state/DashboardURLStateSyncV2.svelte";
   import QueriesStatus from "@rilldata/web-common/runtime-client/QueriesStatus.svelte";
+  import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 
-  export let organization: string;
-  export let project: V1Project;
   export let exploreName: string;
 
   $: ({ instanceId } = $runtime);
@@ -32,63 +25,38 @@
   $: exploreSpec = $exploreSpecQuery.data?.explore ?? {};
   $: metricsViewSpec = $exploreSpecQuery.data?.metricsView ?? {};
   $: metricsViewName = exploreSpec?.metricsView ?? "";
-  $: prefix = `${organization}__${project.name}__`;
 
-  $: fullTimeRangeQuery = useMetricsViewTimeRange(instanceId, metricsViewName, {
-    query: {
-      enabled: Boolean(metricsViewSpec?.timeDimension),
-    },
-  });
+  $: fullTimeRangeQuery = useMetricsViewTimeRange(instanceId, metricsViewName);
 
-  $: defaultExplorePreset = getDefaultExplorePreset(
-    {
-      ...exploreSpec,
-      defaultPreset: {},
-    },
-    metricsViewSpec,
-    $fullTimeRangeQuery.data,
-  );
-  $: ({ partialExploreState: defaultExploreState } =
-    convertPresetToExploreState(
-      metricsViewSpec,
-      exploreSpec,
-      defaultExplorePreset,
-    ));
+  let defaultExploreState: Partial<MetricsExplorerEntity> = {};
+  let explorePresetFromYAMLConfig: V1ExplorePreset = {};
+  let exploreStateFromYAMLConfig: Partial<MetricsExplorerEntity> | undefined =
+    undefined;
+  let mostRecentPartialExploreState:
+    | Partial<MetricsExplorerEntity>
+    | undefined = undefined;
+  let errors: Error[] = [];
 
-  $: explorePresetFromYAMLConfig = getDefaultExplorePreset(
-    exploreSpec,
-    metricsViewSpec,
-    $fullTimeRangeQuery.data,
-  );
-  $: ({ partialExploreState: exploreStateFromYAMLConfig } =
-    convertPresetToExploreState(
-      metricsViewSpec,
-      exploreSpec,
-      explorePresetFromYAMLConfig,
-    ));
-
-  const userQuery = createAdminServiceGetCurrentUser();
-  $: exploreStateFromHomeBookmarkQuery = getHomeBookmarkExploreState(
-    project.id,
+  $: exploreStatesQuery = getStatesForExplore(
     instanceId,
     metricsViewName,
     exploreName,
-    true,
-    Boolean($userQuery.data?.user),
+    undefined,
   );
-
-  $: ({ partialExploreState: mostRecentPartialExploreState } =
-    getMostRecentExploreState(
-      exploreName,
-      prefix,
-      metricsViewSpec,
-      exploreSpec,
-    ));
+  $: if ($exploreStatesQuery.data) {
+    ({
+      defaultExploreState,
+      explorePresetFromYAMLConfig,
+      exploreStateFromYAMLConfig,
+      mostRecentPartialExploreState,
+      errors,
+    } = $exploreStatesQuery.data);
+  }
 
   $: ({ exploreStateFromSessionStorage, partialExploreStateFromUrl } =
     getExploreStates(
       exploreName,
-      prefix,
+      undefined,
       $page.url.searchParams,
       metricsViewSpec,
       exploreSpec,
@@ -97,26 +65,22 @@
 
   $: initExploreState = {
     ...defaultExploreState,
-    // ...(exploreStateFromSessionStorage ??
-    //   partialExploreStateFromUrl ??
-    ...(partialExploreStateFromUrl ??
+    ...(exploreStateFromSessionStorage ??
+      partialExploreStateFromUrl ??
       mostRecentPartialExploreState ??
-      $exploreStateFromHomeBookmarkQuery.data ??
       exploreStateFromYAMLConfig),
   };
 
-  $: partialExploreState = partialExploreStateFromUrl;
-  // exploreStateFromSessionStorage ?? partialExploreStateFromUrl;
+  $: partialExploreState =
+    exploreStateFromSessionStorage ?? partialExploreStateFromUrl;
 
   $: console.log(
-    // !!exploreStateFromSessionStorage,
+    !!exploreStateFromSessionStorage,
     !!partialExploreStateFromUrl,
     !!mostRecentPartialExploreState,
-    !!$exploreStateFromHomeBookmarkQuery.data,
     !!exploreStateFromYAMLConfig,
   );
 
-  $: errors = []; // TODO
   $: if (errors?.length) {
     const _errs = errors;
     setTimeout(() => {
@@ -137,10 +101,7 @@
       query: $fullTimeRangeQuery,
       label: "Time Range",
     },
-    {
-      query: $exploreStateFromHomeBookmarkQuery,
-      label: "Bookmark",
-    },
+    // We do not `exploreStatesQuery` since it depends on `exploreSpecQuery` and `fullTimeRangeQuery` already
   ];
   // $: console.log(
   //   queries.map(({ query, label }) => `${label}: ${query.isLoading}`),
@@ -180,8 +141,7 @@
   </svelte:fragment>
   <DashboardURLStateSyncV2
     {exploreName}
-    extraKeyPrefix={prefix}
-    defaultExplorePreset={explorePresetFromYAMLConfig}
+    {explorePresetFromYAMLConfig}
     {initExploreState}
     {partialExploreState}
   >

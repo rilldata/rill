@@ -19,7 +19,7 @@
 
   export let exploreName: string;
   export let extraKeyPrefix: string | undefined = undefined;
-  export let defaultExplorePreset: V1ExplorePreset;
+  export let exploreStateFromYAMLConfig: V1ExplorePreset;
   export let initExploreState: Partial<MetricsExplorerEntity>;
   export let partialExploreState: Partial<MetricsExplorerEntity>;
 
@@ -74,7 +74,7 @@
     redirectUrl.search = getUpdatedUrlForExploreState(
       exploreSpec,
       timeControlsState,
-      defaultExplorePreset,
+      exploreStateFromYAMLConfig,
       initExploreState,
       $page.url,
     );
@@ -114,7 +114,7 @@
     redirectUrl.search = getUpdatedUrlForExploreState(
       exploreSpec,
       timeControlsState,
-      defaultExplorePreset,
+      exploreStateFromYAMLConfig,
       partialExplore,
       $page.url,
     );
@@ -152,7 +152,7 @@
       $dashboardStore,
       exploreSpec,
       timeControlsState,
-      defaultExplorePreset,
+      exploreStateFromYAMLConfig,
       u,
     );
     u.search = exploreStateParams.toString();

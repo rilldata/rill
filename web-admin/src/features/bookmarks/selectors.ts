@@ -5,7 +5,10 @@ import {
   getAdminServiceListBookmarksQueryKey,
   type V1Bookmark,
 } from "@rilldata/web-admin/client";
-import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
+import {
+  type CompoundQueryResult,
+  getCompoundQuery,
+} from "@rilldata/web-common/features/compound-query-result";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
 import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
@@ -106,7 +109,7 @@ export function getHomeBookmarkExploreState(
   enabled: boolean,
 ): CompoundQueryResult<Partial<MetricsExplorerEntity>> {
   // TODO: adapt getCompoundQuery for this use-case
-  return derived(
+  return getCompoundQuery(
     [
       useExploreValidSpec(instanceId, exploreName),
       createAdminServiceListBookmarks(
@@ -123,47 +126,8 @@ export function getHomeBookmarkExploreState(
       ),
       createQueryServiceMetricsViewSchema(instanceId, metricsViewName),
     ],
-    ([exploreSpecQuery, bookmarksQuery, schemaQuery]) => {
-      const isLoading =
-        exploreSpecQuery.isLoading ||
-        bookmarksQuery.isLoading ||
-        schemaQuery.isLoading;
-      const isFetching =
-        exploreSpecQuery.isFetching ||
-        bookmarksQuery.isFetching ||
-        schemaQuery.isFetching;
-      const error =
-        exploreSpecQuery.error ?? bookmarksQuery.error ?? schemaQuery.error;
-      console.log(
-        "exploreSpecQuery",
-        exploreSpecQuery.isLoading,
-        exploreSpecQuery.isFetching,
-        exploreSpecQuery.error,
-      );
-      console.log(
-        "bookmarksQuery",
-        bookmarksQuery.isLoading,
-        bookmarksQuery.isFetching,
-        bookmarksQuery.error,
-      );
-      console.log(
-        "schemaQuery",
-        schemaQuery.isLoading,
-        schemaQuery.isFetching,
-        schemaQuery.error,
-      );
-      if (isLoading || isFetching || error) {
-        return {
-          isLoading,
-          isFetching,
-          error,
-          data: undefined,
-        };
-      }
-
-      const homeBookmark = bookmarksQuery.data?.bookmarks?.find(
-        (b) => b.default,
-      );
+    ([exploreSpecResp, bookmarksResp, schemaResp]) => {
+      const homeBookmark = bookmarksResp?.bookmarks?.find((b) => b.default);
       if (!homeBookmark) {
         return {
           isLoading: false,
@@ -173,21 +137,16 @@ export function getHomeBookmarkExploreState(
         };
       }
 
-      const exploreSpec = exploreSpecQuery.data?.explore ?? {};
-      const metricsViewSpec = exploreSpecQuery.data?.metricsView ?? {};
+      const exploreSpec = exploreSpecResp?.explore ?? {};
+      const metricsViewSpec = exploreSpecResp?.metricsView ?? {};
 
       const exploreStateFromHomeBookmark = getDashboardStateFromUrl(
         homeBookmark?.data ?? "",
         metricsViewSpec,
         exploreSpec,
-        schemaQuery.data?.schema ?? {},
+        schemaResp?.schema ?? {},
       );
-      return {
-        isLoading: false,
-        isFetching: false,
-        error: undefined,
-        data: exploreStateFromHomeBookmark,
-      };
+      return exploreStateFromHomeBookmark;
     },
   );
 }

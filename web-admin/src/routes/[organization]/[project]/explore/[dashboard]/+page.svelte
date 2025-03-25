@@ -4,7 +4,7 @@
   import { errorStore } from "@rilldata/web-admin/components/errors/error-store";
   import DashboardBuilding from "@rilldata/web-admin/features/dashboards/DashboardBuilding.svelte";
   import DashboardErrored from "@rilldata/web-admin/features/dashboards/DashboardErrored.svelte";
-  import DashboardUrlStateDataLoader from "@rilldata/web-admin/features/dashboards/DashboardURLStateDataLoader.svelte";
+  import DashboardDataLoader from "@rilldata/web-admin/features/dashboards/DashboardDataLoader.svelte";
   import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
   import {
     DashboardBannerID,
@@ -136,15 +136,11 @@
   {:else if metricsViewName}
     {#key exploreName}
       <StateManagersProvider {metricsViewName} {exploreName}>
-        <DashboardUrlStateDataLoader
-          organization={orgName}
-          {project}
-          {exploreName}
-        >
+        <DashboardDataLoader organization={orgName} {project} {exploreName}>
           <DashboardThemeProvider>
             <Dashboard {metricsViewName} {exploreName} />
           </DashboardThemeProvider>
-        </DashboardUrlStateDataLoader>
+        </DashboardDataLoader>
       </StateManagersProvider>
     {/key}
   {/if}
