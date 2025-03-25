@@ -27,6 +27,7 @@
   export let onClose = () => {};
 
   const StateManagers = getStateManagers();
+  const { validSpecStore } = StateManagers;
 
   const bookmarkCreator = createAdminServiceCreateBookmark();
   const bookmarkUpdater = createAdminServiceUpdateBookmark();
@@ -57,6 +58,7 @@
               values.filtersOnly,
               values.absoluteTimeRange,
               $timeControlsStore,
+              $validSpecStore.data?.explore,
             ),
           },
         });
@@ -74,6 +76,7 @@
               values.filtersOnly,
               values.absoluteTimeRange,
               $timeControlsStore,
+              $validSpecStore.data?.explore,
             ),
           },
         });

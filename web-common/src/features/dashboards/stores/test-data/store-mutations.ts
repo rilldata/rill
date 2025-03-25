@@ -157,12 +157,28 @@ export const AD_BIDS_SET_PREVIOUS_WEEK_COMPARE_TIME_RANGE_FILTER: TestDashboardM
 export const AD_BIDS_DISABLE_COMPARE_TIME_RANGE_FILTER: TestDashboardMutation =
   () => metricsExplorerStore.displayTimeComparison(AD_BIDS_EXPLORE_NAME, false);
 
+export const AD_BIDS_TOGGLE_IMPRESSIONS_MEASURE_VISIBILITY: TestDashboardMutation =
+  (mut) => {
+    toggleMeasureVisibility(
+      mut,
+      AD_BIDS_EXPLORE_INIT.measures!,
+      AD_BIDS_IMPRESSIONS_MEASURE,
+    );
+  };
 export const AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY: TestDashboardMutation =
   (mut) => {
     toggleMeasureVisibility(
       mut,
       AD_BIDS_EXPLORE_INIT.measures!,
       AD_BIDS_BID_PRICE_MEASURE,
+    );
+  };
+export const AD_BIDS_TOGGLE_BID_PUBLISHER_DIMENSION_VISIBILITY: TestDashboardMutation =
+  (mut) => {
+    toggleDimensionVisibility(
+      mut,
+      AD_BIDS_EXPLORE_INIT.dimensions!,
+      AD_BIDS_PUBLISHER_DIMENSION,
     );
   };
 export const AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY: TestDashboardMutation =

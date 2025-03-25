@@ -15,7 +15,7 @@
       dimensions: { visibleDimensions, allDimensions },
     },
     actions: {
-      dimensions: { toggleDimensionVisibility },
+      dimensions: { toggleDimensionVisibility, toggleAllDimensionsVisibility },
       contextCol: { setContextColumn },
       setLeaderboardMeasureName,
     },
@@ -70,7 +70,7 @@
         }))}
         selectedItems={visibleDimensionsNames}
         onToggleSelectAll={() => {
-          toggleDimensionVisibility(allDimensionNames);
+          toggleAllDimensionsVisibility(allDimensionNames);
         }}
       />
 
