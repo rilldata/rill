@@ -2,9 +2,11 @@ package ratelimit
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"math"
+	"net"
 	"strings"
 
 	"github.com/go-redis/redis_rate/v10"
@@ -120,37 +122,34 @@ const (
 	errTryAgain    = "TRYAGAIN "
 )
 
-// If the error is a server connection error, we should not return an error. This is because the server may be temporarily unavailable, and we should not block the request. The client should retry the request.
 func isServerConnError(err error) bool {
-	switch err {
-	case io.EOF:
-		return true
-	case io.ErrUnexpectedEOF:
-		return true
-	default:
-		return parseRedisError(err)
+	if err == nil {
+		return false
 	}
-}
 
-func parseRedisError(err error) bool {
+	// Check specific I/O errors
+	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+		return true
+	}
+
+	// Check for network-specific errors
+	var netErr net.Error
+	if errors.As(err, &netErr) {
+		return true
+	}
+
+	// Check specific Redis error strings
 	s := err.Error()
 	if s == errMaxClients {
 		return true
 	}
-	if strings.HasPrefix(s, errLoading) {
+	if strings.HasPrefix(s, errLoading) ||
+		strings.HasPrefix(s, errReadOnly) ||
+		strings.HasPrefix(s, errMasterDown) ||
+		strings.HasPrefix(s, errClusterDown) ||
+		strings.HasPrefix(s, errTryAgain) {
 		return true
 	}
-	if strings.HasPrefix(s, errReadOnly) {
-		return true
-	}
-	if strings.HasPrefix(s, errMasterDown) {
-		return true
-	}
-	if strings.HasPrefix(s, errClusterDown) {
-		return true
-	}
-	if strings.HasPrefix(s, errTryAgain) {
-		return true
-	}
+
 	return false
 }
