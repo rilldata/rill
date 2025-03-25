@@ -26,7 +26,8 @@ Since we're using Rill Developer, we will need to add the `--local` flag to the 
 
 After the model refreshes, you should see the inserted_on value change.
 
-![img](/img/tutorials/302/now.png)
+<img src = '/img/tutorials/302/now.png' class='rounded-gif' />
+<br />
 
 
 ## Enable Increments on our Model 
@@ -44,7 +45,8 @@ After adding the following, what's different?
 
 When selecting the refresh button, a new drop down appears. In this case, we have the choice to [incremental refresh or full refresh](https://docs.rilldata.com/build/incremental-models/#refreshing-an-incremental-model).
 
-![img](/img/tutorials/302/now-incremental.png)
+<img src = '/img/tutorials/302/now-incremental.png' class='rounded-gif' />
+<br />
 
 When select `Incremental Refresh`, instead of overwriting the same row, we are now appending the new values of now() into the table. 
 
@@ -89,7 +91,8 @@ SELECT
 {{ end}}
 ```
 
-![img](/img/tutorials/302/now-state.png)
+<img src = '/img/tutorials/302/now-state.png' class='rounded-gif' />
+<br />
 
 
 

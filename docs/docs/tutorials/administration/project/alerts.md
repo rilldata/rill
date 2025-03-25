@@ -19,8 +19,8 @@ When deploying to Rill Cloud, there might be a few different reasons why a proje
 
 ### Setting up the YAML file in Rill Developer
 
-Let's go ahead and create a basic alert on the project that sends an email if any of the resources reconcile with error.
-[]link the alert YAML once out.
+Let's go ahead and create a [basic alert](/reference/project-files/alerts) on the project that sends an email if any of the resources reconcile with error.
+
 The default alerting is:
 ```yaml
 type: alert
@@ -47,25 +47,28 @@ So as not to spam our own inbox, let's change the alert to run the 1st of every 
 ```
 
 Once complete, we can go ahead and create a broken dashboard or model. The easiest would be to create a new dashboard via +Add, and leaving it as is. There will be a solid red border around the text editor. 
-![img](/img/tutorials/admin/new-dashboard.png)
 
+<img src = '/img/tutorials/admin/new-dashboard.png' class='rounded-gif' />
+<br />
 
 Once we've created this, let's [push our changes to Rill Cloud](/tutorials/rill_developer_advanced_features/advanced_developer/update-rill-cloud). 
 
 
-![img](/img/tutorials/admin/failing-dashboard.png)
-
+<img src = '/img/tutorials/admin/failing-dashboard.png' class='rounded-gif' />
+<br />
 Now, you'll receive an email that gives you more information on the failing resource, in this case the dashboard. 
 
 
-![img](/img/tutorials/admin/alert-email.png)
-
+<img src = '/img/tutorials/admin/alert-email.png' class='rounded-gif' />
+<br />
 You can view all the alerts (project and dashboard) from the Alerts page
 
-![img](/img/tutorials/admin/alert-code.png)
-
+<img src = '/img/tutorials/admin/alert-code.png' class='rounded-gif' />
+<br />
 ## Dashboard Alerts
 
 [Alerts created on individual dashboards](https://docs.rilldata.com/explore/alerts/) can be viewed from a project's alert page. As an admin, you can edit or delete the alert as needed.
 
-![alerts](/img/tutorials/admin/alert-admin.png)
+
+<img src = '/img/tutorials/admin/alert-admin.png' class='rounded-gif' />
+<br />

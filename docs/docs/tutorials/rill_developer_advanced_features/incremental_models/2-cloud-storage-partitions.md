@@ -46,14 +46,16 @@ Once you save the file, Rill will start to ingest all the partitions from GCS. T
 
 Once completed you should see the following:
 
-![img](/img/tutorials/302/partitions.png)
+<img src = '/img/tutorials/302/partitions.png' class='rounded-gif' />
+<br />
+
 
 ### Viewing Partition Status in the UI
 
 If you see any errors in the UI regarding your partitions, you may need to check the status by selecting "View partitions"
 
-![img](/img/tutorials/302/partitions-refresh-ui.png)
-
+<img src = '/img/tutorials/302/partitions-refresh-ui.png' class='rounded-gif' />
+<br />
 
 Or, you can check this via the CLI running:
 ```bash
@@ -69,8 +71,8 @@ rill project partitions <model_name> --local
 
 When issues arise in partitions in your model, you will need to fix the underlying issue then refresh this specific partitions in Rill. In the UI, you can select the dropdown `Showing` and select errors.
 
-![img](/img/tutorials/302/errored-partitions.png)
-
+<img src = '/img/tutorials/302/errored-partitions.png' class='rounded-gif' />
+<br />
 Or, if you prefer to refresh in the CLI, you can run the command to refresh all errored partitions.
 
 ```bash
@@ -99,8 +101,9 @@ refresh:
 ```
 
 Once Rill ingests the data, your UI should look something like this: 
-![img](/img/tutorials/302/incremental.png)
 
+<img src = '/img/tutorials/302/incremental.png' class='rounded-gif' />
+<br />
 
 Your YAML should look like the following:
 

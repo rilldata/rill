@@ -14,7 +14,9 @@ Please review the documentation on [Credential Managment](https://docs.rilldata.
 
 ## Managing Credentials and Variables on Rill Cloud 
 
-![env-ui](/img/tutorials/admin/env-var-ui.png)
+
+<img src = '/img/tutorials/admin/env-var-ui.png' class='rounded-gif' />
+<br />
 
 After deploying your initial credentials into Rill Cloud, you will be able to view them in the Settings page. Any credentials that are defined in the .env file in your project directory will be pushed on deployment to Rill Cloud. If you update the file locally, you will need to run `rill env push` to use it in Rill Cloud.
 

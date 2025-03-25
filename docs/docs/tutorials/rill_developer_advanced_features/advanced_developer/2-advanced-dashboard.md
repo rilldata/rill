@@ -93,7 +93,8 @@ measures:
 
 Similarly to the Basics course, we can create an explore-dashboard on top of this metrics view by selecting `Create explore`. You're preview should look something like the below!
 
-![img](/img/tutorials/204/advanced-dashboard.png)
+<img src = '/img/tutorials/204/advanced-dashboard.png' class='rounded-gif' />
+<br />
 
 Along with the dimensions and measures, you can define `theme:`, time zones, time ranges, and [security policies](https://docs.rilldata.com/manage/security). Feel free to test by uncommenting the parameters and seeing how it changes the explore dashboard.
 

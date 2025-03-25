@@ -68,7 +68,8 @@ It's probably not best practice to push your changes directly onto your `main` b
 
 Checking on our GitHub repository, we can see that the dashboard and model folder have been updated with the commit message, "Adding new files."
 
-![my-rill-project](/img/tutorials/204/github-pushed-changes.png)
+<img src = '/img/tutorials/204/github-pushed-changes.png' class='rounded-gif' />
+<br />
 
 
 That's it! You can now make you changes locally and push to GitHub to sync to your Rill Cloud project whenever you need. Now that we have setup the project's contents, let's build out some feature on Rill Cloud.

@@ -68,8 +68,8 @@ output:
 
   Your final output should look like:
 
-![img](/img/tutorials/302/staging.png)
-
+<img src = '/img/tutorials/302/staging.png' class='rounded-gif' />
+<br />
 :::note
 Our team is continuously working to add additional features to staging connectors. If you are looking for a specific combination, please reach out and let us know!
 :::
