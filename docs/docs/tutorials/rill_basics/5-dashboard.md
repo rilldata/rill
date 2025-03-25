@@ -1,13 +1,14 @@
 ---
-title: "5. Create the Explore Dashboard"
-sidebar_label: "5. Create the Explore Dashboard"
+title: "5. Create a Dashboard"
+sidebar_label: "5. Create a Dashboard"
 sidebar_position: 3
 hide_table_of_contents: false
 tags:
   - OLAP:DuckDB
 ---
 
-At this point our metrics view is ready! Let's select `Create Explore Dashboard`. This will automatically populate the explore dashboard to select all the of created metrics and dimension in your metrics view. We can make changes to the view via the YAML or visual dashboard editor.
+## Explore Dashboard
+We have the choice to start with either an Explore or Canvas dashboard. Let's start with an Explore Dashboard by selecting the `Create Explore Dashboard`. This will automatically populate the explore dashboard to select all the of created metrics and dimension in your metrics view. We can make changes to the view via the YAML or visual dashboard editor.
 
 ![img](/img/tutorials/103/Completed-100-dashboard.png)
 
@@ -27,8 +28,8 @@ By default, the page will contain the basics parameters as seen below. You can a
 
 type: explore
 
-title: "commits___model_metrics dashboard"
-metrics_view: commits___model_metrics
+title: "commits_model_metrics dashboard"
+metrics_view: commits_model_metrics
 
 dimensions: '*'
 measures: '*'
@@ -36,7 +37,7 @@ measures: '*'
 
 
 
-### Explore Dasboard Components
+### Explore Dashboard Components
 
 For a quick summary on the different components of an explore dashboard, and its respective parts in the dashboard UI.
 
@@ -45,13 +46,22 @@ For a quick summary on the different components of an explore dashboard, and its
 
 --- 
 
+## Canvas Dashboard
+Next, let's try to make a Canvas dashboard!
 
+<img src = '/img/tutorials/103/canvas-dashboard.png' class='rounded-gif' />
+<br />
 
+Select the `Add widget` to build a component using our metrics view. The right-hand panel will display the different parameters that you can set per component. 
 
+Try to create the following:
+- KPI with measures: [Sum of Added lines, Sum of deleted lines]
+- Bar Chart: Added lines over Author Name. 
 
+Once completed, select `Preview`. You should see something like the following image
 
-
-
+<img src = '/img/tutorials/103/complete-canvas-dashboard.png' class='rounded-gif' />
+<br />
 
 import DocsRating from '@site/src/components/DocsRating';
 

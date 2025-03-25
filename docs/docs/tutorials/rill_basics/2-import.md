@@ -6,7 +6,6 @@ hide_table_of_contents: false
 tags:
   - OLAP:DuckDB
 ---
-import LoomVideo from '@site/src/components/LoomVideo'; // Adjust the path as needed
 
 Let's start at the beginning of all data pipelines, **the source**.
 
@@ -14,12 +13,11 @@ Let's start at the beginning of all data pipelines, **the source**.
 
 In Rill, the source is your data. Whether this is from a data warehouse, cloud storage, or a RDBMS, Rill can read and import this data.
 
-:::note Import Data?
-By default, the underlying OLAP engine utilized is DuckDB (see <a href='https://docs.rilldata.com/build/olap/' target="_blank"> Connect OLAP engines</a>).
-:::
-
+:::tip Where is the data being imported?
+By default, the underlying OLAP engine utilized is DuckDB (see <a href='https://docs.rilldata.com/build/olap/' target="_blank"> Connect OLAP engines</a>). 
 Please see our docs for the 
 <a href="https://docs.rilldata.com/build/connect/" target="_blank">supported list</a> of connectors.
+:::
 
 
 ### Adding a source is simple! 
@@ -30,18 +28,22 @@ Select the `+Add` dropdown and select `Data`, this will open a UI of supported c
 <img src = '/img/tutorials/102/Adding-Data.gif' class='rounded-gif' />
 <br />
 
-For our tutorial, let's add two GCS storage from our public storage. These are datasets derived from the commit history and modified files of our friends at ClickHouse's GitHub repository. You need to add each one separately. Please refer the GIF above.
+For our tutorial, let's add two GCS storage from our public storage. In Rill, each dataset is added separately and a single object. Once imported into Rill, you can then transform the data via model, but we'll get into that on the next page. Depending on the source type, you will need to provide a SQL statement, bucket location, URL, etc. While some of our sources derive the credentials via the CLI (S3, GCS, Azure), others you will need to manually input. As these datasets are public you will be able to ingest automatically.
+
 
 ```yaml 
-gs://rilldata-public/github-analytics/Clickhouse/*/*/modified_files_*.parquet
-gs://rilldata-public/github-analytics/Clickhouse/*/*/commits_*.parquet
+gs://rilldata-public/github-analytics/Clickhouse/2025/03/modified_files_*.parquet
+gs://rilldata-public/github-analytics/Clickhouse/2025/03/commits_*.parquet
 ```
+:::note Data
+These are datasets derived from the commit history and modified files of our friends at ClickHouse's GitHub repository. In our example, we'll ingest a single month of data however, Rill supports glob patterns in which you could modify the URL to `gs://rilldata-public/github-analytics/Clickhouse/**/modified_files_*.parquet` which would ingest all years and months of data. 
+:::
 
 Once imported, youll see the UI change with a few things..
 1. The `source_name`.YAML file created in the file explorer
-1. DuckDB database, created in the Connectors explorer
-2. Within the DuckDB database, our imported data as a table with a preview.
-3. The right panel giving a summary of the data
+2. DuckDB database, created in the Connectors explorer
+3. Within the DuckDB database, our imported data as a table with a preview.
+4. The right panel giving a summary of the data
 
 <img src = '/img/tutorials/102/Add-GCS.gif' class='rounded-gif' />
 <br />

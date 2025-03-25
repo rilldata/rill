@@ -8,11 +8,7 @@ tags:
 ---
 
 ### What is a Metrics View? 
-:::note
-Starting from version 0.50, we have officially split the metrics view and dashboard and rolled out [visual metric editor](#via-the-visual-metrics-editor) What this means is that we have a separate file for the metrics layer and a dashboard built on top of this. For more reasoning behind this change, please refer to our documentation.
-:::
-A metrics view is a layer in which you can create and define your measures and dimensions. Once you have defined your measures and dimensions, you can build the dashboard.
-
+A metrics view is a layer in which you can create and define your measures and dimensions. Think of it as the layer that takes all of your raw data and makes sense of it. In this layer, you can define, for example, what Net Revenue is defined at using basic to advanced [arithmetic functions available in DuckDB](https://duckdb.org/docs/stable/sql/functions/numeric.html). You also define what dimensions to use to slice-and-dice your data in the Explore Dashboard. If using Canvas dashboards, you can view multiple metrics views in a single page! 
 
 ### Let's create a metrics view!
 
@@ -68,7 +64,7 @@ In the top right of the UI, select the viz button to navigate to the visual metr
 
 We can go ahead and change the following components as directed in the UI:
 
-- `model`: commits___model
+- `model`: commits_model
 - `time column`: author_date
 - `measures`: sum(added_lines)
 - `dimensions`: author_name
@@ -94,10 +90,10 @@ The type is a Rill required key pair as it indicates to Rill what type of file t
 
 ### Underlying Table ###
 ```yaml
-table: commits___model # Note that this has 3 "_"! 
+table: commits_model # Note that this has 3 "_"! 
 ```
 
-The underlying table can be defined here, let's change it to `commits___model`.
+The underlying table can be defined here, let's change it to `commits_model`.
 
 ---
 
@@ -169,7 +165,7 @@ You may need to reference the <a href='https://docs.rilldata.com/reference/proje
 version: 1
 type: metrics_view
 
-table: commits___model
+table: commits_model
 
 timeseries: author_date # Select an actual timestamp column (if any) from your table
 

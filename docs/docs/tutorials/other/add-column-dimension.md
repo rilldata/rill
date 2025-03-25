@@ -6,7 +6,7 @@ hide_table_of_contents: false
 tags:
   - OLAP:DuckDB
 ---
-You will need to add the dimension/s back in Rill Developer and [push the changes to Rill Cloud](/tutorials/rill_advanced_features/advanced_developer/update-rill-cloud) when you're ready.
+You will need to add the dimension/s back in Rill Developer and [push the changes to Rill Cloud](/tutorials/rill_developer_advanced_features/advanced_developer/update-rill-cloud) when you're ready.
 
 ## Rill Developer
 
@@ -47,7 +47,7 @@ Finally, you can preview the dashboard to see if the new dimension/measure is vi
 ## Rill Cloud
 
 ### Pushing Changes
-Once you have finished making all the changes to your dashboard you can [push the new changes to Rill Cloud](/tutorials/rill_advanced_features/advanced_developer/update-rill-cloud) either via the UI by selecting `Update` or via GitHub by pushing the changes to your repository.
+Once you have finished making all the changes to your dashboard you can [push the new changes to Rill Cloud](/tutorials/rill_developer_advanced_features/advanced_developer/update-rill-cloud) either via the UI by selecting `Update` or via GitHub by pushing the changes to your repository.
 
 <img src = '/img/tutorials/other/redeploy.gif' class='rounded-gif' />
 <br />
