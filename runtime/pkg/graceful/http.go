@@ -37,13 +37,13 @@ func ServeHTTP(ctx context.Context, server *http.Server, options ServeOptions) e
 	// Channel to signal server has stopped
 	serveErrCh := make(chan error)
 	go func() {
+		var serveErr error
 		if options.CertPath != "" && options.KeyPath != "" {
-			err := server.ServeTLS(lis, options.CertPath, options.KeyPath)
-			serveErrCh <- err
+			serveErr = server.ServeTLS(lis, options.CertPath, options.KeyPath)
 		} else {
-			err = server.Serve(lis)
-			serveErrCh <- err
+			serveErr = server.Serve(lis)
 		}
+		serveErrCh <- serveErr
 	}()
 
 	// Wait for context to be cancelled or failure to serve
