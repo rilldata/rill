@@ -258,7 +258,6 @@
   }
 
   $: if (dragItemInfo) {
-    console.log(mousePosition);
     dragItemPosition = {
       top: mousePosition.y + offset.y,
       left: mousePosition.x + offset.x,
@@ -486,7 +485,6 @@
 <svelte:window
   on:mouseup={reset}
   on:mousemove={(e) => {
-    console.log(e);
     mousePosition = { x: e.clientX, y: e.clientY };
   }}
   on:keydown={(e) => {
