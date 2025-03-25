@@ -41,7 +41,7 @@ Untracked files:
 	.DS_Store
 	explore-dashboards/advanced_metrics_view_explore.yaml
   metrics/advanced_metrics_view.yaml
-	models/advanced_commits___model.sql
+	models/advanced_commits_model.sql
 	tmp/
 
 nothing added to commit but untracked files present (use "git add" to track)
@@ -52,7 +52,7 @@ Let's try again after adding the mentioned files.
 ```
 git add explore-dashboards/advanced_metrics_view_explore.yaml
 git add metrics/advanced_metrics_view.yaml
-git add models/advanced_commits___model.sql 
+git add models/advanced_commits_model.sql 
 git commit -m "Adding new files"           
     [main 68b293e] Adding new files
     ...

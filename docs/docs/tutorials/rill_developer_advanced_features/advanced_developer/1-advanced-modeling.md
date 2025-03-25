@@ -1,7 +1,7 @@
 ---
-title: "Let's get back to our project"
+title: "Aggregating the Models"
 description:  Further build on project
-sidebar_label: "SQL modeling continued"
+sidebar_label: "SQL Modeling Continued"
 sidebar_position: 16
 ---
 ##  SQL modeling continued
@@ -10,7 +10,7 @@ In order to prepare for some further topics to be discussed, let's revisit our S
 
 It is a simple join between two tables that was able to give us the user details and the commit details. But, in reality that doesn't give us much information about the repository. We can see some added and removed lines and filter based on the user and filename. Let's make a few more modifications.
 
-Let's create a new model file `advanced_commits___mode.sql`.
+Let's create a new model file `advanced_commits_model.sql`.
 
 :::tip
     We will add our original SQL code to a CTE (common table expression) with a few modifications then from there, create our expanded SQL query. 
@@ -21,7 +21,7 @@ Without going into a whole SQL lecture in this course, we will make some modific
 
 - We want to remove the filename from directory path.
 - Using added_lines and delete_lines, make some interesting measures.
-- Using unique hash_commits, count the distint commit_msg to find unique commits.
+- Using unique hash_commits, count the distinct commit_msg to find unique commits.
 
 ```SQL
 -- Model SQL
@@ -36,9 +36,9 @@ WITH commit_file_stats AS (
         b.deleted_lines,
         REGEXP_EXTRACT(b.new_path, '(.*/)', 1) AS directory_path, 
     FROM
-        commits__ a
+        commits a
     inner JOIN
-        modified_files__ b
+        modified_files b
     ON
         a.commit_hash = b.commit_hash
 )

@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from '@docusaurus/Link';
-
+import '../css/custom.scss'
 // Define images or colors for specific documents
 
 

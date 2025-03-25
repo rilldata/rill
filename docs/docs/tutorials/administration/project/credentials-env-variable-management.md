@@ -15,7 +15,8 @@ Please review the documentation on [Credential Managment](https://docs.rilldata.
 ## Managing Credentials and Variables on Rill Cloud 
 
 ![env-ui](/img/tutorials/admin/env-var-ui.png)
-After pushing your initial credentials into Rill Cloud, you will be able to view them in the Settings page. In the above screenshot, we have already run `rill env configure` from the CLI so it has populated the required credentials in the UI via the .env file in your project directory. 
+
+After deploying your initial credentials into Rill Cloud, you will be able to view them in the Settings page. Any credentials that are defined in the .env file in your project directory will be pushed on deployment to Rill Cloud. If you update the file locally, you will need to run `rill env push` to use it in Rill Cloud.
 
 ## Credentials
 
@@ -41,7 +42,7 @@ Finish deploying your project by providing access to the connectors. Rill requir
 
  - bigquery (used by SQL-incremental-tutorial)
  - clickhouse (used by staging_to_CH)
- - gcs (used by commits__ and others)
+ - gcs (used by commits and others)
  - s3 (used by staging_to_CH)
  - snowflake (used by staging_to_CH)
 ```

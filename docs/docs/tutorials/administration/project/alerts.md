@@ -50,7 +50,7 @@ Once complete, we can go ahead and create a broken dashboard or model. The easie
 ![img](/img/tutorials/admin/new-dashboard.png)
 
 
-Once we've created this, let's [push our changes to Rill Cloud](/tutorials/rill_advanced_features/advanced_developer/update-rill-cloud). 
+Once we've created this, let's [push our changes to Rill Cloud](/tutorials/rill_developer_advanced_features/advanced_developer/update-rill-cloud). 
 
 
 ![img](/img/tutorials/admin/failing-dashboard.png)

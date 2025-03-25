@@ -5,12 +5,12 @@ sidebar_label: "Dashboards Features"
 sidebar_position: 16
 ---
 
-## Let's make a new dashboard
+## Let's update the Metrics view
 
 As we have learned in the previous course, we will need to set up the metrics view based on the new column names. 
-Let's create a new metrics view via the UI. It should be named `advanced_metrics-view.yaml`. Let's copy the contents from our old dashboard and make some changes.
+Let's create a new metrics view via the UI. It should be named `advanced_metrics.yaml`. Let's copy the contents from our old dashboard and make some changes.
 
-First, we will want to change the `table` value to the new model name `advaned_commits___model`
+First, we will want to change the `table` value to the new model name `advanced_commits_model`
 
 Add two new dimensions: `directory path` and `commit_msg`.
 
@@ -19,7 +19,7 @@ Add four new measures: `SUM(total_line_changes)`, `SUM(net_line_changes)`, `SUM(
 On the `SUM(net_line_changes)` measure, add the following `name: net_line_changes`. While name is not required, this can be used by other components for reference, which will be discussed later.
 
 ### Creating a measure in the metric-view
-Like the SQL Model, our dashboards also use the same OLAP engine and you can use aggregates or expressions to create new metrics. In our case, since we have the added_lines and delete_lines measures, we can create a percentage of lines deleted measure.
+Like the SQL Model, our dashboards also use the same OLAP engine, and you can use aggregates or expressions to create new metrics. In our case, since we have the added_lines and deleted_lines measures, we can create a percentage of lines deleted measure.
 
 ```
  SUM(deleted_lines) / (SUM(added_lines) + SUM(deleted_lines))
@@ -28,7 +28,7 @@ Like the SQL Model, our dashboards also use the same OLAP engine and you can use
 When to create measures in the SQL Model layer vs the metric-view layer?
 It depends.
 
-Depending on the size of data, type of measure, and what you are caluclating, you can choose either. Sometimes it would be better if you are dealing with a lot of data to front load the calculation on the SQL level so your dashboards load faster. However, the way OLAP engines work (linke avg of avg article), you might get incorrect data by doing certain calculations in the SQL level. You'll have to test and see which works for you!
+Depending on the size of data, type of measure, and what you are calculating, you can choose either. Sometimes it would be better if you are dealing with a lot of data to front load the calculation on the SQL level so your dashboards load faster. However, [the way OLAP engines work](../../other/avg_avg.md), you might get incorrect data by doing certain calculations in the SQL level. You'll have to test and see which works for you!
 :::
 
 
@@ -41,7 +41,7 @@ Depending on the size of data, type of measure, and what you are caluclating, yo
 version: 1
 type: metrics_view
 
-table: advanced_commits___model # Choose a table to underpin your metrics
+table: advanced_commits_model # Choose a table to underpin your metrics
 timeseries: author_date # Choose a timestamp column (if any) from your table
 
 dimensions: 
@@ -89,7 +89,7 @@ measures:
 ```
 </details>
 
-### Create the dashboard
+### Create the Explore dashboard
 
 Similarly to the Basics course, we can create an explore-dashboard on top of this metrics view by selecting `Create explore`. You're preview should look something like the below!
 

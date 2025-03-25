@@ -53,7 +53,7 @@ const sidebars = {
           description: 'Advanced Features and beyond',
           link: {
             type: 'doc',
-            id: 'tutorials/rill_advanced_features/overview',
+            id: 'tutorials/rill_developer_advanced_features/overview',
 
           },
 
@@ -61,12 +61,13 @@ const sidebars = {
 
             {
               type: 'category',
-              label: 'Back to Rill Developer',
+              label: 'Pushing Changes from Rill Developer to Rill Cloud',
               description: 'Make some changes to our SQL model and Dashboard',
               items: [
-                'tutorials/rill_advanced_features/advanced_developer/advanced-modeling',
-                'tutorials/rill_advanced_features/advanced_developer/advanced-dashboard',
-                'tutorials/rill_advanced_features/advanced_developer/update-rill-cloud',
+                'tutorials/rill_developer_advanced_features/advanced_developer/advanced-sources',
+                'tutorials/rill_developer_advanced_features/advanced_developer/advanced-modeling',
+                'tutorials/rill_developer_advanced_features/advanced_developer/advanced-dashboard',
+                'tutorials/rill_developer_advanced_features/advanced_developer/update-rill-cloud',
 
               ]
             },
@@ -74,32 +75,39 @@ const sidebars = {
             {
               type: 'category',
               label: 'Advanced Models',
-
+              description: "Partitioned, Incremental and Staging Models",
               items: [
-                'tutorials/rill_advanced_features/incremental_models/introduction',
+                'tutorials/rill_developer_advanced_features/incremental_models/introduction',
                 {
                   type: 'category',
                   label: 'Basic Incremental and Partitions Model Examples',
                   items: [
-                    'tutorials/rill_advanced_features/incremental_models/simple-examples/incremental_now',
-                    'tutorials/rill_advanced_features/incremental_models/simple-examples/partitions_now',
+                    'tutorials/rill_developer_advanced_features/incremental_models/simple-examples/incremental_now',
+                    'tutorials/rill_developer_advanced_features/incremental_models/simple-examples/partitions_now',
                   ]
                 },
-                'tutorials/rill_advanced_features/incremental_models/cloud-storage-partitions',
-                'tutorials/rill_advanced_features/incremental_models/data-warehouse-partitions',
-
-                'tutorials/rill_advanced_features/incremental_models/staging-connectors'
-
+                'tutorials/rill_developer_advanced_features/incremental_models/cloud-storage-partitions',
+                'tutorials/rill_developer_advanced_features/incremental_models/data-warehouse-partitions',
+                'tutorials/rill_developer_advanced_features/incremental_models/staging-connectors'
+              ]
+            },
+            {
+              type: 'category',
+              label: 'Advanced Measures and Dimensions',
+              description: "Define and Aggregate Measures in the Metrics View ",
+              items: [
+                'tutorials/rill_developer_advanced_features/advanced_measures/advanced_measures'
               ]
             },
 
             {
               type: 'category',
               label: 'Custom APIs',
+              description: "Create, Deploy and Test Custom APIs",
               items: [
-                'tutorials/rill_advanced_features/custom_api/getting-started',
-                'tutorials/rill_advanced_features/custom_api/create-api',
-                'tutorials/rill_advanced_features/custom_api/test-api',
+                'tutorials/rill_developer_advanced_features/custom_api/getting-started',
+                'tutorials/rill_developer_advanced_features/custom_api/create-api',
+                'tutorials/rill_developer_advanced_features/custom_api/test-api',
               ]
             },
           ]
