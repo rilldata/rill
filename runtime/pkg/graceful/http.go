@@ -55,7 +55,9 @@ func ServeHTTP(ctx context.Context, server *http.Server, options ServeOptions) e
 	case err := <-serveErrCh:
 		return err
 	case <-ctx.Done():
-		server.Shutdown(ctx)
+		if err := server.Close(); err != nil {
+			return err
+		}
 	}
 
 	// Wait for graceful shutdown
