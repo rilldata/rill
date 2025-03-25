@@ -2,10 +2,10 @@ package ratelimit
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"io"
 	"math"
-	"net"
+	"strings"
 
 	"github.com/go-redis/redis_rate/v10"
 	"github.com/redis/go-redis/v9"
@@ -81,15 +81,14 @@ func (n Noop) Ping(ctx context.Context) error {
 	return nil
 }
 
-var Default = redis_rate.PerMinute(180)
-
-var Sensitive = redis_rate.PerMinute(30)
-
-var Public = redis_rate.PerMinute(750)
-
-var Unlimited = redis_rate.PerSecond(math.MaxInt)
-
-var Zero = redis_rate.Limit{}
+// Common rate limit configurations
+var (
+	Default   = redis_rate.PerMinute(180)
+	Sensitive = redis_rate.PerMinute(30)
+	Public    = redis_rate.PerMinute(750)
+	Unlimited = redis_rate.PerSecond(math.MaxInt)
+	Zero      = redis_rate.Limit{}
+)
 
 type QuotaExceededError struct {
 	message string
@@ -111,16 +110,47 @@ func AnonLimitKey(methodName, peer string) string {
 	return fmt.Sprintf("anon:%s:%s", methodName, peer)
 }
 
-// isServerError checks if the error is a server connection error.
+// Common Redis error messages
+const (
+	errMaxClients  = "ERR max number of clients reached"
+	errLoading     = "LOADING "
+	errReadOnly    = "READONLY "
+	errMasterDown  = "MASTERDOWN "
+	errClusterDown = "CLUSTERDOWN "
+	errTryAgain    = "TRYAGAIN "
+)
+
+// If the error is a server connection error, we should not return an error. This is because the server may be temporarily unavailable, and we should not block the request. The client should retry the request.
 func isServerConnError(err error) bool {
-	var netErr net.Error
-	if errors.As(err, &netErr) {
-		return netErr.Timeout()
+	switch err {
+	case io.EOF:
+		return true
+	case io.ErrUnexpectedEOF:
+		return true
+	default:
+		return parseRedisError(err)
 	}
+}
 
-	if httpErr, ok := err.(interface{ StatusCode() int }); ok {
-		return httpErr.StatusCode() >= 500 && httpErr.StatusCode() < 600
+func parseRedisError(err error) bool {
+	s := err.Error()
+	if s == errMaxClients {
+		return true
 	}
-
+	if strings.HasPrefix(s, errLoading) {
+		return true
+	}
+	if strings.HasPrefix(s, errReadOnly) {
+		return true
+	}
+	if strings.HasPrefix(s, errMasterDown) {
+		return true
+	}
+	if strings.HasPrefix(s, errClusterDown) {
+		return true
+	}
+	if strings.HasPrefix(s, errTryAgain) {
+		return true
+	}
 	return false
 }
