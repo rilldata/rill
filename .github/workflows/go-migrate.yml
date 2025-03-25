@@ -2,10 +2,6 @@
 
 name: Validate Migrations
 on:
-  push:
-    branches:
-      - main
-      - release-*
   pull_request:
     paths:
       - ".github/workflows/go-migrate.yml"
@@ -66,4 +62,4 @@ jobs:
         RILL_ADMIN_DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
         RILL_ADMIN_RIVER_DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
       run: |
-        go run ./cli devtool migrate
+        go run ./cli admin migrate

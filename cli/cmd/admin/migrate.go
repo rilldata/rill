@@ -1,4 +1,4 @@
-package devtool
+package admin
 
 import (
 	"fmt"
@@ -7,7 +7,6 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/rilldata/rill/admin/database"
-	"github.com/rilldata/rill/cli/cmd/admin"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
@@ -24,7 +23,7 @@ func MigrateCmd(ch *cmdutil.Helper) *cobra.Command {
 			ctx := cmd.Context()
 
 			// Init config
-			var conf admin.Config
+			var conf Config
 			err := envconfig.Process("rill_admin", &conf)
 			if err != nil {
 				fmt.Printf("failed to load config: %s\n", err.Error())
