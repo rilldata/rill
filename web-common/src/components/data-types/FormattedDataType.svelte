@@ -29,7 +29,6 @@
   export let customStyle = "";
   export let truncate = false;
   export let color = "";
-  export let contentRect: DOMRect | undefined = undefined;
 
   let dataType;
   $: {
@@ -67,6 +66,5 @@ about unknown props.
     {value}
     {truncate}
     {color}
-    bind:contentRect
   />
 {/if}
