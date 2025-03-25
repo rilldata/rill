@@ -35,7 +35,7 @@ TableCells – the cell contents.
       comparison: { toggleComparisonDimension },
     },
     selectors: {
-      sorting: { sortMeasure },
+      sorting: { sortByMeasure },
       dimensionFilters: { isFilterExcludeMode },
       comparison: { isBeingCompared: isBeingComparedReadable },
     },
@@ -170,7 +170,7 @@ TableCells – the cell contents.
   async function handleColumnHeaderClick(event) {
     colScrollOffset = $columnVirtualizer.scrollOffset;
     const columnName = event.detail;
-    dimensionTable.handleMeasureColumnHeaderClick(columnName);
+    dimensionTable.handleDimensionMeasureColumnHeaderClick(columnName);
   }
 
   async function handleResizeDimensionColumn(event) {
@@ -219,7 +219,7 @@ TableCells – the cell contents.
         <ColumnHeaders
           virtualColumnItems={virtualColumns}
           noPin={true}
-          selectedColumn={$sortMeasure}
+          sortByMeasure={$sortByMeasure}
           columns={measureColumns}
           on:click-column={handleColumnHeaderClick}
         />

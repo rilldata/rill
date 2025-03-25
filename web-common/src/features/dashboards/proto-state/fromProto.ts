@@ -219,6 +219,9 @@ export function getDashboardStateFromProto(
   if (dashboard.leaderboardSortType) {
     entity.dashboardSortType = dashboard.leaderboardSortType;
   }
+  if (dashboard.leaderboardMeasureCount) {
+    entity.leaderboardMeasureCount = dashboard.leaderboardMeasureCount;
+  }
 
   if (dashboard.pivotIsActive !== undefined) {
     entity.pivot = fromPivotProto(dashboard, metricsView);

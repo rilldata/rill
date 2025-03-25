@@ -157,6 +157,20 @@ export function convertURLToExplorePreset(
     }
   }
 
+  if (searchParams.has(ExploreStateURLParams.LeaderboardMeasureCount)) {
+    const count = searchParams.get(
+      ExploreStateURLParams.LeaderboardMeasureCount,
+    );
+    const parsedCount = parseInt(count ?? "", 10);
+    if (!isNaN(parsedCount) && parsedCount > 0) {
+      preset.exploreLeaderboardMeasureCount = parsedCount;
+    } else {
+      errors.push(
+        getSingleFieldError("leaderboard measure count", count ?? ""),
+      );
+    }
+  }
+
   return { preset, errors };
 }
 
@@ -437,6 +451,20 @@ function fromExploreUrlParams(
       preset.exploreSortType = FromURLParamsSortTypeMap[sortType];
     } else {
       errors.push(getSingleFieldError("sort type", sortType));
+    }
+  }
+
+  if (searchParams.has(ExploreStateURLParams.LeaderboardMeasureCount)) {
+    const count = searchParams.get(
+      ExploreStateURLParams.LeaderboardMeasureCount,
+    );
+    const parsedCount = parseInt(count ?? "", 10);
+    if (!isNaN(parsedCount) && parsedCount > 0) {
+      preset.exploreLeaderboardMeasureCount = parsedCount;
+    } else {
+      errors.push(
+        getSingleFieldError("leaderboard measure count", count ?? ""),
+      );
     }
   }
 

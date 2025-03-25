@@ -37,7 +37,6 @@
     selectors: {
       sorting: { sortedByDimensionValue },
       dimensions: { getDimensionDisplayName },
-
       dimensionFilters: { isFilterExcludeMode },
       measures: { visibleMeasures },
     },
@@ -54,6 +53,7 @@
   const { adminServer, exports } = featureFlags;
 
   $: exploreHasTimeDimension = !!$timeRangeSummaryStore.data;
+
   $: excludeMode = $isFilterExcludeMode(dimensionName);
 
   $: filterKey = excludeMode ? "exclude" : "include";
@@ -136,7 +136,7 @@
     {#if isFetching}
       <DelayedSpinner isLoading={isFetching} size="16px" />
     {:else}
-      <Button type="link" forcedStyle="padding: 0; gap: 0px;">
+      <Button type="link" forcedStyle="padding: 0; gap: 4px;">
         <Back size="16px" />
         <span>All Dimensions</span>
       </Button>
