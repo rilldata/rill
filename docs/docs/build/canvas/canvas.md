@@ -50,8 +50,8 @@ While we encourage creating Canvas dashboards via the visual editing experience 
 ## Example Canvas Dashboards 
 Here are a few deployed examples of Canvas dashboards that you can check out!
 
-- **[E-commerce demo dashboard](https://ui.rilldata.in/demo/ezcommerce-demo/-/dashboards/canvas)**
-- **[Programmatic advertising demo dashboard](https://ui.rilldata.in/demo/rill-openrtb-prog-ads-canvas/-/dashboards/executive_overview)**
-- **[New York City demo dashboard](https://ui.rilldata.com/demo/nyc-canvas-jam/-/dashboards/scorecard%20canvas)**
-- **[NYC party demo dashboard 🎉](https://ui.rilldata.com/demo/nyc-canvas-jam/-/dashboards/Leaderboard)**
+- **[E-commerce demo dashboard](https://ui.rilldata.com/demo/ezcommerce-demo/-/canvas/canvas)**
+- **[Programmatic advertising demo dashboard](https://ui.rilldata.com/demo/rill-openrtb-prog-ads/-/canvas/executive_overview)**
+- **[New York City demo dashboard](https://ui.rilldata.com/demo/nyc-canvas-jam/-/canvas/scorecard%20canvas)**
+- **[NYC party demo dashboard 🎉](https://ui.rilldata.com/demo/nyc-canvas-jam/-/canvas/Leaderboard)**
 
