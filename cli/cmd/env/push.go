@@ -71,11 +71,15 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 			added := 0
 			changed := 0
+			changedVars := make(map[string]string)
+
 			for k, v := range parser.DotEnv {
 				if _, ok := vars[k]; !ok {
 					added++
+					changedVars[k] = v
 				} else if vars[k] != v {
 					changed++
+					changedVars[k] = v
 				}
 				vars[k] = v
 			}
@@ -90,13 +94,8 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 			message := fmt.Sprintf("Found %d new and %d changed variable(s) to push to project %q:\n", added, changed, projectName)
 			ch.Print(message)
 
-			// Add details about the changes
-			for k, v := range parser.DotEnv {
-				if _, ok := vars[k]; !ok {
-					ch.Printf("  + %s: will be added\n", k)
-				} else if vars[k] != v {
-					ch.Printf("  ~ %s: will be updated\n", k)
-				}
+			for k, v := range changedVars {
+				ch.Printf("  %s=%s\n", k, v)
 			}
 
 			ok, err := cmdutil.ConfirmPrompt("Do you want to continue?", "", true)
