@@ -45,8 +45,8 @@
       />
     {:else}
       <PivotTable
-        border={false}
-        rounded={false}
+        border={hasHeader}
+        rounded={hasHeader}
         {pivotDataStore}
         config={pivotConfig}
         {pivotState}

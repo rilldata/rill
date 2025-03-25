@@ -33,6 +33,7 @@
   import CanvasComparisonPill from "./CanvasComparisonPill.svelte";
 
   export let readOnly = false;
+  export let maxWidth: number;
 
   /** the height of a row of chips */
   const ROW_HEIGHT = "26px";
@@ -267,7 +268,10 @@
   onDestroy(destroy);
 </script>
 
-<div class="flex flex-col gap-y-2 size-full pointer-events-none">
+<div
+  class="flex flex-col gap-y-2 size-full pointer-events-none"
+  style:max-width="{maxWidth}px"
+>
   <div
     class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center ml-2 pointer-events-auto w-fit"
   >

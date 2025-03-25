@@ -254,8 +254,8 @@
 
 <div
   class:border
-  class:rounded-md={rounded}
-  class="table-wrapper relative min-h-full"
+  class:rounded-sm={rounded}
+  class="table-wrapper relative"
   style:--row-height="{ROW_HEIGHT}px"
   style:--header-height="{HEADER_HEIGHT}px"
   style:--total-header-height="{totalHeaderHeight + 1}px"
