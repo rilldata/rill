@@ -3,23 +3,28 @@
   import { page } from "$app/stores";
   import {
     createAdminServiceGetCurrentUser,
-    createAdminServiceListBookmarks,
     type V1Project,
   } from "@rilldata/web-admin/client";
-  import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
+  import { getHomeBookmarkExploreState } from "@rilldata/web-admin/features/bookmarks/selectors";
+  import DashboardBuilding from "@rilldata/web-admin/features/dashboards/DashboardBuilding.svelte";
+  import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
+  import CtaHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
+  import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
   import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
   import { getExploreStateFromLocalStorage } from "@rilldata/web-common/features/dashboards/url-state/explore-persisted-store";
   import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import {
     getExploreStates,
     useExploreValidSpec,
   } from "@rilldata/web-common/features/explores/selectors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { createQueryServiceMetricsViewSchema } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import DashboardURLStateSyncV2 from "@rilldata/web-common/features/dashboards/url-state/DashboardURLStateSyncV2.svelte";
+  import QueriesStatus from "@rilldata/web-common/runtime-client/QueriesStatus.svelte";
+  import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
 
   export let organization: string;
   export let project: V1Project;
@@ -66,34 +71,12 @@
     ));
 
   const userQuery = createAdminServiceGetCurrentUser();
-  $: bookmarksQuery = createAdminServiceListBookmarks(
-    {
-      projectId: project.id,
-      resourceKind: ResourceKind.Explore,
-      resourceName: exploreName,
-    },
-    {
-      query: {
-        enabled: Boolean($userQuery.data?.user),
-      },
-    },
-  );
-  $: homeBookmark = $bookmarksQuery.data?.bookmarks?.find((b) => b.default);
-  $: schemaQuery = createQueryServiceMetricsViewSchema(
+  $: exploreStateFromHomeBookmarkQuery = getHomeBookmarkExploreState(
+    project.id,
     instanceId,
     metricsViewName,
-    undefined,
-    {
-      query: {
-        enabled: Boolean(homeBookmark),
-      },
-    },
-  );
-  $: exploreStateFromHomeBookmark = getDashboardStateFromUrl(
-    homeBookmark?.data ?? "",
-    metricsViewSpec,
-    exploreSpec,
-    $schemaQuery.data?.schema ?? {},
+    exploreName,
+    Boolean($userQuery.data?.user),
   );
 
   $: exploreStateFromLocalStorage = getExploreStateFromLocalStorage(
@@ -118,7 +101,7 @@
     ...(exploreStateFromSessionStorage ??
       partialExploreStateFromUrl ??
       exploreStateFromLocalStorage ??
-      exploreStateFromHomeBookmark ??
+      $exploreStateFromHomeBookmarkQuery.data ??
       exploreStateFromYAMLConfig),
   };
 
@@ -137,26 +120,60 @@
     }, 100);
   }
 
-  beforeNavigate(({ from, to }) => {
-    console.log("beforeNavigate", from?.url?.toString(), to?.url?.toString());
-  });
+  $: queries = [
+    {
+      query: $exploreSpecQuery,
+      label: "Explore",
+    },
+    {
+      query: $fullTimeRangeQuery,
+      label: "Time Range",
+    },
+    {
+      query: $exploreStateFromHomeBookmarkQuery,
+      label: "Bookmark",
+    },
+  ];
 
-  afterNavigate(({ from, to, type }) => {
-    console.log(
-      "afterNavigate",
-      type,
-      from?.url?.toString(),
-      to?.url?.toString(),
-    );
-  });
+  // beforeNavigate(({ from, to }) => {
+  //   console.log("beforeNavigate", from?.url?.toString(), to?.url?.toString());
+  // });
+  //
+  // afterNavigate(({ from, to, type }) => {
+  //   console.log(
+  //     "afterNavigate",
+  //     type,
+  //     from?.url?.toString(),
+  //     to?.url?.toString(),
+  //   );
+  // });
 </script>
 
-<DashboardURLStateSyncV2
-  {exploreName}
-  extraKeyPrefix={prefix}
-  {defaultExplorePreset}
-  {initExploreState}
-  {partialExploreState}
->
-  <slot />
-</DashboardURLStateSyncV2>
+<QueriesStatus {queries} longLoadThreshold={2000}>
+  <svelte:fragment slot="loading" let:loadingForLong>
+    <CtaLayoutContainer>
+      <CtaContentContainer>
+        <div class="h-36">
+          <Spinner status={EntityStatus.Running} size="7rem" duration={725} />
+        </div>
+        {#if loadingForLong}
+          <CtaHeader variant="bold">
+            Hang tight! We're building your dashboard...
+          </CtaHeader>
+        {/if}
+      </CtaContentContainer>
+    </CtaLayoutContainer>
+  </svelte:fragment>
+  <svelte:fragment slot="errors" let:errors>
+    {errors[0].label}:{errors[0].error}
+  </svelte:fragment>
+  <DashboardURLStateSyncV2
+    {exploreName}
+    extraKeyPrefix={prefix}
+    {defaultExplorePreset}
+    {initExploreState}
+    {partialExploreState}
+  >
+    <slot />
+  </DashboardURLStateSyncV2>
+</QueriesStatus>

@@ -1,9 +1,11 @@
 import { page } from "$app/stores";
 import {
   adminServiceListBookmarks,
+  createAdminServiceListBookmarks,
   getAdminServiceListBookmarksQueryKey,
   type V1Bookmark,
 } from "@rilldata/web-admin/client";
+import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
 import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
@@ -19,6 +21,7 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
+  createQueryServiceMetricsViewSchema,
   type V1ExplorePreset,
   type V1ExploreSpec,
   type V1MetricsViewSpec,
@@ -93,6 +96,82 @@ export function categorizeBookmarks(
   });
 
   return bookmarks;
+}
+
+export function getHomeBookmarkExploreState(
+  projectId: string,
+  instanceId: string,
+  metricsViewName: string,
+  exploreName: string,
+  enabled: boolean,
+): CompoundQueryResult<Partial<MetricsExplorerEntity>> {
+  // TODO: adapt getCompoundQuery for this use-case
+  return derived(
+    [
+      useExploreValidSpec(instanceId, exploreName),
+      createAdminServiceListBookmarks(
+        {
+          projectId: projectId,
+          resourceKind: ResourceKind.Explore,
+          resourceName: exploreName,
+        },
+        {
+          query: {
+            enabled,
+          },
+        },
+      ),
+      createQueryServiceMetricsViewSchema(instanceId, metricsViewName),
+    ],
+    ([exploreSpecQuery, bookmarksQuery, schemaQuery]) => {
+      const isLoading =
+        exploreSpecQuery.isLoading ||
+        bookmarksQuery.isLoading ||
+        schemaQuery.isLoading;
+      const isFetching =
+        exploreSpecQuery.isFetching ||
+        bookmarksQuery.isFetching ||
+        schemaQuery.isFetching;
+      const error =
+        exploreSpecQuery.error ?? bookmarksQuery.error ?? schemaQuery.error;
+      if (isLoading || isFetching || error) {
+        return {
+          isLoading,
+          isFetching,
+          error,
+          data: undefined,
+        };
+      }
+
+      const homeBookmark = bookmarksQuery.data?.bookmarks?.find(
+        (b) => b.default,
+      );
+      if (!homeBookmark) {
+        return {
+          isLoading: false,
+          isFetching: false,
+          error: undefined,
+          data: undefined,
+        };
+      }
+
+      const exploreSpec = exploreSpecQuery.data?.explore ?? {};
+      const metricsViewSpec = exploreSpecQuery.data?.metricsView ?? {};
+
+      const exploreStateFromHomeBookmark = getDashboardStateFromUrl(
+        homeBookmark?.data ?? "",
+        metricsViewSpec,
+        exploreSpec,
+        schemaQuery.data?.schema ?? {},
+      );
+      return {
+        isLoading: false,
+        isFetching: false,
+        error: undefined,
+        data: exploreStateFromHomeBookmark,
+      };
+    },
+  );
 }
 
 export function searchBookmarks(
