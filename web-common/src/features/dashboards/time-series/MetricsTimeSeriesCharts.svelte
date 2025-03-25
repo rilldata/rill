@@ -48,7 +48,7 @@
   } from "./utils";
   import DashboardDraggableList from "@rilldata/web-common/components/menu/DashboardDraggableList.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import DashboardVisibilityDropdown from "@rilldata/web-common/components/menu/shadcn/DashboardVisibilityDropdown.svelte";
+  import DashboardVisibilityDropdown from "@rilldata/web-common/components/menu/DashboardVisibilityDropdown.svelte";
 
   export let exploreName: string;
   export let workspaceWidth: number;
