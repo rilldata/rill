@@ -54,7 +54,7 @@ class FeatureFlags {
     const updateFlags = debounce((userFlags: V1InstanceFeatureFlags) => {
       for (const key in userFlags) {
         const flag = this[key] as FeatureFlag | undefined;
-        if (!flag || flag.internalOnly) return;
+        if (!flag || flag.internalOnly) continue;
         flag.set(userFlags[key]);
       }
     }, 400);
