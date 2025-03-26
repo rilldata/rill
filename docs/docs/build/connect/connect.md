@@ -62,7 +62,7 @@ Rill will ingest the data next time you run `rill start`.
 Note that if you provide a relative path, _the path should be relative to your Rill project root_ (where your `rill.yaml` file is located), **not** relative to the `sources` directory.
 
 :::tip Import from multiple files
-To import data from multiple files, you can use a glob pattern to specify the files you want to include. To learn more about the syntax and details of glob patterns, please refer to the documentation on [glob patterns](../connect/glob-patterns.md).
+To import data from multiple files, you can use a glob pattern to specify the files you want to include. To learn more about the syntax and details of glob patterns, please refer to the duckdb documentation on [reading multiple files](https://duckdb.org/docs/stable/data/multiple_files/overview.html).
 :::
 
 :::note Source Properties
@@ -114,7 +114,7 @@ You can also push filters to your source definition using inline editing. Common
 - Resolve ingestion issues by declaring types (examples: STRUCT with different values to VARCHAR, fields mixed with INT and VARCHAR values)
 
 :::tip Import from multiple files
-To import data from multiple files, you can use a glob pattern to specify the files you want to include. To learn more about the syntax and details of glob patterns, please refer to the documentation on [glob patterns](glob-patterns.md).
+To import data from multiple files, you can use a glob pattern to specify the files you want to include. To learn more about the syntax and details of glob patterns, please refer to the duckdb documentation on [reading multiple files](https://duckdb.org/docs/stable/data/multiple_files/overview.html).
 :::
 
 :::note Source Properties
