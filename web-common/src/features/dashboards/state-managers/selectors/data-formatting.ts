@@ -2,6 +2,7 @@ import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-for
 import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
 import { activeMeasure } from "./active-measure";
 import type { DashboardDataSources } from "./types";
+import { visibleMeasures } from "./measures";
 
 export const formattingSelectors = {
   /**
@@ -12,16 +13,15 @@ export const formattingSelectors = {
     FormatPreset.HUMANIZE,
 
   /**
-   * A readable containing a function that formats values
-   * according to the active measure's format specification,
-   * whether it's a d3 format string or a format preset.
+   * A map of measure names to their formatters
    */
-  activeMeasureFormatter: (args: DashboardDataSources) => {
-    const measure = activeMeasure(args);
-    if (measure === undefined) {
-      return (_value: number | undefined) => undefined;
-    }
-
-    return createMeasureValueFormatter(measure);
+  measureFormatters: (args: DashboardDataSources) => {
+    const measures = visibleMeasures(args);
+    return Object.fromEntries(
+      measures.map((measure) => [
+        measure.name,
+        createMeasureValueFormatter(measure),
+      ]),
+    );
   },
 };

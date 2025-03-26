@@ -25,7 +25,7 @@
   const {
     selectors: {
       activeMeasure: { isValidPercentOfTotal, isSummableMeasure },
-      numberFormat: { activeMeasureFormatter },
+      numberFormat: { measureFormatters },
       dimensionFilters: { isFilterExcludeMode },
       dimensions: { visibleDimensions },
       comparison: { isBeingCompared: isBeingComparedReadable },
@@ -117,7 +117,7 @@
                 timeRange.end,
               )}
               isBeingCompared={$isBeingComparedReadable(dimension.name)}
-              formatter={$activeMeasureFormatter}
+              formatters={$measureFormatters}
               {setPrimaryDimension}
               {toggleSort}
               {toggleDimensionValueSelection}
