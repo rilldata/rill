@@ -21,97 +21,97 @@ export default defineConfig({
           QueryService_MetricsViewMeta: {
             query: {
               useQuery: true,
-              signal: true,
+              useMutation: false,
             },
           },
           QueryService_ColumnRollupInterval: {
             query: {
               useQuery: true,
-              signal: true,
+              useMutation: false,
             },
           },
           QueryService_ColumnTopK: {
             query: {
               useQuery: true,
-              signal: true,
+              useMutation: false,
             },
           },
           QueryService_ColumnTimeSeries: {
             query: {
               useQuery: true,
-              signal: true,
+              useMutation: false,
             },
           },
           QueryService_TableColumns: {
             query: {
               useQuery: true,
-              signal: true,
+              useMutation: false,
             },
           },
           QueryService_MetricsViewAggregation: {
             query: {
               useQuery: true,
-              signal: true,
+              useMutation: false,
             },
           },
           QueryService_MetricsViewTotals: {
             query: {
               useQuery: true,
-              signal: true,
+              useMutation: false,
             },
           },
           QueryService_MetricsViewTimeSeries: {
             query: {
               useQuery: true,
-              signal: true,
+              useMutation: false,
             },
           },
           QueryService_MetricsViewToplist: {
             query: {
               useQuery: true,
-              signal: true,
+              useMutation: false,
             },
           },
           QueryService_MetricsViewComparison: {
             query: {
               useQuery: true,
-              signal: true,
+              useMutation: false,
             },
           },
           QueryService_MetricsViewRows: {
             query: {
               useQuery: true,
-              signal: true,
+              useMutation: false,
             },
           },
           QueryService_MetricsViewTimeRange: {
             query: {
               useQuery: true,
-              signal: true,
+              useMutation: false,
             },
           },
           QueryService_MetricsViewSearch: {
             query: {
               useQuery: true,
-              signal: true,
+              useMutation: false,
             },
           },
           QueryService_ResolveComponent: {
             query: {
               useQuery: true,
-              signal: true,
+              useMutation: false,
             },
           },
           QueryService_ResolveCanvas: {
             query: {
               useQuery: true,
-              signal: true,
+              useMutation: false,
             },
           },
           RuntimeService_IssueDevJWT: {
             query: {
               useQuery: true,
-              signal: true,
+              useMutation: false,
             },
           },
         },

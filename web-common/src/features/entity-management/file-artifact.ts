@@ -128,7 +128,7 @@ export class FileArtifact {
     };
     const queryKey = getRuntimeServiceGetFileQueryKey(instanceId, queryParams);
 
-    if (invalidate) await queryClient.invalidateQueries(queryKey);
+    if (invalidate) await queryClient.invalidateQueries({ queryKey });
 
     const queryFn: QueryFunction<
       Awaited<ReturnType<typeof runtimeServiceGetFile>>
@@ -306,9 +306,8 @@ export class FileArtifact {
         instanceId,
         name?.name as string,
         name?.kind as ResourceKind,
-        {
-          queryClient,
-        },
+        undefined,
+        queryClient,
       ).subscribe(set),
     ) as ReturnType<typeof useResource<V1Resource>>;
   };

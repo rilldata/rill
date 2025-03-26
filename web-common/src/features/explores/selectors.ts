@@ -1,4 +1,8 @@
-import type { CreateQueryOptions, QueryFunction } from "@rilldata/svelte-query";
+import type {
+  CreateQueryOptions,
+  QueryFunction,
+  QueryClient,
+} from "@tanstack/svelte-query";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
@@ -53,29 +57,24 @@ export function useExploreValidSpec(
     ErrorType<RpcStatus>,
     ExploreValidSpecResponse
   >,
+  queryClient?: QueryClient,
 ) {
-  const defaultQueryOptions: CreateQueryOptions<
-    V1GetExploreResponse,
-    ErrorType<RpcStatus>,
-    ExploreValidSpecResponse
-  > = {
-    select: (data) =>
-      <ExploreValidSpecResponse>{
-        explore: data.explore?.explore?.state?.validSpec,
-        metricsView: data.metricsView?.metricsView?.state?.validSpec,
-      },
-    queryClient,
-    enabled: !!exploreName,
-  };
   return createRuntimeServiceGetExplore(
     instanceId,
     { name: exploreName },
     {
       query: {
-        ...defaultQueryOptions,
+        select: (data) =>
+          <ExploreValidSpecResponse>{
+            explore: data.explore?.explore?.state?.validSpec,
+            metricsView: data.metricsView?.metricsView?.state?.validSpec,
+          },
+
+        enabled: !!exploreName,
         ...queryOptions,
       },
     },
+    queryClient,
   );
 }
 
@@ -123,7 +122,7 @@ export async function fetchExploreSpec(
         {},
       ),
       staleTime: Infinity,
-      cacheTime: Infinity,
+      gcTime: Infinity,
     });
   }
 

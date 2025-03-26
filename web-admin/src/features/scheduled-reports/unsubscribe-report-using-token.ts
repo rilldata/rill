@@ -10,7 +10,7 @@ import {
   createMutation,
   type CreateMutationOptions,
   type MutationFunction,
-} from "@rilldata/svelte-query";
+} from "@tanstack/svelte-query";
 import {
   type AdminServiceUnsubscribeReportBody,
   type RpcStatus,

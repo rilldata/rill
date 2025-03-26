@@ -72,7 +72,7 @@ export function createChartDataQuery(
 
       const queryOptions = {
         enabled: !!timeRange?.start && !!timeRange?.end,
-        queryClient: ctx.queryClient,
+
         keepPreviousData: true,
       };
 
@@ -96,6 +96,7 @@ export function createChartDataQuery(
           {
             query: queryOptions,
           },
+          ctx.queryClient,
         );
       }
 

@@ -39,7 +39,7 @@ export function mapQueryToDashboard(
     return readable({
       isFetching: false,
       isLoading: false,
-      error: "Required parameters are missing.",
+      error: new Error("Required parameters are missing."),
     });
 
   let metricsViewName: string = "";
@@ -75,8 +75,9 @@ export function mapQueryToDashboard(
     return readable({
       isFetching: false,
       isLoading: false,
-      error:
+      error: new Error(
         "Failed to find metrics view name. Please check the format of the report.",
+      ),
     });
   }
   // backwards compatibility for older alerts created on metrics explore directly
@@ -99,7 +100,7 @@ export function mapQueryToDashboard(
         set({
           isFetching: true,
           isLoading: true,
-          error: "",
+          error: new Error(""),
         });
         return;
       }
@@ -108,9 +109,10 @@ export function mapQueryToDashboard(
         set({
           isFetching: false,
           isLoading: false,
-          error:
+          error: new Error(
             validSpecResp.error?.response?.data?.message ??
-            timeRangeSummary.error?.response?.data?.message,
+              timeRangeSummary.error?.response?.data?.message,
+          ),
         });
         return;
       }
@@ -124,7 +126,7 @@ export function mapQueryToDashboard(
         set({
           isFetching: false,
           isLoading: false,
-          error: "Failed to fetch explore.",
+          error: new Error("Failed to fetch explore."),
         });
         return;
       }
@@ -134,7 +136,7 @@ export function mapQueryToDashboard(
         set({
           isFetching: false,
           isLoading: false,
-          error: "Failed to fetch time range summary.",
+          error: new Error("Failed to fetch time range summary."),
         });
         return;
       }
@@ -170,7 +172,7 @@ export function mapQueryToDashboard(
           set({
             isFetching: false,
             isLoading: false,
-            error: "",
+            error: new Error(),
             data: {
               exploreState: newExploreState,
               exploreName,

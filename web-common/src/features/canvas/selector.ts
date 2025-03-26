@@ -1,7 +1,7 @@
 import type {
   CreateQueryOptions,
   CreateQueryResult,
-} from "@rilldata/svelte-query";
+} from "@tanstack/svelte-query";
 import {
   ResourceKind,
   useFilteredResources,

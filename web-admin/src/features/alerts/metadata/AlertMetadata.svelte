@@ -73,9 +73,9 @@
       project,
       name: $alertQuery.data.resource.meta.name.name,
     });
-    await queryClient.invalidateQueries(
-      getRuntimeServiceListResourcesQueryKey(instanceId),
-    );
+    await queryClient.invalidateQueries({
+      queryKey: getRuntimeServiceListResourcesQueryKey(instanceId),
+    });
     // goto only after invalidate is complete
     goto(`/${organization}/${project}/-/alerts`);
   }

@@ -38,11 +38,15 @@
         },
       });
 
-      await queryClient.invalidateQueries(
-        getAdminServiceGetProjectVariablesQueryKey(organization, project, {
-          forAllEnvironments: true,
-        }),
-      );
+      await queryClient.invalidateQueries({
+        queryKey: getAdminServiceGetProjectVariablesQueryKey(
+          organization,
+          project,
+          {
+            forAllEnvironments: true,
+          },
+        ),
+      });
 
       eventBus.emit("notification", {
         message: "Environment variable deleted",

@@ -17,7 +17,10 @@ import {
   createQueryServiceMetricsViewTimeSeries,
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
-import type { CreateQueryResult } from "@tanstack/svelte-query";
+import {
+  keepPreviousData,
+  type CreateQueryResult,
+} from "@tanstack/svelte-query";
 import { type Readable, type Writable, derived, writable } from "svelte/store";
 import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
 import {
@@ -91,10 +94,11 @@ export function createMetricsViewTimeSeries(
               !!ctx.dashboardStore &&
               // in case of comparison, we need to wait for the comparison start time to be available
               (!isComparison || !!timeControls.comparisonAdjustedStart),
-            queryClient: ctx.queryClient,
-            keepPreviousData: true,
+
+            placeholderData: keepPreviousData,
           },
         },
+        ctx.queryClient,
       ).subscribe(set),
   );
 }

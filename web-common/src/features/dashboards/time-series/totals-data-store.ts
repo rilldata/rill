@@ -52,9 +52,9 @@ export function createTotalsForMeasure(
         {
           query: {
             enabled: !!timeControls.ready && !!ctx.dashboardStore,
-            queryClient: ctx.queryClient,
           },
         },
+        ctx.queryClient,
       ).subscribe(set),
   );
 }
@@ -97,9 +97,9 @@ export function createUnfilteredTotalsForMeasure(
         {
           query: {
             enabled: !!timeControls.ready && !!ctx.dashboardStore,
-            queryClient: ctx.queryClient,
           },
         },
+        ctx.queryClient,
       ).subscribe(set);
     },
   );

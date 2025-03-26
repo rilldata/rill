@@ -8,7 +8,6 @@ import {
   useFilteredResources,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   type RpcStatus,
   type V1Expression,
@@ -24,6 +23,7 @@ import {
 import type {
   CreateQueryOptions,
   CreateQueryResult,
+  QueryClient,
 } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 import type { ErrorType } from "../../runtime-client/http-client";
@@ -89,7 +89,7 @@ export const useMetricsViewValidSpec = <T = V1MetricsViewSpec>(
   return useResource<T>(instanceId, metricsViewName, ResourceKind.MetricsView, {
     select: (data) =>
       selector
-        ? selector(data.resource?.metricsView?.state?.validSpec)
+        ? selector(data.resource?.metricsView?.state?.validSpec ?? {})
         : (data.resource?.metricsView?.state?.validSpec as T),
   });
 };
@@ -111,8 +111,11 @@ export function useMetricsViewTimeRange(
   options?: {
     query?: CreateQueryOptions<V1MetricsViewTimeRangeResponse>;
   },
+  queryClient?: QueryClient,
 ): CreateQueryResult<V1MetricsViewTimeRangeResponse> {
   const { query: queryOptions } = options ?? {};
+
+  console.log({ queryClient });
 
   return derived(
     [useMetricsViewValidSpec(instanceId, metricsViewName)],
@@ -125,9 +128,9 @@ export function useMetricsViewTimeRange(
           query: {
             ...queryOptions,
             enabled: !!metricsView.data?.timeDimension && queryOptions?.enabled,
-            queryClient,
           },
         },
+        queryClient,
       ).subscribe(set),
   );
 }

@@ -7,6 +7,7 @@
   import DashboardURLStateSync from "@rilldata/web-common/features/dashboards/url-state/DashboardURLStateSync.svelte";
   import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
   import { getExploreStates } from "@rilldata/web-common/features/explores/selectors";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type { V1ExplorePreset } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
@@ -29,6 +30,8 @@
   $: metricsViewTimeRange = useMetricsViewTimeRange(
     instanceId,
     $metricsViewName,
+    undefined,
+    queryClient,
   );
   $: defaultExplorePreset = getDefaultExplorePreset(
     exploreSpec,
