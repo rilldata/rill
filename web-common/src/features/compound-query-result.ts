@@ -15,7 +15,9 @@ export type CompoundQueryResult<T> = Readable<
 >;
 
 type CreateQueryResponses<Q> = {
-  [K in keyof Q]: Q[K] extends CreateQueryResult<infer U> ? U : never;
+  [K in keyof Q]: Q[K] extends CreateQueryResult<infer U>
+    ? U | undefined
+    : never;
 };
 
 type QueryResults =

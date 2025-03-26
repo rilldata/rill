@@ -1,4 +1,4 @@
-import { getExploreStates } from "@rilldata/web-common/features/explores/selectors";
+import { getExploreStatesFromURLParams } from "@rilldata/web-common/features/explores/selectors";
 
 export const load = async ({ url, parent }) => {
   const { explore, metricsView, defaultExplorePreset } = await parent();
@@ -9,7 +9,7 @@ export const load = async ({ url, parent }) => {
 
   return {
     exploreName,
-    ...getExploreStates(
+    ...getExploreStatesFromURLParams(
       exploreName,
       undefined,
       url.searchParams,

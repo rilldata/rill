@@ -107,44 +107,9 @@ export async function fetchExploreSpec(
     throw error(404, "Metrics view not found");
   }
 
-  const metricsViewSpec =
-    metricsViewResource.metricsView.state?.validSpec ?? {};
-  const exploreSpec = exploreResource.explore.state?.validSpec ?? {};
-
-  let fullTimeRange: V1MetricsViewTimeRangeResponse | undefined = undefined;
-  const metricsViewName = exploreSpec.metricsView;
-  if (metricsViewSpec.timeDimension && metricsViewName) {
-    fullTimeRange = await queryClient.fetchQuery({
-      queryFn: () =>
-        queryServiceMetricsViewTimeRange(instanceId, metricsViewName, {}),
-      queryKey: getQueryServiceMetricsViewTimeRangeQueryKey(
-        instanceId,
-        metricsViewName,
-        {},
-      ),
-      staleTime: Infinity,
-      cacheTime: Infinity,
-    });
-  }
-
-  const defaultExplorePreset = getDefaultExplorePreset(
-    exploreSpec,
-    metricsViewSpec,
-    fullTimeRange,
-  );
-  const { partialExploreState: exploreStateFromYAMLConfig, errors } =
-    convertPresetToExploreState(
-      metricsViewSpec,
-      exploreSpec,
-      defaultExplorePreset,
-    );
-
   return {
     explore: exploreResource,
     metricsView: metricsViewResource,
-    defaultExplorePreset,
-    exploreStateFromYAMLConfig,
-    errors,
   };
 }
 
@@ -162,7 +127,7 @@ export async function fetchMetricsViewSchema(
   return schemaResp.schema ?? {};
 }
 
-export function getExploreStates(
+export function getExploreStatesFromURLParams(
   exploreName: string,
   prefix: string | undefined,
   searchParams: URLSearchParams,

@@ -21,6 +21,7 @@ import {
   createQueryServiceMetricsViewTimeRange,
   createRuntimeServiceListResources,
 } from "@rilldata/web-common/runtime-client";
+import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type {
   CreateQueryOptions,
   CreateQueryResult,
@@ -89,7 +90,7 @@ export const useMetricsViewValidSpec = <T = V1MetricsViewSpec>(
   return useResource<T>(instanceId, metricsViewName, ResourceKind.MetricsView, {
     select: (data) =>
       selector
-        ? selector(data.resource?.metricsView?.state?.validSpec)
+        ? selector(data.resource?.metricsView?.state?.validSpec ?? {})
         : (data.resource?.metricsView?.state?.validSpec as T),
   });
 };
@@ -109,9 +110,9 @@ export function useMetricsViewTimeRange(
   instanceId: string,
   metricsViewName: string,
   options?: {
-    query?: CreateQueryOptions<V1MetricsViewTimeRangeResponse>;
+    query?: CreateQueryOptions<V1MetricsViewTimeRangeResponse, HTTPError>;
   },
-): CreateQueryResult<V1MetricsViewTimeRangeResponse> {
+): CreateQueryResult<V1MetricsViewTimeRangeResponse, HTTPError> {
   const { query: queryOptions } = options ?? {};
 
   return derived(
