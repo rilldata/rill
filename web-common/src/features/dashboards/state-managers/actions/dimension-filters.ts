@@ -1,13 +1,20 @@
+import { page } from "$app/stores";
 import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import {
   createInExpression,
+  createLikeExpression,
   getValueIndexInExpression,
   getValuesInExpression,
   negateExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type { V1Expression } from "@rilldata/web-common/runtime-client";
+import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+import {
+  type V1Expression,
+  V1Operation,
+} from "@rilldata/web-common/runtime-client";
 import { getWhereFilterExpressionIndex } from "../selectors/dimension-filters";
 import type { DashboardMutables } from "./types";
+import { get } from "svelte/store";
 
 export function toggleDimensionValueSelection(
   { dashboard }: DashboardMutables,
@@ -23,11 +30,11 @@ export function toggleDimensionValueSelection(
     dashboard.temporaryFilterName = null;
   }
 
-  const isInclude = !dashboard.dimensionFilterExcludeMode.get(dimensionName);
+  const isExclude = !!dashboard.dimensionFilterExcludeMode.get(dimensionName);
   const exprIdx = getWhereFilterExpressionIndex({ dashboard })(dimensionName);
   if (exprIdx === undefined || exprIdx === -1) {
     dashboard.whereFilter.cond?.exprs?.push(
-      createInExpression(dimensionName, [dimensionValue], !isInclude),
+      createInExpression(dimensionName, [dimensionValue], isExclude),
     );
     return;
   }
@@ -35,6 +42,39 @@ export function toggleDimensionValueSelection(
   const expr = dashboard.whereFilter.cond?.exprs?.[exprIdx];
   if (!expr?.cond?.exprs) {
     // should never happen since getWhereFilterExpressionIndex runs a find
+    return;
+  }
+
+  const wasInListFilter =
+    dashboard.dimensionsWithInlistFilter.includes(dimensionName);
+  const wasLikeFilter =
+    expr.cond?.op === V1Operation.OPERATION_LIKE ||
+    expr.cond?.op === V1Operation.OPERATION_NLIKE;
+  if (wasInListFilter || wasLikeFilter) {
+    eventBus.emit("notification", {
+      message: "Converted filter type to Select",
+      link: {
+        text: "Undo",
+        href: get(page).url.href,
+      },
+    });
+  }
+
+  dashboard.dimensionsWithInlistFilter =
+    dashboard.dimensionsWithInlistFilter.filter((d) => d !== dimensionName);
+  if (wasLikeFilter) {
+    eventBus.emit("notification", {
+      message: "Converted filter type to Select",
+      link: {
+        text: "Undo",
+        href: get(page).url.href,
+      },
+    });
+    dashboard.whereFilter.cond!.exprs![exprIdx] = createInExpression(
+      dimensionName,
+      [dimensionValue],
+      isExclude,
+    );
     return;
   }
 
@@ -60,6 +100,55 @@ export function toggleDimensionValueSelection(
         dashboard.temporaryFilterName = dimensionName;
       }
     }
+  }
+}
+
+export function applyDimensionInListMode(
+  { dashboard }: DashboardMutables,
+  dimensionName: string,
+  values: string[],
+) {
+  if (dashboard.temporaryFilterName !== null) {
+    dashboard.temporaryFilterName = null;
+  }
+
+  if (!dashboard.whereFilter.cond?.exprs) return;
+
+  const isExclude = !!dashboard.dimensionFilterExcludeMode.get(dimensionName);
+  const expr = createInExpression(dimensionName, values, isExclude);
+  if (!dashboard.dimensionsWithInlistFilter.includes(dimensionName)) {
+    dashboard.dimensionsWithInlistFilter.push(dimensionName);
+  }
+  const exprIdx = getWhereFilterExpressionIndex({ dashboard })(dimensionName);
+  if (exprIdx === undefined || exprIdx === -1) {
+    dashboard.whereFilter.cond.exprs.push(expr);
+  } else {
+    dashboard.whereFilter.cond.exprs[exprIdx] = expr;
+  }
+}
+
+export function applyDimensionContainsMode(
+  { dashboard }: DashboardMutables,
+  dimensionName: string,
+  searchText: string,
+) {
+  if (dashboard.temporaryFilterName !== null) {
+    dashboard.temporaryFilterName = null;
+  }
+
+  if (!dashboard.whereFilter.cond?.exprs) return;
+
+  const isExclude = !!dashboard.dimensionFilterExcludeMode.get(dimensionName);
+  const expr = createLikeExpression(
+    dimensionName,
+    `%${searchText}%`,
+    isExclude,
+  );
+  const exprIdx = getWhereFilterExpressionIndex({ dashboard })(dimensionName);
+  if (exprIdx === undefined || exprIdx === -1) {
+    dashboard.whereFilter.cond.exprs.push(expr);
+  } else {
+    dashboard.whereFilter.cond.exprs[exprIdx] = expr;
   }
 }
 
@@ -104,11 +193,11 @@ export function selectItemsInFilter(
   dimensionName: string,
   values: (string | null)[],
 ) {
-  const isInclude = !dashboard.dimensionFilterExcludeMode.get(dimensionName);
+  const isExclude = !!dashboard.dimensionFilterExcludeMode.get(dimensionName);
   const exprIdx = getWhereFilterExpressionIndex({ dashboard })(dimensionName);
   if (exprIdx === undefined || exprIdx === -1) {
     dashboard.whereFilter.cond?.exprs?.push(
-      createInExpression(dimensionName, values, !isInclude),
+      createInExpression(dimensionName, values, isExclude),
     );
     return;
   }
@@ -177,6 +266,8 @@ export const dimensionFilterActions = {
    * the include/exclude mode is a toggle for the entire dimension.
    */
   toggleDimensionValueSelection,
+  applyDimensionInListMode,
+  applyDimensionContainsMode,
   toggleDimensionFilterMode,
   removeDimensionFilter,
   selectItemsInFilter,

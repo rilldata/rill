@@ -95,7 +95,7 @@ func TestResolve(t *testing.T) {
 			"domain": "rilldata.com",
 			"groups": []string{"admin", "user"},
 		},
-	})
+	}, false)
 	require.NoError(t, err)
 	require.Equal(t, "SELECT partner_id FROM domain_partner_mapping WHERE domain = 'rilldata.com' AND groups IN ('admin', 'user') OR true", resolved)
 }
@@ -107,7 +107,7 @@ func TestVariables(t *testing.T) {
 			"a":   "1",
 			"b.a": "2",
 		},
-	})
+	}, false)
 	require.NoError(t, err)
 	require.Equal(t, "a=1 b.a=2 b.a=2", resolved)
 }

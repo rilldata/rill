@@ -1,8 +1,5 @@
 import {
-  clickMenuButton,
   deleteFile,
-  goToFile,
-  openFileNavEntryContextMenu,
   renameFileUsingMenu,
   updateCodeEditor,
   waitForProfiling,
@@ -68,33 +65,5 @@ test.describe("models", () => {
     await deleteFile(page, "/models/AdBids_rename_delete_new.sql");
     await fileNotPresent(page, "/models/AdBids_rename_delete_new.sql");
     await fileNotPresent(page, "/models/AdBids_rename_delete.sql");
-  });
-
-  test("Create model from source", async ({ page }) => {
-    await createSource(page, "AdBids.csv", "/sources/AdBids.yaml");
-
-    await Promise.all([
-      waitForProfiling(page, "AdBids_model", [
-        "publisher",
-        "domain",
-        "timestamp",
-      ]),
-      openFileNavEntryContextMenu(page, "/sources/AdBids.yaml"),
-      clickMenuButton(page, "Create New Model"),
-    ]);
-    await waitForFileNavEntry(page, "/models/AdBids_model.sql", true);
-
-    // navigate to another source
-    await createSource(
-      page,
-      "AdImpressions.tsv",
-      "/sources/AdImpressions.yaml",
-    );
-    // delete the source of model
-    await deleteFile(page, "/sources/AdBids.yaml");
-    // go to model
-    await goToFile(page, "/models/AdBids_model.sql");
-    // make sure error has propagated
-    await wrapRetryAssertion(() => modelHasError(page, true, "Catalog Error"));
   });
 });

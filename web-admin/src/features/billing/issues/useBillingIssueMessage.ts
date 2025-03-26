@@ -36,12 +36,13 @@ export function useBillingIssueMessage(
     ],
     ([orgResp, categorisedIssuesResp, allProjectsHibernatingResp]) => {
       if (
-        orgResp.isFetching ||
-        categorisedIssuesResp.isFetching ||
-        allProjectsHibernatingResp.isFetching
+        orgResp.isLoading ||
+        categorisedIssuesResp.isLoading ||
+        allProjectsHibernatingResp.isLoading
       ) {
         return {
           isFetching: true,
+          isLoading: true,
           error: undefined,
         };
       }
@@ -52,6 +53,7 @@ export function useBillingIssueMessage(
       ) {
         return {
           isFetching: false,
+          isLoading: false,
           error:
             orgResp.error ??
             categorisedIssuesResp.error ??
@@ -62,6 +64,7 @@ export function useBillingIssueMessage(
       if (categorisedIssuesResp.data?.cancelled) {
         return {
           isFetching: false,
+          isLoading: false,
           error: undefined,
           data: getMessageForCancelledIssue(
             categorisedIssuesResp.data.cancelled,
@@ -72,6 +75,7 @@ export function useBillingIssueMessage(
       if (categorisedIssuesResp.data?.trial) {
         return {
           isFetching: false,
+          isLoading: false,
           error: undefined,
           data: getMessageForTrialPlan(categorisedIssuesResp.data.trial),
         };
@@ -89,6 +93,7 @@ export function useBillingIssueMessage(
         if (paymentIssue)
           return {
             isFetching: false,
+            isLoading: false,
             error: undefined,
             data: paymentIssue,
           };
@@ -97,6 +102,7 @@ export function useBillingIssueMessage(
       if (allProjectsHibernatingResp.data) {
         return {
           isFetching: false,
+          isLoading: false,
           error: undefined,
           data: <BillingIssueMessage>{
             type: "default",
@@ -113,6 +119,7 @@ export function useBillingIssueMessage(
 
       return {
         isFetching: false,
+        isLoading: false,
         error: undefined,
       };
     },

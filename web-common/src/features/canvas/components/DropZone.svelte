@@ -17,8 +17,8 @@
     class:last={effectiveColumn === maxColumns}
     class:even={effectiveColumn % 2 === 0}
     class:pointer-events-auto={allowDrop}
-    style:height="calc(100% - 80px)"
-    class="absolute z-20 top-10 h-full"
+    style:height="calc(100% - 20px)"
+    class="absolute z-[100000] h-full min-h-10"
     role="presentation"
     on:mouseenter={() => dropZone.set(dropId)}
     on:mouseleave={dropZone.clear}
@@ -59,11 +59,11 @@
   }
 
   /* .even {
-    @apply bg-red-400/50;
+    @apply bg-red-400/80;
   }
 
   :not(.even) {
-    @apply bg-green-400/50;
+    @apply bg-green-400/80;
   }
 
   .even:hover {

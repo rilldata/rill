@@ -59,6 +59,8 @@
     actions: {
       dimensionsFilter: {
         toggleDimensionValueSelection,
+        applyDimensionInListMode,
+        applyDimensionContainsMode,
         removeDimensionFilter,
         toggleDimensionFilterMode,
       },
@@ -384,7 +386,7 @@
           No filters selected
         </div>
       {:else}
-        {#each allDimensionFilters as { name, label, selectedValues } (name)}
+        {#each allDimensionFilters as { name, label, mode, selectedValues, inputText } (name)}
           {@const dimension = dimensions.find(
             (d) => d.name === name || d.column === name,
           )}
@@ -396,7 +398,9 @@
                 {readOnly}
                 {name}
                 {label}
+                {mode}
                 {selectedValues}
+                {inputText}
                 {timeStart}
                 {timeEnd}
                 {timeControlsReady}
@@ -405,6 +409,10 @@
                 onToggleFilterMode={() => toggleDimensionFilterMode(name)}
                 onSelect={(value) =>
                   toggleDimensionValueSelection(name, value, true)}
+                onApplyInList={(values) =>
+                  applyDimensionInListMode(name, values)}
+                onApplyContainsMode={(searchText) =>
+                  applyDimensionContainsMode(name, searchText)}
               />
             {/if}
           </div>

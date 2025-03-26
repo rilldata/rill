@@ -21,8 +21,8 @@
   import { DateTime, Interval } from "luxon";
   import type { Readable } from "svelte/motion";
   import type { KPISpec } from ".";
-  import { validateKPISchema } from "./selector";
   import { BIG_NUMBER_MIN_WIDTH } from ".";
+  import { validateKPISchema } from "./selector";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
   export let timeAndFilterStore: Readable<TimeAndFilterStore>;
@@ -53,6 +53,7 @@
     comparisonTimeRange,
     showTimeComparison,
     comparisonTimeRangeState,
+    hasTimeSeries,
   } = $timeAndFilterStore);
 
   $: schema = validateKPISchema(ctx, kpiProperties);
@@ -66,7 +67,7 @@
     ? createMeasureValueFormatter<null>(measure, "big-number")
     : () => "no data";
 
-  $: showSparkline = sparkline !== "none";
+  $: showSparkline = sparkline !== "none" && hasTimeSeries;
   $: isSparkRight = sparkline === "right";
 
   $: showComparison = !!comparisonOptions?.length && showTimeComparison;
@@ -196,29 +197,23 @@
 </script>
 
 {#if isValid}
-  {#if measure && !primaryTotalIsFetching}
+  {#if measure && primaryTotalData && !primaryTotalIsFetching}
     <div class="wrapper" class:spark-right={isSparkRight}>
       <div
         class="data-wrapper"
         style:min-width="{BIG_NUMBER_MIN_WIDTH - adjustment}px"
       >
-        <h2 class="measure-name">
+        <h2 class="measure-name" title={measure?.displayName || measureName}>
           {measure?.displayName || measureName}
         </h2>
 
-        <span class="big-number">
-          {#if hoveredPoints?.[0]?.value != null}
-            <span class="hovered-value">
-              {measureValueFormatter(currentValue)}
-            </span>
-
-            <span class="slash">/</span>
-            <span class="primary-value-on-hover">
-              {measureValueFormatter(primaryTotal)}
-            </span>
-          {:else}
-            {measureValueFormatter(primaryTotal)}
-          {/if}
+        <span
+          class="big-number"
+          class:hovered-value={hoveredPoints?.[0]?.value != null}
+        >
+          {measureValueFormatter(
+            hoveredPoints?.[0]?.value != null ? currentValue : primaryTotal,
+          )}
         </span>
 
         {#if showComparison}
@@ -270,13 +265,19 @@
             </p>
           {/if}
         {/if}
+
+        {#if !showSparkline && timeGrain && interval.isValid}
+          <span class="text-gray-500">
+            <RangeDisplay {interval} grain={timeGrain} />
+          </span>
+        {/if}
       </div>
 
       {#if showSparkline}
         <div class="sparkline-wrapper">
           {#if primaryDataIsFetching}
             <Spinner status={EntityStatus.Running} />
-          {:else if timeGrain && timeZone}
+          {:else if timeGrain && timeZone && primaryData.length}
             <Chart
               bind:hoveredPoints
               {primaryData}
@@ -288,10 +289,6 @@
             />
           {/if}
         </div>
-      {:else if interval.isValid && timeGrain}
-        <span class="text-gray-500">
-          <RangeDisplay {interval} grain={timeGrain} />
-        </span>
       {/if}
     </div>
   {:else}
@@ -305,7 +302,7 @@
 
 <style lang="postcss">
   .wrapper {
-    @apply flex items-center justify-center size-full gap-2 flex-col;
+    @apply flex items-center justify-center size-full gap-2 flex-col max-w-full;
   }
 
   .wrapper.spark-right {
@@ -313,8 +310,8 @@
   }
 
   .data-wrapper {
-    @apply flex flex-col w-full h-fit justify-center  items-center;
-    @apply overflow-hidden text-ellipsis;
+    @apply flex flex-col w-full h-fit justify-center items-center max-w-full;
+    @apply overflow-hidden text-ellipsis truncate;
     flex: 1 0 auto;
   }
 
@@ -337,19 +334,6 @@
 
   .hovered-value {
     @apply text-primary-500;
-  }
-
-  .slash {
-    @apply text-lg;
-  }
-
-  .primary-value-on-hover {
-    @apply text-gray-600 text-lg;
-  }
-
-  .spark-right .slash,
-  .spark-right .primary-value-on-hover {
-    display: none;
   }
 
   .comparison-value-wrapper {

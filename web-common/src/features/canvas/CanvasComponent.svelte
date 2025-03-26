@@ -69,7 +69,12 @@
         <ComponentHeader {title} {description} filters={componentFilters} />
       {/if}
       {#if renderer && rendererProperties}
-        <ComponentRenderer {renderer} {rendererProperties} {componentName} />
+        <ComponentRenderer
+          hasHeader={title || description}
+          {renderer}
+          {rendererProperties}
+          {componentName}
+        />
       {/if}
     {:else}
       <div class="size-full grid place-content-center">
@@ -89,7 +94,8 @@
   }
 
   .selected {
-    @apply outline-2 outline-primary-300;
+    @apply shadow-md outline-primary-400 outline-[1.5px];
+
     outline-style: solid !important;
   }
 </style>

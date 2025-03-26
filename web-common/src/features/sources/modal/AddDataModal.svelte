@@ -30,6 +30,8 @@
     BehaviourEventMedium,
   } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
+  import { runtime } from "../../../runtime-client/runtime-store";
+  import { useIsModelingSupportedForDefaultOlapDriver } from "../../connectors/olap/selectors";
   import { duplicateSourceName } from "../sources-store";
   import AddDataForm from "./AddDataForm.svelte";
   import DuplicateSource from "./DuplicateSource.svelte";
@@ -165,6 +167,9 @@
 
     resetModal();
   }
+
+  $: isModelingSupportedForDefaultOlapDriver =
+    useIsModelingSupportedForDefaultOlapDriver($runtime.instanceId);
 </script>
 
 {#if step >= 1 || $duplicateSourceName}
@@ -179,55 +184,53 @@
     closeOnOutsideClick={!isSubmittingForm}
   >
     <Dialog.Content noClose>
-      <section class="mb-1">
-        <Dialog.Title>
-          {#if $duplicateSourceName !== null}
-            Duplicate source
-          {:else if selectedConnector}
-            {selectedConnector?.displayName}
-          {:else if requestConnector}
-            Request a connector
-          {:else if step === 1}
-            Add a source
-          {/if}
-        </Dialog.Title>
+      {#if $isModelingSupportedForDefaultOlapDriver}
+        <section class="mb-1">
+          <Dialog.Title>
+            {#if $duplicateSourceName !== null}
+              Duplicate source
+            {:else if selectedConnector}
+              {selectedConnector?.displayName}
+            {:else if step === 1}
+              Add a source
+            {/if}
+          </Dialog.Title>
 
-        {#if $duplicateSourceName}
-          <DuplicateSource onCancel={resetModal} onComplete={resetModal} />
-        {:else if requestConnector}
-          <RequestConnectorForm on:close={resetModal} on:back={back} />
-        {:else if step === 1}
-          <div class="connector-grid">
-            {#each connectors.filter((c) => c.name && SOURCES.includes(c.name)) as connector (connector.name)}
-              {#if connector.name}
-                <button
-                  id={connector.name}
-                  on:click={() => goToConnectorForm(connector)}
-                  class="connector-tile-button"
-                >
-                  <div class="connector-wrapper">
-                    <svelte:component this={ICONS[connector.name]} />
-                  </div>
-                </button>
-              {/if}
-            {/each}
-          </div>
-        {:else if step === 2 && selectedConnector}
-          {#if selectedConnector.name === "local_file"}
-            <LocalSourceUpload on:close={resetModal} on:back={back} />
-          {:else if selectedConnector && selectedConnector.name}
-            <AddDataForm
-              connector={selectedConnector}
-              formType={OLAP_CONNECTORS.includes(selectedConnector.name)
-                ? "connector"
-                : "source"}
-              onClose={resetModal}
-              onBack={back}
-              on:submitting={handleSubmittingChange}
-            />
+          {#if $duplicateSourceName}
+            <DuplicateSource onCancel={resetModal} onComplete={resetModal} />
+          {:else if step === 1}
+            <div class="connector-grid">
+              {#each connectors.filter((c) => c.name && SOURCES.includes(c.name)) as connector (connector.name)}
+                {#if connector.name}
+                  <button
+                    id={connector.name}
+                    on:click={() => goToConnectorForm(connector)}
+                    class="connector-tile-button"
+                  >
+                    <div class="connector-wrapper">
+                      <svelte:component this={ICONS[connector.name]} />
+                    </div>
+                  </button>
+                {/if}
+              {/each}
+            </div>
+          {:else if step === 2 && selectedConnector}
+            {#if selectedConnector.name === "local_file"}
+              <LocalSourceUpload on:close={resetModal} on:back={back} />
+            {:else if selectedConnector && selectedConnector.name}
+              <AddDataForm
+                connector={selectedConnector}
+                formType={OLAP_CONNECTORS.includes(selectedConnector.name)
+                  ? "connector"
+                  : "source"}
+                onClose={resetModal}
+                onBack={back}
+                on:submitting={handleSubmittingChange}
+              />
+            {/if}
           {/if}
-        {/if}
-      </section>
+        </section>
+      {/if}
 
       {#if step === 1}
         <section>
@@ -259,6 +262,11 @@
             Request a new connector
           </button>
         </div>
+      {/if}
+
+      {#if step === 2 && requestConnector}
+        <Dialog.Title>Request a connector</Dialog.Title>
+        <RequestConnectorForm on:close={resetModal} on:back={back} />
       {/if}
     </Dialog.Content>
   </Dialog.Root>

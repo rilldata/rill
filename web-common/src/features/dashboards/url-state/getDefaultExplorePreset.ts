@@ -36,6 +36,7 @@ export function getDefaultExplorePreset(
   const defaultExplorePreset: V1ExplorePreset = {
     view: V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE,
     where: createAndExpression([]),
+    dimensionsWithInlistFilter: [],
 
     measures: explore.measures,
     dimensions: explore.dimensions,
@@ -56,6 +57,7 @@ export function getDefaultExplorePreset(
     exploreSortAsc: false,
     exploreSortType: V1ExploreSortType.EXPLORE_SORT_TYPE_VALUE,
     exploreExpandedDimension: "",
+    exploreLeaderboardMeasureCount: 1,
 
     timeDimensionMeasure: "",
     timeDimensionChartType: ToURLParamTDDChartMap[TDDChart.DEFAULT],

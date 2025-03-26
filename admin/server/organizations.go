@@ -274,11 +274,13 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 func (s *Server) ListOrganizationMemberUsers(ctx context.Context, req *adminv1.ListOrganizationMemberUsersRequest) (*adminv1.ListOrganizationMemberUsersResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
+		attribute.String("args.role", req.Role),
+		attribute.Bool("include_counts", req.IncludeCounts),
 	)
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -292,9 +294,18 @@ func (s *Server) ListOrganizationMemberUsers(ctx context.Context, req *adminv1.L
 	}
 	pageSize := validPageSize(req.PageSize)
 
-	members, err := s.admin.DB.FindOrganizationMemberUsers(ctx, org.ID, token.Val, pageSize)
+	var roleID string
+	if req.Role != "" {
+		role, err := s.admin.DB.FindOrganizationRole(ctx, req.Role)
+		if err != nil {
+			return nil, err
+		}
+		roleID = role.ID
+	}
+
+	members, err := s.admin.DB.FindOrganizationMemberUsers(ctx, org.ID, roleID, req.IncludeCounts, token.Val, pageSize)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	nextToken := ""
@@ -302,9 +313,9 @@ func (s *Server) ListOrganizationMemberUsers(ctx context.Context, req *adminv1.L
 		nextToken = marshalPageToken(members[len(members)-1].Email)
 	}
 
-	dtos := make([]*adminv1.MemberUser, len(members))
+	dtos := make([]*adminv1.OrganizationMemberUser, len(members))
 	for i, user := range members {
-		dtos[i] = memberUserToPB(user)
+		dtos[i] = orgMemberUserToPB(user)
 	}
 
 	return &adminv1.ListOrganizationMemberUsersResponse{

@@ -1275,6 +1275,8 @@ export interface V1ModelSpec {
   outputProperties?: V1ModelSpecOutputProperties;
   trigger?: boolean;
   triggerFull?: boolean;
+  /** defined_as_source is true if it was defined by user as a source but converted internally to a model. */
+  definedAsSource?: boolean;
 }
 
 export type V1ModelPartitionData = { [key: string]: any };
@@ -2021,6 +2023,8 @@ export interface V1ExplorePreset {
   measures?: string[];
   measuresSelector?: V1FieldSelector;
   where?: V1Expression;
+  /** Temporary to differentiate between "select" and "in list" modes. Expression will be replaced with UI specific state in the future. */
+  dimensionsWithInlistFilter?: string[];
   /** Time range for the explore.
 It corresponds to the `range` property of the explore's `time_ranges`.
 If not found in `time_ranges`, it should be added to the list. */
@@ -2037,6 +2041,7 @@ If not found in `time_ranges`, it should be added to the list. */
   exploreSortAsc?: boolean;
   exploreSortType?: V1ExploreSortType;
   exploreExpandedDimension?: string;
+  exploreLeaderboardMeasureCount?: number;
   timeDimensionMeasure?: string;
   timeDimensionChartType?: string;
   timeDimensionPin?: boolean;

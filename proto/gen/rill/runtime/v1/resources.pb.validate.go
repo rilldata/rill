@@ -2579,6 +2579,8 @@ func (m *ModelSpec) validate(all bool) error {
 
 	// no validation rules for TriggerFull
 
+	// no validation rules for DefinedAsSource
+
 	if len(errors) > 0 {
 		return ModelSpecMultiError(errors)
 	}
@@ -5039,6 +5041,10 @@ func (m *ExplorePreset) validate(all bool) error {
 
 	if m.ExploreExpandedDimension != nil {
 		// no validation rules for ExploreExpandedDimension
+	}
+
+	if m.ExploreLeaderboardMeasureCount != nil {
+		// no validation rules for ExploreLeaderboardMeasureCount
 	}
 
 	if m.TimeDimensionMeasure != nil {

@@ -1,55 +1,45 @@
 <script lang="ts">
   import AddComponentDropdown from "./AddComponentDropdown.svelte";
   import type { CanvasComponentType } from "./components/types";
-  import { dropZone, hoveredDivider, activeDivider } from "./stores/ui-stores";
+  import Divider from "./Divider.svelte";
+  import { dropZone, activeDivider } from "./stores/ui-stores";
 
   export let allowDrop: boolean;
   export let resizeIndex = -1;
   export let dropIndex: number;
+  export let resizingRow = false;
   export let onDrop: (row: number, column: number | null) => void;
   export let onRowResizeStart: (e: MouseEvent) => void = () => {};
   export let addItem: (type: CanvasComponentType) => void;
 
-  let open = false;
+  let menuOpen = false;
 
   $: dividerId = `row:${resizeIndex}::column:null`;
   $: dropId = `row:${dropIndex}::column:null`;
 
-  $: isActiveDivider = $activeDivider === dividerId;
   $: isDropZone = $dropZone === dropId;
-  $: isHoveredDivider = $hoveredDivider === dividerId;
+  $: isActiveDivider = $activeDivider === dividerId;
 
-  $: notActiveDivider = !!$activeDivider && !isActiveDivider;
+  $: notActiveDivider = !isActiveDivider && !!$activeDivider;
 
-  $: showAddComponent = isHoveredDivider && !isActiveDivider;
   $: notResizable = resizeIndex === -1;
 
-  $: if (!showAddComponent) {
-    open = false;
-  }
-
-  function focus() {
-    activeDivider.set(dividerId);
-  }
-
-  function hover() {
-    hoveredDivider.set(dividerId);
-  }
+  $: forceShowDivider = menuOpen || resizingRow || isDropZone;
 </script>
 
 <div
   role="presentation"
   style:pointer-events={allowDrop ? "auto" : "none"}
-  style:width="calc(100% + 160px)"
   class:top={notResizable}
   class:bottom={!notResizable}
-  class="absolute z-10 -left-20 h-20 flex items-center justify-center px-2"
+  class="absolute z-10 w-full h-12 flex items-center justify-center px-2"
   on:mouseenter={() => {
     if (!allowDrop) return;
+
     dropZone.set(dropId);
   }}
   on:mouseleave={() => {
-    if (!allowDrop) return;
+    if (!allowDrop || menuOpen) return;
     dropZone.clear();
   }}
   on:mouseup={() => {
@@ -57,46 +47,50 @@
     onDrop(dropIndex, null);
   }}
 >
-  <button
-    data-row={resizeIndex}
-    class:cursor-default={notResizable && !allowDrop}
-    class:cursor-row-resize={!allowDrop && !notResizable}
-    style:pointer-events={notActiveDivider || allowDrop ? "none" : "auto"}
-    class="mx-20 w-full h-4 z-40 group flex items-center justify-center"
-    on:mousedown={(e) => {
-      onRowResizeStart(e);
-      focus();
-    }}
-    on:mouseenter={hover}
-    on:mouseleave={() => {
-      if (!open) hoveredDivider.reset();
-    }}
-  >
-    <span
-      class:bg-primary-300={isActiveDivider || isHoveredDivider || isDropZone}
-      class="w-full h-[3px] rounded-full pointer-events-none"
-    />
-  </button>
+  <div class="w-full h-4 z-40 group flex items-center justify-center relative">
+    <button
+      data-row={resizeIndex}
+      class:cursor-default={notResizable && !allowDrop}
+      class:cursor-row-resize={!allowDrop && !notResizable}
+      style:pointer-events={notActiveDivider || allowDrop || menuOpen
+        ? "none"
+        : "auto"}
+      class="peer size-full flex items-center justify-center px-px"
+      on:mousedown={(e) => {
+        onRowResizeStart(e);
+        activeDivider.set(dividerId);
 
-  {#if showAddComponent}
+        window.addEventListener(
+          "mouseup",
+          () => {
+            activeDivider.set(null);
+          },
+          { once: true },
+        );
+      }}
+    >
+      <Divider horizontal show={forceShowDivider} />
+    </button>
+
     <span
       role="presentation"
       class:shift-down={notResizable}
-      class="flex shadow-sm pointer-events-auto absolute left-1/2 w-fit z-50 bg-white -translate-x-1/2 border rounded-sm"
-      on:mouseleave={() => {
-        if (!open) hoveredDivider.reset();
-      }}
+      class:not-sr-only={menuOpen}
+      class="sr-only peer-hover:not-sr-only peer-active:sr-only hover:not-sr-only flex shadow-sm pointer-events-auto !absolute left-1/2 w-fit z-50 bg-white -translate-x-1/2 border rounded-sm"
     >
       <AddComponentDropdown
-        bind:open
-        onMouseEnter={hover}
-        onItemClick={(type) => {
-          hoveredDivider.reset();
-          addItem(type);
+        bind:open={menuOpen}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) {
+            activeDivider.set(null);
+          } else {
+            activeDivider.set(dividerId);
+          }
         }}
+        onItemClick={addItem}
       />
     </span>
-  {/if}
+  </div>
 </div>
 
 <style lang="postcss">
