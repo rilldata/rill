@@ -290,38 +290,44 @@ li.theme-doc-sidebar-item-category-level-2 .menu__list-item-collapsible {
   width: 100%;
 }
 
-// CSS changes to CustomCard Component
 
-.custom-doc-card {
-  position: relative;
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  width: 100%;
+  padding: 2rem 0;
+}
+
+.card {
   display: flex;
+  flex-direction: column;
   justify-content: center;
-  align-items: center;
-  height: 200px; // Adjust the height of the card
-  background-size: cover;
-  background-position: center;
-  border-radius: 8px;
-  margin: 1rem 0;
-  text-align: center;
-  color: #fff; // Text color (can be adjusted)
-  text-decoration: none; // Remove underline from the title link
+  background: linear-gradient(145deg, #f4f4ff, #9f9fe4);
 
-  &__header {
-    z-index: 1;
-    font-size: 1.5rem;
-    font-weight: bold;
+  padding: 2rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  text-decoration: none;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(53, 37, 199, 0.2);
+    color: #3525c7;
+    // background: linear-gradient(90deg, #f4f4ff, #9f9fe4,  #f4f4ff, #9f9fe4,);
+
   }
 
-  // Optional: Add overlay for better readability of text over the background
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5); // Add a dark overlay
-    border-radius: 8px;
-    z-index: 0;
+  h3 {
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.95rem;
+    color: #555;
   }
 }

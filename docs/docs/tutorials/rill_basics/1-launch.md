@@ -11,8 +11,8 @@ tags:
 You will need to [install Rill](https://docs.rilldata.com/home/install).
 :::
 
-By the end of this course, you will have a deployed instance of your project in Rill Cloud, and your [30 day 
-trial](./launch) will start. This also prepares you for the [Advanced Features Course](../rill_advanced_features/overview.md) that builds on top of this project.
+The goal of this 6 part tutorial is to deploy your instance of your project on to Rill Cloud, and this will start you [30 day 
+trial](./launch). This also prepares you for the [Advanced Features Course](../rill_developer_advanced_features/overview.md) that builds on top of this project.
 
 ## Start Rill Developer
 
@@ -20,16 +20,19 @@ trial](./launch) will start. This also prepares you for the [Advanced Features C
 rill start my-rill-tutorial
 ```
 
-After running the command, Rill Developer should automatically open in your default browser. If not, you can access it via the following url:
+:::tip
+While we support macOS and Linux, you can also get Rill Developer running on [Windows machine via WSL](https://docs.rilldata.com/home/install#rill-on-windows-using-wsl). If you are having any issues installing and/or starting Rill, please see our [installation page](https://docs.rilldata.com/home/install). 
+
+:::
+
+
+
+After running the command, Rill Developer should automatically open in your default browser. If not, you can access it via the following URL:
 
 ```
 localhost:9009
 ``` 
-
-
-You should see the folowing webpage appear. 
-
-![my-rill-project](/img/tutorials/101/new-rill-project.png)
+<img src = '/img/tutorials/101/new-rill-project.png' class='rounded-gif' />
 <br />
 
 Let's go ahead and select `Start with an empty project`.

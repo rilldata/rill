@@ -49,6 +49,9 @@ Files that are *nested at any level* under your native `sources` directory will 
 **`sql`**
  — Sets the SQL query to extract data from a SQL source: DuckDB/Motherduck/Athena/BigQuery/Postrgres/SQLite/Snowflake _(optional)_.
 
+**`dev`** set different parameters specifically for `dev` environment
+- **`sql`**  — Sets the SQL query to extract data from a SQL source: DuckDB/Motherduck/Athena/BigQuery/Postrgres/SQLite/Snowflake on `dev` _(optional)_.
+
 **`region`**
  — Sets the cloud region of the S3 bucket or Athena you want to connect to using the cloud region identifier (e.g. `us-east-1`). Only available for S3 and Athena _(optional)_.
 

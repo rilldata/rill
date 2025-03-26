@@ -35,16 +35,12 @@ This results in `50`, which mataches because the number of values in each groupi
 ## Why this matters in Rill
 This matters in Rill because of how OLAP engines work. While each engine works slightly different, when managing the underlying data, there is no guarantee that your data is grouped into one when calculating averages, especially if you have large amounts of data. This is why when writing your model's SQL, we advise against certain calculations like AVG().
 
->insert AVG() screenshot in Model with a no-no
 
-:::note Performance
-
-:::
 
 ## What you can do to avoid this issue? 
 Instead, after materializing the final output model table, you can create a measure using the AVG() function.
 
->insert screenshot of avg in measures or copy some YAML 
+
 
 import DocsRating from '@site/src/components/DocsRating';
 

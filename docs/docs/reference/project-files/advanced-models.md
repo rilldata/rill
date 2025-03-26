@@ -34,6 +34,14 @@ refresh:
     - **`path`** - in the case `glob` is selected, you will need to set the path of your source _(optional)_. 
     - **`partition`** - in the case `glob` is selected, you can defined how to partition the table. directory or hive _(optional)_.
     
+**`dev`** - refers to the type of environment, Rill Developer runs as `dev` unless explicitly defined via `rill start --environment`
+  - **`partitions`** - refers to how your data is split (same as above), but for `dev` environment. 
+    - **`connector`** - refers to the connector that the partitions is using _(optional)_.
+    - **`sql`** - refers to the SQL query used to access the data in your data warehouse, use `sql` or `glob` _(optional)_.
+    - **`glob`** - refers to the location of the data in your cloud warehouse, use `sql` or `glob` _(optional)_.
+    - **`path`** - in the case `glob` is selected, you will need to set the path of your source _(optional)_. 
+    - **`partition`** - in the case `glob` is selected, you can defined how to partition the table. directory or hive _(optional)_.
+  - **`sql`** - refers to the SQL query for your model in `dev` environment. _(optional)_.
 ```yaml
 partitions:
   connector: duckdb
