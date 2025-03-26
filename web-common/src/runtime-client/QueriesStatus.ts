@@ -12,6 +12,7 @@ type QueryStatusArg = {
  * Provides a consolidated loading and error status for queries.
  * Has additional `loadingForShortTime` and `loadingForLongTime` as extra information.
  * Also converts errors into params that can easily be fed into `ErrorPage`
+ * TODO: is there a way to merge with getCompoundQuery?
  */
 export class QueriesStatus {
   public readonly loading = writable(false);
@@ -33,11 +34,6 @@ export class QueriesStatus {
       (queryResponses) => {
         const loading = queryResponses.some((q) => q.isLoading);
         const errors = queryResponses.map((q) => q.error);
-        console.log(
-          queryResponses
-            .map((q, i) => `[${i}] ${q.isLoading} ${!!q.data}`)
-            .join(" == "),
-        );
 
         return {
           loading,

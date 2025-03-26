@@ -64,9 +64,6 @@
     queriesStatus!);
   $: firstError = $errors[0];
 
-  $: ({ validSpecQuery, fullTimeRangeQuery } = dataLoader!);
-  $: console.log($validSpecQuery.data, $fullTimeRangeQuery.data);
-
   onDestroy(() => {
     stateSync?.teardown();
     queriesStatus?.teardown();

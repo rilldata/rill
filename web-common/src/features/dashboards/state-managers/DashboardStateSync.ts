@@ -106,7 +106,6 @@ export class DashboardStateSync {
     );
     this.prevUrl = redirectUrl.toString();
 
-    console.log("handleExploreInit", initExploreState, redirectUrl.search);
     if (redirectUrl.search === pageState.url.search) {
       return;
     }

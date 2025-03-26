@@ -50,6 +50,15 @@ export class DashboardStateDataLoader {
       ([validSpecResp, metricsViewTimeRangeResp]) => {
         const metricsViewSpec = validSpecResp?.metricsView ?? {};
         const exploreSpec = validSpecResp?.explore ?? {};
+
+        // Safeguard to make sure time range summary is loaded when time dimension is present.
+        if (
+          metricsViewSpec.timeDimension &&
+          !metricsViewTimeRangeResp?.timeRangeSummary
+        ) {
+          return undefined;
+        }
+
         return getExploreStatesFromSpecs(
           metricsViewSpec,
           exploreSpec,
