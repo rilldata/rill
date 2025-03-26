@@ -213,7 +213,7 @@
     strategy="absolute"
     fitViewport={true}
     overflowY="auto"
-    overflowX="none"
+    overflowX="hidden"
     minHeight="100px"
   >
     <div
