@@ -20,7 +20,7 @@
 
   $: ({ instanceId } = $runtime);
 
-  let showSourceTables = true;
+  let showReferences = true;
 
   $: referencedResourcesStore = derived(
     resourceRefs.map((ref) => {
@@ -41,7 +41,7 @@
         {},
         {
           query: {
-            select: (data) => +(data?.cardinality ?? 0),
+            select: (data) => +(data.cardinality ?? 0),
           },
         },
       );
@@ -56,17 +56,17 @@
     <div class=" pl-4 pr-4">
       <CollapsibleSectionTitle
         tooltipText="References"
-        bind:active={showSourceTables}
+        bind:active={showReferences}
       >
         Referenced in this model
       </CollapsibleSectionTitle>
     </div>
 
-    {#if showSourceTables}
+    {#if showReferences}
       <div transition:slide={{ duration: LIST_SLIDE_DURATION }} class="mt-2">
         {#each resourceRefs as reference, index (reference.name)}
           {@const resource = referencedResources[index]}
-          {@const totalRows = referencedResourceCardinalities[index]}
+          {@const cardinality = referencedResourceCardinalities[index]}
           {@const filePath = resource?.resource?.meta?.filePaths?.[0]}
           {#if filePath}
             <div>
@@ -83,9 +83,9 @@
                     </div>
                   </div>
 
-                  {#if totalRows}
+                  {#if cardinality}
                     <div class="text-gray-500">
-                      {`${formatCompactInteger(totalRows)} rows` || ""}
+                      {`${formatCompactInteger(cardinality)} rows` || ""}
                     </div>
                   {/if}
                 </a>

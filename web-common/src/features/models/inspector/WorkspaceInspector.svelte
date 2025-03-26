@@ -4,8 +4,6 @@
   import ColumnProfile from "@rilldata/web-common/features/column-profile/ColumnProfile.svelte";
   import { getSummaries } from "@rilldata/web-common/features/column-profile/queries";
   import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
-  import { useModels } from "@rilldata/web-common/features/models/selectors";
-  import { useSources } from "@rilldata/web-common/features/sources/selectors";
   import {
     formatConnectorType,
     getFileExtension,
@@ -109,12 +107,6 @@
     totalNulls !== undefined
       ? formatBigNumberPercentage(totalNulls / totalCells)
       : undefined;
-
-  $: getAllSources = useSources(instanceId);
-  $: getAllModels = useModels(instanceId);
-
-  $: allSources = $getAllSources?.data ?? [];
-  $: allModels = $getAllModels?.data ?? [];
 
   $: resourceRefs = resource?.meta?.refs ?? [];
 
