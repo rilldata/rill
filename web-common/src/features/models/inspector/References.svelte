@@ -15,7 +15,7 @@
   import { removeLeadingSlash } from "../../entity-management/entity-mappers";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
 
-  export let resourceRefs: V1ResourceName[];
+  export let refs: V1ResourceName[];
   export let modelHasError: boolean;
 
   $: ({ instanceId } = $runtime);
@@ -23,7 +23,7 @@
   let showReferences = true;
 
   $: referencedResourcesStore = derived(
-    resourceRefs.map((ref) => {
+    refs.map((ref) => {
       return createRuntimeServiceGetResource(instanceId, {
         "name.name": ref.name as string,
         "name.kind": ref.kind as string,
@@ -34,7 +34,7 @@
   $: referencedResources = $referencedResourcesStore;
 
   $: referencedResourceCardinalitiesStore = derived(
-    resourceRefs.map((ref) => {
+    refs.map((ref) => {
       return createQueryServiceTableCardinality(
         instanceId,
         ref.name as string,
@@ -48,10 +48,10 @@
     }),
     (refs) => refs.map((ref) => ref.data),
   );
-  $: referencedResourceCardinalities = $referencedResourceCardinalitiesStore;
+  $: referencedResourcesCardinalities = $referencedResourceCardinalitiesStore;
 </script>
 
-{#if resourceRefs.length}
+{#if refs.length}
   <div>
     <div class=" pl-4 pr-4">
       <CollapsibleSectionTitle
@@ -64,9 +64,9 @@
 
     {#if showReferences}
       <div transition:slide={{ duration: LIST_SLIDE_DURATION }} class="mt-2">
-        {#each resourceRefs as reference, index (reference.name)}
+        {#each refs as reference, index (reference.name)}
           {@const resource = referencedResources[index]}
-          {@const cardinality = referencedResourceCardinalities[index]}
+          {@const cardinality = referencedResourcesCardinalities[index]}
           {@const filePath = resource?.resource?.meta?.filePaths?.[0]}
           {#if filePath}
             <div>

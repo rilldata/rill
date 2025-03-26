@@ -39,7 +39,6 @@
   export let sourceIsReconciling: boolean = false;
   export let isEmpty = false;
   export let hasErrors: boolean;
-  export let showReferences = true;
   export let filePath: string;
 
   let showColumns = true;
@@ -263,11 +262,8 @@
         </InspectorHeaderGrid>
 
         <hr />
-
-        {#if showReferences && resourceRefs.length}
-          <References modelHasError={hasErrors} {resourceRefs} />
-          <hr />
-        {/if}
+        <References refs={resourceRefs} modelHasError={hasErrors} />
+        <hr />
 
         <div>
           <div class="px-4">
