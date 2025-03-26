@@ -155,13 +155,11 @@ export async function convertQueryFilterToToplistQuery(
   );
 }
 
-export async function getExplorePageUrl(
-  curPageUrl: URL,
-  organization: string,
-  project: string,
+export async function getExplorePageUrlSearchParams(
   exploreName: string,
   exploreState: MetricsExplorerEntity,
-) {
+  url: URL,
+): Promise<URLSearchParams> {
   const instanceId = get(runtime).instanceId;
   const { explore, metricsView } = await queryClient.fetchQuery({
     queryFn: ({ signal }) =>
@@ -179,9 +177,6 @@ export async function getExplorePageUrl(
     // so to avoid re-fetching explore everytime we set this so that it hits cache.
     staleTime: Infinity,
   });
-
-  const url = new URL(`${curPageUrl.protocol}//${curPageUrl.host}`);
-  url.pathname = `/${organization}/${project}/explore/${exploreName}`;
 
   const metricsViewSpec = metricsView?.metricsView?.state?.validSpec ?? {};
   const exploreSpec = explore?.explore?.state?.validSpec ?? {};
@@ -205,7 +200,7 @@ export async function getExplorePageUrl(
     });
   }
 
-  url.search = convertExploreStateToURLSearchParams(
+  const searchParams = convertExploreStateToURLSearchParams(
     exploreState,
     exploreSpec,
     getTimeControlState(
@@ -217,5 +212,6 @@ export async function getExplorePageUrl(
     getDefaultExplorePreset(exploreSpec, metricsViewSpec, fullTimeRange),
     url,
   );
-  return url.toString();
+
+  return searchParams;
 }

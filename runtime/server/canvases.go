@@ -84,7 +84,7 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 			// Resolve the renderer properties in the valid_spec.
 			validSpec := cmp.GetComponent().State.ValidSpec
 			if validSpec != nil && validSpec.RendererProperties != nil {
-				v, err := rillv1.ResolveTemplateRecursively(validSpec.RendererProperties.AsMap(), td)
+				v, err := rillv1.ResolveTemplateRecursively(validSpec.RendererProperties.AsMap(), td, false)
 				if err != nil {
 					return nil, status.Errorf(codes.InvalidArgument, "component %q: failed to resolve templating: %s", item.Component, err.Error())
 				}
@@ -203,7 +203,7 @@ func (s *Server) ResolveComponent(ctx context.Context, req *runtimev1.ResolveCom
 	// Resolve templating in the renderer properties
 	var rendererProps *structpb.Struct
 	if spec.RendererProperties != nil {
-		v, err := rillv1.ResolveTemplateRecursively(spec.RendererProperties.AsMap(), td)
+		v, err := rillv1.ResolveTemplateRecursively(spec.RendererProperties.AsMap(), td, false)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}

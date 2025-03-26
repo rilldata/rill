@@ -124,6 +124,7 @@ export function initStateManagers(metricsViewName?: string) {
   metricsViewName ??= AD_BIDS_NAME;
   const exploreName = metricsViewName + "_explore";
 
+  metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
   initAdBidsInStore();
 
   const queryClient = new QueryClient({

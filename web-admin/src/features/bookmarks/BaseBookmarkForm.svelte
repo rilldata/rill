@@ -11,6 +11,7 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import FilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/FilterChipsReadOnly.svelte";
   import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { createTimeControlStoreFromName } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -24,6 +25,11 @@
   $: ({ instanceId } = $runtime);
 
   $: exploreState = useExploreState(exploreName);
+  $: timeControlStore = createTimeControlStoreFromName(
+    instanceId,
+    metricsViewName,
+    exploreName,
+  );
 
   let timeRange: V1TimeRange;
   $: timeRange = {
@@ -73,9 +79,12 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
     </Label>
     <FilterChipsReadOnly
       dimensionThresholdFilters={$exploreState.dimensionThresholdFilters}
+      dimensionsWithInlistFilter={$exploreState.dimensionsWithInlistFilter}
       filters={$exploreState.whereFilter}
       {exploreName}
-      {timeRange}
+      displayTimeRange={timeRange}
+      queryTimeStart={$timeControlStore.timeStart}
+      queryTimeEnd={$timeControlStore.timeEnd}
     />
   </div>
   <ProjectAccessControls
@@ -95,7 +104,11 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
     />
   </ProjectAccessControls>
   <div class="flex items-center space-x-2">
-    <Switch bind:checked={$form["filtersOnly"]} id="filtersOnly" />
+    <Switch
+      bind:checked={$form["filtersOnly"]}
+      id="filtersOnly"
+      label="Filters only"
+    />
     <Label class="font-normal flex gap-x-1 items-center" for="filtersOnly">
       <span>Save filters only</span>
       <Tooltip distance={8}>
@@ -112,7 +125,11 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
     </Label>
   </div>
   <div class="flex items-center space-x-2">
-    <Switch bind:checked={$form["absoluteTimeRange"]} id="absoluteTimeRange" />
+    <Switch
+      bind:checked={$form["absoluteTimeRange"]}
+      id="absoluteTimeRange"
+      label="Absolute time range"
+    />
     <Label class="flex flex-col font-normal" for="absoluteTimeRange">
       <div class="text-left text-sm flex gap-x-1 items-center">
         <span>Absolute time range</span>

@@ -14,6 +14,7 @@
   import { onMount } from "svelte";
   import { get } from "svelte/store";
   import { runtime } from "../../runtime-client/runtime-store";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import type TScheduledReportDialog from "../scheduled-reports/ScheduledReportDialog.svelte";
 
   export let disabled: boolean = false;
@@ -22,12 +23,12 @@
   export let includeScheduledReport = false;
   export let getQuery: (isScheduled: boolean) => V1Query | undefined;
   export let exploreName: string | undefined = undefined;
-  export let metricsViewProto: string | undefined = undefined;
 
   let showScheduledReportDialog = false;
   let open = false;
 
   const exportDash = createQueryServiceExport();
+  const { reports } = featureFlags;
 
   async function handleExport(format: V1ExportFormat) {
     const result = await $exportDash.mutateAsync({
@@ -95,7 +96,7 @@
       Export as XLSX
     </DropdownMenu.Item>
 
-    {#if includeScheduledReport}
+    {#if includeScheduledReport && $reports}
       <DropdownMenu.Item on:click={() => (showScheduledReportDialog = true)}>
         Create scheduled report...
       </DropdownMenu.Item>
@@ -107,7 +108,6 @@
   <svelte:component
     this={ScheduledReportDialog}
     query={getQuery(true)}
-    {metricsViewProto}
     {exploreName}
     bind:open={showScheduledReportDialog}
   />

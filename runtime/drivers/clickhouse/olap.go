@@ -485,6 +485,10 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string) e
 				return err
 			}
 		}
+		err = res.Err()
+		if err != nil {
+			return err
+		}
 		res.Close()
 		engineFull = strings.ReplaceAll(engineFull, localTableName(oldName), safelocalTableName(newName))
 
@@ -540,6 +544,10 @@ func (c *connection) renameView(ctx context.Context, oldName, newName, onCluster
 			res.Close()
 			return err
 		}
+	}
+	err = res.Err()
+	if err != nil {
+		return err
 	}
 	res.Close()
 
@@ -741,6 +749,10 @@ func (c *connection) columnClause(ctx context.Context, table string) (string, er
 		columnClause.WriteString(" ")
 		columnClause.WriteString(typ)
 	}
+	err = res.Err()
+	if err != nil {
+		return "", err
+	}
 	columnClause.WriteRune(')')
 	return columnClause.String(), nil
 }
@@ -844,6 +856,10 @@ func (c *connection) getTableEngine(ctx context.Context, name string) (string, e
 			return "", err
 		}
 	}
+	err = res.Err()
+	if err != nil {
+		return "", err
+	}
 	return engine, nil
 }
 
@@ -865,6 +881,10 @@ func (c *connection) getTablePartitions(ctx context.Context, name string) ([]str
 			return nil, err
 		}
 		partitions = append(partitions, part)
+	}
+	err = res.Err()
+	if err != nil {
+		return nil, err
 	}
 	return partitions, nil
 }

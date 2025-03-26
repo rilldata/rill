@@ -1,12 +1,10 @@
 import { expect } from "@playwright/test";
+import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions";
 import {
   createExploreFromModel,
   createExploreFromSource,
 } from "../utils/exploreHelpers";
-import {
-  assertLeaderboards,
-  interactWithTimeRangeMenu,
-} from "../utils/metricsViewHelpers";
+import { assertLeaderboards } from "../utils/metricsViewHelpers";
 import { ResourceWatcher } from "../utils/ResourceWatcher";
 import { updateCodeEditor, wrapRetryAssertion } from "../utils/commonHelpers";
 import {
@@ -125,7 +123,7 @@ time_ranges:
       await page.getByRole("menuitem", { name: "Last 6 Hours" }).click();
     });
 
-    await page.getByRole("button", { name: "Comparing" }).click();
+    await page.getByLabel("Toggle time comparison").click();
 
     // Check that the total records are 272 and have comparisons
     await expect(page.getByText("272 -23 -8%")).toBeVisible();
@@ -176,13 +174,13 @@ time_ranges:
     expect(parquetRegex.test(downloadParquet.suggestedFilename())).toBe(true);
 
     // Turn off comparison
-    await page.getByRole("button", { name: "Comparing" }).click();
+    await page.getByLabel("Toggle time comparison").click();
 
     // Check number
     await expect(page.getByText("272", { exact: true })).toBeVisible();
 
     // Add comparison back
-    await page.getByRole("button", { name: "Comparing" }).click();
+    await page.getByLabel("Toggle time comparison").click();
 
     /*
       There is a bug where if you programmatically click the Time Range Selector button right after clicking the "Previous Period" menu item,
@@ -222,14 +220,14 @@ time_ranges:
 
     // Change filter to excluded
     await page.getByText("Publisher Facebook").click();
-    await page.getByRole("button", { name: "Exclude" }).click();
+    await page.getByLabel("Include exclude toggle").click();
     await page.getByText("Exclude Publisher Facebook").click();
 
     // Check number
     await expect(page.getByText("Total records 80,659")).toBeVisible();
 
     // Clear the filter from filter bar
-    await page.getByLabel("View filter").getByLabel("Remove").click();
+    await page.getByLabel("publisher filter").getByLabel("Remove").click();
 
     // Apply a different filter
     await page.getByRole("row", { name: "google.com 15.1k" }).click();
@@ -467,7 +465,7 @@ dimensions:
 
     // Check that filter was applied
     await expect(
-      page.getByLabel("View filter").getByText("Publisher Microsoft"),
+      page.getByLabel("publisher filter").getByText("Publisher Microsoft"),
     ).toBeVisible();
 
     // go back to the leaderboards.
@@ -500,7 +498,7 @@ dimensions:
 
     await page.getByRole("cell", { name: "Total rows" }).locator("div").click();
 
-    await page.getByRole("button", { name: "Total rows", exact: true }).click();
+    await page.getByLabel("Open Total rows").click();
     await page.getByRole("menuitem", { name: "Avg Bid Price" }).click();
 
     await expect(page.getByText(" Avg Bid Price $3.02")).toBeVisible();
@@ -516,7 +514,7 @@ dimensions:
     await page
       .getByRole("menuitem", { name: "No comparison dimension" })
       .click();
-    await page.getByRole("button", { name: "Comparing" }).click();
+    await page.getByLabel("Toggle time comparison").click();
 
     await expect(page.getByText("~0%")).toBeVisible();
 

@@ -13,11 +13,13 @@
   import { Image } from "./image";
   import { KPI } from "./kpi";
   import { Markdown } from "./markdown";
+  import { Pivot } from "./pivot";
   import { Table } from "./table";
 
   export let renderer: string;
   export let rendererProperties: V1ComponentSpecRendererProperties;
   export let componentName: string;
+  export let hasHeader: boolean;
 
   const ctx = getCanvasStateManagers();
   const { componentTimeAndFilterStore } = ctx.canvasEntity;
@@ -26,6 +28,7 @@
     ["kpi", KPI],
     ["kpi_grid", KPIGrid],
     ["table", Table],
+    ["pivot", Pivot],
   ]);
 
   const nonFilterableComponents = new Map([
@@ -48,8 +51,20 @@
 {#if rendererProperties && isCanvasComponentType(renderer)}
   {#if isChartComponentType(renderer) && timeAndFilterStore}
     <Chart {rendererProperties} {renderer} {timeAndFilterStore} />
+  {:else if renderer === "pivot" && timeAndFilterStore}
+    <Pivot
+      {hasHeader}
+      {rendererProperties}
+      {timeAndFilterStore}
+      {componentName}
+    />
   {:else if renderer === "table" && timeAndFilterStore}
-    <Table {rendererProperties} {timeAndFilterStore} {componentName} />
+    <Table
+      {rendererProperties}
+      {timeAndFilterStore}
+      {componentName}
+      {hasHeader}
+    />
   {:else if isFilterable && timeAndFilterStore}
     <svelte:component
       this={filterableComponents.get(renderer)}

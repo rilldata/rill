@@ -61,7 +61,7 @@ export const getRillTheme: (isCustomDashboard: boolean) => Config = (
     titleFontSize: 12,
   },
   axisY: {
-    orient: "right",
+    orient: "left",
     gridColor: gridColor,
     gridDash: [2],
     tickColor: gridColor,

@@ -4,7 +4,6 @@
   import {
     getDimensionColumnProps,
     getMeasureColumnProps,
-    getRowNestedLabel,
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-definition";
   import { NUM_ROWS_PER_PAGE } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
   import {
@@ -13,7 +12,6 @@
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import {
-    type Cell,
     type ExpandedState,
     type SortingState,
     type TableOptions,
@@ -38,7 +36,6 @@
 
   // Distance threshold (in pixels) for triggering data fetch
   const ROW_THRESHOLD = 200;
-  const OVERSCAN = 60;
   const ROW_HEIGHT = 24;
   const HEADER_HEIGHT = 30;
 
@@ -47,6 +44,8 @@
   export let pivotState: Readable<PivotState>;
   export let canShowDataViewer = false;
   export let border = true;
+  export let overscan = 20;
+  export let rounded = true;
   export let setPivotExpanded: (expanded: ExpandedState) => void;
   export let setPivotSort: (sorting: SortingState) => void;
   export let setPivotRowPage: (page: number) => void;
@@ -93,9 +92,11 @@
   let stickyRows = [0];
   let rowScrollOffset = 0;
   let scrollLeft = 0;
+  let timeout: ReturnType<typeof setTimeout>;
+  let leftCell = true;
+  let ignoreInitialTimeout = false;
 
   $: timeDimension = $config.time.timeDimension;
-  $: hasRowDimension = $pivotState.rows.length > 0;
   $: hasColumnDimension =
     splitPivotChips($pivotState.columns).dimension.length > 0;
   $: reachedEndForRows = !!$pivotDataStore?.reachedEndForRowData;
@@ -110,7 +111,6 @@
     $config.rowDimensionNames,
     $config,
   );
-  $: rowDimensionLabel = getRowNestedLabel(rowDimensions);
 
   $: headerGroups = $table.getHeaderGroups();
   $: totalHeaderHeight = headerGroups.length * HEADER_HEIGHT;
@@ -120,7 +120,7 @@
     count: rows.length,
     getScrollElement: () => containerRefElement,
     estimateSize: () => ROW_HEIGHT,
-    overscan: OVERSCAN,
+    overscan,
     initialOffset: rowScrollOffset,
     rangeExtractor: (range) => {
       const next = new Set([...stickyRows, ...defaultRangeExtractor(range)]);
@@ -175,45 +175,34 @@
     });
   });
 
-  let showTooltip = false;
   let hoverPosition: DOMRect;
   let hovering: HoveringData | null = null;
-  let timer: ReturnType<typeof setTimeout>;
 
   type HoveringData = {
     value: string | number | null;
   };
 
-  function handleCellClick(cell: Cell<PivotDataRow, unknown>) {
-    if (!canShowDataViewer || !setPivotActiveCell) return;
+  function onCellClick(e: MouseEvent) {
+    if (
+      !canShowDataViewer ||
+      !setPivotActiveCell ||
+      !(e.target instanceof HTMLElement)
+    )
+      return;
 
-    const value = cell.getValue();
-    if (value === undefined) return;
-    setPivotActiveCell(cell.row.id, cell.column.id);
+    const rowId = e.target.dataset.rowid;
+    const columnId = e.target.dataset.columnid;
+
+    if (rowId === undefined || columnId === undefined) return;
+
+    setPivotActiveCell(rowId, columnId);
   }
 
-  function handleHover(
-    e: MouseEvent & {
-      currentTarget: EventTarget & HTMLElement;
-    },
-  ) {
-    hoverPosition = e.currentTarget.getBoundingClientRect();
-    const value = e.currentTarget.dataset.value;
-    if (value === undefined) return;
+  function onTableLeave() {
+    clearTimeout(timeout);
 
-    hovering = {
-      value,
-    };
-
-    timer = setTimeout(() => {
-      showTooltip = true;
-    }, 250);
-  }
-
-  function handleLeave() {
-    clearTimeout(timer);
-    showTooltip = false;
     hovering = null;
+    ignoreInitialTimeout = false;
   }
 
   function handleClick(e: MouseEvent) {
@@ -224,10 +213,48 @@
 
     copyToClipboard(value);
   }
+
+  function onMouseMove(
+    e: MouseEvent & {
+      target: EventTarget & Window;
+    },
+  ) {
+    clearTimeout(timeout);
+
+    if (ignoreInitialTimeout) {
+      handleTooltip(e);
+      return;
+    } else {
+      timeout = setTimeout(() => {
+        handleTooltip(e);
+      }, 400);
+    }
+  }
+
+  function handleTooltip(e: MouseEvent) {
+    // Element is not a cell or we haven't left the cell for the current tooltip
+    if (!leftCell || !(e.target instanceof HTMLElement)) return;
+
+    const value = e.target.dataset.value;
+    if (value === undefined) return;
+
+    leftCell = false;
+    e.target.addEventListener("mouseleave", () => (leftCell = true), {
+      once: true,
+    });
+
+    ignoreInitialTimeout = true;
+
+    hovering = {
+      value,
+    };
+    hoverPosition = e.target.getBoundingClientRect();
+  }
 </script>
 
 <div
   class:border
+  class:rounded-sm={rounded}
   class="table-wrapper relative"
   style:--row-height="{ROW_HEIGHT}px"
   style:--header-height="{HEADER_HEIGHT}px"
@@ -250,9 +277,9 @@
       {hasMeasureContextColumns}
       activeCell={$pivotState.activeCell}
       {assembled}
-      onCellClick={handleCellClick}
-      onCellHover={handleHover}
-      onCellLeave={handleLeave}
+      {onMouseMove}
+      {onCellClick}
+      {onTableLeave}
       onCellCopy={handleClick}
     />
   {:else}
@@ -262,11 +289,10 @@
       {virtualRows}
       {before}
       {after}
-      {hasRowDimension}
       {timeDimension}
       {totalsRow}
       {totalRowSize}
-      {rowDimensionLabel}
+      {rowDimensions}
       {hasColumnDimension}
       {dataRows}
       {measures}
@@ -275,17 +301,17 @@
       {assembled}
       {scrollLeft}
       {containerRefElement}
-      onCellClick={handleCellClick}
-      onCellHover={handleHover}
-      onCellLeave={handleLeave}
+      {onMouseMove}
+      {onCellClick}
+      {onTableLeave}
       onCellCopy={handleClick}
     />
   {/if}
 </div>
 
-{#if showTooltip && hovering}
+{#if hovering}
   <VirtualTooltip
-    sortable={true}
+    sortable
     {hovering}
     {hoverPosition}
     pinned={false}
@@ -296,6 +322,6 @@
 <style lang="postcss">
   .table-wrapper {
     @apply overflow-auto h-fit max-h-full w-fit max-w-full;
-    @apply rounded-md z-40;
+    @apply z-40 select-none;
   }
 </style>

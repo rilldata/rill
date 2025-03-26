@@ -40,17 +40,14 @@ project_files:
     type: source
     connector: gcs
     uri: "gs://integration-test.rilldata.com/csv_test/all_datatypes.csv"
-    materialize: true
   all_datatypes_duckdb_source_glob.yaml:
     type: source
     connector: gcs
     uri: "gs://integration-test.rilldata.com/glob_test/y=202*/a*.csv"
-    materialize: true
   all_datatypes_duckdb_source_parquet.yaml:
     type: source
-    connector: gcs
-    uri: "gs://integration-test.rilldata.com/parquet_test/all_datatypes.parquet"
-    materialize: true
+    connector: duckdb
+    sql: "select * from read_parquet('gs://integration-test.rilldata.com/parquet_test/all_datatypes.parquet')"
 tests:
   - name: query_all_result_duckdb_source_csv
     resolver: sql

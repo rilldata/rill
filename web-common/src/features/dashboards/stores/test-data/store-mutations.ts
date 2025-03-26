@@ -5,6 +5,8 @@ import {
 import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { setLeaderboardMeasureName } from "@rilldata/web-common/features/dashboards/state-managers/actions/core-actions";
 import {
+  applyDimensionInListMode,
+  applyDimensionContainsMode,
   removeDimensionFilter,
   toggleDimensionValueSelection,
 } from "@rilldata/web-common/features/dashboards/state-managers/actions/dimension-filters";
@@ -12,6 +14,7 @@ import {
   setPrimaryDimension,
   toggleDimensionVisibility,
 } from "@rilldata/web-common/features/dashboards/state-managers/actions/dimensions";
+import { clearAllFilters } from "@rilldata/web-common/features/dashboards/state-managers/actions/filters";
 import {
   removeMeasureFilter,
   setMeasureFilter,
@@ -65,6 +68,19 @@ export const AD_BIDS_LARGE_FILTER = createAndExpression([
 export const AD_BIDS_APPLY_LARGE_FILTERS: TestDashboardMutation = (mut) => {
   mut.dashboard.whereFilter = AD_BIDS_LARGE_FILTER;
 };
+export const AD_BIDS_APPLY_PUBLISHER_INLIST_FILTER: TestDashboardMutation = (
+  mut,
+) => {
+  applyDimensionInListMode(mut, AD_BIDS_PUBLISHER_DIMENSION, [
+    "Facebook",
+    "Google",
+  ]);
+};
+export const AD_BIDS_APPLY_DOMAIN_CONTAINS_FILTER: TestDashboardMutation = (
+  mut,
+) => {
+  applyDimensionContainsMode(mut, AD_BIDS_DOMAIN_DIMENSION, "%oo%");
+};
 
 export const AD_BIDS_APPLY_IMP_MEASURE_FILTER: TestDashboardMutation = (mut) =>
   setMeasureFilter(mut, AD_BIDS_PUBLISHER_DIMENSION, {
@@ -88,6 +104,9 @@ export const AD_BIDS_APPLY_BP_MEASURE_FILTER: TestDashboardMutation = (mut) =>
     value1: "10",
     value2: "",
   });
+
+export const AD_BIDS_CLEAR_FILTERS: TestDashboardMutation = (mut) =>
+  clearAllFilters(mut);
 
 export const AD_BIDS_SET_P7D_TIME_RANGE_FILTER: TestDashboardMutation = () =>
   metricsExplorerStore.selectTimeRange(
@@ -307,6 +326,12 @@ export const AD_BIDS_TOGGLE_PIVOT_TABLE_MODE: TestDashboardMutation = () =>
       },
     ],
   );
+
+export const AD_BIDS_SET_LEADERBOARD_MEASURE_COUNT: TestDashboardMutation = (
+  mut,
+) => {
+  mut.dashboard.leaderboardMeasureCount = 4;
+};
 
 export const AD_BIDS_OPEN_PUB_IMP_PIVOT: TestDashboardMutation = () =>
   metricsExplorerStore.createPivot(
