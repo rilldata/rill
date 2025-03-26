@@ -12,19 +12,11 @@
   import EyeIcon from "@rilldata/web-common/components/icons/Eye.svelte";
   import Search from "../search/Search.svelte";
   import { Tooltip } from "bits-ui";
+  import { onMount, onDestroy } from "svelte";
 
   const UPPER_BOUND = 12 + 28 + 25;
   const ITEM_HEIGHT = 28;
   const WINDOW_OFFSET = 100; // Space to leave from window edges
-  let windowHeight = typeof window !== "undefined" ? window.innerHeight : 800;
-  let maxContentHeight = windowHeight - WINDOW_OFFSET;
-
-  if (typeof window !== "undefined") {
-    window.addEventListener("resize", () => {
-      windowHeight = window.innerHeight;
-      maxContentHeight = windowHeight - WINDOW_OFFSET;
-    });
-  }
 
   type SelectableItem = MetricsViewSpecMeasureV2 | MetricsViewSpecDimensionV2;
 
@@ -44,6 +36,25 @@
   let dragIndex = -1;
   let dragItemInitialTop = 0;
   let threshold = 0;
+  let windowHeight = typeof window !== "undefined" ? window.innerHeight : 800;
+  let maxContentHeight = windowHeight - WINDOW_OFFSET;
+  let resizeHandler: () => void;
+
+  onMount(() => {
+    if (typeof window !== "undefined") {
+      resizeHandler = () => {
+        windowHeight = window.innerHeight;
+        maxContentHeight = windowHeight - WINDOW_OFFSET;
+      };
+      window.addEventListener("resize", resizeHandler);
+    }
+  });
+
+  onDestroy(() => {
+    if (typeof window !== "undefined" && resizeHandler) {
+      window.removeEventListener("resize", resizeHandler);
+    }
+  });
 
   $: ({ height } = contentRect);
 
