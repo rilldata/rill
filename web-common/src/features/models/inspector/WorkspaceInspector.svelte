@@ -11,6 +11,8 @@
     getFileExtension,
   } from "@rilldata/web-common/features/sources/sourceUtils";
   import CollapsibleSectionTitle from "@rilldata/web-common/layout/CollapsibleSectionTitle.svelte";
+  import SimpleMessage from "@rilldata/web-common/layout/inspector/SimpleMessage.svelte";
+  import Inspector from "@rilldata/web-common/layout/workspace/Inspector.svelte";
   import {
     formatBigNumberPercentage,
     formatInteger,
@@ -27,12 +29,8 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import IncrementalProcessing from "../incremental/IncrementalProcessing.svelte";
   import PartitionsBrowser from "../partitions/PartitionsBrowser.svelte";
-  import { getTableReferences } from "../utils/get-table-references";
   import References from "./References.svelte";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
-  import { getMatchingReferencesAndEntries } from "./utils";
-  import Inspector from "@rilldata/web-common/layout/workspace/Inspector.svelte";
-  import SimpleMessage from "@rilldata/web-common/layout/inspector/SimpleMessage.svelte";
 
   export let hasUnsavedChanges: boolean;
   export let connector: string;
@@ -112,45 +110,36 @@
       ? formatBigNumberPercentage(totalNulls / totalCells)
       : undefined;
 
-  $: sourceTableReferences =
-    model && getTableReferences(model?.spec?.inputProperties?.sql ?? "");
-
   $: getAllSources = useSources(instanceId);
   $: getAllModels = useModels(instanceId);
 
   $: allSources = $getAllSources?.data ?? [];
   $: allModels = $getAllModels?.data ?? [];
 
-  $: referencedThings =
-    sourceTableReferences &&
-    getMatchingReferencesAndEntries(tableName, sourceTableReferences, [
-      ...allSources,
-      ...allModels,
-    ]);
+  $: resourceRefs = resource?.meta?.refs ?? [];
 
-  $: cardinalityQueries =
-    referencedThings?.map(([resource]) => {
-      return createQueryServiceTableCardinality(
-        instanceId,
-        resource.meta?.name?.name ?? "",
-        {
-          connector,
-          database,
-          databaseSchema,
+  $: cardinalityQueries = resourceRefs.map((ref) => {
+    return createQueryServiceTableCardinality(
+      instanceId,
+      ref.name as string,
+      {
+        connector,
+        database,
+        databaseSchema,
+      },
+      {
+        query: {
+          select: (data) => +(data?.cardinality ?? 0),
         },
-        {
-          query: {
-            select: (data) => +(data?.cardinality ?? 0),
-          },
-        },
-      );
-    }) ?? [];
+      },
+    );
+  });
 
   $: sourceProfileColumns =
-    referencedThings?.map(([resource]) => {
+    resourceRefs.map((ref) => {
       return createQueryServiceTableColumns(
         instanceId,
-        resource.meta?.name?.name ?? "",
+        ref.name as string,
         {
           connector,
           database,
@@ -283,8 +272,8 @@
 
         <hr />
 
-        {#if showReferences && referencedThings?.length}
-          <References modelHasError={hasErrors} {referencedThings} />
+        {#if showReferences && resourceRefs.length}
+          <References modelHasError={hasErrors} {resourceRefs} />
           <hr />
         {/if}
 
