@@ -12,11 +12,9 @@
   import EyeIcon from "@rilldata/web-common/components/icons/Eye.svelte";
   import Search from "../search/Search.svelte";
   import { Tooltip } from "bits-ui";
-  import { onMount, onDestroy } from "svelte";
 
   const UPPER_BOUND = 12 + 28 + 25;
   const ITEM_HEIGHT = 28;
-  const WINDOW_OFFSET = 100; // Space to leave from window edges
 
   type SelectableItem = MetricsViewSpecMeasureV2 | MetricsViewSpecDimensionV2;
 
@@ -36,25 +34,6 @@
   let dragIndex = -1;
   let dragItemInitialTop = 0;
   let threshold = 0;
-  let windowHeight = typeof window !== "undefined" ? window.innerHeight : 800;
-  let maxContentHeight = windowHeight - WINDOW_OFFSET;
-  let resizeHandler: () => void;
-
-  onMount(() => {
-    if (typeof window !== "undefined") {
-      resizeHandler = () => {
-        windowHeight = window.innerHeight;
-        maxContentHeight = windowHeight - WINDOW_OFFSET;
-      };
-      window.addEventListener("resize", resizeHandler);
-    }
-  });
-
-  onDestroy(() => {
-    if (typeof window !== "undefined" && resizeHandler) {
-      window.removeEventListener("resize", resizeHandler);
-    }
-  });
 
   $: ({ height } = contentRect);
 
@@ -70,7 +49,6 @@
 
   $: tooltipText = `Choose ${type === "measure" ? "measures" : "dimensions"} to display`;
 
-  // Filter items based on search text
   $: filteredSelectedItems = searchText
     ? selectedItems.filter((id) => {
         const item = allItemsMap.get(id);
@@ -228,13 +206,21 @@
       </div>
     </Button>
   </Popover.Trigger>
-  <Popover.Content class="p-0" align="start">
+  <Popover.Content
+    class="p-0"
+    align="start"
+    collisionPadding={100}
+    strategy="absolute"
+    fitViewport={true}
+    overflowY="auto"
+    overflowX="none"
+    minHeight="100px"
+  >
     <div
       bind:this={dragContainer}
       bind:contentRect
       class="flex flex-col relative"
       role="presentation"
-      style="max-height: {maxContentHeight}px"
     >
       <div class="px-3 pt-3 pb-0">
         <Search
@@ -246,12 +232,11 @@
 
       <div
         role="presentation"
-        class="flex flex-col pointer-events-none p-1.5 pt-0 overflow-y-auto"
-        style="max-height: calc({maxContentHeight}px / 2)"
+        class="shown-section flex flex-col flex-1 p-1.5 pt-0"
         on:mousedown={handleMouseDown}
       >
         <header
-          class="flex w-full py-1.5 pb-1 justify-between px-2 sticky top-0 from-white from-80% to-transparent bg-gradient-to-b z-10"
+          class="flex-none flex w-full py-1.5 pb-1 justify-between px-2 sticky top-0 from-white from-80% to-transparent bg-gradient-to-b z-10"
         >
           <h3 class="uppercase text-gray-500 font-semibold">
             Shown {type === "measure" ? "Measures" : "Dimensions"}
@@ -390,13 +375,10 @@
         {/if}
       </div>
       {#if selectedItems.length < allItems.length}
-        <span class="h-px bg-slate-200 w-full" />
-        <div
-          class="flex flex-col overflow-y-auto p-1.5 pt-0"
-          style="max-height: calc({maxContentHeight}px / 2)"
-        >
+        <span class="flex-none h-px bg-slate-200 w-full" />
+        <div class="hidden-section flex flex-col flex-1 min-h-0 p-1.5 pt-0">
           <header
-            class="flex py-1.5 justify-between px-2 sticky top-0 from-white from-80% to-transparent bg-gradient-to-b"
+            class="flex-none flex py-1.5 justify-between px-2 sticky top-0 from-white from-80% to-transparent bg-gradient-to-b"
           >
             <h3
               class="uppercase text-xs text-gray-500 font-semibold from-white from-80% to-transparent bg-gradient-to-b"
@@ -413,7 +395,6 @@
               Show all
             </button>
           </header>
-
           {#if filteredHiddenItems.length === 0}
             <div class="px-2 py-2 text-xs text-gray-500">
               {searchText
