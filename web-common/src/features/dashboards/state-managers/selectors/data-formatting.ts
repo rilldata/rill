@@ -13,6 +13,20 @@ export const formattingSelectors = {
     FormatPreset.HUMANIZE,
 
   /**
+   * A readable containing a function that formats values
+   * according to the active measure's format specification,
+   * whether it's a d3 format string or a format preset.
+   */
+  activeMeasureFormatter: (args: DashboardDataSources) => {
+    const measure = activeMeasure(args);
+    if (measure === undefined) {
+      return (_value: number | undefined) => undefined;
+    }
+
+    return createMeasureValueFormatter(measure);
+  },
+
+  /**
    * A map of measure names to their formatters
    */
   measureFormatters: (args: DashboardDataSources) => {
