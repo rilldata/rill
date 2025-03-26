@@ -21,7 +21,7 @@ VALUES ('guest', true, true, false, true, false, false, false, false);
 
 -- Add all project-level members who are not already org-level members as org-level members with the 'guest' role.
 INSERT INTO users_orgs_roles (user_id, org_id, org_role_id)
-SELECT
+SELECT DISTINCT
     upr.user_id AS user_id,
     p.org_id AS org_id,
     (SELECT ors.id FROM org_roles ors WHERE ors.name = 'guest') AS org_role_id
