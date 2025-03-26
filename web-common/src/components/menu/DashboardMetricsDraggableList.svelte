@@ -267,70 +267,114 @@
           {#each filteredSelectedItems as id, i (i)}
             {@const elementId = `visible-${type === "measure" ? "measures" : "dimensions"}-${id}`}
             {@const isDragItem = dragId === elementId}
-            <Tooltip.Root
-              open={!allItemsMap.get(id)?.description &&
-                selectedItems.length > 1}
-              portal="body"
-            >
-              <Tooltip.Trigger>
-                <div
-                  role="presentation"
-                  data-index={i}
-                  data-item-name={id}
-                  id={elementId}
-                  class:sr-only={isDragItem}
-                  class:transition-margin={dragIndex !== -1 &&
-                    dropIndex !== dragIndex}
-                  class:drag-transition={dragIndex !== -1}
-                  class:mt-7={dropIndex !== null &&
-                    !isDragItem &&
-                    i === dropIndex + (i > dragIndex ? 1 : 0)}
-                  class:mb-7={dropIndex === selectedItems.length - 1 &&
-                    i ===
-                      selectedItems.length -
-                        1 -
-                        (dragIndex === selectedItems.length - 1 ? 1 : 0)}
-                  style:pointer-events={isDragItem ? "none" : "auto"}
-                  style:height="{ITEM_HEIGHT}px"
-                  class="w-full flex gap-x-1 flex-none px-2 py-1 pointer-events-auto cursor-grab items-center hover:bg-slate-50 rounded-sm"
-                  class:cursor-not-allowed={selectedItems.length === 1}
-                >
-                  <DragHandle size="16px" className="text-gray-400" />
-
-                  {allItemsMap.get(id)?.displayName ??
-                    `Unknown ${type === "measure" ? "measure" : "dimension"}`}
-
-                  <button
-                    class="ml-auto hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
-                    on:click={() => {
-                      selectedItems = selectedItems.filter((_, j) => j !== i);
-                      onSelectedChange(selectedItems);
-                    }}
-                    on:mousedown|stopPropagation={() => {
-                      // NO-OP
-                    }}
-                    disabled={selectedItems.length === 1}
-                    class:pointer-events-none={selectedItems.length === 1}
-                    class:opacity-50={selectedItems.length === 1}
+            {#if allItemsMap.get(id)?.description || selectedItems.length === 1}
+              <Tooltip.Root openDelay={200} portal="body">
+                <Tooltip.Trigger>
+                  <div
+                    role="presentation"
+                    data-index={i}
+                    data-item-name={id}
+                    id={elementId}
+                    class:sr-only={isDragItem}
+                    class:transition-margin={dragIndex !== -1 &&
+                      dropIndex !== dragIndex}
+                    class:drag-transition={dragIndex !== -1}
+                    class:mt-7={dropIndex !== null &&
+                      !isDragItem &&
+                      i === dropIndex + (i > dragIndex ? 1 : 0)}
+                    class:mb-7={dropIndex === selectedItems.length - 1 &&
+                      i ===
+                        selectedItems.length -
+                          1 -
+                          (dragIndex === selectedItems.length - 1 ? 1 : 0)}
+                    style:pointer-events={isDragItem ? "none" : "auto"}
+                    style:height="{ITEM_HEIGHT}px"
+                    class="w-full flex gap-x-1 flex-none px-2 py-1 pointer-events-auto cursor-grab items-center hover:bg-slate-50 rounded-sm"
+                    class:cursor-not-allowed={selectedItems.length === 1}
                   >
-                    <EyeIcon size="14px" color="#6b7280" />
-                  </button>
-                </div>
-              </Tooltip.Trigger>
-              <Tooltip.Content side="right" sideOffset={12}>
-                <div
-                  class="bg-gray-800 text-gray-50 rounded p-2 pt-1 pb-1 shadow-md z-50"
+                    <DragHandle size="16px" className="text-gray-400" />
+
+                    {allItemsMap.get(id)?.displayName ??
+                      `Unknown ${type === "measure" ? "measure" : "dimension"}`}
+
+                    <button
+                      class="ml-auto hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
+                      on:click={() => {
+                        selectedItems = selectedItems.filter((_, j) => j !== i);
+                        onSelectedChange(selectedItems);
+                      }}
+                      on:mousedown|stopPropagation={() => {
+                        // NO-OP
+                      }}
+                      disabled={selectedItems.length === 1}
+                      class:pointer-events-none={selectedItems.length === 1}
+                      class:opacity-50={selectedItems.length === 1}
+                    >
+                      <EyeIcon size="14px" color="#6b7280" />
+                    </button>
+                  </div>
+                </Tooltip.Trigger>
+
+                <Tooltip.Content side="right" sideOffset={12}>
+                  <div
+                    class="bg-gray-800 text-gray-50 rounded p-2 pt-1 pb-1 shadow-md pointer-events-none z-50"
+                  >
+                    {#if selectedItems.length === 1}
+                      Must show at least one {type === "measure"
+                        ? "measure"
+                        : "dimension"}
+                    {:else}
+                      {allItemsMap.get(id)?.description}
+                    {/if}
+                  </div>
+                </Tooltip.Content>
+              </Tooltip.Root>
+            {:else}
+              <!-- FIXME: hoist to DraggableListItem -->
+              <div
+                role="presentation"
+                data-index={i}
+                data-item-name={id}
+                id={elementId}
+                class:sr-only={isDragItem}
+                class:transition-margin={dragIndex !== -1 &&
+                  dropIndex !== dragIndex}
+                class:drag-transition={dragIndex !== -1}
+                class:mt-7={dropIndex !== null &&
+                  !isDragItem &&
+                  i === dropIndex + (i > dragIndex ? 1 : 0)}
+                class:mb-7={dropIndex === selectedItems.length - 1 &&
+                  i ===
+                    selectedItems.length -
+                      1 -
+                      (dragIndex === selectedItems.length - 1 ? 1 : 0)}
+                style:pointer-events={isDragItem ? "none" : "auto"}
+                style:height="{ITEM_HEIGHT}px"
+                class="w-full flex gap-x-1 flex-none px-2 py-1 pointer-events-auto cursor-grab items-center hover:bg-slate-50 rounded-sm"
+                class:cursor-not-allowed={selectedItems.length === 1}
+              >
+                <DragHandle size="16px" className="text-gray-400" />
+
+                {allItemsMap.get(id)?.displayName ??
+                  `Unknown ${type === "measure" ? "measure" : "dimension"}`}
+
+                <button
+                  class="ml-auto hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
+                  on:click={() => {
+                    selectedItems = selectedItems.filter((_, j) => j !== i);
+                    onSelectedChange(selectedItems);
+                  }}
+                  on:mousedown|stopPropagation={() => {
+                    // NO-OP
+                  }}
+                  disabled={selectedItems.length === 1}
+                  class:pointer-events-none={selectedItems.length === 1}
+                  class:opacity-50={selectedItems.length === 1}
                 >
-                  {#if selectedItems.length === 1}
-                    Must show at least one {type === "measure"
-                      ? "measure"
-                      : "dimension"}
-                  {:else}
-                    {allItemsMap.get(id)?.description}
-                  {/if}
-                </div>
-              </Tooltip.Content>
-            </Tooltip.Root>
+                  <EyeIcon size="14px" color="#6b7280" />
+                </button>
+              </div>
+            {/if}
           {/each}
         {/if}
       </div>
