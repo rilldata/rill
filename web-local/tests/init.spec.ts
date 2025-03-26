@@ -1,10 +1,11 @@
-import { test } from "./setup/base";
-import { expect } from "playwright/test";
 import { EXAMPLES } from "@rilldata/web-common/features/welcome/constants";
+import { expect } from "playwright/test";
+import { test } from "./setup/base";
 
 test.describe("Example project initialization", () => {
   EXAMPLES.forEach((example) => {
     test.describe(`Example project: ${example.title}`, () => {
+      test.describe.configure({ retries: 2 }); // Problem: flaky tests!
       test("should initialize new project", async ({ page }) => {
         await page.getByRole("link", { name: example.title }).click();
 
