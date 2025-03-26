@@ -4,7 +4,6 @@
   import {
     getDimensionColumnProps,
     getMeasureColumnProps,
-    getRowNestedLabel,
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-definition";
   import { NUM_ROWS_PER_PAGE } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
   import {
@@ -46,6 +45,7 @@
   export let canShowDataViewer = false;
   export let border = true;
   export let overscan = 20;
+  export let rounded = true;
   export let setPivotExpanded: (expanded: ExpandedState) => void;
   export let setPivotSort: (sorting: SortingState) => void;
   export let setPivotRowPage: (page: number) => void;
@@ -97,7 +97,6 @@
   let ignoreInitialTimeout = false;
 
   $: timeDimension = $config.time.timeDimension;
-  $: hasRowDimension = $pivotState.rows.length > 0;
   $: hasColumnDimension =
     splitPivotChips($pivotState.columns).dimension.length > 0;
   $: reachedEndForRows = !!$pivotDataStore?.reachedEndForRowData;
@@ -112,7 +111,6 @@
     $config.rowDimensionNames,
     $config,
   );
-  $: rowDimensionLabel = getRowNestedLabel(rowDimensions);
 
   $: headerGroups = $table.getHeaderGroups();
   $: totalHeaderHeight = headerGroups.length * HEADER_HEIGHT;
@@ -256,6 +254,7 @@
 
 <div
   class:border
+  class:rounded-sm={rounded}
   class="table-wrapper relative"
   style:--row-height="{ROW_HEIGHT}px"
   style:--header-height="{HEADER_HEIGHT}px"
@@ -290,11 +289,10 @@
       {virtualRows}
       {before}
       {after}
-      {hasRowDimension}
       {timeDimension}
       {totalsRow}
       {totalRowSize}
-      {rowDimensionLabel}
+      {rowDimensions}
       {hasColumnDimension}
       {dataRows}
       {measures}
@@ -324,6 +322,6 @@
 <style lang="postcss">
   .table-wrapper {
     @apply overflow-auto h-fit max-h-full w-fit max-w-full;
-    @apply rounded-md z-40 select-none;
+    @apply z-40 select-none;
   }
 </style>

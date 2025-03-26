@@ -2539,6 +2539,13 @@ export class ExplorePreset extends Message<ExplorePreset> {
   where?: Expression;
 
   /**
+   * Temporary to differentiate between "select" and "in list" modes. Expression will be replaced with UI specific state in the future.
+   *
+   * @generated from field: repeated string dimensions_with_inlist_filter = 29;
+   */
+  dimensionsWithInlistFilter: string[] = [];
+
+  /**
    * Time range for the explore.
    * It corresponds to the `range` property of the explore's `time_ranges`.
    * If not found in `time_ranges`, it should be added to the list.
@@ -2607,6 +2614,11 @@ export class ExplorePreset extends Message<ExplorePreset> {
   exploreExpandedDimension?: string;
 
   /**
+   * @generated from field: optional uint32 explore_leaderboard_measure_count = 30;
+   */
+  exploreLeaderboardMeasureCount?: number;
+
+  /**
    * @generated from field: optional string time_dimension_measure = 21;
    */
   timeDimensionMeasure?: string;
@@ -2659,6 +2671,7 @@ export class ExplorePreset extends Message<ExplorePreset> {
     { no: 4, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 10, name: "measures_selector", kind: "message", T: FieldSelector },
     { no: 11, name: "where", kind: "message", T: Expression, opt: true },
+    { no: 29, name: "dimensions_with_inlist_filter", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 6, name: "time_range", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 12, name: "timezone", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 13, name: "time_grain", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
@@ -2671,6 +2684,7 @@ export class ExplorePreset extends Message<ExplorePreset> {
     { no: 18, name: "explore_sort_asc", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 19, name: "explore_sort_type", kind: "enum", T: proto3.getEnumType(ExploreSortType), opt: true },
     { no: 20, name: "explore_expanded_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 30, name: "explore_leaderboard_measure_count", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
     { no: 21, name: "time_dimension_measure", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 22, name: "time_dimension_chart_type", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 23, name: "time_dimension_pin", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },

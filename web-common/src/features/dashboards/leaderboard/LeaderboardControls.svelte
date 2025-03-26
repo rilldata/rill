@@ -1,27 +1,39 @@
 <script lang="ts">
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import DashboardVisibilityDropdown from "@rilldata/web-common/components/menu/shadcn/DashboardVisibilityDropdown.svelte";
-  import * as Select from "@rilldata/web-common/components/select";
+  import DashboardVisibilityDropdown from "@rilldata/web-common/components/menu/DashboardVisibilityDropdown.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import { getSimpleMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { getStateManagers } from "../state-managers/state-managers";
+  import LeaderboardMeasureCountSelector from "@rilldata/web-common/components/menu/LeaderboardMeasureCountSelector.svelte";
+  import { featureFlags } from "../../feature-flags";
+  import LeaderboardActiveMeasureDropdown from "@rilldata/web-common/components/menu/LeaderboardActiveMeasureDropdown.svelte";
+  import { SortType } from "../proto-state/derived-types";
 
   export let exploreName: string;
 
+  const StateManagers = getStateManagers();
   const {
     selectors: {
-      measures: { leaderboardMeasureName, getMeasureByName, visibleMeasures },
+      measures: {
+        leaderboardMeasureCount,
+        visibleMeasures,
+        leaderboardMeasureName,
+        getMeasureByName,
+      },
       dimensions: { visibleDimensions, allDimensions },
+      sorting: { sortByMeasure },
     },
     actions: {
       dimensions: { toggleDimensionVisibility },
-      contextCol: { setContextColumn },
+      contextColumn: { setContextColumn },
+      sorting: { toggleSort, setSortDescending },
+      setLeaderboardMeasureCount,
       setLeaderboardMeasureName,
     },
-  } = getStateManagers();
+  } = StateManagers;
 
-  let active = false;
+  const { leaderboardMeasureCount: leaderboardMeasureCountFeatureFlag } =
+    featureFlags;
 
   $: measures = getSimpleMeasures($visibleMeasures);
 
@@ -29,8 +41,9 @@
 
   $: activeLeaderboardMeasure = $getMeasureByName($leaderboardMeasureName);
 
-  $: validPercentOfTotal =
-    activeLeaderboardMeasure?.validPercentOfTotal || false;
+  $: validPercentOfTotal = leaderboardMeasureCountFeatureFlag
+    ? $visibleMeasures.some((measure) => measure.validPercentOfTotal)
+    : activeLeaderboardMeasure?.validPercentOfTotal || false;
 
   $: visibleDimensionsNames = $visibleDimensions
     .map(({ name }) => name)
@@ -55,10 +68,10 @@
 </script>
 
 <div>
-  {#if measures.length && activeLeaderboardMeasure}
+  {#if measures.length}
     <div
       class="flex flex-row items-center ui-copy-muted gap-x-1"
-      style:max-width="450px"
+      style:max-width="768px"
     >
       <DashboardVisibilityDropdown
         category="Dimensions"
@@ -74,53 +87,28 @@
         }}
       />
 
-      <Select.Root
-        bind:open={active}
-        selected={{ value: activeLeaderboardMeasure.name, label: "" }}
-        items={measures.map((measure) => ({
-          value: measure.name ?? "",
-          label: measure.displayName || measure.name,
-        }))}
-        onSelectedChange={(newSelection) => {
-          if (!newSelection?.value) return;
-          setLeaderboardMeasureName(newSelection.value);
-        }}
-      >
-        <Select.Trigger class="outline-none border-none w-fit  px-0 gap-x-0.5">
-          <Button type="text" label="Select a measure to filter by">
-            <span class="truncate text-gray-700 hover:text-inherit">
-              Showing <b>
-                {activeLeaderboardMeasure?.displayName ||
-                  activeLeaderboardMeasure.name}
-              </b>
-            </span>
-          </Button>
-        </Select.Trigger>
-
-        <Select.Content
-          sameWidth={false}
-          align="start"
-          class="max-h-80 overflow-y-auto min-w-44"
-        >
-          {#each measures as measure (measure.name)}
-            <Select.Item
-              value={measure.name}
-              label={measure.displayName || measure.name}
-              class="text-[12px]"
-            >
-              <div class="flex flex-col">
-                <div class:font-bold={$leaderboardMeasureName === measure.name}>
-                  {measure.displayName || measure.name}
-                </div>
-
-                <p class="ui-copy-muted" style:font-size="11px">
-                  {measure.description}
-                </p>
-              </div>
-            </Select.Item>
-          {/each}
-        </Select.Content>
-      </Select.Root>
+      {#if $leaderboardMeasureCountFeatureFlag}
+        <LeaderboardMeasureCountSelector
+          measures={$visibleMeasures}
+          count={$leaderboardMeasureCount}
+          onMeasureCountChange={(count) => {
+            setLeaderboardMeasureCount(count);
+          }}
+          resetSort={() => {
+            // Fallback to the first visible measure if sort_by measure is not in the context
+            toggleSort(SortType.VALUE, $visibleMeasures[0].name);
+            setSortDescending();
+          }}
+          sortByMeasure={$sortByMeasure}
+        />
+      {:else}
+        <LeaderboardActiveMeasureDropdown
+          leaderboardMeasureName={$leaderboardMeasureName}
+          {setLeaderboardMeasureName}
+          {measures}
+          {activeLeaderboardMeasure}
+        />
+      {/if}
     </div>
   {/if}
 </div>

@@ -64,7 +64,7 @@
 
 <CtaLayoutContainer>
   <CtaContentContainer>
-    {#if $dashboardStateForReport.isFetching}
+    {#if $dashboardStateForReport.isLoading}
       <div class="h-36 mt-10">
         <Spinner status={EntityStatus.Running} size="7rem" duration={725} />
       </div>

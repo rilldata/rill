@@ -16,6 +16,7 @@
   export let options: {
     value: string;
     label: string;
+    description?: string;
     type?: string;
     disabled?: boolean;
     tooltip?: string;
@@ -24,6 +25,7 @@
   export let optional: boolean = false;
   export let tooltip: string = "";
   export let width: number | null = null;
+  export let minWidth: number | null = null;
   export let disabled = false;
   export let selectElement: HTMLButtonElement | undefined = undefined;
   export let full = false;
@@ -33,9 +35,16 @@
   export let truncate = false;
   export let enableSearch = false;
   export let lockable = false;
+  export let forcedTriggerStyle = "";
   export let onChange: (value: string) => void = () => {};
 
   let searchText = "";
+
+  const HeightBySize = {
+    sm: "h-6",
+    md: "h-7",
+    lg: "",
+  };
 
   $: selected = options.find((option) => option.value === value);
   $: filteredOptions = enableSearch
@@ -89,11 +98,11 @@
       {lockable}
       {lockTooltip}
       bind:el={selectElement}
-      class="flex px-3 gap-x-2 max-w-full {size === 'sm' ? 'h-6' : ''} {width &&
-        `w-[${width}px]`}  {ringFocus &&
+      class="flex px-3 gap-x-2 max-w-full {HeightBySize[size]} {width &&
+        `w-[${width}px]`} {minWidth && `min-w-[${minWidth}px]`} {ringFocus &&
         'focus:ring-2 focus:ring-primary-100'} {truncate
         ? 'break-all overflow-hidden'
-        : ''}"
+        : ''} {forcedTriggerStyle}"
       aria-label={label}
     >
       <Select.Value
@@ -110,12 +119,13 @@
           <Search bind:value={searchText} showBorderOnFocus={false} />
         </div>
       {/if}
-      {#each filteredOptions as { type, value, label, disabled, tooltip } (value)}
+      {#each filteredOptions as { type, value, label, description, disabled, tooltip } (value)}
         <Select.Item
           {value}
           {label}
+          {description}
           {disabled}
-          class="text-[{fontSize}px] gap-x-2"
+          class="text-[{fontSize}px] gap-x-2 items-start"
         >
           {#if tooltip}
             <Tooltip.Root portal="body">

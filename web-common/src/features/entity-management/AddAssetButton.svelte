@@ -4,7 +4,6 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { Tag } from "@rilldata/web-common/components/tag";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import { Database, Folder, PlusCircleIcon } from "lucide-svelte";
   import CaretDownIcon from "../../components/icons/CaretDownIcon.svelte";
@@ -44,7 +43,6 @@
   const createFolder = createRuntimeServiceCreateDirectory();
 
   $: ({ instanceId } = $runtime);
-  const { canvasDashboards } = featureFlags;
 
   $: currentFile = $page.params.file;
   $: currentDirectory = currentFile
@@ -83,9 +81,9 @@
   }
 
   /**
-   * Open the add source modal
+   * Open the Add Data modal
    */
-  async function handleAddSource() {
+  async function handleAddData() {
     addSourceModal.open();
 
     await behaviourEvent?.fireSourceTriggerEvent(
@@ -173,15 +171,15 @@
     </Button>
   </DropdownMenu.Trigger>
   <DropdownMenu.Content align="start" class="w-[240px]">
+    <DropdownMenu.Item
+      aria-label="Add Source"
+      class="flex gap-x-2"
+      on:click={handleAddData}
+    >
+      <svelte:component this={Database} color="#C026D3" size="16px" />
+      Data
+    </DropdownMenu.Item>
     {#if $isModelingSupportedForDefaultOlapDriver}
-      <DropdownMenu.Item
-        aria-label="Add Source"
-        class="flex gap-x-2"
-        on:click={handleAddSource}
-      >
-        <svelte:component this={Database} color="#C026D3" size="16px" />
-        Data
-      </DropdownMenu.Item>
       <DropdownMenu.Item
         aria-label="Add Model"
         class="flex gap-x-2"
@@ -231,25 +229,24 @@
         />
         Explore dashboard
       </DropdownMenu.Item>
-      {#if $canvasDashboards}
-        <DropdownMenu.Item
-          class="flex items-center justify-between gap-x-2"
-          on:click={async () => {
-            const newFilePath = await createResourceFile(ResourceKind.Canvas);
-            await wrapNavigation(newFilePath);
-          }}
-        >
-          <div class="flex gap-x-2">
-            <svelte:component
-              this={resourceIconMapping[ResourceKind.Canvas]}
-              color={resourceColorMapping[ResourceKind.Canvas]}
-              size="16px"
-            />
-            Canvas dashboard
-          </div>
-          <Tag height={16} color="blue">BETA</Tag>
-        </DropdownMenu.Item>
-      {/if}
+
+      <DropdownMenu.Item
+        class="flex items-center justify-between gap-x-2"
+        on:click={async () => {
+          const newFilePath = await createResourceFile(ResourceKind.Canvas);
+          await wrapNavigation(newFilePath);
+        }}
+      >
+        <div class="flex gap-x-2">
+          <svelte:component
+            this={resourceIconMapping[ResourceKind.Canvas]}
+            color={resourceColorMapping[ResourceKind.Canvas]}
+            size="16px"
+          />
+          Canvas dashboard
+        </div>
+        <Tag height={16} color="blue">BETA</Tag>
+      </DropdownMenu.Item>
     {/if}
     <DropdownMenu.Separator />
     <DropdownMenu.Sub>

@@ -16,4 +16,5 @@ export interface TimeAndFilterStore {
   showTimeComparison: boolean;
   timeRangeState: TimeRangeState | undefined;
   comparisonTimeRangeState: ComparisonTimeRangeState | undefined;
+  hasTimeSeries: boolean | undefined;
 }

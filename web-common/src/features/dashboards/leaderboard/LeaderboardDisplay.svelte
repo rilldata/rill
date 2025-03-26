@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { selectedDimensionValuesV2 } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import type {
     V1Expression,
@@ -8,11 +9,8 @@
   import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardControls from "./LeaderboardControls.svelte";
-  import {
-    DEFAULT_COL_WIDTH,
-    deltaColumn,
-    valueColumn,
-  } from "./leaderboard-widths";
+  import { COMPARISON_COLUMN_WIDTH, valueColumn } from "./leaderboard-widths";
+  import { featureFlags } from "../../feature-flags";
 
   export let metricsViewName: string;
   export let whereFilter: V1Expression;
@@ -21,20 +19,18 @@
   export let comparisonTimeRange: V1TimeRange | undefined;
   export let timeControlsReady: boolean;
   export let activeMeasureName: string;
+  export let activeMeasureNames: string[];
 
   const StateManagers = getStateManagers();
   const {
     selectors: {
       activeMeasure: { isValidPercentOfTotal, isSummableMeasure },
       numberFormat: { activeMeasureFormatter },
-      dimensionFilters: {
-        selectedDimensionValues,
-        atLeastOneSelection,
-        isFilterExcludeMode,
-      },
+      dimensionFilters: { isFilterExcludeMode },
       dimensions: { visibleDimensions },
       comparison: { isBeingCompared: isBeingComparedReadable },
-      sorting: { sortedAscending, sortType },
+      sorting: { sortedAscending, sortType, sortByMeasure },
+      measures: { measureLabel },
     },
     actions: {
       dimensions: { setPrimaryDimension },
@@ -43,29 +39,34 @@
       comparison: { toggleComparisonDimension },
     },
     exploreName,
+    dashboardStore,
   } = StateManagers;
 
   let parentElement: HTMLDivElement;
   let suppressTooltip = false;
+
+  const { leaderboardMeasureCount: leaderboardMeasureCountFeatureFlag } =
+    featureFlags;
 
   $: ({ instanceId } = $runtime);
 
   // Reset column widths when the measure changes
   $: if (activeMeasureName) {
     valueColumn.reset();
-    deltaColumn.reset();
   }
 
-  $: firstColumnWidth =
-    !comparisonTimeRange && !$isValidPercentOfTotal ? 240 : 164;
+  $: dimensionColumnWidth = 164;
+
+  $: showPercentOfTotal = isValidPercentOfTotal;
+  $: showDeltaPercent = !!comparisonTimeRange;
 
   $: tableWidth =
-    firstColumnWidth +
+    dimensionColumnWidth +
     $valueColumn +
     (comparisonTimeRange
-      ? $deltaColumn + DEFAULT_COL_WIDTH
-      : $isValidPercentOfTotal
-        ? DEFAULT_COL_WIDTH
+      ? COMPARISON_COLUMN_WIDTH * (showDeltaPercent ? 2 : 1)
+      : showPercentOfTotal
+        ? COMPARISON_COLUMN_WIDTH
         : 0);
 </script>
 
@@ -91,29 +92,39 @@
               isValidPercentOfTotal={$isValidPercentOfTotal}
               {metricsViewName}
               {activeMeasureName}
+              {activeMeasureNames}
               {whereFilter}
               {dimensionThresholdFilters}
               {instanceId}
               {tableWidth}
               {timeRange}
-              {firstColumnWidth}
+              {dimensionColumnWidth}
               sortedAscending={$sortedAscending}
               sortType={$sortType}
               filterExcludeMode={$isFilterExcludeMode(dimension.name)}
-              atLeastOneActive={$atLeastOneSelection(dimension.name)}
               {comparisonTimeRange}
               {dimension}
               isSummableMeasure={$isSummableMeasure}
               {parentElement}
               {suppressTooltip}
               {timeControlsReady}
-              selectedValues={$selectedDimensionValues(dimension.name)}
+              selectedValues={selectedDimensionValuesV2(
+                $runtime.instanceId,
+                [metricsViewName],
+                $dashboardStore.whereFilter,
+                dimension.name,
+                timeRange.start,
+                timeRange.end,
+              )}
               isBeingCompared={$isBeingComparedReadable(dimension.name)}
               formatter={$activeMeasureFormatter}
               {setPrimaryDimension}
               {toggleSort}
               {toggleDimensionValueSelection}
               {toggleComparisonDimension}
+              sortBy={$sortByMeasure}
+              measureLabel={$measureLabel}
+              leaderboardMeasureCountFeatureFlag={$leaderboardMeasureCountFeatureFlag}
             />
           {/if}
         {/each}
@@ -124,6 +135,6 @@
 
 <style lang="postcss">
   .leaderboard-grid {
-    @apply flex flex-row flex-wrap gap-4;
+    @apply flex flex-row flex-wrap gap-4 overflow-x-auto;
   }
 </style>

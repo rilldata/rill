@@ -150,7 +150,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	// build clickhouse options
 	var opts *clickhouse.Options
 	var embed *embedClickHouse
-	maxOpenConnections := 10 // based on observations
+	maxOpenConnections := 20 // based on observations
 	if conf.DSN != "" {
 		opts, err = clickhouse.ParseDSN(conf.DSN)
 		if err != nil {

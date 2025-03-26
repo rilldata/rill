@@ -38,6 +38,7 @@ export function mapQueryToDashboard(
   if (!queryName || !queryArgsJson || !executionTime)
     return readable({
       isFetching: false,
+      isLoading: false,
       error: "Required parameters are missing.",
     });
 
@@ -73,6 +74,7 @@ export function mapQueryToDashboard(
     // error state
     return readable({
       isFetching: false,
+      isLoading: false,
       error:
         "Failed to find metrics view name. Please check the format of the report.",
     });
@@ -93,9 +95,10 @@ export function mapQueryToDashboard(
       ),
     ],
     ([validSpecResp, timeRangeSummary], set) => {
-      if (validSpecResp.isFetching || timeRangeSummary.isFetching) {
+      if (validSpecResp.isLoading || timeRangeSummary.isLoading) {
         set({
           isFetching: true,
+          isLoading: true,
           error: "",
         });
         return;
@@ -104,6 +107,7 @@ export function mapQueryToDashboard(
       if (validSpecResp.error || timeRangeSummary.error) {
         set({
           isFetching: false,
+          isLoading: false,
           error:
             validSpecResp.error?.response?.data?.message ??
             timeRangeSummary.error?.response?.data?.message,
@@ -119,6 +123,7 @@ export function mapQueryToDashboard(
       ) {
         set({
           isFetching: false,
+          isLoading: false,
           error: "Failed to fetch explore.",
         });
         return;
@@ -128,6 +133,7 @@ export function mapQueryToDashboard(
       if (!timeRangeSummary.data) {
         set({
           isFetching: false,
+          isLoading: false,
           error: "Failed to fetch time range summary.",
         });
         return;
@@ -163,6 +169,7 @@ export function mapQueryToDashboard(
         .then((newExploreState) => {
           set({
             isFetching: false,
+            isLoading: false,
             error: "",
             data: {
               exploreState: newExploreState,
@@ -173,6 +180,7 @@ export function mapQueryToDashboard(
         .catch((err) => {
           set({
             isFetching: false,
+            isLoading: false,
             error: err.message,
           });
         });

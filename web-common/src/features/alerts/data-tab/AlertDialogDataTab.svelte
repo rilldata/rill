@@ -1,6 +1,7 @@
 <script lang="ts">
   import DataPreview from "@rilldata/web-common/features/alerts/data-tab/DataPreview.svelte";
   import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
+  import { createTimeControlStoreFromName } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { MetricsViewSpecMeasureType } from "@rilldata/web-common/runtime-client";
   import { createForm } from "svelte-forms-lib";
   import FormSection from "../../../components/forms/FormSection.svelte";
@@ -43,6 +44,12 @@
         : (d.expression ?? (d.name as string)),
     })) ?? []),
   ];
+
+  $: timeControlStore = createTimeControlStoreFromName(
+    instanceId,
+    metricsViewName,
+    $form["exploreName"],
+  );
 </script>
 
 <div class="flex flex-col gap-y-3">
@@ -53,9 +60,12 @@
     <FilterChipsReadOnly
       dimensionThresholdFilters={$form["dimensionThresholdFilters"]}
       filters={$form["whereFilter"]}
+      dimensionsWithInlistFilter={$form["dimensionsWithInlistFilter"]}
       exploreName={$form["exploreName"]}
-      timeRange={$form["timeRange"]}
-      comparisonTimeRange={$form["comparisonTimeRange"]}
+      displayTimeRange={$form["timeRange"]}
+      displayComparisonTimeRange={$form["comparisonTimeRange"]}
+      queryTimeStart={$timeControlStore.timeStart}
+      queryTimeEnd={$timeControlStore.timeEnd}
     />
   </FormSection>
   <FormSection

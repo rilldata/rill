@@ -75,6 +75,9 @@ export function getProtoFromDashboardState(
   if (metrics.whereFilter) {
     state.where = toExpressionProto(metrics.whereFilter);
   }
+  if (metrics.dimensionsWithInlistFilter) {
+    state.dimensionsWithInlistFilter = metrics.dimensionsWithInlistFilter;
+  }
   if (metrics.dimensionThresholdFilters?.length) {
     state.having = metrics.dimensionThresholdFilters.map(
       ({ name, filters }) =>
@@ -115,6 +118,10 @@ export function getProtoFromDashboardState(
 
   if (metrics.leaderboardMeasureName) {
     state.leaderboardMeasure = metrics.leaderboardMeasureName;
+  }
+
+  if (metrics.leaderboardMeasureCount) {
+    state.leaderboardMeasureCount = metrics.leaderboardMeasureCount;
   }
 
   if (metrics.tdd?.pinIndex !== undefined) {

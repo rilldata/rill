@@ -80,6 +80,10 @@ export function convertPresetToExploreState(
     partialExploreState.whereFilter = dimensionFilters;
     partialExploreState.dimensionThresholdFilters = dimensionThresholdFilters;
   }
+  if (preset.dimensionsWithInlistFilter) {
+    partialExploreState.dimensionsWithInlistFilter =
+      preset.dimensionsWithInlistFilter;
+  }
 
   const { partialExploreState: trPartialState, errors: trErrors } =
     fromTimeRangesParams(preset, dimensions);
@@ -267,6 +271,11 @@ function fromExploreUrlParams(
     partialExploreState.dashboardSortType =
       Number(ToLegacySortTypeMap[preset.exploreSortType]) ??
       DashboardState_LeaderboardSortType.UNSPECIFIED;
+  }
+
+  if (preset.exploreLeaderboardMeasureCount !== undefined) {
+    partialExploreState.leaderboardMeasureCount =
+      preset.exploreLeaderboardMeasureCount;
   }
 
   if (preset.exploreExpandedDimension !== undefined) {

@@ -31,6 +31,7 @@
     isProjectPage,
     isPublicURLPage,
   } from "./nav-utils";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
 
   export let createMagicAuthTokens: boolean;
   export let manageProjectMembers: boolean;
@@ -38,6 +39,7 @@
   export let planDisplayName: string | undefined;
 
   const user = createAdminServiceGetCurrentUser();
+  const { alerts: alertsFlag, dimensionSearch } = featureFlags;
 
   $: ({ instanceId } = $runtime);
 
@@ -114,7 +116,7 @@
         (isMetricsExplorer
           ? resource?.explore?.spec?.displayName
           : resource?.canvas?.spec?.displayName) || name,
-      section: isMetricsExplorer ? "explore" : "-/dashboards",
+      section: isMetricsExplorer ? "explore" : "canvas",
     });
   }, new Map<string, PathOption>());
 
@@ -193,9 +195,13 @@
             exploreName={dashboard}
           >
             <LastRefreshedDate {dashboard} />
-            <GlobalDimensionSearch />
+            {#if $dimensionSearch}
+              <GlobalDimensionSearch />
+            {/if}
             {#if $user.isSuccess && $user.data.user && !onPublicURLPage}
-              <CreateAlert />
+              {#if $alertsFlag}
+                <CreateAlert />
+              {/if}
               <Bookmarks
                 metricsViewName={exploreSpec.metricsView}
                 exploreName={dashboard}

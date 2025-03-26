@@ -36,6 +36,8 @@
   $: ({
     whereFilter,
     toggleDimensionValueSelection,
+    applyDimensionInListMode,
+    applyDimensionContainsMode,
     removeDimensionFilter,
     toggleDimensionFilterMode,
     setMeasureFilter,
@@ -145,7 +147,7 @@
         {#if isComplexFilter}
           <AdvancedFilter advancedFilter={$whereFilter} />
         {:else if allDimensionFilters.length || allMeasureFilters.length}
-          {#each allDimensionFilters as { name, label, selectedValues } (name)}
+          {#each allDimensionFilters as { name, label, mode, selectedValues, inputText } (name)}
             {@const dimension = $allDimensions.find(
               (d) => d.name === name || d.column === name,
             )}
@@ -158,7 +160,9 @@
                   smallChip
                   {name}
                   {label}
+                  {mode}
                   {selectedValues}
+                  {inputText}
                   timeStart={new Date(0).toISOString()}
                   timeEnd={new Date().toISOString()}
                   timeControlsReady
@@ -167,6 +171,10 @@
                   onToggleFilterMode={() => toggleDimensionFilterMode(name)}
                   onSelect={(value) =>
                     toggleDimensionValueSelection(name, value, true)}
+                  onApplyInList={(values) =>
+                    applyDimensionInListMode(name, values)}
+                  onApplyContainsMode={(searchText) =>
+                    applyDimensionContainsMode(name, searchText)}
                 />
               {/if}
             </div>
