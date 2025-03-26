@@ -147,17 +147,7 @@
         <div class="text-[10px] h-4 uppercase">Managed bookmarks</div>
         <div class="text-[11px] font-normal">Created by project admin</div>
       </DropdownMenuLabel>
-      {#if filteredBookmarks.shared?.length || filteredBookmarks.home}
-        {#if filteredBookmarks.home}
-          {#key filteredBookmarks.home.resource.id}
-            <BookmarkItem
-              bookmark={filteredBookmarks.home}
-              {onEdit}
-              {onDelete}
-              readOnly={!manageProject}
-            />
-          {/key}
-        {/if}
+      {#if filteredBookmarks.shared?.length}
         {#each filteredBookmarks.shared as bookmark}
           {#key bookmark.resource.id}
             <BookmarkItem

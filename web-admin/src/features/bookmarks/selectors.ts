@@ -1,9 +1,18 @@
 import { page } from "$app/stores";
+import type { CreateQueryResult } from "@rilldata/svelte-query";
 import {
   adminServiceListBookmarks,
+  createAdminServiceGetCurrentUser,
+  createAdminServiceListBookmarks,
   getAdminServiceListBookmarksQueryKey,
   type V1Bookmark,
+  type V1ListBookmarksResponse,
 } from "@rilldata/web-admin/client";
+import { useProjectId } from "@rilldata/web-admin/features/projects/selectors";
+import {
+  type CompoundQueryResult,
+  getCompoundQuery,
+} from "@rilldata/web-common/features/compound-query-result";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
 import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
@@ -13,12 +22,14 @@ import {
   timeControlStateSelector,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
+import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
+  createQueryServiceMetricsViewSchema,
   type V1ExplorePreset,
   type V1ExploreSpec,
   type V1MetricsViewSpec,
@@ -56,6 +67,30 @@ export async function fetchBookmarks(projectId: string, exploreName: string) {
 
 export function isHomeBookmark(bookmark: V1Bookmark) {
   return Boolean(bookmark.default);
+}
+
+export function getBookmarks(
+  organization: string,
+  project: string,
+  exploreName: string,
+) {
+  return derived(
+    [createAdminServiceGetCurrentUser(), useProjectId(organization, project)],
+    ([userResp, projectIdResp], set) =>
+      createAdminServiceListBookmarks(
+        {
+          projectId: projectIdResp.data,
+          resourceKind: ResourceKind.Explore,
+          resourceName: exploreName,
+        },
+        {
+          query: {
+            enabled: !!userResp.data?.user && !!projectIdResp.data,
+            queryClient,
+          },
+        },
+      ).subscribe(set),
+  ) as CreateQueryResult<V1ListBookmarksResponse>;
 }
 
 export function categorizeBookmarks(
@@ -139,6 +174,107 @@ export function getPrettySelectedTimeRange(
         timeRangeState.selectedTimeRange?.name,
         metricsExplorerEntity?.selectedTimezone,
       );
+    },
+  );
+}
+
+export function getHomeBookmarkExploreState(
+  organization: string,
+  project: string,
+  instanceId: string,
+  metricsViewName: string,
+  exploreName: string,
+): CompoundQueryResult<Partial<MetricsExplorerEntity>> {
+  return getCompoundQuery(
+    [
+      useExploreValidSpec(instanceId, exploreName),
+      getBookmarks(organization, project, exploreName),
+      createQueryServiceMetricsViewSchema(instanceId, metricsViewName),
+    ],
+    ([exploreSpecResp, bookmarksResp, schemaResp]) => {
+      const homeBookmark = bookmarksResp?.bookmarks?.find((b) => b.default);
+      if (!homeBookmark) {
+        return undefined;
+      }
+
+      const exploreSpec = exploreSpecResp?.explore ?? {};
+      const metricsViewSpec = exploreSpecResp?.metricsView ?? {};
+
+      const exploreStateFromHomeBookmark = getDashboardStateFromUrl(
+        homeBookmark?.data ?? "",
+        metricsViewSpec,
+        exploreSpec,
+        schemaResp?.schema ?? {},
+      );
+      return exploreStateFromHomeBookmark;
+    },
+  );
+}
+
+export function getHomeBookmarkURLParams(
+  organization: string,
+  project: string,
+  instanceId: string,
+  metricsViewName: string,
+  exploreName: string,
+) {
+  // Since there is a single non-query store here (useExploreState) we cannot use getCompoundQuery
+  return derived(
+    [
+      useExploreValidSpec(instanceId, exploreName),
+      useMetricsViewTimeRange(instanceId, metricsViewName),
+      useExploreState(exploreName),
+      getHomeBookmarkExploreState(
+        organization,
+        project,
+        instanceId,
+        metricsViewName,
+        exploreName,
+      ),
+    ],
+    ([
+      exploreSpecResp,
+      timeRangeResp,
+      exploreState,
+      homeBookmarkExploreState,
+    ]) => {
+      if (
+        !exploreSpecResp.data?.metricsView ||
+        !exploreSpecResp.data?.explore ||
+        !homeBookmarkExploreState.data
+      ) {
+        return "";
+      }
+
+      const exploreSpec = exploreSpecResp.data.explore;
+      const metricsViewSpec = exploreSpecResp.data.metricsView;
+
+      const finalExploreState = {
+        ...(exploreState ?? {}),
+        ...homeBookmarkExploreState.data,
+      } as MetricsExplorerEntity;
+
+      const defaultExplorePreset = getDefaultExplorePreset(
+        exploreSpec,
+        metricsViewSpec,
+        timeRangeResp.data,
+      );
+      const timeControlState = getTimeControlState(
+        metricsViewSpec,
+        exploreSpec,
+        timeRangeResp.data?.timeRangeSummary,
+        finalExploreState,
+      );
+
+      const url = new URL(get(page).url);
+      const homeBookmarkURLParams = convertExploreStateToURLSearchParams(
+        finalExploreState,
+        exploreSpec,
+        timeControlState,
+        defaultExplorePreset,
+        url,
+      ).toString();
+      return homeBookmarkURLParams;
     },
   );
 }

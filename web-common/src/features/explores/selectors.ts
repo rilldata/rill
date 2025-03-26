@@ -197,6 +197,12 @@ export function getExploreStates(
     );
   errors.push(...errorsFromLoad);
 
+  console.log(
+    "getExploreStates",
+    partialExploreStateFromUrl,
+    exploreStateFromSessionStorage,
+  );
+
   return {
     partialExploreStateFromUrl,
     exploreStateFromSessionStorage,
