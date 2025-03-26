@@ -68,7 +68,11 @@ function includeExcludeModeFromFilters(filters: V1Expression | undefined) {
   const map = new Map<string, boolean>();
   if (!filters) return map;
   forEachIdentifier(filters, (e, ident) => {
-    if (e.cond?.op === V1Operation.OPERATION_NIN) {
+    if (
+      e.cond?.op === V1Operation.OPERATION_NIN ||
+      e.cond?.op === V1Operation.OPERATION_NLIKE ||
+      e.cond?.op === V1Operation.OPERATION_NEQ
+    ) {
       map.set(ident, true);
     }
   });
@@ -86,7 +90,8 @@ function syncMeasures(
     explore.measures?.length &&
     !measuresSet.has(metricsExplorer.leaderboardMeasureName)
   ) {
-    metricsExplorer.leaderboardMeasureName = explore.measures[0];
+    const defaultMeasure = explore.measures[0];
+    metricsExplorer.leaderboardMeasureName = defaultMeasure;
   }
 
   if (
@@ -166,6 +171,10 @@ function syncDimensions(
 const metricsViewReducers = {
   init(name: string, initState: Partial<MetricsExplorerEntity> = {}) {
     update((state) => {
+      // TODO: revisit this during the url state / restore user refactor
+      initState.dimensionFilterExcludeMode = includeExcludeModeFromFilters(
+        initState.whereFilter,
+      );
       state.entities[name] = getFullInitExploreState(name, initState);
 
       updateMetricsExplorerProto(state.entities[name]);
@@ -561,21 +570,21 @@ export function useExploreState(name: string): Readable<MetricsExplorerEntity> {
 }
 
 export function sortTypeForContextColumnType(
-  contextCol: LeaderboardContextColumn,
+  contextColumn: LeaderboardContextColumn,
 ): SortType {
   const sortType = {
     [LeaderboardContextColumn.DELTA_PERCENT]: SortType.DELTA_PERCENT,
     [LeaderboardContextColumn.DELTA_ABSOLUTE]: SortType.DELTA_ABSOLUTE,
     [LeaderboardContextColumn.PERCENT]: SortType.PERCENT,
     [LeaderboardContextColumn.HIDDEN]: SortType.VALUE,
-  }[contextCol];
+  }[contextColumn];
 
   // Note: the above map needs to be EXHAUSTIVE over
   // LeaderboardContextColumn variants. If we ever add a new
   // context column type, we need to add it to the map above.
   // Otherwise, we will throw an error here.
   if (!sortType) {
-    throw new Error(`Invalid context column type: ${contextCol}`);
+    throw new Error(`Invalid context column type: ${contextColumn}`);
   }
   return sortType;
 }

@@ -3,12 +3,14 @@ import type { ChartConfig, ChartType } from "./charts/types";
 import type { ImageSpec } from "./image";
 import type { KPISpec } from "./kpi";
 import type { MarkdownSpec } from "./markdown";
+import type { PivotSpec } from "./pivot";
 import type { TableSpec } from "./table";
 
 // First, let's create a union type for all possible specs
 export type ComponentSpec =
   | ChartConfig
   | TableSpec
+  | PivotSpec
   | ImageSpec
   | KPISpec
   | KPIGridSpec
@@ -47,6 +49,7 @@ export type CanvasComponentType =
   | "kpi"
   | "kpi_grid"
   | "image"
+  | "pivot"
   | "table";
 
 interface LineChart {
@@ -75,9 +78,14 @@ export interface TableTemplateT {
   table: TableSpec;
 }
 
+export interface PivotTemplateT {
+  pivot: PivotSpec;
+}
+
 export type TemplateSpec =
   | ChartTemplates
   | KPITemplateT
   | TableTemplateT
+  | PivotTemplateT
   | MarkdownTemplateT
   | ImageTemplateT;

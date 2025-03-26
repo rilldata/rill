@@ -36,7 +36,8 @@ curl -X POST --location 'https://admin.rilldata.com/v1/organizations/<org-name>/
 --header 'Content-Type: application/json' \
 --header 'Authorization: Bearer <rill-svc-token>' \
 --data-raw '{
-"resource": "<dashboard-name>",
+"resource": "<explore-name>",
+"type": "explore",
 "user_email":"<user-email>"
 }'
 ```
@@ -52,7 +53,7 @@ Note, if you are trying to embed a dashboard that has navigation, or is a canvas
 ```bash
 --data-raw '{
 "resource": "bids",
- "navigation": true,  
+"navigation": true,  
 "user_email":"email@domain.com"
 ```
 
@@ -60,8 +61,8 @@ Note, if you are trying to embed a dashboard that has navigation, or is a canvas
 **Canvas Dashboard:**
 ```bash
 --data-raw '{
-"resource": "canvas",
-"kind": "rill.runtime.v1.Dashboard",
+"resource": "<canvas-name>",
+"type": "canvas",
 "user_email":"email@domain.com"
 }'
 ```
@@ -83,6 +84,7 @@ const rillServiceToken = process.env.RILL_SERVICE_TOKEN;
 // Note that the organization must be the same as the one the service token is associated with.
 const rillOrg = "demo";
 const rillProject = "rill-openrtb-prog-ads";
+const rillDashboardType = "explore";
 const rillDashboard = "bids";
 
 // This is a serverless function that makes an authenticated request to the Rill API to get an iframe URL for a dashboard.
@@ -98,6 +100,7 @@ export default async function handler(req, res) {
                 Authorization: `Bearer ${rillServiceToken}`,
             },
             body: JSON.stringify({
+                type: rillDashboardType,
                 resource: rillDashboard,
                 // You can pass additional parameters for row-level security policies here.
                 // For details, see: https://docs.rilldata.com/integrate/embedding

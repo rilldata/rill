@@ -337,14 +337,14 @@ func testProjectsForUserWithPagination(t *testing.T, db database.DB) {
 	require.Equal(t, "internal", proj3.Name)
 
 	// fetch projects without name filter
-	projs, err := db.FindProjectsForOrgAndUser(ctx, org.ID, user.ID, "", 2)
+	projs, err := db.FindProjectsForOrgAndUser(ctx, org.ID, user.ID, true, "", 2)
 	require.NoError(t, err)
 	require.Equal(t, len(projs), 2)
 	require.Equal(t, "alpha", projs[0].Name)
 	require.Equal(t, "beta", projs[1].Name)
 
 	// fetch project with name filter
-	projs, err = db.FindProjectsForOrgAndUser(ctx, org.ID, user.ID, projs[1].Name, 2)
+	projs, err = db.FindProjectsForOrgAndUser(ctx, org.ID, user.ID, true, projs[1].Name, 2)
 	require.NoError(t, err)
 	require.Equal(t, len(projs), 1)
 	require.Equal(t, "gamma", projs[0].Name)
@@ -382,13 +382,13 @@ func testOrgsMembersPagination(t *testing.T, db database.DB) {
 	require.NoError(t, db.InsertOrganizationInvite(ctx, &database.InsertOrganizationInviteOptions{Email: "test3@rilldata.com", InviterID: adminUser.ID, OrgID: org.ID, RoleID: viewer.ID}))
 
 	// fetch members without name filter
-	users, err := db.FindOrganizationMemberUsers(ctx, org.ID, "", 1)
+	users, err := db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 1)
 	require.NoError(t, err)
 	require.Equal(t, len(users), 1)
 	require.Equal(t, "test1@rilldata.com", users[0].Email)
 
 	// fetch members with name filter
-	users, err = db.FindOrganizationMemberUsers(ctx, org.ID, users[0].Email, 1)
+	users, err = db.FindOrganizationMemberUsers(ctx, org.ID, "", true, users[0].Email, 1)
 	require.NoError(t, err)
 	require.Equal(t, len(users), 1)
 	require.Equal(t, "test2@rilldata.com", users[0].Email)

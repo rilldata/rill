@@ -222,7 +222,7 @@ func (p *SecurityPolicyYAML) Proto() ([]*runtimev1.SecurityRule, error) {
 	}
 
 	if p.Access != "" {
-		tmp, err := ResolveTemplate(p.Access, validationTemplateData)
+		tmp, err := ResolveTemplate(p.Access, validationTemplateData, false)
 		if err != nil {
 			return nil, fmt.Errorf(`invalid 'security': 'access' templating is not valid: %w`, err)
 		}
@@ -251,7 +251,7 @@ func (p *SecurityPolicyYAML) Proto() ([]*runtimev1.SecurityRule, error) {
 	}
 
 	if p.RowFilter != "" {
-		_, err := ResolveTemplate(p.RowFilter, validationTemplateData)
+		_, err := ResolveTemplate(p.RowFilter, validationTemplateData, false)
 		if err != nil {
 			return nil, fmt.Errorf(`invalid 'security': 'row_filter' templating is not valid: %w`, err)
 		}
@@ -270,7 +270,7 @@ func (p *SecurityPolicyYAML) Proto() ([]*runtimev1.SecurityRule, error) {
 			continue
 		}
 
-		tmp, err := ResolveTemplate(inc.Condition, validationTemplateData)
+		tmp, err := ResolveTemplate(inc.Condition, validationTemplateData, false)
 		if err != nil {
 			return nil, fmt.Errorf(`invalid 'security': 'if' condition templating is not valid: %w`, err)
 		}
@@ -318,7 +318,7 @@ func (p *SecurityPolicyYAML) Proto() ([]*runtimev1.SecurityRule, error) {
 			continue
 		}
 
-		tmp, err := ResolveTemplate(exc.Condition, validationTemplateData)
+		tmp, err := ResolveTemplate(exc.Condition, validationTemplateData, false)
 		if err != nil {
 			return nil, fmt.Errorf(`invalid 'security': 'if' condition templating is not valid: %w`, err)
 		}
@@ -377,7 +377,7 @@ type SecurityRuleYAML struct {
 func (r *SecurityRuleYAML) Proto() (*runtimev1.SecurityRule, error) {
 	condition := r.If
 	if condition != "" {
-		tmp, err := ResolveTemplate(condition, validationTemplateData)
+		tmp, err := ResolveTemplate(condition, validationTemplateData, false)
 		if err != nil {
 			return nil, fmt.Errorf(`invalid 'if': templating is not valid: %w`, err)
 		}
@@ -778,6 +778,12 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindTheme, Name: tmp.DefaultTheme})
 	}
 
+	securityRefs, err := inferRefsFromSecurityRules(securityRules)
+	if err != nil {
+		return err
+	}
+	node.Refs = append(node.Refs, securityRefs...)
+
 	var cacheTTLDuration time.Duration
 	if tmp.Cache.KeyTTL != "" {
 		cacheTTLDuration, err = time.ParseDuration(tmp.Cache.KeyTTL)
@@ -868,6 +874,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	}
 
 	refs := []ResourceName{{Kind: ResourceKindMetricsView, Name: node.Name}}
+
 	if tmp.DefaultTheme != "" {
 		refs = append(refs, ResourceName{Kind: ResourceKindTheme, Name: tmp.DefaultTheme})
 	}
@@ -979,6 +986,9 @@ var validationTemplateData = TemplateData{
 		"groups": []interface{}{"all"},
 		"admin":  false,
 	},
+	Resolve: func(ref ResourceName) (string, error) {
+		return ref.Name, nil
+	},
 }
 
 // parseNamesYAML parses a []string or a '*' denoting "all names" from a YAML node.
@@ -1003,4 +1013,28 @@ func parseNamesYAML(n yaml.Node) (names []string, all bool, err error) {
 		err = fmt.Errorf("invalid field names %v", n)
 	}
 	return
+}
+
+// inferRefsFromSecurityRules infers resource references from security rules.
+func inferRefsFromSecurityRules(rules []*runtimev1.SecurityRule) ([]ResourceName, error) {
+	var refs []ResourceName
+	for _, r := range rules {
+		// RowFilter rules are the only rules that can reference external data (since they execute inside the OLAP instead of in the in-memory expression engine).
+		if r == nil {
+			continue
+		}
+		rowFilter := r.GetRowFilter()
+		if rowFilter == nil {
+			continue
+		}
+
+		meta, err := AnalyzeTemplate(rowFilter.Sql)
+		if err != nil {
+			return nil, fmt.Errorf(`invalid 'sql' in row_filter security rule: %w`, err)
+		}
+
+		refs = append(refs, meta.Refs...)
+	}
+	// No need to deduplicate because that's done upstream when the resource is inserted.
+	return refs, nil
 }

@@ -56,6 +56,7 @@ func (c *connection) WithConnection(ctx context.Context, priority int, longRunni
 }
 
 func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
+	ctx = contextWithQueryID(ctx)
 	// Log query if enabled (usually disabled)
 	if c.config.LogQueries {
 		c.logger.Info("clickhouse query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
@@ -103,6 +104,7 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 }
 
 func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res *drivers.Result, outErr error) {
+	ctx = contextWithQueryID(ctx)
 	// Log query if enabled (usually disabled)
 	if c.config.LogQueries {
 		c.logger.Info("clickhouse query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args))
@@ -217,6 +219,7 @@ func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName
 
 // CreateTableAsSelect implements drivers.OLAPStore.
 func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, opts *drivers.CreateTableOptions) (*drivers.TableWriteMetrics, error) {
+	ctx = contextWithQueryID(ctx)
 	outputProps := &ModelOutputProperties{}
 	if err := mapstructure.WeakDecode(opts.TableOpts, outputProps); err != nil {
 		return nil, fmt.Errorf("failed to parse output properties: %w", err)
@@ -261,6 +264,7 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, 
 
 // InsertTableAsSelect implements drivers.OLAPStore.
 func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, opts *drivers.InsertTableOptions) (*drivers.TableWriteMetrics, error) {
+	ctx = contextWithQueryID(ctx)
 	if !opts.InPlace {
 		return nil, fmt.Errorf("clickhouse: inserts does not support inPlace=false")
 	}
@@ -386,6 +390,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 
 // DropTable implements drivers.OLAPStore.
 func (c *connection) DropTable(ctx context.Context, name string) error {
+	ctx = contextWithQueryID(ctx)
 	typ, onCluster, err := informationSchema{c: c}.entityType(ctx, c.config.Database, name)
 	if err != nil {
 		return err
@@ -440,6 +445,7 @@ func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
 
 // RenameTable implements drivers.OLAPStore.
 func (c *connection) RenameTable(ctx context.Context, oldName, newName string) error {
+	ctx = contextWithQueryID(ctx)
 	typ, onCluster, err := informationSchema{c: c}.entityType(ctx, c.config.Database, oldName)
 	if err != nil {
 		return err
@@ -478,6 +484,10 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string) e
 				res.Close()
 				return err
 			}
+		}
+		err = res.Err()
+		if err != nil {
+			return err
 		}
 		res.Close()
 		engineFull = strings.ReplaceAll(engineFull, localTableName(oldName), safelocalTableName(newName))
@@ -534,6 +544,10 @@ func (c *connection) renameView(ctx context.Context, oldName, newName, onCluster
 			res.Close()
 			return err
 		}
+	}
+	err = res.Err()
+	if err != nil {
+		return err
 	}
 	res.Close()
 
@@ -735,6 +749,10 @@ func (c *connection) columnClause(ctx context.Context, table string) (string, er
 		columnClause.WriteString(" ")
 		columnClause.WriteString(typ)
 	}
+	err = res.Err()
+	if err != nil {
+		return "", err
+	}
 	columnClause.WriteRune(')')
 	return columnClause.String(), nil
 }
@@ -838,6 +856,10 @@ func (c *connection) getTableEngine(ctx context.Context, name string) (string, e
 			return "", err
 		}
 	}
+	err = res.Err()
+	if err != nil {
+		return "", err
+	}
 	return engine, nil
 }
 
@@ -859,6 +881,10 @@ func (c *connection) getTablePartitions(ctx context.Context, name string) ([]str
 			return nil, err
 		}
 		partitions = append(partitions, part)
+	}
+	err = res.Err()
+	if err != nil {
+		return nil, err
 	}
 	return partitions, nil
 }

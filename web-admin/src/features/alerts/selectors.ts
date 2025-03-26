@@ -1,10 +1,15 @@
 import { createAdminServiceSearchProjectUsers } from "@rilldata/web-admin/client";
 import { getExploreName } from "@rilldata/web-admin/features/dashboards/query-mappers/utils";
+import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
+  createRuntimeServiceGetExplore,
   createRuntimeServiceGetResource,
   createRuntimeServiceListResources,
+  type V1AlertSpec,
 } from "@rilldata/web-common/runtime-client";
+import { readable } from "svelte/store";
 
 export function useAlerts(instanceId: string, enabled = true) {
   return createRuntimeServiceListResources(
@@ -93,6 +98,43 @@ export function useIsAlertCreatedByCode(instanceId: string, name: string) {
       query: {
         select: (data) =>
           !data.resource.alert.spec.annotations["admin_owner_user_id"],
+      },
+    },
+  );
+}
+
+export function useAlertDashboardState(
+  instanceId: string,
+  alertSpec: V1AlertSpec | undefined,
+) {
+  if (!alertSpec) {
+    return readable({
+      data: <Partial<MetricsExplorerEntity>>{},
+    });
+  }
+
+  const exploreName = getExploreName(
+    alertSpec.annotations?.web_open_path ?? "",
+  );
+  const webState = alertSpec.annotations?.web_open_state ?? "";
+  if (!webState) {
+    return readable({
+      data: <Partial<MetricsExplorerEntity>>{},
+    });
+  }
+
+  return createRuntimeServiceGetExplore(
+    instanceId,
+    { name: exploreName },
+    {
+      query: {
+        select: (data) =>
+          getDashboardStateFromUrl(
+            webState,
+            data.metricsView?.metricsView?.state?.validSpec ?? {},
+            data.explore?.explore?.state?.validSpec,
+            {}, // We dont really need schema right now since this a legacy thing only
+          ),
       },
     },
   );

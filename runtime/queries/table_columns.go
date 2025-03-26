@@ -117,6 +117,10 @@ func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanc
 				pcs = append(pcs, &pc)
 				i++
 			}
+			err = rows.Err()
+			if err != nil {
+				return err
+			}
 
 			q.Result = &runtimev1.TableColumnsResponse{
 				ProfileColumns: pcs[0:i],

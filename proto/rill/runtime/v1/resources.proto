@@ -125,6 +125,8 @@ message ModelSpec {
   google.protobuf.Struct output_properties = 12;
   bool trigger = 9;
   bool trigger_full = 22;
+  // defined_as_source is true if it was defined by user as a source but converted internally to a model.
+  bool defined_as_source = 23;
   reserved 2, 3, 6, 7, 8;
 }
 
@@ -406,6 +408,8 @@ message ExplorePreset {
   FieldSelector measures_selector = 10;
 
   optional Expression where = 11;
+  // Temporary to differentiate between "select" and "in list" modes. Expression will be replaced with UI specific state in the future.
+  repeated string dimensions_with_inlist_filter = 29;
 
   // Time range for the explore.
   // It corresponds to the `range` property of the explore's `time_ranges`.
@@ -427,6 +431,7 @@ message ExplorePreset {
   optional bool explore_sort_asc = 18;
   optional ExploreSortType explore_sort_type = 19;
   optional string explore_expanded_dimension = 20;
+  optional uint32 explore_leaderboard_measure_count = 30;
 
   optional string time_dimension_measure = 21;
   optional string time_dimension_chart_type = 22;

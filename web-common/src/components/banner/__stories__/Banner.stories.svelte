@@ -1,4 +1,8 @@
 <script lang="ts">
+  import {
+    BillingBannerID,
+    BillingBannerPriority,
+  } from "@rilldata/web-common/components/banner/constants";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { Story, Template } from "@storybook/addon-svelte-csf";
   import BannerCenter from "@rilldata/web-common/components/banner/BannerCenter.svelte";
@@ -26,13 +30,17 @@
   );
 
   function showBanner() {
-    eventBus.emit("banner", {
-      message,
-      type: type as any,
-      iconType: iconType as any,
-      cta: {
-        text: "contact us",
-        type: "button",
+    eventBus.emit("add-banner", {
+      id: BillingBannerID,
+      priority: BillingBannerPriority,
+      message: {
+        message,
+        type: type as any,
+        iconType: iconType as any,
+        cta: {
+          text: "contact us",
+          type: "button",
+        },
       },
     });
   }

@@ -5,7 +5,7 @@
     getAdminServiceListProjectInvitesQueryKey,
     getAdminServiceListProjectMemberUsersQueryKey,
   } from "@rilldata/web-admin/client";
-  import type { V1MemberUser } from "@rilldata/web-admin/client";
+  import type { V1ProjectMemberUser } from "@rilldata/web-admin/client";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { capitalize } from "@rilldata/web-common/components/table/utils";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
@@ -14,7 +14,7 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
 
   type User =
-    | V1MemberUser
+    | V1ProjectMemberUser
     | {
         userName: any;
         userEmail: string;

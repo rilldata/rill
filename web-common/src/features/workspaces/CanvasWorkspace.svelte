@@ -13,7 +13,6 @@
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import { mapParseErrorsToLines } from "@rilldata/web-common/features/metrics-views/errors";
-  import ViewSelector from "@rilldata/web-common/features/visual-editing/ViewSelector.svelte";
   import {
     WorkspaceContainer,
     WorkspaceHeader,
@@ -87,6 +86,7 @@
           resource={data}
           hasUnsavedChanges={$hasUnsavedChanges}
           titleInput={fileName}
+          codeToggle
           onTitleChange={onChangeCallback}
           resourceKind={ResourceKind.Canvas}
         >
@@ -95,12 +95,6 @@
               href="/canvas/{canvasName}"
               disabled={allErrors.length > 0 || resourceIsReconciling}
               reconciling={resourceIsReconciling}
-            />
-
-            <!-- <AddComponentMenu {addComponent} /> -->
-            <ViewSelector
-              allowSplit={false}
-              bind:selectedView={$selectedViewStore}
             />
           </div>
         </WorkspaceHeader>

@@ -79,6 +79,9 @@ export function convertLegacyStateToExplorePreset(
   } else if (legacyState.where) {
     preset.where = fromExpressionProto(legacyState.where);
   }
+  if (legacyState.dimensionsWithInlistFilter) {
+    preset.dimensionsWithInlistFilter = legacyState.dimensionsWithInlistFilter;
+  }
   if (legacyState.having) {
     preset.where ??= createAndExpression([]);
     const exprs = preset.where?.cond?.exprs as V1Expression[];
@@ -243,6 +246,10 @@ function fromLegacyExploreFields(
   if (legacyState.leaderboardSortType) {
     preset.exploreSortType =
       FromLegacySortTypeMap[legacyState.leaderboardSortType];
+  }
+
+  if (legacyState.leaderboardMeasureCount) {
+    preset.exploreLeaderboardMeasureCount = legacyState.leaderboardMeasureCount;
   }
 
   if (legacyState.selectedDimension) {

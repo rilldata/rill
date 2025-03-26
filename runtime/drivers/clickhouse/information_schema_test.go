@@ -43,6 +43,11 @@ func TestInformationSchema(t *testing.T) {
 	prepareConn(t, conn)
 	t.Run("testInformationSchemaAll", func(t *testing.T) { testInformationSchemaAll(t, conn) })
 	t.Run("testInformationSchemaAllLike", func(t *testing.T) { testInformationSchemaAllLike(t, conn) })
+	t.Run("testInformationSchemaSystemAllLike", func(t *testing.T) {
+		conn, err := drivers.Open("clickhouse", "default", map[string]any{"dsn": fmt.Sprintf("clickhouse://clickhouse:clickhouse@%v:%v/system", host, port.Port())}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+		require.NoError(t, err)
+		testInformationSchemaSystemAllLike(t, conn)
+	})
 	t.Run("testInformationSchemaLookup", func(t *testing.T) { testInformationSchemaLookup(t, conn) })
 }
 
@@ -97,6 +102,20 @@ func testInformationSchemaAllLike(t *testing.T, conn drivers.Handle) {
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tables))
 	require.Equal(t, "model", tables[0].Name)
+
+	tables, err = olap.InformationSchema().All(context.Background(), "other.%ar")
+	require.NoError(t, err)
+	require.Equal(t, 1, len(tables))
+	require.Equal(t, "bar", tables[0].Name)
+}
+
+func testInformationSchemaSystemAllLike(t *testing.T, conn drivers.Handle) {
+	olap, _ := conn.AsOLAP("")
+
+	tables, err := olap.InformationSchema().All(context.Background(), "query_log")
+	require.NoError(t, err)
+	require.Equal(t, 1, len(tables))
+	require.Equal(t, "query_log", tables[0].Name)
 
 	tables, err = olap.InformationSchema().All(context.Background(), "other.%ar")
 	require.NoError(t, err)

@@ -9,9 +9,9 @@ sidebar_position: 00
 <br />
 
 
-In Rill, explore dashboards are used to visually understand your data with real-time filtering based on your defined dimensions and measures in your metrics view. In the explore dashboard YAML, you can define which measures and dimensions are visible as well as define the default view when a user sees your dashboard. 
+In Rill, Explore dashboards are used to visually understand your data with real-time filtering based on your defined dimensions and measures in your metrics view. In the Explore dashboard YAML, you can define which measures and dimensions are visible as well as define the default view when a user sees your dashboard. 
 :::tip
-Starting in version 0.50, metrics views has been separated from explore dashboards. This allows for a cleaner, more accessible metrics layer and the ability to build various dashboards and components on top of a single metrics view. For more information on what a metrics view is please see: [What is a Metrics View?](/concepts/metrics-layer)
+Starting in version 0.50, metrics views have been separated from Explore dashboards. This allows for a cleaner, more accessible metrics layer and the ability to build various dashboards and components on top of a single metrics view. For more information on what a metrics view is please see: [What is a Metrics View?](/concepts/metrics-layer)
 
 For migration steps, see [Migrations](/latest-changes/v50-dashboard-changes#how-to-migrate-your-current-dashboards).
 :::
@@ -24,7 +24,6 @@ When including dimensions and measures only the named resources will be included
 Rill also supports the ability to exclude a set of named dimensions and measures.
 
 ```yaml
-
 type: explore
 
 title: Title of your Explore Dashboard

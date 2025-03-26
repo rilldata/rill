@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -127,10 +128,31 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 		return nil, fmt.Errorf("parent metrics view %q is invalid", spec.MetricsView)
 	}
 
-	// Add the access and field access security rules from the parent metrics view.
-	for _, rule := range mv.SecurityRules {
-		if rule.GetAccess() != nil || rule.GetFieldAccess() != nil {
-			spec.SecurityRules = append(spec.SecurityRules, rule)
+	if len(spec.SecurityRules) == 0 && len(mv.SecurityRules) > 0 {
+		for _, rule := range mv.SecurityRules {
+			if rule.GetAccess() != nil || rule.GetFieldAccess() != nil {
+				spec.SecurityRules = append(spec.SecurityRules, rule)
+			}
+		}
+	} else {
+		for _, rule := range spec.SecurityRules {
+			if rule.GetAccess() == nil {
+				return nil, fmt.Errorf("security rule %v is not an access rule", rule)
+			}
+		}
+
+		// Merge access rules into a single rule
+		mv.SecurityRules = append(mv.SecurityRules, spec.SecurityRules...)
+		access := mergeAccessRules(mv.SecurityRules)
+		if access != nil {
+			spec.SecurityRules = []*runtimev1.SecurityRule{access}
+		}
+
+		// Copy field access rules
+		for _, rule := range mv.SecurityRules {
+			if rule.GetFieldAccess() != nil {
+				spec.SecurityRules = append(spec.SecurityRules, rule)
+			}
 		}
 	}
 
@@ -200,4 +222,49 @@ func (r *ExploreReconciler) resolveFields(selected []string, selector *runtimev1
 		return nil, fmt.Errorf("failed to resolve dimension or measure name selector: %w", err)
 	}
 	return res, nil
+}
+
+// mergeAccessRules combines Access rule conditions into a single rule
+func mergeAccessRules(rules []*runtimev1.SecurityRule) *runtimev1.SecurityRule {
+	ruleCount := len(rules)
+	// If there are no rules, return nil
+	if ruleCount == 0 {
+		return nil
+	}
+
+	// If there is only one rule, return it
+	if ruleCount == 1 {
+		return rules[0]
+	}
+
+	// If there are multiple rules, merge their conditions into a single condition with AND operator
+	var condition strings.Builder
+	for i, rule := range rules {
+		access := rule.GetAccess()
+		if access == nil {
+			// Skip rules without Access field or log an error
+			continue
+		}
+
+		if i > 0 && condition.Len() > 0 {
+			condition.WriteString(" AND ")
+		}
+		condition.WriteString("(")
+		condition.WriteString(access.Condition)
+		condition.WriteString(")")
+	}
+
+	// If no valid conditions were found
+	if condition.Len() == 0 {
+		return nil
+	}
+
+	return &runtimev1.SecurityRule{
+		Rule: &runtimev1.SecurityRule_Access{
+			Access: &runtimev1.SecurityRuleAccess{
+				Condition: condition.String(),
+				Allow:     true,
+			},
+		},
+	}
 }

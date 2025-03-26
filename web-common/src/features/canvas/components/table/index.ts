@@ -11,16 +11,14 @@ import type {
   ComponentFilterProperties,
 } from "../types";
 
-export { default as Table } from "./TableTemplate.svelte";
-
 export interface TableSpec
   extends ComponentCommonProperties,
     ComponentFilterProperties {
   metrics_view: string;
-  measures: string[];
-  row_dimensions?: string[];
-  col_dimensions?: string[];
+  columns: string[];
 }
+
+export { default as Table } from "./CanvasTableDisplay.svelte";
 
 export class TableCanvasComponent extends BaseCanvasComponent<TableSpec> {
   minSize = { width: 2, height: 2 };
@@ -34,9 +32,7 @@ export class TableCanvasComponent extends BaseCanvasComponent<TableSpec> {
   ) {
     const defaultSpec: TableSpec = {
       metrics_view: "",
-      measures: [],
-      row_dimensions: [],
-      col_dimensions: [],
+      columns: [],
     };
     super(fileArtifact, path, defaultSpec, initialSpec);
   }
@@ -49,12 +45,11 @@ export class TableCanvasComponent extends BaseCanvasComponent<TableSpec> {
     return {
       options: {
         metrics_view: { type: "metrics", label: "Metrics view" },
-        measures: { type: "multi_measures", label: "Measures" },
-        col_dimensions: {
-          type: "multi_dimensions",
-          label: "Column dimensions",
+        columns: {
+          type: "multi_fields",
+          label: "Columns",
+          meta: { allowedTypes: ["time", "dimension", "measure"] },
         },
-        row_dimensions: { type: "multi_dimensions", label: "Row dimensions" },
         ...commonOptions,
       },
       filter: getFilterOptions(true, false),
@@ -65,16 +60,17 @@ export class TableCanvasComponent extends BaseCanvasComponent<TableSpec> {
     metricsViewName: string,
     metricsViewSpec: V1MetricsViewSpec | undefined,
   ): TableSpec {
-    const firstDimension = metricsViewSpec?.dimensions?.[0]?.name;
-    const secondDimension = metricsViewSpec?.dimensions?.[1]?.name;
+    const measures =
+      metricsViewSpec?.measures?.slice(0, 3).map((m) => m.name as string) ?? [];
+
+    const dimensions =
+      metricsViewSpec?.dimensions
+        ?.slice(0, 3)
+        .map((d) => d.name || (d.column as string)) ?? [];
 
     return {
       metrics_view: metricsViewName,
-      measures:
-        metricsViewSpec?.measures?.slice(0, 3).map((m) => m.name as string) ??
-        [],
-      row_dimensions: firstDimension ? [firstDimension] : [],
-      col_dimensions: secondDimension ? [secondDimension] : undefined,
+      columns: [...dimensions, ...measures],
     };
   }
 }

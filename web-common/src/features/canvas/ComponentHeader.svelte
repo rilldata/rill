@@ -30,7 +30,7 @@
     {/if}
   </div>
 {:else if atleastOneFilter}
-  <div class="absolute top-0 left-0 z-50 pl-1 pt-1">
+  <div class="absolute top-0 left-0 z-[60] pl-1 pt-1">
     <LocalFiltersHeader {atleastOneFilter} {filters} />
   </div>
 {/if}
