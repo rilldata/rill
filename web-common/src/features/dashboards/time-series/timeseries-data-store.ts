@@ -104,6 +104,11 @@ export function createMetricsViewTimeSeries(
 export function createTimeSeriesDataStore(
   ctx: StateManagers,
 ): TimeSeriesDataStore {
+  // A cache to keep previous data to preserve animations while fetching new data
+  // Note: a better approach would be to use TanStack Query's `keepPreviousData` option
+  let previousTimeSeriesData: TimeSeriesDatum[] = [];
+  let previousDimensionChartData: DimensionDataItem[] = [];
+
   return derived(
     [ctx.validSpecStore, useTimeControlStore(ctx), ctx.dashboardStore],
     ([validSpec, timeControls, dashboardStore], set) => {
@@ -202,6 +207,10 @@ export function createTimeSeriesDataStore(
           ctx,
           measuresForTimeSeries,
           "chart",
+          previousDimensionChartData,
+          (results) => {
+            previousDimensionChartData = results;
+          },
         );
       }
 
@@ -222,6 +231,8 @@ export function createTimeSeriesDataStore(
           comparisonTotal,
           dimensionChart,
         ]) => {
+          const isFetching = primary?.isFetching || primaryTotal?.isFetching;
+
           let preparedTimeSeriesData: TimeSeriesDatum[] = [];
 
           if (!primary.isFetching && interval) {
@@ -248,15 +259,23 @@ export function createTimeSeriesDataStore(
             error["totals"] = primaryTotal.error.response?.data?.message;
           }
 
+          // Either return the previous data or the new data, depending on whether the data is still fetching
+          const timeSeriesData = isFetching
+            ? previousTimeSeriesData
+            : preparedTimeSeriesData;
+
+          // Update the previous data cache
+          previousTimeSeriesData = timeSeriesData;
+
           return {
-            isFetching: primary?.isFetching || primaryTotal?.isFetching,
+            isFetching,
             isError,
             error,
-            timeSeriesData: preparedTimeSeriesData,
+            timeSeriesData,
             total: primaryTotal?.data?.data?.[0],
             unfilteredTotal: unfilteredTotal?.data?.data?.[0],
             comparisonTotal: comparisonTotal?.data?.data?.[0],
-            dimensionChartData: (dimensionChart as DimensionDataItem[]) || [],
+            dimensionChartData: dimensionChart || [],
           };
         },
       ).subscribe(set);

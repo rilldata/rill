@@ -22,10 +22,7 @@
   import { chartInteractionColumn } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
   import BackToExplore from "@rilldata/web-common/features/dashboards/time-series/BackToExplore.svelte";
-  import {
-    useTimeSeriesDataStore,
-    type TimeSeriesDatum,
-  } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
+  import { useTimeSeriesDataStore } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
   import { timeGrainToDuration } from "@rilldata/web-common/lib/time/grains";
@@ -41,7 +38,6 @@
   import ChartInteractions from "./ChartInteractions.svelte";
   import MeasureChart from "./MeasureChart.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
-  import type { DimensionDataItem } from "./multiple-dimension-queries";
   import {
     adjustTimeInterval,
     getOrderedStartEnd,
@@ -79,9 +75,6 @@
   let startValue: Date | undefined;
   let endValue: Date | undefined;
 
-  let timeSeriesData: TimeSeriesDatum[] = [];
-  let dimensionDataCopy: DimensionDataItem[] = [];
-
   $: exploreState = useExploreState(exploreName);
 
   $: expandedMeasureName = $exploreState?.tdd?.expandedMeasureName;
@@ -107,7 +100,6 @@
 
   $: expandedMeasure = $getMeasureByName(expandedMeasureName);
   // List of measures which will be shown on the dashboard
-  // List of measures which will be shown on the dashboard
   let renderedMeasures: MetricsViewSpecMeasureV2[];
   $: {
     renderedMeasures = expandedMeasure ? [expandedMeasure] : $visibleMeasures;
@@ -116,23 +108,9 @@
   $: totals = $timeSeriesDataStore.total;
   $: totalsComparisons = $timeSeriesDataStore.comparisonTotal;
 
-  // Keep previous data to preserve animations while fetching new data
-  // Note: a better approach would be to use TanStack Query's `keepPreviousData` option
-  $: if (
-    $timeSeriesDataStore?.timeSeriesData &&
-    $timeSeriesDataStore.timeSeriesData.length > 0
-  ) {
-    timeSeriesData = $timeSeriesDataStore.timeSeriesData;
-  }
-
-  $: if (
-    $timeSeriesDataStore?.dimensionChartData?.length ||
-    !comparisonDimension ||
-    includedValuesForDimension.length === 0
-  ) {
-    dimensionDataCopy = $timeSeriesDataStore.dimensionChartData || [];
-  }
-  $: dimensionData = dimensionDataCopy;
+  $: timeSeriesData = $timeSeriesDataStore.timeSeriesData || [];
+  $: comparedDimensionTimeSeriesData =
+    $timeSeriesDataStore.dimensionChartData || [];
 
   // FIXME: move this logic to a function + write tests.
   $: if ($timeControlsStore.ready && interval) {
@@ -400,7 +378,7 @@
               chartType={tddChartType}
               {expandedMeasureName}
               totalsData={timeSeriesData}
-              {dimensionData}
+              dimensionData={comparedDimensionTimeSeriesData}
               xMin={startValue}
               xMax={endValue}
               isTimeComparison={showComparison}
@@ -461,7 +439,7 @@
               {scrubEnd}
               {exploreName}
               data={timeSeriesData}
-              {dimensionData}
+              dimensionData={comparedDimensionTimeSeriesData}
               isFetching={$timeSeriesDataStore.isFetching}
               zone={$exploreState?.selectedTimezone}
               xAccessor="ts_position"
