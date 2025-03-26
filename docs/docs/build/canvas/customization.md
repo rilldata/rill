@@ -9,7 +9,7 @@ You will find below some common customizations and dashboard configurations that
 
 :::info Dashboard properties
 
-For a full list of available dashboard properties and configurations, please see our [Dashboard YAML](/reference/project-files/explore-dashboards.md) reference page.
+For a full list of available dashboard properties and configurations, please see our [Dashboard YAML](/reference/project-files/canvas-dashboards.md) reference page.
 
 :::
 
@@ -59,42 +59,14 @@ Default time range controls the data analyzed on initial page load. Setting the 
 The value must be either a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) (for example, `PT12H` for 12 hours, `P1M` for 1 month, or `P26W` for 26 weeks) or one of the [Rill ISO 8601 extensions](../../reference/rill-iso-extensions.md#extensions).
 
 
-### Default Dimensions
-
-For dashboards with wide tables, setting default dimensions is a good way to make sure that users can focus on the primary analyses and ensure a positive first experience. Each dimension listed under the `dimensions` setting would appear on the screen, while the remainder of the dimensions would be hidden (and still available for selection under filters). Common use cases for setting default fields would be to simplify dashboards on initial load, to narrow the dashboard to the most used fields, and to avoid high cardinality fields (that may take longer to load, but are used less often so improve performance). An example addition to the `dashboard.yaml` file is below.
-
-```yaml
-defaults:
-  dimensions:
-    - column1
-    - column2
-```
-
-:::warning Column vs. Name Usage
-The `column` property is used by default from the column name in your underlying source. If you decide to use the `name` property, you'd replace the column above with the field name.
-:::
-
-### Default Measures
-
-A list of measures that should be visible by default. Operates the same as the `default_dimensions` configuration. When selecting measures, by default, consider hiding more computationally intensive measures like `count distinct` or other complicated expressions to improve performance.
-
-```yaml
-defaults:
-  measures:
-    - measure_1
-    - measure_1
-```
 
 ### Default Comparison Modes
 
-It is also possible to set up a default comparison mode for your dashboard. In Rill, we support both [time comparison](/explore/filters/#time-comparisons) and [dimension comparison.](/explore/filters/#filter-by-dimensions) Note that only one of these comparisons can be set as default. 
+It is also possible to set up a default comparison mode for your dashboard. For Canvas Dashboards, we support [time comparisons](/explore/filters/#time-comparisons). 
 
 ```yaml
 defaults:
   comparison_mode: time
-  # comparison_mode: dimension
-  # comparison_dimension: action
-
 ```
 
 ## Row Access Policies
@@ -124,28 +96,45 @@ Once you have created that file, update the `dashboard.yaml` with the following 
 For more details about configuring themes, you can refer to our [Theme YAML](/reference/project-files/themes.md) reference page.
 
 :::
-
 ## Example
 
 ```yaml
-type: explore
+type: canvas
+title: "Canvas Dashboard"
+defaults:
+  time_range: PT24H
+  comparison_mode: time
+time_ranges:
+  - PT6H
+  - PT24H
+  - P7D
+  - P14D
+  - P4W
+  - P3M
+  - P12M
+  - rill-PDC
+  - rill-PWC
+  - rill-PMC
+  - rill-PQC
+  - rill-PYC
+time_zones:
+  - UTC
+  - America/Los_Angeles
+  - America/Chicago
+  - America/New_York
+  - Europe/London
+  - Europe/Paris
+  - Asia/Jerusalem
+  - Europe/Moscow
+  - Asia/Kolkata
+  - Asia/Shanghai
+  - Asia/Tokyo
+  - Australia/Sydney
 
-title: Title of your explore dashboard
-description: a description
-metrics_view: <your-metric-view-file-name>
+rows:
 
-dimensions: '*' #can use expressions
-measures: '*' #can use expressions
-
-theme: #your default theme
-
-time_ranges: #was available_time_ranges
-time_zones: #was available_time_zones
-
-defaults: #define all the defaults within here
-    dimensions:
-  ...
 
 security:
     access: #only access can be set on dashboard level, see metric view for detailed access policies
+
 ```
