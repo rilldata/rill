@@ -18,7 +18,8 @@ rill --help
 ```
 
 :::tip sharing dashboards in Rill cloud? Clone your git repo first
-If you plan to share your dashboards, it is helpful to start by creating a repo in Git. Go to https://github.com/new to create a new repo. Then, run the [Rill install script](#quick-install) in your cloned location locally to make deployment easier. 
+
+If you plan to share your dashboards, it is helpful to start by creating a repo in Git. Go to https://github.com/new to create a new repo. Then, run the [Rill install script](/home/install#quick-install) in your cloned location locally to make deployment easier. 
 
 More details on deploying Rill via Git in our [Deploy section](../deploy/deploy-dashboard/).
 :::
@@ -71,7 +72,7 @@ curl https://rill.sh | sh -s -- --version <insert_version_number>
 
 :::info Checking the Rill version
 
-To check the precise version of available releases, you can navigate to the [**Releases**](https://github.com/rilldata/rill/releases) page of our [Rill repo](https://github.com/rilldata/rill). Note that if an invalid or incorrect version is passed to the install script, you will get prompted with an error to specify a correct version.
+To check the precise version of available releases, you can navigate to the [**Releases'**](https://github.com/rilldata/rill/releases) page of our [Rill repo](https://github.com/rilldata/rill). Note that if an invalid or incorrect version is passed to the installation script, you will get prompted with an error to specify a correct version.
 
 :::
 
@@ -89,6 +90,12 @@ Once you have installed WSL and logged in to your Linux instance, you just need 
 sudo apt-get update
 sudo apt-get install unzip
 ```
+:::tip Where should Rill be running? 
+Please check that you are running the commands in your Linux instance not from your Windows Command Prompt. 
+
+If you are seeing strange behavior in Rill Developer, run the following command from the CLI to see where your project files are being save `echo "$PWD"`. If they are mounted from your Windows drive, you'll need to bring them into the WSL environment. 
+
+:::
 
 With `unzip` installed, you're ready to install Rill Developer by running the following command:
 ```bash

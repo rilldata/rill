@@ -48,6 +48,11 @@ The main screen of any Rill dashboard is called the _Explore_ page. As seen abov
 
 - _**Time Dimension Detail:**_ A detailed view of a single specific measure that can be further drilled down to understand minute details in your data. As with the Explore page, you can add comparison dimensions to visualize the value for several specific dimension values. For more information see: [Time Dimension Detail](/explore/dashboard-101/tdd).
 
+:::note Big Number Formatting
+
+[Formatting of your measures](/build/metrics-view/advanced-expressions/metric-formatting) will not change the granularity of the Big Number, but you'll see the formatting being applied to the TDD, Dimension Leaderboard, and Pivot tables. 
+:::
+
 ### Dimensions Leaderboard Panel
 
 - _**Dimensions:**_  All _**dimensions**_ available in the underlying model on the right-hand side via leaderboard / toplist charts. You can add or remove any dimension from the page by simply selecting them from the dropdown above the charts (see `green` boxes). You can also drill into leaderboards further (see `blue` box) to see all corresponding metrics for a specific dimension. Within that drilldown, you can also then sort by metric, search your dimensions, and/or [export data](../exports.md). 
