@@ -67,6 +67,7 @@ func TestOrganizationWorkflow(t *testing.T) {
 	p.OverrideDataOutput(&buf)
 
 	helper := &cmdutil.Helper{
+		DotRill:           dotrill.New(t.TempDir()),
 		AdminURLDefault:   "http://localhost:9090",
 		AdminTokenDefault: adminAuthToken.Token().String(),
 		Printer:           p,

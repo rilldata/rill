@@ -30,7 +30,6 @@ import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/printer"
-	"github.com/rilldata/rill/cli/pkg/update"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc/status"
 )
@@ -39,44 +38,45 @@ func init() {
 	cobra.EnableCommandSorting = false
 }
 
-// rootCmd represents the base command when called without any subcommands.
-var rootCmd = &cobra.Command{
-	Use:   "rill <command> [flags]",
-	Short: "A CLI for Rill",
-	Long:  `Work with Rill projects directly from the command line.`,
-}
-
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
+// Execute initializes the root command and executes it.
+// It also handles errors and prints them in a user-friendly way.
 func Execute(ctx context.Context, ver cmdutil.Version) {
-	err := runCmd(ctx, ver)
-	if err != nil {
-		errMsg := err.Error()
-		// check for known messages
-		if strings.Contains(errMsg, "org not found") {
-			fmt.Println("Org not found. Run `rill org list` to see the orgs. Run `rill org switch` to default org.")
-		} else if strings.Contains(errMsg, "project not found") {
-			fmt.Println("Project not found. Run `rill project list` to check the list of projects.")
-		} else if strings.Contains(errMsg, "auth token not found") {
-			fmt.Println("Auth token is invalid/expired. Login again with `rill login`.")
-		} else if strings.Contains(errMsg, "not authenticated as a user") {
-			fmt.Println("Please log in or sign up for Rill with `rill login`.")
-		} else {
-			if s, ok := status.FromError(err); ok {
-				// rpc error
-				fmt.Printf("Error: %s (%v)\n", s.Message(), s.Code())
-			} else {
-				fmt.Printf("Error: %s\n", err.Error())
-			}
-		}
-		os.Exit(1)
+	root, err := RootCmd(ctx, ver)
+	if err == nil {
+		err = root.ExecuteContext(ctx)
 	}
+	if err == nil {
+		return
+	}
+
+	// Pretty print the error with custom handling for known errors.
+	// NOTE: This is a workaround for Cobra not supporting middleware for overriding the error from RunE.
+	errMsg := err.Error()
+	if strings.Contains(errMsg, "org not found") {
+		root.PrintErrln("Org not found. Run `rill org list` to see the orgs. Run `rill org switch` to default org.")
+	} else if strings.Contains(errMsg, "project not found") {
+		root.PrintErrln("Project not found. Run `rill project list` to check the list of projects.")
+	} else if strings.Contains(errMsg, "auth token not found") {
+		root.PrintErrln("Auth token is invalid/expired. Login again with `rill login`.")
+	} else if strings.Contains(errMsg, "not authenticated as a user") {
+		root.PrintErrln("Please log in or sign up for Rill with `rill login`.")
+	} else {
+		if s, ok := status.FromError(err); ok {
+			// rpc error
+			root.PrintErrf("Error: %s (%v)\n", s.Message(), s.Code())
+		} else {
+			root.PrintErrf("Error: %s\n", err.Error())
+		}
+	}
+	os.Exit(1)
 }
 
-func runCmd(ctx context.Context, ver cmdutil.Version) error {
+// RootCmd creates the root command and adds all subcommands.
+func RootCmd(ctx context.Context, ver cmdutil.Version) (*cobra.Command, error) {
 	// Create cmdutil Helper
 	ch := &cmdutil.Helper{
 		Printer:     printer.NewPrinter(printer.FormatHuman),
+		DotRill:     dotrill.New(""),
 		Version:     ver,
 		Interactive: true,
 	}
@@ -85,24 +85,24 @@ func runCmd(ctx context.Context, ver cmdutil.Version) error {
 	// Load base admin config from ~/.rill
 	err := ch.ReloadAdminConfig()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Load default org
-	defaultOrg, err := dotrill.GetDefaultOrg()
+	defaultOrg, err := ch.DotRill.GetDefaultOrg()
 	if err != nil {
-		return fmt.Errorf("could not parse default org from ~/.rill: %w", err)
+		return nil, fmt.Errorf("could not parse default org from ~/.rill: %w", err)
 	}
 	ch.Org = defaultOrg
 
 	// Check version
-	err = update.CheckVersion(ctx, ver.Number)
+	err = ch.CheckVersion(ctx)
 	if err != nil {
 		ch.PrintfWarn("Warning: version check failed: %v\n\n", err)
 	}
 
 	// Print warning if currently acting as an assumed user
-	representingUser, err := dotrill.GetRepresentingUser()
+	representingUser, err := ch.DotRill.GetRepresentingUser()
 	if err != nil {
 		ch.PrintfWarn("Could not parse representing user email\n\n")
 	}
@@ -110,7 +110,12 @@ func runCmd(ctx context.Context, ver cmdutil.Version) error {
 		ch.PrintfWarn("Warning: Running action as %q\n\n", representingUser)
 	}
 
-	// Cobra config
+	// Root command
+	rootCmd := &cobra.Command{
+		Use:   "rill <command> [flags]",
+		Short: "A CLI for Rill",
+		Long:  `Work with Rill projects directly from the command line.`,
+	}
 	rootCmd.Version = ver.String()
 	// silence usage, usage string will only show up if missing arguments/flags
 	rootCmd.SilenceUsage = true
@@ -175,5 +180,5 @@ func runCmd(ctx context.Context, ver cmdutil.Version) error {
 		completionCmd(ch),
 	)
 
-	return rootCmd.ExecuteContext(ctx)
+	return rootCmd, nil
 }

@@ -1,4 +1,4 @@
-package server
+package testadmin
 
 import (
 	"context"
@@ -18,6 +18,7 @@ import (
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/jobs/river"
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
+	"github.com/rilldata/rill/admin/server"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
@@ -25,51 +26,31 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
+
+	// Register database driver and supported provisioners
+	_ "github.com/rilldata/rill/admin/database/postgres"
+	_ "github.com/rilldata/rill/admin/provisioner/static"
 )
 
-// newTestUser creates a new user using a server created with newTestServer.
-func newTestUser(t *testing.T, svr *Server) (*database.User, *client.Client) {
-	return newTestUserWithDomain(t, svr, "test-user.com")
-}
-
-// newTestUserWithDomain creates a new user with a random email with the given email domain using a server created with newTestServer.
-func newTestUserWithDomain(t *testing.T, svr *Server, domain string) (*database.User, *client.Client) {
-	rand := randomBytes(16)
-	email := fmt.Sprintf("test-%x@%s", rand, domain)
-	return newTestUserWithEmail(t, svr, email)
-}
-
-// newTestUserWithEmail creates a new user with the given email using a server created with newTestServer.
-func newTestUserWithEmail(t *testing.T, svr *Server, email string) (*database.User, *client.Client) {
-	name := fmt.Sprintf("Test %s", strings.Split(email, "@")[0])
-
-	u, err := svr.admin.CreateOrUpdateUser(context.Background(), email, name, "")
-	require.NoError(t, err)
-
-	tkn, err := svr.admin.IssueUserAuthToken(context.Background(), u.ID, database.AuthClientIDRillWeb, "Test session", nil, nil)
-	require.NoError(t, err)
-
-	return u, newTestClient(t, svr, tkn.Token().String())
-}
-
-// newTestClient creates a new client for a server created with newTestServer.
-func newTestClient(t *testing.T, svr *Server, token string) *client.Client {
-	host := fmt.Sprintf("http://localhost:%d", svr.opts.GRPCPort)
-	c, err := client.New(host, token, "test")
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, c.Close()) })
-	return c
-}
-
-// newTestServer creates a new admin service and server for testing.
-// The server and its resources will be cleaned up when the test ends.
+// Fixture is a test fixture for an admin service and server.
+// It wraps an admin service with a server running on a random port backed by a testcontainer Postgres database.
+// The service, server and other resources will be cleaned up when the test that created the Fixture stops.
 //
-// The server has several limitations compared to a production server:
+// The service has several limitations compared to a production server:
 // - Cannot provision runtimes
 // - Github operation are no-ops
 // - Billing operations are no-ops
 // - No configured metrics project
-func newTestServer(t *testing.T) *Server {
+// - Does not run background jobs
+type Fixture struct {
+	Admin      *admin.Service
+	Server     *server.Server
+	ServerOpts *server.Options
+}
+
+// New creates an ephemeral admin service and server for testing.
+// See the docstring for the returned Fixture for details.
+func New(t *testing.T) *Fixture {
 	ctx := context.Background()
 
 	// Postgres
@@ -152,7 +133,7 @@ func newTestServer(t *testing.T) *Server {
 	adm.Jobs = jobs
 
 	// Server
-	srvOpts := &Options{
+	srvOpts := &server.Options{
 		HTTPPort:         httpPort,
 		GRPCPort:         grpcPort,
 		AllowedOrigins:   []string{"*"},
@@ -162,7 +143,7 @@ func newTestServer(t *testing.T) *Server {
 		AuthClientID:     "",
 		AuthClientSecret: "",
 	}
-	srv, err := New(logger, adm, issuer, ratelimit.NewNoop(), activity.NewNoopClient(), srvOpts)
+	srv, err := server.New(logger, adm, issuer, ratelimit.NewNoop(), activity.NewNoopClient(), srvOpts)
 	require.NoError(t, err)
 
 	// Serve
@@ -173,7 +154,53 @@ func newTestServer(t *testing.T) *Server {
 	group.Go(func() error { return srv.ServeHTTP(ctx) })
 	require.NoError(t, srv.AwaitServing(ctx))
 
-	return srv
+	return &Fixture{
+		Admin:      adm,
+		Server:     srv,
+		ServerOpts: srvOpts,
+	}
+}
+
+// NewUser creates a new user in the fixture's admin service.
+func (f *Fixture) NewUser(t *testing.T) (*database.User, *client.Client) {
+	return f.NewUserWithDomain(t, "test-user.com")
+}
+
+// NewSuperuser creates a new user with superuser permission in the fixture's admin service.
+func (f *Fixture) NewSuperuser(t *testing.T) (*database.User, *client.Client) {
+	u, c := f.NewUserWithDomain(t, "test-superuser.com")
+	err := f.Admin.DB.UpdateSuperuser(context.Background(), u.ID, true)
+	require.NoError(t, err)
+	return u, c
+}
+
+// NewUserWithDomain creates a new user with a random email with the given email domain in the fixture's admin service.
+func (f *Fixture) NewUserWithDomain(t *testing.T, domain string) (*database.User, *client.Client) {
+	data := randomBytes(16)
+	emailAddr := fmt.Sprintf("test-%x@%s", data, domain)
+	return f.NewUserWithEmail(t, emailAddr)
+}
+
+// NewUserWithEmail creates a new user with the given email in the fixture's admin service.
+func (f *Fixture) NewUserWithEmail(t *testing.T, emailAddr string) (*database.User, *client.Client) {
+	name := fmt.Sprintf("Test %s", strings.Split(emailAddr, "@")[0])
+
+	u, err := f.Admin.CreateOrUpdateUser(context.Background(), emailAddr, name, "")
+	require.NoError(t, err)
+
+	tkn, err := f.Admin.IssueUserAuthToken(context.Background(), u.ID, database.AuthClientIDRillWeb, "Test session", nil, nil)
+	require.NoError(t, err)
+
+	return u, f.NewClient(t, tkn.Token().String())
+}
+
+// NewClient creates a new client for the fixture's server.
+func (f *Fixture) NewClient(t *testing.T, token string) *client.Client {
+	host := fmt.Sprintf("http://localhost:%d", f.ServerOpts.GRPCPort)
+	c, err := client.New(host, token, "test")
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, c.Close()) })
+	return c
 }
 
 // mockGithub provides a mock implementation of admin.Github.

@@ -23,11 +23,9 @@ import (
 	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/pkce"
-	"github.com/rilldata/rill/cli/pkg/update"
 	"github.com/rilldata/rill/cli/pkg/web"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	localv1 "github.com/rilldata/rill/proto/gen/rill/local/v1"
@@ -101,7 +99,7 @@ func (s *Server) GetMetadata(ctx context.Context, r *connect.Request[localv1.Get
 
 // GetVersion implements localv1connect.LocalServiceHandler.
 func (s *Server) GetVersion(ctx context.Context, r *connect.Request[localv1.GetVersionRequest]) (*connect.Response[localv1.GetVersionResponse], error) {
-	latestVersion, err := update.LatestVersion(ctx)
+	latestVersion, err := s.app.ch.LatestVersion(ctx)
 	if err != nil {
 		s.logger.Warn("error finding latest version", zap.Error(err))
 	}
@@ -508,7 +506,7 @@ func (s *Server) GetCurrentUser(ctx context.Context, r *connect.Request[localv1.
 		userOrgs = append(userOrgs, org.Name)
 	}
 
-	representingUser, err := dotrill.GetRepresentingUser()
+	representingUser, err := s.app.ch.DotRill.GetRepresentingUser()
 	if err != nil {
 		return nil, errors.New("failed to get assumed user email")
 	}
@@ -657,7 +655,7 @@ func (s *Server) authCallbackHandler() http.Handler {
 		}
 
 		// Save token and reload config
-		err = dotrill.SetAccessToken(token)
+		err = s.app.ch.DotRill.SetAccessToken(token)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to save access token: %s", err), http.StatusInternalServerError)
 			return
@@ -776,7 +774,7 @@ type versionResponse struct {
 func (s *Server) versionHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Get the latest version available
-		latestVersion, err := update.LatestVersion(r.Context())
+		latestVersion, err := s.app.ch.LatestVersion(r.Context())
 		if err != nil {
 			s.logger.Warn("error finding latest version", zap.Error(err))
 		}

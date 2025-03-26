@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
+	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/mock"
 	"github.com/rilldata/rill/cli/pkg/printer"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
@@ -67,6 +68,7 @@ func TestServiceWorkflow(t *testing.T) {
 	p.OverrideDataOutput(&buf)
 
 	helper := &cmdutil.Helper{
+		DotRill:           dotrill.New(t.TempDir()),
 		AdminURLDefault:   "http://localhost:9090",
 		AdminTokenDefault: adminAuthToken.Token().String(),
 		Org:               "myorg",

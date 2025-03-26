@@ -5,7 +5,6 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/dotrill"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
@@ -70,7 +69,7 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			err = dotrill.SetDefaultOrg(newName)
+			err = ch.DotRill.SetDefaultOrg(newName)
 			if err != nil {
 				return err
 			}

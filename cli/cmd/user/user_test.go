@@ -2,38 +2,27 @@ package user
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/rilldata/rill/admin/database"
-	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
+	"github.com/rilldata/rill/admin/testadmin"
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/mock"
+	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/printer"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 )
 
 func TestUserWorkflow(t *testing.T) {
-	t.Skip("Skipping test as it is failing on CI")
-	pg := pgtestcontainer.New(t)
-	defer pg.Terminate(t)
+	fix := testadmin.New(t)
+	_, c := fix.NewUser(t)
 
-	ctx := context.Background()
-	logger, _ := zap.NewDevelopment()
-
-	// Get Admin service
-	adm, err := mock.AdminService(ctx, logger, pg.DatabaseURL)
-	require.NoError(t, err)
-	defer adm.Close()
-
-	db := adm.DB
+	c.Token
 
 	// create mock admin user
 	adminUser, err := db.InsertUser(ctx, &database.InsertUserOptions{
@@ -66,6 +55,7 @@ func TestUserWorkflow(t *testing.T) {
 	p := printer.NewPrinter(printer.FormatHuman)
 	p.OverrideDataOutput(&buf)
 	helper := &cmdutil.Helper{
+		DotRill:           dotrill.New(t.TempDir()),
 		AdminURLDefault:   "http://localhost:9090",
 		AdminTokenDefault: adminAuthToken.Token().String(),
 		Printer:           p,

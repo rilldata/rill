@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/dotrill"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
@@ -48,7 +47,7 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// Switching to the created org
-			err = dotrill.SetDefaultOrg(res.Organization.Name)
+			err = ch.DotRill.SetDefaultOrg(res.Organization.Name)
 			if err != nil {
 				return err
 			}
