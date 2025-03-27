@@ -488,14 +488,17 @@ If an existing resource matches the request, it will be returned without provisi
 export const createAdminServiceProvision = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceProvision>>,
-    TError,
-    { deploymentId: string; data: AdminServiceProvisionBody },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceProvision>>,
+      TError,
+      { deploymentId: string; data: AdminServiceProvisionBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceProvision>>,
   TError,
   { deploymentId: string; data: AdminServiceProvisionBody },
@@ -503,7 +506,7 @@ export const createAdminServiceProvision = <
 > => {
   const mutationOptions = getAdminServiceProvisionMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary TriggerReconcile triggers reconcile for the project's prod deployment.
@@ -574,14 +577,17 @@ DEPRECATED: Clients should call CreateTrigger directly on the deployed runtime i
 export const createAdminServiceTriggerReconcile = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceTriggerReconcile>>,
-    TError,
-    { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceTriggerReconcile>>,
+      TError,
+      { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceTriggerReconcile>>,
   TError,
   { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
@@ -590,7 +596,7 @@ export const createAdminServiceTriggerReconcile = <
   const mutationOptions =
     getAdminServiceTriggerReconcileMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary TriggerRefreshSources refresh the source for production deployment.
@@ -661,14 +667,17 @@ DEPRECATED: Clients should call CreateTrigger directly on the deployed runtime i
 export const createAdminServiceTriggerRefreshSources = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceTriggerRefreshSources>>,
-    TError,
-    { deploymentId: string; data: AdminServiceTriggerRefreshSourcesBody },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceTriggerRefreshSources>>,
+      TError,
+      { deploymentId: string; data: AdminServiceTriggerRefreshSourcesBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceTriggerRefreshSources>>,
   TError,
   { deploymentId: string; data: AdminServiceTriggerRefreshSourcesBody },
@@ -677,7 +686,7 @@ export const createAdminServiceTriggerRefreshSources = <
   const mutationOptions =
     getAdminServiceTriggerRefreshSourcesMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
@@ -992,14 +1001,17 @@ export type AdminServiceRevokeMagicAuthTokenMutationError = RpcStatus;
 export const createAdminServiceRevokeMagicAuthToken = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceRevokeMagicAuthToken>>,
-    TError,
-    { tokenId: string },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceRevokeMagicAuthToken>>,
+      TError,
+      { tokenId: string },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceRevokeMagicAuthToken>>,
   TError,
   { tokenId: string },
@@ -1008,7 +1020,7 @@ export const createAdminServiceRevokeMagicAuthToken = <
   const mutationOptions =
     getAdminServiceRevokeMagicAuthTokenMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary GetCurrentMagicAuthToken returns information about the current magic auth token.
@@ -1355,14 +1367,17 @@ export type AdminServiceCreateOrganizationMutationError = RpcStatus;
 export const createAdminServiceCreateOrganization = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceCreateOrganization>>,
-    TError,
-    { data: V1CreateOrganizationRequest },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceCreateOrganization>>,
+      TError,
+      { data: V1CreateOrganizationRequest },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceCreateOrganization>>,
   TError,
   { data: V1CreateOrganizationRequest },
@@ -1371,7 +1386,7 @@ export const createAdminServiceCreateOrganization = <
   const mutationOptions =
     getAdminServiceCreateOrganizationMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary GetOrganization returns information about a specific organization
@@ -1528,14 +1543,17 @@ export type AdminServiceDeleteOrganizationMutationError = RpcStatus;
 export const createAdminServiceDeleteOrganization = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceDeleteOrganization>>,
-    TError,
-    { name: string },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceDeleteOrganization>>,
+      TError,
+      { name: string },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceDeleteOrganization>>,
   TError,
   { name: string },
@@ -1544,7 +1562,7 @@ export const createAdminServiceDeleteOrganization = <
   const mutationOptions =
     getAdminServiceDeleteOrganizationMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary UpdateOrganization deletes an organizations
@@ -1611,14 +1629,17 @@ export type AdminServiceUpdateOrganizationMutationError = RpcStatus;
 export const createAdminServiceUpdateOrganization = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceUpdateOrganization>>,
-    TError,
-    { name: string; data: AdminServiceUpdateOrganizationBody },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceUpdateOrganization>>,
+      TError,
+      { name: string; data: AdminServiceUpdateOrganizationBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceUpdateOrganization>>,
   TError,
   { name: string; data: AdminServiceUpdateOrganizationBody },
@@ -1627,7 +1648,7 @@ export const createAdminServiceUpdateOrganization = <
   const mutationOptions =
     getAdminServiceUpdateOrganizationMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary ListOrganizationBillingIssues lists all the billing issues for the organization
@@ -1996,14 +2017,17 @@ export type AdminServiceCancelBillingSubscriptionMutationError = RpcStatus;
 export const createAdminServiceCancelBillingSubscription = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceCancelBillingSubscription>>,
-    TError,
-    { organization: string },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceCancelBillingSubscription>>,
+      TError,
+      { organization: string },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceCancelBillingSubscription>>,
   TError,
   { organization: string },
@@ -2012,7 +2036,7 @@ export const createAdminServiceCancelBillingSubscription = <
   const mutationOptions =
     getAdminServiceCancelBillingSubscriptionMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary UpdateBillingSubscription updates the billing plan for the organization
@@ -2085,17 +2109,20 @@ export type AdminServiceUpdateBillingSubscriptionMutationError = RpcStatus;
 export const createAdminServiceUpdateBillingSubscription = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceUpdateBillingSubscription>>,
-    TError,
-    {
-      organization: string;
-      data: AdminServiceUpdateBillingSubscriptionBodyBody;
-    },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceUpdateBillingSubscription>>,
+      TError,
+      {
+        organization: string;
+        data: AdminServiceUpdateBillingSubscriptionBodyBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceUpdateBillingSubscription>>,
   TError,
   { organization: string; data: AdminServiceUpdateBillingSubscriptionBodyBody },
@@ -2104,7 +2131,7 @@ export const createAdminServiceUpdateBillingSubscription = <
   const mutationOptions =
     getAdminServiceUpdateBillingSubscriptionMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary RenewBillingSubscription renews the billing plan for the organization once cancelled
@@ -2179,17 +2206,20 @@ export type AdminServiceRenewBillingSubscriptionMutationError = RpcStatus;
 export const createAdminServiceRenewBillingSubscription = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceRenewBillingSubscription>>,
-    TError,
-    {
-      organization: string;
-      data: AdminServiceUpdateBillingSubscriptionBodyBody;
-    },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceRenewBillingSubscription>>,
+      TError,
+      {
+        organization: string;
+        data: AdminServiceUpdateBillingSubscriptionBodyBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceRenewBillingSubscription>>,
   TError,
   { organization: string; data: AdminServiceUpdateBillingSubscriptionBodyBody },
@@ -2198,7 +2228,7 @@ export const createAdminServiceRenewBillingSubscription = <
   const mutationOptions =
     getAdminServiceRenewBillingSubscriptionMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary ListOrganizationInvites lists all the org invites
@@ -2666,14 +2696,17 @@ export type AdminServiceAddOrganizationMemberUserMutationError = RpcStatus;
 export const createAdminServiceAddOrganizationMemberUser = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceAddOrganizationMemberUser>>,
-    TError,
-    { organization: string; data: AdminServiceAddOrganizationMemberUserBody },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceAddOrganizationMemberUser>>,
+      TError,
+      { organization: string; data: AdminServiceAddOrganizationMemberUserBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceAddOrganizationMemberUser>>,
   TError,
   { organization: string; data: AdminServiceAddOrganizationMemberUserBody },
@@ -2682,7 +2715,7 @@ export const createAdminServiceAddOrganizationMemberUser = <
   const mutationOptions =
     getAdminServiceAddOrganizationMemberUserMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary RemoveOrganizationMemberUser removes member from the organization
@@ -2747,14 +2780,17 @@ export type AdminServiceRemoveOrganizationMemberUserMutationError = RpcStatus;
 export const createAdminServiceRemoveOrganizationMemberUser = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceRemoveOrganizationMemberUser>>,
-    TError,
-    { organization: string; email: string },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceRemoveOrganizationMemberUser>>,
+      TError,
+      { organization: string; email: string },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceRemoveOrganizationMemberUser>>,
   TError,
   { organization: string; email: string },
@@ -2763,7 +2799,7 @@ export const createAdminServiceRemoveOrganizationMemberUser = <
   const mutationOptions =
     getAdminServiceRemoveOrganizationMemberUserMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary SetOrganizationMemberUserRole sets the role for the member
@@ -2844,18 +2880,21 @@ export type AdminServiceSetOrganizationMemberUserRoleMutationError = RpcStatus;
 export const createAdminServiceSetOrganizationMemberUserRole = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceSetOrganizationMemberUserRole>>,
-    TError,
-    {
-      organization: string;
-      email: string;
-      data: AdminServiceSetOrganizationMemberUserRoleBodyBody;
-    },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceSetOrganizationMemberUserRole>>,
+      TError,
+      {
+        organization: string;
+        email: string;
+        data: AdminServiceSetOrganizationMemberUserRoleBodyBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceSetOrganizationMemberUserRole>>,
   TError,
   {
@@ -2868,7 +2907,7 @@ export const createAdminServiceSetOrganizationMemberUserRole = <
   const mutationOptions =
     getAdminServiceSetOrganizationMemberUserRoleMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary LeaveOrganization removes the current user from the organization
@@ -2929,14 +2968,17 @@ export type AdminServiceLeaveOrganizationMutationError = RpcStatus;
 export const createAdminServiceLeaveOrganization = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceLeaveOrganization>>,
-    TError,
-    { organization: string },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceLeaveOrganization>>,
+      TError,
+      { organization: string },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceLeaveOrganization>>,
   TError,
   { organization: string },
@@ -2945,7 +2987,7 @@ export const createAdminServiceLeaveOrganization = <
   const mutationOptions =
     getAdminServiceLeaveOrganizationMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary ListProjectMemberUsergroups lists the project's user groups
@@ -3279,18 +3321,21 @@ export type AdminServiceCreateAlertMutationError = RpcStatus;
 export const createAdminServiceCreateAlert = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceCreateAlert>>,
-    TError,
-    {
-      organization: string;
-      project: string;
-      data: AdminServiceCreateAlertBodyBody;
-    },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceCreateAlert>>,
+      TError,
+      {
+        organization: string;
+        project: string;
+        data: AdminServiceCreateAlertBodyBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceCreateAlert>>,
   TError,
   {
@@ -3302,7 +3347,7 @@ export const createAdminServiceCreateAlert = <
 > => {
   const mutationOptions = getAdminServiceCreateAlertMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
@@ -3384,18 +3429,21 @@ export type AdminServiceGenerateAlertYAMLMutationError = RpcStatus;
 export const createAdminServiceGenerateAlertYAML = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceGenerateAlertYAML>>,
-    TError,
-    {
-      organization: string;
-      project: string;
-      data: AdminServiceCreateAlertBodyBody;
-    },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceGenerateAlertYAML>>,
+      TError,
+      {
+        organization: string;
+        project: string;
+        data: AdminServiceCreateAlertBodyBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceGenerateAlertYAML>>,
   TError,
   {
@@ -3408,7 +3456,7 @@ export const createAdminServiceGenerateAlertYAML = <
   const mutationOptions =
     getAdminServiceGenerateAlertYAMLMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary DeleteAlert deletes the virtual file for a UI-managed alert, triggers a reconcile, and waits for the alert to be deleted in the runtime
@@ -3473,14 +3521,17 @@ export type AdminServiceDeleteAlertMutationError = RpcStatus;
 export const createAdminServiceDeleteAlert = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceDeleteAlert>>,
-    TError,
-    { organization: string; project: string; name: string },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceDeleteAlert>>,
+      TError,
+      { organization: string; project: string; name: string },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceDeleteAlert>>,
   TError,
   { organization: string; project: string; name: string },
@@ -3488,7 +3539,7 @@ export const createAdminServiceDeleteAlert = <
 > => {
   const mutationOptions = getAdminServiceDeleteAlertMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary EditAlert edits a virtual file for a UI-managed alert, triggers a reconcile, and waits for the alert to be updated in the runtime
@@ -3571,19 +3622,22 @@ export type AdminServiceEditAlertMutationError = RpcStatus;
 export const createAdminServiceEditAlert = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceEditAlert>>,
-    TError,
-    {
-      organization: string;
-      project: string;
-      name: string;
-      data: AdminServiceCreateAlertBodyBody;
-    },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceEditAlert>>,
+      TError,
+      {
+        organization: string;
+        project: string;
+        name: string;
+        data: AdminServiceCreateAlertBodyBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceEditAlert>>,
   TError,
   {
@@ -3596,7 +3650,7 @@ export const createAdminServiceEditAlert = <
 > => {
   const mutationOptions = getAdminServiceEditAlertMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary UnsubscribeAlert removes the calling user from a alert's recipients list
@@ -3682,19 +3736,22 @@ export type AdminServiceUnsubscribeAlertMutationError = RpcStatus;
 export const createAdminServiceUnsubscribeAlert = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceUnsubscribeAlert>>,
-    TError,
-    {
-      organization: string;
-      project: string;
-      name: string;
-      data: AdminServiceTriggerReconcileBodyBody;
-    },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceUnsubscribeAlert>>,
+      TError,
+      {
+        organization: string;
+        project: string;
+        name: string;
+        data: AdminServiceTriggerReconcileBodyBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceUnsubscribeAlert>>,
   TError,
   {
@@ -3708,7 +3765,7 @@ export const createAdminServiceUnsubscribeAlert = <
   const mutationOptions =
     getAdminServiceUnsubscribeAlertMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
@@ -4011,18 +4068,21 @@ Replaces the contents of the remote repo with the contents of the project.
 export const createAdminServiceConnectProjectToGithub = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceConnectProjectToGithub>>,
-    TError,
-    {
-      organization: string;
-      project: string;
-      data: AdminServiceConnectProjectToGithubBody;
-    },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceConnectProjectToGithub>>,
+      TError,
+      {
+        organization: string;
+        project: string;
+        data: AdminServiceConnectProjectToGithubBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceConnectProjectToGithub>>,
   TError,
   {
@@ -4035,7 +4095,7 @@ export const createAdminServiceConnectProjectToGithub = <
   const mutationOptions =
     getAdminServiceConnectProjectToGithubMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary GetDeploymentCredentials returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
@@ -4225,14 +4285,17 @@ export type AdminServiceHibernateProjectMutationError = RpcStatus;
 export const createAdminServiceHibernateProject = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceHibernateProject>>,
-    TError,
-    { organization: string; project: string },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceHibernateProject>>,
+      TError,
+      { organization: string; project: string },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceHibernateProject>>,
   TError,
   { organization: string; project: string },
@@ -4241,7 +4304,7 @@ export const createAdminServiceHibernateProject = <
   const mutationOptions =
     getAdminServiceHibernateProjectMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary GetIFrame returns the iframe URL for the given project
@@ -4310,14 +4373,21 @@ export type AdminServiceGetIFrameMutationError = RpcStatus;
 export const createAdminServiceGetIFrame = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceGetIFrame>>,
-    TError,
-    { organization: string; project: string; data: AdminServiceGetIFrameBody },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceGetIFrame>>,
+      TError,
+      {
+        organization: string;
+        project: string;
+        data: AdminServiceGetIFrameBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceGetIFrame>>,
   TError,
   { organization: string; project: string; data: AdminServiceGetIFrameBody },
@@ -4325,7 +4395,7 @@ export const createAdminServiceGetIFrame = <
 > => {
   const mutationOptions = getAdminServiceGetIFrameMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary ListProjectInvites lists all the project invites
@@ -4639,18 +4709,21 @@ export type AdminServiceAddProjectMemberUserMutationError = RpcStatus;
 export const createAdminServiceAddProjectMemberUser = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceAddProjectMemberUser>>,
-    TError,
-    {
-      organization: string;
-      project: string;
-      data: AdminServiceAddProjectMemberUserBody;
-    },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceAddProjectMemberUser>>,
+      TError,
+      {
+        organization: string;
+        project: string;
+        data: AdminServiceAddProjectMemberUserBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceAddProjectMemberUser>>,
   TError,
   {
@@ -4663,7 +4736,7 @@ export const createAdminServiceAddProjectMemberUser = <
   const mutationOptions =
     getAdminServiceAddProjectMemberUserMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary RemoveProjectMemberUser removes member from the project
@@ -4728,14 +4801,17 @@ export type AdminServiceRemoveProjectMemberUserMutationError = RpcStatus;
 export const createAdminServiceRemoveProjectMemberUser = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceRemoveProjectMemberUser>>,
-    TError,
-    { organization: string; project: string; email: string },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceRemoveProjectMemberUser>>,
+      TError,
+      { organization: string; project: string; email: string },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceRemoveProjectMemberUser>>,
   TError,
   { organization: string; project: string; email: string },
@@ -4744,7 +4820,7 @@ export const createAdminServiceRemoveProjectMemberUser = <
   const mutationOptions =
     getAdminServiceRemoveProjectMemberUserMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary SetProjectMemberUserRole sets the role for the member
@@ -4833,19 +4909,22 @@ export type AdminServiceSetProjectMemberUserRoleMutationError = RpcStatus;
 export const createAdminServiceSetProjectMemberUserRole = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceSetProjectMemberUserRole>>,
-    TError,
-    {
-      organization: string;
-      project: string;
-      email: string;
-      data: AdminServiceSetOrganizationMemberUserRoleBodyBody;
-    },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceSetProjectMemberUserRole>>,
+      TError,
+      {
+        organization: string;
+        project: string;
+        email: string;
+        data: AdminServiceSetOrganizationMemberUserRoleBodyBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceSetProjectMemberUserRole>>,
   TError,
   {
@@ -4859,7 +4938,7 @@ export const createAdminServiceSetProjectMemberUserRole = <
   const mutationOptions =
     getAdminServiceSetProjectMemberUserRoleMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary RedeployProject creates a new production deployment for a project.
@@ -4943,18 +5022,21 @@ This RPC can be used to redeploy a project that has been hibernated.
 export const createAdminServiceRedeployProject = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceRedeployProject>>,
-    TError,
-    {
-      organization: string;
-      project: string;
-      params?: AdminServiceRedeployProjectParams;
-    },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceRedeployProject>>,
+      TError,
+      {
+        organization: string;
+        project: string;
+        params?: AdminServiceRedeployProjectParams;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceRedeployProject>>,
   TError,
   {
@@ -4967,7 +5049,7 @@ export const createAdminServiceRedeployProject = <
   const mutationOptions =
     getAdminServiceRedeployProjectMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary CreateReport adds a virtual file for a report, triggers a reconcile, and waits for the report to be added to the runtime catalog
@@ -5049,18 +5131,21 @@ export type AdminServiceCreateReportMutationError = RpcStatus;
 export const createAdminServiceCreateReport = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceCreateReport>>,
-    TError,
-    {
-      organization: string;
-      project: string;
-      data: AdminServiceCreateReportBodyBody;
-    },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceCreateReport>>,
+      TError,
+      {
+        organization: string;
+        project: string;
+        data: AdminServiceCreateReportBodyBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceCreateReport>>,
   TError,
   {
@@ -5072,7 +5157,7 @@ export const createAdminServiceCreateReport = <
 > => {
   const mutationOptions = getAdminServiceCreateReportMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary GenerateReportYAML generates YAML for a scheduled report to be copied into a project's Git repository
@@ -5261,14 +5346,17 @@ export type AdminServiceDeleteReportMutationError = RpcStatus;
 export const createAdminServiceDeleteReport = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceDeleteReport>>,
-    TError,
-    { organization: string; project: string; name: string },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceDeleteReport>>,
+      TError,
+      { organization: string; project: string; name: string },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceDeleteReport>>,
   TError,
   { organization: string; project: string; name: string },
@@ -5276,7 +5364,7 @@ export const createAdminServiceDeleteReport = <
 > => {
   const mutationOptions = getAdminServiceDeleteReportMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary EditReport edits a virtual file for a UI-managed report, triggers a reconcile, and waits for the report to be updated in the runtime
@@ -5360,19 +5448,22 @@ export type AdminServiceEditReportMutationError = RpcStatus;
 export const createAdminServiceEditReport = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceEditReport>>,
-    TError,
-    {
-      organization: string;
-      project: string;
-      name: string;
-      data: AdminServiceCreateReportBodyBody;
-    },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceEditReport>>,
+      TError,
+      {
+        organization: string;
+        project: string;
+        name: string;
+        data: AdminServiceCreateReportBodyBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceEditReport>>,
   TError,
   {
@@ -5385,7 +5476,7 @@ export const createAdminServiceEditReport = <
 > => {
   const mutationOptions = getAdminServiceEditReportMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary TriggerReport triggers an ad-hoc report run
@@ -5471,19 +5562,22 @@ export type AdminServiceTriggerReportMutationError = RpcStatus;
 export const createAdminServiceTriggerReport = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceTriggerReport>>,
-    TError,
-    {
-      organization: string;
-      project: string;
-      name: string;
-      data: AdminServiceTriggerReconcileBodyBody;
-    },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceTriggerReport>>,
+      TError,
+      {
+        organization: string;
+        project: string;
+        name: string;
+        data: AdminServiceTriggerReconcileBodyBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceTriggerReport>>,
   TError,
   {
@@ -5496,7 +5590,7 @@ export const createAdminServiceTriggerReport = <
 > => {
   const mutationOptions = getAdminServiceTriggerReportMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary UnsubscribeReport removes the calling user from a reports recipients list
@@ -5582,19 +5676,22 @@ export type AdminServiceUnsubscribeReportMutationError = RpcStatus;
 export const createAdminServiceUnsubscribeReport = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceUnsubscribeReport>>,
-    TError,
-    {
-      organization: string;
-      project: string;
-      name: string;
-      data: AdminServiceUnsubscribeReportBody;
-    },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceUnsubscribeReport>>,
+      TError,
+      {
+        organization: string;
+        project: string;
+        name: string;
+        data: AdminServiceUnsubscribeReportBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceUnsubscribeReport>>,
   TError,
   {
@@ -5608,7 +5705,7 @@ export const createAdminServiceUnsubscribeReport = <
   const mutationOptions =
     getAdminServiceUnsubscribeReportMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 export const adminServiceRequestProjectAccess = (
   organization: string,
@@ -5684,18 +5781,21 @@ export type AdminServiceRequestProjectAccessMutationError = RpcStatus;
 export const createAdminServiceRequestProjectAccess = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceRequestProjectAccess>>,
-    TError,
-    {
-      organization: string;
-      project: string;
-      data: AdminServiceTriggerReconcileBodyBody;
-    },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceRequestProjectAccess>>,
+      TError,
+      {
+        organization: string;
+        project: string;
+        data: AdminServiceTriggerReconcileBodyBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceRequestProjectAccess>>,
   TError,
   {
@@ -5708,7 +5808,7 @@ export const createAdminServiceRequestProjectAccess = <
   const mutationOptions =
     getAdminServiceRequestProjectAccessMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary ListMagicAuthTokens lists all the magic auth tokens for a specific project.
@@ -5996,18 +6096,21 @@ export type AdminServiceIssueMagicAuthTokenMutationError = RpcStatus;
 export const createAdminServiceIssueMagicAuthToken = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceIssueMagicAuthToken>>,
-    TError,
-    {
-      organization: string;
-      project: string;
-      data: AdminServiceIssueMagicAuthTokenBody;
-    },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceIssueMagicAuthToken>>,
+      TError,
+      {
+        organization: string;
+        project: string;
+        data: AdminServiceIssueMagicAuthTokenBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceIssueMagicAuthToken>>,
   TError,
   {
@@ -6020,7 +6123,7 @@ export const createAdminServiceIssueMagicAuthToken = <
   const mutationOptions =
     getAdminServiceIssueMagicAuthTokenMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary Converts a project connected to github to a rill managed project.
@@ -6104,18 +6207,21 @@ Uploads the current project to assets.
 export const createAdminServiceUploadProjectAssets = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceUploadProjectAssets>>,
-    TError,
-    {
-      organization: string;
-      project: string;
-      data: AdminServiceTriggerReconcileBodyBody;
-    },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceUploadProjectAssets>>,
+      TError,
+      {
+        organization: string;
+        project: string;
+        data: AdminServiceTriggerReconcileBodyBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceUploadProjectAssets>>,
   TError,
   {
@@ -6128,7 +6234,7 @@ export const createAdminServiceUploadProjectAssets = <
   const mutationOptions =
     getAdminServiceUploadProjectAssetsMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary RemoveProjectMemberUsergroup revokes the project-level role for the user group
@@ -6198,14 +6304,17 @@ export type AdminServiceRemoveProjectMemberUsergroupMutationError = RpcStatus;
 export const createAdminServiceRemoveProjectMemberUsergroup = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceRemoveProjectMemberUsergroup>>,
-    TError,
-    { organization: string; project: string; usergroup: string },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceRemoveProjectMemberUsergroup>>,
+      TError,
+      { organization: string; project: string; usergroup: string },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceRemoveProjectMemberUsergroup>>,
   TError,
   { organization: string; project: string; usergroup: string },
@@ -6214,7 +6323,7 @@ export const createAdminServiceRemoveProjectMemberUsergroup = <
   const mutationOptions =
     getAdminServiceRemoveProjectMemberUsergroupMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary AddProjectMemberUsergroupRole adds the role for the user group
@@ -6305,19 +6414,22 @@ export type AdminServiceAddProjectMemberUsergroupMutationError = RpcStatus;
 export const createAdminServiceAddProjectMemberUsergroup = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceAddProjectMemberUsergroup>>,
-    TError,
-    {
-      organization: string;
-      project: string;
-      usergroup: string;
-      data: AdminServiceSetOrganizationMemberUserRoleBodyBody;
-    },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceAddProjectMemberUsergroup>>,
+      TError,
+      {
+        organization: string;
+        project: string;
+        usergroup: string;
+        data: AdminServiceSetOrganizationMemberUserRoleBodyBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceAddProjectMemberUsergroup>>,
   TError,
   {
@@ -6331,7 +6443,7 @@ export const createAdminServiceAddProjectMemberUsergroup = <
   const mutationOptions =
     getAdminServiceAddProjectMemberUsergroupMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary SetProjectMemberUsergroupRole sets the role for the user group
@@ -6421,19 +6533,22 @@ export type AdminServiceSetProjectMemberUsergroupRoleMutationError = RpcStatus;
 export const createAdminServiceSetProjectMemberUsergroupRole = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceSetProjectMemberUsergroupRole>>,
-    TError,
-    {
-      organization: string;
-      project: string;
-      usergroup: string;
-      data: AdminServiceSetOrganizationMemberUserRoleBodyBody;
-    },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceSetProjectMemberUsergroupRole>>,
+      TError,
+      {
+        organization: string;
+        project: string;
+        usergroup: string;
+        data: AdminServiceSetOrganizationMemberUserRoleBodyBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceSetProjectMemberUsergroupRole>>,
   TError,
   {
@@ -6447,7 +6562,7 @@ export const createAdminServiceSetProjectMemberUsergroupRole = <
   const mutationOptions =
     getAdminServiceSetProjectMemberUsergroupRoleMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary SearchProjectUsers returns users who has access to to a project (including org members that have access through a usergroup)
@@ -6755,18 +6870,21 @@ export type AdminServiceUpdateProjectVariablesMutationError = RpcStatus;
 export const createAdminServiceUpdateProjectVariables = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceUpdateProjectVariables>>,
-    TError,
-    {
-      organization: string;
-      project: string;
-      data: AdminServiceUpdateProjectVariablesBody;
-    },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceUpdateProjectVariables>>,
+      TError,
+      {
+        organization: string;
+        project: string;
+        data: AdminServiceUpdateProjectVariablesBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceUpdateProjectVariables>>,
   TError,
   {
@@ -6779,7 +6897,7 @@ export const createAdminServiceUpdateProjectVariables = <
   const mutationOptions =
     getAdminServiceUpdateProjectVariablesMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary ListWhitelistedDomains lists all the whitelisted domains of the project
@@ -6973,18 +7091,21 @@ export type AdminServiceCreateProjectWhitelistedDomainMutationError = RpcStatus;
 export const createAdminServiceCreateProjectWhitelistedDomain = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceCreateProjectWhitelistedDomain>>,
-    TError,
-    {
-      organization: string;
-      project: string;
-      data: AdminServiceCreateProjectWhitelistedDomainBodyBody;
-    },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceCreateProjectWhitelistedDomain>>,
+      TError,
+      {
+        organization: string;
+        project: string;
+        data: AdminServiceCreateProjectWhitelistedDomainBodyBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceCreateProjectWhitelistedDomain>>,
   TError,
   {
@@ -6997,7 +7118,7 @@ export const createAdminServiceCreateProjectWhitelistedDomain = <
   const mutationOptions =
     getAdminServiceCreateProjectWhitelistedDomainMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary RemoveProjectWhitelistedDomain removes a domain from the project's whitelisted
@@ -7067,14 +7188,17 @@ export type AdminServiceRemoveProjectWhitelistedDomainMutationError = RpcStatus;
 export const createAdminServiceRemoveProjectWhitelistedDomain = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceRemoveProjectWhitelistedDomain>>,
-    TError,
-    { organization: string; project: string; domain: string },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceRemoveProjectWhitelistedDomain>>,
+      TError,
+      { organization: string; project: string; domain: string },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceRemoveProjectWhitelistedDomain>>,
   TError,
   { organization: string; project: string; domain: string },
@@ -7083,7 +7207,7 @@ export const createAdminServiceRemoveProjectWhitelistedDomain = <
   const mutationOptions =
     getAdminServiceRemoveProjectWhitelistedDomainMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary ListOrganizationMemberUsergroups lists the org's user groups
@@ -7274,14 +7398,17 @@ export type AdminServiceCreateUsergroupMutationError = RpcStatus;
 export const createAdminServiceCreateUsergroup = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceCreateUsergroup>>,
-    TError,
-    { organization: string; data: AdminServiceCreateUsergroupBodyBody },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceCreateUsergroup>>,
+      TError,
+      { organization: string; data: AdminServiceCreateUsergroupBodyBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceCreateUsergroup>>,
   TError,
   { organization: string; data: AdminServiceCreateUsergroupBodyBody },
@@ -7290,7 +7417,7 @@ export const createAdminServiceCreateUsergroup = <
   const mutationOptions =
     getAdminServiceCreateUsergroupMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary ListUsergroupsForOrganizationAndUser lists the user groups that an organization member user has access to.
@@ -7597,14 +7724,17 @@ export type AdminServiceDeleteUsergroupMutationError = RpcStatus;
 export const createAdminServiceDeleteUsergroup = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceDeleteUsergroup>>,
-    TError,
-    { organization: string; usergroup: string },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceDeleteUsergroup>>,
+      TError,
+      { organization: string; usergroup: string },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceDeleteUsergroup>>,
   TError,
   { organization: string; usergroup: string },
@@ -7613,7 +7743,7 @@ export const createAdminServiceDeleteUsergroup = <
   const mutationOptions =
     getAdminServiceDeleteUsergroupMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary RenameUsergroup renames the user group
@@ -7695,18 +7825,21 @@ export type AdminServiceRenameUsergroupMutationError = RpcStatus;
 export const createAdminServiceRenameUsergroup = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceRenameUsergroup>>,
-    TError,
-    {
-      organization: string;
-      usergroup: string;
-      data: AdminServiceCreateUsergroupBodyBody;
-    },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceRenameUsergroup>>,
+      TError,
+      {
+        organization: string;
+        usergroup: string;
+        data: AdminServiceCreateUsergroupBodyBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceRenameUsergroup>>,
   TError,
   {
@@ -7719,7 +7852,7 @@ export const createAdminServiceRenameUsergroup = <
   const mutationOptions =
     getAdminServiceRenameUsergroupMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary EditUsergroup renames the user group
@@ -7799,18 +7932,21 @@ export type AdminServiceEditUsergroupMutationError = RpcStatus;
 export const createAdminServiceEditUsergroup = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceEditUsergroup>>,
-    TError,
-    {
-      organization: string;
-      usergroup: string;
-      data: AdminServiceEditUsergroupBody;
-    },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceEditUsergroup>>,
+      TError,
+      {
+        organization: string;
+        usergroup: string;
+        data: AdminServiceEditUsergroupBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceEditUsergroup>>,
   TError,
   {
@@ -7822,7 +7958,7 @@ export const createAdminServiceEditUsergroup = <
 > => {
   const mutationOptions = getAdminServiceEditUsergroupMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary ListUsergroupMemberUsers lists all the user group members
@@ -8014,14 +8150,17 @@ export type AdminServiceRemoveUsergroupMemberUserMutationError = RpcStatus;
 export const createAdminServiceRemoveUsergroupMemberUser = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceRemoveUsergroupMemberUser>>,
-    TError,
-    { organization: string; usergroup: string; email: string },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceRemoveUsergroupMemberUser>>,
+      TError,
+      { organization: string; usergroup: string; email: string },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceRemoveUsergroupMemberUser>>,
   TError,
   { organization: string; usergroup: string; email: string },
@@ -8030,7 +8169,7 @@ export const createAdminServiceRemoveUsergroupMemberUser = <
   const mutationOptions =
     getAdminServiceRemoveUsergroupMemberUserMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary AddUsergroupMemberUser adds a member to the user group
@@ -8119,19 +8258,22 @@ export type AdminServiceAddUsergroupMemberUserMutationError = RpcStatus;
 export const createAdminServiceAddUsergroupMemberUser = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceAddUsergroupMemberUser>>,
-    TError,
-    {
-      organization: string;
-      usergroup: string;
-      email: string;
-      data: AdminServiceTriggerReconcileBodyBody;
-    },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceAddUsergroupMemberUser>>,
+      TError,
+      {
+        organization: string;
+        usergroup: string;
+        email: string;
+        data: AdminServiceTriggerReconcileBodyBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceAddUsergroupMemberUser>>,
   TError,
   {
@@ -8145,7 +8287,7 @@ export const createAdminServiceAddUsergroupMemberUser = <
   const mutationOptions =
     getAdminServiceAddUsergroupMemberUserMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary RemoveOrganizationMemberUsergroup revokes the organization-level role for the user group
@@ -8214,14 +8356,17 @@ export type AdminServiceRemoveOrganizationMemberUsergroupMutationError =
 export const createAdminServiceRemoveOrganizationMemberUsergroup = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceRemoveOrganizationMemberUsergroup>>,
-    TError,
-    { organization: string; usergroup: string },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceRemoveOrganizationMemberUsergroup>>,
+      TError,
+      { organization: string; usergroup: string },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceRemoveOrganizationMemberUsergroup>>,
   TError,
   { organization: string; usergroup: string },
@@ -8230,7 +8375,7 @@ export const createAdminServiceRemoveOrganizationMemberUsergroup = <
   const mutationOptions =
     getAdminServiceRemoveOrganizationMemberUsergroupMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary AddOrganizationMemberUsergroupRole adds the role for the user group
@@ -8317,18 +8462,21 @@ export type AdminServiceAddOrganizationMemberUsergroupMutationError = RpcStatus;
 export const createAdminServiceAddOrganizationMemberUsergroup = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceAddOrganizationMemberUsergroup>>,
-    TError,
-    {
-      organization: string;
-      usergroup: string;
-      data: AdminServiceSetOrganizationMemberUserRoleBodyBody;
-    },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceAddOrganizationMemberUsergroup>>,
+      TError,
+      {
+        organization: string;
+        usergroup: string;
+        data: AdminServiceSetOrganizationMemberUserRoleBodyBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceAddOrganizationMemberUsergroup>>,
   TError,
   {
@@ -8341,7 +8489,7 @@ export const createAdminServiceAddOrganizationMemberUsergroup = <
   const mutationOptions =
     getAdminServiceAddOrganizationMemberUsergroupMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary SetOrganizationMemberUsergroupRole sets the role for the user group
@@ -8429,18 +8577,23 @@ export type AdminServiceSetOrganizationMemberUsergroupRoleMutationError =
 export const createAdminServiceSetOrganizationMemberUsergroupRole = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceSetOrganizationMemberUsergroupRole>>,
-    TError,
-    {
-      organization: string;
-      usergroup: string;
-      data: AdminServiceSetOrganizationMemberUserRoleBodyBody;
-    },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<
+        ReturnType<typeof adminServiceSetOrganizationMemberUsergroupRole>
+      >,
+      TError,
+      {
+        organization: string;
+        usergroup: string;
+        data: AdminServiceSetOrganizationMemberUserRoleBodyBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceSetOrganizationMemberUsergroupRole>>,
   TError,
   {
@@ -8453,7 +8606,7 @@ export const createAdminServiceSetOrganizationMemberUsergroupRole = <
   const mutationOptions =
     getAdminServiceSetOrganizationMemberUsergroupRoleMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary ListWhitelistedDomains lists all the whitelisted domains for the organization
@@ -8630,17 +8783,20 @@ export type AdminServiceCreateWhitelistedDomainMutationError = RpcStatus;
 export const createAdminServiceCreateWhitelistedDomain = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceCreateWhitelistedDomain>>,
-    TError,
-    {
-      organization: string;
-      data: AdminServiceCreateProjectWhitelistedDomainBodyBody;
-    },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceCreateWhitelistedDomain>>,
+      TError,
+      {
+        organization: string;
+        data: AdminServiceCreateProjectWhitelistedDomainBodyBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceCreateWhitelistedDomain>>,
   TError,
   {
@@ -8652,7 +8808,7 @@ export const createAdminServiceCreateWhitelistedDomain = <
   const mutationOptions =
     getAdminServiceCreateWhitelistedDomainMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary RemoveWhitelistedDomain removes a domain from the whitelist list
@@ -8716,14 +8872,17 @@ export type AdminServiceRemoveWhitelistedDomainMutationError = RpcStatus;
 export const createAdminServiceRemoveWhitelistedDomain = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceRemoveWhitelistedDomain>>,
-    TError,
-    { organization: string; domain: string },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceRemoveWhitelistedDomain>>,
+      TError,
+      { organization: string; domain: string },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceRemoveWhitelistedDomain>>,
   TError,
   { organization: string; domain: string },
@@ -8732,7 +8891,7 @@ export const createAdminServiceRemoveWhitelistedDomain = <
   const mutationOptions =
     getAdminServiceRemoveWhitelistedDomainMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary CreateAsset returns a one time signed URL using which any asset can be uploaded.
@@ -8800,14 +8959,17 @@ export type AdminServiceCreateAssetMutationError = RpcStatus;
 export const createAdminServiceCreateAsset = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceCreateAsset>>,
-    TError,
-    { organizationName: string; data: AdminServiceCreateAssetBody },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceCreateAsset>>,
+      TError,
+      { organizationName: string; data: AdminServiceCreateAssetBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceCreateAsset>>,
   TError,
   { organizationName: string; data: AdminServiceCreateAssetBody },
@@ -8815,7 +8977,7 @@ export const createAdminServiceCreateAsset = <
 > => {
   const mutationOptions = getAdminServiceCreateAssetMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary ListProjectsForOrganization lists all the projects currently available for given organizations.
@@ -8996,14 +9158,17 @@ export type AdminServiceCreateProjectMutationError = RpcStatus;
 export const createAdminServiceCreateProject = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceCreateProject>>,
-    TError,
-    { organizationName: string; data: AdminServiceCreateProjectBody },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceCreateProject>>,
+      TError,
+      { organizationName: string; data: AdminServiceCreateProjectBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceCreateProject>>,
   TError,
   { organizationName: string; data: AdminServiceCreateProjectBody },
@@ -9011,7 +9176,7 @@ export const createAdminServiceCreateProject = <
 > => {
   const mutationOptions = getAdminServiceCreateProjectMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary GetProject returns information about a specific project
@@ -9189,14 +9354,17 @@ export type AdminServiceDeleteProjectMutationError = RpcStatus;
 export const createAdminServiceDeleteProject = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceDeleteProject>>,
-    TError,
-    { organizationName: string; name: string },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceDeleteProject>>,
+      TError,
+      { organizationName: string; name: string },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceDeleteProject>>,
   TError,
   { organizationName: string; name: string },
@@ -9204,7 +9372,7 @@ export const createAdminServiceDeleteProject = <
 > => {
   const mutationOptions = getAdminServiceDeleteProjectMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary UpdateProject updates a project
@@ -9284,18 +9452,21 @@ export type AdminServiceUpdateProjectMutationError = RpcStatus;
 export const createAdminServiceUpdateProject = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceUpdateProject>>,
-    TError,
-    {
-      organizationName: string;
-      name: string;
-      data: AdminServiceUpdateProjectBody;
-    },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceUpdateProject>>,
+      TError,
+      {
+        organizationName: string;
+        name: string;
+        data: AdminServiceUpdateProjectBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceUpdateProject>>,
   TError,
   {
@@ -9307,7 +9478,7 @@ export const createAdminServiceUpdateProject = <
 > => {
   const mutationOptions = getAdminServiceUpdateProjectMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary ListService returns all the services per organization
@@ -9473,14 +9644,17 @@ export type AdminServiceCreateServiceMutationError = RpcStatus;
 export const createAdminServiceCreateService = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceCreateService>>,
-    TError,
-    { organizationName: string; params?: AdminServiceCreateServiceParams },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceCreateService>>,
+      TError,
+      { organizationName: string; params?: AdminServiceCreateServiceParams },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceCreateService>>,
   TError,
   { organizationName: string; params?: AdminServiceCreateServiceParams },
@@ -9488,7 +9662,7 @@ export const createAdminServiceCreateService = <
 > => {
   const mutationOptions = getAdminServiceCreateServiceMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary DeleteService deletes a service per organization
@@ -9552,14 +9726,17 @@ export type AdminServiceDeleteServiceMutationError = RpcStatus;
 export const createAdminServiceDeleteService = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceDeleteService>>,
-    TError,
-    { organizationName: string; name: string },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceDeleteService>>,
+      TError,
+      { organizationName: string; name: string },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceDeleteService>>,
   TError,
   { organizationName: string; name: string },
@@ -9567,7 +9744,7 @@ export const createAdminServiceDeleteService = <
 > => {
   const mutationOptions = getAdminServiceDeleteServiceMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary UpdateService updates a service per organization
@@ -9647,18 +9824,21 @@ export type AdminServiceUpdateServiceMutationError = RpcStatus;
 export const createAdminServiceUpdateService = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceUpdateService>>,
-    TError,
-    {
-      organizationName: string;
-      name: string;
-      data: AdminServiceUpdateServiceBody;
-    },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceUpdateService>>,
+      TError,
+      {
+        organizationName: string;
+        name: string;
+        data: AdminServiceUpdateServiceBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceUpdateService>>,
   TError,
   {
@@ -9670,7 +9850,7 @@ export const createAdminServiceUpdateService = <
 > => {
   const mutationOptions = getAdminServiceUpdateServiceMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary ListServiceAuthTokens lists all the service auth tokens
@@ -9863,18 +10043,21 @@ export type AdminServiceIssueServiceAuthTokenMutationError = RpcStatus;
 export const createAdminServiceIssueServiceAuthToken = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceIssueServiceAuthToken>>,
-    TError,
-    {
-      organizationName: string;
-      serviceName: string;
-      data: AdminServiceTriggerReconcileBodyBody;
-    },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceIssueServiceAuthToken>>,
+      TError,
+      {
+        organizationName: string;
+        serviceName: string;
+        data: AdminServiceTriggerReconcileBodyBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceIssueServiceAuthToken>>,
   TError,
   {
@@ -9887,7 +10070,7 @@ export const createAdminServiceIssueServiceAuthToken = <
   const mutationOptions =
     getAdminServiceIssueServiceAuthTokenMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary Ping returns information about the server
@@ -10116,14 +10299,17 @@ export type AdminServiceApproveProjectAccessMutationError = RpcStatus;
 export const createAdminServiceApproveProjectAccess = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceApproveProjectAccess>>,
-    TError,
-    { id: string; data: AdminServiceSetOrganizationMemberUserRoleBodyBody },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceApproveProjectAccess>>,
+      TError,
+      { id: string; data: AdminServiceSetOrganizationMemberUserRoleBodyBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceApproveProjectAccess>>,
   TError,
   { id: string; data: AdminServiceSetOrganizationMemberUserRoleBodyBody },
@@ -10132,7 +10318,7 @@ export const createAdminServiceApproveProjectAccess = <
   const mutationOptions =
     getAdminServiceApproveProjectAccessMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 export const adminServiceDenyProjectAccess = (
   id: string,
@@ -10195,14 +10381,17 @@ export type AdminServiceDenyProjectAccessMutationError = RpcStatus;
 export const createAdminServiceDenyProjectAccess = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceDenyProjectAccess>>,
-    TError,
-    { id: string; data: AdminServiceTriggerReconcileBodyBody },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceDenyProjectAccess>>,
+      TError,
+      { id: string; data: AdminServiceTriggerReconcileBodyBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceDenyProjectAccess>>,
   TError,
   { id: string; data: AdminServiceTriggerReconcileBodyBody },
@@ -10211,7 +10400,7 @@ export const createAdminServiceDenyProjectAccess = <
   const mutationOptions =
     getAdminServiceDenyProjectAccessMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary TriggerRedeploy is similar to RedeployProject.
@@ -10280,14 +10469,17 @@ DEPRECATED: Use RedeployProject instead.
 export const createAdminServiceTriggerRedeploy = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceTriggerRedeploy>>,
-    TError,
-    { data: V1TriggerRedeployRequest },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceTriggerRedeploy>>,
+      TError,
+      { data: V1TriggerRedeployRequest },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceTriggerRedeploy>>,
   TError,
   { data: V1TriggerRedeployRequest },
@@ -10296,7 +10488,7 @@ export const createAdminServiceTriggerRedeploy = <
   const mutationOptions =
     getAdminServiceTriggerRedeployMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary GetProject returns information about a specific project
@@ -10457,14 +10649,17 @@ export type AdminServiceGetAlertMetaMutationError = RpcStatus;
 export const createAdminServiceGetAlertMeta = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceGetAlertMeta>>,
-    TError,
-    { projectId: string; data: AdminServiceGetAlertMetaBody },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceGetAlertMeta>>,
+      TError,
+      { projectId: string; data: AdminServiceGetAlertMetaBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceGetAlertMeta>>,
   TError,
   { projectId: string; data: AdminServiceGetAlertMetaBody },
@@ -10472,7 +10667,7 @@ export const createAdminServiceGetAlertMeta = <
 > => {
   const mutationOptions = getAdminServiceGetAlertMetaMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary GetRepoMeta returns credentials and other metadata for accessing a project's repo
@@ -10757,14 +10952,17 @@ export type AdminServiceGetReportMetaMutationError = RpcStatus;
 export const createAdminServiceGetReportMeta = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceGetReportMeta>>,
-    TError,
-    { projectId: string; data: AdminServiceGetReportMetaBody },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceGetReportMeta>>,
+      TError,
+      { projectId: string; data: AdminServiceGetReportMetaBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceGetReportMeta>>,
   TError,
   { projectId: string; data: AdminServiceGetReportMetaBody },
@@ -10772,7 +10970,7 @@ export const createAdminServiceGetReportMeta = <
 > => {
   const mutationOptions = getAdminServiceGetReportMetaMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary ListRoles lists all the roles available for orgs and projects.
@@ -10913,14 +11111,17 @@ export type AdminServiceRevokeServiceAuthTokenMutationError = RpcStatus;
 export const createAdminServiceRevokeServiceAuthToken = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceRevokeServiceAuthToken>>,
-    TError,
-    { tokenId: string },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceRevokeServiceAuthToken>>,
+      TError,
+      { tokenId: string },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceRevokeServiceAuthToken>>,
   TError,
   { tokenId: string },
@@ -10929,7 +11130,7 @@ export const createAdminServiceRevokeServiceAuthToken = <
   const mutationOptions =
     getAdminServiceRevokeServiceAuthTokenMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary SudoTriggerBillingRepair triggers billing repair jobs for orgs that doesn't have billing info and puts them on trial
@@ -10997,14 +11198,17 @@ export type AdminServiceSudoTriggerBillingRepairMutationError = RpcStatus;
 export const createAdminServiceSudoTriggerBillingRepair = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceSudoTriggerBillingRepair>>,
-    TError,
-    { data: V1SudoTriggerBillingRepairRequest },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceSudoTriggerBillingRepair>>,
+      TError,
+      { data: V1SudoTriggerBillingRepairRequest },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceSudoTriggerBillingRepair>>,
   TError,
   { data: V1SudoTriggerBillingRepairRequest },
@@ -11013,7 +11217,7 @@ export const createAdminServiceSudoTriggerBillingRepair = <
   const mutationOptions =
     getAdminServiceSudoTriggerBillingRepairMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary SudoIssueRuntimeManagerToken returns a runtime JWT with full manager permissions for a runtime.
@@ -11082,14 +11286,17 @@ export type AdminServiceSudoIssueRuntimeManagerTokenMutationError = RpcStatus;
 export const createAdminServiceSudoIssueRuntimeManagerToken = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceSudoIssueRuntimeManagerToken>>,
-    TError,
-    { data: V1SudoIssueRuntimeManagerTokenRequest },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceSudoIssueRuntimeManagerToken>>,
+      TError,
+      { data: V1SudoIssueRuntimeManagerTokenRequest },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceSudoIssueRuntimeManagerToken>>,
   TError,
   { data: V1SudoIssueRuntimeManagerTokenRequest },
@@ -11098,7 +11305,7 @@ export const createAdminServiceSudoIssueRuntimeManagerToken = <
   const mutationOptions =
     getAdminServiceSudoIssueRuntimeManagerTokenMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary ListSuperusers lists all the superusers
@@ -11246,14 +11453,17 @@ export type AdminServiceSetSuperuserMutationError = RpcStatus;
 export const createAdminServiceSetSuperuser = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceSetSuperuser>>,
-    TError,
-    { data: V1SetSuperuserRequest },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceSetSuperuser>>,
+      TError,
+      { data: V1SetSuperuserRequest },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceSetSuperuser>>,
   TError,
   { data: V1SetSuperuserRequest },
@@ -11261,7 +11471,7 @@ export const createAdminServiceSetSuperuser = <
 > => {
   const mutationOptions = getAdminServiceSetSuperuserMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary SudoUpdateOrganizationBillingCustomer update the billing customer for the organization
@@ -11335,16 +11545,19 @@ export type AdminServiceSudoUpdateOrganizationBillingCustomerMutationError =
 export const createAdminServiceSudoUpdateOrganizationBillingCustomer = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<
-      ReturnType<typeof adminServiceSudoUpdateOrganizationBillingCustomer>
-    >,
-    TError,
-    { data: V1SudoUpdateOrganizationBillingCustomerRequest },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<
+        ReturnType<typeof adminServiceSudoUpdateOrganizationBillingCustomer>
+      >,
+      TError,
+      { data: V1SudoUpdateOrganizationBillingCustomerRequest },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceSudoUpdateOrganizationBillingCustomer>>,
   TError,
   { data: V1SudoUpdateOrganizationBillingCustomerRequest },
@@ -11355,7 +11568,7 @@ export const createAdminServiceSudoUpdateOrganizationBillingCustomer = <
       options,
     );
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
@@ -11429,14 +11642,19 @@ The DNS records and ingress TLS must be configured separately.
 export const createAdminServiceSudoUpdateOrganizationCustomDomain = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceSudoUpdateOrganizationCustomDomain>>,
-    TError,
-    { data: V1SudoUpdateOrganizationCustomDomainRequest },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<
+        ReturnType<typeof adminServiceSudoUpdateOrganizationCustomDomain>
+      >,
+      TError,
+      { data: V1SudoUpdateOrganizationCustomDomainRequest },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceSudoUpdateOrganizationCustomDomain>>,
   TError,
   { data: V1SudoUpdateOrganizationCustomDomainRequest },
@@ -11445,7 +11663,7 @@ export const createAdminServiceSudoUpdateOrganizationCustomDomain = <
   const mutationOptions =
     getAdminServiceSudoUpdateOrganizationCustomDomainMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary SudoExtendTrial extends the trial period for an organization
@@ -11512,14 +11730,17 @@ export type AdminServiceSudoExtendTrialMutationError = RpcStatus;
 export const createAdminServiceSudoExtendTrial = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceSudoExtendTrial>>,
-    TError,
-    { data: V1SudoExtendTrialRequest },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceSudoExtendTrial>>,
+      TError,
+      { data: V1SudoExtendTrialRequest },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceSudoExtendTrial>>,
   TError,
   { data: V1SudoExtendTrialRequest },
@@ -11528,7 +11749,7 @@ export const createAdminServiceSudoExtendTrial = <
   const mutationOptions =
     getAdminServiceSudoExtendTrialMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary SudoDeleteOrganizationBillingIssue deletes a billing issue of a type for the organization
@@ -11637,25 +11858,30 @@ export type AdminServiceSudoDeleteOrganizationBillingIssueMutationError =
 export const createAdminServiceSudoDeleteOrganizationBillingIssue = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceSudoDeleteOrganizationBillingIssue>>,
-    TError,
-    {
-      organization: string;
-      type:
-        | "BILLING_ISSUE_TYPE_UNSPECIFIED"
-        | "BILLING_ISSUE_TYPE_ON_TRIAL"
-        | "BILLING_ISSUE_TYPE_TRIAL_ENDED"
-        | "BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD"
-        | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
-        | "BILLING_ISSUE_TYPE_PAYMENT_FAILED"
-        | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
-        | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED";
-    },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<
+        ReturnType<typeof adminServiceSudoDeleteOrganizationBillingIssue>
+      >,
+      TError,
+      {
+        organization: string;
+        type:
+          | "BILLING_ISSUE_TYPE_UNSPECIFIED"
+          | "BILLING_ISSUE_TYPE_ON_TRIAL"
+          | "BILLING_ISSUE_TYPE_TRIAL_ENDED"
+          | "BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD"
+          | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
+          | "BILLING_ISSUE_TYPE_PAYMENT_FAILED"
+          | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
+          | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED";
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceSudoDeleteOrganizationBillingIssue>>,
   TError,
   {
@@ -11675,7 +11901,7 @@ export const createAdminServiceSudoDeleteOrganizationBillingIssue = <
   const mutationOptions =
     getAdminServiceSudoDeleteOrganizationBillingIssueMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary SudoUpdateAnnotations endpoint for superusers to update project annotations
@@ -11741,14 +11967,17 @@ export type AdminServiceSudoUpdateAnnotationsMutationError = RpcStatus;
 export const createAdminServiceSudoUpdateAnnotations = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceSudoUpdateAnnotations>>,
-    TError,
-    { data: V1SudoUpdateAnnotationsRequest },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceSudoUpdateAnnotations>>,
+      TError,
+      { data: V1SudoUpdateAnnotationsRequest },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceSudoUpdateAnnotations>>,
   TError,
   { data: V1SudoUpdateAnnotationsRequest },
@@ -11757,7 +11986,7 @@ export const createAdminServiceSudoUpdateAnnotations = <
   const mutationOptions =
     getAdminServiceSudoUpdateAnnotationsMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary SearchProjectNames returns project names matching the pattern
@@ -11921,14 +12150,17 @@ export type AdminServiceSudoUpdateOrganizationQuotasMutationError = RpcStatus;
 export const createAdminServiceSudoUpdateOrganizationQuotas = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceSudoUpdateOrganizationQuotas>>,
-    TError,
-    { data: V1SudoUpdateOrganizationQuotasRequest },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceSudoUpdateOrganizationQuotas>>,
+      TError,
+      { data: V1SudoUpdateOrganizationQuotasRequest },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceSudoUpdateOrganizationQuotas>>,
   TError,
   { data: V1SudoUpdateOrganizationQuotasRequest },
@@ -11937,7 +12169,7 @@ export const createAdminServiceSudoUpdateOrganizationQuotas = <
   const mutationOptions =
     getAdminServiceSudoUpdateOrganizationQuotasMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary SudoUpdateUserQuotas update the quotas for users
@@ -12003,14 +12235,17 @@ export type AdminServiceSudoUpdateUserQuotasMutationError = RpcStatus;
 export const createAdminServiceSudoUpdateUserQuotas = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceSudoUpdateUserQuotas>>,
-    TError,
-    { data: V1SudoUpdateUserQuotasRequest },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceSudoUpdateUserQuotas>>,
+      TError,
+      { data: V1SudoUpdateUserQuotasRequest },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceSudoUpdateUserQuotas>>,
   TError,
   { data: V1SudoUpdateUserQuotasRequest },
@@ -12019,7 +12254,7 @@ export const createAdminServiceSudoUpdateUserQuotas = <
   const mutationOptions =
     getAdminServiceSudoUpdateUserQuotasMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary SudoGetResource returns details about a resource by ID lookup
@@ -12172,14 +12407,17 @@ export type AdminServiceRevokeCurrentAuthTokenMutationError = RpcStatus;
 export const createAdminServiceRevokeCurrentAuthToken = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceRevokeCurrentAuthToken>>,
-    TError,
-    void,
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceRevokeCurrentAuthToken>>,
+      TError,
+      void,
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceRevokeCurrentAuthToken>>,
   TError,
   void,
@@ -12188,7 +12426,7 @@ export const createAdminServiceRevokeCurrentAuthToken = <
   const mutationOptions =
     getAdminServiceRevokeCurrentAuthTokenMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary IssueRepresentativeAuthToken returns the temporary token for given email
@@ -12257,14 +12495,17 @@ export type AdminServiceIssueRepresentativeAuthTokenMutationError = RpcStatus;
 export const createAdminServiceIssueRepresentativeAuthToken = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceIssueRepresentativeAuthToken>>,
-    TError,
-    { data: V1IssueRepresentativeAuthTokenRequest },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceIssueRepresentativeAuthToken>>,
+      TError,
+      { data: V1IssueRepresentativeAuthTokenRequest },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceIssueRepresentativeAuthToken>>,
   TError,
   { data: V1IssueRepresentativeAuthTokenRequest },
@@ -12273,7 +12514,7 @@ export const createAdminServiceIssueRepresentativeAuthToken = <
   const mutationOptions =
     getAdminServiceIssueRepresentativeAuthTokenMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary GetUser returns user by email
@@ -12425,14 +12666,17 @@ export type AdminServiceDeleteUserMutationError = RpcStatus;
 export const createAdminServiceDeleteUser = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceDeleteUser>>,
-    TError,
-    { email: string },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceDeleteUser>>,
+      TError,
+      { email: string },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceDeleteUser>>,
   TError,
   { email: string },
@@ -12440,7 +12684,7 @@ export const createAdminServiceDeleteUser = <
 > => {
   const mutationOptions = getAdminServiceDeleteUserMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary ListBookmarks lists all the bookmarks for the user and global ones for dashboard
@@ -12601,14 +12845,17 @@ export type AdminServiceCreateBookmarkMutationError = RpcStatus;
 export const createAdminServiceCreateBookmark = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceCreateBookmark>>,
-    TError,
-    { data: V1CreateBookmarkRequest },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceCreateBookmark>>,
+      TError,
+      { data: V1CreateBookmarkRequest },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceCreateBookmark>>,
   TError,
   { data: V1CreateBookmarkRequest },
@@ -12616,7 +12863,7 @@ export const createAdminServiceCreateBookmark = <
 > => {
   const mutationOptions = getAdminServiceCreateBookmarkMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary UpdateBookmark updates a bookmark for the given user for the given project
@@ -12681,14 +12928,17 @@ export type AdminServiceUpdateBookmarkMutationError = RpcStatus;
 export const createAdminServiceUpdateBookmark = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceUpdateBookmark>>,
-    TError,
-    { data: V1UpdateBookmarkRequest },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceUpdateBookmark>>,
+      TError,
+      { data: V1UpdateBookmarkRequest },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceUpdateBookmark>>,
   TError,
   { data: V1UpdateBookmarkRequest },
@@ -12696,7 +12946,7 @@ export const createAdminServiceUpdateBookmark = <
 > => {
   const mutationOptions = getAdminServiceUpdateBookmarkMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary GetBookmark returns the bookmark for the given user for the given project
@@ -12853,14 +13103,17 @@ export type AdminServiceRemoveBookmarkMutationError = RpcStatus;
 export const createAdminServiceRemoveBookmark = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceRemoveBookmark>>,
-    TError,
-    { bookmarkId: string },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceRemoveBookmark>>,
+      TError,
+      { bookmarkId: string },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceRemoveBookmark>>,
   TError,
   { bookmarkId: string },
@@ -12868,7 +13121,7 @@ export const createAdminServiceRemoveBookmark = <
 > => {
   const mutationOptions = getAdminServiceRemoveBookmarkMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary GetCurrentUser returns the currently authenticated user (if any)
@@ -13015,14 +13268,17 @@ export type AdminServiceUpdateUserPreferencesMutationError = RpcStatus;
 export const createAdminServiceUpdateUserPreferences = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceUpdateUserPreferences>>,
-    TError,
-    { data: V1UpdateUserPreferencesRequest },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceUpdateUserPreferences>>,
+      TError,
+      { data: V1UpdateUserPreferencesRequest },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceUpdateUserPreferences>>,
   TError,
   { data: V1UpdateUserPreferencesRequest },
@@ -13031,7 +13287,7 @@ export const createAdminServiceUpdateUserPreferences = <
   const mutationOptions =
     getAdminServiceUpdateUserPreferencesMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary GetUsersByEmail returns users by email

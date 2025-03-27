@@ -18,10 +18,17 @@ export async function createAndPreviewExplore(
     metricsViewResource,
   );
 
+  console.log({ filePath });
+
   // Wait until the Explore resource is ready
   const fileArtifact = fileArtifacts.getFileArtifact(filePath);
   const resource = fileArtifact.getResource(queryClient, instanceId);
-  await waitUntil(() => get(resource).data !== undefined, 10000);
+  console.log("waiting again", queryClient);
+  await waitUntil(() => {
+    console.log(get(resource));
+    return get(resource).data !== undefined;
+  }, 10000);
+  console.log("nice");
   const name = get(resource).data?.meta?.name?.name;
   if (!name) throw new Error("Failed to create an Explore resource");
 

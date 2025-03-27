@@ -22,7 +22,6 @@
 
   export let measure: MetricsViewSpecMeasureV2;
   export let value: number | null;
-
   export let comparisonValue: number | undefined = undefined;
   export let showComparison = false;
   export let status: EntityStatus;
@@ -53,10 +52,6 @@
   );
 
   $: name = measure?.displayName || measure?.expression;
-
-  $: if (value === undefined) {
-    value = null;
-  }
 
   const [send, receive] = crossfade({
     fallback: (node: Element, params: CrossfadeParams) =>

@@ -4,7 +4,6 @@ import type {
   QueryMapperArgs,
   QueryRequests,
 } from "@rilldata/web-admin/features/dashboards/query-mappers/types";
-import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
 import { getFullInitExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
@@ -19,11 +18,6 @@ import {
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { derived, get, readable } from "svelte/store";
 
-type DashboardStateForQuery = {
-  exploreState?: MetricsExplorerEntity;
-  exploreName?: string;
-};
-
 /**
  * Builds the dashboard url from query name and args.
  * Used to show the relevant dashboard for a report/alert.
@@ -34,7 +28,7 @@ export function mapQueryToDashboard(
   queryArgsJson: string | undefined,
   executionTime: string | undefined,
   annotations: Record<string, string>,
-): CompoundQueryResult<DashboardStateForQuery> {
+) {
   if (!queryName || !queryArgsJson || !executionTime)
     return readable({
       isFetching: false,

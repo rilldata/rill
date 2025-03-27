@@ -21,7 +21,7 @@
   $: inputParams = component.inputParams().filter;
 
   $: metricsView =
-    "metrics_view" in paramValues ? paramValues.metrics_view : null;
+    "metrics_view" in paramValues ? (paramValues.metrics_view as string) : null;
 
   onMount(() => {
     localParamValues = structuredClone(paramValues) || {};
@@ -29,7 +29,7 @@
 </script>
 
 <div>
-  {#each Object.entries(inputParams) as [key, config]}
+  {#each Object.entries(inputParams) as [key, config] (key)}
     <div class="component-param">
       {#if config.type === "time_filters"}
         <TimeFiltersInput

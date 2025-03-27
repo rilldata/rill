@@ -114,10 +114,12 @@ export function useResourceV2<T = V1Resource>(
   instanceId: string,
   name: string,
   kind: ResourceKind,
-  queryOptions?: CreateQueryOptions<
-    V1GetResourceResponse,
-    ErrorType<RpcStatus>,
-    T // T is the return type of the `select` function
+  queryOptions?: Partial<
+    CreateQueryOptions<
+      V1GetResourceResponse,
+      ErrorType<RpcStatus>,
+      T // T is the return type of the `select` function
+    >
   >,
   queryClient?: QueryClient,
 ) {

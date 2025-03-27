@@ -113,8 +113,10 @@
     renderedMeasures = expandedMeasure ? [expandedMeasure] : $visibleMeasures;
   }
 
-  $: totals = $timeSeriesDataStore.total;
-  $: totalsComparisons = $timeSeriesDataStore.comparisonTotal;
+  $: totals = $timeSeriesDataStore.total as { [key: string]: number };
+  $: totalsComparisons = $timeSeriesDataStore.comparisonTotal as {
+    [key: string]: number;
+  };
 
   // When changing the timeseries query and the cache is empty, $timeSeriesQuery.data?.data is
   // temporarily undefined as results are fetched.
@@ -361,8 +363,8 @@
       <!-- FIXME: this is pending the remaining state work for show/hide measures and dimensions -->
       {#each renderedMeasures as measure (measure.name)}
         <!-- FIXME: I can't select the big number by the measure id. -->
-        <!-- for bigNum, catch nulls and convert to undefined.  -->
-        {@const bigNum = measure.name ? totals?.[measure.name] : undefined}
+
+        {@const bigNum = measure.name ? totals?.[measure.name] : null}
         {@const comparisonValue = measure.name
           ? totalsComparisons?.[measure.name]
           : undefined}

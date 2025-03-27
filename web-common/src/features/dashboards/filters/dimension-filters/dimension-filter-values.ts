@@ -1,7 +1,4 @@
-import {
-  type CompoundQueryResult,
-  getCompoundQuery,
-} from "@rilldata/web-common/features/compound-query-result";
+import { getCompoundQuery } from "@rilldata/web-common/features/compound-query-result";
 import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-mode";
 import {
   createInExpression,
@@ -38,7 +35,7 @@ export function useDimensionSearch(
     timeEnd,
     enabled,
   }: DimensionSearchArgs,
-): CompoundQueryResult<string[]> {
+) {
   const where = getFilterForSearchArgs(dimensionName, {
     mode,
     searchText,
@@ -92,7 +89,7 @@ export function useAllSearchResultsCount(
     timeEnd,
     enabled,
   }: DimensionSearchArgs,
-): CompoundQueryResult<number | undefined> {
+) {
   const where = getFilterForSearchArgs(dimensionName, {
     mode,
     searchText,

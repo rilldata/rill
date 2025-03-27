@@ -752,14 +752,17 @@ export type QueryServiceExportMutationError = ErrorType<RpcStatus>;
 export const createQueryServiceExport = <
   TError = ErrorType<RpcStatus>,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof queryServiceExport>>,
-    TError,
-    { instanceId: string; data: QueryServiceExportBody },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof queryServiceExport>>,
+      TError,
+      { instanceId: string; data: QueryServiceExportBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof queryServiceExport>>,
   TError,
   { instanceId: string; data: QueryServiceExportBody },
@@ -767,7 +770,7 @@ export const createQueryServiceExport = <
 > => {
   const mutationOptions = getQueryServiceExportMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary MetricsViewAggregation is a generic API for running group-by/pivot queries against a metrics view.
@@ -1610,18 +1613,21 @@ export type QueryServiceMetricsViewTimeRangesMutationError =
 export const createQueryServiceMetricsViewTimeRanges = <
   TError = ErrorType<RpcStatus>,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof queryServiceMetricsViewTimeRanges>>,
-    TError,
-    {
-      instanceId: string;
-      metricsViewName: string;
-      data: QueryServiceMetricsViewTimeRangesBody;
-    },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof queryServiceMetricsViewTimeRanges>>,
+      TError,
+      {
+        instanceId: string;
+        metricsViewName: string;
+        data: QueryServiceMetricsViewTimeRangesBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof queryServiceMetricsViewTimeRanges>>,
   TError,
   {
@@ -1634,7 +1640,7 @@ export const createQueryServiceMetricsViewTimeRanges = <
   const mutationOptions =
     getQueryServiceMetricsViewTimeRangesMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary MetricsViewTimeSeries returns time series for the measures in the metrics view.
@@ -3258,14 +3264,17 @@ export type QueryServiceQueryMutationError = ErrorType<RpcStatus>;
 export const createQueryServiceQuery = <
   TError = ErrorType<RpcStatus>,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof queryServiceQuery>>,
-    TError,
-    { instanceId: string; data: QueryServiceQueryBody },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof queryServiceQuery>>,
+      TError,
+      { instanceId: string; data: QueryServiceQueryBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof queryServiceQuery>>,
   TError,
   { instanceId: string; data: QueryServiceQueryBody },
@@ -3273,7 +3282,7 @@ export const createQueryServiceQuery = <
 > => {
   const mutationOptions = getQueryServiceQueryMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary Batch request with different queries
@@ -3341,14 +3350,17 @@ export type QueryServiceQueryBatchMutationError = ErrorType<RpcStatus>;
 export const createQueryServiceQueryBatch = <
   TError = ErrorType<RpcStatus>,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof queryServiceQueryBatch>>,
-    TError,
-    { instanceId: string; data: QueryServiceQueryBatchBody },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof queryServiceQueryBatch>>,
+      TError,
+      { instanceId: string; data: QueryServiceQueryBatchBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof queryServiceQueryBatch>>,
   TError,
   { instanceId: string; data: QueryServiceQueryBatchBody },
@@ -3356,7 +3368,7 @@ export const createQueryServiceQueryBatch = <
 > => {
   const mutationOptions = getQueryServiceQueryBatchMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary ExportReport builds a URL to download the results of a query as a file.
@@ -3425,14 +3437,21 @@ export type QueryServiceExportReportMutationError = ErrorType<RpcStatus>;
 export const createQueryServiceExportReport = <
   TError = ErrorType<RpcStatus>,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof queryServiceExportReport>>,
-    TError,
-    { instanceId: string; report: string; data: QueryServiceExportReportBody },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof queryServiceExportReport>>,
+      TError,
+      {
+        instanceId: string;
+        report: string;
+        data: QueryServiceExportReportBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof queryServiceExportReport>>,
   TError,
   { instanceId: string; report: string; data: QueryServiceExportReportBody },
@@ -3440,5 +3459,5 @@ export const createQueryServiceExportReport = <
 > => {
   const mutationOptions = getQueryServiceExportReportMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };

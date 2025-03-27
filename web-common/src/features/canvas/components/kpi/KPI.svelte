@@ -49,23 +49,12 @@
   $: ({
     timeGrain,
     timeRange: { timeZone, start, end },
-    // where: objectWhere,
+    where,
     comparisonTimeRange,
     showTimeComparison,
     comparisonTimeRangeState,
     hasTimeSeries,
   } = $timeAndFilterStore);
-
-  // $: stringWhere = JSON.stringify(objectWhere);
-
-  // $: where = JSON.parse(stringWhere);
-
-  const where = {
-    cond: {
-      exprs: [],
-      op: "OPERATION_AND",
-    },
-  };
 
   $: schema = validateKPISchema(ctx, kpiProperties);
   $: ({ isValid } = $schema);
@@ -107,20 +96,6 @@
       },
     },
   );
-
-  $: console.log({ instanceId });
-  $: console.log({ metricsViewName });
-  $: console.log({ measureName });
-  $: console.log({ start });
-  $: console.log({ end });
-  $: console.log({ timeZone });
-  $: console.log({ where });
-  $: console.log({ isValid });
-  $: console.log({ timeAndFilterStore });
-  $: console.log({ rendererProperties });
-
-  // $: console.log({ objectWhere });
-  // $: console.log({ stringWhere });
 
   $: kpiComparisonTotalsQuery = createQueryServiceMetricsViewAggregation(
     instanceId,
@@ -222,112 +197,105 @@
 </script>
 
 {#if isValid}
-  <!-- {#if measure && primaryTotalData && !primaryTotalIsFetching} -->
-  <div class="wrapper" class:spark-right={isSparkRight}>
-    <div
-      class="data-wrapper"
-      style:min-width="{BIG_NUMBER_MIN_WIDTH - adjustment}px"
-    >
-      <h2 class="measure-name" title={measure?.displayName || measureName}>
-        {measure?.displayName || measureName}
-      </h2>
-
-      <span
-        class="big-number"
-        class:hovered-value={hoveredPoints?.[0]?.value != null}
+  {#if measure && primaryTotalData && !primaryTotalIsFetching}
+    <div class="wrapper" class:spark-right={isSparkRight}>
+      <div
+        class="data-wrapper"
+        style:min-width="{BIG_NUMBER_MIN_WIDTH - adjustment}px"
       >
-        {#if primaryTotalIsFetching || !primaryTotalData}
-          <div class="h-9 grid place-content-center">
-            <Spinner status={EntityStatus.Running} size="16px" />
-          </div>
-        {:else}
+        <h2 class="measure-name" title={measure?.displayName || measureName}>
+          {measure?.displayName || measureName}
+        </h2>
+
+        <span
+          class="big-number"
+          class:hovered-value={hoveredPoints?.[0]?.value != null}
+        >
           {measureValueFormatter(
             hoveredPoints?.[0]?.value != null ? currentValue : primaryTotal,
           )}
-        {/if}
-      </span>
-
-      {#if showComparison}
-        <div class="comparison-value-wrapper">
-          {#if comparisonOptions?.includes("previous")}
-            <span class="comparison-value">
-              {measureValueFormatter(comparisonVal)}
-            </span>
-          {/if}
-
-          {#if comparisonOptions?.includes("delta")}
-            <span
-              class="comparison-value"
-              class:text-red-500={primaryTotal !== null &&
-                comparisonVal !== null &&
-                primaryTotal - comparisonVal < 0}
-              class:ui-copy-disabled-faint={comparisonVal === null}
-              class:italic={comparisonVal === null}
-              class:text-sm={comparisonVal === null}
-            >
-              {#if comparisonVal != null && currentValue != null}
-                {getFormattedDiff(comparisonVal, currentValue)}
-              {:else}
-                no change
-              {/if}
-            </span>
-          {/if}
-
-          {#if comparisonOptions?.includes("percent_change") && comparisonPercChange != null && !measureIsPercentage}
-            <span
-              class="w-fit font-semibold ui-copy-inactive"
-              class:text-red-500={primaryTotal && primaryTotal < 0}
-            >
-              <PercentageChange
-                color="text-gray-500"
-                showPosSign
-                tabularNumber={false}
-                value={formatMeasurePercentageDifference(comparisonPercChange)}
-              />
-            </span>
-          {/if}
-        </div>
-
-        {#if comparisonLabel}
-          <p class="text-sm text-gray-400 break-words">
-            vs {comparisonLabel?.toLowerCase()}
-          </p>
-        {/if}
-      {/if}
-
-      {#if !showSparkline && timeGrain && interval.isValid}
-        <span class="text-gray-500">
-          <RangeDisplay {interval} grain={timeGrain} />
         </span>
-      {/if}
-    </div>
 
-    {#if showSparkline}
-      <div class="sparkline-wrapper">
-        {#if primaryDataIsFetching}
-          <Spinner status={EntityStatus.Running} />
-        {:else if timeGrain && timeZone && primaryData.length}
-          <Chart
-            bind:hoveredPoints
-            {primaryData}
-            secondaryData={showComparison ? comparisonData : []}
-            {timeGrain}
-            selectedTimeZone={timeZone}
-            yAccessor={kpiProperties.measure}
-            formatterFunction={measureValueFormatter}
-          />
+        {#if showComparison}
+          <div class="comparison-value-wrapper">
+            {#if comparisonOptions?.includes("previous")}
+              <span class="comparison-value">
+                {measureValueFormatter(comparisonVal)}
+              </span>
+            {/if}
+
+            {#if comparisonOptions?.includes("delta")}
+              <span
+                class="comparison-value"
+                class:text-red-500={primaryTotal !== null &&
+                  comparisonVal !== null &&
+                  primaryTotal - comparisonVal < 0}
+                class:ui-copy-disabled-faint={comparisonVal === null}
+                class:italic={comparisonVal === null}
+                class:text-sm={comparisonVal === null}
+              >
+                {#if comparisonVal != null && currentValue != null}
+                  {getFormattedDiff(comparisonVal, currentValue)}
+                {:else}
+                  no change
+                {/if}
+              </span>
+            {/if}
+
+            {#if comparisonOptions?.includes("percent_change") && comparisonPercChange != null && !measureIsPercentage}
+              <span
+                class="w-fit font-semibold ui-copy-inactive"
+                class:text-red-500={primaryTotal && primaryTotal < 0}
+              >
+                <PercentageChange
+                  color="text-gray-500"
+                  showPosSign
+                  tabularNumber={false}
+                  value={formatMeasurePercentageDifference(
+                    comparisonPercChange,
+                  )}
+                />
+              </span>
+            {/if}
+          </div>
+
+          {#if comparisonLabel}
+            <p class="text-sm text-gray-400 break-words">
+              vs {comparisonLabel?.toLowerCase()}
+            </p>
+          {/if}
+        {/if}
+
+        {#if !showSparkline && timeGrain && interval.isValid}
+          <span class="text-gray-500">
+            <RangeDisplay {interval} grain={timeGrain} />
+          </span>
         {/if}
       </div>
-    {/if}
-  </div>
-  <!-- {:else}
+
+      {#if showSparkline}
+        <div class="sparkline-wrapper">
+          {#if primaryDataIsFetching}
+            <Spinner status={EntityStatus.Running} />
+          {:else if timeGrain && timeZone && primaryData.length}
+            <Chart
+              bind:hoveredPoints
+              {primaryData}
+              secondaryData={showComparison ? comparisonData : []}
+              {timeGrain}
+              selectedTimeZone={timeZone}
+              yAccessor={kpiProperties.measure}
+              formatterFunction={measureValueFormatter}
+            />
+          {/if}
+        </div>
+      {/if}
+    </div>
+  {:else}
     <div class="flex items-center justify-center w-full h-full">
       <Spinner size="36px" status={EntityStatus.Running} />
-      {measure}
-      {primaryTotalData}
-      {primaryTotalIsFetching}
     </div>
-  {/if} -->
+  {/if}
 {:else}
   <ComponentError error={$schema.error} />
 {/if}

@@ -33,6 +33,7 @@
   import { getMatchingReferencesAndEntries } from "./utils";
   import Inspector from "@rilldata/web-common/layout/workspace/Inspector.svelte";
   import SimpleMessage from "@rilldata/web-common/layout/inspector/SimpleMessage.svelte";
+  import { keepPreviousData } from "@tanstack/svelte-query";
 
   export let hasUnsavedChanges: boolean;
   export let connector: string;
@@ -75,7 +76,7 @@
     },
     {
       query: {
-        keepPreviousData: true,
+        placeholderData: keepPreviousData,
       },
     },
   );
@@ -113,7 +114,10 @@
       : undefined;
 
   $: sourceTableReferences =
-    model && getTableReferences(model?.spec?.inputProperties?.sql ?? "");
+    model &&
+    getTableReferences(
+      (model?.spec?.inputProperties?.sql as string | undefined) ?? "",
+    );
 
   $: getAllSources = useSources(instanceId);
   $: getAllModels = useModels(instanceId);

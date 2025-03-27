@@ -59,6 +59,16 @@ export function useCreateMetricsViewFromTableUIAction(
   behaviourEventMedium: BehaviourEventMedium,
   metricsEventSpace: MetricsEventSpace,
 ) {
+  console.log({
+    instanceId,
+    connector,
+    database,
+    databaseSchema,
+    tableName,
+    createExplore,
+    behaviourEventMedium,
+    metricsEventSpace,
+  });
   const isAiEnabled = get(featureFlags.ai);
 
   // Return a function that can be called to create a dashboard from a table
@@ -86,6 +96,8 @@ export function useCreateMetricsViewFromTableUIAction(
     );
     const newMetricsViewFilePath = `/metrics/${newMetricsViewName}.yaml`;
 
+    console.log({ newMetricsViewFilePath });
+
     try {
       // First, request an AI-generated metrics view
       void runtimeServiceGenerateMetricsViewFileWithSignal(
@@ -109,6 +121,8 @@ export function useCreateMetricsViewFromTableUIAction(
           await runtimeServiceGetFile(instanceId, {
             path: newMetricsViewFilePath,
           });
+
+          console.log("AI is done");
           // success, AI is done
           break;
         } catch {
@@ -150,7 +164,10 @@ export function useCreateMetricsViewFromTableUIAction(
       const metricsViewResource = fileArtifacts
         .getFileArtifact(newMetricsViewFilePath)
         .getResource(queryClient, instanceId);
+      console.log("starting to wait");
       await waitUntil(() => get(metricsViewResource).data !== undefined, 5000);
+
+      console.log("success");
 
       const resource = get(metricsViewResource).data;
       if (!resource) {

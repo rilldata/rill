@@ -89,5 +89,5 @@ export const createAdminServiceUnsubscribeReportUsingToken = <
       token: string;
     },
     TContext
-  >(mutationFn, mutationOptions);
+  >({ mutationFn, ...mutationOptions });
 };

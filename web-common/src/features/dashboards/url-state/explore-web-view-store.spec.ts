@@ -201,9 +201,8 @@ describe.skip("ExploreWebViewStore", () => {
     const validSpecQuery = useExploreValidSpec(
       "default",
       AD_BIDS_EXPLORE_NAME,
-      {
-        queryClient,
-      },
+      undefined,
+      queryClient,
     );
     const { unmount } = render(ExploreStateTestComponent, {
       validSpecQuery,

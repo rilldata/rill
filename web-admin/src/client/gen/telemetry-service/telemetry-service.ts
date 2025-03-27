@@ -9,6 +9,7 @@ import type {
   CreateMutationOptions,
   CreateMutationResult,
   MutationFunction,
+  QueryClient,
 } from "@tanstack/svelte-query";
 
 import type {
@@ -90,14 +91,17 @@ The events must conform to the schema described in rill/runtime/pkg/activity/REA
 export const createTelemetryServiceRecordEvents = <
   TError = RpcStatus,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof telemetryServiceRecordEvents>>,
-    TError,
-    { data: V1RecordEventsRequest },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof telemetryServiceRecordEvents>>,
+      TError,
+      { data: V1RecordEventsRequest },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof telemetryServiceRecordEvents>>,
   TError,
   { data: V1RecordEventsRequest },
@@ -106,5 +110,5 @@ export const createTelemetryServiceRecordEvents = <
   const mutationOptions =
     getTelemetryServiceRecordEventsMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };

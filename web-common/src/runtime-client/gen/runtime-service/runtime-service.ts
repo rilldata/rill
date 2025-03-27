@@ -687,14 +687,17 @@ export type RuntimeServiceCreateInstanceMutationError = ErrorType<RpcStatus>;
 export const createRuntimeServiceCreateInstance = <
   TError = ErrorType<RpcStatus>,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceCreateInstance>>,
-    TError,
-    { data: V1CreateInstanceRequest },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServiceCreateInstance>>,
+      TError,
+      { data: V1CreateInstanceRequest },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof runtimeServiceCreateInstance>>,
   TError,
   { data: V1CreateInstanceRequest },
@@ -703,7 +706,7 @@ export const createRuntimeServiceCreateInstance = <
   const mutationOptions =
     getRuntimeServiceCreateInstanceMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary GetInstance returns information about a specific instance
@@ -877,14 +880,17 @@ export type RuntimeServiceDeleteInstanceMutationError = ErrorType<RpcStatus>;
 export const createRuntimeServiceDeleteInstance = <
   TError = ErrorType<RpcStatus>,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceDeleteInstance>>,
-    TError,
-    { instanceId: string; data: RuntimeServiceDeleteInstanceBody },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServiceDeleteInstance>>,
+      TError,
+      { instanceId: string; data: RuntimeServiceDeleteInstanceBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof runtimeServiceDeleteInstance>>,
   TError,
   { instanceId: string; data: RuntimeServiceDeleteInstanceBody },
@@ -893,7 +899,7 @@ export const createRuntimeServiceDeleteInstance = <
   const mutationOptions =
     getRuntimeServiceDeleteInstanceMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary EditInstance edits an existing instance
@@ -960,14 +966,17 @@ export type RuntimeServiceEditInstanceMutationError = ErrorType<RpcStatus>;
 export const createRuntimeServiceEditInstance = <
   TError = ErrorType<RpcStatus>,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceEditInstance>>,
-    TError,
-    { instanceId: string; data: RuntimeServiceEditInstanceBody },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServiceEditInstance>>,
+      TError,
+      { instanceId: string; data: RuntimeServiceEditInstanceBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof runtimeServiceEditInstance>>,
   TError,
   { instanceId: string; data: RuntimeServiceEditInstanceBody },
@@ -975,7 +984,7 @@ export const createRuntimeServiceEditInstance = <
 > => {
   const mutationOptions = getRuntimeServiceEditInstanceMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary AnalyzeConnectors scans all the project files and returns information about all referenced connectors.
@@ -1355,14 +1364,17 @@ export type RuntimeServiceCreateDirectoryMutationError = ErrorType<RpcStatus>;
 export const createRuntimeServiceCreateDirectory = <
   TError = ErrorType<RpcStatus>,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceCreateDirectory>>,
-    TError,
-    { instanceId: string; data: RuntimeServiceCreateDirectoryBody },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServiceCreateDirectory>>,
+      TError,
+      { instanceId: string; data: RuntimeServiceCreateDirectoryBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof runtimeServiceCreateDirectory>>,
   TError,
   { instanceId: string; data: RuntimeServiceCreateDirectoryBody },
@@ -1371,7 +1383,7 @@ export const createRuntimeServiceCreateDirectory = <
   const mutationOptions =
     getRuntimeServiceCreateDirectoryMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary GetFile returns the contents of a specific file in a repo.
@@ -1544,14 +1556,17 @@ export type RuntimeServiceDeleteFileMutationError = ErrorType<RpcStatus>;
 export const createRuntimeServiceDeleteFile = <
   TError = ErrorType<RpcStatus>,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceDeleteFile>>,
-    TError,
-    { instanceId: string; params?: RuntimeServiceDeleteFileParams },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServiceDeleteFile>>,
+      TError,
+      { instanceId: string; params?: RuntimeServiceDeleteFileParams },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof runtimeServiceDeleteFile>>,
   TError,
   { instanceId: string; params?: RuntimeServiceDeleteFileParams },
@@ -1559,7 +1574,7 @@ export const createRuntimeServiceDeleteFile = <
 > => {
   const mutationOptions = getRuntimeServiceDeleteFileMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary PutFile creates or updates a file in a repo
@@ -1627,14 +1642,17 @@ export type RuntimeServicePutFileMutationError = ErrorType<RpcStatus>;
 export const createRuntimeServicePutFile = <
   TError = ErrorType<RpcStatus>,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof runtimeServicePutFile>>,
-    TError,
-    { instanceId: string; data: RuntimeServicePutFileBody },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServicePutFile>>,
+      TError,
+      { instanceId: string; data: RuntimeServicePutFileBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof runtimeServicePutFile>>,
   TError,
   { instanceId: string; data: RuntimeServicePutFileBody },
@@ -1642,7 +1660,7 @@ export const createRuntimeServicePutFile = <
 > => {
   const mutationOptions = getRuntimeServicePutFileMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary GenerateMetricsViewFile generates a metrics view YAML file from a table in an OLAP database
@@ -1712,14 +1730,17 @@ export type RuntimeServiceGenerateMetricsViewFileMutationError =
 export const createRuntimeServiceGenerateMetricsViewFile = <
   TError = ErrorType<RpcStatus>,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceGenerateMetricsViewFile>>,
-    TError,
-    { instanceId: string; data: RuntimeServiceGenerateMetricsViewFileBody },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServiceGenerateMetricsViewFile>>,
+      TError,
+      { instanceId: string; data: RuntimeServiceGenerateMetricsViewFileBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof runtimeServiceGenerateMetricsViewFile>>,
   TError,
   { instanceId: string; data: RuntimeServiceGenerateMetricsViewFileBody },
@@ -1728,7 +1749,7 @@ export const createRuntimeServiceGenerateMetricsViewFile = <
   const mutationOptions =
     getRuntimeServiceGenerateMetricsViewFileMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary RenameFile renames a file in a repo
@@ -1796,14 +1817,17 @@ export type RuntimeServiceRenameFileMutationError = ErrorType<RpcStatus>;
 export const createRuntimeServiceRenameFile = <
   TError = ErrorType<RpcStatus>,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceRenameFile>>,
-    TError,
-    { instanceId: string; data: RuntimeServiceRenameFileBody },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServiceRenameFile>>,
+      TError,
+      { instanceId: string; data: RuntimeServiceRenameFileBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof runtimeServiceRenameFile>>,
   TError,
   { instanceId: string; data: RuntimeServiceRenameFileBody },
@@ -1811,7 +1835,7 @@ export const createRuntimeServiceRenameFile = <
 > => {
   const mutationOptions = getRuntimeServiceRenameFileMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary UnpackEmpty unpacks an empty project
@@ -1880,14 +1904,17 @@ export type RuntimeServiceUnpackEmptyMutationError = ErrorType<RpcStatus>;
 export const createRuntimeServiceUnpackEmpty = <
   TError = ErrorType<RpcStatus>,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceUnpackEmpty>>,
-    TError,
-    { instanceId: string; data: RuntimeServiceUnpackEmptyBody },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServiceUnpackEmpty>>,
+      TError,
+      { instanceId: string; data: RuntimeServiceUnpackEmptyBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof runtimeServiceUnpackEmpty>>,
   TError,
   { instanceId: string; data: RuntimeServiceUnpackEmptyBody },
@@ -1895,7 +1922,7 @@ export const createRuntimeServiceUnpackEmpty = <
 > => {
   const mutationOptions = getRuntimeServiceUnpackEmptyMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary UnpackExample unpacks an example project
@@ -1964,14 +1991,17 @@ export type RuntimeServiceUnpackExampleMutationError = ErrorType<RpcStatus>;
 export const createRuntimeServiceUnpackExample = <
   TError = ErrorType<RpcStatus>,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceUnpackExample>>,
-    TError,
-    { instanceId: string; data: RuntimeServiceUnpackExampleBody },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServiceUnpackExample>>,
+      TError,
+      { instanceId: string; data: RuntimeServiceUnpackExampleBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof runtimeServiceUnpackExample>>,
   TError,
   { instanceId: string; data: RuntimeServiceUnpackExampleBody },
@@ -1980,7 +2010,7 @@ export const createRuntimeServiceUnpackExample = <
   const mutationOptions =
     getRuntimeServiceUnpackExampleMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary WatchFiles streams repo file update events. It is not supported on all backends.
@@ -2157,14 +2187,17 @@ export type RuntimeServiceGenerateRendererMutationError = ErrorType<RpcStatus>;
 export const createRuntimeServiceGenerateRenderer = <
   TError = ErrorType<RpcStatus>,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceGenerateRenderer>>,
-    TError,
-    { instanceId: string; data: RuntimeServiceGenerateRendererBody },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServiceGenerateRenderer>>,
+      TError,
+      { instanceId: string; data: RuntimeServiceGenerateRendererBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof runtimeServiceGenerateRenderer>>,
   TError,
   { instanceId: string; data: RuntimeServiceGenerateRendererBody },
@@ -2173,7 +2206,7 @@ export const createRuntimeServiceGenerateRenderer = <
   const mutationOptions =
     getRuntimeServiceGenerateRendererMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary GenerateResolver generates resolver and resolver properties from a table or a metrics view
@@ -2242,14 +2275,17 @@ export type RuntimeServiceGenerateResolverMutationError = ErrorType<RpcStatus>;
 export const createRuntimeServiceGenerateResolver = <
   TError = ErrorType<RpcStatus>,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceGenerateResolver>>,
-    TError,
-    { instanceId: string; data: RuntimeServiceGenerateResolverBody },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServiceGenerateResolver>>,
+      TError,
+      { instanceId: string; data: RuntimeServiceGenerateResolverBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof runtimeServiceGenerateResolver>>,
   TError,
   { instanceId: string; data: RuntimeServiceGenerateResolverBody },
@@ -2258,7 +2294,7 @@ export const createRuntimeServiceGenerateResolver = <
   const mutationOptions =
     getRuntimeServiceGenerateResolverMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary GetLogs returns recent logs from a controller
@@ -2657,14 +2693,17 @@ export type RuntimeServiceQueryResolverMutationError = ErrorType<RpcStatus>;
 export const createRuntimeServiceQueryResolver = <
   TError = ErrorType<RpcStatus>,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceQueryResolver>>,
-    TError,
-    { instanceId: string; data: RuntimeServiceQueryResolverBody },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServiceQueryResolver>>,
+      TError,
+      { instanceId: string; data: RuntimeServiceQueryResolverBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof runtimeServiceQueryResolver>>,
   TError,
   { instanceId: string; data: RuntimeServiceQueryResolverBody },
@@ -2673,7 +2712,7 @@ export const createRuntimeServiceQueryResolver = <
   const mutationOptions =
     getRuntimeServiceQueryResolverMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary GetResource looks up a specific catalog resource
@@ -3176,14 +3215,17 @@ Triggers are ephemeral resources that will be cleaned up by the controller.
 export const createRuntimeServiceCreateTrigger = <
   TError = ErrorType<RpcStatus>,
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceCreateTrigger>>,
-    TError,
-    { instanceId: string; data: RuntimeServiceCreateTriggerBody },
-    TContext
-  >;
-}): CreateMutationResult<
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServiceCreateTrigger>>,
+      TError,
+      { instanceId: string; data: RuntimeServiceCreateTriggerBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
   Awaited<ReturnType<typeof runtimeServiceCreateTrigger>>,
   TError,
   { instanceId: string; data: RuntimeServiceCreateTriggerBody },
@@ -3192,7 +3234,7 @@ export const createRuntimeServiceCreateTrigger = <
   const mutationOptions =
     getRuntimeServiceCreateTriggerMutationOptions(options);
 
-  return createMutation(mutationOptions);
+  return createMutation(mutationOptions, queryClient);
 };
 /**
  * @summary AnalyzeVariables scans `Source`, `Model` and `Connector` resources in the catalog for use of an environment variable
