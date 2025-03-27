@@ -96,6 +96,8 @@
       class="sr-only peer-hover:not-sr-only peer-active:sr-only hover:not-sr-only flex flex-col pointer-events-auto overflow-hidden shadow-sm !absolute -translate-x-1/2 left-1/2 top-1/2 w-fit z-20 bg-white -translate-y-1/2 border rounded-sm"
     >
       <AddComponentDropdown
+        {rowIndex}
+        columnIndex={addIndex}
         {onItemClick}
         onOpenChange={(isOpen) => {
           if (!isOpen) {
