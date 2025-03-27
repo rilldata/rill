@@ -207,7 +207,7 @@
     </Button>
   </Popover.Trigger>
   <Popover.Content
-    class="p-0"
+    class="p-0 z-popover"
     align="start"
     collisionPadding={100}
     strategy="absolute"
@@ -311,7 +311,7 @@
                   </div>
                 </Tooltip.Trigger>
 
-                <Tooltip.Content side="right" sideOffset={12}>
+                <Tooltip.Content side="right" sideOffset={12} class="z-popover">
                   <div
                     class="bg-gray-800 text-gray-50 rounded p-2 pt-1 pb-1 shadow-md pointer-events-none z-50"
                   >

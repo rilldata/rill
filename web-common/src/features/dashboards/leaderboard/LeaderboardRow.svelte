@@ -409,7 +409,7 @@
   }
 
   td[data-dimension-cell] {
-    @apply sticky left-0 bg-surface;
+    @apply sticky left-0 z-30 bg-surface;
   }
 
   tr:hover td[data-dimension-cell],
