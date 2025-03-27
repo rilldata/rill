@@ -15,6 +15,7 @@
 
   const UPPER_BOUND = 12 + 28 + 25;
   const ITEM_HEIGHT = 28;
+  const THROTTLE_MS = 16; // ~60fps = 60 frames per second = 1000ms / 60 frames = ~16.67ms per frame
 
   type SelectableItem = MetricsViewSpecMeasureV2 | MetricsViewSpecDimensionV2;
 
@@ -34,6 +35,7 @@
   let dragIndex = -1;
   let dragItemInitialTop = 0;
   let threshold = 0;
+  let lastUpdateTime = 0;
 
   $: ({ height } = contentRect);
 
@@ -113,7 +115,7 @@
       dropIndex = dragIndex;
     }
 
-    clone.style.top = dragItemInitialTop + "px";
+    clone.style.transform = `translateY(${dragItemInitialTop}px)`;
     clone.style.width = dragElement.clientWidth + "px";
     clone.style.left = "6px";
 
@@ -125,15 +127,14 @@
       "outline-gray-300",
       "outline-1",
       "opacity-60",
-      "transition-all",
-      "duration-150",
-      "ease-in-out",
+      "will-change-transform",
     );
 
     clone.style.position = "absolute";
     dragContainer.appendChild(clone);
 
     initialMousePosition = e.clientY;
+    lastUpdateTime = performance.now();
 
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener(
@@ -166,18 +167,19 @@
 
     if (!clone) return;
 
-    const delta = e.clientY - initialMousePosition;
+    const now = performance.now();
+    if (now - lastUpdateTime < THROTTLE_MS) return;
+    lastUpdateTime = now;
 
+    const delta = e.clientY - initialMousePosition;
     const newPxValue = dragItemInitialTop + delta;
 
-    clone.style.top = clamp(UPPER_BOUND, newPxValue, lowerBound) + "px";
+    clone.style.transform = `translateY(${clamp(UPPER_BOUND, newPxValue, lowerBound)}px)`;
 
     if (threshold && delta > threshold) {
       dropIndex = null;
-      return;
     } else {
       const newIndex = Math.round((delta - threshold) / ITEM_HEIGHT);
-
       dropIndex = Math.max(0, newIndex + dragIndex);
     }
   }
@@ -438,6 +440,11 @@
   .transition-margin {
     transition-property: margin-top, margin-bottom;
     transition-duration: 100ms;
+    will-change: margin-top, margin-bottom;
+  }
+
+  .drag-transition {
+    transition: none;
   }
 
   h3 {
