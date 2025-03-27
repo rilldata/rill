@@ -1,216 +1,74 @@
-package org
+package org_test
 
 import (
-	"bytes"
-	"context"
-	"encoding/json"
-	"fmt"
+	"crypto/rand"
+	"encoding/hex"
 	"testing"
 
-	"github.com/google/go-github/v50/github"
-	"github.com/rilldata/rill/admin/database"
-	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
-	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/dotrill"
-	"github.com/rilldata/rill/cli/pkg/mock"
-	"github.com/rilldata/rill/cli/pkg/printer"
-	"github.com/rilldata/rill/runtime/pkg/graceful"
+	"github.com/rilldata/rill/admin/testadmin"
+	"github.com/rilldata/rill/cli/testcli"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
-	"golang.org/x/sync/errgroup"
 )
 
-func TestOrganizationWorkflow(t *testing.T) {
-	t.Skip("Skipping test as it is failing on CI")
-	pg := pgtestcontainer.New(t)
-	defer pg.Terminate(t)
+func TestOrg(t *testing.T) {
+	adm := testadmin.New(t)
+	u1 := testcli.NewWithUser(t, adm)
 
-	ctx := context.Background()
-	logger, _ := zap.NewDevelopment()
+	// Create an org
+	org1 := randomName()
+	res := u1.Run(t, "org", "create", org1)
+	t.Log(res.Output)
+	require.Equal(t, 0, res.ExitCode)
 
-	// Get Admin service
-	adm, err := mock.AdminService(ctx, logger, pg.DatabaseURL)
-	require.NoError(t, err)
-	defer adm.Close()
+	// Edit the org
+	desc1 := "foo bar"
+	res = u1.Run(t, "org", "edit", org1, "--description", desc1)
+	require.Equal(t, 0, res.ExitCode)
 
-	db := adm.DB
+	// Check the org is stored in local state and can be shown
+	res = u1.Run(t, "org", "show")
+	require.Equal(t, 0, res.ExitCode)
+	require.Contains(t, res.Output, org1)
+	require.Contains(t, res.Output, desc1)
 
-	// create mock admin user
-	adminUser, err := db.InsertUser(ctx, &database.InsertUserOptions{
-		Email:               "admin@test.io",
-		DisplayName:         "admin",
-		QuotaSingleuserOrgs: 3,
-	})
-	require.NoError(t, err)
-	require.NotNil(t, adminUser)
+	// Create another org
+	org2 := randomName()
+	res = u1.Run(t, "org", "create", org2)
+	require.Equal(t, 0, res.ExitCode)
 
-	// issue admin and viewer tokens
-	adminAuthToken, err := adm.IssueUserAuthToken(ctx, adminUser.ID, database.AuthClientIDRillWeb, "test", nil, nil)
-	require.NoError(t, err)
-	require.NotNil(t, adminAuthToken, adminUser.ID)
+	// Check the org is stored in local state and can be shown
+	res = u1.Run(t, "org", "show")
+	require.Equal(t, 0, res.ExitCode)
+	require.Contains(t, res.Output, org2)
 
-	// Create mock admin server
-	srv, err := mock.AdminServer(ctx, logger, adm)
-	require.NoError(t, err)
+	// Check we can switch between orgs
+	res = u1.Run(t, "org", "switch", org1)
+	require.Equal(t, 0, res.ExitCode)
+	res = u1.Run(t, "org", "show")
+	require.Equal(t, 0, res.ExitCode)
+	require.Contains(t, res.Output, org1)
 
-	// Make errgroup for running the processes
-	ctx = graceful.WithCancelOnTerminate(ctx)
-	group, cctx := errgroup.WithContext(ctx)
+	// Check both orgs can be listed
+	res = u1.Run(t, "org", "list")
+	require.Equal(t, 0, res.ExitCode)
+	require.Contains(t, res.Output, org1)
+	require.Contains(t, res.Output, org2)
 
-	group.Go(func() error { return srv.ServeGRPC(cctx) })
-	group.Go(func() error { return srv.ServeHTTP(cctx) })
-	err = mock.CheckServerStatus(cctx)
-	require.NoError(t, err)
+	// Check it can't show an org that doesn't exist
+	res = u1.Run(t, "org", "show", "nonexistent")
+	require.Equal(t, 1, res.ExitCode)
+	require.Contains(t, res.Output, "not found")
 
-	var buf bytes.Buffer
-	p := printer.NewPrinter(printer.FormatJSON)
-	p.OverrideDataOutput(&buf)
+	// Delete the second org
+	res = u1.Run(t, "org", "delete", org2, "--interactive=false")
+	require.Equal(t, 0, res.ExitCode)
+}
 
-	helper := &cmdutil.Helper{
-		DotRill:           dotrill.New(t.TempDir()),
-		AdminURLDefault:   "http://localhost:9090",
-		AdminTokenDefault: adminAuthToken.Token().String(),
-		Printer:           p,
+func randomName() string {
+	id := make([]byte, 16)
+	_, err := rand.Read(id)
+	if err != nil {
+		panic(err)
 	}
-	defer helper.Close()
-
-	// Create organization with name
-	cmd := CreateCmd(helper)
-	cmd.SetOut(&buf)
-	cmd.SetErr(&buf)
-	cmd.SetArgs([]string{"--name", "myorg"})
-	err = cmd.Execute()
-	require.NoError(t, err)
-
-	orgList := []Org{}
-	err = json.Unmarshal([]byte(buf.String()), &orgList)
-	require.NoError(t, err)
-
-	require.Equal(t, len(orgList), 1)
-	require.Equal(t, orgList[0].Name, "myorg")
-
-	// Create new organization with name
-	buf.Reset()
-	cmd.SetOut(&buf)
-	cmd.SetErr(&buf)
-	cmd.SetArgs([]string{"--name", "test"})
-	err = cmd.Execute()
-	require.NoError(t, err)
-	err = json.Unmarshal([]byte(buf.String()), &orgList)
-	require.NoError(t, err)
-	require.Equal(t, len(orgList), 1)
-	require.Equal(t, orgList[0].Name, "test")
-
-	// List organizations
-	buf.Reset()
-	cmd = ListCmd(helper)
-	cmd.SetOut(&buf)
-	cmd.SetErr(&buf)
-	cmd.SetArgs([]string{})
-	err = cmd.Execute()
-	require.NoError(t, err)
-
-	err = json.Unmarshal([]byte(buf.String()), &orgList)
-	require.NoError(t, err)
-	require.Equal(t, len(orgList), 2)
-
-	// 1 more way to check org list
-	// eq := !reflect.DeepEqual(expectedOrgs, orgList)
-	// c.Assert(eq, qt.Equals, false)
-	expectedOrgs := []string{"myorg", "test"}
-	for _, org := range orgList {
-		require.Contains(t, expectedOrgs, org.Name)
-	}
-
-	// Delete organization
-	buf.Reset()
-	cmd = DeleteCmd(helper)
-	cmd.SetOut(&buf)
-	cmd.SetErr(&buf)
-	cmd.SetArgs([]string{"--org", "myorg", "--force"})
-	err = cmd.Execute()
-	require.NoError(t, err)
-
-	// List organizations
-	buf.Reset()
-	cmd = ListCmd(helper)
-	cmd.SetOut(&buf)
-	cmd.SetErr(&buf)
-	cmd.SetArgs([]string{})
-	err = cmd.Execute()
-	require.NoError(t, err)
-
-	orgList = []Org{}
-	err = json.Unmarshal([]byte(buf.String()), &orgList)
-	require.NoError(t, err)
-	require.Equal(t, len(orgList), 1)
-	expectedOrgs = []string{"test"}
-	for _, org := range orgList {
-		require.Contains(t, expectedOrgs, org.Name)
-	}
-
-	// rename organization
-	buf.Reset()
-	cmd = RenameCmd(helper)
-	cmd.SetOut(&buf)
-	cmd.SetErr(&buf)
-	cmd.SetArgs([]string{"--org", "test", "--new-name", "new-test", "--force"})
-	err = cmd.Execute()
-	require.NoError(t, err)
-
-	err = json.Unmarshal([]byte(buf.String()), &orgList)
-	require.NoError(t, err)
-	require.Equal(t, len(orgList), 1)
-	require.Equal(t, orgList[0].Name, "new-test")
-
-	// edit organization display name
-	buf.Reset()
-	cmd = EditCmd(helper)
-	cmd.SetOut(&buf)
-	cmd.SetErr(&buf)
-	cmd.SetArgs([]string{"--org", "new-test", "--display-name", "new-test-display", "--force"})
-	err = cmd.Execute()
-	require.NoError(t, err)
-
-	err = json.Unmarshal([]byte(buf.String()), &orgList)
-	require.NoError(t, err)
-	require.Equal(t, len(orgList), 1)
-	require.Equal(t, orgList[0].DisplayName, "new-test-display")
-
-	// Switch organization
-	buf.Reset()
-	helper.Printer.OverrideHumanOutput(&buf)
-	cmd = SwitchCmd(helper)
-	cmd.SetOut(&buf)
-	cmd.SetErr(&buf)
-	cmd.SetArgs([]string{"new-test"})
-	err = cmd.Execute()
-	require.NoError(t, err)
-
-	expectedMsg := fmt.Sprintf("Set default organization to %q.\n", "new-test")
-	require.Contains(t, buf.String(), expectedMsg)
-	org, err := dotrill.GetDefaultOrg()
-	require.NoError(t, err)
-	require.Equal(t, org, "new-test")
-
-}
-
-type Org struct {
-	Name        string `json:"Name"`
-	DisplayName string `json:"DisplayName"`
-}
-
-// mockGithub provides a mock implementation of admin.Github.
-type mockGithub struct{}
-
-func (m *mockGithub) AppClient() *github.Client {
-	return nil
-}
-
-func (m *mockGithub) InstallationClient(installationID int64) (*github.Client, error) {
-	return nil, nil
-}
-
-func (m *mockGithub) InstallationToken(ctx context.Context, installationID int64) (string, error) {
-	return "", nil
+	return "test_" + hex.EncodeToString(id)
 }

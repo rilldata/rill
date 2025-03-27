@@ -196,11 +196,15 @@ func (f *Fixture) NewUserWithEmail(t *testing.T, emailAddr string) (*database.Us
 
 // NewClient creates a new client for the fixture's server.
 func (f *Fixture) NewClient(t *testing.T, token string) *client.Client {
-	host := fmt.Sprintf("http://localhost:%d", f.ServerOpts.GRPCPort)
-	c, err := client.New(host, token, "test")
+	c, err := client.New(f.ExternalURL(), token, "test")
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, c.Close()) })
 	return c
+}
+
+// ExternalURL returns the localhost URL of the fixture's server.
+func (f *Fixture) ExternalURL() string {
+	return fmt.Sprintf("http://localhost:%d", f.ServerOpts.GRPCPort)
 }
 
 // mockGithub provides a mock implementation of admin.Github.

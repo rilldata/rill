@@ -9,7 +9,6 @@ import (
 )
 
 func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
-	var force bool
 	var name string
 
 	deleteCmd := &cobra.Command{
@@ -51,7 +50,7 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			if !force {
+			if ch.Interactive {
 				fmt.Printf("Warn: Deleting the org %q will remove all metadata associated with the org\n", name)
 				msg := fmt.Sprintf("Type %q to confirm deletion", name)
 				org, err := cmdutil.InputPrompt(msg, "")
@@ -92,7 +91,6 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 	}
 	deleteCmd.Flags().SortFlags = false
 	deleteCmd.Flags().StringVar(&name, "org", ch.Org, "Organization Name")
-	deleteCmd.Flags().BoolVar(&force, "force", false, "Delete forcefully, skips the confirmation")
 
 	return deleteCmd
 }

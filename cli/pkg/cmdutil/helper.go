@@ -48,6 +48,31 @@ type Helper struct {
 	activityClientHash string
 }
 
+func NewHelper(ver Version, homeDir string) (*Helper, error) {
+	// Create it
+	ch := &Helper{
+		Printer:     printer.NewPrinter(printer.FormatHuman),
+		DotRill:     dotrill.New(homeDir),
+		Version:     ver,
+		Interactive: true,
+	}
+
+	// Load base admin config from ~/.rill
+	err := ch.ReloadAdminConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	// Load default org
+	defaultOrg, err := ch.DotRill.GetDefaultOrg()
+	if err != nil {
+		return nil, fmt.Errorf("could not parse default org from ~/.rill: %w", err)
+	}
+	ch.Org = defaultOrg
+
+	return ch, nil
+}
+
 func (h *Helper) Close() error {
 	grp := errgroup.Group{}
 

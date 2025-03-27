@@ -28,8 +28,6 @@ import (
 	versioncmd "github.com/rilldata/rill/cli/cmd/version"
 	"github.com/rilldata/rill/cli/cmd/whoami"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/dotrill"
-	"github.com/rilldata/rill/cli/pkg/printer"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc/status"
 )
@@ -38,91 +36,54 @@ func init() {
 	cobra.EnableCommandSorting = false
 }
 
-// Execute initializes the root command and executes it.
+// Run initializes the root command and executes it.
 // It also handles errors and prints them in a user-friendly way.
-func Execute(ctx context.Context, ver cmdutil.Version) {
-	root, err := RootCmd(ctx, ver)
-	if err == nil {
-		err = root.ExecuteContext(ctx)
-	}
-	if err == nil {
-		return
+// NOTE: If you change this function, also check if you need to update testcli.Fixture.Run.
+func Run(ctx context.Context, ver cmdutil.Version) {
+	ch, err := cmdutil.NewHelper(ver, "")
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+		os.Exit(1)
 	}
 
-	// Pretty print the error with custom handling for known errors.
-	// NOTE: This is a workaround for Cobra not supporting middleware for overriding the error from RunE.
-	errMsg := err.Error()
-	if strings.Contains(errMsg, "org not found") {
-		root.PrintErrln("Org not found. Run `rill org list` to see the orgs. Run `rill org switch` to default org.")
-	} else if strings.Contains(errMsg, "project not found") {
-		root.PrintErrln("Project not found. Run `rill project list` to check the list of projects.")
-	} else if strings.Contains(errMsg, "auth token not found") {
-		root.PrintErrln("Auth token is invalid/expired. Login again with `rill login`.")
-	} else if strings.Contains(errMsg, "not authenticated as a user") {
-		root.PrintErrln("Please log in or sign up for Rill with `rill login`.")
-	} else {
-		if s, ok := status.FromError(err); ok {
-			// rpc error
-			root.PrintErrf("Error: %s (%v)\n", s.Message(), s.Code())
-		} else {
-			root.PrintErrf("Error: %s\n", err.Error())
-		}
-	}
-	os.Exit(1)
+	err = RootCmd(ch).ExecuteContext(ctx)
+	code := HandleExecuteError(ch, err)
+
+	ch.Close()
+	os.Exit(code)
 }
 
 // RootCmd creates the root command and adds all subcommands.
-func RootCmd(ctx context.Context, ver cmdutil.Version) (*cobra.Command, error) {
-	// Create cmdutil Helper
-	ch := &cmdutil.Helper{
-		Printer:     printer.NewPrinter(printer.FormatHuman),
-		DotRill:     dotrill.New(""),
-		Version:     ver,
-		Interactive: true,
-	}
-	defer ch.Close()
-
-	// Load base admin config from ~/.rill
-	err := ch.ReloadAdminConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	// Load default org
-	defaultOrg, err := ch.DotRill.GetDefaultOrg()
-	if err != nil {
-		return nil, fmt.Errorf("could not parse default org from ~/.rill: %w", err)
-	}
-	ch.Org = defaultOrg
-
-	// Check version
-	err = ch.CheckVersion(ctx)
-	if err != nil {
-		ch.PrintfWarn("Warning: version check failed: %v\n\n", err)
-	}
-
-	// Print warning if currently acting as an assumed user
-	representingUser, err := ch.DotRill.GetRepresentingUser()
-	if err != nil {
-		ch.PrintfWarn("Could not parse representing user email\n\n")
-	}
-	if representingUser != "" {
-		ch.PrintfWarn("Warning: Running action as %q\n\n", representingUser)
-	}
-
+func RootCmd(ch *cmdutil.Helper) *cobra.Command {
 	// Root command
 	rootCmd := &cobra.Command{
 		Use:   "rill <command> [flags]",
 		Short: "A CLI for Rill",
 		Long:  `Work with Rill projects directly from the command line.`,
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			// Check version
+			err := ch.CheckVersion(cmd.Context())
+			if err != nil {
+				ch.PrintfWarn("Warning: version check failed: %v\n\n", err)
+			}
+
+			// Print warning if currently acting as an assumed user
+			representingUser, err := ch.DotRill.GetRepresentingUser()
+			if err != nil {
+				ch.PrintfWarn("Could not parse representing user email\n\n")
+			}
+			if representingUser != "" {
+				ch.PrintfWarn("Warning: Running action as %q\n\n", representingUser)
+			}
+		},
 	}
-	rootCmd.Version = ver.String()
+	rootCmd.Version = ch.Version.String()
 	// silence usage, usage string will only show up if missing arguments/flags
 	rootCmd.SilenceUsage = true
 	// we want to override some error messages
 	rootCmd.SilenceErrors = true
 	rootCmd.PersistentFlags().BoolP("help", "h", false, "Print usage") // Overrides message for help
-	rootCmd.PersistentFlags().BoolVar(&ch.Interactive, "interactive", true, "Prompt for missing required parameters")
+	rootCmd.PersistentFlags().BoolVar(&ch.Interactive, "interactive", false, "Prompt for missing required parameters")
 	rootCmd.PersistentFlags().Var(&ch.Printer.Format, "format", `Output format (options: "human", "json", "csv")`)
 	rootCmd.PersistentFlags().StringVar(&ch.AdminURLOverride, "api-url", ch.AdminURLOverride, "Base URL for the cloud API")
 	if !ch.IsDev() {
@@ -180,5 +141,34 @@ func RootCmd(ctx context.Context, ver cmdutil.Version) (*cobra.Command, error) {
 		completionCmd(ch),
 	)
 
-	return rootCmd, nil
+	return rootCmd
+}
+
+// HandleExecuteError handles an error returned by RootCmd, returning the desired exit code.
+// It contains user-friendly handling for common errors.
+// NOTE (2025-03-27): This is a workaround for Cobra not supporting custom logic for printing the error from RunE.
+func HandleExecuteError(ch *cmdutil.Helper, err error) int {
+	if err == nil {
+		return 0
+	}
+
+	errMsg := err.Error()
+	if strings.Contains(errMsg, "org not found") {
+		ch.Println("Org not found. Run `rill org list` to see the orgs. Run `rill org switch` to default org.")
+	} else if strings.Contains(errMsg, "project not found") {
+		ch.Println("Project not found. Run `rill project list` to check the list of projects.")
+	} else if strings.Contains(errMsg, "auth token not found") {
+		ch.Println("Auth token is invalid/expired. Login again with `rill login`.")
+	} else if strings.Contains(errMsg, "not authenticated as a user") {
+		ch.Println("Please log in or sign up for Rill with `rill login`.")
+	} else {
+		if s, ok := status.FromError(err); ok {
+			// rpc error
+			ch.Printf("Error: %s (%v)\n", s.Message(), s.Code())
+		} else {
+			ch.Printf("Error: %s\n", err.Error())
+		}
+	}
+
+	return 1
 }
