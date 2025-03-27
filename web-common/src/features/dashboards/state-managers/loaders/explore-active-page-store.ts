@@ -2,6 +2,7 @@ import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashbo
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { convertExploreStateToURLSearchParamsNoCompression } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
+import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   type V1ExploreSpec,
@@ -36,7 +37,7 @@ const ExploreActivePageKeys: Record<
 ExploreActivePageKeys[DashboardState_ActivePage.DIMENSION_TABLE] =
   ExploreActivePageKeys[DashboardState_ActivePage.DEFAULT];
 
-// keys other than the current web view
+// keys other than the current active page
 const ExploreActivePageOtherKeys: Record<
   DashboardState_ActivePage,
   (keyof MetricsExplorerEntity)[]
@@ -47,13 +48,13 @@ const ExploreActivePageOtherKeys: Record<
   [DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL]: [],
   [DashboardState_ActivePage.PIVOT]: [],
 };
-// Keys shared between views.
+// Keys shared between page.
 const ExploreActivePageSharedKeys = {} as Record<
   DashboardState_ActivePage,
   (keyof MetricsExplorerEntity)[]
 >;
-// keys shared between views but to be ignored because they are set exclusively
-const ExploreViewIgnoredKeysForShared: (keyof MetricsExplorerEntity)[] = [
+// keys shared between pages but to be ignored because they are set exclusively
+const ExploreActivePageIgnoredKeysForShared: (keyof MetricsExplorerEntity)[] = [
   "activePage",
 ];
 
@@ -69,7 +70,7 @@ for (const activePage in ExploreActivePageOtherKeys) {
 
     for (const key of ExploreActivePageKeys[otherActivePage]) {
       if (keys.has(key)) {
-        if (!ExploreViewIgnoredKeysForShared.includes(key)) {
+        if (!ExploreActivePageIgnoredKeysForShared.includes(key)) {
           ExploreActivePageSharedKeys[activePage][otherActivePage].push(key);
         }
         continue;
@@ -80,7 +81,7 @@ for (const activePage in ExploreActivePageOtherKeys) {
   ExploreActivePageOtherKeys[activePage] = [...otherKeys];
 }
 
-// Values shared across the views. Any keys not defined in ExploreViewKeys will fall under this.
+// Values shared across the pages. Any keys not defined in ExploreActivePageKeys will fall under this.
 // Having a catch-all like this will avoid issues where new fields added are not lost.
 const SharedStateStoreKey = 0;
 
@@ -92,7 +93,6 @@ export function getKeyForSessionStore(
   return `rill:app:explore:${prefix ?? ""}${exploreName}:${activePage}`.toLowerCase();
 }
 
-// TODO: revisit namings
 export function updateExploreSessionStore(
   exploreName: string,
   prefix: string | undefined,
@@ -145,26 +145,32 @@ export function updateExploreSessionStore(
     {},
   );
   try {
+    console.log(
+      "SAVE",
+      DashboardState_ActivePage[activePage],
+      storedUrlSearch.toString(),
+      sharedUrlSearch.toString(),
+    );
     sessionStorage.setItem(keyForActivePage, storedUrlSearch.toString());
     sessionStorage.setItem(sharedKey, sharedUrlSearch.toString());
   } catch {
     // no-op
   }
 
-  for (const otherView in ExploreActivePageSharedKeys[activePage]) {
-    const sharedKeys = ExploreActivePageSharedKeys[activePage][otherView];
+  for (const otherPage in ExploreActivePageSharedKeys[activePage]) {
+    const sharedKeys = ExploreActivePageSharedKeys[activePage][otherPage];
     if (!sharedKeys?.length) continue;
 
-    const otherViewKey = getKeyForSessionStore(
+    const otherPageKey = getKeyForSessionStore(
       exploreName,
       prefix,
-      Number(otherView),
+      Number(otherPage),
     );
-    const otherViewRawPreset = sessionStorage.getItem(otherViewKey) ?? "";
+    const otherPageRawPreset = sessionStorage.getItem(otherPageKey) ?? "";
 
-    const { partialExploreState: otherViewExploreState } =
+    const { partialExploreState: otherPageExploreState } =
       convertURLSearchParamsToExploreState(
-        new URLSearchParams(otherViewRawPreset),
+        new URLSearchParams(otherPageRawPreset),
         metricsView,
         explore,
         {},
@@ -172,17 +178,22 @@ export function updateExploreSessionStore(
 
     for (const sharedKey of sharedKeys) {
       if (!(sharedKey in storedExploreState)) continue;
-      otherViewExploreState[sharedKey] = storedExploreState[sharedKey];
+      otherPageExploreState[sharedKey] = storedExploreState[sharedKey];
     }
-    const otherViewUrlSearch =
+    const otherPageUrlSearch =
       convertExploreStateToURLSearchParamsNoCompression(
-        otherViewExploreState as MetricsExplorerEntity,
+        otherPageExploreState as MetricsExplorerEntity,
         explore,
         timeControlsState,
         {},
       );
     try {
-      sessionStorage.setItem(otherViewKey, otherViewUrlSearch.toString());
+      console.log(
+        "SAVE:OTHER",
+        DashboardState_ActivePage[otherPage],
+        otherPageUrlSearch.toString(),
+      );
+      sessionStorage.setItem(otherPageKey, otherPageUrlSearch.toString());
     } catch {
       // no-op
     }
@@ -193,8 +204,8 @@ export function clearExploreSessionStore(
   exploreName: string,
   prefix: string | undefined,
 ) {
-  for (const view in ExploreActivePageKeys) {
-    const key = getKeyForSessionStore(exploreName, prefix, Number(view));
+  for (const activePage in ExploreActivePageKeys) {
+    const key = getKeyForSessionStore(exploreName, prefix, Number(activePage));
     sessionStorage.removeItem(key);
   }
 
@@ -206,7 +217,7 @@ export function clearExploreSessionStore(
   sessionStorage.removeItem(sharedKey);
 }
 
-export function getExplorePresetForWebView(
+export function getExplorePresetForActivePage(
   exploreName: string,
   prefix: string | undefined,
   activePage: DashboardState_ActivePage,
@@ -223,17 +234,21 @@ export function getExplorePresetForWebView(
   try {
     const sharedUrlSearch = sessionStorage.getItem(sharedKey);
     if (!sharedUrlSearch) return undefined;
-    const rawUrlSearch = sessionStorage.getItem(key) ?? "";
+    const storedUrlSearch = sessionStorage.getItem(key) ?? "";
+
+    const sharedUrlSearchParams = new URLSearchParams(sharedUrlSearch);
+    const storedUrlSearchParams = new URLSearchParams(storedUrlSearch);
+
     const { partialExploreState: sharedExploreState } =
       convertURLSearchParamsToExploreState(
-        new URLSearchParams(sharedUrlSearch),
+        sharedUrlSearchParams,
         metricsView,
         explore,
         {},
       );
-    const { partialExploreState: parsedExploreState } =
+    const { partialExploreState: storedExploreState } =
       convertURLSearchParamsToExploreState(
-        new URLSearchParams(rawUrlSearch),
+        storedUrlSearchParams,
         metricsView,
         explore,
         {},
@@ -241,7 +256,7 @@ export function getExplorePresetForWebView(
 
     if (
       activePage === DashboardState_ActivePage.DEFAULT &&
-      parsedExploreState.selectedDimensionName
+      storedExploreState.selectedDimensionName
     ) {
       activePage = DashboardState_ActivePage.DIMENSION_TABLE;
     }
@@ -249,7 +264,7 @@ export function getExplorePresetForWebView(
     return <Partial<MetricsExplorerEntity>>{
       activePage,
       ...sharedExploreState,
-      ...parsedExploreState,
+      ...storedExploreState,
     };
   } catch {
     return undefined;

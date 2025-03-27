@@ -12,7 +12,7 @@ import {
   AD_BIDS_METRICS_NAME,
   AD_BIDS_PUBLISHER_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
-import type { OtherSourceOfState } from "@rilldata/web-common/features/dashboards/url-state/DashboardStateLoader.svelte";
+import type { OtherSourceOfState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateLoader.svelte";
 import {
   type HoistedPage,
   PageMock,
@@ -31,7 +31,7 @@ import {
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { render, screen, waitFor } from "@testing-library/svelte";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import DashboardStateLoaderTest from "./DashboardStateLoaderTest.svelte";
+import DashboardStateLoaderTest from "web-common/src/features/dashboards/state-managers/loaders/DashboardStateLoaderTest.svelte";
 
 const hoistedPage: HoistedPage = vi.hoisted(() => ({}) as any);
 

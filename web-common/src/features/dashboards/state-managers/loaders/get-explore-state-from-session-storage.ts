@@ -1,5 +1,5 @@
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
-import { getExplorePresetForWebView } from "@rilldata/web-common/features/dashboards/url-state/explore-active-page-store";
+import { getExplorePresetForActivePage } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-active-page-store";
 import {
   FromURLParamViewMap,
   ToActivePageViewMap,
@@ -46,7 +46,7 @@ export function getExploreStateFromSessionStorage(
     : (defaultExplorePreset.view ??
       V1ExploreWebView.EXPLORE_WEB_VIEW_UNSPECIFIED);
   const activePage = Number(ToActivePageViewMap[view] ?? "0");
-  const exploreStateFromSessionStorage = getExplorePresetForWebView(
+  const exploreStateFromSessionStorage = getExplorePresetForActivePage(
     exploreName,
     prefix,
     activePage,

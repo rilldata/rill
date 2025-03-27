@@ -1,6 +1,6 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
-import { DashboardStateDataLoader } from "@rilldata/web-common/features/dashboards/state-managers/DashboardStateDataLoader";
+import { DashboardStateDataLoader } from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateDataLoader";
 import {
   metricsExplorerStore,
   useExploreState,
@@ -14,11 +14,11 @@ import {
   convertExploreStateToURLSearchParams,
   getUpdatedUrlForExploreState,
 } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
-import { saveMostRecentExploreState } from "@rilldata/web-common/features/dashboards/url-state/most-recent-explore-state";
+import { saveMostRecentExploreState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-explore-state";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import type { AfterNavigate } from "@sveltejs/kit";
 import { derived, get, type Readable } from "svelte/store";
-import { updateExploreSessionStore } from "../url-state/explore-active-page-store";
+import { updateExploreSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-active-page-store";
 
 export class DashboardStateSync {
   private readonly exploreStore: Readable<MetricsExplorerEntity | undefined>;
@@ -28,8 +28,8 @@ export class DashboardStateSync {
   private readonly unsubInit: (() => void) | undefined;
   private readonly unsubExploreState: (() => void) | undefined;
 
-  private initializing = false;
-  private prevUrl = "";
+  private initialized = false;
+  private prevUrl: URL | undefined;
 
   public constructor(
     instanceId: string,
@@ -66,13 +66,12 @@ export class DashboardStateSync {
   }
 
   private handleExploreInit(initExploreState: MetricsExplorerEntity) {
-    if (this.initializing) return;
-    this.initializing = true;
+    if (this.initialized) return;
+    this.initialized = true;
 
     const { data: validSpecData } = get(this.validSpecQuery);
     const metricsViewSpec = validSpecData?.metricsView ?? {};
     const exploreSpec = validSpecData?.explore ?? {};
-    const timeControlsState = get(this.timeControlStore);
     const pageState = get(page);
     const { data: exploreStatesFromSpecData } = get(
       this.dataLoader.exploreStatesFromSpecQuery,
@@ -81,6 +80,8 @@ export class DashboardStateSync {
       exploreStatesFromSpecData?.explorePresetFromYAMLConfig ?? {};
 
     metricsExplorerStore.init(this.exploreName, initExploreState);
+    // Get time controls state after explore state is initialized.
+    const timeControlsState = get(this.timeControlStore);
     const redirectUrl = new URL(pageState.url);
     redirectUrl.search = getUpdatedUrlForExploreState(
       exploreSpec,
@@ -98,7 +99,7 @@ export class DashboardStateSync {
       timeControlsState,
       get(metricsExplorerStore).entities[this.exploreName],
     );
-    this.prevUrl = redirectUrl.toString();
+    this.prevUrl = redirectUrl;
 
     if (redirectUrl.search === pageState.url.search) {
       return;
@@ -112,6 +113,8 @@ export class DashboardStateSync {
     });
   }
 
+  // The decision to get the exploreState from url params depends on the navigation type.
+  // This will be called from an afterNavigation callback.
   public handleURLChange(
     urlSearchParams: URLSearchParams,
     type: AfterNavigate["type"],
@@ -127,7 +130,6 @@ export class DashboardStateSync {
     const { data: validSpecData } = get(this.validSpecQuery);
     const metricsViewSpec = validSpecData?.metricsView ?? {};
     const exploreSpec = validSpecData?.explore ?? {};
-    const timeControlsState = get(this.timeControlStore);
     const pageState = get(page);
     const { data: exploreStatesFromSpecData } = get(
       this.dataLoader.exploreStatesFromSpecQuery,
@@ -141,6 +143,8 @@ export class DashboardStateSync {
       partialExplore,
       metricsViewSpec,
     );
+    // Get time controls state after explore state is updated.
+    const timeControlsState = get(this.timeControlStore);
     // if we added extra url params from sessionStorage then update the url
     redirectUrl.search = getUpdatedUrlForExploreState(
       exploreSpec,
@@ -153,9 +157,9 @@ export class DashboardStateSync {
     if (
       redirectUrl.search === pageState.url.search ||
       // redirect loop breaker
-      (this.prevUrl && this.prevUrl === redirectUrl.toString())
+      (this.prevUrl && this.prevUrl.search === redirectUrl.search)
     ) {
-      this.prevUrl = redirectUrl.toString();
+      this.prevUrl = redirectUrl;
       return;
     }
 
@@ -167,7 +171,7 @@ export class DashboardStateSync {
       timeControlsState,
       get(metricsExplorerStore).entities[this.exploreName],
     );
-    this.prevUrl = redirectUrl.toString();
+    this.prevUrl = redirectUrl;
     // using `replaceState` directly messes up the navigation entries,
     // `from` and `to` have the old url before being replaced in `afterNavigate` calls leading to incorrect handling.
     return goto(redirectUrl, {
@@ -188,17 +192,16 @@ export class DashboardStateSync {
     const explorePresetFromYAMLConfig =
       exploreStatesFromSpecData?.explorePresetFromYAMLConfig ?? {};
 
-    const u = new URL(pageState.url);
+    const newUrl = new URL(pageState.url);
     const exploreStateParams = convertExploreStateToURLSearchParams(
       exploreState,
       exploreSpec,
       timeControlsState,
       explorePresetFromYAMLConfig,
-      u,
+      newUrl,
     );
-    u.search = exploreStateParams.toString();
-    const newUrl = u.toString();
-    if (!this.prevUrl || this.prevUrl === newUrl) return;
+    newUrl.search = exploreStateParams.toString();
+    if (!this.prevUrl || this.prevUrl.search === newUrl.search) return;
 
     this.prevUrl = newUrl;
     // dashboard changed so we should update the url

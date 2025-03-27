@@ -1,13 +1,10 @@
-import { page } from "$app/stores";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import {
-  convertExploreStateToURLSearchParams,
-  convertExploreStateToURLSearchParamsNoCompression,
-} from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
+import { convertExploreStateToURLSearchParamsNoCompression } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
 import {
   type DashboardTimeControls,
+  TimeComparisonOption,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
@@ -15,7 +12,6 @@ import type {
   V1ExploreSpec,
   V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
-import { get } from "svelte/store";
 
 // Keys that do not need any special handling and can be directly copied over
 const DirectCopyExploreStateKeys: (keyof MetricsExplorerEntity)[] = [
@@ -46,11 +42,11 @@ export function getMostRecentExploreState(
     );
     if (!rawUrlSearch) return { partialExploreState: undefined, errors: [] };
 
-    // TODO: if all params are equal to dashboard defaults then should we skip it?
     return convertURLSearchParamsToExploreState(
       new URLSearchParams(rawUrlSearch),
       metricsView,
       explore,
+      // Send empty preset so that fields are always stored.
       {},
     );
   } catch {
@@ -75,18 +71,28 @@ export function saveMostRecentExploreState(
   const newExploreState: Partial<MetricsExplorerEntity> = {};
 
   DirectCopyExploreStateKeys.forEach((k) => {
-    // TODO: find a way to avoid using any
     (newExploreState as any)[k] = exploreState[k];
   });
 
-  // Custom handling for time range. We are retaining the previous range if the current range is a custom range.
-  if (exploreState.selectedTimeRange?.name) {
-    if (exploreState.selectedTimeRange.name === TimeRangePreset.CUSTOM) {
-      newExploreState.selectedTimeRange =
-        existingExploreState?.selectedTimeRange;
-    } else {
-      newExploreState.selectedTimeRange = {
-        name: exploreState.selectedTimeRange.name,
+  // Since we are storing a few settings in timeControlsState, url params is populated using it.
+  // Hopefully we will store everything in a single place in the future and we can update timeControlsState directly.
+  if (timeControlsState) {
+    // Custom handling for time range. We are retaining the previous range if the current range is a custom range.
+    if (exploreState.selectedTimeRange?.name) {
+      if (exploreState.selectedTimeRange.name === TimeRangePreset.CUSTOM) {
+        timeControlsState.selectedTimeRange =
+          existingExploreState?.selectedTimeRange;
+      } else {
+        timeControlsState.selectedTimeRange = {
+          name: exploreState.selectedTimeRange.name,
+        } as DashboardTimeControls;
+      }
+    }
+
+    // Reset the comparison time range to default. We are only saving whether it is enabled and not the actual range.
+    if (timeControlsState.selectedComparisonTimeRange) {
+      timeControlsState.selectedComparisonTimeRange = {
+        name: TimeComparisonOption.CONTIGUOUS,
       } as DashboardTimeControls;
     }
   }

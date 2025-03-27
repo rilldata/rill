@@ -5,7 +5,7 @@
   import { getHomeBookmarkExploreState } from "@rilldata/web-admin/features/bookmarks/selectors";
   import DashboardBuilding from "@rilldata/web-admin/features/dashboards/DashboardBuilding.svelte";
   import DashboardErrored from "@rilldata/web-admin/features/dashboards/DashboardErrored.svelte";
-  import DashboardStateLoader from "@rilldata/web-common/features/dashboards/url-state/DashboardStateLoader.svelte";
+  import DashboardStateLoader from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateLoader.svelte";
   import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
   import {
     DashboardBannerID,

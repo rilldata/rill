@@ -41,6 +41,7 @@ import {
   AD_BIDS_IMPRESSIONS_MEASURE,
   AD_BIDS_METRICS_INIT,
   AD_BIDS_PUBLISHER_DIMENSION,
+  TestTimeConstants,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import {
   RandomDomains,
@@ -132,6 +133,18 @@ export const AD_BIDS_SET_ALL_TIME_RANGE_FILTER: TestDashboardMutation = () =>
     undefined,
     AD_BIDS_METRICS_INIT,
   );
+export const AD_BIDS_SET_CUSTOM_TIME_RANGE_FILTER: TestDashboardMutation = () =>
+  metricsExplorerStore.selectTimeRange(
+    AD_BIDS_EXPLORE_NAME,
+    {
+      name: TimeRangePreset.CUSTOM,
+      start: TestTimeConstants.LAST_12_HOURS,
+      end: TestTimeConstants.LAST_6_HOURS,
+    },
+    V1TimeGrain.TIME_GRAIN_DAY,
+    undefined,
+    AD_BIDS_METRICS_INIT,
+  );
 export const AD_BIDS_SET_KATHMANDU_TIMEZONE: TestDashboardMutation = () =>
   metricsExplorerStore.setTimeZone(AD_BIDS_EXPLORE_NAME, "Asia/Kathmandu");
 export const AD_BIDS_SET_LA_TIMEZONE: TestDashboardMutation = () =>
@@ -157,6 +170,14 @@ export const AD_BIDS_SET_PREVIOUS_WEEK_COMPARE_TIME_RANGE_FILTER: TestDashboardM
 export const AD_BIDS_DISABLE_COMPARE_TIME_RANGE_FILTER: TestDashboardMutation =
   () => metricsExplorerStore.displayTimeComparison(AD_BIDS_EXPLORE_NAME, false);
 
+export const AD_BIDS_TOGGLE_IMPRESSIONS_MEASURE_VISIBILITY: TestDashboardMutation =
+  (mut) => {
+    toggleMeasureVisibility(
+      mut,
+      AD_BIDS_EXPLORE_INIT.measures!,
+      AD_BIDS_IMPRESSIONS_MEASURE,
+    );
+  };
 export const AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY: TestDashboardMutation =
   (mut) => {
     toggleMeasureVisibility(

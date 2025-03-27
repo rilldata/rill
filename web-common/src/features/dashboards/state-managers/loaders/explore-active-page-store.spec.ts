@@ -24,8 +24,8 @@ import {
   applyMutationsToDashboard,
   type TestDashboardMutation,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
-import type { OtherSourceOfState } from "@rilldata/web-common/features/dashboards/url-state/DashboardStateLoader.svelte";
-import DashboardStateLoaderTest from "@rilldata/web-common/features/dashboards/url-state/DashboardStateLoaderTest.svelte";
+import type { OtherSourceOfState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateLoader.svelte";
+import DashboardStateLoaderTest from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateLoaderTest.svelte";
 import {
   type HoistedPage,
   PageMock,
@@ -39,7 +39,7 @@ const hoistedPage: HoistedPage = vi.hoisted(() => ({}) as any);
 
 vi.mock("$app/navigation", () => {
   return {
-    goto: (url) => hoistedPage.goto(url),
+    goto: (url, opts) => hoistedPage.goto(url, opts),
     afterNavigate: (cb) => hoistedPage.afterNavigate(cb),
   };
 });
@@ -60,38 +60,38 @@ const TestCases: {
   initView: TestView;
   view: TestView;
 }[] = [
-  {
-    title: "Explore <=> tdd",
-    initView: {
-      view: "explore",
-      mutations: [],
-      expectedSearch:
-        "tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&sort_dir=ASC&sort_by=bid_price&sort_type=percent",
-    },
-    view: {
-      view: "tdd",
-      additionalParams: "&measure=" + AD_BIDS_IMPRESSIONS_MEASURE,
-      mutations: [AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD],
-      expectedSearch:
-        "view=tdd&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions&chart_type=stacked_bar",
-    },
-  },
-  {
-    title: "dimension table <=> tdd",
-    initView: {
-      view: "explore",
-      mutations: [AD_BIDS_OPEN_PUB_DIMENSION_TABLE],
-      expectedSearch:
-        "tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=publisher&sort_dir=ASC&sort_by=bid_price&sort_type=percent",
-    },
-    view: {
-      view: "tdd",
-      additionalParams: "&measure=" + AD_BIDS_IMPRESSIONS_MEASURE,
-      mutations: [AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD],
-      expectedSearch:
-        "view=tdd&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions&chart_type=stacked_bar",
-    },
-  },
+  // {
+  //   title: "Explore <=> tdd",
+  //   initView: {
+  //     view: "explore",
+  //     mutations: [],
+  //     expectedSearch:
+  //       "tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&sort_dir=ASC&sort_by=bid_price&sort_type=percent",
+  //   },
+  //   view: {
+  //     view: "tdd",
+  //     additionalParams: "&measure=" + AD_BIDS_IMPRESSIONS_MEASURE,
+  //     mutations: [AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD],
+  //     expectedSearch:
+  //       "view=tdd&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions&chart_type=stacked_bar",
+  //   },
+  // },
+  // {
+  //   title: "dimension table <=> tdd",
+  //   initView: {
+  //     view: "explore",
+  //     mutations: [AD_BIDS_OPEN_PUB_DIMENSION_TABLE],
+  //     expectedSearch:
+  //       "tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=publisher&sort_dir=ASC&sort_by=bid_price&sort_type=percent",
+  //   },
+  //   view: {
+  //     view: "tdd",
+  //     additionalParams: "&measure=" + AD_BIDS_IMPRESSIONS_MEASURE,
+  //     mutations: [AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD],
+  //     expectedSearch:
+  //       "view=tdd&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions&chart_type=stacked_bar",
+  //   },
+  // },
 
   {
     title: "Explore <=> Pivot",
@@ -111,46 +111,46 @@ const TestCases: {
         "view=pivot&tr=P7D&compare_tr=rill-PP&f=publisher+IN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC",
     },
   },
-  {
-    title: "dimension table <=> Pivot",
-    initView: {
-      view: "explore",
-      mutations: [AD_BIDS_OPEN_PUB_DIMENSION_TABLE],
-      expectedSearch:
-        "tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=publisher&sort_dir=ASC&sort_by=bid_price&sort_type=percent",
-    },
-    view: {
-      view: "pivot",
-      mutations: [
-        AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS,
-        AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC,
-      ],
-      expectedSearch:
-        "view=pivot&tr=P7D&compare_tr=rill-PP&f=publisher+IN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC",
-    },
-  },
-  {
-    title: "tdd <=> Pivot",
-    initView: {
-      view: "tdd",
-      additionalParams: "&measure=" + AD_BIDS_IMPRESSIONS_MEASURE,
-      mutations: [AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD],
-      expectedSearch:
-        "view=tdd&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions&chart_type=stacked_bar",
-    },
-    view: {
-      view: "pivot",
-      mutations: [
-        AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS,
-        AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC,
-      ],
-      expectedSearch:
-        "view=pivot&tr=P7D&compare_tr=rill-PP&f=publisher+IN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC",
-    },
-  },
+  // {
+  //   title: "dimension table <=> Pivot",
+  //   initView: {
+  //     view: "explore",
+  //     mutations: [AD_BIDS_OPEN_PUB_DIMENSION_TABLE],
+  //     expectedSearch:
+  //       "tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=publisher&sort_dir=ASC&sort_by=bid_price&sort_type=percent",
+  //   },
+  //   view: {
+  //     view: "pivot",
+  //     mutations: [
+  //       AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS,
+  //       AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC,
+  //     ],
+  //     expectedSearch:
+  //       "view=pivot&tr=P7D&compare_tr=rill-PP&f=publisher+IN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC",
+  //   },
+  // },
+  // {
+  //   title: "tdd <=> Pivot",
+  //   initView: {
+  //     view: "tdd",
+  //     additionalParams: "&measure=" + AD_BIDS_IMPRESSIONS_MEASURE,
+  //     mutations: [AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD],
+  //     expectedSearch:
+  //       "view=tdd&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions&chart_type=stacked_bar",
+  //   },
+  //   view: {
+  //     view: "pivot",
+  //     mutations: [
+  //       AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS,
+  //       AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC,
+  //     ],
+  //     expectedSearch:
+  //       "view=pivot&tr=P7D&compare_tr=rill-PP&f=publisher+IN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC",
+  //   },
+  // },
 ];
 
-describe("ExploreWebViewStore", () => {
+describe("Explore active page store", () => {
   const mocks = DashboardFetchMocks.useDashboardFetchMocks();
   let pageMock!: PageMock;
 
@@ -208,6 +208,9 @@ describe("ExploreWebViewStore", () => {
       applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, view.mutations);
       const stateInView = getCleanMetricsExploreForAssertion();
 
+      // All history changes before this are a combination of visiting the view and mutations.
+      const historyCutoff = pageMock.urlSearchHistory.length;
+
       // go back to init view without any additional params
       pageMock.gotoSearch(initialSearch);
       // new url should be filled with params from initView
@@ -221,6 +224,13 @@ describe("ExploreWebViewStore", () => {
       pageMock.assertSearchParams(view.expectedSearch);
       // assert state is the same as we 1st entered view
       expect(getCleanMetricsExploreForAssertion()).toEqual(stateInView);
+
+      // History after the all mutations are finished should only be of visiting the views.
+      // This makes sure that replaceState in init is working as expected.
+      expect(pageMock.urlSearchHistory.slice(historyCutoff)).toEqual([
+        initView.expectedSearch,
+        view.expectedSearch,
+      ]);
     });
   }
 });

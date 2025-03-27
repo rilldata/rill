@@ -1,13 +1,13 @@
 import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
-import { getMostRecentExploreState } from "@rilldata/web-common/features/dashboards/url-state/most-recent-explore-state";
+import { getMostRecentExploreState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-explore-state";
 import type {
   V1ExploreSpec,
   V1MetricsViewSpec,
   V1MetricsViewTimeRangeResponse,
 } from "@rilldata/web-common/runtime-client";
 
-export function getExploreStatesFromSpecs(
+export function getExploreStatesFromYaml(
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
   metricsViewTimeRangeResp: V1MetricsViewTimeRangeResponse,

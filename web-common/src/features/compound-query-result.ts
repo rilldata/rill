@@ -2,7 +2,7 @@ import type {
   CreateQueryResult,
   QueryObserverResult,
 } from "@tanstack/svelte-query";
-import { derived, type Readable } from "svelte/store";
+import { derived, readable, type Readable } from "svelte/store";
 
 /**
  * Temporary type for derived data based on multiple queries.
@@ -47,5 +47,15 @@ export function getCompoundQuery<Queries extends CompoundQueryResults, T>(
       isFetching: someQueryFetching,
       isLoading: someQueryLoading,
     };
+  });
+}
+
+// Used as a helper to get correct style in a guard clause.
+export function staticCompoundQueryResult<R>(val: R): CompoundQueryResult<R> {
+  return readable({
+    data: val,
+    error: undefined,
+    isFetching: false,
+    isLoading: false,
   });
 }

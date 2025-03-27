@@ -2,7 +2,7 @@
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
-  import DashboardURLStateSyncWrapper from "@rilldata/web-common/features/dashboards/url-state/DashboardURLStateSyncWrapper.svelte";
+  import DashboardStateLoader from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateLoader.svelte";
   import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
   import { errorStore } from "../../components/errors/error-store";
 
@@ -38,11 +38,11 @@
   {:else if data}
     {#key exploreName}
       <StateManagersProvider {exploreName} {metricsViewName}>
-        <DashboardURLStateSyncWrapper>
+        <DashboardStateLoader {exploreName}>
           <DashboardThemeProvider>
             <Dashboard {exploreName} {metricsViewName} isEmbedded />
           </DashboardThemeProvider>
-        </DashboardURLStateSyncWrapper>
+        </DashboardStateLoader>
       </StateManagersProvider>
     {/key}
   {/if}

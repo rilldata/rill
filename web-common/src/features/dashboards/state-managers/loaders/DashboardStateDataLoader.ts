@@ -5,7 +5,7 @@ import {
 } from "@rilldata/web-common/features/compound-query-result";
 import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import { getExploreStatesFromSpecs } from "@rilldata/web-common/features/dashboards/url-state/get-explore-states-from-specs";
+import { getExploreStatesFromYaml } from "@rilldata/web-common/features/dashboards/state-managers/loaders/get-explore-states-from-yaml";
 import {
   getExploreStatesFromURLParams,
   useExploreValidSpec,
@@ -22,7 +22,7 @@ export class DashboardStateDataLoader {
 
   public readonly initExploreState: Readable<MetricsExplorerEntity | undefined>;
   public readonly exploreStatesFromSpecQuery: CompoundQueryResult<
-    ReturnType<typeof getExploreStatesFromSpecs>
+    ReturnType<typeof getExploreStatesFromYaml>
   >;
 
   private readonly exploreStatesFromURLParamsQuery: Readable<
@@ -56,7 +56,7 @@ export class DashboardStateDataLoader {
           return undefined;
         }
 
-        return getExploreStatesFromSpecs(
+        return getExploreStatesFromYaml(
           metricsViewSpec,
           exploreSpec,
           metricsViewTimeRangeResp ?? {},

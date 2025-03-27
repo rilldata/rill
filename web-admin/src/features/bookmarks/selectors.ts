@@ -1,13 +1,13 @@
 import { page } from "$app/stores";
 import {
   adminServiceListBookmarks,
-  createAdminServiceListBookmarks,
   getAdminServiceListBookmarksQueryKey,
   type V1Bookmark,
 } from "@rilldata/web-admin/client";
 import {
   type CompoundQueryResult,
   getCompoundQuery,
+  staticCompoundQueryResult,
 } from "@rilldata/web-common/features/compound-query-result";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
@@ -107,17 +107,14 @@ export function getHomeBookmarkExploreState(
   exploreName: string,
   homeBookmark: V1Bookmark | undefined,
 ): CompoundQueryResult<Partial<MetricsExplorerEntity>> {
+  if (!homeBookmark) return staticCompoundQueryResult(undefined);
+
   return getCompoundQuery(
     [
       useExploreValidSpec(instanceId, exploreName),
       createQueryServiceMetricsViewSchema(instanceId, metricsViewName),
     ],
     ([exploreSpecResp, schemaResp]) => {
-      // TODO: move this check outside of getCompoundQuery
-      if (!homeBookmark) {
-        return undefined;
-      }
-
       const exploreSpec = exploreSpecResp?.explore ?? {};
       const metricsViewSpec = exploreSpecResp?.metricsView ?? {};
 

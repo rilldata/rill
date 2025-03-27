@@ -2,7 +2,7 @@
   import type { EditorView } from "@codemirror/view";
   import { setLineStatuses } from "@rilldata/web-common/components/editor/line-status";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import { clearExploreSessionStore } from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-store";
+  import { clearExploreSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-active-page-store";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { yaml } from "@codemirror/lang-yaml";
