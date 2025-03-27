@@ -37,7 +37,7 @@ sql: SELECT {{ .partition.num }} AS num, now() AS inserted_on {{if dev}} limit 1
 
 ### glob
 
-When defining the glob pattern, you will need to consider whether you'd partition the data by folder or file. For information on glob patterns, see [glob patterns](/build/connect/glob-patterns).
+When defining the glob pattern, you will need to consider whether you'd partition the data by folder or file.
 In the first example, we are partitioning by each file with the suffix data.csv.
 ```yaml
 partitions:
