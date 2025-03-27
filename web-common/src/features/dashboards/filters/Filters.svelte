@@ -146,14 +146,16 @@
 
   $: availableTimeZones = getPinnedTimeZones(exploreSpec);
 
+  $: allTimeRangeInterval = allTimeRange
+    ? Interval.fromDateTimes(allTimeRange.start, allTimeRange.end)
+    : Interval.invalid("Invalid interval");
+
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(
         DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
         DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
       )
-    : allTimeRange
-      ? Interval.fromDateTimes(allTimeRange.start, allTimeRange.end)
-      : Interval.invalid("Invalid interval");
+    : allTimeRangeInterval;
 
   $: baseTimeRange = selectedTimeRange?.start &&
     selectedTimeRange?.end && {
@@ -345,7 +347,7 @@
         />
       {/if}
 
-      {#if interval.end?.isValid}
+      {#if allTimeRangeInterval?.end?.isValid}
         <Tooltip.Root openDelay={0}>
           <Tooltip.Trigger>
             <span class="text-gray-600 italic">
@@ -353,7 +355,7 @@
                 italic
                 suppress
                 showDate={false}
-                date={interval.end}
+                date={allTimeRangeInterval.end}
                 zone={activeTimeZone}
               />
             </span>
