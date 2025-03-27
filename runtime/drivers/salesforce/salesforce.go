@@ -90,6 +90,7 @@ var spec = drivers.Spec{
 			DisplayName: "Salesforce Password",
 			Required:    false,
 			Hint:        "Either set this or pass --env connector.salesforce.password=... to rill start",
+			Secret:      true,
 		},
 		{
 			Key:         "key",
@@ -97,6 +98,7 @@ var spec = drivers.Spec{
 			DisplayName: "JWT Key for Authentication",
 			Required:    false,
 			Hint:        "Either set this or pass --env connector.salesforce.key=... to rill start",
+			Secret:      true,
 		},
 		{
 			Key:         "endpoint",

@@ -28,9 +28,10 @@
 <!-- For now, only show OLAP connectors -->
 {#if implementsOlap}
   {#if connector.name}
-    <li aria-label={connector.name} class="connector-entry">
+    <li class="connector-entry">
       <button
         class="connector-entry-header"
+        aria-label={connector.name}
         on:click={() => {
           store.toggleItem(connectorName);
         }}

@@ -30,7 +30,7 @@ export async function uploadFile(
   // add asset button
   await page.getByLabel("Add Asset").click();
   // add source menu item
-  await page.getByLabel("Add Source").click();
+  await page.getByLabel("Add Data").click();
   // click local file button
   await page.locator("button#local_file").click();
   // wait for file chooser while clicking on upload button
