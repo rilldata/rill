@@ -3,6 +3,7 @@ package local
 import (
 	"context"
 	"crypto/rand"
+	"embed"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -19,7 +20,6 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/google/go-github/v50/github"
-	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/cli/cmd/auth"
@@ -33,6 +33,7 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	localv1 "github.com/rilldata/rill/proto/gen/rill/local/v1"
 	"github.com/rilldata/rill/proto/gen/rill/local/v1/localv1connect"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -49,6 +50,9 @@ type Server struct {
 }
 
 var _ localv1connect.LocalServiceHandler = (*Server)(nil)
+
+//go:embed embed/file-trace-viewer.html
+var traceViewerFS embed.FS
 
 // RegisterHandlers registers the server's handlers on the provided ServeMux.
 func (s *Server) RegisterHandlers(mux *http.ServeMux, httpPort int, secure, enableUI bool) {
@@ -69,7 +73,16 @@ func (s *Server) RegisterHandlers(mux *http.ServeMux, httpPort int, secure, enab
 	// Register telemetry proxy endpoint
 	mux.Handle("/local/track", s.trackingHandler())
 
+	// endpoints for searching and viewing trace data collected on local
 	mux.Handle("/local/debug/trace", s.traceHandler())
+	mux.Handle("/trace-viewer", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		data, err := traceViewerFS.ReadFile("embed/file-trace-viewer.html")
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to read trace viewer file: %s", err), http.StatusInternalServerError)
+			return
+		}
+		_, _ = w.Write(data)
+	}))
 
 	// Deprecated: use proto RPCs instead
 	mux.Handle("/local/config", s.metadataHandler())
@@ -820,7 +833,11 @@ func (nameConflictRetryErrClassifier) Classify(err error) retrier.Action {
 	return retrier.Fail
 }
 
-// traceHandler returns trace information corresponding to the trace ID.
+// traceHandler returns trace information. Traces are stored in a file in `~/.rill/otel_traces.log` in JSON format when `--debug` flag is set.
+// It uses duckdb to search the JSON file for traces and returns the trace output as JSON.
+// The handler accepts two kind of query parameters:
+// - trace_id: search for traces for a given trace_id
+// - resource_name: search for trace for the last reconcile of the given resource name
 func (s *Server) traceHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		traceID := r.URL.Query().Get("trace_id")
@@ -834,99 +851,19 @@ func (s *Server) traceHandler() http.Handler {
 			return
 		}
 
-		db, err := sqlx.Open("duckdb", "")
+		bytes, err := observability.SearchTracesFile(r.Context(), traceID, resourceName)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		defer db.Close()
-
-		fp, err := dotrill.ResolveFilename("otel_traces*.log", true)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		var query string
-		var args []any
-		if resourceName != "" {
-			query = fmt.Sprintf(`
-				SELECT replace(traceID::VARCHAR, '-', '') AS traceID, * EXCLUDE traceID
-				FROM read_json_auto(%s)
-				WHERE traceID = (
-					SELECT traceID
-					FROM read_json_auto(%s)
-					WHERE name ILIKE '%%Reconcile%%' AND tags.name ILIKE ?
-					ORDER BY timestamp DESC
-					LIMIT 1
-				)
-			`, escapeStringValue(fp), escapeStringValue(fp))
-			args = []any{fmt.Sprintf("%%%s%%", resourceName)}
-		} else {
-			query = fmt.Sprintf(`
-				SELECT 
-					replace(traceID::VARCHAR, '-', '') AS traceID, 
-					* EXCLUDE traceID 
-				FROM 
-					read_json_auto(%s) 
-				WHERE 
-					traceID = ?`, escapeStringValue(fp))
-			args = []any{traceID}
-		}
-		rows, err := db.QueryxContext(r.Context(), query, args...)
-		if err != nil {
-			s.logger.Error("failed to scan trace", zap.Error(err))
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		defer rows.Close()
-
-		var spans []traceSpan
-
-		for rows.Next() {
-			var span traceSpan
-			if err := rows.StructScan(&span); err != nil {
-				s.logger.Error("struct scan error", zap.Error(err))
-				continue
-			}
-
-			// Manually decode tags string to map
-			if err := json.Unmarshal(span.TagsRaw, &span.Tags); err != nil {
-				s.logger.Error("failed to decode tags for span", zap.String("id", span.ID), zap.Error(err))
-				span.Tags = map[string]string{}
-			}
-
-			spans = append(spans, span)
-		}
-		if err := rows.Err(); err != nil {
-			s.logger.Error("failed to scan trace", zap.Error(err))
+			s.logger.Error("failed to search trace", zap.Error(err))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		enc := json.NewEncoder(w)
-		err = enc.Encode(spans)
+		_, err = w.Write(bytes)
 		if err != nil {
 			s.logger.Error("failed to write trace", zap.Error(err))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 	})
-}
-
-func escapeStringValue(s string) string {
-	return fmt.Sprintf("'%s'", strings.ReplaceAll(s, "'", "''"))
-}
-
-type traceSpan struct {
-	TraceID   string            `db:"traceID" json:"traceID"`
-	Duration  int64             `db:"duration" json:"duration"`
-	ID        string            `db:"id" json:"id"`
-	Kind      string            `db:"kind" json:"kind"`
-	Name      string            `db:"name" json:"name"`
-	ParentID  string            `db:"parentId" json:"parentId"`
-	TagsRaw   []byte            `db:"tags" json:"-"`
-	Tags      map[string]string `json:"tags,omitempty"`
-	Timestamp int64             `db:"timestamp" json:"timestamp"`
 }
