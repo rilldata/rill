@@ -143,10 +143,8 @@ export function useResourceV2<T = V1Resource>(
 export function useProjectParser(
   queryClient: QueryClient,
   instanceId: string,
-  queryOptions?: CreateQueryOptions<
-    V1GetResourceResponse,
-    ErrorType<RpcStatus>,
-    V1Resource
+  queryOptions?: Partial<
+    CreateQueryOptions<V1GetResourceResponse, ErrorType<RpcStatus>, V1Resource>
   >,
 ) {
   return useResource(
