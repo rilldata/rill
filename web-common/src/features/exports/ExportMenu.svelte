@@ -27,8 +27,14 @@
   let showScheduledReportDialog = false;
   let open = false;
 
-  $: exportQuery = getQuery(false);
-  $: scheduledReportQuery = getQuery(true);
+  let exportQuery: V1Query | undefined;
+  let scheduledReportQuery: V1Query | undefined;
+
+  // Get the query when the dialog is opened.
+  $: if (open) {
+    exportQuery = getQuery(false);
+    scheduledReportQuery = getQuery(true);
+  }
 
   const exportDash = createQueryServiceExport();
   const { reports } = featureFlags;
