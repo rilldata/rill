@@ -9,8 +9,10 @@
   $: canvasName = data.dashboardName;
 </script>
 
-<StateManagersProvider {canvasName}>
-  <CanvasThemeProvider>
-    <CanvasDashboardEmbed resource={data.dashboard} />
-  </CanvasThemeProvider>
-</StateManagersProvider>
+{#key canvasName}
+  <StateManagersProvider {canvasName}>
+    <CanvasThemeProvider>
+      <CanvasDashboardEmbed resource={data.dashboard} />
+    </CanvasThemeProvider>
+  </StateManagersProvider>
+{/key}
