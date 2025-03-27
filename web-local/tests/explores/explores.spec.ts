@@ -1,11 +1,6 @@
 import { expect } from "@playwright/test";
 import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions";
-import {
-  createExploreFromModel,
-  createExploreFromSource,
-} from "../utils/exploreHelpers";
-import { assertLeaderboards } from "../utils/metricsViewHelpers";
-import { ResourceWatcher } from "../utils/ResourceWatcher";
+import { test } from "../setup/base";
 import { updateCodeEditor, wrapRetryAssertion } from "../utils/commonHelpers";
 import {
   AD_BIDS_EXPLORE_PATH,
@@ -13,8 +8,13 @@ import {
   assertAdBidsDashboard,
   createAdBidsModel,
 } from "../utils/dataSpecifcHelpers";
+import {
+  createExploreFromModel,
+  createExploreFromSource,
+} from "../utils/exploreHelpers";
+import { assertLeaderboards } from "../utils/metricsViewHelpers";
+import { ResourceWatcher } from "../utils/ResourceWatcher";
 import { createSource } from "../utils/sourceHelpers";
-import { test } from "../setup/base";
 import { gotoNavEntry } from "../utils/waitHelpers";
 
 test.describe("explores", () => {
@@ -50,6 +50,8 @@ test.describe("explores", () => {
   });
 
   test("Dashboard runthrough", async ({ page }) => {
+    test.setTimeout(45_000); // Note: we should make this test smaller!
+
     // Enable to get logs in CI
     // page.on("console", async (msg) => {
     //   console.log(msg.text());
@@ -59,6 +61,7 @@ test.describe("explores", () => {
     //     `Uncaught exception: "${exception.message}"\n${exception.stack}`
     //   );
     // });
+
     const watcher = new ResourceWatcher(page);
 
     await createAdBidsModel(page);
