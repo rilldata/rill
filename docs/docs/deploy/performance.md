@@ -48,7 +48,7 @@ There are a few ways to achieve this:
 
 #### Limiting the source data to a smaller time range
 
-There are different ways this can be achieved and the method also depends heavily on the datasource being used. For example, assuming we had a [S3 source](/reference/connectors/s3.md) that was well partitioned by year and month (and written into a partitioned bucket), the recommended pattern would be to leverage the `path` [source property](/reference/project-files/sources.md) and a glob pattern to limit the size of the ingestion in your development environment. Something like (as your `source.yaml`):
+There are different ways this can be achieved and the method also depends heavily on the data source being used. For example, assuming we had a [S3 source](/reference/connectors/s3.md) that was well partitioned by year and month (and written into a partitioned bucket), the recommended pattern would be to leverage the `path` [source property](/reference/project-files/sources.md) and a glob pattern to limit the size of the ingestion in your development environment. Something like (as your `source.yaml`):
 ```yaml
 type: source
 connector: s3
@@ -66,7 +66,7 @@ sql: SELECT * FROM read_parquet('s3://bucket/path/*.parquet') {{ if dev }} where
 
 #### Creating intermediate staging models
 
-Another option would be to create intermediate staging models from your sources, either through [statistical sampling](https://duckdb.org/docs/sql/samples.html) or by appling a [raw limit](https://duckdb.org/docs/sql/query_syntax/limit.html), to reduce the size of your models in development. For example, with [templating](templating.md) and [environments](/build/models/environments.md), this `model.sql` applies a five percent sample to a source:
+Another option would be to create intermediate staging models from your sources, either through [statistical sampling](https://duckdb.org/docs/sql/samples.html) or by applying a [raw limit](https://duckdb.org/docs/sql/query_syntax/limit.html), to reduce the size of your models in development. For example, with [templating](templating.md) and [environments](/build/models/environments.md), this `model.sql` applies a five percent sample to a source:
 
 ```sql
 -- @materialize
@@ -159,7 +159,7 @@ A couple of considerations when rolling data from lower to higher time grains:
 
 ### Dimension Stripping
 
-Dimension stripping is another tool to reduce data size by removing high cardinality fields that are not required for analysis. While this can be done upfront in the data set, another practice would be to drop these fields at certain intervals when they no longer add busiess value. Most frequently, we see a couple decision points where these fields are dropped:
+Dimension stripping is another tool to reduce data size by removing high cardinality fields that are not required for analysis. While this can be done upfront in the data set, another practice would be to drop these fields at certain intervals when they no longer add business value. Most frequently, we see a couple decision points where these fields are dropped:
 
 - After a day to first week, dropping user level details no longer needed for monitoring
 - After a week to multiple weeks, dropping "double click" level details that aren't needed for reporting (e.g. the minor release number on an Operating System field)
@@ -196,4 +196,4 @@ Benefits of dynamic lookups include:
 - Historical continuity for dimensions that change frequently without reprocessing the entire data set
 - Time savings, because there is no data set reprocessing required to complete the update
 - Dynamic lookups are kept separate from the data set. Thus, any human errors introduced in the lookup do not impact the underlying data set
-- Ability for users to create new dimension tables from metadata associated with a dimension table. For example, account ownerships can change during the course of a quarter. In such cases, a dynamic lookup can be updated on the fly to reflect the most current changes
+- Ability for users to create new dimension tables from metadata associated with a dimension table. For example, account ownership can change during the course of a quarter. In such cases, a dynamic lookup can be updated on the fly to reflect the most current changes
