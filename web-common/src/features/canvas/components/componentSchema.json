@@ -2,38 +2,11 @@
   "$ref": "#/definitions/TemplateSpec",
   "$schema": "http://json-schema.org/draft-07/schema#",
   "definitions": {
-    "ChartProperties": {
-      "additionalProperties": false,
-      "properties": {
-        "config": {
-          "$ref": "#/definitions/ChartConfig"
-        },
-        "title": {
-          "type": "string"
-        },
-        "description": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "config"
-      ],
-      "type": "object"
-    },
     "ChartConfig": {
       "additionalProperties": false,
       "properties": {
-        "metrics_view": {
-          "type": "string"
-        },
-        "x": {
-          "$ref": "#/definitions/FieldConfig"
-        },
-        "y": {
-          "$ref": "#/definitions/FieldConfig"
-        },
         "color": {
-          "oneOf": [
+          "anyOf": [
             {
               "$ref": "#/definitions/FieldConfig"
             },
@@ -42,7 +15,19 @@
             }
           ]
         },
+        "metrics_view": {
+          "type": "string"
+        },
         "tooltip": {
+          "$ref": "#/definitions/FieldConfig"
+        },
+        "vl_config": {
+          "type": "string"
+        },
+        "x": {
+          "$ref": "#/definitions/FieldConfig"
+        },
+        "y": {
           "$ref": "#/definitions/FieldConfig"
         }
       },
@@ -51,24 +36,71 @@
       ],
       "type": "object"
     },
+    "ChartSortDirection": {
+      "enum": [
+        "x",
+        "y",
+        "-x",
+        "-y"
+      ],
+      "type": "string"
+    },
+    "ComponentAlignment": {
+      "additionalProperties": false,
+      "properties": {
+        "horizontal": {
+          "$ref": "#/definitions/HoritzontalAlignment"
+        },
+        "vertical": {
+          "$ref": "#/definitions/VeriticalAlignment"
+        }
+      },
+      "required": [
+        "vertical",
+        "horizontal"
+      ],
+      "type": "object"
+    },
+    "ComponentComparisonOptions": {
+      "enum": [
+        "previous",
+        "delta",
+        "percent_change"
+      ],
+      "type": "string"
+    },
     "FieldConfig": {
       "additionalProperties": false,
       "properties": {
         "field": {
           "type": "string"
         },
-        "title": {
-          "type": "string"
+        "limit": {
+          "type": "number"
         },
-        "format": {
-          "type": "string"
+        "showAxisTitle": {
+          "type": "boolean"
         },
-        "type": {
-          "type": "string",
-          "enum": ["quantitative", "ordinal", "nominal", "temporal", "geojson"]
+        "showNull": {
+          "type": "boolean"
+        },
+        "sort": {
+          "$ref": "#/definitions/ChartSortDirection"
         },
         "timeUnit": {
           "type": "string"
+        },
+        "type": {
+          "enum": [
+            "quantitative",
+            "ordinal",
+            "nominal",
+            "temporal"
+          ],
+          "type": "string"
+        },
+        "zeroBasedOrigin": {
+          "type": "boolean"
         }
       },
       "required": [
@@ -77,19 +109,27 @@
       ],
       "type": "object"
     },
-    "ImageProperties": {
+    "HoritzontalAlignment": {
+      "enum": [
+        "left",
+        "center",
+        "right"
+      ],
+      "type": "string"
+    },
+    "ImageSpec": {
       "additionalProperties": false,
       "properties": {
-        "css": {
-          "type": "object"
+        "alignment": {
+          "$ref": "#/definitions/ComponentAlignment"
         },
-        "url": {
+        "description": {
           "type": "string"
         },
         "title": {
           "type": "string"
         },
-        "description": {
+        "url": {
           "type": "string"
         }
       },
@@ -102,7 +142,7 @@
       "additionalProperties": false,
       "properties": {
         "image": {
-          "$ref": "#/definitions/ImageProperties"
+          "$ref": "#/definitions/ImageSpec"
         }
       },
       "required": [
@@ -110,13 +150,19 @@
       ],
       "type": "object"
     },
-    "KPIProperties": {
+    "KPISpec": {
       "additionalProperties": false,
       "properties": {
-        "comparison_range": {
+        "comparison": {
+          "items": {
+            "$ref": "#/definitions/ComponentComparisonOptions"
+          },
+          "type": "array"
+        },
+        "description": {
           "type": "string"
         },
-        "filter": {
+        "dimension_filters": {
           "type": "string"
         },
         "measure": {
@@ -125,20 +171,24 @@
         "metrics_view": {
           "type": "string"
         },
-        "time_range": {
+        "sparkline": {
+          "enum": [
+            "none",
+            "bottom",
+            "right"
+          ],
+          "type": "string"
+        },
+        "time_filters": {
           "type": "string"
         },
         "title": {
           "type": "string"
-        },
-        "description": {
-          "type": "string"
         }
       },
       "required": [
-        "measure",
         "metrics_view",
-        "time_range"
+        "measure"
       ],
       "type": "object"
     },
@@ -146,7 +196,7 @@
       "additionalProperties": false,
       "properties": {
         "kpi": {
-          "$ref": "#/definitions/KPIProperties"
+          "$ref": "#/definitions/KPISpec"
         }
       },
       "required": [
@@ -154,19 +204,19 @@
       ],
       "type": "object"
     },
-    "MarkdownProperties": {
+    "MarkdownSpec": {
       "additionalProperties": false,
       "properties": {
+        "alignment": {
+          "$ref": "#/definitions/ComponentAlignment"
+        },
         "content": {
           "type": "string"
         },
-        "css": {
-          "type": "object"
-        },
-        "title": {
+        "description": {
           "type": "string"
         },
-        "description": {
+        "title": {
           "type": "string"
         }
       },
@@ -179,7 +229,7 @@
       "additionalProperties": false,
       "properties": {
         "markdown": {
-          "$ref": "#/definitions/MarkdownProperties"
+          "$ref": "#/definitions/MarkdownSpec"
         }
       },
       "required": [
@@ -187,74 +237,7 @@
       ],
       "type": "object"
     },
-    "SelectProperties": {
-      "additionalProperties": false,
-      "properties": {
-        "label": {
-          "type": "string"
-        },
-        "labelField": {
-          "type": "string"
-        },
-        "placeholder": {
-          "type": "string"
-        },
-        "tooltip": {
-          "type": "string"
-        },
-        "valueField": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "valueField"
-      ],
-      "type": "object"
-    },
-    "SelectPropertiesT": {
-      "additionalProperties": false,
-      "properties": {
-        "select": {
-          "$ref": "#/definitions/SelectProperties"
-        }
-      },
-      "required": [
-        "select"
-      ],
-      "type": "object"
-    },
-    "SwitchProperties": {
-      "additionalProperties": false,
-      "properties": {
-        "label": {
-          "type": "string"
-        },
-        "tooltip": {
-          "type": "string"
-        },
-        "value": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "label",
-        "value"
-      ],
-      "type": "object"
-    },
-    "SwitchPropertiesT": {
-      "additionalProperties": false,
-      "properties": {
-        "switch": {
-          "$ref": "#/definitions/SwitchProperties"
-        }
-      },
-      "required": [
-        "switch"
-      ],
-      "type": "object"
-    },
-    "TableProperties": {
+    "PivotSpec": {
       "additionalProperties": false,
       "properties": {
         "col_dimensions": {
@@ -263,10 +246,10 @@
           },
           "type": "array"
         },
-        "comparison_range": {
+        "description": {
           "type": "string"
         },
-        "filter": {
+        "dimension_filters": {
           "type": "string"
         },
         "measures": {
@@ -284,20 +267,59 @@
           },
           "type": "array"
         },
-        "time_range": {
+        "time_filters": {
           "type": "string"
         },
         "title": {
           "type": "string"
+        }
+      },
+      "required": [
+        "metrics_view",
+        "measures"
+      ],
+      "type": "object"
+    },
+    "PivotTemplateT": {
+      "additionalProperties": false,
+      "properties": {
+        "pivot": {
+          "$ref": "#/definitions/PivotSpec"
+        }
+      },
+      "required": [
+        "pivot"
+      ],
+      "type": "object"
+    },
+    "TableSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "columns": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
         },
         "description": {
+          "type": "string"
+        },
+        "dimension_filters": {
+          "type": "string"
+        },
+        "metrics_view": {
+          "type": "string"
+        },
+        "time_filters": {
+          "type": "string"
+        },
+        "title": {
           "type": "string"
         }
       },
       "required": [
-        "measures",
         "metrics_view",
-        "time_range"
+        "columns"
       ],
       "type": "object"
     },
@@ -305,7 +327,7 @@
       "additionalProperties": false,
       "properties": {
         "table": {
-          "$ref": "#/definitions/TableProperties"
+          "$ref": "#/definitions/TableSpec"
         }
       },
       "required": [
@@ -319,7 +341,7 @@
           "additionalProperties": false,
           "properties": {
             "line_chart": {
-              "$ref": "#/definitions/ChartProperties"
+              "$ref": "#/definitions/ChartConfig"
             }
           },
           "required": [
@@ -331,7 +353,7 @@
           "additionalProperties": false,
           "properties": {
             "bar_chart": {
-              "$ref": "#/definitions/ChartProperties"
+              "$ref": "#/definitions/ChartConfig"
             }
           },
           "required": [
@@ -342,26 +364,36 @@
         {
           "additionalProperties": false,
           "properties": {
-            "vega_lite": {
-              "spec": {
-                "type": "string"
-              }
+            "area_chart": {
+              "$ref": "#/definitions/ChartConfig"
             }
           },
           "required": [
-            "vega_lite"
+            "area_chart"
           ],
           "type": "object"
         },
         {
           "additionalProperties": false,
           "properties": {
-            "stacked_bar_chart": {
-              "$ref": "#/definitions/ChartProperties"
+            "stacked_bar": {
+              "$ref": "#/definitions/ChartConfig"
             }
           },
           "required": [
-            "stacked_bar_chart"
+            "stacked_bar"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "stacked_bar_normalized": {
+              "$ref": "#/definitions/ChartConfig"
+            }
+          },
+          "required": [
+            "stacked_bar_normalized"
           ],
           "type": "object"
         },
@@ -372,18 +404,23 @@
           "$ref": "#/definitions/TableTemplateT"
         },
         {
+          "$ref": "#/definitions/PivotTemplateT"
+        },
+        {
           "$ref": "#/definitions/MarkdownTemplateT"
         },
         {
           "$ref": "#/definitions/ImageTemplateT"
-        },
-        {
-          "$ref": "#/definitions/SelectPropertiesT"
-        },
-        {
-          "$ref": "#/definitions/SwitchPropertiesT"
         }
       ]
+    },
+    "VeriticalAlignment": {
+      "enum": [
+        "top",
+        "middle",
+        "bottom"
+      ],
+      "type": "string"
     }
   }
 }
