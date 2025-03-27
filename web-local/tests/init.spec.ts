@@ -1,6 +1,6 @@
-import { test } from "./setup/base";
-import { expect } from "playwright/test";
 import { EXAMPLES } from "@rilldata/web-common/features/welcome/constants";
+import { expect } from "playwright/test";
+import { test } from "./setup/base";
 
 test.describe("Example project initialization", () => {
   EXAMPLES.forEach((example) => {

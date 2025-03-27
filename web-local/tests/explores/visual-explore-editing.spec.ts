@@ -1,11 +1,13 @@
 import { expect } from "@playwright/test";
-import { gotoNavEntry } from "../utils/waitHelpers";
 import { test } from "../setup/base";
+import { gotoNavEntry } from "../utils/waitHelpers";
 
 test.describe("visual explore editing", () => {
   test.use({ project: "AdBids" });
 
   test("visual explore editor runthrough", async ({ page }) => {
+    test.setTimeout(45_000); // Note: we should make this test smaller!
+
     await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
     await page.getByRole("button", { name: "switch to code editor" }).click();
