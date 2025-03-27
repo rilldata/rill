@@ -42,6 +42,7 @@ export async function fetchPaymentsPortalURL(
       }),
     // always refetch since the signed url will expire
     // TODO: figure out expiry time and use that instead
+    gcTime: 0,
     staleTime: 0,
   });
 
