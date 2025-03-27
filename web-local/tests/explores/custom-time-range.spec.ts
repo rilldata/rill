@@ -18,7 +18,9 @@ test.describe("custom timerange in Explore", () => {
     await expect(page.getByRole("menuitem", { name: "Custom" })).toBeVisible();
   });
 
-  test("Custom time range should not be visible when toggled off", async ({ page }) => {
+  test("Custom time range should not be visible when toggled off", async ({
+    page,
+  }) => {
     await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
 
@@ -39,6 +41,5 @@ test.describe("custom timerange in Explore", () => {
 
     await page.getByLabel("Select time range").click();
     await expect(page.getByRole("menuitem", { name: "Custom" })).toBeHidden();
-
   });
 });
