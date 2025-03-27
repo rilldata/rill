@@ -48,11 +48,12 @@
   $: ({ organization: orgName, project: projectName } = $page.params);
 
   $: explore = useExplore(instanceId, exploreName, {
-    refetchInterval: (data) => {
-      if (!data) return false;
-      if (isExploreReconcilingForFirstTime(data))
+    refetchInterval: (query) => {
+      if (!query.state.data) return false;
+      if (isExploreReconcilingForFirstTime(query.state.data))
         return PollIntervalWhenDashboardFirstReconciling;
-      if (isExploreErrored(data)) return PollIntervalWhenDashboardErrored;
+      if (isExploreErrored(query.state.data))
+        return PollIntervalWhenDashboardErrored;
       return false;
     },
   });

@@ -16,7 +16,7 @@ import {
   type V1MetricsViewComparisonRequest,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { derived, get, readable } from "svelte/store";
+import { derived, get, readable, type Readable } from "svelte/store";
 
 /**
  * Builds the dashboard url from query name and args.
@@ -28,7 +28,12 @@ export function mapQueryToDashboard(
   queryArgsJson: string | undefined,
   executionTime: string | undefined,
   annotations: Record<string, string>,
-) {
+): Readable<{
+  isFetching: boolean;
+  isLoading: boolean;
+  error: Error;
+  data?: { exploreState: MetricsExplorerEntity; exploreName: string };
+}> {
   if (!queryName || !queryArgsJson || !executionTime)
     return readable({
       isFetching: false,

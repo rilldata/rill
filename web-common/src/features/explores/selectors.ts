@@ -30,10 +30,12 @@ import { error } from "@sveltejs/kit";
 export function useExplore(
   instanceId: string,
   exploreName: string,
-  queryOptions?: CreateQueryOptions<
-    V1GetExploreResponse,
-    ErrorType<RpcStatus>,
-    V1GetExploreResponse
+  queryOptions?: Partial<
+    CreateQueryOptions<
+      V1GetExploreResponse,
+      ErrorType<RpcStatus>,
+      V1GetExploreResponse
+    >
   >,
 ) {
   return createRuntimeServiceGetExplore(

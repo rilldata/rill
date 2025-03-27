@@ -14,15 +14,17 @@
 
   const deleteOrgMutation = createAdminServiceDeleteOrganization();
 
+  $: deleteOrgResult = $deleteOrgMutation;
+
   async function deleteOrg() {
     await $deleteOrgMutation.mutateAsync({
       name: organization,
     });
 
     void goto(`/`);
-    queryClient.removeQueries(
-      getAdminServiceGetOrganizationQueryKey(organization),
-    );
+    queryClient.removeQueries({
+      queryKey: getAdminServiceGetOrganizationQueryKey(organization),
+    });
     eventBus.emit("notification", {
       message: "Deleted organization",
     });
@@ -39,8 +41,8 @@
     title="Delete this org?"
     description={`The org ${organization} will be deleted permanently. This action cannot be undone.`}
     confirmText={`delete ${organization}`}
-    loading={$deleteOrgMutation.isLoading}
-    error={$deleteOrgMutation.error?.message}
+    loading={deleteOrgResult.isPending}
+    error={deleteOrgResult.error?.message}
     onConfirm={deleteOrg}
   >
     <svelte:fragment let:builder>

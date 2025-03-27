@@ -51,7 +51,7 @@
   $: alertSpec = $alertQuery.data?.resource?.alert?.spec;
 
   $: metricsViewAggregationRequest = JSON.parse(
-    alertSpec?.resolverProperties?.query_args_json ||
+    (alertSpec?.resolverProperties?.query_args_json as string) ||
       alertSpec?.queryArgsJson ||
       "{}",
   ) as V1MetricsViewAggregationRequest;
