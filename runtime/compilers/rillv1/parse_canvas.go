@@ -16,16 +16,17 @@ import (
 )
 
 type CanvasYAML struct {
-	commonYAML  `yaml:",inline"`       // Not accessed here, only setting it so we can use KnownFields for YAML parsing
-	DisplayName string                 `yaml:"display_name"`
-	Title       string                 `yaml:"title"` // Deprecated: use display_name
-	MaxWidth    uint32                 `yaml:"max_width"`
-	GapX        uint32                 `yaml:"gap_x"`
-	GapY        uint32                 `yaml:"gap_y"`
-	Theme       yaml.Node              `yaml:"theme"` // Name (string) or inline theme definition (map)
-	TimeRanges  []ExploreTimeRangeYAML `yaml:"time_ranges"`
-	TimeZones   []string               `yaml:"time_zones"`
-	Filters     struct {
+	commonYAML           `yaml:",inline"`       // Not accessed here, only setting it so we can use KnownFields for YAML parsing
+	DisplayName          string                 `yaml:"display_name"`
+	Title                string                 `yaml:"title"` // Deprecated: use display_name
+	MaxWidth             uint32                 `yaml:"max_width"`
+	GapX                 uint32                 `yaml:"gap_x"`
+	GapY                 uint32                 `yaml:"gap_y"`
+	Theme                yaml.Node              `yaml:"theme"` // Name (string) or inline theme definition (map)
+	AllowCustomTimeRange *bool                  `yaml:"allow_custom_time_range"`
+	TimeRanges           []ExploreTimeRangeYAML `yaml:"time_ranges"`
+	TimeZones            []string               `yaml:"time_zones"`
+	Filters              struct {
 		Enable *bool `yaml:"enable"`
 	}
 	Defaults *struct {
@@ -64,6 +65,12 @@ func (p *Parser) parseCanvas(node *Node) error {
 	// Display name backwards compatibility
 	if tmp.Title != "" && tmp.DisplayName == "" {
 		tmp.DisplayName = tmp.Title
+	}
+
+	// Set default for AllowCustomTimeRange to true if not provided
+	allowCustomTimeRange := true
+	if tmp.AllowCustomTimeRange != nil {
+		allowCustomTimeRange = *tmp.AllowCustomTimeRange
 	}
 
 	// Parse theme if present.
@@ -252,6 +259,7 @@ func (p *Parser) parseCanvas(node *Node) error {
 	r.CanvasSpec.GapX = tmp.GapX
 	r.CanvasSpec.GapY = tmp.GapY
 	r.CanvasSpec.Theme = themeName
+	r.CanvasSpec.AllowCustomTimeRange = allowCustomTimeRange
 	r.CanvasSpec.TimeRanges = timeRanges
 	r.CanvasSpec.TimeZones = tmp.TimeZones
 	r.CanvasSpec.FiltersEnabled = true

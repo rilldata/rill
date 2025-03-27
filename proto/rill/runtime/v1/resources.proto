@@ -376,6 +376,8 @@ message ExploreSpec {
   string banner = 18; 
   // When set to true, dashboard will be locked to the first time zone in the time_zones key (or UTC)
   bool lock_time_zone = 19;
+  // Allow custom time range
+  bool allow_custom_time_range = 20;
 }
 
 message ExploreState {
@@ -751,6 +753,8 @@ message CanvasSpec {
   repeated CanvasRow rows = 18;
   // Security rules to apply for access to the canvas.
   repeated SecurityRule security_rules = 6;
+  // Toggle custom time range
+  bool allow_custom_time_range = 14;
 }
 
 message CanvasState {

@@ -30,6 +30,7 @@
   export let interval: Interval;
   export let showPan = false;
   export let lockTimeZone = false;
+  export let allowCustomTimeRange = true;
   export let showFullRange = true;
   export let complete: boolean;
   export let activeTimeZone: string;

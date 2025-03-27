@@ -3705,6 +3705,9 @@ definitions:
           type: object
           $ref: '#/definitions/v1SecurityRule'
         description: Security rules to apply for access to the canvas.
+      allowCustomTimeRange:
+        type: boolean
+        title: Toggle custom time range
   v1CanvasState:
     type: object
     properties:
@@ -4447,6 +4450,9 @@ definitions:
       lockTimeZone:
         type: boolean
         title: When set to true, dashboard will be locked to the first time zone in the time_zones key (or UTC)
+      allowCustomTimeRange:
+        type: boolean
+        title: Allow custom time range
   v1ExploreState:
     type: object
     properties:

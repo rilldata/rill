@@ -292,6 +292,7 @@
       {timeEnd}
       {activeTimeGrain}
       activeTimeZone={$selectedTimezone}
+      allowCustomTimeRange={$canvasSpec?.allowCustomTimeRange}
       canPanLeft
       canPanRight
       showPan
