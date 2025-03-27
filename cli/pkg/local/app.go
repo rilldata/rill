@@ -283,6 +283,8 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 }
 
 func (a *App) Close() error {
+	a.emitStopEvent(a.Context)
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -469,6 +471,11 @@ func (a *App) emitStartEvent(ctx context.Context) error {
 	a.ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventAppStart, attribute.StringSlice("connectors", connectorNames), attribute.String("olap_connector", a.Instance.OLAPConnector))
 
 	return nil
+}
+
+// emitStopEvent sends a telemetry event when the app is stopped.
+func (a *App) emitStopEvent(ctx context.Context) {
+	a.ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventAppStop)
 }
 
 // IsProjectInit checks if the project is initialized by checking if rill.yaml exists in the project directory.

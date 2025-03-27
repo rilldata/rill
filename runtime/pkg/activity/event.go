@@ -51,6 +51,7 @@ const (
 const (
 	BehavioralEventInstallSuccess         = "install-success"
 	BehavioralEventAppStart               = "app-start"
+	BehavioralEventAppStop                = "app-stop"
 	BehavioralEventLoginStart             = "login-start"
 	BehavioralEventLoginSuccess           = "login-success"
 	BehavioralEventDeployStart            = "deploy-start"
@@ -59,4 +60,16 @@ const (
 	BehavioralEventGithubConnectedSuccess = "ghconnected-success"
 	BehavioralEventDataAccessStart        = "dataaccess-start"
 	BehavioralEventDataAccessSuccess      = "dataaccess-success"
+	BehavioralEventAPIQueryStart          = "api-query-start"
+	BehavioralEventAPIQuerySuccess        = "api-query-success"
+	BehavioralEventCanvasResolveStart     = "canvas-resolve-start"
+	BehavioralEventCanvasResolveSuccess   = "canvas-resolve-success"
+)
+
+// AI-related Behavioral Events
+// Note: This lists format will remain snake_case for consistency with the existing metrics.
+const (
+	BehavioralEventAIGeneratedRenderer    = "ai_generated_renderer"
+	BehavioralEventAIGeneratedMetricsView = "ai_generated_metrics_view_yaml"
+	BehavioralEventAIGeneratedResolver    = "ai_generated_resolver"
 )
