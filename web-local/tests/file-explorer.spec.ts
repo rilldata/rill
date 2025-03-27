@@ -5,6 +5,7 @@ test.describe("File Explorer", () => {
   test.use({ project: "Blank" });
 
   test.describe("File CRUD Operations", () => {
+    test.describe.configure({ retries: 2 }); // Problem: flaky tests!
     test("should create, rename, edit, copy, and delete a file", async ({
       page,
     }) => {

@@ -64,38 +64,12 @@ Files that are *nested at any level* under your native `sources` directory will 
 **`project_id`**
  — Sets a project id to be used to run BigQuery [jobs](https://cloud.google.com/bigquery/docs/jobs-overview) _(required for type: bigquery)_.
 
-**`glob.max_total_size`**
- — Applicable if the URI is a glob pattern. The max allowed total size (in bytes) of all objects matching the glob pattern _(optional)_.
-  - Default value is _`107374182400 (100GB)`_
-
-**`glob.max_objects_matched`**
- — Applicable if the URI is a glob pattern. The max allowed number of objects matching the glob pattern _(optional)_.
-  - Default value is _`unlimited`_
-
-**`glob.max_objects_listed`**
- — Applicable if the URI is a glob pattern. The max number of objects to list and match against glob pattern, not inclusive of files already excluded by the glob prefix _(optional)_.
-  - Default value is _`unlimited`_
-
 **`timeout`**
  — The maximum time to wait for souce ingestion _(optional)_.
 
 **`refresh`** - Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying source data _(optional)_.
   - **`cron`** - a cron schedule expression, which should be encapsulated in single quotes, e.g. `'* * * * *'` _(optional)_
   - **`every`** - a Go duration string, such as `24h` ([docs](https://pkg.go.dev/time#ParseDuration)) _(optional)_
-
-**`extract`** - Limits the data ingested from remote sources. Only available for S3 and GCS _(optional)_.
-  - **`rows`** - limits the size of data fetched
-    - **`strategy`** - strategy to fetch data (_head_ or _tail_)
-    - **`size`** - size of data to be fetched (like `100MB`, `1GB`, etc). This is best-effort and <u>may</u> fetch more data than specified.
-  - **`files`** - limits the total number of files to be fetched as per glob pattern
-    - **`strategy`** - strategy to fetch files (_head_ or _tail_)
-    - **`size`** -  number of files
-
-:::tip A note on semantics
-    - If both `rows` and `files` are specified, each file matching the `files` clause will be extracted according to the `rows` clause.
-    - If only `rows` is specified, no limit on number of files is applied. For example, getting a 1 GB `head` extract will download as many files as necessary.
-    - If only `files` is specified, each file will be fully ingested.
-:::
 
 **`db`**
  — Sets the database for motherduck connections and/or the path to the DuckDB/SQLite `db` file _(optional)_.
