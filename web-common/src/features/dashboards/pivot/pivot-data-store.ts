@@ -7,7 +7,6 @@ import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import type {
   V1Expression,
   V1MetricsViewAggregationResponse,
-  V1MetricsViewAggregationResponseDataItem,
   V1MetricsViewAggregationSort,
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
