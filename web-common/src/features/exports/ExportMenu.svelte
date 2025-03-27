@@ -5,6 +5,7 @@
   import Export from "@rilldata/web-common/components/icons/Export.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import {
     createQueryServiceExport,
     V1ExportFormat,
@@ -14,7 +15,6 @@
   import { onMount } from "svelte";
   import { get } from "svelte/store";
   import { runtime } from "../../runtime-client/runtime-store";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import type TScheduledReportDialog from "../scheduled-reports/ScheduledReportDialog.svelte";
 
   export let disabled: boolean = false;
@@ -27,6 +27,9 @@
   let showScheduledReportDialog = false;
   let open = false;
 
+  $: exportQuery = getQuery(false);
+  $: scheduledReportQuery = getQuery(true);
+
   const exportDash = createQueryServiceExport();
   const { reports } = featureFlags;
 
@@ -34,7 +37,7 @@
     const result = await $exportDash.mutateAsync({
       instanceId: get(runtime).instanceId,
       data: {
-        query: getQuery(false),
+        query: exportQuery,
         format,
       },
     });
@@ -96,20 +99,26 @@
       Export as XLSX
     </DropdownMenu.Item>
 
-    {#if includeScheduledReport && $reports}
-      <DropdownMenu.Item on:click={() => (showScheduledReportDialog = true)}>
+    {#if includeScheduledReport && $reports && exploreName}
+      <DropdownMenu.Item
+        on:click={() => (showScheduledReportDialog = true)}
+        disabled={!scheduledReportQuery}
+      >
         Create scheduled report...
       </DropdownMenu.Item>
     {/if}
   </DropdownMenu.Content>
 </DropdownMenu.Root>
 
-{#if includeScheduledReport && ScheduledReportDialog && showScheduledReportDialog}
+{#if includeScheduledReport && ScheduledReportDialog && showScheduledReportDialog && scheduledReportQuery && exploreName}
   <svelte:component
     this={ScheduledReportDialog}
-    query={getQuery(true)}
-    {exploreName}
     bind:open={showScheduledReportDialog}
+    props={{
+      mode: "create",
+      query: scheduledReportQuery,
+      exploreName,
+    }}
   />
 {/if}
 
