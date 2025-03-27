@@ -64,6 +64,7 @@
 >
   {#if !addDisabled || !isSpreadEvenly || isDropZone}
     <button
+      aria-label="Resize row {rowIndex + 1} column {resizeIndex + 1}"
       disabled={resizeDisabled}
       data-width={columnWidth}
       data-row={rowIndex}

@@ -47,12 +47,20 @@ test.describe("canvas", () => {
     ).toBeVisible();
 
     await page
+      .getByRole("button", { name: "Resize row 1 column 1" })
+      .hover({ force: true });
+
+    await page
       .getByRole("button", {
         name: "Insert widget in row 1 at column 2",
         exact: true,
       })
       .click();
 
-    await page.getByRole("menuitem", { name: "KPI" }).click();
+    await page.getByRole("menuitem", { name: "Text" }).click();
+
+    await expect(
+      page.getByRole("heading", { name: "H1 Markdown Text" }),
+    ).toBeVisible();
   });
 });
