@@ -1,7 +1,10 @@
 import { page } from "$app/stores";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
+import {
+  convertExploreStateToURLSearchParams,
+  convertExploreStateToURLSearchParamsNoCompression,
+} from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
 import {
   type DashboardTimeControls,
@@ -38,13 +41,14 @@ export function getMostRecentExploreState(
   explore: V1ExploreSpec,
 ) {
   try {
-    const rawUrlParams = localStorage.getItem(
+    const rawUrlSearch = localStorage.getItem(
       getKeyForLocalStore(exploreName, prefix),
     );
-    if (!rawUrlParams) return { partialExploreState: undefined, errors: [] };
+    if (!rawUrlSearch) return { partialExploreState: undefined, errors: [] };
 
+    // TODO: if all params are equal to dashboard defaults then should we skip it?
     return convertURLSearchParamsToExploreState(
-      new URLSearchParams(rawUrlParams),
+      new URLSearchParams(rawUrlSearch),
       metricsView,
       explore,
       {},
@@ -87,17 +91,11 @@ export function saveMostRecentExploreState(
     }
   }
 
-  console.log(newExploreState);
-  // TODO: split convertExploreStateToURLSearchParams to one that compresses and another that doesnt
-  const u = new URL(get(page).url);
-  u.search = "";
-  const urlSearchParams = convertExploreStateToURLSearchParams(
+  const urlSearchParams = convertExploreStateToURLSearchParamsNoCompression(
     newExploreState as MetricsExplorerEntity,
     explore,
     timeControlsState,
     {},
-    u,
-    true,
   );
 
   try {

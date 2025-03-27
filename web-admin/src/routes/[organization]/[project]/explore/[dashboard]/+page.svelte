@@ -2,9 +2,10 @@
   import { invalidate, onNavigate } from "$app/navigation";
   import { page } from "$app/stores";
   import { errorStore } from "@rilldata/web-admin/components/errors/error-store";
+  import { getHomeBookmarkExploreState } from "@rilldata/web-admin/features/bookmarks/selectors";
   import DashboardBuilding from "@rilldata/web-admin/features/dashboards/DashboardBuilding.svelte";
   import DashboardErrored from "@rilldata/web-admin/features/dashboards/DashboardErrored.svelte";
-  import CloudDashboardStateLoader from "@rilldata/web-admin/features/dashboards/CloudDashboardStateLoader.svelte";
+  import DashboardStateLoader from "@rilldata/web-common/features/dashboards/url-state/DashboardStateLoader.svelte";
   import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
   import {
     DashboardBannerID,
@@ -23,7 +24,7 @@
   const PollIntervalWhenDashboardErrored = 5000;
 
   export let data: PageData;
-  $: ({ project } = data);
+  $: ({ homeBookmark } = data);
 
   $: ({ instanceId } = $runtime);
   $: ({
@@ -72,6 +73,13 @@
       },
     });
   }
+
+  $: bookmarkExploreStateQuery = getHomeBookmarkExploreState(
+    instanceId,
+    metricsViewName,
+    exploreName,
+    homeBookmark,
+  );
 
   onNavigate(({ from, to }) => {
     viewAsUserStore.set(null);
@@ -136,15 +144,19 @@
   {:else if metricsViewName}
     {#key exploreName}
       <StateManagersProvider {metricsViewName} {exploreName}>
-        <CloudDashboardStateLoader
-          organization={orgName}
-          {project}
+        <DashboardStateLoader
           {exploreName}
+          otherSourcesOfState={[
+            {
+              errorHeader: "Failed to fetch bookmarks.",
+              query: bookmarkExploreStateQuery,
+            },
+          ]}
         >
           <DashboardThemeProvider>
             <Dashboard {metricsViewName} {exploreName} />
           </DashboardThemeProvider>
-        </CloudDashboardStateLoader>
+        </DashboardStateLoader>
       </StateManagersProvider>
     {/key}
   {/if}

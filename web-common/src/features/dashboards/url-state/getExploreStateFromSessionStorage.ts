@@ -1,6 +1,9 @@
-import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
-import { getExplorePresetForWebView } from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-store";
-import { FromURLParamViewMap } from "@rilldata/web-common/features/dashboards/url-state/mappers";
+import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
+import { getExplorePresetForWebView } from "@rilldata/web-common/features/dashboards/url-state/explore-active-page-store";
+import {
+  FromURLParamViewMap,
+  ToActivePageViewMap,
+} from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import {
   type V1ExplorePreset,
@@ -27,17 +30,14 @@ export function getExploreStateFromSessionStorage(
     // exactly one param is set, but it is not `view`
     (searchParams.size === 1 &&
       !searchParams.has(ExploreStateURLParams.WebView)) ||
-    // exactly 2 params are set and both `view` and `measure` are not set
+    // exactly 2 params are set and both `view` and `measure` are not set.
     (searchParams.size === 2 &&
       !searchParams.has(ExploreStateURLParams.WebView) &&
       !searchParams.has(ExploreStateURLParams.ExpandedMeasure)) ||
-    // more than 2 params are set
+    // more than 2 params are set.
     searchParams.size > 2
   ) {
-    return {
-      exploreStateFromSessionStorage: undefined,
-      errors: [],
-    };
+    return undefined;
   }
 
   const viewFromUrl = searchParams.get(ExploreStateURLParams.WebView) as string;
@@ -45,33 +45,28 @@ export function getExploreStateFromSessionStorage(
     ? FromURLParamViewMap[viewFromUrl]
     : (defaultExplorePreset.view ??
       V1ExploreWebView.EXPLORE_WEB_VIEW_UNSPECIFIED);
-  const explorePresetFromSessionStorage = getExplorePresetForWebView(
+  const activePage = Number(ToActivePageViewMap[view] ?? "0");
+  const exploreStateFromSessionStorage = getExplorePresetForWebView(
     exploreName,
     prefix,
-    view,
+    activePage,
+    metricsViewSpec,
+    exploreSpec,
   );
-  if (!explorePresetFromSessionStorage) {
-    return {
-      exploreStateFromSessionStorage: undefined,
-      errors: [],
-    };
+  if (!exploreStateFromSessionStorage) {
+    return undefined;
   }
 
   if (view === V1ExploreWebView.EXPLORE_WEB_VIEW_TIME_DIMENSION) {
-    explorePresetFromSessionStorage.timeDimensionMeasure = searchParams.get(
+    exploreStateFromSessionStorage.tdd ??= {
+      expandedMeasureName: "",
+      chartType: TDDChart.DEFAULT,
+      pinIndex: -1,
+    };
+    exploreStateFromSessionStorage.tdd.expandedMeasureName = searchParams.get(
       ExploreStateURLParams.ExpandedMeasure,
     ) as string;
   }
 
-  const { partialExploreState: exploreStateFromSessionStorage, errors } =
-    convertPresetToExploreState(
-      metricsViewSpec,
-      exploreSpec,
-      explorePresetFromSessionStorage,
-    );
-
-  return {
-    exploreStateFromSessionStorage,
-    errors,
-  };
+  return exploreStateFromSessionStorage;
 }

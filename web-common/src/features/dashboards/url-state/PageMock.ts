@@ -1,46 +1,69 @@
-import type { Page } from "@sveltejs/kit";
-import { writable, get, type Readable } from "svelte/store";
-import { vi, expect, type MockInstance } from "vitest";
+import type { afterNavigate } from "$app/navigation";
+import type { AfterNavigate, Page } from "@sveltejs/kit";
+import { writable, get, type Readable, type Updater } from "svelte/store";
+import { expect } from "vitest";
 
-export type PageMock = Readable<Page> & {
-  updateState: (state: string) => void;
+export type HoistedPage = Readable<Page> & {
   goto: (path: string) => void;
-
-  gotoSpy: MockInstance;
-  assertSearchParams: (expectedSearch: string) => void;
+  afterNavigate: typeof afterNavigate;
 };
-export function createPageMock(pageMock: PageMock) {
-  const { update, subscribe } = writable<Page>({
-    url: new URL("http://localhost/explore/AdBids_explore"),
-    params: { name: "AdBids_explore" },
-  } as any);
 
-  pageMock.subscribe = subscribe;
-  pageMock.updateState = (state: string) => {
-    update((page) => {
-      if (state) {
-        page.url = new URL(
-          `http://localhost/explore/AdBids_explore?state=${encodeURIComponent(
-            state,
-          )}`,
-        );
-      } else {
-        page.url = new URL("http://localhost/explore/AdBids_explore");
-      }
-      return page;
-    });
-  };
-  pageMock.goto = (path: string) => {
-    update((page) => {
-      page.url = new URL(`http://localhost${path}`);
-      return page;
-    });
-  };
+export class PageMock {
+  private readonly update: (updater: Updater<Page>) => void;
+  private afterNavigateCallback: (navigation: AfterNavigate) => void;
 
-  pageMock.gotoSpy = vi.spyOn(pageMock, "goto");
-  pageMock.assertSearchParams = (expectedSearch: string) => {
-    expect(get(pageMock).url.searchParams.toString()).toMatch(
+  public constructor(private readonly hoistedPage: HoistedPage) {
+    const { update, subscribe } = writable<Page>({
+      url: new URL("http://localhost/explore/AdBids_explore"),
+      params: { name: "AdBids_explore" },
+    } as any);
+    this.update = update;
+
+    hoistedPage.subscribe = subscribe;
+
+    hoistedPage.goto = (path: string) => {
+      update((page) => {
+        page.url = new URL(`http://localhost${path}`);
+        return page;
+      });
+    };
+
+    hoistedPage.afterNavigate = (
+      callback: (navigation: AfterNavigate) => void,
+    ) => {
+      this.afterNavigateCallback = callback;
+    };
+  }
+
+  public assertSearchParams(expectedSearch: string) {
+    expect(get(this.hoistedPage).url.searchParams.toString()).toMatch(
       new URLSearchParams(expectedSearch).toString(),
     );
-  };
+  }
+
+  public gotoSearch(search: string) {
+    const prevUrl = get(this.hoistedPage).url;
+    this.update((page) => {
+      page.url = new URL("http://localhost/explore/AdBids_explore/?" + search);
+      return page;
+    });
+    this.afterNavigateCallback({
+      from: { url: prevUrl },
+      to: { url: get(this.hoistedPage).url },
+      type: "goto",
+    } as AfterNavigate);
+  }
+
+  public popState(search: string) {
+    const prevUrl = get(this.hoistedPage).url;
+    this.update((page) => {
+      page.url = new URL("http://localhost/explore/AdBids_explore/?" + search);
+      return page;
+    });
+    this.afterNavigateCallback({
+      from: { url: prevUrl },
+      to: { url: get(this.hoistedPage).url },
+      type: "popstate",
+    } as AfterNavigate);
+  }
 }

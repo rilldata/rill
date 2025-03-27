@@ -15,22 +15,27 @@ export type CompoundQueryResult<T> = Readable<
 >;
 
 type CreateQueryResponses<Q> = {
-  [K in keyof Q]: Q[K] extends CreateQueryResult<infer U>
+  [K in keyof Q]: Q[K] extends
+    | CreateQueryResult<infer U>
+    | CompoundQueryResult<infer U>
     ? U | undefined
     : never;
 };
 
-type QueryResults =
-  | [CreateQueryResult<any>, ...Array<CreateQueryResult<any>>]
-  | Array<CreateQueryResult<any>>;
-export function getCompoundQuery<Queries extends QueryResults, T>(
+export type SupportedCompoundQueryResult<R = any, E = any> =
+  | CreateQueryResult<R, E>
+  | CompoundQueryResult<R>;
+type CompoundQueryResults =
+  | [SupportedCompoundQueryResult, ...Array<SupportedCompoundQueryResult>]
+  | Array<SupportedCompoundQueryResult>;
+export function getCompoundQuery<Queries extends CompoundQueryResults, T>(
   queries: Queries,
   getter: (data: CreateQueryResponses<Queries>) => T,
 ) {
   return derived(queries, ($queries) => {
     const someQueryFetching = $queries.some((q) => q.isFetching);
     const someQueryLoading = $queries.some((q) => q.isLoading);
-    const errors = $queries.filter((q) => q.isError).map((q) => q.error);
+    const errors = $queries.filter((q) => !!q.error).map((q) => q.error);
     const data = getter(
       $queries.map((query) => query.data) as CreateQueryResponses<Queries>,
     );

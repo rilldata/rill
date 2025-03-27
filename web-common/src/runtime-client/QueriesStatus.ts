@@ -1,11 +1,11 @@
 import type { ErrorPageProps } from "@rilldata/web-common/components/ErrorPage.svelte";
+import type { SupportedCompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
-import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, writable } from "svelte/store";
 
 type QueryStatusArg = {
   errorHeader: string;
-  query: CreateQueryResult<unknown, HTTPError>;
+  query: SupportedCompoundQueryResult<unknown, HTTPError>;
 };
 
 /**

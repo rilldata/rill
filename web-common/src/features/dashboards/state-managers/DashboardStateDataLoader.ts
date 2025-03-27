@@ -10,7 +10,8 @@ import {
   getExploreStatesFromURLParams,
   useExploreValidSpec,
 } from "@rilldata/web-common/features/explores/selectors";
-import { derived, type Readable } from "svelte/store";
+import type { AfterNavigate } from "@sveltejs/kit";
+import { derived, get, type Readable } from "svelte/store";
 
 export class DashboardStateDataLoader {
   // These can be used to show a loading status
@@ -20,10 +21,6 @@ export class DashboardStateDataLoader {
   >;
 
   public readonly initExploreState: Readable<MetricsExplorerEntity | undefined>;
-  public readonly partialExploreState: Readable<
-    Partial<MetricsExplorerEntity> | undefined
-  >;
-
   public readonly exploreStatesFromSpecQuery: CompoundQueryResult<
     ReturnType<typeof getExploreStatesFromSpecs>
   >;
@@ -110,9 +107,12 @@ export class DashboardStateDataLoader {
           exploreStateFromYAMLConfig,
           mostRecentPartialExploreState,
         } = exploreStatesFromSpecs.data;
-        const { exploreStateFromSessionStorage, partialExploreStateFromUrl } =
-          exploreStatesFromURLParams;
+        const {
+          exploreStateFromSessionStorage,
+          partialExploreStateFromUrlForInit,
+        } = exploreStatesFromURLParams;
 
+        // Select the 1st available exploreState from "otherSourcesOfState"
         const firstStateFromOtherSources = otherSourcesOfState.find(
           (state) => state !== undefined,
         );
@@ -124,7 +124,7 @@ export class DashboardStateDataLoader {
           // TODO: since this only loads on certain params present in the url it should be merged with convertURLSearchParamsToExploreState
           ...(exploreStateFromSessionStorage ??
             // Next priority is the state loaded from url params. It will be undefined if there are no params.
-            partialExploreStateFromUrl ??
+            partialExploreStateFromUrlForInit ??
             // Next priority is the most recent state stored in local storage
             mostRecentPartialExploreState ??
             // Next priority is one of the other source defined.
@@ -138,17 +138,37 @@ export class DashboardStateDataLoader {
         return initExploreState;
       },
     );
+  }
 
-    this.partialExploreState = derived(
-      this.exploreStatesFromURLParamsQuery,
-      (exploreStatesFromURLParams) => {
-        return (
-          // For partial state from url, 1st priority is the session storage.
-          exploreStatesFromURLParams?.exploreStateFromSessionStorage ??
-          // Next priority is the state from the url params
-          exploreStatesFromURLParams?.partialExploreStateFromUrl
-        );
-      },
-    );
+  // The decision to get the exploreState from url params depends on the navigation type.
+  // So we cannot go the derived store route.
+  public getExploreStateFromURLParams(
+    urlSearchParams: URLSearchParams,
+    type: AfterNavigate["type"],
+  ) {
+    const validSpecResp = get(this.validSpecQuery);
+    if (!validSpecResp?.data?.metricsView || !validSpecResp?.data?.explore)
+      return undefined;
+    const metricsViewSpec = validSpecResp.data.metricsView;
+    const exploreSpec = validSpecResp.data.explore;
+    const exploreStatesFromSpec = get(this.exploreStatesFromSpecQuery).data;
+    if (!exploreStatesFromSpec) return undefined;
+
+    // Pressing back button and going back to empty url state should not restore from session store
+    const backButtonUsed = type === "popstate";
+    const skipSessionStorage = backButtonUsed;
+
+    const { exploreStateFromSessionStorage, partialExploreStateFromUrl } =
+      getExploreStatesFromURLParams(
+        this.exploreName,
+        this.extraPrefix,
+        urlSearchParams,
+        metricsViewSpec,
+        exploreSpec,
+        exploreStatesFromSpec.explorePresetFromYAMLConfig,
+      );
+
+    if (skipSessionStorage) return partialExploreStateFromUrl;
+    return exploreStateFromSessionStorage ?? partialExploreStateFromUrl;
   }
 }

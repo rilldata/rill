@@ -1,5 +1,6 @@
 import { useDashboardFetchMocksForComponentTests } from "@rilldata/web-common/features/dashboards/filters/test/filter-test-utils";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
   AD_BIDS_BID_PRICE_MEASURE,
   AD_BIDS_DOMAIN_DIMENSION,
@@ -11,36 +12,50 @@ import {
   AD_BIDS_METRICS_NAME,
   AD_BIDS_PUBLISHER_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
+import type { OtherSourceOfState } from "@rilldata/web-common/features/dashboards/url-state/DashboardStateLoader.svelte";
 import {
-  createPageMock,
-  type PageMock,
+  type HoistedPage,
+  PageMock,
 } from "@rilldata/web-common/features/dashboards/url-state/PageMock";
 import { getCleanMetricsExploreForAssertion } from "@rilldata/web-common/features/dashboards/url-state/url-state-variations.spec";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import DashboardStateLoaderTest from "./DashboardStateLoaderTest.svelte";
 import { mockAnimationsForComponentTesting } from "@rilldata/web-common/lib/test/mock-animations";
-import { render, waitFor, screen } from "@testing-library/svelte";
+import {
+  type DashboardTimeControls,
+  TimeComparisonOption,
+} from "@rilldata/web-common/lib/time/types";
+import {
+  DashboardState_ActivePage,
+  DashboardState_LeaderboardSortDirection,
+} from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
+import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import { render, screen, waitFor } from "@testing-library/svelte";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import DashboardStateLoaderTest from "./DashboardStateLoaderTest.svelte";
 
-const pageMock: PageMock = vi.hoisted(() => ({}) as any);
+const hoistedPage: HoistedPage = vi.hoisted(() => ({}) as any);
 
 vi.mock("$app/navigation", () => {
   return {
-    goto: (url) => pageMock.goto(url),
+    goto: (url) => hoistedPage.goto(url),
+    afterNavigate: (cb) => hoistedPage.afterNavigate(cb),
   };
 });
 vi.mock("$app/stores", () => {
   return {
-    page: pageMock,
+    page: hoistedPage,
   };
 });
 
+// Contains basic tests for verifying order of selection.
+// In-depth tests for storing and retrieving state are separate.
 describe("DashboardStateLoader", () => {
   mockAnimationsForComponentTesting();
   const mocks = useDashboardFetchMocksForComponentTests();
+  let pageMock!: PageMock;
 
   beforeEach(() => {
-    createPageMock(pageMock);
+    pageMock = new PageMock(hoistedPage);
 
     mocks.mockMetricsView(AD_BIDS_METRICS_NAME, AD_BIDS_METRICS_INIT_WITH_TIME);
     mocks.mockMetricsExplore(
@@ -59,55 +74,225 @@ describe("DashboardStateLoader", () => {
     metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
   });
 
-  it("Should load base dashboard state for metrics view with timeseries", async () => {
-    renderDashboardStateLoader();
+  describe("Dashboards with timeseries", () => {
+    const ExploreStateSubsetForBaseState: Partial<MetricsExplorerEntity> = {
+      selectedTimeRange: {
+        name: "rill-QTD",
+        interval: V1TimeGrain.TIME_GRAIN_DAY,
+      } as DashboardTimeControls,
+      showTimeComparison: false,
+      selectedComparisonTimeRange: undefined,
 
-    await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
-    const metricsView = getCleanMetricsExploreForAssertion();
-    expect(metricsView.selectedTimeRange?.name).toEqual("rill-QTD");
-    expect([...metricsView.visibleMeasureKeys!]).toEqual([
-      AD_BIDS_IMPRESSIONS_MEASURE,
-      AD_BIDS_BID_PRICE_MEASURE,
-    ]);
-    expect([...metricsView.visibleDimensionKeys!]).toEqual([
-      AD_BIDS_PUBLISHER_DIMENSION,
-      AD_BIDS_DOMAIN_DIMENSION,
-    ]);
-    expect(metricsView.leaderboardMeasureName).toEqual(
-      AD_BIDS_IMPRESSIONS_MEASURE,
-    );
+      visibleMeasureKeys: new Set([
+        AD_BIDS_IMPRESSIONS_MEASURE,
+        AD_BIDS_BID_PRICE_MEASURE,
+      ]),
+      allMeasuresVisible: true,
+      visibleDimensionKeys: new Set([
+        AD_BIDS_PUBLISHER_DIMENSION,
+        AD_BIDS_DOMAIN_DIMENSION,
+      ]),
+      allDimensionsVisible: true,
+
+      leaderboardMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
+      leaderboardContextColumn: undefined,
+      sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
+    };
+
+    it("Should load base dashboard state", async () => {
+      renderDashboardStateLoader();
+
+      await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
+
+      assertExploreStateSubset(ExploreStateSubsetForBaseState);
+    });
+
+    it("Should load most recent dashboard state", async () => {
+      setMostRecentExploreState(
+        "view=explore&tr=P7D&compare_tr=rill-PP&grain=hour&measures=bid_price&dims=domain&sort_by=bid_price",
+      );
+      renderDashboardStateLoader();
+
+      await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
+      assertExploreStateSubset({
+        selectedTimeRange: {
+          name: "P7D",
+          interval: V1TimeGrain.TIME_GRAIN_HOUR,
+        } as DashboardTimeControls,
+        showTimeComparison: true,
+        selectedComparisonTimeRange: {
+          name: TimeComparisonOption.CONTIGUOUS,
+        } as DashboardTimeControls,
+
+        visibleMeasureKeys: new Set([AD_BIDS_BID_PRICE_MEASURE]),
+        allMeasuresVisible: false,
+        visibleDimensionKeys: new Set([AD_BIDS_DOMAIN_DIMENSION]),
+        allDimensionsVisible: false,
+
+        leaderboardMeasureName: AD_BIDS_BID_PRICE_MEASURE,
+        leaderboardContextColumn: undefined,
+        sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
+      });
+
+      pageMock.popState("");
+      await waitFor(() =>
+        assertExploreStateSubset(ExploreStateSubsetForBaseState),
+      );
+    });
+
+    it("Should load from session dashboard state", async () => {
+      setMostRecentExploreState(
+        "view=explore&tr=P7D&compare_tr=rill-PP&grain=hour&measures=bid_price&dims=domain&sort_by=bid_price",
+      );
+      setSharedExploreState("tr=P14D&compare_tr=rill-PW&grain=day");
+      setExploreStateForActivePage(
+        "view=explore&measures=impressions&dims=publisher&sort_by=impressions",
+        DashboardState_ActivePage.DEFAULT,
+      );
+      renderDashboardStateLoader();
+
+      await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
+      assertExploreStateSubset({
+        selectedTimeRange: {
+          name: "P14D",
+          interval: V1TimeGrain.TIME_GRAIN_DAY,
+        } as DashboardTimeControls,
+        showTimeComparison: true,
+        selectedComparisonTimeRange: {
+          name: TimeComparisonOption.WEEK,
+        } as DashboardTimeControls,
+
+        visibleMeasureKeys: new Set([AD_BIDS_IMPRESSIONS_MEASURE]),
+        allMeasuresVisible: false,
+        visibleDimensionKeys: new Set([AD_BIDS_PUBLISHER_DIMENSION]),
+        allDimensionsVisible: false,
+
+        leaderboardMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
+        leaderboardContextColumn: undefined,
+        sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
+      });
+
+      pageMock.popState("");
+      await waitFor(() =>
+        assertExploreStateSubset(ExploreStateSubsetForBaseState),
+      );
+    });
   });
 
-  it("Should load base dashboard state for metrics view without timeseries", async () => {
-    mocks.mockMetricsView(AD_BIDS_METRICS_NAME, AD_BIDS_METRICS_INIT);
-    mocks.mockMetricsExplore(
-      AD_BIDS_EXPLORE_NAME,
-      AD_BIDS_METRICS_INIT,
-      AD_BIDS_EXPLORE_INIT,
-    );
-    renderDashboardStateLoader();
+  describe("Dashboards without timeseries", () => {
+    const ExploreStateSubsetForBaseState: Partial<MetricsExplorerEntity> = {
+      selectedTimeRange: undefined,
+      showTimeComparison: false,
+      selectedComparisonTimeRange: undefined,
 
-    await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
-    const metricsView = getCleanMetricsExploreForAssertion();
-    expect(metricsView.selectedTimeRange?.name).toBeUndefined();
-    expect([...metricsView.visibleMeasureKeys!]).toEqual([
-      AD_BIDS_IMPRESSIONS_MEASURE,
-      AD_BIDS_BID_PRICE_MEASURE,
-    ]);
-    expect([...metricsView.visibleDimensionKeys!]).toEqual([
-      AD_BIDS_PUBLISHER_DIMENSION,
-      AD_BIDS_DOMAIN_DIMENSION,
-    ]);
-    expect(metricsView.leaderboardMeasureName).toEqual(
-      AD_BIDS_IMPRESSIONS_MEASURE,
-    );
+      visibleMeasureKeys: new Set([
+        AD_BIDS_IMPRESSIONS_MEASURE,
+        AD_BIDS_BID_PRICE_MEASURE,
+      ]),
+      allMeasuresVisible: true,
+      visibleDimensionKeys: new Set([
+        AD_BIDS_PUBLISHER_DIMENSION,
+        AD_BIDS_DOMAIN_DIMENSION,
+      ]),
+      allDimensionsVisible: true,
+
+      leaderboardMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
+      leaderboardContextColumn: undefined,
+      sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
+    };
+
+    beforeEach(() => {
+      mocks.mockMetricsView(AD_BIDS_METRICS_NAME, AD_BIDS_METRICS_INIT);
+      mocks.mockMetricsExplore(
+        AD_BIDS_EXPLORE_NAME,
+        AD_BIDS_METRICS_INIT,
+        AD_BIDS_EXPLORE_INIT,
+      );
+    });
+
+    it("Should load base dashboard state", async () => {
+      renderDashboardStateLoader();
+
+      await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
+
+      assertExploreStateSubset(ExploreStateSubsetForBaseState);
+    });
+
+    it("Should load most recent dashboard state", async () => {
+      setMostRecentExploreState(
+        "view=explore&measures=bid_price&dims=domain&sort_by=bid_price",
+      );
+      renderDashboardStateLoader();
+
+      await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
+      assertExploreStateSubset({
+        selectedTimeRange: undefined,
+        showTimeComparison: false,
+        selectedComparisonTimeRange: undefined,
+
+        visibleMeasureKeys: new Set([AD_BIDS_BID_PRICE_MEASURE]),
+        allMeasuresVisible: false,
+        visibleDimensionKeys: new Set([AD_BIDS_DOMAIN_DIMENSION]),
+        allDimensionsVisible: false,
+
+        leaderboardMeasureName: AD_BIDS_BID_PRICE_MEASURE,
+        leaderboardContextColumn: undefined,
+        sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
+      });
+
+      pageMock.popState("");
+      await waitFor(() =>
+        assertExploreStateSubset(ExploreStateSubsetForBaseState),
+      );
+    });
+
+    it("Should load from session dashboard state", async () => {
+      setMostRecentExploreState(
+        "view=explore&measures=bid_price&dims=domain&sort_by=bid_price",
+      );
+      setSharedExploreState("view=explore");
+      setExploreStateForActivePage(
+        "view=explore&measures=impressions&dims=publisher&sort_by=impressions",
+        DashboardState_ActivePage.DEFAULT,
+      );
+      renderDashboardStateLoader();
+
+      await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
+      assertExploreStateSubset({
+        selectedTimeRange: undefined,
+        showTimeComparison: false,
+        selectedComparisonTimeRange: undefined,
+
+        visibleMeasureKeys: new Set([AD_BIDS_IMPRESSIONS_MEASURE]),
+        allMeasuresVisible: false,
+        visibleDimensionKeys: new Set([AD_BIDS_PUBLISHER_DIMENSION]),
+        allDimensionsVisible: false,
+
+        leaderboardMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
+        leaderboardContextColumn: undefined,
+        sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
+      });
+
+      pageMock.popState("");
+      await waitFor(() =>
+        assertExploreStateSubset(ExploreStateSubsetForBaseState),
+      );
+    });
   });
 });
 
-function renderDashboardStateLoader() {
+// This needs to be there each file because of how hoisting works with vitest.
+// TODO: find if there is a way to share code.
+function renderDashboardStateLoader(
+  otherStateSourceQueries: OtherSourceOfState["query"][] = [],
+) {
   const renderResults = render(DashboardStateLoaderTest, {
     props: {
       exploreName: AD_BIDS_EXPLORE_NAME,
+      otherSourcesOfState: otherStateSourceQueries.map((query) => ({
+        errorHeader: "",
+        query,
+      })),
     },
     // TODO: we need to make sure every single query uses an explicit queryClient instead of the global one
     //       only then we can use a fresh client here.
@@ -115,4 +300,49 @@ function renderDashboardStateLoader() {
   });
 
   return { queryClient, renderResults };
+}
+
+function assertExploreStateSubset(
+  exploreStateSubset: Partial<MetricsExplorerEntity>,
+) {
+  const curExploreState = getCleanMetricsExploreForAssertion();
+  const curExploreStateSubset: Partial<MetricsExplorerEntity> = {
+    selectedTimeRange: curExploreState.selectedTimeRange,
+    showTimeComparison: curExploreState.showTimeComparison,
+    selectedComparisonTimeRange: curExploreState.selectedComparisonTimeRange,
+
+    visibleMeasureKeys: curExploreState.visibleMeasureKeys,
+    allMeasuresVisible: curExploreState.allMeasuresVisible,
+
+    visibleDimensionKeys: curExploreState.visibleDimensionKeys,
+    allDimensionsVisible: curExploreState.allDimensionsVisible,
+
+    leaderboardMeasureName: curExploreState.leaderboardMeasureName,
+    leaderboardContextColumn: curExploreState.leaderboardContextColumn,
+    sortDirection: curExploreState.sortDirection,
+  };
+  expect(curExploreStateSubset).toEqual(exploreStateSubset);
+}
+
+function setMostRecentExploreState(search: string) {
+  localStorage.setItem(
+    `rill:app:explore:${AD_BIDS_EXPLORE_NAME.toLowerCase()}`,
+    search,
+  );
+}
+
+function setExploreStateForActivePage(
+  search: string,
+  activePage: DashboardState_ActivePage,
+) {
+  sessionStorage.setItem(
+    `rill:app:explore:${AD_BIDS_EXPLORE_NAME.toLowerCase()}:${activePage}`,
+    search,
+  );
+}
+function setSharedExploreState(search: string) {
+  sessionStorage.setItem(
+    `rill:app:explore:${AD_BIDS_EXPLORE_NAME.toLowerCase()}:0`,
+    search,
+  );
 }

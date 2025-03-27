@@ -14,10 +14,11 @@ import {
   convertExploreStateToURLSearchParams,
   getUpdatedUrlForExploreState,
 } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
-import { updateExploreSessionStore } from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-store";
 import { saveMostRecentExploreState } from "@rilldata/web-common/features/dashboards/url-state/most-recent-explore-state";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
+import type { AfterNavigate } from "@sveltejs/kit";
 import { derived, get, type Readable } from "svelte/store";
+import { updateExploreSessionStore } from "../url-state/explore-active-page-store";
 
 export class DashboardStateSync {
   private readonly exploreStore: Readable<MetricsExplorerEntity | undefined>;
@@ -25,7 +26,6 @@ export class DashboardStateSync {
   private readonly timeControlStore: TimeControlStore;
 
   private readonly unsubInit: (() => void) | undefined;
-  private readonly unsubUrlChange: (() => void) | undefined;
   private readonly unsubExploreState: (() => void) | undefined;
 
   private initializing = false;
@@ -54,13 +54,6 @@ export class DashboardStateSync {
       void this.handleExploreInit(initExploreState);
     });
 
-    this.unsubUrlChange = dataLoader.partialExploreState.subscribe(
-      (partialExploreState) => {
-        if (!partialExploreState) return;
-        void this.handleURLChange(partialExploreState);
-      },
-    );
-
     this.unsubExploreState = this.exploreStore.subscribe((exploreState) => {
       if (!exploreState) return;
       void this.gotoNewState(exploreState);
@@ -69,7 +62,6 @@ export class DashboardStateSync {
 
   public teardown() {
     this.unsubInit?.();
-    this.unsubUrlChange?.();
     this.unsubExploreState?.();
   }
 
@@ -78,6 +70,7 @@ export class DashboardStateSync {
     this.initializing = true;
 
     const { data: validSpecData } = get(this.validSpecQuery);
+    const metricsViewSpec = validSpecData?.metricsView ?? {};
     const exploreSpec = validSpecData?.explore ?? {};
     const timeControlsState = get(this.timeControlStore);
     const pageState = get(page);
@@ -100,9 +93,10 @@ export class DashboardStateSync {
     updateExploreSessionStore(
       this.exploreName,
       this.extraPrefix,
-      get(metricsExplorerStore).entities[this.exploreName],
+      metricsViewSpec,
       exploreSpec,
       timeControlsState,
+      get(metricsExplorerStore).entities[this.exploreName],
     );
     this.prevUrl = redirectUrl.toString();
 
@@ -118,7 +112,18 @@ export class DashboardStateSync {
     });
   }
 
-  private handleURLChange(partialExplore: Partial<MetricsExplorerEntity>) {
+  public handleURLChange(
+    urlSearchParams: URLSearchParams,
+    type: AfterNavigate["type"],
+  ) {
+    if (!get(metricsExplorerStore).entities[this.exploreName]) return;
+
+    const partialExplore = this.dataLoader.getExploreStateFromURLParams(
+      urlSearchParams,
+      type,
+    );
+    if (!partialExplore) return;
+
     const { data: validSpecData } = get(this.validSpecQuery);
     const metricsViewSpec = validSpecData?.metricsView ?? {};
     const exploreSpec = validSpecData?.explore ?? {};
@@ -157,14 +162,15 @@ export class DashboardStateSync {
     updateExploreSessionStore(
       this.exploreName,
       this.extraPrefix,
-      get(this.exploreStore)!,
+      metricsViewSpec,
       exploreSpec,
       timeControlsState,
+      get(metricsExplorerStore).entities[this.exploreName],
     );
     this.prevUrl = redirectUrl.toString();
     // using `replaceState` directly messes up the navigation entries,
     // `from` and `to` have the old url before being replaced in `afterNavigate` calls leading to incorrect handling.
-    void goto(redirectUrl, {
+    return goto(redirectUrl, {
       replaceState: true,
       state: pageState.state,
     });
@@ -201,9 +207,10 @@ export class DashboardStateSync {
     updateExploreSessionStore(
       this.exploreName,
       this.extraPrefix,
-      exploreState,
+      metricsViewSpec,
       exploreSpec,
       timeControlsState,
+      exploreState,
     );
     saveMostRecentExploreState(
       this.exploreName,

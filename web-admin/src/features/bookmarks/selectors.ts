@@ -1,6 +1,8 @@
 import { page } from "$app/stores";
 import {
+  adminServiceListBookmarks,
   createAdminServiceListBookmarks,
+  getAdminServiceListBookmarksQueryKey,
   type V1Bookmark,
 } from "@rilldata/web-admin/client";
 import {
@@ -18,6 +20,7 @@ import {
 import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
@@ -43,6 +46,19 @@ export type Bookmarks = {
   personal: BookmarkEntry[];
   shared: BookmarkEntry[];
 };
+
+export async function fetchBookmarks(projectId: string, exploreName: string) {
+  const params = {
+    projectId,
+    resourceKind: ResourceKind.Explore,
+    resourceName: exploreName,
+  };
+  const bookmarksResp = await queryClient.fetchQuery({
+    queryKey: getAdminServiceListBookmarksQueryKey(params),
+    queryFn: ({ signal }) => adminServiceListBookmarks(params, signal),
+  });
+  return bookmarksResp.bookmarks ?? [];
+}
 
 export function isHomeBookmark(bookmark: V1Bookmark) {
   return Boolean(bookmark.default);
@@ -86,31 +102,18 @@ export function categorizeBookmarks(
 }
 
 export function getHomeBookmarkExploreState(
-  projectId: string,
   instanceId: string,
   metricsViewName: string,
   exploreName: string,
-  enabled: boolean,
+  homeBookmark: V1Bookmark | undefined,
 ): CompoundQueryResult<Partial<MetricsExplorerEntity>> {
   return getCompoundQuery(
     [
       useExploreValidSpec(instanceId, exploreName),
-      createAdminServiceListBookmarks(
-        {
-          projectId: projectId,
-          resourceKind: ResourceKind.Explore,
-          resourceName: exploreName,
-        },
-        {
-          query: {
-            enabled,
-          },
-        },
-      ),
       createQueryServiceMetricsViewSchema(instanceId, metricsViewName),
     ],
-    ([exploreSpecResp, bookmarksResp, schemaResp]) => {
-      const homeBookmark = bookmarksResp?.bookmarks?.find((b) => b.default);
+    ([exploreSpecResp, schemaResp]) => {
+      // TODO: move this check outside of getCompoundQuery
       if (!homeBookmark) {
         return undefined;
       }

@@ -1,21 +1,16 @@
 import type { CreateQueryOptions, QueryFunction } from "@rilldata/svelte-query";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
-import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import { getExploreStateFromSessionStorage } from "@rilldata/web-common/features/dashboards/url-state/getExploreStateFromSessionStorage";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   createRuntimeServiceGetExplore,
-  getQueryServiceMetricsViewTimeRangeQueryKey,
   getRuntimeServiceGetExploreQueryKey,
-  queryServiceMetricsViewTimeRange,
   runtimeServiceGetExplore,
   type RpcStatus,
   type V1ExploreSpec,
   type V1GetExploreResponse,
   type V1MetricsViewSpec,
-  type V1MetricsViewTimeRangeResponse,
   type V1ExplorePreset,
   getQueryServiceMetricsViewSchemaQueryKey,
   queryServiceMetricsViewSchema,
@@ -150,20 +145,21 @@ export function getExploreStatesFromURLParams(
       exploreSpec,
       defaultExplorePreset,
     );
+  const partialExploreStateFromUrlForInit =
+    searchParams.size === 0 ? undefined : partialExploreStateFromUrl;
 
-  const { exploreStateFromSessionStorage, errors: errorsFromLoad } =
-    getExploreStateFromSessionStorage(
-      exploreName,
-      prefix,
-      searchParams,
-      metricsViewSpec,
-      exploreSpec,
-      defaultExplorePreset,
-    );
-  errors.push(...errorsFromLoad);
+  const exploreStateFromSessionStorage = getExploreStateFromSessionStorage(
+    exploreName,
+    prefix,
+    searchParams,
+    metricsViewSpec,
+    exploreSpec,
+    defaultExplorePreset,
+  );
 
   return {
     partialExploreStateFromUrl,
+    partialExploreStateFromUrlForInit,
     exploreStateFromSessionStorage,
     errors,
   };
