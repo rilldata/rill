@@ -33,9 +33,9 @@ Measures are numeric aggregates of columns from your data model. A measure must 
 
 * Any DuckDB SQL [numeric](https://duckdb.org/docs/sql/functions/numeric) operators and functions
 * This set of DuckDB SQL [aggregates](https://duckdb.org/docs/sql/aggregates): `AVG`, `COUNT`, `FAVG`,`FIRST`, `FSUM`, `LAST`, `MAX`, `MIN`, `PRODUCT`, `SUM`, `APPROX_COUNT_DISTINCT`, `APPROX_QUANTILE`, `STDDEV_POP`, `STDDEV_SAMP`, `VAR_POP`, `VAR_SAMP`.
-* [Filtered aggregates](https://duckdb.org/docs/sql/query_syntax/filter.html) can be used to filter set of rows fed to the aggregate functions
+* [Filtered aggregates](https://duckdb.org/docs/sql/query_syntax/filter.html) can be used to filter set of rows fed to the aggregate functions.
 
-As an example, if you have a table of sales events with the sales price and customer id, you could calculate the following metrics with these aggregates and expressions:
+As an example, if you have a table of sales events with the sales price and customer ID, you could calculate the following metrics with these aggregates and expressions:
 * Number of sales: `COUNT(*)`
 * Total revenue: `SUM(sales_price)` 
 * Revenue per customer: `CAST(SUM(sales_price) AS FLOAT)/CAST(COUNT(DISTINCT customer_id) AS FLOAT)`
@@ -46,7 +46,7 @@ You can also add labels, descriptions, and your choice of number formatting to c
 
 ### Dimensions
 
-Dimensions are used for exploring segments and filtering. Valid dimensions can be any type and are selected using the drop down menu. You can also add labels and descriptions to your dimensions to customize how they are shown.
+Dimensions are used for exploring segments and filtering. Valid dimensions can be any type and are selected using the drop-down menu. You can also add labels and descriptions to your dimensions to customize how they are shown.
 
 
 ## Updating the Metrics View
@@ -55,7 +55,8 @@ Whether you prefer the UI or YAML artifacts, Rill supports both methods for upda
 
 ### Using the Visual Metrics Editor
 
-![visual-metric-editor](/img/build/metrics-view/visual-metrics-editor.png)
+<img src = '/img/build/metrics-view/visual-metrics-editor.png' class='rounded-gif' />
+<br />
 
 When you add a metrics definition using the UI, a code definition will automatically be created as a YAML file in your Rill project within the metrics directory by default. 
 
@@ -87,7 +88,7 @@ measures:
 ```
 :::info Check our reference documentation
 
-For more information about available metrics view properties, feel free to check our [reference YAML documentation](/reference/project-files/metrics-view.
+For more information about available metrics view properties, feel free to check our [reference YAML documentation](/reference/project-files/metrics-view).
 
 :::
 
@@ -96,4 +97,5 @@ For more information about available metrics view properties, feel free to check
 
 Rill Developer is meant to be developer friendly and has been built around the idea of keystroke-by-keystroke feedback when modeling your data, allowing live interactivity and a real-time feedback loop to iterate quickly (or make adjustments as necessary) with your models and dashboards. Additionally, Rill Developer has support for the concept of "hot reloading", which means that you can keep two windows of Rill open at the same time and/or use a preferred editor of choice, such as VSCode, side-by-side with the dashboard that you're actively developing!
 
-![hot-reload-0-36](https://cdn.rilldata.com/docs/release-notes/36_hot_reload.gif)
+<img src = 'https://cdn.rilldata.com/docs/release-notes/36_hot_reload.gif' class='rounded-gif' />
+<br />

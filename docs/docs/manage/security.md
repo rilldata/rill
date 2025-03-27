@@ -10,7 +10,7 @@ Rill supports granular access policies for dashboards. They allow the dashboard 
 Some of the typical use cases include:
 
 - Restricting access to certain dashboards to admin users
-- Limiting dashboards to relevent fields or metrics by team for ease of use (creating a lookup and filter by role) 
+- Limiting dashboards to relevant fields or metrics by team for ease of use (creating a lookup and filter by role) 
 - Limiting access to sensitive dimensions or measures to users from a specific department
 - Partner-filtered dashboards where external users can only see the subset of data that relates to them
 
@@ -44,7 +44,9 @@ When developing access policies, you can leverage a fixed set of user attributes
 
 Note: Rill requires users to confirm their email address before letting them interact with the platform so a user cannot fake an email address or email domain.
 
-If you require additional user attributes to enforce access policies, see the [example for custom attributes below](#advanced-example-custom-attributes) for more details.
+
+If you require additional user attributes to enforce access policies, see the [example for custom attributes below](#advanced-example-custom-attributes-embed-dashboards) for more details.
+
 
 ## Templating and expression evaluation
 
@@ -80,7 +82,9 @@ On the dashboard page (provided you've added a policy) you'll see a "View as" bu
 
 In case you want to test what your users are seeing in Rill Cloud after deploying, you can find this in the dropdown of your account. You will see the actual users in the dropdown of this list, not the mock users defined in the rill.yaml file. 
 
-![rc_view_as](/img/manage/access-policies/rill-cloud-view-as.png)
+<img src = '/img/manage/access-policies/rill-cloud-view-as.png' class='rounded-gif' />
+<br />
+
 
 ## Examples
 
