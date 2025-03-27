@@ -1,7 +1,6 @@
 package org
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -27,7 +26,8 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 				name = args[0]
 			}
 
-			if len(args) == 0 && ch.Interactive {
+			// Only prompt interactively if no name is provided via args or flags
+			if name == "" && ch.Interactive {
 				err = cmdutil.SetFlagsByInputPrompts(*cmd, "name")
 				if err != nil {
 					return err
@@ -43,7 +43,7 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 					return err
 				}
 
-				fmt.Printf("Org name %q already exists\n", name)
+				ch.Printf("Org name %q already exists\n", name)
 				return nil
 			}
 
