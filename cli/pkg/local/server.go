@@ -567,11 +567,11 @@ func (s *Server) ListCandidateProjects(ctx context.Context, r *connect.Request[l
 		return nil, err
 	}
 
+	directoryName := filepath.Base(s.app.ProjectPath)
 	_, githubURL, _ := gitutil.ExtractGitRemote(s.app.ProjectPath, "", false)
-	// Not checking err: if we can't access the Git remote, it's fine to not compare by it.
 
 	resp, err := c.ListProjectsForFingerprint(ctx, &adminv1.ListProjectsForFingerprintRequest{
-		DirectoryName: filepath.Base(s.app.ProjectPath),
+		DirectoryName: directoryName,
 		GithubUrl:     githubURL,
 	})
 	if err != nil {

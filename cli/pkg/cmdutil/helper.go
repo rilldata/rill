@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -375,22 +376,29 @@ func (h *Helper) InferProjectName(ctx context.Context, org, path string) (string
 		return proj.Name, nil
 	}
 
-	// Verify projectPath is a Git repo with remote on Github
-	_, githubURL, err := gitutil.ExtractGitRemote(path, "", true)
+	directoryName := filepath.Base(path)
+	_, githubURL, _ := gitutil.ExtractGitRemote(path, "", true)
+
+	c, err := h.Client()
+	if err != nil {
+		return "", err
+	}
+	resp, err := c.ListProjectsForFingerprint(ctx, &adminv1.ListProjectsForFingerprintRequest{
+		DirectoryName: directoryName,
+		GithubUrl:     githubURL,
+	})
 	if err != nil {
 		return "", err
 	}
 
-	// Fetch project names matching the Github URL
-	names, err := h.ProjectNamesByGithubURL(ctx, org, githubURL, "")
-	if err != nil {
-		return "", err
+	if len(resp.Projects) == 1 {
+		return resp.Projects[0].Name, nil
 	}
 
-	if len(names) == 1 {
-		return names[0], nil
+	var names []string
+	for _, p := range resp.Projects {
+		names = append(names, p.Name)
 	}
-
 	return SelectPrompt("Select project", names, "")
 }
 
