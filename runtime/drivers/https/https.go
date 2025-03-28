@@ -131,7 +131,12 @@ func (c *connection) Driver() string {
 
 // Config implements drivers.Connection.
 func (c *connection) Config() map[string]any {
-	return c.config
+	m := make(map[string]any)
+	err := mapstructure.Decode(c.config, &m)
+	if err != nil {
+		c.logger.Warn("error in generating https config", zap.Error(err))
+	}
+	return m
 }
 
 // Close implements drivers.Connection.
