@@ -10,11 +10,7 @@ import (
 )
 
 func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
-<<<<<<< HEAD
 	var name string
-=======
-	var force bool
->>>>>>> main
 
 	deleteCmd := &cobra.Command{
 		Use:   "delete [<org-name>]",
@@ -94,12 +90,8 @@ This operation cannot be undone. Use --force to skip confirmation.`,
 			return nil
 		},
 	}
-<<<<<<< HEAD
 	deleteCmd.Flags().SortFlags = false
 	deleteCmd.Flags().StringVar(&name, "org", ch.Org, "Organization Name")
-=======
-	deleteCmd.Flags().BoolVar(&force, "force", false, "Delete forcefully, skips the confirmation")
->>>>>>> main
 
 	return deleteCmd
 }
