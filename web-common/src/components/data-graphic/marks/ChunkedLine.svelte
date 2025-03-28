@@ -22,7 +22,11 @@ Over time, we'll make this the default Line implementation, but it's not quite t
     areaFactory,
     lineFactory,
   } from "@rilldata/web-common/components/data-graphic/utils";
-  import { LineMutedColor } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
+  import {
+    AreaMutedColorGradientDark,
+    AreaMutedColorGradientLight,
+    LineMutedColor,
+  } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
   import { guidGenerator } from "@rilldata/web-common/lib/guid";
   import { interpolatePath } from "d3-interpolate-path";
   import { getContext } from "svelte";
@@ -41,10 +45,23 @@ Over time, we'll make this the default Line implementation, but it's not quite t
   export let lineColor = LineMutedColor;
   export let areaGradientColors: [string, string] | null = null;
 
+  export let previousDataLineColor = LineMutedColor;
+  export let previousDataAreaGradientColors: [string, string] = [
+    AreaMutedColorGradientDark,
+    AreaMutedColorGradientLight,
+  ];
+  export let isFetching = false;
+
   export let lineOpacity = 1;
   export let lineWidth = 1;
 
   $: area = areaGradientColors !== null;
+
+  $: gradientColors = isFetching
+    ? previousDataAreaGradientColors
+    : areaGradientColors;
+
+  $: strokeColor = isFetching ? previousDataLineColor : lineColor;
 
   const id = guidGenerator();
 
@@ -110,13 +127,13 @@ Over time, we'll make this the default Line implementation, but it's not quite t
       y={Math.min($yScale(0), $yScale(singleton[yAccessor]))}
       width="1.5"
       height={Math.abs($yScale(0) - $yScale(singleton[yAccessor]))}
-      fill={lineColor}
+      fill={strokeColor}
     />
     <circle
       cx={$xScale(singleton[xAccessor])}
       cy={$yScale(singleton[yAccessor])}
       r="1.5"
-      fill={lineColor}
+      fill={strokeColor}
     />
   {/each}
   <g>
@@ -133,14 +150,14 @@ Over time, we'll make this the default Line implementation, but it's not quite t
       <path
         opacity={lineOpacity}
         stroke-width={lineWidth}
-        stroke={lineColor}
+        stroke={strokeColor}
         d={dt}
         id="segments-line"
         fill="none"
         style="clip-path: url(#path-segments-{id})"
       />
     </WithTween>
-    {#if areaGradientColors !== null}
+    {#if gradientColors !== null}
       <WithTween
         value={areaFunction(yAccessor)(delayedFilteredData)}
         tweenProps={{
@@ -160,12 +177,12 @@ Over time, we'll make this the default Line implementation, but it's not quite t
         <linearGradient id="gradient-{id}" x1="0" x2="0" y1="0" y2="1">
           <stop
             offset="5%"
-            stop-color={areaGradientColors[0]}
+            stop-color={gradientColors[0]}
             stop-opacity={stopOpacity}
           />
           <stop
             offset={areaEndOffset}
-            stop-color={areaGradientColors[1]}
+            stop-color={gradientColors[1]}
             stop-opacity={stopOpacity}
           />
         </linearGradient>

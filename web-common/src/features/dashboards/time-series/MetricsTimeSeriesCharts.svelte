@@ -79,7 +79,7 @@
   let startValue: Date | undefined;
   let endValue: Date | undefined;
 
-  let dataCopy: TimeSeriesDatum[];
+  let timeSeriesData: TimeSeriesDatum[] = [];
   let dimensionDataCopy: DimensionDataItem[] = [];
 
   $: exploreState = useExploreState(exploreName);
@@ -116,16 +116,14 @@
   $: totals = $timeSeriesDataStore.total;
   $: totalsComparisons = $timeSeriesDataStore.comparisonTotal;
 
-  // When changing the timeseries query and the cache is empty, $timeSeriesQuery.data?.data is
-  // temporarily undefined as results are fetched.
-  // To avoid unmounting TimeSeriesBody, which would cause us to lose our tween animations,
-  // we make a copy of the data that avoids `undefined` transition states.
-  // TODO: instead, try using svelte-query's `keepPreviousData = True` option.
-
-  $: if ($timeSeriesDataStore?.timeSeriesData) {
-    dataCopy = $timeSeriesDataStore.timeSeriesData;
+  // Keep previous data to preserve animations while fetching new data
+  // Note: a better approach would be to use TanStack Query's `keepPreviousData` option
+  $: if (
+    $timeSeriesDataStore?.timeSeriesData &&
+    $timeSeriesDataStore.timeSeriesData.length > 0
+  ) {
+    timeSeriesData = $timeSeriesDataStore.timeSeriesData;
   }
-  $: formattedData = dataCopy;
 
   $: if (
     $timeSeriesDataStore?.dimensionChartData?.length ||
@@ -151,8 +149,8 @@
     );
 
     const slicedData = isAllTime
-      ? formattedData?.slice(1)
-      : formattedData?.slice(1, -1);
+      ? timeSeriesData?.slice(1)
+      : timeSeriesData?.slice(1, -1);
 
     chartInteractionColumn.update((state) => {
       const { start, end } = getOrderedStartEnd(scrubStart, scrubEnd);
@@ -212,7 +210,7 @@
 
   $: if (
     isInTimeDimensionView &&
-    formattedData &&
+    timeSeriesData &&
     $timeControlsStore.selectedTimeRange &&
     !isScrubbing
   ) {
@@ -220,7 +218,7 @@
       mouseoverValue?.x,
       undefined,
       isAllTime,
-      formattedData,
+      timeSeriesData,
     );
   }
 
@@ -380,11 +378,10 @@
             errorMessage={$timeSeriesDataStore?.error?.totals}
             status={hasTotalsError
               ? EntityStatus.Error
-              : $timeSeriesDataStore?.isFetching
+              : $timeSeriesDataStore.isFetching
                 ? EntityStatus.Running
                 : EntityStatus.Idle}
           />
-
           {#if hasTimeseriesError}
             <div
               class="flex flex-col p-5 items-center justify-center text-xs ui-copy-muted"
@@ -402,7 +399,7 @@
               timeGrain={interval}
               chartType={tddChartType}
               {expandedMeasureName}
-              totalsData={formattedData}
+              totalsData={timeSeriesData}
               {dimensionData}
               xMin={startValue}
               xMax={endValue}
@@ -415,7 +412,7 @@
                   ts,
                   dimension,
                   isAllTime,
-                  formattedData,
+                  timeSeriesData,
                 );
               }}
               on:chart-brush={(e) => {
@@ -454,7 +451,7 @@
                 });
               }}
             />
-          {:else if formattedData && interval}
+          {:else if timeSeriesData && interval}
             <MeasureChart
               bind:mouseoverValue
               {measure}
@@ -463,8 +460,9 @@
               {scrubStart}
               {scrubEnd}
               {exploreName}
-              data={formattedData}
+              data={timeSeriesData}
               {dimensionData}
+              isFetching={$timeSeriesDataStore.isFetching}
               zone={$exploreState?.selectedTimezone}
               xAccessor="ts_position"
               labelAccessor="ts"
