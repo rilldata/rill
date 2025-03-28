@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"net/url"
 	"strings"
 	"sync"
@@ -321,7 +322,7 @@ func (c *connection) Driver() string {
 
 // Config used to open the Connection
 func (c *connection) Config() map[string]any {
-	return c.driverConfig
+	return maps.Clone(c.driverConfig)
 }
 
 // Close implements drivers.Connection.
