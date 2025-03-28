@@ -39,7 +39,11 @@
 
   $: ({ height } = contentRect);
 
-  $: lowerBound = height - ITEM_HEIGHT - 6;
+  // Calculate lower bound based on number of shown items to prevent dragging beyond last item
+  $: lowerBound = Math.min(
+    height - ITEM_HEIGHT - 6,
+    UPPER_BOUND + (selectedItems.length - 1) * ITEM_HEIGHT,
+  );
 
   $: allItemsMap = new Map(allItems.map((item) => [item.name, item]));
 
@@ -180,7 +184,11 @@
       dropIndex = null;
     } else {
       const newIndex = Math.round((delta - threshold) / ITEM_HEIGHT);
-      dropIndex = Math.max(0, newIndex + dragIndex);
+      // Prevent dragging items to hidden section by limiting dropIndex to last shown item
+      dropIndex = Math.max(
+        0,
+        Math.min(selectedItems.length - 1, newIndex + dragIndex),
+      );
     }
   }
 
