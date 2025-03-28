@@ -32,7 +32,7 @@
   import RowDropZone from "./RowDropZone.svelte";
   import RowWrapper from "./RowWrapper.svelte";
   import { useDefaultMetrics } from "./selector";
-  import { getCanvasStateManagers } from "./state-managers/state-managers";
+  import { getCanvasStore } from "./state-managers/state-managers";
   import { dropZone } from "./stores/ui-stores";
   import ComponentError from "./components/ComponentError.svelte";
 
@@ -42,18 +42,16 @@
     items: (V1CanvasItem | null)[];
   };
 
-  const ctx = getCanvasStateManagers();
+  export let fileArtifact: FileArtifact;
+  export let canvasName: string;
+  export let openSidebar: () => void;
 
-  const {
+  $: ({
     canvasEntity: {
       setSelectedComponent,
       spec: { canvasSpec, metricViewNames },
-      name: canvasName,
     },
-  } = ctx;
-
-  export let fileArtifact: FileArtifact;
-  export let openSidebar: () => void;
+  } = getCanvasStore(canvasName));
 
   let mousePosition = { x: 0, y: 0 };
   let initialMousePosition: { x: number; y: number } | null = null;
@@ -507,6 +505,7 @@
 />
 
 <CanvasDashboardWrapper
+  {canvasName}
   {maxWidth}
   {filtersEnabled}
   onClick={resetSelection}
@@ -534,6 +533,8 @@
         {@const width = widths[columnIndex]}
         {@const id = getId(rowIndex, columnIndex)}
         {@const type = types[columnIndex]}
+        {@const componentResource =
+          canvasData?.resolvedComponents?.[item?.component ?? ""]}
         <ItemWrapper {type} zIndex={4 - columnIndex}>
           {#if columnIndex === 0}
             <ElementDivider
@@ -572,6 +573,8 @@
           />
 
           <CanvasComponent
+            {canvasName}
+            {componentResource}
             canvasItem={item}
             {id}
             editable
@@ -690,6 +693,8 @@
     specCanvasRows[dragItemInfo.position.row]?.items?.[
       dragItemInfo.position.column
     ]}
+  {@const componentResource =
+    canvasData?.resolvedComponents?.[item?.component ?? ""]}
   {#if item}
     <div
       use:portal
@@ -701,6 +706,8 @@
       style:height="{dragItemDimensions.height}px"
     >
       <CanvasComponent
+        {canvasName}
+        {componentResource}
         id="canvas-drag-item"
         canvasItem={item}
         allowPointerEvents={false}

@@ -2,7 +2,7 @@
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import Chart from "@rilldata/web-common/components/time-series-chart/Chart.svelte";
   import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
-  import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
   import RangeDisplay from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/RangeDisplay.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
@@ -26,9 +26,10 @@
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
   export let timeAndFilterStore: Readable<TimeAndFilterStore>;
+  export let canvasName: string;
 
-  const ctx = getCanvasStateManagers();
-  const { spec } = ctx.canvasEntity;
+  $: ctx = getCanvasStore(canvasName);
+  $: ({ spec } = ctx.canvasEntity);
 
   let hoveredPoints: {
     interval: Interval<true>;

@@ -2,7 +2,7 @@
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import CanvasComparisonPill from "@rilldata/web-common/features/canvas/filters/CanvasComparisonPill.svelte";
-  import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import {
     ALL_TIME_RANGE_ALIAS,
     deriveInterval,
@@ -25,14 +25,15 @@
   export let timeFilter: string;
   export let showComparison: boolean;
   export let showGrain: boolean;
+  export let canvasName: string;
   export let onChange: (filter: string) => void = () => {};
 
-  const {
+  $: ({
     canvasEntity: {
       useComponent,
       spec: { canvasSpec },
     },
-  } = getCanvasStateManagers();
+  } = getCanvasStore(canvasName));
 
   $: showLocalFilters = Boolean(timeFilter && timeFilter !== "");
   $: componentStore = useComponent(selectedComponentName);

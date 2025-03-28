@@ -1,5 +1,5 @@
 import type { TableSpec } from "@rilldata/web-common/features/canvas/components/table";
-import type { StateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
 import { createPivotDataStore } from "@rilldata/web-common/features/dashboards/pivot/pivot-data-store";
 import {
@@ -60,7 +60,7 @@ export function clearTableCache(componentName?: string) {
 let lastKey: string | undefined = undefined;
 
 export function getPivotConfig(
-  ctx: StateManagers,
+  ctx: CanvasStore,
   metricsViewName: string,
   tableSpecStore: Readable<PivotSpec>,
   pivotState: Writable<PivotState>,
@@ -154,7 +154,7 @@ export function getPivotConfig(
 }
 
 export const usePivotForCanvas = (
-  ctx: StateManagers,
+  ctx: CanvasStore,
   componentName: string,
   metricsViewName: string,
   pivotConfig: Readable<PivotDataStoreConfig>,
@@ -229,7 +229,7 @@ export function memoizePivotConfig<
   Store extends Readable<PivotDataStoreConfig>,
 >(
   storeGetter: (
-    ctx: StateManagers,
+    ctx: CanvasStore,
     metricsViewName: string,
     tableSpecStore: Readable<TableSpec | PivotSpec>,
     pivotState: Writable<PivotState>,
@@ -238,7 +238,7 @@ export function memoizePivotConfig<
 ) {
   const cache = new Map<string, Store>();
   return (
-    ctx: StateManagers,
+    ctx: CanvasStore,
     metricsViewName: string,
     tableSpecStore: Readable<TableSpec | PivotSpec>,
     pivotState: Writable<PivotState>,

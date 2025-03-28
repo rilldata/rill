@@ -11,6 +11,7 @@
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
   export let timeAndFilterStore: Readable<TimeAndFilterStore>;
+  export let canvasName: string;
 
   let kpis: KPISpec[];
 
@@ -42,7 +43,7 @@
     >
       {#each kpis as kpi, i (i)}
         <div class="min-h-32 kpi-wrapper">
-          <KPI rendererProperties={kpi} {timeAndFilterStore} />
+          <KPI {canvasName} rendererProperties={kpi} {timeAndFilterStore} />
         </div>
       {/each}
     </div>

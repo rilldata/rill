@@ -9,6 +9,7 @@
   export let label: string;
   export let metricsView: string;
   export let value: FieldConfig | string;
+  export let canvasName: string;
   export let onChange: (updatedConfig: FieldConfig | string) => void;
 
   $: selected = !value || typeof value === "string" ? 0 : 1;
@@ -53,6 +54,7 @@
     />
   {:else if selected === 1}
     <SingleFieldInput
+      {canvasName}
       metricName={metricsView}
       id={`${key}-field`}
       type="dimension"
