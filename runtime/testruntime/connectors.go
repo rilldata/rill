@@ -102,6 +102,21 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		require.NotEmpty(t, gac, "Bigquery RILL_RUNTIME_BIGQUERY_TEST_GOOGLE_APPLICATION_CREDENTIALS_JSON not configured")
 		return map[string]string{"google_application_credentials": gac}
 	},
+	// Snowflake connector connects to a real snowflake cloud using dsn in RILL_RUNTIME_SNOWFLAKE_TEST_DSN
+	// The test dataset is pre-populated with tables defined in testdata/init_data/snowflake_init_data.sql:
+	"snowflake": func(t TestingT) map[string]string {
+		// Load .env file at the repo root (if any)
+		_, currentFile, _, _ := goruntime.Caller(0)
+		envPath := filepath.Join(currentFile, "..", "..", "..", ".env")
+		_, err := os.Stat(envPath)
+		if err == nil {
+			require.NoError(t, godotenv.Load(envPath))
+		}
+
+		dsn := os.Getenv("RILL_RUNTIME_SNOWFLAKE_TEST_DSN")
+		require.NotEmpty(t, dsn, "SNOWFLAKE test DSN not configured")
+		return map[string]string{"dsn": dsn}
+	},
 	"gcs": func(t TestingT) map[string]string {
 		// Load .env file at the repo root (if any)
 		_, currentFile, _, _ := goruntime.Caller(0)
