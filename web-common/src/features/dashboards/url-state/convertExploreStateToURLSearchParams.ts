@@ -165,6 +165,7 @@ export function convertExploreStateToURLSearchParamsNoCompression(
 
     case DashboardState_ActivePage.PIVOT:
       copyParamsToTarget(toPivotUrlParams(exploreState, preset), searchParams);
+      searchParams.delete(ExploreStateURLParams.TimeGrain);
       break;
   }
 

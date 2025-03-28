@@ -207,6 +207,10 @@ describe("Explore active page store", () => {
       // apply any mutations in the view
       applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, view.mutations);
       const stateInView = getCleanMetricsExploreForAssertion();
+      if (view.view === "pivot" && stateInView.selectedTimeRange) {
+        // correction for pivot. grain gets filled by time control store for now.
+        delete stateInView.selectedTimeRange.interval;
+      }
 
       // All history changes before this are a combination of visiting the view and mutations.
       const historyCutoff = pageMock.urlSearchHistory.length;

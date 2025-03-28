@@ -55,7 +55,6 @@ export function getMostRecentExploreState(
     );
     if (!rawUrlSearch) return { partialExploreState: undefined, errors: [] };
 
-    console.log("LOCAL:LOAD", rawUrlSearch);
     return convertURLSearchParamsToExploreState(
       new URLSearchParams(rawUrlSearch),
       metricsView,
@@ -122,7 +121,6 @@ export function saveMostRecentExploreState(
   );
 
   try {
-    console.log("LOCAL:SAVE", urlSearchParams.toString());
     localStorage.setItem(
       getKeyForLocalStore(exploreName, prefix),
       urlSearchParams.toString(),

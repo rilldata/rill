@@ -36,7 +36,7 @@ const ExploreActivePageKeys: Record<
 ExploreActivePageKeys[DashboardState_ActivePage.DIMENSION_TABLE] =
   ExploreActivePageKeys[DashboardState_ActivePage.DEFAULT];
 
-// keys other than the current active page
+// Keys other than the current active page.
 const ExploreActivePageOtherKeys: Record<
   DashboardState_ActivePage,
   (keyof MetricsExplorerEntity)[]
@@ -47,15 +47,11 @@ const ExploreActivePageOtherKeys: Record<
   [DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL]: [],
   [DashboardState_ActivePage.PIVOT]: [],
 };
-// Keys shared between page.
+// Keys shared between pages.
 const ExploreActivePageSharedKeys = {} as Record<
   DashboardState_ActivePage,
   (keyof MetricsExplorerEntity)[]
 >;
-// keys shared between pages but to be ignored because they are set exclusively
-const ExploreActivePageIgnoredKeysForShared: (keyof MetricsExplorerEntity)[] = [
-  "activePage",
-];
 
 // Build ExploreActivePageOtherKeys and ExploreActivePageSharedKeys based on ExploreActivePageKeys
 for (const activePage in ExploreActivePageOtherKeys) {
@@ -69,7 +65,8 @@ for (const activePage in ExploreActivePageOtherKeys) {
 
     for (const key of ExploreActivePageKeys[otherActivePage]) {
       if (keys.has(key)) {
-        if (!ExploreActivePageIgnoredKeysForShared.includes(key)) {
+        // activePage is set explicitly
+        if (key !== "activePage") {
           ExploreActivePageSharedKeys[activePage][otherActivePage].push(key);
         }
         continue;
@@ -144,12 +141,6 @@ export function updateExploreSessionStore(
     {},
   );
   try {
-    console.log(
-      "SESSION:SAVE",
-      DashboardState_ActivePage[activePage],
-      storedUrlSearch.toString(),
-      sharedUrlSearch.toString(),
-    );
     sessionStorage.setItem(keyForActivePage, storedUrlSearch.toString());
     sessionStorage.setItem(sharedKey, sharedUrlSearch.toString());
   } catch {
@@ -187,11 +178,6 @@ export function updateExploreSessionStore(
         {},
       );
     try {
-      console.log(
-        "SESSION:SAVE:OTHER",
-        DashboardState_ActivePage[otherPage],
-        otherPageUrlSearch.toString(),
-      );
       sessionStorage.setItem(otherPageKey, otherPageUrlSearch.toString());
     } catch {
       // no-op
@@ -260,12 +246,6 @@ export function getExplorePresetForActivePage(
       activePage = DashboardState_ActivePage.DIMENSION_TABLE;
     }
 
-    console.log(
-      "SESSION:LOAD",
-      DashboardState_ActivePage[activePage],
-      storedUrlSearch,
-      sharedUrlSearch,
-    );
     return <Partial<MetricsExplorerEntity>>{
       activePage,
       ...sharedExploreState,
