@@ -2170,10 +2170,11 @@ metrics_view: missing
 			Paths: []string{"/explores/e1.yaml"},
 			Refs:  []ResourceName{{Kind: ResourceKindMetricsView, Name: "missing"}},
 			ExploreSpec: &runtimev1.ExploreSpec{
-				DisplayName:        "Foo: E1",
-				MetricsView:        "missing",
-				DimensionsSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
-				MeasuresSelector:   &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+				DisplayName:          "Foo: E1",
+				MetricsView:          "missing",
+				DimensionsSelector:   &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+				MeasuresSelector:     &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+				AllowCustomTimeRange: true,
 			},
 		},
 	}
