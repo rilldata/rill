@@ -1,7 +1,6 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
 import { derived, get, type Readable } from "svelte/store";
-
 import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
 import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
@@ -68,8 +67,6 @@ export default function initEmbedPublicAPI(instanceId: string): () => void {
           exploreSpec,
           timeControlsState,
           defaultExplorePreset,
-          get(page).url,
-          true,
         ).toString(),
       );
     },
@@ -109,8 +106,6 @@ export default function initEmbedPublicAPI(instanceId: string): () => void {
         exploreSpec,
         timeControlsState,
         defaultExplorePreset,
-        get(page).url,
-        true,
       ).toString(),
     );
     return { state: stateString };

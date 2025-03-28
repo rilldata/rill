@@ -1,5 +1,5 @@
 <script lang="ts">
-  import DashboardURLStateSyncWrapper from "@rilldata/web-common/features/dashboards/url-state/DashboardURLStateSyncWrapper.svelte";
+  import DashboardStateLoader from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateLoader.svelte";
   import Spinner from "../../entity-management/Spinner.svelte";
   import DashboardThemeProvider from "../DashboardThemeProvider.svelte";
   import StateManagersProvider from "../state-managers/StateManagersProvider.svelte";
@@ -12,11 +12,11 @@
 {#if metricsViewName}
   {#key exploreName + metricsViewName}
     <StateManagersProvider {metricsViewName} {exploreName} visualEditing>
-      <DashboardURLStateSyncWrapper>
+      <DashboardStateLoader {exploreName}>
         <DashboardThemeProvider>
           <Dashboard {metricsViewName} {exploreName} />
         </DashboardThemeProvider>
-      </DashboardURLStateSyncWrapper>
+      </DashboardStateLoader>
     </StateManagersProvider>
   {/key}
 {:else}

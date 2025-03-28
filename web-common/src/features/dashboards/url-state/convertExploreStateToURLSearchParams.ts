@@ -57,6 +57,7 @@ export function getUpdatedUrlForExploreState(
     timeControlsState,
     defaultExplorePreset,
     url,
+    true,
   );
 
   // Filter out the default view parameter if needed
@@ -82,11 +83,10 @@ export function convertExploreStateToURLSearchParams(
   timeControlsState: TimeControlState | undefined,
   preset: V1ExplorePreset,
   // Used to decide whether to compress or not based on the full url length
-  url: URL,
-  disableCompression = false,
+  url?: URL,
+  enableCompression = true,
 ): URLSearchParams {
   const searchParams = new URLSearchParams();
-
   if (!exploreState) return searchParams;
 
   const currentView = FromActivePageMap[exploreState.activePage];
@@ -138,10 +138,13 @@ export function convertExploreStateToURLSearchParams(
 
     case DashboardState_ActivePage.PIVOT:
       copyParamsToTarget(toPivotUrlParams(exploreState, preset), searchParams);
+      // Since we do a shallow merge, we cannot remove time grain from the state for pivot as it is a deeper key.
+      // So this is a patch to remove it from the final url.
+      searchParams.delete(ExploreStateURLParams.TimeGrain);
       break;
   }
 
-  if (disableCompression) return searchParams;
+  if (!enableCompression || !url) return searchParams;
 
   const urlCopy = new URL(url);
   urlCopy.search = searchParams.toString();
