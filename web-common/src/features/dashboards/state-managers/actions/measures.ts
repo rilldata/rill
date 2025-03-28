@@ -30,6 +30,18 @@ export const toggleMeasureVisibility = (
     dashboard.visibleMeasureKeys.size === allMeasures.length;
 };
 
+export const setMeasureVisibility = (
+  { dashboard }: DashboardMutables,
+  measures?: string[],
+  allMeasures?: string[],
+) => {
+  dashboard.visibleMeasureKeys = new Set(measures);
+
+  dashboard.allMeasuresVisible =
+    dashboard.visibleMeasureKeys.size === allMeasures?.length;
+};
+
 export const measureActions = {
   toggleMeasureVisibility,
+  setMeasureVisibility,
 };
