@@ -19,6 +19,7 @@
     DimensionFilterMode,
     DimensionFilterModeOptions,
   } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-mode";
+  import { getQueryErrorMessage } from "@rilldata/web-common/runtime-client/get-query-error-message";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { fly } from "svelte/transition";
   import {
@@ -396,7 +397,7 @@
         </div>
       {:else if error}
         <div class="min-h-9 p-3 text-center text-red-600 text-xs">
-          {error}
+          {getQueryErrorMessage(error)}
         </div>
       {:else if correctedSearchResults}
         <DropdownMenu.Group class="px-1" aria-label={`${name} results`}>
