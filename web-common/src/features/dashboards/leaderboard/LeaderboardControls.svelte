@@ -6,7 +6,6 @@
   import { getStateManagers } from "../state-managers/state-managers";
   import LeaderboardMeasureCountSelector from "@rilldata/web-common/components/menu/LeaderboardMeasureCountSelector.svelte";
   import LeaderboardActiveMeasureDropdown from "@rilldata/web-common/components/menu/LeaderboardActiveMeasureDropdown.svelte";
-  import { SortType } from "../proto-state/derived-types";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import DashboardMetricsDraggableList from "@rilldata/web-common/components/menu/DashboardMetricsDraggableList.svelte";
 

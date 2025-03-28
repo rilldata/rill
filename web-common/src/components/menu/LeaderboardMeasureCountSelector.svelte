@@ -25,14 +25,6 @@
     }
   }
 
-  function getFilteredMeasuresByMeasureCount(
-    measures: MetricsViewSpecMeasureV2[],
-    count: number,
-  ) {
-    return measures.slice(0, count);
-  }
-
-  $: filteredMeasures = getFilteredMeasuresByMeasureCount(measures, count);
   $: visibleMeasuresCount = measures.length;
 
   // Update count to match visible measures when filtered count is greater
