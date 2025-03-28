@@ -2,6 +2,7 @@ import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashbo
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { convertExploreStateToURLSearchParamsNoCompression } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
+import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   type V1ExploreSpec,
@@ -24,12 +25,15 @@ const ExploreActivePageKeys: Record<
     "leaderboardMeasureName",
     "sortDirection",
     "leaderboardContextColumn",
+    "leaderboardMeasureCount",
+    "selectedScrubRange",
   ],
   [DashboardState_ActivePage.DIMENSION_TABLE]: [],
   [DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL]: [
     "activePage",
     "selectedComparisonDimension",
     "tdd",
+    "selectedScrubRange",
   ],
   [DashboardState_ActivePage.PIVOT]: ["activePage", "pivot"],
 };
@@ -52,6 +56,14 @@ const ExploreActivePageSharedKeys = {} as Record<
   DashboardState_ActivePage,
   (keyof MetricsExplorerEntity)[]
 >;
+// Common time range url params to remove since we have to use timeControlsStore.
+// TODO: revisit this when we get rid of timeControlsStore
+const ExploreCommonTimeRangeURLParams: ExploreStateURLParams[] = [
+  ExploreStateURLParams.TimeRange,
+  ExploreStateURLParams.TimeGrain,
+  ExploreStateURLParams.ComparisonTimeRange,
+  ExploreStateURLParams.TimeZone,
+];
 
 // Build ExploreActivePageOtherKeys and ExploreActivePageSharedKeys based on ExploreActivePageKeys
 for (const activePage in ExploreActivePageOtherKeys) {
@@ -223,6 +235,10 @@ export function getExplorePresetForActivePage(
 
     const sharedUrlSearchParams = new URLSearchParams(sharedUrlSearch);
     const storedUrlSearchParams = new URLSearchParams(storedUrlSearch);
+
+    ExploreCommonTimeRangeURLParams.forEach((p) =>
+      storedUrlSearchParams.delete(p),
+    );
 
     const { partialExploreState: sharedExploreState } =
       convertURLSearchParamsToExploreState(

@@ -1,4 +1,3 @@
-import type { ErrorPageProps } from "@rilldata/web-common/components/ErrorPage.svelte";
 import type { SupportedCompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import { derived, writable } from "svelte/store";
@@ -6,6 +5,13 @@ import { derived, writable } from "svelte/store";
 type QueryStatusArg = {
   errorHeader: string;
   query: SupportedCompoundQueryResult<unknown, HTTPError>;
+};
+type ErrorPageProps = {
+  statusCode: number | null | undefined;
+  header: string;
+  body: string;
+  detail: string | undefined;
+  fatal: boolean;
 };
 
 /**
@@ -33,7 +39,9 @@ export class QueriesStatus {
       queries.map(({ query }) => query),
       (queryResponses) => {
         const loading = queryResponses.some((q) => q.isLoading);
-        const errors = queryResponses.map((q) => q.error);
+        const errors = queryResponses.map(
+          (q) => q.error,
+        ) as (HTTPError | null)[];
 
         return {
           loading,

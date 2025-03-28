@@ -1,13 +1,3 @@
-<script context="module" lang="ts">
-  export type ErrorPageProps = {
-    statusCode: number | null | undefined;
-    header: string;
-    body: string;
-    detail: string | undefined;
-    fatal: boolean;
-  };
-</script>
-
 <script lang="ts">
   import { page } from "$app/stores";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
@@ -17,11 +7,11 @@
   import { isEmbedPage } from "../layout/navigation/navigation-utils";
   import AlertCircleOutline from "./icons/AlertCircleOutline.svelte";
 
-  export let statusCode: ErrorPageProps["statusCode"] = undefined;
-  export let header: ErrorPageProps["header"];
-  export let body: ErrorPageProps["body"] = "";
-  export let detail: ErrorPageProps["detail"] = undefined;
-  export let fatal: ErrorPageProps["fatal"] = false;
+  export let statusCode: number | null | undefined = undefined;
+  export let header: string;
+  export let body: string = "";
+  export let detail: string | undefined = undefined;
+  export let fatal = false;
 
   let showDetail = false;
 

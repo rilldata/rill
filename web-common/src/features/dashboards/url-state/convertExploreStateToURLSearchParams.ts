@@ -165,6 +165,8 @@ export function convertExploreStateToURLSearchParamsNoCompression(
 
     case DashboardState_ActivePage.PIVOT:
       copyParamsToTarget(toPivotUrlParams(exploreState, preset), searchParams);
+      // Since we do a shallow merge, we cannot remove time grain from the state for pivot as it is a deeper key.
+      // So this is a patch to remove it from the final url.
       searchParams.delete(ExploreStateURLParams.TimeGrain);
       break;
   }

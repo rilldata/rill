@@ -24,7 +24,6 @@ import {
   applyMutationsToDashboard,
   type TestDashboardMutation,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
-import type { OtherSourceOfState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateLoader.svelte";
 import DashboardStateLoaderTest from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateLoaderTest.svelte";
 import {
   type HoistedPage,
@@ -207,10 +206,6 @@ describe("Explore active page store", () => {
       // apply any mutations in the view
       applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, view.mutations);
       const stateInView = getCleanMetricsExploreForAssertion();
-      if (view.view === "pivot" && stateInView.selectedTimeRange) {
-        // correction for pivot. grain gets filled by time control store for now.
-        delete stateInView.selectedTimeRange.interval;
-      }
 
       // All history changes before this are a combination of visiting the view and mutations.
       const historyCutoff = pageMock.urlSearchHistory.length;
@@ -241,16 +236,11 @@ describe("Explore active page store", () => {
 
 // This needs to be there each file because of how hoisting works with vitest.
 // TODO: find if there is a way to share code.
-function renderDashboardStateLoader(
-  otherStateSourceQueries: OtherSourceOfState["query"][] = [],
-) {
+function renderDashboardStateLoader() {
   const renderResults = render(DashboardStateLoaderTest, {
     props: {
       exploreName: AD_BIDS_EXPLORE_NAME,
-      otherSourcesOfState: otherStateSourceQueries.map((query) => ({
-        errorHeader: "",
-        query,
-      })),
+      otherSourcesOfState: [],
     },
     // TODO: we need to make sure every single query uses an explicit queryClient instead of the global one
     //       only then we can use a fresh client here.

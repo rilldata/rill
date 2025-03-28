@@ -1,5 +1,4 @@
 import { DashboardFetchMocks } from "@rilldata/web-common/features/dashboards/dashboard-fetch-mocks";
-import type { OtherSourceOfState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateLoader.svelte";
 import DashboardStateLoaderTest from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateLoaderTest.svelte";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
@@ -319,16 +318,11 @@ describe("Most recent explore state", () => {
 
 // This needs to be there each file because of how hoisting works with vitest.
 // TODO: find if there is a way to share code.
-function renderDashboardStateLoader(
-  otherStateSourceQueries: OtherSourceOfState["query"][] = [],
-) {
+function renderDashboardStateLoader() {
   const renderResults = render(DashboardStateLoaderTest, {
     props: {
       exploreName: AD_BIDS_EXPLORE_NAME,
-      otherSourcesOfState: otherStateSourceQueries.map((query) => ({
-        errorHeader: "",
-        query,
-      })),
+      otherSourcesOfState: [],
     },
     // TODO: we need to make sure every single query uses an explicit queryClient instead of the global one
     //       only then we can use a fresh client here.

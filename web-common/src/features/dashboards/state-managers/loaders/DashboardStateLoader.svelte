@@ -1,13 +1,3 @@
-<script context="module" lang="ts">
-  export type OtherSourceOfState = {
-    errorHeader: string;
-    query: SupportedCompoundQueryResult<
-      Partial<MetricsExplorerEntity> | undefined,
-      HTTPError
-    >;
-  };
-</script>
-
 <script lang="ts">
   import { afterNavigate } from "$app/navigation";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
@@ -25,7 +15,13 @@
   import { derived } from "svelte/store";
 
   export let exploreName: string;
-  export let otherSourcesOfState: OtherSourceOfState[] = [];
+  export let otherSourcesOfState: {
+    errorHeader: string;
+    query: SupportedCompoundQueryResult<
+      Partial<MetricsExplorerEntity> | undefined,
+      HTTPError
+    >;
+  }[] = [];
 
   const DASHBOARD_SHOW_SPINNER_THRESHOLD = 1000;
   const DASHBOARD_SHOW_LONG_LOAD_MESSAGE_THRESHOLD = 5000;
