@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import { onNavigate } from "$app/navigation";
   import { errorStore } from "@rilldata/web-admin/components/errors/error-store";
   import DashboardBuilding from "@rilldata/web-admin/features/dashboards/DashboardBuilding.svelte";
   import CanvasDashboardEmbed from "@rilldata/web-common/features/canvas/CanvasDashboardEmbed.svelte";
@@ -11,6 +12,11 @@
   } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.js";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import {
+    DashboardBannerID,
+    DashboardBannerPriority,
+  } from "@rilldata/web-common/components/banner/constants";
 
   const PollIntervalWhenDashboardFirstReconciling = 1000;
   const PollIntervalWhenDashboardErrored = 5000;
@@ -31,6 +37,7 @@
   $: canvasResource = $canvasQuery.data;
 
   $: canvasTitle = canvasResource?.canvas?.state?.validSpec?.displayName;
+  $: hasBanner = !!canvasResource?.canvas?.state?.validSpec?.banner;
 
   $: isCanvasNotFound =
     !canvasResource &&
@@ -45,6 +52,28 @@
       body: `The canvas dashboard you requested could not be found. Please check that you provided the name of a working canvas dashboard.`,
     });
   }
+
+  // Display a dashboard banner
+  $: if (hasBanner) {
+    eventBus.emit("add-banner", {
+      id: DashboardBannerID,
+      priority: DashboardBannerPriority,
+      message: {
+        type: "default",
+        message: canvasResource?.canvas?.state?.validSpec?.banner,
+        iconType: "alert",
+      },
+    });
+  }
+
+  onNavigate(({ from, to }) => {
+    const changedDashboard =
+      !from || !to || from.params.dashboard !== to.params.dashboard;
+    // Clear out any dashboard banners
+    if (hasBanner && changedDashboard) {
+      eventBus.emit("remove-banner", DashboardBannerID);
+    }
+  });
 
   function isCanvasReconcilingForFirstTime(canvasResource: V1Resource) {
     if (!canvasResource) return undefined;
