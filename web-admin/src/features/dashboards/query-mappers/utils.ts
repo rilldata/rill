@@ -196,7 +196,7 @@ export async function getExplorePageUrlSearchParams(
         {},
       ),
       staleTime: Infinity,
-      cacheTime: Infinity,
+      gcTime: Infinity,
     });
   }
 

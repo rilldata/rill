@@ -50,13 +50,14 @@
         },
       });
 
-      await queryClient.invalidateQueries(
-        getAdminServiceListOrganizationMemberUsersQueryKey(organization),
-      );
+      await queryClient.invalidateQueries({
+        queryKey:
+          getAdminServiceListOrganizationMemberUsersQueryKey(organization),
+      });
 
-      await queryClient.invalidateQueries(
-        getAdminServiceListOrganizationInvitesQueryKey(organization),
-      );
+      await queryClient.invalidateQueries({
+        queryKey: getAdminServiceListOrganizationInvitesQueryKey(organization),
+      });
 
       email = "";
       role = "";

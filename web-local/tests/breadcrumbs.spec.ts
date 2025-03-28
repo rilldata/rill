@@ -9,7 +9,9 @@ test.describe("Breadcrumbs", () => {
     test("breadcrumb navigation", async ({ page }) => {
       await uploadFile(page, "AdBids.csv");
 
-      await page.waitForTimeout(2000);
+      await page
+        .getByText("View this source")
+        .waitFor({ state: "visible", timeout: 5000 });
 
       await page.getByText("View this source").click();
 

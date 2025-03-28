@@ -468,7 +468,7 @@ export function addExpandedDataToPivot(
         { [anchorDimension]: "LOADING_CELL" },
       ];
       if (expandedRowData?.totals?.length) {
-        skeletonSubTable = expandedRowData?.totals;
+        skeletonSubTable = expandedRowData?.totals as PivotDataRow[];
       }
 
       let subTableData = skeletonSubTable;

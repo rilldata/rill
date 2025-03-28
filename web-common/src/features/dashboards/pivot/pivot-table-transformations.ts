@@ -72,7 +72,7 @@ export function reduceTableCellDataIntoRows(
       colDimensionNames,
       colValuesIndexMaps,
       config.measureNames.length,
-      cell,
+      cell as { [key: string]: string | number },
     );
 
     if (anchorDimensionName) {
@@ -158,7 +158,7 @@ export function getTotalsRow(
     totalsRow = totalsRowTable[0] || {};
 
     globalTotalsData.forEach((total) => {
-      totalsRow = { ...total, ...totalsRow };
+      totalsRow = { ...(total as PivotDataRow), ...totalsRow };
     });
 
     if (anchorDimensionName && !config.isFlat) {

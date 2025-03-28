@@ -49,13 +49,19 @@
         },
       });
 
-      await queryClient.invalidateQueries(
-        getAdminServiceListProjectMemberUsersQueryKey(organization, project),
-      );
+      await queryClient.invalidateQueries({
+        queryKey: getAdminServiceListProjectMemberUsersQueryKey(
+          organization,
+          project,
+        ),
+      });
 
-      await queryClient.invalidateQueries(
-        getAdminServiceListProjectInvitesQueryKey(organization, project),
-      );
+      await queryClient.invalidateQueries({
+        queryKey: getAdminServiceListProjectInvitesQueryKey(
+          organization,
+          project,
+        ),
+      });
 
       eventBus.emit("notification", {
         message: "User role updated",
@@ -77,13 +83,19 @@
         email: email,
       });
 
-      await queryClient.invalidateQueries(
-        getAdminServiceListProjectMemberUsersQueryKey(organization, project),
-      );
+      await queryClient.invalidateQueries({
+        queryKey: getAdminServiceListProjectMemberUsersQueryKey(
+          organization,
+          project,
+        ),
+      });
 
-      await queryClient.invalidateQueries(
-        getAdminServiceListProjectInvitesQueryKey(organization, project),
-      );
+      await queryClient.invalidateQueries({
+        queryKey: getAdminServiceListProjectInvitesQueryKey(
+          organization,
+          project,
+        ),
+      });
 
       eventBus.emit("notification", {
         message: "User removed",

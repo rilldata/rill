@@ -11,14 +11,15 @@ export function invalidateProjectQueries(
   project: string,
 ) {
   return Promise.all([
-    queryClient.refetchQueries(
-      getAdminServiceGetProjectQueryKey(organization, project),
-      {
-        // avoid refetching createAdminServiceGetProjectWithBearerToken
-        exact: true,
-      },
-    ),
-    queryClient.refetchQueries(getAdminServiceGetGithubUserStatusQueryKey()),
+    queryClient.refetchQueries({
+      queryKey: getAdminServiceGetProjectQueryKey(organization, project),
+
+      // avoid refetching createAdminServiceGetProjectWithBearerToken
+      exact: true,
+    }),
+    queryClient.refetchQueries({
+      queryKey: getAdminServiceGetGithubUserStatusQueryKey(),
+    }),
     invalidateRuntimeQueries(queryClient, instanceId),
   ]);
 }

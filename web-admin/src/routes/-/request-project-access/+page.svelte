@@ -35,6 +35,8 @@
       errorMessage = $requestAccess.error.toString();
     }
   }
+
+  $: isPending = $requestAccess.isPending;
 </script>
 
 <AccessRequestContainer>
@@ -50,12 +52,12 @@
     type="primary"
     wide
     on:click={onRequestAccess}
-    loading={$requestAccess.isLoading}
+    loading={isPending}
     disabled={requested}
   >
     {#if requested}<Check />Access requested{:else}Request access{/if}
   </Button>
-  {#if requested && !$requestAccess.isLoading}
+  {#if requested && !isPending}
     {#if errorMessage}
       <div>{errorMessage}</div>
     {:else}

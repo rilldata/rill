@@ -8,8 +8,10 @@
   import { Plus } from "lucide-svelte";
   import AddUsersDialog from "@rilldata/web-admin/features/organizations/users/AddUsersDialog.svelte";
   import { Search } from "@rilldata/web-common/components/search";
-  import { createAdminServiceListOrganizationMemberUsersInfiniteQuery } from "@rilldata/web-admin/features/organizations/users/create-infinite-query-org-users";
-  import { createAdminServiceListOrganizationInvitesInfiniteQuery } from "@rilldata/web-admin/features/organizations/users/create-infinite-query-org-invites";
+  import {
+    createAdminServiceListOrganizationMemberUsersInfinite,
+    createAdminServiceListOrganizationInvitesInfinite,
+  } from "@rilldata/web-admin/client";
 
   const PAGE_SIZE = 12;
 
@@ -22,11 +24,11 @@
   $: organization = $page.params.organization;
 
   $: orgMemberUsersInfiniteQuery =
-    createAdminServiceListOrganizationMemberUsersInfiniteQuery(organization, {
+    createAdminServiceListOrganizationMemberUsersInfinite(organization, {
       pageSize: PAGE_SIZE,
     });
   $: orgInvitesInfiniteQuery =
-    createAdminServiceListOrganizationInvitesInfiniteQuery(organization, {
+    createAdminServiceListOrganizationInvitesInfinite(organization, {
       pageSize: PAGE_SIZE,
     });
 

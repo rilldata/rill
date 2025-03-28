@@ -6,7 +6,6 @@ TableCells – the cell contents.
 <script lang="ts">
   import ColumnHeaders from "@rilldata/web-common/components/virtualized-table/sections/ColumnHeaders.svelte";
   import TableCells from "@rilldata/web-common/components/virtualized-table/sections/TableCells.svelte";
-  import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
   import { createVirtualizer } from "@tanstack/svelte-virtual";
   import { createEventDispatcher, setContext } from "svelte";
   import type { DimensionTableRow } from "./dimension-table-types";
@@ -17,15 +16,15 @@ TableCells – the cell contents.
   import DimensionFilterGutter from "./DimensionFilterGutter.svelte";
   import { DIMENSION_TABLE_CONFIG as config } from "./DimensionTableConfig";
   import DimensionValueHeader from "./DimensionValueHeader.svelte";
-
   import { getStateManagers } from "../state-managers/state-managers";
   import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
+  import { selectedDimensionValuesV2 } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 
   const dispatch = createEventDispatcher();
 
   export let rows: DimensionTableRow[];
   export let columns: VirtualizedTableColumns[];
-  export let selectedValues: CompoundQueryResult<string[]>;
+  export let selectedValues: ReturnType<typeof selectedDimensionValuesV2>;
   export let dimensionName: string;
   export let isFetching: boolean;
 

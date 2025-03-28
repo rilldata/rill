@@ -1,13 +1,18 @@
 <script lang="ts">
   import FormattedDataType from "../../components/data-types/FormattedDataType.svelte";
 
-  export let value: string | boolean | number | null | undefined;
+  export let value: unknown;
   export let type: string | undefined;
   export let selected: boolean;
   export let sorted: boolean;
-  export let formattedValue: string | undefined;
+  export let formattedValue: unknown;
 
-  $: finalValue = formattedValue ?? value;
+  $: finalValue = (formattedValue ?? value) as
+    | string
+    | boolean
+    | number
+    | null
+    | undefined;
 </script>
 
 <div

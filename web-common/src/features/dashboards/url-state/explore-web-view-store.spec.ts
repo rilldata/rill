@@ -1,4 +1,4 @@
-import { QueryClient } from "@rilldata/svelte-query";
+import { QueryClient } from "@tanstack/svelte-query";
 import { DashboardFetchMocks } from "@rilldata/web-common/features/dashboards/dashboard-fetch-mocks";
 import { createStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
@@ -201,9 +201,8 @@ describe.skip("ExploreWebViewStore", () => {
     const validSpecQuery = useExploreValidSpec(
       "default",
       AD_BIDS_EXPLORE_NAME,
-      {
-        queryClient,
-      },
+      undefined,
+      queryClient,
     );
     const { unmount } = render(ExploreStateTestComponent, {
       validSpecQuery,

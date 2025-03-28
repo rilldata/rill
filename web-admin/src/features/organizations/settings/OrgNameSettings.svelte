@@ -58,9 +58,9 @@
             },
           });
 
-          await queryClient.invalidateQueries(
-            getAdminServiceListOrganizationsQueryKey(),
-          );
+          await queryClient.invalidateQueries({
+            queryKey: getAdminServiceListOrganizationsQueryKey(),
+          });
         } catch (err) {
           const parsedErr = parseUpdateOrgError(err);
           if (parsedErr.duplicateOrg) {
@@ -70,14 +70,14 @@
         }
 
         if (organization !== newOrg) {
-          queryClient.removeQueries(
-            getAdminServiceGetOrganizationQueryKey(organization),
-          );
+          queryClient.removeQueries({
+            queryKey: getAdminServiceGetOrganizationQueryKey(organization),
+          });
           setTimeout(() => goto(`/${newOrg}/-/settings`));
         } else {
-          void queryClient.refetchQueries(
-            getAdminServiceGetOrganizationQueryKey(organization),
-          );
+          void queryClient.refetchQueries({
+            queryKey: getAdminServiceGetOrganizationQueryKey(organization),
+          });
         }
         eventBus.emit("notification", {
           message: "Updated organization",
@@ -139,7 +139,7 @@
   <Button
     on:click={submit}
     type="primary"
-    loading={$updateOrgMutation.isLoading}
+    loading={$updateOrgMutation.isPending}
     disabled={!changed}
     slot="action"
   >

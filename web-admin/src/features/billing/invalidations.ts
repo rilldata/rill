@@ -15,10 +15,12 @@ export function invalidateBillingInfo(
   expectedIssueTypes: V1BillingIssueType[] = [],
 ) {
   return Promise.all([
-    queryClient.refetchQueries(
-      getAdminServiceGetBillingSubscriptionQueryKey(org),
-    ),
-    queryClient.invalidateQueries(getAdminServiceGetOrganizationQueryKey(org)),
+    queryClient.refetchQueries({
+      queryKey: getAdminServiceGetBillingSubscriptionQueryKey(org),
+    }),
+    queryClient.invalidateQueries({
+      queryKey: getAdminServiceGetOrganizationQueryKey(org),
+    }),
     waitForUpdatedBillingIssues(org, expectedIssueTypes),
   ]);
 }
@@ -51,9 +53,9 @@ export async function waitForUpdatedBillingIssues(
   const currentlyHasBlockerIssues = hasBlockerIssues(issuesResp.issues ?? []);
 
   while (tries < IssuesUpdateMaxTries) {
-    await queryClient.refetchQueries(
-      getAdminServiceListOrganizationBillingIssuesQueryKey(org),
-    );
+    await queryClient.refetchQueries({
+      queryKey: getAdminServiceListOrganizationBillingIssuesQueryKey(org),
+    });
 
     const newIssuesResp = await queryClient.fetchQuery({
       queryKey: getAdminServiceListOrganizationBillingIssuesQueryKey(org),
@@ -74,9 +76,9 @@ export async function waitForUpdatedBillingIssues(
         // when blocker issues are either added or removed projects hibernation status changes.
         // so re-retch projects list to get updated hibernation status.
         // NOTE: right now projects are not automatically woken up when blocker issues are removed.
-        void queryClient.refetchQueries(
-          getAdminServiceListProjectsForOrganizationQueryKey(org),
-        );
+        void queryClient.refetchQueries({
+          queryKey: getAdminServiceListProjectsForOrganizationQueryKey(org),
+        });
       }
       break;
     }
@@ -88,7 +90,7 @@ export async function waitForUpdatedBillingIssues(
   }
 
   // re-fetch project list at the end
-  return queryClient.refetchQueries(
-    getAdminServiceListProjectsForOrganizationQueryKey(org),
-  );
+  return queryClient.refetchQueries({
+    queryKey: getAdminServiceListProjectsForOrganizationQueryKey(org),
+  });
 }

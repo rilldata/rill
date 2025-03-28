@@ -99,9 +99,12 @@ export function createStateManagers({
   const validSpecStore: Readable<
     QueryObserverResult<ExploreValidSpecResponse, RpcStatus>
   > = derived([runtime, exploreNameStore], ([r, exploreName], set) =>
-    useExploreValidSpec(r.instanceId, exploreName, { queryClient }).subscribe(
-      set,
-    ),
+    useExploreValidSpec(
+      r.instanceId,
+      exploreName,
+      undefined,
+      queryClient,
+    ).subscribe(set),
   );
 
   const timeRangeSummaryStore: Readable<
@@ -115,12 +118,12 @@ export function createStateManagers({
         {},
         {
           query: {
-            queryClient,
             enabled: !!validSpec?.data?.metricsView?.timeDimension,
             staleTime: Infinity,
-            cacheTime: Infinity,
+            gcTime: Infinity,
           },
         },
+        queryClient,
       ).subscribe(set),
   );
 

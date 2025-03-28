@@ -111,9 +111,12 @@
 
           url = _url;
 
-          void queryClient.invalidateQueries(
-            getAdminServiceListMagicAuthTokensQueryKey(organization, project),
-          );
+          void queryClient.invalidateQueries({
+            queryKey: getAdminServiceListMagicAuthTokensQueryKey(
+              organization,
+              project,
+            ),
+          });
         } catch (error) {
           const typedError = error as HTTPError;
           apiError = typedError.response?.data?.message ?? typedError.message;

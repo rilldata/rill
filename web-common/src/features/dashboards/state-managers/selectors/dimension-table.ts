@@ -58,7 +58,9 @@ export const virtualizedTableColumns =
     if (totalsQuery?.data?.data) {
       measures.map((m) => {
         if (m.name && isSummableMeasure(m)) {
-          measureTotals[m.name] = totalsQuery.data?.data?.[0]?.[m.name];
+          measureTotals[m.name] = totalsQuery.data?.data?.[0]?.[
+            m.name
+          ] as number;
         }
       });
     }

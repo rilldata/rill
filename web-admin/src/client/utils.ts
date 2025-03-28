@@ -32,7 +32,7 @@ export function isOrgUsageQuery(query: Query): boolean {
 
 export function mergedQueryStatus(
   queriesOrMutations: Readable<{
-    isLoading: boolean;
+    isPending: boolean;
     isError: boolean;
     error?: any;
   }>[],
@@ -41,7 +41,7 @@ export function mergedQueryStatus(
     const isLoading = queriesOrMutations
       // access 'isLoading' of all queries. this seems to be necessary to get the correct status.
       // TODO: figure out why this is the case.
-      .map((q) => q.isLoading)
+      .map((q) => q.isPending)
       .some((loading) => loading);
     const isError = queriesOrMutations.some((q) => q.isError);
     const errors = queriesOrMutations

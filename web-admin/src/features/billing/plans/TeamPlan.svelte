@@ -92,7 +92,7 @@
         <Button
           type="secondary"
           on:click={handleCancelPlan}
-          loading={$planCanceller.isLoading}
+          loading={$planCanceller.isPending}
         >
           Cancel plan
         </Button>

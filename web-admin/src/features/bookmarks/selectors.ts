@@ -120,9 +120,7 @@ export function getPrettySelectedTimeRange(
   return derived(
     [
       useExploreValidSpec(instanceId, exploreName),
-      useMetricsViewTimeRange(instanceId, metricsViewName, {
-        query: { queryClient },
-      }),
+      useMetricsViewTimeRange(instanceId, metricsViewName, {}, queryClient),
       useExploreState(metricsViewName),
     ],
     ([validSpec, timeRangeSummary, metricsExplorerEntity]) => {

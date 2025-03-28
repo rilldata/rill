@@ -43,9 +43,9 @@
       });
     }
 
-    void queryClient.refetchQueries(
-      getAdminServiceListWhitelistedDomainsQueryKey(organization),
-    );
+    void queryClient.refetchQueries({
+      queryKey: getAdminServiceListWhitelistedDomainsQueryKey(organization),
+    });
   }
 </script>
 
@@ -65,8 +65,8 @@
         </Label>
         <div class="grow"></div>
         <DelayedCircleOutlineSpinner
-          isLoading={$disallowDomainMutation.isLoading ||
-            $allowDomainMutation.isLoading}
+          isLoading={$disallowDomainMutation.isPending ||
+            $allowDomainMutation.isPending}
         >
           <Switch
             checked={domainAllowed}

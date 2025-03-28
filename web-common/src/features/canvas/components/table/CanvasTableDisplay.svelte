@@ -25,7 +25,7 @@
   export let hasHeader: boolean;
 
   const ctx = getCanvasStateManagers();
-  const tableSpecStore = writable(rendererProperties as TableSpec);
+  const tableSpecStore = writable(rendererProperties as unknown as TableSpec);
   const pivotState = writable<PivotState>({
     active: true,
     columns: [],
@@ -43,7 +43,7 @@
   let pivotDataStore: PivotDataStore | undefined;
   let tableConfig: Readable<PivotDataStoreConfig> | undefined;
 
-  $: tableSpec = rendererProperties as TableSpec;
+  $: tableSpec = rendererProperties as unknown as TableSpec;
   $: tableSpecStore.set(tableSpec);
 
   $: columns = tableSpec?.columns || [];

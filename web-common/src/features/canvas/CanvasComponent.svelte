@@ -39,8 +39,8 @@
 
   $: isChartType = isChartComponentType(renderer);
 
-  $: title = rendererProperties?.title;
-  $: description = rendererProperties?.description;
+  $: title = rendererProperties?.title as string | undefined;
+  $: description = rendererProperties?.description as string | undefined;
   $: componentFilters = getComponentFilterProperties(rendererProperties);
 </script>
 
@@ -70,7 +70,7 @@
       {/if}
       {#if renderer && rendererProperties}
         <ComponentRenderer
-          hasHeader={title || description}
+          hasHeader={Boolean(title || description)}
           {renderer}
           {rendererProperties}
           {componentName}

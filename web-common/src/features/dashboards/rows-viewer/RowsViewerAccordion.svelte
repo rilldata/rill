@@ -10,7 +10,6 @@
   import {
     createQueryServiceMetricsViewAggregation,
     type V1Expression,
-    type V1MetricsViewAggregationResponseDataItem,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { get } from "svelte/store";
@@ -119,13 +118,8 @@
 
   $: {
     if ($filteredTotalsQuery.data && $totalsQuery.data) {
-      const numerator = (
-        $filteredTotalsQuery.data
-          ?.data as V1MetricsViewAggregationResponseDataItem
-      )[0]["count"];
-      const denominator = (
-        $totalsQuery.data.data as V1MetricsViewAggregationResponseDataItem
-      )[0]["count"];
+      const numerator = $filteredTotalsQuery.data?.data?.[0]["count"] as number;
+      const denominator = $totalsQuery.data.data?.[0]["count"] as number;
       rowCountlabel = `${formatCompactInteger(numerator)} of ${formatCompactInteger(denominator)} rows`;
     }
   }

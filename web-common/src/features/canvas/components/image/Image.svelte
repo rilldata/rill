@@ -9,7 +9,7 @@
   export let rendererProperties: V1ComponentSpecRendererProperties;
 
   const instanceId = $runtime.instanceId;
-  $: imageProperties = rendererProperties as ImageSpec;
+  $: imageProperties = rendererProperties as unknown as ImageSpec;
 
   $: objectPosition = getImagePosition(imageProperties.alignment);
 

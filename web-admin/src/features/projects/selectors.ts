@@ -1,4 +1,4 @@
-import type { QueryFunction, QueryKey } from "@rilldata/svelte-query";
+import type { QueryFunction, QueryKey } from "@tanstack/svelte-query";
 import {
   adminServiceGetProject,
   createAdminServiceGetProject,

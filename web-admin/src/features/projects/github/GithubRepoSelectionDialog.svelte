@@ -194,7 +194,7 @@
       >
       <Button
         type="primary"
-        loading={$connectToGithubMutation.isLoading}
+        loading={$connectToGithubMutation.isPending}
         disabled={disableContinue}
         on:click={() => updateGithubUrl(false)}>Continue</Button
       >
@@ -204,7 +204,7 @@
 
 <GithubOverwriteConfirmDialog
   bind:open={$showOverwriteConfirmation}
-  loading={$connectToGithubMutation.isLoading}
+  loading={$connectToGithubMutation.isPending}
   {error}
   githubUrl={$githubUrl}
   subpath={$subpath}

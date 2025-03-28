@@ -6,7 +6,7 @@
   import { getPositionClasses } from "./util";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
-  $: markdownProperties = rendererProperties as MarkdownSpec;
+  $: markdownProperties = rendererProperties as unknown as MarkdownSpec;
 
   $: positionClasses = getPositionClasses(markdownProperties.alignment);
 </script>

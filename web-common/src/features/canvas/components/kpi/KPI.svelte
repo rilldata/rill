@@ -37,7 +37,7 @@
 
   $: ({ instanceId } = $runtime);
 
-  $: kpiProperties = rendererProperties as KPISpec;
+  $: kpiProperties = rendererProperties as unknown as KPISpec;
 
   $: ({
     metrics_view: metricsViewName,

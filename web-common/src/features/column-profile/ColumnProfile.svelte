@@ -9,6 +9,7 @@
   import { getColumnType } from "./column-types";
   import { getSummaries } from "./queries";
   import { defaultSort, sortByName, sortByNullity } from "./utils";
+  import { keepPreviousData } from "@tanstack/svelte-query";
 
   export let connector: string;
   export let database: string;
@@ -38,7 +39,7 @@
       database,
       databaseSchema,
     },
-    { query: { keepPreviousData: true } },
+    { query: { placeholderData: keepPreviousData } },
   );
 
   /** get single example */

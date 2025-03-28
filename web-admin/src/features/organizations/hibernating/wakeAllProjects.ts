@@ -10,11 +10,10 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import { get } from "svelte/store";
 
 export async function wakeAllProjects(organization: string) {
-  const projectDeployer = createAdminServiceRedeployProject({
-    mutation: {
-      queryClient,
-    },
-  });
+  const projectDeployer = createAdminServiceRedeployProject(
+    undefined,
+    queryClient,
+  );
   const promises: Promise<V1RedeployProjectResponse>[] = [];
 
   let pageToken: string | undefined = undefined;
@@ -51,9 +50,9 @@ export async function wakeAllProjects(organization: string) {
     // TODO
   }
 
-  void queryClient.refetchQueries(
-    getAdminServiceListProjectsForOrganizationQueryKey(organization),
-  );
+  void queryClient.refetchQueries({
+    queryKey: getAdminServiceListProjectsForOrganizationQueryKey(organization),
+  });
 }
 
 async function redeployProject(
@@ -65,12 +64,14 @@ async function redeployProject(
     organization,
     project: project.name ?? "",
   });
-  void queryClient.refetchQueries(
-    getAdminServiceGetProjectQueryKey(organization, project.name ?? ""),
-    {
-      // avoid invalidating createAdminServiceGetProjectWithBearerToken
-      exact: true,
-    },
-  );
+  void queryClient.refetchQueries({
+    queryKey: getAdminServiceGetProjectQueryKey(
+      organization,
+      project.name ?? "",
+    ),
+
+    // avoid invalidating createAdminServiceGetProjectWithBearerToken
+    exact: true,
+  });
   return resp;
 }

@@ -30,7 +30,10 @@ import {
   createQueryServiceMetricsViewAggregation,
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
-import type { CreateQueryResult } from "@tanstack/svelte-query";
+import {
+  keepPreviousData,
+  type CreateQueryResult,
+} from "@tanstack/svelte-query";
 import { dimensionSearchText } from "../stores/dashboard-stores";
 import {
   getFilterForComparedDimension,
@@ -150,9 +153,9 @@ export function getDimensionValuesForComparison(
                 enabled:
                   timeControls.ready &&
                   !!dashboardStore?.selectedComparisonDimension,
-                queryClient: ctx.queryClient,
               },
             },
+            ctx.queryClient,
           ),
           (topListData) => {
             if (topListData?.isFetching || !dimensionName)
@@ -276,10 +279,10 @@ function getAggregationQueryForTopList(
         {
           query: {
             enabled: !!timeStore.ready && !!ctx.dashboardStore,
-            keepPreviousData: true,
-            queryClient: ctx.queryClient,
+            placeholderData: keepPreviousData,
           },
         },
+        ctx.queryClient,
       ).subscribe(set);
     },
   );

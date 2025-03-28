@@ -12,8 +12,12 @@ import {
   type V1ProfileColumn,
   type V1TableColumnsResponse,
 } from "@rilldata/web-common/runtime-client";
+import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import { getPriorityForColumn } from "@rilldata/web-common/runtime-client/http-request-queue/priorities";
-import type { QueryObserverResult } from "@tanstack/query-core";
+import {
+  keepPreviousData,
+  type QueryObserverResult,
+} from "@tanstack/query-core";
 import { derived, type Readable, writable } from "svelte/store";
 
 export function isFetching(...queries) {
@@ -33,7 +37,7 @@ export function getSummaries(
   database: string,
   databaseSchema: string,
   objectName: string,
-  profileColumnResponse: QueryObserverResult<V1TableColumnsResponse>,
+  profileColumnResponse: QueryObserverResult<V1TableColumnsResponse, HTTPError>,
 ): Readable<Array<ColumnSummary>> {
   return derived(
     profileColumnResponse?.data?.profileColumns?.map((column) => {
@@ -51,7 +55,7 @@ export function getSummaries(
             },
             {
               query: {
-                keepPreviousData: true,
+                placeholderData: keepPreviousData,
                 enabled: !profileColumnResponse.isFetching,
               },
             },
@@ -67,7 +71,7 @@ export function getSummaries(
             },
             {
               query: {
-                keepPreviousData: true,
+                placeholderData: keepPreviousData,
                 enabled: !profileColumnResponse.isFetching,
               },
             },
@@ -298,7 +302,7 @@ export function getTimeSeriesAndSpark(
         smallestTimegrain: $smallestTimeGrain?.data?.timeGrain,
         data: convertTimestampPreview(
           $query?.data?.rollup?.results?.map((di) => {
-            const next = { ...di, count: di?.records?.count };
+            const next = { ...di, count: di?.records?.count as number };
             if (next.count == null || !isFinite(next.count)) {
               next.count = 0;
             }
@@ -307,7 +311,7 @@ export function getTimeSeriesAndSpark(
         ),
         spark: convertTimestampPreview(
           $query?.data?.rollup?.spark?.map((di) => {
-            const next = { ...di, count: di?.records?.count };
+            const next = { ...di, count: di?.records?.count as number };
             if (next.count == null || !isFinite(next.count)) {
               next.count = 0;
             }

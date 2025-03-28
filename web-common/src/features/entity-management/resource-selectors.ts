@@ -79,21 +79,15 @@ export function useResource<T = V1Resource>(
   instanceId: string,
   name: string,
   kind: ResourceKind,
-  queryOptions?: CreateQueryOptions<
-    V1GetResourceResponse,
-    ErrorType<RpcStatus>,
-    T // T is the return type of the `select` function
+  queryOptions?: Partial<
+    CreateQueryOptions<
+      V1GetResourceResponse,
+      ErrorType<RpcStatus>,
+      T // T is the return type of the `select` function
+    >
   >,
+  queryClient?: QueryClient,
 ) {
-  const defaultQueryOptions: CreateQueryOptions<
-    V1GetResourceResponse,
-    ErrorType<RpcStatus>,
-    T
-  > = {
-    select: (data) => data?.resource as T,
-    enabled: !!instanceId && !!name && !!kind,
-  };
-
   return createRuntimeServiceGetResource(
     instanceId,
     {
@@ -102,10 +96,12 @@ export function useResource<T = V1Resource>(
     },
     {
       query: {
-        ...defaultQueryOptions,
+        select: (data) => data?.resource as T,
+        enabled: !!instanceId && !!name && !!kind,
         ...queryOptions,
       },
     },
+    queryClient,
   );
 }
 
@@ -118,21 +114,15 @@ export function useResourceV2<T = V1Resource>(
   instanceId: string,
   name: string,
   kind: ResourceKind,
-  queryOptions?: CreateQueryOptions<
-    V1GetResourceResponse,
-    ErrorType<RpcStatus>,
-    T // T is the return type of the `select` function
+  queryOptions?: Partial<
+    CreateQueryOptions<
+      V1GetResourceResponse,
+      ErrorType<RpcStatus>,
+      T // T is the return type of the `select` function
+    >
   >,
+  queryClient?: QueryClient,
 ) {
-  const defaultQueryOptions: CreateQueryOptions<
-    V1GetResourceResponse,
-    ErrorType<RpcStatus>,
-    T
-  > = {
-    select: (data) => data?.resource as T,
-    enabled: !!instanceId && !!name && !!kind,
-  };
-
   return createRuntimeServiceGetResource(
     instanceId,
     {
@@ -141,30 +131,28 @@ export function useResourceV2<T = V1Resource>(
     },
     {
       query: {
-        ...defaultQueryOptions,
+        select: (data) => data?.resource as T,
+        enabled: !!instanceId && !!name && !!kind,
         ...queryOptions,
       },
     },
+    queryClient,
   );
 }
 
 export function useProjectParser(
   queryClient: QueryClient,
   instanceId: string,
-  queryOptions?: CreateQueryOptions<
-    V1GetResourceResponse,
-    ErrorType<RpcStatus>,
-    V1Resource
+  queryOptions?: Partial<
+    CreateQueryOptions<V1GetResourceResponse, ErrorType<RpcStatus>, V1Resource>
   >,
 ) {
   return useResource(
     instanceId,
     SingletonProjectParserName,
     ResourceKind.ProjectParser,
-    {
-      queryClient,
-      ...queryOptions,
-    },
+    queryOptions,
+    queryClient,
   );
 }
 

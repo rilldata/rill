@@ -27,9 +27,12 @@
       },
     });
 
-    await queryClient.invalidateQueries(
-      getRuntimeServiceListResourcesQueryKey($runtime.instanceId, undefined),
-    );
+    await queryClient.invalidateQueries({
+      queryKey: getRuntimeServiceListResourcesQueryKey(
+        $runtime.instanceId,
+        undefined,
+      ),
+    });
   }
 </script>
 

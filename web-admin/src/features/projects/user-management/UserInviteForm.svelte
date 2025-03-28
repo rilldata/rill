@@ -71,13 +71,19 @@
           }),
         );
 
-        await queryClient.invalidateQueries(
-          getAdminServiceListProjectMemberUsersQueryKey(organization, project),
-        );
+        await queryClient.invalidateQueries({
+          queryKey: getAdminServiceListProjectMemberUsersQueryKey(
+            organization,
+            project,
+          ),
+        });
 
-        await queryClient.invalidateQueries(
-          getAdminServiceListProjectInvitesQueryKey(organization, project),
-        );
+        await queryClient.invalidateQueries({
+          queryKey: getAdminServiceListProjectInvitesQueryKey(
+            organization,
+            project,
+          ),
+        });
 
         eventBus.emit("notification", {
           type: "success",

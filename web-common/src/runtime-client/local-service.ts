@@ -53,10 +53,12 @@ export function createLocalServiceGetMetadata<
   TData = Awaited<ReturnType<typeof localServiceGetMetadata>>,
   TError = ConnectError,
 >(options?: {
-  query?: CreateQueryOptions<
-    Awaited<ReturnType<typeof localServiceGetMetadata>>,
-    TError,
-    TData
+  query?: Partial<
+    CreateQueryOptions<
+      Awaited<ReturnType<typeof localServiceGetMetadata>>,
+      TError,
+      TData
+    >
   >;
 }) {
   const { query: queryOptions } = options ?? {};
@@ -100,11 +102,13 @@ export function createLocalServicePushToGithub<
   TError = ConnectError,
   TContext = unknown,
 >(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof localServicePushToGithub>>,
-    TError,
-    PartialMessage<PushToGithubRequest>,
-    TContext
+  mutation?: Partial<
+    CreateMutationOptions<
+      Awaited<ReturnType<typeof localServicePushToGithub>>,
+      TError,
+      PartialMessage<PushToGithubRequest>,
+      TContext
+    >
   >;
 }) {
   const { mutation: mutationOptions } = options ?? {};
@@ -113,7 +117,7 @@ export function createLocalServicePushToGithub<
     unknown,
     PartialMessage<PushToGithubRequest>,
     unknown
-  >(localServicePushToGithub, mutationOptions);
+  >({ mutationFn: localServicePushToGithub, ...mutationOptions });
 }
 
 export function localServiceDeploy(args: PartialMessage<DeployProjectRequest>) {
@@ -123,11 +127,13 @@ export function createLocalServiceDeploy<
   TError = ConnectError,
   TContext = unknown,
 >(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof localServiceDeploy>>,
-    TError,
-    PartialMessage<DeployProjectRequest>,
-    TContext
+  mutation?: Partial<
+    CreateMutationOptions<
+      Awaited<ReturnType<typeof localServiceDeploy>>,
+      TError,
+      PartialMessage<DeployProjectRequest>,
+      TContext
+    >
   >;
 }) {
   const { mutation: mutationOptions } = options ?? {};
@@ -136,7 +142,7 @@ export function createLocalServiceDeploy<
     unknown,
     PartialMessage<DeployProjectRequest>,
     unknown
-  >(localServiceDeploy, mutationOptions);
+  >({ mutationFn: localServiceDeploy, ...mutationOptions });
 }
 
 export function localServiceRedeploy(
@@ -161,7 +167,7 @@ export function createLocalServiceRedeploy<
     unknown,
     PartialMessage<RedeployProjectRequest>,
     unknown
-  >(localServiceRedeploy, mutationOptions);
+  >({ mutationFn: localServiceRedeploy, ...mutationOptions });
 }
 
 export function localServiceGetCurrentUser() {
@@ -174,10 +180,12 @@ export function createLocalServiceGetCurrentUser<
   TData = Awaited<ReturnType<typeof localServiceGetCurrentUser>>,
   TError = ConnectError,
 >(options?: {
-  query?: CreateQueryOptions<
-    Awaited<ReturnType<typeof localServiceGetCurrentUser>>,
-    TError,
-    TData
+  query?: Partial<
+    CreateQueryOptions<
+      Awaited<ReturnType<typeof localServiceGetCurrentUser>>,
+      TError,
+      TData
+    >
   >;
 }) {
   const { query: queryOptions } = options ?? {};
@@ -198,10 +206,12 @@ export function createLocalServiceGetCurrentProject<
   TData = Awaited<ReturnType<typeof localServiceGetCurrentProject>>,
   TError = ConnectError,
 >(options?: {
-  query?: CreateQueryOptions<
-    Awaited<ReturnType<typeof localServiceGetCurrentProject>>,
-    TError,
-    TData
+  query?: Partial<
+    CreateQueryOptions<
+      Awaited<ReturnType<typeof localServiceGetCurrentProject>>,
+      TError,
+      TData
+    >
   >;
 }) {
   const { query: queryOptions } = options ?? {};
@@ -226,12 +236,16 @@ export function createLocalServiceListOrganizationsAndBillingMetadataRequest<
   >,
   TError = ConnectError,
 >(options?: {
-  query?: CreateQueryOptions<
-    Awaited<
-      ReturnType<typeof localServiceListOrganizationsAndBillingMetadataRequest>
-    >,
-    TError,
-    TData
+  query?: Partial<
+    CreateQueryOptions<
+      Awaited<
+        ReturnType<
+          typeof localServiceListOrganizationsAndBillingMetadataRequest
+        >
+      >,
+      TError,
+      TData
+    >
   >;
 }) {
   const { query: queryOptions } = options ?? {};

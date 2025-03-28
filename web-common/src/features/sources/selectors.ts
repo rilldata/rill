@@ -124,8 +124,8 @@ export function createTableColumnsWithName(
             profileColumns: data.profileColumns,
           };
         },
-        queryClient,
       },
     },
+    queryClient,
   );
 }

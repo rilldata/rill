@@ -14,7 +14,7 @@
   export let organizationFaviconUrl: string | undefined;
 
   const orgUpdater = createAdminServiceUpdateOrganization();
-  $: ({ error, isLoading, mutateAsync } = $orgUpdater);
+  $: ({ error, isPending: isLoading, mutateAsync } = $orgUpdater);
 
   async function onSave(assetId: string) {
     await mutateAsync({
@@ -23,9 +23,9 @@
         faviconAssetId: assetId,
       },
     });
-    void queryClient.invalidateQueries(
-      getAdminServiceGetOrganizationQueryKey(organization),
-    );
+    void queryClient.invalidateQueries({
+      queryKey: getAdminServiceGetOrganizationQueryKey(organization),
+    });
     void invalidate("app:root");
   }
 
@@ -36,9 +36,9 @@
         faviconAssetId: "",
       },
     });
-    void queryClient.invalidateQueries(
-      getAdminServiceGetOrganizationQueryKey(organization),
-    );
+    void queryClient.invalidateQueries({
+      queryKey: getAdminServiceGetOrganizationQueryKey(organization),
+    });
     void invalidate("app:root");
   }
 </script>

@@ -60,5 +60,5 @@ export function createDownloadReportMutation<
     TError,
     { data: DownloadReportRequest },
     TContext
-  >(mutationFn, mutationOptions);
+  >({ mutationFn, ...mutationOptions });
 }

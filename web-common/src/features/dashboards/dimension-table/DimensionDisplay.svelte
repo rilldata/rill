@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { selectedDimensionValuesV2 } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
-
   /**
    * DimensionDisplay.svelte
    * -------------------------
@@ -29,6 +27,7 @@
   import DimensionTable from "./DimensionTable.svelte";
   import { getDimensionFilterWithSearch } from "./dimension-table-utils";
   import { featureFlags } from "../../feature-flags";
+  import { selectedDimensionValuesV2 } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 
   const queryLimit = 250;
 
@@ -103,12 +102,13 @@
   $: unfilteredTotal = $leaderboardMeasureCountFeatureFlag
     ? visibleMeasureNames.reduce(
         (acc, measureName) => {
-          acc[measureName] = $totalsQuery?.data?.data?.[0]?.[measureName] ?? 0;
+          acc[measureName] =
+            ($totalsQuery?.data?.data?.[0]?.[measureName] as number) ?? 0;
           return acc;
         },
         {} as { [key: string]: number },
       )
-    : ($totalsQuery?.data?.data?.[0]?.[activeMeasureName] ?? 0);
+    : (($totalsQuery?.data?.data?.[0]?.[activeMeasureName] as number) ?? 0);
 
   $: columns = $virtualizedTableColumns(
     $totalsQuery,

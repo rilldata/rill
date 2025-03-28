@@ -6,7 +6,6 @@ import type { TeamPlanDialogTypes } from "@rilldata/web-admin/features/billing/p
 import { isTeamPlan } from "@rilldata/web-admin/features/billing/plans/utils";
 import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
 import { areAllProjectsHibernating } from "@rilldata/web-admin/features/organizations/selectors";
-import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
 import type { BannerMessage } from "@rilldata/web-common/lib/event-bus/events";
 import { derived } from "svelte/store";
 
@@ -25,9 +24,7 @@ export type BillingIssueMessageCTA = {
   teamPlanEndDate?: string;
 };
 
-export function useBillingIssueMessage(
-  organization: string,
-): CompoundQueryResult<BillingIssueMessage> {
+export function useBillingIssueMessage(organization: string) {
   return derived(
     [
       createAdminServiceGetOrganization(organization),

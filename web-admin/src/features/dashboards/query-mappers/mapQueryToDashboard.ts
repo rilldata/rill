@@ -4,7 +4,6 @@ import type {
   QueryMapperArgs,
   QueryRequests,
 } from "@rilldata/web-admin/features/dashboards/query-mappers/types";
-import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
 import { getFullInitExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
@@ -17,12 +16,7 @@ import {
   type V1MetricsViewComparisonRequest,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { derived, get, readable } from "svelte/store";
-
-type DashboardStateForQuery = {
-  exploreState?: MetricsExplorerEntity;
-  exploreName?: string;
-};
+import { derived, get, readable, type Readable } from "svelte/store";
 
 /**
  * Builds the dashboard url from query name and args.
@@ -34,12 +28,17 @@ export function mapQueryToDashboard(
   queryArgsJson: string | undefined,
   executionTime: string | undefined,
   annotations: Record<string, string>,
-): CompoundQueryResult<DashboardStateForQuery> {
+): Readable<{
+  isFetching: boolean;
+  isLoading: boolean;
+  error: Error;
+  data?: { exploreState: MetricsExplorerEntity; exploreName: string };
+}> {
   if (!queryName || !queryArgsJson || !executionTime)
     return readable({
       isFetching: false,
       isLoading: false,
-      error: "Required parameters are missing.",
+      error: new Error("Required parameters are missing."),
     });
 
   let metricsViewName: string = "";
@@ -75,8 +74,9 @@ export function mapQueryToDashboard(
     return readable({
       isFetching: false,
       isLoading: false,
-      error:
+      error: new Error(
         "Failed to find metrics view name. Please check the format of the report.",
+      ),
     });
   }
   // backwards compatibility for older alerts created on metrics explore directly
@@ -99,7 +99,7 @@ export function mapQueryToDashboard(
         set({
           isFetching: true,
           isLoading: true,
-          error: "",
+          error: new Error(""),
         });
         return;
       }
@@ -108,9 +108,10 @@ export function mapQueryToDashboard(
         set({
           isFetching: false,
           isLoading: false,
-          error:
+          error: new Error(
             validSpecResp.error?.response?.data?.message ??
-            timeRangeSummary.error?.response?.data?.message,
+              timeRangeSummary.error?.response?.data?.message,
+          ),
         });
         return;
       }
@@ -124,7 +125,7 @@ export function mapQueryToDashboard(
         set({
           isFetching: false,
           isLoading: false,
-          error: "Failed to fetch explore.",
+          error: new Error("Failed to fetch explore."),
         });
         return;
       }
@@ -134,7 +135,7 @@ export function mapQueryToDashboard(
         set({
           isFetching: false,
           isLoading: false,
-          error: "Failed to fetch time range summary.",
+          error: new Error("Failed to fetch time range summary."),
         });
         return;
       }
@@ -170,7 +171,7 @@ export function mapQueryToDashboard(
           set({
             isFetching: false,
             isLoading: false,
-            error: "",
+            error: new Error(),
             data: {
               exploreState: newExploreState,
               exploreName,

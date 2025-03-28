@@ -41,12 +41,12 @@
       $reportQuery.data.resource.report.state.executionHistory[0] ===
         lastExecution
     ) {
-      await queryClient.invalidateQueries(
-        getRuntimeServiceGetResourceQueryKey(instanceId, {
+      await queryClient.invalidateQueries({
+        queryKey: getRuntimeServiceGetResourceQueryKey(instanceId, {
           "name.name": report,
           "name.kind": ResourceKind.Report,
         }),
-      );
+      });
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   }
@@ -56,7 +56,7 @@
   <Button
     type="primary"
     on:click={handleRunNow}
-    disabled={$triggerReport.isLoading}
+    disabled={$triggerReport.isPending}
   >
     Run now
   </Button>
