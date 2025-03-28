@@ -2,7 +2,6 @@ import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashbo
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { convertExploreStateToURLSearchParamsNoCompression } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
-import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   type V1ExploreSpec,
@@ -146,7 +145,7 @@ export function updateExploreSessionStore(
   );
   try {
     console.log(
-      "SAVE",
+      "SESSION:SAVE",
       DashboardState_ActivePage[activePage],
       storedUrlSearch.toString(),
       sharedUrlSearch.toString(),
@@ -189,7 +188,7 @@ export function updateExploreSessionStore(
       );
     try {
       console.log(
-        "SAVE:OTHER",
+        "SESSION:SAVE:OTHER",
         DashboardState_ActivePage[otherPage],
         otherPageUrlSearch.toString(),
       );
@@ -261,6 +260,12 @@ export function getExplorePresetForActivePage(
       activePage = DashboardState_ActivePage.DIMENSION_TABLE;
     }
 
+    console.log(
+      "SESSION:LOAD",
+      DashboardState_ActivePage[activePage],
+      storedUrlSearch,
+      sharedUrlSearch,
+    );
     return <Partial<MetricsExplorerEntity>>{
       activePage,
       ...sharedExploreState,
@@ -269,16 +274,4 @@ export function getExplorePresetForActivePage(
   } catch {
     return undefined;
   }
-}
-
-export function hasSessionStorageData(
-  exploreName: string,
-  prefix: string | undefined,
-) {
-  const sharedKey = getKeyForSessionStore(
-    exploreName,
-    prefix,
-    SharedStateStoreKey,
-  );
-  return !!sessionStorage.getItem(sharedKey);
 }

@@ -4,6 +4,7 @@ import { ResourceWatcher } from "../utils/ResourceWatcher";
 import { gotoNavEntry } from "../utils/waitHelpers";
 import { test } from "../setup/base";
 
+// We are deprecating this
 test.describe("time controls settings from explore preset", () => {
   test.use({ project: "AdBids" });
 

@@ -42,6 +42,7 @@ export function getMostRecentExploreState(
     );
     if (!rawUrlSearch) return { partialExploreState: undefined, errors: [] };
 
+    console.log("LOCAL:LOAD", rawUrlSearch);
     return convertURLSearchParamsToExploreState(
       new URLSearchParams(rawUrlSearch),
       metricsView,
@@ -105,6 +106,7 @@ export function saveMostRecentExploreState(
   );
 
   try {
+    console.log("LOCAL:SAVE", urlSearchParams.toString());
     localStorage.setItem(
       getKeyForLocalStore(exploreName, prefix),
       urlSearchParams.toString(),
@@ -112,4 +114,12 @@ export function saveMostRecentExploreState(
   } catch {
     // no-op
   }
+}
+
+export function clearMostRecentExploreState(
+  exploreName: string,
+  prefix: string | undefined,
+) {
+  const key = getKeyForLocalStore(exploreName, prefix);
+  localStorage.removeItem(key);
 }

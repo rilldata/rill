@@ -83,7 +83,6 @@ export function convertExploreStateToURLSearchParams(
   preset: V1ExplorePreset,
   // Used to decide whether to compress or not based on the full url length
   url: URL,
-  disableCompression = false,
 ): URLSearchParams {
   const searchParams = convertExploreStateToURLSearchParamsNoCompression(
     exploreState,

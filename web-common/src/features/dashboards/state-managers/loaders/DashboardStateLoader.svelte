@@ -9,7 +9,7 @@
 </script>
 
 <script lang="ts">
-  import { afterNavigate, goto } from "$app/navigation";
+  import { afterNavigate } from "$app/navigation";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import type { SupportedCompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
   import { DashboardStateDataLoader } from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateDataLoader";

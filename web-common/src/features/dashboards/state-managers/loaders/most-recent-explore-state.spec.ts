@@ -7,7 +7,6 @@ import {
   AD_BIDS_BID_PRICE_MEASURE,
   AD_BIDS_EXPLORE_INIT,
   AD_BIDS_EXPLORE_NAME,
-  AD_BIDS_IMPRESSIONS_MEASURE,
   AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
   AD_BIDS_METRICS_NAME,
   AD_BIDS_PUBLISHER_DIMENSION,
@@ -22,7 +21,6 @@ import {
   AD_BIDS_SORT_ASC_BY_BID_PRICE,
   AD_BIDS_SORT_BY_PERCENT_VALUE,
   AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY,
-  AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY,
   AD_BIDS_TOGGLE_IMPRESSIONS_MEASURE_VISIBILITY,
   applyMutationsToDashboard,
   type TestDashboardMutation,
@@ -35,7 +33,6 @@ import { getCleanMetricsExploreForAssertion } from "@rilldata/web-common/feature
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import { DashboardState_LeaderboardSortDirection } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { render, screen, waitFor } from "@testing-library/svelte";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 

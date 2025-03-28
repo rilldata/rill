@@ -47,15 +47,16 @@ export class DashboardStateSync {
     );
 
     this.unsubInit = derived(
-      [dataLoader.initExploreState, this.exploreStore],
+      [dataLoader.initExploreState],
       (states) => states,
-    ).subscribe(([initExploreState, exploreStore]) => {
-      if (exploreStore || initExploreState?.activePage === undefined) return;
+    ).subscribe(([initExploreState]) => {
+      // initExploreState is not ready yet. Either data is still loading or dashboard is not reconciled yet.
+      if (initExploreState?.activePage === undefined) return;
       void this.handleExploreInit(initExploreState);
     });
 
     this.unsubExploreState = this.exploreStore.subscribe((exploreState) => {
-      if (!exploreState) return;
+      if (!exploreState || !this.initialized) return;
       void this.gotoNewState(exploreState);
     });
   }
@@ -90,6 +91,15 @@ export class DashboardStateSync {
       initExploreState,
       pageState.url,
     );
+    this.prevUrl = redirectUrl;
+
+    if (redirectUrl.search === pageState.url.search) {
+      return;
+    }
+
+    console.log("REPLACE:INIT", pageState.url.search, redirectUrl.search);
+    const updatedExploreState =
+      get(metricsExplorerStore).entities[this.exploreName];
     // update session store to make sure updated to url or the initial state is propagated to the session store
     updateExploreSessionStore(
       this.exploreName,
@@ -97,14 +107,16 @@ export class DashboardStateSync {
       metricsViewSpec,
       exploreSpec,
       timeControlsState,
-      get(metricsExplorerStore).entities[this.exploreName],
+      updatedExploreState,
     );
-    this.prevUrl = redirectUrl;
-
-    if (redirectUrl.search === pageState.url.search) {
-      return;
-    }
-
+    saveMostRecentExploreState(
+      this.exploreName,
+      this.extraPrefix,
+      metricsViewSpec,
+      exploreSpec,
+      timeControlsState,
+      updatedExploreState,
+    );
     // using `replaceState` directly messes up the navigation entries,
     // `from` and `to` have the old url before being replaced in `afterNavigate` calls leading to incorrect handling.
     return goto(redirectUrl, {
@@ -163,14 +175,25 @@ export class DashboardStateSync {
       return;
     }
 
+    const updatedExploreState =
+      get(metricsExplorerStore).entities[this.exploreName];
     updateExploreSessionStore(
       this.exploreName,
       this.extraPrefix,
       metricsViewSpec,
       exploreSpec,
       timeControlsState,
-      get(metricsExplorerStore).entities[this.exploreName],
+      updatedExploreState,
     );
+    saveMostRecentExploreState(
+      this.exploreName,
+      this.extraPrefix,
+      metricsViewSpec,
+      exploreSpec,
+      timeControlsState,
+      updatedExploreState,
+    );
+    console.log("REPLACE:URL", this.prevUrl?.search, redirectUrl.search);
     this.prevUrl = redirectUrl;
     // using `replaceState` directly messes up the navigation entries,
     // `from` and `to` have the old url before being replaced in `afterNavigate` calls leading to incorrect handling.
@@ -201,11 +224,11 @@ export class DashboardStateSync {
       newUrl,
     );
     newUrl.search = exploreStateParams.toString();
-    if (!this.prevUrl || this.prevUrl.search === newUrl.search) return;
+    if (!this.prevUrl || this.prevUrl.search === newUrl.search) {
+      console.log("NOGO", this.prevUrl?.search, newUrl.search);
+      return;
+    }
 
-    this.prevUrl = newUrl;
-    // dashboard changed so we should update the url
-    void goto(newUrl);
     // also update the session store
     updateExploreSessionStore(
       this.exploreName,
@@ -223,5 +246,9 @@ export class DashboardStateSync {
       timeControlsState,
       exploreState,
     );
+    console.log("GOTO:STATE", this.prevUrl?.search, newUrl.search);
+    this.prevUrl = newUrl;
+    // dashboard changed so we should update the url
+    return goto(newUrl);
   }
 }

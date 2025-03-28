@@ -105,6 +105,8 @@ describe("DashboardStateLoader", () => {
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
 
       assertExploreStateSubset(ExploreStateSubsetForBaseState);
+      // no additional goto is called
+      expect(pageMock.urlSearchHistory).toEqual([]);
     });
 
     it("Should load most recent dashboard state", async () => {
@@ -133,11 +135,16 @@ describe("DashboardStateLoader", () => {
         leaderboardContextColumn: undefined,
         sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
       });
+      const initUrlSearch =
+        "tr=P7D&compare_tr=rill-PP&grain=hour&measures=bid_price&dims=domain&sort_by=bid_price";
+      pageMock.assertSearchParams(initUrlSearch);
 
       pageMock.popState("");
       await waitFor(() =>
         assertExploreStateSubset(ExploreStateSubsetForBaseState),
       );
+      // only 2 urls should in history
+      expect(pageMock.urlSearchHistory).toEqual([initUrlSearch, ""]);
     });
 
     it("Should load from session dashboard state", async () => {
@@ -171,11 +178,16 @@ describe("DashboardStateLoader", () => {
         leaderboardContextColumn: undefined,
         sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
       });
+      const initUrlSearch =
+        "tr=P14D&compare_tr=rill-PW&measures=impressions&dims=publisher";
+      pageMock.assertSearchParams(initUrlSearch);
 
       pageMock.popState("");
       await waitFor(() =>
         assertExploreStateSubset(ExploreStateSubsetForBaseState),
       );
+      // only 2 urls should in history
+      expect(pageMock.urlSearchHistory).toEqual([initUrlSearch, ""]);
     });
   });
 
@@ -216,6 +228,8 @@ describe("DashboardStateLoader", () => {
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
 
       assertExploreStateSubset(ExploreStateSubsetForBaseState);
+      // no additional goto is called
+      expect(pageMock.urlSearchHistory).toEqual([]);
     });
 
     it("Should load most recent dashboard state", async () => {
@@ -239,11 +253,15 @@ describe("DashboardStateLoader", () => {
         leaderboardContextColumn: undefined,
         sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
       });
+      const initUrlSearch = "measures=bid_price&dims=domain&sort_by=bid_price";
+      pageMock.assertSearchParams(initUrlSearch);
 
       pageMock.popState("");
       await waitFor(() =>
         assertExploreStateSubset(ExploreStateSubsetForBaseState),
       );
+      // only 2 urls should in history
+      expect(pageMock.urlSearchHistory).toEqual([initUrlSearch, ""]);
     });
 
     it("Should load from session dashboard state", async () => {
@@ -272,11 +290,15 @@ describe("DashboardStateLoader", () => {
         leaderboardContextColumn: undefined,
         sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
       });
+      const initUrlSearch = "measures=impressions&dims=publisher";
+      pageMock.assertSearchParams(initUrlSearch);
 
       pageMock.popState("");
       await waitFor(() =>
         assertExploreStateSubset(ExploreStateSubsetForBaseState),
       );
+      // only 2 urls should in history
+      expect(pageMock.urlSearchHistory).toEqual([initUrlSearch, ""]);
     });
   });
 });

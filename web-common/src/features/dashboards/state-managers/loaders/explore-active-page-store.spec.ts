@@ -60,38 +60,38 @@ const TestCases: {
   initView: TestView;
   view: TestView;
 }[] = [
-  // {
-  //   title: "Explore <=> tdd",
-  //   initView: {
-  //     view: "explore",
-  //     mutations: [],
-  //     expectedSearch:
-  //       "tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&sort_dir=ASC&sort_by=bid_price&sort_type=percent",
-  //   },
-  //   view: {
-  //     view: "tdd",
-  //     additionalParams: "&measure=" + AD_BIDS_IMPRESSIONS_MEASURE,
-  //     mutations: [AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD],
-  //     expectedSearch:
-  //       "view=tdd&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions&chart_type=stacked_bar",
-  //   },
-  // },
-  // {
-  //   title: "dimension table <=> tdd",
-  //   initView: {
-  //     view: "explore",
-  //     mutations: [AD_BIDS_OPEN_PUB_DIMENSION_TABLE],
-  //     expectedSearch:
-  //       "tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=publisher&sort_dir=ASC&sort_by=bid_price&sort_type=percent",
-  //   },
-  //   view: {
-  //     view: "tdd",
-  //     additionalParams: "&measure=" + AD_BIDS_IMPRESSIONS_MEASURE,
-  //     mutations: [AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD],
-  //     expectedSearch:
-  //       "view=tdd&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions&chart_type=stacked_bar",
-  //   },
-  // },
+  {
+    title: "Explore <=> tdd",
+    initView: {
+      view: "explore",
+      mutations: [],
+      expectedSearch:
+        "tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&sort_dir=ASC&sort_by=bid_price&sort_type=percent",
+    },
+    view: {
+      view: "tdd",
+      additionalParams: "&measure=" + AD_BIDS_IMPRESSIONS_MEASURE,
+      mutations: [AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD],
+      expectedSearch:
+        "view=tdd&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions&chart_type=stacked_bar",
+    },
+  },
+  {
+    title: "dimension table <=> tdd",
+    initView: {
+      view: "explore",
+      mutations: [AD_BIDS_OPEN_PUB_DIMENSION_TABLE],
+      expectedSearch:
+        "tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=publisher&sort_dir=ASC&sort_by=bid_price&sort_type=percent",
+    },
+    view: {
+      view: "tdd",
+      additionalParams: "&measure=" + AD_BIDS_IMPRESSIONS_MEASURE,
+      mutations: [AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD],
+      expectedSearch:
+        "view=tdd&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions&chart_type=stacked_bar",
+    },
+  },
 
   {
     title: "Explore <=> Pivot",
@@ -111,43 +111,43 @@ const TestCases: {
         "view=pivot&tr=P7D&compare_tr=rill-PP&f=publisher+IN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC",
     },
   },
-  // {
-  //   title: "dimension table <=> Pivot",
-  //   initView: {
-  //     view: "explore",
-  //     mutations: [AD_BIDS_OPEN_PUB_DIMENSION_TABLE],
-  //     expectedSearch:
-  //       "tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=publisher&sort_dir=ASC&sort_by=bid_price&sort_type=percent",
-  //   },
-  //   view: {
-  //     view: "pivot",
-  //     mutations: [
-  //       AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS,
-  //       AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC,
-  //     ],
-  //     expectedSearch:
-  //       "view=pivot&tr=P7D&compare_tr=rill-PP&f=publisher+IN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC",
-  //   },
-  // },
-  // {
-  //   title: "tdd <=> Pivot",
-  //   initView: {
-  //     view: "tdd",
-  //     additionalParams: "&measure=" + AD_BIDS_IMPRESSIONS_MEASURE,
-  //     mutations: [AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD],
-  //     expectedSearch:
-  //       "view=tdd&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions&chart_type=stacked_bar",
-  //   },
-  //   view: {
-  //     view: "pivot",
-  //     mutations: [
-  //       AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS,
-  //       AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC,
-  //     ],
-  //     expectedSearch:
-  //       "view=pivot&tr=P7D&compare_tr=rill-PP&f=publisher+IN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC",
-  //   },
-  // },
+  {
+    title: "dimension table <=> Pivot",
+    initView: {
+      view: "explore",
+      mutations: [AD_BIDS_OPEN_PUB_DIMENSION_TABLE],
+      expectedSearch:
+        "tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=publisher&sort_dir=ASC&sort_by=bid_price&sort_type=percent",
+    },
+    view: {
+      view: "pivot",
+      mutations: [
+        AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS,
+        AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC,
+      ],
+      expectedSearch:
+        "view=pivot&tr=P7D&compare_tr=rill-PP&f=publisher+IN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC",
+    },
+  },
+  {
+    title: "tdd <=> Pivot",
+    initView: {
+      view: "tdd",
+      additionalParams: "&measure=" + AD_BIDS_IMPRESSIONS_MEASURE,
+      mutations: [AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD],
+      expectedSearch:
+        "view=tdd&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions&chart_type=stacked_bar",
+    },
+    view: {
+      view: "pivot",
+      mutations: [
+        AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS,
+        AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC,
+      ],
+      expectedSearch:
+        "view=pivot&tr=P7D&compare_tr=rill-PP&f=publisher+IN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC",
+    },
+  },
 ];
 
 describe("Explore active page store", () => {
