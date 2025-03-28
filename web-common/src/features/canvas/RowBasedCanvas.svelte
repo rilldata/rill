@@ -3,8 +3,8 @@
   import { clamp } from "@rilldata/web-common/lib/clamp";
   import {
     type V1CanvasRow as APIV1CanvasRow,
-    createQueryServiceResolveCanvas,
     type V1CanvasItem,
+    type V1ResolveCanvasResponse,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { get, writable } from "svelte/store";
@@ -43,14 +43,12 @@
   };
 
   export let fileArtifact: FileArtifact;
+  export let canvasData: V1ResolveCanvasResponse | undefined;
   export let canvasName: string;
   export let openSidebar: () => void;
 
   $: ({
-    canvasEntity: {
-      setSelectedComponent,
-      spec: { canvasSpec, metricViewNames },
-    },
+    canvasEntity: { setSelectedComponent },
   } = getCanvasStore(canvasName));
 
   let mousePosition = { x: 0, y: 0 };
@@ -73,7 +71,7 @@
   let dragTimeout: ReturnType<typeof setTimeout> | null = null;
   let dragItemPosition = { top: 0, left: 0 };
   let dragItemDimensions = { width: 0, height: 0 };
-  let spec = $canvasSpec ?? {
+  let spec = canvasData?.canvas?.canvas?.spec ?? {
     rows: [],
     filtersEnabled: false,
     maxWidth: DEFAULT_DASHBOARD_WIDTH,
@@ -81,15 +79,19 @@
   let openSidebarAfterSelection = false;
 
   $: ({ instanceId } = $runtime);
+  $: metricsViews = Object.values(canvasData?.referencedMetricsViews ?? {});
 
-  $: metricsViewQuery = useDefaultMetrics(instanceId, $metricViewNames?.[0]);
+  $: metricsViewQuery = useDefaultMetrics(
+    instanceId,
+    metricsViews?.[0]?.meta?.name?.name,
+  );
 
   $: ({ editorContent, updateEditorContent } = fileArtifact);
   $: contents = parseDocument($editorContent ?? "");
 
-  $: if ($canvasSpec) {
+  $: if (canvasData?.canvas?.canvas?.spec) {
     if (!get(activelyEditing)) {
-      spec = structuredClone($canvasSpec ?? spec);
+      spec = structuredClone(canvasData?.canvas?.canvas?.spec ?? spec);
     }
   }
 
@@ -132,14 +134,6 @@
   }
 
   $: defaultMetrics = $metricsViewQuery?.data;
-
-  $: canvasResolverQuery = createQueryServiceResolveCanvas(
-    instanceId,
-    canvasName,
-    {},
-  );
-
-  $: canvasData = $canvasResolverQuery.data;
 
   function onColumResizeStart(e: MouseEvent & { currentTarget: HTMLElement }) {
     initialMousePosition = mousePosition;
@@ -670,7 +664,7 @@
               initializeRow(specCanvasRows.length, type);
             }}
           />
-        {:else}
+        {:else if canvasData}
           <ComponentError error="No valid metrics view in project" />
         {/if}
       </ItemWrapper>

@@ -22,6 +22,8 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import PreviewButton from "../explores/PreviewButton.svelte";
   import RowBasedCanvas from "../canvas/RowBasedCanvas.svelte";
+  import { createQueryServiceResolveCanvas } from "@rilldata/web-common/runtime-client";
+  import DelayedSpinner from "../entity-management/DelayedSpinner.svelte";
 
   export let fileArtifact: FileArtifact;
 
@@ -52,7 +54,6 @@
   $: selectedViewStore = workspace.view;
   $: selectedView = $selectedViewStore ?? "code";
 
-  $: canvasResource = data?.canvas;
   $: canvasName = getNameFromFile(filePath);
 
   $: ({ instanceId } = $runtime);
@@ -63,6 +64,14 @@
   );
 
   $: mainError = lineBasedRuntimeErrors?.at(0);
+
+  $: canvasResolverQuery = createQueryServiceResolveCanvas(
+    instanceId,
+    canvasName,
+    {},
+  );
+  $: canvasResolverQueryResult = $canvasResolverQuery;
+  $: canvasData = canvasResolverQueryResult.data;
 
   async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(
@@ -118,8 +127,11 @@
               header="Unable to load canvas preview"
               statusCode={404}
             />
-          {:else if canvasResource}
+          {:else if canvasResolverQueryResult.isLoading}
+            <DelayedSpinner isLoading={true} size="48px" />
+          {:else if canvasData}
             <RowBasedCanvas
+              {canvasData}
               {canvasName}
               openSidebar={workspace.inspector.open}
               {fileArtifact}
