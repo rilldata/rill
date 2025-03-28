@@ -50,7 +50,7 @@
     onItemClick(randomChartType);
   }
 
-  function getAriaLable(row: number | undefined, column: number | undefined) {
+  function getAriaLabel(row: number | undefined, column: number | undefined) {
     return `Insert widget${row !== undefined ? ` in row ${row + 1}` : ""}${
       column !== undefined ? ` at column ${column + 1}` : ""
     }`;
@@ -90,7 +90,7 @@
         {disabled}
         use:builder.action
         {...builder}
-        aria-label={getAriaLable(rowIndex, columnIndex)}
+        aria-label={getAriaLabel(rowIndex, columnIndex)}
         title="Insert widget"
         class:bg-gray-50={open}
         class="pointer-events-auto active:bg-gray-100 disabled:pointer-events-none h-7 px-2 grid place-content-center z-50 hover:bg-gray-50 text-slate-500 disabled:opacity-50"
