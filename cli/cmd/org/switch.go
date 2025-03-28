@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/dotrill"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
@@ -30,7 +29,7 @@ func SwitchCmd(ch *cmdutil.Helper) *cobra.Command {
 					return err
 				}
 
-				defaultOrg, err = SwitchSelectFlow(res.Organizations)
+				defaultOrg, err = SwitchSelectFlow(ch, res.Organizations)
 				if err != nil {
 					return err
 				}
@@ -44,7 +43,7 @@ func SwitchCmd(ch *cmdutil.Helper) *cobra.Command {
 				defaultOrg = args[0]
 			}
 
-			err = dotrill.SetDefaultOrg(defaultOrg)
+			err = ch.DotRill.SetDefaultOrg(defaultOrg)
 			if err != nil {
 				return err
 			}
@@ -58,7 +57,7 @@ func SwitchCmd(ch *cmdutil.Helper) *cobra.Command {
 	return switchCmd
 }
 
-func SwitchSelectFlow(orgs []*adminv1.Organization) (string, error) {
+func SwitchSelectFlow(ch *cmdutil.Helper, orgs []*adminv1.Organization) (string, error) {
 	if len(orgs) < 1 {
 		fmt.Println("No organizations found, run `rill org create` first.")
 		return "", nil
@@ -69,7 +68,7 @@ func SwitchSelectFlow(orgs []*adminv1.Organization) (string, error) {
 		orgNames = append(orgNames, org.Name)
 	}
 
-	org, err := dotrill.GetDefaultOrg()
+	org, err := ch.DotRill.GetDefaultOrg()
 	if err != nil {
 		return "", err
 	}
@@ -93,17 +92,17 @@ func SetDefaultOrg(ctx context.Context, ch *cmdutil.Helper) error {
 
 	if len(res.Organizations) == 1 {
 		ch.Org = res.Organizations[0].Name
-		if err := dotrill.SetDefaultOrg(ch.Org); err != nil {
+		if err := ch.DotRill.SetDefaultOrg(ch.Org); err != nil {
 			return err
 		}
 	} else if len(res.Organizations) > 1 {
-		orgName, err := SwitchSelectFlow(res.Organizations)
+		orgName, err := SwitchSelectFlow(ch, res.Organizations)
 		if err != nil {
 			return fmt.Errorf("org selection failed %w", err)
 		}
 
 		ch.Org = orgName
-		if err := dotrill.SetDefaultOrg(ch.Org); err != nil {
+		if err := ch.DotRill.SetDefaultOrg(ch.Org); err != nil {
 			return err
 		}
 	}

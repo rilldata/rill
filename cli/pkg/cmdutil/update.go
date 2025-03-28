@@ -1,4 +1,4 @@
-package update
+package cmdutil
 
 import (
 	"context"
@@ -11,26 +11,25 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/hashicorp/go-version"
-	"github.com/rilldata/rill/cli/pkg/dotrill"
 )
 
 const (
-	addr            = "https://api.github.com/repos/rilldata/rill/releases/latest"
+	versionCheckURI = "https://api.github.com/repos/rilldata/rill/releases/latest"
 	versionCheckTTL = 24 * time.Hour
 )
 
-func CheckVersion(ctx context.Context, currentVersion string) error {
+func (h *Helper) CheckVersion(ctx context.Context) error {
 	// Check if build from source
-	if currentVersion == "" {
+	if h.Version.Number == "" {
 		return nil
 	}
 
-	latestVersion, err := LatestVersion(ctx)
+	latestVersion, err := h.LatestVersion(ctx)
 	if err != nil {
 		return err
 	}
 
-	v1, err := version.NewVersion(currentVersion)
+	v1, err := version.NewVersion(h.Version.Number)
 	if err != nil {
 		return err
 	}
@@ -38,14 +37,14 @@ func CheckVersion(ctx context.Context, currentVersion string) error {
 	v2, err := version.NewVersion(latestVersion)
 	if err != nil {
 		// Set version as empty if any parse errors
-		_ = dotrill.SetVersion("")
+		_ = h.DotRill.SetVersion("")
 		return err
 	}
 
 	if v1.LessThan(v2) {
 		fmt.Printf("%s %s → %s\n\n",
 			color.YellowString("A new version of rill is available (run `rill upgrade`):"),
-			color.CyanString(currentVersion),
+			color.CyanString(h.Version.Number),
 			color.CyanString(latestVersion))
 		return nil
 	}
@@ -53,14 +52,14 @@ func CheckVersion(ctx context.Context, currentVersion string) error {
 	return nil
 }
 
-// This will return the latest version available in cache or fetch it from github if its older than 24h
-func LatestVersion(ctx context.Context) (string, error) {
-	cachedVersion, err := dotrill.GetVersion()
+// LatestVersion returns the latest available version of Rill (cached for up to 24 hours).
+func (h *Helper) LatestVersion(ctx context.Context) (string, error) {
+	cachedVersion, err := h.DotRill.GetVersion()
 	if err != nil {
 		return "", err
 	}
 
-	cachedVersionUpdatedAt, err := dotrill.GetVersionUpdatedAt()
+	cachedVersionUpdatedAt, err := h.DotRill.GetVersionUpdatedAt()
 	if err != nil {
 		return "", err
 	}
@@ -69,7 +68,7 @@ func LatestVersion(ctx context.Context) (string, error) {
 		updatedAt, err := time.Parse(time.RFC3339, cachedVersionUpdatedAt)
 		if err != nil {
 			// Set versionTs as empty if any parse errors
-			_ = dotrill.SetVersionUpdatedAt("")
+			_ = h.DotRill.SetVersionUpdatedAt("")
 			return "", err
 		}
 
@@ -84,12 +83,12 @@ func LatestVersion(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	err = dotrill.SetVersionUpdatedAt(time.Now().Format(time.RFC3339))
+	err = h.DotRill.SetVersionUpdatedAt(time.Now().Format(time.RFC3339))
 	if err != nil {
 		return "", err
 	}
 
-	err = dotrill.SetVersion(info.Version)
+	err = h.DotRill.SetVersion(info.Version)
 	if err != nil {
 		return "", err
 	}
@@ -97,16 +96,16 @@ func LatestVersion(ctx context.Context) (string, error) {
 	return info.Version, nil
 }
 
-// ReleaseInfo stores information about a release
+// githubReleaseInfo represents information about a release.
 type githubReleaseInfo struct {
 	Version     string    `json:"tag_name"`
 	URL         string    `json:"html_url"`
 	PublishedAt time.Time `json:"published_at"`
 }
 
-// This will fetch the latest version available for rill on github releases
+// fetchLatestVersion fetches the latest version of Rill from Github releases.
 func fetchLatestVersion(ctx context.Context) (*githubReleaseInfo, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, addr, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, versionCheckURI, http.NoBody)
 	if err != nil {
 		return nil, err
 	}

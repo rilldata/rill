@@ -13,7 +13,6 @@ import (
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
 	"github.com/rilldata/rill/cli/pkg/local"
 	"github.com/rilldata/rill/cli/pkg/printer"
@@ -313,7 +312,7 @@ func createOrgFlow(ctx context.Context, ch *cmdutil.Helper, defaultName string) 
 
 	// Switching to the created org
 	ch.Org = res.Organization.Name
-	err = dotrill.SetDefaultOrg(ch.Org)
+	err = ch.DotRill.SetDefaultOrg(ch.Org)
 	if err != nil {
 		return err
 	}

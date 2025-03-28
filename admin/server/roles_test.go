@@ -1,20 +1,22 @@
-package server
+package server_test
 
 import (
 	"context"
 	"testing"
 
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/testadmin"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/stretchr/testify/require"
 )
 
 func TestListRoles(t *testing.T) {
 	ctx := context.Background()
-	svr := newTestServer(t)
+	fix := testadmin.New(t)
 
 	t.Run("Listing roles", func(t *testing.T) {
-		res, err := svr.ListRoles(ctx, &adminv1.ListRolesRequest{})
+		_, c := fix.NewUser(t)
+		res, err := c.ListRoles(ctx, &adminv1.ListRolesRequest{})
 		require.NoError(t, err)
 
 		require.Len(t, res.OrganizationRoles, 4)
@@ -49,7 +51,7 @@ func TestListRoles(t *testing.T) {
 
 	t.Run("Default project role", func(t *testing.T) {
 		// Create a user and an org
-		_, c := newTestUser(t, svr)
+		_, c := fix.NewUser(t)
 		org, err := c.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
 		require.NoError(t, err)
 
