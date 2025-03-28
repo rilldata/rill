@@ -6,7 +6,7 @@ import { RILL_DEVTOOL_BACKGROUND_PROCESS_PID_FILE } from "./constants";
 
 teardown.describe("global teardown", () => {
   teardown("should clean up the test organization", async ({ cli: _ }) => {
-    await execAsync("rill org delete e2e --force");
+    await execAsync("rill org delete e2e --interactive=false");
 
     // Wait for the organization to be deleted
     // This includes deleting the org from Orb and Stripe, which we'd like to do to keep those environments clean.
