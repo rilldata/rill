@@ -4,8 +4,6 @@ name: Validate Migrations
 on:
   create:
   push:
-    tags:
-      - "**"
     branches:
       - "main"
       - "release**"
