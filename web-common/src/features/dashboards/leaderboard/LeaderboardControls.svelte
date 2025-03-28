@@ -22,13 +22,11 @@
         visibleMeasures,
       },
       dimensions: { visibleDimensions, allDimensions },
-      sorting: { sortByMeasure },
     },
     actions: {
       contextColumn: { setContextColumn },
-      sorting: { toggleSort, setSortDescending },
-      setLeaderboardMeasureCount,
       dimensions: { setDimensionVisibility, toggleDimensionVisibility },
+      setLeaderboardMeasureCount,
       setLeaderboardMeasureName,
     },
   } = StateManagers;
@@ -108,12 +106,6 @@
           onMeasureCountChange={(count) => {
             setLeaderboardMeasureCount(count);
           }}
-          resetSort={() => {
-            // Fallback to the first visible measure if sort_by measure is not in the context
-            toggleSort(SortType.VALUE, $visibleMeasures[0].name);
-            setSortDescending();
-          }}
-          sortByMeasure={$sortByMeasure}
         />
       {:else}
         <LeaderboardActiveMeasureDropdown
