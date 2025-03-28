@@ -141,7 +141,7 @@
             {rendererProperties}
           />
         {/if}
-      {:else}
+      {:else if componentResource}
         <ComponentError error="Invalid component type" />
       {/if}
     {:else}
