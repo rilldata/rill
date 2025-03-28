@@ -10,8 +10,6 @@ import (
 )
 
 func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
-	var name string
-
 	deleteCmd := &cobra.Command{
 		Use:   "delete [<org-name>]",
 		Short: "Delete organization",
@@ -90,8 +88,6 @@ This operation cannot be undone. Use --force to skip confirmation.`,
 			return nil
 		},
 	}
-	deleteCmd.Flags().SortFlags = false
-	deleteCmd.Flags().StringVar(&name, "org", ch.Org, "Organization Name")
 
 	return deleteCmd
 }
