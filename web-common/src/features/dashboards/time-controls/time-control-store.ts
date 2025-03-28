@@ -218,7 +218,6 @@ export function createTimeControlStoreFromName(
   metricsViewName: string,
   exploreName: string,
 ) {
-  console.log("create time control store");
   return derived(
     [
       useExploreValidSpec(instanceId, exploreName),

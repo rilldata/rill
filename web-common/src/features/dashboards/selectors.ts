@@ -115,8 +115,6 @@ export function useMetricsViewTimeRange(
 ): CreateQueryResult<V1MetricsViewTimeRangeResponse> {
   const { query: queryOptions } = options ?? {};
 
-  console.log({ queryClient });
-
   return derived(
     [useMetricsViewValidSpec(instanceId, metricsViewName)],
     ([metricsView], set) =>
