@@ -60,6 +60,7 @@
       {showDefaultItem}
       {showFullRange}
       {defaultTimeRange}
+      {allowCustomTimeRange}
       selected={selectedRangeAlias ?? ""}
       grain={activeTimeGrain}
       {onSelectRange}
