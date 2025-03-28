@@ -46,9 +46,25 @@ func Run(ctx context.Context, ver cmdutil.Version) {
 		os.Exit(1)
 	}
 
+	// Check version.
+	// NOTE: Not using PersistentPreRunE due to this issue: https://github.com/spf13/cobra/issues/216.
+	err = ch.CheckVersion(ctx)
+	if err != nil {
+		ch.PrintfWarn("Warning: version check failed: %v\n\n", err)
+	}
+
+	// Print warning if currently acting as an assumed user
+	representingUser, err := ch.DotRill.GetRepresentingUser()
+	if err != nil {
+		ch.PrintfWarn("Could not parse representing user email\n\n")
+	}
+	if representingUser != "" {
+		ch.PrintfWarn("Warning: Running action as %q\n\n", representingUser)
+	}
+
+	// Execute the root command
 	err = RootCmd(ch).ExecuteContext(ctx)
 	code := HandleExecuteError(ch, err)
-
 	ch.Close()
 	os.Exit(code)
 }
@@ -60,22 +76,6 @@ func RootCmd(ch *cmdutil.Helper) *cobra.Command {
 		Use:   "rill <command> [flags]",
 		Short: "A CLI for Rill",
 		Long:  `Work with Rill projects directly from the command line.`,
-		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			// Check version
-			err := ch.CheckVersion(cmd.Context())
-			if err != nil {
-				ch.PrintfWarn("Warning: version check failed: %v\n\n", err)
-			}
-
-			// Print warning if currently acting as an assumed user
-			representingUser, err := ch.DotRill.GetRepresentingUser()
-			if err != nil {
-				ch.PrintfWarn("Could not parse representing user email\n\n")
-			}
-			if representingUser != "" {
-				ch.PrintfWarn("Warning: Running action as %q\n\n", representingUser)
-			}
-		},
 	}
 	rootCmd.Version = ch.Version.String()
 	// silence usage, usage string will only show up if missing arguments/flags
