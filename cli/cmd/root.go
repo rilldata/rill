@@ -83,7 +83,7 @@ func RootCmd(ch *cmdutil.Helper) *cobra.Command {
 	// we want to override some error messages
 	rootCmd.SilenceErrors = true
 	rootCmd.PersistentFlags().BoolP("help", "h", false, "Print usage") // Overrides message for help
-	rootCmd.PersistentFlags().BoolVar(&ch.Interactive, "interactive", false, "Prompt for missing required parameters")
+	rootCmd.PersistentFlags().BoolVar(&ch.Interactive, "interactive", true, "Prompt for missing required parameters")
 	rootCmd.PersistentFlags().Var(&ch.Printer.Format, "format", `Output format (options: "human", "json", "csv")`)
 	rootCmd.PersistentFlags().StringVar(&ch.AdminURLOverride, "api-url", ch.AdminURLOverride, "Base URL for the cloud API")
 	if !ch.IsDev() {

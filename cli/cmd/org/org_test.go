@@ -17,7 +17,6 @@ func TestOrg(t *testing.T) {
 	// Create an org
 	org1 := randomName()
 	res := u1.Run(t, "org", "create", org1)
-	t.Log(res.Output)
 	require.Equal(t, 0, res.ExitCode)
 
 	// Edit the org
