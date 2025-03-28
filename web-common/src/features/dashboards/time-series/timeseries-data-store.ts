@@ -64,7 +64,6 @@ export function createMetricsViewTimeSeries(
       useTimeControlStore(ctx),
     ],
     ([runtime, metricsViewName, dashboardStore, timeControls], set) => {
-      console.log("query");
       return createQueryServiceMetricsViewTimeSeries(
         runtime.instanceId,
         metricsViewName,
