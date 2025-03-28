@@ -57,6 +57,7 @@ export function getUpdatedUrlForExploreState(
     timeControlsState,
     defaultExplorePreset,
     url,
+    true,
   );
 
   // Filter out the default view parameter if needed
@@ -82,37 +83,9 @@ export function convertExploreStateToURLSearchParams(
   timeControlsState: TimeControlState | undefined,
   preset: V1ExplorePreset,
   // Used to decide whether to compress or not based on the full url length
-  url: URL,
+  url?: URL,
+  enableCompression = true,
 ): URLSearchParams {
-  const searchParams = convertExploreStateToURLSearchParamsNoCompression(
-    exploreState,
-    exploreSpec,
-    timeControlsState,
-    preset,
-  );
-
-  const urlCopy = new URL(url);
-  urlCopy.search = searchParams.toString();
-  const shouldCompress = shouldCompressParams(urlCopy);
-  if (!shouldCompress) return searchParams;
-
-  const compressedUrlParams = new URLSearchParams();
-  compressedUrlParams.set(
-    ExploreStateURLParams.GzippedParams,
-    compressUrlParams(searchParams.toString()),
-  );
-  return compressedUrlParams;
-}
-
-export function convertExploreStateToURLSearchParamsNoCompression(
-  exploreState: MetricsExplorerEntity,
-  exploreSpec: V1ExploreSpec,
-  // We have quite a bit of logic in TimeControlState to validate selections and update them
-  // Eg: if a selected grain is not applicable for the current grain then we change it
-  // But it is only available in TimeControlState and not MetricsExplorerEntity
-  timeControlsState: TimeControlState | undefined,
-  preset: V1ExplorePreset,
-) {
   const searchParams = new URLSearchParams();
   if (!exploreState) return searchParams;
 
@@ -171,7 +144,19 @@ export function convertExploreStateToURLSearchParamsNoCompression(
       break;
   }
 
-  return searchParams;
+  if (!enableCompression || !url) return searchParams;
+
+  const urlCopy = new URL(url);
+  urlCopy.search = searchParams.toString();
+  const shouldCompress = shouldCompressParams(urlCopy);
+  if (!shouldCompress) return searchParams;
+
+  const compressedUrlParams = new URLSearchParams();
+  compressedUrlParams.set(
+    ExploreStateURLParams.GzippedParams,
+    compressUrlParams(searchParams.toString()),
+  );
+  return compressedUrlParams;
 }
 
 function toTimeRangesUrl(

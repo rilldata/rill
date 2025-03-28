@@ -1,6 +1,7 @@
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { AD_BIDS_EXPLORE_NAME } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { convertExploreStateToURLSearchParamsNoCompression } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
+import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
 import {
   type DashboardTimeControls,
@@ -113,7 +114,7 @@ export function saveMostRecentExploreState(
     }
   }
 
-  const urlSearchParams = convertExploreStateToURLSearchParamsNoCompression(
+  const urlSearchParams = convertExploreStateToURLSearchParams(
     newExploreState as MetricsExplorerEntity,
     explore,
     timeControlsState,
@@ -121,10 +122,7 @@ export function saveMostRecentExploreState(
   );
 
   try {
-    localStorage.setItem(
-      getKeyForLocalStore(exploreName, prefix),
-      urlSearchParams.toString(),
-    );
+    setMostRecentExploreState(exploreName, prefix, urlSearchParams.toString());
   } catch {
     // no-op
   }
@@ -136,4 +134,12 @@ export function clearMostRecentExploreState(
 ) {
   const key = getKeyForLocalStore(exploreName, prefix);
   localStorage.removeItem(key);
+}
+
+export function setMostRecentExploreState(
+  exploreName: string,
+  prefix: string | undefined,
+  state: string,
+) {
+  localStorage.setItem(getKeyForLocalStore(exploreName, prefix), state);
 }

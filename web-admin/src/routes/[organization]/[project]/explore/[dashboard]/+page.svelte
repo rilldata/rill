@@ -24,7 +24,7 @@
   const PollIntervalWhenDashboardErrored = 5000;
 
   export let data: PageData;
-  $: ({ homeBookmark } = data);
+  $: ({ project } = data);
 
   $: ({ instanceId } = $runtime);
   $: ({
@@ -76,9 +76,9 @@
 
   $: bookmarkExploreStateQuery = getHomeBookmarkExploreState(
     instanceId,
+    project?.id,
     metricsViewName,
     exploreName,
-    homeBookmark,
   );
 
   onNavigate(({ from, to }) => {
@@ -146,6 +146,7 @@
       <StateManagersProvider {metricsViewName} {exploreName}>
         <DashboardStateLoader
           {exploreName}
+          extraPrefix={`${orgName}__${projectName}__`}
           otherSourcesOfState={[
             {
               errorHeader: "Failed to fetch bookmarks.",

@@ -1,6 +1,7 @@
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { AD_BIDS_EXPLORE_NAME } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { convertExploreStateToURLSearchParamsNoCompression } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
+import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
@@ -114,17 +115,6 @@ export function updateExploreSessionStore(
     activePage = DashboardState_ActivePage.DEFAULT;
   }
 
-  const keyForActivePage = getKeyForSessionStore(
-    exploreName,
-    prefix,
-    activePage,
-  );
-  const sharedKey = getKeyForSessionStore(
-    exploreName,
-    prefix,
-    SharedStateStoreKey,
-  );
-
   const storedExploreState: Partial<MetricsExplorerEntity> = {};
   const sharedExploreState: Partial<MetricsExplorerEntity> = {
     ...exploreState,
@@ -140,21 +130,26 @@ export function updateExploreSessionStore(
   }
   storedExploreState.activePage = Number(storedExploreState.activePage);
 
-  const storedUrlSearch = convertExploreStateToURLSearchParamsNoCompression(
+  const storedUrlSearch = convertExploreStateToURLSearchParams(
     storedExploreState as MetricsExplorerEntity,
     explore,
     timeControlsState,
     {},
   );
-  const sharedUrlSearch = convertExploreStateToURLSearchParamsNoCompression(
+  const sharedUrlSearch = convertExploreStateToURLSearchParams(
     sharedExploreState as MetricsExplorerEntity,
     explore,
     timeControlsState,
     {},
   );
   try {
-    sessionStorage.setItem(keyForActivePage, storedUrlSearch.toString());
-    sessionStorage.setItem(sharedKey, sharedUrlSearch.toString());
+    setExploreStateForActivePage(
+      exploreName,
+      prefix,
+      activePage,
+      storedUrlSearch.toString(),
+    );
+    setSharedExploreState(exploreName, prefix, sharedUrlSearch.toString());
   } catch {
     // no-op
   }
@@ -182,36 +177,23 @@ export function updateExploreSessionStore(
       if (!(sharedKey in storedExploreState)) continue;
       otherPageExploreState[sharedKey] = storedExploreState[sharedKey];
     }
-    const otherPageUrlSearch =
-      convertExploreStateToURLSearchParamsNoCompression(
-        otherPageExploreState as MetricsExplorerEntity,
-        explore,
-        timeControlsState,
-        {},
-      );
+    const otherPageUrlSearch = convertExploreStateToURLSearchParams(
+      otherPageExploreState as MetricsExplorerEntity,
+      explore,
+      timeControlsState,
+      {},
+    );
     try {
-      sessionStorage.setItem(otherPageKey, otherPageUrlSearch.toString());
+      setExploreStateForActivePage(
+        exploreName,
+        prefix,
+        Number(otherPage),
+        otherPageUrlSearch.toString(),
+      );
     } catch {
       // no-op
     }
   }
-}
-
-export function clearExploreSessionStore(
-  exploreName: string,
-  prefix: string | undefined,
-) {
-  for (const activePage in ExploreActivePageKeys) {
-    const key = getKeyForSessionStore(exploreName, prefix, Number(activePage));
-    sessionStorage.removeItem(key);
-  }
-
-  const sharedKey = getKeyForSessionStore(
-    exploreName,
-    prefix,
-    SharedStateStoreKey,
-  );
-  sessionStorage.removeItem(sharedKey);
 }
 
 export function getExplorePresetForActivePage(
@@ -270,4 +252,44 @@ export function getExplorePresetForActivePage(
   } catch {
     return undefined;
   }
+}
+
+export function clearExploreSessionStore(
+  exploreName: string,
+  prefix: string | undefined,
+) {
+  for (const activePage in ExploreActivePageKeys) {
+    const key = getKeyForSessionStore(exploreName, prefix, Number(activePage));
+    sessionStorage.removeItem(key);
+  }
+
+  const sharedKey = getKeyForSessionStore(
+    exploreName,
+    prefix,
+    SharedStateStoreKey,
+  );
+  sessionStorage.removeItem(sharedKey);
+}
+
+export function setExploreStateForActivePage(
+  exploreName: string,
+  prefix: string | undefined,
+  activePage: DashboardState_ActivePage,
+  state: string,
+) {
+  sessionStorage.setItem(
+    getKeyForSessionStore(exploreName, prefix, activePage),
+    state,
+  );
+}
+
+export function setSharedExploreState(
+  exploreName: string,
+  prefix: string | undefined,
+  state: string,
+) {
+  sessionStorage.setItem(
+    getKeyForSessionStore(exploreName, prefix, SharedStateStoreKey),
+    state,
+  );
 }

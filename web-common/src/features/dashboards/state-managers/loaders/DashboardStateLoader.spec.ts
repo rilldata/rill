@@ -3,6 +3,10 @@ import {
   type SupportedCompoundQueryResult,
 } from "@rilldata/web-common/features/compound-query-result";
 import { useDashboardFetchMocksForComponentTests } from "@rilldata/web-common/features/dashboards/filters/test/filter-test-utils";
+import {
+  setExploreStateForActivePage,
+  setSharedExploreState,
+} from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-active-page-store";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
@@ -19,7 +23,7 @@ import {
 import {
   type HoistedPage,
   PageMock,
-} from "@rilldata/web-common/features/dashboards/url-state/PageMock";
+} from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/PageMock";
 import { getCleanMetricsExploreForAssertion } from "@rilldata/web-common/features/dashboards/url-state/url-state-variations.spec";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { mockAnimationsForComponentTesting } from "@rilldata/web-common/lib/test/mock-animations";
@@ -35,7 +39,8 @@ import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import { render, screen, waitFor } from "@testing-library/svelte";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import DashboardStateLoaderTest from "web-common/src/features/dashboards/state-managers/loaders/DashboardStateLoaderTest.svelte";
+import DashboardStateLoaderTest from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/DashboardStateLoaderTest.svelte";
+import { setMostRecentExploreState } from "./most-recent-explore-state";
 
 const hoistedPage: HoistedPage = vi.hoisted(() => ({}) as any);
 
@@ -151,6 +156,8 @@ describe("DashboardStateLoader", () => {
 
     it("Should load most recent dashboard state", async () => {
       setMostRecentExploreState(
+        AD_BIDS_EXPLORE_NAME,
+        undefined,
         "view=explore&tr=P7D&compare_tr=rill-PP&grain=hour&measures=bid_price&dims=domain&sort_by=bid_price",
       );
       renderDashboardStateLoader([OtherSourceQueryResult]);
@@ -189,12 +196,20 @@ describe("DashboardStateLoader", () => {
 
     it("Should load from session dashboard state", async () => {
       setMostRecentExploreState(
+        AD_BIDS_EXPLORE_NAME,
+        undefined,
         "view=explore&tr=P7D&compare_tr=rill-PP&grain=hour&measures=bid_price&dims=domain&sort_by=bid_price",
       );
-      setSharedExploreState("tr=P14D&compare_tr=rill-PW&grain=day");
+      setSharedExploreState(
+        AD_BIDS_EXPLORE_NAME,
+        undefined,
+        "tr=P14D&compare_tr=rill-PW&grain=day",
+      );
       setExploreStateForActivePage(
-        "view=explore&measures=impressions&dims=publisher&sort_by=impressions",
+        AD_BIDS_EXPLORE_NAME,
+        undefined,
         DashboardState_ActivePage.DEFAULT,
+        "view=explore&measures=impressions&dims=publisher&sort_by=impressions",
       );
       renderDashboardStateLoader([OtherSourceQueryResult]);
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
@@ -273,6 +288,8 @@ describe("DashboardStateLoader", () => {
 
     it("Should load most recent dashboard state", async () => {
       setMostRecentExploreState(
+        AD_BIDS_EXPLORE_NAME,
+        undefined,
         "view=explore&measures=bid_price&dims=domain&sort_by=bid_price",
       );
       renderDashboardStateLoader();
@@ -305,12 +322,16 @@ describe("DashboardStateLoader", () => {
 
     it("Should load from session dashboard state", async () => {
       setMostRecentExploreState(
+        AD_BIDS_EXPLORE_NAME,
+        undefined,
         "view=explore&measures=bid_price&dims=domain&sort_by=bid_price",
       );
-      setSharedExploreState("view=explore");
+      setSharedExploreState(AD_BIDS_EXPLORE_NAME, undefined, "view=explore");
       setExploreStateForActivePage(
-        "view=explore&measures=impressions&dims=publisher&sort_by=impressions",
+        AD_BIDS_EXPLORE_NAME,
+        undefined,
         DashboardState_ActivePage.DEFAULT,
+        "view=explore&measures=impressions&dims=publisher&sort_by=impressions",
       );
       renderDashboardStateLoader();
 
@@ -386,27 +407,4 @@ function assertExploreStateSubset(
     sortDirection: curExploreState.sortDirection,
   };
   expect(curExploreStateSubset).toEqual(exploreStateSubset);
-}
-
-function setMostRecentExploreState(search: string) {
-  localStorage.setItem(
-    `rill:app:explore:${AD_BIDS_EXPLORE_NAME.toLowerCase()}`,
-    search,
-  );
-}
-
-function setExploreStateForActivePage(
-  search: string,
-  activePage: DashboardState_ActivePage,
-) {
-  sessionStorage.setItem(
-    `rill:app:explore:${AD_BIDS_EXPLORE_NAME.toLowerCase()}:${activePage}`,
-    search,
-  );
-}
-function setSharedExploreState(search: string) {
-  sessionStorage.setItem(
-    `rill:app:explore:${AD_BIDS_EXPLORE_NAME.toLowerCase()}:0`,
-    search,
-  );
 }

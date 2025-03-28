@@ -3,7 +3,7 @@ import { page } from "$app/stores";
 import { derived, get, type Readable } from "svelte/store";
 import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
 import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-import { convertExploreStateToURLSearchParamsNoCompression } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
+import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 
 import {
@@ -62,7 +62,7 @@ export default function initEmbedPublicAPI(instanceId: string): () => void {
       }
 
       return decodeURIComponent(
-        convertExploreStateToURLSearchParamsNoCompression(
+        convertExploreStateToURLSearchParams(
           $dashboardStore,
           exploreSpec,
           timeControlsState,
@@ -101,7 +101,7 @@ export default function initEmbedPublicAPI(instanceId: string): () => void {
       );
     }
     const stateString = decodeURIComponent(
-      convertExploreStateToURLSearchParamsNoCompression(
+      convertExploreStateToURLSearchParams(
         dashboard,
         exploreSpec,
         timeControlsState,

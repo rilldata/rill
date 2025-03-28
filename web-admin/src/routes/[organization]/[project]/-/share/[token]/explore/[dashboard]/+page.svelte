@@ -57,7 +57,10 @@
       metricsViewName={explore.metricsView.meta.name.name}
       {exploreName}
     >
-      <DashboardStateLoader {exploreName}>
+      <DashboardStateLoader
+        {exploreName}
+        extraPrefix={`${organization}__${project}__`}
+      >
         <DashboardThemeProvider>
           <Dashboard
             {exploreName}

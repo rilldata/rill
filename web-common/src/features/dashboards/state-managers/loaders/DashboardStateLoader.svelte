@@ -15,6 +15,7 @@
   import { derived } from "svelte/store";
 
   export let exploreName: string;
+  export let extraPrefix: string | undefined = undefined;
   export let otherSourcesOfState: {
     errorHeader: string;
     query: SupportedCompoundQueryResult<
@@ -37,7 +38,7 @@
     instanceId,
     metricsViewName,
     exploreName,
-    undefined,
+    extraPrefix,
     otherSourcesOfState.map(({ query }) => derived(query, (q) => q.data)),
   );
 
@@ -48,7 +49,7 @@
       instanceId,
       metricsViewName,
       exploreName,
-      undefined,
+      extraPrefix,
       dataLoader,
     );
   }

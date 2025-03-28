@@ -24,11 +24,11 @@ import {
   applyMutationsToDashboard,
   type TestDashboardMutation,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
-import DashboardStateLoaderTest from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateLoaderTest.svelte";
+import DashboardStateLoaderTest from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/DashboardStateLoaderTest.svelte";
 import {
   type HoistedPage,
   PageMock,
-} from "@rilldata/web-common/features/dashboards/url-state/PageMock";
+} from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/PageMock";
 import { getCleanMetricsExploreForAssertion } from "@rilldata/web-common/features/dashboards/url-state/url-state-variations.spec";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { render, screen, waitFor } from "@testing-library/svelte";

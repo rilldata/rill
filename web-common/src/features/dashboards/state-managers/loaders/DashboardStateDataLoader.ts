@@ -4,12 +4,16 @@ import {
   getCompoundQuery,
 } from "@rilldata/web-common/features/compound-query-result";
 import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
+import { getExploreStateFromSessionStorage } from "@rilldata/web-common/features/dashboards/state-managers/loaders/get-explore-state-from-session-storage";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { getExploreStatesFromYaml } from "@rilldata/web-common/features/dashboards/state-managers/loaders/get-explore-states-from-yaml";
-import {
-  getExploreStatesFromURLParams,
-  useExploreValidSpec,
-} from "@rilldata/web-common/features/explores/selectors";
+import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
+import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
+import type {
+  V1ExplorePreset,
+  V1ExploreSpec,
+  V1MetricsViewSpec,
+} from "@rilldata/web-common/runtime-client";
 import type { AfterNavigate } from "@sveltejs/kit";
 import { derived, get, type Readable } from "svelte/store";
 
@@ -26,7 +30,17 @@ export class DashboardStateDataLoader {
   >;
 
   private readonly exploreStatesFromURLParamsQuery: Readable<
-    ReturnType<typeof getExploreStatesFromURLParams> | undefined
+    | {
+        partialExploreStateFromUrl: Partial<MetricsExplorerEntity>;
+        partialExploreStateFromUrlForInit:
+          | Partial<MetricsExplorerEntity>
+          | undefined;
+        exploreStateFromSessionStorage:
+          | Partial<MetricsExplorerEntity>
+          | undefined;
+        errors: Error[];
+      }
+    | undefined
   >;
 
   public constructor(
@@ -77,7 +91,7 @@ export class DashboardStateDataLoader {
         const explorePresetFromYAMLConfig =
           exploreStatesFromSpecs.data?.explorePresetFromYAMLConfig ?? {};
 
-        return getExploreStatesFromURLParams(
+        return this.getExploreStatesFromURLParams(
           this.exploreName,
           this.extraPrefix,
           page.url.searchParams,
@@ -159,7 +173,7 @@ export class DashboardStateDataLoader {
     const skipSessionStorage = backButtonUsed;
 
     const { exploreStateFromSessionStorage, partialExploreStateFromUrl } =
-      getExploreStatesFromURLParams(
+      this.getExploreStatesFromURLParams(
         this.exploreName,
         this.extraPrefix,
         urlSearchParams,
@@ -170,5 +184,40 @@ export class DashboardStateDataLoader {
 
     if (skipSessionStorage) return partialExploreStateFromUrl;
     return exploreStateFromSessionStorage ?? partialExploreStateFromUrl;
+  }
+
+  private getExploreStatesFromURLParams(
+    exploreName: string,
+    prefix: string | undefined,
+    searchParams: URLSearchParams,
+    metricsViewSpec: V1MetricsViewSpec,
+    exploreSpec: V1ExploreSpec,
+    defaultExplorePreset: V1ExplorePreset,
+  ) {
+    const { partialExploreState: partialExploreStateFromUrl, errors } =
+      convertURLSearchParamsToExploreState(
+        searchParams,
+        metricsViewSpec,
+        exploreSpec,
+        defaultExplorePreset,
+      );
+    const partialExploreStateFromUrlForInit =
+      searchParams.size === 0 ? undefined : partialExploreStateFromUrl;
+
+    const exploreStateFromSessionStorage = getExploreStateFromSessionStorage(
+      exploreName,
+      prefix,
+      searchParams,
+      metricsViewSpec,
+      exploreSpec,
+      defaultExplorePreset,
+    );
+
+    return {
+      partialExploreStateFromUrl,
+      partialExploreStateFromUrlForInit,
+      exploreStateFromSessionStorage,
+      errors,
+    };
   }
 }

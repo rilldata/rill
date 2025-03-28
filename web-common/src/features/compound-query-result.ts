@@ -22,12 +22,15 @@ type CreateQueryResponses<Q> = {
     : never;
 };
 
+// Query types that are supported as arguments to getCompoundQuery
 export type SupportedCompoundQueryResult<R = any, E = any> =
   | CreateQueryResult<R, E>
   | CompoundQueryResult<R>;
+
 type CompoundQueryResults =
   | [SupportedCompoundQueryResult, ...Array<SupportedCompoundQueryResult>]
   | Array<SupportedCompoundQueryResult>;
+
 export function getCompoundQuery<Queries extends CompoundQueryResults, T>(
   queries: Queries,
   getter: (data: CreateQueryResponses<Queries>) => T,
