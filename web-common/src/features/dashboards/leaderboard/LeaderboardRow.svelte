@@ -38,9 +38,10 @@
     keepPillVisible?: boolean | undefined,
     isExclusiveFilter?: boolean | undefined,
   ) => void;
-  export let formatter:
-    | ((_value: number | undefined) => undefined)
-    | ((value: string | number) => string);
+  export let formatters: Record<
+    string,
+    (value: number | string | null | undefined) => string | null | undefined
+  >;
   export let dimensionColumnWidth: number;
   export let suppressTooltip: boolean;
 
@@ -73,7 +74,9 @@
     activeMeasureNames.length === 1 &&
     prevValues[activeMeasureNames[0]] !== undefined &&
     prevValues[activeMeasureNames[0]] !== null
-      ? formatter(prevValues[activeMeasureNames[0]] as number)
+      ? formatters[activeMeasureNames[0]]?.(
+          prevValues[activeMeasureNames[0]] as number,
+        )
       : undefined;
 
   $: href = makeHref(uri, dimensionValue);
@@ -291,7 +294,9 @@
       <div class="w-fit ml-auto bg-transparent" bind:contentRect={valueRect}>
         <FormattedDataType
           type="INTEGER"
-          value={values[measureName] ? formatter(values[measureName]) : null}
+          value={values[measureName]
+            ? formatters[measureName]?.(values[measureName])
+            : null}
         />
       </div>
 
@@ -334,7 +339,7 @@
           color="text-gray-500"
           type="INTEGER"
           value={deltaAbsMap[measureName]
-            ? formatter(deltaAbsMap[measureName])
+            ? formatters[measureName]?.(deltaAbsMap[measureName])
             : null}
           customStyle={deltaAbsMap[measureName] !== null &&
           deltaAbsMap[measureName] < 0

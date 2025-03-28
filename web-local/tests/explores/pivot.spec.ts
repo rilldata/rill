@@ -546,6 +546,8 @@ test.describe("pivot run through", () => {
   test.use({ project: "AdBids" });
 
   test("pivot run through", async ({ page }) => {
+    test.setTimeout(45_000); // Note: we should make this test smaller!
+
     const watcher = new ResourceWatcher(page);
 
     await page.getByLabel("/metrics").click();

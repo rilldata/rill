@@ -5,7 +5,7 @@ sidebar_label: Create Models
 sidebar_position: 00
 ---
 
-<img src = '/img/tutorials/102/Add-model.gif' class='rounded-gif' />
+<img src = '/img/build/model/model.png' class='rounded-gif' />
 <br />
 
 In Rill, [data models](/reference/project-files/models.md) are built using SQL `SELECT` statements applied to your source data.

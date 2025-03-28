@@ -217,6 +217,7 @@
     {expressionFunctions}
     {tooltipFormatter}
     {isScrubbing}
+    renderer="svg"
   />
 {:else}
   <!-- JIC we add a new chart type without brush param -->

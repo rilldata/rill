@@ -25,20 +25,20 @@ func JwtCmd(ch *cmdutil.Helper) *cobra.Command {
 				name = args[0]
 			}
 
+			// Handle interactive project selection if no project specified
 			if !cmd.Flags().Changed("project") && len(args) == 0 && ch.Interactive {
 				names, err := projectNames(ctx, ch)
 				if err != nil {
 					return err
 				}
 
-				// prompt for name from user
 				name, err = cmdutil.SelectPrompt("Select project", names, "")
 				if err != nil {
 					return err
 				}
 			}
 
-			res, err := client.GetProject(cmd.Context(), &adminv1.GetProjectRequest{
+			res, err := client.GetProject(ctx, &adminv1.GetProjectRequest{
 				OrganizationName: ch.Org,
 				Name:             name,
 			})

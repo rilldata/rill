@@ -71,15 +71,16 @@
   export let suppressTooltip = false;
   export let leaderboardMeasureCountFeatureFlag: boolean;
   export let measureLabel: (measureName: string) => string;
+  export let formatters: Record<
+    string,
+    (value: number | string | null | undefined) => string | null | undefined
+  >;
   export let toggleDimensionValueSelection: (
     dimensionName: string,
     dimensionValue: string,
     keepPillVisible?: boolean | undefined,
     isExclusiveFilter?: boolean | undefined,
   ) => void;
-  export let formatter:
-    | ((_value: number | undefined) => undefined)
-    | ((value: string | number) => string);
   export let setPrimaryDimension: (dimensionName: string) => void;
   export let toggleSort: (sortType: DashboardState_LeaderboardSortType) => void;
   export let toggleComparisonDimension: (
@@ -364,7 +365,7 @@
             {isTimeComparisonActive}
             {activeMeasureNames}
             {toggleDimensionValueSelection}
-            {formatter}
+            {formatters}
           />
         {/each}
       {/if}
@@ -386,7 +387,7 @@
           borderTop={i === 0}
           borderBottom={i === belowTheFoldRows.length - 1}
           {toggleDimensionValueSelection}
-          {formatter}
+          {formatters}
         />
       {/each}
     </tbody>

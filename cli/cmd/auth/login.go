@@ -17,6 +17,8 @@ import (
 
 // LoginCmd is the command for logging into a Rill account.
 func LoginCmd(ch *cmdutil.Helper) *cobra.Command {
+	var orgName string
+
 	cmd := &cobra.Command{
 		Use:   "login",
 		Short: "Authenticate with the Rill API",
@@ -38,7 +40,8 @@ func LoginCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// Set default org after login
-			err = SelectOrgFlow(ctx, ch, true)
+			interactive := orgName == ""
+			err = SelectOrgFlow(ctx, ch, interactive, orgName)
 			if err != nil {
 				return err
 			}
@@ -47,6 +50,7 @@ func LoginCmd(ch *cmdutil.Helper) *cobra.Command {
 		},
 	}
 
+	cmd.Flags().StringVarP(&orgName, "org", "o", "", "Organization to use")
 	return cmd
 }
 
@@ -121,7 +125,7 @@ func LoginWithTelemetry(ctx context.Context, ch *cmdutil.Helper, redirectURL str
 	return nil
 }
 
-func SelectOrgFlow(ctx context.Context, ch *cmdutil.Helper, interactive bool) error {
+func SelectOrgFlow(ctx context.Context, ch *cmdutil.Helper, interactive bool, requestedOrg string) error {
 	client, err := ch.Client()
 	if err != nil {
 		return err
@@ -147,7 +151,20 @@ func SelectOrgFlow(ctx context.Context, ch *cmdutil.Helper, interactive bool) er
 	}
 
 	defaultOrg := orgNames[0]
-	if interactive && len(orgNames) > 1 {
+	if requestedOrg != "" {
+		// Verify the requested org exists
+		found := false
+		for _, name := range orgNames {
+			if name == requestedOrg {
+				defaultOrg = requestedOrg
+				found = true
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("organization %q not found", requestedOrg)
+		}
+	} else if interactive && len(orgNames) > 1 {
 		defaultOrg, err = cmdutil.SelectPrompt("Select default org (to change later, run `rill org switch`).", orgNames, defaultOrg)
 		if err != nil {
 			return err

@@ -50,7 +50,7 @@ func SwitchEnvCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			ch.PrintfSuccess("Set default env to %q (%q)\n", toEnv, adminenv.AdminURL(toEnv))
 
-			return auth.SelectOrgFlow(cmd.Context(), ch, true)
+			return auth.SelectOrgFlow(cmd.Context(), ch, true, "")
 		},
 	}
 
@@ -122,7 +122,7 @@ func switchEnvToDevTemporarily(ctx context.Context, ch *cmdutil.Helper) {
 	var prevOrg string
 	if authenticated {
 		prevOrg = ch.Org
-		err = auth.SelectOrgFlow(ctx, ch, false)
+		err = auth.SelectOrgFlow(ctx, ch, false, "")
 		if err != nil {
 			logWarn.Printf("Failed to select org in dev environment: %v\n", err)
 		}

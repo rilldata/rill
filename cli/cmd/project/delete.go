@@ -38,7 +38,7 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("please provide a valid project name. Run `rill project list` to see the available projects")
 			}
 
-			if !force {
+			if !force && ch.Interactive {
 				ch.PrintfWarn("Warn: Deleting the project %q will remove all metadata associated with the project\n", name)
 
 				msg := fmt.Sprintf("Type %q to confirm deletion", name)
@@ -48,7 +48,7 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 
 				if project != name {
-					return fmt.Errorf("Entered incorrect name : %q, expected value is %q", project, name)
+					return fmt.Errorf("entered incorrect name : %q, expected value is %q", project, name)
 				}
 			}
 

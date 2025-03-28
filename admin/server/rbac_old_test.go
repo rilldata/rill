@@ -26,6 +26,7 @@ func TestRBACOld(t *testing.T) {
 	adminOrg, err := adminClient.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: n})
 	require.NoError(t, err)
 	require.Equal(t, n, adminOrg.Organization.Name)
+	require.Equal(t, adminOrg.Organization.DisplayName, "")
 
 	// add a viewer to the organization
 	res, err := adminClient.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{

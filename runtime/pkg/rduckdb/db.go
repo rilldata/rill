@@ -847,6 +847,7 @@ func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, initQ
 			array_agg(c.is_nullable = 'YES' order by c.ordinal_position) as "column_nullable"
 		from information_schema.tables t
 		join information_schema.columns c on t.table_schema = c.table_schema and t.table_name = c.table_name
+		where t.table_catalog = current_database() AND c.table_catalog= current_database()
 		group by 1, 2, 3, 4
 		order by 1, 2, 3, 4
 	`)
