@@ -13,10 +13,7 @@ import type {
   V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
 
-// Keys that do not need any special handling and can be directly copied over
-const DirectCopyExploreStateKeys: (keyof MetricsExplorerEntity)[] = [
-  "activePage",
-  "showTimeComparison",
+const ExploreViewKeys: (keyof MetricsExplorerEntity)[] = [
   "allMeasuresVisible",
   "visibleMeasureKeys",
   "allDimensionsVisible",
@@ -25,6 +22,22 @@ const DirectCopyExploreStateKeys: (keyof MetricsExplorerEntity)[] = [
   "sortDirection",
   "leaderboardContextColumn",
 ];
+// Keys that do not need any special handling and can be directly copied over
+const DirectCopyExploreStateKeys: (keyof MetricsExplorerEntity)[] = [
+  "showTimeComparison",
+  ...ExploreViewKeys,
+];
+// Keys that are not defined in certain views
+const ExploreStateNonDefinedInViewKeys: Record<
+  DashboardState_ActivePage,
+  (keyof MetricsExplorerEntity)[]
+> = {
+  [DashboardState_ActivePage.UNSPECIFIED]: [],
+  [DashboardState_ActivePage.DEFAULT]: [],
+  [DashboardState_ActivePage.DIMENSION_TABLE]: [],
+  [DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL]: ExploreViewKeys,
+  [DashboardState_ActivePage.PIVOT]: ExploreViewKeys,
+};
 
 function getKeyForLocalStore(exploreName: string, prefix: string | undefined) {
   return `rill:app:explore:${prefix ?? ""}${exploreName}`.toLowerCase();
@@ -64,9 +77,6 @@ export function saveMostRecentExploreState(
   timeControlsState: TimeControlState | undefined,
   exploreState: MetricsExplorerEntity,
 ) {
-  // TODO: save relevant fields on non-default pages
-  if (exploreState.activePage !== DashboardState_ActivePage.DEFAULT) return;
-
   const { partialExploreState: existingExploreState } =
     getMostRecentExploreState(exploreName, prefix, metricsView, explore) ?? {};
   const newExploreState: Partial<MetricsExplorerEntity> = {};
@@ -74,6 +84,12 @@ export function saveMostRecentExploreState(
   DirectCopyExploreStateKeys.forEach((k) => {
     (newExploreState as any)[k] = exploreState[k];
   });
+  if (existingExploreState) {
+    ExploreStateNonDefinedInViewKeys[exploreState.activePage].forEach((k) => {
+      (newExploreState as any)[k] = existingExploreState[k];
+    });
+  }
+  newExploreState.activePage = DashboardState_ActivePage.DEFAULT;
 
   // Since we are storing a few settings in timeControlsState, url params is populated using it.
   // Hopefully we will store everything in a single place in the future and we can update timeControlsState directly.

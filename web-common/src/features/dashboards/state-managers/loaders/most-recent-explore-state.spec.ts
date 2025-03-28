@@ -15,6 +15,8 @@ import {
 import {
   AD_BIDS_APPLY_PUB_DIMENSION_FILTER,
   AD_BIDS_DISABLE_COMPARE_TIME_RANGE_FILTER,
+  AD_BIDS_OPEN_IMP_TDD,
+  AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS,
   AD_BIDS_SET_CUSTOM_TIME_RANGE_FILTER,
   AD_BIDS_SET_P7D_TIME_RANGE_FILTER,
   AD_BIDS_SET_PREVIOUS_PERIOD_COMPARE_TIME_RANGE_FILTER,
@@ -160,15 +162,92 @@ const TestCases: {
       AD_BIDS_SET_PREVIOUS_PERIOD_COMPARE_TIME_RANGE_FILTER,
     ],
 
-    // Custom time range is not retained
-    expectedUrlSearch: "tr=P7D&grain=day",
+    expectedUrlSearch: "tr=P7D&compare_tr=rill-PP&grain=day",
     expectedExplore: {
       selectedTimeRange: {
         name: "P7D",
         interval: undefined,
       } as DashboardTimeControls,
-      showTimeComparison: false,
-      selectedComparisonTimeRange: undefined,
+      showTimeComparison: true,
+      selectedComparisonTimeRange: { name: "rill-PP" } as DashboardTimeControls,
+    },
+  },
+  {
+    title: "Changes to dashboard initially from explore then from TDD.",
+    urlSearch: "",
+    mutations: [
+      AD_BIDS_TOGGLE_IMPRESSIONS_MEASURE_VISIBILITY,
+      AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY,
+      AD_BIDS_SORT_ASC_BY_BID_PRICE,
+      AD_BIDS_OPEN_IMP_TDD,
+      AD_BIDS_SET_P7D_TIME_RANGE_FILTER,
+      AD_BIDS_SET_PREVIOUS_PERIOD_COMPARE_TIME_RANGE_FILTER,
+    ],
+
+    expectedUrlSearch:
+      "tr=P7D&compare_tr=rill-PP&grain=day&measures=bid_price&dims=publisher&sort_by=bid_price&sort_dir=ASC",
+    expectedExplore: {
+      selectedTimeRange: {
+        name: "P7D",
+        interval: undefined,
+      } as DashboardTimeControls,
+      showTimeComparison: true,
+      selectedComparisonTimeRange: { name: "rill-PP" } as DashboardTimeControls,
+      allMeasuresVisible: false,
+      visibleMeasureKeys: new Set([AD_BIDS_BID_PRICE_MEASURE]),
+      allDimensionsVisible: false,
+      visibleDimensionKeys: new Set([AD_BIDS_PUBLISHER_DIMENSION]),
+      leaderboardMeasureName: AD_BIDS_BID_PRICE_MEASURE,
+      sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
+    },
+  },
+
+  {
+    title: "Changes to dashboard from pivot.",
+    urlSearch:
+      "view=pivot&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC",
+    mutations: [
+      AD_BIDS_SET_P7D_TIME_RANGE_FILTER,
+      AD_BIDS_SET_PREVIOUS_PERIOD_COMPARE_TIME_RANGE_FILTER,
+    ],
+
+    expectedUrlSearch: "tr=P7D&compare_tr=rill-PP&grain=day",
+    expectedExplore: {
+      selectedTimeRange: {
+        name: "P7D",
+        interval: undefined,
+      } as DashboardTimeControls,
+      showTimeComparison: true,
+      selectedComparisonTimeRange: { name: "rill-PP" } as DashboardTimeControls,
+    },
+  },
+  {
+    title: "Changes to dashboard initially from explore then from pivot.",
+    urlSearch: "",
+    mutations: [
+      AD_BIDS_TOGGLE_IMPRESSIONS_MEASURE_VISIBILITY,
+      AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY,
+      AD_BIDS_SORT_ASC_BY_BID_PRICE,
+      AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS,
+      AD_BIDS_SET_P7D_TIME_RANGE_FILTER,
+      AD_BIDS_SET_PREVIOUS_PERIOD_COMPARE_TIME_RANGE_FILTER,
+    ],
+
+    expectedUrlSearch:
+      "tr=P7D&compare_tr=rill-PP&grain=day&measures=bid_price&dims=publisher&sort_by=bid_price&sort_dir=ASC",
+    expectedExplore: {
+      selectedTimeRange: {
+        name: "P7D",
+        interval: undefined,
+      } as DashboardTimeControls,
+      showTimeComparison: true,
+      selectedComparisonTimeRange: { name: "rill-PP" } as DashboardTimeControls,
+      allMeasuresVisible: false,
+      visibleMeasureKeys: new Set([AD_BIDS_BID_PRICE_MEASURE]),
+      allDimensionsVisible: false,
+      visibleDimensionKeys: new Set([AD_BIDS_PUBLISHER_DIMENSION]),
+      leaderboardMeasureName: AD_BIDS_BID_PRICE_MEASURE,
+      sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
     },
   },
 ];
