@@ -325,6 +325,7 @@ schema: default
 						},
 					},
 				},
+				AllowCustomTimeRange: true,
 				DefaultPreset: &runtimev1.ExplorePreset{
 					DimensionsSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
 					MeasuresSelector:   &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
@@ -1489,11 +1490,12 @@ theme:
 			Paths: []string{"/explores/e1.yaml"},
 			Refs:  []ResourceName{{Kind: ResourceKindMetricsView, Name: "missing"}, {Kind: ResourceKindTheme, Name: "t1"}},
 			ExploreSpec: &runtimev1.ExploreSpec{
-				DisplayName:        "E1",
-				MetricsView:        "missing",
-				DimensionsSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
-				MeasuresSelector:   &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
-				Theme:              "t1",
+				DisplayName:          "E1",
+				MetricsView:          "missing",
+				DimensionsSelector:   &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+				MeasuresSelector:     &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+				Theme:                "t1",
+				AllowCustomTimeRange: true,
 			},
 		},
 		{
@@ -1514,6 +1516,7 @@ theme:
 					},
 					PrimaryColorRaw: "red",
 				},
+				AllowCustomTimeRange: true,
 			},
 		},
 		{
@@ -1521,9 +1524,10 @@ theme:
 			Paths: []string{"/canvases/c1.yaml"},
 			Refs:  []ResourceName{{Kind: ResourceKindTheme, Name: "t1"}},
 			CanvasSpec: &runtimev1.CanvasSpec{
-				DisplayName:    "C1",
-				Theme:          "t1",
-				FiltersEnabled: true,
+				DisplayName:          "C1",
+				Theme:                "t1",
+				FiltersEnabled:       true,
+				AllowCustomTimeRange: true,
 			},
 		},
 		{
@@ -1540,7 +1544,8 @@ theme:
 					},
 					PrimaryColorRaw: "red",
 				},
-				FiltersEnabled: true,
+				FiltersEnabled:       true,
+				AllowCustomTimeRange: true,
 			},
 		},
 	}
@@ -1680,7 +1685,8 @@ rows:
 						},
 					},
 				},
-				FiltersEnabled: false,
+				AllowCustomTimeRange: true,
+				FiltersEnabled:       false,
 				DefaultPreset: &runtimev1.CanvasPreset{
 					TimeRange:      asPtr("P4W"),
 					ComparisonMode: runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_NONE,
