@@ -14,8 +14,11 @@ func AdminCmd(ch *cmdutil.Helper) *cobra.Command {
 		Short:   "Manage an admin server",
 		GroupID: internalGroupID,
 	}
+
+	adminCmd.AddCommand(MigrateCmd(ch))
 	adminCmd.AddCommand(PingCmd(ch))
 	adminCmd.AddCommand(StartCmd(ch))
 	adminCmd.AddCommand(SwitchCmd(ch))
+
 	return adminCmd
 }
