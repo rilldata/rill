@@ -38,7 +38,6 @@ import {
   get,
   writable,
   type Readable,
-  type Unsubscriber,
   type Writable,
 } from "svelte/store";
 
