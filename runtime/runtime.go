@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -42,6 +43,7 @@ type Runtime struct {
 	connCache      conncache.Cache
 	queryCache     *queryCache
 	securityEngine *securityEngine
+	instanceMu     sync.RWMutex
 }
 
 func New(ctx context.Context, opts *Options, logger *zap.Logger, st *storage.Client, ac *activity.Client, emailClient *email.Client) (*Runtime, error) {
