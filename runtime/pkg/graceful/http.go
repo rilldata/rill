@@ -19,8 +19,6 @@ type ServeOptions struct {
 
 // ServeHTTP serves a HTTP server and performs a graceful shutdown if/when ctx is cancelled.
 func ServeHTTP(ctx context.Context, server *http.Server, options ServeOptions) error {
-	var err error
-
 	// Calling net.Listen("tcp", ...) will succeed if the port is blocked on IPv4 but not on IPv6.
 	// This workaround ensures we get the port on IPv4 (and most likely also on IPv6).
 	lis, err := net.Listen("tcp4", fmt.Sprintf(":%d", options.Port))
@@ -41,11 +39,11 @@ func ServeHTTP(ctx context.Context, server *http.Server, options ServeOptions) e
 	go func() {
 		if options.CertPath != "" && options.KeyPath != "" {
 			// Use HTTPS if cert and key are provided
-			err = server.ServeTLS(lis, options.CertPath, options.KeyPath)
+			err := server.ServeTLS(lis, options.CertPath, options.KeyPath)
 			serveErrCh <- err
 		} else {
 			// Otherwise use HTTP
-			err = server.Serve(lis)
+			err := server.Serve(lis)
 			serveErrCh <- err
 		}
 	}()
@@ -55,19 +53,9 @@ func ServeHTTP(ctx context.Context, server *http.Server, options ServeOptions) e
 	case err := <-serveErrCh:
 		return err
 	case <-ctx.Done():
-		if err := server.Close(); err != nil {
-			return err
-		}
-	}
+		ctx, cancel := context.WithTimeout(context.Background(), httpShutdownTimeout)
+		defer cancel()
 
-	// Wait for graceful shutdown
-	select {
-	case err := <-serveErrCh:
-		return err
-	case <-time.After(httpShutdownTimeout):
-		if err := server.Close(); err != nil {
-			return err
-		}
-		return fmt.Errorf("http graceful shutdown timed out")
+		return server.Shutdown(ctx)
 	}
 }

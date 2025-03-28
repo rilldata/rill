@@ -179,9 +179,6 @@ func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID str
 // UpdateInstanceConnector upserts or removes a connector from an instance
 // If connector is nil, the connector is removed; otherwise, it is upserted
 func (r *Runtime) UpdateInstanceConnector(ctx context.Context, instanceID, name string, connector *runtimev1.ConnectorSpec) error {
-	r.instanceMu.Lock()
-	defer r.instanceMu.Unlock()
-
 	inst, err := r.Instance(ctx, instanceID)
 	if err != nil {
 		return err

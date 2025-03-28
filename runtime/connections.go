@@ -196,9 +196,6 @@ func (r *Runtime) Catalog(ctx context.Context, instanceID string) (drivers.Catal
 }
 
 func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) (*ConnectorConfig, error) {
-	r.instanceMu.RLock()
-	defer r.instanceMu.RUnlock()
-
 	inst, err := r.Instance(ctx, instanceID)
 	if err != nil {
 		return nil, err
