@@ -18,6 +18,7 @@
   export let pivotDataStore: PivotDataStore | undefined;
   export let pivotConfig: Readable<PivotDataStoreConfig> | undefined;
   export let pivotState: Writable<PivotState>;
+  export let hasHeader = false;
 
   $: pivotColumns = splitPivotChips($pivotState.columns);
 
@@ -25,7 +26,12 @@
     pivotColumns.dimension.length > 0 && pivotColumns.measure.length === 0;
 </script>
 
-<div class="size-full overflow-hidden" style:max-height="inherit">
+<div
+  class="size-full overflow-hidden"
+  style:max-height="inherit"
+  class:p-4={hasHeader}
+  class:pt-1={hasHeader}
+>
   {#if !$schema.isValid}
     <ComponentError error={$schema.error} />
   {:else if pivotDataStore && $pivotDataStore && pivotConfig && $pivotConfig}
@@ -39,7 +45,8 @@
       />
     {:else}
       <PivotTable
-        border={false}
+        border={hasHeader}
+        rounded={hasHeader}
         {pivotDataStore}
         config={pivotConfig}
         {pivotState}

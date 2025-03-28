@@ -333,6 +333,18 @@ function toExploreUrl(
     );
   }
 
+  if (
+    shouldSetParam(
+      preset.exploreLeaderboardMeasureCount,
+      exploreState.leaderboardMeasureCount,
+    )
+  ) {
+    searchParams.set(
+      ExploreStateURLParams.LeaderboardMeasureCount,
+      exploreState.leaderboardMeasureCount?.toString(),
+    );
+  }
+
   return searchParams;
 }
 

@@ -16,7 +16,8 @@ By default, any new sources, models, metrics view and dashboards will be created
 
 Within Rill Developer, from the left-hand side (file explorer), you should be able to click on the `Add` button to add a new base resource, such as a new source, model, or dashboard. Furthermore, you will also have the ability to add a new parent folder to store groups of resources (can be mixed). If you choose to add a new folder, you should see the folder structure reflected if you check the project directory via the CLI. 
 
-![Adding objects](/img/build/structure/adding-objects.png)
+<img src = '/img/build/structure/adding-objects.png' class='rounded-gif' />
+<br />
 
 :::warning Make sure to include the `type` property
 
@@ -46,4 +47,5 @@ For developers who prefer to use the CLI, the project structure can still be con
 
 Rather than creating a parent folder and moving it into another folder manually, there is a shortcut to create a nested folder by directly hovering over an existing folder in the file explorer > click on the "triple dots" > `New folder`.
 
-![Adding nested folder](/img/build/structure/adding-nested-folder.png)
+<img src = '/img/build/structure/adding-nested-folder.png' class='rounded-gif' />
+<br />

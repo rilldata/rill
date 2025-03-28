@@ -47,12 +47,13 @@ class FeatureFlags {
   hidePublicUrl = new FeatureFlag("user", false);
   alerts = new FeatureFlag("user", true);
   reports = new FeatureFlag("user", true);
+  leaderboardMeasureCount = new FeatureFlag("user", false);
 
   constructor() {
     const updateFlags = (userFlags: V1InstanceFeatureFlags) => {
       for (const key in userFlags) {
         const flag = this[key] as FeatureFlag | undefined;
-        if (!flag || flag.internalOnly) return;
+        if (!flag || flag.internalOnly) continue;
         flag.set(userFlags[key]);
       }
     };

@@ -348,6 +348,12 @@ export const AD_BIDS_TOGGLE_PIVOT_TABLE_MODE: TestDashboardMutation = () =>
     ],
   );
 
+export const AD_BIDS_SET_LEADERBOARD_MEASURE_COUNT: TestDashboardMutation = (
+  mut,
+) => {
+  mut.dashboard.leaderboardMeasureCount = 4;
+};
+
 export const AD_BIDS_OPEN_PUB_IMP_PIVOT: TestDashboardMutation = () =>
   metricsExplorerStore.createPivot(
     AD_BIDS_EXPLORE_NAME,

@@ -8,6 +8,7 @@
   const isDimensionTable = config.table === "DimensionTable";
 
   const dispatch = createEventDispatcher();
+
   export let header;
   export let position: HeaderPosition = "top";
   export let enableResize = true;

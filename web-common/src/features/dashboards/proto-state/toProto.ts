@@ -126,6 +126,10 @@ export function convertExploreStateToProto(metrics: MetricsExplorerEntity) {
     state.leaderboardMeasure = metrics.leaderboardMeasureName;
   }
 
+  if (metrics.leaderboardMeasureCount) {
+    state.leaderboardMeasureCount = metrics.leaderboardMeasureCount;
+  }
+
   if (metrics.tdd?.pinIndex !== undefined) {
     state.pinIndex = metrics.tdd.pinIndex;
   }

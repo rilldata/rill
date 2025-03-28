@@ -234,10 +234,6 @@ const config = {
             to: '/build/connect/source-refresh'
           },
           {
-            from: '/reference/glob-patterns',
-            to: '/build/connect/glob-patterns'
-          },
-          {
             from: '/reference/templating',
             to: '/deploy/templating'
           },

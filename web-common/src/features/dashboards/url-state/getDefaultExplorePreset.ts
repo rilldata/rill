@@ -57,6 +57,7 @@ export function getDefaultExplorePreset(
     exploreSortAsc: false,
     exploreSortType: V1ExploreSortType.EXPLORE_SORT_TYPE_VALUE,
     exploreExpandedDimension: "",
+    exploreLeaderboardMeasureCount: 1,
 
     timeDimensionMeasure: "",
     timeDimensionChartType: ToURLParamTDDChartMap[TDDChart.DEFAULT],

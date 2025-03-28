@@ -581,6 +581,7 @@
             allowPointerEvents={!resizeColumnInfo && resizeRow === -1}
             onMouseDown={(e) => {
               if (e.button !== 0) return;
+              e.preventDefault();
 
               initialMousePosition = mousePosition;
 
