@@ -72,7 +72,7 @@ export function useCreateMetricsViewFromTableUIAction(
         component: OptionToCancelAIGeneration,
         props: {
           onCancel: () => {
-            abortController.abort();
+            abortController.abort("User canceled the AI generation");
             isAICancelled = true;
           },
         },

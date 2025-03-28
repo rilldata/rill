@@ -63,8 +63,9 @@ export function createMetricsViewTimeSeries(
       ctx.dashboardStore,
       useTimeControlStore(ctx),
     ],
-    ([runtime, metricsViewName, dashboardStore, timeControls], set) =>
-      createQueryServiceMetricsViewTimeSeries(
+    ([runtime, metricsViewName, dashboardStore, timeControls], set) => {
+      console.log("query");
+      return createQueryServiceMetricsViewTimeSeries(
         runtime.instanceId,
         metricsViewName,
         {
@@ -96,10 +97,12 @@ export function createMetricsViewTimeSeries(
               (!isComparison || !!timeControls.comparisonAdjustedStart),
 
             placeholderData: keepPreviousData,
+            refetchOnMount: false,
           },
         },
         ctx.queryClient,
-      ).subscribe(set),
+      ).subscribe(set);
+    },
   );
 }
 
@@ -249,9 +252,11 @@ export function createTimeSeriesDataStore(
             isError = true;
             error["totals"] = primaryTotal.error.response?.data?.message;
           }
+          const primaryIsFetching = primary.isFetching;
+          const primaryTotalIsFetching = primaryTotal.isFetching;
 
           return {
-            isFetching: primary?.isFetching || primaryTotal?.isFetching,
+            isFetching: primaryIsFetching || primaryTotalIsFetching,
             isError,
             error,
             timeSeriesData: preparedTimeSeriesData,

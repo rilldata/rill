@@ -52,6 +52,7 @@ export function createTotalsForMeasure(
         {
           query: {
             enabled: !!timeControls.ready && !!ctx.dashboardStore,
+            refetchOnMount: false,
           },
         },
         ctx.queryClient,
