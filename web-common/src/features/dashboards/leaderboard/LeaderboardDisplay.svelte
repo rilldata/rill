@@ -24,13 +24,13 @@
   const StateManagers = getStateManagers();
   const {
     selectors: {
-      activeMeasure: { isValidPercentOfTotal, isSummableMeasure },
+      activeMeasure: { isSummableMeasure },
       numberFormat: { measureFormatters, activeMeasureFormatter },
       dimensionFilters: { isFilterExcludeMode },
       dimensions: { visibleDimensions },
       comparison: { isBeingCompared: isBeingComparedReadable },
       sorting: { sortedAscending, sortType, sortByMeasure },
-      measures: { measureLabel },
+      measures: { measureLabel, isMeasureValidPercentOfTotal },
     },
     actions: {
       dimensions: { setPrimaryDimension },
@@ -57,7 +57,7 @@
 
   $: dimensionColumnWidth = 164;
 
-  $: showPercentOfTotal = isValidPercentOfTotal;
+  $: showPercentOfTotal = $isMeasureValidPercentOfTotal(activeMeasureName);
   $: showDeltaPercent = !!comparisonTimeRange;
 
   $: tableWidth =
@@ -89,7 +89,7 @@
         {#each $visibleDimensions as dimension (dimension.name)}
           {#if dimension.name}
             <Leaderboard
-              isValidPercentOfTotal={$isValidPercentOfTotal}
+              isValidPercentOfTotal={$isMeasureValidPercentOfTotal}
               {metricsViewName}
               {activeMeasureName}
               {activeMeasureNames}

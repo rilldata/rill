@@ -61,7 +61,7 @@
   export let sortBy: string | null;
   export let tableWidth: number;
   export let sortedAscending: boolean;
-  export let isValidPercentOfTotal: boolean;
+  export let isValidPercentOfTotal: (measureName: string) => boolean;
   export let timeControlsReady: boolean;
   export let dimensionColumnWidth: number;
   export let isSummableMeasure: boolean;
@@ -288,7 +288,7 @@
     activeMeasureNames.length + // Value column for each measure
     (isTimeComparisonActive
       ? activeMeasureNames.length * // For each measure
-        ((isValidPercentOfTotal ? 1 : 0) + // Percent of total column
+        ((isValidPercentOfTotal(activeMeasureName) ? 1 : 0) + // Percent of total column
           (isTimeComparisonActive ? 2 : 0)) // Delta absolute and delta percent columns
       : 0);
 </script>
@@ -307,7 +307,7 @@
       <col data-dimension-column style:width="{dimensionColumnWidth}px" />
       {#each activeMeasureNames as _, index (index)}
         <col data-measure-column style:width="{$valueColumn}px" />
-        {#if isValidPercentOfTotal}
+        {#if isValidPercentOfTotal(activeMeasureNames[index])}
           <col
             data-percent-of-total-column
             style:width="{COMPARISON_COLUMN_WIDTH}px"

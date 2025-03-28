@@ -29,7 +29,7 @@
   export let isBeingCompared: boolean;
   export let filterExcludeMode: boolean;
   export let atLeastOneActive: boolean;
-  export let isValidPercentOfTotal: boolean;
+  export let isValidPercentOfTotal: (measureName: string) => boolean;
   export let isTimeComparisonActive: boolean;
   export let activeMeasureNames: string[] = [];
   export let toggleDimensionValueSelection: (
@@ -123,7 +123,7 @@
             length - dimensionColumnWidth - $valueColumn,
             COMPARISON_COLUMN_WIDTH,
           )
-        : isValidPercentOfTotal
+        : isValidPercentOfTotal(name)
           ? clamp(
               0,
               length - dimensionColumnWidth - $valueColumn,
@@ -300,12 +300,12 @@
         />
       </div>
 
-      {#if showZigZags[measureName] && !isTimeComparisonActive && !isValidPercentOfTotal}
+      {#if showZigZags[measureName] && !isTimeComparisonActive && !isValidPercentOfTotal(measureName)}
         <LongBarZigZag />
       {/if}
     </td>
 
-    {#if isValidPercentOfTotal}
+    {#if isValidPercentOfTotal(measureName)}
       <td
         data-comparison-cell
         style:background={percentOfTotalGradients[measureName]}
