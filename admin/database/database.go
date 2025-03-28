@@ -77,6 +77,7 @@ type DB interface {
 	FindProjectPathsByPattern(ctx context.Context, namePattern, afterName string, limit int) ([]string, error)
 	FindProjectPathsByPatternAndAnnotations(ctx context.Context, namePattern, afterName string, annotationKeys []string, annotationPairs map[string]string, limit int) ([]string, error)
 	FindProjectsForUser(ctx context.Context, userID string) ([]*Project, error)
+	FindProjectsForUserAndFingerprint(ctx context.Context, userID, directoryName, githubURL, afterID string, limit int) ([]*Project, error)
 	FindProjectsForOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*Project, error)
 	// FindProjectsForOrgAndUser lists the public projects in the org and the projects where user is added as an external user
 	FindProjectsForOrgAndUser(ctx context.Context, orgID, userID string, includePublic bool, afterProjectName string, limit int) ([]*Project, error)
@@ -408,6 +409,7 @@ type Project struct {
 	ArchiveAssetID               *string           `db:"archive_asset_id"`
 	GithubURL                    *string           `db:"github_url"`
 	GithubInstallationID         *int64            `db:"github_installation_id"`
+	DirectoryName                string            `db:"directory_name"`
 	Subpath                      string            `db:"subpath"`
 	ProdVersion                  string            `db:"prod_version"`
 	ProdBranch                   string            `db:"prod_branch"`
@@ -434,6 +436,7 @@ type InsertProjectOptions struct {
 	ArchiveAssetID       *string
 	GithubURL            *string `validate:"omitempty,http_url"`
 	GithubInstallationID *int64  `validate:"omitempty,ne=0"`
+	DirectoryName        string
 	Subpath              string
 	ProdVersion          string
 	ProdBranch           string
@@ -452,6 +455,7 @@ type UpdateProjectOptions struct {
 	ArchiveAssetID       *string
 	GithubURL            *string `validate:"omitempty,http_url"`
 	GithubInstallationID *int64  `validate:"omitempty,ne=0"`
+	DirectoryName        string
 	Subpath              string
 	ProdVersion          string
 	ProdBranch           string

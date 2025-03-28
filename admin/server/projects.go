@@ -137,6 +137,56 @@ func (s *Server) ListProjectsForOrganizationAndUser(ctx context.Context, req *ad
 	}, nil
 }
 
+func (s *Server) ListProjectsForFingerprint(ctx context.Context, req *adminv1.ListProjectsForFingerprintRequest) (*adminv1.ListProjectsForFingerprintResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.directory_name", req.DirectoryName),
+		attribute.String("args.github_url", req.GithubUrl),
+	)
+
+	claims := auth.GetClaims(ctx)
+	if claims.OwnerType() != auth.OwnerTypeUser {
+		return nil, status.Error(codes.PermissionDenied, "only users can list projects by fingerprint")
+	}
+	userID := claims.OwnerID()
+
+	pageToken, err := unmarshalPageToken(req.PageToken)
+	if err != nil {
+		return nil, err
+	}
+	pageSize := validPageSize(req.PageSize)
+
+	projects, err := s.admin.DB.FindProjectsForUserAndFingerprint(ctx, userID, req.DirectoryName, req.GithubUrl, pageToken.Val, pageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	nextToken := ""
+	if len(projects) >= pageSize {
+		nextToken = marshalPageToken(projects[len(projects)-1].ID)
+	}
+
+	dtos := make([]*adminv1.Project, len(projects))
+	orgNames := make(map[string]string)
+	for i, p := range projects {
+		orgName := orgNames[p.OrganizationID]
+		if orgName == "" {
+			org, err := s.admin.DB.FindOrganization(ctx, p.OrganizationID)
+			if err != nil {
+				return nil, err
+			}
+			orgName = org.Name
+			orgNames[p.OrganizationID] = orgName
+		}
+
+		dtos[i] = s.projToDTO(p, orgName)
+	}
+
+	return &adminv1.ListProjectsForFingerprintResponse{
+		Projects:      dtos,
+		NextPageToken: nextToken,
+	}, nil
+}
+
 func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest) (*adminv1.GetProjectResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.OrganizationName),
@@ -430,6 +480,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		attribute.String("args.prod_branch", req.ProdBranch),
 		attribute.String("args.github_url", req.GithubUrl),
 		attribute.String("args.archive_asset_id", req.ArchiveAssetId),
+		attribute.String("args.directory_name", req.DirectoryName),
 		attribute.Bool("args.skip_deploy", req.SkipDeploy),
 	)
 
@@ -499,11 +550,12 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		Public:               req.Public,
 		CreatedByUserID:      userID,
 		Provisioner:          req.Provisioner,
-		ArchiveAssetID:       nil,         // Populated below
-		GithubURL:            nil,         // Populated below
-		GithubInstallationID: nil,         // Populated below
-		ProdBranch:           "",          // Populated below
-		Subpath:              req.Subpath, // Populated below
+		ArchiveAssetID:       nil, // Populated below
+		GithubURL:            nil, // Populated below
+		GithubInstallationID: nil, // Populated below
+		ProdBranch:           "",  // Populated below
+		DirectoryName:        req.DirectoryName,
+		Subpath:              req.Subpath,
 		ProdVersion:          req.ProdVersion,
 		ProdOLAPDriver:       req.ProdOlapDriver,
 		ProdOLAPDSN:          req.ProdOlapDsn,
@@ -529,7 +581,6 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		opts.GithubInstallationID = &installationID
 		opts.GithubURL = &req.GithubUrl
 		opts.ProdBranch = req.ProdBranch
-		opts.Subpath = req.Subpath
 	} else if req.ArchiveAssetId != "" {
 		// Check access to the archive asset
 		if !s.hasAssetUsagePermission(ctx, req.ArchiveAssetId, org.ID, claims.OwnerID()) {
@@ -617,6 +668,9 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	}
 	if req.GithubUrl != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.github_url", *req.GithubUrl))
+	}
+	if req.DirectoryName != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.directory_name", *req.DirectoryName))
 	}
 	if req.Subpath != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.subpath", *req.Subpath))
@@ -706,6 +760,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		ArchiveAssetID:       archiveAssetID,
 		GithubURL:            githubURL,
 		GithubInstallationID: githubInstID,
+		DirectoryName:        valOrDefault(req.DirectoryName, proj.DirectoryName),
 		Subpath:              subpath,
 		ProdVersion:          valOrDefault(req.ProdVersion, proj.ProdVersion),
 		ProdBranch:           prodBranch,
@@ -1488,6 +1543,7 @@ func (s *Server) SudoUpdateAnnotations(ctx context.Context, req *adminv1.SudoUpd
 		GithubInstallationID: proj.GithubInstallationID,
 		ProdVersion:          proj.ProdVersion,
 		ProdBranch:           proj.ProdBranch,
+		DirectoryName:        proj.DirectoryName,
 		Subpath:              proj.Subpath,
 		ProdDeploymentID:     proj.ProdDeploymentID,
 		ProdSlots:            proj.ProdSlots,

@@ -955,6 +955,104 @@ export class ListProjectsForOrganizationAndUserResponse extends Message<ListProj
 }
 
 /**
+ * @generated from message rill.admin.v1.ListProjectsForFingerprintRequest
+ */
+export class ListProjectsForFingerprintRequest extends Message<ListProjectsForFingerprintRequest> {
+  /**
+   * @generated from field: string directory_name = 1;
+   */
+  directoryName = "";
+
+  /**
+   * @generated from field: string github_url = 2;
+   */
+  githubUrl = "";
+
+  /**
+   * @generated from field: uint32 page_size = 3;
+   */
+  pageSize = 0;
+
+  /**
+   * @generated from field: string page_token = 4;
+   */
+  pageToken = "";
+
+  constructor(data?: PartialMessage<ListProjectsForFingerprintRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ListProjectsForFingerprintRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "directory_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 4, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListProjectsForFingerprintRequest {
+    return new ListProjectsForFingerprintRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListProjectsForFingerprintRequest {
+    return new ListProjectsForFingerprintRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListProjectsForFingerprintRequest {
+    return new ListProjectsForFingerprintRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListProjectsForFingerprintRequest | PlainMessage<ListProjectsForFingerprintRequest> | undefined, b: ListProjectsForFingerprintRequest | PlainMessage<ListProjectsForFingerprintRequest> | undefined): boolean {
+    return proto3.util.equals(ListProjectsForFingerprintRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.ListProjectsForFingerprintResponse
+ */
+export class ListProjectsForFingerprintResponse extends Message<ListProjectsForFingerprintResponse> {
+  /**
+   * @generated from field: repeated rill.admin.v1.Project projects = 1;
+   */
+  projects: Project[] = [];
+
+  /**
+   * @generated from field: string next_page_token = 2;
+   */
+  nextPageToken = "";
+
+  constructor(data?: PartialMessage<ListProjectsForFingerprintResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ListProjectsForFingerprintResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "projects", kind: "message", T: Project, repeated: true },
+    { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListProjectsForFingerprintResponse {
+    return new ListProjectsForFingerprintResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListProjectsForFingerprintResponse {
+    return new ListProjectsForFingerprintResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListProjectsForFingerprintResponse {
+    return new ListProjectsForFingerprintResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListProjectsForFingerprintResponse | PlainMessage<ListProjectsForFingerprintResponse> | undefined, b: ListProjectsForFingerprintResponse | PlainMessage<ListProjectsForFingerprintResponse> | undefined): boolean {
+    return proto3.util.equals(ListProjectsForFingerprintResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.GetProjectRequest
  */
 export class GetProjectRequest extends Message<GetProjectRequest> {
@@ -2393,6 +2491,14 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
   archiveAssetId = "";
 
   /**
+   * directory_name should be the most recently observed local directory name for the project.
+   * See ListProjectsForFingerprint for more context.
+   *
+   * @generated from field: string directory_name = 16;
+   */
+  directoryName = "";
+
+  /**
    * @generated from field: string prod_version = 13;
    */
   prodVersion = "";
@@ -2422,6 +2528,7 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
     { no: 9, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 14, name: "archive_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 16, name: "directory_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "prod_version", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 15, name: "skip_deploy", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
@@ -2605,6 +2712,11 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
   archiveAssetId?: string;
 
   /**
+   * @generated from field: optional string directory_name = 15;
+   */
+  directoryName?: string;
+
+  /**
    * @generated from field: optional int64 prod_slots = 7;
    */
   prodSlots?: bigint;
@@ -2650,6 +2762,7 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
     { no: 6, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 13, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 12, name: "archive_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 15, name: "directory_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 7, name: "prod_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
     { no: 8, name: "provisioner", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 9, name: "new_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
@@ -12682,6 +12795,11 @@ export class Project extends Message<Project> {
   archiveAssetId = "";
 
   /**
+   * @generated from field: string directory_name = 24;
+   */
+  directoryName = "";
+
+  /**
    * @generated from field: string prod_olap_driver = 10;
    */
   prodOlapDriver = "";
@@ -12753,6 +12871,7 @@ export class Project extends Message<Project> {
     { no: 17, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 23, name: "archive_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 24, name: "directory_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "prod_olap_driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "prod_olap_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "prod_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },

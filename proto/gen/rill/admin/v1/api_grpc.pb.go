@@ -28,6 +28,7 @@ const (
 	AdminService_UpdateOrganization_FullMethodName                    = "/rill.admin.v1.AdminService/UpdateOrganization"
 	AdminService_ListProjectsForOrganization_FullMethodName           = "/rill.admin.v1.AdminService/ListProjectsForOrganization"
 	AdminService_ListProjectsForOrganizationAndUser_FullMethodName    = "/rill.admin.v1.AdminService/ListProjectsForOrganizationAndUser"
+	AdminService_ListProjectsForFingerprint_FullMethodName            = "/rill.admin.v1.AdminService/ListProjectsForFingerprint"
 	AdminService_GetProject_FullMethodName                            = "/rill.admin.v1.AdminService/GetProject"
 	AdminService_GetProjectByID_FullMethodName                        = "/rill.admin.v1.AdminService/GetProjectByID"
 	AdminService_SearchProjectNames_FullMethodName                    = "/rill.admin.v1.AdminService/SearchProjectNames"
@@ -177,6 +178,9 @@ type AdminServiceClient interface {
 	// ListProjectsForOrganizationAndUser lists all the projects that an organization member user has access to.
 	// It does not include projects that the user has access to through a usergroup.
 	ListProjectsForOrganizationAndUser(ctx context.Context, in *ListProjectsForOrganizationAndUserRequest, opts ...grpc.CallOption) (*ListProjectsForOrganizationAndUserResponse, error)
+	// ListProjectsForFingerprint lists all projects the current user has access to that match the provided local project details.
+	// This can be used to produce a short list of cloud projects that are likely to have been deployed from a local project.
+	ListProjectsForFingerprint(ctx context.Context, in *ListProjectsForFingerprintRequest, opts ...grpc.CallOption) (*ListProjectsForFingerprintResponse, error)
 	// GetProject returns information about a specific project
 	GetProject(ctx context.Context, in *GetProjectRequest, opts ...grpc.CallOption) (*GetProjectResponse, error)
 	// GetProject returns information about a specific project
@@ -522,6 +526,16 @@ func (c *adminServiceClient) ListProjectsForOrganizationAndUser(ctx context.Cont
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListProjectsForOrganizationAndUserResponse)
 	err := c.cc.Invoke(ctx, AdminService_ListProjectsForOrganizationAndUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) ListProjectsForFingerprint(ctx context.Context, in *ListProjectsForFingerprintRequest, opts ...grpc.CallOption) (*ListProjectsForFingerprintResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListProjectsForFingerprintResponse)
+	err := c.cc.Invoke(ctx, AdminService_ListProjectsForFingerprint_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1773,6 +1787,9 @@ type AdminServiceServer interface {
 	// ListProjectsForOrganizationAndUser lists all the projects that an organization member user has access to.
 	// It does not include projects that the user has access to through a usergroup.
 	ListProjectsForOrganizationAndUser(context.Context, *ListProjectsForOrganizationAndUserRequest) (*ListProjectsForOrganizationAndUserResponse, error)
+	// ListProjectsForFingerprint lists all projects the current user has access to that match the provided local project details.
+	// This can be used to produce a short list of cloud projects that are likely to have been deployed from a local project.
+	ListProjectsForFingerprint(context.Context, *ListProjectsForFingerprintRequest) (*ListProjectsForFingerprintResponse, error)
 	// GetProject returns information about a specific project
 	GetProject(context.Context, *GetProjectRequest) (*GetProjectResponse, error)
 	// GetProject returns information about a specific project
@@ -2060,6 +2077,9 @@ func (UnimplementedAdminServiceServer) ListProjectsForOrganization(context.Conte
 }
 func (UnimplementedAdminServiceServer) ListProjectsForOrganizationAndUser(context.Context, *ListProjectsForOrganizationAndUserRequest) (*ListProjectsForOrganizationAndUserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListProjectsForOrganizationAndUser not implemented")
+}
+func (UnimplementedAdminServiceServer) ListProjectsForFingerprint(context.Context, *ListProjectsForFingerprintRequest) (*ListProjectsForFingerprintResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListProjectsForFingerprint not implemented")
 }
 func (UnimplementedAdminServiceServer) GetProject(context.Context, *GetProjectRequest) (*GetProjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetProject not implemented")
@@ -2606,6 +2626,24 @@ func _AdminService_ListProjectsForOrganizationAndUser_Handler(srv interface{}, c
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).ListProjectsForOrganizationAndUser(ctx, req.(*ListProjectsForOrganizationAndUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_ListProjectsForFingerprint_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListProjectsForFingerprintRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListProjectsForFingerprint(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListProjectsForFingerprint_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListProjectsForFingerprint(ctx, req.(*ListProjectsForFingerprintRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -4848,6 +4886,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListProjectsForOrganizationAndUser",
 			Handler:    _AdminService_ListProjectsForOrganizationAndUser_Handler,
+		},
+		{
+			MethodName: "ListProjectsForFingerprint",
+			Handler:    _AdminService_ListProjectsForFingerprint_Handler,
 		},
 		{
 			MethodName: "GetProject",
