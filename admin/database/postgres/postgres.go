@@ -282,6 +282,42 @@ func (c *connection) FindProjectsForUser(ctx context.Context, userID string) ([]
 	return c.projectsFromDTOs(res)
 }
 
+func (c *connection) FindProjectsForUserAndFingerprint(ctx context.Context, userID, directoryName, githubURL, afterID string, limit int) ([]*database.Project, error) {
+	// Shouldn't happen, but just to be safe and not return all projects.
+	if directoryName == "" && githubURL == "" {
+		return nil, nil
+	}
+
+	args := []any{userID, directoryName, githubURL}
+	qry := `
+		SELECT p.* FROM projects p
+		WHERE p.id IN (
+			SELECT upr.project_id FROM users_projects_roles upr WHERE upr.user_id = $1
+			UNION
+			SELECT ugpr.project_id FROM usergroups_projects_roles ugpr JOIN usergroups_users ugu ON ugpr.usergroup_id = ugu.usergroup_id WHERE ugu.user_id = $1
+		)
+		AND (
+			(p.directory_name != '' AND p.directory_name = $2)
+			OR
+			(p.github_url != '' AND p.github_url = $3)
+		)
+	`
+	if afterID != "" {
+		qry += " AND p.id > $4 ORDER BY p.id LIMIT $5"
+		args = append(args, afterID, limit)
+	} else {
+		qry += " ORDER BY p.id LIMIT $4"
+		args = append(args, limit)
+	}
+
+	var res []*projectDTO
+	err := c.getDB(ctx).SelectContext(ctx, &res, qry, args...)
+	if err != nil {
+		return nil, parseErr("projects", err)
+	}
+	return c.projectsFromDTOs(res)
+}
+
 func (c *connection) FindProjectsForOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*database.Project, error) {
 	var res []*projectDTO
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
@@ -372,9 +408,9 @@ func (c *connection) InsertProject(ctx context.Context, opts *database.InsertPro
 
 	res := &projectDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO projects (org_id, name, description, public, created_by_user_id, provisioner, prod_olap_driver, prod_olap_dsn, prod_slots, subpath, prod_branch, archive_asset_id, github_url, github_installation_id, prod_ttl_seconds, prod_version)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING *`,
-		opts.OrganizationID, opts.Name, opts.Description, opts.Public, opts.CreatedByUserID, opts.Provisioner, opts.ProdOLAPDriver, opts.ProdOLAPDSN, opts.ProdSlots, opts.Subpath, opts.ProdBranch, opts.ArchiveAssetID, opts.GithubURL, opts.GithubInstallationID, opts.ProdTTLSeconds, opts.ProdVersion,
+		INSERT INTO projects (org_id, name, description, public, created_by_user_id, provisioner, prod_olap_driver, prod_olap_dsn, prod_slots, directory_name, subpath, prod_branch, archive_asset_id, github_url, github_installation_id, prod_ttl_seconds, prod_version)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING *`,
+		opts.OrganizationID, opts.Name, opts.Description, opts.Public, opts.CreatedByUserID, opts.Provisioner, opts.ProdOLAPDriver, opts.ProdOLAPDSN, opts.ProdSlots, opts.DirectoryName, opts.Subpath, opts.ProdBranch, opts.ArchiveAssetID, opts.GithubURL, opts.GithubInstallationID, opts.ProdTTLSeconds, opts.ProdVersion,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
@@ -397,9 +433,9 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 
 	res := &projectDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		UPDATE projects SET name=$1, description=$2, public=$3, prod_branch=$4, github_url=$5, github_installation_id=$6, archive_asset_id=$7, prod_deployment_id=$8, provisioner=$9, prod_slots=$10, subpath=$11, prod_ttl_seconds=$12, annotations=$13, prod_version=$14, updated_on=now()
-		WHERE id=$15 RETURNING *`,
-		opts.Name, opts.Description, opts.Public, opts.ProdBranch, opts.GithubURL, opts.GithubInstallationID, opts.ArchiveAssetID, opts.ProdDeploymentID, opts.Provisioner, opts.ProdSlots, opts.Subpath, opts.ProdTTLSeconds, opts.Annotations, opts.ProdVersion, id,
+		UPDATE projects SET name=$1, description=$2, public=$3, prod_branch=$4, github_url=$5, github_installation_id=$6, archive_asset_id=$7, prod_deployment_id=$8, provisioner=$9, prod_slots=$10, directory_name=$11, subpath=$12, prod_ttl_seconds=$13, annotations=$14, prod_version=$15, updated_on=now()
+		WHERE id=$16 RETURNING *`,
+		opts.Name, opts.Description, opts.Public, opts.ProdBranch, opts.GithubURL, opts.GithubInstallationID, opts.ArchiveAssetID, opts.ProdDeploymentID, opts.Provisioner, opts.ProdSlots, opts.DirectoryName, opts.Subpath, opts.ProdTTLSeconds, opts.Annotations, opts.ProdVersion, id,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)

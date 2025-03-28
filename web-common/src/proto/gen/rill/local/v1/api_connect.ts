@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { DeployProjectRequest, DeployProjectResponse, GetCurrentProjectRequest, GetCurrentProjectResponse, GetCurrentUserRequest, GetCurrentUserResponse, GetMetadataRequest, GetMetadataResponse, GetVersionRequest, GetVersionResponse, ListOrganizationsAndBillingMetadataRequest, ListOrganizationsAndBillingMetadataResponse, PingRequest, PingResponse, PushToGithubRequest, PushToGithubResponse, RedeployProjectRequest, RedeployProjectResponse } from "./api_pb.js";
+import { DeployProjectRequest, DeployProjectResponse, GetCurrentProjectRequest, GetCurrentProjectResponse, GetCurrentUserRequest, GetCurrentUserResponse, GetMetadataRequest, GetMetadataResponse, GetVersionRequest, GetVersionResponse, ListCandidateProjectsRequest, ListCandidateProjectsResponse, ListOrganizationsAndBillingMetadataRequest, ListOrganizationsAndBillingMetadataResponse, PingRequest, PingResponse, PushToGithubRequest, PushToGithubResponse, RedeployProjectRequest, RedeployProjectResponse } from "./api_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -90,7 +90,8 @@ export const LocalService = {
       kind: MethodKind.Unary,
     },
     /**
-     * GetCurrentProject returns the rill cloud project connected to the local project
+     * GetCurrentProject returns the rill cloud project connected to the local project.
+     * Deprecated: Use ListCandidateProjects instead.
      *
      * @generated from rpc rill.local.v1.LocalService.GetCurrentProject
      */
@@ -98,6 +99,17 @@ export const LocalService = {
       name: "GetCurrentProject",
       I: GetCurrentProjectRequest,
       O: GetCurrentProjectResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * ListCandidateProjects returns a list of cloud projects that are likely to have been deployed from the local project.
+     *
+     * @generated from rpc rill.local.v1.LocalService.ListCandidateProjects
+     */
+    listCandidateProjects: {
+      name: "ListCandidateProjects",
+      I: ListCandidateProjectsRequest,
+      O: ListCandidateProjectsResponse,
       kind: MethodKind.Unary,
     },
     /**

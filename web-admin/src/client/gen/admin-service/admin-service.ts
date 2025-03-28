@@ -158,6 +158,8 @@ import type {
   V1GetProjectAccessRequestResponse,
   V1ApproveProjectAccessResponse,
   V1DenyProjectAccessResponse,
+  V1ListProjectsForFingerprintResponse,
+  AdminServiceListProjectsForFingerprintParams,
   V1TriggerRedeployResponse,
   V1TriggerRedeployRequest,
   V1GetProjectByIDResponse,
@@ -6263,6 +6265,68 @@ export const createAdminServiceDenyProjectAccess = <
     TContext
   >(mutationFn, mutationOptions);
 };
+/**
+ * @summary ListProjectsForFingerprint lists all projects the current user has access to that match the provided local project details.
+This can be used to produce a short list of cloud projects that are likely to have been deployed from a local project.
+ */
+export const adminServiceListProjectsForFingerprint = (
+  params?: AdminServiceListProjectsForFingerprintParams,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1ListProjectsForFingerprintResponse>({
+    url: `/v1/projects-for-fingerprint`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceListProjectsForFingerprintQueryKey = (
+  params?: AdminServiceListProjectsForFingerprintParams,
+) => [`/v1/projects-for-fingerprint`, ...(params ? [params] : [])];
+
+export type AdminServiceListProjectsForFingerprintQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceListProjectsForFingerprint>>
+>;
+export type AdminServiceListProjectsForFingerprintQueryError = RpcStatus;
+
+export const createAdminServiceListProjectsForFingerprint = <
+  TData = Awaited<ReturnType<typeof adminServiceListProjectsForFingerprint>>,
+  TError = RpcStatus,
+>(
+  params?: AdminServiceListProjectsForFingerprintParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceListProjectsForFingerprint>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceListProjectsForFingerprintQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceListProjectsForFingerprint>>
+  > = ({ signal }) => adminServiceListProjectsForFingerprint(params, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceListProjectsForFingerprint>>,
+    TError,
+    TData
+  >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
 /**
  * @summary TriggerRedeploy is similar to RedeployProject.
 DEPRECATED: Use RedeployProject instead.

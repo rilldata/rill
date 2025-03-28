@@ -62,6 +62,13 @@ export type AdminServiceGetAlertMetaBody = {
   queryForUserEmail?: string;
 };
 
+export type AdminServiceListProjectsForFingerprintParams = {
+  directoryName?: string;
+  githubUrl?: string;
+  pageSize?: number;
+  pageToken?: string;
+};
+
 export type AdminServiceUpdateServiceBody = {
   newName?: string;
 };
@@ -75,6 +82,7 @@ export type AdminServiceUpdateProjectBody = {
   githubUrl?: string;
   subpath?: string;
   archiveAssetId?: string;
+  directoryName?: string;
   prodSlots?: string;
   provisioner?: string;
   newName?: string;
@@ -103,6 +111,9 @@ Either github_url or archive_asset_id should be set. */
   githubUrl?: string;
   /** archive_asset_id is set for projects whose project files are not stored in github but are managed by rill. */
   archiveAssetId?: string;
+  /** directory_name should be the most recently observed local directory name for the project.
+See ListProjectsForFingerprint for more context. */
+  directoryName?: string;
   prodVersion?: string;
   skipDeploy?: boolean;
 };
@@ -884,6 +895,7 @@ export interface V1Project {
   subpath?: string;
   prodBranch?: string;
   archiveAssetId?: string;
+  directoryName?: string;
   prodOlapDriver?: string;
   prodOlapDsn?: string;
   prodSlots?: string;
@@ -1053,6 +1065,11 @@ export interface V1ListProjectsForOrganizationResponse {
 }
 
 export interface V1ListProjectsForOrganizationAndUserResponse {
+  projects?: V1Project[];
+  nextPageToken?: string;
+}
+
+export interface V1ListProjectsForFingerprintResponse {
   projects?: V1Project[];
   nextPageToken?: string;
 }

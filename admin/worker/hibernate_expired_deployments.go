@@ -51,6 +51,7 @@ func (w *Worker) hibernateExpiredDeployment(ctx context.Context, depl *database.
 			GithubInstallationID: proj.GithubInstallationID,
 			ProdVersion:          proj.ProdVersion,
 			ProdBranch:           proj.ProdBranch,
+			DirectoryName:        proj.DirectoryName,
 			Subpath:              proj.Subpath,
 			ProdSlots:            proj.ProdSlots,
 			ProdTTLSeconds:       proj.ProdTTLSeconds,

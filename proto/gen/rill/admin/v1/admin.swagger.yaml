@@ -2629,6 +2629,11 @@ paths:
               archiveAssetId:
                 type: string
                 description: archive_asset_id is set for projects whose project files are not stored in github but are managed by rill.
+              directoryName:
+                type: string
+                description: |-
+                  directory_name should be the most recently observed local directory name for the project.
+                  See ListProjectsForFingerprint for more context.
               prodVersion:
                 type: string
               skipDeploy:
@@ -2729,6 +2734,8 @@ paths:
               subpath:
                 type: string
               archiveAssetId:
+                type: string
+              directoryName:
                 type: string
               prodSlots:
                 type: string
@@ -2979,6 +2986,41 @@ paths:
           required: true
           schema:
             type: object
+      tags:
+        - AdminService
+  /v1/projects-for-fingerprint:
+    get:
+      summary: |-
+        ListProjectsForFingerprint lists all projects the current user has access to that match the provided local project details.
+        This can be used to produce a short list of cloud projects that are likely to have been deployed from a local project.
+      operationId: AdminService_ListProjectsForFingerprint
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListProjectsForFingerprintResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: directoryName
+          in: query
+          required: false
+          type: string
+        - name: githubUrl
+          in: query
+          required: false
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
       tags:
         - AdminService
   /v1/projects/-/redeploy:
@@ -4643,6 +4685,16 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1WhitelistedDomain'
+  v1ListProjectsForFingerprintResponse:
+    type: object
+    properties:
+      projects:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Project'
+      nextPageToken:
+        type: string
   v1ListProjectsForOrganizationAndUserResponse:
     type: object
     properties:
@@ -4969,6 +5021,8 @@ definitions:
       prodBranch:
         type: string
       archiveAssetId:
+        type: string
+      directoryName:
         type: string
       prodOlapDriver:
         type: string

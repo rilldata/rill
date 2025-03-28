@@ -79,5 +79,5 @@ sysroot/
 latest.txt
 /web-common/coverage
 
-postgres/
-clickhouse/
+/postgres
+/clickhouse

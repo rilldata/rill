@@ -231,6 +231,12 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		}
 	}
 
+	// Get the project's directory name
+	directoryName := ""
+	if localProjectPath != "" {
+		directoryName = filepath.Base(localProjectPath)
+	}
+
 	// Create the project (automatically deploys prod branch)
 	res, err := createProjectFlow(ctx, ch, &adminv1.CreateProjectRequest{
 		OrganizationName: ch.Org,
@@ -241,6 +247,7 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		ProdOlapDriver:   local.DefaultOLAPDriver,
 		ProdOlapDsn:      local.DefaultOLAPDSN,
 		ProdSlots:        int64(opts.Slots),
+		DirectoryName:    directoryName,
 		Subpath:          opts.SubPath,
 		ProdBranch:       opts.ProdBranch,
 		Public:           opts.Public,
