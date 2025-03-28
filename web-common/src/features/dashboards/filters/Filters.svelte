@@ -326,6 +326,7 @@
           context={$exploreName}
           {timeStart}
           lockTimeZone={exploreSpec.lockTimeZone}
+          allowCustomTimeRange={exploreSpec.allowCustomTimeRange}
           {timeEnd}
           {activeTimeGrain}
           {activeTimeZone}

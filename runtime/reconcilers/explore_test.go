@@ -68,9 +68,10 @@ defaults:
 						Invert:   true,
 						Selector: &runtimev1.FieldSelector_Fields{Fields: &runtimev1.StringListValue{Values: []string{"internal"}}},
 					},
-					Measures:         nil,
-					MeasuresSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
-					TimeZones:        []string{"UTC", "America/Los_Angeles"},
+					Measures:             nil,
+					MeasuresSelector:     &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+					TimeZones:            []string{"UTC", "America/Los_Angeles"},
+					AllowCustomTimeRange: true,
 					DefaultPreset: &runtimev1.ExplorePreset{
 						DimensionsSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
 						Measures:           []string{"x"},
@@ -79,11 +80,12 @@ defaults:
 				},
 				State: &runtimev1.ExploreState{
 					ValidSpec: &runtimev1.ExploreSpec{
-						DisplayName: "Hello",
-						MetricsView: "mv1",
-						Dimensions:  []string{"foo", "bar"},
-						Measures:    []string{"x", "y"},
-						TimeZones:   []string{"UTC", "America/Los_Angeles"},
+						DisplayName:          "Hello",
+						MetricsView:          "mv1",
+						Dimensions:           []string{"foo", "bar"},
+						Measures:             []string{"x", "y"},
+						TimeZones:            []string{"UTC", "America/Los_Angeles"},
+						AllowCustomTimeRange: true,
 						DefaultPreset: &runtimev1.ExplorePreset{
 							Dimensions:     []string{"foo", "bar"},
 							Measures:       []string{"x"},
@@ -334,9 +336,10 @@ security:
 						Invert:   true,
 						Selector: &runtimev1.FieldSelector_Fields{Fields: &runtimev1.StringListValue{Values: []string{"internal"}}},
 					},
-					Measures:         nil,
-					MeasuresSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
-					TimeZones:        []string{"UTC", "America/Los_Angeles"},
+					Measures:             nil,
+					MeasuresSelector:     &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+					TimeZones:            []string{"UTC", "America/Los_Angeles"},
+					AllowCustomTimeRange: true,
 					DefaultPreset: &runtimev1.ExplorePreset{
 						DimensionsSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
 						Measures:           []string{"x"},
@@ -351,11 +354,12 @@ security:
 				},
 				State: &runtimev1.ExploreState{
 					ValidSpec: &runtimev1.ExploreSpec{
-						DisplayName: "Hello",
-						MetricsView: "mv1",
-						Dimensions:  []string{"foo", "bar"},
-						Measures:    []string{"x", "y"},
-						TimeZones:   []string{"UTC", "America/Los_Angeles"},
+						DisplayName:          "Hello",
+						MetricsView:          "mv1",
+						Dimensions:           []string{"foo", "bar"},
+						Measures:             []string{"x", "y"},
+						TimeZones:            []string{"UTC", "America/Los_Angeles"},
+						AllowCustomTimeRange: true,
 						DefaultPreset: &runtimev1.ExplorePreset{
 							Dimensions:     []string{"foo", "bar"},
 							Measures:       []string{"x"},
