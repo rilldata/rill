@@ -64,7 +64,20 @@ interface BarChart {
   bar_chart: ChartConfig;
 }
 
-export type ChartTemplates = LineChart | BarChart | AreaChart;
+interface StackedBarChart {
+  stacked_bar: ChartConfig;
+}
+
+interface StackedBarNormalized {
+  stacked_bar_normalized: ChartConfig;
+}
+
+export type ChartTemplates =
+  | LineChart
+  | BarChart
+  | AreaChart
+  | StackedBarChart
+  | StackedBarNormalized;
 export interface KPITemplateT {
   kpi: KPISpec;
 }
@@ -83,7 +96,11 @@ export interface PivotTemplateT {
 }
 
 export type TemplateSpec =
-  | ChartTemplates
+  | LineChart
+  | BarChart
+  | AreaChart
+  | StackedBarChart
+  | StackedBarNormalized
   | KPITemplateT
   | TableTemplateT
   | PivotTemplateT
