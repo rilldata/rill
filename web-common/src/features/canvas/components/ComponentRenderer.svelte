@@ -11,7 +11,7 @@
   import type { Readable } from "svelte/store";
   import { Chart } from "./charts";
   import { Image } from "./image";
-  import { KPI } from "./kpi";
+
   import { Markdown } from "./markdown";
   import { Pivot } from "./pivot";
   import { Table } from "./table";
@@ -25,7 +25,6 @@
   const { componentTimeAndFilterStore } = ctx.canvasEntity;
 
   const filterableComponents = new Map([
-    ["kpi", KPI],
     ["kpi_grid", KPIGrid],
     ["table", Table],
     ["pivot", Pivot],

@@ -5,9 +5,9 @@
   import type { KPIGridSpec } from ".";
   import ComponentError from "../ComponentError.svelte";
   import type { KPISpec } from "../kpi";
-  import KPI from "../kpi/KPI.svelte";
   import { validateKPIGridSchema } from "./selector";
   import { getMinWidth } from "../kpi";
+  import KPIProvider from "../kpi/KPIProvider.svelte";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
   export let timeAndFilterStore: Readable<TimeAndFilterStore>;
@@ -42,7 +42,7 @@
     >
       {#each kpis as kpi, i (i)}
         <div class="min-h-32 kpi-wrapper">
-          <KPI rendererProperties={kpi} {timeAndFilterStore} />
+          <KPIProvider rendererProperties={kpi} {timeAndFilterStore} />
         </div>
       {/each}
     </div>
