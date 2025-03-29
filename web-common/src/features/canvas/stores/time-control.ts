@@ -38,7 +38,6 @@ import {
   get,
   writable,
   type Readable,
-  type Unsubscriber,
   type Writable,
 } from "svelte/store";
 
@@ -68,7 +67,6 @@ export class TimeControls {
 
   private componentName: string | undefined;
   private isInitialStateSet: boolean = false;
-  private initialStateSubscriber: Unsubscriber | undefined;
   private specStore: CanvasSpecResponseStore;
 
   constructor(specStore: CanvasSpecResponseStore, componentName?: string) {
@@ -296,11 +294,7 @@ export class TimeControls {
     );
 
     // Subscribe to ensure the derived code runs
-    this.initialStateSubscriber = defaultStore.subscribe(() => {});
-  };
-
-  destroy = () => {
-    this.initialStateSubscriber?.();
+    defaultStore.subscribe(() => {});
   };
 
   combinedTimeRangeSummaryStore = (

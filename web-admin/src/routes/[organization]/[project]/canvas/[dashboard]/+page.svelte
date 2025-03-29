@@ -4,7 +4,6 @@
   import DashboardBuilding from "@rilldata/web-admin/features/dashboards/DashboardBuilding.svelte";
   import CanvasDashboardEmbed from "@rilldata/web-common/features/canvas/CanvasDashboardEmbed.svelte";
   import CanvasThemeProvider from "@rilldata/web-common/features/canvas/CanvasThemeProvider.svelte";
-  import StateManagersProvider from "@rilldata/web-common/features/canvas/state-managers/StateManagersProvider.svelte";
   import {
     ResourceKind,
     useResource,
@@ -73,11 +72,7 @@
 {#if isCanvasReconcilingForFirstTime(canvasResource)}
   <DashboardBuilding />
 {:else}
-  {#key canvasName}
-    <StateManagersProvider {canvasName}>
-      <CanvasThemeProvider>
-        <CanvasDashboardEmbed resource={canvasResource} />
-      </CanvasThemeProvider>
-    </StateManagersProvider>
-  {/key}
+  <CanvasThemeProvider {canvasName}>
+    <CanvasDashboardEmbed resource={canvasResource} />
+  </CanvasThemeProvider>
 {/if}

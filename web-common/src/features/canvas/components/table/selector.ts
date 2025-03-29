@@ -2,12 +2,12 @@ import {
   validateDimensions,
   validateMeasures,
 } from "@rilldata/web-common/features/canvas/components/validators";
-import type { StateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import { type Readable, derived } from "svelte/store";
 import type { TableSpec } from "./";
 
 export function validateTableSchema(
-  ctx: StateManagers,
+  ctx: CanvasStore,
   tableSpec: TableSpec,
 ): Readable<{
   isValid: boolean;

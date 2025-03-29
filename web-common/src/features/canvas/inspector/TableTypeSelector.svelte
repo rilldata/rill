@@ -3,14 +3,15 @@
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import type { CanvasComponentType } from "@rilldata/web-common/features/canvas/components/types";
   import type { CanvasComponentObj } from "@rilldata/web-common/features/canvas/components/util";
-  import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 
   export let component: CanvasComponentObj;
   export let componentType: CanvasComponentType;
   export let metricsViewName: string;
+  export let canvasName: string;
 
-  const ctx = getCanvasStateManagers();
-  const { getMetricsViewFromName } = ctx.canvasEntity.spec;
+  $: ctx = getCanvasStore(canvasName);
+  $: ({ getMetricsViewFromName } = ctx.canvasEntity.spec);
 
   $: selected = componentType === "table" ? 0 : 1;
   $: metricsView = getMetricsViewFromName(metricsViewName);

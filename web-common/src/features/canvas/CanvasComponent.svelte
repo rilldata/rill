@@ -1,47 +1,83 @@
 <script lang="ts" context="module">
   import ComponentHeader from "@rilldata/web-common/features/canvas/ComponentHeader.svelte";
-  import ComponentRenderer from "@rilldata/web-common/features/canvas/components/ComponentRenderer.svelte";
-  import {
-    getComponentFilterProperties,
-    isChartComponentType,
-  } from "@rilldata/web-common/features/canvas/components/util";
-  import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-  import type { V1CanvasItem } from "@rilldata/web-common/runtime-client";
+  import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import type {
+    V1CanvasItem,
+    V1Resource,
+  } from "@rilldata/web-common/runtime-client";
   import { hideBorder } from "./layout-util";
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
+  import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
+  import { KPIGrid } from "@rilldata/web-common/features/canvas/components/kpi-grid";
+  import {
+    isCanvasComponentType,
+    isChartComponentType,
+    getComponentFilterProperties,
+  } from "@rilldata/web-common/features/canvas/components/util";
+  import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
+  import type { Readable } from "svelte/store";
+  import { Chart } from "./components/charts";
+  import { Image } from "./components/image";
+  import { KPI } from "./components/kpi";
+  import { Markdown } from "./components/markdown";
+  import { Pivot } from "./components/pivot";
+  import { Table } from "./components/table";
+  import Toolbar from "./Toolbar.svelte";
+
+  const filterableComponents = new Map([
+    ["kpi", KPI],
+    ["kpi_grid", KPIGrid],
+    ["table", Table],
+    ["pivot", Pivot],
+  ]);
+
+  const nonFilterableComponents = new Map([
+    ["markdown", Markdown],
+    ["image", Image],
+  ]);
 </script>
 
 <script lang="ts">
-  import Toolbar from "./Toolbar.svelte";
-
   export let canvasItem: V1CanvasItem | null;
   export let selected = false;
   export let id: string;
   export let ghost = false;
   export let allowPointerEvents = true;
   export let editable = false;
+  export let canvasName: string;
+  export let componentResource: V1Resource | undefined;
   export let onMouseDown: (e: MouseEvent) => void = () => {};
   export let onDuplicate: () => void = () => {};
   export let onDelete: () => void = () => {};
 
-  const {
-    canvasEntity: {
-      spec: { getComponentResourceFromName },
-    },
-  } = getCanvasStateManagers();
+  $: ({
+    canvasEntity: { componentTimeAndFilterStore },
+  } = getCanvasStore(canvasName));
 
   let open = false;
+  let timeAndFilterStore: Readable<TimeAndFilterStore> | undefined;
 
   $: componentName = canvasItem?.component ?? "";
 
-  $: component = getComponentResourceFromName(componentName);
-  $: ({ renderer, rendererProperties } = $component ?? {});
+  $: ({ renderer, rendererProperties } =
+    componentResource?.component?.spec ?? {});
 
   $: isChartType = isChartComponentType(renderer);
 
-  $: title = rendererProperties?.title;
-  $: description = rendererProperties?.description;
+  $: title = rendererProperties?.title as string | undefined;
+  $: description = rendererProperties?.description as string | undefined;
   $: componentFilters = getComponentFilterProperties(rendererProperties);
+
+  $: isFilterable = filterableComponents.has(renderer ?? "");
+
+  $: hasHeader = !!title || !!description;
+
+  $: if (
+    (isChartComponentType(renderer) || isFilterable) &&
+    rendererProperties?.metrics_view
+  ) {
+    timeAndFilterStore = componentTimeAndFilterStore(componentName);
+  }
 </script>
 
 <article
@@ -68,13 +104,45 @@
       {#if !isChartType}
         <ComponentHeader {title} {description} filters={componentFilters} />
       {/if}
-      {#if renderer && rendererProperties}
-        <ComponentRenderer
-          hasHeader={title || description}
-          {renderer}
-          {rendererProperties}
-          {componentName}
-        />
+      {#if rendererProperties && isCanvasComponentType(renderer)}
+        {#if isChartComponentType(renderer) && timeAndFilterStore}
+          <Chart
+            {canvasName}
+            {rendererProperties}
+            {renderer}
+            {timeAndFilterStore}
+          />
+        {:else if renderer === "pivot" && timeAndFilterStore}
+          <Pivot
+            {canvasName}
+            {hasHeader}
+            {rendererProperties}
+            {timeAndFilterStore}
+            {componentName}
+          />
+        {:else if renderer === "table" && timeAndFilterStore}
+          <Table
+            {canvasName}
+            {rendererProperties}
+            {timeAndFilterStore}
+            {componentName}
+            {hasHeader}
+          />
+        {:else if isFilterable && timeAndFilterStore}
+          <svelte:component
+            this={filterableComponents.get(renderer)}
+            {canvasName}
+            {rendererProperties}
+            {timeAndFilterStore}
+          />
+        {:else}
+          <svelte:component
+            this={nonFilterableComponents.get(renderer)}
+            {rendererProperties}
+          />
+        {/if}
+      {:else if componentResource}
+        <ComponentError error="Invalid component type" />
       {/if}
     {:else}
       <div class="size-full grid place-content-center">

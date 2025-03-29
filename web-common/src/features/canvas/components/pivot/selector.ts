@@ -2,13 +2,13 @@ import {
   validateDimensions,
   validateMeasures,
 } from "@rilldata/web-common/features/canvas/components/validators";
-import type { StateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import { isTimeDimension } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
 import { type Readable, derived } from "svelte/store";
 import type { PivotSpec } from "./";
 
 export function validateTableSchema(
-  ctx: StateManagers,
+  ctx: CanvasStore,
   tableSpec: PivotSpec,
 ): Readable<{
   isValid: boolean;

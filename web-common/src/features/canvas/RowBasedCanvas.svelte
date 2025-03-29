@@ -3,8 +3,8 @@
   import { clamp } from "@rilldata/web-common/lib/clamp";
   import {
     type V1CanvasRow as APIV1CanvasRow,
-    createQueryServiceResolveCanvas,
     type V1CanvasItem,
+    type V1ResolveCanvasResponse,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { get, writable } from "svelte/store";
@@ -32,7 +32,7 @@
   import RowDropZone from "./RowDropZone.svelte";
   import RowWrapper from "./RowWrapper.svelte";
   import { useDefaultMetrics } from "./selector";
-  import { getCanvasStateManagers } from "./state-managers/state-managers";
+  import { getCanvasStore } from "./state-managers/state-managers";
   import { dropZone } from "./stores/ui-stores";
   import ComponentError from "./components/ComponentError.svelte";
 
@@ -42,18 +42,14 @@
     items: (V1CanvasItem | null)[];
   };
 
-  const ctx = getCanvasStateManagers();
-
-  const {
-    canvasEntity: {
-      setSelectedComponent,
-      spec: { canvasSpec, metricViewNames },
-      name: canvasName,
-    },
-  } = ctx;
-
   export let fileArtifact: FileArtifact;
+  export let canvasData: V1ResolveCanvasResponse | undefined;
+  export let canvasName: string;
   export let openSidebar: () => void;
+
+  $: ({
+    canvasEntity: { setSelectedComponent },
+  } = getCanvasStore(canvasName));
 
   let mousePosition = { x: 0, y: 0 };
   let initialMousePosition: { x: number; y: number } | null = null;
@@ -75,7 +71,7 @@
   let dragTimeout: ReturnType<typeof setTimeout> | null = null;
   let dragItemPosition = { top: 0, left: 0 };
   let dragItemDimensions = { width: 0, height: 0 };
-  let spec = $canvasSpec ?? {
+  let spec = canvasData?.canvas?.canvas?.spec ?? {
     rows: [],
     filtersEnabled: false,
     maxWidth: DEFAULT_DASHBOARD_WIDTH,
@@ -83,15 +79,19 @@
   let openSidebarAfterSelection = false;
 
   $: ({ instanceId } = $runtime);
+  $: metricsViews = Object.values(canvasData?.referencedMetricsViews ?? {});
 
-  $: metricsViewQuery = useDefaultMetrics(instanceId, $metricViewNames?.[0]);
+  $: metricsViewQuery = useDefaultMetrics(
+    instanceId,
+    metricsViews?.[0]?.meta?.name?.name,
+  );
 
   $: ({ editorContent, updateEditorContent } = fileArtifact);
   $: contents = parseDocument($editorContent ?? "");
 
-  $: if ($canvasSpec) {
+  $: if (canvasData?.canvas?.canvas?.spec) {
     if (!get(activelyEditing)) {
-      spec = structuredClone($canvasSpec ?? spec);
+      spec = structuredClone(canvasData?.canvas?.canvas?.spec ?? spec);
     }
   }
 
@@ -134,14 +134,6 @@
   }
 
   $: defaultMetrics = $metricsViewQuery?.data;
-
-  $: canvasResolverQuery = createQueryServiceResolveCanvas(
-    instanceId,
-    canvasName,
-    {},
-  );
-
-  $: canvasData = $canvasResolverQuery.data;
 
   function onColumResizeStart(e: MouseEvent & { currentTarget: HTMLElement }) {
     initialMousePosition = mousePosition;
@@ -507,6 +499,7 @@
 />
 
 <CanvasDashboardWrapper
+  {canvasName}
   {maxWidth}
   {filtersEnabled}
   onClick={resetSelection}
@@ -534,6 +527,8 @@
         {@const width = widths[columnIndex]}
         {@const id = getId(rowIndex, columnIndex)}
         {@const type = types[columnIndex]}
+        {@const componentResource =
+          canvasData?.resolvedComponents?.[item?.component ?? ""]}
         <ItemWrapper {type} zIndex={4 - columnIndex}>
           {#if columnIndex === 0}
             <ElementDivider
@@ -572,6 +567,8 @@
           />
 
           <CanvasComponent
+            {canvasName}
+            {componentResource}
             canvasItem={item}
             {id}
             editable
@@ -667,7 +664,7 @@
               initializeRow(specCanvasRows.length, type);
             }}
           />
-        {:else}
+        {:else if canvasData}
           <ComponentError error="No valid metrics view in project" />
         {/if}
       </ItemWrapper>
@@ -690,6 +687,8 @@
     specCanvasRows[dragItemInfo.position.row]?.items?.[
       dragItemInfo.position.column
     ]}
+  {@const componentResource =
+    canvasData?.resolvedComponents?.[item?.component ?? ""]}
   {#if item}
     <div
       use:portal
@@ -701,6 +700,8 @@
       style:height="{dragItemDimensions.height}px"
     >
       <CanvasComponent
+        {canvasName}
+        {componentResource}
         id="canvas-drag-item"
         canvasItem={item}
         allowPointerEvents={false}

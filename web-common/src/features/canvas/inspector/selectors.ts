@@ -1,5 +1,5 @@
 import type { FieldType } from "@rilldata/web-common/features/canvas/inspector/types";
-import type { StateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import {
   getDimensionDisplayName,
   getMeasureDisplayName,
@@ -19,7 +19,7 @@ export function getParsedDocument(fileArtifact: FileArtifact) {
 }
 
 export function useMetricFieldData(
-  ctx: StateManagers,
+  ctx: CanvasStore,
   metricViewName: string,
   type: FieldType[],
   searchableItems: string[] | undefined = undefined,

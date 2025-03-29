@@ -2,7 +2,7 @@
   import { Button } from "@rilldata/web-common/components/button";
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
-  import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import AdvancedFilter from "@rilldata/web-common/features/dashboards/filters/AdvancedFilter.svelte";
   import FilterButton from "@rilldata/web-common/features/dashboards/filters/FilterButton.svelte";
   import DimensionFilter from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilter.svelte";
@@ -27,17 +27,18 @@
   } from "@rilldata/web-common/lib/time/types";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { DateTime, Interval } from "luxon";
-  import { onDestroy, onMount } from "svelte";
+  import { onMount } from "svelte";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
   import CanvasComparisonPill from "./CanvasComparisonPill.svelte";
 
   export let readOnly = false;
   export let maxWidth: number;
+  export let canvasName: string;
 
   /** the height of a row of chips */
   const ROW_HEIGHT = "26px";
-  const {
+  $: ({
     canvasEntity: {
       filters: {
         whereFilter,
@@ -70,10 +71,9 @@
         displayTimeComparison,
         setSelectedComparisonRange,
         setInitialState,
-        destroy,
       },
     },
-  } = getCanvasStateManagers();
+  } = getCanvasStore(canvasName));
 
   let showDefaultItem = false;
 
@@ -267,7 +267,6 @@
       setInitialState();
     }
   });
-  onDestroy(destroy);
 </script>
 
 <div

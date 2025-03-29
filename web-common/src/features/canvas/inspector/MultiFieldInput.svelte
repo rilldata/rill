@@ -4,16 +4,17 @@
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import type { SearchableFilterSelectableGroup } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
   import SearchableMenuContent from "@rilldata/web-common/components/searchable-filter-menu/SearchableMenuContent.svelte";
-  import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import { PlusIcon } from "lucide-svelte";
   import { useMetricFieldData } from "./selectors";
   import type { FieldType } from "./types";
+
+  export let canvasName: string;
   export let metricName: string;
   export let label: string;
   export let id: string;
   export let selectedItems: string[] = [];
   export let types: FieldType[];
-
   export let onMultiSelect: (items: string[]) => void = () => {};
 
   let open = false;
@@ -21,7 +22,7 @@
   // Local state for optimistic updates
   let localSelectedItems: string[] = selectedItems;
 
-  const ctx = getCanvasStateManagers();
+  $: ctx = getCanvasStore(canvasName);
 
   $: fieldData = useMetricFieldData(ctx, metricName, types);
 
@@ -123,7 +124,7 @@
 
   {#if selectedItems?.length > 0}
     <div class="flex flex-col gap-1 mt-2">
-      {#each selectedItems as item}
+      {#each selectedItems as item, i (i)}
         <Chip
           removable
           fullWidth
