@@ -64,6 +64,7 @@
     height,
     renderer,
     expressionFunctions,
+    useExpressionInterpreter: false,
   });
 
   const onError = (e: CustomEvent<{ error: Error }>) => {
