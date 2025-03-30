@@ -9,7 +9,7 @@ import type { Config } from "vega-lite";
 const BarFill = "var(--color-primary-400)";
 
 const defaultMarkColor = MainLineColor;
-const gridColor = "#d1d5db"; // gray-300
+const gridColor = "#e5e7eb"; // gray-200
 const axisLabelColor = "#4b5563"; // gray-600
 
 export const getRillTheme: (isCustomDashboard: boolean) => Config = (
@@ -63,7 +63,9 @@ export const getRillTheme: (isCustomDashboard: boolean) => Config = (
   axisY: {
     orient: "left",
     gridColor: gridColor,
-    gridDash: [2],
+    ...(!isCustomDashboard && {
+      gridDash: [2],
+    }),
     tickColor: gridColor,
     domain: false,
     tickSize: 0,
@@ -80,6 +82,9 @@ export const getRillTheme: (isCustomDashboard: boolean) => Config = (
     labelOverlap: false,
   },
   axisX: {
+    ...(isCustomDashboard && {
+      grid: false,
+    }),
     gridColor: gridColor,
     gridDash: [2],
     tickColor: gridColor,
