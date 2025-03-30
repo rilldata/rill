@@ -31,6 +31,7 @@
   let scheduledReportQuery: V1Query | undefined;
 
   // Get the query when the dialog is opened.
+  // (Note: it might be better to pass pre-computed queries into the `ExportMenu` component.)
   $: if (open) {
     exportQuery = getQuery(false);
     scheduledReportQuery = getQuery(true);
@@ -90,17 +91,20 @@
   <DropdownMenu.Content align="start">
     <DropdownMenu.Item
       on:click={() => handleExport(V1ExportFormat.EXPORT_FORMAT_CSV)}
+      disabled={!exportQuery}
     >
       Export as CSV
     </DropdownMenu.Item>
     <DropdownMenu.Item
       on:click={() => handleExport(V1ExportFormat.EXPORT_FORMAT_PARQUET)}
+      disabled={!exportQuery}
     >
       Export as Parquet
     </DropdownMenu.Item>
 
     <DropdownMenu.Item
       on:click={() => handleExport(V1ExportFormat.EXPORT_FORMAT_XLSX)}
+      disabled={!exportQuery}
     >
       Export as XLSX
     </DropdownMenu.Item>
