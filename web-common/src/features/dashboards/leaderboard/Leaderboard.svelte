@@ -187,7 +187,7 @@
     {
       ...(leaderboardMeasureCountFeatureFlag
         ? {
-            measures: leaderboardMeasureNames.map((name) => ({ name })),
+            measures: visibleMeasures.map((name) => ({ name })),
           }
         : {
             measures: [{ name: activeMeasureName }],
@@ -208,7 +208,10 @@
 
   $: leaderboardTotals = totalsData?.data?.[0]
     ? Object.fromEntries(
-        leaderboardMeasureNames.map((name) => [
+        (leaderboardMeasureCountFeatureFlag
+          ? visibleMeasures
+          : leaderboardMeasureNames
+        ).map((name) => [
           name,
           (totalsData?.data?.[0]?.[name] as number) ?? null,
         ]),
