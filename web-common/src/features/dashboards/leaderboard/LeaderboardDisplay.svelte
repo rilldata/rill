@@ -30,7 +30,7 @@
       dimensions: { visibleDimensions },
       comparison: { isBeingCompared: isBeingComparedReadable },
       sorting: { sortedAscending, sortType, sortByMeasure },
-      measures: { measureLabel, isMeasureValidPercentOfTotal },
+      measures: { measureLabel, isMeasureValidPercentOfTotal, visibleMeasures },
     },
     actions: {
       dimensions: { setPrimaryDimension },
@@ -127,6 +127,9 @@
               sortBy={$sortByMeasure}
               measureLabel={$measureLabel}
               leaderboardMeasureCountFeatureFlag={$leaderboardMeasureCountFeatureFlag}
+              visibleMeasures={$visibleMeasures
+                .map((m) => m.name)
+                .filter((name) => name !== undefined)}
             />
           {/if}
         {/each}
