@@ -2,15 +2,16 @@
   import { replaceState } from "$app/navigation";
   import ComponentsEditor from "@rilldata/web-common/features/canvas/inspector/ComponentsEditor.svelte";
   import PageEditor from "@rilldata/web-common/features/canvas/inspector/PageEditor.svelte";
-  import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { Inspector } from "@rilldata/web-common/layout/workspace";
   import { parseDocument } from "yaml";
 
   export let fileArtifact: FileArtifact;
   export let autoSave: boolean;
+  export let canvasName: string;
 
-  const { canvasEntity } = getCanvasStateManagers();
+  $: ({ canvasEntity } = getCanvasStore(canvasName));
 
   $: ({ editorContent, updateEditorContent, saveLocalContent, path } =
     fileArtifact);
@@ -56,8 +57,12 @@
 
 <Inspector minWidth={320} filePath={path}>
   {#if $selectedComponent !== null}
-    <ComponentsEditor {fileArtifact} selectedComponent={$selectedComponent} />
+    <ComponentsEditor
+      {canvasName}
+      {fileArtifact}
+      selectedComponent={$selectedComponent}
+    />
   {:else}
-    <PageEditor {fileArtifact} {updateProperties} />
+    <PageEditor {canvasName} {fileArtifact} {updateProperties} />
   {/if}
 </Inspector>
