@@ -1,9 +1,6 @@
 import { type CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
 import { useDashboardFetchMocksForComponentTests } from "@rilldata/web-common/features/dashboards/filters/test/filter-test-utils";
-import {
-  setExploreStateForActivePage,
-  setSharedExploreState,
-} from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-active-page-store";
+import { setExploreStateForWebView } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
@@ -28,10 +25,7 @@ import {
   type DashboardTimeControls,
   TimeComparisonOption,
 } from "@rilldata/web-common/lib/time/types";
-import {
-  DashboardState_ActivePage,
-  DashboardState_LeaderboardSortDirection,
-} from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
+import { DashboardState_LeaderboardSortDirection } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { render, screen, waitFor } from "@testing-library/svelte";
 import { readable } from "svelte/store";
@@ -202,16 +196,11 @@ describe("DashboardStateLoader", () => {
         undefined,
         "view=explore&tr=P7D&compare_tr=rill-PP&grain=hour&measures=bid_price&dims=domain&sort_by=bid_price",
       );
-      setSharedExploreState(
+      setExploreStateForWebView(
         AD_BIDS_EXPLORE_NAME,
         undefined,
-        "tr=P14D&compare_tr=rill-PW&grain=day",
-      );
-      setExploreStateForActivePage(
-        AD_BIDS_EXPLORE_NAME,
-        undefined,
-        DashboardState_ActivePage.DEFAULT,
-        "view=explore&measures=impressions&dims=publisher&sort_by=impressions",
+        "explore",
+        "view=explore&tr=P14D&compare_tr=rill-PW&grain=day&measures=impressions&dims=publisher&sort_by=impressions",
       );
       renderDashboardStateLoader(BookmarkSourceQueryResult);
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
@@ -328,11 +317,10 @@ describe("DashboardStateLoader", () => {
         undefined,
         "view=explore&measures=bid_price&dims=domain&sort_by=bid_price",
       );
-      setSharedExploreState(AD_BIDS_EXPLORE_NAME, undefined, "view=explore");
-      setExploreStateForActivePage(
+      setExploreStateForWebView(
         AD_BIDS_EXPLORE_NAME,
         undefined,
-        DashboardState_ActivePage.DEFAULT,
+        "explore",
         "view=explore&measures=impressions&dims=publisher&sort_by=impressions",
       );
       renderDashboardStateLoader();

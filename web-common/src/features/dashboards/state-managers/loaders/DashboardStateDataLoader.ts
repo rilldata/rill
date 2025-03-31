@@ -208,8 +208,8 @@ export class DashboardStateDataLoader {
     );
 
     this.exploreStateFromSessionStorage = derived(
-      [this.validSpecQuery, this.explorePresetFromYAMLConfig, page],
-      ([validSpecResp, explorePresetFromYAMLConfig, pageState]) => {
+      [this.validSpecQuery, page],
+      ([validSpecResp, pageState]) => {
         const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
         const exploreSpec = validSpecResp.data?.explore ?? {};
         const exploreStateFromSessionStorage =
@@ -219,16 +219,13 @@ export class DashboardStateDataLoader {
             pageState.url.searchParams,
             metricsViewSpec,
             exploreSpec,
-            explorePresetFromYAMLConfig.data ?? {},
           );
 
         return {
           data: exploreStateFromSessionStorage,
-          error: validSpecResp.error ?? explorePresetFromYAMLConfig.error,
-          isLoading:
-            validSpecResp.isLoading || explorePresetFromYAMLConfig.isLoading,
-          isFetching:
-            validSpecResp.isFetching || explorePresetFromYAMLConfig.isFetching,
+          error: validSpecResp.error,
+          isLoading: validSpecResp.isLoading,
+          isFetching: validSpecResp.isFetching,
         };
       },
     );
@@ -348,7 +345,6 @@ export class DashboardStateDataLoader {
       urlSearchParams,
       metricsViewSpec,
       exploreSpec,
-      explorePresetFromYAMLConfig.data,
     );
 
     return (

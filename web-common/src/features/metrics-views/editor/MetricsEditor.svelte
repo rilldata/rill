@@ -5,7 +5,7 @@
   import { metricsPlusSQL } from "@rilldata/web-common/components/editor/presets/yamlWithJsonAndSql";
   import { clearMostRecentExploreState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-explore-state";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import { clearExploreSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-active-page-store";
+  import { clearExploreSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";

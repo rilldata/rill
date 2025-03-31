@@ -1,12 +1,8 @@
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
-import { getPartialExploreStateForActivePage } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-active-page-store";
-import {
-  FromURLParamViewMap,
-  ToActivePageViewMap,
-} from "@rilldata/web-common/features/dashboards/url-state/mappers";
+import { getPartialExploreStateForWebView } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
+import type { ExploreUrlWebView } from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-specific-url-params";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import {
-  type V1ExplorePreset,
   type V1ExploreSpec,
   V1ExploreWebView,
   type V1MetricsViewSpec,
@@ -24,7 +20,6 @@ export function getExploreStateFromSessionStorage(
   searchParams: URLSearchParams,
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
-  defaultExplorePreset: V1ExplorePreset,
 ) {
   if (
     // exactly one param is set, but it is not `view`
@@ -40,16 +35,13 @@ export function getExploreStateFromSessionStorage(
     return undefined;
   }
 
-  const viewFromUrl = searchParams.get(ExploreStateURLParams.WebView) as string;
-  const view = viewFromUrl
-    ? FromURLParamViewMap[viewFromUrl]
-    : (defaultExplorePreset.view ??
-      V1ExploreWebView.EXPLORE_WEB_VIEW_UNSPECIFIED);
-  const activePage = Number(ToActivePageViewMap[view] ?? "0");
-  const exploreStateFromSessionStorage = getPartialExploreStateForActivePage(
+  const viewFromUrl = searchParams.get(ExploreStateURLParams.WebView) as
+    | ExploreUrlWebView
+    | undefined;
+  const exploreStateFromSessionStorage = getPartialExploreStateForWebView(
     exploreName,
     storageNamespacePrefix,
-    activePage,
+    viewFromUrl ?? "explore",
     metricsViewSpec,
     exploreSpec,
   );
@@ -57,7 +49,7 @@ export function getExploreStateFromSessionStorage(
     return undefined;
   }
 
-  if (view === V1ExploreWebView.EXPLORE_WEB_VIEW_TIME_DIMENSION) {
+  if (viewFromUrl === "tdd") {
     exploreStateFromSessionStorage.tdd ??= {
       expandedMeasureName: "",
       chartType: TDDChart.DEFAULT,

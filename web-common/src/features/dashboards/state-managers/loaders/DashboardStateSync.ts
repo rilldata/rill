@@ -17,7 +17,7 @@ import {
 import { saveMostRecentExploreState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-explore-state";
 import type { AfterNavigate } from "@sveltejs/kit";
 import { derived, get, type Readable } from "svelte/store";
-import { updateExploreSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-active-page-store";
+import { updateExploreSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
 
 /**
  * Keeps explore state and url in sync.
@@ -78,7 +78,6 @@ export class DashboardStateSync {
     this.initialized = true;
 
     const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
-    const metricsViewSpec = validSpecData?.metricsView ?? {};
     const exploreSpec = validSpecData?.explore ?? {};
     const pageState = get(page);
     const { data: explorePresetFromYAMLConfig } = get(
@@ -108,7 +107,6 @@ export class DashboardStateSync {
     updateExploreSessionStore(
       this.exploreName,
       this.extraPrefix,
-      metricsViewSpec,
       exploreSpec,
       timeControlsState,
       updatedExploreState,
@@ -116,7 +114,6 @@ export class DashboardStateSync {
     saveMostRecentExploreState(
       this.exploreName,
       this.extraPrefix,
-      metricsViewSpec,
       exploreSpec,
       timeControlsState,
       updatedExploreState,
@@ -186,7 +183,6 @@ export class DashboardStateSync {
     updateExploreSessionStore(
       this.exploreName,
       this.extraPrefix,
-      metricsViewSpec,
       exploreSpec,
       timeControlsState,
       updatedExploreState,
@@ -194,7 +190,6 @@ export class DashboardStateSync {
     saveMostRecentExploreState(
       this.exploreName,
       this.extraPrefix,
-      metricsViewSpec,
       exploreSpec,
       timeControlsState,
       updatedExploreState,
@@ -210,7 +205,6 @@ export class DashboardStateSync {
 
   private gotoNewState(exploreState: MetricsExplorerEntity) {
     const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
-    const metricsViewSpec = validSpecData?.metricsView ?? {};
     const exploreSpec = validSpecData?.explore ?? {};
     const timeControlsState = get(this.timeControlStore);
     const pageState = get(page);
@@ -235,7 +229,6 @@ export class DashboardStateSync {
     updateExploreSessionStore(
       this.exploreName,
       this.extraPrefix,
-      metricsViewSpec,
       exploreSpec,
       timeControlsState,
       exploreState,
@@ -243,7 +236,6 @@ export class DashboardStateSync {
     saveMostRecentExploreState(
       this.exploreName,
       this.extraPrefix,
-      metricsViewSpec,
       exploreSpec,
       timeControlsState,
       exploreState,

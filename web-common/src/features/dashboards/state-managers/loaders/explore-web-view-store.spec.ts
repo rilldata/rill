@@ -14,9 +14,8 @@ import {
   AD_BIDS_OPEN_PUB_DIMENSION_TABLE,
   AD_BIDS_SET_P7D_TIME_RANGE_FILTER,
   AD_BIDS_SET_PREVIOUS_PERIOD_COMPARE_TIME_RANGE_FILTER,
-  AD_BIDS_SORT_ASC_BY_BID_PRICE,
+  AD_BIDS_SORT_ASC_BY_IMPRESSIONS,
   AD_BIDS_SORT_BY_PERCENT_VALUE,
-  AD_BIDS_SORT_DESC_BY_IMPRESSIONS,
   AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC,
   AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD,
   AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY,
@@ -65,7 +64,7 @@ const TestCases: {
       view: "explore",
       mutations: [],
       expectedSearch:
-        "tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&sort_dir=ASC&sort_by=bid_price&sort_type=percent",
+        "tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&sort_type=percent",
     },
     view: {
       view: "tdd",
@@ -81,7 +80,7 @@ const TestCases: {
       view: "explore",
       mutations: [AD_BIDS_OPEN_PUB_DIMENSION_TABLE],
       expectedSearch:
-        "tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=publisher&sort_dir=ASC&sort_by=bid_price&sort_type=percent",
+        "tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=publisher&sort_type=percent",
     },
     view: {
       view: "tdd",
@@ -98,7 +97,7 @@ const TestCases: {
       view: "explore",
       mutations: [],
       expectedSearch:
-        "tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&sort_dir=ASC&sort_by=bid_price&sort_type=percent",
+        "tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&sort_type=percent",
     },
     view: {
       view: "pivot",
@@ -116,7 +115,7 @@ const TestCases: {
       view: "explore",
       mutations: [AD_BIDS_OPEN_PUB_DIMENSION_TABLE],
       expectedSearch:
-        "tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=publisher&sort_dir=ASC&sort_by=bid_price&sort_type=percent",
+        "tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=publisher&sort_type=percent",
     },
     view: {
       view: "pivot",
@@ -149,7 +148,7 @@ const TestCases: {
   },
 ];
 
-describe("Explore active page store", () => {
+describe("Explore web view store", () => {
   const mocks = DashboardFetchMocks.useDashboardFetchMocks();
   let pageMock!: PageMock;
 
@@ -188,9 +187,8 @@ describe("Explore active page store", () => {
         AD_BIDS_SET_PREVIOUS_PERIOD_COMPARE_TIME_RANGE_FILTER,
         AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY,
         AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY,
-        AD_BIDS_SORT_DESC_BY_IMPRESSIONS,
+        AD_BIDS_SORT_ASC_BY_IMPRESSIONS,
         AD_BIDS_SORT_BY_PERCENT_VALUE,
-        AD_BIDS_SORT_ASC_BY_BID_PRICE,
       ]);
 
       const initialSearch = `view=${initView.view}${initView.additionalParams ?? ""}`;
