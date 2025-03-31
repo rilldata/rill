@@ -24,7 +24,6 @@
   const StateManagers = getStateManagers();
   const {
     selectors: {
-      activeMeasure: { isSummableMeasure },
       numberFormat: { measureFormatters, activeMeasureFormatter },
       dimensionFilters: { isFilterExcludeMode },
       dimensions: { visibleDimensions },
@@ -109,7 +108,6 @@
               filterExcludeMode={$isFilterExcludeMode(dimension.name)}
               {comparisonTimeRange}
               {dimension}
-              isSummableMeasure={$isSummableMeasure}
               {parentElement}
               {suppressTooltip}
               {timeControlsReady}

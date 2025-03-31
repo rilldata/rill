@@ -25,7 +25,6 @@
   export let tableWidth: number;
   export let borderTop = false;
   export let borderBottom = false;
-  export let isSummableMeasure: boolean;
   export let isBeingCompared: boolean;
   export let filterExcludeMode: boolean;
   export let atLeastOneActive: boolean;
@@ -96,7 +95,7 @@
   $: barLengths = Object.fromEntries(
     Object.entries(pctOfTotals).map(([name, pct]) => [
       name,
-      isSummableMeasure && pct ? tableWidth * pct : 0,
+      pct ? tableWidth * pct : 0,
     ]),
   );
 
