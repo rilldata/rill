@@ -18,14 +18,13 @@
   import type { Readable } from "svelte/store";
   import { Chart } from "./components/charts";
   import { Image } from "./components/image";
-  import { KPI } from "./components/kpi";
+
   import { Markdown } from "./components/markdown";
   import { Pivot } from "./components/pivot";
   import { Table } from "./components/table";
   import Toolbar from "./Toolbar.svelte";
 
   const filterableComponents = new Map([
-    ["kpi", KPI],
     ["kpi_grid", KPIGrid],
     ["table", Table],
     ["pivot", Pivot],
