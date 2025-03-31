@@ -48,6 +48,7 @@ class FeatureFlags {
   alerts = new FeatureFlag("user", true);
   reports = new FeatureFlag("user", true);
   leaderboardMeasureCount = new FeatureFlag("user", false);
+  reorderMeasuresDimensions = new FeatureFlag("user", false);
 
   constructor() {
     const updateFlags = (userFlags: V1InstanceFeatureFlags) => {

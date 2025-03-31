@@ -137,6 +137,56 @@ func (s *Server) ListProjectsForOrganizationAndUser(ctx context.Context, req *ad
 	}, nil
 }
 
+func (s *Server) ListProjectsForFingerprint(ctx context.Context, req *adminv1.ListProjectsForFingerprintRequest) (*adminv1.ListProjectsForFingerprintResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.directory_name", req.DirectoryName),
+		attribute.String("args.github_url", req.GithubUrl),
+	)
+
+	claims := auth.GetClaims(ctx)
+	if claims.OwnerType() != auth.OwnerTypeUser {
+		return nil, status.Error(codes.PermissionDenied, "only users can list projects by fingerprint")
+	}
+	userID := claims.OwnerID()
+
+	pageToken, err := unmarshalPageToken(req.PageToken)
+	if err != nil {
+		return nil, err
+	}
+	pageSize := validPageSize(req.PageSize)
+
+	projects, err := s.admin.DB.FindProjectsForUserAndFingerprint(ctx, userID, req.DirectoryName, req.GithubUrl, pageToken.Val, pageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	nextToken := ""
+	if len(projects) >= pageSize {
+		nextToken = marshalPageToken(projects[len(projects)-1].ID)
+	}
+
+	dtos := make([]*adminv1.Project, len(projects))
+	orgNames := make(map[string]string)
+	for i, p := range projects {
+		orgName := orgNames[p.OrganizationID]
+		if orgName == "" {
+			org, err := s.admin.DB.FindOrganization(ctx, p.OrganizationID)
+			if err != nil {
+				return nil, err
+			}
+			orgName = org.Name
+			orgNames[p.OrganizationID] = orgName
+		}
+
+		dtos[i] = s.projToDTO(p, orgName)
+	}
+
+	return &adminv1.ListProjectsForFingerprintResponse{
+		Projects:      dtos,
+		NextPageToken: nextToken,
+	}, nil
+}
+
 func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest) (*adminv1.GetProjectResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.OrganizationName),
@@ -422,14 +472,15 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		attribute.String("args.project", req.Name),
 		attribute.String("args.description", req.Description),
 		attribute.Bool("args.public", req.Public),
+		attribute.String("args.directory_name", req.DirectoryName),
 		attribute.String("args.provisioner", req.Provisioner),
+		attribute.String("args.archive_asset_id", req.ArchiveAssetId),
+		attribute.String("args.github_url", req.GithubUrl),
+		attribute.String("args.sub_path", req.Subpath),
 		attribute.String("args.prod_version", req.ProdVersion),
+		attribute.String("args.prod_branch", req.ProdBranch),
 		attribute.String("args.prod_olap_driver", req.ProdOlapDriver),
 		attribute.Int64("args.prod_slots", req.ProdSlots),
-		attribute.String("args.sub_path", req.Subpath),
-		attribute.String("args.prod_branch", req.ProdBranch),
-		attribute.String("args.github_url", req.GithubUrl),
-		attribute.String("args.archive_asset_id", req.ArchiveAssetId),
 		attribute.Bool("args.skip_deploy", req.SkipDeploy),
 	)
 
@@ -498,13 +549,14 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		Description:          req.Description,
 		Public:               req.Public,
 		CreatedByUserID:      userID,
+		DirectoryName:        req.DirectoryName,
 		Provisioner:          req.Provisioner,
-		ArchiveAssetID:       nil,         // Populated below
-		GithubURL:            nil,         // Populated below
-		GithubInstallationID: nil,         // Populated below
-		ProdBranch:           "",          // Populated below
-		Subpath:              req.Subpath, // Populated below
+		ArchiveAssetID:       nil, // Populated below
+		GithubURL:            nil, // Populated below
+		GithubInstallationID: nil, // Populated below
+		Subpath:              "",  // Populated below
 		ProdVersion:          req.ProdVersion,
+		ProdBranch:           "", // Populated below
 		ProdOLAPDriver:       req.ProdOlapDriver,
 		ProdOLAPDSN:          req.ProdOlapDsn,
 		ProdSlots:            int(req.ProdSlots),
@@ -603,17 +655,23 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		attribute.String("args.org", req.OrganizationName),
 		attribute.String("args.project", req.Name),
 	)
+	if req.NewName != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.new_name", *req.NewName))
+	}
 	if req.Description != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.description", *req.Description))
+	}
+	if req.Public != nil {
+		observability.AddRequestAttributes(ctx, attribute.Bool("args.public", *req.Public))
+	}
+	if req.DirectoryName != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.directory_name", *req.DirectoryName))
 	}
 	if req.Provisioner != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.provisioner", *req.Provisioner))
 	}
-	if req.ProdVersion != nil {
-		observability.AddRequestAttributes(ctx, attribute.String("args.prod_version", *req.ProdVersion))
-	}
-	if req.ProdBranch != nil {
-		observability.AddRequestAttributes(ctx, attribute.String("args.prod_branch", *req.ProdBranch))
+	if req.ArchiveAssetId != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.archive_asset_id", *req.ArchiveAssetId))
 	}
 	if req.GithubUrl != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.github_url", *req.GithubUrl))
@@ -621,20 +679,17 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	if req.Subpath != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.subpath", *req.Subpath))
 	}
-	if req.ArchiveAssetId != nil {
-		observability.AddRequestAttributes(ctx, attribute.String("args.archive_asset_id", *req.ArchiveAssetId))
+	if req.ProdVersion != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.prod_version", *req.ProdVersion))
 	}
-	if req.Public != nil {
-		observability.AddRequestAttributes(ctx, attribute.Bool("args.public", *req.Public))
+	if req.ProdBranch != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.prod_branch", *req.ProdBranch))
 	}
 	if req.ProdSlots != nil {
 		observability.AddRequestAttributes(ctx, attribute.Int64("args.prod_slots", *req.ProdSlots))
 	}
 	if req.ProdTtlSeconds != nil {
 		observability.AddRequestAttributes(ctx, attribute.Int64("args.prod_ttl_seconds", *req.ProdTtlSeconds))
-	}
-	if req.NewName != nil {
-		observability.AddRequestAttributes(ctx, attribute.String("args.new_name", *req.NewName))
 	}
 
 	// Find project
@@ -703,16 +758,17 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		Name:                 valOrDefault(req.NewName, proj.Name),
 		Description:          valOrDefault(req.Description, proj.Description),
 		Public:               valOrDefault(req.Public, proj.Public),
+		DirectoryName:        valOrDefault(req.DirectoryName, proj.DirectoryName),
+		Provisioner:          valOrDefault(req.Provisioner, proj.Provisioner),
 		ArchiveAssetID:       archiveAssetID,
 		GithubURL:            githubURL,
 		GithubInstallationID: githubInstID,
 		Subpath:              subpath,
 		ProdVersion:          valOrDefault(req.ProdVersion, proj.ProdVersion),
 		ProdBranch:           prodBranch,
-		ProdDeploymentID:     proj.ProdDeploymentID,
 		ProdSlots:            int(valOrDefault(req.ProdSlots, int64(proj.ProdSlots))),
 		ProdTTLSeconds:       prodTTLSeconds,
-		Provisioner:          valOrDefault(req.Provisioner, proj.Provisioner),
+		ProdDeploymentID:     proj.ProdDeploymentID,
 		Annotations:          proj.Annotations,
 	}
 	proj, err = s.admin.UpdateProject(ctx, proj, opts)
@@ -1483,16 +1539,17 @@ func (s *Server) SudoUpdateAnnotations(ctx context.Context, req *adminv1.SudoUpd
 		Name:                 proj.Name,
 		Description:          proj.Description,
 		Public:               proj.Public,
+		DirectoryName:        proj.DirectoryName,
+		Provisioner:          proj.Provisioner,
 		ArchiveAssetID:       proj.ArchiveAssetID,
 		GithubURL:            proj.GithubURL,
 		GithubInstallationID: proj.GithubInstallationID,
+		Subpath:              proj.Subpath,
 		ProdVersion:          proj.ProdVersion,
 		ProdBranch:           proj.ProdBranch,
-		Subpath:              proj.Subpath,
-		ProdDeploymentID:     proj.ProdDeploymentID,
 		ProdSlots:            proj.ProdSlots,
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
-		Provisioner:          proj.Provisioner,
+		ProdDeploymentID:     proj.ProdDeploymentID,
 		Annotations:          req.Annotations,
 	})
 	if err != nil {
@@ -1797,20 +1854,21 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 		OrgId:            p.OrganizationID,
 		OrgName:          orgName,
 		Description:      p.Description,
+		FrontendUrl:      s.admin.URLs.Project(orgName, p.Name),
 		Public:           p.Public,
 		CreatedByUserId:  safeStr(p.CreatedByUserID),
+		DirectoryName:    p.DirectoryName,
 		Provisioner:      p.Provisioner,
+		ArchiveAssetId:   safeStr(p.ArchiveAssetID),
+		GithubUrl:        safeStr(p.GithubURL),
+		Subpath:          p.Subpath,
 		ProdVersion:      p.ProdVersion,
+		ProdBranch:       p.ProdBranch,
 		ProdOlapDriver:   p.ProdOLAPDriver,
 		ProdOlapDsn:      p.ProdOLAPDSN,
 		ProdSlots:        int64(p.ProdSlots),
-		ProdBranch:       p.ProdBranch,
-		Subpath:          p.Subpath,
-		GithubUrl:        safeStr(p.GithubURL),
-		ArchiveAssetId:   safeStr(p.ArchiveAssetID),
-		ProdDeploymentId: safeStr(p.ProdDeploymentID),
 		ProdTtlSeconds:   safeInt64(p.ProdTTLSeconds),
-		FrontendUrl:      s.admin.URLs.Project(orgName, p.Name),
+		ProdDeploymentId: safeStr(p.ProdDeploymentID),
 		Annotations:      p.Annotations,
 		CreatedOn:        timestamppb.New(p.CreatedOn),
 		UpdatedOn:        timestamppb.New(p.UpdatedOn),

@@ -15,6 +15,8 @@ In your Rill project directory, create a explore dashboard, `<dashboard_name>.ya
 
 **`display_name`** - Refers to the display name for the metrics view _(required)_.
 
+**`banner`** - Refers to the custom banner displayed at the header of an Canvas dashboard  _(optional)_.
+
 **`rows`** - Refers to all of the rows displayed on the Canvas dashboard _(required)_.
 
     - **`items`** - Refers to each row of components, mulitple items can be listed in a single `items` . _(required)_.

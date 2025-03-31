@@ -13,6 +13,7 @@ export interface CreateEmbedOptionsParams {
   config?: Config;
   renderer?: "canvas" | "svg";
   expressionFunctions?: ExpressionFunction;
+  useExpressionInterpreter?: boolean;
 }
 
 export function createEmbedOptions({
@@ -22,6 +23,7 @@ export function createEmbedOptions({
   config,
   renderer = "canvas",
   expressionFunctions = {},
+  useExpressionInterpreter = true,
 }: CreateEmbedOptionsParams): EmbedOptions {
   const jwt = get(runtime).jwt;
 
@@ -32,9 +34,11 @@ export function createEmbedOptions({
     logLevel: 0, // only show errors
     width: canvasDashboard ? width : undefined,
     height: canvasDashboard ? height : undefined,
-    // Add interpreter so that vega expressions are CSP compliant
-    ast: true,
-    expr: expressionInterpreter,
+    ...(useExpressionInterpreter && {
+      // Add interpreter so that vega expressions are CSP compliant
+      ast: true,
+      expr: expressionInterpreter,
+    }),
     expressionFunctions,
     loader: {
       baseURL: `${get(runtime).host}/v1/instances/${get(runtime).instanceId}/assets/`,

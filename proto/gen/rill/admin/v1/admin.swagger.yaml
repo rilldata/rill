@@ -2608,7 +2608,26 @@ paths:
                 type: string
               public:
                 type: boolean
+              directoryName:
+                type: string
+                description: |-
+                  directory_name should be the most recently observed local directory name for the project.
+                  See ListProjectsForFingerprint for more context.
               provisioner:
+                type: string
+              archiveAssetId:
+                type: string
+                description: archive_asset_id is set for projects whose project files are not stored in github but are managed by rill.
+              githubUrl:
+                type: string
+                description: |-
+                  github_url is set for projects whose project files are stored in github. This is set to a github repo url.
+                  Either github_url or archive_asset_id should be set.
+              subpath:
+                type: string
+              prodVersion:
+                type: string
+              prodBranch:
                 type: string
               prodOlapDriver:
                 type: string
@@ -2617,20 +2636,6 @@ paths:
               prodSlots:
                 type: string
                 format: int64
-              subpath:
-                type: string
-              prodBranch:
-                type: string
-              githubUrl:
-                type: string
-                description: |-
-                  github_url is set for projects whose project files are stored in github. This is set to a github repo url.
-                  Either github_url or archive_asset_id should be set.
-              archiveAssetId:
-                type: string
-                description: archive_asset_id is set for projects whose project files are not stored in github but are managed by rill.
-              prodVersion:
-                type: string
               skipDeploy:
                 type: boolean
       tags:
@@ -2718,30 +2723,32 @@ paths:
           schema:
             type: object
             properties:
+              newName:
+                type: string
               description:
                 type: string
               public:
                 type: boolean
-              prodBranch:
+              directoryName:
+                type: string
+              provisioner:
+                type: string
+              archiveAssetId:
                 type: string
               githubUrl:
                 type: string
               subpath:
                 type: string
-              archiveAssetId:
+              prodVersion:
+                type: string
+              prodBranch:
                 type: string
               prodSlots:
                 type: string
                 format: int64
-              provisioner:
-                type: string
-              newName:
-                type: string
               prodTtlSeconds:
                 type: string
                 format: int64
-              prodVersion:
-                type: string
               superuserForceAccess:
                 type: boolean
       tags:
@@ -2979,6 +2986,41 @@ paths:
           required: true
           schema:
             type: object
+      tags:
+        - AdminService
+  /v1/projects-for-fingerprint:
+    get:
+      summary: |-
+        ListProjectsForFingerprint lists all projects the current user has access to that match the provided local project details.
+        This can be used to produce a short list of cloud projects that are likely to have been deployed from a local project.
+      operationId: AdminService_ListProjectsForFingerprint
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListProjectsForFingerprintResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: directoryName
+          in: query
+          required: false
+          type: string
+        - name: githubUrl
+          in: query
+          required: false
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
       tags:
         - AdminService
   /v1/projects/-/redeploy:
@@ -4643,6 +4685,16 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1WhitelistedDomain'
+  v1ListProjectsForFingerprintResponse:
+    type: object
+    properties:
+      projects:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Project'
+      nextPageToken:
+        type: string
   v1ListProjectsForOrganizationAndUserResponse:
     type: object
     properties:
@@ -4956,19 +5008,26 @@ definitions:
         type: string
       description:
         type: string
+      frontendUrl:
+        type: string
+        description: 'Note: Does NOT incorporate the parent org''s custom domain.'
       public:
         type: boolean
       createdByUserId:
         type: string
+      directoryName:
+        type: string
       provisioner:
+        type: string
+      archiveAssetId:
         type: string
       githubUrl:
         type: string
       subpath:
         type: string
-      prodBranch:
+      prodVersion:
         type: string
-      archiveAssetId:
+      prodBranch:
         type: string
       prodOlapDriver:
         type: string
@@ -4977,20 +5036,15 @@ definitions:
       prodSlots:
         type: string
         format: int64
-      prodDeploymentId:
-        type: string
-      frontendUrl:
-        type: string
-        description: 'Note: Does NOT incorporate the parent org''s custom domain.'
       prodTtlSeconds:
         type: string
         format: int64
+      prodDeploymentId:
+        type: string
       annotations:
         type: object
         additionalProperties:
           type: string
-      prodVersion:
-        type: string
       createdOn:
         type: string
         format: date-time

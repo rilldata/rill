@@ -79,6 +79,7 @@
       class="sr-only peer-hover:not-sr-only peer-active:sr-only hover:not-sr-only flex shadow-sm pointer-events-auto !absolute left-1/2 w-fit z-50 bg-white -translate-x-1/2 border rounded-sm"
     >
       <AddComponentDropdown
+        rowIndex={dropIndex}
         bind:open={menuOpen}
         onOpenChange={(isOpen) => {
           if (!isOpen) {

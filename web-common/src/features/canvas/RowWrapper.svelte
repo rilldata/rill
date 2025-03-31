@@ -9,7 +9,7 @@
 <section
   id="canvas-row-{rowIndex}"
   role="presentation"
-  class="w-full grid canvas-row relative h-fit min-h-fit"
+  class="w-full grid canvas-row relative h-fit min-h-fit pointer-events-none"
   style:z-index={zIndex}
   style:max-width="{maxWidth}px"
   style:--row-height={height}

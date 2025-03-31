@@ -155,6 +155,12 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 		return err
 	}
 
+	// Get the project's directory name
+	directoryName := ""
+	if localProjectPath != "" {
+		directoryName = filepath.Base(localProjectPath)
+	}
+
 	projResp, err := adminClient.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: ch.Org, Name: opts.Name})
 	if err != nil {
 		if st, ok := status.FromError(err); !ok || st.Code() != codes.NotFound {
@@ -181,6 +187,7 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 		res, err := adminClient.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
 			OrganizationName: ch.Org,
 			Name:             opts.Name,
+			DirectoryName:    &directoryName,
 			ArchiveAssetId:   &assetID,
 		})
 		if err != nil {
@@ -225,13 +232,14 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 		OrganizationName: ch.Org,
 		Name:             opts.Name,
 		Description:      opts.Description,
+		Public:           opts.Public,
+		DirectoryName:    directoryName,
 		Provisioner:      opts.Provisioner,
+		ArchiveAssetId:   assetID,
 		ProdVersion:      opts.ProdVersion,
 		ProdOlapDriver:   local.DefaultOLAPDriver,
 		ProdOlapDsn:      local.DefaultOLAPDSN,
 		ProdSlots:        int64(opts.Slots),
-		Public:           opts.Public,
-		ArchiveAssetId:   assetID,
 	})
 	if err != nil {
 		if s, ok := status.FromError(err); ok && s.Code() == codes.PermissionDenied {

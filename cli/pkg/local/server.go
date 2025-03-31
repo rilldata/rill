@@ -286,6 +286,12 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 		}
 	}
 
+	// Get the project's directory name
+	directoryName := ""
+	if s.app.ProjectPath != "" {
+		directoryName = filepath.Base(s.app.ProjectPath)
+	}
+
 	var projRequest *adminv1.CreateProjectRequest
 	if r.Msg.Upload { // upload repo to rill managed storage instead of github
 		repo, release, err := s.app.Runtime.Repo(ctx, s.app.Instance.ID)
@@ -304,13 +310,14 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			OrganizationName: r.Msg.Org,
 			Name:             r.Msg.ProjectName,
 			Description:      "Auto created by Rill",
+			Public:           false,
+			DirectoryName:    directoryName,
 			Provisioner:      "",
+			ArchiveAssetId:   assetID,
 			ProdVersion:      "",
 			ProdOlapDriver:   "duckdb",
 			ProdOlapDsn:      "",
 			ProdSlots:        int64(DefaultProdSlots(s.app.ch)),
-			Public:           false,
-			ArchiveAssetId:   assetID,
 		}
 	} else {
 		userStatus, err := c.GetGithubUserStatus(ctx, &adminv1.GetGithubUserStatusRequest{})
@@ -353,15 +360,16 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			OrganizationName: r.Msg.Org,
 			Name:             r.Msg.ProjectName,
 			Description:      "Auto created by Rill",
+			Public:           false,
+			DirectoryName:    directoryName,
 			Provisioner:      "",
+			GithubUrl:        ghURL,
+			Subpath:          "",
 			ProdVersion:      "",
+			ProdBranch:       repoStatus.DefaultBranch,
 			ProdOlapDriver:   "duckdb",
 			ProdOlapDsn:      "",
 			ProdSlots:        int64(DefaultProdSlots(s.app.ch)),
-			Public:           false,
-			GithubUrl:        ghURL,
-			Subpath:          "",
-			ProdBranch:       repoStatus.DefaultBranch,
 		}
 	}
 
@@ -443,9 +451,9 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 			return nil, err
 		}
 		_, err = c.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
-			ArchiveAssetId:   &assetID,
 			OrganizationName: projResp.Project.OrgName,
 			Name:             projResp.Project.Name,
+			ArchiveAssetId:   &assetID,
 		})
 		if err != nil {
 			return nil, err
@@ -546,6 +554,32 @@ func (s *Server) GetCurrentProject(ctx context.Context, r *connect.Request[local
 	return connect.NewResponse(&localv1.GetCurrentProjectResponse{
 		LocalProjectName: localProjectName,
 		Project:          project,
+	}), nil
+}
+
+func (s *Server) ListCandidateProjects(ctx context.Context, r *connect.Request[localv1.ListCandidateProjectsRequest]) (*connect.Response[localv1.ListCandidateProjectsResponse], error) {
+	// Get authenticated admin client
+	if !s.app.ch.IsAuthenticated() {
+		return nil, errors.New("must authenticate before performing this action")
+	}
+	c, err := s.app.ch.Client()
+	if err != nil {
+		return nil, err
+	}
+
+	directoryName := filepath.Base(s.app.ProjectPath)
+	_, githubURL, _ := gitutil.ExtractGitRemote(s.app.ProjectPath, "", false)
+
+	resp, err := c.ListProjectsForFingerprint(ctx, &adminv1.ListProjectsForFingerprintRequest{
+		DirectoryName: directoryName,
+		GithubUrl:     githubURL,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return connect.NewResponse(&localv1.ListCandidateProjectsResponse{
+		Projects: resp.Projects,
 	}), nil
 }
 

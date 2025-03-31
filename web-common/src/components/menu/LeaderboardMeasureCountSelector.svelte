@@ -7,9 +7,7 @@
 
   export let measures: MetricsViewSpecMeasureV2[];
   export let count: number = 1;
-  export let sortByMeasure: string | null;
   export let onMeasureCountChange: (count: number) => void;
-  export let resetSort: () => void;
 
   let isHovered = false;
 
@@ -27,24 +25,7 @@
     }
   }
 
-  function getFilteredMeasuresByMeasureCount(
-    measures: MetricsViewSpecMeasureV2[],
-    count: number,
-  ) {
-    return measures.slice(0, count);
-  }
-
-  $: filteredMeasures = getFilteredMeasuresByMeasureCount(measures, count);
   $: visibleMeasuresCount = measures.length;
-
-  // Workaround for feature flag `leaderboardMeasureCount`
-  // If the sortByMeasure isn't in the filtered measures, we need to reset the sort
-  $: if (
-    sortByMeasure &&
-    !filteredMeasures.some((measure) => measure.name === sortByMeasure)
-  ) {
-    resetSort();
-  }
 
   // Update count to match visible measures when filtered count is greater
   $: if (visibleMeasuresCount < count) {

@@ -98,6 +98,12 @@ dimensions:
 
 **`lock_time_zone`** — When `true`, the dashboard will be locked to the first time provided in the `time_zones` list. When no `time_zones` are provided, the dashboard will be locked to UTC. _(optional)_.
 
+```yaml
+time_zones:
+  - America/Los_Angeles
+lock_time_zone: true
+```
+
 **`theme`** — Refers to the default theme to apply to the dashboard. A valid theme must be defined in the project. Read this [page](./themes.md) for more detailed information about themes _(optional)_.
 ```yaml
 theme:
