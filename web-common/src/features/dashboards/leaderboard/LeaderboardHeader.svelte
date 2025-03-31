@@ -36,7 +36,7 @@
 
 <thead>
   <tr>
-    <th aria-label="Comparison column">
+    <th aria-label="Comparison column" class="grid place-content-center">
       {#if isFetching}
         <DelayedSpinner isLoading={isFetching} size="16px" />
       {:else if hovered || isBeingCompared}
