@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
   import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
   import {
@@ -14,12 +13,14 @@
   import type { KPISpec } from ".";
   import { validateKPISchema } from "./selector";
   import { KPI } from ".";
+  import { getCanvasStore } from "../../state-managers/state-managers";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
   export let timeAndFilterStore: Readable<TimeAndFilterStore>;
+  export let canvasName: string;
 
-  const ctx = getCanvasStateManagers();
-  const { spec } = ctx.canvasEntity;
+  $: ctx = getCanvasStore(canvasName);
+  $: ({ spec } = ctx.canvasEntity);
 
   $: ({ instanceId } = $runtime);
 
