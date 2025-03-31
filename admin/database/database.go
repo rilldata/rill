@@ -397,32 +397,66 @@ type UpdateOrganizationOptions struct {
 // Project represents one Git connection.
 // Projects belong to an organization.
 type Project struct {
-	ID              string
-	OrganizationID  string `db:"org_id"`
-	Name            string
-	Description     string
-	Public          bool
+	ID string
+	// OrganizationID is the ID of the organization that owns this project.
+	OrganizationID string `db:"org_id"`
+	// Name is a slug for the project that is unique within the organization.
+	Name string
+	// Description is a human-readable description of the project.
+	Description string
+	// Public indicates if the project is publicly accessible to anyone with the link.
+	Public bool
+	// CreatedByUserID is the ID of the user that created this project (if any).
 	CreatedByUserID *string `db:"created_by_user_id"`
-	Provisioner     string
-	// ArchiveAssetID is set when project files are managed by Rill instead of maintained in Git.
-	// If ArchiveAssetID is set all git related fields will be empty.
-	ArchiveAssetID               *string           `db:"archive_asset_id"`
-	GithubURL                    *string           `db:"github_url"`
-	GithubInstallationID         *int64            `db:"github_installation_id"`
-	DirectoryName                string            `db:"directory_name"`
-	Subpath                      string            `db:"subpath"`
-	ProdVersion                  string            `db:"prod_version"`
-	ProdBranch                   string            `db:"prod_branch"`
-	ProdVariables                map[string]string `db:"prod_variables"`
-	ProdVariablesEncryptionKeyID string            `db:"prod_variables_encryption_key_id"`
-	ProdOLAPDriver               string            `db:"prod_olap_driver"`
-	ProdOLAPDSN                  string            `db:"prod_olap_dsn"`
-	ProdSlots                    int               `db:"prod_slots"`
-	ProdTTLSeconds               *int64            `db:"prod_ttl_seconds"`
-	ProdDeploymentID             *string           `db:"prod_deployment_id"`
-	Annotations                  map[string]string `db:"annotations"`
-	CreatedOn                    time.Time         `db:"created_on"`
-	UpdatedOn                    time.Time         `db:"updated_on"`
+	// DirectoryName is the most recently observed local directory name for the project's files.
+	// It is NOT user-facing configuration and does not relate to how files are found in the archive or Git repository.
+	// It is tracked only as internal metadata and used for fuzzy matching local files to cloud projects.
+	DirectoryName string `db:"directory_name"`
+	// Provisioner is the provisioner to use for deploying the project's runtimes.
+	Provisioner string
+	// ArchiveAssetID references a tarball archive of project files to serve.
+	// It is used for non-Git connected projects. It is a foreign key to the assets table.
+	// If it is set, all the Git(hub)-related fields should be empty.
+	ArchiveAssetID *string `db:"archive_asset_id"`
+	// GithubURL is the URL of the GitHub repository for this project.
+	// It should be a regular `https://github.com/account/repo` URL, not a remote ending in `.git`.
+	// It is set for Github-connected projects.
+	// If it is set, ArchiveAssetID should be empty.
+	GithubURL *string `db:"github_url"`
+	// GithubInstallationID is the Github installation ID for the repository in GithubURL.
+	GithubInstallationID *int64 `db:"github_installation_id"`
+	// Subpath is an optional subpath for the project files within the Git repository.
+	// It enables Rill files to be stored in a monorepo.
+	Subpath string `db:"subpath"`
+	// ProdVersion is the runtime version to use for the production deployment.
+	ProdVersion string `db:"prod_version"`
+	// ProdBranch is the Git branch to use for the production deployment for Git-connected projects.
+	ProdBranch string `db:"prod_branch"`
+	// Deprecated: See the ProjectVariable type instead.
+	ProdVariables map[string]string `db:"prod_variables"`
+	// Deprecated: See the ProjectVariable type instead.
+	ProdVariablesEncryptionKeyID string `db:"prod_variables_encryption_key_id"`
+	// ProdOLAPDriver is the OLAP driver to use for the production deployment.
+	// Deprecated: This should now be configured in the project's rill.yaml instead.
+	ProdOLAPDriver string `db:"prod_olap_driver"`
+	// ProdOLAPDSN is the OLAP DSN to use for the production deployment.
+	// Deprecated: This should now be configured with a variable instead.
+	ProdOLAPDSN string `db:"prod_olap_dsn"`
+	// ProdSlots is the number of slots to use for the production deployment.
+	// Slots are a virtual unit of compute, memory and disk resources.
+	ProdSlots int `db:"prod_slots"`
+	// ProdTTLSeconds is the time-to-live for the production deployment.
+	// If the project has not been accessed in this time, its deployment(s) will be hibernated.
+	ProdTTLSeconds *int64 `db:"prod_ttl_seconds"`
+	// ProdDeploymentID is the ID of the current production deployment.
+	ProdDeploymentID *string `db:"prod_deployment_id"`
+	// Annotations are internally configured key-value metadata about the project.
+	// They propagate to the project's deployments and telemetry.
+	Annotations map[string]string `db:"annotations"`
+	// CreatedOn is the time the project was created.
+	CreatedOn time.Time `db:"created_on"`
+	// UpdatedOn is the time the project was last updated.
+	UpdatedOn time.Time `db:"updated_on"`
 }
 
 // InsertProjectOptions defines options for inserting a new Project.
@@ -432,11 +466,11 @@ type InsertProjectOptions struct {
 	Description          string
 	Public               bool
 	CreatedByUserID      *string
+	DirectoryName        string
 	Provisioner          string
 	ArchiveAssetID       *string
 	GithubURL            *string `validate:"omitempty,http_url"`
 	GithubInstallationID *int64  `validate:"omitempty,ne=0"`
-	DirectoryName        string
 	Subpath              string
 	ProdVersion          string
 	ProdBranch           string
@@ -451,17 +485,17 @@ type UpdateProjectOptions struct {
 	Name                 string `validate:"slug"`
 	Description          string
 	Public               bool
+	DirectoryName        string
 	Provisioner          string
 	ArchiveAssetID       *string
 	GithubURL            *string `validate:"omitempty,http_url"`
 	GithubInstallationID *int64  `validate:"omitempty,ne=0"`
-	DirectoryName        string
 	Subpath              string
 	ProdVersion          string
 	ProdBranch           string
-	ProdDeploymentID     *string
 	ProdSlots            int
 	ProdTTLSeconds       *int64
+	ProdDeploymentID     *string
 	Annotations          map[string]string
 }
 

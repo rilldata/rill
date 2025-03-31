@@ -408,9 +408,43 @@ func (c *connection) InsertProject(ctx context.Context, opts *database.InsertPro
 
 	res := &projectDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO projects (org_id, name, description, public, created_by_user_id, provisioner, prod_olap_driver, prod_olap_dsn, prod_slots, directory_name, subpath, prod_branch, archive_asset_id, github_url, github_installation_id, prod_ttl_seconds, prod_version)
+		INSERT INTO projects (
+			org_id,
+			name,
+			description,
+			public,
+			created_by_user_id,
+			directory_name,
+			provisioner,
+			archive_asset_id,
+			github_url,
+			github_installation_id,
+			subpath,
+			prod_version,
+			prod_branch,
+			prod_olap_driver,
+			prod_olap_dsn,
+			prod_slots,
+			prod_ttl_seconds
+		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING *`,
-		opts.OrganizationID, opts.Name, opts.Description, opts.Public, opts.CreatedByUserID, opts.Provisioner, opts.ProdOLAPDriver, opts.ProdOLAPDSN, opts.ProdSlots, opts.DirectoryName, opts.Subpath, opts.ProdBranch, opts.ArchiveAssetID, opts.GithubURL, opts.GithubInstallationID, opts.ProdTTLSeconds, opts.ProdVersion,
+		opts.OrganizationID,
+		opts.Name,
+		opts.Description,
+		opts.Public,
+		opts.CreatedByUserID,
+		opts.DirectoryName,
+		opts.Provisioner,
+		opts.ArchiveAssetID,
+		opts.GithubURL,
+		opts.GithubInstallationID,
+		opts.Subpath,
+		opts.ProdVersion,
+		opts.ProdBranch,
+		opts.ProdOLAPDriver,
+		opts.ProdOLAPDSN,
+		opts.ProdSlots,
+		opts.ProdTTLSeconds,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
@@ -433,9 +467,40 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 
 	res := &projectDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		UPDATE projects SET name=$1, description=$2, public=$3, prod_branch=$4, github_url=$5, github_installation_id=$6, archive_asset_id=$7, prod_deployment_id=$8, provisioner=$9, prod_slots=$10, directory_name=$11, subpath=$12, prod_ttl_seconds=$13, annotations=$14, prod_version=$15, updated_on=now()
+		UPDATE projects SET
+			name=$1,
+			description=$2,
+			public=$3,
+			directory_name=$4,
+			provisioner=$5,
+			archive_asset_id=$6,
+			github_url=$7,
+			github_installation_id=$8,
+			subpath=$9,
+			prod_version=$10,
+			prod_branch=$11,
+			prod_slots=$12,
+			prod_ttl_seconds=$13,
+			prod_deployment_id=$14,
+			annotations=$15,
+			updated_on=now()
 		WHERE id=$16 RETURNING *`,
-		opts.Name, opts.Description, opts.Public, opts.ProdBranch, opts.GithubURL, opts.GithubInstallationID, opts.ArchiveAssetID, opts.ProdDeploymentID, opts.Provisioner, opts.ProdSlots, opts.DirectoryName, opts.Subpath, opts.ProdTTLSeconds, opts.Annotations, opts.ProdVersion, id,
+		opts.Name,
+		opts.Description,
+		opts.Public,
+		opts.DirectoryName,
+		opts.Provisioner,
+		opts.ArchiveAssetID,
+		opts.GithubURL,
+		opts.GithubInstallationID,
+		opts.Subpath,
+		opts.ProdVersion,
+		opts.ProdBranch,
+		opts.ProdSlots,
+		opts.ProdTTLSeconds,
+		opts.ProdDeploymentID,
+		opts.Annotations,
+		id,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)

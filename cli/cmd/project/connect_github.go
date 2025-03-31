@@ -242,16 +242,16 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		OrganizationName: ch.Org,
 		Name:             opts.Name,
 		Description:      opts.Description,
+		Public:           opts.Public,
+		DirectoryName:    directoryName,
 		Provisioner:      opts.Provisioner,
+		GithubUrl:        githubURL,
+		Subpath:          opts.SubPath,
 		ProdVersion:      opts.ProdVersion,
+		ProdBranch:       opts.ProdBranch,
 		ProdOlapDriver:   local.DefaultOLAPDriver,
 		ProdOlapDsn:      local.DefaultOLAPDSN,
 		ProdSlots:        int64(opts.Slots),
-		DirectoryName:    directoryName,
-		Subpath:          opts.SubPath,
-		ProdBranch:       opts.ProdBranch,
-		Public:           opts.Public,
-		GithubUrl:        githubURL,
 	})
 	if err != nil {
 		if s, ok := status.FromError(err); ok && s.Code() == codes.PermissionDenied {

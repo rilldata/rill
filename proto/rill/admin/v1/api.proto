@@ -1184,21 +1184,21 @@ message CreateProjectRequest {
   string name = 2 [(validate.rules).string.min_len = 1];
   string description = 3;
   bool public = 4;
-  string provisioner = 5;
-  string prod_olap_driver = 6;
-  string prod_olap_dsn = 7;
-  int64 prod_slots = 8;
-  string subpath = 12;
-  string prod_branch = 9;
-  // github_url is set for projects whose project files are stored in github. This is set to a github repo url.
-  // Either github_url or archive_asset_id should be set.
-  string github_url = 10;
-  // archive_asset_id is set for projects whose project files are not stored in github but are managed by rill.
-  string archive_asset_id = 14;
   // directory_name should be the most recently observed local directory name for the project.
   // See ListProjectsForFingerprint for more context.
   string directory_name = 16;
+  string provisioner = 5;
+  // archive_asset_id is set for projects whose project files are not stored in github but are managed by rill.
+  string archive_asset_id = 14;
+  // github_url is set for projects whose project files are stored in github. This is set to a github repo url.
+  // Either github_url or archive_asset_id should be set.
+  string github_url = 10;
+  string subpath = 12;
   string prod_version = 13;
+  string prod_branch = 9;
+  string prod_olap_driver = 6;
+  string prod_olap_dsn = 7;
+  int64 prod_slots = 8;
   bool skip_deploy = 15;
 }
 
@@ -1218,18 +1218,18 @@ message DeleteProjectResponse {
 message UpdateProjectRequest {
   string organization_name = 1 [(validate.rules).string.min_len = 1];
   string name = 2 [(validate.rules).string.min_len = 1];
+  optional string new_name = 9;
   optional string description = 3;
   optional bool public = 4;
-  optional string prod_branch = 5;
+  optional string directory_name = 15;
+  optional string provisioner = 8;
+  optional string archive_asset_id = 12;
   optional string github_url = 6;
   optional string subpath = 13;
-  optional string archive_asset_id = 12;
-  optional string directory_name = 15;
-  optional int64 prod_slots = 7;
-  optional string provisioner = 8;
-  optional string new_name = 9;
-  optional int64 prod_ttl_seconds = 10;
   optional string prod_version = 11;
+  optional string prod_branch = 5;
+  optional int64 prod_slots = 7;
+  optional int64 prod_ttl_seconds = 10;
   bool superuser_force_access = 14;
 }
 
@@ -2374,22 +2374,22 @@ message Project {
   string org_id = 3;
   string org_name = 4;
   string description = 5;
+  string frontend_url = 16; // Note: Does NOT incorporate the parent org's custom domain.
   bool public = 6;
   string created_by_user_id = 22;
+  string directory_name = 24;
   string provisioner = 7;
+  string archive_asset_id = 23;
   string github_url = 8;
   string subpath = 17;
+  string prod_version = 21;
   string prod_branch = 9;
-  string archive_asset_id = 23;
-  string directory_name = 24;
   string prod_olap_driver = 10;
   string prod_olap_dsn = 11;
   int64 prod_slots = 12;
-  string prod_deployment_id = 13;
-  string frontend_url = 16; // Note: Does NOT incorporate the parent org's custom domain.
   int64 prod_ttl_seconds = 18;
+  string prod_deployment_id = 13;
   map<string, string> annotations = 20;
-  string prod_version = 21;
   google.protobuf.Timestamp created_on = 14;
   google.protobuf.Timestamp updated_on = 15;
 }

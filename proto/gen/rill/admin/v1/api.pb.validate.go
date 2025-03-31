@@ -6141,25 +6141,25 @@ func (m *CreateProjectRequest) validate(all bool) error {
 
 	// no validation rules for Public
 
+	// no validation rules for DirectoryName
+
 	// no validation rules for Provisioner
+
+	// no validation rules for ArchiveAssetId
+
+	// no validation rules for GithubUrl
+
+	// no validation rules for Subpath
+
+	// no validation rules for ProdVersion
+
+	// no validation rules for ProdBranch
 
 	// no validation rules for ProdOlapDriver
 
 	// no validation rules for ProdOlapDsn
 
 	// no validation rules for ProdSlots
-
-	// no validation rules for Subpath
-
-	// no validation rules for ProdBranch
-
-	// no validation rules for GithubUrl
-
-	// no validation rules for ArchiveAssetId
-
-	// no validation rules for DirectoryName
-
-	// no validation rules for ProdVersion
 
 	// no validation rules for SkipDeploy
 
@@ -6630,6 +6630,10 @@ func (m *UpdateProjectRequest) validate(all bool) error {
 
 	// no validation rules for SuperuserForceAccess
 
+	if m.NewName != nil {
+		// no validation rules for NewName
+	}
+
 	if m.Description != nil {
 		// no validation rules for Description
 	}
@@ -6638,8 +6642,16 @@ func (m *UpdateProjectRequest) validate(all bool) error {
 		// no validation rules for Public
 	}
 
-	if m.ProdBranch != nil {
-		// no validation rules for ProdBranch
+	if m.DirectoryName != nil {
+		// no validation rules for DirectoryName
+	}
+
+	if m.Provisioner != nil {
+		// no validation rules for Provisioner
+	}
+
+	if m.ArchiveAssetId != nil {
+		// no validation rules for ArchiveAssetId
 	}
 
 	if m.GithubUrl != nil {
@@ -6650,32 +6662,20 @@ func (m *UpdateProjectRequest) validate(all bool) error {
 		// no validation rules for Subpath
 	}
 
-	if m.ArchiveAssetId != nil {
-		// no validation rules for ArchiveAssetId
+	if m.ProdVersion != nil {
+		// no validation rules for ProdVersion
 	}
 
-	if m.DirectoryName != nil {
-		// no validation rules for DirectoryName
+	if m.ProdBranch != nil {
+		// no validation rules for ProdBranch
 	}
 
 	if m.ProdSlots != nil {
 		// no validation rules for ProdSlots
 	}
 
-	if m.Provisioner != nil {
-		// no validation rules for Provisioner
-	}
-
-	if m.NewName != nil {
-		// no validation rules for NewName
-	}
-
 	if m.ProdTtlSeconds != nil {
 		// no validation rules for ProdTtlSeconds
-	}
-
-	if m.ProdVersion != nil {
-		// no validation rules for ProdVersion
 	}
 
 	if len(errors) > 0 {
@@ -35280,21 +35280,25 @@ func (m *Project) validate(all bool) error {
 
 	// no validation rules for Description
 
+	// no validation rules for FrontendUrl
+
 	// no validation rules for Public
 
 	// no validation rules for CreatedByUserId
 
+	// no validation rules for DirectoryName
+
 	// no validation rules for Provisioner
+
+	// no validation rules for ArchiveAssetId
 
 	// no validation rules for GithubUrl
 
 	// no validation rules for Subpath
 
+	// no validation rules for ProdVersion
+
 	// no validation rules for ProdBranch
-
-	// no validation rules for ArchiveAssetId
-
-	// no validation rules for DirectoryName
 
 	// no validation rules for ProdOlapDriver
 
@@ -35302,15 +35306,11 @@ func (m *Project) validate(all bool) error {
 
 	// no validation rules for ProdSlots
 
-	// no validation rules for ProdDeploymentId
-
-	// no validation rules for FrontendUrl
-
 	// no validation rules for ProdTtlSeconds
 
-	// no validation rules for Annotations
+	// no validation rules for ProdDeploymentId
 
-	// no validation rules for ProdVersion
+	// no validation rules for Annotations
 
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {

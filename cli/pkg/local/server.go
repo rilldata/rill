@@ -310,14 +310,14 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			OrganizationName: r.Msg.Org,
 			Name:             r.Msg.ProjectName,
 			Description:      "Auto created by Rill",
+			Public:           false,
+			DirectoryName:    directoryName,
 			Provisioner:      "",
+			ArchiveAssetId:   assetID,
 			ProdVersion:      "",
 			ProdOlapDriver:   "duckdb",
 			ProdOlapDsn:      "",
 			ProdSlots:        int64(DefaultProdSlots(s.app.ch)),
-			Public:           false,
-			ArchiveAssetId:   assetID,
-			DirectoryName:    directoryName,
 		}
 	} else {
 		userStatus, err := c.GetGithubUserStatus(ctx, &adminv1.GetGithubUserStatusRequest{})
@@ -360,16 +360,16 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			OrganizationName: r.Msg.Org,
 			Name:             r.Msg.ProjectName,
 			Description:      "Auto created by Rill",
+			Public:           false,
+			DirectoryName:    directoryName,
 			Provisioner:      "",
+			GithubUrl:        ghURL,
+			Subpath:          "",
 			ProdVersion:      "",
+			ProdBranch:       repoStatus.DefaultBranch,
 			ProdOlapDriver:   "duckdb",
 			ProdOlapDsn:      "",
 			ProdSlots:        int64(DefaultProdSlots(s.app.ch)),
-			Public:           false,
-			GithubUrl:        ghURL,
-			DirectoryName:    directoryName,
-			Subpath:          "",
-			ProdBranch:       repoStatus.DefaultBranch,
 		}
 	}
 
@@ -451,9 +451,9 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 			return nil, err
 		}
 		_, err = c.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
-			ArchiveAssetId:   &assetID,
 			OrganizationName: projResp.Project.OrgName,
 			Name:             projResp.Project.Name,
+			ArchiveAssetId:   &assetID,
 		})
 		if err != nil {
 			return nil, err

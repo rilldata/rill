@@ -2446,9 +2446,47 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
   public = false;
 
   /**
+   * directory_name should be the most recently observed local directory name for the project.
+   * See ListProjectsForFingerprint for more context.
+   *
+   * @generated from field: string directory_name = 16;
+   */
+  directoryName = "";
+
+  /**
    * @generated from field: string provisioner = 5;
    */
   provisioner = "";
+
+  /**
+   * archive_asset_id is set for projects whose project files are not stored in github but are managed by rill.
+   *
+   * @generated from field: string archive_asset_id = 14;
+   */
+  archiveAssetId = "";
+
+  /**
+   * github_url is set for projects whose project files are stored in github. This is set to a github repo url.
+   * Either github_url or archive_asset_id should be set.
+   *
+   * @generated from field: string github_url = 10;
+   */
+  githubUrl = "";
+
+  /**
+   * @generated from field: string subpath = 12;
+   */
+  subpath = "";
+
+  /**
+   * @generated from field: string prod_version = 13;
+   */
+  prodVersion = "";
+
+  /**
+   * @generated from field: string prod_branch = 9;
+   */
+  prodBranch = "";
 
   /**
    * @generated from field: string prod_olap_driver = 6;
@@ -2464,44 +2502,6 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
    * @generated from field: int64 prod_slots = 8;
    */
   prodSlots = protoInt64.zero;
-
-  /**
-   * @generated from field: string subpath = 12;
-   */
-  subpath = "";
-
-  /**
-   * @generated from field: string prod_branch = 9;
-   */
-  prodBranch = "";
-
-  /**
-   * github_url is set for projects whose project files are stored in github. This is set to a github repo url.
-   * Either github_url or archive_asset_id should be set.
-   *
-   * @generated from field: string github_url = 10;
-   */
-  githubUrl = "";
-
-  /**
-   * archive_asset_id is set for projects whose project files are not stored in github but are managed by rill.
-   *
-   * @generated from field: string archive_asset_id = 14;
-   */
-  archiveAssetId = "";
-
-  /**
-   * directory_name should be the most recently observed local directory name for the project.
-   * See ListProjectsForFingerprint for more context.
-   *
-   * @generated from field: string directory_name = 16;
-   */
-  directoryName = "";
-
-  /**
-   * @generated from field: string prod_version = 13;
-   */
-  prodVersion = "";
 
   /**
    * @generated from field: bool skip_deploy = 15;
@@ -2520,16 +2520,16 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 16, name: "directory_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "provisioner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 14, name: "archive_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 12, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 13, name: "prod_version", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "prod_olap_driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "prod_olap_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "prod_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
-    { no: 12, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 9, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 10, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 14, name: "archive_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 16, name: "directory_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 13, name: "prod_version", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 15, name: "skip_deploy", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
@@ -2682,6 +2682,11 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
   name = "";
 
   /**
+   * @generated from field: optional string new_name = 9;
+   */
+  newName?: string;
+
+  /**
    * @generated from field: optional string description = 3;
    */
   description?: string;
@@ -2692,9 +2697,19 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
   public?: boolean;
 
   /**
-   * @generated from field: optional string prod_branch = 5;
+   * @generated from field: optional string directory_name = 15;
    */
-  prodBranch?: string;
+  directoryName?: string;
+
+  /**
+   * @generated from field: optional string provisioner = 8;
+   */
+  provisioner?: string;
+
+  /**
+   * @generated from field: optional string archive_asset_id = 12;
+   */
+  archiveAssetId?: string;
 
   /**
    * @generated from field: optional string github_url = 6;
@@ -2707,14 +2722,14 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
   subpath?: string;
 
   /**
-   * @generated from field: optional string archive_asset_id = 12;
+   * @generated from field: optional string prod_version = 11;
    */
-  archiveAssetId?: string;
+  prodVersion?: string;
 
   /**
-   * @generated from field: optional string directory_name = 15;
+   * @generated from field: optional string prod_branch = 5;
    */
-  directoryName?: string;
+  prodBranch?: string;
 
   /**
    * @generated from field: optional int64 prod_slots = 7;
@@ -2722,24 +2737,9 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
   prodSlots?: bigint;
 
   /**
-   * @generated from field: optional string provisioner = 8;
-   */
-  provisioner?: string;
-
-  /**
-   * @generated from field: optional string new_name = 9;
-   */
-  newName?: string;
-
-  /**
    * @generated from field: optional int64 prod_ttl_seconds = 10;
    */
   prodTtlSeconds?: bigint;
-
-  /**
-   * @generated from field: optional string prod_version = 11;
-   */
-  prodVersion?: string;
 
   /**
    * @generated from field: bool superuser_force_access = 14;
@@ -2756,18 +2756,18 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "new_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 4, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
-    { no: 5, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 15, name: "directory_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 8, name: "provisioner", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 12, name: "archive_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 6, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 13, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 12, name: "archive_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 15, name: "directory_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 7, name: "prod_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
-    { no: 8, name: "provisioner", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 9, name: "new_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 10, name: "prod_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
     { no: 11, name: "prod_version", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 5, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 7, name: "prod_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
+    { no: 10, name: "prod_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
     { no: 14, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
@@ -12760,6 +12760,13 @@ export class Project extends Message<Project> {
   description = "";
 
   /**
+   * Note: Does NOT incorporate the parent org's custom domain.
+   *
+   * @generated from field: string frontend_url = 16;
+   */
+  frontendUrl = "";
+
+  /**
    * @generated from field: bool public = 6;
    */
   public = false;
@@ -12770,9 +12777,19 @@ export class Project extends Message<Project> {
   createdByUserId = "";
 
   /**
+   * @generated from field: string directory_name = 24;
+   */
+  directoryName = "";
+
+  /**
    * @generated from field: string provisioner = 7;
    */
   provisioner = "";
+
+  /**
+   * @generated from field: string archive_asset_id = 23;
+   */
+  archiveAssetId = "";
 
   /**
    * @generated from field: string github_url = 8;
@@ -12785,19 +12802,14 @@ export class Project extends Message<Project> {
   subpath = "";
 
   /**
+   * @generated from field: string prod_version = 21;
+   */
+  prodVersion = "";
+
+  /**
    * @generated from field: string prod_branch = 9;
    */
   prodBranch = "";
-
-  /**
-   * @generated from field: string archive_asset_id = 23;
-   */
-  archiveAssetId = "";
-
-  /**
-   * @generated from field: string directory_name = 24;
-   */
-  directoryName = "";
 
   /**
    * @generated from field: string prod_olap_driver = 10;
@@ -12815,31 +12827,19 @@ export class Project extends Message<Project> {
   prodSlots = protoInt64.zero;
 
   /**
-   * @generated from field: string prod_deployment_id = 13;
-   */
-  prodDeploymentId = "";
-
-  /**
-   * Note: Does NOT incorporate the parent org's custom domain.
-   *
-   * @generated from field: string frontend_url = 16;
-   */
-  frontendUrl = "";
-
-  /**
    * @generated from field: int64 prod_ttl_seconds = 18;
    */
   prodTtlSeconds = protoInt64.zero;
 
   /**
+   * @generated from field: string prod_deployment_id = 13;
+   */
+  prodDeploymentId = "";
+
+  /**
    * @generated from field: map<string, string> annotations = 20;
    */
   annotations: { [key: string]: string } = {};
-
-  /**
-   * @generated from field: string prod_version = 21;
-   */
-  prodVersion = "";
 
   /**
    * @generated from field: google.protobuf.Timestamp created_on = 14;
@@ -12864,22 +12864,22 @@ export class Project extends Message<Project> {
     { no: 3, name: "org_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "org_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 16, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 22, name: "created_by_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 24, name: "directory_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "provisioner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 23, name: "archive_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 17, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 21, name: "prod_version", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 23, name: "archive_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 24, name: "directory_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "prod_olap_driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "prod_olap_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "prod_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
-    { no: 13, name: "prod_deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 16, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 18, name: "prod_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 13, name: "prod_deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 20, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 21, name: "prod_version", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 14, name: "created_on", kind: "message", T: Timestamp },
     { no: 15, name: "updated_on", kind: "message", T: Timestamp },
   ]);

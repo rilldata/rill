@@ -370,9 +370,9 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 	_, err = s.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
 		OrganizationName: org.Name,
 		Name:             proj.Name,
-		ProdBranch:       &req.Branch,
 		GithubUrl:        &req.Repo,
 		Subpath:          &req.Subpath,
+		ProdBranch:       &req.Branch,
 	})
 	if err != nil {
 		return nil, err

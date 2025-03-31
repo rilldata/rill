@@ -187,8 +187,8 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 		res, err := adminClient.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
 			OrganizationName: ch.Org,
 			Name:             opts.Name,
-			ArchiveAssetId:   &assetID,
 			DirectoryName:    &directoryName,
+			ArchiveAssetId:   &assetID,
 		})
 		if err != nil {
 			if s, ok := status.FromError(err); ok && s.Code() == codes.PermissionDenied {
@@ -232,14 +232,14 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 		OrganizationName: ch.Org,
 		Name:             opts.Name,
 		Description:      opts.Description,
+		Public:           opts.Public,
+		DirectoryName:    directoryName,
 		Provisioner:      opts.Provisioner,
+		ArchiveAssetId:   assetID,
 		ProdVersion:      opts.ProdVersion,
 		ProdOlapDriver:   local.DefaultOLAPDriver,
 		ProdOlapDsn:      local.DefaultOLAPDSN,
 		ProdSlots:        int64(opts.Slots),
-		Public:           opts.Public,
-		ArchiveAssetId:   assetID,
-		DirectoryName:    directoryName,
 	})
 	if err != nil {
 		if s, ok := status.FromError(err); ok && s.Code() == codes.PermissionDenied {

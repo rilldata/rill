@@ -76,18 +76,18 @@ export type AdminServiceUpdateServiceBody = {
 export type AdminServiceCreateServiceParams = { name?: string };
 
 export type AdminServiceUpdateProjectBody = {
+  newName?: string;
   description?: string;
   public?: boolean;
-  prodBranch?: string;
+  directoryName?: string;
+  provisioner?: string;
+  archiveAssetId?: string;
   githubUrl?: string;
   subpath?: string;
-  archiveAssetId?: string;
-  directoryName?: string;
-  prodSlots?: string;
-  provisioner?: string;
-  newName?: string;
-  prodTtlSeconds?: string;
   prodVersion?: string;
+  prodBranch?: string;
+  prodSlots?: string;
+  prodTtlSeconds?: string;
   superuserForceAccess?: boolean;
 };
 
@@ -100,21 +100,21 @@ export type AdminServiceCreateProjectBody = {
   name?: string;
   description?: string;
   public?: boolean;
-  provisioner?: string;
-  prodOlapDriver?: string;
-  prodOlapDsn?: string;
-  prodSlots?: string;
-  subpath?: string;
-  prodBranch?: string;
-  /** github_url is set for projects whose project files are stored in github. This is set to a github repo url.
-Either github_url or archive_asset_id should be set. */
-  githubUrl?: string;
-  /** archive_asset_id is set for projects whose project files are not stored in github but are managed by rill. */
-  archiveAssetId?: string;
   /** directory_name should be the most recently observed local directory name for the project.
 See ListProjectsForFingerprint for more context. */
   directoryName?: string;
+  provisioner?: string;
+  /** archive_asset_id is set for projects whose project files are not stored in github but are managed by rill. */
+  archiveAssetId?: string;
+  /** github_url is set for projects whose project files are stored in github. This is set to a github repo url.
+Either github_url or archive_asset_id should be set. */
+  githubUrl?: string;
+  subpath?: string;
   prodVersion?: string;
+  prodBranch?: string;
+  prodOlapDriver?: string;
+  prodOlapDsn?: string;
+  prodSlots?: string;
   skipDeploy?: boolean;
 };
 
@@ -888,23 +888,23 @@ export interface V1Project {
   orgId?: string;
   orgName?: string;
   description?: string;
+  /** Note: Does NOT incorporate the parent org's custom domain. */
+  frontendUrl?: string;
   public?: boolean;
   createdByUserId?: string;
+  directoryName?: string;
   provisioner?: string;
+  archiveAssetId?: string;
   githubUrl?: string;
   subpath?: string;
+  prodVersion?: string;
   prodBranch?: string;
-  archiveAssetId?: string;
-  directoryName?: string;
   prodOlapDriver?: string;
   prodOlapDsn?: string;
   prodSlots?: string;
-  prodDeploymentId?: string;
-  /** Note: Does NOT incorporate the parent org's custom domain. */
-  frontendUrl?: string;
   prodTtlSeconds?: string;
+  prodDeploymentId?: string;
   annotations?: V1ProjectAnnotations;
-  prodVersion?: string;
   createdOn?: string;
   updatedOn?: string;
 }

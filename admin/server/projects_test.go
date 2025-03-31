@@ -21,8 +21,8 @@ func TestProject(t *testing.T) {
 		_, err = c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
 			OrganizationName: r1.Organization.Name,
 			Name:             "proj1",
-			ProdSlots:        1,
 			DirectoryName:    "foo",
+			ProdSlots:        1,
 			SkipDeploy:       true,
 		})
 		require.NoError(t, err)
@@ -34,8 +34,8 @@ func TestProject(t *testing.T) {
 		_, err = c2.CreateProject(ctx, &adminv1.CreateProjectRequest{
 			OrganizationName: o1.Organization.Name,
 			Name:             "proj2",
-			ProdSlots:        1,
 			DirectoryName:    "foo",
+			ProdSlots:        1,
 			SkipDeploy:       true,
 		})
 		require.NoError(t, err)
@@ -44,16 +44,16 @@ func TestProject(t *testing.T) {
 		_, err = c2.CreateProject(ctx, &adminv1.CreateProjectRequest{
 			OrganizationName: o2.Organization.Name,
 			Name:             "proj3",
-			ProdSlots:        1,
 			DirectoryName:    "baz",
+			ProdSlots:        1,
 			SkipDeploy:       true,
 		})
 		require.NoError(t, err)
 		_, err = c2.CreateProject(ctx, &adminv1.CreateProjectRequest{
 			OrganizationName: o2.Organization.Name,
 			Name:             "proj4",
-			ProdSlots:        1,
 			DirectoryName:    "baz",
+			ProdSlots:        1,
 			SkipDeploy:       true,
 		})
 		require.NoError(t, err)
