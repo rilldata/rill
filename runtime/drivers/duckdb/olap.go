@@ -298,7 +298,9 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 			// Execute the pre-init SQL first
 			if opts.BeforeInsert != "" {
 				_, err := conn.ExecContext(ctx, opts.BeforeInsert)
-				return err
+				if err != nil {
+					return err
+				}
 			}
 			defer func() {
 				if opts.AfterInsert != "" {
