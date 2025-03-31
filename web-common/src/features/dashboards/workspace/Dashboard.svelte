@@ -32,8 +32,8 @@
     selectors: {
       measures: {
         visibleMeasures,
-        leaderboardMeasureCount,
         leaderboardMeasureName,
+        activeMeasureNamesFromMeasureCount,
       },
       dimensions: { getDimensionByName },
       pivot: { showPivot },
@@ -51,14 +51,8 @@
 
   let exploreContainerWidth: number;
 
-  // FIXME: move to activeMeasure selectors
-  $: activeMeasureNamesFromMeasureCount = $visibleMeasures
-    .slice(0, $leaderboardMeasureCount)
-    .map(({ name }) => name)
-    .filter(isDefined);
-
   $: leaderboardMeasureNames = $leaderboardMeasureCountFeatureFlag
-    ? activeMeasureNamesFromMeasureCount
+    ? $activeMeasureNamesFromMeasureCount
     : [$leaderboardMeasureName];
 
   $: ({ instanceId } = $runtime);
