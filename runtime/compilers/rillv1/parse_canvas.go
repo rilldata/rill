@@ -19,7 +19,7 @@ type CanvasYAML struct {
 	commonYAML           `yaml:",inline"`       // Not accessed here, only setting it so we can use KnownFields for YAML parsing
 	DisplayName          string                 `yaml:"display_name"`
 	Title                string                 `yaml:"title"` // Deprecated: use display_name
-  Banner               string                 `yaml:"banner"`
+	Banner               string                 `yaml:"banner"`
 	MaxWidth             uint32                 `yaml:"max_width"`
 	GapX                 uint32                 `yaml:"gap_x"`
 	GapY                 uint32                 `yaml:"gap_y"`
