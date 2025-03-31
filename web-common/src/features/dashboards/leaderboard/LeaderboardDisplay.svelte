@@ -92,7 +92,7 @@
         {#each $visibleDimensions as dimension (dimension.name)}
           {#if dimension.name}
             <Leaderboard
-              isValidPercentOfTotal={$isValidPercentOfTotal}
+              isValidPercentOfTotal={$isMeasureValidPercentOfTotal}
               {metricsViewName}
               {activeMeasureName}
               {leaderboardMeasureNames}
