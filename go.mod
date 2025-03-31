@@ -65,7 +65,7 @@ require (
 	github.com/jackc/pgconn v1.14.3
 	github.com/jackc/pgtype v1.14.3
 	github.com/jackc/pgx/v4 v4.18.3
-	github.com/jackc/pgx/v5 v5.6.0
+	github.com/jackc/pgx/v5 v5.7.2
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/joho/godotenv v1.5.1
 	github.com/kelseyhightower/envconfig v1.4.0
@@ -79,9 +79,9 @@ require (
 	github.com/pingcap/tidb/pkg/parser v0.0.0-20231124053542-069631e2ecfe
 	github.com/prometheus/client_golang v1.19.1
 	github.com/redis/go-redis/v9 v9.6.1
-	github.com/riverqueue/river v0.11.4
-	github.com/riverqueue/river/riverdriver/riverpgxv5 v0.11.4
-	github.com/riverqueue/river/rivertype v0.11.4
+	github.com/riverqueue/river v0.19.0
+	github.com/riverqueue/river/riverdriver/riverpgxv5 v0.19.0
+	github.com/riverqueue/river/rivertype v0.19.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/cors v1.11.1
 	github.com/santhosh-tekuri/jsonschema/v5 v5.2.0
@@ -118,9 +118,9 @@ require (
 	gocloud.dev v0.36.0
 	golang.org/x/exp v0.0.0-20241217172543-b2144cdd0a67
 	golang.org/x/oauth2 v0.27.0
-	golang.org/x/sync v0.11.0
+	golang.org/x/sync v0.12.0
 	golang.org/x/sys v0.30.0
-	golang.org/x/text v0.22.0
+	golang.org/x/text v0.23.0
 	google.golang.org/api v0.214.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20250303144028-a0af3efb3deb
 	google.golang.org/grpc v1.70.0
@@ -283,7 +283,7 @@ require (
 	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgproto3/v2 v2.3.3 // indirect
-	github.com/jackc/pgservicefile v0.0.0-20231201235250-de7065d80cb9 // indirect
+	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/jonboulle/clockwork v0.4.0 // indirect
@@ -348,8 +348,8 @@ require (
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/richardlehane/mscfb v1.0.4 // indirect
 	github.com/richardlehane/msoleps v1.0.3 // indirect
-	github.com/riverqueue/river/riverdriver v0.11.4 // indirect
-	github.com/riverqueue/river/rivershared v0.11.4 // indirect
+	github.com/riverqueue/river/riverdriver v0.19.0 // indirect
+	github.com/riverqueue/river/rivershared v0.19.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.4.0 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
@@ -364,7 +364,7 @@ require (
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966 // indirect
 	github.com/spf13/cast v1.5.1 // indirect
 	github.com/theupdateframework/notary v0.7.0 // indirect
-	github.com/tidwall/gjson v1.14.4 // indirect
+	github.com/tidwall/gjson v1.18.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/tidwall/sjson v1.2.5 // indirect
@@ -394,7 +394,7 @@ require (
 	go.uber.org/goleak v1.3.0 // indirect
 	go.uber.org/mock v0.4.0 // indirect
 	golang.org/x/crypto v0.35.0 // indirect
-	golang.org/x/mod v0.22.0 // indirect
+	golang.org/x/mod v0.24.0 // indirect
 	golang.org/x/net v0.35.0 // indirect
 	golang.org/x/term v0.29.0 // indirect
 	golang.org/x/time v0.8.0 // indirect
