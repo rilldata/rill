@@ -24,6 +24,7 @@
   export let component: CanvasComponentObj;
   export let componentType: CanvasComponentType;
   export let paramValues: V1ComponentSpecRendererProperties;
+  export let canvasName: string;
 
   $: localParamValues = localParamValues || {};
   let oldParamValuesRef: V1ComponentSpecRendererProperties = {};
@@ -50,6 +51,7 @@
 
 {#if metricsView && isTableComponentType(componentType)}
   <TableTypeSelector
+    {canvasName}
     {component}
     {componentType}
     metricsViewName={metricsView}
@@ -86,6 +88,7 @@
           <!-- MEASURE / DIMENSION -->
         {:else if metricsView && (config.type === "measure" || config.type === "dimension")}
           <SingleFieldInput
+            {canvasName}
             label={config.label ?? key}
             metricName={metricsView}
             id={key}
@@ -99,6 +102,7 @@
           <!-- MULTIPLE MEASURE / MULTIPLE DIMENSION / MULTIPLE FIELDS -->
         {:else if metricsView && config.type === "multi_fields"}
           <MultiFieldInput
+            {canvasName}
             label={config.label ?? key}
             metricName={metricsView}
             id={key}
@@ -186,6 +190,7 @@
           <!-- POSITIONAL CONFIG -->
         {:else if metricsView && config.type === "positional"}
           <PositionalFieldConfig
+            {canvasName}
             {key}
             {config}
             {metricsView}
@@ -198,6 +203,7 @@
           <!-- COLOR CONFIG -->
         {:else if metricsView && config.type === "mark"}
           <MarkSelector
+            {canvasName}
             label={config.label ?? key}
             {key}
             {metricsView}

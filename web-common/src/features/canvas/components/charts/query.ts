@@ -3,7 +3,7 @@ import type {
   ChartSortDirection,
 } from "@rilldata/web-common/features/canvas/components/charts/types";
 import type { ComponentFilterProperties } from "@rilldata/web-common/features/canvas/components/types";
-import type { StateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
@@ -24,7 +24,7 @@ import {
 import { derived, readable, type Readable } from "svelte/store";
 
 export function createChartDataQuery(
-  ctx: StateManagers,
+  ctx: CanvasStore,
   config: ChartConfig & ComponentFilterProperties,
   timeAndFilterStore: Readable<TimeAndFilterStore>,
 ): Readable<{

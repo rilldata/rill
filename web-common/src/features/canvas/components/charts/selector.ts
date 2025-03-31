@@ -2,7 +2,7 @@ import {
   validateDimensions,
   validateMeasures,
 } from "@rilldata/web-common/features/canvas/components/validators";
-import type { StateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import {
@@ -38,7 +38,7 @@ export interface TimeDimensionDefinition {
 }
 
 export function getChartData(
-  ctx: StateManagers,
+  ctx: CanvasStore,
   config: ChartConfig,
   timeAndFilterStore: Readable<TimeAndFilterStore>,
 ): Readable<ChartDataResult> {
@@ -119,7 +119,7 @@ export function getTimeDimensionDefinition(
 }
 
 export function validateChartSchema(
-  ctx: StateManagers,
+  ctx: CanvasStore,
   chartSpec: ChartSpec,
 ): Readable<{
   isValid: boolean;
