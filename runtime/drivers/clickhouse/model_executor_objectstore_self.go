@@ -151,7 +151,6 @@ func (e *objectStoreToSelfExecutor) genSQL(glob, format string) (string, error) 
 	default:
 		return "", fmt.Errorf("internal error: unsupported object store: %s", e.objectStore.Driver())
 	}
-
 }
 
 func isGlob(path string) bool {
