@@ -97,6 +97,9 @@
               {metricsViewName}
               {activeMeasureName}
               {activeMeasureNames}
+              visibleMeasures={$visibleMeasures
+                .map((m) => m.name)
+                .filter((name) => name !== undefined)}
               {whereFilter}
               {dimensionThresholdFilters}
               {instanceId}
@@ -131,9 +134,6 @@
               sortBy={$sortByMeasure}
               measureLabel={$measureLabel}
               leaderboardMeasureCountFeatureFlag={$leaderboardMeasureCountFeatureFlag}
-              visibleMeasures={$visibleMeasures
-                .map((m) => m.name)
-                .filter((name) => name !== undefined)}
             />
           {/if}
         {/each}
