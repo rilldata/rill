@@ -55,8 +55,7 @@
   export let whereFilter: V1Expression;
   export let dimensionThresholdFilters: DimensionThresholdFilter[];
   export let activeMeasureName: string;
-  // FIXME: rename
-  export let activeMeasureNames: string[]; // For display (limited by leaderboardMeasureCount)
+  export let leaderboardMeasureNames: string[]; // For display (limited by leaderboardMeasureCount)
   export let visibleMeasures: string[]; // For querying/sorting (all visible measures)
   export let metricsViewName: string;
   export let sortType: SortType;
@@ -189,7 +188,7 @@
     {
       ...(leaderboardMeasureCountFeatureFlag
         ? {
-            measures: activeMeasureNames.map((name) => ({ name })),
+            measures: leaderboardMeasureNames.map((name) => ({ name })),
           }
         : {
             measures: [{ name: activeMeasureName }],
@@ -210,7 +209,7 @@
 
   $: leaderboardTotals = totalsData?.data?.[0]
     ? Object.fromEntries(
-        activeMeasureNames.map((name) => [
+        leaderboardMeasureNames.map((name) => [
           name,
           (totalsData?.data?.[0]?.[name] as number) ?? null,
         ]),
@@ -221,7 +220,7 @@
     prepareLeaderboardItemData(
       sortedData?.data,
       dimensionName,
-      activeMeasureNames,
+      leaderboardMeasureNames,
       slice,
       $selectedValues?.data ?? [],
       leaderboardTotals,
@@ -278,7 +277,7 @@
     cleanUpComparisonValue(
       item,
       dimensionName,
-      activeMeasureNames,
+      leaderboardMeasureNames,
       leaderboardTotals,
       $selectedValues?.data?.findIndex((value) =>
         compareLeaderboardValues(value, item[dimensionName]),
@@ -290,9 +289,9 @@
 
   $: columnCount =
     1 + // Base column (dimension)
-    activeMeasureNames.length + // Value column for each measure
+    leaderboardMeasureNames.length + // Value column for each measure
     (isTimeComparisonActive
-      ? activeMeasureNames.length * // For each measure
+      ? leaderboardMeasureNames.length * // For each measure
         ((isValidPercentOfTotal(activeMeasureName) ? 1 : 0) + // Percent of total column
           (isTimeComparisonActive ? 2 : 0)) // Delta absolute and delta percent columns
       : 0);
@@ -310,9 +309,9 @@
     <colgroup>
       <col data-gutter-column style:width="{gutterWidth}px" />
       <col data-dimension-column style:width="{dimensionColumnWidth}px" />
-      {#each activeMeasureNames as _, index (index)}
+      {#each leaderboardMeasureNames as _, index (index)}
         <col data-measure-column style:width="{$valueColumn}px" />
-        {#if isValidPercentOfTotal(activeMeasureNames[index])}
+        {#if isValidPercentOfTotal(leaderboardMeasureNames[index])}
           <col
             data-percent-of-total-column
             style:width="{COMPARISON_COLUMN_WIDTH}px"
@@ -342,7 +341,7 @@
       {isValidPercentOfTotal}
       {isTimeComparisonActive}
       {sortedAscending}
-      {activeMeasureNames}
+      activeMeasureNames={leaderboardMeasureNames}
       {toggleSort}
       {setPrimaryDimension}
       {toggleComparisonDimension}
@@ -368,7 +367,7 @@
             {itemData}
             {isValidPercentOfTotal}
             {isTimeComparisonActive}
-            {activeMeasureNames}
+            activeMeasureNames={leaderboardMeasureNames}
             {toggleDimensionValueSelection}
             {formatters}
           />
@@ -388,7 +387,7 @@
           {atLeastOneActive}
           {isValidPercentOfTotal}
           {isTimeComparisonActive}
-          {activeMeasureNames}
+          activeMeasureNames={leaderboardMeasureNames}
           borderTop={i === 0}
           borderBottom={i === belowTheFoldRows.length - 1}
           {toggleDimensionValueSelection}

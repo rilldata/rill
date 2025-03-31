@@ -33,7 +33,7 @@
       measures: {
         visibleMeasures,
         leaderboardMeasureName,
-        activeMeasureNamesFromMeasureCount,
+        activeMeasuresFromMeasureCount,
       },
       dimensions: { getDimensionByName },
       pivot: { showPivot },
@@ -52,7 +52,7 @@
   let exploreContainerWidth: number;
 
   $: leaderboardMeasureNames = $leaderboardMeasureCountFeatureFlag
-    ? $activeMeasureNamesFromMeasureCount
+    ? $activeMeasuresFromMeasureCount
     : [$leaderboardMeasureName];
 
   $: ({ instanceId } = $runtime);
@@ -234,7 +234,7 @@
             <LeaderboardDisplay
               {metricsViewName}
               activeMeasureName={$leaderboardMeasureName}
-              activeMeasureNames={leaderboardMeasureNames}
+              {leaderboardMeasureNames}
               {whereFilter}
               {dimensionThresholdFilters}
               {timeRange}

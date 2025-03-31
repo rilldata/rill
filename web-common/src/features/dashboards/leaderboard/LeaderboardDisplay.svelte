@@ -19,7 +19,7 @@
   export let comparisonTimeRange: V1TimeRange | undefined;
   export let timeControlsReady: boolean;
   export let activeMeasureName: string;
-  export let activeMeasureNames: string[];
+  export let leaderboardMeasureNames: string[];
 
   const StateManagers = getStateManagers();
   const {
@@ -68,6 +68,10 @@
       : showPercentOfTotal
         ? COMPARISON_COLUMN_WIDTH
         : 0);
+
+  $: validVisibleMeasures = $visibleMeasures
+    .map((m) => m.name)
+    .filter((name) => name !== undefined);
 </script>
 
 <div class="flex flex-col overflow-hidden size-full" aria-label="Leaderboards">
@@ -92,10 +96,8 @@
               isValidPercentOfTotal={$isMeasureValidPercentOfTotal}
               {metricsViewName}
               {activeMeasureName}
-              {activeMeasureNames}
-              visibleMeasures={$visibleMeasures
-                .map((m) => m.name)
-                .filter((name) => name !== undefined)}
+              {leaderboardMeasureNames}
+              visibleMeasures={validVisibleMeasures}
               {whereFilter}
               {dimensionThresholdFilters}
               {instanceId}
