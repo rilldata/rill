@@ -141,6 +141,9 @@ export class DashboardStateSync {
       urlSearchParams,
       type,
     );
+    // This can be undefined when one of the queries has not loaded yet.
+    // Rest of the code can be indeterminate when queries have not loaded.
+    // This shouldn't ideally happen.
     if (!partialExplore) return;
 
     const { data: validSpecData } = get(this.dataLoader.validSpecQuery);

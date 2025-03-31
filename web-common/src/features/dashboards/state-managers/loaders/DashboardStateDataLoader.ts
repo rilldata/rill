@@ -19,6 +19,11 @@ import {
 import type { AfterNavigate } from "@sveltejs/kit";
 import { derived, get } from "svelte/store";
 
+/**
+ * Loads data from explore and metrics view specs, along with all time range query.
+ * Mainly outputs a initial explore state based on various conditions. Check initExploreState CompoundQuery for more info.
+ * Also has a method to get a partial explore state based on url params.
+ */
 export class DashboardStateDataLoader {
   // These can be used to show a loading status
   public readonly validSpecQuery: ReturnType<typeof useExploreValidSpec>;
@@ -53,6 +58,15 @@ export class DashboardStateDataLoader {
     errors: Error[];
   }>;
 
+  /**
+   * The explore state used to populate the store with initial explore.
+   * 1. If state is present in the url, use it.
+   * 2. If no url state, load from session storage (only persists within the tab)
+   * 3. If no url state, session storage, restore user's most recent state (from local storage).
+   * 4. If no url state, session storage, most recent state, apply home bookmark (cloud only).
+   * 5. If no url state, session storage, most recent state, home bookmark, apply explore.yaml defaults
+   * 6. If no url state, session storage, most recent state, home bookmark or defaults open as blank dashboard.
+   */
   public readonly initExploreState: CompoundQueryResult<
     MetricsExplorerEntity | undefined
   >;
@@ -324,6 +338,9 @@ export class DashboardStateDataLoader {
         exploreSpec,
         explorePresetFromYAMLConfig.data,
       );
+    // If we are skipping using state from session storage then exit early with partialExploreStateFromUrl
+    // regardless if there is exploreStateFromSessionStorage for current url params or not.
+    if (skipSessionStorage) return partialExploreStateFromUrl;
 
     const exploreStateFromSessionStorage = getExploreStateFromSessionStorage(
       this.exploreName,
@@ -334,7 +351,11 @@ export class DashboardStateDataLoader {
       explorePresetFromYAMLConfig.data,
     );
 
-    if (skipSessionStorage) return partialExploreStateFromUrl;
-    return exploreStateFromSessionStorage ?? partialExploreStateFromUrl;
+    return (
+      // preference goes to session storage 1st
+      exploreStateFromSessionStorage ??
+      // else we use the partial explore state from the url params.
+      partialExploreStateFromUrl
+    );
   }
 }

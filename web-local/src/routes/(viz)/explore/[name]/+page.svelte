@@ -9,7 +9,7 @@
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
   import { resetSelectedMockUserAfterNavigate } from "@rilldata/web-common/features/dashboards/granular-access-policies/resetSelectedMockUserAfterNavigate";
   import { selectedMockUserStore } from "@rilldata/web-common/features/dashboards/granular-access-policies/stores";
-  import DashboardStateLoader from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateLoader.svelte";
+  import DashboardStateManager from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateManager.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import { useProjectParser } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
@@ -90,11 +90,11 @@
 {:else}
   {#key exploreName}
     <StateManagersProvider {metricsViewName} {exploreName}>
-      <DashboardStateLoader {exploreName}>
+      <DashboardStateManager {exploreName}>
         <DashboardThemeProvider>
           <Dashboard {metricsViewName} {exploreName} />
         </DashboardThemeProvider>
-      </DashboardStateLoader>
+      </DashboardStateManager>
     </StateManagersProvider>
   {/key}
 {/if}

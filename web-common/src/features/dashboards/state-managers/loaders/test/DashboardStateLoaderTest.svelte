@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
-  import DashboardStateLoader from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateLoader.svelte";
+  import DashboardStateManager from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateManager.svelte";
   import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 
   /**
@@ -12,6 +12,6 @@
     | undefined = undefined;
 </script>
 
-<DashboardStateLoader {exploreName} {bookmarkOrTokenExploreState}>
+<DashboardStateManager {exploreName} {bookmarkOrTokenExploreState}>
   <div>Dashboard loaded!</div>
-</DashboardStateLoader>
+</DashboardStateManager>

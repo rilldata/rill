@@ -5,7 +5,7 @@
   import { getHomeBookmarkExploreState } from "@rilldata/web-admin/features/bookmarks/selectors";
   import DashboardBuilding from "@rilldata/web-admin/features/dashboards/DashboardBuilding.svelte";
   import DashboardErrored from "@rilldata/web-admin/features/dashboards/DashboardErrored.svelte";
-  import DashboardStateLoader from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateLoader.svelte";
+  import DashboardStateManager from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateManager.svelte";
   import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
   import {
     DashboardBannerID,
@@ -144,7 +144,7 @@
   {:else if metricsViewName}
     {#key exploreName}
       <StateManagersProvider {metricsViewName} {exploreName}>
-        <DashboardStateLoader
+        <DashboardStateManager
           {exploreName}
           storageNamespacePrefix={`${orgName}__${projectName}__`}
           bookmarkOrTokenExploreState={bookmarkExploreStateQuery}
@@ -152,7 +152,7 @@
           <DashboardThemeProvider>
             <Dashboard {metricsViewName} {exploreName} />
           </DashboardThemeProvider>
-        </DashboardStateLoader>
+        </DashboardStateManager>
       </StateManagersProvider>
     {/key}
   {/if}

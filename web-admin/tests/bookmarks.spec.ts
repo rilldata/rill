@@ -178,7 +178,8 @@ test.describe.serial("Bookmarks", () => {
     });
   });
 
-  // Home bookmark interferes with other bookmark creation. So adding it to the end
+  // Home bookmark interferes with other bookmark creation since we are adding some filters.
+  // So adding it to the end.
   test.describe.serial("Home bookmarks", () => {
     test("Should create a home bookmark", async ({ adminPage }) => {
       await adminPage.goto("/e2e/openrtb/explore/auction_explore_bookmarks");

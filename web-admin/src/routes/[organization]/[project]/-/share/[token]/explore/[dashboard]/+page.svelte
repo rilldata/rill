@@ -9,7 +9,7 @@
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
-  import DashboardStateLoader from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateLoader.svelte";
+  import DashboardStateManager from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateManager.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -57,7 +57,7 @@
       metricsViewName={explore.metricsView.meta.name.name}
       {exploreName}
     >
-      <DashboardStateLoader
+      <DashboardStateManager
         {exploreName}
         storageNamespacePrefix={`${organization}__${project}__`}
       >
@@ -67,7 +67,7 @@
             metricsViewName={explore.metricsView.meta.name.name}
           />
         </DashboardThemeProvider>
-      </DashboardStateLoader>
+      </DashboardStateManager>
     </StateManagersProvider>
   {/if}
 {/key}

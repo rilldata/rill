@@ -199,7 +199,7 @@ export function updateExploreSessionStore(
   }
 }
 
-export function getExplorePresetForActivePage(
+export function getPartialExploreStateForActivePage(
   exploreName: string,
   storageNamespacePrefix: string | undefined,
   activePage: DashboardState_ActivePage,
