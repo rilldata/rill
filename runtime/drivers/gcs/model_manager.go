@@ -132,8 +132,7 @@ func deleteObjectsInPrefix(ctx context.Context, c *Connection, bucketName, prefi
 	}
 	defer client.Close()
 	bucket := client.Bucket(bucketName)
-	var it = bucket.Objects(ctx, &storage.Query{Prefix: prefix})
-
+	it := bucket.Objects(ctx, &storage.Query{Prefix: prefix})
 	for {
 		objAttrs, err := it.Next()
 		if errors.Is(err, iterator.Done) {
