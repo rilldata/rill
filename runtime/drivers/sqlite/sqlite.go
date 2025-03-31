@@ -3,6 +3,7 @@ package sqlite
 import (
 	"context"
 	"fmt"
+	"maps"
 	"strings"
 
 	"github.com/XSAM/otelsql"
@@ -113,7 +114,7 @@ func (c *connection) Driver() string {
 
 // Config implements drivers.Connection.
 func (c *connection) Config() map[string]any {
-	return c.config
+	return maps.Clone(c.config)
 }
 
 // Close implements drivers.Connection.

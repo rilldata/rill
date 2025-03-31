@@ -43,20 +43,12 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 		return nil, err
 	}
 
-	tx, err := dbPool.Begin(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = tx.Rollback(ctx) }()
-
-	migrator := rivermigrate.New(riverpgxv5.New(dbPool), nil)
-
-	res, err := migrator.MigrateTx(ctx, tx, rivermigrate.DirectionUp, nil)
+	migrator, err := rivermigrate.New(riverpgxv5.New(dbPool), nil)
 	if err != nil {
 		return nil, err
 	}
 
-	err = tx.Commit(ctx)
+	res, err := migrator.Migrate(ctx, rivermigrate.DirectionUp, nil)
 	if err != nil {
 		return nil, err
 	}
