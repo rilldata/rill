@@ -1,10 +1,9 @@
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
-import { getPartialExploreStateForWebView } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
+import { getMostRecentPartialExploreStateForWebView } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-store";
 import type { ExploreUrlWebView } from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-specific-url-params";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import {
   type V1ExploreSpec,
-  V1ExploreWebView,
   type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
 
@@ -14,7 +13,7 @@ import {
  * 2. If only view param is set then load the params from session storage.
  * 3. If view=ttd and `measure` is the only other param set load from session storage.
  */
-export function getExploreStateFromSessionStorage(
+export function getMostRecentExploreStateForURL(
   exploreName: string,
   storageNamespacePrefix: string | undefined,
   searchParams: URLSearchParams,
@@ -38,13 +37,14 @@ export function getExploreStateFromSessionStorage(
   const viewFromUrl = searchParams.get(ExploreStateURLParams.WebView) as
     | ExploreUrlWebView
     | undefined;
-  const exploreStateFromSessionStorage = getPartialExploreStateForWebView(
-    exploreName,
-    storageNamespacePrefix,
-    viewFromUrl ?? "explore",
-    metricsViewSpec,
-    exploreSpec,
-  );
+  const exploreStateFromSessionStorage =
+    getMostRecentPartialExploreStateForWebView(
+      exploreName,
+      storageNamespacePrefix,
+      viewFromUrl ?? "explore",
+      metricsViewSpec,
+      exploreSpec,
+    );
   if (!exploreStateFromSessionStorage) {
     return undefined;
   }

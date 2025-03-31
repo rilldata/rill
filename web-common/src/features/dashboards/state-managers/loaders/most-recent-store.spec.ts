@@ -23,7 +23,7 @@ import {
   applyMutationsToDashboard,
   type TestDashboardMutation,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
-import DashboardStateLoaderTest from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/DashboardStateLoaderTest.svelte";
+import DashboardStateManagerTest from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/DashboardStateManagerTest.svelte";
 import {
   type HoistedPage,
   PageMock,
@@ -170,7 +170,6 @@ describe("Explore web view store", () => {
     );
 
     localStorage.clear();
-    sessionStorage.clear();
     queryClient.clear();
     metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
   });
@@ -235,7 +234,7 @@ describe("Explore web view store", () => {
 // This needs to be there each file because of how hoisting works with vitest.
 // TODO: find if there is a way to share code.
 function renderDashboardStateLoader() {
-  const renderResults = render(DashboardStateLoaderTest, {
+  const renderResults = render(DashboardStateManagerTest, {
     props: {
       exploreName: AD_BIDS_EXPLORE_NAME,
     },

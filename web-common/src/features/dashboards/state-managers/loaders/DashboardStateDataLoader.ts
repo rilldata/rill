@@ -4,8 +4,7 @@ import {
   getCompoundQuery,
 } from "@rilldata/web-common/features/compound-query-result";
 import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
-import { getExploreStateFromSessionStorage } from "@rilldata/web-common/features/dashboards/state-managers/loaders/get-explore-state-from-session-storage";
-import { getMostRecentExploreState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-explore-state";
+import { getMostRecentExploreStateForURL } from "@rilldata/web-common/features/dashboards/state-managers/loaders/get-most-recent-explore-state-for-url";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
@@ -43,12 +42,8 @@ export class DashboardStateDataLoader {
   public readonly explorePresetFromYAMLConfig: CompoundQueryResult<
     V1ExplorePreset | undefined
   >;
-  private readonly mostRecentPartialExploreStateAndErrors: CompoundQueryResult<{
-    mostRecentPartialExploreState: Partial<MetricsExplorerEntity> | undefined;
-    errors: Error[];
-  }>;
 
-  private readonly exploreStateFromSessionStorage: CompoundQueryResult<
+  private readonly mostRecentExploreStateForCurrentView: CompoundQueryResult<
     Partial<MetricsExplorerEntity> | undefined
   >;
   private readonly partialExploreStateFromUrlForInitAndErrors: CompoundQueryResult<{
@@ -61,11 +56,10 @@ export class DashboardStateDataLoader {
   /**
    * The explore state used to populate the store with initial explore.
    * 1. If state is present in the url, use it.
-   * 2. If no url state, load from session storage (only persists within the tab)
-   * 3. If no url state, session storage, restore user's most recent state (from local storage).
-   * 4. If no url state, session storage, most recent state, apply home bookmark (cloud only).
-   * 5. If no url state, session storage, most recent state, home bookmark, apply explore.yaml defaults
-   * 6. If no url state, session storage, most recent state, home bookmark or defaults open as blank dashboard.
+   * 2. If no url state or only certain params, most recent user state for web view. Check getMostRecentExploreStateForURL for exact details.
+   * 3. If no url state, most recent state, apply home bookmark (cloud only).
+   * 4. If no url state, most recent state, home bookmark, apply explore.yaml defaults
+   * 5. If no url state, most recent state, home bookmark or defaults open as blank dashboard.
    */
   public readonly initExploreState: CompoundQueryResult<
     MetricsExplorerEntity | undefined
@@ -188,41 +182,21 @@ export class DashboardStateDataLoader {
       },
     );
 
-    this.mostRecentPartialExploreStateAndErrors = getCompoundQuery(
-      [this.validSpecQuery],
-      ([validSpecResp]) => {
-        const metricsViewSpec = validSpecResp?.metricsView ?? {};
-        const exploreSpec = validSpecResp?.explore ?? {};
-        const { partialExploreState: mostRecentPartialExploreState, errors } =
-          getMostRecentExploreState(
-            exploreName,
-            storageNamespacePrefix,
-            metricsViewSpec,
-            exploreSpec,
-          );
-        return {
-          mostRecentPartialExploreState,
-          errors,
-        };
-      },
-    );
-
-    this.exploreStateFromSessionStorage = derived(
+    this.mostRecentExploreStateForCurrentView = derived(
       [this.validSpecQuery, page],
       ([validSpecResp, pageState]) => {
         const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
         const exploreSpec = validSpecResp.data?.explore ?? {};
-        const exploreStateFromSessionStorage =
-          getExploreStateFromSessionStorage(
-            exploreName,
-            storageNamespacePrefix,
-            pageState.url.searchParams,
-            metricsViewSpec,
-            exploreSpec,
-          );
+        const mostRecentExploreStateForUrl = getMostRecentExploreStateForURL(
+          exploreName,
+          storageNamespacePrefix,
+          pageState.url.searchParams,
+          metricsViewSpec,
+          exploreSpec,
+        );
 
         return {
-          data: exploreStateFromSessionStorage,
+          data: mostRecentExploreStateForUrl,
           error: validSpecResp.error,
           isLoading: validSpecResp.isLoading,
           isFetching: validSpecResp.isFetching,
@@ -265,17 +239,15 @@ export class DashboardStateDataLoader {
     this.initExploreState = getCompoundQuery(
       [
         this.defaultExploreStateAndErrors,
-        this.exploreStateFromSessionStorage,
+        this.mostRecentExploreStateForCurrentView,
         this.partialExploreStateFromUrlForInitAndErrors,
-        this.mostRecentPartialExploreStateAndErrors,
         this.exploreStateFromYAMLConfigAndErrors,
         ...(bookmarkOrTokenExploreState ? [bookmarkOrTokenExploreState] : []),
       ],
       ([
         defaultExploreStateAndErrors,
-        exploreStateFromSessionStorage,
+        mostRecentExploreStateForUrl,
         partialExploreStateFromUrlForInitAndErrors,
-        mostRecentPartialExploreStateAndErrors,
         exploreStateFromYAMLConfigAndErrors,
         bookmarkOrTokenExploreState,
       ]) => {
@@ -290,13 +262,10 @@ export class DashboardStateDataLoader {
         const initExploreState = {
           // Since this is a complete state, we need the complete default explore state which works as a base.
           ...defaultExploreStateAndErrors.defaultExploreState,
-          // 1st priority is the state from session storage.
-          // TODO: since this only loads on certain params present in the url it should be merged with convertURLSearchParamsToExploreState
-          ...(exploreStateFromSessionStorage ??
+          // 1st priority is the most recent state.
+          ...(mostRecentExploreStateForUrl ??
             // Next priority is the state loaded from url params. It will be undefined if there are no params.
             partialExploreStateFromUrlForInitAndErrors?.partialExploreStateFromUrlForInit ??
-            // Next priority is the most recent state stored in local storage
-            mostRecentPartialExploreStateAndErrors?.mostRecentPartialExploreState ??
             // Next priority is one of the other source defined.
             // For cloud dashboard it would be home bookmark if present.
             // For shared url it would be the saved state in token
@@ -324,9 +293,9 @@ export class DashboardStateDataLoader {
     const explorePresetFromYAMLConfig = get(this.explorePresetFromYAMLConfig);
     if (!explorePresetFromYAMLConfig.data) return undefined;
 
-    // Pressing back button and going back to empty url state should not restore from session store
+    // Pressing back button and going back to empty url state should not restore most recent state
     const backButtonUsed = type === "popstate";
-    const skipSessionStorage = backButtonUsed;
+    const skipMostRecentState = backButtonUsed;
 
     const { partialExploreState: partialExploreStateFromUrl } =
       convertURLSearchParamsToExploreState(
@@ -335,11 +304,11 @@ export class DashboardStateDataLoader {
         exploreSpec,
         explorePresetFromYAMLConfig.data,
       );
-    // If we are skipping using state from session storage then exit early with partialExploreStateFromUrl
-    // regardless if there is exploreStateFromSessionStorage for current url params or not.
-    if (skipSessionStorage) return partialExploreStateFromUrl;
+    // If we are skipping using most recent state then exit early with partialExploreStateFromUrl
+    // regardless if there is mostRecentExploreStateForCurrentView for current url params or not.
+    if (skipMostRecentState) return partialExploreStateFromUrl;
 
-    const exploreStateFromSessionStorage = getExploreStateFromSessionStorage(
+    const mostRecentExploreStateForUrl = getMostRecentExploreStateForURL(
       this.exploreName,
       this.storageNamespacePrefix,
       urlSearchParams,
@@ -348,8 +317,8 @@ export class DashboardStateDataLoader {
     );
 
     return (
-      // preference goes to session storage 1st
-      exploreStateFromSessionStorage ??
+      // preference goes to most recent state.
+      mostRecentExploreStateForUrl ??
       // else we use the partial explore state from the url params.
       partialExploreStateFromUrl
     );

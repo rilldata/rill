@@ -1,6 +1,6 @@
 import { type CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
 import { useDashboardFetchMocksForComponentTests } from "@rilldata/web-common/features/dashboards/filters/test/filter-test-utils";
-import { setExploreStateForWebView } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
+import { setMostRecentExploreStateForWebView } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-store";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
@@ -30,8 +30,7 @@ import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { render, screen, waitFor } from "@testing-library/svelte";
 import { readable } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import DashboardStateLoaderTest from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/DashboardStateLoaderTest.svelte";
-import { setMostRecentExploreState } from "./most-recent-explore-state";
+import DashboardStateManagerTest from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/DashboardStateManagerTest.svelte";
 
 const hoistedPage: HoistedPage = vi.hoisted(() => ({}) as any);
 
@@ -49,7 +48,7 @@ vi.mock("$app/stores", () => {
 
 // Contains basic tests for verifying order of selection.
 // In-depth tests for storing and retrieving state are separate.
-describe("DashboardStateLoader", () => {
+describe("DashboardStateManager", () => {
   mockAnimationsForComponentTesting();
   const mocks = useDashboardFetchMocksForComponentTests();
   let pageMock!: PageMock;
@@ -69,7 +68,6 @@ describe("DashboardStateLoader", () => {
     });
 
     localStorage.clear();
-    sessionStorage.clear();
     queryClient.clear();
     metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
   });
@@ -151,9 +149,10 @@ describe("DashboardStateLoader", () => {
     });
 
     it("Should load most recent dashboard state", async () => {
-      setMostRecentExploreState(
+      setMostRecentExploreStateForWebView(
         AD_BIDS_EXPLORE_NAME,
         undefined,
+        "explore",
         "view=explore&tr=P7D&compare_tr=rill-PP&grain=hour&measures=bid_price&dims=domain&sort_by=bid_price",
       );
       renderDashboardStateLoader(BookmarkSourceQueryResult);
@@ -180,52 +179,6 @@ describe("DashboardStateLoader", () => {
       });
       const initUrlSearch =
         "tr=P7D&compare_tr=rill-PP&grain=hour&measures=bid_price&dims=domain&sort_by=bid_price";
-      pageMock.assertSearchParams(initUrlSearch);
-
-      pageMock.popState("");
-      await waitFor(() =>
-        assertExploreStateSubset(ExploreStateSubsetForBaseState),
-      );
-      // only 2 urls should in history
-      expect(pageMock.urlSearchHistory).toEqual([initUrlSearch, ""]);
-    });
-
-    it("Should load from session dashboard state", async () => {
-      setMostRecentExploreState(
-        AD_BIDS_EXPLORE_NAME,
-        undefined,
-        "view=explore&tr=P7D&compare_tr=rill-PP&grain=hour&measures=bid_price&dims=domain&sort_by=bid_price",
-      );
-      setExploreStateForWebView(
-        AD_BIDS_EXPLORE_NAME,
-        undefined,
-        "explore",
-        "view=explore&tr=P14D&compare_tr=rill-PW&grain=day&measures=impressions&dims=publisher&sort_by=impressions",
-      );
-      renderDashboardStateLoader(BookmarkSourceQueryResult);
-      await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
-
-      assertExploreStateSubset({
-        selectedTimeRange: {
-          name: "P14D",
-          interval: V1TimeGrain.TIME_GRAIN_DAY,
-        } as DashboardTimeControls,
-        showTimeComparison: true,
-        selectedComparisonTimeRange: {
-          name: TimeComparisonOption.WEEK,
-        } as DashboardTimeControls,
-
-        visibleMeasureKeys: new Set([AD_BIDS_IMPRESSIONS_MEASURE]),
-        allMeasuresVisible: false,
-        visibleDimensionKeys: new Set([AD_BIDS_PUBLISHER_DIMENSION]),
-        allDimensionsVisible: false,
-
-        leaderboardMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
-        leaderboardContextColumn: undefined,
-        sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
-      });
-      const initUrlSearch =
-        "tr=P14D&compare_tr=rill-PW&grain=day&measures=impressions&dims=publisher";
       pageMock.assertSearchParams(initUrlSearch);
 
       pageMock.popState("");
@@ -278,9 +231,10 @@ describe("DashboardStateLoader", () => {
     });
 
     it("Should load most recent dashboard state", async () => {
-      setMostRecentExploreState(
+      setMostRecentExploreStateForWebView(
         AD_BIDS_EXPLORE_NAME,
         undefined,
+        "explore",
         "view=explore&measures=bid_price&dims=domain&sort_by=bid_price",
       );
       renderDashboardStateLoader();
@@ -310,46 +264,6 @@ describe("DashboardStateLoader", () => {
       // only 2 urls should in history
       expect(pageMock.urlSearchHistory).toEqual([initUrlSearch, ""]);
     });
-
-    it("Should load from session dashboard state", async () => {
-      setMostRecentExploreState(
-        AD_BIDS_EXPLORE_NAME,
-        undefined,
-        "view=explore&measures=bid_price&dims=domain&sort_by=bid_price",
-      );
-      setExploreStateForWebView(
-        AD_BIDS_EXPLORE_NAME,
-        undefined,
-        "explore",
-        "view=explore&measures=impressions&dims=publisher&sort_by=impressions",
-      );
-      renderDashboardStateLoader();
-
-      await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
-      assertExploreStateSubset({
-        selectedTimeRange: undefined,
-        showTimeComparison: false,
-        selectedComparisonTimeRange: undefined,
-
-        visibleMeasureKeys: new Set([AD_BIDS_IMPRESSIONS_MEASURE]),
-        allMeasuresVisible: false,
-        visibleDimensionKeys: new Set([AD_BIDS_PUBLISHER_DIMENSION]),
-        allDimensionsVisible: false,
-
-        leaderboardMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
-        leaderboardContextColumn: undefined,
-        sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
-      });
-      const initUrlSearch = "measures=impressions&dims=publisher";
-      pageMock.assertSearchParams(initUrlSearch);
-
-      pageMock.popState("");
-      await waitFor(() =>
-        assertExploreStateSubset(ExploreStateSubsetForBaseState),
-      );
-      // only 2 urls should in history
-      expect(pageMock.urlSearchHistory).toEqual([initUrlSearch, ""]);
-    });
   });
 });
 
@@ -360,7 +274,7 @@ function renderDashboardStateLoader(
     | CompoundQueryResult<Partial<MetricsExplorerEntity> | undefined>
     | undefined = undefined,
 ) {
-  const renderResults = render(DashboardStateLoaderTest, {
+  const renderResults = render(DashboardStateManagerTest, {
     props: {
       exploreName: AD_BIDS_EXPLORE_NAME,
       bookmarkOrTokenExploreState,

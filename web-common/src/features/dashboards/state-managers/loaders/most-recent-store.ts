@@ -17,7 +17,7 @@ import {
   type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
 
-export function getKeyForSessionStore(
+export function getKeyMostRecentStateForWebView(
   exploreName: string,
   storageNamespacePrefix: string | undefined,
   webView: ExploreUrlWebView,
@@ -25,7 +25,12 @@ export function getKeyForSessionStore(
   return `rill:app:explore:${storageNamespacePrefix ?? ""}${exploreName}:${webView}`.toLowerCase();
 }
 
-export function updateExploreSessionStore(
+/**
+ * Save the current explore state as "most recent explore" state in localStorage.
+ * Makes sure to update all views with global and common fields.
+ * Stores in url params format so that the converter code is shared.
+ */
+export function updateMostRecentExploreState(
   exploreName: string,
   storageNamespacePrefix: string | undefined,
   explore: V1ExploreSpec,
@@ -50,7 +55,7 @@ export function updateExploreSessionStore(
   );
   try {
     // Store the full url for the web view
-    setExploreStateForWebView(
+    setMostRecentExploreStateForWebView(
       exploreName,
       storageNamespacePrefix,
       curWebView,
@@ -65,12 +70,12 @@ export function updateExploreSessionStore(
     const otherWebView = otherWebViewStr as ExploreUrlWebView;
     if (otherWebView === curWebView) continue;
 
-    const otherWebViewKey = getKeyForSessionStore(
+    const otherWebViewKey = getKeyMostRecentStateForWebView(
       exploreName,
       storageNamespacePrefix,
       otherWebView,
     );
-    const otherWebViewRawSearch = sessionStorage.getItem(otherWebViewKey) ?? "";
+    const otherWebViewRawSearch = localStorage.getItem(otherWebViewKey) ?? "";
     const otherWebViewUrlParams = new URLSearchParams(otherWebViewRawSearch);
 
     // Copy relevant params from current view to the other view
@@ -83,7 +88,7 @@ export function updateExploreSessionStore(
 
     try {
       // Store the full url for the other web view
-      setExploreStateForWebView(
+      setMostRecentExploreStateForWebView(
         exploreName,
         storageNamespacePrefix,
         otherWebView,
@@ -95,21 +100,21 @@ export function updateExploreSessionStore(
   }
 }
 
-export function getPartialExploreStateForWebView(
+export function getMostRecentPartialExploreStateForWebView(
   exploreName: string,
   storageNamespacePrefix: string | undefined,
   urlWebView: ExploreUrlWebView,
   metricsView: V1MetricsViewSpec,
   explore: V1ExploreSpec,
 ) {
-  const key = getKeyForSessionStore(
+  const key = getKeyMostRecentStateForWebView(
     exploreName,
     storageNamespacePrefix,
     urlWebView,
   );
 
   try {
-    const storedUrlSearch = sessionStorage.getItem(key);
+    const storedUrlSearch = localStorage.getItem(key);
     if (!storedUrlSearch) return undefined;
     const storedUrlSearchParams = new URLSearchParams(storedUrlSearch);
 
@@ -127,28 +132,32 @@ export function getPartialExploreStateForWebView(
   }
 }
 
-export function clearExploreSessionStore(
+export function clearMostRecentExploreState(
   exploreName: string,
   storageNamespacePrefix: string | undefined,
 ) {
   for (const otherWebView in FromURLParamViewMap) {
-    const key = getKeyForSessionStore(
+    const key = getKeyMostRecentStateForWebView(
       exploreName,
       storageNamespacePrefix,
       otherWebView as ExploreUrlWebView,
     );
-    sessionStorage.removeItem(key);
+    localStorage.removeItem(key);
   }
 }
 
-export function setExploreStateForWebView(
+export function setMostRecentExploreStateForWebView(
   exploreName: string,
   storageNamespacePrefix: string | undefined,
   webView: ExploreUrlWebView,
   state: string,
 ) {
-  sessionStorage.setItem(
-    getKeyForSessionStore(exploreName, storageNamespacePrefix, webView),
+  localStorage.setItem(
+    getKeyMostRecentStateForWebView(
+      exploreName,
+      storageNamespacePrefix,
+      webView,
+    ),
     state,
   );
 }

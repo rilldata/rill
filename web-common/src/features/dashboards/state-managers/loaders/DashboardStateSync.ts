@@ -14,10 +14,9 @@ import {
   convertExploreStateToURLSearchParams,
   getUpdatedUrlForExploreState,
 } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
-import { saveMostRecentExploreState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-explore-state";
 import type { AfterNavigate } from "@sveltejs/kit";
 import { derived, get, type Readable } from "svelte/store";
-import { updateExploreSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
+import { updateMostRecentExploreState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-store";
 
 /**
  * Keeps explore state and url in sync.
@@ -34,6 +33,9 @@ export class DashboardStateSync {
 
   private initialized = false;
   private prevUrl: URL | undefined;
+  // There can be cases when updating either the url or the state can impact the code handling the other part.
+  // So we need a lock to make sure an update doesnt trigger the counterpart code.
+  private updating = false;
 
   public constructor(
     instanceId: string,
@@ -100,18 +102,11 @@ export class DashboardStateSync {
     if (redirectUrl.search === pageState.url.search) {
       return;
     }
+    console.log("INIT", redirectUrl.search);
 
     const updatedExploreState =
       get(metricsExplorerStore).entities[this.exploreName];
-    // update session store to make sure updated to url or the initial state is propagated to the session store
-    updateExploreSessionStore(
-      this.exploreName,
-      this.extraPrefix,
-      exploreSpec,
-      timeControlsState,
-      updatedExploreState,
-    );
-    saveMostRecentExploreState(
+    updateMostRecentExploreState(
       this.exploreName,
       this.extraPrefix,
       exploreSpec,
@@ -132,7 +127,8 @@ export class DashboardStateSync {
     urlSearchParams: URLSearchParams,
     type: AfterNavigate["type"],
   ) {
-    if (!get(metricsExplorerStore).entities[this.exploreName]) return;
+    if (!get(metricsExplorerStore).entities[this.exploreName] || this.updating)
+      return;
 
     const partialExplore = this.dataLoader.getExploreStateFromURLParams(
       urlSearchParams,
@@ -143,6 +139,7 @@ export class DashboardStateSync {
     // This shouldn't ideally happen.
     if (!partialExplore) return;
 
+    this.updating = true;
     const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
     const metricsViewSpec = validSpecData?.metricsView ?? {};
     const exploreSpec = validSpecData?.explore ?? {};
@@ -159,7 +156,7 @@ export class DashboardStateSync {
     );
     // Get time controls state after explore state is updated.
     const timeControlsState = get(this.timeControlStore);
-    // if we added extra url params from sessionStorage then update the url
+    // if we added extra url params from most recent store then update the url
     redirectUrl.search = getUpdatedUrlForExploreState(
       exploreSpec,
       timeControlsState,
@@ -173,21 +170,15 @@ export class DashboardStateSync {
       // redirect loop breaker
       (this.prevUrl && this.prevUrl.search === redirectUrl.search)
     ) {
+      this.updating = false;
       this.prevUrl = redirectUrl;
       return;
     }
+    console.log("GOTO:REPLACE", redirectUrl.search);
 
     const updatedExploreState =
       get(metricsExplorerStore).entities[this.exploreName];
-    // also update the session store
-    updateExploreSessionStore(
-      this.exploreName,
-      this.extraPrefix,
-      exploreSpec,
-      timeControlsState,
-      updatedExploreState,
-    );
-    saveMostRecentExploreState(
+    updateMostRecentExploreState(
       this.exploreName,
       this.extraPrefix,
       exploreSpec,
@@ -195,6 +186,7 @@ export class DashboardStateSync {
       updatedExploreState,
     );
     this.prevUrl = redirectUrl;
+    this.updating = false;
     // using `replaceState` directly messes up the navigation entries,
     // `from` and `to` have the old url before being replaced in `afterNavigate` calls leading to incorrect handling.
     return goto(redirectUrl, {
@@ -204,6 +196,9 @@ export class DashboardStateSync {
   }
 
   private gotoNewState(exploreState: MetricsExplorerEntity) {
+    if (this.updating) return;
+    this.updating = true;
+
     const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
     const exploreSpec = validSpecData?.explore ?? {};
     const timeControlsState = get(this.timeControlStore);
@@ -222,18 +217,12 @@ export class DashboardStateSync {
     );
     newUrl.search = exploreStateParams.toString();
     if (!this.prevUrl || this.prevUrl.search === newUrl.search) {
+      this.updating = false;
       return;
     }
+    console.log("GOTO", newUrl.search);
 
-    // also update the session store
-    updateExploreSessionStore(
-      this.exploreName,
-      this.extraPrefix,
-      exploreSpec,
-      timeControlsState,
-      exploreState,
-    );
-    saveMostRecentExploreState(
+    updateMostRecentExploreState(
       this.exploreName,
       this.extraPrefix,
       exploreSpec,
@@ -241,6 +230,7 @@ export class DashboardStateSync {
       exploreState,
     );
     this.prevUrl = newUrl;
+    this.updating = false;
     // dashboard changed so we should update the url
     return goto(newUrl);
   }

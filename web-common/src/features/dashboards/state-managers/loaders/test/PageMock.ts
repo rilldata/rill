@@ -60,6 +60,7 @@ export class PageMock {
       page.url = new URL("http://localhost/explore/AdBids_explore/?" + search);
       return page;
     });
+    this.urlSearchHistory.push(search);
     this.afterNavigateCallback({
       from: { url: prevUrl },
       to: { url: get(this.hoistedPage).url },
@@ -73,6 +74,7 @@ export class PageMock {
       page.url = new URL("http://localhost/explore/AdBids_explore/?" + search);
       return page;
     });
+    this.urlSearchHistory.push(search);
     this.afterNavigateCallback({
       from: { url: prevUrl },
       to: { url: get(this.hoistedPage).url },
