@@ -1302,6 +1302,7 @@ func (r *ModelReconciler) acquireExecutor(ctx context.Context, self *runtimev1.R
 	// Acquire the final result manager
 	finalResultManager, ok := finalOpts.OutputHandle.AsModelManager(r.C.InstanceID)
 	if !ok {
+		stageRelease()
 		finalRelease()
 		return nil, nil, fmt.Errorf("output connector %q is not capable of managing model results", mdl.Spec.OutputConnector)
 	}
@@ -1338,6 +1339,7 @@ func (r *ModelReconciler) acquireExecutorInner(ctx context.Context, opts *driver
 
 		e, ok := ic.AsModelExecutor(r.C.InstanceID, opts)
 		if !ok {
+			ir()
 			return "", nil, nil, fmt.Errorf("connector %q is not capable of executing models", opts.InputConnector)
 		}
 

@@ -263,7 +263,7 @@ func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 
 // AsModelManager implements drivers.Handle.
 func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
-	return nil, false
+	return c, true
 }
 
 // AsTransporter implements drivers.Connection.
