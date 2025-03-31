@@ -148,5 +148,4 @@ func deleteObjectsInPrefix(ctx context.Context, c *Connection, bucketName, prefi
 		}
 	}
 	return nil
-
 }
