@@ -118,8 +118,9 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		require.NotEmpty(t, hmacSecret, "GCS RILL_RUNTIME_GCS_TEST_HMAC_SECRET not configured")
 
 		return map[string]string{
-			"key_id": hmacKey,
-			"secret": hmacSecret,
+			"google_application_credentials": gac,
+			"key_id":                         hmacKey,
+			"secret":                         hmacSecret,
 		}
 	},
 	"gcs_s3_compat": func(t TestingT) map[string]string {
