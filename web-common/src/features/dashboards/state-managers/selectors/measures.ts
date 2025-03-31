@@ -39,7 +39,7 @@ export const leaderboardMeasureCount = ({
   return dashboard.leaderboardMeasureCount ?? 1;
 };
 
-export const activeMeasureNamesFromMeasureCount = ({
+export const activeMeasuresFromMeasureCount = ({
   validMetricsView,
   validExplore,
   dashboard,
@@ -218,5 +218,5 @@ export const measureSelectors = {
 
   leaderboardMeasureCount,
 
-  activeMeasureNamesFromMeasureCount,
+  activeMeasuresFromMeasureCount,
 };
