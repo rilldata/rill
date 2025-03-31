@@ -24,17 +24,12 @@
   const StateManagers = getStateManagers();
   const {
     selectors: {
-      activeMeasure: { isValidPercentOfTotal, isSummableMeasure },
       numberFormat: { measureFormatters, activeMeasureFormatter },
       dimensionFilters: { isFilterExcludeMode },
       dimensions: { visibleDimensions },
       comparison: { isBeingCompared: isBeingComparedReadable },
       sorting: { sortedAscending, sortType, sortByMeasure },
-<<<<<<< HEAD
-      measures: { measureLabel },
-=======
       measures: { measureLabel, isMeasureValidPercentOfTotal, visibleMeasures },
->>>>>>> 7f9e72c51 (use visible measures for querying/sorting)
     },
     actions: {
       dimensions: { setPrimaryDimension },
@@ -61,7 +56,7 @@
 
   $: dimensionColumnWidth = 164;
 
-  $: showPercentOfTotal = isValidPercentOfTotal;
+  $: showPercentOfTotal = $isMeasureValidPercentOfTotal(activeMeasureName);
   $: showDeltaPercent = !!comparisonTimeRange;
 
   $: tableWidth =
@@ -113,7 +108,6 @@
               filterExcludeMode={$isFilterExcludeMode(dimension.name)}
               {comparisonTimeRange}
               {dimension}
-              isSummableMeasure={$isSummableMeasure}
               {parentElement}
               {suppressTooltip}
               {timeControlsReady}

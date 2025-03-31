@@ -65,7 +65,6 @@
   export let isValidPercentOfTotal: boolean;
   export let timeControlsReady: boolean;
   export let dimensionColumnWidth: number;
-  export let isSummableMeasure: boolean;
   export let filterExcludeMode: boolean;
   export let isBeingCompared: boolean;
   export let parentElement: HTMLElement;
@@ -359,7 +358,6 @@
             {suppressTooltip}
             {tableWidth}
             {dimensionColumnWidth}
-            {isSummableMeasure}
             {isBeingCompared}
             {filterExcludeMode}
             {atLeastOneActive}
@@ -379,7 +377,6 @@
           {suppressTooltip}
           {itemData}
           {dimensionColumnWidth}
-          {isSummableMeasure}
           {tableWidth}
           {dimensionName}
           {isBeingCompared}
