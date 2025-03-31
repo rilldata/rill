@@ -43,7 +43,8 @@
         {maxWidth}
         {rowIndex}
         zIndex={50 - rowIndex * 2}
-        height="{height}{heightUnit}"
+        {height}
+        {heightUnit}
         gridTemplate={widths.map((w) => `${w}fr`).join(" ")}
       >
         {#each items as item, columnIndex (columnIndex)}

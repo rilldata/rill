@@ -11,7 +11,6 @@
   export let addIndex: number;
   export let rowLength: number;
   export let rowIndex: number;
-  export let resizingColumn = false;
   export let columnWidth: number | undefined = undefined;
   export let isSpreadEvenly: boolean;
   export let dragging: boolean;
@@ -19,7 +18,8 @@
     position: { row: number; column: number },
     item: CanvasComponentType[],
   ) => void;
-  export let onMouseDown: ((e: MouseEvent) => void) | undefined = undefined;
+  export let onColumnResizeStart: ((columnIndex: number) => void) | undefined =
+    undefined;
   export let spreadEvenly: (rowIndex: number) => void;
 
   let menuOpen = false;
@@ -36,7 +36,7 @@
 
   $: notActiveDivider = !isActiveDivider && !!$activeDivider;
 
-  $: forceShowDivider = menuOpen || resizingColumn || isDropZone;
+  $: forceShowDivider = menuOpen || isActiveDivider || isDropZone;
 
   $: if (isActiveDivider) {
     document.body.style.cursor = "col-resize";
@@ -74,8 +74,8 @@
         : "auto"}
       class:!opacity-100={isDropZone}
       class="peer h-full flex items-center justify-center w-4 disabled:opacity-60 disabled:cursor-default cursor-col-resize"
-      on:mousedown={(e) => {
-        if (onMouseDown) onMouseDown(e);
+      on:mousedown={() => {
+        if (onColumnResizeStart) onColumnResizeStart(resizeIndex);
         activeDivider.set(dividerId);
         window.addEventListener(
           "mouseup",

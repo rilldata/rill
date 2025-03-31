@@ -1,6 +1,5 @@
 <script lang="ts">
   import { portal } from "@rilldata/web-common/lib/actions/portal";
-  import { clamp } from "@rilldata/web-common/lib/clamp";
   import {
     type V1CanvasRow as APIV1CanvasRow,
     type V1CanvasItem,
@@ -20,20 +19,19 @@
   import {
     COLUMN_COUNT,
     DEFAULT_DASHBOARD_WIDTH,
-    getInitialHeight,
     mapGuard,
-    MIN_HEIGHT,
-    MIN_WIDTH,
     moveToRow,
-    normalizeSizeArray,
     rowsGuard,
+    mousePosition,
   } from "./layout-util";
-  import RowDropZone from "./RowDropZone.svelte";
+  import { activeDivider } from "./stores/ui-stores";
+
   import RowWrapper from "./RowWrapper.svelte";
   import { useDefaultMetrics, type CanvasResponse } from "./selector";
   import { getCanvasStore } from "./state-managers/state-managers";
   import { dropZone } from "./stores/ui-stores";
   import ComponentError from "./components/ComponentError.svelte";
+  import EditableCanvasRow from "./EditableCanvasRow.svelte";
 
   const activelyEditing = writable(false);
 
@@ -50,22 +48,12 @@
     canvasEntity: { setSelectedComponent },
   } = getCanvasStore(canvasName));
 
-  let mousePosition = { x: 0, y: 0 };
   let initialMousePosition: { x: number; y: number } | null = null;
   let clientWidth: number;
   let selected: Set<string> = new Set();
   let offset = { x: 0, y: 0 };
-  let resizeRow = -1;
-  let resizeRowMinimum = MIN_HEIGHT;
-  let initialHeight = 0;
+
   let dragItemInfo: DragItem | null = null;
-  let resizeColumnInfo: {
-    width: number;
-    row: number;
-    column: number;
-    maxWidth: number;
-    nextElementWidth: number;
-  } | null = null;
   let timeout: ReturnType<typeof setTimeout> | null = null;
   let dragTimeout: ReturnType<typeof setTimeout> | null = null;
   let dragItemPosition = { top: 0, left: 0 };
@@ -91,9 +79,7 @@
     }
   }
 
-  $: activelyEditing.set(
-    resizeRow !== -1 || !!dragItemInfo || !!resizeColumnInfo,
-  );
+  $: activelyEditing.set(!!$activeDivider || !!dragItemInfo);
 
   $: ({ rows = [], filtersEnabled, maxWidth: canvasMaxWidth } = spec);
 
@@ -107,111 +93,23 @@
   $: columnWidth = clientWidth / 12;
 
   $: mouseDelta = initialMousePosition
-    ? calculateMouseDelta(initialMousePosition, mousePosition)
+    ? calculateMouseDelta(initialMousePosition, $mousePosition)
     : 0;
 
   $: dropZone.setMouseDelta(mouseDelta);
 
-  $: resizeRowData = structuredClone(specCanvasRows?.[resizeRow]);
-
-  $: resizeColumnData =
-    !!resizeColumnInfo &&
-    structuredClone(specCanvasRows?.[resizeColumnInfo.row]?.items);
-
-  $: if (resizeRowData && initialMousePosition) {
-    const diff = mousePosition.y - initialMousePosition.y;
-
-    resizeRowData.height = Math.max(
-      resizeRowMinimum,
-      Math.floor(diff + initialHeight),
-    );
-
-    specCanvasRows[resizeRow] = resizeRowData;
-  }
-
   $: defaultMetrics = $metricsViewQuery?.data;
 
-  function onColumResizeStart(e: MouseEvent & { currentTarget: HTMLElement }) {
-    initialMousePosition = mousePosition;
-    const row = Number(e.currentTarget.getAttribute("data-row"));
-    const column = Number(e.currentTarget.getAttribute("data-column"));
-    const rowWidths = normalizeSizeArray(
-      specCanvasRows[row]?.items?.map((el) => el?.width ?? 0) ?? [],
-    );
-
-    const nextElementWidth = rowWidths[column + 1];
-
-    const maxWidth = rowWidths.reduce((acc, el, i) => {
-      if (i === column) {
-        return acc;
-      } else if (i === column + 1) {
-        return acc - MIN_WIDTH;
-      } else {
-        return acc - el;
-      }
-    }, COLUMN_COUNT);
-
-    if (!nextElementWidth) return;
-
-    resizeColumnInfo = {
-      width: Number(e.currentTarget.getAttribute("data-width")),
-      row,
-      column,
-      nextElementWidth,
-      maxWidth,
-    };
-
-    window.addEventListener("mousemove", onColumnResize);
-    window.addEventListener("mouseup", onColumnResizeEnd);
-  }
-
-  function onColumnResize(e: MouseEvent) {
-    if (!resizeColumnInfo || !resizeColumnData) return;
-
-    const { row, column, width, maxWidth, nextElementWidth } = resizeColumnInfo;
-
-    const layoutRow = resizeColumnData.map((el) => el?.width ?? 0) ?? [];
-
-    const delta = e.clientX - (initialMousePosition?.x ?? 0);
-    const columnDelta = Math.round(delta / columnWidth);
-
-    const newValue = clamp(MIN_WIDTH, width + columnDelta, maxWidth);
-
-    const clampedDelta = newValue - width;
-
-    layoutRow[column] = newValue;
-
-    layoutRow[column + 1] = nextElementWidth - clampedDelta;
-
-    layoutRow.forEach((el, i) => {
-      if (!resizeColumnData[i]) return;
-
-      resizeColumnData[i].width = el;
-    });
-
-    if (!specCanvasRows[row]) return;
-
-    specCanvasRows[row].items = resizeColumnData;
-  }
-
-  function onColumnResizeEnd() {
-    window.removeEventListener("mousemove", onColumnResize);
-    window.removeEventListener("mouseup", onColumnResizeEnd);
-
-    if (!resizeColumnInfo || !resizeColumnData) return;
-    const rowIndex = resizeColumnInfo.row;
-    resizeColumnData.forEach((el, i) => {
-      if (!el) return;
+  function updateComponentWidths(rowIndex: number, newWidths: number[]) {
+    newWidths.forEach((width, i) => {
       try {
-        contents.setIn(["rows", rowIndex, "items", i, "width"], el.width);
+        contents.setIn(["rows", rowIndex, "items", i, "width"], width);
       } catch (e) {
         console.error(e);
       }
     });
 
     updateContents();
-    resizeColumnInfo = null;
-    document.body.style.cursor = "";
   }
 
   function getId(row: number | undefined, column: number | undefined) {
@@ -240,15 +138,15 @@
     dragItemDimensions = { width, height };
 
     offset = {
-      x: left - (initialMousePosition?.x ?? mousePosition.x),
-      y: top - (initialMousePosition?.y ?? mousePosition.y),
+      x: left - (initialMousePosition?.x ?? $mousePosition.x),
+      y: top - (initialMousePosition?.y ?? $mousePosition.y),
     };
   }
 
   $: if (dragItemInfo) {
     dragItemPosition = {
-      top: mousePosition.y + offset.y,
-      left: mousePosition.x + offset.x,
+      top: $mousePosition.y + offset.y,
+      left: $mousePosition.x + offset.x,
     };
   }
 
@@ -256,31 +154,9 @@
     dragItemInfo = null;
   }
 
-  function onRowResizeStart(
-    e: MouseEvent,
-    rowIndex: number,
-    types: (string | undefined)[],
-  ) {
-    initialMousePosition = { x: e.clientX, y: e.clientY };
-    resizeRow = rowIndex;
-    initialHeight =
-      document
-        .querySelector(`#canvas-row-${resizeRow}`)
-        ?.getBoundingClientRect().height ??
-      Number(specCanvasRows[resizeRow]?.height ?? MIN_HEIGHT);
-    resizeRowMinimum =
-      types.reduce((acc, type) => {
-        return Math.max(acc, getInitialHeight(type) ?? MIN_HEIGHT);
-      }, 0) ?? MIN_HEIGHT;
-  }
-
   function reset() {
     if (dragTimeout) {
       clearTimeout(dragTimeout);
-    }
-
-    if (resizeRow !== -1) {
-      onRowResizeEnd();
     }
 
     if (dragItemInfo) {
@@ -295,23 +171,12 @@
     dropZone.clear();
   }
 
-  function onRowResizeEnd() {
-    const height = specCanvasRows[resizeRow]?.height;
-
-    if (!height) return;
-
+  function updateRowHeight(newHeight: number, rowIndex: number) {
     try {
-      contents.setIn(
-        ["rows", resizeRow, "height"],
-        Math.max(resizeRowMinimum, height) + "px",
-      );
+      contents.setIn(["rows", rowIndex, "height"], newHeight + "px");
     } catch (e) {
       console.error(e);
     }
-
-    initialMousePosition = null;
-    resizeRow = -1;
-    initialHeight = 0;
 
     updateContents();
   }
@@ -472,9 +337,6 @@
 
 <svelte:window
   on:mouseup={reset}
-  on:mousemove={(e) => {
-    mousePosition = { x: e.clientX, y: e.clientY };
-  }}
   on:keydown={(e) => {
     if (e.key === "Backspace" && selected) {
       if (
@@ -502,25 +364,26 @@
   showGrabCursor={!!dragItemInfo}
   bind:clientWidth
 >
-  {#each specCanvasRows as { items = [], height = MIN_HEIGHT, heightUnit = "px" }, rowIndex (rowIndex)}
-    {@const widths = normalizeSizeArray(items?.map((el) => el?.width ?? 0))}
-    {@const isSpreadEvenly = items?.every(
-      (el) => el?.width === items?.[0]?.width,
-    )}
-    {@const types = items?.map(
-      (item) =>
-        canvasData?.components?.[item?.component ?? ""]?.component?.spec
-          ?.renderer,
-    )}
-    <RowWrapper
+  {#each specCanvasRows as row, rowIndex (rowIndex)}
+    <EditableCanvasRow
+      {row}
+      {canvasData}
       {maxWidth}
       {rowIndex}
+      movingWidget={!!dragItemInfo}
       zIndex={50 - rowIndex * 2}
-      height="{height}{heightUnit}"
-      gridTemplate={widths.map((w) => `${w}fr`).join(" ")}
+      {columnWidth}
+      {updateComponentWidths}
+      {onDrop}
+      {initializeRow}
+      {updateRowHeight}
+      let:widths
+      let:isSpreadEvenly
+      let:types
+      let:items
+      let:onColumnResizeStart
     >
       {#each items as item, columnIndex (columnIndex)}
-        {@const width = widths[columnIndex]}
         {@const id = getId(rowIndex, columnIndex)}
         {@const type = types[columnIndex]}
         {@const componentResource =
@@ -541,17 +404,15 @@
 
           <ElementDivider
             {isSpreadEvenly}
-            onMouseDown={onColumResizeStart}
-            columnWidth={width}
+            columnWidth={widths[columnIndex]}
             {rowIndex}
-            resizingColumn={resizeColumnInfo?.row === rowIndex &&
-              resizeColumnInfo?.column === columnIndex}
             dragging={!!dragItemInfo}
             resizeIndex={columnIndex}
             addIndex={columnIndex + 1}
             rowLength={items.length}
             {spreadEvenly}
             {addItems}
+            {onColumnResizeStart}
           />
 
           <DropZone
@@ -571,12 +432,12 @@
             ghost={dragItemInfo?.position?.row === rowIndex &&
               dragItemInfo?.position?.column === columnIndex}
             selected={selected.has(id)}
-            allowPointerEvents={!resizeColumnInfo && resizeRow === -1}
+            allowPointerEvents={!$activeDivider}
             onMouseDown={(e) => {
               if (e.button !== 0) return;
               e.preventDefault();
 
-              initialMousePosition = mousePosition;
+              initialMousePosition = $mousePosition;
 
               setSelectedComponent({ column: columnIndex, row: rowIndex });
               selected = new Set([id]);
@@ -616,32 +477,7 @@
           />
         </ItemWrapper>
       {/each}
-
-      <RowDropZone
-        allowDrop={!!dragItemInfo}
-        resizeIndex={rowIndex}
-        dropIndex={rowIndex + 1}
-        resizingRow={resizeRow === rowIndex}
-        onRowResizeStart={(e) => {
-          onRowResizeStart(e, rowIndex, types);
-        }}
-        {onDrop}
-        addItem={(type) => {
-          initializeRow(rowIndex + 1, type);
-        }}
-      />
-
-      {#if rowIndex === 0}
-        <RowDropZone
-          allowDrop={!!dragItemInfo}
-          dropIndex={0}
-          {onDrop}
-          addItem={(type) => {
-            initializeRow(rowIndex, type);
-          }}
-        />
-      {/if}
-    </RowWrapper>
+    </EditableCanvasRow>
   {:else}
     <RowWrapper
       gridTemplate="12fr"

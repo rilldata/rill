@@ -21,7 +21,7 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import PreviewButton from "../explores/PreviewButton.svelte";
-  import RowBasedCanvas from "../canvas/RowBasedCanvas.svelte";
+  import CanvasBuilder from "../canvas/CanvasBuilder.svelte";
   import DelayedSpinner from "../entity-management/DelayedSpinner.svelte";
   import { useCanvas } from "../canvas/selector";
 
@@ -126,7 +126,7 @@
           {:else if canvasResolverQueryResult.isLoading}
             <DelayedSpinner isLoading={true} size="48px" />
           {:else if canvasData}
-            <RowBasedCanvas
+            <CanvasBuilder
               {canvasData}
               {canvasName}
               openSidebar={workspace.inspector.open}
