@@ -55,8 +55,8 @@
   export let whereFilter: V1Expression;
   export let dimensionThresholdFilters: DimensionThresholdFilter[];
   export let activeMeasureName: string;
-  export let leaderboardMeasureNames: string[]; // For display (limited by leaderboardMeasureCount)
-  export let visibleMeasures: string[]; // For querying/sorting (all visible measures)
+  export let leaderboardMeasureNames: string[];
+  export let visibleMeasures: string[];
   export let metricsViewName: string;
   export let sortType: SortType;
   export let sortBy: string | null;
