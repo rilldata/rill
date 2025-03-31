@@ -4,7 +4,7 @@
   const PollTimeWhenProjectDeploymentOk = RUNTIME_ACCESS_TOKEN_DEFAULT_TTL / 2; // Proactively refetch the JWT before it expires
 
   const baseGetProjectQueryOptions: Partial<
-    QueryObserverOptions<V1GetProjectResponse, RpcStatus>
+    CreateQueryOptions<V1GetProjectResponse, RpcStatus>
   > = {
     gcTime: Math.min(RUNTIME_ACCESS_TOKEN_DEFAULT_TTL, 1000 * 60 * 5), // Make sure we don't keep a stale JWT in the cache
     refetchInterval: (query) => {
@@ -59,7 +59,7 @@
   import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
   import { fixLocalhostRuntimePort } from "@rilldata/web-common/runtime-client/fix-localhost-runtime-port";
   import type { AuthContext } from "@rilldata/web-common/runtime-client/runtime-store";
-  import type { QueryObserverOptions } from "@tanstack/svelte-query";
+  import type { CreateQueryOptions } from "@tanstack/svelte-query";
 
   const user = createAdminServiceGetCurrentUser();
 
