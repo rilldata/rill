@@ -22,7 +22,6 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import PreviewButton from "../explores/PreviewButton.svelte";
   import RowBasedCanvas from "../canvas/RowBasedCanvas.svelte";
-  import { createQueryServiceResolveCanvas } from "@rilldata/web-common/runtime-client";
   import DelayedSpinner from "../entity-management/DelayedSpinner.svelte";
   import { useCanvas } from "../canvas/selector";
 
