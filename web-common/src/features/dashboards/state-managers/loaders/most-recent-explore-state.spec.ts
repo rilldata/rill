@@ -322,7 +322,6 @@ function renderDashboardStateLoader() {
   const renderResults = render(DashboardStateLoaderTest, {
     props: {
       exploreName: AD_BIDS_EXPLORE_NAME,
-      otherSourcesOfState: [],
     },
     // TODO: we need to make sure every single query uses an explicit queryClient instead of the global one
     //       only then we can use a fresh client here.

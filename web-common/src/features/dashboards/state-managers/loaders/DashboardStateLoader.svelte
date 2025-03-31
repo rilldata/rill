@@ -1,7 +1,7 @@
 <script lang="ts">
   import { afterNavigate } from "$app/navigation";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
-  import type { SupportedCompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
+  import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
   import { DashboardStateDataLoader } from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateDataLoader";
   import { DashboardStateSync } from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateSync";
   import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
@@ -10,26 +10,16 @@
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { QueriesStatus } from "@rilldata/web-common/runtime-client/QueriesStatus";
   import { onDestroy } from "svelte";
-  import { derived } from "svelte/store";
 
   export let exploreName: string;
-  export let extraPrefix: string | undefined = undefined;
-  export let otherSourcesOfState: {
-    errorHeader: string;
-    query: SupportedCompoundQueryResult<
-      Partial<MetricsExplorerEntity> | undefined,
-      HTTPError
-    >;
-  }[] = [];
-
-  const DASHBOARD_SHOW_SPINNER_THRESHOLD = 1000;
-  const DASHBOARD_SHOW_LONG_LOAD_MESSAGE_THRESHOLD = 5000;
+  export let storageNamespacePrefix: string | undefined = undefined;
+  export let bookmarkOrTokenExploreState:
+    | CompoundQueryResult<Partial<MetricsExplorerEntity> | undefined>
+    | undefined = undefined;
 
   $: ({ instanceId } = $runtime);
   $: exploreSpecQuery = useExploreValidSpec(instanceId, exploreName);
-  $: metricsViewSpec = $exploreSpecQuery.data?.metricsView ?? {};
   $: exploreSpec = $exploreSpecQuery.data?.explore ?? {};
   $: metricsViewName = exploreSpec?.metricsView ?? "";
   $: exploreStore = useExploreState(exploreName);
@@ -38,8 +28,8 @@
     instanceId,
     metricsViewName,
     exploreName,
-    extraPrefix,
-    otherSourcesOfState.map(({ query }) => derived(query, (q) => q.data)),
+    storageNamespacePrefix,
+    bookmarkOrTokenExploreState,
   );
 
   let stateSync: DashboardStateSync | undefined;
@@ -49,37 +39,18 @@
       instanceId,
       metricsViewName,
       exploreName,
-      extraPrefix,
+      storageNamespacePrefix,
       dataLoader,
     );
   }
 
-  let queriesStatus: QueriesStatus | undefined;
-  $: if (dataLoader) {
-    queriesStatus?.teardown();
-    queriesStatus = new QueriesStatus(
-      [
-        {
-          errorHeader: "Failed to explore.",
-          query: dataLoader.validSpecQuery,
-        },
-        ...(metricsViewSpec.timeDimension
-          ? [
-              {
-                errorHeader: "Failed to fetch time range for the explore.",
-                query: dataLoader.fullTimeRangeQuery,
-              },
-            ]
-          : []),
-        ...otherSourcesOfState,
-      ],
-      DASHBOARD_SHOW_SPINNER_THRESHOLD,
-      DASHBOARD_SHOW_LONG_LOAD_MESSAGE_THRESHOLD,
-    );
-  }
-  $: ({ loading, loadingForShortTime, loadingForLongTime, errors } =
-    queriesStatus!);
-  $: firstError = $errors[0];
+  $: ({ initExploreState } = dataLoader);
+  let error: HTTPError | null;
+  let isLoading: boolean;
+  $: ({ isLoading, error } = $initExploreState as {
+    isLoading: boolean;
+    error: HTTPError | null;
+  });
 
   afterNavigate(({ from, to, type }) => {
     if (!from?.url || !to?.url || !stateSync) return;
@@ -89,21 +60,16 @@
 
   onDestroy(() => {
     stateSync?.teardown();
-    queriesStatus?.teardown();
   });
 </script>
 
-{#if $loading}
-  <DashboardLoading
-    loadingForShortTime={$loadingForShortTime}
-    loadingForLongTime={$loadingForLongTime}
-  />
-{:else if firstError}
+{#if isLoading}
+  <DashboardLoading {isLoading} />
+{:else if error}
   <ErrorPage
-    statusCode={firstError.statusCode}
-    header={firstError.header}
-    body={firstError.body}
-    detail={firstError.detail}
+    statusCode={error.response?.status}
+    header={"Failed to load dashboard."}
+    detail={error.response?.data?.message ?? error.message}
   />
 {:else if $exploreStore}
   <slot />

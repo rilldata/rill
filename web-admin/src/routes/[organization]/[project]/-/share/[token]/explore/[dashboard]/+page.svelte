@@ -59,7 +59,7 @@
     >
       <DashboardStateLoader
         {exploreName}
-        extraPrefix={`${organization}__${project}__`}
+        storageNamespacePrefix={`${organization}__${project}__`}
       >
         <DashboardThemeProvider>
           <Dashboard

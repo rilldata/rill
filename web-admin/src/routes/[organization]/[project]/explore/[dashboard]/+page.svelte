@@ -75,8 +75,8 @@
   }
 
   $: bookmarkExploreStateQuery = getHomeBookmarkExploreState(
-    instanceId,
     project?.id,
+    instanceId,
     metricsViewName,
     exploreName,
   );
@@ -146,13 +146,8 @@
       <StateManagersProvider {metricsViewName} {exploreName}>
         <DashboardStateLoader
           {exploreName}
-          extraPrefix={`${orgName}__${projectName}__`}
-          otherSourcesOfState={[
-            {
-              errorHeader: "Failed to fetch bookmarks.",
-              query: bookmarkExploreStateQuery,
-            },
-          ]}
+          storageNamespacePrefix={`${orgName}__${projectName}__`}
+          bookmarkOrTokenExploreState={bookmarkExploreStateQuery}
         >
           <DashboardThemeProvider>
             <Dashboard {metricsViewName} {exploreName} />

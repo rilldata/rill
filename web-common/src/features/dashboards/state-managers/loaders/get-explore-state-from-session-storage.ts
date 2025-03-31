@@ -13,14 +13,14 @@ import {
 } from "@rilldata/web-common/runtime-client";
 
 /**
- * Redirects to a view with params loaded from session storage.
+ * Returns explore state filled with extra fields stored when user last visited a particular view.
  * 1. If no param is set then load the params for the default view from session storage.
  * 2. If only view param is set then load the params from session storage.
  * 3. If view=ttd and `measure` is the only other param set load from session storage.
  */
 export function getExploreStateFromSessionStorage(
   exploreName: string,
-  prefix: string | undefined,
+  storageNamespacePrefix: string | undefined,
   searchParams: URLSearchParams,
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
@@ -48,7 +48,7 @@ export function getExploreStateFromSessionStorage(
   const activePage = Number(ToActivePageViewMap[view] ?? "0");
   const exploreStateFromSessionStorage = getExplorePresetForActivePage(
     exploreName,
-    prefix,
+    storageNamespacePrefix,
     activePage,
     metricsViewSpec,
     exploreSpec,

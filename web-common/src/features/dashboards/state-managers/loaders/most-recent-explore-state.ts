@@ -1,5 +1,4 @@
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import { AD_BIDS_EXPLORE_NAME } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
@@ -40,19 +39,22 @@ const ExploreStateNonDefinedInViewKeys: Record<
   [DashboardState_ActivePage.PIVOT]: ExploreViewKeys,
 };
 
-function getKeyForLocalStore(exploreName: string, prefix: string | undefined) {
-  return `rill:app:explore:${prefix ?? ""}${exploreName}`.toLowerCase();
+function getKeyForLocalStore(
+  exploreName: string,
+  storageNamespacePrefix: string | undefined,
+) {
+  return `rill:app:explore:${storageNamespacePrefix ?? ""}${exploreName}`.toLowerCase();
 }
 
 export function getMostRecentExploreState(
   exploreName: string,
-  prefix: string | undefined,
+  storageNamespacePrefix: string | undefined,
   metricsView: V1MetricsViewSpec,
   explore: V1ExploreSpec,
 ) {
   try {
     const rawUrlSearch = localStorage.getItem(
-      getKeyForLocalStore(exploreName, prefix),
+      getKeyForLocalStore(exploreName, storageNamespacePrefix),
     );
     if (!rawUrlSearch) return { partialExploreState: undefined, errors: [] };
 
@@ -71,14 +73,19 @@ export function getMostRecentExploreState(
 
 export function saveMostRecentExploreState(
   exploreName: string,
-  prefix: string | undefined,
+  storageNamespacePrefix: string | undefined,
   metricsView: V1MetricsViewSpec,
   explore: V1ExploreSpec,
   timeControlsState: TimeControlState | undefined,
   exploreState: MetricsExplorerEntity,
 ) {
   const { partialExploreState: existingExploreState } =
-    getMostRecentExploreState(exploreName, prefix, metricsView, explore) ?? {};
+    getMostRecentExploreState(
+      exploreName,
+      storageNamespacePrefix,
+      metricsView,
+      explore,
+    ) ?? {};
   const newExploreState: Partial<MetricsExplorerEntity> = {};
 
   DirectCopyExploreStateKeys.forEach((k) => {
@@ -122,7 +129,11 @@ export function saveMostRecentExploreState(
   );
 
   try {
-    setMostRecentExploreState(exploreName, prefix, urlSearchParams.toString());
+    setMostRecentExploreState(
+      exploreName,
+      storageNamespacePrefix,
+      urlSearchParams.toString(),
+    );
   } catch {
     // no-op
   }
@@ -130,16 +141,19 @@ export function saveMostRecentExploreState(
 
 export function clearMostRecentExploreState(
   exploreName: string,
-  prefix: string | undefined,
+  storageNamespacePrefix: string | undefined,
 ) {
-  const key = getKeyForLocalStore(exploreName, prefix);
+  const key = getKeyForLocalStore(exploreName, storageNamespacePrefix);
   localStorage.removeItem(key);
 }
 
 export function setMostRecentExploreState(
   exploreName: string,
-  prefix: string | undefined,
+  storageNamespacePrefix: string | undefined,
   state: string,
 ) {
-  localStorage.setItem(getKeyForLocalStore(exploreName, prefix), state);
+  localStorage.setItem(
+    getKeyForLocalStore(exploreName, storageNamespacePrefix),
+    state,
+  );
 }

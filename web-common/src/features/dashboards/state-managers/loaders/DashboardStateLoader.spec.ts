@@ -1,7 +1,4 @@
-import {
-  staticCompoundQueryResult,
-  type SupportedCompoundQueryResult,
-} from "@rilldata/web-common/features/compound-query-result";
+import { type CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
 import { useDashboardFetchMocksForComponentTests } from "@rilldata/web-common/features/dashboards/filters/test/filter-test-utils";
 import {
   setExploreStateForActivePage,
@@ -36,8 +33,8 @@ import {
   DashboardState_LeaderboardSortDirection,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import { render, screen, waitFor } from "@testing-library/svelte";
+import { readable } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import DashboardStateLoaderTest from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/DashboardStateLoaderTest.svelte";
 import { setMostRecentExploreState } from "./most-recent-explore-state";
@@ -73,8 +70,8 @@ describe("DashboardStateLoader", () => {
       AD_BIDS_EXPLORE_INIT,
     );
     mocks.mockTimeRangeSummary(AD_BIDS_METRICS_NAME, {
-      min: "2025-01-01",
-      max: "2025-03-31",
+      min: "2024-01-01",
+      max: "2024-03-31",
     });
 
     localStorage.clear();
@@ -87,7 +84,7 @@ describe("DashboardStateLoader", () => {
     const ExploreStateSubsetForBaseState: Partial<MetricsExplorerEntity> = {
       selectedTimeRange: {
         name: "rill-QTD",
-        interval: V1TimeGrain.TIME_GRAIN_DAY,
+        interval: V1TimeGrain.TIME_GRAIN_WEEK,
       } as DashboardTimeControls,
       showTimeComparison: false,
       selectedComparisonTimeRange: undefined,
@@ -107,15 +104,20 @@ describe("DashboardStateLoader", () => {
       leaderboardContextColumn: undefined,
       sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
     };
-    const OtherSourceQueryResult = staticCompoundQueryResult({
-      selectedTimeRange: {
-        name: "PT24H",
-        interval: V1TimeGrain.TIME_GRAIN_HOUR,
-      } as DashboardTimeControls,
-      showTimeComparison: true,
-      selectedComparisonTimeRange: {
-        name: TimeComparisonOption.CONTIGUOUS,
-      } as DashboardTimeControls,
+    const BookmarkSourceQueryResult = readable({
+      data: {
+        selectedTimeRange: {
+          name: "PT24H",
+          interval: V1TimeGrain.TIME_GRAIN_HOUR,
+        } as DashboardTimeControls,
+        showTimeComparison: true,
+        selectedComparisonTimeRange: {
+          name: TimeComparisonOption.CONTIGUOUS,
+        } as DashboardTimeControls,
+      },
+      error: undefined,
+      isFetching: false,
+      isLoading: false,
     });
 
     it("Should load base dashboard state", async () => {
@@ -128,7 +130,7 @@ describe("DashboardStateLoader", () => {
     });
 
     it("Should load 'other source' of dashboard state", async () => {
-      renderDashboardStateLoader([OtherSourceQueryResult]);
+      renderDashboardStateLoader(BookmarkSourceQueryResult);
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
 
       assertExploreStateSubset({
@@ -160,7 +162,7 @@ describe("DashboardStateLoader", () => {
         undefined,
         "view=explore&tr=P7D&compare_tr=rill-PP&grain=hour&measures=bid_price&dims=domain&sort_by=bid_price",
       );
-      renderDashboardStateLoader([OtherSourceQueryResult]);
+      renderDashboardStateLoader(BookmarkSourceQueryResult);
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
 
       assertExploreStateSubset({
@@ -211,7 +213,7 @@ describe("DashboardStateLoader", () => {
         DashboardState_ActivePage.DEFAULT,
         "view=explore&measures=impressions&dims=publisher&sort_by=impressions",
       );
-      renderDashboardStateLoader([OtherSourceQueryResult]);
+      renderDashboardStateLoader(BookmarkSourceQueryResult);
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
 
       assertExploreStateSubset({
@@ -234,7 +236,7 @@ describe("DashboardStateLoader", () => {
         sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
       });
       const initUrlSearch =
-        "tr=P14D&compare_tr=rill-PW&measures=impressions&dims=publisher";
+        "tr=P14D&compare_tr=rill-PW&grain=day&measures=impressions&dims=publisher";
       pageMock.assertSearchParams(initUrlSearch);
 
       pageMock.popState("");
@@ -366,18 +368,14 @@ describe("DashboardStateLoader", () => {
 // This needs to be there each file because of how hoisting works with vitest.
 // TODO: find if there is a way to share code.
 function renderDashboardStateLoader(
-  otherStateSourceQueries: SupportedCompoundQueryResult<
-    Partial<MetricsExplorerEntity> | undefined,
-    HTTPError
-  >[] = [],
+  bookmarkOrTokenExploreState:
+    | CompoundQueryResult<Partial<MetricsExplorerEntity> | undefined>
+    | undefined = undefined,
 ) {
   const renderResults = render(DashboardStateLoaderTest, {
     props: {
       exploreName: AD_BIDS_EXPLORE_NAME,
-      otherSourcesOfState: otherStateSourceQueries.map((query) => ({
-        errorHeader: "",
-        query,
-      })),
+      bookmarkOrTokenExploreState,
     },
     // TODO: we need to make sure every single query uses an explicit queryClient instead of the global one
     //       only then we can use a fresh client here.

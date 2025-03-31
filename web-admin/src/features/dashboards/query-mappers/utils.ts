@@ -211,7 +211,6 @@ export async function getExplorePageUrlSearchParams(
     ),
     getDefaultExplorePreset(exploreSpec, metricsViewSpec, fullTimeRange),
     url,
-    true,
   );
 
   return searchParams;

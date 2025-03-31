@@ -1,7 +1,4 @@
 import type { CreateQueryOptions, QueryFunction } from "@rilldata/svelte-query";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
-import { getExploreStateFromSessionStorage } from "@rilldata/web-common/features/dashboards/state-managers/loaders/get-explore-state-from-session-storage";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   createRuntimeServiceGetExplore,
@@ -11,7 +8,6 @@ import {
   type V1ExploreSpec,
   type V1GetExploreResponse,
   type V1MetricsViewSpec,
-  type V1ExplorePreset,
   getQueryServiceMetricsViewSchemaQueryKey,
   queryServiceMetricsViewSchema,
 } from "@rilldata/web-common/runtime-client";
@@ -120,47 +116,4 @@ export async function fetchMetricsViewSchema(
     queryFn: () => queryServiceMetricsViewSchema(instanceId, metricsViewName),
   });
   return schemaResp.schema ?? {};
-}
-
-export function getExploreStatesFromURLParams(
-  exploreName: string,
-  prefix: string | undefined,
-  searchParams: URLSearchParams,
-  metricsViewSpec: V1MetricsViewSpec | undefined,
-  exploreSpec: V1ExploreSpec | undefined,
-  defaultExplorePreset: V1ExplorePreset,
-) {
-  if (!metricsViewSpec || !exploreSpec) {
-    return {
-      partialExploreStateFromUrl: <Partial<MetricsExplorerEntity>>{},
-      exploreStateFromSessionStorage: undefined,
-      errors: [],
-    };
-  }
-
-  const { partialExploreState: partialExploreStateFromUrl, errors } =
-    convertURLSearchParamsToExploreState(
-      searchParams,
-      metricsViewSpec,
-      exploreSpec,
-      defaultExplorePreset,
-    );
-  const partialExploreStateFromUrlForInit =
-    searchParams.size === 0 ? undefined : partialExploreStateFromUrl;
-
-  const exploreStateFromSessionStorage = getExploreStateFromSessionStorage(
-    exploreName,
-    prefix,
-    searchParams,
-    metricsViewSpec,
-    exploreSpec,
-    defaultExplorePreset,
-  );
-
-  return {
-    partialExploreStateFromUrl,
-    partialExploreStateFromUrlForInit,
-    exploreStateFromSessionStorage,
-    errors,
-  };
 }

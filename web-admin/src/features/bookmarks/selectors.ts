@@ -232,7 +232,6 @@ function parseBookmark(
     ),
     defaultExplorePreset,
     url,
-    true,
   ).toString();
   return {
     resource: bookmarkResource,

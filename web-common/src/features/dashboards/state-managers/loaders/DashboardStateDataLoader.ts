@@ -5,17 +5,19 @@ import {
 } from "@rilldata/web-common/features/compound-query-result";
 import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
 import { getExploreStateFromSessionStorage } from "@rilldata/web-common/features/dashboards/state-managers/loaders/get-explore-state-from-session-storage";
+import { getMostRecentExploreState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-explore-state";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import { getExploreStatesFromYaml } from "@rilldata/web-common/features/dashboards/state-managers/loaders/get-explore-states-from-yaml";
+import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
+import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
-import type {
-  V1ExplorePreset,
-  V1ExploreSpec,
-  V1MetricsViewSpec,
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import {
+  createQueryServiceMetricsViewTimeRange,
+  type V1ExplorePreset,
 } from "@rilldata/web-common/runtime-client";
 import type { AfterNavigate } from "@sveltejs/kit";
-import { derived, get, type Readable } from "svelte/store";
+import { derived, get } from "svelte/store";
 
 export class DashboardStateDataLoader {
   // These can be used to show a loading status
@@ -24,45 +26,121 @@ export class DashboardStateDataLoader {
     typeof useMetricsViewTimeRange
   >;
 
-  public readonly initExploreState: Readable<MetricsExplorerEntity | undefined>;
-  public readonly exploreStatesFromSpecQuery: CompoundQueryResult<
-    ReturnType<typeof getExploreStatesFromYaml>
+  private readonly defaultExploreStateAndErrors: CompoundQueryResult<{
+    defaultExploreState: Partial<MetricsExplorerEntity> | undefined;
+    errors: Error[];
+  }>;
+  private readonly exploreStateFromYAMLConfigAndErrors: CompoundQueryResult<{
+    exploreStateFromYAMLConfig: Partial<MetricsExplorerEntity>;
+    errors: Error[];
+  }>;
+  // This is used to decide defaults and show/hide url params. TODO: is this the correct preset?
+  public readonly explorePresetFromYAMLConfig: CompoundQueryResult<
+    V1ExplorePreset | undefined
   >;
+  private readonly mostRecentPartialExploreStateAndErrors: CompoundQueryResult<{
+    mostRecentPartialExploreState: Partial<MetricsExplorerEntity> | undefined;
+    errors: Error[];
+  }>;
 
-  private readonly exploreStatesFromURLParamsQuery: Readable<
-    | {
-        partialExploreStateFromUrl: Partial<MetricsExplorerEntity>;
-        partialExploreStateFromUrlForInit:
-          | Partial<MetricsExplorerEntity>
-          | undefined;
-        exploreStateFromSessionStorage:
-          | Partial<MetricsExplorerEntity>
-          | undefined;
-        errors: Error[];
-      }
-    | undefined
+  private readonly exploreStateFromSessionStorage: CompoundQueryResult<
+    Partial<MetricsExplorerEntity> | undefined
+  >;
+  private readonly partialExploreStateFromUrlForInitAndErrors: CompoundQueryResult<{
+    partialExploreStateFromUrlForInit:
+      | Partial<MetricsExplorerEntity>
+      | undefined;
+    errors: Error[];
+  }>;
+
+  public readonly initExploreState: CompoundQueryResult<
+    MetricsExplorerEntity | undefined
   >;
 
   public constructor(
     instanceId: string,
     metricsViewName: string,
     private readonly exploreName: string,
-    private readonly extraPrefix: string | undefined,
-    otherSourcesOfState: Readable<Partial<MetricsExplorerEntity> | undefined>[],
+    private readonly storageNamespacePrefix: string | undefined,
+    bookmarkOrTokenExploreState?: CompoundQueryResult<
+      Partial<MetricsExplorerEntity> | undefined
+    >,
   ) {
     this.validSpecQuery = useExploreValidSpec(instanceId, exploreName);
-    this.fullTimeRangeQuery = useMetricsViewTimeRange(
-      instanceId,
-      metricsViewName,
+    this.fullTimeRangeQuery = derived(
+      [this.validSpecQuery],
+      ([validSpecResp], set) => {
+        const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
+        if (!metricsViewSpec.timeDimension) {
+          // We return early to avoid having isLoading=true when time dimension is not present.
+          // This allows us to check isLoading further down without any issues of it getting stuck.
+          set({
+            data: undefined,
+            error: null,
+            isLoading: false,
+            isError: false,
+          } as any);
+          return;
+        }
+
+        createQueryServiceMetricsViewTimeRange(
+          instanceId,
+          metricsViewName,
+          {},
+          {
+            query: {
+              queryClient,
+            },
+          },
+        ).subscribe(set);
+      },
     );
 
-    this.exploreStatesFromSpecQuery = getCompoundQuery(
+    this.defaultExploreStateAndErrors = getCompoundQuery(
       [this.validSpecQuery, this.fullTimeRangeQuery],
       ([validSpecResp, metricsViewTimeRangeResp]) => {
         const metricsViewSpec = validSpecResp?.metricsView ?? {};
         const exploreSpec = validSpecResp?.explore ?? {};
 
-        // Safeguard to make sure time range summary is loaded when time dimension is present.
+        // safeguard to make sure time range summary is loaded for metrics view with time dimension
+        if (
+          metricsViewSpec.timeDimension &&
+          !metricsViewTimeRangeResp?.timeRangeSummary
+        ) {
+          return {
+            defaultExploreState: undefined,
+            errors: [],
+          };
+        }
+
+        const defaultExplorePreset = getDefaultExplorePreset(
+          {
+            ...exploreSpec,
+            defaultPreset: {},
+          },
+          metricsViewSpec,
+          metricsViewTimeRangeResp,
+        );
+        const { partialExploreState: defaultExploreState, errors } =
+          convertPresetToExploreState(
+            metricsViewSpec,
+            exploreSpec,
+            defaultExplorePreset,
+          );
+        return {
+          defaultExploreState,
+          errors,
+        };
+      },
+    );
+
+    this.explorePresetFromYAMLConfig = getCompoundQuery(
+      [this.validSpecQuery, this.fullTimeRangeQuery],
+      ([validSpecResp, metricsViewTimeRangeResp]) => {
+        const metricsViewSpec = validSpecResp?.metricsView ?? {};
+        const exploreSpec = validSpecResp?.explore ?? {};
+
+        // safeguard to make sure time range summary is loaded for metrics view with time dimension
         if (
           metricsViewSpec.timeDimension &&
           !metricsViewTimeRangeResp?.timeRangeSummary
@@ -70,83 +148,150 @@ export class DashboardStateDataLoader {
           return undefined;
         }
 
-        return getExploreStatesFromYaml(
-          metricsViewSpec,
+        return getDefaultExplorePreset(
           exploreSpec,
-          metricsViewTimeRangeResp ?? {},
-          exploreName,
-          extraPrefix,
+          metricsViewSpec,
+          metricsViewTimeRangeResp,
         );
       },
     );
 
-    this.exploreStatesFromURLParamsQuery = derived(
-      [this.validSpecQuery, this.exploreStatesFromSpecQuery, page],
-      ([validSpecResp, exploreStatesFromSpecs, page]) => {
-        if (!validSpecResp.data || !exploreStatesFromSpecs.data)
-          return undefined;
+    this.exploreStateFromYAMLConfigAndErrors = getCompoundQuery(
+      [this.validSpecQuery, this.explorePresetFromYAMLConfig],
+      ([validSpecResp, explorePresetFromYAMLConfig]) => {
+        const metricsViewSpec = validSpecResp?.metricsView ?? {};
+        const exploreSpec = validSpecResp?.explore ?? {};
+        const { partialExploreState: exploreStateFromYAMLConfig, errors } =
+          convertPresetToExploreState(
+            metricsViewSpec,
+            exploreSpec,
+            explorePresetFromYAMLConfig ?? {},
+          );
+        return {
+          exploreStateFromYAMLConfig,
+          errors,
+        };
+      },
+    );
 
+    this.mostRecentPartialExploreStateAndErrors = getCompoundQuery(
+      [this.validSpecQuery],
+      ([validSpecResp]) => {
+        const metricsViewSpec = validSpecResp?.metricsView ?? {};
+        const exploreSpec = validSpecResp?.explore ?? {};
+        const { partialExploreState: mostRecentPartialExploreState, errors } =
+          getMostRecentExploreState(
+            exploreName,
+            storageNamespacePrefix,
+            metricsViewSpec,
+            exploreSpec,
+          );
+        return {
+          mostRecentPartialExploreState,
+          errors,
+        };
+      },
+    );
+
+    this.exploreStateFromSessionStorage = derived(
+      [this.validSpecQuery, this.explorePresetFromYAMLConfig, page],
+      ([validSpecResp, explorePresetFromYAMLConfig, pageState]) => {
         const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
         const exploreSpec = validSpecResp.data?.explore ?? {};
-        const explorePresetFromYAMLConfig =
-          exploreStatesFromSpecs.data?.explorePresetFromYAMLConfig ?? {};
+        const exploreStateFromSessionStorage =
+          getExploreStateFromSessionStorage(
+            exploreName,
+            storageNamespacePrefix,
+            pageState.url.searchParams,
+            metricsViewSpec,
+            exploreSpec,
+            explorePresetFromYAMLConfig.data ?? {},
+          );
 
-        return this.getExploreStatesFromURLParams(
-          this.exploreName,
-          this.extraPrefix,
-          page.url.searchParams,
-          metricsViewSpec,
-          exploreSpec,
-          explorePresetFromYAMLConfig,
-        );
+        return {
+          data: exploreStateFromSessionStorage,
+          error: validSpecResp.error ?? explorePresetFromYAMLConfig.error,
+          isLoading:
+            validSpecResp.isLoading || explorePresetFromYAMLConfig.isLoading,
+          isFetching:
+            validSpecResp.isFetching || explorePresetFromYAMLConfig.isFetching,
+        };
       },
     );
 
-    this.initExploreState = derived(
+    this.partialExploreStateFromUrlForInitAndErrors = derived(
+      [this.validSpecQuery, this.explorePresetFromYAMLConfig, page],
+      ([validSpecResp, explorePresetFromYAMLConfig, pageState]) => {
+        const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
+        const exploreSpec = validSpecResp.data?.explore ?? {};
+
+        const { partialExploreState: partialExploreStateFromUrl, errors } =
+          convertURLSearchParamsToExploreState(
+            pageState.url.searchParams,
+            metricsViewSpec,
+            exploreSpec,
+            explorePresetFromYAMLConfig.data ?? {},
+          );
+        const partialExploreStateFromUrlForInit =
+          pageState.url.searchParams.size === 0
+            ? undefined
+            : partialExploreStateFromUrl;
+
+        return {
+          data: {
+            partialExploreStateFromUrlForInit,
+            errors,
+          },
+          error: validSpecResp.error ?? explorePresetFromYAMLConfig.error,
+          isLoading:
+            validSpecResp.isLoading || explorePresetFromYAMLConfig.isLoading,
+          isFetching:
+            validSpecResp.isFetching || explorePresetFromYAMLConfig.isFetching,
+        };
+      },
+    );
+
+    this.initExploreState = getCompoundQuery(
       [
-        this.exploreStatesFromSpecQuery,
-        this.exploreStatesFromURLParamsQuery,
-        ...otherSourcesOfState,
+        this.defaultExploreStateAndErrors,
+        this.exploreStateFromSessionStorage,
+        this.partialExploreStateFromUrlForInitAndErrors,
+        this.mostRecentPartialExploreStateAndErrors,
+        this.exploreStateFromYAMLConfigAndErrors,
+        ...(bookmarkOrTokenExploreState ? [bookmarkOrTokenExploreState] : []),
       ],
       ([
-        exploreStatesFromSpecs,
-        exploreStatesFromURLParams,
-        ...otherSourcesOfState
+        defaultExploreStateAndErrors,
+        exploreStateFromSessionStorage,
+        partialExploreStateFromUrlForInitAndErrors,
+        mostRecentPartialExploreStateAndErrors,
+        exploreStateFromYAMLConfigAndErrors,
+        bookmarkOrTokenExploreState,
       ]) => {
-        if (!exploreStatesFromSpecs.data || !exploreStatesFromURLParams)
+        // type guards. other fields dont need it since we have chaining `??`
+        if (
+          !defaultExploreStateAndErrors?.defaultExploreState ||
+          !exploreStateFromYAMLConfigAndErrors?.exploreStateFromYAMLConfig
+        ) {
           return undefined;
-
-        const {
-          defaultExploreState,
-          exploreStateFromYAMLConfig,
-          mostRecentPartialExploreState,
-        } = exploreStatesFromSpecs.data;
-        const {
-          exploreStateFromSessionStorage,
-          partialExploreStateFromUrlForInit,
-        } = exploreStatesFromURLParams;
-
-        // Select the 1st available exploreState from "otherSourcesOfState"
-        const firstStateFromOtherSources = otherSourcesOfState.find(
-          (state) => state !== undefined,
-        );
+        }
 
         const initExploreState = {
           // Since this is a complete state, we need the complete default explore state which works as a base.
-          ...defaultExploreState,
+          ...defaultExploreStateAndErrors.defaultExploreState,
           // 1st priority is the state from session storage.
           // TODO: since this only loads on certain params present in the url it should be merged with convertURLSearchParamsToExploreState
           ...(exploreStateFromSessionStorage ??
             // Next priority is the state loaded from url params. It will be undefined if there are no params.
-            partialExploreStateFromUrlForInit ??
+            partialExploreStateFromUrlForInitAndErrors?.partialExploreStateFromUrlForInit ??
             // Next priority is the most recent state stored in local storage
-            mostRecentPartialExploreState ??
+            mostRecentPartialExploreStateAndErrors?.mostRecentPartialExploreState ??
             // Next priority is one of the other source defined.
             // For cloud dashboard it would be home bookmark if present.
             // For shared url it would be the saved state in token
-            firstStateFromOtherSources ??
+            bookmarkOrTokenExploreState ??
             // Finally the state from yaml is used
-            exploreStateFromYAMLConfig),
+            exploreStateFromYAMLConfigAndErrors.exploreStateFromYAMLConfig),
         } as MetricsExplorerEntity;
 
         return initExploreState;
@@ -165,59 +310,31 @@ export class DashboardStateDataLoader {
       return undefined;
     const metricsViewSpec = validSpecResp.data.metricsView;
     const exploreSpec = validSpecResp.data.explore;
-    const exploreStatesFromSpec = get(this.exploreStatesFromSpecQuery).data;
-    if (!exploreStatesFromSpec) return undefined;
+    const explorePresetFromYAMLConfig = get(this.explorePresetFromYAMLConfig);
+    if (!explorePresetFromYAMLConfig.data) return undefined;
 
     // Pressing back button and going back to empty url state should not restore from session store
     const backButtonUsed = type === "popstate";
     const skipSessionStorage = backButtonUsed;
 
-    const { exploreStateFromSessionStorage, partialExploreStateFromUrl } =
-      this.getExploreStatesFromURLParams(
-        this.exploreName,
-        this.extraPrefix,
+    const { partialExploreState: partialExploreStateFromUrl } =
+      convertURLSearchParamsToExploreState(
         urlSearchParams,
         metricsViewSpec,
         exploreSpec,
-        exploreStatesFromSpec.explorePresetFromYAMLConfig,
+        explorePresetFromYAMLConfig.data,
       );
+
+    const exploreStateFromSessionStorage = getExploreStateFromSessionStorage(
+      this.exploreName,
+      this.storageNamespacePrefix,
+      urlSearchParams,
+      metricsViewSpec,
+      exploreSpec,
+      explorePresetFromYAMLConfig.data,
+    );
 
     if (skipSessionStorage) return partialExploreStateFromUrl;
     return exploreStateFromSessionStorage ?? partialExploreStateFromUrl;
-  }
-
-  private getExploreStatesFromURLParams(
-    exploreName: string,
-    prefix: string | undefined,
-    searchParams: URLSearchParams,
-    metricsViewSpec: V1MetricsViewSpec,
-    exploreSpec: V1ExploreSpec,
-    defaultExplorePreset: V1ExplorePreset,
-  ) {
-    const { partialExploreState: partialExploreStateFromUrl, errors } =
-      convertURLSearchParamsToExploreState(
-        searchParams,
-        metricsViewSpec,
-        exploreSpec,
-        defaultExplorePreset,
-      );
-    const partialExploreStateFromUrlForInit =
-      searchParams.size === 0 ? undefined : partialExploreStateFromUrl;
-
-    const exploreStateFromSessionStorage = getExploreStateFromSessionStorage(
-      exploreName,
-      prefix,
-      searchParams,
-      metricsViewSpec,
-      exploreSpec,
-      defaultExplorePreset,
-    );
-
-    return {
-      partialExploreStateFromUrl,
-      partialExploreStateFromUrlForInit,
-      exploreStateFromSessionStorage,
-      errors,
-    };
   }
 }

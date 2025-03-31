@@ -1,5 +1,4 @@
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import { AD_BIDS_EXPLORE_NAME } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
@@ -96,15 +95,15 @@ const SharedStateStoreKey = 0;
 
 export function getKeyForSessionStore(
   exploreName: string,
-  prefix: string | undefined,
+  storageNamespacePrefix: string | undefined,
   activePage: number,
 ) {
-  return `rill:app:explore:${prefix ?? ""}${exploreName}:${activePage}`.toLowerCase();
+  return `rill:app:explore:${storageNamespacePrefix ?? ""}${exploreName}:${activePage}`.toLowerCase();
 }
 
 export function updateExploreSessionStore(
   exploreName: string,
-  prefix: string | undefined,
+  storageNamespacePrefix: string | undefined,
   metricsView: V1MetricsViewSpec,
   explore: V1ExploreSpec,
   timeControlsState: TimeControlState | undefined,
@@ -145,11 +144,15 @@ export function updateExploreSessionStore(
   try {
     setExploreStateForActivePage(
       exploreName,
-      prefix,
+      storageNamespacePrefix,
       activePage,
       storedUrlSearch.toString(),
     );
-    setSharedExploreState(exploreName, prefix, sharedUrlSearch.toString());
+    setSharedExploreState(
+      exploreName,
+      storageNamespacePrefix,
+      sharedUrlSearch.toString(),
+    );
   } catch {
     // no-op
   }
@@ -160,7 +163,7 @@ export function updateExploreSessionStore(
 
     const otherPageKey = getKeyForSessionStore(
       exploreName,
-      prefix,
+      storageNamespacePrefix,
       Number(otherPage),
     );
     const otherPageRawPreset = sessionStorage.getItem(otherPageKey) ?? "";
@@ -186,7 +189,7 @@ export function updateExploreSessionStore(
     try {
       setExploreStateForActivePage(
         exploreName,
-        prefix,
+        storageNamespacePrefix,
         Number(otherPage),
         otherPageUrlSearch.toString(),
       );
@@ -198,15 +201,19 @@ export function updateExploreSessionStore(
 
 export function getExplorePresetForActivePage(
   exploreName: string,
-  prefix: string | undefined,
+  storageNamespacePrefix: string | undefined,
   activePage: DashboardState_ActivePage,
   metricsView: V1MetricsViewSpec,
   explore: V1ExploreSpec,
 ) {
-  const key = getKeyForSessionStore(exploreName, prefix, activePage);
+  const key = getKeyForSessionStore(
+    exploreName,
+    storageNamespacePrefix,
+    activePage,
+  );
   const sharedKey = getKeyForSessionStore(
     exploreName,
-    prefix,
+    storageNamespacePrefix,
     SharedStateStoreKey,
   );
 
@@ -256,16 +263,20 @@ export function getExplorePresetForActivePage(
 
 export function clearExploreSessionStore(
   exploreName: string,
-  prefix: string | undefined,
+  storageNamespacePrefix: string | undefined,
 ) {
   for (const activePage in ExploreActivePageKeys) {
-    const key = getKeyForSessionStore(exploreName, prefix, Number(activePage));
+    const key = getKeyForSessionStore(
+      exploreName,
+      storageNamespacePrefix,
+      Number(activePage),
+    );
     sessionStorage.removeItem(key);
   }
 
   const sharedKey = getKeyForSessionStore(
     exploreName,
-    prefix,
+    storageNamespacePrefix,
     SharedStateStoreKey,
   );
   sessionStorage.removeItem(sharedKey);
@@ -273,23 +284,27 @@ export function clearExploreSessionStore(
 
 export function setExploreStateForActivePage(
   exploreName: string,
-  prefix: string | undefined,
+  storageNamespacePrefix: string | undefined,
   activePage: DashboardState_ActivePage,
   state: string,
 ) {
   sessionStorage.setItem(
-    getKeyForSessionStore(exploreName, prefix, activePage),
+    getKeyForSessionStore(exploreName, storageNamespacePrefix, activePage),
     state,
   );
 }
 
 export function setSharedExploreState(
   exploreName: string,
-  prefix: string | undefined,
+  storageNamespacePrefix: string | undefined,
   state: string,
 ) {
   sessionStorage.setItem(
-    getKeyForSessionStore(exploreName, prefix, SharedStateStoreKey),
+    getKeyForSessionStore(
+      exploreName,
+      storageNamespacePrefix,
+      SharedStateStoreKey,
+    ),
     state,
   );
 }
