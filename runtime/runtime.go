@@ -182,6 +182,10 @@ func (r *Runtime) UpdateInstanceConnector(ctx context.Context, instanceID, name 
 		return err
 	}
 
+	// Shallow clone for editing
+	tmp := *inst
+	inst = &tmp
+
 	// remove the connector if it exists
 	for i, c := range inst.ProjectConnectors {
 		if c.Name == name {
