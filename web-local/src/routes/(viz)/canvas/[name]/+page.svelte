@@ -2,7 +2,6 @@
   import { onNavigate } from "$app/navigation";
   import CanvasDashboardEmbed from "@rilldata/web-common/features/canvas/CanvasDashboardEmbed.svelte";
   import CanvasThemeProvider from "@rilldata/web-common/features/canvas/CanvasThemeProvider.svelte";
-  import StateManagersProvider from "@rilldata/web-common/features/canvas/state-managers/StateManagersProvider.svelte";
   import type { PageData } from "./$types";
   import {
     DashboardBannerID,
@@ -34,10 +33,6 @@
   });
 </script>
 
-{#key canvasName}
-  <StateManagersProvider {canvasName}>
-    <CanvasThemeProvider>
-      <CanvasDashboardEmbed resource={data.dashboard} />
-    </CanvasThemeProvider>
-  </StateManagersProvider>
-{/key}
+<CanvasThemeProvider {canvasName}>
+  <CanvasDashboardEmbed resource={data.dashboard} />
+</CanvasThemeProvider>

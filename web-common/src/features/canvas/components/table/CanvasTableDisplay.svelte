@@ -1,6 +1,6 @@
 <script lang="ts">
   import CanvasPivotRenderer from "@rilldata/web-common/features/canvas/components/pivot/CanvasPivotRenderer.svelte";
-  import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
   import {
     type PivotDataStore,
@@ -23,8 +23,9 @@
   export let timeAndFilterStore: Readable<TimeAndFilterStore>;
   export let componentName: string;
   export let hasHeader: boolean;
+  export let canvasName: string;
 
-  const ctx = getCanvasStateManagers();
+  $: ctx = getCanvasStore(canvasName);
   const tableSpecStore = writable(rendererProperties as TableSpec);
   const pivotState = writable<PivotState>({
     active: true,
@@ -39,7 +40,7 @@
     activeCell: null,
   });
 
-  const { getMetricsViewFromName } = ctx.canvasEntity.spec;
+  $: ({ getMetricsViewFromName } = ctx.canvasEntity.spec);
   let pivotDataStore: PivotDataStore | undefined;
   let tableConfig: Readable<PivotDataStoreConfig> | undefined;
 
