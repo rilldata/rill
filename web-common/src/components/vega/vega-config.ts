@@ -12,14 +12,14 @@ const defaultMarkColor = MainLineColor;
 const gridColor = "#e5e7eb"; // gray-200
 const axisLabelColor = "#4b5563"; // gray-600
 
-export const getRillTheme: (isCustomDashboard: boolean) => Config = (
-  isCustomDashboard,
+export const getRillTheme: (isCanvasDashboard: boolean) => Config = (
+  isCanvasDashboard,
 ) => ({
   autosize: {
     type: "fit-x",
   },
   mark: {
-    tooltip: isCustomDashboard ? true : false,
+    tooltip: isCanvasDashboard ? true : false,
   },
   arc: { fill: defaultMarkColor },
   area: {
@@ -63,7 +63,7 @@ export const getRillTheme: (isCustomDashboard: boolean) => Config = (
   axisY: {
     orient: "left",
     gridColor: gridColor,
-    ...(!isCustomDashboard && {
+    ...(!isCanvasDashboard && {
       gridDash: [2],
     }),
     tickColor: gridColor,
@@ -82,7 +82,7 @@ export const getRillTheme: (isCustomDashboard: boolean) => Config = (
     labelOverlap: false,
   },
   axisX: {
-    ...(isCustomDashboard && {
+    ...(isCanvasDashboard && {
       grid: false,
     }),
     gridColor: gridColor,
