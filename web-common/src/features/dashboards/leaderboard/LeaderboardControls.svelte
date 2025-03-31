@@ -5,9 +5,9 @@
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { getStateManagers } from "../state-managers/state-managers";
   import LeaderboardMeasureCountSelector from "@rilldata/web-common/components/menu/LeaderboardMeasureCountSelector.svelte";
-  import { featureFlags } from "../../feature-flags";
   import LeaderboardActiveMeasureDropdown from "@rilldata/web-common/components/menu/LeaderboardActiveMeasureDropdown.svelte";
-  import { SortType } from "../proto-state/derived-types";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import DashboardMetricsDraggableList from "@rilldata/web-common/components/menu/DashboardMetricsDraggableList.svelte";
 
   export let exploreName: string;
 
@@ -16,24 +16,24 @@
     selectors: {
       measures: {
         leaderboardMeasureCount,
-        visibleMeasures,
         leaderboardMeasureName,
         getMeasureByName,
+        visibleMeasures,
       },
       dimensions: { visibleDimensions, allDimensions },
-      sorting: { sortByMeasure },
     },
     actions: {
-      dimensions: { toggleDimensionVisibility },
       contextColumn: { setContextColumn },
-      sorting: { toggleSort, setSortDescending },
+      dimensions: { setDimensionVisibility, toggleDimensionVisibility },
       setLeaderboardMeasureCount,
       setLeaderboardMeasureName,
     },
   } = StateManagers;
 
-  const { leaderboardMeasureCount: leaderboardMeasureCountFeatureFlag } =
-    featureFlags;
+  const {
+    leaderboardMeasureCount: leaderboardMeasureCountFeatureFlag,
+    reorderMeasuresDimensions,
+  } = featureFlags;
 
   $: measures = getSimpleMeasures($visibleMeasures);
 
@@ -73,19 +73,30 @@
       class="flex flex-row items-center ui-copy-muted gap-x-1"
       style:max-width="768px"
     >
-      <DashboardVisibilityDropdown
-        category="Dimensions"
-        tooltipText="Choose dimensions to display"
-        onSelect={(name) => toggleDimensionVisibility(allDimensionNames, name)}
-        selectableItems={$allDimensions.map(({ name, displayName }) => ({
-          name: name || "",
-          label: displayName || name || "",
-        }))}
-        selectedItems={visibleDimensionsNames}
-        onToggleSelectAll={() => {
-          toggleDimensionVisibility(allDimensionNames);
-        }}
-      />
+      {#if $reorderMeasuresDimensions}
+        <DashboardMetricsDraggableList
+          type="dimension"
+          onSelectedChange={(items) =>
+            setDimensionVisibility(items, allDimensionNames)}
+          allItems={$allDimensions}
+          selectedItems={visibleDimensionsNames}
+        />
+      {:else}
+        <DashboardVisibilityDropdown
+          category="Dimensions"
+          tooltipText="Choose dimensions to display"
+          onSelect={(name) =>
+            toggleDimensionVisibility(allDimensionNames, name)}
+          selectableItems={$allDimensions.map(({ name, displayName }) => ({
+            name: name || "",
+            label: displayName || name || "",
+          }))}
+          selectedItems={visibleDimensionsNames}
+          onToggleSelectAll={() => {
+            toggleDimensionVisibility(allDimensionNames);
+          }}
+        />
+      {/if}
 
       {#if $leaderboardMeasureCountFeatureFlag}
         <LeaderboardMeasureCountSelector
@@ -94,12 +105,6 @@
           onMeasureCountChange={(count) => {
             setLeaderboardMeasureCount(count);
           }}
-          resetSort={() => {
-            // Fallback to the first visible measure if sort_by measure is not in the context
-            toggleSort(SortType.VALUE, $visibleMeasures[0].name);
-            setSortDescending();
-          }}
-          sortByMeasure={$sortByMeasure}
         />
       {:else}
         <LeaderboardActiveMeasureDropdown

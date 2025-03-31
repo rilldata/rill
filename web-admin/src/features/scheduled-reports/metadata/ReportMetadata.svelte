@@ -200,7 +200,9 @@
 {#if reportSpec}
   <ScheduledReportDialog
     bind:open={showEditReportDialog}
-    {reportSpec}
-    exploreName={$dashboardName.data}
+    props={{
+      mode: "edit",
+      reportSpec,
+    }}
   />
 {/if}
