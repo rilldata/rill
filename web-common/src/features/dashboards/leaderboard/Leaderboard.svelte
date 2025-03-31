@@ -55,7 +55,9 @@
   export let whereFilter: V1Expression;
   export let dimensionThresholdFilters: DimensionThresholdFilter[];
   export let activeMeasureName: string;
-  export let activeMeasureNames: string[];
+  // FIXME: rename
+  export let activeMeasureNames: string[]; // For display (limited by leaderboardMeasureCount)
+  export let visibleMeasures: string[]; // For querying/sorting (all visible measures)
   export let metricsViewName: string;
   export let sortType: SortType;
   export let sortBy: string | null;
@@ -128,7 +130,7 @@
 
   $: measures = [
     ...(leaderboardMeasureCountFeatureFlag
-      ? activeMeasureNames.map(
+      ? visibleMeasures.map(
           (name) =>
             ({
               name,
@@ -143,7 +145,10 @@
 
     // Add comparison measures if there's a comparison time range
     ...(comparisonTimeRange
-      ? activeMeasureNames.flatMap((name) => getComparisonRequestMeasures(name))
+      ? (leaderboardMeasureCountFeatureFlag
+          ? visibleMeasures
+          : [activeMeasureName]
+        ).flatMap((name) => getComparisonRequestMeasures(name))
       : []),
 
     // Add URI measure if URI is present

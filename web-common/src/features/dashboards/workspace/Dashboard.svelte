@@ -30,8 +30,11 @@
   const StateManagers = getStateManagers();
   const {
     selectors: {
-      measures: { visibleMeasures, leaderboardMeasureCount },
-      activeMeasure: { activeMeasureName },
+      measures: {
+        visibleMeasures,
+        leaderboardMeasureCount,
+        leaderboardMeasureName,
+      },
       dimensions: { getDimensionByName },
       pivot: { showPivot },
     },
@@ -56,7 +59,7 @@
 
   $: leaderboardMeasureNames = $leaderboardMeasureCountFeatureFlag
     ? activeMeasureNamesFromMeasureCount
-    : [$activeMeasureName];
+    : [$leaderboardMeasureName];
 
   $: ({ instanceId } = $runtime);
 
@@ -228,7 +231,7 @@
               {dimensionThresholdFilters}
               {timeRange}
               {comparisonTimeRange}
-              activeMeasureName={$activeMeasureName}
+              activeMeasureName={$leaderboardMeasureName}
               {timeControlsReady}
               {visibleMeasureNames}
               hideStartPivotButton={hidePivot}
@@ -236,7 +239,7 @@
           {:else}
             <LeaderboardDisplay
               {metricsViewName}
-              activeMeasureName={$activeMeasureName}
+              activeMeasureName={$leaderboardMeasureName}
               activeMeasureNames={leaderboardMeasureNames}
               {whereFilter}
               {dimensionThresholdFilters}

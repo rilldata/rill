@@ -30,7 +30,11 @@
       dimensions: { visibleDimensions },
       comparison: { isBeingCompared: isBeingComparedReadable },
       sorting: { sortedAscending, sortType, sortByMeasure },
+<<<<<<< HEAD
       measures: { measureLabel },
+=======
+      measures: { measureLabel, isMeasureValidPercentOfTotal, visibleMeasures },
+>>>>>>> 7f9e72c51 (use visible measures for querying/sorting)
     },
     actions: {
       dimensions: { setPrimaryDimension },
@@ -127,6 +131,9 @@
               sortBy={$sortByMeasure}
               measureLabel={$measureLabel}
               leaderboardMeasureCountFeatureFlag={$leaderboardMeasureCountFeatureFlag}
+              visibleMeasures={$visibleMeasures
+                .map((m) => m.name)
+                .filter((name) => name !== undefined)}
             />
           {/if}
         {/each}
