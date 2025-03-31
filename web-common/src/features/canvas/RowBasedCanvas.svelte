@@ -4,7 +4,6 @@
   import {
     type V1CanvasRow as APIV1CanvasRow,
     type V1CanvasItem,
-    type V1ResolveCanvasResponse,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { get, writable } from "svelte/store";
@@ -31,7 +30,7 @@
   } from "./layout-util";
   import RowDropZone from "./RowDropZone.svelte";
   import RowWrapper from "./RowWrapper.svelte";
-  import { useDefaultMetrics } from "./selector";
+  import { useDefaultMetrics, type CanvasResponse } from "./selector";
   import { getCanvasStore } from "./state-managers/state-managers";
   import { dropZone } from "./stores/ui-stores";
   import ComponentError from "./components/ComponentError.svelte";
@@ -43,7 +42,7 @@
   };
 
   export let fileArtifact: FileArtifact;
-  export let canvasData: V1ResolveCanvasResponse | undefined;
+  export let canvasData: CanvasResponse | undefined;
   export let canvasName: string;
   export let openSidebar: () => void;
 
@@ -71,7 +70,7 @@
   let dragTimeout: ReturnType<typeof setTimeout> | null = null;
   let dragItemPosition = { top: 0, left: 0 };
   let dragItemDimensions = { width: 0, height: 0 };
-  let spec = canvasData?.canvas?.canvas?.spec ?? {
+  let spec = canvasData?.canvas ?? {
     rows: [],
     filtersEnabled: false,
     maxWidth: DEFAULT_DASHBOARD_WIDTH,
@@ -79,19 +78,16 @@
   let openSidebarAfterSelection = false;
 
   $: ({ instanceId } = $runtime);
-  $: metricsViews = Object.values(canvasData?.referencedMetricsViews ?? {});
+  $: metricsViews = Object.entries(canvasData?.metricsViews ?? {});
 
-  $: metricsViewQuery = useDefaultMetrics(
-    instanceId,
-    metricsViews?.[0]?.meta?.name?.name,
-  );
+  $: metricsViewQuery = useDefaultMetrics(instanceId, metricsViews?.[0]?.[0]);
 
   $: ({ editorContent, updateEditorContent } = fileArtifact);
   $: contents = parseDocument($editorContent ?? "");
 
-  $: if (canvasData?.canvas?.canvas?.spec) {
+  $: if (canvasData?.canvas) {
     if (!get(activelyEditing)) {
-      spec = structuredClone(canvasData?.canvas?.canvas?.spec ?? spec);
+      spec = structuredClone(canvasData?.canvas ?? spec);
     }
   }
 
@@ -513,7 +509,7 @@
     )}
     {@const types = items?.map(
       (item) =>
-        canvasData?.resolvedComponents?.[item?.component ?? ""]?.component?.spec
+        canvasData?.components?.[item?.component ?? ""]?.component?.spec
           ?.renderer,
     )}
     <RowWrapper
@@ -528,7 +524,7 @@
         {@const id = getId(rowIndex, columnIndex)}
         {@const type = types[columnIndex]}
         {@const componentResource =
-          canvasData?.resolvedComponents?.[item?.component ?? ""]}
+          canvasData?.components?.[item?.component ?? ""]}
         <ItemWrapper {type} zIndex={4 - columnIndex}>
           {#if columnIndex === 0}
             <ElementDivider
@@ -687,8 +683,7 @@
     specCanvasRows[dragItemInfo.position.row]?.items?.[
       dragItemInfo.position.column
     ]}
-  {@const componentResource =
-    canvasData?.resolvedComponents?.[item?.component ?? ""]}
+  {@const componentResource = canvasData?.components?.[item?.component ?? ""]}
   {#if item}
     <div
       use:portal

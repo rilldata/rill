@@ -24,6 +24,7 @@
   import RowBasedCanvas from "../canvas/RowBasedCanvas.svelte";
   import { createQueryServiceResolveCanvas } from "@rilldata/web-common/runtime-client";
   import DelayedSpinner from "../entity-management/DelayedSpinner.svelte";
+  import { useCanvas } from "../canvas/selector";
 
   export let fileArtifact: FileArtifact;
 
@@ -65,11 +66,7 @@
 
   $: mainError = lineBasedRuntimeErrors?.at(0);
 
-  $: canvasResolverQuery = createQueryServiceResolveCanvas(
-    instanceId,
-    canvasName,
-    {},
-  );
+  $: canvasResolverQuery = useCanvas(instanceId, canvasName);
   $: canvasResolverQueryResult = $canvasResolverQuery;
   $: canvasData = canvasResolverQueryResult.data;
 
