@@ -84,9 +84,6 @@ func NewConfigProperties(in map[string]any) (*ConfigProperties, error) {
 	if err != nil {
 		return nil, err
 	}
-	if gcsConfig.SecretJSON != "" && (gcsConfig.KeyID != "" || gcsConfig.Secret != "") {
-		return nil, errors.New("cannot provide both secretJSON and keyID/secret")
-	}
 	return gcsConfig, nil
 }
 

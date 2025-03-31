@@ -2,6 +2,7 @@ package gcs
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"strings"
@@ -120,32 +121,32 @@ func deleteObjectsInPrefix(ctx context.Context, c *Connection, bucketName, prefi
 			}
 		}
 		return nil
-	} else {
-		credentials, err := gcputil.Credentials(ctx, c.config.SecretJSON, c.config.AllowHostAccess)
-		if err != nil {
-			return err
-		}
-		client, err := storage.NewClient(ctx, option.WithCredentials(credentials))
-		if err != nil {
-			return fmt.Errorf("failed to create GCS client: %w", err)
-		}
-		defer client.Close()
-		bucket := client.Bucket(bucketName)
-		var it = bucket.Objects(ctx, &storage.Query{Prefix: prefix})
-
-		for {
-			objAttrs, err := it.Next()
-			if err == iterator.Done {
-				break
-			}
-			if err != nil {
-				return fmt.Errorf("error listing objects: %w", err)
-			}
-
-			if err := bucket.Object(objAttrs.Name).Delete(ctx); err != nil {
-				return fmt.Errorf("failed to delete object %s: %w", objAttrs.Name, err)
-			}
-		}
-		return nil
 	}
+	cred, err := gcputil.Credentials(ctx, c.config.SecretJSON, c.config.AllowHostAccess)
+	if err != nil {
+		return err
+	}
+	client, err := storage.NewClient(ctx, option.WithCredentials(cred))
+	if err != nil {
+		return fmt.Errorf("failed to create GCS client: %w", err)
+	}
+	defer client.Close()
+	bucket := client.Bucket(bucketName)
+	var it = bucket.Objects(ctx, &storage.Query{Prefix: prefix})
+
+	for {
+		objAttrs, err := it.Next()
+		if errors.Is(err, iterator.Done) {
+			break
+		}
+		if err != nil {
+			return fmt.Errorf("error listing objects: %w", err)
+		}
+
+		if err := bucket.Object(objAttrs.Name).Delete(ctx); err != nil {
+			return fmt.Errorf("failed to delete object %s: %w", objAttrs.Name, err)
+		}
+	}
+	return nil
+
 }

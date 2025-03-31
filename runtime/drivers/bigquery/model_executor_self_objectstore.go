@@ -97,13 +97,13 @@ func (e *selfToObjectStoreExecutor) export(ctx context.Context, props map[string
 
 	job, err := q.Run(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to start query job: %v", err)
+		return "", fmt.Errorf("failed to start query job: %w", err)
 	}
 
 	// Wait for completion
 	_, err = job.Wait(ctx)
 	if err != nil {
-		return "", fmt.Errorf("query job failed: %v", err)
+		return "", fmt.Errorf("query job failed: %w", err)
 	}
 
 	return outputLocation, nil
@@ -137,7 +137,6 @@ func exportOptions(outputLocation string, format drivers.FileFormat) (string, er
 	default:
 		return "", errors.New("invalid format: must be 'CSV', 'JSON', or 'PARQUET'")
 	}
-
 }
 
 func validateStore(store drivers.ObjectStore) error {
