@@ -130,10 +130,6 @@
       console.error("Error running initEmbedPublicAPI:", error);
     }
   }
-
-  function isDefined(value: string | undefined): value is string {
-    return value !== undefined;
-  }
 </script>
 
 <article
