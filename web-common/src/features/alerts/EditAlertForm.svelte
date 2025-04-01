@@ -70,7 +70,7 @@
         queryArgsJson,
         $metricsViewSpec?.data ?? {},
         $timeRange?.data ?? {},
-        $dashboardState.data ?? {},
+        $dashboardState?.data ?? {},
       ),
     },
     validationSchema: alertFormValidationSchema,
