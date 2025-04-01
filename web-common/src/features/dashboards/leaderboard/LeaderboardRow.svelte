@@ -111,58 +111,46 @@
     ]),
   );
 
-  $: secondCellBarLengths = Object.fromEntries(
+  $: measureCellBarLengths = Object.fromEntries(
     Object.entries(barLengths).map(([name, length]) => [
       name,
-      clamp(0, length - dimensionColumnWidth, $valueColumn),
+      clamp(0, length, $valueColumn),
     ]),
   );
 
-  $: thirdCellBarLengths = Object.fromEntries(
+  $: percentOfTotalCellBarLengths = Object.fromEntries(
+    Object.entries(barLengths).map(([name, length]) => [
+      name,
+      isValidPercentOfTotal(name) ? clamp(0, length, DEFAULT_COLUMN_WIDTH) : 0,
+    ]),
+  );
+
+  $: deltaAbsoluteCellBarLengths = Object.fromEntries(
     Object.entries(barLengths).map(([name, length]) => [
       name,
       isTimeComparisonActive
         ? clamp(
             0,
-            length - dimensionColumnWidth - $valueColumn,
+            length - $valueColumn - (percentOfTotalCellBarLengths[name] || 0),
             COMPARISON_COLUMN_WIDTH,
           )
-        : isValidPercentOfTotal(name)
-          ? clamp(
-              0,
-              length - dimensionColumnWidth - $valueColumn,
-              DEFAULT_COLUMN_WIDTH,
-            )
-          : 0,
+        : 0,
     ]),
   );
 
-  $: fourthCellBarLengths = Object.fromEntries(
+  $: deltaPercentCellBarLengths = Object.fromEntries(
     Object.entries(barLengths).map(([name, length]) => [
       name,
-      clamp(
-        0,
-        length -
-          dimensionColumnWidth -
-          $valueColumn -
-          (thirdCellBarLengths[name] || 0),
-        DEFAULT_COLUMN_WIDTH,
-      ),
-    ]),
-  );
-
-  $: fifthCellBarLengths = Object.fromEntries(
-    Object.entries(barLengths).map(([name, length]) => [
-      name,
-      clamp(
-        0,
-        length -
-          dimensionColumnWidth -
-          $valueColumn -
-          (thirdCellBarLengths[name] || 0) -
-          (fourthCellBarLengths[name] || 0),
-        DEFAULT_COLUMN_WIDTH,
-      ),
+      isTimeComparisonActive
+        ? clamp(
+            0,
+            length -
+              $valueColumn -
+              (percentOfTotalCellBarLengths[name] || 0) -
+              (deltaAbsoluteCellBarLengths[name] || 0),
+            COMPARISON_COLUMN_WIDTH,
+          )
+        : 0,
     ]),
   );
 
@@ -172,8 +160,33 @@
       ${totalBarLength}px, transparent ${totalBarLength}px)`
       : undefined;
 
+  $: measureGradients =
+    leaderboardMeasureNames.length > 1
+      ? Object.fromEntries(
+          Object.entries(measureCellBarLengths).map(([name, length]) => [
+            name,
+            length
+              ? `linear-gradient(to right, transparent 16px, ${barColor} 16px, ${barColor} ${length + 16}px, transparent ${length + 16}px)`
+              : undefined,
+          ]),
+        )
+      : undefined;
+
+  $: percentOfTotalGradients =
+    leaderboardMeasureNames.length > 1
+      ? Object.fromEntries(
+          Object.entries(percentOfTotalCellBarLengths).map(([name, length]) => [
+            name,
+            length
+              ? `linear-gradient(to right, ${barColor}
+    ${length}px, transparent ${length}px)`
+              : undefined,
+          ]),
+        )
+      : undefined;
+
   $: deltaAbsoluteGradients = Object.fromEntries(
-    Object.entries(thirdCellBarLengths).map(([name, length]) => [
+    Object.entries(deltaAbsoluteCellBarLengths).map(([name, length]) => [
       name,
       length
         ? `linear-gradient(to right, ${barColor}
@@ -183,17 +196,7 @@
   );
 
   $: deltaPercentGradients = Object.fromEntries(
-    Object.entries(fourthCellBarLengths).map(([name, length]) => [
-      name,
-      length
-        ? `linear-gradient(to right, ${barColor}
-    ${length}px, transparent ${length}px)`
-        : undefined,
-    ]),
-  );
-
-  $: percentOfTotalGradients = Object.fromEntries(
-    Object.entries(fifthCellBarLengths).map(([name, length]) => [
+    Object.entries(deltaPercentCellBarLengths).map(([name, length]) => [
       name,
       length
         ? `linear-gradient(to right, ${barColor}
@@ -281,6 +284,7 @@
       on:click={modified({
         shift: () => shiftClickHandler(values[measureName]?.toString() || ""),
       })}
+      style:background={measureGradients?.[measureName]}
     >
       <div class="w-fit ml-auto bg-transparent" bind:contentRect={valueRect}>
         <FormattedDataType
@@ -299,7 +303,7 @@
     {#if isValidPercentOfTotal(measureName)}
       <td
         data-comparison-cell
-        style:background={percentOfTotalGradients[measureName]}
+        style:background={percentOfTotalGradients?.[measureName]}
         on:click={modified({
           shift: () =>
             shiftClickHandler(pctOfTotals[measureName]?.toString() || ""),
