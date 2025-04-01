@@ -99,22 +99,26 @@ func SearchTracesFile(ctx context.Context, traceID, resourceName string) ([]byte
 	var args []any
 	if resourceName != "" {
 		query = fmt.Sprintf(`
-			SELECT replace(traceID::VARCHAR, '-', '') AS traceID, * EXCLUDE traceID
+			SELECT 
+				replace(traceID::VARCHAR, '-', '') AS traceID, 
+				tags::JSON AS tags, 
+				* EXCLUDE (traceID, tags)
 			FROM read_json_auto(%s)
 			WHERE traceID = (
 				SELECT traceID
 				FROM read_json_auto(%s)
-				WHERE name ILIKE '%%Reconcile%%' AND tags.name ILIKE ?
+				WHERE name ILIKE '%%Reconcile%%' AND element_at(tags, 'name')[1] ILIKE ?
 				ORDER BY timestamp DESC
 				LIMIT 1
 			)
 		`, escapeStringValue(fp), escapeStringValue(fp))
-		args = []any{fmt.Sprintf("%%%s%%", resourceName)}
+		args = []any{resourceName}
 	} else {
 		query = fmt.Sprintf(`
 			SELECT 
 				replace(traceID::VARCHAR, '-', '') AS traceID, 
-				* EXCLUDE traceID 
+				tags::JSON AS tags, 
+				* EXCLUDE (traceID, tags) 
 			FROM 
 				read_json_auto(%s) 
 			WHERE 
