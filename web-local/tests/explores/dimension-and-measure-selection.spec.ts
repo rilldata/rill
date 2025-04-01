@@ -17,9 +17,14 @@ test.describe("dimension and measure selectors", () => {
   }
 
   // Click the eye icon to hide/show items
-  async function toggleItemVisibility(page, itemName: string) {
+  async function toggleItemVisibility(
+    page,
+    itemName: string,
+    sectionName: "Shown" | "Hidden",
+  ) {
     await page
       .getByRole("button", { name: itemName })
+      .locator(`.${sectionName.toLowerCase()}-section`)
       .getByRole("button", { name: "Toggle visibility" })
       .click();
   }
@@ -32,9 +37,9 @@ test.describe("dimension and measure selectors", () => {
     // Test individual measure toggling
     await measuresButton.click();
     // Show "Total records" from hidden section first
-    await toggleItemVisibility(page, "Total records");
+    await toggleItemVisibility(page, "Total records", "Hidden");
     // Now we can hide "Sum of Bid Price" since we have another measure shown
-    await toggleItemVisibility(page, "Sum of Bid Price");
+    await toggleItemVisibility(page, "Sum of Bid Price", "Shown");
     await escape(page);
     await expect(measuresButton).toHaveText("1 of 2 Measures");
 
@@ -43,9 +48,9 @@ test.describe("dimension and measure selectors", () => {
 
     await measuresButton.click();
     // Show "Sum of Bid Price" from hidden section first
-    await toggleItemVisibility(page, "Sum of Bid Price");
+    await toggleItemVisibility(page, "Sum of Bid Price", "Hidden");
     // Now we can hide "Total records" since we have another measure shown
-    await toggleItemVisibility(page, "Total records");
+    await toggleItemVisibility(page, "Total records", "Shown");
     await expect(measuresButton).toHaveText("1 of 2 Measures");
     await escape(page);
 
@@ -80,9 +85,9 @@ test.describe("dimension and measure selectors", () => {
     // Test individual dimension toggling
     await dimensionsButton.click();
     // Show "Domain" from hidden section first
-    await toggleItemVisibility(page, "Domain");
+    await toggleItemVisibility(page, "Domain", "Hidden");
     // Now we can hide "Publisher" since we have another dimension shown
-    await toggleItemVisibility(page, "Publisher");
+    await toggleItemVisibility(page, "Publisher", "Shown");
     await expect(dimensionsButton).toHaveText("1 of 2 Dimensions");
     await escape(page);
 
@@ -91,9 +96,9 @@ test.describe("dimension and measure selectors", () => {
 
     await dimensionsButton.click();
     // Show "Publisher" from hidden section first
-    await toggleItemVisibility(page, "Publisher");
+    await toggleItemVisibility(page, "Publisher", "Hidden");
     // Now we can hide "Domain" since we have another dimension shown
-    await toggleItemVisibility(page, "Domain");
+    await toggleItemVisibility(page, "Domain", "Shown");
     await expect(dimensionsButton).toHaveText("1 of 2 Dimensions");
     await escape(page);
 
