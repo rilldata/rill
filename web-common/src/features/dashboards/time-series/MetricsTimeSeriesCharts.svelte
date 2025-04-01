@@ -47,7 +47,6 @@
     updateChartInteractionStore,
   } from "./utils";
   import DashboardMetricsDraggableList from "@rilldata/web-common/components/menu/DashboardMetricsDraggableList.svelte";
-  import DashboardVisibilityDropdown from "@rilldata/web-common/components/menu/DashboardVisibilityDropdown.svelte";
 
   export let exploreName: string;
   export let workspaceWidth: number;
@@ -65,7 +64,7 @@
       dimensionFilters: { includedDimensionValues },
     },
     actions: {
-      measures: { setMeasureVisibility, toggleMeasureVisibility },
+      measures: { setMeasureVisibility },
     },
     validSpecStore,
   } = getStateManagers();

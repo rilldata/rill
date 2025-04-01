@@ -1,5 +1,4 @@
 <script lang="ts">
-  import DashboardVisibilityDropdown from "@rilldata/web-common/components/menu/DashboardVisibilityDropdown.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import { getSimpleMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
@@ -24,7 +23,7 @@
     },
     actions: {
       contextColumn: { setContextColumn },
-      dimensions: { setDimensionVisibility, toggleDimensionVisibility },
+      dimensions: { setDimensionVisibility },
       setLeaderboardMeasureCount,
       setLeaderboardMeasureName,
     },
