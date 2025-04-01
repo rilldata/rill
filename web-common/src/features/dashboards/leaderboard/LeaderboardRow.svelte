@@ -403,6 +403,7 @@
 
   tr {
     @apply cursor-pointer;
+    max-height: 22px;
   }
 
   tr:hover {
@@ -429,5 +430,9 @@
 
   a:hover {
     @apply bg-primary-100;
+  }
+
+  td {
+    height: 22px !important;
   }
 </style>

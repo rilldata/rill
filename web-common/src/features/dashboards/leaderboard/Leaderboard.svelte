@@ -200,7 +200,7 @@
     },
   );
 
-  $: ({ data: sortedData, isFetching } = $sortedQuery);
+  $: ({ data: sortedData, isFetching, isLoading } = $sortedQuery);
   $: ({ data: totalsData } = $totalsQuery);
 
   $: leaderboardTotals = totalsData?.data?.[0]
@@ -347,9 +347,12 @@
     />
 
     <tbody>
-      {#if isFetching}
-        <DelayedLoadingRows isLoading={isFetching} columns={columnCount + 1} />
-      {:else}
+      <DelayedLoadingRows
+        {isLoading}
+        {isFetching}
+        rowCount={aboveTheFold.length}
+        columnCount={columnCount + 1}
+      >
         {#each aboveTheFold as itemData (itemData.dimensionValue)}
           <LeaderboardRow
             {suppressTooltip}
@@ -368,7 +371,7 @@
             {formatters}
           />
         {/each}
-      {/if}
+      </DelayedLoadingRows>
 
       {#each belowTheFoldRows as itemData, i (itemData.dimensionValue)}
         <LeaderboardRow
