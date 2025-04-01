@@ -1,6 +1,5 @@
 import { expect } from "@playwright/test";
 import { gotoNavEntry } from "../utils/waitHelpers";
-import { clickMenuButton } from "../utils/commonHelpers";
 import { test } from "../setup/base";
 
 test.describe("dimension and measure selectors", () => {
