@@ -30,20 +30,33 @@
   const StateManagers = getStateManagers();
   const {
     selectors: {
-      measures: { visibleMeasures },
+      measures: { visibleMeasures, leaderboardMeasureCount },
       activeMeasure: { activeMeasureName },
       dimensions: { getDimensionByName },
       pivot: { showPivot },
     },
-
     dashboardStore,
   } = StateManagers;
 
+  const {
+    cloudDataViewer,
+    readOnly,
+    leaderboardMeasureCount: leaderboardMeasureCountFeatureFlag,
+  } = featureFlags;
+
   const timeControlsStore = useTimeControlStore(StateManagers);
 
-  const { cloudDataViewer, readOnly } = featureFlags;
-
   let exploreContainerWidth: number;
+
+  // FIXME: move to activeMeasure selectors
+  $: activeMeasureNamesFromMeasureCount = $visibleMeasures
+    .slice(0, $leaderboardMeasureCount)
+    .map(({ name }) => name)
+    .filter(isDefined);
+
+  $: leaderboardMeasureNames = $leaderboardMeasureCountFeatureFlag
+    ? activeMeasureNamesFromMeasureCount
+    : [$activeMeasureName];
 
   $: ({ instanceId } = $runtime);
 
@@ -94,6 +107,8 @@
   $: exploreSpec = $explore.data?.explore;
   $: timeRanges = exploreSpec?.timeRanges ?? [];
 
+  $: visibleMeasureNames = $visibleMeasures.map(({ name }) => name ?? "");
+
   let metricsWidth = DEFAULT_TIMESERIES_WIDTH;
   let resizing = false;
 
@@ -117,6 +132,10 @@
     } catch (error) {
       console.error("Error running initEmbedPublicAPI:", error);
     }
+  }
+
+  function isDefined(value: string | undefined): value is string {
+    return value !== undefined;
   }
 </script>
 
@@ -211,15 +230,14 @@
               {comparisonTimeRange}
               activeMeasureName={$activeMeasureName}
               {timeControlsReady}
-              visibleMeasureNames={$visibleMeasures.map(
-                ({ name }) => name ?? "",
-              )}
+              {visibleMeasureNames}
               hideStartPivotButton={hidePivot}
             />
           {:else}
             <LeaderboardDisplay
               {metricsViewName}
               activeMeasureName={$activeMeasureName}
+              activeMeasureNames={leaderboardMeasureNames}
               {whereFilter}
               {dimensionThresholdFilters}
               {timeRange}

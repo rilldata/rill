@@ -98,7 +98,7 @@
                 shift: () =>
                   copyToClipboard(
                     getCopyValue(type, item.value),
-                    `copied column value "${
+                    `Copied column value "${
                       item.value === null
                         ? "NULL"
                         : getCopyValue(type, item.value)

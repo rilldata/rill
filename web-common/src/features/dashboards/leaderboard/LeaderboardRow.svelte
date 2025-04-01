@@ -13,9 +13,10 @@
   import LeaderboardTooltipContent from "./LeaderboardTooltipContent.svelte";
   import LongBarZigZag from "./LongBarZigZag.svelte";
   import {
-    DEFAULT_COL_WIDTH,
-    deltaColumn,
+    COMPARISON_COLUMN_WIDTH,
+    DEFAULT_COLUMN_WIDTH,
     valueColumn,
+    deltaColumn,
   } from "./leaderboard-widths";
   import FloatingElement from "@rilldata/web-common/components/floating-element/FloatingElement.svelte";
 
@@ -30,47 +31,37 @@
   export let atLeastOneActive: boolean;
   export let isValidPercentOfTotal: boolean;
   export let isTimeComparisonActive: boolean;
+  export let activeMeasureNames: string[] = [];
   export let toggleDimensionValueSelection: (
     dimensionName: string,
     dimensionValue: string,
     keepPillVisible?: boolean | undefined,
     isExclusiveFilter?: boolean | undefined,
   ) => void;
-  export let formatter:
-    | ((_value: number | undefined) => undefined)
-    | ((value: string | number) => string);
-  export let firstColumnWidth: number;
+  export let formatters: Record<
+    string,
+    (value: number | string | null | undefined) => string | null | undefined
+  >;
+  export let dimensionColumnWidth: number;
   export let suppressTooltip: boolean;
 
   let hovered = false;
-  let valueRect = new DOMRect(0, 0, DEFAULT_COL_WIDTH);
-  let deltaRect = new DOMRect(0, 0, DEFAULT_COL_WIDTH);
+  let valueRect = new DOMRect(0, 0, DEFAULT_COLUMN_WIDTH);
+  let deltaRect = new DOMRect(0, 0, COMPARISON_COLUMN_WIDTH);
   let parent: HTMLTableRowElement;
 
   $: ({
     dimensionValue,
     selectedIndex,
-    pctOfTotal,
-    value,
-    prevValue,
-    deltaAbs,
-    deltaRel,
+    values,
+    pctOfTotals,
+    prevValues,
+    deltaRels,
+    deltaAbs: deltaAbsMap,
     uri,
   } = itemData);
 
   $: selected = selectedIndex >= 0;
-
-  $: formattedValue = value ? formatter(value) : null;
-  $: formattedDeltaRel = deltaRel
-    ? formatMeasurePercentageDifference(deltaRel)
-    : null;
-  $: formattedDelta = deltaAbs ? formatter(deltaAbs) : null;
-
-  $: deltaElementWidth = deltaRect.width;
-  $: valueElementWith = valueRect.width;
-
-  $: valueColumn.update(valueElementWith);
-  $: deltaColumn.update(deltaElementWidth);
 
   // Super important special case: if there is not at least one "active" (selected) value,
   // we need to set *all* items to be included, because by default if a user has not
@@ -80,18 +71,21 @@
     : false;
 
   $: previousValueString =
-    prevValue !== undefined && prevValue !== null
-      ? formatter(prevValue)
+    activeMeasureNames.length === 1 &&
+    prevValues[activeMeasureNames[0]] !== undefined &&
+    prevValues[activeMeasureNames[0]] !== null
+      ? formatters[activeMeasureNames[0]]?.(
+          prevValues[activeMeasureNames[0]] as number,
+        )
       : undefined;
-
-  $: negativeChange = deltaAbs !== null && deltaAbs < 0;
 
   $: href = makeHref(uri, dimensionValue);
 
-  $: percentOfTotal = isSummableMeasure && pctOfTotal ? pctOfTotal : 0;
+  $: deltaElementWidth = deltaRect?.width;
+  $: valueElementWith = valueRect?.width;
 
-  $: barLength = tableWidth * percentOfTotal;
-  $: showZigZag = barLength > tableWidth;
+  $: valueColumn.update(valueElementWith);
+  $: deltaColumn.update(deltaElementWidth);
 
   $: barColor = excluded
     ? "rgb(243 244 246)"
@@ -99,38 +93,124 @@
       ? "var(--color-primary-200)"
       : "var(--color-primary-100)";
 
-  $: secondCellBarLength = clamp(0, barLength - firstColumnWidth, $valueColumn);
-  $: thirdCellBarLength = isTimeComparisonActive
-    ? clamp(0, barLength - firstColumnWidth - $valueColumn, $deltaColumn)
-    : isValidPercentOfTotal
-      ? clamp(0, barLength - firstColumnWidth - $valueColumn, DEFAULT_COL_WIDTH)
-      : 0;
-  $: fourthCellBarLength = isTimeComparisonActive
-    ? clamp(
+  $: barLengths = Object.fromEntries(
+    Object.entries(pctOfTotals).map(([name, pct]) => [
+      name,
+      isSummableMeasure && pct ? tableWidth * pct : 0,
+    ]),
+  );
+
+  $: showZigZags = Object.fromEntries(
+    Object.entries(barLengths).map(([name, length]) => [
+      name,
+      length > tableWidth,
+    ]),
+  );
+
+  $: secondCellBarLengths = Object.fromEntries(
+    Object.entries(barLengths).map(([name, length]) => [
+      name,
+      clamp(0, length - dimensionColumnWidth, $valueColumn),
+    ]),
+  );
+
+  $: thirdCellBarLengths = Object.fromEntries(
+    Object.entries(barLengths).map(([name, length]) => [
+      name,
+      isTimeComparisonActive
+        ? clamp(
+            0,
+            length - dimensionColumnWidth - $valueColumn,
+            COMPARISON_COLUMN_WIDTH,
+          )
+        : isValidPercentOfTotal
+          ? clamp(
+              0,
+              length - dimensionColumnWidth - $valueColumn,
+              DEFAULT_COLUMN_WIDTH,
+            )
+          : 0,
+    ]),
+  );
+
+  $: fourthCellBarLengths = Object.fromEntries(
+    Object.entries(barLengths).map(([name, length]) => [
+      name,
+      clamp(
         0,
-        barLength - firstColumnWidth - $valueColumn - $deltaColumn,
-        DEFAULT_COL_WIDTH,
-      )
-    : 0;
+        length -
+          dimensionColumnWidth -
+          $valueColumn -
+          (thirdCellBarLengths[name] || 0),
+        DEFAULT_COLUMN_WIDTH,
+      ),
+    ]),
+  );
 
-  // Update the gradients
-  $: firstCellGradient = `linear-gradient(to right, ${barColor}
-    ${barLength}px, transparent ${barLength}px)`;
+  $: fifthCellBarLengths = Object.fromEntries(
+    Object.entries(barLengths).map(([name, length]) => [
+      name,
+      clamp(
+        0,
+        length -
+          dimensionColumnWidth -
+          $valueColumn -
+          (thirdCellBarLengths[name] || 0) -
+          (fourthCellBarLengths[name] || 0),
+        DEFAULT_COLUMN_WIDTH,
+      ),
+    ]),
+  );
 
-  $: secondCellGradient = secondCellBarLength
-    ? `linear-gradient(to right, ${barColor}
-    ${secondCellBarLength}px, transparent ${secondCellBarLength}px)`
-    : undefined;
+  $: dimensionGradients =
+    activeMeasureNames.length >= 2
+      ? "bg-white"
+      : `linear-gradient(to right, ${barColor}
+    ${Math.max(...Object.values(barLengths))}px, transparent ${Math.max(...Object.values(barLengths))}px)`;
 
-  $: thirdCellGradient = thirdCellBarLength
-    ? `linear-gradient(to right, ${barColor}
-    ${thirdCellBarLength}px, transparent ${thirdCellBarLength}px)`
-    : undefined;
+  $: measureGradients =
+    activeMeasureNames.length === 1
+      ? "bg-white"
+      : Object.fromEntries(
+          Object.entries(secondCellBarLengths).map(([name, length]) => [
+            name,
+            length
+              ? `linear-gradient(to right, transparent 16px, ${barColor} 16px, ${barColor} ${length + 16}px, transparent ${length + 16}px)`
+              : undefined,
+          ]),
+        );
 
-  $: fourthCellGradient = fourthCellBarLength
-    ? `linear-gradient(to right, ${barColor}
-    ${fourthCellBarLength}px, transparent ${fourthCellBarLength}px)`
-    : undefined;
+  $: deltaAbsoluteGradients = Object.fromEntries(
+    Object.entries(thirdCellBarLengths).map(([name, length]) => [
+      name,
+      length
+        ? `linear-gradient(to right, ${barColor}
+    ${length}px, transparent ${length}px)`
+        : undefined,
+    ]),
+  );
+
+  $: deltaPercentGradients = Object.fromEntries(
+    Object.entries(fourthCellBarLengths).map(([name, length]) => [
+      name,
+      length
+        ? `linear-gradient(to right, ${barColor}
+    ${length}px, transparent ${length}px)`
+        : undefined,
+    ]),
+  );
+
+  $: percentOfTotalGradients = Object.fromEntries(
+    Object.entries(fifthCellBarLengths).map(([name, length]) => [
+      name,
+      length
+        ? `linear-gradient(to right, ${barColor}
+    ${length}px, transparent ${length}px)`
+        : undefined,
+    ]),
+  );
+
+  $: showTooltip = hovered && !suppressTooltip;
 
   function shiftClickHandler(label: string) {
     let truncatedLabel = label?.toString();
@@ -161,7 +241,7 @@
     );
   }}
 >
-  <td>
+  <td data-comparison-cell>
     <LeaderboardItemFilterIcon
       {excluded}
       {isBeingCompared}
@@ -169,7 +249,8 @@
     />
   </td>
   <td
-    style:background={firstCellGradient}
+    data-dimension-cell
+    style:background={dimensionGradients}
     class:ui-copy={!atLeastOneActive}
     class:ui-copy-disabled={excluded}
     class:ui-copy-strong={!excluded && selected}
@@ -202,61 +283,98 @@
     {/if}
   </td>
 
-  <td
-    style:background={secondCellGradient}
-    on:click={modified({
-      shift: () => shiftClickHandler(value?.toString() || ""),
-    })}
-  >
-    <div class="w-fit ml-auto bg-transparent" bind:contentRect={valueRect}>
-      <FormattedDataType type="INTEGER" value={formattedValue} />
-    </div>
-
-    {#if showZigZag && !isTimeComparisonActive && !isValidPercentOfTotal}
-      <LongBarZigZag />
-    {/if}
-  </td>
-
-  {#if isTimeComparisonActive || isValidPercentOfTotal}
+  {#each Object.keys(values) as measureName}
     <td
-      style:background={thirdCellGradient}
+      data-measure-cell
+      style:background={measureGradients[measureName]}
       on:click={modified({
-        shift: () => shiftClickHandler(deltaAbs?.toString() || ""),
+        shift: () => shiftClickHandler(values[measureName]?.toString() || ""),
       })}
     >
-      {#if isTimeComparisonActive}
-        <div class="w-fit ml-auto" bind:contentRect={deltaRect}>
-          <FormattedDataType
-            type="INTEGER"
-            value={formattedDelta}
-            customStyle={negativeChange ? "text-red-500" : ""}
-          />
-        </div>
-      {:else}
-        <PercentageChange value={pctOfTotal} />
-        {#if showZigZag}
-          <LongBarZigZag />
-        {/if}
-      {/if}
-    </td>
-  {/if}
+      <div class="w-fit ml-auto bg-transparent" bind:contentRect={valueRect}>
+        <FormattedDataType
+          type="INTEGER"
+          value={values[measureName]
+            ? formatters[measureName]?.(values[measureName])
+            : null}
+        />
+      </div>
 
-  {#if isTimeComparisonActive}
-    <td
-      style:background={fourthCellGradient}
-      on:click={modified({
-        shift: () => shiftClickHandler(deltaRel?.toString() || ""),
-      })}
-    >
-      <PercentageChange value={formattedDeltaRel} />
-      {#if showZigZag}
+      {#if showZigZags[measureName] && !isTimeComparisonActive && !isValidPercentOfTotal}
         <LongBarZigZag />
       {/if}
     </td>
-  {/if}
+
+    {#if isValidPercentOfTotal}
+      <td
+        data-comparison-cell
+        style:background={percentOfTotalGradients[measureName]}
+        on:click={modified({
+          shift: () =>
+            shiftClickHandler(pctOfTotals[measureName]?.toString() || ""),
+        })}
+        title={pctOfTotals[measureName]?.toString() || ""}
+      >
+        <PercentageChange
+          value={pctOfTotals[measureName]}
+          color="text-gray-500"
+        />
+        {#if showZigZags[measureName]}
+          <LongBarZigZag />
+        {/if}
+      </td>
+    {/if}
+
+    {#if isTimeComparisonActive}
+      <td
+        data-comparison-cell
+        style:background={deltaAbsoluteGradients[measureName]}
+        on:click={modified({
+          shift: () =>
+            shiftClickHandler(deltaAbsMap[measureName]?.toString() || ""),
+        })}
+        title={deltaAbsMap[measureName]?.toString() || ""}
+      >
+        <FormattedDataType
+          color="text-gray-500"
+          type="INTEGER"
+          value={deltaAbsMap[measureName]
+            ? formatters[measureName]?.(deltaAbsMap[measureName])
+            : null}
+          customStyle={deltaAbsMap[measureName] !== null &&
+          deltaAbsMap[measureName] < 0
+            ? "text-red-500"
+            : ""}
+          truncate={true}
+        />
+      </td>
+    {/if}
+
+    {#if isTimeComparisonActive}
+      <td
+        data-comparison-cell
+        style:background={deltaPercentGradients[measureName]}
+        on:click={modified({
+          shift: () =>
+            shiftClickHandler(deltaRels[measureName]?.toString() || ""),
+        })}
+        title={deltaRels[measureName]?.toString() || ""}
+      >
+        <PercentageChange
+          value={deltaRels[measureName]
+            ? formatMeasurePercentageDifference(deltaRels[measureName])
+            : null}
+          color="text-gray-500"
+        />
+        {#if showZigZags[measureName]}
+          <LongBarZigZag />
+        {/if}
+      </td>
+    {/if}
+  {/each}
 </tr>
 
-{#if hovered && !suppressTooltip}
+{#if showTooltip}
   {#await new Promise((r) => setTimeout(r, 600)) then}
     <FloatingElement
       target={parent}
@@ -291,8 +409,17 @@
     @apply bg-gray-100;
   }
 
-  td:first-of-type {
-    @apply p-0 bg-surface;
+  td[data-comparison-cell] {
+    @apply bg-surface px-1 truncate;
+  }
+
+  td[data-dimension-cell] {
+    @apply sticky left-0 z-30 bg-surface;
+  }
+
+  tr:hover td[data-dimension-cell],
+  tr:hover td[data-comparison-cell] {
+    @apply bg-gray-100;
   }
 
   a {

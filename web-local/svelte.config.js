@@ -11,6 +11,12 @@ const config = {
     adapter: adapter({
       fallback: "index.html",
     }),
+    // TODO: enable CSP after addressing error in Pylon and Codemirror
+    // csp: {
+    //   directives: {
+    //     "script-src": ["self"],
+    //   },
+    // },
     files: {
       assets: "../web-common/static",
     },

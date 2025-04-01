@@ -45,6 +45,7 @@
   export let canShowDataViewer = false;
   export let border = true;
   export let overscan = 20;
+  export let rounded = true;
   export let setPivotExpanded: (expanded: ExpandedState) => void;
   export let setPivotSort: (sorting: SortingState) => void;
   export let setPivotRowPage: (page: number) => void;
@@ -253,6 +254,7 @@
 
 <div
   class:border
+  class:rounded-sm={rounded}
   class="table-wrapper relative"
   style:--row-height="{ROW_HEIGHT}px"
   style:--header-height="{HEADER_HEIGHT}px"
@@ -320,6 +322,6 @@
 <style lang="postcss">
   .table-wrapper {
     @apply overflow-auto h-fit max-h-full w-fit max-w-full;
-    @apply rounded-md z-40 select-none;
+    @apply z-40 select-none;
   }
 </style>

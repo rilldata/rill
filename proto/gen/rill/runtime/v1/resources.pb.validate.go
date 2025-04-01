@@ -4437,6 +4437,8 @@ func (m *ExploreSpec) validate(all bool) error {
 
 	// no validation rules for LockTimeZone
 
+	// no validation rules for AllowCustomTimeRange
+
 	if len(errors) > 0 {
 		return ExploreSpecMultiError(errors)
 	}
@@ -5041,6 +5043,10 @@ func (m *ExplorePreset) validate(all bool) error {
 
 	if m.ExploreExpandedDimension != nil {
 		// no validation rules for ExploreExpandedDimension
+	}
+
+	if m.ExploreLeaderboardMeasureCount != nil {
+		// no validation rules for ExploreLeaderboardMeasureCount
 	}
 
 	if m.TimeDimensionMeasure != nil {
@@ -10506,6 +10512,8 @@ func (m *CanvasSpec) validate(all bool) error {
 		}
 
 	}
+
+	// no validation rules for AllowCustomTimeRange
 
 	if len(errors) > 0 {
 		return CanvasSpecMultiError(errors)

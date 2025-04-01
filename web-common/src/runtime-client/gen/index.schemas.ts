@@ -1977,6 +1977,7 @@ These are not currently parsed from YAML, but will be derived from the parent me
   /** Banner text that can be displayed in Rill Cloud. */
   banner?: string;
   lockTimeZone?: boolean;
+  allowCustomTimeRange?: boolean;
 }
 
 export interface V1ExploreState {
@@ -2023,6 +2024,8 @@ export interface V1ExplorePreset {
   measures?: string[];
   measuresSelector?: V1FieldSelector;
   where?: V1Expression;
+  /** Temporary to differentiate between "select" and "in list" modes. Expression will be replaced with UI specific state in the future. */
+  dimensionsWithInlistFilter?: string[];
   /** Time range for the explore.
 It corresponds to the `range` property of the explore's `time_ranges`.
 If not found in `time_ranges`, it should be added to the list. */
@@ -2039,6 +2042,7 @@ If not found in `time_ranges`, it should be added to the list. */
   exploreSortAsc?: boolean;
   exploreSortType?: V1ExploreSortType;
   exploreExpandedDimension?: string;
+  exploreLeaderboardMeasureCount?: number;
   timeDimensionMeasure?: string;
   timeDimensionChartType?: string;
   timeDimensionPin?: boolean;
@@ -2434,6 +2438,7 @@ The values should be valid IANA location identifiers. */
   rows?: V1CanvasRow[];
   /** Security rules to apply for access to the canvas. */
   securityRules?: V1SecurityRule[];
+  allowCustomTimeRange?: boolean;
 }
 
 export interface V1CanvasItem {

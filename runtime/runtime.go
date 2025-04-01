@@ -119,7 +119,7 @@ func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID str
 	}
 
 	rillYAML := parser.RillYAML
-	dotEnv := parser.DotEnv
+	dotEnv := parser.GetDotEnv()
 
 	inst, err := r.Instance(ctx, instanceID)
 	if err != nil {
@@ -181,6 +181,10 @@ func (r *Runtime) UpdateInstanceConnector(ctx context.Context, instanceID, name 
 	if err != nil {
 		return err
 	}
+
+	// Shallow clone for editing
+	tmp := *inst
+	inst = &tmp
 
 	// remove the connector if it exists
 	for i, c := range inst.ProjectConnectors {

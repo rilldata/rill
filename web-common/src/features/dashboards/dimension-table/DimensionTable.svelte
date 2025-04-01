@@ -6,6 +6,7 @@ TableCells – the cell contents.
 <script lang="ts">
   import ColumnHeaders from "@rilldata/web-common/components/virtualized-table/sections/ColumnHeaders.svelte";
   import TableCells from "@rilldata/web-common/components/virtualized-table/sections/TableCells.svelte";
+  import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
   import { createVirtualizer } from "@tanstack/svelte-virtual";
   import { createEventDispatcher, setContext } from "svelte";
   import type { DimensionTableRow } from "./dimension-table-types";
@@ -24,7 +25,7 @@ TableCells – the cell contents.
 
   export let rows: DimensionTableRow[];
   export let columns: VirtualizedTableColumns[];
-  export let selectedValues: string[];
+  export let selectedValues: CompoundQueryResult<string[]>;
   export let dimensionName: string;
   export let isFetching: boolean;
 
@@ -34,7 +35,7 @@ TableCells – the cell contents.
       comparison: { toggleComparisonDimension },
     },
     selectors: {
-      sorting: { sortMeasure },
+      sorting: { sortByMeasure },
       dimensionFilters: { isFilterExcludeMode },
       comparison: { isBeingCompared: isBeingComparedReadable },
     },
@@ -59,9 +60,10 @@ TableCells – the cell contents.
   const CHARACTER_LIMIT_FOR_WRAPPING = 9;
   const FILTER_COLUMN_WIDTH = config.indexWidth;
 
-  $: selectedIndex = selectedValues.map((label) => {
-    return rows.findIndex((row) => row[dimensionName] === label);
-  });
+  $: selectedIndex =
+    $selectedValues.data?.map((label) => {
+      return rows.findIndex((row) => row[dimensionName] === label);
+    }) ?? [];
 
   let rowScrollOffset = 0;
   $: rowScrollOffset = $rowVirtualizer?.scrollOffset || 0;
@@ -168,7 +170,7 @@ TableCells – the cell contents.
   async function handleColumnHeaderClick(event) {
     colScrollOffset = $columnVirtualizer.scrollOffset;
     const columnName = event.detail;
-    dimensionTable.handleMeasureColumnHeaderClick(columnName);
+    dimensionTable.handleDimensionMeasureColumnHeaderClick(columnName);
   }
 
   async function handleResizeDimensionColumn(event) {
@@ -202,7 +204,7 @@ TableCells – the cell contents.
       scrolling = true;
     }}
   >
-    {#if rowVirtualizer}
+    {#if $rowVirtualizer}
       <div
         role="grid"
         tabindex="0"
@@ -217,7 +219,7 @@ TableCells – the cell contents.
         <ColumnHeaders
           virtualColumnItems={virtualColumns}
           noPin={true}
-          selectedColumn={$sortMeasure}
+          sortByMeasure={$sortByMeasure}
           columns={measureColumns}
           on:click-column={handleColumnHeaderClick}
         />
@@ -266,7 +268,7 @@ TableCells – the cell contents.
             on:inspect={setActiveIndex}
             cellLabel="Filter dimension value"
           />
-        {:else if isFetching}
+        {:else if isFetching || $selectedValues.isFetching}
           <div class="flex text-gray-500 justify-center mt-[30vh]">
             Loading...
           </div>

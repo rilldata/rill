@@ -3705,6 +3705,9 @@ definitions:
           type: object
           $ref: '#/definitions/v1SecurityRule'
         description: Security rules to apply for access to the canvas.
+      allowCustomTimeRange:
+        type: boolean
+        title: Toggle custom time range
   v1CanvasState:
     type: object
     properties:
@@ -4310,6 +4313,11 @@ definitions:
         description: Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
       where:
         $ref: '#/definitions/v1Expression'
+      dimensionsWithInlistFilter:
+        type: array
+        items:
+          type: string
+        description: Temporary to differentiate between "select" and "in list" modes. Expression will be replaced with UI specific state in the future.
       timeRange:
         type: string
         description: |-
@@ -4340,6 +4348,9 @@ definitions:
         $ref: '#/definitions/v1ExploreSortType'
       exploreExpandedDimension:
         type: string
+      exploreLeaderboardMeasureCount:
+        type: integer
+        format: int64
       timeDimensionMeasure:
         type: string
       timeDimensionChartType:
@@ -4439,6 +4450,9 @@ definitions:
       lockTimeZone:
         type: boolean
         title: When set to true, dashboard will be locked to the first time zone in the time_zones key (or UTC)
+      allowCustomTimeRange:
+        type: boolean
+        title: Allow custom time range
   v1ExploreState:
     type: object
     properties:

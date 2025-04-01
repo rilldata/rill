@@ -112,7 +112,10 @@ export function convertExploreStateToURLSearchParams(
   if (expr && expr?.cond?.exprs?.length) {
     searchParams.set(
       ExploreStateURLParams.Filters,
-      convertExpressionToFilterParam(expr),
+      convertExpressionToFilterParam(
+        expr,
+        exploreState.dimensionsWithInlistFilter,
+      ),
     );
   }
 
@@ -311,6 +314,18 @@ function toExploreUrl(
     searchParams.set(
       ExploreStateURLParams.SortDirection,
       sortAsc ? "ASC" : "DESC",
+    );
+  }
+
+  if (
+    shouldSetParam(
+      preset.exploreLeaderboardMeasureCount,
+      exploreState.leaderboardMeasureCount,
+    )
+  ) {
+    searchParams.set(
+      ExploreStateURLParams.LeaderboardMeasureCount,
+      exploreState.leaderboardMeasureCount?.toString(),
     );
   }
 

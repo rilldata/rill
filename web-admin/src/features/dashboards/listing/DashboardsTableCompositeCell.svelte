@@ -24,7 +24,7 @@
     ? undefined
     : isMetricsExplorer
       ? `/${organization}/${project}/explore/${name}`
-      : `/${organization}/${project}/-/dashboards/${name}`;
+      : `/${organization}/${project}/canvas/${name}`;
 </script>
 
 <svelte:element

@@ -40,7 +40,7 @@
 
   $: atLeastOneSelected = !!selectedIndex?.length;
 
-  const getCellProps = (row: VirtualItem) => {
+  const getCellProps = (row: VirtualItem, selectedIndex: number[]) => {
     const value = rows[row.index]?.[column.name];
     return {
       value,
@@ -72,13 +72,13 @@
     enableResize={true}
     position="top-left"
     borderRight={horizontalScrolling}
-    bgClass={$sortedByDimensionValue ? `bg-gray-50` : "bg-white"}
+    bgClass="bg-white"
     onClick={sortByDimensionValue}
     on:keydown={sortByDimensionValue}
     on:resize={handleResize}
   >
     <div class="flex items-center">
-      <span class={"px-1 " + $sortedByDimensionValue ? "font-bold" : ""}
+      <span class:font-bold={"px-1 " + $sortedByDimensionValue}
         >{column?.label || column?.name}</span
       >
       {#if $sortedByDimensionValue}
@@ -103,7 +103,7 @@
       position="left"
       header={{ size: width, start: row.start }}
       borderRight={horizontalScrolling}
-      bgClass={$sortedByDimensionValue ? `bg-gray-50` : "bg-white"}
+      bgClass="bg-white"
     >
       <Cell
         positionStatic
@@ -112,7 +112,7 @@
         {atLeastOneSelected}
         {excludeMode}
         {rowActive}
-        {...getCellProps(row)}
+        {...getCellProps(row, selectedIndex)}
         colSelected={$sortedByDimensionValue}
         on:inspect
         on:select-item

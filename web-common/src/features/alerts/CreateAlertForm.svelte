@@ -12,6 +12,7 @@
     getAlertQueryArgsFromFormValues,
   } from "@rilldata/web-common/features/alerts/form-utils";
   import { getEmptyMeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+  import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import {
     mapSelectedComparisonTimeRangeToV1TimeRange,
@@ -106,6 +107,7 @@
       metricsViewName: $metricsViewName,
       exploreName: $exploreName,
       whereFilter: $dashboardStore.whereFilter,
+      dimensionsWithInlistFilter: $dashboardStore.dimensionsWithInlistFilter,
       dimensionThresholdFilters: $dashboardStore.dimensionThresholdFilters,
       timeRange: timeRange
         ? {
@@ -146,6 +148,7 @@
               renotify: !!values.snooze,
               renotifyAfterSeconds: values.snooze ? Number(values.snooze) : 0,
               webOpenPath: `/explore/${$exploreName}`,
+              webOpenState: getProtoFromDashboardState($dashboardStore),
             },
           },
         });

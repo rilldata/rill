@@ -54,7 +54,7 @@ var spec = drivers.Spec{
 			Hint:        "Glob patterns are supported",
 		},
 		{
-			Key:         "account",
+			Key:         "azure_storage_account",
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Account name",
 			Description: "Azure storage account name.",

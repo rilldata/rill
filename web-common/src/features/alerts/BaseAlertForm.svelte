@@ -129,7 +129,7 @@
       <Button type="primary" on:click={handleNextTab}>Next</Button>
     {:else}
       <Button type="primary" disabled={$isSubmitting} form={formId} submitForm>
-        Create
+        {isEditForm ? "Update" : "Create"}
       </Button>
     {/if}
   </div>

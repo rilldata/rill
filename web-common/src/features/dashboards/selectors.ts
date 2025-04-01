@@ -9,13 +9,13 @@ import {
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import type {
-  RpcStatus,
-  V1Expression,
-  V1GetResourceResponse,
-  V1MetricsViewSpec,
-  V1MetricsViewTimeRangeResponse,
-  V1Resource,
+import {
+  type RpcStatus,
+  type V1Expression,
+  type V1GetResourceResponse,
+  type V1MetricsViewSpec,
+  type V1MetricsViewTimeRangeResponse,
+  type V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import {
   createQueryServiceMetricsViewTimeRange,
@@ -149,10 +149,12 @@ export function getFiltersForOtherDimensions(
 }
 
 export function additionalMeasures(
-  activeMeasureName: string,
+  activeMeasureName: string | null,
   dimensionThresholdFilters: DimensionThresholdFilter[],
 ) {
-  const measures = new Set<string>([activeMeasureName]);
+  const measures = new Set<string>(
+    activeMeasureName ? [activeMeasureName] : [],
+  );
   dimensionThresholdFilters.forEach(({ filters }) => {
     filters.forEach((filter) => {
       measures.add(filter.measure);

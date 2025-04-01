@@ -21,7 +21,6 @@ import {
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
 import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { render } from "@testing-library/svelte";
 import { get } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -29,10 +28,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.stubEnv("TZ", "UTC");
 
 describe("time-control-store", () => {
-  runtime.set({
-    host: "http://localhost",
-    instanceId: "default",
-  });
   const dashboardFetchMocks = DashboardFetchMocks.useDashboardFetchMocks();
 
   beforeEach(() => {

@@ -118,6 +118,9 @@ export function getDashboardStateFromProto(
   } else if (dashboard.where) {
     entity.whereFilter = fromExpressionProto(dashboard.where);
   }
+  if (dashboard.dimensionsWithInlistFilter) {
+    entity.dimensionsWithInlistFilter = dashboard.dimensionsWithInlistFilter;
+  }
   if (dashboard.having) {
     entity.dimensionThresholdFilters = dashboard.having.map((h) => {
       const expr = fromExpressionProto(h.filter as Expression);
@@ -215,6 +218,9 @@ export function getDashboardStateFromProto(
   }
   if (dashboard.leaderboardSortType) {
     entity.dashboardSortType = dashboard.leaderboardSortType;
+  }
+  if (dashboard.leaderboardMeasureCount) {
+    entity.leaderboardMeasureCount = dashboard.leaderboardMeasureCount;
   }
 
   if (dashboard.pivotIsActive !== undefined) {
