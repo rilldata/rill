@@ -343,7 +343,7 @@
       {isValidPercentOfTotal}
       {isTimeComparisonActive}
       {sortedAscending}
-      activeMeasureNames={leaderboardMeasureNames}
+      {leaderboardMeasureNames}
       {toggleSort}
       {setPrimaryDimension}
       {toggleComparisonDimension}
@@ -371,7 +371,7 @@
             {itemData}
             {isValidPercentOfTotal}
             {isTimeComparisonActive}
-            activeMeasureNames={leaderboardMeasureNames}
+            {leaderboardMeasureNames}
             {toggleDimensionValueSelection}
             {formatters}
           />
@@ -390,7 +390,7 @@
           {atLeastOneActive}
           {isValidPercentOfTotal}
           {isTimeComparisonActive}
-          activeMeasureNames={leaderboardMeasureNames}
+          {leaderboardMeasureNames}
           borderTop={i === 0}
           borderBottom={i === belowTheFoldRows.length - 1}
           {toggleDimensionValueSelection}

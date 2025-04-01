@@ -28,9 +28,11 @@
   export let isBeingCompared: boolean;
   export let filterExcludeMode: boolean;
   export let atLeastOneActive: boolean;
-  export let isValidPercentOfTotal: (measureName: string) => boolean;
   export let isTimeComparisonActive: boolean;
-  export let activeMeasureNames: string[] = [];
+  export let leaderboardMeasureNames: string[] = [];
+  export let dimensionColumnWidth: number;
+  export let suppressTooltip: boolean;
+  export let isValidPercentOfTotal: (measureName: string) => boolean;
   export let toggleDimensionValueSelection: (
     dimensionName: string,
     dimensionValue: string,
@@ -41,8 +43,6 @@
     string,
     (value: number | string | null | undefined) => string | null | undefined
   >;
-  export let dimensionColumnWidth: number;
-  export let suppressTooltip: boolean;
 
   let hovered = false;
   let valueRect = new DOMRect(0, 0, DEFAULT_COLUMN_WIDTH);
@@ -70,11 +70,11 @@
     : false;
 
   $: previousValueString =
-    activeMeasureNames.length === 1 &&
-    prevValues[activeMeasureNames[0]] !== undefined &&
-    prevValues[activeMeasureNames[0]] !== null
-      ? formatters[activeMeasureNames[0]]?.(
-          prevValues[activeMeasureNames[0]] as number,
+    leaderboardMeasureNames.length === 1 &&
+    prevValues[leaderboardMeasureNames[0]] !== undefined &&
+    prevValues[leaderboardMeasureNames[0]] !== null
+      ? formatters[leaderboardMeasureNames[0]]?.(
+          prevValues[leaderboardMeasureNames[0]] as number,
         )
       : undefined;
 
@@ -161,23 +161,17 @@
     ]),
   );
 
-  $: dimensionGradients =
-    activeMeasureNames.length >= 2
-      ? "bg-white"
-      : `linear-gradient(to right, ${barColor}
-    ${Math.max(...Object.values(barLengths))}px, transparent ${Math.max(...Object.values(barLengths))}px)`;
+  // $: dimensionGradients = `linear-gradient(to right, ${barColor}
+  //   ${Math.max(...Object.values(barLengths))}px, transparent ${Math.max(...Object.values(barLengths))}px)`;
 
-  $: measureGradients =
-    activeMeasureNames.length === 1
-      ? "bg-white"
-      : Object.fromEntries(
-          Object.entries(secondCellBarLengths).map(([name, length]) => [
-            name,
-            length
-              ? `linear-gradient(to right, transparent 16px, ${barColor} 16px, ${barColor} ${length + 16}px, transparent ${length + 16}px)`
-              : undefined,
-          ]),
-        );
+  // $: measureGradients = Object.fromEntries(
+  //   Object.entries(secondCellBarLengths).map(([name, length]) => [
+  //     name,
+  //     length
+  //       ? `linear-gradient(to right, transparent 16px, ${barColor} 16px, ${barColor} ${length + 16}px, transparent ${length + 16}px)`
+  //       : undefined,
+  //   ]),
+  // );
 
   $: deltaAbsoluteGradients = Object.fromEntries(
     Object.entries(thirdCellBarLengths).map(([name, length]) => [
@@ -249,7 +243,6 @@
   </td>
   <td
     data-dimension-cell
-    style:background={dimensionGradients}
     class:ui-copy={!atLeastOneActive}
     class:ui-copy-disabled={excluded}
     class:ui-copy-strong={!excluded && selected}
@@ -285,7 +278,6 @@
   {#each Object.keys(values) as measureName}
     <td
       data-measure-cell
-      style:background={measureGradients[measureName]}
       on:click={modified({
         shift: () => shiftClickHandler(values[measureName]?.toString() || ""),
       })}
