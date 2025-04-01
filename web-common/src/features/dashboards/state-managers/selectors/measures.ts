@@ -28,6 +28,7 @@ export const allMeasures = ({
   );
 };
 
+// FIXME: to consolidate web-common/src/features/dashboards/state-managers/selectors/active-measure.ts
 export const leaderboardMeasureName = ({ dashboard }: DashboardDataSources) => {
   return dashboard.leaderboardMeasureName;
 };
@@ -36,6 +37,26 @@ export const leaderboardMeasureCount = ({
   dashboard,
 }: DashboardDataSources) => {
   return dashboard.leaderboardMeasureCount ?? 1;
+};
+
+export const activeMeasuresFromMeasureCount = ({
+  validMetricsView,
+  validExplore,
+  dashboard,
+}: DashboardDataSources): string[] => {
+  if (!validMetricsView?.measures || !validExplore?.measures) return [];
+
+  const visibleMeasures = Array.from(dashboard.visibleMeasureKeys).map(
+    (key) =>
+      validMetricsView.measures?.find(
+        (m) => m.name === key,
+      ) as MetricsViewSpecMeasureV2,
+  );
+
+  return visibleMeasures
+    .slice(0, dashboard.leaderboardMeasureCount ?? 1)
+    .map(({ name }) => name)
+    .filter((name): name is string => name !== undefined);
 };
 
 export const visibleMeasures = ({
@@ -200,4 +221,6 @@ export const measureSelectors = {
   leaderboardMeasureName,
 
   leaderboardMeasureCount,
+
+  activeMeasuresFromMeasureCount,
 };

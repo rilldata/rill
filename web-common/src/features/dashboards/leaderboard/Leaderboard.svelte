@@ -55,16 +55,16 @@
   export let whereFilter: V1Expression;
   export let dimensionThresholdFilters: DimensionThresholdFilter[];
   export let activeMeasureName: string;
-  export let activeMeasureNames: string[];
+  export let leaderboardMeasureNames: string[];
+  export let visibleMeasures: string[];
   export let metricsViewName: string;
   export let sortType: SortType;
   export let sortBy: string | null;
   export let tableWidth: number;
   export let sortedAscending: boolean;
-  export let isValidPercentOfTotal: boolean;
+  export let isValidPercentOfTotal: (measureName: string) => boolean;
   export let timeControlsReady: boolean;
   export let dimensionColumnWidth: number;
-  export let isSummableMeasure: boolean;
   export let filterExcludeMode: boolean;
   export let isBeingCompared: boolean;
   export let parentElement: HTMLElement;
@@ -128,7 +128,7 @@
 
   $: measures = [
     ...(leaderboardMeasureCountFeatureFlag
-      ? activeMeasureNames.map(
+      ? visibleMeasures.map(
           (name) =>
             ({
               name,
@@ -143,7 +143,10 @@
 
     // Add comparison measures if there's a comparison time range
     ...(comparisonTimeRange
-      ? activeMeasureNames.flatMap((name) => getComparisonRequestMeasures(name))
+      ? (leaderboardMeasureCountFeatureFlag
+          ? visibleMeasures
+          : [activeMeasureName]
+        ).flatMap((name) => getComparisonRequestMeasures(name))
       : []),
 
     // Add URI measure if URI is present
@@ -184,7 +187,7 @@
     {
       ...(leaderboardMeasureCountFeatureFlag
         ? {
-            measures: activeMeasureNames.map((name) => ({ name })),
+            measures: visibleMeasures.map((name) => ({ name })),
           }
         : {
             measures: [{ name: activeMeasureName }],
@@ -205,7 +208,10 @@
 
   $: leaderboardTotals = totalsData?.data?.[0]
     ? Object.fromEntries(
-        activeMeasureNames.map((name) => [
+        (leaderboardMeasureCountFeatureFlag
+          ? visibleMeasures
+          : leaderboardMeasureNames
+        ).map((name) => [
           name,
           (totalsData?.data?.[0]?.[name] as number) ?? null,
         ]),
@@ -216,7 +222,7 @@
     prepareLeaderboardItemData(
       sortedData?.data,
       dimensionName,
-      activeMeasureNames,
+      leaderboardMeasureNames,
       slice,
       $selectedValues?.data ?? [],
       leaderboardTotals,
@@ -273,7 +279,7 @@
     cleanUpComparisonValue(
       item,
       dimensionName,
-      activeMeasureNames,
+      leaderboardMeasureNames,
       leaderboardTotals,
       $selectedValues?.data?.findIndex((value) =>
         compareLeaderboardValues(value, item[dimensionName]),
@@ -285,10 +291,10 @@
 
   $: columnCount =
     1 + // Base column (dimension)
-    activeMeasureNames.length + // Value column for each measure
+    leaderboardMeasureNames.length + // Value column for each measure
     (isTimeComparisonActive
-      ? activeMeasureNames.length * // For each measure
-        ((isValidPercentOfTotal ? 1 : 0) + // Percent of total column
+      ? leaderboardMeasureNames.length * // For each measure
+        ((isValidPercentOfTotal(activeMeasureName) ? 1 : 0) + // Percent of total column
           (isTimeComparisonActive ? 2 : 0)) // Delta absolute and delta percent columns
       : 0);
 </script>
@@ -305,9 +311,9 @@
     <colgroup>
       <col data-gutter-column style:width="{gutterWidth}px" />
       <col data-dimension-column style:width="{dimensionColumnWidth}px" />
-      {#each activeMeasureNames as _, index (index)}
+      {#each leaderboardMeasureNames as _, index (index)}
         <col data-measure-column style:width="{$valueColumn}px" />
-        {#if isValidPercentOfTotal}
+        {#if isValidPercentOfTotal(leaderboardMeasureNames[index])}
           <col
             data-percent-of-total-column
             style:width="{COMPARISON_COLUMN_WIDTH}px"
@@ -337,7 +343,7 @@
       {isValidPercentOfTotal}
       {isTimeComparisonActive}
       {sortedAscending}
-      {activeMeasureNames}
+      activeMeasureNames={leaderboardMeasureNames}
       {toggleSort}
       {setPrimaryDimension}
       {toggleComparisonDimension}
@@ -355,7 +361,6 @@
             {suppressTooltip}
             {tableWidth}
             {dimensionColumnWidth}
-            {isSummableMeasure}
             {isBeingCompared}
             {filterExcludeMode}
             {atLeastOneActive}
@@ -363,7 +368,7 @@
             {itemData}
             {isValidPercentOfTotal}
             {isTimeComparisonActive}
-            {activeMeasureNames}
+            activeMeasureNames={leaderboardMeasureNames}
             {toggleDimensionValueSelection}
             {formatters}
           />
@@ -375,7 +380,6 @@
           {suppressTooltip}
           {itemData}
           {dimensionColumnWidth}
-          {isSummableMeasure}
           {tableWidth}
           {dimensionName}
           {isBeingCompared}
@@ -383,7 +387,7 @@
           {atLeastOneActive}
           {isValidPercentOfTotal}
           {isTimeComparisonActive}
-          {activeMeasureNames}
+          activeMeasureNames={leaderboardMeasureNames}
           borderTop={i === 0}
           borderBottom={i === belowTheFoldRows.length - 1}
           {toggleDimensionValueSelection}

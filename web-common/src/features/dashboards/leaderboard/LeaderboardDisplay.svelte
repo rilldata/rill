@@ -19,18 +19,17 @@
   export let comparisonTimeRange: V1TimeRange | undefined;
   export let timeControlsReady: boolean;
   export let activeMeasureName: string;
-  export let activeMeasureNames: string[];
+  export let leaderboardMeasureNames: string[];
 
   const StateManagers = getStateManagers();
   const {
     selectors: {
-      activeMeasure: { isValidPercentOfTotal, isSummableMeasure },
       numberFormat: { measureFormatters, activeMeasureFormatter },
       dimensionFilters: { isFilterExcludeMode },
       dimensions: { visibleDimensions },
       comparison: { isBeingCompared: isBeingComparedReadable },
       sorting: { sortedAscending, sortType, sortByMeasure },
-      measures: { measureLabel },
+      measures: { measureLabel, isMeasureValidPercentOfTotal, visibleMeasures },
     },
     actions: {
       dimensions: { setPrimaryDimension },
@@ -57,7 +56,7 @@
 
   $: dimensionColumnWidth = 164;
 
-  $: showPercentOfTotal = isValidPercentOfTotal;
+  $: showPercentOfTotal = $isMeasureValidPercentOfTotal(activeMeasureName);
   $: showDeltaPercent = !!comparisonTimeRange;
 
   $: tableWidth =
@@ -68,6 +67,10 @@
       : showPercentOfTotal
         ? COMPARISON_COLUMN_WIDTH
         : 0);
+
+  $: validVisibleMeasures = $visibleMeasures
+    .map((m) => m.name)
+    .filter((name) => name !== undefined);
 </script>
 
 <div class="flex flex-col overflow-hidden size-full" aria-label="Leaderboards">
@@ -89,10 +92,11 @@
         {#each $visibleDimensions as dimension (dimension.name)}
           {#if dimension.name}
             <Leaderboard
-              isValidPercentOfTotal={$isValidPercentOfTotal}
+              isValidPercentOfTotal={$isMeasureValidPercentOfTotal}
               {metricsViewName}
               {activeMeasureName}
-              {activeMeasureNames}
+              {leaderboardMeasureNames}
+              visibleMeasures={validVisibleMeasures}
               {whereFilter}
               {dimensionThresholdFilters}
               {instanceId}
@@ -104,7 +108,6 @@
               filterExcludeMode={$isFilterExcludeMode(dimension.name)}
               {comparisonTimeRange}
               {dimension}
-              isSummableMeasure={$isSummableMeasure}
               {parentElement}
               {suppressTooltip}
               {timeControlsReady}
