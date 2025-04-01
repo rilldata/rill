@@ -315,6 +315,7 @@
                       disabled={selectedItems.length === 1}
                       class:pointer-events-none={selectedItems.length === 1}
                       class:opacity-50={selectedItems.length === 1}
+                      aria-label="Toggle visibility"
                     >
                       <EyeIcon size="14px" color="#6b7280" />
                     </button>
@@ -376,6 +377,7 @@
                   disabled={selectedItems.length === 1}
                   class:pointer-events-none={selectedItems.length === 1}
                   class:opacity-50={selectedItems.length === 1}
+                  aria-label="Toggle visibility"
                 >
                   <EyeIcon size="14px" color="#6b7280" />
                 </button>
@@ -432,6 +434,7 @@
                     selectedItems = [...selectedItems, id];
                     onSelectedChange(selectedItems);
                   }}
+                  aria-label="Toggle visibility"
                 >
                   <EyeOffIcon size="14px" color="#9ca3af" />
                 </button>

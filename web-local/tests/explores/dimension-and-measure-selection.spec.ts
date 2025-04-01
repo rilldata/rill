@@ -6,59 +6,118 @@ import { test } from "../setup/base";
 test.describe("dimension and measure selectors", () => {
   test.use({ project: "AdBids" });
 
-  test("dimension and measure selectors flow", async ({ page }) => {
+  test.beforeEach(async ({ page }) => {
     await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
     await page.getByRole("button", { name: "Preview" }).click();
+  });
 
+  async function escape(page) {
+    await page.keyboard.press("Escape");
+    await page.getByRole("menu").waitFor({ state: "hidden" });
+  }
+
+  // Click the eye icon to hide/show items
+  async function toggleItemVisibility(page, itemName: string) {
+    await page
+      .getByRole("button", { name: itemName })
+      .getByRole("button", { name: "Toggle visibility" })
+      .click();
+  }
+
+  test("measure selector flow", async ({ page }) => {
     const measuresButton = page.getByRole("button", {
       name: "Choose measures to display",
     });
-    const dimensionsButton = page.getByRole("button", {
-      name: "Choose dimensions to display",
-    });
 
-    async function escape() {
-      await page.keyboard.press("Escape");
-      await page.getByRole("menu").waitFor({ state: "hidden" });
-    }
-
-    async function clickMenuItem(itemName: string) {
-      await clickMenuButton(page, itemName);
-    }
-
+    // Test individual measure toggling
     await measuresButton.click();
-    await clickMenuItem("Total records");
-    await escape();
+    // Show "Total records" from hidden section first
+    await toggleItemVisibility(page, "Total records");
+    // Now we can hide "Sum of Bid Price" since we have another measure shown
+    await toggleItemVisibility(page, "Sum of Bid Price");
+    await escape(page);
     await expect(measuresButton).toHaveText("1 of 2 Measures");
-
-    await expect(page.getByText("Sum of Bid Price 301k")).toBeVisible();
-    await expect(page.getByText("Total records 100k")).not.toBeVisible();
-
-    await measuresButton.click();
-    await clickMenuItem("Total records");
-    await clickMenuItem("Sum of Bid Price");
-    await expect(measuresButton).toHaveText("1 of 2 Measures");
-    await escape();
 
     await expect(page.getByText("Sum of Bid Price 301k")).not.toBeVisible();
     await expect(page.getByText("Total records 100k")).toBeVisible();
 
+    await measuresButton.click();
+    // Show "Sum of Bid Price" from hidden section first
+    await toggleItemVisibility(page, "Sum of Bid Price");
+    // Now we can hide "Total records" since we have another measure shown
+    await toggleItemVisibility(page, "Total records");
+    await expect(measuresButton).toHaveText("1 of 2 Measures");
+    await escape(page);
+
+    await expect(page.getByText("Sum of Bid Price 301k")).toBeVisible();
+    await expect(page.getByText("Total records 100k")).not.toBeVisible();
+
+    // Test "Hide all" and "Show all" functionality
+    await measuresButton.click();
+    // Click "Hide all" button in the shown section header
+    await page.getByRole("button", { name: "Hide all" }).click();
+    await expect(measuresButton).toHaveText("1 of 2 Measures");
+    await escape(page);
+
+    await expect(page.getByText("Sum of Bid Price 301k")).not.toBeVisible();
+    await expect(page.getByText("Total records 100k")).toBeVisible();
+
+    await measuresButton.click();
+    // Click "Show all" button in the hidden section header
+    await page.getByRole("button", { name: "Show all" }).click();
+    await expect(measuresButton).toHaveText("All Measures");
+    await escape(page);
+
+    await expect(page.getByText("Sum of Bid Price 301k")).toBeVisible();
+    await expect(page.getByText("Total records 100k")).toBeVisible();
+  });
+
+  test("dimension selector flow", async ({ page }) => {
+    const dimensionsButton = page.getByRole("button", {
+      name: "Choose dimensions to display",
+    });
+
+    // Test individual dimension toggling
     await dimensionsButton.click();
-    await clickMenuItem("Publisher");
+    // Show "Domain" from hidden section first
+    await toggleItemVisibility(page, "Domain");
+    // Now we can hide "Publisher" since we have another dimension shown
+    await toggleItemVisibility(page, "Publisher");
     await expect(dimensionsButton).toHaveText("1 of 2 Dimensions");
-    await escape();
+    await escape(page);
 
     await expect(page.getByText("Publisher")).not.toBeVisible();
     await expect(page.getByText("Domain")).toBeVisible();
 
     await dimensionsButton.click();
-    await clickMenuItem("Publisher");
-    await clickMenuItem("Domain");
+    // Show "Publisher" from hidden section first
+    await toggleItemVisibility(page, "Publisher");
+    // Now we can hide "Domain" since we have another dimension shown
+    await toggleItemVisibility(page, "Domain");
     await expect(dimensionsButton).toHaveText("1 of 2 Dimensions");
-    await escape();
+    await escape(page);
 
     await expect(page.getByText("Publisher")).toBeVisible();
     await expect(page.getByText("Domain")).not.toBeVisible();
+
+    // Test "Hide all" and "Show all" functionality
+    await dimensionsButton.click();
+    // Click "Hide all" button in the shown section header
+    await page.getByRole("button", { name: "Hide all" }).click();
+    await expect(dimensionsButton).toHaveText("1 of 2 Dimensions");
+    await escape(page);
+
+    await expect(page.getByText("Publisher")).not.toBeVisible();
+    await expect(page.getByText("Domain")).toBeVisible();
+
+    await dimensionsButton.click();
+    // Click "Show all" button in the hidden section header
+    await page.getByRole("button", { name: "Show all" }).click();
+    await expect(dimensionsButton).toHaveText("All Dimensions");
+    await escape(page);
+
+    await expect(page.getByText("Publisher")).toBeVisible();
+    await expect(page.getByText("Domain")).toBeVisible();
   });
 });
