@@ -15,20 +15,39 @@ export type CompoundQueryResult<T> = Readable<
   }
 >;
 
-export function getCompoundQuery<R, T>(
-  queries: CreateQueryResult<R, HTTPError>[],
-  getter: (data: (R | undefined)[]) => T,
-): CompoundQueryResult<T> {
+type CreateQueryResponses<Q> = {
+  [K in keyof Q]: Q[K] extends
+    | CreateQueryResult<infer U>
+    | CompoundQueryResult<infer U>
+    ? U | undefined
+    : never;
+};
+
+// Query types that are supported as arguments to getCompoundQuery
+export type SupportedCompoundQueryResult<R = any, E = any> =
+  | CreateQueryResult<R, E>
+  | CompoundQueryResult<R>;
+
+type CompoundQueryResults =
+  | [SupportedCompoundQueryResult, ...Array<SupportedCompoundQueryResult>]
+  | Array<SupportedCompoundQueryResult>;
+
+export function getCompoundQuery<Queries extends CompoundQueryResults, T>(
+  queries: Queries,
+  getter: (data: CreateQueryResponses<Queries>) => T,
+) {
   return derived(queries, ($queries) => {
     const someQueryFetching = $queries.some((q) => q.isFetching);
     const someQueryLoading = $queries.some((q) => q.isLoading);
-    const errors = $queries.filter((q) => q.isError).map((q) => q.error);
-    const data = getter($queries.map((query) => query.data));
+    const errors = $queries.filter((q) => !!q.error).map((q) => q.error);
+    const data = getter(
+      $queries.map((query) => query.data) as CreateQueryResponses<Queries>,
+    );
 
     return {
       data,
       // TODO: merge multiple errors
-      error: errors[0]?.response?.data.message,
+      error: errors[0],
       isFetching: someQueryFetching,
       isLoading: someQueryLoading,
     };
