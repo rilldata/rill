@@ -55,10 +55,10 @@
             shared: values.shared === "true",
             data: getBookmarkDataForDashboard(
               $exploreState,
+              $validSpecStore.data?.explore ?? {},
               values.filtersOnly,
               values.absoluteTimeRange,
               $timeControlsStore,
-              $validSpecStore.data?.explore,
             ),
           },
         });
@@ -73,10 +73,10 @@
             shared: values.shared === "true",
             data: getBookmarkDataForDashboard(
               $exploreState,
+              $validSpecStore.data?.explore ?? {},
               values.filtersOnly,
               values.absoluteTimeRange,
               $timeControlsStore,
-              $validSpecStore.data?.explore,
             ),
           },
         });

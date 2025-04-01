@@ -34,7 +34,19 @@ export const toggleAllMeasuresVisibility = (
   dashboard.allMeasuresVisible = !dashboard.allMeasuresVisible;
 };
 
+export const setMeasureVisibility = (
+  { dashboard }: DashboardMutables,
+  measures: string[],
+  allMeasures: string[],
+) => {
+  dashboard.visibleMeasures = measures;
+
+  dashboard.allMeasuresVisible =
+    dashboard.visibleMeasures.length === allMeasures.length;
+};
+
 export const measureActions = {
   toggleMeasureVisibility,
   toggleAllMeasuresVisibility,
+  setMeasureVisibility,
 };

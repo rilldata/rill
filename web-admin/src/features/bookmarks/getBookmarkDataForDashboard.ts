@@ -9,17 +9,17 @@ import type { V1ExploreSpec } from "@rilldata/web-common/runtime-client";
  * Converts the dashboard to base64 protobuf string using {@link getProtoFromDashboardState}
  *
  * @param dashboard
+ * @param exploreSpec
  * @param filtersOnly Only dimension/measure filters and the selected time range is stored.
  * @param absoluteTimeRange Time ranges is treated as absolute.
  * @param timeControlState Time control state to derive the time range from.
- * @param exploreSpec
  */
 export function getBookmarkDataForDashboard(
   dashboard: MetricsExplorerEntity,
+  exploreSpec: V1ExploreSpec,
   filtersOnly?: boolean,
   absoluteTimeRange?: boolean,
   timeControlState?: TimeControlState,
-  exploreSpec?: V1ExploreSpec,
 ): string {
   const newDashboard = structuredClone(dashboard);
 

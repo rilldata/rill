@@ -56,10 +56,7 @@
     await homeBookmarkModifier(
       getBookmarkDataForDashboard(
         $exploreState,
-        undefined,
-        undefined,
-        undefined,
-        $validSpecStore.data?.explore,
+        $validSpecStore.data?.explore ?? {},
       ),
       $projectId.data,
       $bookamrksResp.data?.bookmarks ?? [],
