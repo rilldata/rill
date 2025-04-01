@@ -1,6 +1,7 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
 import { DashboardStateDataLoader } from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateDataLoader";
+import { saveMostRecentExploreState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-explore-state";
 import {
   metricsExplorerStore,
   useExploreState,
@@ -16,7 +17,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
 import type { AfterNavigate } from "@sveltejs/kit";
 import { derived, get, type Readable } from "svelte/store";
-import { updateMostRecentExploreState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-store";
+import { updateExploreSessionStorage } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
 
 /**
  * Keeps explore state and url in sync.
@@ -34,7 +35,7 @@ export class DashboardStateSync {
   private initialized = false;
   private prevUrl: URL | undefined;
   // There can be cases when updating either the url or the state can impact the code handling the other part.
-  // So we need a lock to make sure an update doesnt trigger the counterpart code.
+  // So we need a lock to make sure an update doesn't trigger the counterpart code.
   private updating = false;
 
   public constructor(
@@ -106,7 +107,14 @@ export class DashboardStateSync {
 
     const updatedExploreState =
       get(metricsExplorerStore).entities[this.exploreName];
-    updateMostRecentExploreState(
+    updateExploreSessionStorage(
+      this.exploreName,
+      this.extraPrefix,
+      exploreSpec,
+      timeControlsState,
+      updatedExploreState,
+    );
+    saveMostRecentExploreState(
       this.exploreName,
       this.extraPrefix,
       exploreSpec,
@@ -156,7 +164,7 @@ export class DashboardStateSync {
     );
     // Get time controls state after explore state is updated.
     const timeControlsState = get(this.timeControlStore);
-    // if we added extra url params from most recent store then update the url
+    // if we added extra url params from session storage then update the url
     redirectUrl.search = getUpdatedUrlForExploreState(
       exploreSpec,
       timeControlsState,
@@ -178,7 +186,14 @@ export class DashboardStateSync {
 
     const updatedExploreState =
       get(metricsExplorerStore).entities[this.exploreName];
-    updateMostRecentExploreState(
+    updateExploreSessionStorage(
+      this.exploreName,
+      this.extraPrefix,
+      exploreSpec,
+      timeControlsState,
+      updatedExploreState,
+    );
+    saveMostRecentExploreState(
       this.exploreName,
       this.extraPrefix,
       exploreSpec,
@@ -222,7 +237,14 @@ export class DashboardStateSync {
     }
     console.log("GOTO", newUrl.search);
 
-    updateMostRecentExploreState(
+    updateExploreSessionStorage(
+      this.exploreName,
+      this.extraPrefix,
+      exploreSpec,
+      timeControlsState,
+      exploreState,
+    );
+    saveMostRecentExploreState(
       this.exploreName,
       this.extraPrefix,
       exploreSpec,

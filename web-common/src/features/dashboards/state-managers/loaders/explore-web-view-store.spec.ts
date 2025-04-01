@@ -170,13 +170,14 @@ describe("Explore web view store", () => {
     );
 
     localStorage.clear();
+    sessionStorage.clear();
     queryClient.clear();
     metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
   });
 
   for (const { title, initView, view } of TestCases) {
     it(title, async () => {
-      renderDashboardStateLoader();
+      renderDashboardStateManager();
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
 
       // apply mutations to main view to setup the initial state
@@ -233,7 +234,7 @@ describe("Explore web view store", () => {
 
 // This needs to be there each file because of how hoisting works with vitest.
 // TODO: find if there is a way to share code.
-function renderDashboardStateLoader() {
+function renderDashboardStateManager() {
   const renderResults = render(DashboardStateManagerTest, {
     props: {
       exploreName: AD_BIDS_EXPLORE_NAME,

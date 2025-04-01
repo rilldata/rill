@@ -1,6 +1,7 @@
 import { type CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
 import { useDashboardFetchMocksForComponentTests } from "@rilldata/web-common/features/dashboards/filters/test/filter-test-utils";
-import { setMostRecentExploreStateForWebView } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-store";
+import { setExploreStateForWebView } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
+import { setMostRecentExploreState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-explore-state";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
@@ -68,6 +69,7 @@ describe("DashboardStateManager", () => {
     });
 
     localStorage.clear();
+    sessionStorage.clear();
     queryClient.clear();
     metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
   });
@@ -113,7 +115,7 @@ describe("DashboardStateManager", () => {
     });
 
     it("Should load base dashboard state", async () => {
-      renderDashboardStateLoader();
+      renderDashboardStateManager();
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
 
       assertExploreStateSubset(ExploreStateSubsetForBaseState);
@@ -122,7 +124,7 @@ describe("DashboardStateManager", () => {
     });
 
     it("Should load 'other source' of dashboard state", async () => {
-      renderDashboardStateLoader(BookmarkSourceQueryResult);
+      renderDashboardStateManager(BookmarkSourceQueryResult);
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
 
       assertExploreStateSubset({
@@ -149,13 +151,12 @@ describe("DashboardStateManager", () => {
     });
 
     it("Should load most recent dashboard state", async () => {
-      setMostRecentExploreStateForWebView(
+      setMostRecentExploreState(
         AD_BIDS_EXPLORE_NAME,
         undefined,
-        "explore",
         "view=explore&tr=P7D&compare_tr=rill-PP&grain=hour&measures=bid_price&dims=domain&sort_by=bid_price",
       );
-      renderDashboardStateLoader(BookmarkSourceQueryResult);
+      renderDashboardStateManager(BookmarkSourceQueryResult);
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
 
       assertExploreStateSubset({
@@ -179,6 +180,52 @@ describe("DashboardStateManager", () => {
       });
       const initUrlSearch =
         "tr=P7D&compare_tr=rill-PP&grain=hour&measures=bid_price&dims=domain&sort_by=bid_price";
+      pageMock.assertSearchParams(initUrlSearch);
+
+      pageMock.popState("");
+      await waitFor(() =>
+        assertExploreStateSubset(ExploreStateSubsetForBaseState),
+      );
+      // only 2 urls should in history
+      expect(pageMock.urlSearchHistory).toEqual([initUrlSearch, ""]);
+    });
+
+    it("Should load from session dashboard state", async () => {
+      setMostRecentExploreState(
+        AD_BIDS_EXPLORE_NAME,
+        undefined,
+        "view=explore&tr=P7D&compare_tr=rill-PP&grain=hour&measures=bid_price&dims=domain&sort_by=bid_price",
+      );
+      setExploreStateForWebView(
+        AD_BIDS_EXPLORE_NAME,
+        undefined,
+        "explore",
+        "view=explore&tr=P14D&compare_tr=rill-PW&grain=day&measures=impressions&dims=publisher&sort_by=impressions",
+      );
+      renderDashboardStateManager(BookmarkSourceQueryResult);
+      await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
+
+      assertExploreStateSubset({
+        selectedTimeRange: {
+          name: "P14D",
+          interval: V1TimeGrain.TIME_GRAIN_DAY,
+        } as DashboardTimeControls,
+        showTimeComparison: true,
+        selectedComparisonTimeRange: {
+          name: TimeComparisonOption.WEEK,
+        } as DashboardTimeControls,
+
+        visibleMeasureKeys: new Set([AD_BIDS_IMPRESSIONS_MEASURE]),
+        allMeasuresVisible: false,
+        visibleDimensionKeys: new Set([AD_BIDS_PUBLISHER_DIMENSION]),
+        allDimensionsVisible: false,
+
+        leaderboardMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
+        leaderboardContextColumn: undefined,
+        sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
+      });
+      const initUrlSearch =
+        "tr=P14D&compare_tr=rill-PW&grain=day&measures=impressions&dims=publisher";
       pageMock.assertSearchParams(initUrlSearch);
 
       pageMock.popState("");
@@ -222,7 +269,7 @@ describe("DashboardStateManager", () => {
     });
 
     it("Should load base dashboard state", async () => {
-      renderDashboardStateLoader();
+      renderDashboardStateManager();
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
 
       assertExploreStateSubset(ExploreStateSubsetForBaseState);
@@ -231,13 +278,12 @@ describe("DashboardStateManager", () => {
     });
 
     it("Should load most recent dashboard state", async () => {
-      setMostRecentExploreStateForWebView(
+      setMostRecentExploreState(
         AD_BIDS_EXPLORE_NAME,
         undefined,
-        "explore",
         "view=explore&measures=bid_price&dims=domain&sort_by=bid_price",
       );
-      renderDashboardStateLoader();
+      renderDashboardStateManager();
 
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
       assertExploreStateSubset({
@@ -264,12 +310,52 @@ describe("DashboardStateManager", () => {
       // only 2 urls should in history
       expect(pageMock.urlSearchHistory).toEqual([initUrlSearch, ""]);
     });
+
+    it("Should load from session dashboard state", async () => {
+      setMostRecentExploreState(
+        AD_BIDS_EXPLORE_NAME,
+        undefined,
+        "view=explore&measures=bid_price&dims=domain&sort_by=bid_price",
+      );
+      setExploreStateForWebView(
+        AD_BIDS_EXPLORE_NAME,
+        undefined,
+        "explore",
+        "view=explore&measures=impressions&dims=publisher&sort_by=impressions",
+      );
+      renderDashboardStateManager();
+
+      await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
+      assertExploreStateSubset({
+        selectedTimeRange: undefined,
+        showTimeComparison: false,
+        selectedComparisonTimeRange: undefined,
+
+        visibleMeasureKeys: new Set([AD_BIDS_IMPRESSIONS_MEASURE]),
+        allMeasuresVisible: false,
+        visibleDimensionKeys: new Set([AD_BIDS_PUBLISHER_DIMENSION]),
+        allDimensionsVisible: false,
+
+        leaderboardMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
+        leaderboardContextColumn: undefined,
+        sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
+      });
+      const initUrlSearch = "measures=impressions&dims=publisher";
+      pageMock.assertSearchParams(initUrlSearch);
+
+      pageMock.popState("");
+      await waitFor(() =>
+        assertExploreStateSubset(ExploreStateSubsetForBaseState),
+      );
+      // only 2 urls should in history
+      expect(pageMock.urlSearchHistory).toEqual([initUrlSearch, ""]);
+    });
   });
 });
 
 // This needs to be there each file because of how hoisting works with vitest.
 // TODO: find if there is a way to share code.
-function renderDashboardStateLoader(
+function renderDashboardStateManager(
   bookmarkOrTokenExploreState:
     | CompoundQueryResult<Partial<MetricsExplorerEntity> | undefined>
     | undefined = undefined,
