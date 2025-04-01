@@ -99,6 +99,11 @@
     ]),
   );
 
+  $: totalBarLength = Object.values(barLengths).reduce(
+    (sum, length) => sum + length,
+    0,
+  );
+
   $: showZigZags = Object.fromEntries(
     Object.entries(barLengths).map(([name, length]) => [
       name,
@@ -161,17 +166,11 @@
     ]),
   );
 
-  // $: dimensionGradients = `linear-gradient(to right, ${barColor}
-  //   ${Math.max(...Object.values(barLengths))}px, transparent ${Math.max(...Object.values(barLengths))}px)`;
-
-  // $: measureGradients = Object.fromEntries(
-  //   Object.entries(secondCellBarLengths).map(([name, length]) => [
-  //     name,
-  //     length
-  //       ? `linear-gradient(to right, transparent 16px, ${barColor} 16px, ${barColor} ${length + 16}px, transparent ${length + 16}px)`
-  //       : undefined,
-  //   ]),
-  // );
+  $: dimensionGradients =
+    leaderboardMeasureNames.length === 1
+      ? `linear-gradient(to right, ${barColor}
+      ${totalBarLength}px, transparent ${totalBarLength}px)`
+      : undefined;
 
   $: deltaAbsoluteGradients = Object.fromEntries(
     Object.entries(thirdCellBarLengths).map(([name, length]) => [
@@ -250,6 +249,7 @@
       shift: () => shiftClickHandler(dimensionValue),
     })}
     class="relative size-full flex flex-none justify-between items-center leaderboard-label"
+    style:background={dimensionGradients}
   >
     <FormattedDataType value={dimensionValue} truncate />
 
@@ -304,7 +304,6 @@
           shift: () =>
             shiftClickHandler(pctOfTotals[measureName]?.toString() || ""),
         })}
-        title={pctOfTotals[measureName]?.toString() || ""}
       >
         <PercentageChange
           value={pctOfTotals[measureName]}
@@ -324,7 +323,6 @@
           shift: () =>
             shiftClickHandler(deltaAbsMap[measureName]?.toString() || ""),
         })}
-        title={deltaAbsMap[measureName]?.toString() || ""}
       >
         <FormattedDataType
           color="text-gray-500"
@@ -349,7 +347,6 @@
           shift: () =>
             shiftClickHandler(deltaRels[measureName]?.toString() || ""),
         })}
-        title={deltaRels[measureName]?.toString() || ""}
       >
         <PercentageChange
           value={deltaRels[measureName]
