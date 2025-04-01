@@ -363,7 +363,6 @@
           <LeaderboardRow
             {suppressTooltip}
             {tableWidth}
-            {dimensionColumnWidth}
             {isBeingCompared}
             {filterExcludeMode}
             {atLeastOneActive}
@@ -382,7 +381,6 @@
         <LeaderboardRow
           {suppressTooltip}
           {itemData}
-          {dimensionColumnWidth}
           {tableWidth}
           {dimensionName}
           {isBeingCompared}

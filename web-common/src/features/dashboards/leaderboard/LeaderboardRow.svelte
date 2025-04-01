@@ -30,7 +30,6 @@
   export let atLeastOneActive: boolean;
   export let isTimeComparisonActive: boolean;
   export let leaderboardMeasureNames: string[] = [];
-  export let dimensionColumnWidth: number;
   export let suppressTooltip: boolean;
   export let isValidPercentOfTotal: (measureName: string) => boolean;
   export let toggleDimensionValueSelection: (
