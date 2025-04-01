@@ -1,4 +1,3 @@
-import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type {
   CreateQueryResult,
   QueryObserverResult,
