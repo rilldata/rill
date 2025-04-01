@@ -41,7 +41,6 @@
   import { valueColumn, COMPARISON_COLUMN_WIDTH } from "./leaderboard-widths";
   import DelayedLoadingRows from "./DelayedLoadingRows.svelte";
   import type { selectedDimensionValuesV2 } from "../state-managers/selectors/dimension-filters";
-  import { keepPreviousData } from "@tanstack/svelte-query";
 
   const slice = 7;
   const gutterWidth = 24;
@@ -175,12 +174,9 @@
     {
       query: {
         enabled: visible && timeControlsReady,
-        placeholderData: keepPreviousData,
       },
     },
   );
-
-  $: console.log($sortedQuery.data?.data);
 
   $: totalsQuery = createQueryServiceMetricsViewAggregation(
     instanceId,
@@ -204,7 +200,7 @@
     },
   );
 
-  $: ({ data: sortedData, isLoading } = $sortedQuery);
+  $: ({ data: sortedData, isFetching, isLoading } = $sortedQuery);
   $: ({ data: totalsData } = $totalsQuery);
 
   $: leaderboardTotals = totalsData?.data?.[0]
@@ -225,8 +221,6 @@
       $selectedValues?.data ?? [],
       leaderboardTotals,
     ));
-
-  $: console.log({ aboveTheFold: aboveTheFold.length });
 
   $: belowTheFoldDataLimit = maxValuesToShow - aboveTheFold.length;
   $: belowTheFoldDataQuery = createQueryServiceMetricsViewAggregation(
@@ -353,9 +347,12 @@
     />
 
     <tbody>
-      {#if isLoading}
-        <DelayedLoadingRows {isLoading} columns={columnCount + 1} />
-      {:else}
+      <DelayedLoadingRows
+        {isLoading}
+        {isFetching}
+        rowCount={aboveTheFold.length}
+        columnCount={columnCount + 1}
+      >
         {#each aboveTheFold as itemData (itemData.dimensionValue)}
           <LeaderboardRow
             {suppressTooltip}
@@ -374,7 +371,7 @@
             {formatters}
           />
         {/each}
-      {/if}
+      </DelayedLoadingRows>
 
       {#each belowTheFoldRows as itemData, i (itemData.dimensionValue)}
         <LeaderboardRow

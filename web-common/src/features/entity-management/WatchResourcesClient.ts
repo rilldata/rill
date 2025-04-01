@@ -106,13 +106,13 @@ export class WatchResourcesClient {
           return;
 
         // Refetch `ListResources` queries
-        void queryClient.invalidateQueries({
+        void queryClient.refetchQueries({
           queryKey: getRuntimeServiceListResourcesQueryKey(
             this.instanceId,
             undefined,
           ),
         });
-        void queryClient.invalidateQueries({
+        void queryClient.refetchQueries({
           queryKey: getRuntimeServiceListResourcesQueryKey(this.instanceId, {
             kind: res.name.kind,
           }),
@@ -239,7 +239,7 @@ export class WatchResourcesClient {
               );
             }
 
-            void queryClient.invalidateQueries({
+            void queryClient.refetchQueries({
               queryKey: getRuntimeServiceGetExploreQueryKey(this.instanceId, {
                 name: res.name.name,
               }),
@@ -249,7 +249,7 @@ export class WatchResourcesClient {
           }
 
           case ResourceKind.Canvas: {
-            void queryClient.invalidateQueries({
+            void queryClient.refetchQueries({
               queryKey: getQueryServiceResolveCanvasQueryKey(
                 this.instanceId,
                 res.name.name,
@@ -280,13 +280,13 @@ export class WatchResourcesClient {
        */
       case V1ResourceEvent.RESOURCE_EVENT_DELETE:
         // Refetch `ListResources` queries
-        void queryClient.invalidateQueries({
+        void queryClient.refetchQueries({
           queryKey: getRuntimeServiceListResourcesQueryKey(
             this.instanceId,
             undefined,
           ),
         });
-        void queryClient.invalidateQueries({
+        void queryClient.refetchQueries({
           queryKey: getRuntimeServiceListResourcesQueryKey(this.instanceId, {
             kind: res.name.kind,
           }),

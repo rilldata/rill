@@ -143,6 +143,7 @@ export function createChartDataQuery(
               placeholderData: keepPreviousData,
             },
           },
+          ctx.queryClient,
         );
 
         return derived(dataQuery, ($dataQuery) => {
