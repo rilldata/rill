@@ -174,10 +174,11 @@ func (tr *TimeRange) IsZero() bool {
 }
 
 type Expression struct {
-	Name      string     `mapstructure:"name"`
-	Value     any        `mapstructure:"val"`
-	Condition *Condition `mapstructure:"cond"`
-	Subquery  *Subquery  `mapstructure:"subquery"`
+	Name       string     `mapstructure:"name"`
+	Value      any        `mapstructure:"val"`
+	Condition  *Condition `mapstructure:"cond"`
+	Subquery   *Subquery  `mapstructure:"subquery"`
+	Identifier string     `mapstructure:"identifier"`
 }
 
 type Condition struct {
@@ -186,6 +187,7 @@ type Condition struct {
 }
 
 type Subquery struct {
+	RawSQL    string      `mapstructure:"sql"`
 	Dimension Dimension   `mapstructure:"dimension"`
 	Measures  []Measure   `mapstructure:"measures"`
 	Where     *Expression `mapstructure:"where"`

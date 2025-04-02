@@ -205,11 +205,15 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 
 	if n.Group && len(n.DimFields) > 0 {
 		b.out.WriteString(" GROUP BY ")
-		for i := range n.DimFields {
+		for i, f := range n.DimFields {
 			if i > 0 {
 				b.out.WriteString(", ")
 			}
-			b.out.WriteString(strconv.Itoa(i + 1))
+			if n.GroupByIdentifier {
+				b.out.WriteString(b.ast.dialect.EscapeIdentifier(f.GroupByIdentifier))
+			} else {
+				b.out.WriteString(strconv.Itoa(i + 1))
+			}
 		}
 	}
 
