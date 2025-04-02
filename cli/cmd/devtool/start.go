@@ -97,7 +97,7 @@ func start(ch *cmdutil.Helper, preset string, verbose, reset, refreshDotenv bool
 	case "local":
 		err = local{}.start(ctx, verbose, reset, services)
 	default:
-		err = fmt.Errorf("Unknown preset %q", preset)
+		err = fmt.Errorf("unknown preset %q", preset)
 	}
 	// If ctx.Err() != nil, we don't return the err because any graceful shutdown will cause sub-commands to return non-zero exit code errors.
 	// In these cases, ignoring the error doesn't really matter since "real" errors are probably also logged to stdout anyway.
@@ -111,7 +111,7 @@ func checkGoVersion() error {
 	v := version.Must(version.NewVersion(strings.TrimPrefix(runtime.Version(), "go")))
 	minVersion := version.Must(version.NewVersion(minGoVersion))
 	if v.LessThan(minVersion) {
-		return fmt.Errorf("Go version %s or higher is required", minGoVersion)
+		return fmt.Errorf("go version %s or higher is required", minGoVersion)
 	}
 	return nil
 }
