@@ -61,6 +61,9 @@ func TestTransfer(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
+	_, err = db.ExecContext(context.Background(), sqlStmt)
+	require.NoError(t, err)
+
 	t.Run("model_executor_postgres_to_duckDB", func(t *testing.T) { pgxToDuckDB(t, db, pg.DatabaseURL) })
 }
 

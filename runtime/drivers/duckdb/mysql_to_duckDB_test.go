@@ -96,6 +96,9 @@ func TestMySQLToDuckDBTransfer(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
+	_, err = db.ExecContext(ctx, mysqlInitStmt)
+	require.NoError(t, err)
+
 	t.Run("model_executor_mysql_to_duckDB", func(t *testing.T) {
 		mysqlToDuckDB(t, fmt.Sprintf("host=%s port=%v database=mydb user=myuser password=mypassword", host, port.Int()))
 	})
