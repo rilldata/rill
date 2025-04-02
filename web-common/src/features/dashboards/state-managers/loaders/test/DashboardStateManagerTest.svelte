@@ -8,7 +8,7 @@
    */
   export let exploreName: string;
   export let bookmarkOrTokenExploreState:
-    | CompoundQueryResult<Partial<MetricsExplorerEntity> | undefined>
+    | CompoundQueryResult<Partial<MetricsExplorerEntity> | null>
     | undefined = undefined;
 </script>
 

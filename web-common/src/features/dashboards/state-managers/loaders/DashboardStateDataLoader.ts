@@ -71,9 +71,7 @@ export class DashboardStateDataLoader {
     metricsViewName: string,
     private readonly exploreName: string,
     private readonly storageNamespacePrefix: string | undefined,
-    bookmarkOrTokenExploreState?: CompoundQueryResult<
-      Partial<MetricsExplorerEntity> | undefined
-    >,
+    bookmarkOrTokenExploreState?: CompoundQueryResult<Partial<MetricsExplorerEntity> | null>,
   ) {
     this.validSpecQuery = useExploreValidSpec(instanceId, exploreName);
     this.fullTimeRangeQuery = derived(

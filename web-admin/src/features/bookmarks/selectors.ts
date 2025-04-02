@@ -127,7 +127,7 @@ export function getHomeBookmarkExploreState(
   instanceId: string,
   metricsViewName: string,
   exploreName: string,
-): CompoundQueryResult<Partial<MetricsExplorerEntity>> {
+): CompoundQueryResult<Partial<MetricsExplorerEntity> | null> {
   return getCompoundQuery(
     [
       getBookmarks(projectId, exploreName),
@@ -136,7 +136,7 @@ export function getHomeBookmarkExploreState(
     ],
     ([bookmarksResp, exploreSpecResp, schemaResp]) => {
       const homeBookmark = bookmarksResp?.bookmarks?.find(isHomeBookmark);
-      if (!homeBookmark) return undefined;
+      if (!homeBookmark) return null;
 
       const exploreSpec = exploreSpecResp?.explore ?? {};
       const metricsViewSpec = exploreSpecResp?.metricsView ?? {};

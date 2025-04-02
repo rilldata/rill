@@ -15,7 +15,7 @@
   export let exploreName: string;
   export let storageNamespacePrefix: string | undefined = undefined;
   export let bookmarkOrTokenExploreState:
-    | CompoundQueryResult<Partial<MetricsExplorerEntity> | undefined>
+    | CompoundQueryResult<Partial<MetricsExplorerEntity> | null>
     | undefined = undefined;
 
   $: ({ instanceId } = $runtime);
