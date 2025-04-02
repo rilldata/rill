@@ -3,6 +3,7 @@
   import {
     type V1CanvasRow as APIV1CanvasRow,
     type V1CanvasItem,
+    type V1ComponentSpec,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { get, writable } from "svelte/store";
@@ -12,7 +13,7 @@
   import CanvasComponent from "./CanvasComponent.svelte";
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
   import DropZone from "./components/DropZone.svelte";
-  import type { CanvasComponentType } from "./components/types";
+  import type { CanvasComponentType, ComponentSpec } from "./components/types";
   import ElementDivider from "./ElementDivider.svelte";
   import ItemWrapper from "./ItemWrapper.svelte";
   import type { DragItem, YAMLRow } from "./layout-util";
@@ -23,6 +24,7 @@
     moveToRow,
     rowsGuard,
     mousePosition,
+    initComponentSpec,
   } from "./layout-util";
   import { activeDivider } from "./stores/ui-stores";
 
@@ -32,6 +34,8 @@
   import { dropZone } from "./stores/ui-stores";
   import ComponentError from "./components/ComponentError.svelte";
   import EditableCanvasRow from "./EditableCanvasRow.svelte";
+  import { ResourceKind } from "../entity-management/resource-selectors";
+  import { COMPONENT_CLASS_MAP } from "./components/util";
 
   const activelyEditing = writable(false);
 
@@ -45,7 +49,12 @@
   export let openSidebar: () => void;
 
   $: ({
-    canvasEntity: { setSelectedComponent, selectedComponent, components },
+    canvasEntity: {
+      setSelectedComponent,
+      selectedComponent,
+      components,
+      initializeOrUpdateComponent,
+    },
   } = getCanvasStore(canvasName));
 
   let initialMousePosition: { x: number; y: number } | null = null;
@@ -280,6 +289,38 @@
   function initializeRow(row: number, type: CanvasComponentType) {
     if (!defaultMetrics) return;
 
+    const id = getId(row, 0);
+
+    const spec = COMPONENT_CLASS_MAP[type].newComponentSpec(
+      defaultMetrics.metricsViewName,
+      defaultMetrics.metricsViewSpec,
+    );
+
+    initializeOrUpdateComponent(
+      {
+        meta: {
+          name: {
+            name: id,
+            kind: ResourceKind.Component,
+          },
+        },
+        component: {
+          state: {
+            validSpec: {
+              renderer: type,
+              rendererProperties: spec,
+            },
+          },
+          spec: {
+            renderer: type,
+            rendererProperties: spec,
+          },
+        },
+      },
+      row,
+      0,
+    );
+
     const newYamlRows = moveToRow(
       yamlCanvasRows,
       [{ type }],
@@ -289,8 +330,6 @@
     const newSpecRows = moveToRow(specCanvasRows, [{ type }], { row });
 
     updateAssets(newSpecRows, newYamlRows);
-
-    const id = getId(row, 0);
 
     setSelectedComponent(id);
   }
@@ -467,7 +506,7 @@
                 ])}
             />
           {:else}
-            <ComponentError error="No valid component in project" />
+            <ComponentError error="No valid component {id} in project" />
           {/if}
         </ItemWrapper>
       {/each}

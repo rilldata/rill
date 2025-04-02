@@ -231,7 +231,7 @@ export function getInitialHeight(id: string | undefined) {
   return initialHeights[id as CanvasComponentType] ?? MIN_HEIGHT;
 }
 
-function initComponentSpec(
+export function initComponentSpec(
   componentType: CanvasComponentType,
   defaultMetrics: {
     metricsViewName: string;

@@ -127,6 +127,7 @@ export class CanvasEntity {
     row: number,
     column: number,
   ) => {
+    console.log("Initializing component", resource);
     const id = resource.meta?.name?.name as string;
     const component = this.components.get(id);
     const path = constructPath(
@@ -140,43 +141,6 @@ export class CanvasEntity {
       this.components.set(id, createComponent(resource, this, path));
     }
   };
-
-  // useComponent = (componentName: string): BaseCanvasComponent => {
-  //   let componentEntity = this.components.get(componentName);
-
-  //   if (!componentEntity) {
-  //     const canvasResponse = get(this.specStore).data;
-
-  //     const components = canvasResponse?.components;
-  //     const rows = canvasResponse?.canvas?.rows ?? [];
-
-  //     const [row, column] = rows.reduce(
-  //       (acc, row, index) => {
-  //         const items = row.items ?? [];
-  //         const item = items.find((item) => item.component === componentName);
-  //         if (item) {
-  //           return [index, items.indexOf(item)];
-  //         }
-  //         return acc;
-  //       },
-  //       [-1, -1],
-  //     );
-  //     const resource = components?.[componentName];
-  //     if (!resource) {
-  //       throw new Error(`Component ${componentName} not found in canvas spec`);
-  //     }
-
-  //     const path = constructPath(
-  //       row,
-  //       column,
-  //       resource.component?.state?.validSpec?.renderer as CanvasComponentType,
-  //     );
-
-  //     componentEntity = createComponent(resource, this, path);
-  //     this.components.set(componentName, componentEntity);
-  //   }
-  //   return componentEntity;
-  // };
 
   removeComponent = (componentName: string) => {
     this.components.delete(componentName);
