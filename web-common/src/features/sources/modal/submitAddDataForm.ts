@@ -95,7 +95,7 @@ export async function submitAddOLAPConnectorForm(
     fileArtifacts.getNamesForKind(ResourceKind.Connector),
   );
 
-  const projectParserStartingVersion = getProjectParserVersion(instanceId);
+  const projectParserStartingVersion = getProjectParserVersion(instanceId); // So we can track when the next reconcilation happens
 
   /**
    * Optimistic updates:
