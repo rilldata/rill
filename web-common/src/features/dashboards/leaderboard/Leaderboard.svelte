@@ -343,7 +343,7 @@
       {isValidPercentOfTotal}
       {isTimeComparisonActive}
       {sortedAscending}
-      activeMeasureNames={leaderboardMeasureNames}
+      {leaderboardMeasureNames}
       {toggleSort}
       {setPrimaryDimension}
       {toggleComparisonDimension}
@@ -360,7 +360,6 @@
           <LeaderboardRow
             {suppressTooltip}
             {tableWidth}
-            {dimensionColumnWidth}
             {isBeingCompared}
             {filterExcludeMode}
             {atLeastOneActive}
@@ -368,7 +367,7 @@
             {itemData}
             {isValidPercentOfTotal}
             {isTimeComparisonActive}
-            activeMeasureNames={leaderboardMeasureNames}
+            {leaderboardMeasureNames}
             {toggleDimensionValueSelection}
             {formatters}
           />
@@ -379,7 +378,6 @@
         <LeaderboardRow
           {suppressTooltip}
           {itemData}
-          {dimensionColumnWidth}
           {tableWidth}
           {dimensionName}
           {isBeingCompared}
@@ -387,7 +385,7 @@
           {atLeastOneActive}
           {isValidPercentOfTotal}
           {isTimeComparisonActive}
-          activeMeasureNames={leaderboardMeasureNames}
+          {leaderboardMeasureNames}
           borderTop={i === 0}
           borderBottom={i === belowTheFoldRows.length - 1}
           {toggleDimensionValueSelection}
