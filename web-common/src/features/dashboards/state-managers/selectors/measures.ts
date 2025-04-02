@@ -39,21 +39,15 @@ export const leaderboardMeasureCount = ({
   return dashboard.leaderboardMeasureCount ?? 1;
 };
 
-export const activeMeasuresFromMeasureCount = ({
-  validMetricsView,
-  validExplore,
-  dashboard,
-}: DashboardDataSources): string[] => {
+export const activeMeasuresFromMeasureCount = (
+  dashboardDataSources: DashboardDataSources,
+): string[] => {
+  const { validMetricsView, validExplore, dashboard } = dashboardDataSources;
   if (!validMetricsView?.measures || !validExplore?.measures) return [];
 
-  const visibleMeasures = Array.from(dashboard.visibleMeasureKeys).map(
-    (key) =>
-      validMetricsView.measures?.find(
-        (m) => m.name === key,
-      ) as MetricsViewSpecMeasureV2,
-  );
+  const visibleMeasureSpecs = visibleMeasures(dashboardDataSources);
 
-  return visibleMeasures
+  return visibleMeasureSpecs
     .slice(0, dashboard.leaderboardMeasureCount ?? 1)
     .map(({ name }) => name)
     .filter((name): name is string => name !== undefined);
