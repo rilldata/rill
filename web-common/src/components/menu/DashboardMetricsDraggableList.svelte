@@ -281,6 +281,7 @@
                     role="presentation"
                     data-index={i}
                     data-item-name={id}
+                    data-testid={elementId}
                     id={elementId}
                     class:sr-only={isDragItem}
                     class:transition-margin={dragIndex !== -1 &&
@@ -344,6 +345,7 @@
                 role="presentation"
                 data-index={i}
                 data-item-name={id}
+                data-testid={elementId}
                 id={elementId}
                 class:sr-only={isDragItem}
                 class:transition-margin={dragIndex !== -1 &&
@@ -421,7 +423,7 @@
             </div>
           {:else}
             {#each filteredHiddenItems as [id = "", item], i (i)}
-              {@const elementId = `all-${type === "measure" ? "measures" : "dimensions"}-${id}`}
+              {@const elementId = `hidden-${type === "measure" ? "measures" : "dimensions"}-${id}`}
               {@const isDragItem = dragId === elementId}
               <div
                 data-index={i + selectedItems.length - 1}
