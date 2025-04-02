@@ -23,10 +23,10 @@ test.describe("dimension and measure selectors", () => {
     sectionName: "Shown" | "Hidden",
   ) {
     await page
-      .locator(`.${sectionName.toLowerCase()}-section`)
-      .getByText(itemName)
+      .getByTestId(`${sectionName.toLowerCase()}-section`)
+      .getByText(itemName, { exact: true })
       .locator("..")
-      .getByRole("button", { name: "Toggle visibility" })
+      .getByTestId("toggle-visibility-button")
       .click();
   }
 

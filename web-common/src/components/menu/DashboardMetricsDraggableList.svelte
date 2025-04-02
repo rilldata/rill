@@ -243,6 +243,7 @@
       <div
         role="presentation"
         class="shown-section flex flex-col flex-1 p-1.5 pt-0"
+        data-testid="shown-section"
         on:mousedown={handleMouseDown}
       >
         <header
@@ -316,6 +317,7 @@
                       class:pointer-events-none={selectedItems.length === 1}
                       class:opacity-50={selectedItems.length === 1}
                       aria-label="Toggle visibility"
+                      data-testid="toggle-visibility-button"
                     >
                       <EyeIcon size="14px" color="#6b7280" />
                     </button>
@@ -378,6 +380,7 @@
                   class:pointer-events-none={selectedItems.length === 1}
                   class:opacity-50={selectedItems.length === 1}
                   aria-label="Toggle visibility"
+                  data-testid="toggle-visibility-button"
                 >
                   <EyeIcon size="14px" color="#6b7280" />
                 </button>
@@ -388,7 +391,10 @@
       </div>
       {#if selectedItems.length < allItems.length}
         <span class="flex-none h-px bg-slate-200 w-full" />
-        <div class="hidden-section flex flex-col flex-1 min-h-0 p-1.5 pt-0">
+        <div
+          class="hidden-section flex flex-col flex-1 min-h-0 p-1.5 pt-0"
+          data-testid="hidden-section"
+        >
           <header
             class="flex-none flex py-1.5 justify-between px-2 sticky top-0 from-white from-80% to-transparent bg-gradient-to-b"
           >
@@ -435,6 +441,7 @@
                     onSelectedChange(selectedItems);
                   }}
                   aria-label="Toggle visibility"
+                  data-testid="toggle-visibility-button"
                 >
                   <EyeOffIcon size="14px" color="#9ca3af" />
                 </button>
