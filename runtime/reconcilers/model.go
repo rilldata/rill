@@ -753,12 +753,20 @@ func (r *ModelReconciler) syncPartitions(ctx context.Context, mdl *runtimev1.Mod
 		var watermark *time.Time
 		if mdl.Spec.PartitionsWatermarkField != "" {
 			if v, ok := row[mdl.Spec.PartitionsWatermarkField]; ok {
-				t, ok := v.(time.Time)
-				if !ok {
+				switch t := v.(type) {
+				case time.Time:
+					watermark = &t
+				case string:
+					var tm time.Time
+					tm, err := time.Parse(time.RFC3339, t)
+					if err != nil {
+						return fmt.Errorf("partition watermark field %q is a non-time formatted string: %w", mdl.Spec.PartitionsWatermarkField, err)
+					}
+					watermark = &tm
+				default:
 					return fmt.Errorf(`expected a timestamp for partition watermark field %q, got type %T`, mdl.Spec.PartitionsWatermarkField, v)
 				}
 
-				watermark = &t
 				delete(row, mdl.Spec.PartitionsWatermarkField)
 			}
 		}
