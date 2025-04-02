@@ -124,34 +124,34 @@
     ]),
   );
 
-  $: deltaAbsoluteCellBarLengths = Object.fromEntries(
-    Object.entries(barLengths).map(([name, length]) => [
-      name,
-      isTimeComparisonActive
-        ? clamp(
-            0,
-            length - $valueColumn - (percentOfTotalCellBarLengths[name] || 0),
-            COMPARISON_COLUMN_WIDTH,
-          )
-        : 0,
-    ]),
-  );
+  // $: deltaAbsoluteCellBarLengths = Object.fromEntries(
+  //   Object.entries(barLengths).map(([name, length]) => [
+  //     name,
+  //     isTimeComparisonActive
+  //       ? clamp(
+  //           0,
+  //           length - $valueColumn - (percentOfTotalCellBarLengths[name] || 0),
+  //           COMPARISON_COLUMN_WIDTH,
+  //         )
+  //       : 0,
+  //   ]),
+  // );
 
-  $: deltaPercentCellBarLengths = Object.fromEntries(
-    Object.entries(barLengths).map(([name, length]) => [
-      name,
-      isTimeComparisonActive
-        ? clamp(
-            0,
-            length -
-              $valueColumn -
-              (percentOfTotalCellBarLengths[name] || 0) -
-              (deltaAbsoluteCellBarLengths[name] || 0),
-            COMPARISON_COLUMN_WIDTH,
-          )
-        : 0,
-    ]),
-  );
+  // $: deltaPercentCellBarLengths = Object.fromEntries(
+  //   Object.entries(barLengths).map(([name, length]) => [
+  //     name,
+  //     isTimeComparisonActive
+  //       ? clamp(
+  //           0,
+  //           length -
+  //             $valueColumn -
+  //             (percentOfTotalCellBarLengths[name] || 0) -
+  //             (deltaAbsoluteCellBarLengths[name] || 0),
+  //           COMPARISON_COLUMN_WIDTH,
+  //         )
+  //       : 0,
+  //   ]),
+  // );
 
   $: dimensionGradients =
     leaderboardMeasureNames.length === 1
@@ -171,38 +171,38 @@
         )
       : undefined;
 
-  $: percentOfTotalGradients =
-    leaderboardMeasureNames.length > 1
-      ? Object.fromEntries(
-          Object.entries(percentOfTotalCellBarLengths).map(([name, length]) => [
-            name,
-            length
-              ? `linear-gradient(to right, ${barColor}
-    ${length}px, transparent ${length}px)`
-              : undefined,
-          ]),
-        )
-      : undefined;
+  // $: percentOfTotalGradients =
+  //   leaderboardMeasureNames.length > 1
+  //     ? Object.fromEntries(
+  //         Object.entries(percentOfTotalCellBarLengths).map(([name, length]) => [
+  //           name,
+  //           length
+  //             ? `linear-gradient(to right, ${barColor}
+  //   ${length}px, transparent ${length}px)`
+  //             : undefined,
+  //         ]),
+  //       )
+  //     : undefined;
 
-  $: deltaAbsoluteGradients = Object.fromEntries(
-    Object.entries(deltaAbsoluteCellBarLengths).map(([name, length]) => [
-      name,
-      length
-        ? `linear-gradient(to right, ${barColor}
-    ${length}px, transparent ${length}px)`
-        : undefined,
-    ]),
-  );
+  // $: deltaAbsoluteGradients = Object.fromEntries(
+  //   Object.entries(deltaAbsoluteCellBarLengths).map(([name, length]) => [
+  //     name,
+  //     length
+  //       ? `linear-gradient(to right, ${barColor}
+  //   ${length}px, transparent ${length}px)`
+  //       : undefined,
+  //   ]),
+  // );
 
-  $: deltaPercentGradients = Object.fromEntries(
-    Object.entries(deltaPercentCellBarLengths).map(([name, length]) => [
-      name,
-      length
-        ? `linear-gradient(to right, ${barColor}
-    ${length}px, transparent ${length}px)`
-        : undefined,
-    ]),
-  );
+  // $: deltaPercentGradients = Object.fromEntries(
+  //   Object.entries(deltaPercentCellBarLengths).map(([name, length]) => [
+  //     name,
+  //     length
+  //       ? `linear-gradient(to right, ${barColor}
+  //   ${length}px, transparent ${length}px)`
+  //       : undefined,
+  //   ]),
+  // );
 
   $: showTooltip = hovered && !suppressTooltip;
 
@@ -302,7 +302,7 @@
     {#if isValidPercentOfTotal(measureName)}
       <td
         data-comparison-cell
-        style:background={percentOfTotalGradients?.[measureName]}
+        title={pctOfTotals[measureName]?.toString() || ""}
         on:click={modified({
           shift: () =>
             shiftClickHandler(pctOfTotals[measureName]?.toString() || ""),
@@ -321,7 +321,7 @@
     {#if isTimeComparisonActive}
       <td
         data-comparison-cell
-        style:background={deltaAbsoluteGradients[measureName]}
+        title={deltaAbsMap[measureName]?.toString() || ""}
         on:click={modified({
           shift: () =>
             shiftClickHandler(deltaAbsMap[measureName]?.toString() || ""),
@@ -345,7 +345,7 @@
     {#if isTimeComparisonActive}
       <td
         data-comparison-cell
-        style:background={deltaPercentGradients[measureName]}
+        title={deltaRels[measureName]?.toString() || ""}
         on:click={modified({
           shift: () =>
             shiftClickHandler(deltaRels[measureName]?.toString() || ""),
