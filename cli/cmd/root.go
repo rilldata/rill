@@ -120,14 +120,16 @@ func runCmd(ctx context.Context, ver cmdutil.Version) error {
 			} else if time.Now().Unix() > expiryTime {
 				// Token has expired, automatically unassume
 				ch.PrintfWarn("Token for assumed user %q has expired. Automatically reverting to original user.\n\n", representingUser)
-				sudouser.RestoreOriginalUserState(ctx, ch)
+				err := sudouser.RestoreOriginalUserState(ctx, ch)
+				if err != nil {
+					return err
+				}
 			} else {
 				ch.PrintfWarn("Warning: Running action as %q\n\n", representingUser)
 			}
 		} else {
 			ch.PrintfWarn("Warning: Running action as %q\n\n", representingUser)
 		}
-
 	}
 
 	// Cobra config

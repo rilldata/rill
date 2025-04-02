@@ -21,15 +21,17 @@ const (
 
 // Constants for YAML keys
 const (
-	DefaultOrgConfigKey            = "org"
-	BackupDefaultOrgConfigKey      = "backup_org"
-	DefaultAdminURLConfigKey       = "api_url"
-	AnalyticsEnabledConfigKey      = "analytics_enabled"
-	AccessTokenCredentialsKey      = "token"
+	DefaultOrgConfigKey       = "org"
+	BackupDefaultOrgConfigKey = "backup_org"
+	DefaultAdminURLConfigKey  = "api_url"
+	AnalyticsEnabledConfigKey = "analytics_enabled"
+	AccessTokenCredentialsKey = "token"
+	//nolint:gosec // This is a key name, not a credential
 	AccessTokenExpiryKey           = "token_expiry"
 	InstallIDStateKey              = "install_id"
 	RepresentingUserCredentialsKey = "representing_user"
 	BackupTokenCredentialsKey      = "backup_token"
+	//nolint:gosec // This is a key name, not a credential
 	BackupAccessTokenExpiryKey     = "backup_token_expiry"
 	LatestVersionStateKey          = "latest_version"
 	LatestVersionCheckedAtStateKey = "latest_version_checked_at"

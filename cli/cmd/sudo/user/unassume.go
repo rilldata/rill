@@ -52,13 +52,13 @@ func RestoreOriginalUserState(ctx context.Context, ch *cmdutil.Helper) error {
 		return err
 	}
 
-	// Fetch the original defualt org
+	// Fetch the original default org
 	originalDefaultOrg, err := dotrill.GetBackupDefaultOrg()
 	if err != nil {
 		return err
 	}
 
-	// Restore the original defualt org as defualt org
+	// Restore the original default org as default org
 	err = dotrill.SetDefaultOrg(originalDefaultOrg)
 	if err != nil {
 		return err
