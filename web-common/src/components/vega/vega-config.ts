@@ -19,7 +19,7 @@ export const getRillTheme: (isCanvasDashboard: boolean) => Config = (
     type: "fit-x",
   },
   mark: {
-    tooltip: isCanvasDashboard ? true : false,
+    tooltip: isCanvasDashboard,
   },
   arc: { fill: defaultMarkColor },
   area: {
@@ -44,7 +44,7 @@ export const getRillTheme: (isCanvasDashboard: boolean) => Config = (
       ],
     },
   },
-  bar: { fill: BarFill, opacity: 0.8 },
+  bar: { fill: BarFill, ...(!isCanvasDashboard && { opacity: 0.8 }) },
   line: { stroke: defaultMarkColor, strokeWidth: 1.5, strokeOpacity: 1 },
   path: { stroke: defaultMarkColor },
   rect: { fill: defaultMarkColor },
