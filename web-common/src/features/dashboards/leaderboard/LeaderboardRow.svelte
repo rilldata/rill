@@ -117,12 +117,12 @@
     ]),
   );
 
-  $: percentOfTotalCellBarLengths = Object.fromEntries(
-    Object.entries(barLengths).map(([name, length]) => [
-      name,
-      isValidPercentOfTotal(name) ? clamp(0, length, DEFAULT_COLUMN_WIDTH) : 0,
-    ]),
-  );
+  // $: percentOfTotalCellBarLengths = Object.fromEntries(
+  //   Object.entries(barLengths).map(([name, length]) => [
+  //     name,
+  //     isValidPercentOfTotal(name) ? clamp(0, length, DEFAULT_COLUMN_WIDTH) : 0,
+  //   ]),
+  // );
 
   // $: deltaAbsoluteCellBarLengths = Object.fromEntries(
   //   Object.entries(barLengths).map(([name, length]) => [
