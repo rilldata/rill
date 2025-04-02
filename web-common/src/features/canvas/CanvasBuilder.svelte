@@ -3,7 +3,6 @@
   import {
     type V1CanvasRow as APIV1CanvasRow,
     type V1CanvasItem,
-    type V1ComponentSpec,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { get, writable } from "svelte/store";
@@ -13,7 +12,7 @@
   import CanvasComponent from "./CanvasComponent.svelte";
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
   import DropZone from "./components/DropZone.svelte";
-  import type { CanvasComponentType, ComponentSpec } from "./components/types";
+  import type { CanvasComponentType } from "./components/types";
   import ElementDivider from "./ElementDivider.svelte";
   import ItemWrapper from "./ItemWrapper.svelte";
   import type { DragItem, YAMLRow } from "./layout-util";
@@ -24,7 +23,6 @@
     moveToRow,
     rowsGuard,
     mousePosition,
-    initComponentSpec,
   } from "./layout-util";
   import { activeDivider } from "./stores/ui-stores";
 
