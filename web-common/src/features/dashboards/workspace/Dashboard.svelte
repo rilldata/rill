@@ -30,20 +30,30 @@
   const StateManagers = getStateManagers();
   const {
     selectors: {
-      measures: { visibleMeasures },
-      activeMeasure: { activeMeasureName },
+      measures: {
+        visibleMeasures,
+        leaderboardMeasureName,
+        activeMeasuresFromMeasureCount,
+      },
       dimensions: { getDimensionByName },
       pivot: { showPivot },
     },
-
     dashboardStore,
   } = StateManagers;
 
+  const {
+    cloudDataViewer,
+    readOnly,
+    leaderboardMeasureCount: leaderboardMeasureCountFeatureFlag,
+  } = featureFlags;
+
   const timeControlsStore = useTimeControlStore(StateManagers);
 
-  const { cloudDataViewer, readOnly } = featureFlags;
-
   let exploreContainerWidth: number;
+
+  $: leaderboardMeasureNames = $leaderboardMeasureCountFeatureFlag
+    ? $activeMeasuresFromMeasureCount
+    : [$leaderboardMeasureName];
 
   $: ({ instanceId } = $runtime);
 
@@ -93,6 +103,8 @@
 
   $: exploreSpec = $explore.data?.explore;
   $: timeRanges = exploreSpec?.timeRanges ?? [];
+
+  $: visibleMeasureNames = $visibleMeasures.map(({ name }) => name ?? "");
 
   let metricsWidth = DEFAULT_TIMESERIES_WIDTH;
   let resizing = false;
@@ -209,17 +221,16 @@
               {dimensionThresholdFilters}
               {timeRange}
               {comparisonTimeRange}
-              activeMeasureName={$activeMeasureName}
+              activeMeasureName={$leaderboardMeasureName}
               {timeControlsReady}
-              visibleMeasureNames={$visibleMeasures.map(
-                ({ name }) => name ?? "",
-              )}
+              {visibleMeasureNames}
               hideStartPivotButton={hidePivot}
             />
           {:else}
             <LeaderboardDisplay
               {metricsViewName}
-              activeMeasureName={$activeMeasureName}
+              activeMeasureName={$leaderboardMeasureName}
+              {leaderboardMeasureNames}
               {whereFilter}
               {dimensionThresholdFilters}
               {timeRange}

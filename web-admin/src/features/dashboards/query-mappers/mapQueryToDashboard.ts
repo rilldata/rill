@@ -9,7 +9,6 @@ import { getFullInitExploreState } from "@rilldata/web-common/features/dashboard
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
-import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
@@ -39,6 +38,7 @@ export function mapQueryToDashboard(
   if (!queryName || !queryArgsJson || !executionTime)
     return readable({
       isFetching: false,
+      isLoading: false,
       error: "Required parameters are missing.",
     });
 
@@ -74,6 +74,7 @@ export function mapQueryToDashboard(
     // error state
     return readable({
       isFetching: false,
+      isLoading: false,
       error:
         "Failed to find metrics view name. Please check the format of the report.",
     });
@@ -94,33 +95,55 @@ export function mapQueryToDashboard(
       ),
     ],
     ([validSpecResp, timeRangeSummary], set) => {
-      if (
-        !validSpecResp.data?.metricsView ||
-        !validSpecResp.data?.explore ||
-        !timeRangeSummary.data
-      ) {
+      if (validSpecResp.isLoading || timeRangeSummary.isLoading) {
         set({
           isFetching: true,
+          isLoading: true,
           error: "",
         });
         return;
       }
 
       if (validSpecResp.error || timeRangeSummary.error) {
-        // error state
         set({
           isFetching: false,
+          isLoading: false,
           error:
-            validSpecResp.error?.message ?? timeRangeSummary.error?.message,
+            validSpecResp.error?.response?.data?.message ??
+            timeRangeSummary.error?.response?.data?.message,
+        });
+        return;
+      }
+
+      // Type guard
+      if (
+        !validSpecResp.data ||
+        !validSpecResp.data.explore ||
+        !validSpecResp.data.metricsView
+      ) {
+        set({
+          isFetching: false,
+          isLoading: false,
+          error: "Failed to fetch explore.",
+        });
+        return;
+      }
+
+      // Type guard
+      if (!timeRangeSummary.data) {
+        set({
+          isFetching: false,
+          isLoading: false,
+          error: "Failed to fetch time range summary.",
         });
         return;
       }
 
       const { metricsView, explore } = validSpecResp.data;
 
-      initLocalUserPreferenceStore(metricsViewName);
       const defaultExplorePreset = getDefaultExplorePreset(
         validSpecResp.data.explore,
+        validSpecResp.data.metricsView,
         timeRangeSummary.data,
       );
       const { partialExploreState } = convertPresetToExploreState(
@@ -146,6 +169,7 @@ export function mapQueryToDashboard(
         .then((newExploreState) => {
           set({
             isFetching: false,
+            isLoading: false,
             error: "",
             data: {
               exploreState: newExploreState,
@@ -156,6 +180,7 @@ export function mapQueryToDashboard(
         .catch((err) => {
           set({
             isFetching: false,
+            isLoading: false,
             error: err.message,
           });
         });

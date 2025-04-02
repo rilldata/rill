@@ -50,6 +50,24 @@ func (o *Orb) Name() string {
 	return "orb"
 }
 
+func (o *Orb) DefaultQuotas() Quotas {
+	return Quotas{
+		StorageLimitBytesPerDeployment: toPtr(int64(10737418240)), // 10GB
+		NumProjects:                    toPtr(1),
+		NumDeployments:                 toPtr(2),
+		NumSlotsTotal:                  toPtr(4),
+		NumSlotsPerDeployment:          toPtr(2),
+		NumOutstandingInvites:          toPtr(200),
+	}
+}
+
+func (o *Orb) DefaultUserQuotas() UserQuotas {
+	return UserQuotas{
+		SingleuserOrgs: toPtr(100),
+		TrialOrgs:      toPtr(2),
+	}
+}
+
 func (o *Orb) GetDefaultPlan(ctx context.Context) (*Plan, error) {
 	plans, err := o.GetPlans(ctx)
 	if err != nil {
@@ -669,4 +687,8 @@ func (retryErrClassifier) Classify(err error) retrier.Action {
 	}
 
 	return retrier.Fail
+}
+
+func toPtr[T any](v T) *T {
+	return &v
 }

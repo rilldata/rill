@@ -31,7 +31,7 @@ test.describe("banner in explore preview", () => {
   dimensions: "*"
       `;
 
-    await page.getByLabel("code").click();
+    await page.getByRole("button", { name: "switch to code editor" }).click();
     await watcher.updateAndWaitForDashboard(exploreWithBanner);
     await page.getByRole("button", { name: "Preview" }).click();
     await page.waitForTimeout(500);

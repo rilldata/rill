@@ -2,12 +2,16 @@ package graceful
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"strings"
+	"time"
 
 	"google.golang.org/grpc"
 )
+
+const grpcShutdownTimeout = 15 * time.Second
 
 // ServeGRPC serves a GRPC server and performs a graceful shutdown if/when ctx is cancelled.
 func ServeGRPC(ctx context.Context, server *grpc.Server, port int) error {
@@ -25,17 +29,27 @@ func ServeGRPC(ctx context.Context, server *grpc.Server, port int) error {
 		return err
 	}
 
-	cctx, cancel := context.WithCancel(ctx)
-	var serveErr error
+	// Channel to signal server has stopped
+	serveErrCh := make(chan error)
 	go func() {
-		serveErr = server.Serve(lis)
-		cancel()
+		err := server.Serve(lis)
+		serveErrCh <- err
 	}()
 
-	<-cctx.Done()
-	if serveErr == nil {
+	// Wait for context to be cancelled or failure to serve
+	select {
+	case err := <-serveErrCh:
+		return err
+	case <-ctx.Done():
 		server.GracefulStop()
 	}
 
-	return serveErr
+	// Wait for graceful shutdown
+	select {
+	case err := <-serveErrCh:
+		return err
+	case <-time.After(grpcShutdownTimeout):
+		server.Stop()
+		return errors.New("grpc graceful shutdown timed out")
+	}
 }

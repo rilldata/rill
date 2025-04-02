@@ -23,6 +23,7 @@ export function durationToMillis(duration: string): number {
 // Get the default grain for a given time range.
 export function getDefaultTimeGrain(start: Date, end: Date): TimeGrain {
   const timeRangeDurationMs = end.getTime() - start.getTime();
+
   if (
     timeRangeDurationMs <
     2 * durationToMillis(TIME_GRAIN.TIME_GRAIN_HOUR.duration)

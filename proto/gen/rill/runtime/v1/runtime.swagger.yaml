@@ -3708,6 +3708,9 @@ definitions:
           type: object
           $ref: '#/definitions/v1SecurityRule'
         description: Security rules to apply for access to the canvas.
+      allowCustomTimeRange:
+        type: boolean
+        title: Toggle custom time range
   v1CanvasState:
     type: object
     properties:
@@ -4313,6 +4316,11 @@ definitions:
         description: Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
       where:
         $ref: '#/definitions/v1Expression'
+      dimensionsWithInlistFilter:
+        type: array
+        items:
+          type: string
+        description: Temporary to differentiate between "select" and "in list" modes. Expression will be replaced with UI specific state in the future.
       timeRange:
         type: string
         description: |-
@@ -4343,6 +4351,9 @@ definitions:
         $ref: '#/definitions/v1ExploreSortType'
       exploreExpandedDimension:
         type: string
+      exploreLeaderboardMeasureCount:
+        type: integer
+        format: int64
       timeDimensionMeasure:
         type: string
       timeDimensionChartType:
@@ -4439,6 +4450,12 @@ definitions:
       banner:
         type: string
         description: Banner text that can be displayed in Rill Cloud.
+      lockTimeZone:
+        type: boolean
+        title: When set to true, dashboard will be locked to the first time zone in the time_zones key (or UTC)
+      allowCustomTimeRange:
+        type: boolean
+        title: Allow custom time range
   v1ExploreState:
     type: object
     properties:
@@ -5672,6 +5689,9 @@ definitions:
         type: boolean
       triggerFull:
         type: boolean
+      definedAsSource:
+        type: boolean
+        description: defined_as_source is true if it was defined by user as a source but converted internally to a model.
   v1ModelState:
     type: object
     properties:
@@ -5798,6 +5818,10 @@ definitions:
         title: unsupported_columns are columns having datatypes which are not supported by Rill
       view:
         type: boolean
+      physicalSizeBytes:
+        type: string
+        format: int64
+        description: physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
   v1OLAPListTablesResponse:
     type: object
     properties:
@@ -6506,6 +6530,10 @@ definitions:
       hasUnsupportedDataTypes:
         type: boolean
         title: has_unsupported_data_types indicates if the underlying table has any column with an unsupported OLAP engine datatype
+      physicalSizeBytes:
+        type: string
+        format: int64
+        description: physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
   v1TableRowsRequest:
     type: object
     properties:

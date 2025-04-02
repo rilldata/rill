@@ -3,7 +3,7 @@
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import { getParsedDocument } from "@rilldata/web-common/features/canvas/inspector/selectors";
-  import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import ZoneDisplay from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/ZoneDisplay.svelte";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
@@ -27,19 +27,21 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { YAMLMap, YAMLSeq } from "yaml";
   import { DEFAULT_DASHBOARD_WIDTH } from "../layout-util";
+  import { allTimeZones } from "@rilldata/web-common/lib/time/timezone";
 
   export let updateProperties: (
     newRecord: Record<string, unknown>,
     removeProperties?: Array<string | string[]>,
   ) => Promise<void>;
   export let fileArtifact: FileArtifact;
+  export let canvasName: string;
 
-  const {
+  $: ({
     canvasEntity: {
       spec: { canvasSpec },
       filters: { setFilters },
     },
-  } = getCanvasStateManagers();
+  } = getCanvasStore(canvasName));
 
   $: ({ instanceId } = $runtime);
 
@@ -188,7 +190,7 @@
           id="visual-explore-zone"
           showLabel={false}
           defaultLabel="Default time zones"
-          searchableItems={Intl.supportedValuesOf("timeZone")}
+          searchableItems={allTimeZones}
           defaultItems={DEFAULT_TIMEZONES}
           keyNotSet={!rawTimeZones}
           selectedItems={timeZones}

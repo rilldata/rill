@@ -3,7 +3,7 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
-  import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import { useMetricFieldData } from "./selectors";
 
   export let metricName: string;
@@ -12,14 +12,15 @@
   export let selectedItem: string | undefined = undefined;
   export let type: "measure" | "dimension";
   export let includeTime = false;
+  export let canvasName: string;
   export let searchableItems: string[] | undefined = undefined;
   export let onSelect: (item: string, displayName: string) => void = () => {};
 
   let open = false;
   let searchValue = "";
 
-  const ctx = getCanvasStateManagers();
-  const { getTimeDimensionForMetricView } = ctx.canvasEntity.spec;
+  $: ctx = getCanvasStore(canvasName);
+  $: ({ getTimeDimensionForMetricView } = ctx.canvasEntity.spec);
 
   $: timeDimension = getTimeDimensionForMetricView(metricName);
 
@@ -27,7 +28,7 @@
   $: fieldData = useMetricFieldData(
     ctx,
     metricName,
-    type,
+    [type],
     searchableItems,
     searchValue,
   );
@@ -52,7 +53,7 @@
           {#if isTimeSelected}
             Time
           {:else if selectedItem}
-            {$fieldData.displayMap[selectedItem] || selectedItem}
+            {$fieldData.displayMap[selectedItem]?.label || selectedItem}
           {:else}
             Select a {type} field
           {/if}
@@ -83,12 +84,12 @@
             <DropdownMenu.Item
               class="pl-8 mx-1"
               on:click={() => {
-                onSelect(item, $fieldData.displayMap[item] || item);
+                onSelect(item, $fieldData.displayMap[item]?.label || item);
                 open = false;
               }}
             >
               <slot {item}>
-                {$fieldData.displayMap[item] || item}
+                {$fieldData.displayMap[item]?.label || item}
               </slot>
             </DropdownMenu.Item>
           {/if}

@@ -99,6 +99,10 @@ func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *Query) er
 
 		vals = append(vals, val)
 	}
+	err = res.Err()
+	if err != nil {
+		return err
+	}
 
 	// Add the dimensions values as a "<dim> IN (<vals...>)" expression in the outer query's WHERE clause.
 	var inExpr *Expression

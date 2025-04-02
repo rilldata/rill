@@ -384,6 +384,7 @@ export type RangeBuckets = {
   latest: { label: string; range: ISODurationString }[];
   previous: { range: RillPreviousPeriod; label: string }[];
   periodToDate: { range: RillPeriodToDate; label: string }[];
+  allTime: boolean;
 };
 
 const defaultBuckets = {
@@ -399,6 +400,7 @@ const defaultBuckets = {
     range,
     label: RILL_TO_LABEL[range],
   })),
+  allTime: false,
 };
 
 export function bucketYamlRanges(
@@ -420,6 +422,8 @@ export function bucketYamlRanges(
         record.previous.push({ range, label: RILL_TO_LABEL[range] });
       } else if (isValidISODuration(range)) {
         record.latest.push({ range, label: getDurationLabel(range) });
+      } else if (range === ALL_TIME_RANGE_ALIAS) {
+        record.allTime = true;
       }
 
       return record;
@@ -428,6 +432,7 @@ export function bucketYamlRanges(
       previous: [],
       latest: [],
       periodToDate: [],
+      allTime: false,
     },
   );
 }

@@ -433,6 +433,10 @@ func getMinMaxRange(ctx context.Context, olap drivers.OLAPStore, columnName, dat
 			return nil, nil, nil, err
 		}
 	}
+	err = minMaxRow.Err()
+	if err != nil {
+		return nil, nil, nil, err
+	}
 
 	minMaxRow.Close()
 

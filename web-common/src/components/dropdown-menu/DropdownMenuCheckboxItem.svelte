@@ -5,6 +5,7 @@
 
   type $$Props = DropdownMenuPrimitive.CheckboxItemProps & {
     checkSize?: string;
+    checkRight?: boolean;
     // See: https://www.bits-ui.com/docs/components/dropdown-menu#dropdownmenucheckboxitem
     // Converts div to anchor tag
     href?: string;
@@ -19,6 +20,7 @@
   export let href: $$Props["href"] = undefined;
   export let preloadData: $$Props["preloadData"] = true;
   export let showXForSelected: $$Props["showXForSelected"] = false;
+  export let checkRight: $$Props["checkRight"] = false;
   export { className as class };
 
   const iconColor = "#15141A";
@@ -34,8 +36,9 @@
     {checked}
     role="menuitem"
     class={cn(
-      "relative flex cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-xs outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 hover:bg-accent hover:rounded-sm focus:bg-accent focus:rounded-sm",
+      "relative flex cursor-pointer select-none items-center rounded-sm py-1.5 px-2 gap-x-2 text-xs outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 hover:bg-accent hover:rounded-sm focus:bg-accent focus:rounded-sm",
       className,
+      checkRight && "flex-row-reverse justify-between",
     )}
     {...$$restProps}
     on:click
@@ -46,9 +49,7 @@
     on:pointerleave
     on:pointermove
   >
-    <span
-      class="absolute left-2.5 flex h-3.5 w-3.5 items-center justify-center"
-    >
+    <span class="flex flex-none h-3.5 w-3.5 items-center justify-center">
       {#if checked}
         <svelte:component
           this={showXForSelected ? X : Check}

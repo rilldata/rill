@@ -15,6 +15,7 @@
   export let defaultTimeRange: NamedRange | ISODurationString | undefined;
   export let onSelectRange: (range: NamedRange | ISODurationString) => void;
   export let onSelectCustomOption: () => void;
+  export let allowCustomTimeRange = true;
 
   function handleClick(e: CustomEventHandler<MouseEvent, HTMLDivElement>) {
     const range = e.detail.currentTarget.dataset.range;
@@ -26,21 +27,13 @@
   }
 </script>
 
-<DropdownMenu.Item on:click={handleClick} data-range={ALL_TIME_RANGE_ALIAS}>
-  <span class:font-bold={selected === ALL_TIME_RANGE_ALIAS}>
-    {RILL_TO_LABEL[ALL_TIME_RANGE_ALIAS]}
-  </span>
-</DropdownMenu.Item>
-
 {#if showDefaultItem && defaultTimeRange}
   <DropdownMenu.Item data-range={defaultTimeRange} on:click={handleClick}>
     <div class:font-bold={selected === defaultTimeRange}>
       Last {humaniseISODuration(defaultTimeRange)}
     </div>
   </DropdownMenu.Item>
-{/if}
 
-{#if ranges.latest.length}
   <DropdownMenu.Separator />
 {/if}
 
@@ -52,7 +45,7 @@
   </DropdownMenu.Item>
 {/each}
 
-{#if ranges.periodToDate.length}
+{#if ranges.latest.length}
   <DropdownMenu.Separator />
 {/if}
 
@@ -64,7 +57,7 @@
   </DropdownMenu.Item>
 {/each}
 
-{#if ranges.previous.length}
+{#if ranges.periodToDate.length}
   <DropdownMenu.Separator />
 {/if}
 
@@ -76,8 +69,18 @@
   </DropdownMenu.Item>
 {/each}
 
-<DropdownMenu.Separator />
+{#if ranges.allTime}
+  <DropdownMenu.Separator />
+  <DropdownMenu.Item on:click={handleClick} data-range={ALL_TIME_RANGE_ALIAS}>
+    <span class:font-bold={selected === ALL_TIME_RANGE_ALIAS}>
+      {RILL_TO_LABEL[ALL_TIME_RANGE_ALIAS]}
+    </span>
+  </DropdownMenu.Item>
+{/if}
 
-<DropdownMenu.Item on:click={onSelectCustomOption} data-range="custom">
-  <span class:font-bold={selected === "CUSTOM"}> Custom </span>
-</DropdownMenu.Item>
+{#if allowCustomTimeRange}
+  <DropdownMenu.Separator />
+  <DropdownMenu.Item on:click={onSelectCustomOption} data-range="custom">
+    <span class:font-bold={selected === "CUSTOM"}> Custom </span>
+  </DropdownMenu.Item>
+{/if}

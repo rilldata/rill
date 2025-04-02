@@ -85,9 +85,11 @@ export function getChartTitle(config: ChartConfig, data: ChartDataResult) {
       ? data.fields[config.color.field]?.displayName || config.color.field
       : "";
 
+  const preposition = xLabel === "Time" ? "over" : "per";
+
   return colorLabel
-    ? `${yLabel} per ${xLabel} split by ${colorLabel}`
-    : `${yLabel} per ${xLabel}`;
+    ? `${yLabel} ${preposition} ${xLabel} split by ${colorLabel}`
+    : `${yLabel} ${preposition} ${xLabel}`;
 }
 
 export const timeGrainToVegaTimeUnitMap: Record<V1TimeGrain, string> = {
@@ -105,5 +107,12 @@ export const timeGrainToVegaTimeUnitMap: Record<V1TimeGrain, string> = {
 
 export function sanitizeFieldName(fieldName: string) {
   const specialCharactersRemoved = sanitizeValueForVega(fieldName);
-  return specialCharactersRemoved.replace(" ", "__");
+  const sanitizedFieldName = specialCharactersRemoved.replace(" ", "__");
+
+  /**
+   * Add a prefix to the beginning of the field
+   * name to avoid variables starting with a special
+   * character or number.
+   */
+  return `rill_${sanitizedFieldName}`;
 }

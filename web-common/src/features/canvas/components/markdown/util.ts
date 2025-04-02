@@ -1,8 +1,8 @@
-import { defaultAlignment } from "@rilldata/web-common/features/canvas/components/markdown";
+import { defaultMarkdownAlignment } from "@rilldata/web-common/features/canvas/components/markdown";
 import type { ComponentAlignment } from "@rilldata/web-common/features/canvas/components/types";
 
 export function getPositionClasses(alignment: ComponentAlignment | undefined) {
-  if (!alignment) alignment = defaultAlignment;
+  if (!alignment) alignment = defaultMarkdownAlignment;
   let classString = "";
 
   switch (alignment.horizontal) {

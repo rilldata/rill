@@ -147,6 +147,34 @@ tests:
       - sum: 4
         sum_prev: 2
         time__day: "2024-01-04T00:00:00Z"
+  - name: time_as_dimension_check_cache_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics
+      dimensions:
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: sum
+        - name: sum_prev
+          compute:
+            comparison_value:
+              measure: sum
+      time_range:
+        end: 2024-01-04T00:00:00Z
+        start: 2024-01-03T00:00:00Z
+      comparison_time_range:
+        end: 2024-01-02T00:00:00Z
+        start: 2024-01-01T00:00:00Z
+      sort:
+        - name: time__day
+    result:
+      - sum: 3
+        sum_prev: 1
+        time__day: "2024-01-03T00:00:00Z"
   - name: iso_ranges_duckdb
     resolver: metrics
     properties:
@@ -167,9 +195,9 @@ tests:
       sort:
         - name: sum
     result:
-      - sum: 7
+      - country: US
+        sum: 7
         sum_prev: 2
-        country: "US"
   - name: iso_ranges_clickhouse
     resolver: metrics
     properties:
@@ -190,9 +218,9 @@ tests:
       sort:
         - name: sum
     result:
-      - sum: 7
+      - country: US
+        sum: 7
         sum_prev: 2
-        country: "US"
   - name: rill_time_ranges_duckdb
     resolver: metrics
     properties:
@@ -212,12 +240,12 @@ tests:
       sort:
         - name: sum
     result:
-      - sum: 5
+      - country: DK
+        sum: 5
         sum_prev: 1
-        country: "DK"
-      - sum: 7
+      - country: US
+        sum: 7
         sum_prev: 2
-        country: "US"
   - name: rill_time_ranges_clickhouse
     resolver: metrics
     properties:
@@ -237,9 +265,9 @@ tests:
       sort:
         - name: sum
     result:
-      - sum: 5
+      - country: DK
+        sum: 5
         sum_prev: 1
-        country: "DK"
-      - sum: 7
+      - country: US
+        sum: 7
         sum_prev: 2
-        country: "US"

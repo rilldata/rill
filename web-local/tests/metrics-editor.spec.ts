@@ -12,8 +12,10 @@ test.describe("Metrics editor", () => {
     await gotoNavEntry(page, "/metrics/AdBids_metrics.yaml");
 
     await page.getByRole("button", { name: "Add new measure" }).click();
-
     await page.getByText("Model column").click();
+    await page
+      .getByRole("option", { name: "bid_price" })
+      .waitFor({ timeout: 2_000 });
     await page.getByRole("option", { name: "bid_price" }).click();
     await page.getByLabel("Display name (optional)").fill("New Measure");
     await page.getByRole("button", { name: "Add measure" }).click();
@@ -61,7 +63,7 @@ test.describe("Metrics editor", () => {
     await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/metrics/AdBids_metrics.yaml");
 
-    await page.getByLabel("code").click();
+    await page.getByRole("button", { name: "switch to code editor" }).click();
 
     await updateCodeEditor(page, "");
 

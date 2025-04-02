@@ -121,7 +121,7 @@ env:
 
 :::info Overriding variables locally
 
-Variables also follow an order of precedence and can be overriden locally. By default, any variables defined will be inherited from `rill.yaml`. However, if you manually pass in a variable when starting Rill Developer locally via the CLI, this value will be used instead for the current instance of your running project:
+Variables also follow an order of precedence and can be overridden locally. By default, any variables defined will be inherited from `rill.yaml`. However, if you manually pass in a variable when starting Rill Developer locally via the CLI, this value will be used instead for the current instance of your running project:
 
 ```bash
 rill start --env numeric_var=100 --env string_var="different_value"
@@ -172,8 +172,8 @@ mock_users:
 ```
 
 
-![View as User](/img/reference/project-files/View-as.png)
-
+<img src = '/img/reference/project-files/View-as.png' class='centered' />
+<br />
 
 :::info The View as selector is not visible in my dashboard, why?
 

@@ -80,12 +80,30 @@
       </DropdownMenu.CheckboxItem>
       <DropdownMenu.CheckboxItem
         class="font-normal flex items-center"
+        checked={role === "editor"}
+        on:click={() => {
+          handleSetRole("editor");
+        }}
+      >
+        <span>Editor</span>
+      </DropdownMenu.CheckboxItem>
+      <DropdownMenu.CheckboxItem
+        class="font-normal flex items-center"
         checked={role === "viewer"}
         on:click={() => {
           handleSetRole("viewer");
         }}
       >
         <span>Viewer</span>
+      </DropdownMenu.CheckboxItem>
+      <DropdownMenu.CheckboxItem
+        class="font-normal flex items-center"
+        checked={role === "guest"}
+        on:click={() => {
+          handleSetRole("guest");
+        }}
+      >
+        <span>Guest</span>
       </DropdownMenu.CheckboxItem>
     </DropdownMenu.Content>
   </DropdownMenu.Root>

@@ -15,6 +15,7 @@
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
   export let name: string;
+  export let managed: boolean;
   export let role: string | undefined = undefined;
 
   let isDropdownOpen = false;
@@ -98,8 +99,8 @@
   }
 </script>
 
-<!-- all-users — "cannot add role for all-users group" -->
-{#if name !== "all-users"}
+<!-- For managed groups, show "cannot add role for system managed group" -->
+{#if !managed}
   <DropdownMenu.Root bind:open={isDropdownOpen}>
     <DropdownMenu.Trigger
       class="w-18 flex flex-row gap-1 items-center rounded-sm {isDropdownOpen
@@ -126,6 +127,19 @@
         }}
       >
         <span>Admin</span>
+      </DropdownMenu.CheckboxItem>
+      <DropdownMenu.CheckboxItem
+        class="font-normal flex items-center"
+        checked={role === "editor"}
+        on:click={() => {
+          if (role) {
+            handleSetRole("editor");
+          } else {
+            handleAddRole("editor");
+          }
+        }}
+      >
+        <span>Editor</span>
       </DropdownMenu.CheckboxItem>
       <DropdownMenu.CheckboxItem
         class="font-normal flex items-center"
@@ -157,7 +171,7 @@
       <span class="cursor-help">-</span>
     </div>
     <TooltipContent maxWidth="400px" slot="tooltip-content">
-      Cannot add role for all-users group
+      Cannot add role for system-managed group
     </TooltipContent>
   </Tooltip>
 {/if}

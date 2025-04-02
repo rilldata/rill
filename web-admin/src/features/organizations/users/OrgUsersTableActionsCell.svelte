@@ -49,7 +49,21 @@
       await queryClient.invalidateQueries(
         getAdminServiceListUsergroupMemberUsersQueryKey(
           organization,
-          "all-users",
+          "autogroup:users",
+        ),
+      );
+
+      await queryClient.invalidateQueries(
+        getAdminServiceListUsergroupMemberUsersQueryKey(
+          organization,
+          "autogroup:members",
+        ),
+      );
+
+      await queryClient.invalidateQueries(
+        getAdminServiceListUsergroupMemberUsersQueryKey(
+          organization,
+          "autogroup:guests",
         ),
       );
 

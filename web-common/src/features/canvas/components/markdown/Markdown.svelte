@@ -11,7 +11,7 @@
   $: positionClasses = getPositionClasses(markdownProperties.alignment);
 </script>
 
-<div class="size-full p-2 bg-white overflow-y-auto">
+<div class="size-full px-2 bg-white overflow-y-auto">
   <div class="canvas-markdown {positionClasses} h-full flex flex-col min-h-min">
     {#await marked(markdownProperties.content) then content}
       {@html DOMPurify.sanitize(content)}
@@ -42,6 +42,14 @@
   :global(.canvas-markdown p) {
     font-size: 14px;
     @apply my-2;
+  }
+
+  :global(.canvas-markdown.items-center p) {
+    @apply text-center w-full;
+  }
+
+  :global(.canvas-markdown.items-end p) {
+    @apply text-right w-full;
   }
   :global(.canvas-markdown table) {
     @apply w-full border-collapse my-4;

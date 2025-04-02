@@ -31,9 +31,10 @@ import {
   type TimeRange,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
-import { mergeSearchParams } from "@rilldata/web-common/lib/url-utils";
+import { copyParamsToTarget } from "@rilldata/web-common/lib/url-utils";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
+  V1ExploreComparisonMode,
   type V1ExplorePreset,
   type V1ExploreSpec,
 } from "@rilldata/web-common/runtime-client";
@@ -48,28 +49,28 @@ export function getUpdatedUrlForExploreState(
   defaultExplorePreset: V1ExplorePreset,
   partialExploreState: Partial<MetricsExplorerEntity>,
   url: URL,
-) {
-  const newUrlSearchParams = new URLSearchParams(
-    convertExploreStateToURLSearchParams(
-      partialExploreState as MetricsExplorerEntity,
-      exploreSpec,
-      timeControlsState,
-      defaultExplorePreset,
-      url,
-    ),
+): string {
+  // Create params from the explore state
+  const stateParams = convertExploreStateToURLSearchParams(
+    partialExploreState as MetricsExplorerEntity,
+    exploreSpec,
+    timeControlsState,
+    defaultExplorePreset,
+    url,
   );
+
+  // Filter out the default view parameter if needed
   url.searchParams.forEach((value, key) => {
     if (
       key === ExploreStateURLParams.WebView &&
       FromURLParamViewMap[value] === defaultExplorePreset.view
     ) {
-      // ignore default view.
-      // since we do not add params equal to default this will append to the end of the URL breaking the param order.
-      return;
+      return; // Skip this parameter
     }
-    newUrlSearchParams.set(key, value);
+    stateParams.set(key, value);
   });
-  return newUrlSearchParams.toString();
+
+  return stateParams.toString();
 }
 
 export function convertExploreStateToURLSearchParams(
@@ -81,18 +82,15 @@ export function convertExploreStateToURLSearchParams(
   timeControlsState: TimeControlState | undefined,
   preset: V1ExplorePreset,
   // Used to decide whether to compress or not based on the full url length
-  url: URL,
-  disableCompression = false,
-) {
-  const urlCopy = new URL(url);
-  // clear any existing search params
-  urlCopy.search = "";
+  urlForCompressionCheck?: URL,
+): URLSearchParams {
+  const searchParams = new URLSearchParams();
 
-  if (!exploreState) return urlCopy.searchParams.toString();
+  if (!exploreState) return searchParams;
 
   const currentView = FromActivePageMap[exploreState.activePage];
   if (shouldSetParam(preset.view, currentView)) {
-    urlCopy.searchParams.set(
+    searchParams.set(
       ExploreStateURLParams.WebView,
       ToURLParamViewMap[currentView] as string,
     );
@@ -100,9 +98,9 @@ export function convertExploreStateToURLSearchParams(
 
   // timeControlsState will be undefined for dashboards without timeseries
   if (timeControlsState) {
-    mergeSearchParams(
-      toTimeRangesUrl(exploreState, exploreSpec, timeControlsState, preset),
-      urlCopy.searchParams,
+    copyParamsToTarget(
+      toTimeRangesUrl(exploreState, timeControlsState, preset),
+      searchParams,
     );
   }
 
@@ -111,9 +109,12 @@ export function convertExploreStateToURLSearchParams(
     exploreState.dimensionThresholdFilters,
   );
   if (expr && expr?.cond?.exprs?.length) {
-    urlCopy.searchParams.set(
+    searchParams.set(
       ExploreStateURLParams.Filters,
-      convertExpressionToFilterParam(expr),
+      convertExpressionToFilterParam(
+        expr,
+        exploreState.dimensionsWithInlistFilter,
+      ),
     );
   }
 
@@ -121,40 +122,41 @@ export function convertExploreStateToURLSearchParams(
     case DashboardState_ActivePage.UNSPECIFIED:
     case DashboardState_ActivePage.DEFAULT:
     case DashboardState_ActivePage.DIMENSION_TABLE:
-      mergeSearchParams(
+      copyParamsToTarget(
         toExploreUrl(exploreState, exploreSpec, preset),
-        urlCopy.searchParams,
+        searchParams,
       );
       break;
 
     case DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL:
-      mergeSearchParams(
+      copyParamsToTarget(
         toTimeDimensionUrlParams(exploreState, preset),
-        urlCopy.searchParams,
+        searchParams,
       );
       break;
 
     case DashboardState_ActivePage.PIVOT:
-      mergeSearchParams(
-        toPivotUrlParams(exploreState, preset),
-        urlCopy.searchParams,
-      );
+      copyParamsToTarget(toPivotUrlParams(exploreState, preset), searchParams);
       break;
   }
 
-  if (disableCompression || !shouldCompressParams(urlCopy))
-    return urlCopy.searchParams.toString();
+  if (!urlForCompressionCheck) return searchParams;
+
+  const urlCopy = new URL(urlForCompressionCheck);
+  urlCopy.search = searchParams.toString();
+  const shouldCompress = shouldCompressParams(urlCopy);
+  if (!shouldCompress) return searchParams;
+
   const compressedUrlParams = new URLSearchParams();
   compressedUrlParams.set(
     ExploreStateURLParams.GzippedParams,
-    compressUrlParams(urlCopy.search),
+    compressUrlParams(searchParams.toString()),
   );
-  return compressedUrlParams.toString();
+  return compressedUrlParams;
 }
 
 function toTimeRangesUrl(
   exploreState: MetricsExplorerEntity,
-  exploreSpec: V1ExploreSpec,
   timeControlsState: TimeControlState,
   preset: V1ExplorePreset,
 ) {
@@ -169,10 +171,7 @@ function toTimeRangesUrl(
     );
   }
 
-  if (
-    exploreSpec.timeZones?.length &&
-    shouldSetParam(preset.timezone, exploreState.selectedTimezone)
-  ) {
+  if (shouldSetParam(preset.timezone, exploreState.selectedTimezone)) {
     searchParams.set(
       ExploreStateURLParams.TimeZone,
       exploreState.selectedTimezone,
@@ -191,12 +190,19 @@ function toTimeRangesUrl(
       ExploreStateURLParams.ComparisonTimeRange,
       toTimeRangeParam(timeControlsState.selectedComparisonTimeRange),
     );
+  } else if (
+    !exploreState.showTimeComparison &&
+    preset.comparisonMode ===
+      V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
+  ) {
+    searchParams.set(ExploreStateURLParams.ComparisonTimeRange, "");
   }
 
   const mappedTimeGrain =
     ToURLParamTimeGrainMapMap[
       timeControlsState.selectedTimeRange?.interval ?? ""
     ] ?? "";
+
   if (mappedTimeGrain && shouldSetParam(preset.timeGrain, mappedTimeGrain)) {
     searchParams.set(ExploreStateURLParams.TimeGrain, mappedTimeGrain);
   }
@@ -310,6 +316,18 @@ function toExploreUrl(
     );
   }
 
+  if (
+    shouldSetParam(
+      preset.exploreLeaderboardMeasureCount,
+      exploreState.leaderboardMeasureCount,
+    )
+  ) {
+    searchParams.set(
+      ExploreStateURLParams.LeaderboardMeasureCount,
+      exploreState.leaderboardMeasureCount?.toString(),
+    );
+  }
+
   return searchParams;
 }
 
@@ -406,6 +424,7 @@ function toPivotUrlParams(
     sort?.id in ToURLParamTimeDimensionMap
       ? ToURLParamTimeDimensionMap[sort?.id]
       : sort?.id;
+
   if (shouldSetParam(preset.pivotSortBy, sortId)) {
     searchParams.set(ExploreStateURLParams.SortBy, sortId ?? "");
   }

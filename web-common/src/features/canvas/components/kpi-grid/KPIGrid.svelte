@@ -5,12 +5,13 @@
   import type { KPIGridSpec } from ".";
   import ComponentError from "../ComponentError.svelte";
   import type { KPISpec } from "../kpi";
-  import KPI from "../kpi/KPI.svelte";
   import { validateKPIGridSchema } from "./selector";
   import { getMinWidth } from "../kpi";
+  import KPIProvider from "../kpi/KPIProvider.svelte";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
   export let timeAndFilterStore: Readable<TimeAndFilterStore>;
+  export let canvasName: string;
 
   let kpis: KPISpec[];
 
@@ -41,10 +42,12 @@
       class="grid-wrapper gap-px overflow-hidden size-full"
     >
       {#each kpis as kpi, i (i)}
-        <div
-          class="min-h-32 kpi-wrapper before:absolute before:z-20 before:top-full before:h-px before:w-full before:bg-gray-200 after:absolute after:left-full after:h-full after:w-px after:bg-gray-200"
-        >
-          <KPI rendererProperties={kpi} {timeAndFilterStore} />
+        <div class="min-h-32 kpi-wrapper">
+          <KPIProvider
+            rendererProperties={kpi}
+            {timeAndFilterStore}
+            {canvasName}
+          />
         </div>
       {/each}
     </div>
@@ -60,11 +63,12 @@
   }
 
   .kpi-wrapper {
-    @apply relative p-4 grid;
+    @apply relative p-4 grid outline outline-1 outline-gray-200;
   }
 
   .border-overlay {
-    @apply border-[16px] pointer-events-none border-white absolute size-full z-50;
+    @apply absolute border-[12.5px] pointer-events-none border-white size-full;
+    z-index: 50;
   }
 
   @container component-container (inline-size < 440px) {

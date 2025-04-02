@@ -14,7 +14,6 @@
     getUpdatedUrlForExploreState,
   } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
   import {
-    clearExploreSessionStore,
     hasSessionStorageData,
     updateExploreSessionStore,
   } from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-store";
@@ -70,14 +69,17 @@
   }
 
   let prevUrl = "";
+  let mounted = false;
+  let navigatedFromWithin = false;
   let initializing = false;
 
   onMount(() => {
+    mounted = true;
     // in some cases afterNavigate is not always triggered
     // so this is the escape hatch to make sure dashboard store gets initialised
     setTimeout(() => {
       if (!$dashboardStore) {
-        void handleExploreInit(true);
+        void handleExploreInit(!navigatedFromWithin);
       }
     });
   });
@@ -87,13 +89,10 @@
       // routing to the same path but probably different url params
       return;
     }
-
-    // session store is only used to save state for different views and not keep other params url
-    // so, we clear the store when we navigate away
-    clearExploreSessionStore(exploreName, extraKeyPrefix);
   });
 
   afterNavigate(({ from, to, type }) => {
+    navigatedFromWithin = true;
     if (
       // null checks
       !metricsSpec ||
@@ -183,6 +182,12 @@
     if (initializing || doNotInitYet) return;
     initializing = true;
 
+    // time range summary query has `enabled` based on `metricsSpec.timeDimension`
+    // isLoading will never be true when the query is disabled, so we need this check before waiting for it.
+    if (metricsSpec.timeDimension) {
+      await waitUntil(() => !timeRangeSummaryIsLoading);
+    }
+
     let initState: Partial<MetricsExplorerEntity> | undefined;
     let shouldUpdateUrl = false;
     if (exploreStateFromSessionStorage && !isManualUrlChange) {
@@ -208,11 +213,6 @@
       };
     }
 
-    // time range summary query has `enabled` based on `metricsSpec.timeDimension`
-    // isLoading will never be true when the query is disabled, so we need this check before waiting for it.
-    if (metricsSpec.timeDimension) {
-      await waitUntil(() => !timeRangeSummaryIsLoading);
-    }
     metricsExplorerStore.init(exploreName, initState);
     timeControlsState ??= getTimeControlState(
       metricsSpec,
@@ -254,13 +254,14 @@
     if (!exploreSpec) return;
 
     const u = new URL($page.url);
-    u.search = convertExploreStateToURLSearchParams(
+    const exploreStateParams = convertExploreStateToURLSearchParams(
       $dashboardStore,
       exploreSpec,
       timeControlsState,
       defaultExplorePreset,
       u,
     );
+    u.search = exploreStateParams.toString();
     const newUrl = u.toString();
     if (!prevUrl || prevUrl === newUrl) return;
 
@@ -283,13 +284,18 @@
     void gotoNewState();
   }
 
+  function initFromReactiveStatement() {
+    if (!mounted) return;
+    void handleExploreInit(!navigatedFromWithin);
+  }
+
   // reactive statement to try re-init if not already initialised
   // this can happen during the initial deploy of project and the user is on dashboard page while it completes reconcile
   $: if (
     !$dashboardStore &&
     exploreStateFromYAMLConfig.activePage !== undefined
   ) {
-    void handleExploreInit(true);
+    initFromReactiveStatement();
   }
 </script>
 

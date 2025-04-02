@@ -7,6 +7,7 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 )
 
 // connCtxKey is used as the key when saving a connection in a context
@@ -42,4 +43,12 @@ func (c *connection) sessionAwareContext(ctx context.Context) context.Context {
 	}
 	// native protocol already has session context
 	return ctx
+}
+
+func contextWithQueryID(ctx context.Context) context.Context {
+	traceID := observability.TraceID(ctx)
+	if traceID == "" {
+		return ctx
+	}
+	return clickhouse.Context(ctx, clickhouse.WithQueryID(traceID))
 }

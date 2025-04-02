@@ -711,6 +711,8 @@ export interface V1TableInfo {
   isDefaultDatabaseSchema?: boolean;
   name?: string;
   hasUnsupportedDataTypes?: boolean;
+  /** physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined. */
+  physicalSizeBytes?: string;
 }
 
 export type V1TableColumnsResponseUnsupportedColumns = {
@@ -1163,6 +1165,8 @@ export interface V1OLAPGetTableResponse {
   schema?: V1StructType;
   unsupportedColumns?: V1OLAPGetTableResponseUnsupportedColumns;
   view?: boolean;
+  /** physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined. */
+  physicalSizeBytes?: string;
 }
 
 export interface V1NumericStatistics {
@@ -1272,6 +1276,8 @@ export interface V1ModelSpec {
   outputProperties?: V1ModelSpecOutputProperties;
   trigger?: boolean;
   triggerFull?: boolean;
+  /** defined_as_source is true if it was defined by user as a source but converted internally to a model. */
+  definedAsSource?: boolean;
 }
 
 export type V1ModelPartitionData = { [key: string]: any };
@@ -1971,6 +1977,8 @@ These are not currently parsed from YAML, but will be derived from the parent me
   securityRules?: V1SecurityRule[];
   /** Banner text that can be displayed in Rill Cloud. */
   banner?: string;
+  lockTimeZone?: boolean;
+  allowCustomTimeRange?: boolean;
 }
 
 export interface V1ExploreState {
@@ -2017,6 +2025,8 @@ export interface V1ExplorePreset {
   measures?: string[];
   measuresSelector?: V1FieldSelector;
   where?: V1Expression;
+  /** Temporary to differentiate between "select" and "in list" modes. Expression will be replaced with UI specific state in the future. */
+  dimensionsWithInlistFilter?: string[];
   /** Time range for the explore.
 It corresponds to the `range` property of the explore's `time_ranges`.
 If not found in `time_ranges`, it should be added to the list. */
@@ -2033,6 +2043,7 @@ If not found in `time_ranges`, it should be added to the list. */
   exploreSortAsc?: boolean;
   exploreSortType?: V1ExploreSortType;
   exploreExpandedDimension?: string;
+  exploreLeaderboardMeasureCount?: number;
   timeDimensionMeasure?: string;
   timeDimensionChartType?: string;
   timeDimensionPin?: boolean;
@@ -2428,6 +2439,7 @@ The values should be valid IANA location identifiers. */
   rows?: V1CanvasRow[];
   /** Security rules to apply for access to the canvas. */
   securityRules?: V1SecurityRule[];
+  allowCustomTimeRange?: boolean;
 }
 
 export interface V1CanvasItem {

@@ -39,6 +39,9 @@ export type AdminServiceGetReportMetaBody = {
   ownerId?: string;
   executionTime?: string;
   emailRecipients?: string[];
+  anonRecipients?: boolean;
+  resources?: V1ResourceName[];
+  webOpenMode?: string;
 };
 
 export type AdminServicePullVirtualRepoParams = {
@@ -101,6 +104,7 @@ Either github_url or archive_asset_id should be set. */
   /** archive_asset_id is set for projects whose project files are not stored in github but are managed by rill. */
   archiveAssetId?: string;
   prodVersion?: string;
+  skipDeploy?: boolean;
 };
 
 export type AdminServiceListProjectsForOrganizationParams = {
@@ -130,7 +134,15 @@ export type AdminServiceGetUsergroupParams = {
   pageToken?: string;
 };
 
+export type AdminServiceListUsergroupsForOrganizationAndUserParams = {
+  userId?: string;
+  pageSize?: number;
+  pageToken?: string;
+};
+
 export type AdminServiceListOrganizationMemberUsergroupsParams = {
+  role?: string;
+  includeCounts?: boolean;
   pageSize?: number;
   pageToken?: string;
 };
@@ -168,7 +180,7 @@ export type AdminServiceSearchProjectUsersParams = {
 export type AdminServiceIssueMagicAuthTokenBody = {
   /** TTL for the token in minutes. Set to 0 for no expiry. Defaults to no expiry. */
   ttlMinutes?: string;
-  /** Type of resource to grant access to. Currently only supports "rill.runtime.v1.Explore". */
+  /** Type of resource to grant access to. */
   resourceType?: string;
   /** Name of the resource to grant access to. */
   resourceName?: string;
@@ -180,11 +192,18 @@ This will be translated to a rill.runtime.v1.SecurityRuleFieldAccess, which curr
   state?: string;
   /** Optional display name to store with the token. */
   displayName?: string;
+  /** list of resources to grant access to. */
+  resources?: V1ResourceName[];
 };
 
 export type AdminServiceListMagicAuthTokensParams = {
   pageSize?: number;
   pageToken?: string;
+};
+
+export type AdminServiceUnsubscribeReportBody = {
+  email?: string;
+  slackUser?: string;
 };
 
 export type AdminServiceRedeployProjectParams = {
@@ -197,6 +216,7 @@ export type AdminServiceAddProjectMemberUserBody = {
 };
 
 export type AdminServiceListProjectMemberUsersParams = {
+  role?: string;
   pageSize?: number;
   pageToken?: string;
 };
@@ -265,13 +285,16 @@ export type AdminServiceConnectProjectToGithubBody = {
   force?: boolean;
 };
 
-export type AdminServiceListProjectMemberUsergroupsParams = {
+export type AdminServiceListProjectsForOrganizationAndUserParams = {
+  userId?: string;
   pageSize?: number;
   pageToken?: string;
 };
 
-export type AdminServiceRemoveOrganizationMemberUserParams = {
-  keepProjectRoles?: boolean;
+export type AdminServiceListProjectMemberUsergroupsParams = {
+  role?: string;
+  pageSize?: number;
+  pageToken?: string;
 };
 
 export type AdminServiceAddOrganizationMemberUserBody = {
@@ -281,6 +304,8 @@ export type AdminServiceAddOrganizationMemberUserBody = {
 };
 
 export type AdminServiceListOrganizationMemberUsersParams = {
+  role?: string;
+  includeCounts?: boolean;
   pageSize?: number;
   pageToken?: string;
 };
@@ -298,6 +323,7 @@ export type AdminServiceUpdateOrganizationBody = {
   displayName?: string;
   logoAssetId?: string;
   faviconAssetId?: string;
+  defaultProjectRole?: string;
   billingEmail?: string;
 };
 
@@ -367,10 +393,20 @@ export interface V1VirtualFile {
   updatedOn?: string;
 }
 
+export interface V1UsergroupMemberUser {
+  userId?: string;
+  userEmail?: string;
+  userName?: string;
+  userPhotoUrl?: string;
+  createdOn?: string;
+  updatedOn?: string;
+}
+
 export interface V1Usergroup {
   groupId?: string;
   groupName?: string;
   groupDescription?: string;
+  managed?: boolean;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -656,6 +692,11 @@ export interface V1RevokeCurrentAuthTokenResponse {
   tokenId?: string;
 }
 
+export interface V1ResourceName {
+  type?: string;
+  name?: string;
+}
+
 export interface V1RequestProjectAccessResponse {
   [key: string]: any;
 }
@@ -677,6 +718,10 @@ export interface V1ReportOptions {
   webOpenPath?: string;
   /** Annotation for the base64-encoded UI state to open for the report. */
   webOpenState?: string;
+  explore?: string;
+  canvas?: string;
+  webOpenMode?: string;
+  filter?: V1Expression;
 }
 
 export interface V1RenewBillingSubscriptionResponse {
@@ -784,6 +829,7 @@ If empty, the variable is shared for all environments. */
 }
 
 export interface V1ProjectPermissions {
+  admin?: boolean;
   readProject?: boolean;
   manageProject?: boolean;
   readProd?: boolean;
@@ -796,6 +842,7 @@ export interface V1ProjectPermissions {
   manageProvisionerResources?: boolean;
   readProjectMembers?: boolean;
   manageProjectMembers?: boolean;
+  manageProjectAdmins?: boolean;
   createMagicAuthTokens?: boolean;
   manageMagicAuthTokens?: boolean;
   createReports?: boolean;
@@ -804,6 +851,22 @@ export interface V1ProjectPermissions {
   manageAlerts?: boolean;
   createBookmarks?: boolean;
   manageBookmarks?: boolean;
+}
+
+export interface V1ProjectRole {
+  id?: string;
+  name?: string;
+  permissions?: V1ProjectPermissions;
+}
+
+export interface V1ProjectMemberUser {
+  userId?: string;
+  userEmail?: string;
+  userName?: string;
+  userPhotoUrl?: string;
+  roleName?: string;
+  createdOn?: string;
+  updatedOn?: string;
 }
 
 export type V1ProjectAnnotations = { [key: string]: string };
@@ -849,6 +912,8 @@ export interface V1OrganizationQuotas {
 }
 
 export interface V1OrganizationPermissions {
+  admin?: boolean;
+  guest?: boolean;
   readOrg?: boolean;
   manageOrg?: boolean;
   readProjects?: boolean;
@@ -856,6 +921,25 @@ export interface V1OrganizationPermissions {
   manageProjects?: boolean;
   readOrgMembers?: boolean;
   manageOrgMembers?: boolean;
+  manageOrgAdmins?: boolean;
+}
+
+export interface V1OrganizationRole {
+  id?: string;
+  name?: string;
+  permissions?: V1OrganizationPermissions;
+}
+
+export interface V1OrganizationMemberUser {
+  userId?: string;
+  userEmail?: string;
+  userName?: string;
+  userPhotoUrl?: string;
+  roleName?: string;
+  projectsCount?: number;
+  usergroupsCount?: number;
+  createdOn?: string;
+  updatedOn?: string;
 }
 
 export interface V1Organization {
@@ -866,6 +950,7 @@ export interface V1Organization {
   logoUrl?: string;
   faviconUrl?: string;
   customDomain?: string;
+  defaultProjectRoleId?: string;
   quotas?: V1OrganizationQuotas;
   billingCustomerId?: string;
   paymentCustomerId?: string;
@@ -898,17 +983,9 @@ export const V1Operation = {
 export interface V1MemberUsergroup {
   groupId?: string;
   groupName?: string;
+  groupManaged?: boolean;
   roleName?: string;
-  createdOn?: string;
-  updatedOn?: string;
-}
-
-export interface V1MemberUser {
-  userId?: string;
-  userEmail?: string;
-  userName?: string;
-  userPhotoUrl?: string;
-  roleName?: string;
+  usersCount?: number;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -926,6 +1003,7 @@ export interface V1MagicAuthToken {
   createdByUserId?: string;
   createdByUserEmail?: string;
   attributes?: V1MagicAuthTokenAttributes;
+  resources?: V1ResourceName[];
   resourceType?: string;
   resourceName?: string;
   filter?: V1Expression;
@@ -938,8 +1016,13 @@ export interface V1ListWhitelistedDomainsResponse {
   domains?: V1WhitelistedDomain[];
 }
 
+export interface V1ListUsergroupsForOrganizationAndUserResponse {
+  usergroups?: V1Usergroup[];
+  nextPageToken?: string;
+}
+
 export interface V1ListUsergroupMemberUsersResponse {
-  members?: V1MemberUser[];
+  members?: V1UsergroupMemberUser[];
   nextPageToken?: string;
 }
 
@@ -955,6 +1038,11 @@ export interface V1ListServiceAuthTokensResponse {
   tokens?: V1ServiceToken[];
 }
 
+export interface V1ListRolesResponse {
+  organizationRoles?: V1OrganizationRole[];
+  projectRoles?: V1ProjectRole[];
+}
+
 export interface V1ListPublicBillingPlansResponse {
   plans?: V1BillingPlan[];
 }
@@ -964,12 +1052,17 @@ export interface V1ListProjectsForOrganizationResponse {
   nextPageToken?: string;
 }
 
+export interface V1ListProjectsForOrganizationAndUserResponse {
+  projects?: V1Project[];
+  nextPageToken?: string;
+}
+
 export interface V1ListProjectWhitelistedDomainsResponse {
   domains?: V1WhitelistedDomain[];
 }
 
 export interface V1ListProjectMemberUsersResponse {
-  members?: V1MemberUser[];
+  members?: V1ProjectMemberUser[];
   nextPageToken?: string;
 }
 
@@ -989,7 +1082,7 @@ export interface V1ListOrganizationsResponse {
 }
 
 export interface V1ListOrganizationMemberUsersResponse {
-  members?: V1MemberUser[];
+  members?: V1OrganizationMemberUser[];
   nextPageToken?: string;
 }
 
@@ -1070,7 +1163,6 @@ export type V1GetReportMetaResponseRecipientUrls = {
 };
 
 export interface V1GetReportMetaResponse {
-  baseUrls?: GetReportMetaResponseURLs;
   recipientUrls?: V1GetReportMetaResponseRecipientUrls;
 }
 
@@ -1312,7 +1404,7 @@ export interface V1CreateWhitelistedDomainResponse {
 }
 
 export interface V1CreateUsergroupResponse {
-  [key: string]: any;
+  usergroup?: V1Usergroup;
 }
 
 export interface V1CreateServiceResponse {
@@ -1606,4 +1698,5 @@ export interface GetReportMetaResponseURLs {
   openUrl?: string;
   exportUrl?: string;
   editUrl?: string;
+  unsubscribeUrl?: string;
 }

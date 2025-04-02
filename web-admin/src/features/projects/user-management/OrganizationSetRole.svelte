@@ -108,6 +108,15 @@
     </DropdownMenu.CheckboxItem>
     <DropdownMenu.CheckboxItem
       class="font-normal flex items-center"
+      checked={group.roleName === "editor"}
+      on:click={() => {
+        handleSetRole(group.groupName, "editor");
+      }}
+    >
+      <span>Editor</span>
+    </DropdownMenu.CheckboxItem>
+    <DropdownMenu.CheckboxItem
+      class="font-normal flex items-center"
       checked={group.roleName === "viewer"}
       on:click={() => {
         handleSetRole(group.groupName, "viewer");
@@ -115,7 +124,7 @@
     >
       <span>Viewer</span>
     </DropdownMenu.CheckboxItem>
-    {#if group.groupName !== "all-users"}
+    {#if !group.groupManaged}
       <DropdownMenu.Separator />
       <DropdownMenu.Item
         class="font-normal flex items-center"

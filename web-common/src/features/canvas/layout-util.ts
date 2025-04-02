@@ -6,6 +6,7 @@ import type {
 import { YAMLMap, YAMLSeq } from "yaml";
 import type { CanvasComponentType } from "./components/types";
 import { getComponentRegistry } from "./components/util";
+import { writable } from "svelte/store";
 
 export const initialHeights: Record<CanvasComponentType, number> = {
   line_chart: 320,
@@ -13,11 +14,12 @@ export const initialHeights: Record<CanvasComponentType, number> = {
   area_chart: 320,
   stacked_bar: 320,
   stacked_bar_normalized: 320,
-  markdown: 80,
+  markdown: 40,
   kpi: 128,
   kpi_grid: 128,
-  image: 300,
+  image: 80,
   table: 300,
+  pivot: 300,
 };
 
 const componentRegistry = getComponentRegistry();
@@ -26,6 +28,18 @@ export const MIN_HEIGHT = 40;
 export const MIN_WIDTH = 3;
 export const COLUMN_COUNT = 12;
 export const DEFAULT_DASHBOARD_WIDTH = 1200;
+
+export const mousePosition = (() => {
+  const store = writable({ x: 0, y: 0 });
+
+  function update(event: MouseEvent) {
+    store.set({ x: event.clientX, y: event.clientY });
+  }
+
+  window.addEventListener("mousemove", update);
+
+  return store;
+})();
 
 type YAMLItem = Record<string, unknown> & {
   width?: number;
@@ -78,6 +92,7 @@ export function moveToRow<T extends YAMLRow | V1CanvasRow>(
   dropPosition?: {
     column?: number;
     row: number;
+    copy?: boolean;
   },
   defaultMetrics?: {
     metricsViewName: string;
@@ -135,6 +150,13 @@ export function moveToRow<T extends YAMLRow | V1CanvasRow>(
               definedInCanvas: true,
             },
       );
+    } else if (dropPosition?.copy && item.position) {
+      const row = rowsClone[item.position.row];
+      if (!row) return;
+      const component = row.items?.[item.position.column];
+      if (!component) return;
+
+      movedComponents.push(structuredClone(component));
     } else if (item.position) {
       const row = rowsClone[item.position.row];
       if (!row) return;

@@ -21,6 +21,7 @@
   export let assembled: boolean;
   export let measures: MeasureColumnProps;
   export let dataRows: PivotDataRow[];
+  export let hasMeasureContextColumns: boolean;
   export let canShowDataViewer = false;
   export let activeCell: { rowId: string; columnId: string } | null | undefined;
 
@@ -34,11 +35,9 @@
   export let totalRowSize: number;
 
   // Event handlers
-  export let onCellClick: (cell: Cell<PivotDataRow, unknown>) => void;
-  export let onCellHover: (
-    e: MouseEvent & { currentTarget: EventTarget & HTMLElement },
-  ) => void;
-  export let onCellLeave: () => void;
+  export let onCellClick: (e: MouseEvent) => void;
+  export let onMouseMove: (e: MouseEvent) => void;
+  export let onTableLeave: () => void;
   export let onCellCopy: (e: MouseEvent) => void;
 
   const HEADER_HEIGHT = 30;
@@ -87,6 +86,14 @@
       cell.column.id === activeCell?.columnId
     );
   }
+
+  function hasBorderRight(columnId: string): boolean {
+    if (!hasMeasureContextColumns) return true;
+    const measureIndex = measures.findIndex((m) => m.name === columnId);
+    if (measureIndex === -1) return true;
+    //  Every third column is the last in its group
+    return (measureIndex + 1) % 3 === 0;
+  }
 </script>
 
 <div
@@ -122,7 +129,9 @@
   role="presentation"
   style:width="{totalLength}px"
   class:with-measure={measures.length > 0}
-  on:click={modified({ shift: onCellCopy })}
+  on:click={modified({ shift: onCellCopy, click: onCellClick })}
+  on:mousemove={onMouseMove}
+  on:mouseleave={onTableLeave}
 >
   <colgroup>
     {#each headers as header (header.id)}
@@ -137,19 +146,24 @@
       <tr>
         {#each headerGroup.headers as header (header.id)}
           {@const sortDirection = header.column.getIsSorted()}
-
+          {@const icon = header.column.columnDef.meta?.icon}
           <th>
             <button
               class="header-cell"
               class:cursor-pointer={header.column.getCanSort()}
               class:select-none={header.column.getCanSort()}
               class:flex-row-reverse={!!getMeasureColumn(header.column)}
+              class:border-r={hasBorderRight(header.column.id)}
               on:click={header.column.getToggleSortingHandler()}
             >
               {#if !header.isPlaceholder}
-                <p class="truncate">
-                  {header.column.columnDef.header}
-                </p>
+                {#if icon}
+                  <svelte:component this={icon} />
+                {:else}
+                  <p class="truncate">
+                    {header.column.columnDef.header}
+                  </p>
+                {/if}
                 {#if sortDirection}
                   <span
                     class="transition-transform -mr-1"
@@ -177,34 +191,29 @@
               : cell.column.columnDef.cell}
           {@const isActive = isCellActive(cell)}
           <td
-            class="ui-copy-number"
+            class="ui-copy-number cell truncate"
             class:active-cell={isActive}
             class:interactive-cell={canShowDataViewer &&
               cell.getValue() !== undefined}
             class:text-right={getMeasureColumn(cell.column)}
-            on:click={() => onCellClick(cell)}
-            on:mouseenter={onCellHover}
-            on:mouseleave={onCellLeave}
+            class:border-r={hasBorderRight(cell.column.id)}
             data-value={cell.getValue()}
+            data-rowid={cell.row.id}
+            data-columnid={cell.column.id}
           >
-            <div class="cell pointer-events-none truncate" role="presentation">
-              {#if result?.component && result?.props}
-                <svelte:component
-                  this={result.component}
-                  {...result.props}
-                  {assembled}
-                />
-              {:else if typeof result === "string" || typeof result === "number"}
-                {result}
-              {:else}
-                <svelte:component
-                  this={flexRender(
-                    cell.column.columnDef.cell,
-                    cell.getContext(),
-                  )}
-                />
-              {/if}
-            </div>
+            {#if result?.component && result?.props}
+              <svelte:component
+                this={result.component}
+                {...result.props}
+                {assembled}
+              />
+            {:else if typeof result === "string" || typeof result === "number"}
+              {result}
+            {:else}
+              <svelte:component
+                this={flexRender(cell.column.columnDef.cell, cell.getContext())}
+              />
+            {/if}
           </td>
         {/each}
       </tr>
@@ -240,7 +249,7 @@
 
   th {
     @apply p-0 m-0 text-xs;
-    @apply border-r border-b relative;
+    @apply border-b relative;
   }
 
   th:last-of-type,
@@ -260,27 +269,22 @@
   .header-cell {
     @apply px-2 bg-white size-full;
     @apply flex items-center gap-x-1 w-full truncate;
-    @apply font-medium;
+    @apply text-gray-800 font-medium;
     height: var(--header-height);
   }
 
   .cell {
-    @apply size-full p-1 px-2;
+    @apply size-full p-1 px-2 text-gray-800;
   }
 
   tr > td {
-    @apply border-r font-normal;
+    @apply font-normal;
   }
 
   /* The totals row */
-  :global(.with-measure) tbody > tr:nth-of-type(2) {
-    @apply bg-slate-50 sticky z-20 font-semibold;
+  .with-measure tbody > tr:nth-of-type(2) {
+    @apply bg-white sticky z-20;
     top: var(--total-header-height);
-  }
-
-  /* The totals row header */
-  :global(.with-measure) tbody > tr:nth-of-type(2) > td {
-    @apply font-semibold;
   }
 
   tr:hover,
@@ -288,17 +292,17 @@
     @apply bg-slate-100;
   }
 
-  tr:hover .active-cell .cell {
+  tr:hover .active-cell {
     @apply bg-primary-100;
   }
 
   .interactive-cell {
     @apply cursor-pointer;
   }
-  .interactive-cell:hover .cell {
+  .interactive-cell.cell:hover {
     @apply bg-primary-100;
   }
-  .active-cell .cell {
+  .active-cell.cell {
     @apply bg-primary-50;
   }
 </style>
