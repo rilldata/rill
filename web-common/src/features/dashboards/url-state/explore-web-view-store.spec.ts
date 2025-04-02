@@ -171,7 +171,7 @@ const TestCases: {
   },
 ];
 
-// TODO: add tests by wrapping DashboardURLStateSync.svelte
+// TODO: revisit after ExploreWebViewStore refactor
 describe.skip("ExploreWebViewStore", () => {
   const dashboardFetchMocks = DashboardFetchMocks.useDashboardFetchMocks();
   const queryClient = new QueryClient({
