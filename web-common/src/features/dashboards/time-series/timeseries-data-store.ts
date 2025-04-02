@@ -92,6 +92,8 @@ export function createMetricsViewTimeSeries(
               // in case of comparison, we need to wait for the comparison start time to be available
               (!isComparison || !!timeControls.comparisonAdjustedStart),
             queryClient: ctx.queryClient,
+            // Note: `keepPreviousData` doesn't work here b/c every update to the derived store creates a whole new QueryObserver, which
+            // instanites a new Query store. However, I'm keeping this here to remind us to use `keepPreviousData` once we have a stable QueryObserver.
             keepPreviousData: true,
           },
         },

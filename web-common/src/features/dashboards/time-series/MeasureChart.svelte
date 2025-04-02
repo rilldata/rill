@@ -59,6 +59,7 @@
   export let isInTimeDimensionView: boolean;
   export let data;
   export let dimensionData: DimensionDataItem[] = [];
+  export let isFetching: boolean;
   export let xAccessor = "ts";
   export let labelAccessor = "label";
   export let yAccessor = "value";
@@ -278,6 +279,7 @@
     />
     <Body>
       <ChartBody
+        {isFetching}
         {data}
         {dimensionData}
         dimensionValue={hoveredDimensionValue}
