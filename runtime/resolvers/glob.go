@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/compilers/rillv1"
@@ -25,6 +26,8 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/typepb"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
+
+	_ "github.com/marcboeker/go-duckdb"
 )
 
 func init() {
@@ -372,26 +375,27 @@ func (r *globResolver) writeTempNDJSONFile(rows []map[string]any) (string, error
 }
 
 func readNDJSONFile(filePath string) ([]map[string]any, error) {
-	f, err := os.Open(filePath)
+	db, err := sqlx.Open("duckdb", "")
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+	defer db.Close()
 
-	dec := json.NewDecoder(f)
-	var rows []map[string]any
-	for {
-		var row map[string]any
-		if err := dec.Decode(&row); err != nil {
-			if errors.Is(err, io.EOF) {
-				break
-			}
+	// read filepath as ndjson
+	var data []map[string]any
+	rows, err := db.QueryxContext(context.Background(), fmt.Sprintf("SELECT * FROM read_ndjson_auto(%s)", safeSQLString(filePath)))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		row := make(map[string]any)
+		if err := rows.MapScan(row); err != nil {
 			return nil, err
 		}
-		rows = append(rows, row)
+		data = append(data, row)
 	}
-
-	return rows, nil
+	return data, nil
 }
 
 func randomString(prefix string, n int) (string, error) {
@@ -401,4 +405,8 @@ func randomString(prefix string, n int) (string, error) {
 		return "", err
 	}
 	return prefix + hex.EncodeToString(b), nil
+}
+
+func safeSQLString(name string) string {
+	return drivers.DialectDuckDB.EscapeStringValue(name)
 }
