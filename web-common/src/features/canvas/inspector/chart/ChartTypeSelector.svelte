@@ -5,10 +5,9 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import type { ChartMetadata } from "@rilldata/web-common/features/canvas/components/charts/types";
   import { chartMetadata } from "@rilldata/web-common/features/canvas/components/charts/util";
-  import type { BaseCanvasComponent } from "../../components/BaseCanvasComponent";
-  import type { TableSpec } from "../../components/table";
+  import type { ChartComponent } from "../../components/charts";
 
-  export let component: BaseCanvasComponent<TableSpec>;
+  export let component: ChartComponent;
 
   async function selectChartType(chartType: ChartMetadata) {
     await component.updateChartType(chartType.type);

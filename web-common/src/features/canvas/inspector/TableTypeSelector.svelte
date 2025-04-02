@@ -1,24 +1,25 @@
 <script lang="ts">
   import FieldSwitcher from "@rilldata/web-common/components/forms/FieldSwitcher.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
-  import type { CanvasComponentType } from "@rilldata/web-common/features/canvas/components/types";
-  import type { CanvasComponentObj } from "@rilldata/web-common/features/canvas/components/util";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import type { TableCanvasComponent } from "../components/table";
+  import type { PivotCanvasComponent } from "../components/pivot";
 
-  export let component: CanvasComponentObj;
-  export let componentType: CanvasComponentType;
+  export let component: TableCanvasComponent | PivotCanvasComponent;
   export let metricsViewName: string;
   export let canvasName: string;
 
   $: ctx = getCanvasStore(canvasName);
   $: ({ getMetricsViewFromName } = ctx.canvasEntity.spec);
 
-  $: selected = componentType === "table" ? 0 : 1;
+  $: ({ type } = component);
+
+  $: selected = type === "table" ? 0 : 1;
   $: metricsView = getMetricsViewFromName(metricsViewName);
 
   async function onChange(tableType: "pivot" | "table") {
-    if (tableType !== componentType) {
-      component.updateTableType(tableType, $metricsView);
+    if (tableType !== type) {
+      await component.updateTableType(tableType, $metricsView);
     }
   }
 </script>

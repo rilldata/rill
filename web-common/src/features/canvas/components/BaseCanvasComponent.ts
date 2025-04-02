@@ -17,8 +17,6 @@ import type {
 import { derived, get, writable, type Writable } from "svelte/store";
 import { CanvasComponentState } from "../stores/canvas-component";
 import type { CanvasEntity, ComponentPath } from "../stores/canvas-entity";
-import type { Readable } from "svelte/motion";
-import type { TimeAndFilterStore } from "../stores/types";
 import type {
   ComparisonTimeRangeState,
   TimeRangeState,

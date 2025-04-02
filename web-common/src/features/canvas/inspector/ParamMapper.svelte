@@ -2,14 +2,10 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
-  import {
-    isChartComponentType,
-    isTableComponentType,
-    type CanvasComponentObj,
-  } from "@rilldata/web-common/features/canvas/components/util";
+
   import { type V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
-  import type { CanvasComponentType, ComponentSpec } from "../components/types";
+  import type { ComponentSpec } from "../components/types";
   import AlignmentInput from "./AlignmentInput.svelte";
   import ChartTypeSelector from "./chart/ChartTypeSelector.svelte";
   import MarkSelector from "./chart/MarkSelector.svelte";
@@ -21,6 +17,9 @@
   import SparklineInput from "./SparklineInput.svelte";
   import TableTypeSelector from "./TableTypeSelector.svelte";
   import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
+  import { ChartComponent } from "../components/charts";
+  import { TableCanvasComponent } from "../components/table";
+  import { PivotCanvasComponent } from "../components/pivot";
 
   export let component: BaseCanvasComponent<ComponentSpec>;
   export let paramValues: V1ComponentSpecRendererProperties;
@@ -45,11 +44,11 @@
   });
 </script>
 
-{#if isChartComponentType(component.type)}
+{#if component instanceof ChartComponent}
   <ChartTypeSelector {component} />
 {/if}
 
-{#if metricsView && isTableComponentType(component.type)}
+{#if (metricsView && component instanceof TableCanvasComponent) || component instanceof PivotCanvasComponent}
   <TableTypeSelector {canvasName} {component} metricsViewName={metricsView} />
 {/if}
 
