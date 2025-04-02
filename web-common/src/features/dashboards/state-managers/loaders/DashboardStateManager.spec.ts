@@ -91,9 +91,9 @@ describe("DashboardStateManager", () => {
       showTimeComparison: false,
       selectedComparisonTimeRange: undefined,
 
-      visibleMeasureKeys: new Set([AD_BIDS_IMPRESSIONS_MEASURE]),
+      visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE],
       allMeasuresVisible: false,
-      visibleDimensionKeys: new Set([AD_BIDS_PUBLISHER_DIMENSION]),
+      visibleDimensions: [AD_BIDS_PUBLISHER_DIMENSION],
       allDimensionsVisible: false,
 
       leaderboardMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
@@ -179,9 +179,9 @@ describe("DashboardStateManager", () => {
           name: TimeComparisonOption.WEEK,
         } as DashboardTimeControls,
 
-        visibleMeasureKeys: new Set([AD_BIDS_BID_PRICE_MEASURE]),
+        visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
         allMeasuresVisible: false,
-        visibleDimensionKeys: new Set([AD_BIDS_DOMAIN_DIMENSION]),
+        visibleDimensions: [AD_BIDS_DOMAIN_DIMENSION],
         allDimensionsVisible: false,
 
         leaderboardMeasureName: AD_BIDS_BID_PRICE_MEASURE,
@@ -207,9 +207,9 @@ describe("DashboardStateManager", () => {
       showTimeComparison: false,
       selectedComparisonTimeRange: undefined,
 
-      visibleMeasureKeys: new Set([AD_BIDS_IMPRESSIONS_MEASURE]),
+      visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE],
       allMeasuresVisible: false,
-      visibleDimensionKeys: new Set([AD_BIDS_PUBLISHER_DIMENSION]),
+      visibleDimensions: [AD_BIDS_PUBLISHER_DIMENSION],
       allDimensionsVisible: false,
 
       leaderboardMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
@@ -252,9 +252,9 @@ describe("DashboardStateManager", () => {
         showTimeComparison: false,
         selectedComparisonTimeRange: undefined,
 
-        visibleMeasureKeys: new Set([AD_BIDS_BID_PRICE_MEASURE]),
+        visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
         allMeasuresVisible: false,
-        visibleDimensionKeys: new Set([AD_BIDS_DOMAIN_DIMENSION]),
+        visibleDimensions: [AD_BIDS_DOMAIN_DIMENSION],
         allDimensionsVisible: false,
 
         leaderboardMeasureName: AD_BIDS_BID_PRICE_MEASURE,
@@ -304,10 +304,10 @@ function assertExploreStateSubset(
     showTimeComparison: curExploreState.showTimeComparison,
     selectedComparisonTimeRange: curExploreState.selectedComparisonTimeRange,
 
-    visibleMeasureKeys: curExploreState.visibleMeasureKeys,
+    visibleMeasures: curExploreState.visibleMeasures,
     allMeasuresVisible: curExploreState.allMeasuresVisible,
 
-    visibleDimensionKeys: curExploreState.visibleDimensionKeys,
+    visibleDimensions: curExploreState.visibleDimensions,
     allDimensionsVisible: curExploreState.allDimensionsVisible,
 
     leaderboardMeasureName: curExploreState.leaderboardMeasureName,
