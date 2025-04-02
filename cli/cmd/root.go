@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/rilldata/rill/cli/cmd/admin"
 	"github.com/rilldata/rill/cli/cmd/auth"
@@ -21,6 +23,7 @@ import (
 	"github.com/rilldata/rill/cli/cmd/service"
 	"github.com/rilldata/rill/cli/cmd/start"
 	"github.com/rilldata/rill/cli/cmd/sudo"
+	sudouser "github.com/rilldata/rill/cli/cmd/sudo/user"
 	"github.com/rilldata/rill/cli/cmd/uninstall"
 	"github.com/rilldata/rill/cli/cmd/upgrade"
 	"github.com/rilldata/rill/cli/cmd/user"
@@ -107,7 +110,24 @@ func runCmd(ctx context.Context, ver cmdutil.Version) error {
 		ch.PrintfWarn("Could not parse representing user email\n\n")
 	}
 	if representingUser != "" {
-		ch.PrintfWarn("Warning: Running action as %q\n\n", representingUser)
+		tokenExpiryStr, err := dotrill.GetAccessTokenExpiry()
+		if err != nil {
+			ch.PrintfWarn("Could not parse token expiry\n\n")
+		} else if tokenExpiryStr != "" {
+			expiryTime, err := strconv.ParseInt(tokenExpiryStr, 10, 64)
+			if err != nil {
+				ch.PrintfWarn("Could not parse token expiry time\n\n")
+			} else if time.Now().Unix() > expiryTime {
+				// Token has expired, automatically unassume
+				ch.PrintfWarn("Token for assumed user %q has expired. Automatically reverting to original user.\n\n", representingUser)
+				sudouser.RestoreOriginalUserState(ctx, ch)
+			} else {
+				ch.PrintfWarn("Warning: Running action as %q\n\n", representingUser)
+			}
+		} else {
+			ch.PrintfWarn("Warning: Running action as %q\n\n", representingUser)
+		}
+
 	}
 
 	// Cobra config
