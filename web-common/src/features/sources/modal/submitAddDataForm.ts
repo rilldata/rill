@@ -19,8 +19,6 @@ import {
 import { runtime } from "../../../runtime-client/runtime-store";
 import {
   compileConnectorYAML,
-  deleteEnvVariable,
-  makeDotEnvConnectorKey,
   updateDotEnvWithSecrets,
   updateRillYAMLWithOlapConnector,
 } from "../../connectors/code-utils";
@@ -28,6 +26,10 @@ import { testOLAPConnector } from "../../connectors/olap/test-connection";
 import { getFileAPIPathFromNameAndType } from "../../entity-management/entity-mappers";
 import { fileArtifacts } from "../../entity-management/file-artifacts";
 import { getName } from "../../entity-management/name-utils";
+import {
+  getProjectParserVersion,
+  waitForProjectParserVersion,
+} from "../../entity-management/project-parser";
 import { ResourceKind } from "../../entity-management/resource-selectors";
 import { EntityType } from "../../entity-management/types";
 import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
@@ -93,6 +95,8 @@ export async function submitAddOLAPConnectorForm(
     fileArtifacts.getNamesForKind(ResourceKind.Connector),
   );
 
+  const projectParserStartingVersion = getProjectParserVersion(instanceId);
+
   /**
    * Optimistic updates:
    * 1. Make a new `<connector>.yaml` file
@@ -111,18 +115,23 @@ export async function submitAddOLAPConnectorForm(
     createOnly: false,
   });
 
-  // Check if .env file exists before we update it
-  let envFileExisted = false;
+  // Check for an existing `.env` file
+  // Store the original `.env` blob so we can restore it in case of errors
+  let originalEnvBlob: string | undefined;
   try {
     const envFile = await queryClient.fetchQuery({
       queryKey: getRuntimeServiceGetFileQueryKey(instanceId, { path: ".env" }),
       queryFn: () => runtimeServiceGetFile(instanceId, { path: ".env" }),
     });
-    envFileExisted = !!envFile.blob;
+    originalEnvBlob = envFile.blob;
   } catch (error) {
-    // If file doesn't exist, envFileExisted remains false
-    if (!error?.response?.data?.message?.includes("no such file")) {
-      throw error; // Re-throw if it's a different error
+    const fileNotFound =
+      error?.response?.data?.message?.includes("no such file");
+    if (fileNotFound) {
+      // Do nothing. We'll create the `.env` file below.
+    } else {
+      // We have a problem. Throw the error.
+      throw error;
     }
   }
 
@@ -141,52 +150,42 @@ export async function submitAddOLAPConnectorForm(
   });
 
   /**
-   * Test the connection to validate the connector configuration
+   * Test the new OLAP connector:
+   * 1. Ensure the file has reconciled and has no errors
+   * 2. Test the connection to the OLAP database
    */
-  const result = await testOLAPConnector(
+
+  // Wait until the project parser has reconciled the new connector file
+  await waitForProjectParserVersion(
     instanceId,
-    newConnectorFilePath,
-    newConnectorName,
+    projectParserStartingVersion + 1,
   );
 
-  /**
-   * Rollback all changes if the connection test fails
-   */
+  // Check for file errors
+  // If the connector file has errors, rollback the changes
+  const errorMessage = await fileArtifacts.checkFileErrors(
+    queryClient,
+    instanceId,
+    newConnectorFilePath,
+  );
+  if (errorMessage) {
+    await rollbackConnectorChanges(
+      instanceId,
+      newConnectorFilePath,
+      originalEnvBlob,
+    );
+    throw new Error(errorMessage);
+  }
+
+  // Test the connection to the OLAP database
+  // If the connection test fails, rollback the changes
+  const result = await testOLAPConnector(instanceId, newConnectorName);
   if (!result.success) {
-    // Clean-up the `connector.yaml` file
-    await runtimeServiceDeleteFile(instanceId, {
-      path: newConnectorFilePath,
-    });
-
-    // Clean-up the `.env` file
-    if (!envFileExisted) {
-      // If .env file didn't exist before, delete it
-      await runtimeServiceDeleteFile(instanceId, {
-        path: ".env",
-      });
-    } else {
-      // If .env file existed before, remove only the secrets we added
-      const secretKeys =
-        connector.configProperties
-          ?.filter((property) => property.secret)
-          .map((property) => property.key) || [];
-
-      let updatedEnvBlob = newEnvBlob;
-      for (const key of secretKeys) {
-        if (key) {
-          const envKey = makeDotEnvConnectorKey(connector.name as string, key);
-          updatedEnvBlob = deleteEnvVariable(updatedEnvBlob, envKey);
-        }
-      }
-
-      await runtimeServicePutFile(instanceId, {
-        path: ".env",
-        blob: updatedEnvBlob,
-        create: true,
-        createOnly: false,
-      });
-    }
-
+    await rollbackConnectorChanges(
+      instanceId,
+      newConnectorFilePath,
+      originalEnvBlob,
+    );
     throw new Error(result.error || "Unable to establish a connection");
   }
 
@@ -227,5 +226,32 @@ async function beforeSubmitForm(instanceId: string) {
     // `/files/${newFilePath}`. invalidate("init") is also called in the
     // `WatchFilesClient`, but there it's not guaranteed to get invoked before we need it.
     await invalidate("init");
+  }
+}
+
+async function rollbackConnectorChanges(
+  instanceId: string,
+  newConnectorFilePath: string,
+  originalEnvBlob: string | undefined,
+) {
+  // Clean-up the `connector.yaml` file
+  await runtimeServiceDeleteFile(instanceId, {
+    path: newConnectorFilePath,
+  });
+
+  // Clean-up the `.env` file
+  if (!originalEnvBlob) {
+    // If .env file didn't exist before, delete it
+    await runtimeServiceDeleteFile(instanceId, {
+      path: ".env",
+    });
+  } else {
+    // If .env file existed before, restore its original content
+    await runtimeServicePutFile(instanceId, {
+      path: ".env",
+      blob: originalEnvBlob,
+      create: true,
+      createOnly: false,
+    });
   }
 }
