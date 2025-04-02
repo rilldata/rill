@@ -1,13 +1,14 @@
 <script lang="ts">
-  import type { PivotSpec } from "@rilldata/web-common/features/canvas/components/pivot";
+  import type {
+    PivotCanvasComponent,
+    PivotSpec,
+  } from "@rilldata/web-common/features/canvas/components/pivot";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-  import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
   import {
     type PivotDataStore,
     type PivotDataStoreConfig,
     type PivotState,
   } from "@rilldata/web-common/features/dashboards/pivot/types";
-  import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
   import { onDestroy } from "svelte";
   import { writable, type Readable } from "svelte/store";
   import CanvasPivotRenderer from "./CanvasPivotRenderer.svelte";
@@ -19,14 +20,22 @@
     usePivotForCanvas,
   } from "./util";
 
-  export let rendererProperties: V1ComponentSpecRendererProperties;
-  export let timeAndFilterStore: Readable<TimeAndFilterStore>;
-  export let componentName: string;
-  export let hasHeader: boolean;
-  export let canvasName: string;
+  export let component: PivotCanvasComponent;
+
+  $: ({
+    parent: { name: canvasName },
+    specStore,
+    id: componentName,
+    timeAndFilterStore,
+  } = component);
+
+  $: rendererProperties = $specStore;
+
+  $: hasHeader =
+    !!rendererProperties?.title || !!rendererProperties?.description;
 
   $: ctx = getCanvasStore(canvasName);
-  const tableSpecStore = writable(rendererProperties as PivotSpec);
+  const tableSpecStore = writable(rendererProperties);
   const pivotState = writable<PivotState>({
     active: true,
     columns: [],

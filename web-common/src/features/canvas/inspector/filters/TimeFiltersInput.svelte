@@ -90,7 +90,7 @@
     onChange($timeRangeText);
   }
 
-  function selectRange(range: TimeRange) {
+  async function selectRange(range: TimeRange) {
     const defaultTimeGrain = getDefaultTimeGrain(range.start, range.end).grain;
 
     const comparisonOption = DEFAULT_TIME_RANGES[range.name as TimeRangePreset]
@@ -99,18 +99,18 @@
     // Get valid option for the new time range
     const validComparison = allTimeRange && comparisonOption;
 
-    makeTimeSeriesTimeRangeAndUpdateAppState(range, defaultTimeGrain, {
+    await makeTimeSeriesTimeRangeAndUpdateAppState(range, defaultTimeGrain, {
       name: validComparison,
     } as DashboardTimeControls);
   }
 
-  function onSelectRange(name: string) {
+  async function onSelectRange(name: string) {
     if (!$allTimeRange?.end) {
       return;
     }
 
     if (name === ALL_TIME_RANGE_ALIAS) {
-      makeTimeSeriesTimeRangeAndUpdateAppState(
+      await makeTimeSeriesTimeRangeAndUpdateAppState(
         $allTimeRange,
         "TIME_GRAIN_DAY",
         undefined,
@@ -144,9 +144,9 @@
     }
   }
 
-  function onTimeGrainSelect(timeGrain: V1TimeGrain) {
+  async function onTimeGrainSelect(timeGrain: V1TimeGrain) {
     if (baseTimeRange) {
-      makeTimeSeriesTimeRangeAndUpdateAppState(
+      await makeTimeSeriesTimeRangeAndUpdateAppState(
         baseTimeRange,
         timeGrain,
         selectedComparisonTimeRange,

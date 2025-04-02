@@ -8,7 +8,6 @@
   import RowWrapper from "./RowWrapper.svelte";
   import {
     COLUMN_COUNT,
-    getInitialHeight,
     MIN_HEIGHT,
     MIN_WIDTH,
     normalizeSizeArray,
@@ -16,7 +15,6 @@
   import { mousePosition } from "./layout-util";
   import type { Unsubscriber } from "svelte/store";
   import { clamp } from "@rilldata/web-common/lib/clamp";
-  import type { CanvasResponse } from "./selector";
 
   type V1CanvasRow = Omit<APIV1CanvasRow, "items"> & {
     items: (V1CanvasItem | null)[];
@@ -28,7 +26,6 @@
   export let heightUnit: string = "px";
   export let rowIndex: number;
   export let movingWidget: boolean;
-
   export let onDrop: (row: number, column: number | null) => void;
   export let initializeRow: (row: number, type: CanvasComponentType) => void;
   export let updateRowHeight: (newHeight: number, index: number) => void;
@@ -36,7 +33,6 @@
     index: number,
     newWidths: number[],
   ) => void;
-  export let canvasData: CanvasResponse | undefined;
   export let columnWidth: number;
 
   let rowHeight = row.height ?? MIN_HEIGHT;
@@ -54,34 +50,24 @@
 
   $: heightUnit = row.heightUnit ?? "px";
 
-  $: types = types = items?.map(
-    (item) =>
-      canvasData?.components?.[item?.component ?? ""]?.component?.spec
-        ?.renderer,
-  );
-
-  $: resizeRowMinimum =
-    types.reduce((acc, type) => {
-      return Math.max(acc, getInitialHeight(type) ?? MIN_HEIGHT);
-    }, 0) ?? MIN_HEIGHT;
-
   $: updateHeightFromSpec(row.height);
   $: updateWidthsFromSpec(row.items?.map((item) => item?.width ?? 0));
+
+  $: id = `canvas-row-${rowIndex}`;
 
   function onRowResizeStart() {
     initialMousePosition = $mousePosition;
     hasLocalChange = true;
 
     initialHeight =
-      document.querySelector(`#canvas-row-${rowIndex}`)?.getBoundingClientRect()
-        .height ??
+      document.querySelector(`#${id}`)?.getBoundingClientRect().height ??
       rowHeight ??
       MIN_HEIGHT;
 
     unsubscriber = mousePosition.subscribe((position) => {
       const diff = position.y - initialMousePosition.y;
 
-      rowHeight = Math.max(resizeRowMinimum, Math.floor(diff + initialHeight));
+      rowHeight = Math.floor(diff + initialHeight);
     });
 
     window.addEventListener(
@@ -89,7 +75,12 @@
       () => {
         unsubscriber?.();
         unsubscriber = undefined;
-        updateRowHeight(rowHeight, rowIndex);
+        const actualHeight =
+          document.querySelector(`#${id}`)?.getBoundingClientRect().height ??
+          rowHeight;
+
+        rowHeight = actualHeight;
+        updateRowHeight(actualHeight, rowIndex);
       },
       { once: true },
     );
@@ -176,13 +167,12 @@
   {maxWidth}
   height={rowHeight}
   {heightUnit}
-  {rowIndex}
+  {id}
   gridTemplate={componentWidths.map((w) => `${w}fr`).join(" ")}
 >
   <slot
     widths={componentWidths}
     {isSpreadEvenly}
-    {types}
     {items}
     {onColumnResizeStart}
   />

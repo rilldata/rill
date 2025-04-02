@@ -48,7 +48,7 @@
   ]);
 
   $: xScales = xExtents.map((extents) =>
-    scaleTime().domain(extents).range([0, 1000]),
+    scaleTime().domain(extents).range([0, 10000]),
   );
 
   $: allYExtents = mappedData.map((line) =>
@@ -135,7 +135,7 @@
 </script>
 
 {#if mappedData.length}
-  <div role="presentation" class="flex flex-col grow h-full relative">
+  <div role="presentation" class="flex flex-col size-full relative">
     {#if nearPoints.filter(Boolean).length && clientPosition}
       <div
         use:portal
@@ -162,7 +162,7 @@
       role="presentation"
       class="cursor-default size-full overflow-visible"
       preserveAspectRatio="none"
-      viewBox="0 0 1000 100"
+      viewBox="0 0 10000 100"
       on:mousemove={(e) => {
         offsetPosition = { x: e.offsetX, y: e.offsetY };
         clientPosition = { x: e.clientX, y: e.clientY };

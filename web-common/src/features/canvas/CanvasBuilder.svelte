@@ -3,6 +3,7 @@
   import {
     type V1CanvasRow as APIV1CanvasRow,
     type V1CanvasItem,
+    type V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { get, writable } from "svelte/store";
@@ -15,34 +16,30 @@
   import type { CanvasComponentType } from "./components/types";
   import ElementDivider from "./ElementDivider.svelte";
   import ItemWrapper from "./ItemWrapper.svelte";
-  import type { DragItem, YAMLRow } from "./layout-util";
+  import type { DragItem, Transaction, YAMLRow } from "./layout-util";
   import {
     COLUMN_COUNT,
     DEFAULT_DASHBOARD_WIDTH,
     mapGuard,
-    moveToRow,
     rowsGuard,
     mousePosition,
+    generateNewAssets,
   } from "./layout-util";
   import { activeDivider } from "./stores/ui-stores";
-
   import RowWrapper from "./RowWrapper.svelte";
-  import { useDefaultMetrics, type CanvasResponse } from "./selector";
+  import { useDefaultMetrics } from "./selector";
   import { getCanvasStore } from "./state-managers/state-managers";
   import { dropZone } from "./stores/ui-stores";
   import ComponentError from "./components/ComponentError.svelte";
   import EditableCanvasRow from "./EditableCanvasRow.svelte";
-  import { ResourceKind } from "../entity-management/resource-selectors";
-  import { COMPONENT_CLASS_MAP } from "./components/util";
 
   const activelyEditing = writable(false);
 
   type V1CanvasRow = Omit<APIV1CanvasRow, "items"> & {
-    items: (V1CanvasItem | null)[];
+    items: V1CanvasItem[];
   };
 
   export let fileArtifact: FileArtifact;
-  export let canvasData: CanvasResponse | undefined;
   export let canvasName: string;
   export let openSidebar: () => void;
 
@@ -50,10 +47,14 @@
     canvasEntity: {
       setSelectedComponent,
       selectedComponent,
-      components,
-      initializeOrUpdateComponent,
+      _components,
+      processRows,
+      specStore,
+      unsubscribe,
     },
   } = getCanvasStore(canvasName));
+
+  $: components = $_components;
 
   let initialMousePosition: { x: number; y: number } | null = null;
   let clientWidth: number;
@@ -63,11 +64,6 @@
   let dragTimeout: ReturnType<typeof setTimeout> | null = null;
   let dragItemPosition = { top: 0, left: 0 };
   let dragItemDimensions = { width: 0, height: 0 };
-  let spec = canvasData?.canvas ?? {
-    rows: [],
-    filtersEnabled: false,
-    maxWidth: DEFAULT_DASHBOARD_WIDTH,
-  };
   let openSidebarAfterSelection = false;
 
   $: ({ instanceId } = $runtime);
@@ -77,6 +73,15 @@
 
   $: ({ editorContent, updateEditorContent } = fileArtifact);
   $: contents = parseDocument($editorContent ?? "");
+
+  $: canvasData = $specStore.data;
+  $: resolvedComponents = canvasData?.components;
+
+  $: spec = canvasData?.canvas ?? {
+    rows: [],
+    filtersEnabled: false,
+    maxWidth: DEFAULT_DASHBOARD_WIDTH,
+  };
 
   $: if (canvasData?.canvas) {
     if (!get(activelyEditing)) {
@@ -207,6 +212,7 @@
   function updateAssets(
     specRows: V1CanvasRow[],
     yamlRows: YAMLRow[],
+    resolvedComponents?: Record<string, V1Resource>,
     clearSelection = true,
   ) {
     if (clearSelection) {
@@ -214,6 +220,16 @@
     }
 
     specCanvasRows = specRows;
+
+    if (resolvedComponents) {
+      processRows({
+        components: resolvedComponents,
+
+        canvas: {
+          rows: specRows,
+        },
+      });
+    }
 
     try {
       contents.setIn(["rows"], yamlRows);
@@ -224,51 +240,36 @@
     updateContents();
   }
 
-  function dropItemsInExistingRow(
-    items: DragItem[],
-    row: number,
-    column: number,
-  ) {
-    const newYamlRows = moveToRow(yamlCanvasRows, items, { row, column });
-    const newSpecRows = moveToRow(specCanvasRows, items, { row, column });
+  function performTransaction(transaction: Transaction) {
+    if (!defaultMetrics) return;
 
-    updateAssets(newSpecRows, newYamlRows);
-  }
+    const { newSpecRows, newYamlRows, newResolvedComponents } =
+      generateNewAssets({
+        yamlRows: yamlCanvasRows,
+        specRows: specCanvasRows,
+        canvasName,
+        defaultMetrics,
+        resolvedComponents,
+        transaction,
+      });
 
-  function moveToNewRow(items: DragItem[], row: number) {
-    const newSpecRows = moveToRow(specCanvasRows, items, { row });
-    const newYamlRows = moveToRow(yamlCanvasRows, items, { row });
-
-    updateAssets(newSpecRows, newYamlRows);
-  }
-
-  function removeItems(items: { position: { row: number; column: number } }[]) {
-    const newSpecRows = moveToRow(specCanvasRows, items);
-    const newYamlRows = moveToRow(yamlCanvasRows, items);
-
-    updateAssets(newSpecRows, newYamlRows);
+    updateAssets(newSpecRows, newYamlRows, newResolvedComponents);
   }
 
   function addItems(
     position: { row: number; column: number },
     items: CanvasComponentType[],
   ) {
-    if (!defaultMetrics) return;
-    const newYamlRows = moveToRow(
-      yamlCanvasRows,
-      items.map((type) => ({ type })),
-      position,
-
-      defaultMetrics,
-    );
-
-    const newSpecRows = moveToRow(
-      specCanvasRows,
-      items.map((type) => ({ type })),
-      position,
-    );
-
-    updateAssets(newSpecRows, newYamlRows);
+    performTransaction({
+      operations: items.map((type, i) => ({
+        type: "add",
+        componentType: type,
+        destination: {
+          row: position.row,
+          col: position.column + i,
+        },
+      })),
+    });
 
     const id = getId(position.row, position.column);
 
@@ -289,45 +290,19 @@
 
     const id = getId(row, 0);
 
-    const spec = COMPONENT_CLASS_MAP[type].newComponentSpec(
-      defaultMetrics.metricsViewName,
-      defaultMetrics.metricsViewSpec,
-    );
-
-    initializeOrUpdateComponent(
-      {
-        meta: {
-          name: {
-            name: id,
-            kind: ResourceKind.Component,
+    performTransaction({
+      operations: [
+        {
+          type: "add",
+          insertRow: true,
+          componentType: type,
+          destination: {
+            row,
+            col: 0,
           },
         },
-        component: {
-          state: {
-            validSpec: {
-              renderer: type,
-              rendererProperties: spec,
-            },
-          },
-          spec: {
-            renderer: type,
-            rendererProperties: spec,
-          },
-        },
-      },
-      row,
-      0,
-    );
-
-    const newYamlRows = moveToRow(
-      yamlCanvasRows,
-      [{ type }],
-      { row },
-      defaultMetrics,
-    );
-    const newSpecRows = moveToRow(specCanvasRows, [{ type }], { row });
-
-    updateAssets(newSpecRows, newYamlRows);
+      ],
+    });
 
     setSelectedComponent(id);
   }
@@ -344,11 +319,23 @@
       ) {
         return;
       }
-      if (column === null) {
-        moveToNewRow([dragItemInfo], row);
-      } else {
-        dropItemsInExistingRow([dragItemInfo], row, column);
-      }
+
+      performTransaction({
+        operations: [
+          {
+            type: "move",
+            insertRow: column === null,
+            source: {
+              row: dragItemInfo.position?.row ?? 0,
+              col: dragItemInfo.position?.column ?? 0,
+            },
+            destination: {
+              row,
+              col: column ?? 0,
+            },
+          },
+        ],
+      });
     }
   }
 
@@ -379,9 +366,19 @@
       const component = components.get(selected);
       if (!component) return;
 
-      const [, row, , column] = component.pathInYAML;
+      const [, row, , col] = component.pathInYAML;
 
-      removeItems([{ position: { row, column } }]);
+      performTransaction({
+        operations: [
+          {
+            type: "delete",
+            target: {
+              row,
+              col,
+            },
+          },
+        ],
+      });
     }
   }}
 />
@@ -397,7 +394,6 @@
   {#each specCanvasRows as row, rowIndex (rowIndex)}
     <EditableCanvasRow
       {row}
-      {canvasData}
       {maxWidth}
       {rowIndex}
       movingWidget={!!dragItemInfo}
@@ -409,16 +405,14 @@
       {updateRowHeight}
       let:widths
       let:isSpreadEvenly
-      let:types
       let:items
       let:onColumnResizeStart
     >
       {#each items as item, columnIndex (columnIndex)}
         {@const id = item?.component ?? getId(rowIndex, columnIndex)}
-        {@const type = types[columnIndex]}
-
         {@const component = components.get(id)}
-        <ItemWrapper {type} zIndex={4 - columnIndex}>
+        {@const type = component?.type}
+        <ItemWrapper type={component?.type} zIndex={4 - columnIndex}>
           {#if columnIndex === 0}
             <ElementDivider
               {rowIndex}
@@ -455,7 +449,6 @@
 
           {#if component}
             <CanvasComponent
-              {canvasName}
               {component}
               editable
               ghost={dragItemInfo?.position?.row === rowIndex &&
@@ -485,23 +478,35 @@
               onDuplicate={() => {
                 if (!defaultMetrics) return;
 
-                const newYamlRows = moveToRow(
-                  yamlCanvasRows,
-                  [{ position: { row: rowIndex, column: columnIndex } }],
-                  { row: rowIndex + 1, copy: true },
-                );
-                const newSpecRows = moveToRow(
-                  specCanvasRows,
-                  [{ position: { row: rowIndex, column: columnIndex } }],
-                  { row: rowIndex + 1, copy: true },
-                );
-
-                updateAssets(newSpecRows, newYamlRows);
+                performTransaction({
+                  operations: [
+                    {
+                      type: "copy",
+                      insertRow: true,
+                      source: {
+                        row: rowIndex,
+                        col: columnIndex,
+                      },
+                      destination: {
+                        row: rowIndex + 1,
+                        col: 0,
+                      },
+                    },
+                  ],
+                });
               }}
               onDelete={() =>
-                removeItems([
-                  { position: { row: rowIndex, column: columnIndex } },
-                ])}
+                performTransaction({
+                  operations: [
+                    {
+                      type: "delete",
+                      target: {
+                        row: rowIndex,
+                        col: columnIndex,
+                      },
+                    },
+                  ],
+                })}
             />
           {:else}
             <ComponentError error="No valid component {id} in project" />
@@ -514,7 +519,7 @@
       gridTemplate="12fr"
       zIndex={0}
       {maxWidth}
-      rowIndex={specCanvasRows.length}
+      id="add-component-row"
     >
       <ItemWrapper zIndex={0}>
         {#if defaultMetrics}
@@ -546,12 +551,11 @@
 {/if}
 
 {#if dragItemInfo && dragItemInfo.position}
-  {@const item =
-    specCanvasRows[dragItemInfo.position.row]?.items?.[
-      dragItemInfo.position.column
-    ]}
-  {@const componentResource = canvasData?.components?.[item?.component ?? ""]}
-  {#if item}
+  {@const component = components.get(
+    getId(dragItemInfo.position.row, dragItemInfo.position.column),
+  )}
+
+  {#if component}
     <div
       use:portal
       class="absolute pointer-events-none drag-container"
@@ -561,15 +565,7 @@
       style:width="{dragItemDimensions.width}px"
       style:height="{dragItemDimensions.height}px"
     >
-      <CanvasComponent
-        {canvasName}
-        {componentResource}
-        id="canvas-drag-item"
-        canvasItem={item}
-        allowPointerEvents={false}
-        ghost
-        selected
-      />
+      <CanvasComponent {component} allowPointerEvents={false} ghost selected />
     </div>
   {/if}
 {/if}

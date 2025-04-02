@@ -7,6 +7,7 @@ import {
 } from "../types";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
 import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
+import Markdown from "./Markdown.svelte";
 
 export { default as Markdown } from "./Markdown.svelte";
 
@@ -25,6 +26,7 @@ export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
   defaultSize = { width: 3, height: 2 };
   resetParams = [];
   type: CanvasComponentType = "markdown";
+  component = Markdown;
 
   constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
     const defaultSpec: MarkdownSpec = {

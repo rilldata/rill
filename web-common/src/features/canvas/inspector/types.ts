@@ -35,7 +35,7 @@ export interface FilterInputParam {
   meta?: Record<string, any>;
 }
 
-type AllKeys<T> = T extends any ? keyof T : never;
+export type AllKeys<T> = T extends any ? keyof T : never;
 
 export interface InputParams<T> {
   options: Partial<Record<AllKeys<T>, ComponentInputParam>>;

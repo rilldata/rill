@@ -11,6 +11,7 @@
   import ItemWrapper from "./ItemWrapper.svelte";
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
   import { useCanvas } from "./selector";
+  import { getCanvasStore } from "./state-managers/state-managers";
   export let resource: V1Resource;
 
   $: ({ instanceId } = $runtime);
@@ -25,6 +26,12 @@
   $: canvasResolverQuery = useCanvas(instanceId, canvasName);
 
   $: canvasData = $canvasResolverQuery?.data;
+
+  $: ({
+    canvasEntity: { _components },
+  } = getCanvasStore(canvasName));
+
+  $: components = $_components;
 </script>
 
 {#if canvasName}
@@ -41,22 +48,19 @@
       )}
       <RowWrapper
         {maxWidth}
-        {rowIndex}
+        id="{canvasName}-row-{rowIndex}"
         zIndex={50 - rowIndex * 2}
         {height}
         {heightUnit}
         gridTemplate={widths.map((w) => `${w}fr`).join(" ")}
       >
         {#each items as item, columnIndex (columnIndex)}
-          {@const componentResource =
-            canvasData?.components?.[item.component ?? ""]}
+          {@const component = components.get(item.component ?? "")}
+
           <ItemWrapper type={types[columnIndex]} zIndex={4 - columnIndex}>
-            <CanvasComponent
-              {canvasName}
-              {componentResource}
-              canvasItem={item}
-              id={item.component ?? ""}
-            />
+            {#if component}
+              <CanvasComponent {component} />
+            {/if}
           </ItemWrapper>
         {/each}
       </RowWrapper>

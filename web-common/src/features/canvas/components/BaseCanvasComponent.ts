@@ -1,16 +1,14 @@
-import type { ChartType } from "@rilldata/web-common/features/canvas/components/charts/types";
-import type { PivotSpec } from "@rilldata/web-common/features/canvas/components/pivot";
-import type { TableSpec } from "@rilldata/web-common/features/canvas/components/table";
 import type {
   CanvasComponentType,
   ComponentSize,
   ComponentSpec,
 } from "@rilldata/web-common/features/canvas/components/types";
-import { getParsedDocument } from "@rilldata/web-common/features/canvas/inspector/selectors";
-import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
+import type {
+  AllKeys,
+  InputParams,
+} from "@rilldata/web-common/features/canvas/inspector/types";
 import type {
   V1Expression,
-  V1MetricsViewSpec,
   V1Resource,
   V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
@@ -26,68 +24,22 @@ import {
   createAndExpression,
 } from "../../dashboards/stores/filter-utils";
 import { mergeFilters } from "../../dashboards/pivot/pivot-merge-filters";
+import type { ComponentType, SvelteComponent } from "svelte";
 
-// A base class that implements all the store logic
 export abstract class BaseCanvasComponent<T = ComponentSpec> {
-  /**
-   * Local copy of the spec as a svelte writable store
-   */
-  specStore: Writable<T>;
-  /**
-   * Path in the YAML where the component is stored
-   */
-  pathInYAML: ComponentPath;
-  /**
-   * File artifact where the component
-   * is stored
-   */
-  // parent: CanvasEntity;
-
   id: string;
-
-  state: CanvasComponentState;
   resource: Writable<V1Resource | null> = writable(null);
+  specStore: Writable<T>;
+  pathInYAML: ComponentPath;
+  state: CanvasComponentState<T>;
 
   abstract type: CanvasComponentType;
-
-  // Let child classes define these
-  /**
-   * Minimum allowed size for the component
-   * container on the canvas
-   */
+  abstract component: ComponentType<SvelteComponent>;
   abstract minSize: ComponentSize;
-
-  /**
-   * The default size of the container when the component
-   * is added to the canvas
-   */
   abstract defaultSize: ComponentSize;
-
-  /**
-   * The parameters that should be reset when the metrics_view
-   * is changed
-   */
   abstract resetParams: string[];
-
-  /**
-   * The minimum condition needed for the spec to be valid
-   * for the given component and to be rendered on the canvas
-   */
   abstract isValid(spec: T): boolean;
-
-  /**
-   * A map of input params which will be used in the visual
-   * UI builder
-   */
   abstract inputParams(): InputParams<T>;
-
-  /**
-   * Get the spec when the component is added to the canvas
-   */
-  // abstract newComponentSpec(
-  //   metricsViewName: string,
-  //   metricsViewSpec: V1MetricsViewSpec | undefined,
-  // ): T;
 
   constructor(
     resource: V1Resource,
@@ -103,17 +55,16 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
 
     this.resource.set(resource);
     this.id = resource.meta?.name?.name as string;
-    // this.parent = parent;
     this.state = new CanvasComponentState(
       this.id,
       this.parent.specStore,
       this.parent.spec,
+      this.specStore,
     );
   }
 
   update(resource: V1Resource, path: ComponentPath) {
     const yamlSpec = resource.component?.state?.validSpec?.rendererProperties;
-
     const mergedSpec = { ...this.defaultSpec, ...yamlSpec };
     this.resource.set(resource);
     this.pathInYAML = path;
@@ -151,7 +102,6 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
         const dimensions = metricsView?.state?.validSpec?.dimensions ?? [];
         const measures = metricsView?.state?.validSpec?.measures ?? [];
 
-        // Time Filters
         let timeRange: V1TimeRange = {
           start: globalTimeRangeState?.timeStart,
           end: globalTimeRangeState?.timeEnd,
@@ -207,7 +157,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
 
         if (componentSpec?.["dimension_filters"]) {
           const { expr: componentWhere } =
-            component.state.localFilters.getFiltersFromText(
+            this.state.localFilters.getFiltersFromText(
               componentSpec?.["dimension_filters"] as string,
             );
           where = mergeFilters(globalWhere, componentWhere);
@@ -227,36 +177,26 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
     );
   }
 
-  private async updateYAML(newSpec: T): Promise<void> {
+  private updateYAML(newSpec: T) {
     if (!this.parent.fileArtifact) return;
     const parseDocumentStore = this.parent.parsedContent;
     const parsedDocument = get(parseDocumentStore);
 
-    const { updateEditorContent, saveLocalContent } = this.parent.fileArtifact;
+    const { updateEditorContent } = this.parent.fileArtifact;
 
-    // Update the Item
     parsedDocument.setIn(this.pathInYAML, newSpec);
 
-    // Save the updated document
-    updateEditorContent(parsedDocument.toString(), false);
-    await saveLocalContent();
+    updateEditorContent(parsedDocument.toString(), false, true);
   }
 
-  /**
-   * Set the spec store and YAML with the new values
-   */
-  async setSpec(newSpec: T): Promise<void> {
+  setSpec(newSpec: T) {
     if (this.isValid(newSpec)) {
-      await this.updateYAML(newSpec);
+      this.updateYAML(newSpec);
     }
     this.specStore.set(newSpec);
   }
 
-  /**
-   * Update the spec store and YAML with the new values
-   */
-  // TODO: Add stricter type definition for keys and value deriving from spec
-  async updateProperty(key: string, value: unknown): Promise<void> {
+  updateProperty(key: AllKeys<T>, value: T[AllKeys<T>]) {
     const currentSpec = get(this.specStore);
 
     const newSpec = { ...currentSpec, [key]: value };
@@ -281,92 +221,8 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
     }
 
     if (this.isValid(newSpec)) {
-      await this.updateYAML(newSpec);
+      this.updateYAML(newSpec);
     }
     this.specStore.set(newSpec);
-  }
-
-  /**
-   * Update the chart type of chart component in store and YAML
-   */
-  async updateChartType(key: ChartType) {
-    if (!this.parent.fileArtifact) return;
-    const currentSpec = get(this.specStore);
-
-    const parentPath = this.pathInYAML.slice(0, -1);
-
-    const parseDocumentStore = getParsedDocument(this.parent.fileArtifact);
-    const parsedDocument = get(parseDocumentStore);
-
-    const { updateEditorContent, saveLocalContent } = this.parent.fileArtifact;
-
-    const width = parsedDocument.getIn([...parentPath, "width"]);
-
-    parsedDocument.setIn(parentPath, { [key]: currentSpec, width });
-
-    // Save the updated document
-    updateEditorContent(parsedDocument.toString(), true);
-    await saveLocalContent();
-  }
-
-  async updateTableType(
-    newTableType: "pivot" | "table",
-    metricsViewSpec: V1MetricsViewSpec | undefined,
-  ) {
-    if (!this.parent.fileArtifact) return;
-    const parentPath = this.pathInYAML.slice(0, -1);
-    const parseDocumentStore = getParsedDocument(this.parent.fileArtifact);
-    const parsedDocument = get(parseDocumentStore);
-    const { updateEditorContent, saveLocalContent } = this.parent.fileArtifact;
-
-    const currentSpec = get(this.specStore);
-
-    const allMeasures =
-      metricsViewSpec?.measures?.map((m) => m.name as string) || [];
-    const allDimensions =
-      metricsViewSpec?.dimensions?.map((d) => d.name || (d.column as string)) ||
-      [];
-
-    let newSpec: PivotSpec | TableSpec;
-    if (newTableType === "pivot") {
-      // Switch to pivot table spec
-      const flatTableSpec = currentSpec as TableSpec;
-      const { columns = [], ...restFlatTableSpec } = flatTableSpec || {};
-
-      const row_dimensions =
-        columns?.filter((c) => allDimensions.includes(c)) || [];
-      const measures = columns?.filter((c) => allMeasures.includes(c)) || [];
-
-      newSpec = {
-        ...restFlatTableSpec,
-        row_dimensions,
-        measures,
-      };
-    } else {
-      // Switch to flat table spec
-      const pivotTableSpec = currentSpec as PivotSpec;
-
-      const {
-        row_dimensions = [],
-        col_dimensions = [],
-        measures = [],
-        ...restPivotTableSpec
-      } = pivotTableSpec || {};
-
-      const columns = [...row_dimensions, ...col_dimensions, ...measures];
-
-      newSpec = {
-        ...restPivotTableSpec,
-        columns,
-      };
-    }
-
-    const width = parsedDocument.getIn([...parentPath, "width"]);
-
-    parsedDocument.setIn(parentPath, { [newTableType]: newSpec, width });
-
-    // Save the updated document
-    updateEditorContent(parsedDocument.toString(), true);
-    await saveLocalContent();
   }
 }

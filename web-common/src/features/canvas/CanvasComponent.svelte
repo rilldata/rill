@@ -3,30 +3,13 @@
   import { hideBorder } from "./layout-util";
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
   import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
-  import { KPIGrid } from "@rilldata/web-common/features/canvas/components/kpi-grid";
   import {
     isCanvasComponentType,
     isChartComponentType,
     getComponentFilterProperties,
   } from "@rilldata/web-common/features/canvas/components/util";
-  import { Chart } from "./components/charts";
-  import { Image } from "./components/image";
-  import { Markdown } from "./components/markdown";
-  import { Pivot } from "./components/pivot";
-  import { Table } from "./components/table";
   import Toolbar from "./Toolbar.svelte";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
-
-  const filterableComponents = new Map([
-    ["kpi_grid", KPIGrid],
-    ["table", Table],
-    ["pivot", Pivot],
-  ]);
-
-  const nonFilterableComponents = new Map([
-    ["markdown", Markdown],
-    ["image", Image],
-  ]);
 </script>
 
 <script lang="ts">
@@ -35,14 +18,11 @@
   export let ghost = false;
   export let allowPointerEvents = true;
   export let editable = false;
-  export let canvasName: string;
   export let onMouseDown: (e: MouseEvent) => void = () => {};
   export let onDuplicate: () => void = () => {};
   export let onDelete: () => void = () => {};
 
   let open = false;
-
-  $: timeAndFilterStore = component?.timeAndFilterStore;
 
   $: ({ id: componentName, specStore, type: renderer, resource } = component);
 
@@ -54,10 +34,6 @@
   $: title = rendererProperties?.["title"] as string | undefined;
   $: description = rendererProperties?.["description"] as string | undefined;
   $: componentFilters = getComponentFilterProperties(rendererProperties);
-
-  $: isFilterable = filterableComponents.has(renderer ?? "");
-
-  $: hasHeader = !!title || !!description;
 
   $: allowBorder = !hideBorder.has(renderer);
 </script>
@@ -86,8 +62,10 @@
       {#if !isChartType}
         <ComponentHeader {title} {description} filters={componentFilters} />
       {/if}
+
       {#if rendererProperties && isCanvasComponentType(renderer)}
-        {#if isChartComponentType(renderer) && timeAndFilterStore}
+        <svelte:component this={component.component} {component} />
+        <!-- {#if isChartComponentType(renderer) && timeAndFilterStore}
           <Chart
             {canvasName}
             {rendererProperties}
@@ -122,7 +100,7 @@
             this={nonFilterableComponents.get(renderer)}
             {rendererProperties}
           />
-        {/if}
+        {/if} -->
       {:else if componentResource}
         <ComponentError error="Invalid component type" />
       {/if}

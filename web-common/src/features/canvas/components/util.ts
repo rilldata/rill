@@ -141,8 +141,6 @@ export function createComponent(
   return new ChartComponent(resource, parent, path);
 }
 
-export type CanvasComponentObj = ReturnType<typeof createComponent>;
-
 export function isCanvasComponentType(
   value: string | undefined,
 ): value is CanvasComponentType {

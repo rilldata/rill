@@ -9,8 +9,12 @@
 
   export let component: ChartComponent;
 
-  async function selectChartType(chartType: ChartMetadata) {
-    await component.updateChartType(chartType.type);
+  $: ({ chartType } = component);
+
+  $: type = $chartType;
+
+  function selectChartType(chartType: ChartMetadata) {
+    component.updateChartType(chartType.type);
   }
 </script>
 
@@ -23,7 +27,7 @@
           square
           small
           type="secondary"
-          selected={component.type === chart.type}
+          selected={type === chart.type}
           on:click={() => selectChartType(chart)}
         >
           <svelte:component this={chart.icon} size="20px" />
@@ -38,11 +42,11 @@
 
 <style lang="postcss">
   .section {
-    @apply px-5 flex flex-col gap-y-2 pt-2;
+    @apply px-5 flex flex-col gap-y-2 p-2;
     @apply border-t border-gray-200;
   }
 
   .chart-icons {
-    @apply flex border-2 px-2 py-1 gap-x-4;
+    @apply flex border px-2 py-1 gap-x-4 rounded-[2px];
   }
 </style>

@@ -12,8 +12,10 @@
   export let canvasName: string;
 
   $: ({
-    canvasEntity: { selectedComponent, components },
+    canvasEntity: { selectedComponent, _components },
   } = getCanvasStore(canvasName));
+
+  $: components = $_components;
 
   $: ({ editorContent, updateEditorContent, saveLocalContent, path } =
     fileArtifact);
@@ -59,7 +61,7 @@
 
 <Inspector minWidth={320} filePath={path}>
   {#if component}
-    <ComponentsEditor {canvasName} {component} />
+    <ComponentsEditor {component} />
   {:else}
     <PageEditor {canvasName} {fileArtifact} {updateProperties} />
   {/if}

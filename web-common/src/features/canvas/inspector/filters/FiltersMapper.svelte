@@ -1,38 +1,33 @@
 <script lang="ts">
   import DimensionFiltersInput from "@rilldata/web-common/features/canvas/inspector/filters/DimensionFiltersInput.svelte";
   import TimeFiltersInput from "@rilldata/web-common/features/canvas/inspector/filters/TimeFiltersInput.svelte";
-  import { type V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
-  import { onMount } from "svelte";
-
   import type { BaseCanvasComponent } from "../../components/BaseCanvasComponent";
+  import type { AllKeys, FilterInputParam } from "../types";
+  import type { ComponentSpec } from "../../components/types";
 
   export let component: BaseCanvasComponent;
-  export let paramValues: V1ComponentSpecRendererProperties;
-  export let canvasName: string;
 
-  $: componentStore = component.state;
+  $: ({
+    specStore,
+    state: componentStore,
+    parent: { name: canvasName },
+  } = component);
 
-  $: localParamValues = localParamValues || {};
-  let oldParamValuesRef: V1ComponentSpecRendererProperties = {};
-
-  // TODO: Make this robust possibly a store.
-  $: if (JSON.stringify(paramValues) !== JSON.stringify(oldParamValuesRef)) {
-    localParamValues = structuredClone(paramValues) || {};
-    oldParamValuesRef = paramValues;
-  }
+  $: localParamValues = $specStore;
 
   $: inputParams = component.inputParams().filter;
 
   $: metricsView =
-    "metrics_view" in paramValues ? paramValues.metrics_view : null;
+    "metrics_view" in localParamValues ? localParamValues.metrics_view : null;
 
-  onMount(() => {
-    localParamValues = structuredClone(paramValues) || {};
-  });
+  $: entries = Object.entries(inputParams) as [
+    AllKeys<ComponentSpec>,
+    FilterInputParam,
+  ][];
 </script>
 
 <div>
-  {#each Object.entries(inputParams) as [key, config] (key)}
+  {#each entries as [key, config] (key)}
     <div class="component-param">
       {#if config.type === "time_filters"}
         <TimeFiltersInput

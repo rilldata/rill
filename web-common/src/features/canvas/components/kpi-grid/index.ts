@@ -16,6 +16,7 @@ import type {
   ComponentFilterProperties,
 } from "../types";
 import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
+import KPIGrid from "./KPIGrid.svelte";
 
 export { default as KPIGrid } from "./KPIGrid.svelte";
 
@@ -40,6 +41,7 @@ export class KPIGridComponent extends BaseCanvasComponent<KPIGridSpec> {
   defaultSize = { width: 6, height: 4 };
   resetParams = ["measures"];
   type: CanvasComponentType = "kpi_grid";
+  component = KPIGrid;
 
   constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
     const defaultSpec: KPIGridSpec = {

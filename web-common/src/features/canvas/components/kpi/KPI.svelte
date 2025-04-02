@@ -245,7 +245,7 @@
   }
 
   .sparkline-wrapper {
-    @apply size-full flex items-center justify-center flex-shrink;
+    @apply size-full flex items-center justify-center flex-shrink min-h-12;
   }
 
   .spark-right .sparkline-wrapper {

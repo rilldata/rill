@@ -1,22 +1,16 @@
 <script lang="ts">
   import VegaLiteRenderer from "@rilldata/web-common/components/vega/VegaLiteRenderer.svelte";
   import ComponentHeader from "@rilldata/web-common/features/canvas/ComponentHeader.svelte";
-  import type { ChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
+  import type { ChartComponent } from "@rilldata/web-common/features/canvas/components/charts";
   import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
   import { getComponentFilterProperties } from "@rilldata/web-common/features/canvas/components/util";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-  import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
-  import type {
-    MetricsViewSpecMeasureV2,
-    V1ComponentSpecRendererProperties,
-  } from "@rilldata/web-common/runtime-client";
-  import type { Readable } from "svelte/store";
+  import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
   import type { View } from "vega-typings";
   import { getChartData, validateChartSchema } from "./selector";
-  import type { ChartType } from "./types";
   import {
     generateSpec,
     getChartTitle,
@@ -25,10 +19,16 @@
     sanitizeFieldName,
   } from "./util";
 
-  export let rendererProperties: V1ComponentSpecRendererProperties;
-  export let renderer: string;
-  export let canvasName: string;
-  export let timeAndFilterStore: Readable<TimeAndFilterStore>;
+  export let component: ChartComponent;
+
+  $: ({
+    specStore,
+    parent: { name: canvasName },
+    timeAndFilterStore,
+    chartType: type,
+  } = component);
+
+  $: chartType = $type;
 
   $: store = getCanvasStore(canvasName);
   $: ({
@@ -39,17 +39,20 @@
 
   let viewVL: View;
 
-  $: chartConfig = rendererProperties as ChartSpec;
-  $: chartType = renderer as ChartType;
+  $: chartConfig = $specStore;
 
-  $: schema = validateChartSchema(store, chartConfig);
+  $: schemaStore = validateChartSchema(store, chartConfig);
 
-  $: data = getChartData(store, chartConfig, timeAndFilterStore);
-  $: hasNoData = !$data.isFetching && $data.data.length === 0;
+  $: schema = $schemaStore;
 
-  $: spec = generateSpec(chartType, chartConfig, $data);
+  $: chartQuery = getChartData(store, chartConfig, timeAndFilterStore);
 
-  $: componentFilters = getComponentFilterProperties(rendererProperties);
+  $: ({ isFetching, data, error } = $chartQuery);
+  $: hasNoData = !isFetching && data.length === 0;
+
+  $: spec = generateSpec(chartType, chartConfig, $chartQuery);
+
+  $: componentFilters = getComponentFilterProperties(chartConfig);
 
   $: measure = getMeasureForMetricView(
     chartConfig.y?.field,
@@ -66,18 +69,18 @@
     ? mergedVlConfig(chartConfig.vl_config)
     : undefined;
 
-  $: title = chartConfig?.title || getChartTitle(chartConfig, $data);
+  $: title = chartConfig?.title || getChartTitle(chartConfig, $chartQuery);
   $: description = chartConfig?.description;
 </script>
 
 <div class="size-full flex flex-col overflow-hidden">
-  {#if $schema.isValid}
-    {#if $data.isFetching}
+  {#if schema.isValid}
+    {#if isFetching}
       <div class="flex items-center justify-center h-full w-full">
         <Spinner status={EntityStatus.Running} size="20px" />
       </div>
-    {:else if $data.error}
-      <ComponentError error={$data.error.message} />
+    {:else if error}
+      <ComponentError error={error.message} />
     {:else}
       <ComponentHeader
         faint={!chartConfig?.title}
@@ -95,7 +98,7 @@
         <VegaLiteRenderer
           bind:viewVL
           canvasDashboard
-          data={{ "metrics-view": $data.data }}
+          data={{ "metrics-view": data }}
           {spec}
           renderer={isChartLineLike(chartType) ? "svg" : "canvas"}
           expressionFunctions={{
@@ -106,6 +109,6 @@
       {/if}
     {/if}
   {:else}
-    <ComponentError error={$schema.error} />
+    <ComponentError error={schema.error} />
   {/if}
 </div>

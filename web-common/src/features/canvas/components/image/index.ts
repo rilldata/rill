@@ -8,6 +8,7 @@ import { commonOptions } from "@rilldata/web-common/features/canvas/components/u
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
 import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
+import Image from "./Image.svelte";
 
 export { default as Image } from "./Image.svelte";
 
@@ -26,6 +27,7 @@ export class ImageComponent extends BaseCanvasComponent<ImageSpec> {
   defaultSize = { width: 2, height: 2 };
   resetParams = [];
   type: CanvasComponentType = "image";
+  component = Image;
 
   constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
     const defaultSpec: ImageSpec = {

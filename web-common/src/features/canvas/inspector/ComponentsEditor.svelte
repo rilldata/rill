@@ -13,7 +13,6 @@
   import { hasComponentFilters } from "./util";
   import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
 
-  export let canvasName: string;
   export let component: BaseCanvasComponent;
 
   let currentTab: string;
@@ -30,7 +29,6 @@
   disableHorizontalPadding
   title={getHeaderForComponent(componentType)}
 >
-  {component.pathInYAML}
   <svelte:fragment slot="header">
     {#if componentType}
       {#key componentType}
@@ -44,23 +42,13 @@
   </svelte:fragment>
 
   {#if componentType && component && rendererProperties}
-    {#key component}
-      {#if currentTab === "options"}
-        <ParamMapper
-          {canvasName}
-          {component}
-          paramValues={rendererProperties}
-        />
-      {:else if currentTab === "filters"}
-        <FiltersMapper
-          {canvasName}
-          {component}
-          paramValues={rendererProperties}
-        />
-      {:else if currentTab === "config"}
-        <VegaConfigInput {component} paramValues={rendererProperties} />
-      {/if}
-    {/key}
+    {#if currentTab === "options"}
+      <ParamMapper {component} />
+    {:else if currentTab === "filters"}
+      <FiltersMapper {component} />
+    {:else if currentTab === "config"}
+      <VegaConfigInput {component} paramValues={rendererProperties} />
+    {/if}
   {:else if !type}
     <div class="inspector-center">
       <Spinner status={EntityStatus.Running} size="16px" />

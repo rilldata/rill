@@ -13,7 +13,10 @@ import type {
   ComponentCommonProperties,
   ComponentFilterProperties,
 } from "../types";
-import type { CanvasEntity } from "../../stores/canvas-entity";
+import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
+import CanvasPivotDisplay from "./CanvasPivotDisplay.svelte";
+import type { TableSpec } from "../table";
+import { get } from "svelte/store";
 
 export interface PivotSpec
   extends ComponentCommonProperties,
@@ -31,20 +34,16 @@ export class PivotCanvasComponent extends BaseCanvasComponent<PivotSpec> {
   defaultSize = { width: 4, height: 10 };
   resetParams = ["measures", "row_dimensions", "col_dimensions"];
   type: CanvasComponentType = "pivot";
+  component = CanvasPivotDisplay;
 
-  constructor(
-    resource: V1Resource,
-    parent: CanvasEntity,
-    path: (string | number)[] = [],
-    initialSpec: Partial<PivotSpec> = {},
-  ) {
+  constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
     const defaultSpec: PivotSpec = {
       metrics_view: "",
       measures: [],
       row_dimensions: [],
       col_dimensions: [],
     };
-    super(resource, parent, path, defaultSpec, initialSpec);
+    super(resource, parent, path, defaultSpec);
   }
 
   isValid(spec: PivotSpec): boolean {
@@ -91,5 +90,66 @@ export class PivotCanvasComponent extends BaseCanvasComponent<PivotSpec> {
       row_dimensions: firstDimension ? [firstDimension] : [],
       col_dimensions: secondDimension ? [secondDimension] : undefined,
     };
+  }
+
+  updateTableType(
+    newTableType: "pivot" | "table",
+    metricsViewSpec: V1MetricsViewSpec | undefined,
+  ) {
+    if (!this.parent.fileArtifact) return;
+
+    const parentPath = this.pathInYAML.slice(0, -1);
+    const parseDocumentStore = this.parent.parsedContent;
+    const parsedDocument = get(parseDocumentStore);
+    const { updateEditorContent } = this.parent.fileArtifact;
+
+    const currentSpec = get(this.specStore);
+
+    const allMeasures =
+      metricsViewSpec?.measures?.map((m) => m.name as string) || [];
+    const allDimensions =
+      metricsViewSpec?.dimensions?.map((d) => d.name || (d.column as string)) ||
+      [];
+
+    let newSpec: PivotSpec | TableSpec;
+    if (newTableType === "pivot") {
+      // Switch to pivot table spec
+      const flatTableSpec = currentSpec;
+      const { columns = [], ...restFlatTableSpec } = flatTableSpec || {};
+
+      const row_dimensions =
+        columns?.filter((c) => allDimensions.includes(c)) || [];
+      const measures = columns?.filter((c) => allMeasures.includes(c)) || [];
+
+      newSpec = {
+        ...restFlatTableSpec,
+        row_dimensions,
+        measures,
+      };
+    } else {
+      // Switch to flat table spec
+      const pivotTableSpec = currentSpec as unknown as PivotSpec;
+
+      const {
+        row_dimensions = [],
+        col_dimensions = [],
+        measures = [],
+        ...restPivotTableSpec
+      } = pivotTableSpec || {};
+
+      const columns = [...row_dimensions, ...col_dimensions, ...measures];
+
+      newSpec = {
+        ...restPivotTableSpec,
+        columns,
+      };
+    }
+
+    const width = parsedDocument.getIn([...parentPath, "width"]);
+
+    parsedDocument.setIn(parentPath, { [newTableType]: newSpec, width });
+
+    // Save the updated document
+    updateEditorContent(parsedDocument.toString(), false, true);
   }
 }

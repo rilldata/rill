@@ -2,9 +2,6 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
-
-  import { type V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
-  import { onMount } from "svelte";
   import type { ComponentSpec } from "../components/types";
   import AlignmentInput from "./AlignmentInput.svelte";
   import ChartTypeSelector from "./chart/ChartTypeSelector.svelte";
@@ -20,40 +17,38 @@
   import { ChartComponent } from "../components/charts";
   import { TableCanvasComponent } from "../components/table";
   import { PivotCanvasComponent } from "../components/pivot";
+  import type { AllKeys, ComponentInputParam } from "./types";
 
-  export let component: BaseCanvasComponent<ComponentSpec>;
-  export let paramValues: V1ComponentSpecRendererProperties;
-  export let canvasName: string;
+  export let component: BaseCanvasComponent;
 
-  $: localParamValues = localParamValues || {};
-  let oldParamValuesRef: V1ComponentSpecRendererProperties = {};
+  $: ({
+    specStore,
+    parent: { name: canvasName },
+  } = component);
 
-  // TODO: Make this robust possibly a store.
-  $: if (JSON.stringify(paramValues) !== JSON.stringify(oldParamValuesRef)) {
-    localParamValues = structuredClone(paramValues) || {};
-    oldParamValuesRef = paramValues;
-  }
+  $: localParamValues = $specStore;
 
   $: inputParams = component.inputParams().options;
 
   $: metricsView =
-    "metrics_view" in paramValues ? paramValues.metrics_view : null;
+    "metrics_view" in localParamValues ? localParamValues.metrics_view : null;
 
-  onMount(() => {
-    localParamValues = structuredClone(paramValues) || {};
-  });
+  $: entries = Object.entries(inputParams) as [
+    AllKeys<ComponentSpec>,
+    ComponentInputParam,
+  ][];
 </script>
 
 {#if component instanceof ChartComponent}
   <ChartTypeSelector {component} />
 {/if}
 
-{#if (metricsView && component instanceof TableCanvasComponent) || component instanceof PivotCanvasComponent}
+{#if metricsView && (component instanceof TableCanvasComponent || component instanceof PivotCanvasComponent)}
   <TableTypeSelector {canvasName} {component} metricsViewName={metricsView} />
 {/if}
 
 <div>
-  {#each Object.entries(inputParams) as [key, config] (key)}
+  {#each entries as [key, config] (key)}
     {#if config.showInUI !== false}
       <div class="component-param">
         <!-- TEXT, NUMBER, RILL_TIME -->
@@ -66,11 +61,11 @@
             placeholder={config?.meta?.placeholder ?? ""}
             labelGap={2}
             label={config.label ?? key}
-            bind:value={localParamValues[key]}
-            onBlur={async () => {
+            bind:value={$specStore[key]}
+            onBlur={() => {
               component.updateProperty(key, localParamValues[key]);
             }}
-            onEnter={async () => {
+            onEnter={() => {
               component.updateProperty(key, localParamValues[key]);
             }}
           />
@@ -88,7 +83,7 @@
             id={key}
             type={config.type}
             selectedItem={localParamValues[key]}
-            onSelect={async (field) => {
+            onSelect={(field) => {
               component.updateProperty(key, field);
             }}
           />
@@ -102,7 +97,7 @@
             id={key}
             types={config.meta?.allowedTypes ?? ["measure", "dimension"]}
             selectedItems={localParamValues[key]}
-            onMultiSelect={async (field) => {
+            onMultiSelect={(field) => {
               component.updateProperty(key, field);
             }}
           />
@@ -116,13 +111,7 @@
               id={key}
               faint={!localParamValues[key]}
             />
-            <Switch
-              bind:checked={localParamValues[key]}
-              on:click={async () => {
-                component.updateProperty(key, !paramValues[key]);
-              }}
-              small
-            />
+            <Switch bind:checked={$specStore[key]} small />
           </div>
 
           <!-- TEXT AREA -->
@@ -137,8 +126,8 @@
             <textarea
               class="w-full p-2 border border-gray-300 rounded-sm"
               rows="8"
-              bind:value={localParamValues[key]}
-              on:blur={async () => {
+              bind:value={$specStore[key]}
+              on:blur={() => {
                 component.updateProperty(key, localParamValues[key]);
               }}
               placeholder={config.label ?? key}
