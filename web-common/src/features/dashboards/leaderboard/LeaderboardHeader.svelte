@@ -15,7 +15,7 @@
 
   export let dimensionName: string;
   export let isFetching: boolean;
-  export let isValidPercentOfTotal: boolean;
+  export let isValidPercentOfTotal: (measureName: string) => boolean;
   export let isTimeComparisonActive: boolean;
   export let dimensionDescription: string;
   export let isBeingCompared: boolean;
@@ -115,7 +115,7 @@
         </button>
       </th>
 
-      {#if isValidPercentOfTotal}
+      {#if isValidPercentOfTotal(measureName)}
         <th data-percent-of-total-header>
           <button
             aria-label="Toggle sort leaderboards by percent of total"

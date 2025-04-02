@@ -68,8 +68,6 @@ export default function initEmbedPublicAPI(instanceId: string): () => void {
           exploreSpec,
           timeControlsState,
           defaultExplorePreset,
-          get(page).url,
-          true,
         ).toString(),
       );
     },
@@ -109,8 +107,6 @@ export default function initEmbedPublicAPI(instanceId: string): () => void {
         exploreSpec,
         timeControlsState,
         defaultExplorePreset,
-        get(page).url,
-        true,
       ).toString(),
     );
     return { state: stateString };
