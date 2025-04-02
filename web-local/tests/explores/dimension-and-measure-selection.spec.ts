@@ -24,7 +24,8 @@ test.describe("dimension and measure selectors", () => {
   ) {
     await page
       .locator(`.${sectionName.toLowerCase()}-section`)
-      .getByRole("button", { name: itemName })
+      .getByText(itemName)
+      .locator("..")
       .getByRole("button", { name: "Toggle visibility" })
       .click();
   }
