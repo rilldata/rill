@@ -65,42 +65,6 @@
 
       {#if rendererProperties && isCanvasComponentType(renderer)}
         <svelte:component this={component.component} {component} />
-        <!-- {#if isChartComponentType(renderer) && timeAndFilterStore}
-          <Chart
-            {canvasName}
-            {rendererProperties}
-            {renderer}
-            {timeAndFilterStore}
-          />
-        {:else if renderer === "pivot" && timeAndFilterStore}
-          <Pivot
-            {canvasName}
-            {hasHeader}
-            {rendererProperties}
-            {timeAndFilterStore}
-            {componentName}
-          />
-        {:else if renderer === "table" && timeAndFilterStore}
-          <Table
-            {canvasName}
-            {rendererProperties}
-            {timeAndFilterStore}
-            {componentName}
-            {hasHeader}
-          />
-        {:else if isFilterable && timeAndFilterStore}
-          <svelte:component
-            this={filterableComponents.get(renderer)}
-            {canvasName}
-            {rendererProperties}
-            {timeAndFilterStore}
-          />
-        {:else}
-          <svelte:component
-            this={nonFilterableComponents.get(renderer)}
-            {rendererProperties}
-          />
-        {/if} -->
       {:else if componentResource}
         <ComponentError error="Invalid component type" />
       {/if}

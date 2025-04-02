@@ -32,6 +32,7 @@
   import { dropZone } from "./stores/ui-stores";
   import ComponentError from "./components/ComponentError.svelte";
   import EditableCanvasRow from "./EditableCanvasRow.svelte";
+  import { onDestroy } from "svelte";
 
   const activelyEditing = writable(false);
 
@@ -349,6 +350,18 @@
       element.scrollTop = element.scrollHeight;
     }
   }
+
+  onDestroy(() => {
+    if (dragTimeout) {
+      clearTimeout(dragTimeout);
+    }
+
+    if (timeout) {
+      clearTimeout(timeout);
+    }
+
+    unsubscribe();
+  });
 </script>
 
 <svelte:window
