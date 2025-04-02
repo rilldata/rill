@@ -1,6 +1,7 @@
 package rilltime
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -44,9 +45,18 @@ func Test_Eval(t *testing.T) {
 		{"<m of +2d", "2025-03-12T00:00:00Z", "2025-03-12T00:01:00Z", timeutil.TimeGrainSecond},
 		{">m of +2d", "2025-03-12T23:59:00Z", "2025-03-13T00:00:00Z", timeutil.TimeGrainSecond},
 
+		// 1st of March is on a friday so we take the next monday to start.
 		{"W1", "2025-03-03T00:00:00Z", "2025-03-10T00:00:00Z", timeutil.TimeGrainDay},
 		{"W1 by H", "2025-03-03T00:00:00Z", "2025-03-10T00:00:00Z", timeutil.TimeGrainHour},
+		// `of M` means current month, so this will be of March.
+		{"W1 of M", "2025-03-03T00:00:00Z", "2025-03-10T00:00:00Z", timeutil.TimeGrainDay},
+		// `of 0M` means current month as well.
+		{"W1 of 0M", "2025-03-03T00:00:00Z", "2025-03-10T00:00:00Z", timeutil.TimeGrainDay},
+		// `~` doesn't add anything when it is not on the anchor in the 1st position. So this is still March.
+		{"W1 of M~", "2025-03-03T00:00:00Z", "2025-03-10T00:00:00Z", timeutil.TimeGrainDay},
+		// 1st of Jan is on a Wednesday, so include the 2 days from Dec 2024.
 		{"W1 of -2M", "2024-12-30T00:00:00Z", "2025-01-06T00:00:00Z", timeutil.TimeGrainDay},
+		{"W1 of +2M", "2025-04-28T00:00:00Z", "2025-05-05T00:00:00Z", timeutil.TimeGrainDay},
 		{"D3 of W1 of -3Y", "2022-01-05T00:00:00Z", "2022-01-06T00:00:00Z", timeutil.TimeGrainHour},
 		{"W2 of M11 of +3Y", "2028-11-06T00:00:00Z", "2028-11-13T00:00:00Z", timeutil.TimeGrainDay},
 		{"<3m of H2 of -6D of -1M", "2025-02-04T01:00:00Z", "2025-02-04T01:03:00Z", timeutil.TimeGrainSecond},
@@ -90,6 +100,7 @@ func Test_Eval(t *testing.T) {
 				FirstDay:   1,
 				FirstMonth: 1,
 			})
+			fmt.Println(testCase.timeRange, start, end)
 			require.Equal(t, parseTestTime(t, testCase.start), start)
 			require.Equal(t, parseTestTime(t, testCase.end), end)
 			require.Equal(t, testCase.grain, grain)

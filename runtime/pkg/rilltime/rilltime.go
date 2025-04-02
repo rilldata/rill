@@ -64,6 +64,7 @@ var (
 	rillTimeParser = participle.MustBuild[Expression](
 		participle.Lexer(rillTimeLexer),
 		participle.Elide("Whitespace"),
+		participle.UseLookahead(2),
 	)
 	grainMap = map[string]timeutil.TimeGrain{
 		"s": timeutil.TimeGrainSecond,
@@ -103,11 +104,11 @@ var (
 )
 
 type Expression struct {
-	From           *Link            `parser:"@@"`
-	To             *Link            `parser:"(To @@)?"`
-	Grain          *string          `parser:"(By @Grain)?"`
-	AnchorOverride *HardcodedAnchor `parser:"('@' @@)?"`
-	TimeZone       *string          `parser:"('@' @TimeZone)?"`
+	From           *Link          `parser:"@@"`
+	To             *Link          `parser:"(To @@)?"`
+	Grain          *string        `parser:"(By @Grain)?"`
+	AnchorOverride *LabeledAnchor `parser:"('@' @@)?"`
+	TimeZone       *string        `parser:"('@' @TimeZone)?"`
 
 	isNewFormat bool
 	timeZone    *time.Location
@@ -121,32 +122,36 @@ type Link struct {
 }
 
 type LinkPart struct {
-	Pos lexer.Position
-
-	Ordinal         *Ordinal         `parser:"( @@"`
-	Anchor          *TimeAnchor      `parser:"| @@"`
-	AbsoluteTime    *AbsoluteTime    `parser:"| @@"`
-	HardcodedAnchor *HardcodedAnchor `parser:"| @@)"`
+	Ordinal       *Ordinal       `parser:"( @@"`
+	PeriodToGrain *PeriodToGrain `parser:"| @@"`
+	Anchor        *TimeAnchor    `parser:"| @@"`
+	AbsoluteTime  *AbsoluteTime  `parser:"| @@"`
+	LabeledAnchor *LabeledAnchor `parser:"| @@)"`
 }
 
-type HardcodedAnchor struct {
+//type FirstLinkPart struct {
+//	Ordinal *Ordinal    `parser:"( @@"`
+//	Anchor  *TimeAnchor `parser:"| @@)"`
+//}
+//
+//type MiddleLinkPart struct {
+//	Ordinal *Ordinal    `parser:"( @@"`
+//	Anchor  *TimeAnchor `parser:"| @@)"`
+//}
+//
+//type LastLinkPart struct {
+//	Ordinal       *Ordinal       `parser:"( @@"`
+//	PeriodToGrain *PeriodToGrain `parser:"| @@"`
+//	Anchor        *TimeAnchor    `parser:"| @@"`
+//	AbsoluteTime  *AbsoluteTime  `parser:"| @@"`
+//	LabeledAnchor *LabeledAnchor `parser:"| @@)"`
+//}
+
+type LabeledAnchor struct {
 	Earliest  bool `parser:"( @Earliest"`
 	Now       bool `parser:"| @Now"`
 	Latest    bool `parser:"| @Latest"`
 	Watermark bool `parser:"| @Watermark)"`
-}
-
-type TimeAnchor struct {
-	Pos lexer.Position
-
-	Prefix         *string `parser:"@AnchorPrefix?"`
-	Num            *int    `parser:"@Number?"`
-	Grain          *string `parser:"( @Grain"`
-	PeriodToGrain  *string `parser:"| @PeriodToGrain)"`
-	IncludeCurrent bool    `parser:"@Current?"`
-
-	from timeutil.TimeGrain
-	to   timeutil.TimeGrain
 }
 
 // Ordinal represent a particular sequence of a grain in the next order grain.
@@ -155,6 +160,23 @@ type TimeAnchor struct {
 type Ordinal struct {
 	Grain string `parser:"@Grain"`
 	Num   int    `parser:"@Number"`
+}
+
+type PeriodToGrain struct {
+	Prefix         *string `parser:"@AnchorPrefix?"`
+	Num            *int    `parser:"@Number?"`
+	PeriodToGrain  string  `parser:"@PeriodToGrain"`
+	IncludeCurrent bool    `parser:"@Current?"`
+
+	from timeutil.TimeGrain
+	to   timeutil.TimeGrain
+}
+
+type TimeAnchor struct {
+	Prefix         *string `parser:"@AnchorPrefix?"`
+	Num            *int    `parser:"@Number?"`
+	Grain          string  `parser:"@Grain"`
+	IncludeCurrent bool    `parser:"@Current?"`
 }
 
 type AbsoluteTime struct {
@@ -201,24 +223,19 @@ func Parse(from string, parseOpts ParseOptions) (*Expression, error) {
 		rt.isNewFormat = true
 	}
 
-	// TODO: validation per link and link-part
 	if rt.From != nil {
-		for _, part := range rt.From.Parts {
-			err = part.parse()
-			if err != nil {
-				return nil, err
-			}
+		err = rt.From.parse()
+		if err != nil {
+			return nil, err
 		}
 	} else if rt.isoDuration == nil {
 		return nil, errors.New("invalid range: missing from")
 	}
 
 	if rt.To != nil {
-		for _, part := range rt.To.Parts {
-			err = part.parse()
-			if err != nil {
-				return nil, err
-			}
+		err = rt.To.parse()
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -293,6 +310,16 @@ func (e *Expression) Eval(evalOpts EvalOptions) (time.Time, time.Time, timeutil.
 	return start, end, tg
 }
 
+func (l *Link) parse() error {
+	for _, part := range l.Parts {
+		err := part.parse()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (l *Link) time(evalOpts EvalOptions, start, end time.Time, tz *time.Location) (time.Time, time.Time, timeutil.TimeGrain) {
 	tg := timeutil.TimeGrainUnspecified
 	i := len(l.Parts) - 1
@@ -305,29 +332,31 @@ func (l *Link) time(evalOpts EvalOptions, start, end time.Time, tz *time.Locatio
 }
 
 func (l *LinkPart) parse() error {
-	if l.Anchor != nil {
-		return l.Anchor.parse()
+	if l.PeriodToGrain != nil {
+		return l.PeriodToGrain.parse()
 	} else if l.AbsoluteTime != nil {
 		return l.AbsoluteTime.parse()
 	}
 	return nil
 }
 
-func (l *LinkPart) time(evalOpts EvalOptions, start, end time.Time, tz *time.Location, tg timeutil.TimeGrain, isFinal bool) (time.Time, time.Time, timeutil.TimeGrain) {
-	if l.Anchor != nil {
-		return l.Anchor.time(evalOpts, start, end, tz, tg, isFinal)
+func (l *LinkPart) time(evalOpts EvalOptions, start, end time.Time, tz *time.Location, tg timeutil.TimeGrain, isFirstPart bool) (time.Time, time.Time, timeutil.TimeGrain) {
+	if l.PeriodToGrain != nil {
+		return l.PeriodToGrain.time(evalOpts, start, end, tz, tg)
+	} else if l.Anchor != nil {
+		return l.Anchor.time(evalOpts, start, end, tz, tg, isFirstPart)
 	} else if l.Ordinal != nil {
 		return l.Ordinal.time(evalOpts, start, tz, tg)
 	} else if l.AbsoluteTime != nil {
-		return l.AbsoluteTime.time(tz, isFinal)
-	} else if l.HardcodedAnchor != nil {
-		tm := l.HardcodedAnchor.anchor(evalOpts)
+		return l.AbsoluteTime.time(tz, isFirstPart)
+	} else if l.LabeledAnchor != nil {
+		tm := l.LabeledAnchor.anchor(evalOpts)
 		return tm, tm, tg
 	}
 	return time.Time{}, time.Time{}, tg
 }
 
-func (a *HardcodedAnchor) anchor(evalOpts EvalOptions) time.Time {
+func (a *LabeledAnchor) anchor(evalOpts EvalOptions) time.Time {
 	if a.Earliest {
 		return evalOpts.MinTime
 	} else if a.Now {
@@ -340,23 +369,43 @@ func (a *HardcodedAnchor) anchor(evalOpts EvalOptions) time.Time {
 	return time.Time{}
 }
 
-func (t *TimeAnchor) parse() error {
-	if t.PeriodToGrain == nil {
-		return nil
-	}
-
-	grains := strings.Split(*t.PeriodToGrain, "T")
+func (p *PeriodToGrain) parse() error {
+	grains := strings.Split(p.PeriodToGrain, "T")
 	if len(grains) != 2 {
-		return fmt.Errorf("invalid period grain format: %s", *t.PeriodToGrain)
+		return fmt.Errorf("invalid period grain format: %s", p.PeriodToGrain)
 	}
-	t.from = grainMap[grains[0]]
-	t.to = grainMap[grains[1]]
+	p.from = grainMap[grains[0]]
+	p.to = grainMap[grains[1]]
 	// TODO: from should be smaller than to
 
 	return nil
 }
 
-func (t *TimeAnchor) time(evalOpts EvalOptions, start, end time.Time, tz *time.Location, higherTg timeutil.TimeGrain, isFinal bool) (time.Time, time.Time, timeutil.TimeGrain) {
+func (p *PeriodToGrain) time(evalOpts EvalOptions, start, end time.Time, tz *time.Location, higherTg timeutil.TimeGrain) (time.Time, time.Time, timeutil.TimeGrain) {
+	num := 1
+	if p.Num != nil {
+		num = *p.Num
+	}
+
+	if p.IncludeCurrent {
+		num--
+	}
+
+	ptgStart := timeutil.TruncateTime(start, p.from, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+	if num > 1 && p.Prefix != nil {
+		switch *p.Prefix {
+		case "-":
+			ptgStart = timeutil.OffsetTime(ptgStart, p.from, -num+1)
+
+		case "+":
+			ptgStart = timeutil.OffsetTime(ptgStart, p.from, num-1)
+		}
+	}
+	ptgEnd := timeutil.CeilTime(start, p.to, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+	return ptgStart, ptgEnd, p.to
+}
+
+func (t *TimeAnchor) time(evalOpts EvalOptions, start, end time.Time, tz *time.Location, higherTg timeutil.TimeGrain, isFirstPart bool) (time.Time, time.Time, timeutil.TimeGrain) {
 	num := 1
 	if t.Num != nil {
 		num = *t.Num
@@ -366,29 +415,16 @@ func (t *TimeAnchor) time(evalOpts EvalOptions, start, end time.Time, tz *time.L
 		num--
 	}
 
-	if t.PeriodToGrain != nil {
-		ptgStart := timeutil.TruncateTime(start, t.from, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
-		if num > 1 {
-			if t.Prefix != nil {
-				switch *t.Prefix {
-				case "-":
-					ptgStart = timeutil.OffsetTime(ptgStart, t.from, -num+1)
-
-				case "+":
-					ptgStart = timeutil.OffsetTime(ptgStart, t.from, num-1)
-				}
-			}
-		}
-		ptgEnd := timeutil.CeilTime(start, t.to, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
-		return ptgStart, ptgEnd, t.to
-	}
-
-	curTg := grainMap[*t.Grain]
+	curTg := grainMap[t.Grain]
 	if higherTg == timeutil.TimeGrainUnspecified {
 		higherTg = higherOrderMap[curTg]
 	}
 
 	if t.Prefix == nil {
+		if !isFirstPart && num == 1 {
+			// For anchors not in the 1st part of a link, M & 0M are the same so do not offset by setting num to 0
+			num = 0
+		}
 		if num > 0 {
 			start = timeutil.OffsetTime(start, curTg, -num)
 		}
@@ -406,7 +442,7 @@ func (t *TimeAnchor) time(evalOpts EvalOptions, start, end time.Time, tz *time.L
 		// So we subtract <num> from start and <num-1> from end.
 		case "-":
 			start = timeutil.OffsetTime(start, curTg, -num)
-			if isFinal {
+			if isFirstPart {
 				start = timeutil.TruncateTime(start, curTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 
 				end = timeutil.OffsetTime(end, curTg, -num+1)
@@ -419,7 +455,7 @@ func (t *TimeAnchor) time(evalOpts EvalOptions, start, end time.Time, tz *time.L
 		// So we add <num-1> to start and <num> to end.
 		case "+":
 			end = timeutil.OffsetTime(end, curTg, num)
-			if isFinal {
+			if isFirstPart {
 				start = timeutil.OffsetTime(start, curTg, num-1)
 				start = timeutil.CeilTime(start, curTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 				end = timeutil.CeilTime(end, curTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
@@ -524,11 +560,11 @@ func (a *AbsoluteTime) parse() error {
 	return nil
 }
 
-func (a *AbsoluteTime) time(tz *time.Location, isFinal bool) (time.Time, time.Time, timeutil.TimeGrain) {
+func (a *AbsoluteTime) time(tz *time.Location, isFirstPart bool) (time.Time, time.Time, timeutil.TimeGrain) {
 	start := time.Date(a.year, time.Month(a.month), a.day, a.hour, a.minute, a.second, 0, tz)
 	end := start
 
-	if isFinal {
+	if isFirstPart {
 		end = timeutil.OffsetTime(start, a.tg, 1)
 	}
 
@@ -541,12 +577,12 @@ func parseISO(from string, parseOpts ParseOptions) (*Expression, error) {
 		return &Expression{
 			From: &Link{
 				Parts: []*LinkPart{
-					{HardcodedAnchor: &HardcodedAnchor{Earliest: true}},
+					{LabeledAnchor: &LabeledAnchor{Earliest: true}},
 				},
 			},
 			To: &Link{
 				Parts: []*LinkPart{
-					{HardcodedAnchor: &HardcodedAnchor{Latest: true}},
+					{LabeledAnchor: &LabeledAnchor{Latest: true}},
 				},
 			},
 		}, nil
