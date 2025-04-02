@@ -176,21 +176,10 @@
     }}
   >
     <Dialog.Content noClose>
-      {#if $isModelingSupportedForDefaultOlapDriver}
-        <section class="mb-1">
-          <Dialog.Title>
-            {#if $duplicateSourceName !== null}
-              Duplicate source
-            {:else if selectedConnector}
-              {selectedConnector?.displayName}
-            {:else if step === 1}
-              Add a source
-            {/if}
-          </Dialog.Title>
-
-          {#if $duplicateSourceName}
-            <DuplicateSource onCancel={resetModal} onComplete={resetModal} />
-          {:else if step === 1}
+      {#if step === 1}
+        {#if $isModelingSupportedForDefaultOlapDriver}
+          <Dialog.Title>Add a source</Dialog.Title>
+          <section class="mb-1">
             <div class="connector-grid">
               {#each connectors.filter((c) => c.name && SOURCES.includes(c.name)) as connector (connector.name)}
                 {#if connector.name}
@@ -206,21 +195,8 @@
                 {/if}
               {/each}
             </div>
-          {:else if step === 2 && selectedConnector}
-            {#if selectedConnector.name === "local_file"}
-              <LocalSourceUpload on:close={resetModal} on:back={back} />
-            {:else if selectedConnector && selectedConnector.name}
-              <AddDataForm
-                connector={selectedConnector}
-                formType={OLAP_CONNECTORS.includes(selectedConnector.name)
-                  ? "connector"
-                  : "source"}
-                onClose={resetModal}
-                onBack={back}
-              />
-            {/if}
-          {/if}
-        </section>
+          </section>
+        {/if}
       {/if}
 
       {#if step === 1}
@@ -253,6 +229,31 @@
             Request a new connector
           </button>
         </div>
+      {/if}
+
+      {#if step === 2 && selectedConnector}
+        <Dialog.Title>
+          {#if $duplicateSourceName !== null}
+            Duplicate source
+          {:else}
+            {selectedConnector.displayName}
+          {/if}
+        </Dialog.Title>
+
+        {#if $duplicateSourceName !== null}
+          <DuplicateSource onCancel={resetModal} onComplete={resetModal} />
+        {:else if selectedConnector.name === "local_file"}
+          <LocalSourceUpload on:close={resetModal} on:back={back} />
+        {:else if selectedConnector.name}
+          <AddDataForm
+            connector={selectedConnector}
+            formType={OLAP_CONNECTORS.includes(selectedConnector.name)
+              ? "connector"
+              : "source"}
+            onClose={resetModal}
+            onBack={back}
+          />
+        {/if}
       {/if}
 
       {#if step === 2 && requestConnector}
