@@ -446,8 +446,8 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 	if opts.InputHandle == c {
 		return &selfToSelfExecutor{c}, true
 	}
-	if opts.InputHandle.Driver() == "s3" {
-		return &s3ToSelfExecutor{opts.InputHandle, c}, true
+	if opts.InputHandle.Driver() == "s3" || opts.InputHandle.Driver() == "gcs" {
+		return &objectStoreToSelfExecutor{opts.InputHandle, c}, true
 	}
 	if opts.InputHandle.Driver() == "local_file" {
 		return &localFileToSelfExecutor{opts.InputHandle, c}, true

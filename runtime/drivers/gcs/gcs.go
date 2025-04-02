@@ -84,9 +84,6 @@ func NewConfigProperties(in map[string]any) (*ConfigProperties, error) {
 	if err != nil {
 		return nil, err
 	}
-	if gcsConfig.SecretJSON != "" && (gcsConfig.KeyID != "" || gcsConfig.Secret != "") {
-		return nil, errors.New("cannot provide both secretJSON and keyID/secret")
-	}
 	return gcsConfig, nil
 }
 
@@ -263,7 +260,7 @@ func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 
 // AsModelManager implements drivers.Handle.
 func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
-	return nil, false
+	return c, true
 }
 
 // AsTransporter implements drivers.Connection.
