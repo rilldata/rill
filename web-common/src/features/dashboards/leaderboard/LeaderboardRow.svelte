@@ -25,11 +25,10 @@
   export let tableWidth: number;
   export let borderTop = false;
   export let borderBottom = false;
-  export let isSummableMeasure: boolean;
   export let isBeingCompared: boolean;
   export let filterExcludeMode: boolean;
   export let atLeastOneActive: boolean;
-  export let isValidPercentOfTotal: boolean;
+  export let isValidPercentOfTotal: (measureName: string) => boolean;
   export let isTimeComparisonActive: boolean;
   export let activeMeasureNames: string[] = [];
   export let toggleDimensionValueSelection: (
@@ -96,7 +95,7 @@
   $: barLengths = Object.fromEntries(
     Object.entries(pctOfTotals).map(([name, pct]) => [
       name,
-      isSummableMeasure && pct ? tableWidth * pct : 0,
+      pct ? tableWidth * pct : 0,
     ]),
   );
 
@@ -123,7 +122,7 @@
             length - dimensionColumnWidth - $valueColumn,
             COMPARISON_COLUMN_WIDTH,
           )
-        : isValidPercentOfTotal
+        : isValidPercentOfTotal(name)
           ? clamp(
               0,
               length - dimensionColumnWidth - $valueColumn,
@@ -300,12 +299,12 @@
         />
       </div>
 
-      {#if showZigZags[measureName] && !isTimeComparisonActive && !isValidPercentOfTotal}
+      {#if showZigZags[measureName] && !isTimeComparisonActive && !isValidPercentOfTotal(measureName)}
         <LongBarZigZag />
       {/if}
     </td>
 
-    {#if isValidPercentOfTotal}
+    {#if isValidPercentOfTotal(measureName)}
       <td
         data-comparison-cell
         style:background={percentOfTotalGradients[measureName]}
@@ -403,6 +402,7 @@
 
   tr {
     @apply cursor-pointer;
+    max-height: 22px;
   }
 
   tr:hover {
@@ -429,5 +429,9 @@
 
   a:hover {
     @apply bg-primary-100;
+  }
+
+  td {
+    height: 22px !important;
   }
 </style>

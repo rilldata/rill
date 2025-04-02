@@ -84,10 +84,16 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	logger, cleanupFn := initLogger(opts.Verbose, opts.LogFormat, logPath)
 	sugarLogger := logger.Sugar()
 
+	var tracesExporter observability.Exporter
+	if opts.Debug {
+		tracesExporter = observability.FileBasedExporter
+	} else {
+		tracesExporter = observability.NoopExporter
+	}
 	// Init Prometheus telemetry
 	shutdown, err := observability.Start(ctx, logger, &observability.Options{
 		MetricsExporter: observability.PrometheusExporter,
-		TracesExporter:  observability.NoopExporter,
+		TracesExporter:  tracesExporter,
 		ServiceName:     "rill-local",
 		ServiceVersion:  opts.Ch.Version.String(),
 	})

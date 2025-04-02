@@ -4,7 +4,7 @@
     getHeaderForComponent,
     isCanvasComponentType,
   } from "@rilldata/web-common/features/canvas/components/util";
-  import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
@@ -16,12 +16,13 @@
 
   export let selectedComponent: { row: number; column: number };
   export let fileArtifact: FileArtifact;
+  export let canvasName: string;
 
-  const {
+  $: ({
     canvasEntity: {
       spec: { getComponentFromIndex, getComponentNameFromPos },
     },
-  } = getCanvasStateManagers();
+  } = getCanvasStore(canvasName));
   let currentTab: string;
 
   $: componentSpec = getComponentFromIndex(selectedComponent);
@@ -61,12 +62,14 @@
     {#key $componentName}
       {#if currentTab === "options"}
         <ParamMapper
+          {canvasName}
           {component}
           {componentType}
           paramValues={rendererProperties}
         />
       {:else if currentTab === "filters"}
         <FiltersMapper
+          {canvasName}
           selectedComponentName={$componentName}
           {component}
           paramValues={rendererProperties}

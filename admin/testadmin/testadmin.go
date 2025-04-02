@@ -65,7 +65,6 @@ func New(t *testing.T) *Fixture {
 
 	// Sender
 	sender := email.NewTestSender()
-	require.NoError(t, err)
 	emailClient := email.New(sender)
 
 	// Application-managed column encryption keyring

@@ -9,24 +9,14 @@
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
-  import DashboardURLStateSync from "@rilldata/web-common/features/dashboards/url-state/DashboardURLStateSync.svelte";
+  import DashboardStateManager from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateManager.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import type { PageData } from "./$types";
-
-  export let data: PageData;
 
   $: ({ instanceId } = $runtime);
 
-  $: ({
-    exploreName,
-    defaultExplorePreset,
-    exploreStateFromYAMLConfig,
-    partialExploreStateFromUrl,
-    exploreStateFromSessionStorage,
-  } = data);
-  $: ({ organization, project } = $page.params);
+  $: ({ organization, project, dashboard: exploreName } = $page.params);
 
   // Query the `GetProject` API with cookie-based auth to determine if the user has access to the original dashboard
   $: cookieProjectQuery = createAdminServiceGetProject(organization, project);
@@ -67,13 +57,9 @@
       metricsViewName={explore.metricsView.meta.name.name}
       {exploreName}
     >
-      <DashboardURLStateSync
-        metricsViewName={explore.metricsView.meta.name.name}
+      <DashboardStateManager
         {exploreName}
-        {defaultExplorePreset}
-        {exploreStateFromYAMLConfig}
-        {partialExploreStateFromUrl}
-        {exploreStateFromSessionStorage}
+        storageNamespacePrefix={`${organization}__${project}__`}
       >
         <DashboardThemeProvider>
           <Dashboard
@@ -81,7 +67,7 @@
             metricsViewName={explore.metricsView.meta.name.name}
           />
         </DashboardThemeProvider>
-      </DashboardURLStateSync>
+      </DashboardStateManager>
     </StateManagersProvider>
   {/if}
 {/key}
