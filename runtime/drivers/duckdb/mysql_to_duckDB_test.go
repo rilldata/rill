@@ -96,42 +96,9 @@ func TestMySQLToDuckDBTransfer(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	t.Run("AllDataTypes", func(t *testing.T) {
-		allMySQLDataTypesTest(t, db, dsn)
-	})
-
 	t.Run("model_executor_mysql_to_duckDB", func(t *testing.T) {
 		mysqlToDuckDB(t, fmt.Sprintf("host=%s port=%v database=mydb user=myuser password=mypassword", host, port.Int()))
 	})
-}
-
-func allMySQLDataTypesTest(t *testing.T, db *sql.DB, dsn string) {
-	ctx := context.Background()
-	_, err := db.ExecContext(ctx, mysqlInitStmt)
-	require.NoError(t, err)
-
-	to, err := drivers.Open("duckdb", "default", map[string]any{}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
-	require.NoError(t, err)
-	olap, _ := to.AsOLAP("")
-
-	inputHandle, err := drivers.Open("mysql", "default", map[string]any{"dsn": dsn}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
-	require.NoError(t, err)
-
-	tr, ok := to.AsTransporter(inputHandle, to)
-	require.True(t, ok)
-	err = tr.Transfer(ctx, map[string]any{"sql": "select * from all_data_types_table;", "db": dsn}, map[string]any{"table": "sink"}, &drivers.TransferOptions{})
-	require.NoError(t, err)
-	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "select count(*) from sink"})
-	require.NoError(t, err)
-	for res.Next() {
-		var count int
-		err = res.Rows.Scan(&count)
-		require.NoError(t, err)
-		require.Equal(t, count, 2)
-	}
-	require.NoError(t, res.Err())
-	require.NoError(t, res.Close())
-	require.NoError(t, to.Close())
 }
 
 func mysqlToDuckDB(t *testing.T, dsn string) {

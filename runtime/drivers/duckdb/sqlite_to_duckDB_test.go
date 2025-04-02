@@ -34,12 +34,35 @@ func Test_sqliteToDuckDB_Transfer(t *testing.T) {
 	require.NoError(t, err)
 	olap, _ := to.AsOLAP("")
 
-	tr := newDuckDBToDuckDB(to, to.(*connection), zap.NewNop())
-	query := fmt.Sprintf("SELECT * FROM sqlite_scan('%s', 't');", dbPath)
-	err = tr.Transfer(context.Background(), map[string]any{"sql": query}, map[string]any{"table": "test"}, &drivers.TransferOptions{})
+	opts := &drivers.ModelExecutorOptions{
+		InputHandle:     to,
+		InputConnector:  "duckdb",
+		OutputHandle:    to,
+		OutputConnector: "duckdb",
+		Env: &drivers.ModelEnv{
+			AllowHostAccess: false,
+			StageChanges:    true,
+		},
+		PreliminaryInputProperties: map[string]any{
+			"sql": fmt.Sprintf("SELECT * FROM sqlite_scan('%s', 't');", dbPath),
+			"db":  dbPath,
+		},
+		PreliminaryOutputProperties: map[string]any{
+			"table": "sink",
+		},
+	}
+
+	me, ok := to.AsModelExecutor("default", opts)
+	require.True(t, ok)
+	execOpts := &drivers.ModelExecuteOptions{
+		ModelExecutorOptions: opts,
+		InputProperties:      opts.PreliminaryInputProperties,
+		OutputProperties:     opts.PreliminaryOutputProperties,
+	}
+	_, err = me.Execute(context.Background(), execOpts)
 	require.NoError(t, err)
 
-	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT count(*) from test"})
+	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT count(*) from sink"})
 	require.NoError(t, err)
 	res.Next()
 	var count int

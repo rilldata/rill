@@ -61,38 +61,7 @@ func TestTransfer(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	t.Run("AllDataTypes", func(t *testing.T) { allDataTypesTest(t, db, pg.DatabaseURL) })
 	t.Run("model_executor_postgres_to_duckDB", func(t *testing.T) { pgxToDuckDB(t, db, pg.DatabaseURL) })
-}
-
-func allDataTypesTest(t *testing.T, db *sql.DB, dbURL string) {
-	ctx := context.Background()
-	_, err := db.ExecContext(ctx, sqlStmt)
-	require.NoError(t, err)
-
-	to, err := drivers.Open("duckdb", "default", map[string]any{}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
-	require.NoError(t, err)
-	olap, _ := to.AsOLAP("")
-
-	inputHandle, err := drivers.Open("postgres", "default", map[string]any{"database_url": dbURL}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
-	require.NoError(t, err)
-
-	tr, ok := to.AsTransporter(inputHandle, to)
-	require.True(t, ok)
-
-	err = tr.Transfer(ctx, map[string]any{"sql": "select * from all_datatypes;"}, map[string]any{"table": "sink"}, &drivers.TransferOptions{})
-	require.NoError(t, err)
-	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "select count(*) from sink"})
-	require.NoError(t, err)
-	for res.Next() {
-		var count int
-		err = res.Rows.Scan(&count)
-		require.NoError(t, err)
-		require.Equal(t, 1, count)
-	}
-	require.NoError(t, res.Err())
-	require.NoError(t, res.Close())
-	require.NoError(t, to.Close())
 }
 
 func pgxToDuckDB(t *testing.T, pgdb *sql.DB, dbURL string) {
