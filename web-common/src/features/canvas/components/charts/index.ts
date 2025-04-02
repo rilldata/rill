@@ -5,13 +5,17 @@ import {
   getFilterOptions,
 } from "@rilldata/web-common/features/canvas/components/util";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
-import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
 import { defaultPrimaryColors } from "@rilldata/web-common/features/themes/color-config";
-import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 import type {
+  V1MetricsViewSpec,
+  V1Resource,
+} from "@rilldata/web-common/runtime-client";
+import type {
+  CanvasComponentType,
   ComponentCommonProperties,
   ComponentFilterProperties,
 } from "../types";
+import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
 
 export { default as Chart } from "./Chart.svelte";
 
@@ -23,18 +27,19 @@ export class ChartComponent extends BaseCanvasComponent<ChartSpec> {
   minSize = { width: 4, height: 4 };
   defaultSize = { width: 6, height: 4 };
   resetParams = [];
+  type: CanvasComponentType;
 
-  constructor(
-    fileArtifact: FileArtifact | undefined = undefined,
-    path: (string | number)[] = [],
-    initialSpec: Partial<ChartSpec> = {},
-  ) {
+  constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
     const defaultSpec: ChartSpec = {
       metrics_view: "",
       title: "",
       description: "",
     };
-    super(fileArtifact, path, defaultSpec, initialSpec);
+
+    super(resource, parent, path, defaultSpec);
+
+    this.type = resource.component?.state?.validSpec
+      ?.renderer as CanvasComponentType;
   }
 
   isValid(spec: ChartSpec): boolean {
@@ -56,7 +61,7 @@ export class ChartComponent extends BaseCanvasComponent<ChartSpec> {
     };
   }
 
-  newComponentSpec(
+  static newComponentSpec(
     metricsViewName: string,
     metricsViewSpec: V1MetricsViewSpec | undefined,
   ): ChartSpec {

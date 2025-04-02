@@ -9,7 +9,7 @@
   } from "@rilldata/web-common/features/canvas/components/util";
   import { type V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
-  import type { CanvasComponentType } from "../components/types";
+  import type { CanvasComponentType, ComponentSpec } from "../components/types";
   import AlignmentInput from "./AlignmentInput.svelte";
   import ChartTypeSelector from "./chart/ChartTypeSelector.svelte";
   import MarkSelector from "./chart/MarkSelector.svelte";
@@ -20,9 +20,9 @@
   import SingleFieldInput from "./SingleFieldInput.svelte";
   import SparklineInput from "./SparklineInput.svelte";
   import TableTypeSelector from "./TableTypeSelector.svelte";
+  import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
 
-  export let component: CanvasComponentObj;
-  export let componentType: CanvasComponentType;
+  export let component: BaseCanvasComponent<ComponentSpec>;
   export let paramValues: V1ComponentSpecRendererProperties;
   export let canvasName: string;
 
@@ -45,17 +45,12 @@
   });
 </script>
 
-{#if isChartComponentType(componentType)}
-  <ChartTypeSelector {component} {componentType} />
+{#if isChartComponentType(component.type)}
+  <ChartTypeSelector {component} />
 {/if}
 
-{#if metricsView && isTableComponentType(componentType)}
-  <TableTypeSelector
-    {canvasName}
-    {component}
-    {componentType}
-    metricsViewName={metricsView}
-  />
+{#if metricsView && isTableComponentType(component.type)}
+  <TableTypeSelector {canvasName} {component} metricsViewName={metricsView} />
 {/if}
 
 <div>

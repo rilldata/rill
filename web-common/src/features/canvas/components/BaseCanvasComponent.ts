@@ -1,15 +1,36 @@
 import type { ChartType } from "@rilldata/web-common/features/canvas/components/charts/types";
 import type { PivotSpec } from "@rilldata/web-common/features/canvas/components/pivot";
 import type { TableSpec } from "@rilldata/web-common/features/canvas/components/table";
-import type { ComponentSize } from "@rilldata/web-common/features/canvas/components/types";
+import type {
+  CanvasComponentType,
+  ComponentSize,
+  ComponentSpec,
+} from "@rilldata/web-common/features/canvas/components/types";
 import { getParsedDocument } from "@rilldata/web-common/features/canvas/inspector/selectors";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
-import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
-import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
-import { get, writable, type Writable } from "svelte/store";
+import type {
+  V1Expression,
+  V1MetricsViewSpec,
+  V1Resource,
+  V1TimeRange,
+} from "@rilldata/web-common/runtime-client";
+import { derived, get, writable, type Writable } from "svelte/store";
+import { CanvasComponentState } from "../stores/canvas-component";
+import type { CanvasEntity, ComponentPath } from "../stores/canvas-entity";
+import type { Readable } from "svelte/motion";
+import type { TimeAndFilterStore } from "../stores/types";
+import type {
+  ComparisonTimeRangeState,
+  TimeRangeState,
+} from "../../dashboards/time-controls/time-control-store";
+import {
+  buildValidMetricsViewFilter,
+  createAndExpression,
+} from "../../dashboards/stores/filter-utils";
+import { mergeFilters } from "../../dashboards/pivot/pivot-merge-filters";
 
 // A base class that implements all the store logic
-export abstract class BaseCanvasComponent<T> {
+export abstract class BaseCanvasComponent<T = ComponentSpec> {
   /**
    * Local copy of the spec as a svelte writable store
    */
@@ -17,12 +38,19 @@ export abstract class BaseCanvasComponent<T> {
   /**
    * Path in the YAML where the component is stored
    */
-  pathInYAML: (string | number)[] = [];
+  pathInYAML: ComponentPath;
   /**
    * File artifact where the component
    * is stored
    */
-  fileArtifact: FileArtifact | undefined = undefined;
+  // parent: CanvasEntity;
+
+  id: string;
+
+  state: CanvasComponentState;
+  resource: Writable<V1Resource | null> = writable(null);
+
+  abstract type: CanvasComponentType;
 
   // Let child classes define these
   /**
@@ -58,30 +86,155 @@ export abstract class BaseCanvasComponent<T> {
   /**
    * Get the spec when the component is added to the canvas
    */
-  abstract newComponentSpec(
-    metricsViewName: string,
-    metricsViewSpec: V1MetricsViewSpec | undefined,
-  ): T;
+  // abstract newComponentSpec(
+  //   metricsViewName: string,
+  //   metricsViewSpec: V1MetricsViewSpec | undefined,
+  // ): T;
 
   constructor(
-    fileArtifact: FileArtifact | undefined,
-    path: (string | number)[],
-    defaultSpec: T,
-    initialSpec: Partial<T> = {},
+    resource: V1Resource,
+    public parent: CanvasEntity,
+    path: ComponentPath,
+    public defaultSpec: T,
   ) {
-    // Initialize the store with merged spec
-    const mergedSpec = { ...defaultSpec, ...initialSpec };
+    const yamlSpec = resource.component?.state?.validSpec?.rendererProperties;
+
+    const mergedSpec = { ...defaultSpec, ...yamlSpec };
     this.specStore = writable(mergedSpec);
     this.pathInYAML = path;
-    this.fileArtifact = fileArtifact;
+
+    this.resource.set(resource);
+    this.id = resource.meta?.name?.name as string;
+    // this.parent = parent;
+    this.state = new CanvasComponentState(
+      this.id,
+      this.parent.specStore,
+      this.parent.spec,
+    );
+  }
+
+  update(resource: V1Resource, path: ComponentPath) {
+    const yamlSpec = resource.component?.state?.validSpec?.rendererProperties;
+
+    const mergedSpec = { ...this.defaultSpec, ...yamlSpec };
+    this.resource.set(resource);
+    this.pathInYAML = path;
+    this.specStore.set(mergedSpec);
+  }
+
+  get timeAndFilterStore() {
+    return derived(
+      [
+        this.parent.timeControls.timeRangeStateStore,
+        this.state.localTimeControls.timeRangeStateStore,
+        this.parent.timeControls.comparisonRangeStateStore,
+        this.state.localTimeControls.comparisonRangeStateStore,
+        this.parent.timeControls.selectedTimezone,
+        this.parent.filters.whereFilter,
+        this.parent.filters.dimensionThresholdFilters,
+        this.parent.specStore,
+        this.parent.timeControls.hasTimeSeries,
+        this.specStore,
+      ],
+      ([
+        globalTimeRangeState,
+        localTimeRangeState,
+        globalComparisonRangeState,
+        localComparisonRangeState,
+        timeZone,
+        whereFilter,
+        dtf,
+        canvasData,
+        hasTimeSeries,
+        componentSpec,
+      ]) => {
+        const metricsViewName = componentSpec["metrics_view"];
+        const metricsView = canvasData.data?.metricsViews?.[metricsViewName];
+        const dimensions = metricsView?.state?.validSpec?.dimensions ?? [];
+        const measures = metricsView?.state?.validSpec?.measures ?? [];
+
+        // Time Filters
+        let timeRange: V1TimeRange = {
+          start: globalTimeRangeState?.timeStart,
+          end: globalTimeRangeState?.timeEnd,
+          timeZone,
+        };
+
+        let timeGrain = globalTimeRangeState?.selectedTimeRange?.interval;
+
+        const localShowTimeComparison =
+          !!localComparisonRangeState?.showTimeComparison;
+        const globalShowTimeComparison =
+          !!globalComparisonRangeState?.showTimeComparison;
+
+        let showTimeComparison = globalShowTimeComparison;
+
+        let comparisonTimeRange: V1TimeRange | undefined = {
+          start: globalComparisonRangeState?.comparisonTimeStart,
+          end: globalComparisonRangeState?.comparisonTimeEnd,
+          timeZone,
+        };
+
+        let timeRangeState: TimeRangeState | undefined = globalTimeRangeState;
+        let comparisonTimeRangeState: ComparisonTimeRangeState | undefined =
+          globalComparisonRangeState;
+
+        if (componentSpec?.["time_filters"]) {
+          timeRange = {
+            start: localTimeRangeState?.timeStart,
+            end: localTimeRangeState?.timeEnd,
+            timeZone,
+          };
+
+          comparisonTimeRange = {
+            start: localComparisonRangeState?.comparisonTimeStart,
+            end: localComparisonRangeState?.comparisonTimeEnd,
+            timeZone,
+          };
+
+          showTimeComparison = localShowTimeComparison;
+
+          timeGrain = localTimeRangeState?.selectedTimeRange?.interval;
+
+          timeRangeState = localTimeRangeState;
+          comparisonTimeRangeState = localComparisonRangeState;
+        }
+
+        // Dimension Filters
+        const globalWhere =
+          buildValidMetricsViewFilter(whereFilter, dtf, dimensions, measures) ??
+          createAndExpression([]);
+
+        let where: V1Expression | undefined = globalWhere;
+
+        if (componentSpec?.["dimension_filters"]) {
+          const { expr: componentWhere } =
+            component.state.localFilters.getFiltersFromText(
+              componentSpec?.["dimension_filters"] as string,
+            );
+          where = mergeFilters(globalWhere, componentWhere);
+        }
+
+        return {
+          timeRange,
+          showTimeComparison,
+          comparisonTimeRange,
+          where,
+          timeGrain,
+          timeRangeState,
+          comparisonTimeRangeState,
+          hasTimeSeries,
+        };
+      },
+    );
   }
 
   private async updateYAML(newSpec: T): Promise<void> {
-    if (!this.fileArtifact) return;
-    const parseDocumentStore = getParsedDocument(this.fileArtifact);
+    if (!this.parent.fileArtifact) return;
+    const parseDocumentStore = this.parent.parsedContent;
     const parsedDocument = get(parseDocumentStore);
 
-    const { updateEditorContent, saveLocalContent } = this.fileArtifact;
+    const { updateEditorContent, saveLocalContent } = this.parent.fileArtifact;
 
     // Update the Item
     parsedDocument.setIn(this.pathInYAML, newSpec);
@@ -139,15 +292,15 @@ export abstract class BaseCanvasComponent<T> {
    * Update the chart type of chart component in store and YAML
    */
   async updateChartType(key: ChartType) {
-    if (!this.fileArtifact) return;
+    if (!this.parent.fileArtifact) return;
     const currentSpec = get(this.specStore);
 
     const parentPath = this.pathInYAML.slice(0, -1);
 
-    const parseDocumentStore = getParsedDocument(this.fileArtifact);
+    const parseDocumentStore = getParsedDocument(this.parent.fileArtifact);
     const parsedDocument = get(parseDocumentStore);
 
-    const { updateEditorContent, saveLocalContent } = this.fileArtifact;
+    const { updateEditorContent, saveLocalContent } = this.parent.fileArtifact;
 
     const width = parsedDocument.getIn([...parentPath, "width"]);
 
@@ -162,11 +315,11 @@ export abstract class BaseCanvasComponent<T> {
     newTableType: "pivot" | "table",
     metricsViewSpec: V1MetricsViewSpec | undefined,
   ) {
-    if (!this.fileArtifact) return;
+    if (!this.parent.fileArtifact) return;
     const parentPath = this.pathInYAML.slice(0, -1);
-    const parseDocumentStore = getParsedDocument(this.fileArtifact);
+    const parseDocumentStore = getParsedDocument(this.parent.fileArtifact);
     const parsedDocument = get(parseDocumentStore);
-    const { updateEditorContent, saveLocalContent } = this.fileArtifact;
+    const { updateEditorContent, saveLocalContent } = this.parent.fileArtifact;
 
     const currentSpec = get(this.specStore);
 

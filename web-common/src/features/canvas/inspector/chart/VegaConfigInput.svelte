@@ -3,11 +3,11 @@
   import { EditorState } from "@codemirror/state";
   import { EditorView, placeholder } from "@codemirror/view";
   import { base as baseExtensions } from "@rilldata/web-common/components/editor/presets/base";
-  import type { CanvasComponentObj } from "@rilldata/web-common/features/canvas/components/util";
   import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
   import { onDestroy, onMount } from "svelte";
+  import type { BaseCanvasComponent } from "../../components/BaseCanvasComponent";
 
-  export let component: CanvasComponentObj;
+  export let component: BaseCanvasComponent;
   export let paramValues: V1ComponentSpecRendererProperties;
 
   const KEY = "vl_config";

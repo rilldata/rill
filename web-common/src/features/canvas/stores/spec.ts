@@ -214,32 +214,6 @@ export class CanvasResolvedSpec {
     };
   }
 
-  getComponentNameFromPos = (pos: {
-    row: number;
-    column: number;
-  }): Readable<string | undefined> => {
-    return derived(this.canvasSpec, (canvasSpec) => {
-      const componentName =
-        canvasSpec?.rows?.[pos.row]?.items?.[pos.column]?.component;
-      if (!componentName) return undefined;
-      return componentName;
-    });
-  };
-
-  getComponentFromIndex = (pos: {
-    row: number;
-    column: number;
-  }): Readable<V1ComponentSpec | undefined> => {
-    const componentName = this.getComponentNameFromPos(pos);
-    return derived(
-      [componentName, this.components],
-      ([componentName, components]) => {
-        if (!componentName) return undefined;
-        return components[componentName];
-      },
-    );
-  };
-
   getDimensionsFromMeasure = (
     measureName: string,
   ): MetricsViewSpecDimensionV2[] => {

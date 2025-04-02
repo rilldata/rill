@@ -45,14 +45,12 @@
   export let openSidebar: () => void;
 
   $: ({
-    canvasEntity: { setSelectedComponent },
+    canvasEntity: { setSelectedComponent, selectedComponent, components },
   } = getCanvasStore(canvasName));
 
   let initialMousePosition: { x: number; y: number } | null = null;
   let clientWidth: number;
-  let selected: Set<string> = new Set();
   let offset = { x: 0, y: 0 };
-
   let dragItemInfo: DragItem | null = null;
   let timeout: ReturnType<typeof setTimeout> | null = null;
   let dragTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -113,7 +111,7 @@
   }
 
   function getId(row: number | undefined, column: number | undefined) {
-    return `component-${row ?? 0}-${column ?? 0}`;
+    return `${canvasName}--component-${row ?? 0}-${column ?? 0}`;
   }
 
   function calculateMouseDelta(
@@ -205,7 +203,6 @@
     clearSelection = true,
   ) {
     if (clearSelection) {
-      selected = new Set();
       setSelectedComponent(null);
     }
 
@@ -268,9 +265,7 @@
 
     const id = getId(position.row, position.column);
 
-    selected = new Set([id]);
-
-    setSelectedComponent({ column: position.column, row: position.row });
+    setSelectedComponent(id);
   }
 
   function updateContents() {
@@ -297,9 +292,7 @@
 
     const id = getId(row, 0);
 
-    selected = new Set([id]);
-
-    setSelectedComponent({ column: 0, row });
+    setSelectedComponent(id);
   }
 
   function onDrop(row: number, column: number | null) {
@@ -324,7 +317,6 @@
 
   function resetSelection() {
     setSelectedComponent(null);
-    selected = new Set();
   }
 
   function scrollToBottom() {
@@ -338,20 +330,21 @@
 <svelte:window
   on:mouseup={reset}
   on:keydown={(e) => {
-    if (e.key === "Backspace" && selected) {
-      if (
-        !(e.target instanceof HTMLElement) ||
-        (e.target.tagName !== "INPUT" &&
-          e.target.tagName !== "TEXTAREA" &&
-          !e.target.isContentEditable)
-      ) {
-        removeItems(
-          Array.from(selected).map((id) => {
-            const [row, column] = id.split("-").slice(1).map(Number);
-            return { position: { row, column } };
-          }),
-        );
-      }
+    const selected = $selectedComponent;
+    if (!selected || e.key !== "Backspace") return;
+
+    if (
+      !(e.target instanceof HTMLElement) ||
+      (e.target.tagName !== "INPUT" &&
+        e.target.tagName !== "TEXTAREA" &&
+        !e.target.isContentEditable)
+    ) {
+      const component = components.get(selected);
+      if (!component) return;
+
+      const [, row, , column] = component.pathInYAML;
+
+      removeItems([{ position: { row, column } }]);
     }
   }}
 />
@@ -384,10 +377,10 @@
       let:onColumnResizeStart
     >
       {#each items as item, columnIndex (columnIndex)}
-        {@const id = getId(rowIndex, columnIndex)}
+        {@const id = item?.component ?? getId(rowIndex, columnIndex)}
         {@const type = types[columnIndex]}
-        {@const componentResource =
-          canvasData?.components?.[item?.component ?? ""]}
+
+        {@const component = components.get(id)}
         <ItemWrapper {type} zIndex={4 - columnIndex}>
           {#if columnIndex === 0}
             <ElementDivider
@@ -423,58 +416,59 @@
             {onDrop}
           />
 
-          <CanvasComponent
-            {canvasName}
-            {componentResource}
-            canvasItem={item}
-            {id}
-            editable
-            ghost={dragItemInfo?.position?.row === rowIndex &&
-              dragItemInfo?.position?.column === columnIndex}
-            selected={selected.has(id)}
-            allowPointerEvents={!$activeDivider}
-            onMouseDown={(e) => {
-              if (e.button !== 0) return;
-              e.preventDefault();
+          {#if component}
+            <CanvasComponent
+              {canvasName}
+              {component}
+              editable
+              ghost={dragItemInfo?.position?.row === rowIndex &&
+                dragItemInfo?.position?.column === columnIndex}
+              selected={$selectedComponent === id}
+              allowPointerEvents={!$activeDivider}
+              onMouseDown={(e) => {
+                if (e.button !== 0) return;
+                e.preventDefault();
 
-              initialMousePosition = $mousePosition;
+                initialMousePosition = $mousePosition;
 
-              setSelectedComponent({ column: columnIndex, row: rowIndex });
-              selected = new Set([id]);
+                setSelectedComponent(id);
 
-              if (dragTimeout) clearTimeout(dragTimeout);
+                if (dragTimeout) clearTimeout(dragTimeout);
 
-              openSidebarAfterSelection = true;
+                openSidebarAfterSelection = true;
 
-              dragTimeout = setTimeout(() => {
-                openSidebarAfterSelection = false;
-                handleDragStart({
-                  position: { row: rowIndex, column: columnIndex },
-                  type: type ?? "line_chart",
-                });
-              }, 150);
-            }}
-            onDuplicate={() => {
-              if (!defaultMetrics) return;
+                dragTimeout = setTimeout(() => {
+                  openSidebarAfterSelection = false;
+                  handleDragStart({
+                    position: { row: rowIndex, column: columnIndex },
+                    type: type ?? "line_chart",
+                  });
+                }, 150);
+              }}
+              onDuplicate={() => {
+                if (!defaultMetrics) return;
 
-              const newYamlRows = moveToRow(
-                yamlCanvasRows,
-                [{ position: { row: rowIndex, column: columnIndex } }],
-                { row: rowIndex + 1, copy: true },
-              );
-              const newSpecRows = moveToRow(
-                specCanvasRows,
-                [{ position: { row: rowIndex, column: columnIndex } }],
-                { row: rowIndex + 1, copy: true },
-              );
+                const newYamlRows = moveToRow(
+                  yamlCanvasRows,
+                  [{ position: { row: rowIndex, column: columnIndex } }],
+                  { row: rowIndex + 1, copy: true },
+                );
+                const newSpecRows = moveToRow(
+                  specCanvasRows,
+                  [{ position: { row: rowIndex, column: columnIndex } }],
+                  { row: rowIndex + 1, copy: true },
+                );
 
-              updateAssets(newSpecRows, newYamlRows);
-            }}
-            onDelete={() =>
-              removeItems([
-                { position: { row: rowIndex, column: columnIndex } },
-              ])}
-          />
+                updateAssets(newSpecRows, newYamlRows);
+              }}
+              onDelete={() =>
+                removeItems([
+                  { position: { row: rowIndex, column: columnIndex } },
+                ])}
+            />
+          {:else}
+            <ComponentError error="No valid component in project" />
+          {/if}
         </ItemWrapper>
       {/each}
     </EditableCanvasRow>

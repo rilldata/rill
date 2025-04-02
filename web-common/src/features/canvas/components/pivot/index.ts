@@ -4,12 +4,16 @@ import {
   getFilterOptions,
 } from "@rilldata/web-common/features/canvas/components/util";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
-import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
-import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 import type {
+  V1MetricsViewSpec,
+  V1Resource,
+} from "@rilldata/web-common/runtime-client";
+import type {
+  CanvasComponentType,
   ComponentCommonProperties,
   ComponentFilterProperties,
 } from "../types";
+import type { CanvasEntity } from "../../stores/canvas-entity";
 
 export interface PivotSpec
   extends ComponentCommonProperties,
@@ -26,9 +30,11 @@ export class PivotCanvasComponent extends BaseCanvasComponent<PivotSpec> {
   minSize = { width: 2, height: 2 };
   defaultSize = { width: 4, height: 10 };
   resetParams = ["measures", "row_dimensions", "col_dimensions"];
+  type: CanvasComponentType = "pivot";
 
   constructor(
-    fileArtifact: FileArtifact | undefined = undefined,
+    resource: V1Resource,
+    parent: CanvasEntity,
     path: (string | number)[] = [],
     initialSpec: Partial<PivotSpec> = {},
   ) {
@@ -38,7 +44,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<PivotSpec> {
       row_dimensions: [],
       col_dimensions: [],
     };
-    super(fileArtifact, path, defaultSpec, initialSpec);
+    super(resource, parent, path, defaultSpec, initialSpec);
   }
 
   isValid(spec: PivotSpec): boolean {
@@ -70,7 +76,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<PivotSpec> {
     };
   }
 
-  newComponentSpec(
+  static newComponentSpec(
     metricsViewName: string,
     metricsViewSpec: V1MetricsViewSpec | undefined,
   ): PivotSpec {

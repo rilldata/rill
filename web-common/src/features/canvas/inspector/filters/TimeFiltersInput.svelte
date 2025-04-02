@@ -19,24 +19,23 @@
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { DateTime, Interval } from "luxon";
   import { tick } from "svelte";
+  import type { CanvasComponentState } from "../../stores/canvas-component";
 
-  export let selectedComponentName: string;
   export let id: string;
   export let timeFilter: string;
   export let showComparison: boolean;
   export let showGrain: boolean;
   export let canvasName: string;
+  export let componentStore: CanvasComponentState;
   export let onChange: (filter: string) => void = () => {};
 
   $: ({
     canvasEntity: {
-      useComponent,
       spec: { canvasSpec },
     },
   } = getCanvasStore(canvasName));
 
   $: showLocalFilters = Boolean(timeFilter && timeFilter !== "");
-  $: componentStore = useComponent(selectedComponentName);
 
   $: ({
     allTimeRange,

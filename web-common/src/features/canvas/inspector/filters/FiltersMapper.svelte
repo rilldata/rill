@@ -1,14 +1,16 @@
 <script lang="ts">
-  import { type CanvasComponentObj } from "@rilldata/web-common/features/canvas/components/util";
   import DimensionFiltersInput from "@rilldata/web-common/features/canvas/inspector/filters/DimensionFiltersInput.svelte";
   import TimeFiltersInput from "@rilldata/web-common/features/canvas/inspector/filters/TimeFiltersInput.svelte";
   import { type V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
 
-  export let selectedComponentName: string;
-  export let component: CanvasComponentObj;
+  import type { BaseCanvasComponent } from "../../components/BaseCanvasComponent";
+
+  export let component: BaseCanvasComponent;
   export let paramValues: V1ComponentSpecRendererProperties;
   export let canvasName: string;
+
+  $: componentStore = component.state;
 
   $: localParamValues = localParamValues || {};
   let oldParamValuesRef: V1ComponentSpecRendererProperties = {};
@@ -35,8 +37,8 @@
       {#if config.type === "time_filters"}
         <TimeFiltersInput
           {canvasName}
-          {selectedComponentName}
           id={key}
+          {componentStore}
           timeFilter={localParamValues[key]}
           showComparison={config?.meta?.hasComparison}
           showGrain={config?.meta?.hasGrain}
@@ -49,7 +51,7 @@
         <DimensionFiltersInput
           {canvasName}
           {metricsView}
-          {selectedComponentName}
+          {componentStore}
           id={key}
           filter={localParamValues[key]}
           onChange={async (filter) => {

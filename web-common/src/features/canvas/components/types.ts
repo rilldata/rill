@@ -46,7 +46,6 @@ export interface ComponentSize {
 export type CanvasComponentType =
   | ChartType
   | "markdown"
-  | "kpi"
   | "kpi_grid"
   | "image"
   | "pivot"

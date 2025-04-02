@@ -11,13 +11,15 @@
   export let autoSave: boolean;
   export let canvasName: string;
 
-  $: ({ canvasEntity } = getCanvasStore(canvasName));
+  $: ({
+    canvasEntity: { selectedComponent, components },
+  } = getCanvasStore(canvasName));
 
   $: ({ editorContent, updateEditorContent, saveLocalContent, path } =
     fileArtifact);
 
   $: parsedDocument = parseDocument($editorContent ?? "");
-  $: selectedComponent = canvasEntity.selectedComponent;
+  $: component = components.get($selectedComponent ?? "");
 
   async function updateProperties(
     newRecord: Record<string, unknown>,
@@ -56,12 +58,8 @@
 </script>
 
 <Inspector minWidth={320} filePath={path}>
-  {#if $selectedComponent !== null}
-    <ComponentsEditor
-      {canvasName}
-      {fileArtifact}
-      selectedComponent={$selectedComponent}
-    />
+  {#if component}
+    <ComponentsEditor {canvasName} {component} />
   {:else}
     <PageEditor {canvasName} {fileArtifact} {updateProperties} />
   {/if}

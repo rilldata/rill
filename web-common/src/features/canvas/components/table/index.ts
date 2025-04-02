@@ -4,12 +4,16 @@ import {
   getFilterOptions,
 } from "@rilldata/web-common/features/canvas/components/util";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
-import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
-import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 import type {
+  V1MetricsViewSpec,
+  V1Resource,
+} from "@rilldata/web-common/runtime-client";
+import type {
+  CanvasComponentType,
   ComponentCommonProperties,
   ComponentFilterProperties,
 } from "../types";
+import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
 
 export interface TableSpec
   extends ComponentCommonProperties,
@@ -24,17 +28,14 @@ export class TableCanvasComponent extends BaseCanvasComponent<TableSpec> {
   minSize = { width: 2, height: 2 };
   defaultSize = { width: 4, height: 10 };
   resetParams = ["measures", "row_dimensions", "col_dimensions"];
+  type: CanvasComponentType = "table";
 
-  constructor(
-    fileArtifact: FileArtifact | undefined = undefined,
-    path: (string | number)[] = [],
-    initialSpec: Partial<TableSpec> = {},
-  ) {
+  constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
     const defaultSpec: TableSpec = {
       metrics_view: "",
       columns: [],
     };
-    super(fileArtifact, path, defaultSpec, initialSpec);
+    super(resource, parent, path, defaultSpec);
   }
 
   isValid(spec: TableSpec): boolean {
@@ -56,7 +57,7 @@ export class TableCanvasComponent extends BaseCanvasComponent<TableSpec> {
     };
   }
 
-  newComponentSpec(
+  static newComponentSpec(
     metricsViewName: string,
     metricsViewSpec: V1MetricsViewSpec | undefined,
   ): TableSpec {

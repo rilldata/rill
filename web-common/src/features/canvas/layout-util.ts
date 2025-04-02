@@ -5,8 +5,8 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import { YAMLMap, YAMLSeq } from "yaml";
 import type { CanvasComponentType } from "./components/types";
-import { getComponentRegistry } from "./components/util";
 import { writable } from "svelte/store";
+import { COMPONENT_CLASS_MAP } from "./components/util";
 
 export const initialHeights: Record<CanvasComponentType, number> = {
   line_chart: 320,
@@ -21,8 +21,6 @@ export const initialHeights: Record<CanvasComponentType, number> = {
   table: 300,
   pivot: 300,
 };
-
-const componentRegistry = getComponentRegistry();
 
 export const MIN_HEIGHT = 40;
 export const MIN_WIDTH = 3;
@@ -137,7 +135,7 @@ export function moveToRow<T extends YAMLRow | V1CanvasRow>(
       movedComponents.push(
         defaultMetrics
           ? {
-              ...createComponent(
+              ...initComponentSpec(
                 item.type as CanvasComponentType,
                 defaultMetrics,
               ),
@@ -233,14 +231,14 @@ export function getInitialHeight(id: string | undefined) {
   return initialHeights[id as CanvasComponentType] ?? MIN_HEIGHT;
 }
 
-function createComponent(
+function initComponentSpec(
   componentType: CanvasComponentType,
   defaultMetrics: {
     metricsViewName: string;
     metricsViewSpec: V1MetricsViewSpec | undefined;
   },
 ) {
-  const newSpec = componentRegistry[componentType].newComponentSpec(
+  const newSpec = COMPONENT_CLASS_MAP[componentType].newComponentSpec(
     defaultMetrics.metricsViewName,
     defaultMetrics.metricsViewSpec,
   );

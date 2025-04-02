@@ -1,32 +1,30 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
-
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import type { ChartMetadata } from "@rilldata/web-common/features/canvas/components/charts/types";
   import { chartMetadata } from "@rilldata/web-common/features/canvas/components/charts/util";
-  import { type CanvasComponentType } from "@rilldata/web-common/features/canvas/components/types";
-  import { type CanvasComponentObj } from "@rilldata/web-common/features/canvas/components/util";
+  import type { BaseCanvasComponent } from "../../components/BaseCanvasComponent";
+  import type { TableSpec } from "../../components/table";
 
-  export let componentType: CanvasComponentType;
-  export let component: CanvasComponentObj;
+  export let component: BaseCanvasComponent<TableSpec>;
 
   async function selectChartType(chartType: ChartMetadata) {
-    component.updateChartType(chartType.type);
+    await component.updateChartType(chartType.type);
   }
 </script>
 
 <div class="section">
   <InputLabel small label="Chart type" id="chart-components" />
   <div class="chart-icons">
-    {#each chartMetadata as chart}
+    {#each chartMetadata as chart, i (i)}
       <Tooltip distance={8} location="right">
         <Button
           square
           small
           type="secondary"
-          selected={componentType === chart.type}
+          selected={component.type === chart.type}
           on:click={() => selectChartType(chart)}
         >
           <svelte:component this={chart.icon} size="20px" />

@@ -78,6 +78,7 @@ export interface CanvasResponse {
   canvas: V1CanvasSpec | undefined;
   components: V1ResolveCanvasResponseResolvedComponents | undefined;
   metricsViews: Record<string, V1MetricsViewV2 | undefined>;
+  filePath: string | undefined;
 }
 
 export function useCanvas(
@@ -107,6 +108,7 @@ export function useCanvas(
         canvas: data.canvas?.canvas?.state?.validSpec,
         components: data.resolvedComponents,
         metricsViews,
+        filePath: data.canvas?.meta?.filePaths?.[0],
       };
     },
     queryClient,
