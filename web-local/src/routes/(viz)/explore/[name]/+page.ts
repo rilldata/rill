@@ -1,20 +1,28 @@
-import { getExploreStates } from "@rilldata/web-common/features/explores/selectors";
+import { fetchExploreSpec } from "@rilldata/web-common/features/explores/selectors";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import { error } from "@sveltejs/kit";
+import { get } from "svelte/store";
 
-export const load = async ({ url, parent, params }) => {
-  const { explore, metricsView, defaultExplorePreset } = await parent();
-  const { name: exploreName } = params;
-  const metricsViewSpec = metricsView.metricsView?.state?.validSpec;
-  const exploreSpec = explore.explore?.state?.validSpec;
+export const load = async ({ params, depends }) => {
+  const { instanceId } = get(runtime);
 
-  return {
-    exploreName,
-    ...getExploreStates(
+  const exploreName = params.name;
+
+  depends(exploreName, "explore");
+
+  try {
+    const { explore, metricsView } = await fetchExploreSpec(
+      instanceId,
       exploreName,
-      undefined,
-      url.searchParams,
-      metricsViewSpec,
-      exploreSpec,
-      defaultExplorePreset,
-    ),
-  };
+    );
+
+    return {
+      explore,
+      metricsView,
+      exploreName,
+    };
+  } catch (e) {
+    console.error(e);
+    throw error(404, "Explore not found");
+  }
 };

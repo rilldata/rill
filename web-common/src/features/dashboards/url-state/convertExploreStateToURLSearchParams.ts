@@ -85,7 +85,6 @@ export function convertExploreStateToURLSearchParams(
   urlForCompressionCheck?: URL,
 ): URLSearchParams {
   const searchParams = new URLSearchParams();
-
   if (!exploreState) return searchParams;
 
   const currentView = FromActivePageMap[exploreState.activePage];
@@ -137,6 +136,9 @@ export function convertExploreStateToURLSearchParams(
 
     case DashboardState_ActivePage.PIVOT:
       copyParamsToTarget(toPivotUrlParams(exploreState, preset), searchParams);
+      // Since we do a shallow merge, we cannot remove time grain from the state for pivot as it is a deeper key.
+      // So this is a patch to remove it from the final url.
+      searchParams.delete(ExploreStateURLParams.TimeGrain);
       break;
   }
 

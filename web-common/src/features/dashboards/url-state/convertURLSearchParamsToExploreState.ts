@@ -13,6 +13,7 @@ export function convertURLSearchParamsToExploreState(
   defaultExplorePreset: V1ExplorePreset,
 ) {
   const errors: Error[] = [];
+
   const { preset, errors: errorsFromPreset } = convertURLToExplorePreset(
     searchParams,
     metricsView,

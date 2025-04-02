@@ -8,12 +8,14 @@ import {
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 
-export const FromURLParamViewMap: Record<string, V1ExploreWebView> = {
+export const FromURLParamViewMap = {
   explore: V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE,
   pivot: V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT,
   tdd: V1ExploreWebView.EXPLORE_WEB_VIEW_TIME_DIMENSION,
 };
-export const ToURLParamViewMap = reverseMap(FromURLParamViewMap);
+export const ToURLParamViewMap = reverseMap(
+  FromURLParamViewMap as Record<string, V1ExploreWebView>,
+);
 
 export const FromActivePageMap: Record<
   DashboardState_ActivePage,

@@ -555,16 +555,15 @@ export function applyURLToExploreState(
   exploreSpec: V1ExploreSpec,
   defaultExplorePreset: V1ExplorePreset,
 ) {
-  const { partialExploreState: partialExploreStateDefaultUrl, errors } =
-    convertURLSearchParamsToExploreState(
-      url.searchParams,
-      AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-      exploreSpec,
-      defaultExplorePreset,
-    );
+  const { partialExploreState, errors } = convertURLSearchParamsToExploreState(
+    url.searchParams,
+    AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+    exploreSpec,
+    defaultExplorePreset,
+  );
   metricsExplorerStore.mergePartialExplorerEntity(
     AD_BIDS_EXPLORE_NAME,
-    partialExploreStateDefaultUrl,
+    partialExploreState,
     AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
   );
   return errors;

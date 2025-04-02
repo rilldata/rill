@@ -87,21 +87,20 @@ export function getDashboardStateFromUrl(
 ): Partial<MetricsExplorerEntity> {
   // backwards compatibility for older urls that had encoded state
   urlState = urlState.includes("%") ? decodeURIComponent(urlState) : urlState;
-  return getDashboardStateFromProto(
-    base64ToProto(urlState),
+  return convertProtoToExploreState(
+    DashboardState.fromBinary(base64ToProto(urlState)),
     metricsView,
     explore,
     schema,
   );
 }
 
-export function getDashboardStateFromProto(
-  binary: Uint8Array,
+export function convertProtoToExploreState(
+  dashboard: DashboardState,
   metricsView: V1MetricsViewSpec,
   explore: V1ExploreSpec,
   schema: V1StructType,
 ): Partial<MetricsExplorerEntity> {
-  const dashboard = DashboardState.fromBinary(binary);
   const entity: Partial<MetricsExplorerEntity> = {};
 
   if (dashboard.filters) {
