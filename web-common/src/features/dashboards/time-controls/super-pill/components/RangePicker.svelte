@@ -24,6 +24,7 @@
   export let defaultTimeRange: NamedRange | ISODurationString | undefined;
   export let onSelectRange: (range: NamedRange | ISODurationString) => void;
   export let applyCustomRange: (range: Interval<true>) => void;
+  export let allowCustomTimeRange = true;
 
   let firstVisibleMonth: DateTime<true> = interval.start;
   let open = false;
@@ -65,6 +66,7 @@
           {selected}
           {showDefaultItem}
           {defaultTimeRange}
+          {allowCustomTimeRange}
           onSelectRange={(selected) => {
             onSelectRange(selected);
 

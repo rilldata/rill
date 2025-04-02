@@ -1,4 +1,3 @@
-import type { Reference } from "@rilldata/web-common/features/models/utils/get-table-references";
 import type { BannerEvent, NotificationMessage } from "./events";
 
 class EventBus {
@@ -55,7 +54,6 @@ export interface Events {
   "clear-all-notifications": void;
   "add-banner": BannerEvent;
   "remove-banner": string;
-  highlightSelection: Reference[];
   "shift-click": null;
   "command-click": null;
   click: null;

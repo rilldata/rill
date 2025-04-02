@@ -13,7 +13,6 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import { ChartComponent } from "./charts";
 import { ImageComponent } from "./image";
-import { KPIComponent } from "./kpi";
 import { MarkdownCanvasComponent } from "./markdown";
 import { PivotCanvasComponent } from "./pivot";
 import { TableCanvasComponent } from "./table";
@@ -81,7 +80,6 @@ type TableType = (typeof TABLE_TYPES)[number];
 // Component type to class mapping
 const COMPONENT_CLASS_MAP = {
   markdown: MarkdownCanvasComponent,
-  kpi: KPIComponent,
   kpi_grid: KPIGridComponent,
   image: ImageComponent,
   table: TableCanvasComponent,
