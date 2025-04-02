@@ -181,11 +181,11 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 	// Add HTTP handler for health check
 	observability.MuxHandle(httpMux, "/v1/health", observability.Middleware("runtime", s.logger, http.HandlerFunc(s.healthCheckHandler)))
 
-	// Add handler for multipart file upload
-	// observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/files/upload/-/{path=**}", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.MultipartFileUpload))))
-
 	// Add HTTP handler for query export downloads
 	observability.MuxHandle(httpMux, "/v1/download", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.downloadHandler))))
+
+	// Add HTTP handler for multipart file upload
+	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/files/upload/-/{path...}", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.UploadMultipartFile))))
 
 	// Add handler for dynamic APIs, i.e. APIs backed by resolvers (such as custom APIs defined in YAML).
 	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/api/{name...}", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, httputil.Handler(s.apiHandler))))

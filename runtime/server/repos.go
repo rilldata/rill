@@ -210,13 +210,16 @@ func (s *Server) RenameFile(ctx context.Context, req *runtimev1.RenameFileReques
 
 // UploadMultipartFile implements the same functionality as PutFile, but for multipart HTTP upload.
 // It's mounted only on as a REST API and enables upload of large files (such as data files).
-func (s *Server) UploadMultipartFile(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-	if !auth.GetClaims(req.Context()).CanInstance(pathParams["instance_id"], auth.EditRepo) {
+func (s *Server) UploadMultipartFile(w http.ResponseWriter, req *http.Request) {
+	ctx := req.Context()
+	instanceID := req.PathValue("instance_id")
+	path := req.PathValue("path")
+
+	if !auth.GetClaims(req.Context()).CanInstance(instanceID, auth.EditRepo) {
 		http.Error(w, "action not allowed", http.StatusUnauthorized)
 		return
 	}
 
-	ctx := context.Background()
 	if err := req.ParseForm(); err != nil {
 		http.Error(w, fmt.Sprintf("failed to parse request: %s", err), http.StatusBadRequest)
 		return
@@ -228,19 +231,16 @@ func (s *Server) UploadMultipartFile(w http.ResponseWriter, req *http.Request, p
 		return
 	}
 
-	if pathParams["path"] == "" {
+	if path == "" {
 		http.Error(w, "must have a path to file", http.StatusBadRequest)
 		return
 	}
 
-	observability.AddRequestAttributes(ctx,
-		attribute.String("args.instance_id", pathParams["instance_id"]),
-		attribute.String("args.path", pathParams["path"]),
-	)
+	observability.AddRequestAttributes(ctx, attribute.String("args.instance_id", instanceID), attribute.String("args.path", path))
 
-	s.addInstanceRequestAttributes(ctx, pathParams["instance_id"])
+	s.addInstanceRequestAttributes(ctx, instanceID)
 
-	err = s.runtime.PutFile(ctx, pathParams["instance_id"], pathParams["path"], f, true, false)
+	err = s.runtime.PutFile(ctx, instanceID, path, f, true, false)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to write file: %s", err), http.StatusBadRequest)
 		return
