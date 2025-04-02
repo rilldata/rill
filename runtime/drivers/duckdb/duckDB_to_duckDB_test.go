@@ -28,16 +28,39 @@ func TestDuckDBToDuckDBTransfer(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, db.Close())
 
-	to, err := drivers.Open("duckdb", "default", map[string]any{}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	duckDB, err := drivers.Open("duckdb", "default", map[string]any{"data_dir": t.TempDir()}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
-	tr := newDuckDBToDuckDB(to, to.(*connection), zap.NewNop())
+	opts := &drivers.ModelExecutorOptions{
+		InputHandle:     duckDB,
+		InputConnector:  "duckdb",
+		OutputHandle:    duckDB,
+		OutputConnector: "duckdb",
+		Env: &drivers.ModelEnv{
+			AllowHostAccess: false,
+			StageChanges:    true,
+		},
+		PreliminaryInputProperties: map[string]any{
+			"sql": "SELECT * FROM foo;",
+			"db":  dbFile,
+		},
+		PreliminaryOutputProperties: map[string]any{
+			"table": "sink",
+		},
+	}
 
-	// transfer once
-	err = tr.Transfer(context.Background(), map[string]any{"sql": "SELECT * FROM foo", "db": dbFile}, map[string]any{"table": "test"}, &drivers.TransferOptions{})
+	me, ok := duckDB.AsModelExecutor("default", opts)
+	require.True(t, ok)
+
+	execOpts := &drivers.ModelExecuteOptions{
+		ModelExecutorOptions: opts,
+		InputProperties:      opts.PreliminaryInputProperties,
+		OutputProperties:     opts.PreliminaryOutputProperties,
+	}
+	_, err = me.Execute(context.Background(), execOpts)
 	require.NoError(t, err)
 
-	rows, err := to.(*connection).Execute(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM test"})
+	rows, err := duckDB.(*connection).Execute(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM sink"})
 	require.NoError(t, err)
 
 	var count int
@@ -47,10 +70,10 @@ func TestDuckDBToDuckDBTransfer(t *testing.T) {
 	require.NoError(t, rows.Close())
 
 	// transfer again
-	err = tr.Transfer(context.Background(), map[string]any{"sql": "SELECT * FROM foo", "db": dbFile}, map[string]any{"table": "test"}, &drivers.TransferOptions{})
+	_, err = me.Execute(context.Background(), execOpts)
 	require.NoError(t, err)
 
-	rows, err = to.(*connection).Execute(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM test"})
+	rows, err = duckDB.(*connection).Execute(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM sink"})
 	require.NoError(t, err)
 
 	rows.Next()
