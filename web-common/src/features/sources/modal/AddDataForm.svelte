@@ -77,6 +77,7 @@
     form: dsnForm,
     errors: dsnErrors,
     enhance: dsnEnhance,
+    tainted: dsnTainted,
     submit: dsnSubmit,
     submitting: dsnSubmitting,
   } = superForm(defaults(dsnYupSchema), {
@@ -90,6 +91,13 @@
   // Active form
   $: formId = useDsn ? dsnFormId : paramsFormId;
   $: submitting = useDsn ? $dsnSubmitting : $paramsSubmitting;
+
+  // Reset errors when form is modified
+  $: if (useDsn) {
+    if ($dsnTainted) dsnError = null;
+  } else {
+    if ($paramsTainted) paramsError = null;
+  }
 
   // Emit the submitting state to the parent
   $: dispatch("submitting", { submitting });
