@@ -1,5 +1,4 @@
 <script lang="ts">
-  import DashboardVisibilityDropdown from "@rilldata/web-common/components/menu/DashboardVisibilityDropdown.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import { getSimpleMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
@@ -24,16 +23,14 @@
     },
     actions: {
       contextColumn: { setContextColumn },
-      dimensions: { setDimensionVisibility, toggleDimensionVisibility },
+      dimensions: { setDimensionVisibility },
       setLeaderboardMeasureCount,
       setLeaderboardMeasureName,
     },
   } = StateManagers;
 
-  const {
-    leaderboardMeasureCount: leaderboardMeasureCountFeatureFlag,
-    reorderMeasuresDimensions,
-  } = featureFlags;
+  const { leaderboardMeasureCount: leaderboardMeasureCountFeatureFlag } =
+    featureFlags;
 
   $: measures = getSimpleMeasures($visibleMeasures);
 
@@ -73,31 +70,13 @@
       class="flex flex-row items-center ui-copy-muted gap-x-1"
       style:max-width="768px"
     >
-      {#if $reorderMeasuresDimensions}
-        <DashboardMetricsDraggableList
-          type="dimension"
-          onSelectedChange={(items) =>
-            setDimensionVisibility(items, allDimensionNames)}
-          allItems={$allDimensions}
-          selectedItems={visibleDimensionsNames}
-        />
-      {:else}
-        <DashboardVisibilityDropdown
-          category="Dimensions"
-          tooltipText="Choose dimensions to display"
-          onSelect={(name) =>
-            toggleDimensionVisibility(allDimensionNames, name)}
-          selectableItems={$allDimensions.map(({ name, displayName }) => ({
-            name: name || "",
-            label: displayName || name || "",
-          }))}
-          selectedItems={visibleDimensionsNames}
-          onToggleSelectAll={() => {
-            toggleDimensionVisibility(allDimensionNames);
-          }}
-        />
-      {/if}
-
+      <DashboardMetricsDraggableList
+        type="dimension"
+        onSelectedChange={(items) =>
+          setDimensionVisibility(items, allDimensionNames)}
+        allItems={$allDimensions}
+        selectedItems={visibleDimensionsNames}
+      />
       {#if $leaderboardMeasureCountFeatureFlag}
         <LeaderboardMeasureCountSelector
           measures={$visibleMeasures}
