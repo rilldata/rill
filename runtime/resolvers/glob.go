@@ -16,7 +16,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/compilers/rillv1"
@@ -26,9 +25,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/typepb"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
-
-	// import duckdb package to scan JSON file
-	_ "github.com/marcboeker/go-duckdb"
 )
 
 func init() {
@@ -315,6 +311,7 @@ func (r *globResolver) transformResult(ctx context.Context, rows []map[string]an
 	}
 	defer os.Remove(jsonFile)
 
+	var result []map[string]any
 	err = olap.WithConnection(ctx, 0, false, func(wrappedCtx context.Context, ensuredCtx context.Context, _ *databasesql.Conn) error {
 		// Load the JSON file into a temporary table
 		err = olap.Exec(wrappedCtx, &drivers.Statement{
@@ -338,11 +335,18 @@ func (r *globResolver) transformResult(ctx context.Context, rows []map[string]an
 		}()
 
 		// Execute the transform SQL
-		err = olap.Exec(wrappedCtx, &drivers.Statement{
-			Query: fmt.Sprintf("COPY (%s\n) TO %s (FORMAT JSON)", sql, olap.Dialect().EscapeStringValue(jsonFile)),
+		rows, err := olap.Execute(wrappedCtx, &drivers.Statement{
+			Query: sql,
 		})
 		if err != nil {
 			return fmt.Errorf("failed to execute transform SQL for glob: %w", err)
+		}
+		for rows.Next() {
+			row := make(map[string]any)
+			if err := rows.MapScan(row); err != nil {
+				return err
+			}
+			result = append(result, row)
 		}
 
 		return nil
@@ -351,7 +355,7 @@ func (r *globResolver) transformResult(ctx context.Context, rows []map[string]an
 		return nil, err
 	}
 
-	return readNDJSONFile(jsonFile)
+	return result, nil
 }
 
 func (r *globResolver) writeTempNDJSONFile(rows []map[string]any) (string, error) {
@@ -375,30 +379,6 @@ func (r *globResolver) writeTempNDJSONFile(rows []map[string]any) (string, error
 	return f.Name(), nil
 }
 
-func readNDJSONFile(filePath string) ([]map[string]any, error) {
-	db, err := sqlx.Open("duckdb", "")
-	if err != nil {
-		return nil, err
-	}
-	defer db.Close()
-
-	// read filepath as ndjson
-	var data []map[string]any
-	rows, err := db.QueryxContext(context.Background(), fmt.Sprintf("SELECT * FROM read_ndjson_auto(%s)", safeSQLString(filePath)))
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		row := make(map[string]any)
-		if err := rows.MapScan(row); err != nil {
-			return nil, err
-		}
-		data = append(data, row)
-	}
-	return data, nil
-}
-
 func randomString(prefix string, n int) (string, error) {
 	b := make([]byte, n)
 	_, err := rand.Read(b)
@@ -406,8 +386,4 @@ func randomString(prefix string, n int) (string, error) {
 		return "", err
 	}
 	return prefix + hex.EncodeToString(b), nil
-}
-
-func safeSQLString(name string) string {
-	return drivers.DialectDuckDB.EscapeStringValue(name)
 }
