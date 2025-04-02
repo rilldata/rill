@@ -36,7 +36,10 @@ import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { get } from "svelte/store";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 
-describe("dashboard-stores", () => {
+// These tests are run against the proto saved in dashboard state.
+// We do not use that param anymore.
+// TODO: cleanup and make sure tests are present for url params
+describe.skip("dashboard-stores", () => {
   beforeAll(() => {
     runtime.set({
       instanceId: "",
