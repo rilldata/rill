@@ -1,5 +1,6 @@
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
 import {
   ExploreUrlWebView,
@@ -7,6 +8,7 @@ import {
   FromURLParamViewMap,
   ToURLParamViewMap,
 } from "@rilldata/web-common/features/dashboards/url-state/mappers";
+import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import {
   type V1ExploreSpec,
   V1ExploreWebView,
@@ -96,17 +98,39 @@ export function updateExploreSessionStore(
   }
 }
 
-export function getPartialExploreStateForWebView(
+/**
+ * Returns explore state filled with extra fields stored when user last visited a particular view.
+ * 1. If no param is set then load the params for the default view from session storage.
+ * 2. If only view param is set then load the params from session storage.
+ * 3. If view=ttd and `measure` is the only other param set load from session storage.
+ */
+export function getPartialExploreStateFromSessionStorage(
   exploreName: string,
   storageNamespacePrefix: string | undefined,
-  urlWebView: ExploreUrlWebView,
+  searchParams: URLSearchParams,
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
 ) {
+  if (
+    // exactly one param is set, but it is not `view`
+    (searchParams.size === 1 &&
+      !searchParams.has(ExploreStateURLParams.WebView)) ||
+    // exactly 2 params are set and both `view` and `measure` are not set.
+    (searchParams.size === 2 &&
+      !searchParams.has(ExploreStateURLParams.WebView) &&
+      !searchParams.has(ExploreStateURLParams.ExpandedMeasure)) ||
+    // more than 2 params are set.
+    searchParams.size > 2
+  ) {
+    return undefined;
+  }
+
+  const viewFromUrl = (searchParams.get(ExploreStateURLParams.WebView) ??
+    ExploreUrlWebView.Explore) as ExploreUrlWebView;
   const key = getKeyForSessionStore(
     exploreName,
     storageNamespacePrefix,
-    urlWebView,
+    viewFromUrl,
   );
 
   try {
@@ -121,6 +145,21 @@ export function getPartialExploreStateForWebView(
         exploreSpec,
         {},
       );
+
+    // TDD is different from other views. It has a variable that is expanded measure.
+    // So we need to copy over the actual measure from current url but keep other params.
+    if (viewFromUrl === ExploreUrlWebView.TimeDimension) {
+      // type safety
+      storedExploreState.tdd ??= {
+        expandedMeasureName: "",
+        chartType: TDDChart.DEFAULT,
+        pinIndex: -1,
+      };
+      // copy over the expanded measure from current url search params.
+      storedExploreState.tdd.expandedMeasureName = searchParams.get(
+        ExploreStateURLParams.ExpandedMeasure,
+      ) as string;
+    }
 
     return storedExploreState;
   } catch {

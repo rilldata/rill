@@ -4,11 +4,11 @@ import {
   getCompoundQuery,
 } from "@rilldata/web-common/features/compound-query-result";
 import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
+import { getPartialExploreStateFromSessionStorage } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
-import { getExploreStateFromSessionStorage } from "@rilldata/web-common/features/dashboards/state-managers/loaders/get-explore-state-from-session-storage";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
@@ -187,7 +187,7 @@ export class DashboardStateDataLoader {
         const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
         const exploreSpec = validSpecResp.data?.explore ?? {};
         const exploreStateFromSessionStorage =
-          getExploreStateFromSessionStorage(
+          getPartialExploreStateFromSessionStorage(
             exploreName,
             storageNamespacePrefix,
             pageState.url.searchParams,
@@ -312,13 +312,14 @@ export class DashboardStateDataLoader {
     // regardless if there is exploreStateFromSessionStorage for current url params or not.
     if (skipSessionStorage) return partialExploreStateFromUrl;
 
-    const exploreStateFromSessionStorage = getExploreStateFromSessionStorage(
-      this.exploreName,
-      this.storageNamespacePrefix,
-      urlSearchParams,
-      metricsViewSpec,
-      exploreSpec,
-    );
+    const exploreStateFromSessionStorage =
+      getPartialExploreStateFromSessionStorage(
+        this.exploreName,
+        this.storageNamespacePrefix,
+        urlSearchParams,
+        metricsViewSpec,
+        exploreSpec,
+      );
 
     return (
       // preference goes to session storage 1st.
