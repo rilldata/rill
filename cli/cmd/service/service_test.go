@@ -57,8 +57,7 @@ func TestServiceWorkflow(t *testing.T) {
 	ctx = graceful.WithCancelOnTerminate(ctx)
 	group, cctx := errgroup.WithContext(ctx)
 
-	group.Go(func() error { return srv.ServeGRPC(cctx) })
-	group.Go(func() error { return srv.ServeHTTP(cctx) })
+	group.Go(func() error { return srv.Serve(cctx) })
 	err = mock.CheckServerStatus(cctx)
 	require.NoError(t, err)
 

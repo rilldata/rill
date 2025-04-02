@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
+	"connectrpc.com/vanguard/vanguardgrpc"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
-	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -28,7 +28,6 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -119,8 +118,25 @@ func (s *Server) Ping(ctx context.Context, req *runtimev1.PingRequest) (*runtime
 	return resp, nil
 }
 
-// ServeGRPC Starts the gRPC server.
-func (s *Server) ServeGRPC(ctx context.Context) error {
+// Starts the HTTP server.
+func (s *Server) ServeHTTP(ctx context.Context, registerAdditionalHandlers func(mux *http.ServeMux)) error {
+	handler, err := s.HTTPHandler(ctx, registerAdditionalHandlers)
+	if err != nil {
+		return err
+	}
+
+	server := &http.Server{Handler: handler}
+	s.logger.Sugar().Infof("serving HTTP on port:%v", s.opts.HTTPPort)
+	options := graceful.ServeOptions{
+		Port:     s.opts.HTTPPort,
+		CertPath: s.opts.TLSCertPath,
+		KeyPath:  s.opts.TLSKeyPath,
+	}
+	return graceful.ServeHTTP(ctx, server, options)
+}
+
+// HTTPHandler HTTP handler serving REST gateway.
+func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers func(mux *http.ServeMux)) (http.Handler, error) {
 	server := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
 			middleware.TimeoutStreamServerInterceptor(timeoutSelector),
@@ -146,62 +162,10 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 	runtimev1.RegisterRuntimeServiceServer(server, s)
 	runtimev1.RegisterQueryServiceServer(server, s)
 	runtimev1.RegisterConnectorServiceServer(server, s)
-	s.logger.Sugar().Infof("serving runtime gRPC on port:%v", s.opts.GRPCPort)
-	return graceful.ServeGRPC(ctx, server, s.opts.GRPCPort)
-}
 
-// Starts the HTTP server.
-func (s *Server) ServeHTTP(ctx context.Context, registerAdditionalHandlers func(mux *http.ServeMux)) error {
-	handler, err := s.HTTPHandler(ctx, registerAdditionalHandlers)
+	transcoder, err := vanguardgrpc.NewTranscoder(server)
 	if err != nil {
-		return err
-	}
-
-	server := &http.Server{Handler: handler}
-	s.logger.Sugar().Infof("serving HTTP on port:%v", s.opts.HTTPPort)
-	options := graceful.ServeOptions{
-		Port:     s.opts.HTTPPort,
-		CertPath: s.opts.TLSCertPath,
-		KeyPath:  s.opts.TLSKeyPath,
-	}
-	return graceful.ServeHTTP(ctx, server, options)
-}
-
-// HTTPHandler HTTP handler serving REST gateway.
-func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers func(mux *http.ServeMux)) (http.Handler, error) {
-	// Create REST gateway
-	gwMux := gateway.NewServeMux(
-		gateway.WithErrorHandler(HTTPErrorHandler),
-		gateway.WithOutgoingHeaderMatcher(func(s string) (string, bool) {
-			// grpc gateway adds gateway.MetadataHeaderPrefix to all outgoing headers
-			// we want to skip that for `x-trace-id` set in response
-			if s == observability.TracingHeader {
-				return s, true
-			}
-			// default matcher logic
-			return fmt.Sprintf("%s%s", gateway.MetadataHeaderPrefix, s), true
-		}),
-	)
-	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
-	grpcAddress := fmt.Sprintf("localhost:%d", s.opts.GRPCPort)
-	err := runtimev1.RegisterRuntimeServiceHandlerFromEndpoint(ctx, gwMux, grpcAddress, opts)
-	if err != nil {
-		return nil, err
-	}
-	err = runtimev1.RegisterQueryServiceHandlerFromEndpoint(ctx, gwMux, grpcAddress, opts)
-	if err != nil {
-		return nil, err
-	}
-	err = runtimev1.RegisterConnectorServiceHandlerFromEndpoint(ctx, gwMux, grpcAddress, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	// One-off REST-only path for multipart file upload
-	// NOTE: It's local only and we should deprecate it in favor of a cloud-friendly alternative.
-	err = gwMux.HandlePath("POST", "/v1/instances/{instance_id}/files/upload/-/{path=**}", auth.GatewayMiddleware(s.aud, s.UploadMultipartFile))
-	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("failed to create transcoder: %w", err)
 	}
 
 	// Call callback to register additional paths
@@ -212,10 +176,13 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 	}
 
 	// Add gRPC-gateway on httpMux
-	httpMux.Handle("/v1/", gwMux)
+	httpMux.Handle("/v1/", transcoder)
 
 	// Add HTTP handler for health check
 	observability.MuxHandle(httpMux, "/v1/health", observability.Middleware("runtime", s.logger, http.HandlerFunc(s.healthCheckHandler)))
+
+	// Add handler for multipart file upload
+	// observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/files/upload/-/{path=**}", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.MultipartFileUpload))))
 
 	// Add HTTP handler for query export downloads
 	observability.MuxHandle(httpMux, "/v1/download", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.downloadHandler))))
@@ -270,16 +237,6 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 	handler := cors.New(corsOpts).Handler(httpMux)
 
 	return handler, nil
-}
-
-// HTTPErrorHandler wraps gateway.DefaultHTTPErrorHandler to map gRPC unknown errors (i.e. errors without an explicit
-// code) to HTTP status code 400 instead of 500.
-func HTTPErrorHandler(ctx context.Context, mux *gateway.ServeMux, marshaler gateway.Marshaler, w http.ResponseWriter, r *http.Request, err error) {
-	s := status.Convert(err)
-	if s.Code() == codes.Unknown {
-		err = &gateway.HTTPStatusError{HTTPStatus: http.StatusBadRequest, Err: err}
-	}
-	gateway.DefaultHTTPErrorHandler(ctx, mux, marshaler, w, r, err)
 }
 
 func timeoutSelector(fullMethodName string) time.Duration {
