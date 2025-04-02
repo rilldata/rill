@@ -35,10 +35,8 @@ test.describe("dimension and measure selectors", () => {
       name: "Choose measures to display",
     });
 
-    // Test individual measure toggling
     await measuresButton.click();
-    // First hide "Total records" from the shown section
-    await toggleItemVisibility(page, "Total records", "Shown");
+    await toggleItemVisibility(page, "Sum of Bid Price", "Shown");
     await escape(page);
     await expect(measuresButton).toHaveText("1 of 2 Measures");
 
