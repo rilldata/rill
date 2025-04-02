@@ -29,12 +29,9 @@ export const visibleDimensions = ({
 }: DashboardDataSources): MetricsViewSpecDimensionV2[] => {
   if (!validMetricsView?.dimensions || !validExplore?.dimensions) return [];
 
-  return Array.from(dashboard.visibleDimensionKeys).map(
-    (key) =>
-      validMetricsView.dimensions?.find(
-        (d) => d.name === key,
-      ) as MetricsViewSpecDimensionV2,
-  );
+  return dashboard.visibleDimensions
+    .map((dim) => validMetricsView.dimensions?.find((d) => d.name === dim))
+    .filter(Boolean) as MetricsViewSpecDimensionV2[];
 };
 
 export const dimensionTableColumnName = (

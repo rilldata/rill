@@ -126,13 +126,12 @@ export async function getDashboardFromAggregationRequest({
     dashboard.selectedTimezone = req.timeRange?.timeZone || "UTC";
   }
 
-  dashboard.visibleMeasureKeys = new Set(
+  dashboard.visibleMeasures =
     req.measures
       ?.map((m) => m.name ?? "")
-      .filter((m) => !measureHasSuffix(m)) ?? [],
-  );
+      .filter((m) => !measureHasSuffix(m)) ?? [];
   dashboard.allMeasuresVisible =
-    dashboard.visibleMeasureKeys.size === explore.measures?.length;
+    dashboard.visibleMeasures.length === explore.measures?.length;
 
   // if the selected sort is a measure set it to leaderboardMeasureName
   if (

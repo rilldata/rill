@@ -166,8 +166,8 @@
   $: newDefaults = constructDefaultState(
     exploreState?.showTimeComparison,
     exploreState?.selectedComparisonDimension,
-    exploreState?.visibleDimensionKeys,
-    exploreState?.visibleMeasureKeys,
+    exploreState?.visibleDimensions,
+    exploreState?.visibleMeasures,
     exploreState?.selectedTimeRange,
   );
 
@@ -252,8 +252,8 @@
   function constructDefaultState(
     showTimeComparison?: boolean,
     selectedComparisonDimension?: string | undefined,
-    visibleDimensionKeys?: Set<string>,
-    visibleMeasureKeys?: Set<string>,
+    visibleDimensions?: string[],
+    visibleMeasures?: string[],
     selectedTimeRange?: DashboardTimeControls | undefined,
   ): Defaults {
     const newDefaults: Defaults = {
@@ -272,12 +272,12 @@
       newDefaults.comparison_dimension = selectedComparisonDimension;
     }
 
-    if (visibleDimensionKeys?.size) {
-      newDefaults.dimensions = Array.from(visibleDimensionKeys);
+    if (visibleDimensions?.length) {
+      newDefaults.dimensions = [...visibleDimensions];
     }
 
-    if (visibleMeasureKeys?.size) {
-      newDefaults.measures = Array.from(visibleMeasureKeys);
+    if (visibleMeasures?.length) {
+      newDefaults.measures = [...visibleMeasures];
     }
 
     if (
