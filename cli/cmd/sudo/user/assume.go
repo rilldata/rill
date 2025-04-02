@@ -21,14 +21,26 @@ func AssumeCmd(ch *cmdutil.Helper) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
-			client, err := ch.Client()
+			representingUser, err := dotrill.GetRepresentingUser()
 			if err != nil {
-				return err
+				ch.PrintfWarn("Could not parse representing user email\n\n")
+			}
+			if representingUser != "" {
+				ch.PrintfWarn("You are already a assumed user %q. so unassuming it first.\n\n", representingUser)
+				err = UnassumeUser(ctx, ch)
+				if err != nil {
+					return err
+				}
 			}
 
 			// saving expiryTime before the actual call to get token
 			// we can get it from server too but i think it is not required.
 			expiryTime := time.Now().Unix() + int64(ttlMinutes*60)
+
+			client, err := ch.Client()
+			if err != nil {
+				return err
+			}
 
 			res, err := client.IssueRepresentativeAuthToken(ctx, &adminv1.IssueRepresentativeAuthTokenRequest{
 				Email:      args[0],
@@ -58,7 +70,7 @@ func AssumeCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			// Backup current token as original_token
+			// Backup current org as backup org
 			defaultOrg, err := dotrill.GetDefaultOrg()
 			if err != nil {
 				return err

@@ -28,10 +28,9 @@ func UnassumeUser(ctx context.Context, ch *cmdutil.Helper) error {
 	if err != nil {
 		return err
 	}
-	// Revoke current token
 	_, err = client.RevokeCurrentAuthToken(ctx, &adminv1.RevokeCurrentAuthTokenRequest{})
 	if err != nil {
-		fmt.Printf("Failed to revoke token (it may have expired). Clearing local token anyway.\n")
+		ch.Printf("Failed to revoke token (it may have expired). Clearing local token anyway.\n")
 	}
 	return RestoreOriginalUserState(ctx, ch)
 }

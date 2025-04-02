@@ -119,7 +119,7 @@ func runCmd(ctx context.Context, ver cmdutil.Version) error {
 				ch.PrintfWarn("Could not parse token expiry time\n\n")
 			} else if time.Now().Unix() > expiryTime {
 				// Token has expired, automatically unassume
-				ch.PrintfWarn("Token for assumed user %q has expired. Automatically reverting to original user.\n\n", representingUser)
+				ch.Printf("Token for assumed user %q has expired. Automatically reverting to original user.\n\n", representingUser)
 				err := sudouser.RestoreOriginalUserState(ctx, ch)
 				if err != nil {
 					return err
