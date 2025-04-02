@@ -9,39 +9,37 @@ async function escape(page) {
 
 async function toggleVisibleMeasureItem(page, itemName: string) {
   const itemId = itemName.toLowerCase().replace(/\s+/g, "_");
-  await page
-    .getByTestId("shown-section")
-    .getByTestId(`visible-measures-${itemId}`)
-    .getByTestId("toggle-visibility-button")
-    .click();
-}
 
-// async function toggleHiddenMeasureItem(page, itemName: string) {
-//   const itemId = itemName.toLowerCase().replace(/\s+/g, "_");
-//   await page
-//     .getByTestId("hidden-section")
-//     .getByTestId(`hidden-measures-${itemId}`)
-//     .getByTestId("toggle-visibility-button")
-//     .click();
-// }
+  // Wait for the popover menu to be visible
+  await page.getByRole("menu").waitFor({ state: "visible" });
+
+  // Wait for the section and item to be visible
+  const section = page.getByTestId("shown-section");
+  await section.waitFor({ state: "visible" });
+
+  const item = section.getByTestId(`visible-measures-${itemId}`);
+  await item.waitFor({ state: "visible" });
+
+  // Click the toggle button
+  await item.getByRole("button", { name: "Toggle visibility" }).click();
+}
 
 async function toggleVisibleDimensionItem(page, itemName: string) {
   const itemId = itemName.toLowerCase().replace(/\s+/g, "_");
-  await page
-    .getByTestId("shown-section")
-    .getByTestId(`visible-dimensions-${itemId}`)
-    .getByTestId("toggle-visibility-button")
-    .click();
-}
 
-// async function toggleHiddenDimensionItem(page, itemName: string) {
-//   const itemId = itemName.toLowerCase().replace(/\s+/g, "_");
-//   await page
-//     .getByTestId("hidden-section")
-//     .getByTestId(`hidden-dimensions-${itemId}`)
-//     .getByTestId("toggle-visibility-button")
-//     .click();
-// }
+  // Wait for the popover menu to be visible
+  await page.getByRole("menu").waitFor({ state: "visible" });
+
+  // Wait for the section and item to be visible
+  const section = page.getByTestId("shown-section");
+  await section.waitFor({ state: "visible" });
+
+  const item = section.getByTestId(`visible-dimensions-${itemId}`);
+  await item.waitFor({ state: "visible" });
+
+  // Click the toggle button
+  await item.getByRole("button", { name: "Toggle visibility" }).click();
+}
 
 test.describe("dimension and measure selectors", () => {
   test.use({ project: "AdBids" });
