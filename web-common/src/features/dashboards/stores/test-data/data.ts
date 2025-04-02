@@ -199,7 +199,7 @@ export const AD_BIDS_METRICS_3_MEASURES_DIMENSIONS: V1MetricsViewSpec = {
 
 export const AD_BIDS_EXPLORE_INIT: V1ExploreSpec = {
   displayName: AD_BIDS_EXPLORE_NAME,
-  metricsView: AD_BIDS_NAME,
+  metricsView: AD_BIDS_METRICS_NAME,
   measures: AD_BIDS_INIT_MEASURES.map((m) => m.name!),
   dimensions: AD_BIDS_INIT_DIMENSIONS.map((d) => d.name!),
 };
@@ -241,6 +241,13 @@ export const AD_BIDS_PRESET: V1ExplorePreset = {
   timeRange: "P7D",
   timezone: "Asia/Kathmandu",
   compareTimeRange: "rill-PP",
+  measures: [AD_BIDS_IMPRESSIONS_MEASURE],
+  dimensions: [AD_BIDS_PUBLISHER_DIMENSION],
+  exploreSortBy: AD_BIDS_IMPRESSIONS_MEASURE,
+  exploreSortAsc: true,
+  exploreSortType: V1ExploreSortType.EXPLORE_SORT_TYPE_PERCENT,
+};
+export const AD_BIDS_PRESET_WITHOUT_TIMESTAMP: V1ExplorePreset = {
   measures: [AD_BIDS_IMPRESSIONS_MEASURE],
   dimensions: [AD_BIDS_PUBLISHER_DIMENSION],
   exploreSortBy: AD_BIDS_IMPRESSIONS_MEASURE,

@@ -376,6 +376,8 @@ message ExploreSpec {
   string banner = 18; 
   // When set to true, dashboard will be locked to the first time zone in the time_zones key (or UTC)
   bool lock_time_zone = 19;
+  // Allow custom time range
+  bool allow_custom_time_range = 20;
 }
 
 message ExploreState {
@@ -737,6 +739,8 @@ message CanvasSpec {
   // If the list is empty, a default list should be shown.
   // TODO: Once the canvas APIs have stabilized, rename ExploreTimeRange to a non-explore-specific name.
   repeated ExploreTimeRange time_ranges = 11;
+  // Toggle custom time range
+  bool allow_custom_time_range = 14;
   // List of selectable time zones.
   // If the list is empty, a default list should be shown.
   // The values should be valid IANA location identifiers.

@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"errors"
+	"maps"
 
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
@@ -117,7 +118,7 @@ func (c *connection) Driver() string {
 
 // Config implements drivers.Connection.
 func (c *connection) Config() map[string]any {
-	return c.config
+	return maps.Clone(c.config)
 }
 
 // Close implements drivers.Connection.

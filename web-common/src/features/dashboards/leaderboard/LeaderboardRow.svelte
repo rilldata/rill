@@ -25,11 +25,10 @@
   export let tableWidth: number;
   export let borderTop = false;
   export let borderBottom = false;
-  export let isSummableMeasure: boolean;
   export let isBeingCompared: boolean;
   export let filterExcludeMode: boolean;
   export let atLeastOneActive: boolean;
-  export let isValidPercentOfTotal: boolean;
+  export let isValidPercentOfTotal: (measureName: string) => boolean;
   export let isTimeComparisonActive: boolean;
   export let activeMeasureNames: string[] = [];
   export let toggleDimensionValueSelection: (
@@ -38,9 +37,10 @@
     keepPillVisible?: boolean | undefined,
     isExclusiveFilter?: boolean | undefined,
   ) => void;
-  export let formatter:
-    | ((_value: number | undefined) => undefined)
-    | ((value: string | number) => string);
+  export let formatters: Record<
+    string,
+    (value: number | string | null | undefined) => string | null | undefined
+  >;
   export let dimensionColumnWidth: number;
   export let suppressTooltip: boolean;
 
@@ -73,7 +73,9 @@
     activeMeasureNames.length === 1 &&
     prevValues[activeMeasureNames[0]] !== undefined &&
     prevValues[activeMeasureNames[0]] !== null
-      ? formatter(prevValues[activeMeasureNames[0]] as number)
+      ? formatters[activeMeasureNames[0]]?.(
+          prevValues[activeMeasureNames[0]] as number,
+        )
       : undefined;
 
   $: href = makeHref(uri, dimensionValue);
@@ -93,7 +95,7 @@
   $: barLengths = Object.fromEntries(
     Object.entries(pctOfTotals).map(([name, pct]) => [
       name,
-      isSummableMeasure && pct ? tableWidth * pct : 0,
+      pct ? tableWidth * pct : 0,
     ]),
   );
 
@@ -120,7 +122,7 @@
             length - dimensionColumnWidth - $valueColumn,
             COMPARISON_COLUMN_WIDTH,
           )
-        : isValidPercentOfTotal
+        : isValidPercentOfTotal(name)
           ? clamp(
               0,
               length - dimensionColumnWidth - $valueColumn,
@@ -291,16 +293,18 @@
       <div class="w-fit ml-auto bg-transparent" bind:contentRect={valueRect}>
         <FormattedDataType
           type="INTEGER"
-          value={values[measureName] ? formatter(values[measureName]) : null}
+          value={values[measureName]
+            ? formatters[measureName]?.(values[measureName])
+            : null}
         />
       </div>
 
-      {#if showZigZags[measureName] && !isTimeComparisonActive && !isValidPercentOfTotal}
+      {#if showZigZags[measureName] && !isTimeComparisonActive && !isValidPercentOfTotal(measureName)}
         <LongBarZigZag />
       {/if}
     </td>
 
-    {#if isValidPercentOfTotal}
+    {#if isValidPercentOfTotal(measureName)}
       <td
         data-comparison-cell
         style:background={percentOfTotalGradients[measureName]}
@@ -334,7 +338,7 @@
           color="text-gray-500"
           type="INTEGER"
           value={deltaAbsMap[measureName]
-            ? formatter(deltaAbsMap[measureName])
+            ? formatters[measureName]?.(deltaAbsMap[measureName])
             : null}
           customStyle={deltaAbsMap[measureName] !== null &&
           deltaAbsMap[measureName] < 0
@@ -398,6 +402,7 @@
 
   tr {
     @apply cursor-pointer;
+    max-height: 22px;
   }
 
   tr:hover {
@@ -424,5 +429,9 @@
 
   a:hover {
     @apply bg-primary-100;
+  }
+
+  td {
+    height: 22px !important;
   }
 </style>

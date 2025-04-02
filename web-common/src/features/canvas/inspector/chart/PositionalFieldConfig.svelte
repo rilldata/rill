@@ -2,20 +2,22 @@
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import type { FieldConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
   import SingleFieldInput from "@rilldata/web-common/features/canvas/inspector/SingleFieldInput.svelte";
-  import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import FieldConfigDropdown from "./FieldConfigDropdown.svelte";
 
   export let key: string;
   export let config: { label?: string };
   export let metricsView: string;
   export let fieldConfig: FieldConfig;
+  export let canvasName: string;
+
   export let onChange: (updatedConfig: FieldConfig) => void;
 
-  const {
+  $: ({
     canvasEntity: {
       spec: { getTimeDimensionForMetricView },
     },
-  } = getCanvasStateManagers();
+  } = getCanvasStore(canvasName));
 
   $: isDimension = key === "x";
   $: timeDimension = getTimeDimensionForMetricView(metricsView);
@@ -58,6 +60,7 @@
   </div>
 
   <SingleFieldInput
+    {canvasName}
     metricName={metricsView}
     id={`${key}-field`}
     type={isDimension ? "dimension" : "measure"}

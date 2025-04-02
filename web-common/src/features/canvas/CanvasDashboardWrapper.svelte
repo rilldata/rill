@@ -5,6 +5,7 @@
   export let clientWidth = 0;
   export let showGrabCursor = false;
   export let filtersEnabled: boolean | undefined;
+  export let canvasName: string;
   export let onClick: () => void = () => {};
 
   let contentRect = new DOMRectReadOnly(0, 0, 0, 0);
@@ -19,14 +20,14 @@
       class="bg-background border-b py-4 px-2 w-full h-fit select-none z-50 flex items-center justify-center"
       on:click|self={onClick}
     >
-      <CanvasFilters {maxWidth} />
+      <CanvasFilters {canvasName} {maxWidth} />
     </header>
   {/if}
 
   <div
     role="presentation"
     id="canvas-scroll-container"
-    class="size-full p-2 pb-48 flex flex-col items-center bg-white select-none overflow-auto"
+    class="size-full p-2 pb-48 flex flex-col items-center bg-white select-none overflow-y-auto overflow-x-hidden"
     class:!cursor-grabbing={showGrabCursor}
     on:click|self={onClick}
   >

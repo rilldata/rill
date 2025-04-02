@@ -102,6 +102,7 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		require.NotEmpty(t, gac, "Bigquery RILL_RUNTIME_BIGQUERY_TEST_GOOGLE_APPLICATION_CREDENTIALS_JSON not configured")
 		return map[string]string{"google_application_credentials": gac}
 	},
+	// gcs connector uses an actual gcs bucket with data populated from testdata/init_data/azure.
 	"gcs": func(t TestingT) map[string]string {
 		// Load .env file at the repo root (if any)
 		_, currentFile, _, _ := goruntime.Caller(0)
@@ -135,6 +136,7 @@ var Connectors = map[string]ConnectorAcquireFunc{
 			"secret": hmacSecret,
 		}
 	},
+	// S3 connector uses an actual S3 bucket with data populated from testdata/init_data/azure.
 	"s3": func(t TestingT) map[string]string {
 		// Load .env file at the repo root (if any)
 		_, currentFile, _, _ := goruntime.Caller(0)
@@ -147,6 +149,26 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		secretAccessKey := os.Getenv("RILL_RUNTIME_S3_TEST_AWS_SECRET_ACCESS_KEY")
 		require.NotEmpty(t, accessKeyID, "S3 RILL_RUNTIME_S3_TEST_AWS_ACCESS_KEY_ID not configured")
 		require.NotEmpty(t, secretAccessKey, "S3 RILL_RUNTIME_S3_TEST_AWS_SECRET_ACCESS_KEY not configured")
+		return map[string]string{
+			"aws_access_key_id":     accessKeyID,
+			"aws_secret_access_key": secretAccessKey,
+		}
+	},
+	// Athena connector connects to an actual Athena service.
+	// The test dataset is pre-populated with table definitions in testdata/init_data/athena_init_data.sql,
+	// and the actual data is stored on S3, which matches the data in testdata/init_data/azure/parquet_test.
+	"athena": func(t TestingT) map[string]string {
+		// Load .env file at the repo root (if any)
+		_, currentFile, _, _ := goruntime.Caller(0)
+		envPath := filepath.Join(currentFile, "..", "..", "..", ".env")
+		_, err := os.Stat(envPath)
+		if err == nil {
+			require.NoError(t, godotenv.Load(envPath))
+		}
+		accessKeyID := os.Getenv("RILL_RUNTIME_ATHENA_TEST_AWS_ACCESS_KEY_ID")
+		secretAccessKey := os.Getenv("RILL_RUNTIME_ATHENA_TEST_AWS_SECRET_ACCESS_KEY")
+		require.NotEmpty(t, accessKeyID, "Athena RILL_RUNTIME_ATHENA_TEST_AWS_ACCESS_KEY_ID not configured")
+		require.NotEmpty(t, secretAccessKey, "Athena RILL_RUNTIME_ATHENA_TEST_AWS_SECRET_ACCESS_KEY not configured")
 		return map[string]string{
 			"aws_access_key_id":     accessKeyID,
 			"aws_secret_access_key": secretAccessKey,
