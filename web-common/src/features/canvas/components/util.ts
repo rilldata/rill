@@ -13,6 +13,7 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import { ChartComponent } from "./charts";
 import { ImageComponent } from "./image";
+import { LeaderboardComponent } from "./leaderboard";
 import { MarkdownCanvasComponent } from "./markdown";
 import { PivotCanvasComponent } from "./pivot";
 import { TableCanvasComponent } from "./table";
@@ -71,6 +72,7 @@ const NON_CHART_TYPES = [
   "image",
   "table",
   "pivot",
+  "leaderboard",
 ] as const;
 const ALL_COMPONENT_TYPES = [...CHART_TYPES, ...NON_CHART_TYPES] as const;
 
@@ -82,6 +84,7 @@ const COMPONENT_CLASS_MAP = {
   markdown: MarkdownCanvasComponent,
   kpi_grid: KPIGridComponent,
   image: ImageComponent,
+  leaderboard: LeaderboardComponent,
   table: TableCanvasComponent,
   pivot: PivotCanvasComponent,
 } as const;
@@ -94,6 +97,7 @@ const DISPLAY_MAP: Record<CanvasComponentType, string> = {
   table: "Table",
   pivot: "Pivot",
   image: "Image",
+  leaderboard: "Leaderboard",
   bar_chart: "Chart",
   line_chart: "Chart",
   stacked_bar: "Chart",

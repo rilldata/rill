@@ -1,33 +1,36 @@
 <script lang="ts" context="module">
+  import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
   import ComponentHeader from "@rilldata/web-common/features/canvas/ComponentHeader.svelte";
+  import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
+  import { KPIGrid } from "@rilldata/web-common/features/canvas/components/kpi-grid";
+  import {
+    getComponentFilterProperties,
+    isCanvasComponentType,
+    isChartComponentType,
+  } from "@rilldata/web-common/features/canvas/components/util";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
   import type {
     V1CanvasItem,
     V1Resource,
   } from "@rilldata/web-common/runtime-client";
-  import { hideBorder } from "./layout-util";
-  import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
-  import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
-  import { KPIGrid } from "@rilldata/web-common/features/canvas/components/kpi-grid";
-  import {
-    isCanvasComponentType,
-    isChartComponentType,
-    getComponentFilterProperties,
-  } from "@rilldata/web-common/features/canvas/components/util";
-  import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
   import type { Readable } from "svelte/store";
   import { Chart } from "./components/charts";
   import { Image } from "./components/image";
+  import { hideBorder } from "./layout-util";
 
+  import { Leaderboard } from "./components/leaderboard";
   import { Markdown } from "./components/markdown";
   import { Pivot } from "./components/pivot";
   import { Table } from "./components/table";
+
   import Toolbar from "./Toolbar.svelte";
 
   const filterableComponents = new Map([
     ["kpi_grid", KPIGrid],
     ["table", Table],
     ["pivot", Pivot],
+    ["leaderboard", Leaderboard],
   ]);
 
   const nonFilterableComponents = new Map([

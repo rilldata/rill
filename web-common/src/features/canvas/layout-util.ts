@@ -3,10 +3,10 @@ import type {
   V1CanvasItem,
   V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
+import { writable } from "svelte/store";
 import { YAMLMap, YAMLSeq } from "yaml";
 import type { CanvasComponentType } from "./components/types";
 import { getComponentRegistry } from "./components/util";
-import { writable } from "svelte/store";
 
 export const initialHeights: Record<CanvasComponentType, number> = {
   line_chart: 320,
@@ -20,6 +20,7 @@ export const initialHeights: Record<CanvasComponentType, number> = {
   image: 80,
   table: 300,
   pivot: 300,
+  leaderboard: 300,
 };
 
 const componentRegistry = getComponentRegistry();
