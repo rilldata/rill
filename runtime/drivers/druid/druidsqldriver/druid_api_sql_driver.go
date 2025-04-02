@@ -52,6 +52,26 @@ type sqlConnection struct {
 
 var _ driver.QueryerContext = &sqlConnection{}
 
+func (c *sqlConnection) Ping(ctx context.Context) error {
+	healthURL := strings.TrimSuffix(c.dsn, "/druid/v2/sql") + "/status/health"
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, healthURL, http.NoBody)
+	if err != nil {
+		return err
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("druid health check failed with status code: %d", resp.StatusCode)
+	}
+
+	return nil
+}
+
 func (c *sqlConnection) Prepare(query string) (driver.Stmt, error) {
 	return &stmt{
 		query: query,
