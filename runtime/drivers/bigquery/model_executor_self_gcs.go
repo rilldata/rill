@@ -11,21 +11,21 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-type selfToObjectStoreExecutor struct {
+type selfToGCSExecutor struct {
 	c     *Connection
 	store drivers.ObjectStore
 }
 
-var _ drivers.ModelExecutor = &selfToObjectStoreExecutor{}
+var _ drivers.ModelExecutor = &selfToGCSExecutor{}
 
-func (e *selfToObjectStoreExecutor) Concurrency(desired int) (int, bool) {
+func (e *selfToGCSExecutor) Concurrency(desired int) (int, bool) {
 	if desired > 0 {
 		return desired, true
 	}
 	return 10, true // Default
 }
 
-func (e *selfToObjectStoreExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
+func (e *selfToGCSExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
 	props := &drivers.ObjectStoreModelOutputProperties{}
 	if err := mapstructure.Decode(opts.OutputProperties, props); err != nil {
 		return nil, err
@@ -53,13 +53,8 @@ func (e *selfToObjectStoreExecutor) Execute(ctx context.Context, opts *drivers.M
 	}, nil
 }
 
-func (e *selfToObjectStoreExecutor) export(ctx context.Context, props map[string]any, outputLocation string, format drivers.FileFormat) (string, error) {
+func (e *selfToGCSExecutor) export(ctx context.Context, props map[string]any, outputLocation string, format drivers.FileFormat) (string, error) {
 	conf, err := parseSourceProperties(props)
-	if err != nil {
-		return "", err
-	}
-
-	err = validateStore(e.store)
 	if err != nil {
 		return "", err
 	}
@@ -93,7 +88,6 @@ func (e *selfToObjectStoreExecutor) export(ctx context.Context, props map[string
 
 	// Run the EXPORT DATA SQL query
 	q := client.Query(query)
-	q.Location = "US" // Adjust based on dataset location
 
 	job, err := q.Run(ctx)
 	if err != nil {
@@ -136,15 +130,5 @@ func exportOptions(outputLocation string, format drivers.FileFormat) (string, er
 			outputLocation), nil
 	default:
 		return "", errors.New("invalid format: must be 'CSV', 'JSON', or 'PARQUET'")
-	}
-}
-
-func validateStore(store drivers.ObjectStore) error {
-	h := store.(drivers.Handle)
-	switch h.Driver() {
-	case "gcs":
-		return nil
-	default:
-		return fmt.Errorf("bigquery connector can't export to connector %q", h.Driver())
 	}
 }
