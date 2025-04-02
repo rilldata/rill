@@ -27,6 +27,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 
+	// import duckdb package to scan JSON file
 	_ "github.com/marcboeker/go-duckdb"
 )
 
