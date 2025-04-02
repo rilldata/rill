@@ -102,7 +102,6 @@ export class DashboardStateSync {
     if (redirectUrl.search === pageState.url.search) {
       return;
     }
-    console.log("INIT", redirectUrl.search);
 
     const updatedExploreState =
       get(metricsExplorerStore).entities[this.exploreName];
@@ -174,7 +173,6 @@ export class DashboardStateSync {
       this.prevUrl = redirectUrl;
       return;
     }
-    console.log("GOTO:REPLACE", redirectUrl.search);
 
     const updatedExploreState =
       get(metricsExplorerStore).entities[this.exploreName];
@@ -220,7 +218,6 @@ export class DashboardStateSync {
       this.updating = false;
       return;
     }
-    console.log("GOTO", newUrl.search);
 
     updateExploreSessionStore(
       this.exploreName,

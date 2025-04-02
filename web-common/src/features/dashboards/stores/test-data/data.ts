@@ -247,6 +247,13 @@ export const AD_BIDS_PRESET: V1ExplorePreset = {
   exploreSortAsc: true,
   exploreSortType: V1ExploreSortType.EXPLORE_SORT_TYPE_PERCENT,
 };
+export const AD_BIDS_PRESET_WITHOUT_TIMESTAMP: V1ExplorePreset = {
+  measures: [AD_BIDS_IMPRESSIONS_MEASURE],
+  dimensions: [AD_BIDS_PUBLISHER_DIMENSION],
+  exploreSortBy: AD_BIDS_IMPRESSIONS_MEASURE,
+  exploreSortAsc: true,
+  exploreSortType: V1ExploreSortType.EXPLORE_SORT_TYPE_PERCENT,
+};
 export const AD_BIDS_DIMENSION_TABLE_PRESET: V1ExplorePreset = {
   exploreExpandedDimension: AD_BIDS_DOMAIN_DIMENSION,
 };

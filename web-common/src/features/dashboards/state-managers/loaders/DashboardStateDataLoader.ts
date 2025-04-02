@@ -249,7 +249,7 @@ export class DashboardStateDataLoader {
       ],
       ([
         defaultExploreStateAndErrors,
-        mostRecentExploreStateForUrl,
+        exploreStateFromSessionStorage,
         partialExploreStateFromUrlForInitAndErrors,
         exploreStateFromYAMLConfigAndErrors,
         bookmarkOrTokenExploreState,
@@ -262,19 +262,23 @@ export class DashboardStateDataLoader {
           return undefined;
         }
 
+        // Old behaviour where the base of the dashboard is a combination of settings for blank dashboard and yaml defaults.
+        const baseExploreState = {
+          ...defaultExploreStateAndErrors.defaultExploreState,
+          ...exploreStateFromYAMLConfigAndErrors.exploreStateFromYAMLConfig,
+        };
+
         const initExploreState = {
           // Since this is a complete state, we need the complete default explore state which works as a base.
-          ...defaultExploreStateAndErrors.defaultExploreState,
-          // 1st priority is the most recent state.
-          ...(mostRecentExploreStateForUrl ??
+          ...baseExploreState,
+          // 1st priority is the state from session storage.
+          ...(exploreStateFromSessionStorage ??
             // Next priority is the state loaded from url params. It will be undefined if there are no params.
             partialExploreStateFromUrlForInitAndErrors?.partialExploreStateFromUrlForInit ??
             // Next priority is one of the other source defined.
             // For cloud dashboard it would be home bookmark if present.
             // For shared url it would be the saved state in token
-            bookmarkOrTokenExploreState ??
-            // Finally the state from yaml is used
-            exploreStateFromYAMLConfigAndErrors.exploreStateFromYAMLConfig),
+            bookmarkOrTokenExploreState),
         } as MetricsExplorerEntity;
 
         return initExploreState;

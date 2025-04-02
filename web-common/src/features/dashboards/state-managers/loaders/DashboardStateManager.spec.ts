@@ -15,6 +15,8 @@ import {
   AD_BIDS_METRICS_INIT,
   AD_BIDS_METRICS_INIT_WITH_TIME,
   AD_BIDS_METRICS_NAME,
+  AD_BIDS_PRESET,
+  AD_BIDS_PRESET_WITHOUT_TIMESTAMP,
   AD_BIDS_PUBLISHER_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import { getKeyForSessionStore } from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-store";
@@ -64,7 +66,10 @@ describe("DashboardStateManager", () => {
     mocks.mockMetricsExplore(
       AD_BIDS_EXPLORE_NAME,
       AD_BIDS_METRICS_INIT_WITH_TIME,
-      AD_BIDS_EXPLORE_INIT,
+      {
+        ...AD_BIDS_EXPLORE_INIT,
+        defaultPreset: AD_BIDS_PRESET,
+      },
     );
     mocks.mockTimeRangeSummary(AD_BIDS_METRICS_NAME, {
       min: "2024-01-01",
@@ -80,26 +85,20 @@ describe("DashboardStateManager", () => {
   describe("Dashboards with timeseries", () => {
     const ExploreStateSubsetForBaseState: Partial<MetricsExplorerEntity> = {
       selectedTimeRange: {
-        name: "rill-QTD",
-        interval: V1TimeGrain.TIME_GRAIN_WEEK,
+        name: "P7D",
+        interval: V1TimeGrain.TIME_GRAIN_DAY,
       } as DashboardTimeControls,
       showTimeComparison: false,
       selectedComparisonTimeRange: undefined,
 
-      visibleMeasureKeys: new Set([
-        AD_BIDS_IMPRESSIONS_MEASURE,
-        AD_BIDS_BID_PRICE_MEASURE,
-      ]),
-      allMeasuresVisible: true,
-      visibleDimensionKeys: new Set([
-        AD_BIDS_PUBLISHER_DIMENSION,
-        AD_BIDS_DOMAIN_DIMENSION,
-      ]),
-      allDimensionsVisible: true,
+      visibleMeasureKeys: new Set([AD_BIDS_IMPRESSIONS_MEASURE]),
+      allMeasuresVisible: false,
+      visibleDimensionKeys: new Set([AD_BIDS_PUBLISHER_DIMENSION]),
+      allDimensionsVisible: false,
 
       leaderboardMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
       leaderboardContextColumn: undefined,
-      sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
+      sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
     };
     const BookmarkSourceQueryResult = readable({
       data: {
@@ -142,7 +141,7 @@ describe("DashboardStateManager", () => {
           name: TimeComparisonOption.CONTIGUOUS,
         } as DashboardTimeControls,
       });
-      const initUrlSearch = "tr=PT24H&compare_tr=rill-PP&grain=hour";
+      const initUrlSearch = "tr=PT24H&grain=hour";
       pageMock.assertSearchParams(initUrlSearch);
 
       pageMock.popState("");
@@ -161,9 +160,10 @@ describe("DashboardStateManager", () => {
           timeGrain: "day",
         },
         {
-          measures: [AD_BIDS_IMPRESSIONS_MEASURE],
-          dimensions: [AD_BIDS_PUBLISHER_DIMENSION],
-          exploreSortBy: AD_BIDS_IMPRESSIONS_MEASURE,
+          measures: [AD_BIDS_BID_PRICE_MEASURE],
+          dimensions: [AD_BIDS_DOMAIN_DIMENSION],
+          exploreSortBy: AD_BIDS_BID_PRICE_MEASURE,
+          exploreSortAsc: false,
         },
       );
       renderDashboardStateManager(BookmarkSourceQueryResult);
@@ -179,17 +179,17 @@ describe("DashboardStateManager", () => {
           name: TimeComparisonOption.WEEK,
         } as DashboardTimeControls,
 
-        visibleMeasureKeys: new Set([AD_BIDS_IMPRESSIONS_MEASURE]),
+        visibleMeasureKeys: new Set([AD_BIDS_BID_PRICE_MEASURE]),
         allMeasuresVisible: false,
-        visibleDimensionKeys: new Set([AD_BIDS_PUBLISHER_DIMENSION]),
+        visibleDimensionKeys: new Set([AD_BIDS_DOMAIN_DIMENSION]),
         allDimensionsVisible: false,
 
-        leaderboardMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
+        leaderboardMeasureName: AD_BIDS_BID_PRICE_MEASURE,
         leaderboardContextColumn: undefined,
         sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
       });
       const initUrlSearch =
-        "tr=P14D&compare_tr=rill-PW&grain=day&measures=impressions&dims=publisher";
+        "tr=P14D&compare_tr=rill-PW&measures=bid_price&dims=domain&sort_by=bid_price&sort_dir=DESC";
       pageMock.assertSearchParams(initUrlSearch);
 
       pageMock.popState("");
@@ -207,29 +207,22 @@ describe("DashboardStateManager", () => {
       showTimeComparison: false,
       selectedComparisonTimeRange: undefined,
 
-      visibleMeasureKeys: new Set([
-        AD_BIDS_IMPRESSIONS_MEASURE,
-        AD_BIDS_BID_PRICE_MEASURE,
-      ]),
-      allMeasuresVisible: true,
-      visibleDimensionKeys: new Set([
-        AD_BIDS_PUBLISHER_DIMENSION,
-        AD_BIDS_DOMAIN_DIMENSION,
-      ]),
-      allDimensionsVisible: true,
+      visibleMeasureKeys: new Set([AD_BIDS_IMPRESSIONS_MEASURE]),
+      allMeasuresVisible: false,
+      visibleDimensionKeys: new Set([AD_BIDS_PUBLISHER_DIMENSION]),
+      allDimensionsVisible: false,
 
       leaderboardMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
       leaderboardContextColumn: undefined,
-      sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
+      sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
     };
 
     beforeEach(() => {
       mocks.mockMetricsView(AD_BIDS_METRICS_NAME, AD_BIDS_METRICS_INIT);
-      mocks.mockMetricsExplore(
-        AD_BIDS_EXPLORE_NAME,
-        AD_BIDS_METRICS_INIT,
-        AD_BIDS_EXPLORE_INIT,
-      );
+      mocks.mockMetricsExplore(AD_BIDS_EXPLORE_NAME, AD_BIDS_METRICS_INIT, {
+        ...AD_BIDS_EXPLORE_INIT,
+        defaultPreset: AD_BIDS_PRESET_WITHOUT_TIMESTAMP,
+      });
     });
 
     it("Should load base dashboard state", async () => {
@@ -245,9 +238,10 @@ describe("DashboardStateManager", () => {
       mockLocalStorageEntry(
         {},
         {
-          measures: [AD_BIDS_IMPRESSIONS_MEASURE],
-          dimensions: [AD_BIDS_PUBLISHER_DIMENSION],
-          exploreSortBy: AD_BIDS_IMPRESSIONS_MEASURE,
+          measures: [AD_BIDS_BID_PRICE_MEASURE],
+          dimensions: [AD_BIDS_DOMAIN_DIMENSION],
+          exploreSortBy: AD_BIDS_BID_PRICE_MEASURE,
+          exploreSortAsc: false,
         },
       );
       renderDashboardStateManager();
@@ -258,16 +252,17 @@ describe("DashboardStateManager", () => {
         showTimeComparison: false,
         selectedComparisonTimeRange: undefined,
 
-        visibleMeasureKeys: new Set([AD_BIDS_IMPRESSIONS_MEASURE]),
+        visibleMeasureKeys: new Set([AD_BIDS_BID_PRICE_MEASURE]),
         allMeasuresVisible: false,
-        visibleDimensionKeys: new Set([AD_BIDS_PUBLISHER_DIMENSION]),
+        visibleDimensionKeys: new Set([AD_BIDS_DOMAIN_DIMENSION]),
         allDimensionsVisible: false,
 
-        leaderboardMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
+        leaderboardMeasureName: AD_BIDS_BID_PRICE_MEASURE,
         leaderboardContextColumn: undefined,
         sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
       });
-      const initUrlSearch = "measures=impressions&dims=publisher";
+      const initUrlSearch =
+        "measures=bid_price&dims=domain&sort_by=bid_price&sort_dir=DESC";
       pageMock.assertSearchParams(initUrlSearch);
 
       pageMock.popState("");
