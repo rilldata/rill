@@ -8,7 +8,7 @@ import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashbo
 import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
-import { getExploreStateFromSessionStorage } from "@rilldata/web-common/features/dashboards/url-state/getExploreStateFromSessionStorage";
+import { getExploreStateFromSessionStorage } from "@rilldata/web-common/features/dashboards/state-managers/loaders/get-explore-state-from-session-storage";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
@@ -182,18 +182,17 @@ export class DashboardStateDataLoader {
     );
 
     this.exploreStateFromSessionStorage = derived(
-      [this.validSpecQuery, this.explorePresetFromYAMLConfig, page],
-      ([validSpecResp, explorePresetFromYAMLConfig, pageState]) => {
+      [this.validSpecQuery, page],
+      ([validSpecResp, pageState]) => {
         const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
         const exploreSpec = validSpecResp.data?.explore ?? {};
-        const { exploreStateFromSessionStorage } =
+        const exploreStateFromSessionStorage =
           getExploreStateFromSessionStorage(
             exploreName,
             storageNamespacePrefix,
             pageState.url.searchParams,
             metricsViewSpec,
             exploreSpec,
-            explorePresetFromYAMLConfig.data ?? {},
           );
 
         return {
@@ -313,15 +312,13 @@ export class DashboardStateDataLoader {
     // regardless if there is exploreStateFromSessionStorage for current url params or not.
     if (skipSessionStorage) return partialExploreStateFromUrl;
 
-    const { exploreStateFromSessionStorage } =
-      getExploreStateFromSessionStorage(
-        this.exploreName,
-        this.storageNamespacePrefix,
-        urlSearchParams,
-        metricsViewSpec,
-        exploreSpec,
-        explorePresetFromYAMLConfig.data,
-      );
+    const exploreStateFromSessionStorage = getExploreStateFromSessionStorage(
+      this.exploreName,
+      this.storageNamespacePrefix,
+      urlSearchParams,
+      metricsViewSpec,
+      exploreSpec,
+    );
 
     return (
       // preference goes to session storage 1st.
