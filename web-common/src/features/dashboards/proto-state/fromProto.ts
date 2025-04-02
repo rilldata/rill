@@ -194,18 +194,18 @@ export function getDashboardStateFromProto(
 
   if (dashboard.allMeasuresVisible) {
     entity.allMeasuresVisible = true;
-    entity.visibleMeasureKeys = new Set(explore.measures);
+    entity.visibleMeasures = [...(explore.measures ?? [])];
   } else if (dashboard.visibleMeasures?.length) {
     entity.allMeasuresVisible = false;
-    entity.visibleMeasureKeys = new Set(dashboard.visibleMeasures);
+    entity.visibleMeasures = [...dashboard.visibleMeasures];
   }
 
   if (dashboard.allDimensionsVisible) {
     entity.allDimensionsVisible = true;
-    entity.visibleDimensionKeys = new Set(explore.dimensions);
+    entity.visibleDimensions = [...(explore.dimensions ?? [])];
   } else if (dashboard.visibleDimensions?.length) {
     entity.allDimensionsVisible = false;
-    entity.visibleDimensionKeys = new Set(dashboard.visibleDimensions);
+    entity.visibleDimensions = [...dashboard.visibleDimensions];
   }
 
   if (dashboard.leaderboardContextColumn !== undefined) {
