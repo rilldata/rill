@@ -82,8 +82,7 @@ export function convertExploreStateToURLSearchParams(
   timeControlsState: TimeControlState | undefined,
   preset: V1ExplorePreset,
   // Used to decide whether to compress or not based on the full url length
-  url: URL,
-  disableCompression = false,
+  urlForCompressionCheck?: URL,
 ): URLSearchParams {
   const searchParams = new URLSearchParams();
 
@@ -141,9 +140,9 @@ export function convertExploreStateToURLSearchParams(
       break;
   }
 
-  if (disableCompression) return searchParams;
+  if (!urlForCompressionCheck) return searchParams;
 
-  const urlCopy = new URL(url);
+  const urlCopy = new URL(urlForCompressionCheck);
   urlCopy.search = searchParams.toString();
   const shouldCompress = shouldCompressParams(urlCopy);
   if (!shouldCompress) return searchParams;

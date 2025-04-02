@@ -1977,6 +1977,7 @@ These are not currently parsed from YAML, but will be derived from the parent me
   /** Banner text that can be displayed in Rill Cloud. */
   banner?: string;
   lockTimeZone?: boolean;
+  allowCustomTimeRange?: boolean;
 }
 
 export interface V1ExploreState {
@@ -2437,6 +2438,7 @@ The values should be valid IANA location identifiers. */
   rows?: V1CanvasRow[];
   /** Security rules to apply for access to the canvas. */
   securityRules?: V1SecurityRule[];
+  allowCustomTimeRange?: boolean;
 }
 
 export interface V1CanvasItem {

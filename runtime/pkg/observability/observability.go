@@ -25,6 +25,7 @@ type Exporter string
 const (
 	NoopExporter       Exporter = ""
 	OtelExporter       Exporter = "otel"
+	FileBasedExporter  Exporter = "file"
 	PrometheusExporter Exporter = "prometheus"
 )
 
@@ -98,6 +99,17 @@ func Start(ctx context.Context, logger *zap.Logger, opts *Options) (ShutdownFunc
 	case OtelExporter:
 		client := otlptracegrpc.NewClient()
 		exp, err := otlptrace.New(ctx, client)
+		if err != nil {
+			return nil, err
+		}
+		bsp := trace.NewBatchSpanProcessor(exp)
+		tracerProvider = trace.NewTracerProvider(
+			trace.WithSampler(trace.AlwaysSample()),
+			trace.WithResource(res),
+			trace.WithSpanProcessor(bsp),
+		)
+	case FileBasedExporter:
+		exp, err := NewFileExporter()
 		if err != nil {
 			return nil, err
 		}

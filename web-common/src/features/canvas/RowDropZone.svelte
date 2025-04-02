@@ -7,7 +7,6 @@
   export let allowDrop: boolean;
   export let resizeIndex = -1;
   export let dropIndex: number;
-  export let resizingRow = false;
   export let onDrop: (row: number, column: number | null) => void;
   export let onRowResizeStart: (e: MouseEvent) => void = () => {};
   export let addItem: (type: CanvasComponentType) => void;
@@ -24,7 +23,7 @@
 
   $: notResizable = resizeIndex === -1;
 
-  $: forceShowDivider = menuOpen || resizingRow || isDropZone;
+  $: forceShowDivider = menuOpen || isActiveDivider || isDropZone;
 </script>
 
 <div
