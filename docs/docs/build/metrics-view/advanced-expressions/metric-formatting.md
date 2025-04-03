@@ -22,11 +22,11 @@ If an invalid format string is supplied, measures will be formatted with `format
 :::warning Cannot have both
  Measures cannot have both `format_preset` and `format_d3` entries.
 :::
-Please review the reference documentation, [here.](/reference/project-files/metrics-view)
+Please review the reference documentation, [here.](/reference/project-files/metrics-views)
 
 ## Customization
 
-For further customization of your measures, you can swtich to the YAML view and with our [metrics view reference documentation](/reference/project-files/metrics-view) use the [format_d3_locale](https://d3js.org/d3-format#formatLocale) parameter to create specific formatting. 
+For further customization of your measures, you can swtich to the YAML view and with our [metrics view reference documentation](/reference/project-files/metrics-views) use the [format_d3_locale](https://d3js.org/d3-format#formatLocale) parameter to create specific formatting. 
 
 ```yaml
  format_d3: 
@@ -40,7 +40,7 @@ For further customization of your measures, you can swtich to the YAML view and 
 
 As explained in the introduction, you'll notice that in each of the screenshot the Big Number doesn't always follow the exact formatting, but will change based on percentage / currency formatting. This is as designed as there is a fixed width that the number has to be displayed. Instead you'll see these values in the dimension leaderboard, TDD and pivot tables.
 
-If you have any quesitons, please review our [reference documentation.](/reference/project-files/metrics-view)
+If you have any quesitons, please review our [reference documentation.](/reference/project-files/metrics-views)
 
 ### Format a measure to include specific amount of decimals
 <img src = '/img/build/metrics-view/examples/decimal-example.png' class='rounded-gif' />
