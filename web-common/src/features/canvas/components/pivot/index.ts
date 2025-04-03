@@ -114,7 +114,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<PivotSpec> {
     let newSpec: PivotSpec | TableSpec;
     if (newTableType === "pivot") {
       // Switch to pivot table spec
-      const flatTableSpec = currentSpec;
+      const flatTableSpec = currentSpec as unknown as TableSpec;
       const { columns = [], ...restFlatTableSpec } = flatTableSpec || {};
 
       const row_dimensions =
