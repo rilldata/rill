@@ -1,4 +1,4 @@
-package rillv1
+package parser
 
 // Version identifier for this compiler
 const Version = "rillv1"
