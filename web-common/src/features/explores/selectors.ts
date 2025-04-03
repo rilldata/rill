@@ -54,10 +54,12 @@ export type ExploreValidSpecResponse = {
 export function useExploreValidSpec(
   instanceId: string,
   exploreName: string,
-  queryOptions?: CreateQueryOptions<
-    V1GetExploreResponse,
-    ErrorType<RpcStatus>,
-    ExploreValidSpecResponse
+  queryOptions?: Partial<
+    CreateQueryOptions<
+      V1GetExploreResponse,
+      ErrorType<RpcStatus>,
+      ExploreValidSpecResponse
+    >
   >,
   queryClient?: QueryClient,
 ) {

@@ -8,13 +8,15 @@
   > = {
     gcTime: Math.min(RUNTIME_ACCESS_TOKEN_DEFAULT_TTL, 1000 * 60 * 5), // Make sure we don't keep a stale JWT in the cache
     refetchInterval: (query) => {
-      switch (query.state.data.prodDeployment.status) {
+      switch (query.state.data?.prodDeployment?.status) {
         case V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING:
           return PollTimeWhenProjectDeploymentPending;
         case V1DeploymentStatus.DEPLOYMENT_STATUS_ERROR:
           return PollTimeWhenProjectDeploymentError;
         case V1DeploymentStatus.DEPLOYMENT_STATUS_OK:
           return PollTimeWhenProjectDeploymentOk;
+        default:
+          return false;
       }
     },
     refetchOnMount: true,

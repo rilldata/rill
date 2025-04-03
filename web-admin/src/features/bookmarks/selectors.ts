@@ -33,6 +33,7 @@ import {
   type V1StructType,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
+import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { QueryClient } from "@tanstack/query-core";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, get, type Readable } from "svelte/store";
@@ -74,11 +75,11 @@ export function getBookmarks(projectId: string, exploreName: string) {
       {
         query: {
           enabled: !!userResp.data?.user && !!projectId,
-          queryClient,
         },
       },
+      queryClient,
     ).subscribe(set),
-  ) as CreateQueryResult<V1ListBookmarksResponse>;
+  ) as CreateQueryResult<V1ListBookmarksResponse, HTTPError>;
 }
 
 export function isHomeBookmark(bookmark: V1Bookmark) {
