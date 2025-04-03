@@ -24,7 +24,11 @@
     },
     actions: {
       contextColumn: { setContextColumn },
-      dimensions: { setDimensionVisibility, toggleDimensionVisibility },
+      dimensions: {
+        setDimensionVisibility,
+        toggleAllDimensionsVisibility,
+        toggleDimensionVisibility,
+      },
       setLeaderboardMeasureCount,
       setLeaderboardMeasureName,
     },
@@ -41,7 +45,7 @@
 
   $: activeLeaderboardMeasure = $getMeasureByName($leaderboardMeasureName);
 
-  $: validPercentOfTotal = leaderboardMeasureCountFeatureFlag
+  $: validPercentOfTotal = $leaderboardMeasureCountFeatureFlag
     ? $visibleMeasures.some((measure) => measure.validPercentOfTotal)
     : activeLeaderboardMeasure?.validPercentOfTotal || false;
 
@@ -93,7 +97,7 @@
           }))}
           selectedItems={visibleDimensionsNames}
           onToggleSelectAll={() => {
-            toggleDimensionVisibility(allDimensionNames);
+            toggleAllDimensionsVisibility(allDimensionNames);
           }}
         />
       {/if}
