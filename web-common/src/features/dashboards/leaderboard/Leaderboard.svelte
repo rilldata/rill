@@ -128,7 +128,7 @@
 
   $: measures = [
     ...(leaderboardMeasureCountFeatureFlag
-      ? visibleMeasures.map(
+      ? leaderboardMeasureNames.map(
           (name) =>
             ({
               name,
@@ -144,7 +144,7 @@
     // Add comparison measures if there's a comparison time range
     ...(comparisonTimeRange
       ? (leaderboardMeasureCountFeatureFlag
-          ? visibleMeasures
+          ? leaderboardMeasureNames
           : [activeMeasureName]
         ).flatMap((name) => getComparisonRequestMeasures(name))
       : []),
