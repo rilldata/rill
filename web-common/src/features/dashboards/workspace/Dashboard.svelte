@@ -30,30 +30,20 @@
   const StateManagers = getStateManagers();
   const {
     selectors: {
-      measures: {
-        visibleMeasures,
-        leaderboardMeasureName,
-        activeMeasuresFromMeasureCount,
-      },
+      measures: { visibleMeasures, leaderboardMeasureName },
       dimensions: { getDimensionByName },
       pivot: { showPivot },
     },
     dashboardStore,
   } = StateManagers;
 
-  const {
-    cloudDataViewer,
-    readOnly,
-    leaderboardMeasureCount: leaderboardMeasureCountFeatureFlag,
-  } = featureFlags;
+  const { cloudDataViewer, readOnly } = featureFlags;
 
   const timeControlsStore = useTimeControlStore(StateManagers);
 
   let exploreContainerWidth: number;
 
-  $: leaderboardMeasureNames = $leaderboardMeasureCountFeatureFlag
-    ? $activeMeasuresFromMeasureCount
-    : [$leaderboardMeasureName];
+  $: leaderboardMeasureNames = [$leaderboardMeasureName];
 
   $: ({ instanceId } = $runtime);
 

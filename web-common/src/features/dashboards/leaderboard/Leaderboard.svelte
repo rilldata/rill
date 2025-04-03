@@ -57,7 +57,6 @@
   export let dimensionThresholdFilters: DimensionThresholdFilter[];
   export let activeMeasureName: string;
   export let leaderboardMeasureNames: string[];
-  export let visibleMeasures: string[];
   export let metricsViewName: string;
   export let sortType: SortType;
   export let sortBy: string | null;
@@ -70,7 +69,6 @@
   export let isBeingCompared: boolean;
   export let parentElement: HTMLElement;
   export let suppressTooltip = false;
-  export let leaderboardMeasureCountFeatureFlag: boolean;
   export let measureLabel: (measureName: string) => string;
   export let formatters: Record<
     string,
@@ -128,26 +126,18 @@
       );
 
   $: measures = [
-    ...(leaderboardMeasureCountFeatureFlag
-      ? leaderboardMeasureNames.map(
-          (name) =>
-            ({
-              name,
-            }) as V1MetricsViewAggregationMeasure,
-        )
-      : additionalMeasures(activeMeasureName, dimensionThresholdFilters).map(
-          (n) =>
-            ({
-              name: n,
-            }) as V1MetricsViewAggregationMeasure,
-        )),
+    ...additionalMeasures(activeMeasureName, dimensionThresholdFilters).map(
+      (n) =>
+        ({
+          name: n,
+        }) as V1MetricsViewAggregationMeasure,
+    ),
 
     // Add comparison measures if there's a comparison time range
     ...(comparisonTimeRange
-      ? (leaderboardMeasureCountFeatureFlag
-          ? leaderboardMeasureNames
-          : [activeMeasureName]
-        ).flatMap((name) => getComparisonRequestMeasures(name))
+      ? [activeMeasureName].flatMap((name) =>
+          getComparisonRequestMeasures(name),
+        )
       : []),
 
     // Add URI measure if URI is present
@@ -186,13 +176,9 @@
     instanceId,
     metricsViewName,
     {
-      ...(leaderboardMeasureCountFeatureFlag
-        ? {
-            measures: visibleMeasures.map((name) => ({ name })),
-          }
-        : {
-            measures: [{ name: activeMeasureName }],
-          }),
+      ...{
+        measures: [{ name: activeMeasureName }],
+      },
       where,
       timeStart: timeRange.start,
       timeEnd: timeRange.end,
@@ -209,10 +195,7 @@
 
   $: leaderboardTotals = totalsData?.data?.[0]
     ? Object.fromEntries(
-        (leaderboardMeasureCountFeatureFlag
-          ? visibleMeasures
-          : leaderboardMeasureNames
-        ).map((name) => [
+        leaderboardMeasureNames.map((name) => [
           name,
           (totalsData?.data?.[0]?.[name] as number) ?? null,
         ]),
@@ -350,7 +333,6 @@
       {toggleComparisonDimension}
       {sortBy}
       {measureLabel}
-      {leaderboardMeasureCountFeatureFlag}
     />
 
     <tbody>

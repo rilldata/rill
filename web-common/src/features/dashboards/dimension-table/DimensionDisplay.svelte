@@ -63,9 +63,6 @@
     dashboardStore,
   } = getStateManagers();
 
-  const { leaderboardMeasureCount: leaderboardMeasureCountFeatureFlag } =
-    featureFlags;
-
   $: ({ name: dimensionName = "" } = dimension);
 
   $: ({ instanceId } = $runtime);
@@ -100,35 +97,23 @@
     },
   );
 
-  $: unfilteredTotal = $leaderboardMeasureCountFeatureFlag
-    ? visibleMeasureNames.reduce(
-        (acc, measureName) => {
-          acc[measureName] = $totalsQuery?.data?.data?.[0]?.[measureName] ?? 0;
-          return acc;
-        },
-        {} as { [key: string]: number },
-      )
-    : ($totalsQuery?.data?.data?.[0]?.[activeMeasureName] ?? 0);
+  $: unfilteredTotal = $totalsQuery?.data?.data?.[0]?.[activeMeasureName] ?? 0;
 
-  $: columns = $virtualizedTableColumns(
-    $totalsQuery,
-    $leaderboardMeasureCountFeatureFlag ? visibleMeasureNames : undefined,
-  );
+  $: columns = $virtualizedTableColumns($totalsQuery, undefined);
 
   $: measures = [
     // Get base measures
     ...getMeasuresForDimensionTable(
-      $leaderboardMeasureCountFeatureFlag ? null : activeMeasureName,
+      activeMeasureName,
       dimensionThresholdFilters,
       visibleMeasureNames,
     ).map((name) => ({ name }) as V1MetricsViewAggregationMeasure),
 
     // Add comparison measures if comparison time range exists
     ...(comparisonTimeRange
-      ? ($leaderboardMeasureCountFeatureFlag
-          ? visibleMeasureNames
-          : [activeMeasureName]
-        ).flatMap((name) => getComparisonRequestMeasures(name))
+      ? [activeMeasureName].flatMap((name) =>
+          getComparisonRequestMeasures(name),
+        )
       : []),
   ];
 

@@ -29,18 +29,14 @@
     },
   } = StateManagers;
 
-  const { leaderboardMeasureCount: leaderboardMeasureCountFeatureFlag } =
-    featureFlags;
-
   $: measures = getSimpleMeasures($visibleMeasures);
 
   $: metricsExplorer = $metricsExplorerStore.entities[exploreName];
 
   $: activeLeaderboardMeasure = $getMeasureByName($leaderboardMeasureName);
 
-  $: validPercentOfTotal = leaderboardMeasureCountFeatureFlag
-    ? $visibleMeasures.some((measure) => measure.validPercentOfTotal)
-    : activeLeaderboardMeasure?.validPercentOfTotal || false;
+  $: validPercentOfTotal =
+    activeLeaderboardMeasure?.validPercentOfTotal || false;
 
   $: visibleDimensionsNames = $visibleDimensions
     .map(({ name }) => name)
@@ -77,22 +73,12 @@
         allItems={$allDimensions}
         selectedItems={visibleDimensionsNames}
       />
-      {#if $leaderboardMeasureCountFeatureFlag}
-        <LeaderboardMeasureCountSelector
-          measures={$visibleMeasures}
-          count={$leaderboardMeasureCount}
-          onMeasureCountChange={(count) => {
-            setLeaderboardMeasureCount(count);
-          }}
-        />
-      {:else}
-        <LeaderboardActiveMeasureDropdown
-          leaderboardMeasureName={$leaderboardMeasureName}
-          {setLeaderboardMeasureName}
-          {measures}
-          {activeLeaderboardMeasure}
-        />
-      {/if}
+      <LeaderboardActiveMeasureDropdown
+        leaderboardMeasureName={$leaderboardMeasureName}
+        {setLeaderboardMeasureName}
+        {measures}
+        {activeLeaderboardMeasure}
+      />
     </div>
   {/if}
 </div>

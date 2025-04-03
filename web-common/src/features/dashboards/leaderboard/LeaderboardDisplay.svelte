@@ -44,9 +44,6 @@
   let parentElement: HTMLDivElement;
   let suppressTooltip = false;
 
-  const { leaderboardMeasureCount: leaderboardMeasureCountFeatureFlag } =
-    featureFlags;
-
   $: ({ instanceId } = $runtime);
 
   // Reset column widths when the measure changes
@@ -67,10 +64,6 @@
       : showPercentOfTotal
         ? COMPARISON_COLUMN_WIDTH
         : 0);
-
-  $: validVisibleMeasures = $visibleMeasures
-    .map((m) => m.name)
-    .filter((name) => name !== undefined);
 </script>
 
 <div class="flex flex-col overflow-hidden size-full" aria-label="Leaderboards">
@@ -97,7 +90,6 @@
               sortBy={$sortByMeasure}
               {activeMeasureName}
               {leaderboardMeasureNames}
-              visibleMeasures={validVisibleMeasures}
               {whereFilter}
               {dimensionThresholdFilters}
               {instanceId}
@@ -121,15 +113,12 @@
                 timeRange.end,
               )}
               isBeingCompared={$isBeingComparedReadable(dimension.name)}
-              formatters={$leaderboardMeasureCountFeatureFlag
-                ? $measureFormatters
-                : { [activeMeasureName]: $activeMeasureFormatter }}
+              formatters={{ [activeMeasureName]: $activeMeasureFormatter }}
               {setPrimaryDimension}
               {toggleSort}
               {toggleDimensionValueSelection}
               {toggleComparisonDimension}
               measureLabel={$measureLabel}
-              leaderboardMeasureCountFeatureFlag={$leaderboardMeasureCountFeatureFlag}
             />
           {/if}
         {/each}
