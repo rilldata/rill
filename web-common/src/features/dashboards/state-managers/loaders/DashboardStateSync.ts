@@ -10,11 +10,9 @@ import {
   createTimeControlStoreFromName,
   type TimeControlStore,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import {
-  convertExploreStateToURLSearchParams,
-  getUpdatedUrlForExploreState,
-} from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
+import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
 import { updateExploreSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
+import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
 import type { AfterNavigate } from "@sveltejs/kit";
 import { derived, get, type Readable } from "svelte/store";
 
@@ -51,16 +49,12 @@ export class DashboardStateSync {
     );
 
     this.unsubInit = derived(
-      [dataLoader.initExploreState],
+      [dataLoader.initUrlParams],
       (states) => states,
-    ).subscribe(([initExploreState]) => {
-      // initExploreState is not ready yet. Either data is still loading or dashboard is not reconciled yet.
-      if (
-        initExploreState.isLoading ||
-        initExploreState.data?.activePage === undefined
-      )
-        return;
-      void this.handleExploreInit(initExploreState.data);
+    ).subscribe(([initUrlParamsResp]) => {
+      // initUrlParams is not ready yet. Either data is still loading or dashboard is not reconciled yet.
+      if (initUrlParamsResp.isLoading || !initUrlParamsResp.data) return;
+      void this.handleExploreInit(initUrlParamsResp.data);
     });
 
     this.unsubExploreState = this.exploreStore.subscribe((exploreState) => {
@@ -74,33 +68,34 @@ export class DashboardStateSync {
     this.unsubExploreState?.();
   }
 
-  private handleExploreInit(initExploreState: MetricsExplorerEntity) {
+  private handleExploreInit(initUrlParams: URLSearchParams) {
     if (this.initialized) return;
     this.initialized = true;
 
     const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
+    const metricsViewSpec = validSpecData?.metricsView ?? {};
     const exploreSpec = validSpecData?.explore ?? {};
     const pageState = get(page);
-    const { data: explorePresetFromYAMLConfig } = get(
-      this.dataLoader.explorePresetFromYAMLConfig,
-    );
+
+    const { partialExploreState: initExploreState } =
+      convertURLSearchParamsToExploreState(
+        initUrlParams,
+        metricsViewSpec,
+        exploreSpec,
+        {},
+      );
 
     metricsExplorerStore.init(this.exploreName, initExploreState);
-    // Get time controls state after explore state is initialized.
-    const timeControlsState = get(this.timeControlStore);
+
     const redirectUrl = new URL(pageState.url);
-    redirectUrl.search = getUpdatedUrlForExploreState(
-      exploreSpec,
-      timeControlsState,
-      explorePresetFromYAMLConfig ?? {},
-      initExploreState,
-      pageState.url,
-    );
+    redirectUrl.search = initUrlParams.toString();
 
     if (redirectUrl.search === pageState.url.search) {
       return;
     }
 
+    // Get time controls state after explore state is initialized.
+    const timeControlsState = get(this.timeControlStore);
     const updatedExploreState =
       get(metricsExplorerStore).entities[this.exploreName];
     updateExploreSessionStore(
@@ -128,23 +123,28 @@ export class DashboardStateSync {
     if (!get(metricsExplorerStore).entities[this.exploreName] || this.updating)
       return;
 
-    const partialExplore = this.dataLoader.getExploreStateFromURLParams(
+    const resolvedUrlParams = this.dataLoader.getExploreStateFromURLParams(
       urlSearchParams,
       type,
     );
     // This can be undefined when one of the queries has not loaded yet.
     // Rest of the code can be indeterminate when queries have not loaded.
     // This shouldn't ideally happen.
-    if (!partialExplore) return;
+    if (!resolvedUrlParams) return;
 
     this.updating = true;
     const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
     const metricsViewSpec = validSpecData?.metricsView ?? {};
     const exploreSpec = validSpecData?.explore ?? {};
     const pageState = get(page);
-    const { data: explorePresetFromYAMLConfig } = get(
-      this.dataLoader.explorePresetFromYAMLConfig,
-    );
+
+    const { partialExploreState: partialExplore } =
+      convertURLSearchParamsToExploreState(
+        resolvedUrlParams,
+        metricsViewSpec,
+        exploreSpec,
+        {},
+      );
 
     const redirectUrl = new URL(pageState.url);
     metricsExplorerStore.mergePartialExplorerEntity(
@@ -152,17 +152,11 @@ export class DashboardStateSync {
       partialExplore,
       metricsViewSpec,
     );
+    // if we added extra url params from session storage then update the url
+    redirectUrl.search = resolvedUrlParams.toString();
+
     // Get time controls state after explore state is updated.
     const timeControlsState = get(this.timeControlStore);
-    // if we added extra url params from session storage then update the url
-    redirectUrl.search = getUpdatedUrlForExploreState(
-      exploreSpec,
-      timeControlsState,
-      explorePresetFromYAMLConfig ?? {},
-      partialExplore,
-      pageState.url,
-    );
-
     const updatedExploreState =
       get(metricsExplorerStore).entities[this.exploreName];
     updateExploreSessionStore(
@@ -195,16 +189,13 @@ export class DashboardStateSync {
     const exploreSpec = validSpecData?.explore ?? {};
     const timeControlsState = get(this.timeControlStore);
     const pageState = get(page);
-    const { data: explorePresetFromYAMLConfig } = get(
-      this.dataLoader.explorePresetFromYAMLConfig,
-    );
 
     const newUrl = new URL(pageState.url);
     const exploreStateParams = convertExploreStateToURLSearchParams(
       exploreState,
       exploreSpec,
       timeControlsState,
-      explorePresetFromYAMLConfig ?? {},
+      {},
       newUrl,
     );
     newUrl.search = exploreStateParams.toString();

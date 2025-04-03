@@ -1,3 +1,4 @@
+import { getCompoundQuery } from "@rilldata/web-common/features/compound-query-result";
 import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
@@ -231,6 +232,22 @@ export function createTimeControlStoreFromName(
         timeRangeSummaryResp,
         dashboardStore,
       ]),
+  );
+}
+
+export function createTimeControlStoreCompoundQuery(
+  instanceId: string,
+  metricsViewName: string,
+  exploreName: string,
+) {
+  return derived(
+    createTimeControlStoreFromName(instanceId, metricsViewName, exploreName),
+    (timeControlState) => ({
+      data: timeControlState,
+      error: null,
+      isLoading: false,
+      isFetching: false,
+    }),
   );
 }
 
