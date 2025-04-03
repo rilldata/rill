@@ -3,27 +3,6 @@ import { SortDirection, SortType } from "../../proto-state/derived-types";
 import type { DashboardMutables } from "./types";
 import { setLeaderboardMeasureName } from "./core-actions";
 
-const isMeasureSortType = (sortType: SortType) =>
-  sortType === SortType.VALUE ||
-  sortType === SortType.DELTA_ABSOLUTE ||
-  sortType === SortType.DELTA_PERCENT ||
-  sortType === SortType.PERCENT;
-
-const handleNewMeasureName = (args: DashboardMutables, measureName: string) => {
-  const { dashboard } = args;
-  setLeaderboardMeasureName(args, measureName);
-  dashboard.dashboardSortType = SortType.VALUE;
-  dashboard.sortDirection = SortDirection.DESCENDING;
-};
-
-const toggleSortDirection = (args: DashboardMutables) => {
-  const { dashboard } = args;
-  dashboard.sortDirection =
-    dashboard.sortDirection === SortDirection.ASCENDING
-      ? SortDirection.DESCENDING
-      : SortDirection.ASCENDING;
-};
-
 export const toggleSort = (
   args: DashboardMutables,
   sortType: SortType,
