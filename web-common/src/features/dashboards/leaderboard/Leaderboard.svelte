@@ -47,6 +47,7 @@
   const queryLimit = 8;
   const maxValuesToShow = 15;
 
+  // FIXME: clean up `sortBy` and `activeMeasureName`
   export let dimension: MetricsViewSpecDimensionV2;
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
@@ -128,7 +129,7 @@
 
   $: measures = [
     ...(leaderboardMeasureCountFeatureFlag
-      ? visibleMeasures.map(
+      ? leaderboardMeasureNames.map(
           (name) =>
             ({
               name,
@@ -144,7 +145,7 @@
     // Add comparison measures if there's a comparison time range
     ...(comparisonTimeRange
       ? (leaderboardMeasureCountFeatureFlag
-          ? visibleMeasures
+          ? leaderboardMeasureNames
           : [activeMeasureName]
         ).flatMap((name) => getComparisonRequestMeasures(name))
       : []),
