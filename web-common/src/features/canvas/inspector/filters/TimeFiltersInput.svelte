@@ -208,7 +208,6 @@
       />
 
       {#if showComparison}
-        {$comparisonRangeStateStore?.showTimeComparison}
         <CanvasComparisonPill
           allTimeRange={$allTimeRange}
           {selectedTimeRange}
