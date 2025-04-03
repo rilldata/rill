@@ -2,12 +2,12 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import { type CanvasComponentObj } from "@rilldata/web-common/features/canvas/components/util";
   import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
-  import { isString } from "../../workspaces/visual-util";
   import {
     ResourceKind,
     useFilteredResources,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { isString } from "../../workspaces/visual-util";
 
   export let component: CanvasComponentObj;
   export let key: string;
@@ -33,7 +33,7 @@
 
 <Input
   hint="View documentation"
-  link="https://docs.rilldata.com/reference/project-files/metrics-view"
+  link="https://docs.rilldata.com/reference/project-files/metrics-views"
   label={inputParam.label}
   capitalizeLabel={false}
   bind:value={metricsView}
