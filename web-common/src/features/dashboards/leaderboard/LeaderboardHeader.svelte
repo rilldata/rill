@@ -24,7 +24,8 @@
   export let displayName: string;
   export let hovered: boolean;
   export let sortType: SortType;
-  export let allowCompare: boolean;
+  export let allowDimensionComparison: boolean;
+  export let allowExpandTable: boolean;
   export let activeMeasureNames: string[] = [];
   export let sortBy: string | null;
   export let leaderboardMeasureCountFeatureFlag: boolean;
@@ -41,7 +42,7 @@
     <th aria-label="Comparison column" class="grid place-content-center">
       {#if isFetching}
         <DelayedSpinner isLoading={isFetching} size="16px" />
-      {:else if allowCompare && (hovered || isBeingCompared)}
+      {:else if allowDimensionComparison && (hovered || isBeingCompared)}
         <DimensionCompareMenu
           {dimensionName}
           {isBeingCompared}
@@ -55,7 +56,10 @@
     <th data-dimension-header>
       <Tooltip distance={16} location="top">
         <button
-          class="ui-header-primary"
+          disabled={!allowExpandTable}
+          class="text-slate-600 {allowExpandTable
+            ? 'hover:text-primary-700'
+            : ''}"
           aria-label="Open dimension details"
           on:click={() => setPrimaryDimension(dimensionName)}
         >
@@ -77,8 +81,10 @@
               {/if}
             </div>
             <Shortcut />
-            <div>Expand leaderboard</div>
-            <Shortcut>Click</Shortcut>
+            {#if allowExpandTable}
+              <div>Expand leaderboard</div>
+              <Shortcut>Click</Shortcut>
+            {/if}
           </TooltipShortcutContainer>
         </TooltipContent>
       </Tooltip>

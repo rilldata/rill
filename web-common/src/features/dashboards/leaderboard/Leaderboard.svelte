@@ -71,7 +71,7 @@
   export let suppressTooltip = false;
   export let leaderboardMeasureCountFeatureFlag: boolean;
   export let allowExpandTable = true;
-  export let allowCompare = true;
+  export let allowDimensionComparison = true;
   export let measureLabel: (measureName: string) => string;
   export let formatters: Record<
     string,
@@ -335,7 +335,8 @@
     </colgroup>
 
     <LeaderboardHeader
-      {allowCompare}
+      {allowDimensionComparison}
+      {allowExpandTable}
       {hovered}
       displayName={displayName || dimensionName}
       dimensionDescription={description}

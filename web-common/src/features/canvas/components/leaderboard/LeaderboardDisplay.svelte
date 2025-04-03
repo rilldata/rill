@@ -141,7 +141,7 @@
               {suppressTooltip}
               timeControlsReady={true}
               allowExpandTable={false}
-              allowCompare={false}
+              allowDimensionComparison={false}
               selectedValues={getSelectedValues(dimension.name)}
               isBeingCompared={false}
               formatters={measureFormatters}
