@@ -55,10 +55,10 @@
   $: visibleDimensions = $allDimensions.filter((d) =>
     dimensionNames.includes(d.name || (d.column as string)),
   );
+
   $: visibleMeasures = $allMeasures.filter((m) =>
     leaderboardMeasureNames.includes(m.name as string),
   );
-
   $: activeMeasureName = leaderboardMeasureNames?.[0] || "measure";
 
   $: measureFormatters = Object.fromEntries(
@@ -69,6 +69,11 @@
   );
 
   $: showDeltaPercent = !!$timeAndFilterStore.comparisonTimeRange;
+
+  // Reset column widths when the measure changes
+  $: if (leaderboardMeasureNames) {
+    valueColumn.reset();
+  }
 
   $: tableWidth =
     DIMENSION_COLUMN_WIDTH +
@@ -89,6 +94,15 @@
       $timeAndFilterStore.timeRange.end,
     );
   }
+
+  function isValidPercentOfTotal(measureName: string) {
+    return (
+      visibleMeasures.find((m) => m.name === measureName)
+        ?.validPercentOfTotal ?? false
+    );
+  }
+
+  $: console.log($timeAndFilterStore.comparisonTimeRange);
 </script>
 
 <div class="flex flex-col overflow-hidden size-full" aria-label="Leaderboards">
@@ -107,14 +121,14 @@
         {#each visibleDimensions as dimension (dimension.name)}
           {#if dimension.name}
             <Leaderboard
-              isValidPercentOfTotal={() => true}
+              {instanceId}
+              {isValidPercentOfTotal}
               {metricsViewName}
               {activeMeasureName}
               {leaderboardMeasureNames}
               visibleMeasures={leaderboardMeasureNames}
               {whereFilter}
               {dimensionThresholdFilters}
-              {instanceId}
               {tableWidth}
               dimensionColumnWidth={DIMENSION_COLUMN_WIDTH}
               sortedAscending={false}
@@ -126,13 +140,13 @@
               {parentElement}
               {suppressTooltip}
               timeControlsReady={true}
+              allowExpandTable={false}
+              allowCompare={false}
               selectedValues={getSelectedValues(dimension.name)}
               isBeingCompared={false}
               formatters={measureFormatters}
-              setPrimaryDimension={() => {}}
               toggleSort={() => {}}
               toggleDimensionValueSelection={() => {}}
-              toggleComparisonDimension={() => {}}
               sortBy={null}
               measureLabel={(measureName) =>
                 visibleMeasures.find((m) => m.name === measureName)

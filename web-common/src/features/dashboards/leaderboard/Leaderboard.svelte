@@ -31,6 +31,7 @@
     sanitiseExpression,
   } from "../stores/filter-utils";
   import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
+  import DelayedLoadingRows from "./DelayedLoadingRows.svelte";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
   import LeaderboardRow from "./LeaderboardRow.svelte";
   import {
@@ -39,8 +40,7 @@
     getSort,
     prepareLeaderboardItemData,
   } from "./leaderboard-utils";
-  import { valueColumn, COMPARISON_COLUMN_WIDTH } from "./leaderboard-widths";
-  import DelayedLoadingRows from "./DelayedLoadingRows.svelte";
+  import { COMPARISON_COLUMN_WIDTH, valueColumn } from "./leaderboard-widths";
 
   const slice = 7;
   const gutterWidth = 24;
@@ -70,6 +70,8 @@
   export let parentElement: HTMLElement;
   export let suppressTooltip = false;
   export let leaderboardMeasureCountFeatureFlag: boolean;
+  export let allowExpandTable = true;
+  export let allowCompare = true;
   export let measureLabel: (measureName: string) => string;
   export let formatters: Record<
     string,
@@ -81,11 +83,11 @@
     keepPillVisible?: boolean | undefined,
     isExclusiveFilter?: boolean | undefined,
   ) => void;
-  export let setPrimaryDimension: (dimensionName: string) => void;
+  export let setPrimaryDimension: (dimensionName: string) => void = () => {};
   export let toggleSort: (sortType: DashboardState_LeaderboardSortType) => void;
   export let toggleComparisonDimension: (
     dimensionName: string | undefined,
-  ) => void;
+  ) => void = () => {};
 
   const observer = new IntersectionObserver(
     ([entry]) => {
@@ -333,6 +335,7 @@
     </colgroup>
 
     <LeaderboardHeader
+      {allowCompare}
       {hovered}
       displayName={displayName || dimensionName}
       dimensionDescription={description}
@@ -400,7 +403,7 @@
     </tbody>
   </table>
 
-  {#if showExpandTable}
+  {#if allowExpandTable && showExpandTable}
     <Tooltip location="right">
       <button
         class="transition-color ui-copy-muted table-message"

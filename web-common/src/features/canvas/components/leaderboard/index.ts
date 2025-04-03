@@ -12,7 +12,7 @@ import type {
   ComponentFilterProperties,
 } from "../types";
 
-export { default as Leaderboard } from "./CanvasLeaderboardDisplay.svelte";
+export { default as Leaderboard } from "./LeaderboardDisplay.svelte";
 
 export const defaultComparisonOptions: ComponentComparisonOptions[] = [
   "delta",
