@@ -13,8 +13,7 @@ export const setLeaderboardMeasureCount = (
   // set it to the first visible measure
   const visibleMeasures = dashboard.visibleMeasures.slice(0, count);
   if (!visibleMeasures.includes(dashboard.leaderboardMeasureName)) {
-    dashboard.leaderboardMeasureName =
-      visibleMeasures[0] || dashboard.leaderboardMeasureName;
+    dashboard.leaderboardMeasureName = visibleMeasures[0];
   }
 };
 

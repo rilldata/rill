@@ -88,8 +88,6 @@
     dimensionName: string | undefined,
   ) => void;
 
-  $: console.log("sortBy: ", sortBy);
-  $: console.log("activeMeasureName: ", activeMeasureName);
   const observer = new IntersectionObserver(
     ([entry]) => {
       visible = entry.isIntersecting;
