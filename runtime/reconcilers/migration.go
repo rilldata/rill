@@ -133,7 +133,7 @@ func (r *MigrationReconciler) executeMigration(ctx context.Context, self *runtim
 			if name.Kind == parser.ResourceKindUnspecified {
 				return parser.TemplateResource{}, fmt.Errorf("can't resolve name %q without type specified", name.Name)
 			}
-			res, err := r.C.Get(ctx, runtime.ResourceNameFromCompiler(name), false)
+			res, err := r.C.Get(ctx, runtime.ResourceNameFromParser(name), false)
 			if err != nil {
 				return parser.TemplateResource{}, err
 			}

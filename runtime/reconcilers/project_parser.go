@@ -356,7 +356,7 @@ func (r *ProjectParserReconciler) reconcileResources(ctx context.Context, inst *
 			continue
 		}
 
-		n := runtime.ResourceNameToCompiler(rr.Meta.Name).Normalized()
+		n := runtime.ResourceNameToParser(rr.Meta.Name).Normalized()
 		def, ok := parser.Resources[n]
 
 		// If the existing resource is in the parser output, update it.
@@ -428,12 +428,12 @@ func (r *ProjectParserReconciler) reconcileResourcesDiff(ctx context.Context, in
 	// Gather resource to delete so we can check for renames.
 	deleteResources := make([]*runtimev1.ResourceName, 0, len(diff.Deleted))
 	for _, n := range diff.Deleted {
-		deleteResources = append(deleteResources, runtime.ResourceNameFromCompiler(n))
+		deleteResources = append(deleteResources, runtime.ResourceNameFromParser(n))
 	}
 
 	// Updates
 	for _, n := range diff.Modified {
-		existing, err := r.C.Get(ctx, runtime.ResourceNameFromCompiler(n), false)
+		existing, err := r.C.Get(ctx, runtime.ResourceNameFromParser(n), false)
 		if err != nil {
 			return err
 		}
@@ -566,11 +566,11 @@ func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, inst
 	// Make refs for the resource meta
 	refs := make([]*runtimev1.ResourceName, 0, len(def.Refs))
 	for _, r := range def.Refs {
-		refs = append(refs, runtime.ResourceNameFromCompiler(r))
+		refs = append(refs, runtime.ResourceNameFromParser(r))
 	}
 
 	// Create and return if not updating
-	n := runtime.ResourceNameFromCompiler(def.Name)
+	n := runtime.ResourceNameFromParser(def.Name)
 	if existing == nil {
 		return r.C.Create(ctx, n, refs, self.Meta.Name, def.Paths, false, res)
 	}
@@ -618,7 +618,7 @@ func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, inst
 // It returns false if no rename was done.
 // In addition to renaming, it also updates the resource's meta to match the parser resource definition.
 func (r *ProjectParserReconciler) attemptRename(ctx context.Context, inst *drivers.Instance, self *runtimev1.Resource, def *parserpkg.Resource, existing *runtimev1.Resource) (bool, error) {
-	newName := runtime.ResourceNameFromCompiler(def.Name)
+	newName := runtime.ResourceNameFromParser(def.Name)
 	if existing.Meta.Name.Kind != newName.Kind {
 		return false, nil
 	}
@@ -628,7 +628,7 @@ func (r *ProjectParserReconciler) attemptRename(ctx context.Context, inst *drive
 		return false, nil
 	}
 	for i, n := range existing.Meta.Refs {
-		if runtime.ResourceNameToCompiler(n) != def.Refs[i] {
+		if runtime.ResourceNameToParser(n) != def.Refs[i] {
 			return false, nil
 		}
 	}

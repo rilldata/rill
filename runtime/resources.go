@@ -69,8 +69,8 @@ func ResourceKindFromShorthand(kind string) string {
 	}
 }
 
-// ResourceKindFromCompiler converts a compiler resource kind to a runtime resource kind.
-func ResourceKindFromCompiler(kind parser.ResourceKind) string {
+// ResourceKindFromParser converts a parser resource kind to a runtime resource kind.
+func ResourceKindFromParser(kind parser.ResourceKind) string {
 	switch kind {
 	case parser.ResourceKindSource:
 		return ResourceKindSource
@@ -97,12 +97,12 @@ func ResourceKindFromCompiler(kind parser.ResourceKind) string {
 	case parser.ResourceKindConnector:
 		return ResourceKindConnector
 	default:
-		panic(fmt.Errorf("unknown compiler resource type %q", kind))
+		panic(fmt.Errorf("unknown parser resource type %q", kind))
 	}
 }
 
-// ResourceKindToCompiler converts a runtime resource kind to a compiler resource kind.
-func ResourceKindToCompiler(kind string) parser.ResourceKind {
+// ResourceKindToParser converts a runtime resource kind to a parser resource kind.
+func ResourceKindToParser(kind string) parser.ResourceKind {
 	switch kind {
 	case ResourceKindSource:
 		return parser.ResourceKindSource
@@ -135,14 +135,14 @@ func ResourceKindToCompiler(kind string) parser.ResourceKind {
 	}
 }
 
-// ResourceNameFromCompiler converts a compiler resource name to a runtime resource name.
-func ResourceNameFromCompiler(name parser.ResourceName) *runtimev1.ResourceName {
-	return &runtimev1.ResourceName{Kind: ResourceKindFromCompiler(name.Kind), Name: name.Name}
+// ResourceNameFromParser converts a parser resource name to a runtime resource name.
+func ResourceNameFromParser(name parser.ResourceName) *runtimev1.ResourceName {
+	return &runtimev1.ResourceName{Kind: ResourceKindFromParser(name.Kind), Name: name.Name}
 }
 
-// ResourceNameToCompiler converts a runtime resource name to a compiler resource name.
-func ResourceNameToCompiler(name *runtimev1.ResourceName) parser.ResourceName {
-	return parser.ResourceName{Kind: ResourceKindToCompiler(name.Kind), Name: name.Name}
+// ResourceNameToParser converts a runtime resource name to a parser resource name.
+func ResourceNameToParser(name *runtimev1.ResourceName) parser.ResourceName {
+	return parser.ResourceName{Kind: ResourceKindToParser(name.Kind), Name: name.Name}
 }
 
 // PrettifyResourceKind returns the resource kind in a user-friendly format suitable for printing.

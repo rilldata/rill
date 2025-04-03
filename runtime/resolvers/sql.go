@@ -257,7 +257,7 @@ func resolveTemplate(sqlTemplate string, args map[string]any, inst *drivers.Inst
 					&runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: ref.Name},
 				)
 			} else {
-				refs = append(refs, runtime.ResourceNameFromCompiler(ref))
+				refs = append(refs, runtime.ResourceNameFromParser(ref))
 			}
 
 			// Return the escaped identifier

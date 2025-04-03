@@ -87,7 +87,7 @@ func (s *Server) AnalyzeConnectors(ctx context.Context, req *runtimev1.AnalyzeCo
 		}
 
 		for _, r := range connector.Resources {
-			c.UsedBy = append(c.UsedBy, runtime.ResourceNameFromCompiler(r.Name))
+			c.UsedBy = append(c.UsedBy, runtime.ResourceNameFromParser(r.Name))
 		}
 
 		res[connector.Name] = c

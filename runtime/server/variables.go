@@ -92,7 +92,7 @@ func (s *Server) AnalyzeVariables(ctx context.Context, req *runtimev1.AnalyzeVar
 			UsedBy:       make([]*runtimev1.ResourceName, 0, len(analyzedVar.UsedBy)),
 		}
 		for r := range analyzedVar.UsedBy {
-			av.UsedBy = append(av.UsedBy, runtime.ResourceNameFromCompiler(r))
+			av.UsedBy = append(av.UsedBy, runtime.ResourceNameFromParser(r))
 		}
 		analyzedVars = append(analyzedVars, av)
 	}
