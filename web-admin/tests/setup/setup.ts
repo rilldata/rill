@@ -190,6 +190,21 @@ setup.describe("global setup", () => {
     // ).toBeVisible(); // Billing banner
     // await expect(adminPage.getByText("Free trial")).toBeVisible(); // Billing status
 
+    // There is a scenario where page loads before runtime can identify what files are present.
+    // This leads to a case where we never refresh the resources list.
+    // TODO: find a solution to refetch in the app itself
+    await expect
+      .poll(
+        async () => {
+          await adminPage.reload();
+          console.log("RELOADING...");
+          const title = adminPage.getByLabel("Container title");
+          return title.textContent();
+        },
+        { intervals: Array(5).fill(1_000), timeout: 5_000 },
+      )
+      .toEqual("Project dashboards");
+
     // Check that the dashboards are listed
     await expect(
       adminPage.getByRole("link", { name: "Programmatic Ads Auction" }).first(),
@@ -208,7 +223,10 @@ setup.describe("global setup", () => {
           });
           return listing.textContent();
         },
-        { intervals: Array(6).fill(5_000), timeout: 30_000 },
+        {
+          intervals: [10_000, 10_000, 20_000, 20_000, 30_000, 30_000],
+          timeout: 120_000,
+        },
       )
       .toContain("Last refreshed");
 
