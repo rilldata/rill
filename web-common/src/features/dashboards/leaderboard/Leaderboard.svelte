@@ -42,10 +42,7 @@
   } from "./leaderboard-utils";
   import { COMPARISON_COLUMN_WIDTH, valueColumn } from "./leaderboard-widths";
 
-  const slice = 7;
   const gutterWidth = 24;
-  const queryLimit = 8;
-  const maxValuesToShow = 15;
 
   export let dimension: MetricsViewSpecDimensionV2;
   export let timeRange: V1TimeRange;
@@ -60,6 +57,7 @@
   export let metricsViewName: string;
   export let sortType: SortType;
   export let sortBy: string | null;
+  export let slice = 7;
   export let tableWidth: number;
   export let sortedAscending: boolean;
   export let isValidPercentOfTotal: (measureName: string) => boolean;
@@ -107,6 +105,9 @@
   let container: HTMLElement;
   let visible = false;
   let hovered: boolean;
+
+  $: queryLimit = slice + 1;
+  $: maxValuesToShow = slice * 2;
 
   $: ({
     name: dimensionName = "",

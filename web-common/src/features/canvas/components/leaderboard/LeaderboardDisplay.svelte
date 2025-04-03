@@ -24,6 +24,7 @@
   let metricsViewName: string;
   let leaderboardMeasureNames: string[] = [];
   let dimensionNames: string[] = [];
+  let numRows = 7;
 
   let parentElement: HTMLDivElement;
   let suppressTooltip = false;
@@ -44,6 +45,7 @@
     metricsViewName = leaderboardProperties.metrics_view;
     leaderboardMeasureNames = leaderboardProperties.measures ?? [];
     dimensionNames = leaderboardProperties.dimensions ?? [];
+    numRows = leaderboardProperties.num_rows ?? 7;
   }
 
   $: ({ dimensionFilters: whereFilter, dimensionThresholdFilters } =
@@ -121,6 +123,7 @@
         {#each visibleDimensions as dimension (dimension.name)}
           {#if dimension.name}
             <Leaderboard
+              slice={numRows}
               {instanceId}
               {isValidPercentOfTotal}
               {metricsViewName}
