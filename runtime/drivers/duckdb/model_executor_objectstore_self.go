@@ -146,7 +146,6 @@ func objectStoreSecretSQL(ctx context.Context, path, model, inputConnector strin
 					sb.WriteString(", USE_SSL false")
 				}
 			}
-
 			sb.WriteString(", ENDPOINT ")
 			sb.WriteString(safeSQLString(s3Config.Endpoint))
 			sb.WriteString(", URL_STYLE path")
