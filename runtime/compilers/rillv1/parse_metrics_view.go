@@ -30,16 +30,20 @@ type MetricsViewYAML struct {
 	FirstDayOfWeek    uint32           `yaml:"first_day_of_week"`
 	FirstMonthOfYear  uint32           `yaml:"first_month_of_year"`
 	Dimensions        []*struct {
-		Name        string
-		DisplayName string `yaml:"display_name"`
-		Label       string // Deprecated: use display_name
-		Description string
-		Column      string
-		Expression  string
-		Property    string // For backwards compatibility
-		Ignore      bool   `yaml:"ignore"` // Deprecated
-		Unnest      bool
-		URI         string
+		Name             string
+		DisplayName      string `yaml:"display_name"`
+		Label            string // Deprecated: use display_name
+		Description      string
+		Column           string
+		Expression       string
+		Property         string // For backwards compatibility
+		Ignore           bool   `yaml:"ignore"` // Deprecated
+		Unnest           bool
+		URI              string
+		DictName         string `yaml:"dict_name"`
+		DictKeyExpr      string `yaml:"dict_key_expression"`
+		DictKeyColName   string `yaml:"dict_key_column_name"`
+		DictValueColName string `yaml:"dict_value_column_name"`
 	}
 	Measures []*struct {
 		Name                string
@@ -821,13 +825,17 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		}
 
 		spec.Dimensions = append(spec.Dimensions, &runtimev1.MetricsViewSpec_DimensionV2{
-			Name:        dim.Name,
-			DisplayName: dim.DisplayName,
-			Description: dim.Description,
-			Column:      dim.Column,
-			Expression:  dim.Expression,
-			Unnest:      dim.Unnest,
-			Uri:         dim.URI,
+			Name:                dim.Name,
+			DisplayName:         dim.DisplayName,
+			Description:         dim.Description,
+			Column:              dim.Column,
+			Expression:          dim.Expression,
+			Unnest:              dim.Unnest,
+			Uri:                 dim.URI,
+			DictName:            dim.DictName,
+			DictKeyExpression:   dim.DictKeyExpr,
+			DictKeyColumnName:   dim.DictKeyColName,
+			DictValueColumnName: dim.DictValueColName,
 		})
 	}
 

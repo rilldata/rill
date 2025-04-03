@@ -1543,6 +1543,28 @@ export class MetricsViewSpec_DimensionV2 extends Message<MetricsViewSpec_Dimensi
    */
   uri = "";
 
+  /**
+   * @generated from field: string dict_name = 8;
+   */
+  dictName = "";
+
+  /**
+   * expression or column name that supplies values to be looked up
+   *
+   * @generated from field: string dict_key_expression = 9;
+   */
+  dictKeyExpression = "";
+
+  /**
+   * @generated from field: string dict_key_column_name = 10;
+   */
+  dictKeyColumnName = "";
+
+  /**
+   * @generated from field: string dict_value_column_name = 11;
+   */
+  dictValueColumnName = "";
+
   constructor(data?: PartialMessage<MetricsViewSpec_DimensionV2>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1558,6 +1580,10 @@ export class MetricsViewSpec_DimensionV2 extends Message<MetricsViewSpec_Dimensi
     { no: 6, name: "expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "unnest", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "uri", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "dict_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "dict_key_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "dict_key_column_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "dict_value_column_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_DimensionV2 {

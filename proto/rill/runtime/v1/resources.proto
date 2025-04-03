@@ -176,6 +176,10 @@ message MetricsViewSpec {
     string expression = 6;
     bool unnest = 5;
     string uri = 7;
+    string dict_name = 8;
+    string dict_key_expression = 9; // expression or column name that supplies values to be looked up
+    string dict_key_column_name = 10;
+    string dict_value_column_name = 11;
   }
   // Selector for a dimension
   message DimensionSelector {

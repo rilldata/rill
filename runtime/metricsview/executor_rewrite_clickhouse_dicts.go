@@ -2,15 +2,15 @@ package metricsview
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
 type lookupMeta struct {
-	table  string
-	column string
-	key    string
+	table    string
+	keyExpr  string
+	keyCol   string
+	valueCol string
 }
 
 // Rewrites filter on dictionary columns to use the key column instead of the value column. For example, if the dictionary value column is "country" and key column is "country_key",
@@ -22,12 +22,12 @@ func (e *Executor) rewriteClickhouseDictFilters(qry *Query) map[string]*lookupMe
 
 	dictLookups := make(map[string]*lookupMeta)
 	for _, dim := range e.metricsView.Dimensions {
-		if strings.HasPrefix(dim.Expression, "dictGet") {
-			tbl, col, key := drivers.ParseClickhouseDictGet(dim.Expression)
+		if dim.DictName != "" {
 			dictLookups[dim.Name] = &lookupMeta{
-				table:  tbl,
-				column: col,
-				key:    key,
+				table:    dim.DictName,
+				keyExpr:  dim.DictKeyExpression,
+				keyCol:   dim.DictKeyColumnName,
+				valueCol: dim.DictValueColumnName,
 			}
 		}
 	}
@@ -56,7 +56,7 @@ func (e *Executor) handleExpression(expr *Expression, dictLookups map[string]*lo
 		lkpMeta := dictLookups[exprs[0].Name]
 
 		subquery := &Subquery{
-			RawSQL: fmt.Sprintf("SELECT %s FROM dictionary(%s) WHERE %s IN ", e.olap.Dialect().EscapeIdentifier(lkpMeta.key), e.olap.Dialect().EscapeIdentifier(lkpMeta.table), e.olap.Dialect().EscapeIdentifier(lkpMeta.column)),
+			RawSQL: fmt.Sprintf("SELECT %s FROM dictionary(%s) WHERE %s IN ", e.olap.Dialect().EscapeIdentifier(lkpMeta.keyCol), e.olap.Dialect().EscapeIdentifier(lkpMeta.table), e.olap.Dialect().EscapeIdentifier(lkpMeta.valueCol)),
 		}
 
 		subquery.RawSQL += "("
@@ -77,7 +77,7 @@ func (e *Executor) handleExpression(expr *Expression, dictLookups map[string]*lo
 
 		expr.Condition.Expressions = []*Expression{
 			{
-				Identifier: lkpMeta.key,
+				Identifier: lkpMeta.keyExpr,
 			},
 			{
 				Subquery: subquery,
@@ -114,7 +114,7 @@ func (e *Executor) rewriteClickhouseDictGroupBySelect(ast *AST, n *SelectNode, d
 		wrap := false
 		for i := range n.DimFields {
 			if lookup, ok := dictLookups[n.DimFields[i].Name]; ok {
-				n.DimFields[i].GroupByIdentifier = lookup.key
+				n.DimFields[i].GroupByIdentifier = lookup.keyExpr
 				wrap = true
 			} else {
 				n.DimFields[i].GroupByIdentifier = ast.dimFields[i].Name

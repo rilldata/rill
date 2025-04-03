@@ -3090,6 +3090,15 @@ definitions:
         type: boolean
       uri:
         type: string
+      dictName:
+        type: string
+      dictKeyExpression:
+        type: string
+        title: expression or column name that supplies values to be looked up
+      dictKeyColumnName:
+        type: string
+      dictValueColumnName:
+        type: string
     title: Dimensions are columns to filter and group by
   MetricsViewSpecMeasureType:
     type: string

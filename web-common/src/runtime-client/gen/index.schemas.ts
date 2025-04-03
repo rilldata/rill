@@ -2758,6 +2758,10 @@ export interface MetricsViewSpecDimensionV2 {
   expression?: string;
   unnest?: boolean;
   uri?: string;
+  dictName?: string;
+  dictKeyExpression?: string;
+  dictKeyColumnName?: string;
+  dictValueColumnName?: string;
 }
 
 export interface MetricsViewSpecDimensionSelector {

@@ -12642,6 +12642,14 @@ func (m *MetricsViewSpec_DimensionV2) validate(all bool) error {
 
 	// no validation rules for Uri
 
+	// no validation rules for DictName
+
+	// no validation rules for DictKeyExpression
+
+	// no validation rules for DictKeyColumnName
+
+	// no validation rules for DictValueColumnName
+
 	if len(errors) > 0 {
 		return MetricsViewSpec_DimensionV2MultiError(errors)
 	}
