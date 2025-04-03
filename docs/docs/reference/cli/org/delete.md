@@ -22,12 +22,6 @@ rill org delete [<org-name>] [flags]
   rill org delete myorg --force
 ```
 
-### Flags
-
-```
-      --force   Delete forcefully, skips the confirmation
-```
-
 ### Global flags
 
 ```

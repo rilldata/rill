@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/dotrill"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
@@ -31,7 +30,7 @@ func UnassumeUser(ctx context.Context, ch *cmdutil.Helper) error {
 	}
 
 	// Revoke the current token if it's not expired
-	expiryTime, err := dotrill.GetRepresentingUserAccessTokenExpiry()
+	expiryTime, err := ch.DotRill.GetRepresentingUserAccessTokenExpiry()
 	if err == nil && expiryTime != nil && time.Now().Before(*expiryTime) {
 		_, err = client.RevokeCurrentAuthToken(ctx, &adminv1.RevokeCurrentAuthTokenRequest{})
 		if err != nil {
@@ -40,13 +39,13 @@ func UnassumeUser(ctx context.Context, ch *cmdutil.Helper) error {
 	}
 
 	// Clear local token and expiry
-	err = dotrill.SetRepresentingUserAccessTokenExpiry(nil)
+	err = ch.DotRill.SetRepresentingUserAccessTokenExpiry(nil)
 	if err != nil {
 		return err
 	}
 
 	// Fetch the original token
-	originalToken, err := dotrill.GetBackupToken()
+	originalToken, err := ch.DotRill.GetBackupToken()
 	if err != nil {
 		return err
 	}
@@ -55,38 +54,38 @@ func UnassumeUser(ctx context.Context, ch *cmdutil.Helper) error {
 	}
 
 	// Restore the original token as the access token
-	err = dotrill.SetAccessToken(originalToken)
+	err = ch.DotRill.SetAccessToken(originalToken)
 	if err != nil {
 		return err
 	}
 
 	// Fetch the original default org
-	originalDefaultOrg, err := dotrill.GetBackupDefaultOrg()
+	originalDefaultOrg, err := ch.DotRill.GetBackupDefaultOrg()
 	if err != nil {
 		return err
 	}
 
 	// Restore the original default org as default org
-	err = dotrill.SetDefaultOrg(originalDefaultOrg)
+	err = ch.DotRill.SetDefaultOrg(originalDefaultOrg)
 	if err != nil {
 		return err
 	}
 	ch.Org = originalDefaultOrg
 
 	// Clear backup token
-	err = dotrill.SetBackupToken("")
+	err = ch.DotRill.SetBackupToken("")
 	if err != nil {
 		return err
 	}
 
 	// Set email for representing user as empty
-	err = dotrill.SetRepresentingUser("")
+	err = ch.DotRill.SetRepresentingUser("")
 	if err != nil {
 		return err
 	}
 
 	// Clear backup default org
-	err = dotrill.SetBackupDefaultOrg("")
+	err = ch.DotRill.SetBackupDefaultOrg("")
 	if err != nil {
 		return err
 	}

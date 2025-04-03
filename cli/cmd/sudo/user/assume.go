@@ -5,7 +5,6 @@ import (
 
 	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/dotrill"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
@@ -20,7 +19,7 @@ func AssumeCmd(ch *cmdutil.Helper) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
-			representingUser, err := dotrill.GetRepresentingUser()
+			representingUser, err := ch.DotRill.GetRepresentingUser()
 			if err != nil {
 				ch.PrintfWarn("Could not parse representing user email: %v\n\n", err)
 			}
@@ -50,38 +49,38 @@ func AssumeCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// Backup current token as original_token
-			originalToken, err := dotrill.GetAccessToken()
+			originalToken, err := ch.DotRill.GetAccessToken()
 			if err != nil {
 				return err
 			}
-			err = dotrill.SetBackupToken(originalToken)
+			err = ch.DotRill.SetBackupToken(originalToken)
 			if err != nil {
 				return err
 			}
 			// Backup current org as backup org
-			defaultOrg, err := dotrill.GetDefaultOrg()
+			defaultOrg, err := ch.DotRill.GetDefaultOrg()
 			if err != nil {
 				return err
 			}
-			err = dotrill.SetBackupDefaultOrg(defaultOrg)
+			err = ch.DotRill.SetBackupDefaultOrg(defaultOrg)
 			if err != nil {
 				return err
 			}
 
 			// Set new access token
-			err = dotrill.SetAccessToken(res.Token)
+			err = ch.DotRill.SetAccessToken(res.Token)
 			if err != nil {
 				return err
 			}
 
 			// Set the new token expiry
-			err = dotrill.SetRepresentingUserAccessTokenExpiry(&expiry)
+			err = ch.DotRill.SetRepresentingUserAccessTokenExpiry(&expiry)
 			if err != nil {
 				return err
 			}
 
 			// Set representing user email
-			err = dotrill.SetRepresentingUser(args[0])
+			err = ch.DotRill.SetRepresentingUser(args[0])
 			if err != nil {
 				return err
 			}

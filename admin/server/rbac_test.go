@@ -1,11 +1,13 @@
-package server
+package server_test
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/hex"
 	"testing"
 
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/testadmin"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/stretchr/testify/require"
@@ -13,12 +15,12 @@ import (
 
 func TestRBAC(t *testing.T) {
 	ctx := context.Background()
-	svr := newTestServer(t)
+	fix := testadmin.New(t)
 
 	t.Run("Adding org and project members", func(t *testing.T) {
 		// Create users
-		u1, c1 := newTestUser(t, svr)
-		u2, c2 := newTestUser(t, svr)
+		u1, c1 := fix.NewUser(t)
+		u2, c2 := fix.NewUser(t)
 
 		// Create org and project
 		r1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
@@ -134,7 +136,7 @@ func TestRBAC(t *testing.T) {
 
 	t.Run("Ability to filter by role in member listings", func(t *testing.T) {
 		// Create org, project and usergroup
-		_, c1 := newTestUser(t, svr)
+		_, c1 := fix.NewUser(t)
 		r1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
 		require.NoError(t, err)
 		r2, err := c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
@@ -151,7 +153,7 @@ func TestRBAC(t *testing.T) {
 		require.NoError(t, err)
 
 		// Add a user as viewer to the org and project, and to the usergroup
-		u2, _ := newTestUser(t, svr)
+		u2, _ := fix.NewUser(t)
 		_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
 			Organization: r1.Organization.Name,
 			Email:        u2.Email,
@@ -234,7 +236,7 @@ func TestRBAC(t *testing.T) {
 
 	t.Run("Ability to include project and usergroup counts in org member listings", func(t *testing.T) {
 		// Create org, two projects and two usergroup
-		u1, c1 := newTestUser(t, svr)
+		u1, c1 := fix.NewUser(t)
 		r1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
 		require.NoError(t, err)
 		r2, err := c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
@@ -263,7 +265,7 @@ func TestRBAC(t *testing.T) {
 		require.NoError(t, err)
 
 		// Add a user to the org, one of the usergroups, and one of the projects
-		u2, _ := newTestUser(t, svr)
+		u2, _ := fix.NewUser(t)
 		_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
 			Organization: r1.Organization.Name,
 			Email:        u2.Email,
@@ -315,7 +317,7 @@ func TestRBAC(t *testing.T) {
 
 	t.Run("Ability to include users counts in usergroup listings", func(t *testing.T) {
 		// Create org and usergroup
-		_, c1 := newTestUser(t, svr)
+		_, c1 := fix.NewUser(t)
 		r1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
 		require.NoError(t, err)
 		r2, err := c1.CreateUsergroup(ctx, &adminv1.CreateUsergroupRequest{
@@ -325,7 +327,7 @@ func TestRBAC(t *testing.T) {
 		require.NoError(t, err)
 
 		// Add a user to the usergroup
-		u2, _ := newTestUser(t, svr)
+		u2, _ := fix.NewUser(t)
 		_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
 			Organization: r1.Organization.Name,
 			Email:        u2.Email,
@@ -375,8 +377,8 @@ func TestRBAC(t *testing.T) {
 
 	t.Run("Visibility of public projects", func(t *testing.T) {
 		// Create users
-		_, c1 := newTestUser(t, svr)
-		_, c2 := newTestUser(t, svr)
+		_, c1 := fix.NewUser(t)
+		_, c2 := fix.NewUser(t)
 
 		// Create org and public and private projects
 		r1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
@@ -426,7 +428,7 @@ func TestRBAC(t *testing.T) {
 
 	t.Run("Inviting users who have not signed up yet", func(t *testing.T) {
 		// Create admin user with org, project and group
-		_, c1 := newTestUser(t, svr)
+		_, c1 := fix.NewUser(t)
 		org1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
 		require.NoError(t, err)
 		proj1, err := c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
@@ -465,7 +467,7 @@ func TestRBAC(t *testing.T) {
 		require.NoError(t, err)
 
 		// Check that two emails were sent (org and project addition)
-		sender := svr.admin.Email.Sender.(*email.TestSender)
+		sender := fix.Admin.Email.Sender.(*email.TestSender)
 		var count int
 		for _, email := range sender.Emails {
 			if email.ToEmail == userEmail {
@@ -490,7 +492,7 @@ func TestRBAC(t *testing.T) {
 		require.Equal(t, database.ProjectRoleNameAdmin, projInvites.Invites[0].Role)
 
 		// Create the user and check they can access the org and project, and check they are in the list of members
-		_, c2 := newTestUserWithEmail(t, svr, userEmail)
+		_, c2 := fix.NewUserWithEmail(t, userEmail)
 		_, err = c2.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: org1.Organization.Name})
 		require.NoError(t, err)
 		_, err = c2.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: org1.Organization.Name, Name: proj1.Project.Name})
@@ -545,7 +547,7 @@ func TestRBAC(t *testing.T) {
 
 	t.Run("Inviting project users who haven't signed up yet become org guests", func(t *testing.T) {
 		// Create admin user with org and project
-		_, c1 := newTestUser(t, svr)
+		_, c1 := fix.NewUser(t)
 		org1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
 		require.NoError(t, err)
 		proj1, err := c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
@@ -567,7 +569,7 @@ func TestRBAC(t *testing.T) {
 		require.NoError(t, err)
 
 		// Sign up the user
-		_, _ = newTestUserWithEmail(t, svr, userEmail)
+		_, _ = fix.NewUserWithEmail(t, userEmail)
 
 		// Check that the user is a guest in the org
 		orgMembers, err := c1.ListOrganizationMemberUsers(ctx, &adminv1.ListOrganizationMemberUsersRequest{Organization: org1.Organization.Name})
@@ -592,7 +594,7 @@ func TestRBAC(t *testing.T) {
 
 	t.Run("Project invites are connected to org invites", func(t *testing.T) {
 		// Create an org and project
-		_, c1 := newTestUser(t, svr)
+		_, c1 := fix.NewUser(t)
 		org1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
 		require.NoError(t, err)
 		proj1, err := c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
@@ -647,7 +649,7 @@ func TestRBAC(t *testing.T) {
 		require.Len(t, projInvites.Invites, 0)
 
 		// Signup the user and check they are not added to the org
-		_, c2 := newTestUserWithEmail(t, svr, userEmail)
+		_, c2 := fix.NewUserWithEmail(t, userEmail)
 		orgs, err := c2.ListOrganizations(ctx, &adminv1.ListOrganizationsRequest{})
 		require.NoError(t, err)
 		require.Len(t, orgs.Organizations, 0)
@@ -655,7 +657,7 @@ func TestRBAC(t *testing.T) {
 
 	t.Run("Whitelisting domains on orgs", func(t *testing.T) {
 		// Create admin user with four orgs
-		u1, c1 := newTestUserWithDomain(t, svr, "whitelist-orgs.test")
+		u1, c1 := fix.NewUserWithDomain(t, "whitelist-orgs.test")
 		adminEmail := u1.Email
 		org1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
 		require.NoError(t, err)
@@ -668,7 +670,7 @@ func TestRBAC(t *testing.T) {
 
 		// Create a user matching a domain BEFORE whitelisting
 		userEmail := randomName() + "@whitelist-orgs.test"
-		_, _ = newTestUserWithEmail(t, svr, userEmail)
+		_, _ = fix.NewUserWithEmail(t, userEmail)
 
 		// Whitelist one domain on org1 and org2, another on org3, and none on org4
 		_, err = c1.CreateWhitelistedDomain(ctx, &adminv1.CreateWhitelistedDomainRequest{
@@ -684,7 +686,7 @@ func TestRBAC(t *testing.T) {
 		})
 		require.NoError(t, err)
 		// Since normal admins can only whitelist their own domain, we need to create and add a separate user on the other domain to whitelist it.
-		uTemp, cTemp := newTestUserWithDomain(t, svr, "whitelist-orgs2.test")
+		uTemp, cTemp := fix.NewUserWithDomain(t, "whitelist-orgs2.test")
 		_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
 			Organization: org3.Organization.Name,
 			Email:        uTemp.Email,
@@ -717,7 +719,7 @@ func TestRBAC(t *testing.T) {
 
 		// Create a user matching a domain AFTER whitelisting
 		userEmail2 := randomName() + "@whitelist-orgs.test"
-		_, _ = newTestUserWithEmail(t, svr, userEmail2)
+		_, _ = fix.NewUserWithEmail(t, userEmail2)
 
 		// Utils for checking org and group members
 		checkOrgMember := func(email string, orgName string, role string, totalMembers int) {
@@ -777,7 +779,7 @@ func TestRBAC(t *testing.T) {
 
 	t.Run("Whitelisting domains on projects", func(t *testing.T) {
 		// Create an admin user and two orgs with a project each
-		u1, c1 := newTestUserWithDomain(t, svr, "whitelist-projs.test")
+		u1, c1 := fix.NewUserWithDomain(t, "whitelist-projs.test")
 		adminEmail := u1.Email
 		org1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
 		require.NoError(t, err)
@@ -800,9 +802,9 @@ func TestRBAC(t *testing.T) {
 
 		// Create two users before adding the whitelist
 		userEmail1 := randomName() + "@whitelist-projs.test"
-		_, _ = newTestUserWithEmail(t, svr, userEmail1)
+		_, _ = fix.NewUserWithEmail(t, userEmail1)
 		userEmail2 := randomName() + "@whitelist-projs.test"
-		_, _ = newTestUserWithEmail(t, svr, userEmail2)
+		_, _ = fix.NewUserWithEmail(t, userEmail2)
 
 		// Add one of the users to the org
 		_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
@@ -856,9 +858,9 @@ func TestRBAC(t *testing.T) {
 		require.NoError(t, err)
 
 		// Create two users matching the domain, one of whom matches the org-level invite
-		_, _ = newTestUserWithEmail(t, svr, userEmail3)
+		_, _ = fix.NewUserWithEmail(t, userEmail3)
 		userEmail4 := randomName() + "@whitelist-projs.test"
-		_, _ = newTestUserWithEmail(t, svr, userEmail4)
+		_, _ = fix.NewUserWithEmail(t, userEmail4)
 
 		// Utils for checking org, group and project members
 		checkOrgMember := func(email string, orgName string, role string, totalMembers int) {
@@ -937,7 +939,7 @@ func TestRBAC(t *testing.T) {
 
 	t.Run("Managed usergroup memberships", func(t *testing.T) {
 		// Create an admin user and an org
-		u1, c1 := newTestUser(t, svr)
+		u1, c1 := fix.NewUser(t)
 		org1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
 		require.NoError(t, err)
 
@@ -968,7 +970,7 @@ func TestRBAC(t *testing.T) {
 		checkGroupMember(database.UsergroupNameAutogroupGuests, "", 0)
 
 		// Create another user, add them to the org, and check memberships
-		u2, _ := newTestUser(t, svr)
+		u2, _ := fix.NewUser(t)
 		_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
 			Organization: org1.Organization.Name,
 			Email:        u2.Email,
@@ -1003,7 +1005,7 @@ func TestRBAC(t *testing.T) {
 
 	t.Run("Editors can manage non-admin users only", func(t *testing.T) {
 		// Create an org, project and usergroup
-		_, c1 := newTestUser(t, svr)
+		_, c1 := fix.NewUser(t)
 		org1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
 		require.NoError(t, err)
 		proj1, err := c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
@@ -1020,7 +1022,7 @@ func TestRBAC(t *testing.T) {
 		require.NoError(t, err)
 
 		// Create an editor user and add them to the org and project
-		u2, c2 := newTestUser(t, svr)
+		u2, c2 := fix.NewUser(t)
 		_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
 			Organization: org1.Organization.Name,
 			Email:        u2.Email,
@@ -1036,7 +1038,7 @@ func TestRBAC(t *testing.T) {
 		require.NoError(t, err)
 
 		// Check that the editor can add a user and usergroup to the org and project
-		u3, _ := newTestUser(t, svr)
+		u3, _ := fix.NewUser(t)
 		_, err = c2.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
 			Organization: org1.Organization.Name,
 			Email:        u3.Email,
@@ -1181,7 +1183,7 @@ func TestRBAC(t *testing.T) {
 		require.NoError(t, err)
 
 		// Check that the editor can't add a member to the usergroup now that it has an admin role
-		u4, _ := newTestUser(t, svr)
+		u4, _ := fix.NewUser(t)
 		_, err = c2.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
 			Organization: org1.Organization.Name,
 			Email:        u4.Email,
@@ -1250,7 +1252,7 @@ func TestRBAC(t *testing.T) {
 
 	t.Run("Organization admins can inspect the projects and usergroups of a user", func(t *testing.T) {
 		// Create an org, project and usergroup
-		_, c1 := newTestUser(t, svr)
+		_, c1 := fix.NewUser(t)
 		org1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
 		require.NoError(t, err)
 		proj1, err := c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
@@ -1267,7 +1269,7 @@ func TestRBAC(t *testing.T) {
 		require.NoError(t, err)
 
 		// Create a user and add them to the org
-		u2, _ := newTestUser(t, svr)
+		u2, _ := fix.NewUser(t)
 		_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
 			Organization: org1.Organization.Name,
 			Email:        u2.Email,
@@ -1327,6 +1329,10 @@ func TestRBAC(t *testing.T) {
 }
 
 func randomName() string {
-	id := randomBytes(16)
+	id := make([]byte, 16)
+	_, err := rand.Read(id)
+	if err != nil {
+		panic(err)
+	}
 	return "test_" + hex.EncodeToString(id)
 }
