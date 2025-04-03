@@ -129,24 +129,6 @@ type LinkPart struct {
 	LabeledAnchor *LabeledAnchor `parser:"| @@)"`
 }
 
-//type FirstLinkPart struct {
-//	Ordinal *Ordinal    `parser:"( @@"`
-//	Anchor  *TimeAnchor `parser:"| @@)"`
-//}
-//
-//type MiddleLinkPart struct {
-//	Ordinal *Ordinal    `parser:"( @@"`
-//	Anchor  *TimeAnchor `parser:"| @@)"`
-//}
-//
-//type LastLinkPart struct {
-//	Ordinal       *Ordinal       `parser:"( @@"`
-//	PeriodToGrain *PeriodToGrain `parser:"| @@"`
-//	Anchor        *TimeAnchor    `parser:"| @@"`
-//	AbsoluteTime  *AbsoluteTime  `parser:"| @@"`
-//	LabeledAnchor *LabeledAnchor `parser:"| @@)"`
-//}
-
 type LabeledAnchor struct {
 	Earliest  bool `parser:"( @Earliest"`
 	Now       bool `parser:"| @Now"`
@@ -180,15 +162,15 @@ type TimeAnchor struct {
 }
 
 type AbsoluteTime struct {
-	ISO    string `parser:"@ISOTime"`
-	year   int
-	month  int
-	week   int
-	day    int
-	hour   int
-	minute int
-	second int
-	tg     timeutil.TimeGrain
+	ISO        string `parser:"@ISOTime"`
+	year       int
+	month      int
+	week       int
+	day        int
+	hour       int
+	minute     int
+	second     int
+	smallestTg timeutil.TimeGrain
 }
 
 // ParseOptions allows for additional options that could probably not be added to the time range itself
@@ -303,8 +285,6 @@ func (e *Expression) Eval(evalOpts EvalOptions) (time.Time, time.Time, timeutil.
 
 	if e.Grain != nil {
 		tg = grainMap[*e.Grain]
-	} else {
-		tg = lowerOrderMap[tg]
 	}
 
 	return start, end, tg
@@ -342,11 +322,11 @@ func (l *LinkPart) parse() error {
 
 func (l *LinkPart) time(evalOpts EvalOptions, start, end time.Time, tz *time.Location, tg timeutil.TimeGrain, isFirstPart bool) (time.Time, time.Time, timeutil.TimeGrain) {
 	if l.PeriodToGrain != nil {
-		return l.PeriodToGrain.time(evalOpts, start, end, tz, tg)
+		return l.PeriodToGrain.time(evalOpts, start, tz)
 	} else if l.Anchor != nil {
 		return l.Anchor.time(evalOpts, start, end, tz, tg, isFirstPart)
 	} else if l.Ordinal != nil {
-		return l.Ordinal.time(evalOpts, start, tz, tg)
+		return l.Ordinal.time(evalOpts, start, tz, tg, isFirstPart)
 	} else if l.AbsoluteTime != nil {
 		return l.AbsoluteTime.time(tz, isFirstPart)
 	} else if l.LabeledAnchor != nil {
@@ -381,7 +361,7 @@ func (p *PeriodToGrain) parse() error {
 	return nil
 }
 
-func (p *PeriodToGrain) time(evalOpts EvalOptions, start, end time.Time, tz *time.Location, higherTg timeutil.TimeGrain) (time.Time, time.Time, timeutil.TimeGrain) {
+func (p *PeriodToGrain) time(evalOpts EvalOptions, start time.Time, tz *time.Location) (time.Time, time.Time, timeutil.TimeGrain) {
 	num := 1
 	if p.Num != nil {
 		num = *p.Num
@@ -401,7 +381,9 @@ func (p *PeriodToGrain) time(evalOpts EvalOptions, start, end time.Time, tz *tim
 			ptgStart = timeutil.OffsetTime(ptgStart, p.from, num-1)
 		}
 	}
+
 	ptgEnd := timeutil.CeilTime(start, p.to, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+
 	return ptgStart, ptgEnd, p.to
 }
 
@@ -481,10 +463,16 @@ func (t *TimeAnchor) time(evalOpts EvalOptions, start, end time.Time, tz *time.L
 		}
 	}
 
-	return start, end, curTg
+	nextTg := curTg
+	// If this is first part in a link and a single unit of grain is requested, return a grain less that the part's grain
+	if isFirstPart && num <= 1 {
+		nextTg = lowerOrderMap[nextTg]
+	}
+
+	return start, end, nextTg
 }
 
-func (o *Ordinal) time(evalOpts EvalOptions, start time.Time, tz *time.Location, higherTg timeutil.TimeGrain) (time.Time, time.Time, timeutil.TimeGrain) {
+func (o *Ordinal) time(evalOpts EvalOptions, start time.Time, tz *time.Location, higherTg timeutil.TimeGrain, isFirstPart bool) (time.Time, time.Time, timeutil.TimeGrain) {
 	curTg := grainMap[o.Grain]
 	if higherTg == timeutil.TimeGrainUnspecified {
 		higherTg = higherOrderMap[curTg]
@@ -505,7 +493,13 @@ func (o *Ordinal) time(evalOpts EvalOptions, start time.Time, tz *time.Location,
 	start = timeutil.OffsetTime(start, curTg, offset)
 	end := timeutil.OffsetTime(start, curTg, 1)
 
-	return start, end, curTg
+	nextTg := curTg
+	// If this is first part in a link, return a grain less that the part's grain
+	if isFirstPart {
+		nextTg = lowerOrderMap[curTg]
+	}
+
+	return start, end, nextTg
 }
 
 // TODO: reuse code from duration.ParseISO8601
@@ -525,25 +519,25 @@ func (a *AbsoluteTime) parse() error {
 		switch name {
 		case "year":
 			a.year = val
-			a.tg = timeutil.TimeGrainYear
+			a.smallestTg = timeutil.TimeGrainYear
 		case "month":
 			a.month = val
-			a.tg = timeutil.TimeGrainMonth
+			a.smallestTg = timeutil.TimeGrainMonth
 		case "week":
 			a.week = val
-			a.tg = timeutil.TimeGrainWeek
+			a.smallestTg = timeutil.TimeGrainWeek
 		case "day":
 			a.day = val
-			a.tg = timeutil.TimeGrainDay
+			a.smallestTg = timeutil.TimeGrainDay
 		case "hour":
 			a.hour = val
-			a.tg = timeutil.TimeGrainHour
+			a.smallestTg = timeutil.TimeGrainHour
 		case "minute":
 			a.minute = val
-			a.tg = timeutil.TimeGrainMinute
+			a.smallestTg = timeutil.TimeGrainMinute
 		case "second":
 			a.second = val
-			a.tg = timeutil.TimeGrainSecond
+			a.smallestTg = timeutil.TimeGrainSecond
 		default:
 			return fmt.Errorf("unexpected field %q in duration", name)
 		}
@@ -565,10 +559,16 @@ func (a *AbsoluteTime) time(tz *time.Location, isFirstPart bool) (time.Time, tim
 	end := start
 
 	if isFirstPart {
-		end = timeutil.OffsetTime(start, a.tg, 1)
+		end = timeutil.OffsetTime(start, a.smallestTg, 1)
 	}
 
-	return start, end, a.tg
+	nextTg := a.smallestTg
+	// If this is the first part in the link then return a grain lower than return grain lower than the smallest time grain
+	if isFirstPart {
+		nextTg = lowerOrderMap[nextTg]
+	}
+
+	return start, end, nextTg
 }
 
 func parseISO(from string, parseOpts ParseOptions) (*Expression, error) {
