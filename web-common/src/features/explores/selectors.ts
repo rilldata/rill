@@ -3,11 +3,8 @@ import type {
   QueryFunction,
   QueryClient,
 } from "@tanstack/svelte-query";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
-import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
-import { getExploreStateFromSessionStorage } from "@rilldata/web-common/features/dashboards/url-state/getExploreStateFromSessionStorage";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   createRuntimeServiceGetExplore,
@@ -20,9 +17,6 @@ import {
   type V1GetExploreResponse,
   type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
-  type V1ExplorePreset,
-  getQueryServiceMetricsViewSchemaQueryKey,
-  queryServiceMetricsViewSchema,
 } from "@rilldata/web-common/runtime-client";
 import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client";
 import { error } from "@sveltejs/kit";
@@ -37,6 +31,7 @@ export function useExplore(
       V1GetExploreResponse
     >
   >,
+  queryClient?: QueryClient,
 ) {
   return createRuntimeServiceGetExplore(
     instanceId,
@@ -44,6 +39,7 @@ export function useExplore(
     {
       query: queryOptions,
     },
+    queryClient,
   );
 }
 
@@ -147,62 +143,6 @@ export async function fetchExploreSpec(
     metricsView: metricsViewResource,
     defaultExplorePreset,
     exploreStateFromYAMLConfig,
-    errors,
-  };
-}
-
-export async function fetchMetricsViewSchema(
-  instanceId: string,
-  metricsViewName: string,
-) {
-  const schemaResp = await queryClient.fetchQuery({
-    queryKey: getQueryServiceMetricsViewSchemaQueryKey(
-      instanceId,
-      metricsViewName,
-    ),
-    queryFn: () => queryServiceMetricsViewSchema(instanceId, metricsViewName),
-  });
-  return schemaResp.schema ?? {};
-}
-
-export function getExploreStates(
-  exploreName: string,
-  prefix: string | undefined,
-  searchParams: URLSearchParams,
-  metricsViewSpec: V1MetricsViewSpec | undefined,
-  exploreSpec: V1ExploreSpec | undefined,
-  defaultExplorePreset: V1ExplorePreset,
-) {
-  if (!metricsViewSpec || !exploreSpec) {
-    return {
-      partialExploreStateFromUrl: <Partial<MetricsExplorerEntity>>{},
-      exploreStateFromSessionStorage: undefined,
-      errors: [],
-    };
-  }
-
-  const { partialExploreState: partialExploreStateFromUrl, errors } =
-    convertURLSearchParamsToExploreState(
-      searchParams,
-      metricsViewSpec,
-      exploreSpec,
-      defaultExplorePreset,
-    );
-
-  const { exploreStateFromSessionStorage, errors: errorsFromLoad } =
-    getExploreStateFromSessionStorage(
-      exploreName,
-      prefix,
-      searchParams,
-      metricsViewSpec,
-      exploreSpec,
-      defaultExplorePreset,
-    );
-  errors.push(...errorsFromLoad);
-
-  return {
-    partialExploreStateFromUrl,
-    exploreStateFromSessionStorage,
     errors,
   };
 }
