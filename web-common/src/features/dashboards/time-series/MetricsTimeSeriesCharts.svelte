@@ -47,8 +47,6 @@
     updateChartInteractionStore,
   } from "./utils";
   import DashboardMetricsDraggableList from "@rilldata/web-common/components/menu/DashboardMetricsDraggableList.svelte";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import DashboardVisibilityDropdown from "@rilldata/web-common/components/menu/DashboardVisibilityDropdown.svelte";
 
   export let exploreName: string;
   export let workspaceWidth: number;
@@ -66,12 +64,10 @@
       dimensionFilters: { includedDimensionValues },
     },
     actions: {
-      measures: { setMeasureVisibility, toggleMeasureVisibility },
+      measures: { setMeasureVisibility },
     },
     validSpecStore,
   } = getStateManagers();
-
-  const { reorderMeasuresDimensions } = featureFlags;
 
   const timeControlsStore = useTimeControlStore(getStateManagers());
   const timeSeriesDataStore = useTimeSeriesDataStore(getStateManagers());
@@ -307,29 +303,13 @@
         chartType={tddChartType}
       />
     {:else}
-      {#if $reorderMeasuresDimensions}
-        <DashboardMetricsDraggableList
-          type="measure"
-          onSelectedChange={(items) =>
-            setMeasureVisibility(items, allMeasureNames)}
-          allItems={$allMeasures}
-          selectedItems={visibleMeasureNames}
-        />
-      {:else}
-        <DashboardVisibilityDropdown
-          category="Measures"
-          tooltipText="Choose measures to display"
-          onSelect={(name) => toggleMeasureVisibility(allMeasureNames, name)}
-          selectableItems={$allMeasures.map(({ name, displayName }) => ({
-            name: name || "",
-            label: displayName || name || "",
-          }))}
-          selectedItems={visibleMeasureNames}
-          onToggleSelectAll={() => {
-            toggleMeasureVisibility(allMeasureNames);
-          }}
-        />
-      {/if}
+      <DashboardMetricsDraggableList
+        type="measure"
+        onSelectedChange={(items) =>
+          setMeasureVisibility(items, allMeasureNames)}
+        allItems={$allMeasures}
+        selectedItems={visibleMeasureNames}
+      />
 
       {#if !hideStartPivotButton}
         <button

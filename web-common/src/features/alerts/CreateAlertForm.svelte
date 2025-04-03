@@ -44,6 +44,7 @@
     selectors: {
       timeRangeSelectors: { timeControlsState },
     },
+    validSpecStore,
   } = getStateManagers();
   const timeControls = get(timeControlsState);
 
@@ -69,6 +70,8 @@
     timeControls,
     timeRange,
   );
+
+  $: exploreSpec = $validSpecStore.data?.explore ?? {};
 
   const formState = createForm<AlertFormValues>({
     initialValues: {
@@ -148,7 +151,10 @@
               renotify: !!values.snooze,
               renotifyAfterSeconds: values.snooze ? Number(values.snooze) : 0,
               webOpenPath: `/explore/${$exploreName}`,
-              webOpenState: getProtoFromDashboardState($dashboardStore),
+              webOpenState: getProtoFromDashboardState(
+                $dashboardStore,
+                exploreSpec,
+              ),
             },
           },
         });

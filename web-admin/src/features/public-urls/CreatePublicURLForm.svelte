@@ -45,6 +45,7 @@
       measures: { visibleMeasures },
       dimensions: { visibleDimensions },
     },
+    validSpecStore,
   } = StateManagers;
 
   $: ({ organization, project, dashboard } = $page.params);
@@ -62,6 +63,7 @@
   $: sanitizedState = getSanitizedDashboardStateParam(
     $dashboardStore,
     exploreFields,
+    $validSpecStore.data?.explore,
   );
 
   let url: string | null = null;

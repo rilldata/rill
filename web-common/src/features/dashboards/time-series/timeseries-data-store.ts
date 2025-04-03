@@ -134,8 +134,8 @@ export function createTimeSeriesDataStore(
           (measure) => measure === expandedMeasuerName,
         );
       } else {
-        measures = dashboardStore?.visibleMeasureKeys
-          ? [...dashboardStore.visibleMeasureKeys]
+        measures = dashboardStore?.visibleMeasures
+          ? [...dashboardStore.visibleMeasures]
           : [];
       }
 
