@@ -5,14 +5,11 @@ import (
 	"strings"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/dotrill"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
 func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
-	var force bool
-
 	deleteCmd := &cobra.Command{
 		Use:   "delete [<org-name>]",
 		Short: "Delete organization",
@@ -50,7 +47,7 @@ This operation cannot be undone. Use --force to skip confirmation.`,
 				}
 			}
 
-			if !force {
+			if ch.Interactive {
 				ch.Printf("Warn: Deleting the org %q will remove all metadata associated with the org\n", name)
 				msg := fmt.Sprintf("Type %q to confirm deletion", name)
 				org, err := cmdutil.InputPrompt(msg, "")
@@ -81,7 +78,7 @@ This operation cannot be undone. Use --force to skip confirmation.`,
 
 			// If deleting the default org, set the default org to empty
 			if name == ch.Org {
-				err = dotrill.SetDefaultOrg("")
+				err = ch.DotRill.SetDefaultOrg("")
 				if err != nil {
 					return err
 				}
@@ -91,7 +88,6 @@ This operation cannot be undone. Use --force to skip confirmation.`,
 			return nil
 		},
 	}
-	deleteCmd.Flags().BoolVar(&force, "force", false, "Delete forcefully, skips the confirmation")
 
 	return deleteCmd
 }

@@ -10,7 +10,6 @@ import (
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/deviceauth"
-	"github.com/rilldata/rill/cli/pkg/dotrill"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/spf13/cobra"
@@ -88,7 +87,7 @@ func Login(ctx context.Context, ch *cmdutil.Helper, redirectURL string) error {
 		return err
 	}
 
-	err = dotrill.SetAccessToken(res1.AccessToken)
+	err = ch.DotRill.SetAccessToken(res1.AccessToken)
 	if err != nil {
 		return err
 	}
@@ -172,7 +171,7 @@ func SelectOrgFlow(ctx context.Context, ch *cmdutil.Helper, interactive bool, re
 		}
 	}
 
-	err = dotrill.SetDefaultOrg(defaultOrg)
+	err = ch.DotRill.SetDefaultOrg(defaultOrg)
 	if err != nil {
 		return err
 	}

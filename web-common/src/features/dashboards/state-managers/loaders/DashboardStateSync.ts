@@ -14,7 +14,7 @@ import {
   convertExploreStateToURLSearchParams,
   getUpdatedUrlForExploreState,
 } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
-import { updateExploreSessionStore } from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-store";
+import { updateExploreSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
 import type { AfterNavigate } from "@sveltejs/kit";
 import { derived, get, type Readable } from "svelte/store";
 
