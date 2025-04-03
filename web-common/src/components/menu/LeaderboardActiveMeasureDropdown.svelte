@@ -3,10 +3,10 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
 
-  export let leaderboardMeasureName: string;
+  export let sortBy: string;
   export let activeLeaderboardMeasure: MetricsViewSpecMeasureV2 | undefined;
   export let measures: MetricsViewSpecMeasureV2[];
-  export let setLeaderboardMeasureName: (name: string) => void;
+  export let setSortBy: (name: string) => void;
 
   let active = false;
 </script>
@@ -21,7 +21,7 @@
     }))}
     onSelectedChange={(newSelection) => {
       if (!newSelection?.value) return;
-      setLeaderboardMeasureName(newSelection.value);
+      setSortBy(newSelection.value);
     }}
   >
     <Select.Trigger class="outline-none border-none w-fit  px-0 gap-x-0.5">
@@ -47,7 +47,7 @@
           class="text-[12px]"
         >
           <div class="flex flex-col">
-            <div class:font-bold={leaderboardMeasureName === measure.name}>
+            <div class:font-bold={sortBy === measure.name}>
               {measure.displayName || measure.name}
             </div>
 

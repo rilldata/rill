@@ -6,6 +6,7 @@ import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity
 import {
   setLeaderboardMeasureCount,
   setLeaderboardMeasureName,
+  setLeaderboardMeasureNames,
 } from "./core-actions";
 import { dimensionTableActions } from "./dimension-table";
 import type {
@@ -101,6 +102,14 @@ export const createStateManagerActions = (
     setLeaderboardMeasureName: dashboardMutatorToUpdater(
       actionArgs,
       setLeaderboardMeasureName,
+    ),
+
+    /**
+     * sets the list of measure names to show in the leaderboard.
+     */
+    setLeaderboardMeasureNames: dashboardMutatorToUpdater(
+      actionArgs,
+      setLeaderboardMeasureNames,
     ),
   };
 };

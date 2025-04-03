@@ -26,3 +26,11 @@ export const setLeaderboardMeasureName = (
   // reset column widths when changing the leaderboard measure
   resetAllContextColumnWidths(dashboard.contextColumnWidths);
 };
+
+export const setLeaderboardMeasureNames = (
+  { dashboard }: DashboardMutables,
+  names: string[],
+) => {
+  dashboard.leaderboardMeasureNames = names;
+  resetAllContextColumnWidths(dashboard.contextColumnWidths);
+};

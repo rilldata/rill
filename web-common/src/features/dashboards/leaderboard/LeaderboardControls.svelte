@@ -3,10 +3,9 @@
   import { getSimpleMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { getStateManagers } from "../state-managers/state-managers";
-  import LeaderboardMeasureCountSelector from "@rilldata/web-common/components/menu/LeaderboardMeasureCountSelector.svelte";
   import LeaderboardActiveMeasureDropdown from "@rilldata/web-common/components/menu/LeaderboardActiveMeasureDropdown.svelte";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import DashboardMetricsDraggableList from "@rilldata/web-common/components/menu/DashboardMetricsDraggableList.svelte";
+  import LeaderboardActiveMeasureNamesDropdown from "@rilldata/web-common/components/menu/LeaderboardActiveMeasureNamesDropdown.svelte";
 
   export let exploreName: string;
 
@@ -14,18 +13,19 @@
   const {
     selectors: {
       measures: {
-        leaderboardMeasureCount,
         leaderboardMeasureName,
+        leaderboardMeasureNames,
         getMeasureByName,
         visibleMeasures,
+        allMeasures,
       },
       dimensions: { visibleDimensions, allDimensions },
     },
     actions: {
       contextColumn: { setContextColumn },
       dimensions: { setDimensionVisibility },
-      setLeaderboardMeasureCount,
       setLeaderboardMeasureName,
+      setLeaderboardMeasureNames,
     },
   } = StateManagers;
 
@@ -44,6 +44,7 @@
   $: allDimensionNames = $allDimensions
     .map(({ name }) => name)
     .filter(isDefined);
+  $: allMeasureNames = $allMeasures.map(({ name }) => name).filter(isDefined);
 
   // if the percent of total is currently being shown,
   // but it is not valid for this measure, then turn it off
@@ -58,6 +59,8 @@
   function isDefined(value: string | undefined): value is string {
     return value !== undefined;
   }
+
+  $: console.log("leaderboardMeasureNames: ", $leaderboardMeasureNames);
 </script>
 
 <div>
@@ -74,10 +77,22 @@
         selectedItems={visibleDimensionsNames}
       />
       <LeaderboardActiveMeasureDropdown
-        leaderboardMeasureName={$leaderboardMeasureName}
-        {setLeaderboardMeasureName}
+        sortBy={$leaderboardMeasureName}
+        setSortBy={setLeaderboardMeasureName}
         {measures}
         {activeLeaderboardMeasure}
+      />
+      <LeaderboardActiveMeasureNamesDropdown
+        {measures}
+        sortBy={$leaderboardMeasureName}
+        tooltipText="Choose measures to filter by"
+        selectedMeasureNames={$leaderboardMeasureNames}
+        onSelect={(names) => {
+          setLeaderboardMeasureNames(names);
+        }}
+        onToggleSelectAll={() => {
+          console.log("toggle all");
+        }}
       />
     </div>
   {/if}

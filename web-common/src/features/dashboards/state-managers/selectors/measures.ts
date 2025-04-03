@@ -33,6 +33,12 @@ export const leaderboardMeasureName = ({ dashboard }: DashboardDataSources) => {
   return dashboard.leaderboardMeasureName;
 };
 
+export const leaderboardMeasureNames = ({
+  dashboard,
+}: DashboardDataSources) => {
+  return dashboard.leaderboardMeasureNames;
+};
+
 export const leaderboardMeasureCount = ({
   dashboard,
 }: DashboardDataSources) => {
@@ -206,6 +212,8 @@ export const measureSelectors = {
   filteredSimpleMeasures,
 
   leaderboardMeasureName,
+
+  leaderboardMeasureNames,
 
   leaderboardMeasureCount,
 

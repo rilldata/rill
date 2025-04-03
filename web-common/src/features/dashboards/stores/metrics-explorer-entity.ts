@@ -65,6 +65,11 @@ export interface MetricsExplorerEntity {
   leaderboardMeasureName: string;
 
   /**
+   * This is the list of measures to show in the leaderboard.
+   */
+  leaderboardMeasureNames: string[];
+
+  /**
    * This is the number of measures to show in the leaderboard.
    */
   leaderboardMeasureCount: number;
