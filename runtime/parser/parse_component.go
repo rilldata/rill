@@ -14,7 +14,7 @@ import (
 //go:embed data/component-template-v1.json
 var componentTemplateSpec string
 
-var componentTemplateSchema = jsonschema.MustCompileString("https://github.com/rilldata/rill/tree/main/runtime/compilers/rillv1/data/component-template-v1.json", componentTemplateSpec)
+var componentTemplateSchema = jsonschema.MustCompileString("https://github.com/rilldata/rill/tree/main/runtime/parser/data/component-template-v1.json", componentTemplateSpec)
 
 type ComponentYAML struct {
 	commonYAML  `yaml:",inline"`          // Not accessed here, only setting it so we can use KnownFields for YAML parsing

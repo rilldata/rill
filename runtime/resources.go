@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	compilerv1 "github.com/rilldata/rill/runtime/compilers/rillv1"
+	"github.com/rilldata/rill/runtime/parser"
 )
 
 // Built-in resource kinds
@@ -70,31 +70,31 @@ func ResourceKindFromShorthand(kind string) string {
 }
 
 // ResourceKindFromCompiler converts a compiler resource kind to a runtime resource kind.
-func ResourceKindFromCompiler(kind compilerv1.ResourceKind) string {
+func ResourceKindFromCompiler(kind parser.ResourceKind) string {
 	switch kind {
-	case compilerv1.ResourceKindSource:
+	case parser.ResourceKindSource:
 		return ResourceKindSource
-	case compilerv1.ResourceKindModel:
+	case parser.ResourceKindModel:
 		return ResourceKindModel
-	case compilerv1.ResourceKindMetricsView:
+	case parser.ResourceKindMetricsView:
 		return ResourceKindMetricsView
-	case compilerv1.ResourceKindExplore:
+	case parser.ResourceKindExplore:
 		return ResourceKindExplore
-	case compilerv1.ResourceKindMigration:
+	case parser.ResourceKindMigration:
 		return ResourceKindMigration
-	case compilerv1.ResourceKindReport:
+	case parser.ResourceKindReport:
 		return ResourceKindReport
-	case compilerv1.ResourceKindAlert:
+	case parser.ResourceKindAlert:
 		return ResourceKindAlert
-	case compilerv1.ResourceKindTheme:
+	case parser.ResourceKindTheme:
 		return ResourceKindTheme
-	case compilerv1.ResourceKindComponent:
+	case parser.ResourceKindComponent:
 		return ResourceKindComponent
-	case compilerv1.ResourceKindCanvas:
+	case parser.ResourceKindCanvas:
 		return ResourceKindCanvas
-	case compilerv1.ResourceKindAPI:
+	case parser.ResourceKindAPI:
 		return ResourceKindAPI
-	case compilerv1.ResourceKindConnector:
+	case parser.ResourceKindConnector:
 		return ResourceKindConnector
 	default:
 		panic(fmt.Errorf("unknown compiler resource type %q", kind))
@@ -102,32 +102,32 @@ func ResourceKindFromCompiler(kind compilerv1.ResourceKind) string {
 }
 
 // ResourceKindToCompiler converts a runtime resource kind to a compiler resource kind.
-func ResourceKindToCompiler(kind string) compilerv1.ResourceKind {
+func ResourceKindToCompiler(kind string) parser.ResourceKind {
 	switch kind {
 	case ResourceKindSource:
-		return compilerv1.ResourceKindSource
+		return parser.ResourceKindSource
 	case ResourceKindModel:
-		return compilerv1.ResourceKindModel
+		return parser.ResourceKindModel
 	case ResourceKindMetricsView:
-		return compilerv1.ResourceKindMetricsView
+		return parser.ResourceKindMetricsView
 	case ResourceKindExplore:
-		return compilerv1.ResourceKindExplore
+		return parser.ResourceKindExplore
 	case ResourceKindMigration:
-		return compilerv1.ResourceKindMigration
+		return parser.ResourceKindMigration
 	case ResourceKindReport:
-		return compilerv1.ResourceKindReport
+		return parser.ResourceKindReport
 	case ResourceKindAlert:
-		return compilerv1.ResourceKindAlert
+		return parser.ResourceKindAlert
 	case ResourceKindTheme:
-		return compilerv1.ResourceKindTheme
+		return parser.ResourceKindTheme
 	case ResourceKindComponent:
-		return compilerv1.ResourceKindComponent
+		return parser.ResourceKindComponent
 	case ResourceKindCanvas:
-		return compilerv1.ResourceKindCanvas
+		return parser.ResourceKindCanvas
 	case ResourceKindAPI:
-		return compilerv1.ResourceKindAPI
+		return parser.ResourceKindAPI
 	case ResourceKindConnector:
-		return compilerv1.ResourceKindConnector
+		return parser.ResourceKindConnector
 	case ResourceKindProjectParser, ResourceKindPullTrigger, ResourceKindRefreshTrigger, ResourceKindBucketPlanner:
 		panic(fmt.Errorf("unsupported resource type %q", kind))
 	default:
@@ -136,13 +136,13 @@ func ResourceKindToCompiler(kind string) compilerv1.ResourceKind {
 }
 
 // ResourceNameFromCompiler converts a compiler resource name to a runtime resource name.
-func ResourceNameFromCompiler(name compilerv1.ResourceName) *runtimev1.ResourceName {
+func ResourceNameFromCompiler(name parser.ResourceName) *runtimev1.ResourceName {
 	return &runtimev1.ResourceName{Kind: ResourceKindFromCompiler(name.Kind), Name: name.Name}
 }
 
 // ResourceNameToCompiler converts a runtime resource name to a compiler resource name.
-func ResourceNameToCompiler(name *runtimev1.ResourceName) compilerv1.ResourceName {
-	return compilerv1.ResourceName{Kind: ResourceKindToCompiler(name.Kind), Name: name.Name}
+func ResourceNameToCompiler(name *runtimev1.ResourceName) parser.ResourceName {
+	return parser.ResourceName{Kind: ResourceKindToCompiler(name.Kind), Name: name.Name}
 }
 
 // PrettifyResourceKind returns the resource kind in a user-friendly format suitable for printing.

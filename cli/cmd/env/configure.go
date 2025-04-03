@@ -10,8 +10,8 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
-	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/spf13/cobra"
@@ -93,11 +93,11 @@ func VariablesFlow(ctx context.Context, ch *cmdutil.Helper, projectPath string) 
 	if err != nil {
 		return nil, err
 	}
-	parser, err := rillv1.Parse(ctx, repo, instanceID, "prod", "duckdb")
+	p, err := parser.Parse(ctx, repo, instanceID, "prod", "duckdb")
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse project: %w", err)
 	}
-	connectors := parser.AnalyzeConnectors(ctx)
+	connectors := p.AnalyzeConnectors(ctx)
 	for _, c := range connectors {
 		if c.Err != nil {
 			return nil, fmt.Errorf("failed to extract connectors: %w", c.Err)

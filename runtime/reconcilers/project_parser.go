@@ -9,8 +9,8 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	compilerv1 "github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
+	parserpkg "github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/arrayutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
@@ -148,7 +148,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 
 	// Parse the project
 	// NOTE: Explicitly passing inst.OLAPConnector instead of inst.ResolveOLAPConnector() since the parser expects the base name to use if not overridden in rill.yaml.
-	parser, err := compilerv1.Parse(ctx, repo, r.C.InstanceID, inst.Environment, inst.OLAPConnector)
+	parser, err := parserpkg.Parse(ctx, repo, r.C.InstanceID, inst.Environment, inst.OLAPConnector)
 	if err != nil {
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to parse: %w", err)}
 	}
@@ -252,7 +252,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 }
 
 // reconcileParser reconciles a parser's output with the current resources in the catalog.
-func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *drivers.Instance, self *runtimev1.Resource, parser *compilerv1.Parser, diff *compilerv1.Diff, changedPaths []string) error {
+func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *drivers.Instance, self *runtimev1.Resource, parser *parserpkg.Parser, diff *parserpkg.Diff, changedPaths []string) error {
 	// Update parse errors
 	pp := self.GetProjectParser()
 	pp.State.ParseErrors = parser.Errors
@@ -334,12 +334,12 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 }
 
 // reconcileProjectConfig updates instance config derived from rill.yaml and .env
-func (r *ProjectParserReconciler) reconcileProjectConfig(ctx context.Context, parser *compilerv1.Parser, restartController bool) error {
+func (r *ProjectParserReconciler) reconcileProjectConfig(ctx context.Context, parser *parserpkg.Parser, restartController bool) error {
 	return r.C.Runtime.UpdateInstanceWithRillYAML(ctx, r.C.InstanceID, parser, restartController)
 }
 
 // reconcileResources creates, updates and deletes resources as necessary to match the parser's output with the current resources in the catalog.
-func (r *ProjectParserReconciler) reconcileResources(ctx context.Context, inst *drivers.Instance, self *runtimev1.Resource, parser *compilerv1.Parser) error {
+func (r *ProjectParserReconciler) reconcileResources(ctx context.Context, inst *drivers.Instance, self *runtimev1.Resource, parser *parserpkg.Parser) error {
 	// Gather resources to delete so we can check for renames.
 	var deleteResources []*runtimev1.Resource
 
@@ -348,7 +348,7 @@ func (r *ProjectParserReconciler) reconcileResources(ctx context.Context, inst *
 	if err != nil {
 		return err
 	}
-	seen := make(map[compilerv1.ResourceName]bool, len(resources))
+	seen := make(map[parserpkg.ResourceName]bool, len(resources))
 	for _, rr := range resources {
 		// Skip if the resource was not created by the parser.
 		// If a code file is added for a currently ad-hoc resource, the putParserResourceDef call for it will fail.
@@ -424,7 +424,7 @@ func (r *ProjectParserReconciler) reconcileResources(ctx context.Context, inst *
 }
 
 // reconcileResourcesDiff is similar to reconcileResources, but uses a diff from parser.Reparse instead of doing a full comparison of all resources.
-func (r *ProjectParserReconciler) reconcileResourcesDiff(ctx context.Context, inst *drivers.Instance, self *runtimev1.Resource, parser *compilerv1.Parser, diff *compilerv1.Diff) error {
+func (r *ProjectParserReconciler) reconcileResourcesDiff(ctx context.Context, inst *drivers.Instance, self *runtimev1.Resource, parser *parserpkg.Parser, diff *parserpkg.Diff) error {
 	// Gather resource to delete so we can check for renames.
 	deleteResources := make([]*runtimev1.ResourceName, 0, len(diff.Deleted))
 	for _, n := range diff.Deleted {
@@ -500,7 +500,7 @@ func (r *ProjectParserReconciler) reconcileResourcesDiff(ctx context.Context, in
 // putParserResourceDef creates or updates a resource in the catalog based on a parser resource definition.
 // It does an insert if existing is nil, otherwise it does an update.
 // If existing is not nil, it compares values and only updates meta/spec values if they have changed (ensuring stable resource version numbers).
-func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, inst *drivers.Instance, self *runtimev1.Resource, def *compilerv1.Resource, existing *runtimev1.Resource) error {
+func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, inst *drivers.Instance, self *runtimev1.Resource, def *parserpkg.Resource, existing *runtimev1.Resource) error {
 	// Apply defaults
 	def, err := applySpecDefaults(inst, def)
 	if err != nil {
@@ -511,51 +511,51 @@ func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, inst
 	// res should be nil if no spec changes are needed.
 	var res *runtimev1.Resource
 	switch def.Name.Kind {
-	case compilerv1.ResourceKindSource:
+	case parserpkg.ResourceKindSource:
 		if existing == nil || !equalSourceSpec(existing.GetSource().Spec, def.SourceSpec) {
 			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Source{Source: &runtimev1.SourceV2{Spec: def.SourceSpec}}}
 		}
-	case compilerv1.ResourceKindModel:
+	case parserpkg.ResourceKindModel:
 		if existing == nil || !equalModelSpec(existing.GetModel().Spec, def.ModelSpec) {
 			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Model{Model: &runtimev1.ModelV2{Spec: def.ModelSpec}}}
 		}
-	case compilerv1.ResourceKindMetricsView:
+	case parserpkg.ResourceKindMetricsView:
 		if existing == nil || !equalMetricsViewSpec(existing.GetMetricsView().Spec, def.MetricsViewSpec) {
 			res = &runtimev1.Resource{Resource: &runtimev1.Resource_MetricsView{MetricsView: &runtimev1.MetricsViewV2{Spec: def.MetricsViewSpec}}}
 		}
-	case compilerv1.ResourceKindExplore:
+	case parserpkg.ResourceKindExplore:
 		if existing == nil || !equalExploreSpec(existing.GetExplore().Spec, def.ExploreSpec) {
 			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Explore{Explore: &runtimev1.Explore{Spec: def.ExploreSpec}}}
 		}
-	case compilerv1.ResourceKindMigration:
+	case parserpkg.ResourceKindMigration:
 		if existing == nil || !equalMigrationSpec(existing.GetMigration().Spec, def.MigrationSpec) {
 			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Migration{Migration: &runtimev1.Migration{Spec: def.MigrationSpec}}}
 		}
-	case compilerv1.ResourceKindReport:
+	case parserpkg.ResourceKindReport:
 		if existing == nil || !equalReportSpec(existing.GetReport().Spec, def.ReportSpec) {
 			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Report{Report: &runtimev1.Report{Spec: def.ReportSpec}}}
 		}
-	case compilerv1.ResourceKindAlert:
+	case parserpkg.ResourceKindAlert:
 		if existing == nil || !equalAlertSpec(existing.GetAlert().Spec, def.AlertSpec) {
 			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Alert{Alert: &runtimev1.Alert{Spec: def.AlertSpec}}}
 		}
-	case compilerv1.ResourceKindTheme:
+	case parserpkg.ResourceKindTheme:
 		if existing == nil || !equalThemeSpec(existing.GetTheme().Spec, def.ThemeSpec) {
 			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Theme{Theme: &runtimev1.Theme{Spec: def.ThemeSpec}}}
 		}
-	case compilerv1.ResourceKindComponent:
+	case parserpkg.ResourceKindComponent:
 		if existing == nil || !equalComponentSpec(existing.GetComponent().Spec, def.ComponentSpec) {
 			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Component{Component: &runtimev1.Component{Spec: def.ComponentSpec}}}
 		}
-	case compilerv1.ResourceKindCanvas:
+	case parserpkg.ResourceKindCanvas:
 		if existing == nil || !equalCanvasSpec(existing.GetCanvas().Spec, def.CanvasSpec) {
 			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Canvas{Canvas: &runtimev1.Canvas{Spec: def.CanvasSpec}}}
 		}
-	case compilerv1.ResourceKindAPI:
+	case parserpkg.ResourceKindAPI:
 		if existing == nil || !equalAPISpec(existing.GetApi().Spec, def.APISpec) {
 			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Api{Api: &runtimev1.API{Spec: def.APISpec}}}
 		}
-	case compilerv1.ResourceKindConnector:
+	case parserpkg.ResourceKindConnector:
 		if existing == nil || !equalConnectorSpec(existing.GetConnector().Spec, def.ConnectorSpec) {
 			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Connector{Connector: &runtimev1.ConnectorV2{Spec: def.ConnectorSpec}}}
 		}
@@ -617,7 +617,7 @@ func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, inst
 // attemptRename renames an existing resource if its spec matches a parser resource definition.
 // It returns false if no rename was done.
 // In addition to renaming, it also updates the resource's meta to match the parser resource definition.
-func (r *ProjectParserReconciler) attemptRename(ctx context.Context, inst *drivers.Instance, self *runtimev1.Resource, def *compilerv1.Resource, existing *runtimev1.Resource) (bool, error) {
+func (r *ProjectParserReconciler) attemptRename(ctx context.Context, inst *drivers.Instance, self *runtimev1.Resource, def *parserpkg.Resource, existing *runtimev1.Resource) (bool, error) {
 	newName := runtime.ResourceNameFromCompiler(def.Name)
 	if existing.Meta.Name.Kind != newName.Kind {
 		return false, nil
@@ -641,19 +641,19 @@ func (r *ProjectParserReconciler) attemptRename(ctx context.Context, inst *drive
 
 	// Check spec is the same
 	switch def.Name.Kind {
-	case compilerv1.ResourceKindSource:
+	case parserpkg.ResourceKindSource:
 		if !equalSourceSpec(existing.GetSource().Spec, def.SourceSpec) {
 			return false, nil
 		}
-	case compilerv1.ResourceKindModel:
+	case parserpkg.ResourceKindModel:
 		if !equalModelSpec(existing.GetModel().Spec, def.ModelSpec) {
 			return false, nil
 		}
-	case compilerv1.ResourceKindMetricsView:
+	case parserpkg.ResourceKindMetricsView:
 		if !equalMetricsViewSpec(existing.GetMetricsView().Spec, def.MetricsViewSpec) {
 			return false, nil
 		}
-	case compilerv1.ResourceKindMigration:
+	case parserpkg.ResourceKindMigration:
 		if !equalMigrationSpec(existing.GetMigration().Spec, def.MigrationSpec) {
 			return false, nil
 		}
@@ -675,7 +675,7 @@ func (r *ProjectParserReconciler) attemptRename(ctx context.Context, inst *drive
 }
 
 // applySpecDefaults applies instance-level default properties to a resource spec.
-func applySpecDefaults(_ *drivers.Instance, def *compilerv1.Resource) (*compilerv1.Resource, error) {
+func applySpecDefaults(_ *drivers.Instance, def *parserpkg.Resource) (*parserpkg.Resource, error) {
 	// There are no defaults to apply at the moment but it can be used to set defaults in the future.
 	return def, nil
 }
