@@ -79,7 +79,7 @@ export function getDimensionTableAggregationRequestForTime(
       name: name,
     }));
 
-  let apiSortName = dashboardState.leaderboardMeasureName;
+  let apiSortName = dashboardState.leaderboardSortByMeasureName;
   if (!dashboardState.visibleMeasures.includes(apiSortName)) {
     // if selected sort measure is not visible add it to list
     measures.push({ name: apiSortName });

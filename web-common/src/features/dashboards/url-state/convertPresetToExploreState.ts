@@ -252,7 +252,7 @@ function fromExploreUrlParams(
 
   if (preset.exploreSortBy) {
     if (measures.has(preset.exploreSortBy)) {
-      partialExploreState.leaderboardMeasureName = preset.exploreSortBy;
+      partialExploreState.leaderboardSortByMeasureName = preset.exploreSortBy;
     } else {
       errors.push(getSingleFieldError("sort by measure", preset.exploreSortBy));
     }
