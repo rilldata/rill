@@ -27,10 +27,10 @@ export const setLeaderboardMeasureName = (
   resetAllContextColumnWidths(dashboard.contextColumnWidths);
 };
 
-export const setLeaderboardMeasureNames = (
+export const setLeaderboardMeasures = (
   { dashboard }: DashboardMutables,
   names: string[],
 ) => {
-  dashboard.leaderboardMeasureNames = names;
+  dashboard.leaderboardMeasures = names;
   resetAllContextColumnWidths(dashboard.contextColumnWidths);
 };

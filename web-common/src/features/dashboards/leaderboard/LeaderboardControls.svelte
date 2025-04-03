@@ -14,7 +14,7 @@
     selectors: {
       measures: {
         leaderboardMeasureName,
-        leaderboardMeasureNames,
+        leaderboardMeasures,
         getMeasureByName,
         visibleMeasures,
         allMeasures,
@@ -25,7 +25,7 @@
       contextColumn: { setContextColumn },
       dimensions: { setDimensionVisibility },
       setLeaderboardMeasureName,
-      setLeaderboardMeasureNames,
+      setLeaderboardMeasures,
     },
   } = StateManagers;
 
@@ -60,7 +60,7 @@
     return value !== undefined;
   }
 
-  $: console.log("leaderboardMeasureNames: ", $leaderboardMeasureNames);
+  $: console.log("leaderboardMeasures: ", $leaderboardMeasures);
 </script>
 
 <div>
@@ -86,9 +86,9 @@
         {measures}
         sortBy={$leaderboardMeasureName}
         tooltipText="Choose measures to filter by"
-        selectedMeasureNames={$leaderboardMeasureNames}
+        selectedMeasureNames={$leaderboardMeasures}
         onSelect={(names) => {
-          setLeaderboardMeasureNames(names);
+          setLeaderboardMeasures(names);
         }}
         onToggleSelectAll={() => {
           console.log("toggle all");

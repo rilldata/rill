@@ -67,9 +67,10 @@ export interface MetricsExplorerEntity {
   /**
    * This is the list of measures to show in the leaderboard.
    */
-  leaderboardMeasureNames: string[];
+  leaderboardMeasures: string[];
 
   /**
+   * @deprecated
    * This is the number of measures to show in the leaderboard.
    */
   leaderboardMeasureCount: number;
