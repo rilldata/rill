@@ -14,7 +14,8 @@
     | "dashed"
     | "link"
     | "text"
-    | "add";
+    | "add"
+    | "toolbar";
 
   export let type: ButtonType = "plain";
   export let status: "info" | "error" = "info";
@@ -275,6 +276,28 @@
   }
 
   .text:disabled {
+    @apply text-slate-400;
+  }
+
+  /* TOOLBAR STYLES */
+
+  .toolbar {
+    @apply text-slate-600;
+    @apply h-6 px-1.5;
+    @apply gap-x-1.5;
+    @apply rounded-sm;
+  }
+
+  .toolbar:hover {
+    @apply bg-gray-200;
+  }
+
+  .toolbar:active,
+  .toolbar.selected {
+    @apply text-slate-800;
+  }
+
+  .toolbar:disabled {
     @apply text-slate-400;
   }
 
