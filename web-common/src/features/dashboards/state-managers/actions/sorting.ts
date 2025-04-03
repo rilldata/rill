@@ -3,7 +3,27 @@ import { SortDirection, SortType } from "../../proto-state/derived-types";
 import type { DashboardMutables } from "./types";
 import { setLeaderboardMeasureName } from "./core-actions";
 
-// FIXME: similar to handleDimensionMeasureColumnHeaderClick, consolidate this
+const isMeasureSortType = (sortType: SortType) =>
+  sortType === SortType.VALUE ||
+  sortType === SortType.DELTA_ABSOLUTE ||
+  sortType === SortType.DELTA_PERCENT ||
+  sortType === SortType.PERCENT;
+
+const handleNewMeasureName = (args: DashboardMutables, measureName: string) => {
+  const { dashboard } = args;
+  setLeaderboardMeasureName(args, measureName);
+  dashboard.dashboardSortType = SortType.VALUE;
+  dashboard.sortDirection = SortDirection.DESCENDING;
+};
+
+const toggleSortDirection = (args: DashboardMutables) => {
+  const { dashboard } = args;
+  dashboard.sortDirection =
+    dashboard.sortDirection === SortDirection.ASCENDING
+      ? SortDirection.DESCENDING
+      : SortDirection.ASCENDING;
+};
+
 export const toggleSort = (
   args: DashboardMutables,
   sortType: SortType,
@@ -11,34 +31,31 @@ export const toggleSort = (
 ) => {
   const { dashboard } = args;
 
-  // If a measureName is provided that's different from the current one,
-  // update it for both value sorts and comparison sorts
   if (
     measureName !== undefined &&
     measureName !== dashboard.leaderboardMeasureName &&
-    (sortType === SortType.VALUE ||
-      sortType === SortType.DELTA_ABSOLUTE ||
-      sortType === SortType.DELTA_PERCENT ||
-      sortType === SortType.PERCENT)
+    isMeasureSortType(sortType)
   ) {
-    setLeaderboardMeasureName(args, measureName);
+    handleNewMeasureName(args, measureName);
+    return;
   }
 
-  // if sortType is not provided, or if it is provided
-  // and is the same as the current sort type,
-  // then just toggle the current sort direction
   if (sortType === undefined || dashboard.dashboardSortType === sortType) {
-    dashboard.sortDirection =
-      dashboard.sortDirection === SortDirection.ASCENDING
-        ? SortDirection.DESCENDING
-        : SortDirection.ASCENDING;
-  } else {
-    // if the sortType is different from the current sort type,
-    // then update the sort type and set the sort direction
-    // to descending
+    toggleSortDirection(args);
+    return;
+  }
+
+  if (
+    isMeasureSortType(sortType) &&
+    isMeasureSortType(dashboard.dashboardSortType)
+  ) {
     dashboard.dashboardSortType = sortType;
     dashboard.sortDirection = SortDirection.DESCENDING;
+    return;
   }
+
+  dashboard.dashboardSortType = sortType;
+  dashboard.sortDirection = SortDirection.DESCENDING;
 };
 
 const contextColumnToSortType = {
