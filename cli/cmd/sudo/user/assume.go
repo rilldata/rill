@@ -1,6 +1,9 @@
 package user
 
 import (
+	"strconv"
+	"time"
+
 	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
@@ -17,6 +20,22 @@ func AssumeCmd(ch *cmdutil.Helper) *cobra.Command {
 		Short: "Temporarily act as another user",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
+
+			representingUser, err := dotrill.GetRepresentingUser()
+			if err != nil {
+				ch.PrintfWarn("Could not parse representing user email\n\n")
+			}
+			if representingUser != "" {
+				ch.Printf("You are already a assumed user %q. so unassuming it first.\n", representingUser)
+				err = UnassumeUser(ctx, ch)
+				if err != nil {
+					return err
+				}
+			}
+
+			// saving expiryTime before the actual call to get token
+			// we can get it from server too but i think it is not required.
+			expiryTime := time.Now().Unix() + int64(ttlMinutes*60)
 
 			client, err := ch.Client()
 			if err != nil {
@@ -41,8 +60,33 @@ func AssumeCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
+			// Backup current token expiry as original token expiry
+			originalTokenExpiry, err := dotrill.GetAccessTokenExpiry()
+			if err != nil {
+				return err
+			}
+			err = dotrill.SetBackupTokenExpiry(originalTokenExpiry)
+			if err != nil {
+				return err
+			}
+
+			// Backup current org as backup org
+			defaultOrg, err := dotrill.GetDefaultOrg()
+			if err != nil {
+				return err
+			}
+			err = dotrill.SetBackupDefaultOrg(defaultOrg)
+			if err != nil {
+				return err
+			}
+
 			// Set new access token
 			err = dotrill.SetAccessToken(res.Token)
+			if err != nil {
+				return err
+			}
+
+			err = dotrill.SetAccessTokenExpiry(strconv.FormatInt(expiryTime, 10))
 			if err != nil {
 				return err
 			}

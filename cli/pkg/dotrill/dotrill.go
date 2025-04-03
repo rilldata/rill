@@ -21,13 +21,18 @@ const (
 
 // Constants for YAML keys
 const (
-	DefaultOrgConfigKey            = "org"
-	DefaultAdminURLConfigKey       = "api_url"
-	AnalyticsEnabledConfigKey      = "analytics_enabled"
-	AccessTokenCredentialsKey      = "token"
+	DefaultOrgConfigKey       = "org"
+	BackupDefaultOrgConfigKey = "backup_org"
+	DefaultAdminURLConfigKey  = "api_url"
+	AnalyticsEnabledConfigKey = "analytics_enabled"
+	AccessTokenCredentialsKey = "token"
+	//nolint:gosec // This is a key name, not a credential
+	AccessTokenExpiryKey           = "token_expiry"
 	InstallIDStateKey              = "install_id"
 	RepresentingUserCredentialsKey = "representing_user"
 	BackupTokenCredentialsKey      = "backup_token"
+	//nolint:gosec // This is a key name, not a credential
+	BackupAccessTokenExpiryKey     = "backup_token_expiry"
 	LatestVersionStateKey          = "latest_version"
 	LatestVersionCheckedAtStateKey = "latest_version_checked_at"
 	UserIDStateKey                 = "user_id"
@@ -113,6 +118,16 @@ func SetDefaultOrg(orgName string) error {
 	return Set(ConfigFilename, DefaultOrgConfigKey, orgName)
 }
 
+// GetDefaultOrg loads the default org
+func GetBackupDefaultOrg() (string, error) {
+	return Get(ConfigFilename, BackupDefaultOrgConfigKey)
+}
+
+// SetDefaultOrg saves the default org
+func SetBackupDefaultOrg(orgName string) error {
+	return Set(ConfigFilename, BackupDefaultOrgConfigKey, orgName)
+}
+
 // SetDefaultAdminURL loads the default admin URL (if set)
 func SetDefaultAdminURL(url string) error {
 	return Set(ConfigFilename, DefaultAdminURLConfigKey, url)
@@ -133,6 +148,16 @@ func SetAccessToken(token string) error {
 	return Set(CredentialsFilename, AccessTokenCredentialsKey, token)
 }
 
+// GetAccessTokenExpiry loads the current auth token expiry
+func GetAccessTokenExpiry() (string, error) {
+	return Get(CredentialsFilename, AccessTokenExpiryKey)
+}
+
+// SetAccessTokenExpiry saves an auth token expiry
+func SetAccessTokenExpiry(expiry string) error {
+	return Set(CredentialsFilename, AccessTokenExpiryKey, expiry)
+}
+
 // GetBackupToken loads the original auth token
 func GetBackupToken() (string, error) {
 	return Get(CredentialsFilename, BackupTokenCredentialsKey)
@@ -141,6 +166,16 @@ func GetBackupToken() (string, error) {
 // SetBackupToken saves original auth token
 func SetBackupToken(token string) error {
 	return Set(CredentialsFilename, BackupTokenCredentialsKey, token)
+}
+
+// GetBackupTokenExpiry loads the original auth token expiry
+func GetBackupTokenExpiry() (string, error) {
+	return Get(CredentialsFilename, BackupAccessTokenExpiryKey)
+}
+
+// SetBackupTokenExpiry saves original auth token expiry
+func SetBackupTokenExpiry(expiry string) error {
+	return Set(CredentialsFilename, BackupAccessTokenExpiryKey, expiry)
 }
 
 // GetRepresentingUser loads the current representing user email
