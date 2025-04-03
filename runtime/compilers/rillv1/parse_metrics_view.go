@@ -30,20 +30,21 @@ type MetricsViewYAML struct {
 	FirstDayOfWeek    uint32           `yaml:"first_day_of_week"`
 	FirstMonthOfYear  uint32           `yaml:"first_month_of_year"`
 	Dimensions        []*struct {
-		Name             string
-		DisplayName      string `yaml:"display_name"`
-		Label            string // Deprecated: use display_name
-		Description      string
-		Column           string
-		Expression       string
-		Property         string // For backwards compatibility
-		Ignore           bool   `yaml:"ignore"` // Deprecated
-		Unnest           bool
-		URI              string
-		DictName         string `yaml:"dict_name"`
-		DictKeyExpr      string `yaml:"dict_key_expression"`
-		DictKeyColName   string `yaml:"dict_key_column_name"`
-		DictValueColName string `yaml:"dict_value_column_name"`
+		Name        string
+		DisplayName string `yaml:"display_name"`
+		Label       string // Deprecated: use display_name
+		Description string
+		Column      string
+		Expression  string
+		Property    string // For backwards compatibility
+		Ignore      bool   `yaml:"ignore"` // Deprecated
+		Unnest      bool
+		URI         string
+		Lookup      *struct {
+			Table       string
+			KeyColumn   string `yaml:"key_column"`
+			ValueColumn string `yaml:"value_column"`
+		}
 	}
 	Measures []*struct {
 		Name                string
@@ -824,18 +825,32 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			continue
 		}
 
+		var lookup *runtimev1.MetricsViewSpec_Lookup
+		// all dict fields should be defined or none
+		if dim.Lookup != nil {
+			if dim.Lookup.Table != "" && dim.Lookup.KeyColumn != "" && dim.Lookup.ValueColumn != "" {
+				if dim.Column == "" {
+					return fmt.Errorf("column is required if lookup fields are defined, containing values to be looked up")
+				}
+				lookup = &runtimev1.MetricsViewSpec_Lookup{
+					Table:       dim.Lookup.Table,
+					KeyColumn:   dim.Lookup.KeyColumn,
+					ValueColumn: dim.Lookup.ValueColumn,
+				}
+			} else {
+				return fmt.Errorf("all lookup fields should be defined")
+			}
+		}
+
 		spec.Dimensions = append(spec.Dimensions, &runtimev1.MetricsViewSpec_DimensionV2{
-			Name:                dim.Name,
-			DisplayName:         dim.DisplayName,
-			Description:         dim.Description,
-			Column:              dim.Column,
-			Expression:          dim.Expression,
-			Unnest:              dim.Unnest,
-			Uri:                 dim.URI,
-			DictName:            dim.DictName,
-			DictKeyExpression:   dim.DictKeyExpr,
-			DictKeyColumnName:   dim.DictKeyColName,
-			DictValueColumnName: dim.DictValueColName,
+			Name:        dim.Name,
+			DisplayName: dim.DisplayName,
+			Description: dim.Description,
+			Column:      dim.Column,
+			Expression:  dim.Expression,
+			Unnest:      dim.Unnest,
+			Uri:         dim.URI,
+			Lookup:      lookup,
 		})
 	}
 

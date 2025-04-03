@@ -354,6 +354,9 @@ func (d Dialect) AutoUnnest(expr string) string {
 }
 
 func (d Dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsViewSpec_DimensionV2) string {
+	if dimension.Lookup != nil {
+		return d.DictGetExpr(dimension.Lookup.Table, dimension.Lookup.ValueColumn, dimension.Column)
+	}
 	if dimension.Expression != "" {
 		return dimension.Expression
 	}
@@ -766,6 +769,15 @@ func (d Dialect) GetTimeExpr(t time.Time) (bool, string) {
 		return true, fmt.Sprintf("CAST(%d AS TIMESTAMP)", t.UnixMilli())
 	default:
 		return false, ""
+	}
+}
+
+func (d Dialect) DictGetExpr(lookupTable, lookupColumn, lookupKey string) string {
+	switch d {
+	case DialectClickHouse:
+		return fmt.Sprintf("dictGet('%s', '%s', %s)", lookupTable, lookupColumn, lookupKey)
+	default:
+		return ""
 	}
 }
 

@@ -3090,16 +3090,19 @@ definitions:
         type: boolean
       uri:
         type: string
-      dictName:
-        type: string
-      dictKeyExpression:
-        type: string
-        title: expression or column name that supplies values to be looked up
-      dictKeyColumnName:
-        type: string
-      dictValueColumnName:
-        type: string
+      lookup:
+        $ref: '#/definitions/MetricsViewSpecLookup'
+        title: Lookup fields for the dimension
     title: Dimensions are columns to filter and group by
+  MetricsViewSpecLookup:
+    type: object
+    properties:
+      table:
+        type: string
+      keyColumn:
+        type: string
+      valueColumn:
+        type: string
   MetricsViewSpecMeasureType:
     type: string
     enum:

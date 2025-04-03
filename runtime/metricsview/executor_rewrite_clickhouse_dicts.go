@@ -20,24 +20,24 @@ func (e *Executor) rewriteClickhouseDictFilters(qry *Query) map[string]*lookupMe
 		return nil
 	}
 
-	dictLookups := make(map[string]*lookupMeta)
+	dictMeta := make(map[string]*lookupMeta)
 	for _, dim := range e.metricsView.Dimensions {
-		if dim.DictName != "" {
-			dictLookups[dim.Name] = &lookupMeta{
-				table:    dim.DictName,
-				keyExpr:  dim.DictKeyExpression,
-				keyCol:   dim.DictKeyColumnName,
-				valueCol: dim.DictValueColumnName,
+		if dim.Lookup != nil {
+			dictMeta[dim.Name] = &lookupMeta{
+				table:    dim.Lookup.Table,
+				keyExpr:  dim.Column,
+				keyCol:   dim.Lookup.KeyColumn,
+				valueCol: dim.Lookup.ValueColumn,
 			}
 		}
 	}
-	if qry.Where != nil && len(dictLookups) > 0 {
-		e.handleExpression(qry.Where, dictLookups)
+	if qry.Where != nil && len(dictMeta) > 0 {
+		e.handleExpression(qry.Where, dictMeta)
 	}
-	return dictLookups
+	return dictMeta
 }
 
-func (e *Executor) handleExpression(expr *Expression, dictLookups map[string]*lookupMeta) {
+func (e *Executor) handleExpression(expr *Expression, dictMeta map[string]*lookupMeta) {
 	if expr == nil || expr.Condition == nil {
 		return
 	}
@@ -49,11 +49,10 @@ func (e *Executor) handleExpression(expr *Expression, dictLookups map[string]*lo
 			return
 		}
 
-		if dictLookups[exprs[0].Name] == nil {
+		lkpMeta := dictMeta[exprs[0].Name]
+		if lkpMeta == nil {
 			return
 		}
-
-		lkpMeta := dictLookups[exprs[0].Name]
 
 		subquery := &Subquery{
 			RawSQL: fmt.Sprintf("SELECT %s FROM dictionary(%s) WHERE %s IN ", e.olap.Dialect().EscapeIdentifier(lkpMeta.keyCol), e.olap.Dialect().EscapeIdentifier(lkpMeta.table), e.olap.Dialect().EscapeIdentifier(lkpMeta.valueCol)),
@@ -85,27 +84,28 @@ func (e *Executor) handleExpression(expr *Expression, dictLookups map[string]*lo
 		}
 	} else {
 		for _, ex := range expr.Condition.Expressions {
-			e.handleExpression(ex, dictLookups)
+			e.handleExpression(ex, dictMeta)
 		}
 	}
 }
 
-// wrap select inside subquery and group by looked up value again to prevent duplicate groups if lookup in not injective
-func (e *Executor) rewriteClickhouseDictGroupBys(ast *AST, dictLookups map[string]*lookupMeta) {
-	if len(dictLookups) == 0 {
+// rewriteClickhouseDictGroupBys for dictionary dimension group by ID column, so if the dimension is dictGet(”,”, DICT_ID) AS DIM_NAME the group by DIM_ID to prevent lookup for each value
+// also wrap SELECT inside a subquery and group by looked up value (DIM_NAME) again to merge duplicate groups if lookup in not injective i.e. multiple DIM_ID can map to a single DIM_NAME
+func (e *Executor) rewriteClickhouseDictGroupBys(ast *AST, dictMeta map[string]*lookupMeta) {
+	if len(dictMeta) == 0 {
 		return
 	}
 
 	// handle CTEs first
 	for _, cte := range ast.CTEs {
-		e.rewriteClickhouseDictGroupBySelect(ast, cte, dictLookups)
+		e.rewriteClickhouseDictGroupBySelect(ast, cte, dictMeta)
 	}
 
 	// now the root node
-	e.rewriteClickhouseDictGroupBySelect(ast, ast.Root, dictLookups)
+	e.rewriteClickhouseDictGroupBySelect(ast, ast.Root, dictMeta)
 }
 
-func (e *Executor) rewriteClickhouseDictGroupBySelect(ast *AST, n *SelectNode, dictLookups map[string]*lookupMeta) {
+func (e *Executor) rewriteClickhouseDictGroupBySelect(ast *AST, n *SelectNode, dictMeta map[string]*lookupMeta) {
 	if n == nil {
 		return
 	}
@@ -113,7 +113,7 @@ func (e *Executor) rewriteClickhouseDictGroupBySelect(ast *AST, n *SelectNode, d
 	if n.Group {
 		wrap := false
 		for i := range n.DimFields {
-			if lookup, ok := dictLookups[n.DimFields[i].Name]; ok {
+			if lookup, ok := dictMeta[n.DimFields[i].Name]; ok {
 				n.DimFields[i].GroupByIdentifier = lookup.keyExpr
 				wrap = true
 			} else {
@@ -128,22 +128,22 @@ func (e *Executor) rewriteClickhouseDictGroupBySelect(ast *AST, n *SelectNode, d
 	}
 
 	if n.FromSelect != nil {
-		e.rewriteClickhouseDictGroupBySelect(ast, n.FromSelect, dictLookups)
+		e.rewriteClickhouseDictGroupBySelect(ast, n.FromSelect, dictMeta)
 	}
 
 	if n.JoinComparisonSelect != nil {
-		e.rewriteClickhouseDictGroupBySelect(ast, n.JoinComparisonSelect, dictLookups)
+		e.rewriteClickhouseDictGroupBySelect(ast, n.JoinComparisonSelect, dictMeta)
 	}
 
 	if n.SpineSelect != nil {
-		e.rewriteClickhouseDictGroupBySelect(ast, n.SpineSelect, dictLookups)
+		e.rewriteClickhouseDictGroupBySelect(ast, n.SpineSelect, dictMeta)
 	}
 
 	for _, s := range n.LeftJoinSelects {
-		e.rewriteClickhouseDictGroupBySelect(ast, s, dictLookups)
+		e.rewriteClickhouseDictGroupBySelect(ast, s, dictMeta)
 	}
 
 	for _, s := range n.CrossJoinSelects {
-		e.rewriteClickhouseDictGroupBySelect(ast, s, dictLookups)
+		e.rewriteClickhouseDictGroupBySelect(ast, s, dictMeta)
 	}
 }

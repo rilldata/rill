@@ -931,13 +931,6 @@ The resources state.valid_spec.renderer_properties will have templating resolved
   referencedMetricsViews?: V1ResolveCanvasResponseReferencedMetricsViews;
 }
 
-export interface V1ReportState {
-  nextRunOn?: string;
-  currentExecution?: V1ReportExecution;
-  executionHistory?: V1ReportExecution[];
-  executionCount?: number;
-}
-
 export type V1ReportSpecAnnotations = { [key: string]: string };
 
 export interface V1ReportSpec {
@@ -964,6 +957,13 @@ export interface V1ReportExecution {
   reportTime?: string;
   startedOn?: string;
   finishedOn?: string;
+}
+
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
 }
 
 export interface V1Report {
@@ -1337,6 +1337,11 @@ export interface V1MetricsViewToplistResponse {
   data?: V1MetricsViewToplistResponseDataItem[];
 }
 
+export interface V1MetricsViewSort {
+  name?: string;
+  ascending?: boolean;
+}
+
 export interface V1MetricsViewToplistRequest {
   instanceId?: string;
   metricsViewName?: string;
@@ -1442,11 +1447,6 @@ It's set to true if the metrics view is based on an externally managed table. */
   /** The last time the metrics view's underlying model was refreshed.
 This may be empty if the metrics view is based on an externally managed table. */
   modelRefreshedOn?: string;
-}
-
-export interface V1MetricsViewSort {
-  name?: string;
-  ascending?: boolean;
 }
 
 export interface V1MetricsViewSearchResponse {
@@ -2642,14 +2642,6 @@ export interface V1API {
   state?: V1APIState;
 }
 
-export interface Runtimev1Type {
-  code?: TypeCode;
-  nullable?: boolean;
-  arrayElementType?: Runtimev1Type;
-  structType?: V1StructType;
-  mapType?: V1MapType;
-}
-
 /**
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
@@ -2711,6 +2703,14 @@ export const TypeCode = {
   CODE_UUID: "CODE_UUID",
 } as const;
 
+export interface Runtimev1Type {
+  code?: TypeCode;
+  nullable?: boolean;
+  arrayElementType?: Runtimev1Type;
+  structType?: V1StructType;
+  mapType?: V1MapType;
+}
+
 export interface TopKEntry {
   value?: unknown;
   count?: number;
@@ -2737,6 +2737,13 @@ export interface NumericHistogramBinsBin {
   count?: number;
 }
 
+export interface MetricsViewSpecMeasureWindow {
+  partition?: boolean;
+  /** Dimensions to order the window by. Must be present in required_dimensions. */
+  orderBy?: MetricsViewSpecDimensionSelector[];
+  frameExpression?: string;
+}
+
 export type MetricsViewSpecMeasureV2FormatD3Locale = { [key: string]: any };
 
 export type MetricsViewSpecMeasureType =
@@ -2749,33 +2756,6 @@ export const MetricsViewSpecMeasureType = {
   MEASURE_TYPE_DERIVED: "MEASURE_TYPE_DERIVED",
   MEASURE_TYPE_TIME_COMPARISON: "MEASURE_TYPE_TIME_COMPARISON",
 } as const;
-
-export interface MetricsViewSpecDimensionV2 {
-  name?: string;
-  displayName?: string;
-  description?: string;
-  column?: string;
-  expression?: string;
-  unnest?: boolean;
-  uri?: string;
-  dictName?: string;
-  dictKeyExpression?: string;
-  dictKeyColumnName?: string;
-  dictValueColumnName?: string;
-}
-
-export interface MetricsViewSpecDimensionSelector {
-  name?: string;
-  timeGrain?: V1TimeGrain;
-  desc?: boolean;
-}
-
-export interface MetricsViewSpecMeasureWindow {
-  partition?: boolean;
-  /** Dimensions to order the window by. Must be present in required_dimensions. */
-  orderBy?: MetricsViewSpecDimensionSelector[];
-  frameExpression?: string;
-}
 
 export interface MetricsViewSpecMeasureV2 {
   name?: string;
@@ -2792,6 +2772,29 @@ export interface MetricsViewSpecMeasureV2 {
   formatD3Locale?: MetricsViewSpecMeasureV2FormatD3Locale;
   validPercentOfTotal?: boolean;
   treatNullsAs?: string;
+}
+
+export interface MetricsViewSpecLookup {
+  table?: string;
+  keyColumn?: string;
+  valueColumn?: string;
+}
+
+export interface MetricsViewSpecDimensionV2 {
+  name?: string;
+  displayName?: string;
+  description?: string;
+  column?: string;
+  expression?: string;
+  unnest?: boolean;
+  uri?: string;
+  lookup?: MetricsViewSpecLookup;
+}
+
+export interface MetricsViewSpecDimensionSelector {
+  name?: string;
+  timeGrain?: V1TimeGrain;
+  desc?: boolean;
 }
 
 /**
