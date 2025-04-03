@@ -55,7 +55,7 @@ func (e *Executor) handleExpression(expr *Expression, dictLookups map[string]*lo
 
 		lkpMeta := dictLookups[exprs[0].Name]
 
-		subquery := &Subquery{ // this should be per dict dimension
+		subquery := &Subquery{
 			RawSQL: fmt.Sprintf("SELECT %s FROM dictionary(%s) WHERE %s IN ", e.olap.Dialect().EscapeIdentifier(lkpMeta.key), e.olap.Dialect().EscapeIdentifier(lkpMeta.table), e.olap.Dialect().EscapeIdentifier(lkpMeta.column)),
 		}
 
