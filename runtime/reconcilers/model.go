@@ -753,12 +753,20 @@ func (r *ModelReconciler) syncPartitions(ctx context.Context, mdl *runtimev1.Mod
 		var watermark *time.Time
 		if mdl.Spec.PartitionsWatermarkField != "" {
 			if v, ok := row[mdl.Spec.PartitionsWatermarkField]; ok {
-				t, ok := v.(time.Time)
-				if !ok {
+				switch t := v.(type) {
+				case time.Time:
+					watermark = &t
+				case string:
+					var tm time.Time
+					tm, err := time.Parse(time.RFC3339, t)
+					if err != nil {
+						return fmt.Errorf("partition watermark field %q is a non-time formatted string: %w", mdl.Spec.PartitionsWatermarkField, err)
+					}
+					watermark = &tm
+				default:
 					return fmt.Errorf(`expected a timestamp for partition watermark field %q, got type %T`, mdl.Spec.PartitionsWatermarkField, v)
 				}
 
-				watermark = &t
 				delete(row, mdl.Spec.PartitionsWatermarkField)
 			}
 		}
@@ -1302,6 +1310,7 @@ func (r *ModelReconciler) acquireExecutor(ctx context.Context, self *runtimev1.R
 	// Acquire the final result manager
 	finalResultManager, ok := finalOpts.OutputHandle.AsModelManager(r.C.InstanceID)
 	if !ok {
+		stageRelease()
 		finalRelease()
 		return nil, nil, fmt.Errorf("output connector %q is not capable of managing model results", mdl.Spec.OutputConnector)
 	}
@@ -1338,6 +1347,7 @@ func (r *ModelReconciler) acquireExecutorInner(ctx context.Context, opts *driver
 
 		e, ok := ic.AsModelExecutor(r.C.InstanceID, opts)
 		if !ok {
+			ir()
 			return "", nil, nil, fmt.Errorf("connector %q is not capable of executing models", opts.InputConnector)
 		}
 
