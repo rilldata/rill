@@ -34,28 +34,26 @@ export const toggleSort = (
   if (
     measureName !== undefined &&
     measureName !== dashboard.leaderboardMeasureName &&
-    isMeasureSortType(sortType)
+    (sortType === SortType.VALUE ||
+      sortType === SortType.DELTA_ABSOLUTE ||
+      sortType === SortType.DELTA_PERCENT ||
+      sortType === SortType.PERCENT)
   ) {
-    handleNewMeasureName(args, measureName);
-    return;
-  }
-
-  if (sortType === undefined || dashboard.dashboardSortType === sortType) {
-    toggleSortDirection(args);
-    return;
-  }
-
-  if (
-    isMeasureSortType(sortType) &&
-    isMeasureSortType(dashboard.dashboardSortType)
-  ) {
+    setLeaderboardMeasureName(args, measureName);
     dashboard.dashboardSortType = sortType;
     dashboard.sortDirection = SortDirection.DESCENDING;
     return;
   }
 
-  dashboard.dashboardSortType = sortType;
-  dashboard.sortDirection = SortDirection.DESCENDING;
+  if (sortType === undefined || dashboard.dashboardSortType === sortType) {
+    dashboard.sortDirection =
+      dashboard.sortDirection === SortDirection.ASCENDING
+        ? SortDirection.DESCENDING
+        : SortDirection.ASCENDING;
+  } else {
+    dashboard.dashboardSortType = sortType;
+    dashboard.sortDirection = SortDirection.DESCENDING;
+  }
 };
 
 const contextColumnToSortType = {
