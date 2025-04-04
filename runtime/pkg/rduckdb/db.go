@@ -786,8 +786,12 @@ func (d *db) acquireWriteConn(ctx context.Context, dsn, table string, initQuerie
 		return rows.Err()
 	}
 
-	release := func() error {
-		err := dropViews()
+	release := func() (err error) {
+		defer func() {
+			// close the connection and db handle
+			err = errors.Join(err, conn.Close(), db.Close())
+		}()
+		err = dropViews()
 		if err != nil {
 			return err
 		}
@@ -795,8 +799,6 @@ func (d *db) acquireWriteConn(ctx context.Context, dsn, table string, initQuerie
 		if err != nil {
 			return err
 		}
-		_ = conn.Close()
-		err = db.Close()
 		return err
 	}
 	return conn, release, nil
