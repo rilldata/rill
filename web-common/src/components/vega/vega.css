@@ -1,0 +1,31 @@
+.vega-embed {
+  width: 100%;
+}
+
+#vg-tooltip-element,
+#rill-vg-tooltip {
+  @apply absolute border border-slate-300 p-3 rounded-lg pointer-events-none;
+  background: rgba(255, 255, 255, 0.9);
+
+  & h2 {
+    @apply text-slate-500 text-sm font-semibold mb-2;
+  }
+
+  & table {
+    @apply border-spacing-0;
+  }
+
+  & td {
+    @apply truncate py-0.5;
+  }
+
+  & td.key {
+    @apply text-left px-1 font-normal truncate;
+    max-width: 250px;
+  }
+
+  & td.value {
+    @apply text-left truncate font-semibold;
+    max-width: 250px;
+  }
+}
