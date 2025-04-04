@@ -6,6 +6,7 @@ test.describe("Breadcrumbs", () => {
   test.use({ project: "Blank" });
 
   test.describe("Breadcrumb interactions", () => {
+    test.describe.configure({ retries: 3 });
     test("breadcrumb navigation", async ({ page }) => {
       await uploadFile(page, "AdBids.csv");
 

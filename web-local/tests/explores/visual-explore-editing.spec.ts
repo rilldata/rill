@@ -9,6 +9,7 @@ test.describe("visual explore editing", () => {
     test.setTimeout(45_000); // Note: we should make this test smaller!
 
     await page.getByLabel("/dashboards").click();
+    await page.waitForTimeout(1000);
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
     await page.getByRole("button", { name: "switch to code editor" }).click();
 
