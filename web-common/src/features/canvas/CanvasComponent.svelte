@@ -29,10 +29,6 @@
   $: componentFilters = getComponentFilterProperties(rendererProperties);
 
   $: allowBorder = !hideBorder.has(renderer);
-
-  $: console.log(
-    `CanvasComponent: ${componentName} - ${renderer} - ${title} - ${description}`,
-  );
 </script>
 
 <article
