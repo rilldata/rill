@@ -7,6 +7,9 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 )
 
 const httpShutdownTimeout = 15 * time.Second
@@ -33,29 +36,30 @@ func ServeHTTP(ctx context.Context, server *http.Server, options ServeOptions) e
 		return err
 	}
 
-	// Channel to signal server has stopped
-	serveErrCh := make(chan error)
-	// Start server in a goroutine
+	cctx, cancel := context.WithCancel(ctx)
+	var serveErr error
 	go func() {
+		// Set up h2c handler (for HTTP/2 over cleartext) only once
+		server.Handler = h2c.NewHandler(server.Handler, &http2.Server{})
+
+		// Serve HTTP or HTTPS based on certificate configuration
 		if options.CertPath != "" && options.KeyPath != "" {
-			// Use HTTPS if cert and key are provided
-			err := server.ServeTLS(lis, options.CertPath, options.KeyPath)
-			serveErrCh <- err
+			serveErr = server.ServeTLS(lis, options.CertPath, options.KeyPath)
 		} else {
-			// Otherwise use HTTP
-			err := server.Serve(lis)
-			serveErrCh <- err
+			serveErr = server.Serve(lis)
 		}
+
+		cancel()
 	}()
 
-	// Wait for context cancellation or server stopped
-	select {
-	case err := <-serveErrCh:
-		return err
-	case <-ctx.Done():
+	<-cctx.Done()
+	if serveErr == nil {
+		// server.Serve always returns a non-nil err, so this must be a cancel on the parent ctx.
+		// We perform a graceful shutdown.
 		ctx, cancel := context.WithTimeout(context.Background(), httpShutdownTimeout)
 		defer cancel()
-
-		return server.Shutdown(ctx)
+		serveErr = server.Shutdown(ctx)
 	}
+
+	return serveErr
 }

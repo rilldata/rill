@@ -87,7 +87,7 @@ func New(t *testing.T) *Fixture {
 	// Runtime provisioner.
 	// NOTE: Only gives the appearance of a static runtime, but does not actually start one.
 	// TODO: Support actually starting a runtime.
-	runtimeExternalURL := "http://localhost:9091"
+	runtimeExternalURL := "http://localhost:8081"
 	runtimeAudienceURL := "http://localhost:8081"
 	defaultProvisioner := "static"
 	provisionerSetJSON := must(json.Marshal(map[string]any{
@@ -149,8 +149,7 @@ func New(t *testing.T) *Fixture {
 	ctx, cancel := context.WithCancel(ctx)
 	t.Cleanup(cancel)
 	group, ctx := errgroup.WithContext(ctx)
-	group.Go(func() error { return srv.ServeGRPC(ctx) })
-	group.Go(func() error { return srv.ServeHTTP(ctx) })
+	group.Go(func() error { return srv.Serve(ctx) })
 	require.NoError(t, srv.AwaitServing(ctx))
 
 	return &Fixture{
