@@ -739,11 +739,67 @@ func (d *db) acquireWriteConn(ctx context.Context, dsn, table string, initQuerie
 		}
 	}
 
-	return conn, func() error {
+	// We can leave the attached databases and views in the db but we don't need them once data has been ingested in the table.
+	// This can lead to performance issues when running catalog queries across whole database.
+	// So it is better to drop all views and detach all databases before closing the write handle.
+	dropViews := func() error {
+		// remove all views created on top of attached table
+		rows, err := conn.QueryxContext(ctx, "SELECT view_name FROM duckdb_views WHERE database_name = current_database() AND internal = false")
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		var name string
+		for rows.Next() {
+			err = rows.Scan(&name)
+			if err != nil {
+				return err
+			}
+			_, err = conn.ExecContext(ctx, "DROP VIEW IF EXISTS "+safeSQLName(name))
+			if err != nil {
+				return err
+			}
+		}
+		return rows.Err()
+	}
+
+	detach := func() error {
+		// detach all attached databases
+		rows, err := conn.QueryxContext(ctx, "SELECT database_name FROM (SHOW databases) WHERE database_name != current_database()")
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		var name string
+		for rows.Next() {
+			err = rows.Scan(&name)
+			if err != nil {
+				return err
+			}
+			_, err = conn.ExecContext(ctx, "DETACH "+safeSQLName(name))
+			if err != nil {
+				return err
+			}
+		}
+		return rows.Err()
+	}
+
+	release := func() error {
+		err := dropViews()
+		if err != nil {
+			return err
+		}
+		err = detach()
+		if err != nil {
+			return err
+		}
 		_ = conn.Close()
 		err = db.Close()
 		return err
-	}, nil
+	}
+	return conn, release, nil
 }
 
 func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, initQueries []string, read bool) (db *sqlx.DB, dbErr error) {
