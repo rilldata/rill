@@ -201,6 +201,10 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		}
 		// Set default DuckDB pool size to 4
 		olapCfg["pool_size"] = "4"
+
+	}
+	if opts.Debug {
+		olapCfg["log_queries"] = "true"
 	}
 
 	// Add OLAP connector
