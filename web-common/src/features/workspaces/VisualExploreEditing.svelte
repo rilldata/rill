@@ -462,7 +462,6 @@
       defaultItems={DEFAULT_TIMEZONES}
       keyNotSet={!rawTimeZones}
       selectedItems={timeZones}
-      noneOption
       clearKey={() => {
         updateProperties({}, ["time_zones"]);
       }}
