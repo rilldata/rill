@@ -32,7 +32,7 @@
       measures: {
         visibleMeasures,
         leaderboardSortByMeasureName,
-        activeMeasuresFromMeasureCount,
+        leaderboardMeasureNames,
       },
       dimensions: { getDimensionByName },
       pivot: { showPivot },
@@ -50,9 +50,11 @@
 
   let exploreContainerWidth: number;
 
-  $: leaderboardMeasureNames = $leaderboardMeasureCountFeatureFlag
-    ? $activeMeasuresFromMeasureCount
-    : [$leaderboardSortByMeasureName];
+  // TODO: replace with the new leaderboardMeasureNames
+  // $: leaderboardMeasureNamesTest = $leaderboardMeasureCountFeatureFlag
+  //   ? $activeMeasuresFromMeasureCount
+  //   : [$leaderboardSortByMeasureName];
+  $: console.log("leaderboardMeasureNames: ", $leaderboardMeasureNames);
 
   $: ({ instanceId } = $runtime);
 
@@ -227,7 +229,7 @@
             <LeaderboardDisplay
               {metricsViewName}
               activeMeasureName={$leaderboardSortByMeasureName}
-              {leaderboardMeasureNames}
+              leaderboardMeasureNames={$leaderboardMeasureNames}
               {whereFilter}
               {dimensionThresholdFilters}
               {timeRange}
