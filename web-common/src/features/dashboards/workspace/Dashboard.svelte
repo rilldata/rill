@@ -31,7 +31,11 @@
   const StateManagers = getStateManagers();
   const {
     selectors: {
-      measures: { visibleMeasures, leaderboardMeasureName },
+      measures: {
+        visibleMeasures,
+        leaderboardMeasureName,
+        leaderboardMeasures,
+      },
       dimensions: { getDimensionByName },
       pivot: { showPivot },
     },
@@ -44,7 +48,9 @@
 
   let exploreContainerWidth: number;
 
-  $: leaderboardMeasureNames = [$leaderboardMeasureName];
+  // $: console.log("$leaderboardMeasures: ", $leaderboardMeasures);
+
+  // $: leaderboardMeasureNames = [$leaderboardMeasureName];
 
   $: ({ instanceId } = $runtime);
 
@@ -221,7 +227,7 @@
             <LeaderboardDisplay
               {metricsViewName}
               sortBy={$leaderboardMeasureName}
-              {leaderboardMeasureNames}
+              leaderboardMeasureNames={$leaderboardMeasures}
               {whereFilter}
               {dimensionThresholdFilters}
               {timeRange}

@@ -92,7 +92,11 @@
             class="measure-label line-clamp-2"
             title={measureLabel(measureName)}
           >
-            #
+            {#if leaderboardMeasureNames.length > 1}
+              {measureLabel(measureName)}
+            {:else}
+              #
+            {/if}
           </span>
           {#if measureName === sortBy && sortType === SortType.VALUE}
             <div class="ui-copy-icon">

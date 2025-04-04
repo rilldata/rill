@@ -44,7 +44,6 @@
   $: allDimensionNames = $allDimensions
     .map(({ name }) => name)
     .filter(isDefined);
-  $: allMeasureNames = $allMeasures.map(({ name }) => name).filter(isDefined);
 
   // if the percent of total is currently being shown,
   // but it is not valid for this measure, then turn it off

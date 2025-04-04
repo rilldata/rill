@@ -54,12 +54,12 @@
   export let instanceId: string;
   export let whereFilter: V1Expression;
   export let dimensionThresholdFilters: DimensionThresholdFilter[];
-  export let sortBy: string;
   export let leaderboardMeasureNames: string[];
   export let metricsViewName: string;
+  export let sortBy: string;
   export let sortType: SortType;
-  export let tableWidth: number;
   export let sortedAscending: boolean;
+  export let tableWidth: number;
   export let isValidPercentOfTotal: (measureName: string) => boolean;
   export let timeControlsReady: boolean;
   export let dimensionColumnWidth: number;
@@ -124,6 +124,12 @@
       );
 
   $: measures = [
+    ...leaderboardMeasureNames.map(
+      (name) =>
+        ({
+          name,
+        }) as V1MetricsViewAggregationMeasure,
+    ),
     ...additionalMeasures(sortBy, dimensionThresholdFilters).map(
       (n) =>
         ({
