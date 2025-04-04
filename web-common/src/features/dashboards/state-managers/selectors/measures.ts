@@ -35,12 +35,24 @@ export const leaderboardSortByMeasureName = ({
   return dashboard.leaderboardSortByMeasureName;
 };
 
+export const leaderboardMeasureNames = ({
+  dashboard,
+}: DashboardDataSources) => {
+  // TODO: shouldn't fallback to [], we should always have a value from visibleMeasures[0]
+  return (
+    dashboard.leaderboardMeasureNames ?? [
+      dashboard.leaderboardSortByMeasureName,
+    ]
+  );
+};
+
 export const leaderboardMeasureCount = ({
   dashboard,
 }: DashboardDataSources) => {
   return dashboard.leaderboardMeasureCount ?? 1;
 };
 
+// @deprecated
 export const activeMeasuresFromMeasureCount = (
   dashboardDataSources: DashboardDataSources,
 ): string[] => {
@@ -212,4 +224,6 @@ export const measureSelectors = {
   leaderboardMeasureCount,
 
   activeMeasuresFromMeasureCount,
+
+  leaderboardMeasureNames,
 };
