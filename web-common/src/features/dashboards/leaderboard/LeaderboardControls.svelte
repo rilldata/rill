@@ -15,7 +15,6 @@
   const {
     selectors: {
       measures: {
-        leaderboardMeasureCount,
         leaderboardSortByMeasureName,
         leaderboardMeasureNames,
         getMeasureByName,
@@ -26,7 +25,6 @@
     actions: {
       contextColumn: { setContextColumn },
       dimensions: { setDimensionVisibility },
-      setLeaderboardMeasureCount,
       setLeaderboardSortByMeasureName,
       setLeaderboardMeasureNames,
     },
@@ -96,15 +94,12 @@
         {activeLeaderboardMeasure}
       />
       <LeaderboardActiveMeasureNamesDropdown
+        tooltipText="Choose measures to filter by"
         {measures}
         sortBy={$leaderboardSortByMeasureName}
-        tooltipText="Choose measures to filter by"
         selectedMeasureNames={$leaderboardMeasureNames}
         onSelect={(names) => {
           setLeaderboardMeasureNames(names);
-        }}
-        onToggleSelectAll={() => {
-          console.log("toggle all");
         }}
       />
     </div>

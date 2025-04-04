@@ -27,7 +27,7 @@
     <Select.Trigger class="outline-none border-none w-fit  px-0 gap-x-0.5">
       <Button type="text" label="Select a measure to filter by">
         <span class="truncate text-gray-700 hover:text-inherit">
-          Showing <b>
+          Sort by <b>
             {activeLeaderboardMeasure?.displayName ||
               activeLeaderboardMeasure.name}
           </b>
