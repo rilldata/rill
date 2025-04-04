@@ -23,9 +23,7 @@
     refetchOnWindowFocus: true,
     select: (data: V1GetProjectResponse) => {
       if (data?.prodDeployment?.runtimeHost) {
-        data.prodDeployment.runtimeHost = fixLocalhostRuntimePort(
-          data.prodDeployment.runtimeHost,
-        );
+        data.prodDeployment.runtimeHost
       }
       return data;
     },
@@ -58,7 +56,6 @@
   import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
   import { RUNTIME_ACCESS_TOKEN_DEFAULT_TTL } from "@rilldata/web-common/runtime-client/constants";
   import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
-  import { fixLocalhostRuntimePort } from "@rilldata/web-common/runtime-client/fix-localhost-runtime-port";
   import type { AuthContext } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { QueryObserverOptions } from "@tanstack/svelte-query";
 
@@ -121,9 +118,6 @@
         query: {
           enabled: !!mockedUserId,
           select: (data) => {
-            if (data?.runtimeHost) {
-              data.runtimeHost = fixLocalhostRuntimePort(data.runtimeHost);
-            }
             return data;
           },
         },

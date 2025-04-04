@@ -65,7 +65,7 @@ func TestUserWorkflow(t *testing.T) {
 	p := printer.NewPrinter(printer.FormatHuman)
 	p.OverrideDataOutput(&buf)
 	helper := &cmdutil.Helper{
-		AdminURLDefault:   "http://localhost:9090",
+		AdminURLDefault:   "http://localhost:8080",
 		AdminTokenDefault: adminAuthToken.Token().String(),
 		Printer:           p,
 	}

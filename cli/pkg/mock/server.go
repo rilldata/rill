@@ -36,7 +36,7 @@ func AdminService(ctx context.Context, logger *zap.Logger, databaseURL string) (
 		return nil, err
 	}
 
-	provisionerSetJSON := "{\"static\":{\"type\":\"static\",\"spec\":{\"runtimes\":[{\"host\":\"http://localhost:9091\",\"slots\":50,\"data_dir\":\"\",\"audience_url\":\"http://localhost:8081\"}]}}}"
+	provisionerSetJSON := "{\"static\":{\"type\":\"static\",\"spec\":{\"runtimes\":[{\"host\":\"http://localhost:8081\",\"slots\":50,\"data_dir\":\"\",\"audience_url\":\"http://localhost:8081\"}]}}}"
 
 	// Init admin service
 	admOpts := &admin.Options{
@@ -44,7 +44,7 @@ func AdminService(ctx context.Context, logger *zap.Logger, databaseURL string) (
 		DatabaseDSN:        databaseURL,
 		ProvisionerSetJSON: provisionerSetJSON,
 		DefaultProvisioner: "static",
-		ExternalURL:        "http://localhost:9090",
+		ExternalURL:        "http://localhost:8080",
 		FrontendURL:        "http://localhost:3000",
 		VersionNumber:      "",
 		VersionCommit:      "",
@@ -68,7 +68,7 @@ func AdminServer(ctx context.Context, logger *zap.Logger, adm *admin.Service) (*
 	seesionKeyPairs := []string{"7938b8c95ac90b3731c353076daeae8a", "90c22a5a6c6b442afdb46855f95eb7d6"}
 	conf := &admincli.Config{
 		HTTPPort:        8080,
-		GRPCPort:        9090,
+		GRPCPort:        8080,
 		SessionKeyPairs: seesionKeyPairs,
 		AuthDomain:      "gorillio-stage.auth0.com",
 	}

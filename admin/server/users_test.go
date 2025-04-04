@@ -50,7 +50,7 @@ func TestUser(t *testing.T) {
 	issuer, err := runtimeauth.NewEphemeralIssuer("")
 	require.NoError(t, err)
 
-	provisionerSetJSON := "{\"static\":{\"type\":\"static\",\"spec\":{\"runtimes\":[{\"host\":\"http://localhost:9091\",\"slots\":50,\"data_dir\":\"\",\"audience_url\":\"http://localhost:8081\"}]}}}"
+	provisionerSetJSON := "{\"static\":{\"type\":\"static\",\"spec\":{\"runtimes\":[{\"host\":\"http://localhost:8081\",\"slots\":50,\"data_dir\":\"\",\"audience_url\":\"http://localhost:8081\"}]}}}"
 
 	service, err := admin.New(context.Background(),
 		&admin.Options{
@@ -58,7 +58,7 @@ func TestUser(t *testing.T) {
 			DatabaseDSN:        pg.DatabaseURL,
 			ProvisionerSetJSON: provisionerSetJSON,
 			DefaultProvisioner: "static",
-			ExternalURL:        "http://localhost:9090",
+			ExternalURL:        "http://localhost:8080",
 			VersionNumber:      "",
 		},
 		logger,

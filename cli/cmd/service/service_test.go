@@ -66,7 +66,7 @@ func TestServiceWorkflow(t *testing.T) {
 	p.OverrideDataOutput(&buf)
 
 	helper := &cmdutil.Helper{
-		AdminURLDefault:   "http://localhost:9090",
+		AdminURLDefault:   "http://localhost:8080",
 		AdminTokenDefault: adminAuthToken.Token().String(),
 		Org:               "myorg",
 		Printer:           p,
