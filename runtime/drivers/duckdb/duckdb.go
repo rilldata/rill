@@ -478,6 +478,8 @@ func (c *connection) reopenDB(ctx context.Context) error {
 	dbInitQueries = append(dbInitQueries,
 		"SET enable_http_logging = true",
 		"SET http_logging_output = '/tmp/http-log.txt'",
+		"SET logging_level = 'debug'",
+		"SET logging_storage = 'file'",
 		"INSTALL 'json'",
 		"LOAD 'json'",
 		"INSTALL 'icu'",
