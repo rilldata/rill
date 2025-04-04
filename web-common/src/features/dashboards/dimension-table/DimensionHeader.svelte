@@ -131,7 +131,7 @@
   });
 </script>
 
-<div class="flex justify-between items-center p-1 pr-5 h-7">
+<div class="flex justify-start items-center p-1 pr-5 h-7 gap-x-2">
   <button class="flex items-center" on:click={() => goBackToLeaderboard()}>
     {#if isFetching}
       <DelayedSpinner isLoading={isFetching} size="16px" />
