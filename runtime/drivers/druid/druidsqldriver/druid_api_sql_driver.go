@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -50,10 +51,19 @@ type sqlConnection struct {
 	dsn    string
 }
 
-var _ driver.QueryerContext = &sqlConnection{}
+var (
+	_ driver.QueryerContext = &sqlConnection{}
+	_ driver.Pinger         = &sqlConnection{}
+)
 
 func (c *sqlConnection) Ping(ctx context.Context) error {
-	healthURL := strings.TrimSuffix(c.dsn, "/druid/v2/sql") + "/status/health"
+	parsedURL, err := url.Parse(c.dsn)
+	if err != nil {
+		return err
+	}
+	parsedURL.Path = "/status/health"
+	healthURL := parsedURL.String()
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, healthURL, http.NoBody)
 	if err != nil {
 		return err
@@ -106,7 +116,13 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 		context.AfterFunc(ctx, func() {
 			tctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
-			r, err := http.NewRequestWithContext(tctx, http.MethodDelete, urlutil.MustJoinURL(c.dsn, dr.Context.SQLQueryID), http.NoBody)
+
+			parsedURL, err := url.Parse(c.dsn)
+			if err != nil {
+				return
+			}
+			parsedURL.Path = urlutil.MustJoinURL(parsedURL.Path, dr.Context.SQLQueryID)
+			r, err := http.NewRequestWithContext(tctx, http.MethodDelete, parsedURL.String(), http.NoBody)
 			if err != nil {
 				return
 			}
@@ -137,7 +153,7 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 
 		if resp.StatusCode == http.StatusTooManyRequests {
 			resp.Body.Close()
-			return nil, retrier.Retry, fmt.Errorf("Too many requests")
+			return nil, retrier.Retry, fmt.Errorf("too many requests")
 		}
 
 		// Druid sends well-formed response for 200, 400 and 500 status codes, for others use this
@@ -408,7 +424,7 @@ func (chc *coordinatorHTTPCheck) IsHardFailure(ctx context.Context) (bool, error
 	case http.StatusTooManyRequests:
 		return false, nil
 	case http.StatusUnauthorized, http.StatusForbidden:
-		return true, fmt.Errorf("Unauthorized request")
+		return true, fmt.Errorf("unauthorized request")
 	}
 
 	// Druid sends well-formed response for 200, 400 and 500 status codes, for others use this
