@@ -299,6 +299,13 @@
                     style:height="{ITEM_HEIGHT}px"
                     class="w-full flex gap-x-1 flex-none px-2 py-1 pointer-events-auto cursor-grab items-center hover:bg-slate-50 rounded-sm"
                     class:cursor-not-allowed={selectedItems.length === 1}
+                    on:keydown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        selectedItems = selectedItems.filter((_, j) => j !== i);
+                        onSelectedChange(selectedItems);
+                      }
+                    }}
                   >
                     <DragHandle size="16px" className="text-gray-400" />
 
@@ -363,6 +370,13 @@
                 style:height="{ITEM_HEIGHT}px"
                 class="w-full flex gap-x-1 flex-none px-2 py-1 pointer-events-auto cursor-grab items-center hover:bg-slate-50 rounded-sm"
                 class:cursor-not-allowed={selectedItems.length === 1}
+                on:keydown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    selectedItems = selectedItems.filter((_, j) => j !== i);
+                    onSelectedChange(selectedItems);
+                  }
+                }}
               >
                 <DragHandle size="16px" className="text-gray-400" />
 
@@ -381,8 +395,6 @@
                   disabled={selectedItems.length === 1}
                   class:pointer-events-none={selectedItems.length === 1}
                   class:opacity-50={selectedItems.length === 1}
-                  aria-label="Toggle visibility"
-                  data-testid="toggle-visibility-button"
                 >
                   <EyeIcon size="14px" color="#6b7280" />
                 </button>
@@ -393,10 +405,7 @@
       </div>
       {#if selectedItems.length < allItems.length}
         <span class="flex-none h-px bg-slate-200 w-full" />
-        <div
-          class="hidden-section flex flex-col flex-1 min-h-0 p-1.5 pt-0"
-          data-testid="hidden-section"
-        >
+        <div class="hidden-section flex flex-col flex-1 min-h-0 p-1.5 pt-0">
           <header
             class="flex-none flex py-1.5 justify-between px-2 sticky top-0 from-white from-80% to-transparent bg-gradient-to-b"
           >
@@ -432,7 +441,19 @@
                 class:z-50={isDragItem}
                 class:opacity-0={isDragItem}
                 style:height="{ITEM_HEIGHT}px"
-                class="w-full flex gap-x-1 px-2 py-1 justify-between pointer-events-auto items-center p-1 rounded-sm"
+                class="w-full flex gap-x-1 px-2 py-1 justify-between pointer-events-auto items-center p-1 rounded-sm hover:bg-slate-50 cursor-pointer"
+                on:click={() => {
+                  selectedItems = [...selectedItems, id];
+                  onSelectedChange(selectedItems);
+                }}
+                on:keydown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    selectedItems = [...selectedItems, id];
+                    onSelectedChange(selectedItems);
+                  }
+                }}
+                role="presentation"
               >
                 {item.displayName}
 

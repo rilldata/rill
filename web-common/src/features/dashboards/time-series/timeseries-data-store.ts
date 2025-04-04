@@ -17,7 +17,10 @@ import {
   createQueryServiceMetricsViewTimeSeries,
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
-import type { CreateQueryResult } from "@tanstack/svelte-query";
+import {
+  keepPreviousData,
+  type CreateQueryResult,
+} from "@tanstack/svelte-query";
 import { type Readable, type Writable, derived, writable } from "svelte/store";
 import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
 import {
@@ -60,8 +63,8 @@ export function createMetricsViewTimeSeries(
       ctx.dashboardStore,
       useTimeControlStore(ctx),
     ],
-    ([runtime, metricsViewName, dashboardStore, timeControls], set) =>
-      createQueryServiceMetricsViewTimeSeries(
+    ([runtime, metricsViewName, dashboardStore, timeControls], set) => {
+      return createQueryServiceMetricsViewTimeSeries(
         runtime.instanceId,
         metricsViewName,
         {
@@ -91,11 +94,14 @@ export function createMetricsViewTimeSeries(
               !!ctx.dashboardStore &&
               // in case of comparison, we need to wait for the comparison start time to be available
               (!isComparison || !!timeControls.comparisonAdjustedStart),
-            queryClient: ctx.queryClient,
-            keepPreviousData: true,
+
+            placeholderData: keepPreviousData,
+            refetchOnMount: false,
           },
         },
-      ).subscribe(set),
+        ctx.queryClient,
+      ).subscribe(set);
+    },
   );
 }
 
@@ -245,9 +251,11 @@ export function createTimeSeriesDataStore(
             isError = true;
             error["totals"] = primaryTotal.error.response?.data?.message;
           }
+          const primaryIsFetching = primary.isFetching;
+          const primaryTotalIsFetching = primaryTotal.isFetching;
 
           return {
-            isFetching: primary?.isFetching || primaryTotal?.isFetching,
+            isFetching: primaryIsFetching || primaryTotalIsFetching,
             isError,
             error,
             timeSeriesData: preparedTimeSeriesData,

@@ -80,7 +80,7 @@ export function getSanitizedDashboardStateParam(
       metricsViewFields?.includes(dimension),
     ),
     allDimensionsVisible: dashboard.allDimensionsVisible,
-    leaderboardMeasureName: dashboard.leaderboardMeasureName,
+    leaderboardSortByMeasureName: dashboard.leaderboardSortByMeasureName,
     dashboardSortType: dashboard.dashboardSortType,
     sortDirection: dashboard.sortDirection,
     // Remove the where filter

@@ -4,13 +4,19 @@
  * rill/admin/v1/ai.proto
  * OpenAPI spec version: version not set
  */
-import { createQuery, createMutation } from "@tanstack/svelte-query";
+import {
+  createQuery,
+  createInfiniteQuery,
+  createMutation,
+} from "@tanstack/svelte-query";
 import type {
   CreateQueryOptions,
+  CreateInfiniteQueryOptions,
   CreateMutationOptions,
   QueryFunction,
   MutationFunction,
   CreateQueryResult,
+  CreateInfiniteQueryResult,
   QueryKey,
 } from "@tanstack/svelte-query";
 import type {
@@ -1458,13 +1464,11 @@ export const createAdminServiceRenewBillingSubscription = <
 export const adminServiceListOrganizationInvites = (
   organization: string,
   params?: AdminServiceListOrganizationInvitesParams,
-  signal?: AbortSignal,
 ) => {
   return httpClient<V1ListOrganizationInvitesResponse>({
     url: `/v1/organizations/${organization}/invites`,
     method: "get",
     params,
-    signal,
   });
 };
 
@@ -1472,6 +1476,54 @@ export const getAdminServiceListOrganizationInvitesQueryKey = (
   organization: string,
   params?: AdminServiceListOrganizationInvitesParams,
 ) => [`/v1/organizations/${organization}/invites`, ...(params ? [params] : [])];
+
+export type AdminServiceListOrganizationInvitesInfiniteQueryResult =
+  NonNullable<Awaited<ReturnType<typeof adminServiceListOrganizationInvites>>>;
+export type AdminServiceListOrganizationInvitesInfiniteQueryError = RpcStatus;
+
+export const createAdminServiceListOrganizationInvitesInfinite = <
+  TData = Awaited<ReturnType<typeof adminServiceListOrganizationInvites>>,
+  TError = RpcStatus,
+>(
+  organization: string,
+  params?: AdminServiceListOrganizationInvitesParams,
+  options?: {
+    query?: CreateInfiniteQueryOptions<
+      Awaited<ReturnType<typeof adminServiceListOrganizationInvites>>,
+      TError,
+      TData
+    >;
+  },
+): CreateInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceListOrganizationInvitesQueryKey(organization, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceListOrganizationInvites>>
+  > = ({ pageParam }) =>
+    adminServiceListOrganizationInvites(organization, {
+      pageToken: pageParam,
+      ...params,
+    });
+
+  const query = createInfiniteQuery<
+    Awaited<ReturnType<typeof adminServiceListOrganizationInvites>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!organization,
+    ...queryOptions,
+  }) as CreateInfiniteQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
 
 export type AdminServiceListOrganizationInvitesQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceListOrganizationInvites>>
@@ -1500,8 +1552,7 @@ export const createAdminServiceListOrganizationInvites = <
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof adminServiceListOrganizationInvites>>
-  > = ({ signal }) =>
-    adminServiceListOrganizationInvites(organization, params, signal);
+  > = () => adminServiceListOrganizationInvites(organization, params);
 
   const query = createQuery<
     Awaited<ReturnType<typeof adminServiceListOrganizationInvites>>,
@@ -1525,13 +1576,11 @@ export const createAdminServiceListOrganizationInvites = <
 export const adminServiceListOrganizationMemberUsers = (
   organization: string,
   params?: AdminServiceListOrganizationMemberUsersParams,
-  signal?: AbortSignal,
 ) => {
   return httpClient<V1ListOrganizationMemberUsersResponse>({
     url: `/v1/organizations/${organization}/members`,
     method: "get",
     params,
-    signal,
   });
 };
 
@@ -1539,6 +1588,57 @@ export const getAdminServiceListOrganizationMemberUsersQueryKey = (
   organization: string,
   params?: AdminServiceListOrganizationMemberUsersParams,
 ) => [`/v1/organizations/${organization}/members`, ...(params ? [params] : [])];
+
+export type AdminServiceListOrganizationMemberUsersInfiniteQueryResult =
+  NonNullable<
+    Awaited<ReturnType<typeof adminServiceListOrganizationMemberUsers>>
+  >;
+export type AdminServiceListOrganizationMemberUsersInfiniteQueryError =
+  RpcStatus;
+
+export const createAdminServiceListOrganizationMemberUsersInfinite = <
+  TData = Awaited<ReturnType<typeof adminServiceListOrganizationMemberUsers>>,
+  TError = RpcStatus,
+>(
+  organization: string,
+  params?: AdminServiceListOrganizationMemberUsersParams,
+  options?: {
+    query?: CreateInfiniteQueryOptions<
+      Awaited<ReturnType<typeof adminServiceListOrganizationMemberUsers>>,
+      TError,
+      TData
+    >;
+  },
+): CreateInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceListOrganizationMemberUsersQueryKey(organization, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceListOrganizationMemberUsers>>
+  > = ({ pageParam }) =>
+    adminServiceListOrganizationMemberUsers(organization, {
+      pageToken: pageParam,
+      ...params,
+    });
+
+  const query = createInfiniteQuery<
+    Awaited<ReturnType<typeof adminServiceListOrganizationMemberUsers>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!organization,
+    ...queryOptions,
+  }) as CreateInfiniteQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
 
 export type AdminServiceListOrganizationMemberUsersQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceListOrganizationMemberUsers>>
@@ -1567,8 +1667,7 @@ export const createAdminServiceListOrganizationMemberUsers = <
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof adminServiceListOrganizationMemberUsers>>
-  > = ({ signal }) =>
-    adminServiceListOrganizationMemberUsers(organization, params, signal);
+  > = () => adminServiceListOrganizationMemberUsers(organization, params);
 
   const query = createQuery<
     Awaited<ReturnType<typeof adminServiceListOrganizationMemberUsers>>,
@@ -3522,13 +3621,11 @@ export const adminServiceListMagicAuthTokens = (
   organization: string,
   project: string,
   params?: AdminServiceListMagicAuthTokensParams,
-  signal?: AbortSignal,
 ) => {
   return httpClient<V1ListMagicAuthTokensResponse>({
     url: `/v1/organizations/${organization}/projects/${project}/tokens/magic`,
     method: "get",
     params,
-    signal,
   });
 };
 
@@ -3540,6 +3637,56 @@ export const getAdminServiceListMagicAuthTokensQueryKey = (
   `/v1/organizations/${organization}/projects/${project}/tokens/magic`,
   ...(params ? [params] : []),
 ];
+
+export type AdminServiceListMagicAuthTokensInfiniteQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceListMagicAuthTokens>>
+>;
+export type AdminServiceListMagicAuthTokensInfiniteQueryError = RpcStatus;
+
+export const createAdminServiceListMagicAuthTokensInfinite = <
+  TData = Awaited<ReturnType<typeof adminServiceListMagicAuthTokens>>,
+  TError = RpcStatus,
+>(
+  organization: string,
+  project: string,
+  params?: AdminServiceListMagicAuthTokensParams,
+  options?: {
+    query?: CreateInfiniteQueryOptions<
+      Awaited<ReturnType<typeof adminServiceListMagicAuthTokens>>,
+      TError,
+      TData
+    >;
+  },
+): CreateInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceListMagicAuthTokensQueryKey(organization, project, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceListMagicAuthTokens>>
+  > = ({ pageParam }) =>
+    adminServiceListMagicAuthTokens(organization, project, {
+      pageToken: pageParam,
+      ...params,
+    });
+
+  const query = createInfiniteQuery<
+    Awaited<ReturnType<typeof adminServiceListMagicAuthTokens>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!(organization && project),
+    ...queryOptions,
+  }) as CreateInfiniteQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
 
 export type AdminServiceListMagicAuthTokensQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceListMagicAuthTokens>>
@@ -3569,8 +3716,7 @@ export const createAdminServiceListMagicAuthTokens = <
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof adminServiceListMagicAuthTokens>>
-  > = ({ signal }) =>
-    adminServiceListMagicAuthTokens(organization, project, params, signal);
+  > = () => adminServiceListMagicAuthTokens(organization, project, params);
 
   const query = createQuery<
     Awaited<ReturnType<typeof adminServiceListMagicAuthTokens>>,
