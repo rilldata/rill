@@ -54,6 +54,10 @@ func (b *sqlExprBuilder) writeExpression(e *Expression) error {
 	if e.Condition != nil {
 		return b.writeCondition(e.Condition)
 	}
+	if e.Identifier != "" {
+		b.writeString(b.ast.dialect.EscapeIdentifier(e.Identifier))
+		return nil
+	}
 	return errors.New("invalid expression")
 }
 
@@ -79,6 +83,12 @@ func (b *sqlExprBuilder) writeValue(val any) error {
 }
 
 func (b *sqlExprBuilder) writeSubquery(sub *Subquery) error {
+	if sub.RawSQL != "" {
+		b.writeString("(")
+		b.writeString(sub.RawSQL)
+		b.writeString(")")
+		return nil
+	}
 	// We construct a Query that combines the parent Query's contextual info with that of the Subquery.
 	outer := b.ast.query
 	inner := &Query{

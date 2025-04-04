@@ -1543,6 +1543,13 @@ export class MetricsViewSpec_DimensionV2 extends Message<MetricsViewSpec_Dimensi
    */
   uri = "";
 
+  /**
+   * Lookup fields for the dimension
+   *
+   * @generated from field: rill.runtime.v1.MetricsViewSpec.Lookup lookup = 8;
+   */
+  lookup?: MetricsViewSpec_Lookup;
+
   constructor(data?: PartialMessage<MetricsViewSpec_DimensionV2>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1558,6 +1565,7 @@ export class MetricsViewSpec_DimensionV2 extends Message<MetricsViewSpec_Dimensi
     { no: 6, name: "expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "unnest", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "uri", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "lookup", kind: "message", T: MetricsViewSpec_Lookup },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_DimensionV2 {
@@ -1574,6 +1582,55 @@ export class MetricsViewSpec_DimensionV2 extends Message<MetricsViewSpec_Dimensi
 
   static equals(a: MetricsViewSpec_DimensionV2 | PlainMessage<MetricsViewSpec_DimensionV2> | undefined, b: MetricsViewSpec_DimensionV2 | PlainMessage<MetricsViewSpec_DimensionV2> | undefined): boolean {
     return proto3.util.equals(MetricsViewSpec_DimensionV2, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.MetricsViewSpec.Lookup
+ */
+export class MetricsViewSpec_Lookup extends Message<MetricsViewSpec_Lookup> {
+  /**
+   * @generated from field: string table = 1;
+   */
+  table = "";
+
+  /**
+   * @generated from field: string key_column = 2;
+   */
+  keyColumn = "";
+
+  /**
+   * @generated from field: string value_column = 3;
+   */
+  valueColumn = "";
+
+  constructor(data?: PartialMessage<MetricsViewSpec_Lookup>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewSpec.Lookup";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "key_column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "value_column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Lookup {
+    return new MetricsViewSpec_Lookup().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewSpec_Lookup {
+    return new MetricsViewSpec_Lookup().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewSpec_Lookup {
+    return new MetricsViewSpec_Lookup().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewSpec_Lookup | PlainMessage<MetricsViewSpec_Lookup> | undefined, b: MetricsViewSpec_Lookup | PlainMessage<MetricsViewSpec_Lookup> | undefined): boolean {
+    return proto3.util.equals(MetricsViewSpec_Lookup, a, b);
   }
 }
 
@@ -4625,6 +4682,13 @@ export class CanvasSpec extends Message<CanvasSpec> {
   timeRanges: ExploreTimeRange[] = [];
 
   /**
+   * Toggle custom time range
+   *
+   * @generated from field: bool allow_custom_time_range = 14;
+   */
+  allowCustomTimeRange = false;
+
+  /**
    * List of selectable time zones.
    * If the list is empty, a default list should be shown.
    * The values should be valid IANA location identifiers.
@@ -4668,13 +4732,6 @@ export class CanvasSpec extends Message<CanvasSpec> {
    */
   securityRules: SecurityRule[] = [];
 
-  /**
-   * Toggle custom time range
-   *
-   * @generated from field: bool allow_custom_time_range = 14;
-   */
-  allowCustomTimeRange = false;
-
   constructor(data?: PartialMessage<CanvasSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4691,13 +4748,13 @@ export class CanvasSpec extends Message<CanvasSpec> {
     { no: 7, name: "theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "embedded_theme", kind: "message", T: ThemeSpec },
     { no: 11, name: "time_ranges", kind: "message", T: ExploreTimeRange, repeated: true },
+    { no: 14, name: "allow_custom_time_range", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 12, name: "time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 13, name: "filters_enabled", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 15, name: "default_preset", kind: "message", T: CanvasPreset },
     { no: 5, name: "variables", kind: "message", T: ComponentVariable, repeated: true },
     { no: 18, name: "rows", kind: "message", T: CanvasRow, repeated: true },
     { no: 6, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
-    { no: 14, name: "allow_custom_time_range", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasSpec {

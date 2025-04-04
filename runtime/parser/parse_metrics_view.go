@@ -40,6 +40,11 @@ type MetricsViewYAML struct {
 		Ignore      bool   `yaml:"ignore"` // Deprecated
 		Unnest      bool
 		URI         string
+		Lookup      *struct {
+			Table       string
+			KeyColumn   string `yaml:"key_column"`
+			ValueColumn string `yaml:"value_column"`
+		}
 	}
 	Measures []*struct {
 		Name                string
@@ -820,6 +825,23 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			continue
 		}
 
+		var lookup *runtimev1.MetricsViewSpec_Lookup
+		// all dict fields should be defined or none
+		if dim.Lookup != nil {
+			if dim.Lookup.Table != "" && dim.Lookup.KeyColumn != "" && dim.Lookup.ValueColumn != "" {
+				if dim.Column == "" {
+					return fmt.Errorf("column is required if lookup fields are defined, containing values to be looked up")
+				}
+				lookup = &runtimev1.MetricsViewSpec_Lookup{
+					Table:       dim.Lookup.Table,
+					KeyColumn:   dim.Lookup.KeyColumn,
+					ValueColumn: dim.Lookup.ValueColumn,
+				}
+			} else {
+				return fmt.Errorf("all lookup fields should be defined")
+			}
+		}
+
 		spec.Dimensions = append(spec.Dimensions, &runtimev1.MetricsViewSpec_DimensionV2{
 			Name:        dim.Name,
 			DisplayName: dim.DisplayName,
@@ -828,6 +850,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			Expression:  dim.Expression,
 			Unnest:      dim.Unnest,
 			Uri:         dim.URI,
+			Lookup:      lookup,
 		})
 	}
 

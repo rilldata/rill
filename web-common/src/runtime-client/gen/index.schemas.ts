@@ -105,6 +105,13 @@ export interface MetricsViewSpecDimensionV2 {
   expression?: string;
   unnest?: boolean;
   uri?: string;
+  lookup?: MetricsViewSpecLookup;
+}
+
+export interface MetricsViewSpecLookup {
+  table?: string;
+  keyColumn?: string;
+  valueColumn?: string;
 }
 
 export type MetricsViewSpecMeasureType =
@@ -479,6 +486,7 @@ export interface V1CanvasSpec {
 If the list is empty, a default list should be shown.
 TODO: Once the canvas APIs have stabilized, rename ExploreTimeRange to a non-explore-specific name. */
   timeRanges?: V1ExploreTimeRange[];
+  allowCustomTimeRange?: boolean;
   /** List of selectable time zones.
 If the list is empty, a default list should be shown.
 The values should be valid IANA location identifiers. */
@@ -491,7 +499,6 @@ The values should be valid IANA location identifiers. */
   rows?: V1CanvasRow[];
   /** Security rules to apply for access to the canvas. */
   securityRules?: V1SecurityRule[];
-  allowCustomTimeRange?: boolean;
 }
 
 export interface V1CanvasState {
@@ -2140,6 +2147,7 @@ export interface V1Subquery {
   measures?: string[];
   where?: V1Expression;
   having?: V1Expression;
+  rawSql?: string;
 }
 
 export interface V1TableCardinalityRequest {

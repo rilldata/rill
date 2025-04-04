@@ -176,6 +176,12 @@ message MetricsViewSpec {
     string expression = 6;
     bool unnest = 5;
     string uri = 7;
+    Lookup lookup = 8; // Lookup fields for the dimension
+  }
+  message Lookup {
+    string table = 1;
+    string key_column = 2;
+    string value_column = 3;
   }
   // Selector for a dimension
   message DimensionSelector {

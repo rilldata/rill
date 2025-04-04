@@ -3090,7 +3090,19 @@ definitions:
         type: boolean
       uri:
         type: string
+      lookup:
+        $ref: '#/definitions/MetricsViewSpecLookup'
+        title: Lookup fields for the dimension
     title: Dimensions are columns to filter and group by
+  MetricsViewSpecLookup:
+    type: object
+    properties:
+      table:
+        type: string
+      keyColumn:
+        type: string
+      valueColumn:
+        type: string
   MetricsViewSpecMeasureType:
     type: string
     enum:
@@ -3673,6 +3685,9 @@ definitions:
           List of selectable time ranges with comparison time ranges.
           If the list is empty, a default list should be shown.
           TODO: Once the canvas APIs have stabilized, rename ExploreTimeRange to a non-explore-specific name.
+      allowCustomTimeRange:
+        type: boolean
+        title: Toggle custom time range
       timeZones:
         type: array
         items:
@@ -3705,9 +3720,6 @@ definitions:
           type: object
           $ref: '#/definitions/v1SecurityRule'
         description: Security rules to apply for access to the canvas.
-      allowCustomTimeRange:
-        type: boolean
-        title: Toggle custom time range
   v1CanvasState:
     type: object
     properties:
@@ -6459,6 +6471,8 @@ definitions:
         $ref: '#/definitions/v1Expression'
       having:
         $ref: '#/definitions/v1Expression'
+      rawSql:
+        type: string
   v1TableCardinalityRequest:
     type: object
     properties:

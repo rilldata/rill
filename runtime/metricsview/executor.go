@@ -269,6 +269,8 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		return nil, err
 	}
 
+	e.rewriteClickhouseDictFilters(qry)
+
 	ast, err := NewAST(e.metricsView, e.security, qry, e.olap.Dialect())
 	if err != nil {
 		return nil, err
