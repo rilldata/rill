@@ -47,6 +47,8 @@ class FeatureFlags {
   hidePublicUrl = new FeatureFlag("user", false);
   alerts = new FeatureFlag("user", true);
   reports = new FeatureFlag("user", true);
+
+  // @deprecated
   leaderboardMeasureCount = new FeatureFlag("user", false);
 
   constructor() {

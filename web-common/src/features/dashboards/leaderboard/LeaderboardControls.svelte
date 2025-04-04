@@ -17,6 +17,7 @@
       measures: {
         leaderboardMeasureCount,
         leaderboardSortByMeasureName,
+        leaderboardMeasureNames,
         getMeasureByName,
         visibleMeasures,
       },
@@ -81,13 +82,13 @@
         allItems={$allDimensions}
         selectedItems={visibleDimensionsNames}
       />
-      <LeaderboardMeasureCountSelector
+      <!-- <LeaderboardMeasureCountSelector
         measures={$visibleMeasures}
         count={$leaderboardMeasureCount}
         onMeasureCountChange={(count) => {
           setLeaderboardMeasureCount(count);
         }}
-      />
+      /> -->
       <LeaderboardActiveMeasureDropdown
         leaderboardSortByMeasureName={$leaderboardSortByMeasureName}
         {setLeaderboardSortByMeasureName}
@@ -98,7 +99,7 @@
         {measures}
         sortBy={$leaderboardSortByMeasureName}
         tooltipText="Choose measures to filter by"
-        selectedMeasureNames={[$leaderboardSortByMeasureName]}
+        selectedMeasureNames={$leaderboardMeasureNames}
         onSelect={(names) => {
           setLeaderboardMeasureNames(names);
         }}
