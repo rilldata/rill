@@ -291,9 +291,16 @@ function toExploreUrl(
     );
   }
 
-  if (
-    shouldSetParam(preset.exploreSortBy, exploreState.leaderboardMeasureName)
-  ) {
+  // UNCOMMENT TO HIDE THE DEFAULT SORT BY MEASURE
+  // if (
+  //   shouldSetParam(preset.exploreSortBy, exploreState.leaderboardMeasureName)
+  // ) {
+  //   searchParams.set(
+  //     ExploreStateURLParams.SortBy,
+  //     exploreState.leaderboardMeasureName,
+  //   );
+  // }
+  if (exploreState.leaderboardMeasureName) {
     searchParams.set(
       ExploreStateURLParams.SortBy,
       exploreState.leaderboardMeasureName,
@@ -325,6 +332,13 @@ function toExploreUrl(
     searchParams.set(
       ExploreStateURLParams.LeaderboardMeasureCount,
       exploreState.leaderboardMeasureCount?.toString(),
+    );
+  }
+
+  if (exploreState.leaderboardMeasures) {
+    searchParams.set(
+      ExploreStateURLParams.LeaderboardMeasures,
+      exploreState.leaderboardMeasures.join(","),
     );
   }
 
