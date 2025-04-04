@@ -1,4 +1,4 @@
-import type { CreateQueryResult } from "@rilldata/svelte-query";
+import type { CreateQueryResult } from "@tanstack/svelte-query";
 import {
   AD_BIDS_INIT_DIMENSIONS,
   AD_BIDS_INIT_MEASURES,

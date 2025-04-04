@@ -84,13 +84,13 @@
       }
       onClose();
 
-      await queryClient.refetchQueries(
-        getAdminServiceListBookmarksQueryKey({
+      await queryClient.refetchQueries({
+        queryKey: getAdminServiceListBookmarksQueryKey({
           projectId: $projectId.data ?? "",
           resourceKind: ResourceKind.Explore,
           resourceName: exploreName,
         }),
-      );
+      });
       eventBus.emit("notification", {
         message: bookmark ? "Bookmark updated" : "Bookmark created",
       });

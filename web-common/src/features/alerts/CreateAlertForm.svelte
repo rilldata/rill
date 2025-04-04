@@ -158,9 +158,9 @@
             },
           },
         });
-        await queryClient.invalidateQueries(
-          getRuntimeServiceListResourcesQueryKey(instanceId),
-        );
+        await queryClient.invalidateQueries({
+          queryKey: getRuntimeServiceListResourcesQueryKey(instanceId),
+        });
         dispatch("close");
         eventBus.emit("notification", {
           message: "Alert created",

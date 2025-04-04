@@ -17,7 +17,10 @@ import {
   type V1MetricsViewAggregationSort,
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
-import type { CreateQueryResult } from "@tanstack/svelte-query";
+import {
+  keepPreviousData,
+  type CreateQueryResult,
+} from "@tanstack/svelte-query";
 import { derived, readable, type Readable } from "svelte/store";
 
 export function createChartDataQuery(
@@ -70,16 +73,12 @@ export function createChartDataQuery(
         hasColorDimension = true;
       }
 
-      const queryOptions = {
-        enabled: !!timeRange?.start && !!timeRange?.end,
-        queryClient: ctx.queryClient,
-        keepPreviousData: true,
-      };
-
       let topNQuery:
         | Readable<null>
         | CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> =
         readable(null);
+
+      const enabled = !!timeRange?.start && !!timeRange?.end;
 
       if (limit && hasColorDimension) {
         topNQuery = createQueryServiceMetricsViewAggregation(
@@ -94,8 +93,12 @@ export function createChartDataQuery(
             limit: limit.toString(),
           },
           {
-            query: queryOptions,
+            query: {
+              enabled,
+              placeholderData: keepPreviousData,
+            },
           },
+          ctx.queryClient,
         );
       }
 
@@ -135,8 +138,12 @@ export function createChartDataQuery(
             limit: hasColorDimension || !limit ? "5000" : limit.toString(),
           },
           {
-            query: queryOptions,
+            query: {
+              enabled,
+              placeholderData: keepPreviousData,
+            },
           },
+          ctx.queryClient,
         );
 
         return derived(dataQuery, ($dataQuery) => {
