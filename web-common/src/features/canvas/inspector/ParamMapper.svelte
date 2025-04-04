@@ -49,7 +49,7 @@
 {/if}
 
 {#if metricsView && component instanceof PivotCanvasComponent}
-  <TableTypeSelector {canvasName} {component} metricsViewName={metricsView} />
+  <TableTypeSelector {component} />
 {/if}
 
 <div>

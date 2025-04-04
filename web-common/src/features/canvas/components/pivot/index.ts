@@ -171,10 +171,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
     };
   }
 
-  updateTableType(
-    newTableType: "pivot" | "table",
-    metricsViewSpec: V1MetricsViewSpec | undefined,
-  ) {
+  updateTableType(newTableType: "pivot" | "table") {
     if (!this.parent.fileArtifact) return;
 
     this.type = newTableType;
@@ -185,6 +182,12 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
     const { updateEditorContent } = this.parent.fileArtifact;
 
     const currentSpec = get(this.specStore);
+
+    const metricsViewSpecQuery = this.parent.spec.getMetricsViewFromName(
+      currentSpec.metrics_view,
+    );
+
+    const metricsViewSpec = get(metricsViewSpecQuery).metricsView;
 
     const allMeasures =
       metricsViewSpec?.measures?.map((m) => m.name as string) || [];
