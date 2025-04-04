@@ -27,6 +27,7 @@
 
   const DEFAULT_TIMESERIES_WIDTH = 580;
   const MIN_TIMESERIES_WIDTH = 440;
+
   const StateManagers = getStateManagers();
   const {
     selectors: {
@@ -219,7 +220,7 @@
           {:else}
             <LeaderboardDisplay
               {metricsViewName}
-              activeMeasureName={$leaderboardMeasureName}
+              sortBy={$leaderboardMeasureName}
               {leaderboardMeasureNames}
               {whereFilter}
               {dimensionThresholdFilters}

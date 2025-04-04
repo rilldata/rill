@@ -47,7 +47,6 @@
   const queryLimit = 8;
   const maxValuesToShow = 15;
 
-  // FIXME: clean up `sortBy` and `activeMeasureName`
   export let dimension: MetricsViewSpecDimensionV2;
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
@@ -55,11 +54,10 @@
   export let instanceId: string;
   export let whereFilter: V1Expression;
   export let dimensionThresholdFilters: DimensionThresholdFilter[];
-  export let activeMeasureName: string;
+  export let sortBy: string;
   export let leaderboardMeasureNames: string[];
   export let metricsViewName: string;
   export let sortType: SortType;
-  export let sortBy: string | null;
   export let tableWidth: number;
   export let sortedAscending: boolean;
   export let isValidPercentOfTotal: (measureName: string) => boolean;
@@ -126,7 +124,7 @@
       );
 
   $: measures = [
-    ...additionalMeasures(activeMeasureName, dimensionThresholdFilters).map(
+    ...additionalMeasures(sortBy, dimensionThresholdFilters).map(
       (n) =>
         ({
           name: n,
@@ -135,9 +133,7 @@
 
     // Add comparison measures if there's a comparison time range
     ...(comparisonTimeRange
-      ? [activeMeasureName].flatMap((name) =>
-          getComparisonRequestMeasures(name),
-        )
+      ? [sortBy].flatMap((name) => getComparisonRequestMeasures(name))
       : []),
 
     // Add URI measure if URI is present
@@ -147,7 +143,7 @@
   $: sort = getSort(
     sortedAscending,
     sortType,
-    activeMeasureName,
+    sortBy,
     dimensionName,
     !!comparisonTimeRange,
   );
@@ -177,7 +173,7 @@
     metricsViewName,
     {
       ...{
-        measures: [{ name: activeMeasureName }],
+        measures: [{ name: sortBy }],
       },
       where,
       timeStart: timeRange.start,
@@ -256,7 +252,7 @@
     ? data?.data
     : belowTheFoldValues.map((value) => ({
         [dimensionName]: value,
-        [activeMeasureName]: null,
+        [sortBy]: null,
       }));
 
   $: belowTheFoldRows = belowTheFoldData.map((item) =>
@@ -278,7 +274,7 @@
     leaderboardMeasureNames.length + // Value column for each measure
     (isTimeComparisonActive
       ? leaderboardMeasureNames.length * // For each measure
-        ((isValidPercentOfTotal(activeMeasureName) ? 1 : 0) + // Percent of total column
+        ((isValidPercentOfTotal(sortBy) ? 1 : 0) + // Percent of total column
           (isTimeComparisonActive ? 2 : 0)) // Delta absolute and delta percent columns
       : 0);
 </script>

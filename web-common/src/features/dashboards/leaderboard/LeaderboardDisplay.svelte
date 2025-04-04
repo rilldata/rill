@@ -10,7 +10,6 @@
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardControls from "./LeaderboardControls.svelte";
   import { COMPARISON_COLUMN_WIDTH, valueColumn } from "./leaderboard-widths";
-  import { featureFlags } from "../../feature-flags";
 
   export let metricsViewName: string;
   export let whereFilter: V1Expression;
@@ -18,18 +17,18 @@
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
   export let timeControlsReady: boolean;
-  export let activeMeasureName: string;
+  export let sortBy: string;
   export let leaderboardMeasureNames: string[];
 
   const StateManagers = getStateManagers();
   const {
     selectors: {
-      numberFormat: { measureFormatters, activeMeasureFormatter },
+      numberFormat: { activeMeasureFormatter },
       dimensionFilters: { isFilterExcludeMode },
       dimensions: { visibleDimensions },
       comparison: { isBeingCompared: isBeingComparedReadable },
-      sorting: { sortedAscending, sortType, sortByMeasure },
-      measures: { measureLabel, isMeasureValidPercentOfTotal, visibleMeasures },
+      sorting: { sortedAscending, sortType },
+      measures: { measureLabel, isMeasureValidPercentOfTotal },
     },
     actions: {
       dimensions: { setPrimaryDimension },
@@ -47,13 +46,13 @@
   $: ({ instanceId } = $runtime);
 
   // Reset column widths when the measure changes
-  $: if (activeMeasureName) {
+  $: if (sortBy) {
     valueColumn.reset();
   }
 
   $: dimensionColumnWidth = 164;
 
-  $: showPercentOfTotal = $isMeasureValidPercentOfTotal(activeMeasureName);
+  $: showPercentOfTotal = $isMeasureValidPercentOfTotal(sortBy);
   $: showDeltaPercent = !!comparisonTimeRange;
 
   $: tableWidth =
@@ -87,8 +86,7 @@
             <Leaderboard
               isValidPercentOfTotal={$isMeasureValidPercentOfTotal}
               {metricsViewName}
-              sortBy={$sortByMeasure}
-              {activeMeasureName}
+              {sortBy}
               {leaderboardMeasureNames}
               {whereFilter}
               {dimensionThresholdFilters}
@@ -113,7 +111,7 @@
                 timeRange.end,
               )}
               isBeingCompared={$isBeingComparedReadable(dimension.name)}
-              formatters={{ [activeMeasureName]: $activeMeasureFormatter }}
+              formatters={{ [sortBy]: $activeMeasureFormatter }}
               {setPrimaryDimension}
               {toggleSort}
               {toggleDimensionValueSelection}
