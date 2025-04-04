@@ -113,7 +113,7 @@ export function getDimensionValuesForComparison(
       } else if (surface === "table") {
         let sortBy = isInTimeDimensionView
           ? dashboardStore.tdd.expandedMeasureName
-          : dashboardStore.leaderboardMeasureName;
+          : dashboardStore.leaderboardSortByMeasureName;
         if (dashboardStore?.dashboardSortType === SortType.DIMENSION) {
           sortBy = dimensionName;
         }

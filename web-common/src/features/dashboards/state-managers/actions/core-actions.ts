@@ -12,16 +12,16 @@ export const setLeaderboardMeasureCount = (
   // If the current leaderboard measure is not in the first N visible measures,
   // set it to the first visible measure
   const visibleMeasures = dashboard.visibleMeasures.slice(0, count);
-  if (!visibleMeasures.includes(dashboard.leaderboardMeasureName)) {
-    dashboard.leaderboardMeasureName = visibleMeasures[0];
+  if (!visibleMeasures.includes(dashboard.leaderboardSortByMeasureName)) {
+    dashboard.leaderboardSortByMeasureName = visibleMeasures[0];
   }
 };
 
-export const setLeaderboardMeasureName = (
+export const setLeaderboardSortByMeasureName = (
   { dashboard }: DashboardMutables,
   name: string,
 ) => {
-  dashboard.leaderboardMeasureName = name;
+  dashboard.leaderboardSortByMeasureName = name;
 
   // reset column widths when changing the leaderboard measure
   resetAllContextColumnWidths(dashboard.contextColumnWidths);

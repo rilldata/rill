@@ -92,7 +92,7 @@ export const prepareDimTableRows =
     if (!dimension) return [];
 
     const dimensionColumn = dimension.name ?? "";
-    const leaderboardMeasureName = activeMeasureName(dashData);
+    const leaderboardSortByMeasureName = activeMeasureName(dashData);
 
     // FIXME: should this really be all measures, or just visible measures?
     const measures = allMeasures(dashData);
@@ -100,7 +100,7 @@ export const prepareDimTableRows =
     return prepareDimensionTableRows(
       sortedQuery?.data?.data ?? [],
       measures,
-      leaderboardMeasureName,
+      leaderboardSortByMeasureName,
       dimensionColumn,
       isTimeComparisonActive(dashData),
       isValidPercentOfTotal(dashData),

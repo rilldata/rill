@@ -6,6 +6,7 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
+  import { onMount, tick } from "svelte";
   import { useExploreState } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { runtime } from "../../../runtime-client/runtime-store";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
@@ -18,7 +19,6 @@
   import { useTimeControlStore } from "../time-controls/time-control-store";
   import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
   import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
-  import { onMount, tick } from "svelte";
 
   export let exploreName: string;
   export let metricsViewName: string;
@@ -31,7 +31,7 @@
     selectors: {
       measures: {
         visibleMeasures,
-        leaderboardMeasureName,
+        leaderboardSortByMeasureName,
         activeMeasuresFromMeasureCount,
       },
       dimensions: { getDimensionByName },
@@ -52,7 +52,7 @@
 
   $: leaderboardMeasureNames = $leaderboardMeasureCountFeatureFlag
     ? $activeMeasuresFromMeasureCount
-    : [$leaderboardMeasureName];
+    : [$leaderboardSortByMeasureName];
 
   $: ({ instanceId } = $runtime);
 
@@ -218,7 +218,7 @@
               {dimensionThresholdFilters}
               {timeRange}
               {comparisonTimeRange}
-              activeMeasureName={$leaderboardMeasureName}
+              activeMeasureName={$leaderboardSortByMeasureName}
               {timeControlsReady}
               {visibleMeasureNames}
               hideStartPivotButton={hidePivot}
@@ -226,7 +226,7 @@
           {:else}
             <LeaderboardDisplay
               {metricsViewName}
-              activeMeasureName={$leaderboardMeasureName}
+              activeMeasureName={$leaderboardSortByMeasureName}
               {leaderboardMeasureNames}
               {whereFilter}
               {dimensionThresholdFilters}
