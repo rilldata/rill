@@ -476,6 +476,8 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		dbInitQueries = append(dbInitQueries, c.config.BootQueries)
 	}
 	dbInitQueries = append(dbInitQueries,
+		"SET enable_http_logging = true",
+		"SET http_logging_output = '/tmp/http-log.txt'",
 		"INSTALL 'json'",
 		"LOAD 'json'",
 		"INSTALL 'icu'",
@@ -487,7 +489,7 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		"INSTALL 'sqlite'",
 		"LOAD 'sqlite'",
 		"SET GLOBAL timezone='UTC'",
-		"SET GLOBAL old_implicit_casting = true", // Implicit Cast to VARCHAR
+		"SET GLOBAL old_implicit_casting = true",        // Implicit Cast to VARCHAR
 		"SET GLOBAL allow_community_extensions = false", // This locks the configuration, so it can't later be enabled.
 	)
 
