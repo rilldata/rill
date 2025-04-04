@@ -1,7 +1,7 @@
 import { LeaderboardContextColumn } from "../../leaderboard-context-column";
 import { SortDirection, SortType } from "../../proto-state/derived-types";
+import { setLeaderboardSortByMeasureName } from "./core-actions";
 import type { DashboardMutables } from "./types";
-import { setLeaderboardMeasureName } from "./core-actions";
 
 const isValueBasedSort = (sortType: SortType): boolean => {
   return (
@@ -30,10 +30,10 @@ export const toggleSort = (
   // Handle measure name change if provided
   if (
     measureName !== undefined &&
-    measureName !== dashboard.leaderboardMeasureName &&
+    measureName !== dashboard.leaderboardSortByMeasureName &&
     isValueBasedSort(sortType)
   ) {
-    setLeaderboardMeasureName(args, measureName);
+    setLeaderboardSortByMeasureName(args, measureName);
     dashboard.dashboardSortType = sortType;
     dashboard.sortDirection = SortDirection.DESCENDING;
     return;

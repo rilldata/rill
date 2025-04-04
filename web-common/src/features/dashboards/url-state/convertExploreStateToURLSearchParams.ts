@@ -134,6 +134,9 @@ export function convertExploreStateToURLSearchParams(
 
     case DashboardState_ActivePage.PIVOT:
       copyParamsToTarget(toPivotUrlParams(exploreState, preset), searchParams);
+      // Since we do a shallow merge, we cannot remove time grain from the state for pivot as it is a deeper key.
+      // So this is a patch to remove it from the final url.
+      searchParams.delete(ExploreStateURLParams.TimeGrain);
       break;
   }
 
@@ -289,11 +292,14 @@ function toExploreUrl(
   }
 
   if (
-    shouldSetParam(preset.exploreSortBy, exploreState.leaderboardMeasureName)
+    shouldSetParam(
+      preset.exploreSortBy,
+      exploreState.leaderboardSortByMeasureName,
+    )
   ) {
     searchParams.set(
       ExploreStateURLParams.SortBy,
-      exploreState.leaderboardMeasureName,
+      exploreState.leaderboardSortByMeasureName,
     );
   }
 

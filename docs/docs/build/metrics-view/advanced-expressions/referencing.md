@@ -11,7 +11,7 @@ Within a metrics view, it is possible for a measure to reference another by usin
 <img src = '/img/build/metrics-view/examples/requires-example.png' class='rounded-gif' />
 <br />
 
-Please review the reference documentation, [here.](/reference/project-files/metrics-view)
+Please review the reference documentation, [here.](/reference/project-files/metrics-views)
 
 ## Examples
 

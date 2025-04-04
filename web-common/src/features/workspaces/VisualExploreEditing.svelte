@@ -14,6 +14,7 @@
     DEFAULT_TIMEZONES,
     DEFAULT_TIME_RANGES,
   } from "@rilldata/web-common/lib/time/config";
+  import { allTimeZones } from "@rilldata/web-common/lib/time/timezone";
   import {
     TimeRangePreset,
     type DashboardTimeControls,
@@ -36,7 +37,6 @@
   import MultiSelectInput from "../visual-editing/MultiSelectInput.svelte";
   import SidebarWrapper from "../visual-editing/SidebarWrapper.svelte";
   import ThemeInput from "../visual-editing/ThemeInput.svelte";
-  import { allTimeZones } from "@rilldata/web-common/lib/time/timezone";
 
   const itemTypes = ["measures", "dimensions"] as const;
 
@@ -349,7 +349,7 @@
 
     <Input
       hint="View documentation"
-      link="https://docs.rilldata.com/reference/project-files/metrics-view"
+      link="https://docs.rilldata.com/reference/project-files/metrics-views"
       lockable
       lockTooltip="Unlock to change metrics view"
       label="Metrics view referenced"
@@ -462,7 +462,6 @@
       defaultItems={DEFAULT_TIMEZONES}
       keyNotSet={!rawTimeZones}
       selectedItems={timeZones}
-      noneOption
       clearKey={() => {
         updateProperties({}, ["time_zones"]);
       }}
