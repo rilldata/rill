@@ -801,6 +801,7 @@ If not found in `time_ranges`, it should be added to the list. */
   exploreSortType?: V1ExploreSortType;
   exploreExpandedDimension?: string;
   exploreLeaderboardMeasureCount?: number;
+  exploreLeaderboardMeasures?: string[];
   timeDimensionMeasure?: string;
   timeDimensionChartType?: string;
   timeDimensionPin?: boolean;
