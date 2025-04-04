@@ -106,6 +106,12 @@ export class DashboardStateSync {
       timeControlsState,
     );
 
+    console.log(
+      "handleExploreInit:",
+      redirectUrl.search,
+      " ==> ",
+      pageState.url.search,
+    );
     // using `replaceState` directly messes up the navigation entries,
     // `from` and `to` have the old url before being replaced in `afterNavigate` calls leading to incorrect handling.
     return goto(redirectUrl, {
@@ -173,6 +179,12 @@ export class DashboardStateSync {
       return;
     }
 
+    console.log(
+      "handleURLChange:",
+      redirectUrl.search,
+      " ==> ",
+      pageState.url.search,
+    );
     // using `replaceState` directly messes up the navigation entries,
     // `from` and `to` have the old url before being replaced in `afterNavigate` calls leading to incorrect handling.
     return goto(redirectUrl, {
@@ -214,6 +226,7 @@ export class DashboardStateSync {
       return;
     }
 
+    console.log("gotoNewState:", newUrl.search, " ==> ", pageState.url.search);
     // dashboard changed so we should update the url
     return goto(newUrl);
   }

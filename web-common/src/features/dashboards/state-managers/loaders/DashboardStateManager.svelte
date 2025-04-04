@@ -15,7 +15,7 @@
   export let exploreName: string;
   export let storageNamespacePrefix: string | undefined = undefined;
   export let bookmarkOrTokenExploreState:
-    | CompoundQueryResult<Partial<MetricsExplorerEntity> | null>
+    | CompoundQueryResult<URLSearchParams | null>
     | undefined = undefined;
 
   $: ({ instanceId } = $runtime);
@@ -44,10 +44,10 @@
     );
   }
 
-  $: ({ initExploreState } = dataLoader);
+  $: ({ initUrlParams } = dataLoader);
   let error: HTTPError | null;
   let isLoading: boolean;
-  $: ({ isLoading, error } = $initExploreState as {
+  $: ({ isLoading, error } = $initUrlParams as {
     isLoading: boolean;
     error: HTTPError | null;
   });

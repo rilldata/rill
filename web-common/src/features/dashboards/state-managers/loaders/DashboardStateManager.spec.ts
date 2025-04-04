@@ -85,7 +85,7 @@ describe("DashboardStateManager", () => {
         name: "P7D",
         interval: V1TimeGrain.TIME_GRAIN_DAY,
       } as DashboardTimeControls,
-      showTimeComparison: false,
+      showTimeComparison: undefined,
       selectedComparisonTimeRange: undefined,
 
       visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE],
@@ -98,16 +98,7 @@ describe("DashboardStateManager", () => {
       sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
     };
     const BookmarkSourceQueryResult = readable({
-      data: {
-        selectedTimeRange: {
-          name: "PT24H",
-          interval: V1TimeGrain.TIME_GRAIN_HOUR,
-        } as DashboardTimeControls,
-        showTimeComparison: true,
-        selectedComparisonTimeRange: {
-          name: TimeComparisonOption.CONTIGUOUS,
-        } as DashboardTimeControls,
-      },
+      data: new URLSearchParams("tr=PT24H&compare_tr=rill-PP&grain=hour"),
       error: undefined,
       isFetching: false,
       isLoading: false,
@@ -138,7 +129,8 @@ describe("DashboardStateManager", () => {
           name: TimeComparisonOption.CONTIGUOUS,
         } as DashboardTimeControls,
       });
-      const initUrlSearch = "tr=PT24H&grain=hour";
+      const initUrlSearch =
+        "view=explore&tr=PT24H&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=hour&measures=impressions&dims=publisher&sort_by=impressions&sort_type=percent&sort_dir=ASC&leaderboard_measure_count=1";
       pageMock.assertSearchParams(initUrlSearch);
 
       pageMock.popState("");
@@ -266,7 +258,7 @@ describe("DashboardStateManager", () => {
 // TODO: find if there is a way to share code.
 function renderDashboardStateManager(
   bookmarkOrTokenExploreState:
-    | CompoundQueryResult<Partial<MetricsExplorerEntity> | undefined>
+    | CompoundQueryResult<URLSearchParams | undefined>
     | undefined = undefined,
 ) {
   const renderResults = render(DashboardStateManagerTest, {

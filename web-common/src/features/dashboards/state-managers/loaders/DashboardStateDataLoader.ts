@@ -6,25 +6,15 @@ import {
 import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
 import { getPartialExploreStateFromSessionStorage } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import {
-  createTimeControlStoreCompoundQuery,
-  type TimeControlState,
-} from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+import { cascadingUrlParamsMerge } from "@rilldata/web-common/features/dashboards/url-state/cascading-url-params-merge";
 import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
 import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
-import {
-  ExploreWebViewSpecificURLParams,
-  GlobalExploreURLParams,
-} from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-specific-url-params";
+import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
-import { ExploreUrlWebView } from "@rilldata/web-common/features/dashboards/url-state/mappers";
-import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import {
-  createQueryServiceMetricsViewTimeRange,
-  type V1ExplorePreset,
-} from "@rilldata/web-common/runtime-client";
+import { createQueryServiceMetricsViewTimeRange } from "@rilldata/web-common/runtime-client";
 import type { AfterNavigate } from "@sveltejs/kit";
 import { derived, get } from "svelte/store";
 
@@ -38,12 +28,6 @@ export class DashboardStateDataLoader {
   public readonly validSpecQuery: ReturnType<typeof useExploreValidSpec>;
   public readonly fullTimeRangeQuery: ReturnType<
     typeof useMetricsViewTimeRange
-  >;
-  private readonly timeControlStore: CompoundQueryResult<TimeControlState>;
-
-  // This is used to decide defaults and show/hide url params. TODO: is this the correct preset?
-  public readonly explorePresetFromYAMLConfig: CompoundQueryResult<
-    V1ExplorePreset | undefined
   >;
 
   private readonly blankDashboardUrlParams: CompoundQueryResult<URLSearchParams>;
@@ -91,23 +75,16 @@ export class DashboardStateDataLoader {
       },
     );
 
-    this.timeControlStore = createTimeControlStoreCompoundQuery(
-      instanceId,
-      metricsViewName,
-      exploreName,
-    );
-
     this.blankDashboardUrlParams = getCompoundQuery(
-      [this.validSpecQuery, this.fullTimeRangeQuery, this.timeControlStore],
-      ([validSpecResp, metricsViewTimeRangeResp, timeControlState]) => {
+      [this.validSpecQuery, this.fullTimeRangeQuery],
+      ([validSpecResp, metricsViewTimeRangeResp]) => {
         const metricsViewSpec = validSpecResp?.metricsView ?? {};
         const exploreSpec = validSpecResp?.explore ?? {};
 
         // safeguard to make sure time range summary is loaded for metrics view with time dimension
         if (
           metricsViewSpec.timeDimension &&
-          (!metricsViewTimeRangeResp?.timeRangeSummary ||
-            !timeControlState?.ready)
+          !metricsViewTimeRangeResp?.timeRangeSummary
         ) {
           return undefined;
         }
@@ -127,57 +104,71 @@ export class DashboardStateDataLoader {
             exploreSpec,
             defaultExplorePreset,
           );
-        return convertExploreStateToURLSearchParams(
+        const blankDashboardUrlParams = convertExploreStateToURLSearchParams(
           defaultExploreState as MetricsExplorerEntity,
           exploreSpec,
-          timeControlState,
-          {},
-        );
-      },
-    );
-
-    this.sessionStorageUrlParams = derived(
-      [this.validSpecQuery, page],
-      ([validSpecResp, pageState]) => {
-        const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
-        const exploreSpec = validSpecResp.data?.explore ?? {};
-        const sessionStorageUrlParams =
-          getPartialExploreStateFromSessionStorage(
-            exploreName,
-            storageNamespacePrefix,
-            pageState.url.searchParams,
+          getTimeControlState(
             metricsViewSpec,
             exploreSpec,
-          );
-
-        return {
-          data: sessionStorageUrlParams,
-          error: validSpecResp.error,
-          isLoading: validSpecResp.isLoading,
-          isFetching: validSpecResp.isFetching,
-        };
+            metricsViewTimeRangeResp?.timeRangeSummary,
+            defaultExploreState as MetricsExplorerEntity,
+          ),
+          {},
+        );
+        return blankDashboardUrlParams;
       },
     );
 
+    this.sessionStorageUrlParams = derived(page, (pageState) => {
+      const sessionStorageUrlParams = getPartialExploreStateFromSessionStorage(
+        exploreName,
+        storageNamespacePrefix,
+        pageState.url.searchParams,
+      );
+
+      return {
+        data: sessionStorageUrlParams,
+        error: null,
+        isLoading: false,
+        isFetching: false,
+      };
+    });
+
     this.yamlConfigUrlParams = getCompoundQuery(
-      [
-        this.validSpecQuery,
-        this.explorePresetFromYAMLConfig,
-        this.timeControlStore,
-      ],
-      ([validSpecResp, explorePresetFromYAMLConfig, timeControlState]) => {
+      [this.validSpecQuery, this.fullTimeRangeQuery],
+      ([validSpecResp, metricsViewTimeRangeResp]) => {
         const metricsViewSpec = validSpecResp?.metricsView ?? {};
         const exploreSpec = validSpecResp?.explore ?? {};
+
+        // safeguard to make sure time range summary is loaded for metrics view with time dimension
+        if (
+          metricsViewSpec.timeDimension &&
+          !metricsViewTimeRangeResp?.timeRangeSummary
+        ) {
+          return undefined;
+        }
+
+        // TODO: get rid of the need for a V1ExplorePreset
+        const explorePresetFromYAMLConfig = getDefaultExplorePreset(
+          exploreSpec,
+          metricsViewSpec,
+          metricsViewTimeRangeResp,
+        );
         const { partialExploreState: exploreStateFromYAMLConfig } =
           convertPresetToExploreState(
             metricsViewSpec,
             exploreSpec,
-            explorePresetFromYAMLConfig ?? {},
+            explorePresetFromYAMLConfig,
           );
         return convertExploreStateToURLSearchParams(
           exploreStateFromYAMLConfig as MetricsExplorerEntity,
           exploreSpec,
-          timeControlState,
+          getTimeControlState(
+            metricsViewSpec,
+            exploreSpec,
+            metricsViewTimeRangeResp?.timeRangeSummary,
+            exploreStateFromYAMLConfig as MetricsExplorerEntity,
+          ),
           {},
         );
       },
@@ -226,8 +217,6 @@ export class DashboardStateDataLoader {
     const validSpecResp = get(this.validSpecQuery);
     if (!validSpecResp?.data?.metricsView || !validSpecResp?.data?.explore)
       return undefined;
-    const metricsViewSpec = validSpecResp.data.metricsView;
-    const exploreSpec = validSpecResp.data.explore;
 
     const yamlConfigUrlParams = get(this.yamlConfigUrlParams);
     const blankDashboardUrlParams = get(this.blankDashboardUrlParams);
@@ -253,8 +242,6 @@ export class DashboardStateDataLoader {
       this.exploreName,
       this.storageNamespacePrefix,
       urlSearchParams,
-      metricsViewSpec,
-      exploreSpec,
     );
 
     return this.getCascadingUrlParams(
@@ -271,28 +258,47 @@ export class DashboardStateDataLoader {
     yamlConfigUrlParams: URLSearchParams,
     blankDashboardUrlParams: URLSearchParams,
   ) {
-    const initUrlParams = new URLSearchParams();
+    const validSpecResp = get(this.validSpecQuery);
+    const metricsViewSpec = validSpecResp?.data?.metricsView ?? {};
+    const exploreSpec = validSpecResp?.data?.explore ?? {};
+    const timeRangeSummary = get(this.fullTimeRangeQuery).data
+      ?.timeRangeSummary;
 
-    const urlParamsOrder = [
+    // TODO: make sure we have decompressed url params
+    //       also the order of params should be the same
+    const urlParamsInOrder = [
       pageUrlParams,
       sessionStorageUrlParams,
-      this.bookmarkOrTokenUrlParams,
+      this.bookmarkOrTokenUrlParams
+        ? get(this.bookmarkOrTokenUrlParams).data
+        : null,
       yamlConfigUrlParams,
       blankDashboardUrlParams,
     ].filter(Boolean) as URLSearchParams[];
 
-    const curView =
-      pageUrlParams.get(ExploreStateURLParams.WebView) ??
-      ExploreUrlWebView.Explore;
-    [
-      ...GlobalExploreURLParams,
-      ...ExploreWebViewSpecificURLParams[curView],
-    ].forEach((k) => {
-      const val = urlParamsOrder.find((p) => p.has(k));
-      if (!val) return;
-      initUrlParams.set(k, val.get(k) ?? "");
-    });
+    const newUrlParams = cascadingUrlParamsMerge(urlParamsInOrder);
 
-    return initUrlParams;
+    // The copied url params are not in the correct order.
+    // So we run through our code to get it in the correct order.
+    // TODO: find a better solution by merging in the correct order.
+    const { partialExploreState } = convertURLSearchParamsToExploreState(
+      newUrlParams,
+      metricsViewSpec,
+      exploreSpec,
+      {},
+    );
+    convertExploreStateToURLSearchParams(
+      partialExploreState as MetricsExplorerEntity,
+      exploreSpec,
+      getTimeControlState(
+        metricsViewSpec,
+        exploreSpec,
+        timeRangeSummary,
+        partialExploreState as MetricsExplorerEntity,
+      ),
+      {},
+    );
+
+    return newUrlParams;
   }
 }
