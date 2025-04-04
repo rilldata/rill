@@ -187,7 +187,7 @@ type Condition struct {
 }
 
 type Subquery struct {
-	RawSQL    string      `mapstructure:"sql"`
+	RawSQL    string      `mapstructure:"raw_sql"`
 	Dimension Dimension   `mapstructure:"dimension"`
 	Measures  []Measure   `mapstructure:"measures"`
 	Where     *Expression `mapstructure:"where"`

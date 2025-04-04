@@ -6465,6 +6465,8 @@ definitions:
         $ref: '#/definitions/v1Expression'
       having:
         $ref: '#/definitions/v1Expression'
+      rawSql:
+        type: string
   v1TableCardinalityRequest:
     type: object
     properties:

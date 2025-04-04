@@ -39,4 +39,5 @@ message Subquery {
   repeated string measures = 2;
   Expression where = 3;
   Expression having = 4;
+  string raw_sql = 5;
 }

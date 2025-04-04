@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"regexp"
 	"strings"
 	"time"
 
@@ -24,8 +23,6 @@ var (
 	ErrUnsupportedConnector = errors.New("drivers: connector not supported")
 	// ErrOptimizationFailure is returned when an optimization fails.
 	ErrOptimizationFailure = errors.New("drivers: optimization failure")
-
-	CHDictGetPattern = regexp.MustCompile(`dictGet\s*\(\s*'([^']*)'\s*,\s*'([^']*)'\s*,\s*([^)]*?)\s*(?:\s*\))?$`)
 )
 
 // WithConnectionFunc is a callback function that provides a context to be used in further OLAP store calls to enforce affinity to a single connection.
@@ -779,19 +776,6 @@ func (d Dialect) DictGetExpr(lookupTable, lookupColumn, lookupKey string) string
 	default:
 		return ""
 	}
-}
-
-// ParseClickhouseDictGet For expressions like dictGet('default.application_dict', 'NAME', APPLICATION_ID) extract
-// lookupTable as default.application_dict, lookupColumn as NAME and lookupKey as APPLICATION_ID
-func ParseClickhouseDictGet(expr string) (string, string, string) {
-	matches := CHDictGetPattern.FindStringSubmatch(expr)
-	if len(matches) == 4 {
-		lookupTable := matches[1]
-		lookupColumn := matches[2]
-		lookupKey := matches[3]
-		return lookupTable, lookupColumn, lookupKey
-	}
-	return "", "", ""
 }
 
 func (d Dialect) checkTypeCompatibility(f *runtimev1.StructType_Field) bool {
