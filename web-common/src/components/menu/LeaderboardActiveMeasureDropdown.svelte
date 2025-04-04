@@ -6,7 +6,7 @@
   export let leaderboardSortByMeasureName: string;
   export let activeLeaderboardMeasure: MetricsViewSpecMeasureV2 | undefined;
   export let measures: MetricsViewSpecMeasureV2[];
-  export let setLeaderboardSortedMeasureName: (name: string) => void;
+  export let setLeaderboardSortByMeasureName: (name: string) => void;
 
   let active = false;
 </script>
@@ -21,7 +21,7 @@
     }))}
     onSelectedChange={(newSelection) => {
       if (!newSelection?.value) return;
-      setLeaderboardSortedMeasureName(newSelection.value);
+      setLeaderboardSortByMeasureName(newSelection.value);
     }}
   >
     <Select.Trigger class="outline-none border-none w-fit  px-0 gap-x-0.5">
