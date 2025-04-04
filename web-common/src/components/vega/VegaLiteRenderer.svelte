@@ -10,6 +10,7 @@
   import type { ExpressionFunction, VLTooltipFormatter } from "./types";
   import { createEmbedOptions } from "./vega-embed-options";
   import { VegaLiteTooltipHandler } from "./vega-tooltip";
+  import "./vega.css";
 
   export let data: Record<string, unknown> = {};
   export let spec: VisualizationSpec;
@@ -72,7 +73,7 @@
   {/if}
 </div>
 
-<style lang="postcss">
+<!-- <style lang="postcss">
   :global(.vega-embed) {
     width: 100%;
   }
@@ -102,4 +103,4 @@
       max-width: 250px;
     }
   }
-</style>
+</style> -->
