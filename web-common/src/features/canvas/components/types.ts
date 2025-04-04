@@ -3,13 +3,14 @@ import type { ChartConfig, ChartType } from "./charts/types";
 import type { ImageSpec } from "./image";
 import type { KPISpec } from "./kpi";
 import type { MarkdownSpec } from "./markdown";
-import type { PivotSpec } from "./pivot";
+import type { PivotSpec, TableSpec } from "./pivot";
 
 // First, let's create a union type for all possible specs
 export type ComponentSpec =
   | ChartConfig
   | PivotSpec
   | ImageSpec
+  | TableSpec
   | KPISpec
   | KPIGridSpec
   | MarkdownSpec;

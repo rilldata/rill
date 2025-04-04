@@ -12,7 +12,6 @@ import {
   writable,
   type Readable,
   type Unsubscriber,
-  type Writable,
 } from "svelte/store";
 import { Filters } from "./filters";
 import { CanvasResolvedSpec } from "./spec";
@@ -29,19 +28,13 @@ import { parseDocument } from "yaml";
 import { fileArtifacts } from "../../entity-management/file-artifacts";
 import type { CanvasComponentType } from "../components/types";
 import { ResourceKind } from "../../entity-management/resource-selectors";
-import { COLUMN_COUNT } from "../layout-util";
-
-export interface LayoutRow {
-  itemIds: Writable<string[]>;
-  height: Writable<number>;
-  itemWidths: Writable<number[]>;
-}
+import { Grid } from "./grid";
 
 export class CanvasEntity {
   name: string;
   components = new Map<string, BaseCanvasComponent>();
 
-  _rows: Writable<LayoutRow[]> = writable([]);
+  _rows: Grid = new Grid();
 
   /**
    * Time controls for the canvas entity containing various
@@ -123,22 +116,10 @@ export class CanvasEntity {
 
     const set = new Set<string>();
 
-    const existingRows = get(this._rows);
-
-    let updatedRows = false;
     let createdNewComponent = false;
-
-    if (rows.length < existingRows.length) {
-      updatedRows = true;
-      this._rows.update((current) => {
-        return current.slice(0, rows.length);
-      });
-    }
 
     rows.forEach((row, rowIndex) => {
       const items = row.items ?? [];
-      const itemIds = items.map((item) => item.component ?? "");
-      const existingRow = existingRows[rowIndex];
 
       items.forEach((item, columnIndex) => {
         const componentName = item.component;
@@ -167,38 +148,9 @@ export class CanvasEntity {
           );
         }
       });
-
-      if (existingRow) {
-        existingRow.height.set(row.height ?? 0);
-        const existingItemIds = get(existingRow.itemIds);
-
-        if (
-          existingItemIds.length !== itemIds.length ||
-          itemIds.some((itemId, index) => itemId !== existingItemIds[index])
-        ) {
-          existingRow.itemIds.set(itemIds);
-        }
-        existingRow.itemWidths.set(
-          items.map((item) => {
-            return item.width ?? COLUMN_COUNT / items.length;
-          }),
-        );
-      } else {
-        const height = writable(row.height ?? 0);
-        this._rows.update((existing) => {
-          existing[rowIndex] = {
-            itemIds: writable(itemIds),
-            height,
-            itemWidths: writable(
-              items.map((item) => {
-                return item.width ?? COLUMN_COUNT / items.length;
-              }),
-            ),
-          };
-          return existing;
-        });
-      }
     });
+
+    const didUpdateRowCount = this._rows.updateFromCanvasRows(rows);
 
     existingKeys.difference(set).forEach((componentName) => {
       const component = this.components.get(componentName);
@@ -208,8 +160,8 @@ export class CanvasEntity {
     });
 
     // Only necessary because we are not using stable IDs yet
-    if (!updatedRows && createdNewComponent) {
-      this._rows.update((r) => r);
+    if (!didUpdateRowCount && createdNewComponent) {
+      this._rows.refresh();
     }
   };
 

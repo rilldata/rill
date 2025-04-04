@@ -7,35 +7,42 @@
     MIN_HEIGHT,
     MIN_WIDTH,
     normalizeSizeArray,
+    type DragItem,
   } from "./layout-util";
   import { mousePosition } from "./layout-util";
-  import { get, type Unsubscriber } from "svelte/store";
+  import { get, type Unsubscriber, type Writable } from "svelte/store";
   import { clamp } from "@rilldata/web-common/lib/clamp";
-  import type { CanvasEntity, LayoutRow } from "./stores/canvas-entity";
+  import type { CanvasEntity } from "./stores/canvas-entity";
   import ComponentError from "./components/ComponentError.svelte";
   import ItemWrapper from "./ItemWrapper.svelte";
   import ElementDivider from "./ElementDivider.svelte";
   import DropZone from "./components/DropZone.svelte";
   import CanvasComponent from "./CanvasComponent.svelte";
   import { activeDivider } from "./stores/ui-stores";
+  import type { Row } from "./stores/row";
 
-  export let row: LayoutRow;
+  export let row: Row;
   export let zIndex = 50;
   export let maxWidth: number;
-
   export let heightUnit: string = "px";
   export let rowIndex: number;
   export let movingWidget: boolean;
-
   export let components: CanvasEntity["components"];
-  export let dragItemInfo;
-  export let addItems;
-  export let spreadEvenly;
-  export let selectedComponent;
-
-  export let onComponentMouseDown;
-  export let onDuplicate;
-  export let onDelete;
+  export let dragItemInfo: DragItem | null;
+  export let addItems: (
+    position: { row: number; column: number },
+    items: CanvasComponentType[],
+  ) => void;
+  export let spreadEvenly: (index: number) => void;
+  export let selectedComponent: Writable<string | null>;
+  export let onComponentMouseDown: (params: {
+    columnIndex: number;
+    id: string;
+    type: CanvasComponentType;
+    event: MouseEvent;
+  }) => void;
+  export let onDuplicate: (params: { columnIndex: number }) => void;
+  export let onDelete: (params: { columnIndex: number }) => void;
   export let onDrop: (row: number, column: number | null) => void;
   export let initializeRow: (row: number, type: CanvasComponentType) => void;
   export let updateRowHeight: (newHeight: number, index: number) => void;
@@ -51,7 +58,7 @@
   let initialHeight: number;
   let unsubscriber: Unsubscriber | undefined = undefined;
 
-  $: ({ height, itemIds: _itemIds, itemWidths } = row);
+  $: ({ height, items: _itemIds, widths: itemWidths } = row);
 
   $: widths = normalizeSizeArray($itemWidths);
 
