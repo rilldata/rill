@@ -22,7 +22,7 @@
   );
 
   function goToDashboardHome() {
-    // Without clearing sessions empty url will load that instead
+    // Without clearing sessions empty, DashboardStateDataLoader will load from session for explore view
     clearExploreSessionStore(exploreName, `${organization}__${project}__`);
   }
 </script>
