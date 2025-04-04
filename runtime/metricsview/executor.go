@@ -269,14 +269,12 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		return nil, err
 	}
 
-	dictMeta := e.rewriteClickhouseDictFilters(qry)
+	e.rewriteClickhouseDictFilters(qry)
 
 	ast, err := NewAST(e.metricsView, e.security, qry, e.olap.Dialect())
 	if err != nil {
 		return nil, err
 	}
-
-	e.rewriteClickhouseDictGroupBys(ast, dictMeta)
 
 	ok, err := e.rewriteTwoPhaseComparisons(ctx, qry, ast, ogLimit)
 	if err != nil {

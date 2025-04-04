@@ -54,7 +54,6 @@ type SelectNode struct {
 	JoinComparisonType   JoinType         // Type of join to use for JoinComparisonSelect
 	Unnests              []string         // Unnest expressions to add in the FROM clause
 	Group                bool             // Whether the SELECT is grouped. If yes, it will group by all DimFields.
-	GroupByIdentifier    bool             // Whether the SELECT is grouped by the dimension field names or ordinal positions. By default, ordinal position.
 	Where                *ExprNode        // Expression for the WHERE clause
 	TimeWhere            *ExprNode        // Expression for the time range to add to the WHERE clause
 	Having               *ExprNode        // Expression for the HAVING clause. If HAVING is not allowed in the current context, it will added as a WHERE in a wrapping SELECT.
@@ -67,12 +66,11 @@ type SelectNode struct {
 // The Name must always match a the name of a dimension/measure in the metrics view or a computed field specified in the request.
 // This means that if two columns in different places in the AST have the same Name, they're guaranteed to resolve to the same value.
 type FieldNode struct {
-	Name              string
-	DisplayName       string
-	Expr              string
-	AutoUnnest        bool
-	TreatNullAs       string // only used for measures
-	GroupByIdentifier string
+	Name        string
+	DisplayName string
+	Expr        string
+	AutoUnnest  bool
+	TreatNullAs string // only used for measures
 }
 
 // ExprNode represents an expression for a WHERE clause.
@@ -1088,7 +1086,6 @@ func (a *AST) wrapSelect(s *SelectNode, innerAlias string) {
 	s.JoinComparisonType = JoinTypeUnspecified
 	s.Unnests = nil
 	s.Group = false
-	s.GroupByIdentifier = false
 	s.Where = nil
 	s.TimeWhere = nil
 	s.Having = nil
