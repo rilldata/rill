@@ -74,8 +74,10 @@ export function cleanUpComparisonValue(
   selectedIndex: number,
 ): LeaderboardItemData {
   const cleanValue: LeaderboardItemData = {
-    dimensionValue: v[dimensionName],
-    uri: v[dimensionName + URI_DIMENSION_SUFFIX] || null,
+    dimensionValue: v[dimensionName] as string,
+    uri:
+      (v[dimensionName + URI_DIMENSION_SUFFIX] as string | undefined | null) ||
+      null,
     values: {},
     pctOfTotals: {},
     prevValues: {},
@@ -189,7 +191,11 @@ export function prepareLeaderboardItemData(
 
     const cleanValue: LeaderboardItemData = {
       dimensionValue,
-      uri: value[dimensionName + URI_DIMENSION_SUFFIX] || null,
+      uri:
+        (value[dimensionName + URI_DIMENSION_SUFFIX] as
+          | string
+          | undefined
+          | null) || null,
       values: {},
       pctOfTotals: {},
       prevValues: {},

@@ -203,7 +203,7 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
       const isValidLocale = isValidD3Locale(measureSpec.formatD3Locale);
       if (isValidLocale) {
         const locale = getLocaleFromConfig(
-          measureSpec.formatD3Locale as FormatLocaleDefinition,
+          measureSpec.formatD3Locale as unknown as FormatLocaleDefinition,
         );
         d3formatter = d3FormatLocale(locale).format(measureSpec.formatD3);
       } else {

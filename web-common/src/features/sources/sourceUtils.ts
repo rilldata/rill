@@ -189,7 +189,7 @@ export function maybeRewriteToDuckDb(
 }
 
 export function getFileExtension(source: V1SourceV2): string {
-  const path = source?.spec?.properties?.path?.toLowerCase();
+  const path = String(source?.spec?.properties?.path).toLowerCase();
   if (path?.includes(".csv")) return "CSV";
   if (path?.includes(".parquet")) return "Parquet";
   if (path?.includes(".json")) return "JSON";

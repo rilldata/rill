@@ -5,11 +5,12 @@
 
   export let isLoading: boolean;
   export let isFetching: boolean;
+  export let isPending: boolean;
   export let delay: number = 300;
   export let rowCount: number;
   export let columnCount: number = 4;
 
-  const showPlaceholder = writable(false);
+  const showPlaceholder = writable(true);
 
   let timeoutId: ReturnType<typeof setTimeout> | undefined = undefined;
   let previousRowCount = rowCount ?? 7;
@@ -17,7 +18,7 @@
   $: {
     if (timeoutId) clearTimeout(timeoutId);
 
-    if (isLoading) {
+    if (isLoading || isPending) {
       showPlaceholder.set(true);
     } else if (isFetching) {
       timeoutId = setTimeout(() => {

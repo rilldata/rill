@@ -1,4 +1,4 @@
-import type { QueryObserverResult } from "@rilldata/svelte-query";
+import type { QueryObserverResult } from "@tanstack/svelte-query";
 import { KPIGridComponent } from "@rilldata/web-common/features/canvas/components/kpi-grid";
 import type {
   ComponentInputParam,

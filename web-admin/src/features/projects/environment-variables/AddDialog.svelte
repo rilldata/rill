@@ -122,9 +122,12 @@
         },
       });
 
-      await queryClient.invalidateQueries(
-        getAdminServiceGetProjectVariablesQueryKey(organization, project),
-      );
+      await queryClient.invalidateQueries({
+        queryKey: getAdminServiceGetProjectVariablesQueryKey(
+          organization,
+          project,
+        ),
+      });
 
       eventBus.emit("notification", {
         message: "Environment variables updated",

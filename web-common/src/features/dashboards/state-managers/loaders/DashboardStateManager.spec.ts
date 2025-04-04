@@ -108,7 +108,7 @@ describe("DashboardStateManager", () => {
           name: TimeComparisonOption.CONTIGUOUS,
         } as DashboardTimeControls,
       },
-      error: undefined,
+      error: null,
       isFetching: false,
       isLoading: false,
     });

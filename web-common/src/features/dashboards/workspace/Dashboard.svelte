@@ -1,7 +1,6 @@
 <script lang="ts">
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import PivotDisplay from "@rilldata/web-common/features/dashboards/pivot/PivotDisplay.svelte";
-  import { useModelHasTimeSeries } from "@rilldata/web-common/features/dashboards/selectors";
   import TabBar from "@rilldata/web-common/features/dashboards/tab-bar/TabBar.svelte";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
@@ -67,13 +66,13 @@
   $: selectedDimension =
     selectedDimensionName && $getDimensionByName(selectedDimensionName);
   $: expandedMeasureName = $exploreState?.tdd?.expandedMeasureName;
-  $: metricTimeSeries = useModelHasTimeSeries(instanceId, metricsViewName);
-  $: hasTimeSeries = $metricTimeSeries.data;
 
   $: isRillDeveloper = $readOnly === false;
 
   // Check if the mock user (if selected) has access to the explore
   $: explore = useExploreValidSpec(instanceId, exploreName);
+
+  $: hasTimeSeries = !!$explore.data?.metricsView?.timeDimension;
 
   $: mockUserHasNoAccess =
     $selectedMockUserStore && $explore.error?.response?.status === 404;
@@ -146,7 +145,7 @@
     {:else}
       {#key exploreName}
         <section class="flex relative justify-between gap-x-4 py-4 pb-6 px-4">
-          <Filters {timeRanges} {metricsViewName} />
+          <Filters {timeRanges} {metricsViewName} {hasTimeSeries} />
           <div class="absolute bottom-0 flex flex-col right-0">
             <TabBar {hidePivot} {exploreName} onPivot={$showPivot} />
           </div>
@@ -176,17 +175,15 @@
         style:width={expandedMeasureName ? "auto" : `${metricsWidth}px`}
       >
         {#key exploreName}
-          {#if !$metricTimeSeries.isLoading}
-            {#if hasTimeSeries}
-              <MetricsTimeSeriesCharts
-                {exploreName}
-                timeSeriesWidth={metricsWidth}
-                workspaceWidth={exploreContainerWidth}
-                hideStartPivotButton={hidePivot}
-              />
-            {:else}
-              <MeasuresContainer {exploreContainerWidth} {metricsViewName} />
-            {/if}
+          {#if hasTimeSeries}
+            <MetricsTimeSeriesCharts
+              {exploreName}
+              timeSeriesWidth={metricsWidth}
+              workspaceWidth={exploreContainerWidth}
+              hideStartPivotButton={hidePivot}
+            />
+          {:else}
+            <MeasuresContainer {exploreContainerWidth} {metricsViewName} />
           {/if}
         {/key}
       </div>

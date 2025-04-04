@@ -7,15 +7,19 @@ import {
 import type { QueryClient } from "@tanstack/svelte-query";
 
 export function useAllFileNames(queryClient: QueryClient, instanceId: string) {
-  return createRuntimeServiceListFiles(instanceId, undefined, {
-    query: {
-      queryClient,
-      select: (data) =>
-        data.files
-          ?.filter((f) => !f.isDir)
-          .map((f) => f.path?.split("/").pop() ?? "") ?? [],
+  return createRuntimeServiceListFiles(
+    instanceId,
+    undefined,
+    {
+      query: {
+        select: (data) =>
+          data.files
+            ?.filter((f) => !f.isDir)
+            .map((f) => f.path?.split("/").pop() ?? "") ?? [],
+      },
     },
-  });
+    queryClient,
+  );
 }
 
 export function fileIsMainEntity(filePath: string) {

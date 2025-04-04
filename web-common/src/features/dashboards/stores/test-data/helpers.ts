@@ -1,4 +1,4 @@
-import { QueryClient } from "@rilldata/svelte-query";
+import { QueryClient } from "@tanstack/svelte-query";
 import { createStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
