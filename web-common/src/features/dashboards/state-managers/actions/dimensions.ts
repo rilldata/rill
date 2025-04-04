@@ -17,35 +17,41 @@ export const setPrimaryDimension = (
 export const toggleDimensionVisibility = (
   { dashboard }: DashboardMutables,
   allDimensions: string[],
-  dimensionName?: string,
+  dimensionName: string,
 ) => {
-  if (dimensionName) {
-    const deleted = dashboard.visibleDimensionKeys.delete(dimensionName);
-    if (!deleted) {
-      dashboard.visibleDimensionKeys.add(dimensionName);
-    }
+  const index = dashboard.visibleDimensions.indexOf(dimensionName);
+  if (index !== -1) {
+    dashboard.visibleDimensions.splice(index, 1);
   } else {
-    const allSelected =
-      dashboard.visibleDimensionKeys.size === allDimensions.length;
-
-    dashboard.visibleDimensionKeys = new Set(
-      allSelected ? allDimensions.slice(0, 1) : allDimensions,
-    );
+    dashboard.visibleDimensions.push(dimensionName);
   }
 
   dashboard.allDimensionsVisible =
-    dashboard.visibleDimensionKeys.size === allDimensions.length;
+    dashboard.visibleDimensions.length === allDimensions.length;
+};
+
+export const toggleAllDimensionsVisibility = (
+  { dashboard }: DashboardMutables,
+  allDimensions: string[],
+) => {
+  const allSelected =
+    dashboard.visibleDimensions.length === allDimensions.length;
+
+  dashboard.visibleDimensions = allSelected
+    ? allDimensions.slice(0, 1)
+    : [...allDimensions];
+  dashboard.allDimensionsVisible = !dashboard.allDimensionsVisible;
 };
 
 export const setDimensionVisibility = (
   { dashboard }: DashboardMutables,
-  dimensions?: string[],
-  allDimensions?: string[],
+  dimensions: string[],
+  allDimensions: string[],
 ) => {
-  dashboard.visibleDimensionKeys = new Set(dimensions);
+  dashboard.visibleDimensions = [...dimensions];
 
   dashboard.allDimensionsVisible =
-    dashboard.visibleDimensionKeys.size === allDimensions?.length;
+    dashboard.visibleDimensions.length === allDimensions.length;
 };
 
 export const dimensionActions = {
@@ -56,5 +62,6 @@ export const dimensionActions = {
    */
   setPrimaryDimension,
   toggleDimensionVisibility,
+  toggleAllDimensionsVisibility,
   setDimensionVisibility,
 };

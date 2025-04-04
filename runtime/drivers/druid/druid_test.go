@@ -47,3 +47,11 @@ func acquireTestDruid(t *testing.T) (drivers.Handle, drivers.OLAPStore) {
 
 	return conn, olap
 }
+
+func TestPing(t *testing.T) {
+	conn, _ := acquireTestDruid(t)
+
+	// Test that ping works
+	err := conn.Ping(context.Background())
+	require.NoError(t, err)
+}

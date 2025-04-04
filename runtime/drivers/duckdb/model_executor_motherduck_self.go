@@ -16,6 +16,11 @@ type mdToSelfInputProps struct {
 	DSN   string `mapstructure:"dsn"`
 }
 
+type mdConfigProps struct {
+	Token           string `mapstructure:"token"`
+	AllowHostAccess bool   `mapstructure:"allow_host_access"`
+}
+
 func (p *mdToSelfInputProps) resolveDSN() string {
 	if p.DSN != "" {
 		return p.DSN

@@ -73,7 +73,7 @@ first_month_of_year: #defined in metrics view,
 
 ```
 ---
-**[Metrics View YAML](/reference/project-files/metrics-view):**
+**[Metrics View YAML](/reference/project-files/metrics-views):**
 
 Please check the reference for the required parameters for a metrics view.
 ```yaml

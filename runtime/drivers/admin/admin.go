@@ -234,11 +234,6 @@ func (h *Handle) AsModelManager(instanceID string) (drivers.ModelManager, bool) 
 	return nil, false
 }
 
-// AsTransporter implements drivers.Handle.
-func (h *Handle) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
-	return nil, false
-}
-
 // AsNotifier implements drivers.Handle.
 func (h *Handle) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier

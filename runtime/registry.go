@@ -10,8 +10,8 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/logbuffer"
 	"github.com/rilldata/rill/runtime/pkg/logutil"
@@ -570,7 +570,7 @@ func (r *registryCache) updateProjectConfig(iwc *instanceWithController) error {
 		return err
 	}
 
-	p, err := rillv1.Parse(iwc.ctx, repo, iwc.instanceID, instance.Environment, instance.OLAPConnector)
+	p, err := parser.Parse(iwc.ctx, repo, iwc.instanceID, instance.Environment, instance.OLAPConnector)
 	if err != nil {
 		return err
 	}

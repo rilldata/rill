@@ -2,7 +2,6 @@ package org
 
 import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/dotrill"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc/codes"
@@ -86,7 +85,8 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Update default org if name changed
 			if req.NewName != nil {
-				if err := dotrill.SetDefaultOrg(*req.NewName); err != nil {
+				err = ch.DotRill.SetDefaultOrg(*req.NewName)
+				if err != nil {
 					return err
 				}
 			}

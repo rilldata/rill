@@ -230,7 +230,7 @@ function fromExploreUrlParams(
 
     partialExploreState.allMeasuresVisible =
       selectedMeasures.length === explore.measures?.length;
-    partialExploreState.visibleMeasureKeys = new Set(selectedMeasures);
+    partialExploreState.visibleMeasures = [...selectedMeasures];
   }
 
   if (preset.dimensions?.length) {
@@ -247,12 +247,12 @@ function fromExploreUrlParams(
 
     partialExploreState.allDimensionsVisible =
       selectedDimensions.length === explore.dimensions?.length;
-    partialExploreState.visibleDimensionKeys = new Set(selectedDimensions);
+    partialExploreState.visibleDimensions = [...selectedDimensions];
   }
 
   if (preset.exploreSortBy) {
     if (measures.has(preset.exploreSortBy)) {
-      partialExploreState.leaderboardMeasureName = preset.exploreSortBy;
+      partialExploreState.leaderboardSortByMeasureName = preset.exploreSortBy;
     } else {
       errors.push(getSingleFieldError("sort by measure", preset.exploreSortBy));
     }

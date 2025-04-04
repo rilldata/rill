@@ -20,7 +20,7 @@ If you are using a different OLAP engine to power your dashboard, simply use the
 
 IE: [Clickhouse quantile](https://clickhouse.com/docs/sql-reference/aggregate-functions/reference/quantile), [Pinot percentile](https://docs.pinot.apache.org/configuration-reference/functions/percentile)
 :::
-Please review the reference documentation, [here.](/reference/project-files/metrics-view)
+Please review the reference documentation, [here.](/reference/project-files/metrics-views)
 
 ## Examples
 

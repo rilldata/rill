@@ -45,6 +45,8 @@ import {
   AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD,
   AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY,
   AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY,
+  AD_BIDS_TOGGLE_BID_PUBLISHER_DIMENSION_VISIBILITY,
+  AD_BIDS_TOGGLE_IMPRESSIONS_MEASURE_VISIBILITY,
   AD_BIDS_TOGGLE_PIVOT,
   AD_BIDS_TOGGLE_PIVOT_TABLE_MODE,
   AD_BIDS_SET_LEADERBOARD_MEASURE_COUNT,
@@ -215,6 +217,17 @@ const TestCases: {
     ],
     preset: AD_BIDS_PRESET,
     expectedUrl: "http://localhost/?measures=*&dims=*",
+  },
+  {
+    title: "Show and hide measures/dimensions",
+    mutations: [
+      AD_BIDS_TOGGLE_IMPRESSIONS_MEASURE_VISIBILITY,
+      AD_BIDS_TOGGLE_IMPRESSIONS_MEASURE_VISIBILITY,
+      AD_BIDS_TOGGLE_BID_PUBLISHER_DIMENSION_VISIBILITY,
+      AD_BIDS_TOGGLE_BID_PUBLISHER_DIMENSION_VISIBILITY,
+    ],
+    expectedUrl:
+      "http://localhost/?measures=bid_price%2Cimpressions&dims=domain%2Cpublisher",
   },
 
   {
@@ -466,7 +479,10 @@ describe("Human readable URL state variations", () => {
 
         const url = new URL("http://localhost");
         // load url with legacy protobuf state
-        url.searchParams.set("state", getProtoFromDashboardState(curState));
+        url.searchParams.set(
+          "state",
+          getProtoFromDashboardState(curState, explore),
+        );
         // get back the entity from url params
         const { partialExploreState: entityFromUrl } =
           convertURLSearchParamsToExploreState(
@@ -576,11 +592,6 @@ export function getCleanMetricsExploreForAssertion() {
   const cleanedState = deepClone(
     get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
   ) as Partial<MetricsExplorerEntity>;
-  // these are not cloned
-  cleanedState.visibleMeasureKeys = new Set(cleanedState.visibleMeasureKeys);
-  cleanedState.visibleDimensionKeys = new Set(
-    cleanedState.visibleDimensionKeys,
-  );
 
   delete cleanedState.name;
   delete cleanedState.proto;

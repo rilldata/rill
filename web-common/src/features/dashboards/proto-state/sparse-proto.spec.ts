@@ -98,7 +98,10 @@ describe("sparse proto", () => {
             AD_BIDS_TIME_RANGE_SUMMARY,
           ),
         );
-        const defaultProto = getProtoFromDashboardState(dashboard);
+        const defaultProto = getProtoFromDashboardState(
+          dashboard,
+          AD_BIDS_EXPLORE_INIT,
+        );
 
         applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
 
@@ -122,7 +125,10 @@ describe("sparse proto", () => {
           AD_BIDS_EXPLORE_NAME,
           keys,
         );
-        const partialProto = getProtoFromDashboardState(partialDashboard);
+        const partialProto = getProtoFromDashboardState(
+          partialDashboard,
+          AD_BIDS_EXPLORE_INIT,
+        );
 
         applyMutationsToDashboard(
           AD_BIDS_EXPLORE_NAME,

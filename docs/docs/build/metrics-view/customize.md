@@ -11,7 +11,7 @@ You will find below some common customizations and metrics view configurations t
 
 :::info Metric View properties
 
-For a full list of available dashboard properties and configurations, please see our [Metrics View YAML](/reference/project-files/metrics-view.md) reference page.
+For a full list of available dashboard properties and configurations, please see our [Metrics View YAML](/reference/project-files/metrics-views.md) reference page.
 :::
 
 

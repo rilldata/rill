@@ -334,3 +334,53 @@ func rewriteDuckDBSQL(ctx context.Context, props *ModelInputProperties, inputHan
 	props.SQL, err = rewriteSQL(ast, files)
 	return func() { _ = iter.Close() }, err
 }
+
+func rewriteSQL(ast *duckdbsql.AST, allFiles []string) (string, error) {
+	err := ast.RewriteTableRefs(func(table *duckdbsql.TableRef) (*duckdbsql.TableRef, bool) {
+		return &duckdbsql.TableRef{
+			Paths:      allFiles,
+			Function:   table.Function,
+			Properties: table.Properties,
+			Params:     table.Params,
+		}, true
+	})
+	if err != nil {
+		return "", err
+	}
+	sql, err := ast.Format()
+	if err != nil {
+		return "", err
+	}
+	return sql, nil
+}
+
+// rewriteLocalPaths rewrites a DuckDB SQL statement such that relative paths become absolute paths relative to the basePath,
+// and if allowHostAccess is false, returns an error if any of the paths resolve to a path outside of the basePath.
+func rewriteLocalPaths(ast *duckdbsql.AST, basePath string, allowHostAccess bool) (string, error) {
+	var resolveErr error
+	err := ast.RewriteTableRefs(func(t *duckdbsql.TableRef) (*duckdbsql.TableRef, bool) {
+		res := make([]string, 0)
+		for _, p := range t.Paths {
+			resolved, err := fileutil.ResolveLocalPath(p, basePath, allowHostAccess)
+			if err != nil {
+				resolveErr = err
+				return nil, false
+			}
+			res = append(res, resolved)
+		}
+		return &duckdbsql.TableRef{
+			Function:   t.Function,
+			Paths:      res,
+			Properties: t.Properties,
+			Params:     t.Params,
+		}, true
+	})
+	if resolveErr != nil {
+		return "", resolveErr
+	}
+	if err != nil {
+		return "", err
+	}
+
+	return ast.Format()
+}

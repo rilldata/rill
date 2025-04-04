@@ -6,7 +6,7 @@ import (
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
-	"github.com/rilldata/rill/runtime/compilers/rillv1"
+	"github.com/rilldata/rill/runtime/parser"
 	"github.com/spf13/cobra"
 )
 
@@ -34,11 +34,11 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to get repo for project path: %w", err)
 			}
-			parser, err := rillv1.Parse(cmd.Context(), repo, instanceID, "prod", "duckdb")
+			p, err := parser.Parse(cmd.Context(), repo, instanceID, "prod", "duckdb")
 			if err != nil {
 				return fmt.Errorf("failed to parse project: %w", err)
 			}
-			if parser.RillYAML == nil {
+			if p.RillYAML == nil {
 				return fmt.Errorf("not a valid Rill project (missing a rill.yaml file)")
 			}
 
@@ -72,7 +72,7 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 			added := 0
 			changed := 0
 			changedVars := make(map[string]string)
-			for k, v := range parser.GetDotEnv() {
+			for k, v := range p.GetDotEnv() {
 				if _, ok := vars[k]; !ok {
 					added++
 					changedVars[k] = v

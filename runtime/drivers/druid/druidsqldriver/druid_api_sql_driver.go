@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -50,7 +51,36 @@ type sqlConnection struct {
 	dsn    string
 }
 
-var _ driver.QueryerContext = &sqlConnection{}
+var (
+	_ driver.QueryerContext = &sqlConnection{}
+	_ driver.Pinger         = &sqlConnection{}
+)
+
+func (c *sqlConnection) Ping(ctx context.Context) error {
+	parsedURL, err := url.Parse(c.dsn)
+	if err != nil {
+		return err
+	}
+	parsedURL.Path = "/status/health"
+	healthURL := parsedURL.String()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, healthURL, http.NoBody)
+	if err != nil {
+		return err
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("druid health check failed with status code: %d", resp.StatusCode)
+	}
+
+	return nil
+}
 
 func (c *sqlConnection) Prepare(query string) (driver.Stmt, error) {
 	return &stmt{
@@ -117,7 +147,7 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 
 		if resp.StatusCode == http.StatusTooManyRequests {
 			resp.Body.Close()
-			return nil, retrier.Retry, fmt.Errorf("Too many requests")
+			return nil, retrier.Retry, fmt.Errorf("too many requests")
 		}
 
 		// Druid sends well-formed response for 200, 400 and 500 status codes, for others use this
@@ -388,7 +418,7 @@ func (chc *coordinatorHTTPCheck) IsHardFailure(ctx context.Context) (bool, error
 	case http.StatusTooManyRequests:
 		return false, nil
 	case http.StatusUnauthorized, http.StatusForbidden:
-		return true, fmt.Errorf("Unauthorized request")
+		return true, fmt.Errorf("unauthorized request")
 	}
 
 	// Druid sends well-formed response for 200, 400 and 500 status codes, for others use this

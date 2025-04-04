@@ -10,8 +10,8 @@ import (
 
 	"github.com/hashicorp/golang-lru/simplelru"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers/slack"
+	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/expressionpb"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"go.uber.org/zap"
@@ -229,12 +229,12 @@ func (p *securityEngine) resolveSecurity(instanceID, environment string, vars ma
 	if attrs == nil {
 		attrs = make(map[string]any)
 	}
-	templateData := rillv1.TemplateData{
+	templateData := parser.TemplateData{
 		Environment: environment,
 		User:        attrs,
 		Variables:   vars,
-		Self:        rillv1.TemplateResource{Meta: r.Meta},
-		Resolve: func(ref rillv1.ResourceName) (string, error) {
+		Self:        parser.TemplateResource{Meta: r.Meta},
+		Resolve: func(ref parser.ResourceName) (string, error) {
 			return ref.Name, nil
 		},
 	}
@@ -468,18 +468,18 @@ func (p *securityEngine) builtInReportSecurityRule(spec *runtimev1.ReportSpec, c
 }
 
 // applySecurityRuleAccess applies an access rule to the resolved security.
-func (p *securityEngine) applySecurityRuleAccess(res *ResolvedSecurity, _ *runtimev1.Resource, rule *runtimev1.SecurityRuleAccess, td rillv1.TemplateData) error {
+func (p *securityEngine) applySecurityRuleAccess(res *ResolvedSecurity, _ *runtimev1.Resource, rule *runtimev1.SecurityRuleAccess, td parser.TemplateData) error {
 	// If already explicitly denied, do nothing (explicit denies take precedence over explicit allows)
 	if res.access != nil && !*res.access {
 		return nil
 	}
 
 	if rule.Condition != "" {
-		expr, err := rillv1.ResolveTemplate(rule.Condition, td, false)
+		expr, err := parser.ResolveTemplate(rule.Condition, td, false)
 		if err != nil {
 			return err
 		}
-		apply, err := rillv1.EvaluateBoolExpression(expr)
+		apply, err := parser.EvaluateBoolExpression(expr)
 		if err != nil {
 			return err
 		}
@@ -495,7 +495,7 @@ func (p *securityEngine) applySecurityRuleAccess(res *ResolvedSecurity, _ *runti
 }
 
 // applySecurityRuleFieldAccess applies a field access rule to the resolved security.
-func (p *securityEngine) applySecurityRuleFieldAccess(res *ResolvedSecurity, r *runtimev1.Resource, rule *runtimev1.SecurityRuleFieldAccess, td rillv1.TemplateData) error {
+func (p *securityEngine) applySecurityRuleFieldAccess(res *ResolvedSecurity, r *runtimev1.Resource, rule *runtimev1.SecurityRuleFieldAccess, td parser.TemplateData) error {
 	// This rule currently only applies to metrics views and explores.
 	// Skip it for other resource types.
 	var availableFields []string
@@ -531,11 +531,11 @@ func (p *securityEngine) applySecurityRuleFieldAccess(res *ResolvedSecurity, r *
 
 	// Determine if the rule should be applied
 	if rule.Condition != "" {
-		expr, err := rillv1.ResolveTemplate(rule.Condition, td, false)
+		expr, err := parser.ResolveTemplate(rule.Condition, td, false)
 		if err != nil {
 			return err
 		}
-		apply, err := rillv1.EvaluateBoolExpression(expr)
+		apply, err := parser.EvaluateBoolExpression(expr)
 		if err != nil {
 			return err
 		}
@@ -566,14 +566,14 @@ func (p *securityEngine) applySecurityRuleFieldAccess(res *ResolvedSecurity, r *
 }
 
 // applySecurityRuleRowFilter applies a row filter rule to the resolved security.
-func (p *securityEngine) applySecurityRuleRowFilter(res *ResolvedSecurity, _ *runtimev1.Resource, rule *runtimev1.SecurityRuleRowFilter, td rillv1.TemplateData) error {
+func (p *securityEngine) applySecurityRuleRowFilter(res *ResolvedSecurity, _ *runtimev1.Resource, rule *runtimev1.SecurityRuleRowFilter, td parser.TemplateData) error {
 	// Determine if the rule should be applied
 	if rule.Condition != "" {
-		expr, err := rillv1.ResolveTemplate(rule.Condition, td, false)
+		expr, err := parser.ResolveTemplate(rule.Condition, td, false)
 		if err != nil {
 			return err
 		}
-		apply, err := rillv1.EvaluateBoolExpression(expr)
+		apply, err := parser.EvaluateBoolExpression(expr)
 		if err != nil {
 			return err
 		}
@@ -585,7 +585,7 @@ func (p *securityEngine) applySecurityRuleRowFilter(res *ResolvedSecurity, _ *ru
 
 	// Handle raw SQL row filters
 	if rule.Sql != "" {
-		sql, err := rillv1.ResolveTemplate(rule.Sql, td, false)
+		sql, err := parser.ResolveTemplate(rule.Sql, td, false)
 		if err != nil {
 			return err
 		}

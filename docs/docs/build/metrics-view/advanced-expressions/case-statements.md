@@ -10,7 +10,7 @@ One of the most common advanced measure expressions are [`case`](https://duckdb.
 <img src = '/img/build/metrics-view/examples/case-example.png' class='rounded-gif' />
 <br />
 
-Please review the reference documentation, [here.](/reference/project-files/metrics-view)
+Please review the reference documentation, [here.](/reference/project-files/metrics-views)
 
 ## Examples
 

@@ -126,7 +126,7 @@
 </script>
 
 <div class="h-full w-full flex flex-col">
-  <div class="pb-2 text-slate-500">
+  <div class="pb-1 text-slate-500">
     Need help? Refer to our
     <a
       href="https://docs.rilldata.com/build/connect"

@@ -14,7 +14,7 @@ import {
   convertExploreStateToURLSearchParams,
   getUpdatedUrlForExploreState,
 } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
-import { updateExploreSessionStore } from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-store";
+import { updateExploreSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
 import type { AfterNavigate } from "@sveltejs/kit";
 import { derived, get, type Readable } from "svelte/store";
 
@@ -32,7 +32,6 @@ export class DashboardStateSync {
   private readonly unsubExploreState: (() => void) | undefined;
 
   private initialized = false;
-  private prevUrl: URL | undefined;
   // There can be cases when updating either the url or the state can impact the code handling the other part.
   // So we need a lock to make sure an update doesn't trigger the counterpart code.
   private updating = false;
@@ -97,7 +96,6 @@ export class DashboardStateSync {
       initExploreState,
       pageState.url,
     );
-    this.prevUrl = redirectUrl;
 
     if (redirectUrl.search === pageState.url.search) {
       return;
@@ -112,6 +110,7 @@ export class DashboardStateSync {
       exploreSpec,
       timeControlsState,
     );
+
     // using `replaceState` directly messes up the navigation entries,
     // `from` and `to` have the old url before being replaced in `afterNavigate` calls leading to incorrect handling.
     return goto(redirectUrl, {
@@ -164,16 +163,6 @@ export class DashboardStateSync {
       pageState.url,
     );
 
-    if (
-      redirectUrl.search === pageState.url.search ||
-      // redirect loop breaker
-      (this.prevUrl && this.prevUrl.search === redirectUrl.search)
-    ) {
-      this.updating = false;
-      this.prevUrl = redirectUrl;
-      return;
-    }
-
     const updatedExploreState =
       get(metricsExplorerStore).entities[this.exploreName];
     updateExploreSessionStore(
@@ -183,8 +172,13 @@ export class DashboardStateSync {
       exploreSpec,
       timeControlsState,
     );
-    this.prevUrl = redirectUrl;
+
     this.updating = false;
+    // redirect loop breaker
+    if (redirectUrl.search === pageState.url.search) {
+      return;
+    }
+
     // using `replaceState` directly messes up the navigation entries,
     // `from` and `to` have the old url before being replaced in `afterNavigate` calls leading to incorrect handling.
     return goto(redirectUrl, {
@@ -214,10 +208,6 @@ export class DashboardStateSync {
       newUrl,
     );
     newUrl.search = exploreStateParams.toString();
-    if (!this.prevUrl || this.prevUrl.search === newUrl.search) {
-      this.updating = false;
-      return;
-    }
 
     updateExploreSessionStore(
       this.exploreName,
@@ -226,8 +216,13 @@ export class DashboardStateSync {
       exploreSpec,
       timeControlsState,
     );
-    this.prevUrl = newUrl;
+
     this.updating = false;
+    // redirect loop breaker
+    if (newUrl.search === pageState.url.search) {
+      return;
+    }
+
     // dashboard changed so we should update the url
     return goto(newUrl);
   }

@@ -1,23 +1,23 @@
 import { filterActions } from "@rilldata/web-common/features/dashboards/state-managers/actions/filters";
 import { measureFilterActions } from "@rilldata/web-common/features/dashboards/state-managers/actions/measure-filters";
-import { sortActions } from "./sorting";
-import { contextColActions } from "./context-columns";
 import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
+import { comparisonActions } from "./comparison";
+import { contextColActions } from "./context-columns";
 import {
   setLeaderboardMeasureCount,
-  setLeaderboardMeasureName,
+  setLeaderboardSortByMeasureName,
 } from "./core-actions";
+import { dimensionFilterActions } from "./dimension-filters";
 import { dimensionTableActions } from "./dimension-table";
+import { dimensionActions } from "./dimensions";
+import { measureActions } from "./measures";
+import { sortActions } from "./sorting";
 import type {
   DashboardCallbackExecutor,
   DashboardMutatorFn,
   DashboardMutatorFns,
   DashboardUpdaters,
 } from "./types";
-import { dimensionActions } from "./dimensions";
-import { comparisonActions } from "./comparison";
-import { dimensionFilterActions } from "./dimension-filters";
-import { measureActions } from "./measures";
 
 export type StateManagerActions = ReturnType<typeof createStateManagerActions>;
 
@@ -98,9 +98,9 @@ export const createStateManagerActions = (
     /**
      * sets the main measure name for the dashboard.
      */
-    setLeaderboardMeasureName: dashboardMutatorToUpdater(
+    setLeaderboardSortByMeasureName: dashboardMutatorToUpdater(
       actionArgs,
-      setLeaderboardMeasureName,
+      setLeaderboardSortByMeasureName,
     ),
   };
 };

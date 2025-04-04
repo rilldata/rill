@@ -17,8 +17,8 @@ import (
 	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	compilerv1 "github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"go.uber.org/zap"
@@ -1310,6 +1310,7 @@ func (r *ModelReconciler) acquireExecutor(ctx context.Context, self *runtimev1.R
 	// Acquire the final result manager
 	finalResultManager, ok := finalOpts.OutputHandle.AsModelManager(r.C.InstanceID)
 	if !ok {
+		stageRelease()
 		finalRelease()
 		return nil, nil, fmt.Errorf("output connector %q is not capable of managing model results", mdl.Spec.OutputConnector)
 	}
@@ -1346,6 +1347,7 @@ func (r *ModelReconciler) acquireExecutorInner(ctx context.Context, opts *driver
 
 		e, ok := ic.AsModelExecutor(r.C.InstanceID, opts)
 		if !ok {
+			ir()
 			return "", nil, nil, fmt.Errorf("connector %q is not capable of executing models", opts.InputConnector)
 		}
 
@@ -1434,18 +1436,18 @@ func (r *ModelReconciler) resolveTemplatedProps(ctx context.Context, self *runti
 		}
 	}
 
-	td := compilerv1.TemplateData{
+	td := parser.TemplateData{
 		Environment: inst.Environment,
 		User:        map[string]any{},
 		Variables:   inst.ResolveVariables(false),
 		State:       incrementalState,
 		ExtraProps:  extraProps,
-		Self: compilerv1.TemplateResource{
+		Self: parser.TemplateResource{
 			Meta:  self.Meta,
 			Spec:  self.GetModel().Spec,
 			State: self.GetModel().State,
 		},
-		Resolve: func(ref compilerv1.ResourceName) (string, error) {
+		Resolve: func(ref parser.ResourceName) (string, error) {
 			if dialect == drivers.DialectUnspecified {
 				return ref.Name, nil
 			}
@@ -1453,7 +1455,7 @@ func (r *ModelReconciler) resolveTemplatedProps(ctx context.Context, self *runti
 		},
 	}
 
-	val, err := compilerv1.ResolveTemplateRecursively(props, td, false)
+	val, err := parser.ResolveTemplateRecursively(props, td, false)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve template: %w", err)
 	}
@@ -1464,7 +1466,7 @@ func (r *ModelReconciler) resolveTemplatedProps(ctx context.Context, self *runti
 // It returns a map of variable names referenced in the props mapped to their current value (if known).
 func (r *ModelReconciler) analyzeTemplatedVariables(ctx context.Context, props map[string]any) (map[string]string, error) {
 	res := make(map[string]string)
-	err := compilerv1.AnalyzeTemplateRecursively(props, res)
+	err := parser.AnalyzeTemplateRecursively(props, res)
 	if err != nil {
 		return nil, err
 	}

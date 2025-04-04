@@ -47,6 +47,7 @@
   const queryLimit = 8;
   const maxValuesToShow = 15;
 
+  // FIXME: clean up `sortBy` and `activeMeasureName`
   export let dimension: MetricsViewSpecDimensionV2;
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
@@ -128,7 +129,7 @@
 
   $: measures = [
     ...(leaderboardMeasureCountFeatureFlag
-      ? visibleMeasures.map(
+      ? leaderboardMeasureNames.map(
           (name) =>
             ({
               name,
@@ -144,7 +145,7 @@
     // Add comparison measures if there's a comparison time range
     ...(comparisonTimeRange
       ? (leaderboardMeasureCountFeatureFlag
-          ? visibleMeasures
+          ? leaderboardMeasureNames
           : [activeMeasureName]
         ).flatMap((name) => getComparisonRequestMeasures(name))
       : []),
@@ -343,7 +344,7 @@
       {isValidPercentOfTotal}
       {isTimeComparisonActive}
       {sortedAscending}
-      activeMeasureNames={leaderboardMeasureNames}
+      {leaderboardMeasureNames}
       {toggleSort}
       {setPrimaryDimension}
       {toggleComparisonDimension}
@@ -363,7 +364,6 @@
           <LeaderboardRow
             {suppressTooltip}
             {tableWidth}
-            {dimensionColumnWidth}
             {isBeingCompared}
             {filterExcludeMode}
             {atLeastOneActive}
@@ -371,7 +371,7 @@
             {itemData}
             {isValidPercentOfTotal}
             {isTimeComparisonActive}
-            activeMeasureNames={leaderboardMeasureNames}
+            {leaderboardMeasureNames}
             {toggleDimensionValueSelection}
             {formatters}
           />
@@ -382,7 +382,6 @@
         <LeaderboardRow
           {suppressTooltip}
           {itemData}
-          {dimensionColumnWidth}
           {tableWidth}
           {dimensionName}
           {isBeingCompared}
@@ -390,7 +389,7 @@
           {atLeastOneActive}
           {isValidPercentOfTotal}
           {isTimeComparisonActive}
-          activeMeasureNames={leaderboardMeasureNames}
+          {leaderboardMeasureNames}
           borderTop={i === 0}
           borderBottom={i === belowTheFoldRows.length - 1}
           {toggleDimensionValueSelection}

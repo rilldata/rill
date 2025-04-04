@@ -96,7 +96,7 @@ test.describe.serial("Public URLs", () => {
     await anonPage.getByLabel("Choose dimensions to display").click();
     await anonPage.getByPlaceholder("Search").fill("pub name");
     await expect(
-      anonPage.getByTestId("searchable-menu-no-results"),
+      anonPage.getByText("No matching dimensions shown"),
     ).toBeVisible();
   });
 });

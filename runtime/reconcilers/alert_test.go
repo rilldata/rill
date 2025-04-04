@@ -8,7 +8,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/compilers/rillv1"
+	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
@@ -578,7 +578,7 @@ func newMetricsView(name, model, timeDim string, measures, dimensions []string) 
 		Spec: &runtimev1.MetricsViewSpec{
 			Connector:     "duckdb",
 			Model:         model,
-			DisplayName:   rillv1.ToDisplayName(name),
+			DisplayName:   parser.ToDisplayName(name),
 			TimeDimension: timeDim,
 			Measures:      make([]*runtimev1.MetricsViewSpec_MeasureV2, len(measures)),
 			Dimensions:    make([]*runtimev1.MetricsViewSpec_DimensionV2, len(dimensions)),
@@ -588,7 +588,7 @@ func newMetricsView(name, model, timeDim string, measures, dimensions []string) 
 				Connector:     "duckdb",
 				Table:         model,
 				Model:         model,
-				DisplayName:   rillv1.ToDisplayName(name),
+				DisplayName:   parser.ToDisplayName(name),
 				TimeDimension: timeDim,
 				Measures:      make([]*runtimev1.MetricsViewSpec_MeasureV2, len(measures)),
 				Dimensions:    make([]*runtimev1.MetricsViewSpec_DimensionV2, len(dimensions)),
@@ -599,13 +599,13 @@ func newMetricsView(name, model, timeDim string, measures, dimensions []string) 
 		name := fmt.Sprintf("measure_%d", i)
 		metrics.Spec.Measures[i] = &runtimev1.MetricsViewSpec_MeasureV2{
 			Name:        name,
-			DisplayName: rillv1.ToDisplayName(name),
+			DisplayName: parser.ToDisplayName(name),
 			Expression:  measure,
 			Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 		}
 		metrics.State.ValidSpec.Measures[i] = &runtimev1.MetricsViewSpec_MeasureV2{
 			Name:        name,
-			DisplayName: rillv1.ToDisplayName(name),
+			DisplayName: parser.ToDisplayName(name),
 			Expression:  measure,
 			Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 		}
@@ -613,12 +613,12 @@ func newMetricsView(name, model, timeDim string, measures, dimensions []string) 
 	for i, dimension := range dimensions {
 		metrics.Spec.Dimensions[i] = &runtimev1.MetricsViewSpec_DimensionV2{
 			Name:        dimension,
-			DisplayName: rillv1.ToDisplayName(dimension),
+			DisplayName: parser.ToDisplayName(dimension),
 			Column:      dimension,
 		}
 		metrics.State.ValidSpec.Dimensions[i] = &runtimev1.MetricsViewSpec_DimensionV2{
 			Name:        dimension,
-			DisplayName: rillv1.ToDisplayName(dimension),
+			DisplayName: parser.ToDisplayName(dimension),
 			Column:      dimension,
 		}
 	}

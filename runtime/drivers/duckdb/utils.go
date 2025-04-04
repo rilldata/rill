@@ -2,100 +2,10 @@ package duckdb
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 
-	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 )
-
-type sinkProperties struct {
-	Table string `mapstructure:"table"`
-}
-
-func parseSinkProperties(props map[string]any) (*sinkProperties, error) {
-	cfg := &sinkProperties{}
-	if err := mapstructure.Decode(props, cfg); err != nil {
-		return nil, fmt.Errorf("failed to parse sink properties: %w", err)
-	}
-	return cfg, nil
-}
-
-type dbSourceProperties struct {
-	Database    string `mapstructure:"db"`
-	DSN         string `mapstructure:"dsn"`
-	DatabaseURL string `mapstructure:"database_url"`
-	SQL         string `mapstructure:"sql"`
-}
-
-func parseDBSourceProperties(props map[string]any) (*dbSourceProperties, error) {
-	cfg := &dbSourceProperties{}
-	if err := mapstructure.Decode(props, cfg); err != nil {
-		return nil, fmt.Errorf("failed to parse source properties: %w", err)
-	}
-	if cfg.DSN != "" { // For mysql the property is called as dsn
-		cfg.Database = cfg.DSN
-	}
-	if cfg.DatabaseURL != "" { // For postgres the property is called as database_url
-		cfg.Database = cfg.DatabaseURL
-	}
-	if cfg.SQL == "" {
-		return nil, fmt.Errorf("property 'sql' is mandatory")
-	}
-	return cfg, nil
-}
-
-type fileSourceProperties struct {
-	SQL                   string         `mapstructure:"sql"`
-	DuckDB                map[string]any `mapstructure:"duckdb"`
-	Format                string         `mapstructure:"format"`
-	AllowSchemaRelaxation bool           `mapstructure:"allow_schema_relaxation"`
-	BatchSize             string         `mapstructure:"batch_size"`
-	CastToENUM            []string       `mapstructure:"cast_to_enum"`
-
-	// Backwards compatibility
-	HivePartitioning            *bool  `mapstructure:"hive_partitioning"`
-	CSVDelimiter                string `mapstructure:"csv.delimiter"`
-	IngestAllowSchemaRelaxation *bool  `mapstructure:"ingest.allow_schema_relaxation"`
-}
-
-func parseFileSourceProperties(props map[string]any) (*fileSourceProperties, error) {
-	cfg := &fileSourceProperties{}
-	if err := mapstructure.Decode(props, cfg); err != nil {
-		return nil, fmt.Errorf("failed to parse source properties: %w", err)
-	}
-
-	if cfg.DuckDB == nil {
-		cfg.DuckDB = map[string]any{}
-	}
-
-	if cfg.HivePartitioning != nil {
-		cfg.DuckDB["hive_partitioning"] = *cfg.HivePartitioning
-		cfg.HivePartitioning = nil
-	}
-
-	if cfg.CSVDelimiter != "" {
-		cfg.DuckDB["delim"] = fmt.Sprintf("'%v'", cfg.CSVDelimiter)
-		cfg.CSVDelimiter = ""
-	}
-
-	if cfg.IngestAllowSchemaRelaxation != nil {
-		cfg.AllowSchemaRelaxation = *cfg.IngestAllowSchemaRelaxation
-		cfg.IngestAllowSchemaRelaxation = nil
-	}
-
-	if cfg.AllowSchemaRelaxation {
-		if val, ok := cfg.DuckDB["union_by_name"].(bool); ok && !val {
-			return nil, fmt.Errorf("can't set `union_by_name` and `allow_schema_relaxation` at the same time")
-		}
-
-		if hasKey(cfg.DuckDB, "columns", "types", "dtypes") {
-			return nil, fmt.Errorf("if any of `columns`,`types`,`dtypes` is set `allow_schema_relaxation` must be disabled")
-		}
-	}
-	return cfg, nil
-}
 
 func sourceReader(paths []string, format string, ingestionProps map[string]any) (string, error) {
 	// Generate a "read" statement
@@ -159,51 +69,6 @@ func convertToStatementParamsStr(paths []string, properties map[string]any) stri
 	return strings.Join(ingestionParamsStr, ",")
 }
 
-type duckDBTableSchemaResult struct {
-	ColumnName string  `db:"column_name"`
-	ColumnType string  `db:"column_type"`
-	Nullable   *string `db:"null"`
-	Key        *string `db:"key"`
-	Default    *string `db:"default"`
-	Extra      *string `db:"extra"`
-}
-
-// utility functions
-func hasKey(m map[string]interface{}, key ...string) bool {
-	for _, k := range key {
-		if _, ok := m[k]; ok {
-			return true
-		}
-	}
-	return false
-}
-
-func missingMapKeys(src, lookup map[string]string) []string {
-	keys := make([]string, 0)
-	for k := range src {
-		if _, ok := lookup[k]; !ok {
-			keys = append(keys, k)
-		}
-	}
-	return keys
-}
-
-func keys(src map[string]string) []string {
-	keys := make([]string, 0, len(src))
-	for k := range src {
-		keys = append(keys, k)
-	}
-	return keys
-}
-
-func names(filePaths []string) []string {
-	names := make([]string, len(filePaths))
-	for i, f := range filePaths {
-		names[i] = filepath.Base(f)
-	}
-	return names
-}
-
 // copyMap does a shallow copy of the map
 func copyMap(originalMap map[string]any) map[string]any {
 	newMap := make(map[string]any, len(originalMap))
@@ -221,16 +86,6 @@ func containsAny(s string, targets []string) bool {
 		}
 	}
 	return false
-}
-
-func fileSize(paths []string) int64 {
-	var size int64
-	for _, path := range paths {
-		if info, err := os.Stat(path); err == nil { // ignoring error since only error possible is *PathError
-			size += info.Size()
-		}
-	}
-	return size
 }
 
 func safeName(name string) string {

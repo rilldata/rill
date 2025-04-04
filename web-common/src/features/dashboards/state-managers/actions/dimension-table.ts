@@ -1,15 +1,15 @@
-import { SortType } from "../../proto-state/derived-types";
-import { toggleSort, sortActions } from "./sorting";
 import { LeaderboardContextColumn } from "../../leaderboard-context-column";
+import { SortType } from "../../proto-state/derived-types";
 import { setContextColumn } from "./context-columns";
+import { setLeaderboardSortByMeasureName } from "./core-actions";
+import { sortActions, toggleSort } from "./sorting";
 import type { DashboardMutables } from "./types";
-import { setLeaderboardMeasureName } from "./core-actions";
 
 export const handleDimensionMeasureColumnHeaderClick = (
   generalArgs: DashboardMutables,
   measureName: string,
 ) => {
-  const { leaderboardMeasureName: name } = generalArgs.dashboard;
+  const { leaderboardSortByMeasureName: name } = generalArgs.dashboard;
 
   const delta = name + "_delta";
   const deltaPerc = name + "_delta_perc";
@@ -32,7 +32,7 @@ export const handleDimensionMeasureColumnHeaderClick = (
       toggleSort(generalArgs, SortType.VALUE);
       break;
     default:
-      setLeaderboardMeasureName(generalArgs, measureName);
+      setLeaderboardSortByMeasureName(generalArgs, measureName);
       toggleSort(generalArgs, SortType.VALUE);
       sortActions.setSortDescending(generalArgs);
   }

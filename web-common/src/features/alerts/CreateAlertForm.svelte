@@ -44,6 +44,7 @@
     selectors: {
       timeRangeSelectors: { timeControlsState },
     },
+    validSpecStore,
   } = getStateManagers();
   const timeControls = get(timeControlsState);
 
@@ -70,19 +71,21 @@
     timeRange,
   );
 
+  $: exploreSpec = $validSpecStore.data?.explore ?? {};
+
   const formState = createForm<AlertFormValues>({
     initialValues: {
       name: "",
       measure:
         $dashboardStore.tdd.expandedMeasureName ??
-        $dashboardStore.leaderboardMeasureName ??
+        $dashboardStore.leaderboardSortByMeasureName ??
         "",
       splitByDimension: dimension,
       evaluationInterval: "",
       criteria: [
         {
           ...getEmptyMeasureFilterEntry(),
-          measure: $dashboardStore.leaderboardMeasureName ?? "",
+          measure: $dashboardStore.leaderboardSortByMeasureName ?? "",
         },
       ],
       criteriaOperation: V1Operation.OPERATION_AND,
@@ -148,7 +151,10 @@
               renotify: !!values.snooze,
               renotifyAfterSeconds: values.snooze ? Number(values.snooze) : 0,
               webOpenPath: `/explore/${$exploreName}`,
-              webOpenState: getProtoFromDashboardState($dashboardStore),
+              webOpenState: getProtoFromDashboardState(
+                $dashboardStore,
+                exploreSpec,
+              ),
             },
           },
         });

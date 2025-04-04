@@ -1,6 +1,18 @@
 connectors:
+  - clickhouse
+  - gcs
   - bigquery
 project_files:
+  all_datatypes_clickhouse.yaml:
+    type: model
+    connector: bigquery
+    # not support for parquet export from bigquery json_col,range_date_col,range_datetime_col,range_timestamp_col,array_json_col,array_geography_col,array_range_date_col,array_range_datetime_col,array_range_timestamp_col, array_struct_col,struct_col
+    sql: "select int_col,float_col,numeric_col,bignumeric_col,bool_col,string_col,bytes_col,date_col,datetime_col,time_col,timestamp_col,geography_col,array_int_col,array_float_col,array_numeric_col,array_bignumeric_col,array_bool_col,array_string_col,array_bytes_col,array_date_col,array_datetime_col,array_time_col,array_timestamp_col from rilldata.integration_test.all_datatypes"
+    stage:
+      connector: gcs
+      path: gs://integration-test.rilldata.com/biquery_clickhouse_stage/
+    output:
+      connector: clickhouse
   all_datatypes_column_duckdb.yaml:
     type: model
     connector: bigquery
@@ -74,4 +86,40 @@ tests:
       array_range_timestamp_col,"STRUCT(""start"" TIMESTAMP WITH TIME ZONE, ""end"" TIMESTAMP WITH TIME ZONE)[]",YES,,,
       array_struct_col,"STRUCT(field_int BIGINT, field_float DOUBLE, field_numeric DECIMAL(38,9), field_bignumeric DOUBLE, field_bool BOOLEAN, field_string VARCHAR, field_bytes BLOB, field_date DATE, field_datetime TIMESTAMP WITH TIME ZONE, field_time TIME WITH TIME ZONE, field_timestamp TIMESTAMP WITH TIME ZONE, field_json VARCHAR, field_geography VARCHAR)[]",YES,,,
       struct_col,"STRUCT(field_int BIGINT, field_float DOUBLE, field_numeric DECIMAL(38,9), field_bignumeric DOUBLE, field_bool BOOLEAN, field_string VARCHAR, field_bytes BLOB, field_date DATE, field_datetime TIMESTAMP WITH TIME ZONE, field_time TIME WITH TIME ZONE, field_timestamp TIMESTAMP WITH TIME ZONE, field_json VARCHAR, field_geography VARCHAR, field_array_int BIGINT[], field_array_float DOUBLE[], field_array_numeric DECIMAL(38,9)[], field_array_bignumeric DOUBLE[], field_array_bool BOOLEAN[], field_array_string VARCHAR[], field_array_bytes BLOB[], field_array_date DATE[], field_array_datetime TIMESTAMP WITH TIME ZONE[], field_array_time TIME WITH TIME ZONE[], field_array_timestamp TIMESTAMP WITH TIME ZONE[], field_array_json VARCHAR[], field_array_geography VARCHAR[])",YES,,,
-  
+  - name: query_all_result_clickhouse
+    resolver: sql
+    properties:
+      sql: "select * from all_datatypes_clickhouse order by int_col"
+      connector: clickhouse
+    result_csv: "int_col,float_col,numeric_col,bignumeric_col,bool_col,string_col,bytes_col,date_col,datetime_col,time_col,timestamp_col,geography_col,array_int_col,array_float_col,array_numeric_col,array_bignumeric_col,array_bool_col,array_string_col,array_bytes_col,array_date_col,array_datetime_col,array_time_col,array_timestamp_col\n0,0,0,0,false,,,1970-01-01,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,\x01\x01\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0,[],[],[],[],[],[],[],[],[],[],[]\n1,1.1,123.45,1e+38,true,sample1,abc,2023-01-01,2023-01-01T12:34:56Z,1970-01-01T12:34:56Z,2023-01-01T12:34:56Z,\x01\x01\0\0\0�?\0\0\0\0\0\0\0@,[1],[1.1],\"[\"\"123.45\"\"]\",\"[\"\"99999999999999999999999999999999999999.99\"\"]\",[true],\"[\"\"sample1\"\"]\",\"[\"\"abc\"\"]\",\"[\"\"2023-01-01\"\"]\",\"[\"\"2023-01-01T12:34:56Z\"\"]\",\"[\"\"1970-01-01T12:34:56Z\"\"]\",\"[\"\"2023-01-01T12:34:56Z\"\"]\"\n,,,,,,,,,,,,[],[],[],[],[],[],[],[],[],[],[]\n"
+  - name: query_all_datatypes_clickhouse
+    resolver: sql
+    properties:
+      sql: |
+        select name, type from system.columns where `table` = 'all_datatypes_clickhouse'
+      connector: clickhouse
+    result_csv: |
+      name,type
+      int_col,Nullable(Int64)
+      float_col,Nullable(Float64)
+      numeric_col,"Nullable(Decimal(38, 9))"
+      bignumeric_col,"Nullable(Decimal(76, 38))"
+      bool_col,Nullable(Bool)
+      string_col,Nullable(String)
+      bytes_col,Nullable(String)
+      date_col,Nullable(Date32)
+      datetime_col,Nullable(DateTime64(6))
+      time_col,Nullable(DateTime64(6))
+      timestamp_col,Nullable(DateTime64(6))
+      geography_col,Nullable(String)
+      array_int_col,Array(Nullable(Int64))
+      array_float_col,Array(Nullable(Float64))
+      array_numeric_col,"Array(Nullable(Decimal(38, 9)))"
+      array_bignumeric_col,"Array(Nullable(Decimal(76, 38)))"
+      array_bool_col,Array(Nullable(Bool))
+      array_string_col,Array(Nullable(String))
+      array_bytes_col,Array(Nullable(String))
+      array_date_col,Array(Nullable(Date32))
+      array_datetime_col,Array(Nullable(DateTime64(6)))
+      array_time_col,Array(Nullable(DateTime64(6)))
+      array_timestamp_col,Array(Nullable(DateTime64(6)))

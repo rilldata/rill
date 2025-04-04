@@ -416,34 +416,6 @@ func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bo
 	return c, true
 }
 
-// AsTransporter implements drivers.Connection.
-func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
-	olap, _ := to.(*connection)
-	if c == to {
-		if from == to {
-			return newDuckDBToDuckDB(from, c, c.logger), true
-		}
-		switch from.Driver() {
-		case "motherduck":
-			return newMotherduckToDuckDB(from, c, c.logger), true
-		case "postgres":
-			return newDuckDBToDuckDB(from, c, c.logger), true
-		case "mysql":
-			return newDuckDBToDuckDB(from, c, c.logger), true
-		}
-		if store, ok := from.AsWarehouse(); ok {
-			return NewWarehouseToDuckDB(store, olap, c.logger), true
-		}
-		if store, ok := from.AsObjectStore(); ok { // objectstore to duckdb transfer
-			return NewObjectStoreToDuckDB(store, olap, c.logger), true
-		}
-		if store, ok := from.AsFileStore(); ok {
-			return NewFileStoreToDuckDB(store, olap, c.logger), true
-		}
-	}
-	return nil, false
-}
-
 func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 	return nil, false
 }

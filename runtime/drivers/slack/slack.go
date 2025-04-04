@@ -141,10 +141,6 @@ func (h *handle) AsModelManager(instanceID string) (drivers.ModelManager, bool) 
 	return nil, false
 }
 
-func (h *handle) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
-	return nil, false
-}
-
 func (h *handle) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return newNotifier(h.config.BotToken, properties)
 }

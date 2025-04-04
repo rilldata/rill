@@ -133,18 +133,6 @@ func (j *bulkJob) Next() ([]string, error) {
 	return []string{j.tempFilePath}, nil
 }
 
-// Size implements drivers.RowIterator.
-func (j *bulkJob) Size(unit drivers.ProgressUnit) (int64, bool) {
-	switch unit {
-	case drivers.ProgressUnitRecord:
-		return int64(j.job.NumberRecordsProcessed), true
-	case drivers.ProgressUnitFile:
-		return int64(len(j.results)), true
-	default:
-		return 0, false
-	}
-}
-
 type sourceProperties struct {
 	SOQL     string `mapstructure:"soql"`
 	SObject  string `mapstructure:"sobject"`

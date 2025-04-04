@@ -74,14 +74,13 @@ export function getDimensionTableAggregationRequestForTime(
   comparisonTimeRange: V1TimeRange | undefined,
   dimensionSearchText: string,
 ): V1MetricsViewAggregationRequest {
-  const measures: V1MetricsViewAggregationMeasure[] = [
-    ...dashboardState.visibleMeasureKeys,
-  ].map((name) => ({
-    name: name,
-  }));
+  const measures: V1MetricsViewAggregationMeasure[] =
+    dashboardState.visibleMeasures.map((name) => ({
+      name: name,
+    }));
 
-  let apiSortName = dashboardState.leaderboardMeasureName;
-  if (!dashboardState.visibleMeasureKeys.has(apiSortName)) {
+  let apiSortName = dashboardState.leaderboardSortByMeasureName;
+  if (!dashboardState.visibleMeasures.includes(apiSortName)) {
     // if selected sort measure is not visible add it to list
     measures.push({ name: apiSortName });
   }

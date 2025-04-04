@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/runtime/compilers/rillv1"
+	"github.com/rilldata/rill/runtime/parser"
 )
 
 func ParseDotenv(ctx context.Context, projectPath string) (map[string]string, error) {
@@ -13,13 +13,13 @@ func ParseDotenv(ctx context.Context, projectPath string) (map[string]string, er
 	if err != nil {
 		return nil, err
 	}
-	parser, err := rillv1.Parse(ctx, repo, instanceID, "prod", "duckdb")
+	p, err := parser.Parse(ctx, repo, instanceID, "prod", "duckdb")
 	if err != nil {
 		return nil, err
 	}
-	if parser.RillYAML == nil {
+	if p.RillYAML == nil {
 		return nil, fmt.Errorf("not a valid Rill project (missing a rill.yaml file)")
 	}
 
-	return parser.GetDotEnv(), nil
+	return p.GetDotEnv(), nil
 }

@@ -136,10 +136,6 @@ type Handle interface {
 	// But managing the result lifecycle is easier to do directly using the output connector.
 	AsModelManager(instanceID string) (ModelManager, bool)
 
-	// AsTransporter returns a Transporter for moving data between two other handles. One of the input handles may be the Handle itself.
-	// Examples: duckdb.AsTransporter(gcs, duckdb), beam.AsTransporter(gcs, s3).
-	AsTransporter(from Handle, to Handle) (Transporter, bool)
-
 	// AsNotifier returns a Notifier (if the driver can serve as such) to send notifications: alerts, reports, etc.
 	// Examples: email notifier, slack notifier.
 	AsNotifier(properties map[string]any) (Notifier, error)

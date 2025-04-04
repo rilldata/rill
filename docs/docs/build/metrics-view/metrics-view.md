@@ -88,7 +88,7 @@ measures:
 ```
 :::info Check our reference documentation
 
-For more information about available metrics view properties, feel free to check our [reference YAML documentation](/reference/project-files/metrics-view).
+For more information about available metrics view properties, feel free to check our [reference YAML documentation](/reference/project-files/metrics-views).
 
 :::
 

@@ -166,13 +166,6 @@
   role="textbox"
   aria-label="codemirror editor"
   tabindex="0"
-  on:click={() => {
-    /** give the editor focus no matter where we click */
-    if (!editor?.hasFocus) editor?.focus();
-  }}
-  on:keydown={() => {
-    /** no op for now */
-  }}
 />
 
 <style lang="postcss">

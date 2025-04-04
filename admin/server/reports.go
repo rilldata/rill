@@ -765,7 +765,7 @@ func recreateReportOptionsFromSpec(spec *runtimev1.ReportSpec) (*adminv1.ReportO
 	return opts, nil
 }
 
-// reportYAML is derived from rillv1.ReportYAML, but adapted for generating (as opposed to parsing) the report YAML.
+// reportYAML is derived from runtime/parser.ReportYAML, but adapted for generating (as opposed to parsing) the report YAML.
 type reportYAML struct {
 	Type        string `yaml:"type"`
 	DisplayName string `yaml:"display_name"`

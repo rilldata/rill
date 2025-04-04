@@ -94,6 +94,7 @@
             <Leaderboard
               isValidPercentOfTotal={$isMeasureValidPercentOfTotal}
               {metricsViewName}
+              sortBy={$sortByMeasure}
               {activeMeasureName}
               {leaderboardMeasureNames}
               visibleMeasures={validVisibleMeasures}
@@ -127,7 +128,6 @@
               {toggleSort}
               {toggleDimensionValueSelection}
               {toggleComparisonDimension}
-              sortBy={$sortByMeasure}
               measureLabel={$measureLabel}
               leaderboardMeasureCountFeatureFlag={$leaderboardMeasureCountFeatureFlag}
             />

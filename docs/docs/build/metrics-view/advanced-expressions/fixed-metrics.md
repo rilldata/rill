@@ -31,7 +31,7 @@ expression: |
 The syntax for fixed metrics is specific to DuckDB as an OLAP engine as it required DuckDB specific commands. However, you can create a similar SQL expression using a different OLAP engine, too!
 
 :::
-Please review the reference documentation, [here.](/reference/project-files/metrics-view)
+Please review the reference documentation, [here.](/reference/project-files/metrics-views)
 
 
 ## Example

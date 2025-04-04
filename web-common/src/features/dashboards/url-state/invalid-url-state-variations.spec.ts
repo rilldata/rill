@@ -8,8 +8,8 @@ import {
   AD_BIDS_EXPLORE_INIT,
   AD_BIDS_EXPLORE_NAME,
   AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-  AD_BIDS_TIME_RANGE_SUMMARY,
   AD_BIDS_METRICS_INIT,
+  AD_BIDS_TIME_RANGE_SUMMARY,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import { getInitExploreStateForTest } from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
@@ -104,9 +104,9 @@ Unexpected " ".`,
       `Selected dimension: "pub" is not valid.`,
     ],
     entity: {
-      visibleMeasureKeys: new Set(["bid_price"]),
+      visibleMeasures: ["bid_price"],
       allMeasuresVisible: false,
-      visibleDimensionKeys: new Set(["domain"]),
+      visibleDimensions: ["domain"],
       allDimensionsVisible: false,
     },
   },
@@ -116,7 +116,7 @@ Unexpected " ".`,
     errors: [`Selected sort by measure: "bp" is not valid.`],
     entity: {
       // defaults to 1st measure
-      leaderboardMeasureName: "impressions",
+      leaderboardSortByMeasureName: "impressions",
     },
   },
   {

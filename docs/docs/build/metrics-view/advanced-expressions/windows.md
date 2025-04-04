@@ -7,7 +7,7 @@ sidebar_position: 05
 
 In addition to standard metrics, it is possible to define running window calculations of your data whether you are looking to monitor a cumulative trend, smooth out fluctuations, etc. You'll need to navigate to the Code view in order to create a windowed measure.
 
-Please review the reference documentation, [here.](/reference/project-files/metrics-view)
+Please review the reference documentation, [here.](/reference/project-files/metrics-views)
 
 
 ## Example

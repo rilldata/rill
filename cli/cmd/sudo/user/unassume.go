@@ -5,7 +5,6 @@ import (
 
 	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/dotrill"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
@@ -24,7 +23,7 @@ func UnassumeCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// Fetch the original token
-			originalToken, err := dotrill.GetBackupToken()
+			originalToken, err := ch.DotRill.GetBackupToken()
 			if err != nil {
 				return err
 			}
@@ -39,19 +38,19 @@ func UnassumeCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// Restore the original token as the access token
-			err = dotrill.SetAccessToken(originalToken)
+			err = ch.DotRill.SetAccessToken(originalToken)
 			if err != nil {
 				return err
 			}
 
 			// Clear backup token
-			err = dotrill.SetBackupToken("")
+			err = ch.DotRill.SetBackupToken("")
 			if err != nil {
 				return err
 			}
 
 			// Set email for representing user as empty
-			err = dotrill.SetRepresentingUser("")
+			err = ch.DotRill.SetRepresentingUser("")
 			if err != nil {
 				return err
 			}
