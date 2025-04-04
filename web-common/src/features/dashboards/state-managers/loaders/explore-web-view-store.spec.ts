@@ -214,6 +214,10 @@ describe("Explore web view store", () => {
       pageMock.assertSearchParams(initView.expectedSearch);
       // assert state is the same as initial view
       expect(getCleanMetricsExploreForAssertion()).toEqual(initState);
+      // Revisiting the same view doesn't break anything.
+      pageMock.gotoSearch(initialSearch);
+      pageMock.assertSearchParams(initView.expectedSearch);
+      expect(getCleanMetricsExploreForAssertion()).toEqual(initState);
 
       // go back to view without any additional params
       pageMock.gotoSearch(viewSearch);
@@ -221,11 +225,17 @@ describe("Explore web view store", () => {
       pageMock.assertSearchParams(view.expectedSearch);
       // assert state is the same as we 1st entered view
       expect(getCleanMetricsExploreForAssertion()).toEqual(stateInView);
+      // Revisiting the same view doesn't break anything.
+      pageMock.gotoSearch(viewSearch);
+      pageMock.assertSearchParams(view.expectedSearch);
+      expect(getCleanMetricsExploreForAssertion()).toEqual(stateInView);
 
       // History after the all mutations are finished should only be of visiting the views.
       // This makes sure that replaceState in init is working as expected.
       expect(pageMock.urlSearchHistory.slice(historyCutoff)).toEqual([
         initView.expectedSearch,
+        initView.expectedSearch,
+        view.expectedSearch,
         view.expectedSearch,
       ]);
     });
