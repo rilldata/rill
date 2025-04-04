@@ -10,7 +10,6 @@ import (
 	"sync"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"golang.org/x/sync/errgroup"
 )
@@ -135,23 +134,6 @@ func (e *Executor) ValidateMetricsView(ctx context.Context) (*ValidateMetricsVie
 	// Pinot does have any native support for time shift using time grain specifiers
 	if e.olap.Dialect() == drivers.DialectPinot && (mv.FirstDayOfWeek > 1 || mv.FirstMonthOfYear > 1) {
 		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("time shift not supported for Pinot dialect, so FirstDayOfWeek and FirstMonthOfYear should be 1"))
-	}
-
-	// Check the default theme exists
-	if mv.DefaultTheme != "" {
-		ctrl, err := e.rt.Controller(ctx, e.instanceID)
-		if err != nil {
-			return nil, fmt.Errorf("could not get controller: %w", err)
-		}
-
-		_, err = ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindTheme, Name: mv.DefaultTheme}, false)
-		if err != nil {
-			if errors.Is(err, drivers.ErrNotFound) {
-				res.OtherErrs = append(res.OtherErrs, fmt.Errorf("theme %q does not exist", mv.DefaultTheme))
-			} else {
-				return nil, fmt.Errorf("could not find theme %q: %w", mv.DefaultTheme, err)
-			}
-		}
 	}
 
 	// Validate the metrics view schema.

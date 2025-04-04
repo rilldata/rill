@@ -625,6 +625,12 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
+
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -652,12 +658,6 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
-
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
 
 export interface V1TimeRange {
   start?: string;
@@ -929,6 +929,13 @@ The resources state.valid_spec.renderer_properties will have templating resolved
   referencedMetricsViews?: V1ResolveCanvasResponseReferencedMetricsViews;
 }
 
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
+}
+
 export type V1ReportSpecAnnotations = { [key: string]: string };
 
 export interface V1ReportSpec {
@@ -955,13 +962,6 @@ export interface V1ReportExecution {
   reportTime?: string;
   startedOn?: string;
   finishedOn?: string;
-}
-
-export interface V1ReportState {
-  nextRunOn?: string;
-  currentExecution?: V1ReportExecution;
-  executionHistory?: V1ReportExecution[];
-  executionCount?: number;
 }
 
 export interface V1Report {
@@ -1319,24 +1319,6 @@ export interface V1MetricsViewToplistResponse {
   data?: V1MetricsViewToplistResponseDataItem[];
 }
 
-export interface V1MetricsViewToplistRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimensionName?: string;
-  measureNames?: string[];
-  timeStart?: string;
-  timeEnd?: string;
-  limit?: string;
-  offset?: string;
-  sort?: V1MetricsViewSort[];
-  where?: V1Expression;
-  whereSql?: string;
-  having?: V1Expression;
-  havingSql?: string;
-  priority?: number;
-  filter?: V1MetricsViewFilter;
-}
-
 export interface V1MetricsViewTimeSeriesResponse {
   meta?: V1MetricsViewColumn[];
   data?: V1TimeSeriesValue[];
@@ -1388,28 +1370,6 @@ export interface V1MetricsViewSpec {
   firstDayOfWeek?: number;
   /** Month number to use as the base for time aggregations by year. Defaults to 1 (January). */
   firstMonthOfYear?: number;
-  /** List of selected dimensions by defaults.
-Deprecated: Now defined in the Explore resource. */
-  defaultDimensions?: string[];
-  /** List of selected measures by defaults.
-Deprecated: Now defined in the Explore resource. */
-  defaultMeasures?: string[];
-  /** Default time range for the dashboard. It should be a valid ISO 8601 duration string.
-Deprecated: Now defined in the Explore resource. */
-  defaultTimeRange?: string;
-  defaultComparisonMode?: MetricsViewSpecComparisonMode;
-  /** If comparison mode is dimension then this determines which is the default dimension.
-Deprecated: Now defined in the Explore resource. */
-  defaultComparisonDimension?: string;
-  /** Default theme to apply.
-Deprecated: Now defined in the Explore resource. */
-  defaultTheme?: string;
-  /** List of available time ranges with comparison ranges that would replace the default list.
-Deprecated: Now defined in the Explore resource. */
-  availableTimeRanges?: MetricsViewSpecAvailableTimeRange[];
-  /** Available time zones list preferred time zones using IANA location identifiers.
-Deprecated: Now defined in the Explore resource. */
-  availableTimeZones?: string[];
   /** Cache controls for the metrics view. */
   cacheEnabled?: boolean;
   cacheKeySql?: string;
@@ -1441,9 +1401,32 @@ export interface V1MetricsViewSchemaResponse {
 
 export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
 
+export interface V1MetricsViewRowsResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewRowsResponseDataItem[];
+}
+
 export interface V1MetricsViewFilter {
   include?: MetricsViewFilterCond[];
   exclude?: MetricsViewFilterCond[];
+}
+
+export interface V1MetricsViewToplistRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimensionName?: string;
+  measureNames?: string[];
+  timeStart?: string;
+  timeEnd?: string;
+  limit?: string;
+  offset?: string;
+  sort?: V1MetricsViewSort[];
+  where?: V1Expression;
+  whereSql?: string;
+  having?: V1Expression;
+  havingSql?: string;
+  priority?: number;
+  filter?: V1MetricsViewFilter;
 }
 
 export interface V1MetricsViewRowsRequest {
@@ -1486,6 +1469,13 @@ export const V1MetricsViewComparisonSortType = {
     "METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA",
 } as const;
 
+export interface V1MetricsViewComparisonSort {
+  name?: string;
+  desc?: boolean;
+  type?: V1MetricsViewComparisonSortType;
+  sortType?: V1MetricsViewComparisonMeasureType;
+}
+
 export interface V1MetricsViewComparisonRow {
   dimensionValue?: unknown;
   measureValues?: V1MetricsViewComparisonValue[];
@@ -1512,13 +1502,6 @@ export const V1MetricsViewComparisonMeasureType = {
     "METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA",
 } as const;
 
-export interface V1MetricsViewComparisonSort {
-  name?: string;
-  desc?: boolean;
-  type?: V1MetricsViewComparisonSortType;
-  sortType?: V1MetricsViewComparisonMeasureType;
-}
-
 export interface V1MetricsViewComparisonMeasureAlias {
   name?: string;
   type?: V1MetricsViewComparisonMeasureType;
@@ -1529,11 +1512,6 @@ export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
   nullable?: boolean;
-}
-
-export interface V1MetricsViewRowsResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1MetricsViewRowsResponseDataItem[];
 }
 
 export interface V1MetricsViewAggregationSort {
@@ -1926,6 +1904,46 @@ export const V1ExploreWebView = {
   EXPLORE_WEB_VIEW_CANVAS: "EXPLORE_WEB_VIEW_CANVAS",
 } as const;
 
+export interface V1ExploreTimeRange {
+  range?: string;
+  comparisonTimeRanges?: V1ExploreComparisonTimeRange[];
+}
+
+export interface V1ExploreSpec {
+  displayName?: string;
+  description?: string;
+  metricsView?: string;
+  /** Dimensions to show. If `dimensions_selector` is set, this will only be set in `state.valid_spec`. */
+  dimensions?: string[];
+  dimensionsSelector?: V1FieldSelector;
+  /** Measures to show. If `measures_selector` is set, this will only be set in `state.valid_spec`. */
+  measures?: string[];
+  measuresSelector?: V1FieldSelector;
+  theme?: string;
+  embeddedTheme?: V1ThemeSpec;
+  /** List of selectable time ranges with comparison time ranges.
+If the list is empty, a default list should be shown. */
+  timeRanges?: V1ExploreTimeRange[];
+  /** List of selectable time zones.
+If the list is empty, a default list should be shown.
+The values should be valid IANA location identifiers. */
+  timeZones?: string[];
+  defaultPreset?: V1ExplorePreset;
+  /** If true, the pivot tab will be hidden when the explore is embedded. */
+  embedsHidePivot?: boolean;
+  /** Security for the explore dashboard.
+These are not currently parsed from YAML, but will be derived from the parent metrics view. */
+  securityRules?: V1SecurityRule[];
+  /** Banner text that can be displayed in Rill Cloud. */
+  banner?: string;
+  lockTimeZone?: boolean;
+  allowCustomTimeRange?: boolean;
+}
+
+export interface V1ExploreState {
+  validSpec?: V1ExploreSpec;
+}
+
 export type V1ExploreSortType =
   (typeof V1ExploreSortType)[keyof typeof V1ExploreSortType];
 
@@ -1937,30 +1955,6 @@ export const V1ExploreSortType = {
   EXPLORE_SORT_TYPE_DELTA_PERCENT: "EXPLORE_SORT_TYPE_DELTA_PERCENT",
   EXPLORE_SORT_TYPE_DELTA_ABSOLUTE: "EXPLORE_SORT_TYPE_DELTA_ABSOLUTE",
   EXPLORE_SORT_TYPE_DIMENSION: "EXPLORE_SORT_TYPE_DIMENSION",
-} as const;
-
-export interface V1ExploreComparisonTimeRange {
-  /** ISO 8601 duration string to use as an offset from the base time range. */
-  offset?: string;
-  /** ISO 8601 duration string for the duration of the comparison time range.
-If not specified, it should fallback to the range of the base time range. */
-  range?: string;
-}
-
-export interface V1ExploreTimeRange {
-  range?: string;
-  comparisonTimeRanges?: V1ExploreComparisonTimeRange[];
-}
-
-export type V1ExploreComparisonMode =
-  (typeof V1ExploreComparisonMode)[keyof typeof V1ExploreComparisonMode];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const V1ExploreComparisonMode = {
-  EXPLORE_COMPARISON_MODE_UNSPECIFIED: "EXPLORE_COMPARISON_MODE_UNSPECIFIED",
-  EXPLORE_COMPARISON_MODE_NONE: "EXPLORE_COMPARISON_MODE_NONE",
-  EXPLORE_COMPARISON_MODE_TIME: "EXPLORE_COMPARISON_MODE_TIME",
-  EXPLORE_COMPARISON_MODE_DIMENSION: "EXPLORE_COMPARISON_MODE_DIMENSION",
 } as const;
 
 export interface V1ExplorePreset {
@@ -2000,40 +1994,24 @@ If not found in `time_ranges`, it should be added to the list. */
   pivotTableMode?: string;
 }
 
-export interface V1ExploreSpec {
-  displayName?: string;
-  description?: string;
-  metricsView?: string;
-  /** Dimensions to show. If `dimensions_selector` is set, this will only be set in `state.valid_spec`. */
-  dimensions?: string[];
-  dimensionsSelector?: V1FieldSelector;
-  /** Measures to show. If `measures_selector` is set, this will only be set in `state.valid_spec`. */
-  measures?: string[];
-  measuresSelector?: V1FieldSelector;
-  theme?: string;
-  embeddedTheme?: V1ThemeSpec;
-  /** List of selectable time ranges with comparison time ranges.
-If the list is empty, a default list should be shown. */
-  timeRanges?: V1ExploreTimeRange[];
-  /** List of selectable time zones.
-If the list is empty, a default list should be shown.
-The values should be valid IANA location identifiers. */
-  timeZones?: string[];
-  defaultPreset?: V1ExplorePreset;
-  /** If true, the pivot tab will be hidden when the explore is embedded. */
-  embedsHidePivot?: boolean;
-  /** Security for the explore dashboard.
-These are not currently parsed from YAML, but will be derived from the parent metrics view. */
-  securityRules?: V1SecurityRule[];
-  /** Banner text that can be displayed in Rill Cloud. */
-  banner?: string;
-  lockTimeZone?: boolean;
-  allowCustomTimeRange?: boolean;
+export interface V1ExploreComparisonTimeRange {
+  /** ISO 8601 duration string to use as an offset from the base time range. */
+  offset?: string;
+  /** ISO 8601 duration string for the duration of the comparison time range.
+If not specified, it should fallback to the range of the base time range. */
+  range?: string;
 }
 
-export interface V1ExploreState {
-  validSpec?: V1ExploreSpec;
-}
+export type V1ExploreComparisonMode =
+  (typeof V1ExploreComparisonMode)[keyof typeof V1ExploreComparisonMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1ExploreComparisonMode = {
+  EXPLORE_COMPARISON_MODE_UNSPECIFIED: "EXPLORE_COMPARISON_MODE_UNSPECIFIED",
+  EXPLORE_COMPARISON_MODE_NONE: "EXPLORE_COMPARISON_MODE_NONE",
+  EXPLORE_COMPARISON_MODE_TIME: "EXPLORE_COMPARISON_MODE_TIME",
+  EXPLORE_COMPARISON_MODE_DIMENSION: "EXPLORE_COMPARISON_MODE_DIMENSION",
+} as const;
 
 export interface V1Explore {
   spec?: V1ExploreSpec;
@@ -2077,24 +2055,6 @@ export interface V1CreateInstanceResponse {
 export type V1CreateInstanceRequestAnnotations = { [key: string]: string };
 
 export type V1CreateInstanceRequestVariables = { [key: string]: string };
-
-/**
- * Request message for RuntimeService.CreateInstance.
-See message Instance for field descriptions.
- */
-export interface V1CreateInstanceRequest {
-  instanceId?: string;
-  environment?: string;
-  olapConnector?: string;
-  repoConnector?: string;
-  adminConnector?: string;
-  aiConnector?: string;
-  connectors?: V1Connector[];
-  variables?: V1CreateInstanceRequestVariables;
-  annotations?: V1CreateInstanceRequestAnnotations;
-  embedCatalog?: boolean;
-  watchRepo?: boolean;
-}
 
 export interface V1CreateDirectoryResponse {
   [key: string]: any;
@@ -2155,6 +2115,24 @@ export interface V1Connector {
   templatedProperties?: string[];
   provision?: boolean;
   provisionArgs?: V1ConnectorProvisionArgs;
+}
+
+/**
+ * Request message for RuntimeService.CreateInstance.
+See message Instance for field descriptions.
+ */
+export interface V1CreateInstanceRequest {
+  instanceId?: string;
+  environment?: string;
+  olapConnector?: string;
+  repoConnector?: string;
+  adminConnector?: string;
+  aiConnector?: string;
+  connectors?: V1Connector[];
+  variables?: V1CreateInstanceRequestVariables;
+  annotations?: V1CreateInstanceRequestAnnotations;
+  embedCatalog?: boolean;
+  watchRepo?: boolean;
 }
 
 export interface V1Condition {
@@ -2325,6 +2303,10 @@ export interface V1ColumnDescriptiveStatisticsRequest {
   priority?: number;
 }
 
+export interface V1ColumnCardinalityResponse {
+  categoricalSummary?: V1CategoricalSummary;
+}
+
 export interface V1ColumnCardinalityRequest {
   instanceId?: string;
   connector?: string;
@@ -2349,10 +2331,6 @@ export interface V1CharLocation {
 export interface V1CategoricalSummary {
   topK?: V1TopK;
   cardinality?: number;
-}
-
-export interface V1ColumnCardinalityResponse {
-  categoricalSummary?: V1CategoricalSummary;
 }
 
 export interface V1CanvasRow {
@@ -2689,6 +2667,13 @@ export interface NumericHistogramBinsBin {
   count?: number;
 }
 
+export interface MetricsViewSpecMeasureWindow {
+  partition?: boolean;
+  /** Dimensions to order the window by. Must be present in required_dimensions. */
+  orderBy?: MetricsViewSpecDimensionSelector[];
+  frameExpression?: string;
+}
+
 export type MetricsViewSpecMeasureV2FormatD3Locale = { [key: string]: any };
 
 export type MetricsViewSpecMeasureType =
@@ -2701,29 +2686,6 @@ export const MetricsViewSpecMeasureType = {
   MEASURE_TYPE_DERIVED: "MEASURE_TYPE_DERIVED",
   MEASURE_TYPE_TIME_COMPARISON: "MEASURE_TYPE_TIME_COMPARISON",
 } as const;
-
-export interface MetricsViewSpecDimensionV2 {
-  name?: string;
-  displayName?: string;
-  description?: string;
-  column?: string;
-  expression?: string;
-  unnest?: boolean;
-  uri?: string;
-}
-
-export interface MetricsViewSpecDimensionSelector {
-  name?: string;
-  timeGrain?: V1TimeGrain;
-  desc?: boolean;
-}
-
-export interface MetricsViewSpecMeasureWindow {
-  partition?: boolean;
-  /** Dimensions to order the window by. Must be present in required_dimensions. */
-  orderBy?: MetricsViewSpecDimensionSelector[];
-  frameExpression?: string;
-}
 
 export interface MetricsViewSpecMeasureV2 {
   name?: string;
@@ -2742,37 +2704,20 @@ export interface MetricsViewSpecMeasureV2 {
   treatNullsAs?: string;
 }
 
-/**
- * DEPRECATED FIELDS
-Deprecated: Now defined in the Explore resource.
- */
-export type MetricsViewSpecComparisonMode =
-  (typeof MetricsViewSpecComparisonMode)[keyof typeof MetricsViewSpecComparisonMode];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const MetricsViewSpecComparisonMode = {
-  COMPARISON_MODE_UNSPECIFIED: "COMPARISON_MODE_UNSPECIFIED",
-  COMPARISON_MODE_NONE: "COMPARISON_MODE_NONE",
-  COMPARISON_MODE_TIME: "COMPARISON_MODE_TIME",
-  COMPARISON_MODE_DIMENSION: "COMPARISON_MODE_DIMENSION",
-} as const;
-
-/**
- * Deprecated: Now defined in the Explore resource.
- */
-export interface MetricsViewSpecAvailableComparisonOffset {
-  offset?: string;
-  /** Used to override the range for the comparison with something other than the selected range. */
-  range?: string;
+export interface MetricsViewSpecDimensionV2 {
+  name?: string;
+  displayName?: string;
+  description?: string;
+  column?: string;
+  expression?: string;
+  unnest?: boolean;
+  uri?: string;
 }
 
-/**
- * Deprecated: Now defined in the Explore resource.
- */
-export interface MetricsViewSpecAvailableTimeRange {
-  range?: string;
-  /** Available comparison offsets for this time range. */
-  comparisonOffsets?: MetricsViewSpecAvailableComparisonOffset[];
+export interface MetricsViewSpecDimensionSelector {
+  name?: string;
+  timeGrain?: V1TimeGrain;
+  desc?: boolean;
 }
 
 export interface MetricsViewSearchResponseSearchResult {
