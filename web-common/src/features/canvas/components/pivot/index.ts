@@ -92,7 +92,6 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
       path,
       type === "pivot" ? defaultPivotSpec : defaultFlatSpec,
     );
-    console.log("constructor");
 
     this.type = type;
 
