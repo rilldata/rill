@@ -766,7 +766,7 @@ func (d *db) acquireWriteConn(ctx context.Context, dsn, table string, initQuerie
 
 	detach := func() error {
 		// detach all attached databases
-		rows, err := conn.QueryxContext(ctx, "SELECT database_name FROM (SHOW databases) WHERE database_name != current_database()")
+		rows, err := conn.QueryxContext(ctx, "SELECT database_name FROM duckdb_databases() WHERE database_name != current_database() AND internal = false AND type NOT LIKE 'motherduck%'")
 		if err != nil {
 			return err
 		}
