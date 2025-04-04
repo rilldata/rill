@@ -197,7 +197,6 @@ setup.describe("global setup", () => {
       .poll(
         async () => {
           await adminPage.reload();
-          console.log("RELOADING...");
           const title = adminPage.getByLabel("Container title");
           return title.textContent();
         },
@@ -224,6 +223,7 @@ setup.describe("global setup", () => {
           return listing.textContent();
         },
         {
+          // Increased timeout for the 1st dashboard to make sure sources are reconciled.
           intervals: [10_000, 10_000, 20_000, 20_000, 30_000, 30_000],
           timeout: 120_000,
         },
