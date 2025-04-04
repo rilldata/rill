@@ -16,8 +16,8 @@ import (
 	"github.com/rilldata/rill/cli/pkg/pkce"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/debugserver"
 	"github.com/rilldata/rill/runtime/pkg/email"
@@ -458,12 +458,12 @@ func (a *App) emitStartEvent(ctx context.Context) error {
 		return err
 	}
 
-	parser, err := rillv1.Parse(ctx, repo, instanceID, a.Instance.Environment, a.Instance.OLAPConnector)
+	p, err := parser.Parse(ctx, repo, instanceID, a.Instance.Environment, a.Instance.OLAPConnector)
 	if err != nil {
 		return err
 	}
 
-	connectors := parser.AnalyzeConnectors(ctx)
+	connectors := p.AnalyzeConnectors(ctx)
 	for _, c := range connectors {
 		if c.Err != nil {
 			return err
