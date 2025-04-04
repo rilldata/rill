@@ -7,8 +7,8 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/conncache"
 	"github.com/rilldata/rill/runtime/pkg/email"
@@ -113,13 +113,13 @@ func (r *Runtime) GetInstanceAttributes(ctx context.Context, instanceID string) 
 	return instanceAnnotationsToAttribs(instance)
 }
 
-func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID string, parser *rillv1.Parser, restartController bool) error {
-	if parser.RillYAML == nil {
+func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID string, p *parser.Parser, restartController bool) error {
+	if p.RillYAML == nil {
 		return errors.New("rill.yaml is required to update an instance")
 	}
 
-	rillYAML := parser.RillYAML
-	dotEnv := parser.GetDotEnv()
+	rillYAML := p.RillYAML
+	dotEnv := p.GetDotEnv()
 
 	inst, err := r.Instance(ctx, instanceID)
 	if err != nil {
@@ -141,7 +141,7 @@ func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID str
 			Config: c.Defaults,
 		}
 	}
-	for _, r := range parser.Resources {
+	for _, r := range p.Resources {
 		if r.ConnectorSpec != nil {
 			connMap[r.Name.Name] = &runtimev1.Connector{
 				Name:                r.Name.Name,
@@ -181,6 +181,10 @@ func (r *Runtime) UpdateInstanceConnector(ctx context.Context, instanceID, name 
 	if err != nil {
 		return err
 	}
+
+	// Shallow clone for editing
+	tmp := *inst
+	inst = &tmp
 
 	// remove the connector if it exists
 	for i, c := range inst.ProjectConnectors {

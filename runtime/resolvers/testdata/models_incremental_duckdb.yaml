@@ -1,0 +1,37 @@
+project_files:
+  range_partitions_append.yaml:
+    type: model
+    partitions:
+      sql: SELECT range AS num FROM range(0, 10)
+    pre_exec: SELECT 1
+    sql: SELECT {{ .partition.num }} AS num
+    post_exec: SELECT 1
+    output:
+      incremental_strategy: append
+  range_partitions_merge.yaml:
+    type: model
+    partitions:
+      sql: SELECT range AS num FROM range(0, 10)
+    pre_exec: SELECT 1
+    sql: SELECT {{ .partition.num }} AS num
+    post_exec: SELECT 1
+    output:
+      incremental_strategy: merge
+      unique_key: [num]
+tests:
+  - name: range_partitions_append_stats
+    resolver: sql
+    properties:
+      sql: SELECT COUNT(*) AS count, MIN(num) AS min, MAX(num) AS max FROM range_partitions_append
+    result:
+      - count: 10
+        min: 0
+        max: 9
+  - name: range_partitions_merge_stats
+    resolver: sql
+    properties:
+      sql: SELECT COUNT(*) AS count, MIN(num) AS min, MAX(num) AS max FROM range_partitions_merge
+    result:
+      - count: 10
+        min: 0
+        max: 9

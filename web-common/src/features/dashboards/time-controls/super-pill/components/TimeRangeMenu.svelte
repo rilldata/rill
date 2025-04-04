@@ -15,6 +15,7 @@
   export let defaultTimeRange: NamedRange | ISODurationString | undefined;
   export let onSelectRange: (range: NamedRange | ISODurationString) => void;
   export let onSelectCustomOption: () => void;
+  export let allowCustomTimeRange = true;
 
   function handleClick(e: CustomEventHandler<MouseEvent, HTMLDivElement>) {
     const range = e.detail.currentTarget.dataset.range;
@@ -68,20 +69,18 @@
   </DropdownMenu.Item>
 {/each}
 
-{#if ranges.previous.length}
-  <DropdownMenu.Separator />
-{/if}
-
 {#if ranges.allTime}
+  <DropdownMenu.Separator />
   <DropdownMenu.Item on:click={handleClick} data-range={ALL_TIME_RANGE_ALIAS}>
     <span class:font-bold={selected === ALL_TIME_RANGE_ALIAS}>
       {RILL_TO_LABEL[ALL_TIME_RANGE_ALIAS]}
     </span>
   </DropdownMenu.Item>
-
-  <DropdownMenu.Separator />
 {/if}
 
-<DropdownMenu.Item on:click={onSelectCustomOption} data-range="custom">
-  <span class:font-bold={selected === "CUSTOM"}> Custom </span>
-</DropdownMenu.Item>
+{#if allowCustomTimeRange}
+  <DropdownMenu.Separator />
+  <DropdownMenu.Item on:click={onSelectCustomOption} data-range="custom">
+    <span class:font-bold={selected === "CUSTOM"}> Custom </span>
+  </DropdownMenu.Item>
+{/if}

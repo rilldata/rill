@@ -1,13 +1,10 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import {
-    createAdminServiceGetCurrentUser,
-    createAdminServiceListBookmarks,
-  } from "@rilldata/web-admin/client";
   import BookmarkItem from "@rilldata/web-admin/features/bookmarks/BookmarksDropdownMenuItem.svelte";
   import {
     type BookmarkEntry,
     categorizeBookmarks,
+    getBookmarks,
     searchBookmarks,
   } from "@rilldata/web-admin/features/bookmarks/selectors";
   import {
@@ -26,7 +23,6 @@
   import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
   import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { createQueryServiceMetricsViewSchema } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -63,19 +59,7 @@
   );
 
   $: projectIdResp = useProjectId(organization, project);
-  const userResp = createAdminServiceGetCurrentUser();
-  $: bookamrksResp = createAdminServiceListBookmarks(
-    {
-      projectId: $projectIdResp.data,
-      resourceKind: ResourceKind.Explore,
-      resourceName: exploreName,
-    },
-    {
-      query: {
-        enabled: !!$projectIdResp.data && !!$userResp.data.user,
-      },
-    },
-  );
+  $: bookamrksResp = getBookmarks($projectIdResp.data, exploreName);
 
   let searchText: string;
   $: categorizedBookmarks = categorizeBookmarks(

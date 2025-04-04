@@ -5,7 +5,7 @@ sidebar_label: Create Models
 sidebar_position: 00
 ---
 
-<img src = '/img/tutorials/102/Add-model.gif' class='rounded-gif' />
+<img src = '/img/build/model/model.png' class='rounded-gif' />
 <br />
 
 In Rill, [data models](/reference/project-files/models.md) are built using SQL `SELECT` statements applied to your source data.
@@ -15,9 +15,9 @@ They allow you to join, transform, and clean data.
 
 By default, data transformations in Rill Developer are powered by DuckDB and their dialect of SQL (DuckDB SQL). Please visit [DuckDB SQL documentation](https://duckdb.org/docs/sql/introduction) to learn about how to write your queries.
 
-It is possible to change the default [OLAP engine](https://docs.rilldata.com/build/olap/) for [the entire project](https://docs.rilldata.com/reference/project-files/rill-yaml#configuring-the-default-olap-engine) or [a specific metrics view](https://docs.rilldata.com/reference/project-files/metrics-view). You will need to define the connector credentials within your Rill project, or via the environmental variables.
+It is possible to change the default [OLAP engine](https://docs.rilldata.com/build/olap/) for [the entire project](https://docs.rilldata.com/reference/project-files/rill-yaml#configuring-the-default-olap-engine) or [a specific metrics view](https://docs.rilldata.com/reference/project-files/metrics-views). You will need to define the connector credentials within your Rill project, or via the environmental variables.
 
-For additional tips on commonly used expressions (either in models or dashboard definitions) visit our [common expressions page](../metrics-view/expressions.md).
+For additional tips on commonly used expressions (either in models or dashboard definitions) visit our [common expressions page](../metrics-view/advanced-expressions/advanced-expressions.md).
 
 
 ## Adding a data model

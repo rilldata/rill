@@ -6,6 +6,7 @@ import type {
 import { YAMLMap, YAMLSeq } from "yaml";
 import type { CanvasComponentType } from "./components/types";
 import { getComponentRegistry } from "./components/util";
+import { writable } from "svelte/store";
 
 export const initialHeights: Record<CanvasComponentType, number> = {
   line_chart: 320,
@@ -27,6 +28,18 @@ export const MIN_HEIGHT = 40;
 export const MIN_WIDTH = 3;
 export const COLUMN_COUNT = 12;
 export const DEFAULT_DASHBOARD_WIDTH = 1200;
+
+export const mousePosition = (() => {
+  const store = writable({ x: 0, y: 0 });
+
+  function update(event: MouseEvent) {
+    store.set({ x: event.clientX, y: event.clientY });
+  }
+
+  window.addEventListener("mousemove", update);
+
+  return store;
+})();
 
 type YAMLItem = Record<string, unknown> & {
   width?: number;

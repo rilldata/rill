@@ -1,14 +1,11 @@
 import { page } from "$app/stores";
 import type { CreateQueryResult } from "@rilldata/svelte-query";
 import {
-  adminServiceListBookmarks,
   createAdminServiceGetCurrentUser,
   createAdminServiceListBookmarks,
-  getAdminServiceListBookmarksQueryKey,
   type V1Bookmark,
   type V1ListBookmarksResponse,
 } from "@rilldata/web-admin/client";
-import { useProjectId } from "@rilldata/web-admin/features/projects/selectors";
 import {
   type CompoundQueryResult,
   getCompoundQuery,
@@ -52,45 +49,26 @@ export type Bookmarks = {
   shared: BookmarkEntry[];
 };
 
-export async function fetchBookmarks(projectId: string, exploreName: string) {
-  const params = {
-    projectId,
-    resourceKind: ResourceKind.Explore,
-    resourceName: exploreName,
-  };
-  const bookmarksResp = await queryClient.fetchQuery({
-    queryKey: getAdminServiceListBookmarksQueryKey(params),
-    queryFn: ({ signal }) => adminServiceListBookmarks(params, signal),
-  });
-  return bookmarksResp.bookmarks ?? [];
+export function getBookmarks(projectId: string, exploreName: string) {
+  return derived(createAdminServiceGetCurrentUser(), (userResp, set) =>
+    createAdminServiceListBookmarks(
+      {
+        projectId,
+        resourceKind: ResourceKind.Explore,
+        resourceName: exploreName,
+      },
+      {
+        query: {
+          enabled: !!userResp.data?.user && !!projectId,
+          queryClient,
+        },
+      },
+    ).subscribe(set),
+  ) as CreateQueryResult<V1ListBookmarksResponse>;
 }
 
 export function isHomeBookmark(bookmark: V1Bookmark) {
   return Boolean(bookmark.default);
-}
-
-export function getBookmarks(
-  organization: string,
-  project: string,
-  exploreName: string,
-) {
-  return derived(
-    [createAdminServiceGetCurrentUser(), useProjectId(organization, project)],
-    ([userResp, projectIdResp], set) =>
-      createAdminServiceListBookmarks(
-        {
-          projectId: projectIdResp.data,
-          resourceKind: ResourceKind.Explore,
-          resourceName: exploreName,
-        },
-        {
-          query: {
-            enabled: !!userResp.data?.user && !!projectIdResp.data,
-            queryClient,
-          },
-        },
-      ).subscribe(set),
-  ) as CreateQueryResult<V1ListBookmarksResponse>;
 }
 
 export function categorizeBookmarks(
@@ -128,6 +106,36 @@ export function categorizeBookmarks(
   });
 
   return bookmarks;
+}
+
+export function getHomeBookmarkExploreState(
+  projectId: string,
+  instanceId: string,
+  metricsViewName: string,
+  exploreName: string,
+): CompoundQueryResult<Partial<MetricsExplorerEntity> | null> {
+  return getCompoundQuery(
+    [
+      getBookmarks(projectId, exploreName),
+      useExploreValidSpec(instanceId, exploreName),
+      createQueryServiceMetricsViewSchema(instanceId, metricsViewName),
+    ],
+    ([bookmarksResp, exploreSpecResp, schemaResp]) => {
+      const homeBookmark = bookmarksResp?.bookmarks?.find(isHomeBookmark);
+      if (!homeBookmark) return null;
+
+      const exploreSpec = exploreSpecResp?.explore ?? {};
+      const metricsViewSpec = exploreSpecResp?.metricsView ?? {};
+
+      const exploreStateFromHomeBookmark = getDashboardStateFromUrl(
+        homeBookmark?.data ?? "",
+        metricsViewSpec,
+        exploreSpec,
+        schemaResp?.schema ?? {},
+      );
+      return exploreStateFromHomeBookmark;
+    },
+  );
 }
 
 export function searchBookmarks(
@@ -178,42 +186,8 @@ export function getPrettySelectedTimeRange(
   );
 }
 
-export function getHomeBookmarkExploreState(
-  organization: string,
-  project: string,
-  instanceId: string,
-  metricsViewName: string,
-  exploreName: string,
-): CompoundQueryResult<Partial<MetricsExplorerEntity>> {
-  return getCompoundQuery(
-    [
-      useExploreValidSpec(instanceId, exploreName),
-      getBookmarks(organization, project, exploreName),
-      createQueryServiceMetricsViewSchema(instanceId, metricsViewName),
-    ],
-    ([exploreSpecResp, bookmarksResp, schemaResp]) => {
-      const homeBookmark = bookmarksResp?.bookmarks?.find((b) => b.default);
-      if (!homeBookmark) {
-        return undefined;
-      }
-
-      const exploreSpec = exploreSpecResp?.explore ?? {};
-      const metricsViewSpec = exploreSpecResp?.metricsView ?? {};
-
-      const exploreStateFromHomeBookmark = getDashboardStateFromUrl(
-        homeBookmark?.data ?? "",
-        metricsViewSpec,
-        exploreSpec,
-        schemaResp?.schema ?? {},
-      );
-      return exploreStateFromHomeBookmark;
-    },
-  );
-}
-
 export function getHomeBookmarkURLParams(
-  organization: string,
-  project: string,
+  projectId: string,
   instanceId: string,
   metricsViewName: string,
   exploreName: string,
@@ -225,8 +199,7 @@ export function getHomeBookmarkURLParams(
       useMetricsViewTimeRange(instanceId, metricsViewName),
       useExploreState(exploreName),
       getHomeBookmarkExploreState(
-        organization,
-        project,
+        projectId,
         instanceId,
         metricsViewName,
         exploreName,

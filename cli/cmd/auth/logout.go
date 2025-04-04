@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/dotrill"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
@@ -50,25 +49,25 @@ func Logout(ctx context.Context, ch *cmdutil.Helper) error {
 		ch.Printf("Failed to revoke token (did you revoke it manually?). Clearing local token anyway.\n")
 	}
 
-	err = dotrill.SetAccessToken("")
+	err = ch.DotRill.SetAccessToken("")
 	if err != nil {
 		return err
 	}
 
 	// Set original_token as empty
-	err = dotrill.SetBackupToken("")
+	err = ch.DotRill.SetBackupToken("")
 	if err != nil {
 		return err
 	}
 
 	// Set representing user email as empty
-	err = dotrill.SetRepresentingUser("")
+	err = ch.DotRill.SetRepresentingUser("")
 	if err != nil {
 		return err
 	}
 
 	// Clear the state during logout
-	err = dotrill.SetDefaultOrg("")
+	err = ch.DotRill.SetDefaultOrg("")
 	if err != nil {
 		return err
 	}
