@@ -1,6 +1,7 @@
 import { resetAllContextColumnWidths } from "./context-columns";
 import type { DashboardMutables } from "./types";
 
+// @deprecated
 // NOTE: this is a temporary action to set the leaderboard measure count.
 // It will be removed in the multiple measures second pass anyway.
 export const setLeaderboardMeasureCount = (
