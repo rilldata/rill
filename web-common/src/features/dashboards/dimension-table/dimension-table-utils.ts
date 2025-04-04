@@ -104,7 +104,9 @@ export function computePercentOfTotal(
         PERC_DIFF.CURRENT_VALUE_NO_DATA;
     } else {
       value[measureName + "_percent_of_total"] =
-        formatMeasurePercentageDifference(value[measureName] / total);
+        formatMeasurePercentageDifference(
+          (value[measureName] as number) / total,
+        );
     }
   }
 
@@ -247,9 +249,9 @@ export function prepareVirtualizedDimTableColumns(
   const sortDirection = dash.sortDirection;
 
   const measureNames = allMeasures.map((m) => m.name);
-  const leaderboardMeasureName = dash.leaderboardMeasureName;
+  const leaderboardSortByMeasureName = dash.leaderboardSortByMeasureName;
   const selectedMeasure = allMeasures.find(
-    (m) => m.name === leaderboardMeasureName,
+    (m) => m.name === leaderboardSortByMeasureName,
   );
 
   const dimensionColumn = dimension.name ?? "";

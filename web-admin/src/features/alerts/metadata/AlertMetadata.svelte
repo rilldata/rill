@@ -51,7 +51,7 @@
   $: alertSpec = $alertQuery.data?.resource?.alert?.spec;
 
   $: metricsViewAggregationRequest = JSON.parse(
-    alertSpec?.resolverProperties?.query_args_json ||
+    (alertSpec?.resolverProperties?.query_args_json as string) ||
       alertSpec?.queryArgsJson ||
       "{}",
   ) as V1MetricsViewAggregationRequest;
@@ -73,9 +73,9 @@
       project,
       name: $alertQuery.data.resource.meta.name.name,
     });
-    await queryClient.invalidateQueries(
-      getRuntimeServiceListResourcesQueryKey(instanceId),
-    );
+    await queryClient.invalidateQueries({
+      queryKey: getRuntimeServiceListResourcesQueryKey(instanceId),
+    });
     // goto only after invalidate is complete
     goto(`/${organization}/${project}/-/alerts`);
   }

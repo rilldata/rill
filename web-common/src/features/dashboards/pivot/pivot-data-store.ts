@@ -7,7 +7,6 @@ import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import type {
   V1Expression,
   V1MetricsViewAggregationResponse,
-  V1MetricsViewAggregationResponseDataItem,
   V1MetricsViewAggregationSort,
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
@@ -517,13 +516,13 @@ export function createPivotDataStore(
                 }
 
                 let pivotData: PivotDataRow[] = [];
-                let cellData: V1MetricsViewAggregationResponseDataItem[] = [];
+                let cellData: PivotDataRow[] = [];
                 let isCellDataEmpty = false;
                 if (getPivotConfigKey(config) in expandedTableMap) {
                   pivotData = expandedTableMap[getPivotConfigKey(config)];
                 } else {
                   if (tableCellData === null) {
-                    cellData = pivotSkeleton;
+                    cellData = pivotSkeleton as PivotDataRow[];
                   } else {
                     if (tableCellData.isFetching) {
                       return cellSet({
@@ -537,7 +536,8 @@ export function createPivotDataStore(
                           : undefined,
                       });
                     }
-                    cellData = tableCellData.data?.data || [];
+                    cellData = (tableCellData.data?.data ||
+                      []) as PivotDataRow[];
                     isCellDataEmpty = cellData.length === 0;
                   }
 
@@ -554,7 +554,7 @@ export function createPivotDataStore(
                       anchorDimension,
                       rowDimensionValues || [],
                       columnDimensionAxes?.data || {},
-                      pivotSkeleton,
+                      pivotSkeleton as PivotDataRow[],
                       cellData,
                     );
                   }

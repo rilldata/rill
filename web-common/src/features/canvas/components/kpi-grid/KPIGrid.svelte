@@ -1,9 +1,8 @@
 <script lang="ts">
   import type { KPIGridComponent } from ".";
   import ComponentError from "../ComponentError.svelte";
-  import type { KPISpec } from "../kpi";
   import { validateKPIGridSchema } from "./selector";
-  import { getMinWidth } from "../kpi";
+  import { getMinWidth, type KPISpec } from "../kpi";
   import KPIProvider from "../kpi/KPIProvider.svelte";
 
   export let component: KPIGridComponent;

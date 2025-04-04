@@ -3,19 +3,20 @@
   const PollTimeWhenProjectDeploymentError = 5000;
   const PollTimeWhenProjectDeploymentOk = RUNTIME_ACCESS_TOKEN_DEFAULT_TTL / 2; // Proactively refetch the JWT before it expires
 
-  const baseGetProjectQueryOptions: QueryObserverOptions<
-    V1GetProjectResponse,
-    RpcStatus
+  const baseGetProjectQueryOptions: Partial<
+    CreateQueryOptions<V1GetProjectResponse, RpcStatus>
   > = {
-    cacheTime: Math.min(RUNTIME_ACCESS_TOKEN_DEFAULT_TTL, 1000 * 60 * 5), // Make sure we don't keep a stale JWT in the cache
-    refetchInterval: (data) => {
-      switch (data?.prodDeployment?.status) {
+    gcTime: Math.min(RUNTIME_ACCESS_TOKEN_DEFAULT_TTL, 1000 * 60 * 5), // Make sure we don't keep a stale JWT in the cache
+    refetchInterval: (query) => {
+      switch (query.state.data?.prodDeployment?.status) {
         case V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING:
           return PollTimeWhenProjectDeploymentPending;
         case V1DeploymentStatus.DEPLOYMENT_STATUS_ERROR:
           return PollTimeWhenProjectDeploymentError;
         case V1DeploymentStatus.DEPLOYMENT_STATUS_OK:
           return PollTimeWhenProjectDeploymentOk;
+        default:
+          return false;
       }
     },
     refetchOnMount: true,
@@ -60,7 +61,7 @@
   import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
   import { fixLocalhostRuntimePort } from "@rilldata/web-common/runtime-client/fix-localhost-runtime-port";
   import type { AuthContext } from "@rilldata/web-common/runtime-client/runtime-store";
-  import type { QueryObserverOptions } from "@tanstack/svelte-query";
+  import type { CreateQueryOptions } from "@tanstack/svelte-query";
 
   const user = createAdminServiceGetCurrentUser();
 

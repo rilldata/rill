@@ -4,7 +4,11 @@ import {
 } from "@rilldata/web-common/features/canvas/selector";
 import type { CanvasSpecResponseStore } from "@rilldata/web-common/features/canvas/types";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import { type V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
+import {
+  type V1ComponentSpecRendererProperties,
+  type V1MetricsViewSpec,
+  type V1Resource,
+} from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import {
   derived,
@@ -60,11 +64,16 @@ export class CanvasEntity {
 
   constructor(name: string) {
     const instanceId = get(runtime).instanceId;
-    this.specStore = useCanvas(instanceId, name, {
-      retry: 3,
-      retryDelay: (attemptIndex) => Math.min(1000 + 1000 * attemptIndex, 5000),
+    this.specStore = useCanvas(
+      instanceId,
+      name,
+      {
+        retry: 3,
+        retryDelay: (attemptIndex) =>
+          Math.min(1000 + 1000 * attemptIndex, 5000),
+      },
       queryClient,
-    });
+    );
 
     this.name = name;
 
@@ -213,7 +222,7 @@ export class CanvasEntity {
     column: number;
     metricsViewName: string;
     metricsViewSpec: V1MetricsViewSpec | undefined;
-  }) => {
+  }): V1Resource => {
     const { type, row, column, metricsViewName, metricsViewSpec } = options;
 
     const spec = COMPONENT_CLASS_MAP[type].newComponentSpec(
@@ -232,12 +241,14 @@ export class CanvasEntity {
         state: {
           validSpec: {
             renderer: type,
-            rendererProperties: spec,
+            rendererProperties:
+              spec as unknown as V1ComponentSpecRendererProperties,
           },
         },
         spec: {
           renderer: type,
-          rendererProperties: spec,
+          rendererProperties:
+            spec as unknown as V1ComponentSpecRendererProperties,
         },
       },
     };
