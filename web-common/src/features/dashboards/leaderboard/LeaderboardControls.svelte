@@ -7,6 +7,7 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { getStateManagers } from "../state-managers/state-managers";
+  import LeaderboardActiveMeasureNamesDropdown from "@rilldata/web-common/components/menu/LeaderboardActiveMeasureNamesDropdown.svelte";
 
   export let exploreName: string;
 
@@ -26,6 +27,7 @@
       dimensions: { setDimensionVisibility },
       setLeaderboardMeasureCount,
       setLeaderboardSortByMeasureName,
+      setLeaderboardMeasureNames,
     },
   } = StateManagers;
 
@@ -79,22 +81,31 @@
         allItems={$allDimensions}
         selectedItems={visibleDimensionsNames}
       />
-      {#if $leaderboardMeasureCountFeatureFlag}
-        <LeaderboardMeasureCountSelector
-          measures={$visibleMeasures}
-          count={$leaderboardMeasureCount}
-          onMeasureCountChange={(count) => {
-            setLeaderboardMeasureCount(count);
-          }}
-        />
-      {:else}
-        <LeaderboardActiveMeasureDropdown
-          leaderboardSortByMeasureName={$leaderboardSortByMeasureName}
-          {setLeaderboardSortByMeasureName}
-          {measures}
-          {activeLeaderboardMeasure}
-        />
-      {/if}
+      <LeaderboardMeasureCountSelector
+        measures={$visibleMeasures}
+        count={$leaderboardMeasureCount}
+        onMeasureCountChange={(count) => {
+          setLeaderboardMeasureCount(count);
+        }}
+      />
+      <LeaderboardActiveMeasureDropdown
+        leaderboardSortByMeasureName={$leaderboardSortByMeasureName}
+        {setLeaderboardSortByMeasureName}
+        {measures}
+        {activeLeaderboardMeasure}
+      />
+      <LeaderboardActiveMeasureNamesDropdown
+        {measures}
+        sortBy={$leaderboardSortByMeasureName}
+        tooltipText="Choose measures to filter by"
+        selectedMeasureNames={[$leaderboardSortByMeasureName]}
+        onSelect={(names) => {
+          setLeaderboardMeasureNames(names);
+        }}
+        onToggleSelectAll={() => {
+          console.log("toggle all");
+        }}
+      />
     </div>
   {/if}
 </div>
