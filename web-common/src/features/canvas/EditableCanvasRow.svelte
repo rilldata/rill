@@ -186,9 +186,7 @@
 >
   {#each itemIds as id, columnIndex (columnIndex)}
     {@const component = components.get(id)}
-    <!-- {@const type = component?.type} -->
     {@const itemCount = itemIds.length}
-
     <ItemWrapper type={component?.type} zIndex={4 - columnIndex}>
       {#if columnIndex === 0}
         <ElementDivider
