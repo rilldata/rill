@@ -7,7 +7,7 @@ sidebar_position: 00
 After creating your initial set of sources, models, and dashboards, you may have noticed the following _native_ folders that exist in your Rill project directory:
 - [Sources](/reference/project-files/sources)
 - [Models](/reference/project-files/models)
-- [Metrics View](/reference/project-files/metrics-view)
+- [Metrics Views](/reference/project-files/metrics-views)
 - [Dashboards](/reference/project-files/explore-dashboards)
 
 By default, any new sources, models, metrics view and dashboards will be created in their respective native folder. However, this does not necessarily have to be the case and Rill Developer allows a flexible project directory structure, including nested folders or even storing objects in non-native folders. This is a powerful feature that allows you as a developer to organize your project to meet your specific team needs.
@@ -16,7 +16,8 @@ By default, any new sources, models, metrics view and dashboards will be created
 
 Within Rill Developer, from the left-hand side (file explorer), you should be able to click on the `Add` button to add a new base resource, such as a new source, model, or dashboard. Furthermore, you will also have the ability to add a new parent folder to store groups of resources (can be mixed). If you choose to add a new folder, you should see the folder structure reflected if you check the project directory via the CLI. 
 
-![Adding objects](/img/build/structure/adding-objects.png)
+<img src = '/img/build/structure/adding-objects.png' class='rounded-gif' />
+<br />
 
 :::warning Make sure to include the `type` property
 
@@ -46,4 +47,5 @@ For developers who prefer to use the CLI, the project structure can still be con
 
 Rather than creating a parent folder and moving it into another folder manually, there is a shortcut to create a nested folder by directly hovering over an existing folder in the file explorer > click on the "triple dots" > `New folder`.
 
-![Adding nested folder](/img/build/structure/adding-nested-folder.png)
+<img src = '/img/build/structure/adding-nested-folder.png' class='rounded-gif' />
+<br />

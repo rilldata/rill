@@ -1978,6 +1978,7 @@ These are not currently parsed from YAML, but will be derived from the parent me
   /** Banner text that can be displayed in Rill Cloud. */
   banner?: string;
   lockTimeZone?: boolean;
+  allowCustomTimeRange?: boolean;
 }
 
 export interface V1ExploreState {
@@ -2426,6 +2427,7 @@ export interface V1CanvasSpec {
 If the list is empty, a default list should be shown.
 TODO: Once the canvas APIs have stabilized, rename ExploreTimeRange to a non-explore-specific name. */
   timeRanges?: V1ExploreTimeRange[];
+  allowCustomTimeRange?: boolean;
   /** List of selectable time zones.
 If the list is empty, a default list should be shown.
 The values should be valid IANA location identifiers. */

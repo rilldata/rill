@@ -4437,6 +4437,8 @@ func (m *ExploreSpec) validate(all bool) error {
 
 	// no validation rules for LockTimeZone
 
+	// no validation rules for AllowCustomTimeRange
+
 	if len(errors) > 0 {
 		return ExploreSpecMultiError(errors)
 	}
@@ -10377,6 +10379,8 @@ func (m *CanvasSpec) validate(all bool) error {
 		}
 
 	}
+
+	// no validation rules for AllowCustomTimeRange
 
 	// no validation rules for FiltersEnabled
 

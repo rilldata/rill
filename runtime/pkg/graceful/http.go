@@ -33,26 +33,29 @@ func ServeHTTP(ctx context.Context, server *http.Server, options ServeOptions) e
 		return err
 	}
 
-	cctx, cancel := context.WithCancel(ctx)
-	var serveErr error
+	// Channel to signal server has stopped
+	serveErrCh := make(chan error)
+	// Start server in a goroutine
 	go func() {
 		if options.CertPath != "" && options.KeyPath != "" {
-			serveErr = server.ServeTLS(lis, options.CertPath, options.KeyPath)
+			// Use HTTPS if cert and key are provided
+			err := server.ServeTLS(lis, options.CertPath, options.KeyPath)
+			serveErrCh <- err
 		} else {
-			serveErr = server.Serve(lis)
+			// Otherwise use HTTP
+			err := server.Serve(lis)
+			serveErrCh <- err
 		}
-
-		cancel()
 	}()
 
-	<-cctx.Done()
-	if serveErr == nil {
-		// server.Serve always returns a non-nil err, so this must be a cancel on the parent ctx.
-		// We perform a graceful shutdown.
+	// Wait for context cancellation or server stopped
+	select {
+	case err := <-serveErrCh:
+		return err
+	case <-ctx.Done():
 		ctx, cancel := context.WithTimeout(context.Background(), httpShutdownTimeout)
 		defer cancel()
-		serveErr = server.Shutdown(ctx)
-	}
 
-	return serveErr
+		return server.Shutdown(ctx)
+	}
 }

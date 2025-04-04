@@ -1,5 +1,4 @@
 import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
-import { defaultComparisonOptions } from "@rilldata/web-common/features/canvas/components/kpi";
 import {
   commonOptions,
   getFilterOptions,
@@ -14,6 +13,11 @@ import type {
 } from "../types";
 
 export { default as KPIGrid } from "./KPIGrid.svelte";
+
+export const defaultComparisonOptions: ComponentComparisonOptions[] = [
+  "delta",
+  "percent_change",
+];
 
 export interface KPIGridSpec
   extends ComponentCommonProperties,

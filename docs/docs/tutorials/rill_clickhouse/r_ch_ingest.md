@@ -9,11 +9,11 @@ tags:
 
 ## Importing your own Data into ClickHouse from ...
 
-Currently, Clickhouse lacks some [direct ingestion](https://clickhouse.com/docs/en/migrations/snowflake) from certain providers. You can navigate to their website for a full list of data sources in which they support [direct ingestion](https://clickhouse.com/docs/en/integrations), via manual import or [ClickPipes](https://clickhouse.com/cloud/clickpipes).
+Currently, ClickHouse lacks some [direct ingestion](https://clickhouse.com/docs/en/migrations/snowflake) from certain providers. You can navigate to their website for a full list of data sources in which they support [direct ingestion](https://clickhouse.com/docs/en/integrations), via manual import or [ClickPipes](https://clickhouse.com/cloud/clickpipes).
 
 ### How does this effect Rill?
 
-When switching from DuckDB, you may have noticed some changes to the capabilities of Rill. By default, we disable modeling when Clickhouse is enabled as the default OLAP engine. However, we can change this behavior by enabling the feature flag `clickhouseModeling`.
+When switching from DuckDB, you may have noticed some changes to the capabilities of Rill. By default, we disable modeling when ClickHouse is enabled as the default OLAP engine. However, we can change this behavior by enabling the feature flag `clickhouseModeling`.
 
 ```yaml
 features:
@@ -59,5 +59,5 @@ connector.s3.aws_access_key_id=""
 connector.s3.aws_secret_access_key=""
 ```
 :::note
-If you already set up clickhouse via the .env file, you will just need to add your snowflake and s3 credentials.
+If you already set up ClickHouse via the .env file, you will just need to add your snowflake and s3 credentials.
 :::

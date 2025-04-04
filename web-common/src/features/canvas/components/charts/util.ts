@@ -110,9 +110,9 @@ export function sanitizeFieldName(fieldName: string) {
   const sanitizedFieldName = specialCharactersRemoved.replace(" ", "__");
 
   /**
-   * Add an underscore to the beginning of the field
+   * Add a prefix to the beginning of the field
    * name to avoid variables starting with a special
    * character or number.
    */
-  return `_${sanitizedFieldName}`;
+  return `rill_${sanitizedFieldName}`;
 }
