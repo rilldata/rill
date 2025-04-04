@@ -5,6 +5,7 @@ import { comparisonActions } from "./comparison";
 import { contextColActions } from "./context-columns";
 import {
   setLeaderboardMeasureCount,
+  setLeaderboardMeasureNames,
   setLeaderboardSortByMeasureName,
 } from "./core-actions";
 import { dimensionFilterActions } from "./dimension-filters";
@@ -101,6 +102,14 @@ export const createStateManagerActions = (
     setLeaderboardSortByMeasureName: dashboardMutatorToUpdater(
       actionArgs,
       setLeaderboardSortByMeasureName,
+    ),
+
+    /**
+     * sets the measure names for the leaderboard.
+     */
+    setLeaderboardMeasureNames: dashboardMutatorToUpdater(
+      actionArgs,
+      setLeaderboardMeasureNames,
     ),
   };
 };
