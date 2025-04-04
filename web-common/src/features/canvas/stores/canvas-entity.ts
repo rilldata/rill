@@ -34,7 +34,7 @@ export class CanvasEntity {
   name: string;
   components = new Map<string, BaseCanvasComponent>();
 
-  _rows: Grid = new Grid();
+  _rows: Grid = new Grid(this);
 
   /**
    * Time controls for the canvas entity containing various
@@ -55,6 +55,7 @@ export class CanvasEntity {
   fileArtifact: FileArtifact | undefined;
   parsedContent: Readable<ReturnType<typeof parseDocument>>;
   specStore: CanvasSpecResponseStore;
+  firstLoad = true;
   unsubscriber: Unsubscriber;
 
   constructor(name: string) {
@@ -108,6 +109,42 @@ export class CanvasEntity {
     // this.unsubscriber();
   };
 
+  duplicateItem = (id: string) => {
+    const component = this.components.get(id);
+    if (!component) return;
+    const { pathInYAML, type, resource } = component;
+    const [, rowIndex, , columnIndex] = pathInYAML;
+    const path = constructPath(rowIndex, columnIndex, type);
+
+    const existingResource = get(resource);
+
+    const metricsViewName = existingResource?.component?.state?.validSpec
+      ?.rendererProperties?.metrics_view as string | undefined;
+
+    if (!metricsViewName) {
+      throw new Error("No metrics view name found");
+    }
+
+    const metricsViewSpec = get(
+      this.spec.getMetricsViewFromName(metricsViewName),
+    ).metricsView;
+
+    if (!metricsViewSpec) {
+      throw new Error("No metrics view spec found");
+    }
+
+    const newResource = this.createOptimisticResource({
+      type,
+      row: rowIndex + 1,
+      column: columnIndex,
+      metricsViewName,
+      metricsViewSpec,
+    });
+
+    const newComponent = createComponent(newResource, this, path);
+    return newComponent.id;
+  };
+
   // Once we have stable IDs, this can be simplified
   processRows = (canvasData: Partial<CanvasResponse>) => {
     const newComponents = canvasData.components;
@@ -139,8 +176,10 @@ export class CanvasEntity {
         const path = constructPath(rowIndex, columnIndex, newType);
 
         if (existingClass && areSameType(newType, existingClass.type)) {
+          console.log("Updating existing component", componentName);
           existingClass.update(newResource, path);
         } else {
+          console.log("Creating new component", componentName);
           createdNewComponent = true;
           this.components.set(
             componentName,
@@ -160,9 +199,11 @@ export class CanvasEntity {
     });
 
     // Only necessary because we are not using stable IDs yet
-    if (!didUpdateRowCount && createdNewComponent) {
+    if ((!didUpdateRowCount && createdNewComponent) || this.firstLoad) {
+      console.log("refresh");
       this._rows.refresh();
     }
+    this.firstLoad = false;
   };
 
   generateId = (row: number | undefined, column: number | undefined) => {

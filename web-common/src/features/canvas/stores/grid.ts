@@ -2,9 +2,12 @@ import { get, writable } from "svelte/store";
 import { Row } from "./row";
 import type { V1CanvasRow } from "@rilldata/web-common/runtime-client";
 import { COLUMN_COUNT } from "../layout-util";
+import type { CanvasEntity } from "./canvas-entity";
 
 export class Grid {
   private _rows = writable<Row[]>([]);
+
+  constructor(public canvas: CanvasEntity) {}
 
   subscribe = this._rows.subscribe;
 
@@ -32,8 +35,14 @@ export class Grid {
     return get(this._rows).map((row) => row.snapshot());
   }
 
+  removeItem(fromRow: Row, fromIndex: number) {
+    if (fromIndex < 0) return;
+
+    fromRow.remove(fromIndex);
+  }
+
   moveItem(fromRow: Row, fromIndex: number, toRow: Row, toIndex: number) {
-    if (fromIndex < 1 || toIndex < 1) return;
+    if (fromIndex < 0 || toIndex < 0) return;
 
     if (fromRow === toRow) {
       fromRow.moveWithin(fromIndex, toIndex);
@@ -47,13 +56,20 @@ export class Grid {
   }
 
   copyItemToNewRow(fromRow: Row, fromIndex: number): Row | null {
-    if (fromIndex < 1) return null;
+    console.warn("Do not use without stable IDs");
+    if (fromIndex < 0) return null;
 
-    const value = fromRow.getValue(fromIndex);
-    if (value === null) return null;
+    const id = fromRow.getValue(fromIndex);
+    if (id === null) return null;
 
-    const newRow = this.addRow();
-    newRow.add(value, 1);
+    const newId = this.canvas.duplicateItem(id);
+
+    if (!newId) return null;
+
+    const existingRowIndex = get(this._rows).indexOf(fromRow);
+    const newRow = this.addRowAt(existingRowIndex + 1);
+
+    newRow.add(newId, 0);
     return newRow;
   }
 

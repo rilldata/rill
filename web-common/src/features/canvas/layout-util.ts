@@ -356,7 +356,6 @@ export function generateNewAssets(params: {
 
 function createOptimisticResource(options: {
   type: CanvasComponentType;
-
   metricsViewName: string;
   metricsViewSpec: V1MetricsViewSpec | undefined;
 }) {

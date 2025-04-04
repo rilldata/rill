@@ -124,6 +124,7 @@ export function validateChartSchema(
 ): Readable<{
   isValid: boolean;
   error?: string;
+  isLoading?: boolean;
 }> {
   const { metrics_view, x, y, color } = chartSpec;
   let measures: string[] = [];
@@ -135,7 +136,14 @@ export function validateChartSchema(
 
   return derived(
     ctx.canvasEntity.spec.getMetricsViewFromName(metrics_view),
-    (metricsView) => {
+    (metricsViewQuery) => {
+      if (metricsViewQuery.isLoading) {
+        return {
+          isValid: true,
+          isLoading: true,
+        };
+      }
+      const metricsView = metricsViewQuery.metricsView;
       if (!metricsView) {
         return {
           isValid: false,

@@ -13,7 +13,7 @@
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
   import type { CanvasComponentType } from "./components/types";
   import ItemWrapper from "./ItemWrapper.svelte";
-  import type { DragItem, Transaction, YAMLRow } from "./layout-util";
+  import type { Transaction, YAMLRow } from "./layout-util";
   import {
     COLUMN_COUNT,
     DEFAULT_DASHBOARD_WIDTH,
@@ -30,6 +30,7 @@
   import ComponentError from "./components/ComponentError.svelte";
   import EditableCanvasRow from "./EditableCanvasRow.svelte";
   import { onDestroy } from "svelte";
+  import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
 
   const activelyEditing = writable(false);
 
@@ -54,7 +55,7 @@
   let initialMousePosition: { x: number; y: number } | null = null;
   let clientWidth: number;
   let offset = { x: 0, y: 0 };
-  let dragItemInfo: DragItem | null = null;
+  let dragComponent: BaseCanvasComponent | null = null;
   let timeout: ReturnType<typeof setTimeout> | null = null;
   let dragTimeout: ReturnType<typeof setTimeout> | null = null;
   let dragItemPosition = { top: 0, left: 0 };
@@ -84,7 +85,7 @@
     }
   }
 
-  $: activelyEditing.set(!!$activeDivider || !!dragItemInfo);
+  $: activelyEditing.set(!!$activeDivider || activelyDragging);
 
   $: ({ rows = [], filtersEnabled, maxWidth: canvasMaxWidth } = spec);
 
@@ -104,6 +105,8 @@
   $: dropZone.setMouseDelta(mouseDelta);
 
   $: defaultMetrics = $metricsViewQuery?.data;
+
+  $: activelyDragging = !!dragComponent;
 
   function updateComponentWidths(rowIndex: number, newWidths: number[]) {
     newWidths.forEach((width, i) => {
@@ -128,10 +131,10 @@
     return Math.sqrt((pos1.x - pos2.x) ** 2 + (pos1.y - pos2.y) ** 2);
   }
 
-  function handleDragStart(metadata: DragItem) {
-    dragItemInfo = metadata;
+  function handleDragStart(component: BaseCanvasComponent) {
+    dragComponent = component;
 
-    const id = getId(metadata.position?.row, metadata.position?.column);
+    const id = component.id;
     const element = document.querySelector("#" + id);
     if (!element) return;
 
@@ -148,7 +151,7 @@
     };
   }
 
-  $: if (dragItemInfo) {
+  $: if (dragComponent) {
     dragItemPosition = {
       top: $mousePosition.y + offset.y,
       left: $mousePosition.x + offset.x,
@@ -156,7 +159,7 @@
   }
 
   function onDragEnd() {
-    dragItemInfo = null;
+    dragComponent = null;
   }
 
   function reset() {
@@ -164,7 +167,7 @@
       clearTimeout(dragTimeout);
     }
 
-    if (dragItemInfo) {
+    if (dragComponent) {
       onDragEnd();
     }
 
@@ -306,12 +309,9 @@
     if (!$dropZone) return;
     dropZone.clear();
 
-    if (dragItemInfo) {
-      if (
-        row === dragItemInfo.position?.row &&
-        (column === dragItemInfo.position.column ||
-          column === dragItemInfo.position?.column + 1)
-      ) {
+    if (dragComponent) {
+      const [, fromRow, , fromCol] = dragComponent.pathInYAML;
+      if (row === fromRow && (column === fromCol || column === fromCol + 1)) {
         return;
       }
 
@@ -321,8 +321,8 @@
             type: "move",
             insertRow: column === null,
             source: {
-              row: dragItemInfo.position?.row ?? 0,
-              col: dragItemInfo.position?.column ?? 0,
+              row: fromRow,
+              col: fromCol,
             },
             destination: {
               row,
@@ -395,7 +395,7 @@
   {maxWidth}
   {filtersEnabled}
   onClick={resetSelection}
-  showGrabCursor={!!dragItemInfo}
+  showGrabCursor={activelyDragging}
   bind:clientWidth
 >
   {#each layoutRows as row, rowIndex (rowIndex)}
@@ -404,18 +404,17 @@
       {maxWidth}
       {rowIndex}
       {components}
-      {dragItemInfo}
-      {spreadEvenly}
-      {addItems}
-      {selectedComponent}
-      movingWidget={!!dragItemInfo}
-      zIndex={50 - rowIndex * 2}
       {columnWidth}
-      {updateComponentWidths}
+      {dragComponent}
+      {selectedComponent}
+      zIndex={50 - rowIndex * 2}
       {onDrop}
+      {addItems}
+      {spreadEvenly}
       {initializeRow}
       {updateRowHeight}
-      onDelete={({ columnIndex }) =>
+      {updateComponentWidths}
+      onDelete={({ columnIndex }) => {
         performTransaction({
           operations: [
             {
@@ -426,7 +425,8 @@
               },
             },
           ],
-        })}
+        });
+      }}
       onDuplicate={({ columnIndex }) => {
         if (!defaultMetrics) return;
 
@@ -447,8 +447,10 @@
           ],
         });
       }}
-      onComponentMouseDown={({ event, id, columnIndex, type }) => {
+      onComponentMouseDown={({ event, id }) => {
         if (event.button !== 0) return;
+        const component = components.get(id);
+        if (!component) return;
         event.preventDefault();
 
         initialMousePosition = $mousePosition;
@@ -461,10 +463,7 @@
 
         dragTimeout = setTimeout(() => {
           openSidebarAfterSelection = false;
-          handleDragStart({
-            position: { row: rowIndex, column: columnIndex },
-            type: type ?? "line_chart",
-          });
+          handleDragStart(component);
         }, 150);
       }}
     />
@@ -504,24 +503,23 @@
   />
 {/if}
 
-{#if dragItemInfo && dragItemInfo.position}
-  {@const component = components.get(
-    getId(dragItemInfo.position.row, dragItemInfo.position.column),
-  )}
-
-  {#if component}
-    <div
-      use:portal
-      class="absolute pointer-events-none drag-container"
-      style:z-index="1000"
-      style:top="{dragItemPosition.top}px"
-      style:left="{dragItemPosition.left}px"
-      style:width="{dragItemDimensions.width}px"
-      style:height="{dragItemDimensions.height}px"
-    >
-      <CanvasComponent {component} allowPointerEvents={false} ghost selected />
-    </div>
-  {/if}
+{#if dragComponent}
+  <div
+    use:portal
+    class="absolute pointer-events-none drag-container"
+    style:z-index="1000"
+    style:top="{dragItemPosition.top}px"
+    style:left="{dragItemPosition.left}px"
+    style:width="{dragItemDimensions.width}px"
+    style:height="{dragItemDimensions.height}px"
+  >
+    <CanvasComponent
+      component={dragComponent}
+      allowPointerEvents={false}
+      ghost
+      selected
+    />
+  </div>
 {/if}
 
 <style lang="postcss">

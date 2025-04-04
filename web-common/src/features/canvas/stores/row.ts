@@ -1,5 +1,6 @@
 import { writable, get } from "svelte/store";
 import { Grid } from "./grid";
+import { COLUMN_COUNT } from "../layout-util";
 
 export class Row {
   items = writable<string[]>([]);
@@ -22,13 +23,21 @@ export class Row {
 
   remove(index: number) {
     if (index < 1) return;
+
+    let newLength = 0;
+
     this.items.update((arr) => {
       const copy = [...arr];
-      copy.splice(index - 1, 1);
+      copy.splice(index, 1);
+      newLength = copy.length;
       return copy;
     });
 
-    if (this.isEmpty()) {
+    this.widths.update(() => {
+      return Array.from({ length: newLength }, () => COLUMN_COUNT / newLength);
+    });
+
+    if (newLength === 0) {
       this.grid.removeRow(this);
     }
   }

@@ -23,7 +23,10 @@ export class CanvasResolvedSpec {
 
   getMetricsViewFromName: (
     metricViewName: string,
-  ) => Readable<V1MetricsViewSpec | undefined>;
+  ) => Readable<{
+    metricsView: V1MetricsViewSpec | undefined;
+    isLoading: boolean;
+  }>;
   /** Measure Selectors */
   getMeasuresForMetricView: (
     metricViewName: string,
@@ -101,9 +104,12 @@ export class CanvasResolvedSpec {
 
     this.getMetricsViewFromName = (metricViewName: string) =>
       derived(this.allMetricsViews, ($metricsViews) => {
-        return $metricsViews?.data?.find(
-          (res) => res?.meta?.name?.name === metricViewName,
-        )?.metricsView?.state?.validSpec;
+        return {
+          metricsView: $metricsViews?.data?.find(
+            (res) => res?.meta?.name?.name === metricViewName,
+          )?.metricsView?.state?.validSpec,
+          isLoading: $metricsViews?.isLoading,
+        };
       });
 
     this.getMeasuresForMetricView = (metricViewName: string) =>

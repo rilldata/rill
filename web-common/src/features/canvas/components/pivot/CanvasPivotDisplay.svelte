@@ -21,7 +21,7 @@
   $: hasHeader = !!tableSpec?.title || !!tableSpec?.description;
 
   $: _metricViewSpec = getMetricsViewFromName(tableSpec.metrics_view);
-  $: metricsViewSpec = $_metricViewSpec;
+  $: metricsViewSpec = $_metricViewSpec.metricsView;
 
   $: schema = validateTableSchema(metricsViewSpec, tableSpec);
 

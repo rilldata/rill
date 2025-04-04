@@ -7,7 +7,6 @@
     MIN_HEIGHT,
     MIN_WIDTH,
     normalizeSizeArray,
-    type DragItem,
   } from "./layout-util";
   import { mousePosition } from "./layout-util";
   import { get, type Unsubscriber, type Writable } from "svelte/store";
@@ -20,25 +19,24 @@
   import CanvasComponent from "./CanvasComponent.svelte";
   import { activeDivider } from "./stores/ui-stores";
   import type { Row } from "./stores/row";
+  import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
 
   export let row: Row;
   export let zIndex = 50;
   export let maxWidth: number;
   export let heightUnit: string = "px";
   export let rowIndex: number;
-  export let movingWidget: boolean;
+  export let columnWidth: number;
   export let components: CanvasEntity["components"];
-  export let dragItemInfo: DragItem | null;
+  export let dragComponent: BaseCanvasComponent | null;
+  export let selectedComponent: Writable<string | null>;
   export let addItems: (
     position: { row: number; column: number },
     items: CanvasComponentType[],
   ) => void;
   export let spreadEvenly: (index: number) => void;
-  export let selectedComponent: Writable<string | null>;
   export let onComponentMouseDown: (params: {
-    columnIndex: number;
     id: string;
-    type: CanvasComponentType;
     event: MouseEvent;
   }) => void;
   export let onDuplicate: (params: { columnIndex: number }) => void;
@@ -50,7 +48,6 @@
     index: number,
     newWidths: number[],
   ) => void;
-  export let columnWidth: number;
 
   let rowHeight = get(row.height) ?? MIN_HEIGHT;
   let hasLocalChange = false;
@@ -65,6 +62,7 @@
   $: itemIds = $_itemIds;
 
   $: isSpreadEvenly = widths.every((w) => w === widths[0]);
+  $: activelyDragging = !!dragComponent;
 
   $: updateHeightFromSpec($height);
   $: updateWidthsFromSpec($itemWidths);
@@ -188,7 +186,7 @@
 >
   {#each itemIds as id, columnIndex (columnIndex)}
     {@const component = components.get(id)}
-    {@const type = component?.type}
+    <!-- {@const type = component?.type} -->
     {@const itemCount = itemIds.length}
 
     <ItemWrapper type={component?.type} zIndex={4 - columnIndex}>
@@ -198,7 +196,7 @@
           resizeIndex={-1}
           addIndex={columnIndex}
           rowLength={itemCount}
-          dragging={!!dragItemInfo}
+          dragging={activelyDragging}
           {isSpreadEvenly}
           {spreadEvenly}
           {addItems}
@@ -209,7 +207,7 @@
         {isSpreadEvenly}
         columnWidth={widths[columnIndex]}
         {rowIndex}
-        dragging={!!dragItemInfo}
+        dragging={activelyDragging}
         resizeIndex={columnIndex}
         addIndex={columnIndex + 1}
         rowLength={itemCount}
@@ -222,7 +220,7 @@
         column={columnIndex}
         row={rowIndex}
         maxColumns={itemCount}
-        allowDrop={!!dragItemInfo}
+        allowDrop={activelyDragging}
         {onDrop}
       />
 
@@ -230,16 +228,13 @@
         <CanvasComponent
           {component}
           editable
-          ghost={dragItemInfo?.position?.row === rowIndex &&
-            dragItemInfo?.position?.column === columnIndex}
+          ghost={dragComponent === component}
           selected={$selectedComponent === id}
           allowPointerEvents={!$activeDivider}
           onMouseDown={(event) => {
             onComponentMouseDown({
               event,
               id,
-              columnIndex,
-              type,
             });
           }}
           onDuplicate={() => {
@@ -255,7 +250,7 @@
     </ItemWrapper>
   {/each}
   <RowDropZone
-    allowDrop={movingWidget}
+    allowDrop={activelyDragging}
     resizeIndex={rowIndex}
     dropIndex={rowIndex + 1}
     {onRowResizeStart}
@@ -267,7 +262,7 @@
 
   {#if rowIndex === 0}
     <RowDropZone
-      allowDrop={movingWidget}
+      allowDrop={activelyDragging}
       dropIndex={0}
       {onDrop}
       addItem={(type) => {
