@@ -150,7 +150,6 @@ func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID str
 				TemplatedProperties: r.ConnectorSpec.TemplatedProperties,
 				Provision:           r.ConnectorSpec.Provision,
 				ProvisionArgs:       r.ConnectorSpec.ProvisionArgs,
-				ConfigFromVariables: r.ConnectorSpec.PropertiesFromVariables,
 			}
 		}
 	}
@@ -207,7 +206,6 @@ func (r *Runtime) UpdateInstanceConnector(ctx context.Context, instanceID, name 
 		TemplatedProperties: connector.TemplatedProperties,
 		Provision:           connector.Provision,
 		ProvisionArgs:       connector.ProvisionArgs,
-		ConfigFromVariables: connector.PropertiesFromVariables,
 	})
 
 	return r.EditInstance(ctx, inst, false)

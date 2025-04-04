@@ -325,8 +325,6 @@ message Connector {
   // Provision settings if its a managed connector
   bool provision = 6;
   google.protobuf.Struct provision_args = 7;
-  // DEPRECATED: config_from_variables stores configs whose value is a variable. This is only set for configs obtained from `connector.yaml`
-  map<string, string> config_from_variables = 4;
 }
 
 // Request message for RuntimeService.ListInstances

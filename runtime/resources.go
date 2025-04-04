@@ -18,7 +18,6 @@ const (
 	ResourceKindMigration      string = "rill.runtime.v1.Migration"
 	ResourceKindReport         string = "rill.runtime.v1.Report"
 	ResourceKindAlert          string = "rill.runtime.v1.Alert"
-	ResourceKindPullTrigger    string = "rill.runtime.v1.PullTrigger"
 	ResourceKindRefreshTrigger string = "rill.runtime.v1.RefreshTrigger"
 	ResourceKindBucketPlanner  string = "rill.runtime.v1.BucketPlanner"
 	ResourceKindTheme          string = "rill.runtime.v1.Theme"
@@ -48,8 +47,6 @@ func ResourceKindFromShorthand(kind string) string {
 		return ResourceKindReport
 	case "alert":
 		return ResourceKindAlert
-	case "pulltrigger", "pull_trigger":
-		return ResourceKindPullTrigger
 	case "refreshtrigger", "refresh_trigger":
 		return ResourceKindRefreshTrigger
 	case "bucketplanner", "bucket_planner":
@@ -128,7 +125,7 @@ func ResourceKindToParser(kind string) parser.ResourceKind {
 		return parser.ResourceKindAPI
 	case ResourceKindConnector:
 		return parser.ResourceKindConnector
-	case ResourceKindProjectParser, ResourceKindPullTrigger, ResourceKindRefreshTrigger, ResourceKindBucketPlanner:
+	case ResourceKindProjectParser, ResourceKindRefreshTrigger, ResourceKindBucketPlanner:
 		panic(fmt.Errorf("unsupported resource type %q", kind))
 	default:
 		panic(fmt.Errorf("unknown resource type %q", kind))

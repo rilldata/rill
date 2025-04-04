@@ -3,7 +3,7 @@ package rill.runtime.v1;
 
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
-import "rill/runtime/v1/colors.proto";
+import "rill/runtime/v1/color.proto";
 import "rill/runtime/v1/export_format.proto";
 import "rill/runtime/v1/expression.proto";
 import "rill/runtime/v1/schema.proto";
@@ -21,16 +21,14 @@ message Resource {
   oneof resource {
     // Well-known types only, for now. If required, we can add support for a google.protobuf.Any later.
     ProjectParser project_parser = 2;
-    SourceV2 source = 3;
-    ModelV2 model = 4;
+    Source source = 3;
+    Model model = 4;
     MetricsViewV2 metrics_view = 5;
     Explore explore = 17;
     Migration migration = 9;
     Report report = 10;
     Alert alert = 12;
-    PullTrigger pull_trigger = 6;
     RefreshTrigger refresh_trigger = 7;
-    BucketPlanner bucket_planner = 8;
     Theme theme = 11;
     Component component = 13;
     Canvas canvas = 14;
@@ -77,7 +75,7 @@ message ProjectParserState {
   bool watching = 3;
 }
 
-message SourceV2 {
+message Source {
   SourceSpec spec = 1;
   SourceState state = 2;
 }
@@ -101,7 +99,7 @@ message SourceState {
   google.protobuf.Timestamp refreshed_on = 4;
 }
 
-message ModelV2 {
+message Model {
   ModelSpec spec = 1;
   ModelState state = 2;
 }
@@ -614,16 +612,6 @@ enum AssertionStatus {
   ASSERTION_STATUS_ERROR = 3;
 }
 
-// DEPRECATED (2024-08-28): Use a RefreshTrigger that targets the project parser instead.
-message PullTrigger {
-  PullTriggerSpec spec = 1;
-  PullTriggerState state = 2;
-}
-
-message PullTriggerSpec {}
-
-message PullTriggerState {}
-
 message RefreshTrigger {
   RefreshTriggerSpec spec = 1;
   RefreshTriggerState state = 2;
@@ -649,31 +637,6 @@ message RefreshModelTrigger {
   repeated string partitions = 3;
   // If true, it will refresh all partitions that errored on their last execution.
   bool all_errored_partitions = 4;
-}
-
-message BucketPlanner {
-  BucketPlannerSpec spec = 1;
-  BucketPlannerState state = 2;
-}
-
-message BucketPlannerSpec {
-  BucketExtractPolicy extract_policy = 1;
-}
-
-message BucketPlannerState {
-  string region = 1;
-}
-
-message BucketExtractPolicy {
-  enum Strategy {
-    STRATEGY_UNSPECIFIED = 0;
-    STRATEGY_HEAD = 1;
-    STRATEGY_TAIL = 2;
-  }
-  Strategy rows_strategy = 1;
-  uint64 rows_limit_bytes = 2;
-  Strategy files_strategy = 3;
-  uint64 files_limit = 4;
 }
 
 message Theme {
@@ -855,9 +818,6 @@ message ConnectorSpec {
   repeated string templated_properties = 4;
   bool provision = 5;
   google.protobuf.Struct provision_args = 6;
-  // DEPRECATED: properties_from_variables stores properties whose value is a variable.
-  // NOTE : properties_from_variables and properties both should be used to get all properties.
-  map<string, string> properties_from_variables = 3;
 }
 
 message ConnectorState {

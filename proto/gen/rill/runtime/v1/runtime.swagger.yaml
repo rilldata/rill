@@ -2944,13 +2944,6 @@ paths:
       tags:
         - ConnectorService
 definitions:
-  BucketExtractPolicyStrategy:
-    type: string
-    enum:
-      - STRATEGY_UNSPECIFIED
-      - STRATEGY_HEAD
-      - STRATEGY_TAIL
-    default: STRATEGY_UNSPECIFIED
   ColumnTimeSeriesRequestBasicMeasure:
     type: object
     properties:
@@ -3544,36 +3537,6 @@ definitions:
         type: array
         items:
           type: string
-  v1BucketExtractPolicy:
-    type: object
-    properties:
-      rowsStrategy:
-        $ref: '#/definitions/BucketExtractPolicyStrategy'
-      rowsLimitBytes:
-        type: string
-        format: uint64
-      filesStrategy:
-        $ref: '#/definitions/BucketExtractPolicyStrategy'
-      filesLimit:
-        type: string
-        format: uint64
-  v1BucketPlanner:
-    type: object
-    properties:
-      spec:
-        $ref: '#/definitions/v1BucketPlannerSpec'
-      state:
-        $ref: '#/definitions/v1BucketPlannerState'
-  v1BucketPlannerSpec:
-    type: object
-    properties:
-      extractPolicy:
-        $ref: '#/definitions/v1BucketExtractPolicy'
-  v1BucketPlannerState:
-    type: object
-    properties:
-      region:
-        type: string
   v1BuiltinMeasure:
     type: string
     enum:
@@ -3673,6 +3636,9 @@ definitions:
           List of selectable time ranges with comparison time ranges.
           If the list is empty, a default list should be shown.
           TODO: Once the canvas APIs have stabilized, rename ExploreTimeRange to a non-explore-specific name.
+      allowCustomTimeRange:
+        type: boolean
+        title: Toggle custom time range
       timeZones:
         type: array
         items:
@@ -3705,9 +3671,6 @@ definitions:
           type: object
           $ref: '#/definitions/v1SecurityRule'
         description: Security rules to apply for access to the canvas.
-      allowCustomTimeRange:
-        type: boolean
-        title: Toggle custom time range
   v1CanvasState:
     type: object
     properties:
@@ -4102,11 +4065,6 @@ definitions:
         title: Provision settings if its a managed connector
       provisionArgs:
         type: object
-      configFromVariables:
-        type: object
-        additionalProperties:
-          type: string
-        title: 'DEPRECATED: config_from_variables stores configs whose value is a variable. This is only set for configs obtained from `connector.yaml`'
   v1ConnectorDriver:
     type: object
     properties:
@@ -4172,13 +4130,6 @@ definitions:
         type: boolean
       provisionArgs:
         type: object
-      propertiesFromVariables:
-        type: object
-        additionalProperties:
-          type: string
-        description: |-
-          DEPRECATED: properties_from_variables stores properties whose value is a variable.
-          NOTE : properties_from_variables and properties both should be used to get all properties.
   v1ConnectorState:
     type: object
     properties:
@@ -5628,6 +5579,13 @@ definitions:
       version:
         type: integer
         format: int64
+  v1Model:
+    type: object
+    properties:
+      spec:
+        $ref: '#/definitions/v1ModelSpec'
+      state:
+        $ref: '#/definitions/v1ModelState'
   v1ModelPartition:
     type: object
     properties:
@@ -5737,13 +5695,6 @@ definitions:
         type: string
         format: int64
         description: latest_execution_duration_ms is the time user queries took to execute in the last successful refresh.
-  v1ModelV2:
-    type: object
-    properties:
-      spec:
-        $ref: '#/definitions/v1ModelSpec'
-      state:
-        $ref: '#/definitions/v1ModelState'
   v1Notifier:
     type: object
     properties:
@@ -5903,18 +5854,6 @@ definitions:
         format: date-time
       watching:
         type: boolean
-  v1PullTrigger:
-    type: object
-    properties:
-      spec:
-        $ref: '#/definitions/v1PullTriggerSpec'
-      state:
-        $ref: '#/definitions/v1PullTriggerState'
-    description: 'DEPRECATED (2024-08-28): Use a RefreshTrigger that targets the project parser instead.'
-  v1PullTriggerSpec:
-    type: object
-  v1PullTriggerState:
-    type: object
   v1PutFileResponse:
     type: object
     properties:
@@ -6201,9 +6140,9 @@ definitions:
         $ref: '#/definitions/v1ProjectParser'
         description: Well-known types only, for now. If required, we can add support for a google.protobuf.Any later.
       source:
-        $ref: '#/definitions/v1SourceV2'
+        $ref: '#/definitions/v1Source'
       model:
-        $ref: '#/definitions/v1ModelV2'
+        $ref: '#/definitions/v1Model'
       metricsView:
         $ref: '#/definitions/v1MetricsViewV2'
       explore:
@@ -6214,12 +6153,8 @@ definitions:
         $ref: '#/definitions/v1Report'
       alert:
         $ref: '#/definitions/v1Alert'
-      pullTrigger:
-        $ref: '#/definitions/v1PullTrigger'
       refreshTrigger:
         $ref: '#/definitions/v1RefreshTrigger'
-      bucketPlanner:
-        $ref: '#/definitions/v1BucketPlanner'
       theme:
         $ref: '#/definitions/v1Theme'
       component:
@@ -6390,6 +6325,13 @@ definitions:
       expression:
         $ref: '#/definitions/v1Expression'
         title: Regular query expression referencing dimension names
+  v1Source:
+    type: object
+    properties:
+      spec:
+        $ref: '#/definitions/v1SourceSpec'
+      state:
+        $ref: '#/definitions/v1SourceState'
   v1SourceSpec:
     type: object
     properties:
@@ -6423,13 +6365,6 @@ definitions:
       refreshedOn:
         type: string
         format: date-time
-  v1SourceV2:
-    type: object
-    properties:
-      spec:
-        $ref: '#/definitions/v1SourceSpec'
-      state:
-        $ref: '#/definitions/v1SourceState'
   v1StringListValue:
     type: object
     properties:
