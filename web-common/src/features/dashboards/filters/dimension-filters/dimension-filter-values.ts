@@ -63,10 +63,10 @@ export function useDimensionSearch(
   return getCompoundQuery(queries, (responses) => {
     const values = responses
       .filter((r) => !!r?.data)
-      .map((r) => r!.data!.map((i) => i[dimensionName] as string))
+      .map((r) => r!.data!.map((i) => i[dimensionName]))
       .flat();
     const dedupedValues = new Set(values);
-    return [...dedupedValues];
+    return [...dedupedValues] as string[];
   });
 }
 

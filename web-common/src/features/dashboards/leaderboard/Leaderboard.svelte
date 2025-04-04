@@ -411,7 +411,7 @@
         Expand dimension to see more values
       </TooltipContent>
     </Tooltip>
-  {:else if noAvailableValues && !isLoading}
+  {:else if noAvailableValues}
     <div class="table-message ui-copy-muted">
       <div class="pl-8">(No available values)</div>
     </div>

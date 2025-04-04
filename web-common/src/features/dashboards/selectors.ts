@@ -94,17 +94,6 @@ export const useMetricsViewValidSpec = <T = V1MetricsViewSpec>(
   });
 };
 
-// TODO: cleanup usage of useModelHasTimeSeries and useModelAllTimeRange
-export const useModelHasTimeSeries = (
-  instanceId: string,
-  metricsViewName: string,
-) =>
-  useMetricsViewValidSpec(
-    instanceId,
-    metricsViewName,
-    (meta) => !!meta?.timeDimension,
-  );
-
 export function useMetricsViewTimeRange(
   instanceId: string,
   metricsViewName: string,
