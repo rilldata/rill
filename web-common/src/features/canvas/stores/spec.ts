@@ -21,9 +21,7 @@ export class CanvasResolvedSpec {
   isLoading: Readable<boolean>;
   metricViewNames: Readable<string[]>;
 
-  getMetricsViewFromName: (
-    metricViewName: string,
-  ) => Readable<{
+  getMetricsViewFromName: (metricViewName: string) => Readable<{
     metricsView: V1MetricsViewSpec | undefined;
     isLoading: boolean;
   }>;
