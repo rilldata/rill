@@ -9,7 +9,7 @@ import { StructType } from "./schema_pb.js";
 import { TimeGrain } from "./time_grain_pb.js";
 import { Expression } from "./expression_pb.js";
 import { ExportFormat } from "./export_format_pb.js";
-import { Color } from "./colors_pb.js";
+import { Color } from "./color_pb.js";
 
 /**
  * @generated from enum rill.runtime.v1.ReconcileStatus
@@ -211,15 +211,15 @@ export class Resource extends Message<Resource> {
     case: "projectParser";
   } | {
     /**
-     * @generated from field: rill.runtime.v1.SourceV2 source = 3;
+     * @generated from field: rill.runtime.v1.Source source = 3;
      */
-    value: SourceV2;
+    value: Source;
     case: "source";
   } | {
     /**
-     * @generated from field: rill.runtime.v1.ModelV2 model = 4;
+     * @generated from field: rill.runtime.v1.Model model = 4;
      */
-    value: ModelV2;
+    value: Model;
     case: "model";
   } | {
     /**
@@ -253,22 +253,10 @@ export class Resource extends Message<Resource> {
     case: "alert";
   } | {
     /**
-     * @generated from field: rill.runtime.v1.PullTrigger pull_trigger = 6;
-     */
-    value: PullTrigger;
-    case: "pullTrigger";
-  } | {
-    /**
      * @generated from field: rill.runtime.v1.RefreshTrigger refresh_trigger = 7;
      */
     value: RefreshTrigger;
     case: "refreshTrigger";
-  } | {
-    /**
-     * @generated from field: rill.runtime.v1.BucketPlanner bucket_planner = 8;
-     */
-    value: BucketPlanner;
-    case: "bucketPlanner";
   } | {
     /**
      * @generated from field: rill.runtime.v1.Theme theme = 11;
@@ -311,16 +299,14 @@ export class Resource extends Message<Resource> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "meta", kind: "message", T: ResourceMeta },
     { no: 2, name: "project_parser", kind: "message", T: ProjectParser, oneof: "resource" },
-    { no: 3, name: "source", kind: "message", T: SourceV2, oneof: "resource" },
-    { no: 4, name: "model", kind: "message", T: ModelV2, oneof: "resource" },
+    { no: 3, name: "source", kind: "message", T: Source, oneof: "resource" },
+    { no: 4, name: "model", kind: "message", T: Model, oneof: "resource" },
     { no: 5, name: "metrics_view", kind: "message", T: MetricsViewV2, oneof: "resource" },
     { no: 17, name: "explore", kind: "message", T: Explore, oneof: "resource" },
     { no: 9, name: "migration", kind: "message", T: Migration, oneof: "resource" },
     { no: 10, name: "report", kind: "message", T: Report, oneof: "resource" },
     { no: 12, name: "alert", kind: "message", T: Alert, oneof: "resource" },
-    { no: 6, name: "pull_trigger", kind: "message", T: PullTrigger, oneof: "resource" },
     { no: 7, name: "refresh_trigger", kind: "message", T: RefreshTrigger, oneof: "resource" },
-    { no: 8, name: "bucket_planner", kind: "message", T: BucketPlanner, oneof: "resource" },
     { no: 11, name: "theme", kind: "message", T: Theme, oneof: "resource" },
     { no: 13, name: "component", kind: "message", T: Component, oneof: "resource" },
     { no: 14, name: "canvas", kind: "message", T: Canvas, oneof: "resource" },
@@ -645,9 +631,9 @@ export class ProjectParserState extends Message<ProjectParserState> {
 }
 
 /**
- * @generated from message rill.runtime.v1.SourceV2
+ * @generated from message rill.runtime.v1.Source
  */
-export class SourceV2 extends Message<SourceV2> {
+export class Source extends Message<Source> {
   /**
    * @generated from field: rill.runtime.v1.SourceSpec spec = 1;
    */
@@ -658,32 +644,32 @@ export class SourceV2 extends Message<SourceV2> {
    */
   state?: SourceState;
 
-  constructor(data?: PartialMessage<SourceV2>) {
+  constructor(data?: PartialMessage<Source>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.SourceV2";
+  static readonly typeName = "rill.runtime.v1.Source";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "spec", kind: "message", T: SourceSpec },
     { no: 2, name: "state", kind: "message", T: SourceState },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SourceV2 {
-    return new SourceV2().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Source {
+    return new Source().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SourceV2 {
-    return new SourceV2().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Source {
+    return new Source().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SourceV2 {
-    return new SourceV2().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Source {
+    return new Source().fromJsonString(jsonString, options);
   }
 
-  static equals(a: SourceV2 | PlainMessage<SourceV2> | undefined, b: SourceV2 | PlainMessage<SourceV2> | undefined): boolean {
-    return proto3.util.equals(SourceV2, a, b);
+  static equals(a: Source | PlainMessage<Source> | undefined, b: Source | PlainMessage<Source> | undefined): boolean {
+    return proto3.util.equals(Source, a, b);
   }
 }
 
@@ -824,9 +810,9 @@ export class SourceState extends Message<SourceState> {
 }
 
 /**
- * @generated from message rill.runtime.v1.ModelV2
+ * @generated from message rill.runtime.v1.Model
  */
-export class ModelV2 extends Message<ModelV2> {
+export class Model extends Message<Model> {
   /**
    * @generated from field: rill.runtime.v1.ModelSpec spec = 1;
    */
@@ -837,32 +823,32 @@ export class ModelV2 extends Message<ModelV2> {
    */
   state?: ModelState;
 
-  constructor(data?: PartialMessage<ModelV2>) {
+  constructor(data?: PartialMessage<Model>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.ModelV2";
+  static readonly typeName = "rill.runtime.v1.Model";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "spec", kind: "message", T: ModelSpec },
     { no: 2, name: "state", kind: "message", T: ModelState },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelV2 {
-    return new ModelV2().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Model {
+    return new Model().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ModelV2 {
-    return new ModelV2().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Model {
+    return new Model().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ModelV2 {
-    return new ModelV2().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Model {
+    return new Model().fromJsonString(jsonString, options);
   }
 
-  static equals(a: ModelV2 | PlainMessage<ModelV2> | undefined, b: ModelV2 | PlainMessage<ModelV2> | undefined): boolean {
-    return proto3.util.equals(ModelV2, a, b);
+  static equals(a: Model | PlainMessage<Model> | undefined, b: Model | PlainMessage<Model> | undefined): boolean {
+    return proto3.util.equals(Model, a, b);
   }
 }
 
@@ -3698,113 +3684,6 @@ export class AssertionResult extends Message<AssertionResult> {
 }
 
 /**
- * DEPRECATED (2024-08-28): Use a RefreshTrigger that targets the project parser instead.
- *
- * @generated from message rill.runtime.v1.PullTrigger
- */
-export class PullTrigger extends Message<PullTrigger> {
-  /**
-   * @generated from field: rill.runtime.v1.PullTriggerSpec spec = 1;
-   */
-  spec?: PullTriggerSpec;
-
-  /**
-   * @generated from field: rill.runtime.v1.PullTriggerState state = 2;
-   */
-  state?: PullTriggerState;
-
-  constructor(data?: PartialMessage<PullTrigger>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.PullTrigger";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "spec", kind: "message", T: PullTriggerSpec },
-    { no: 2, name: "state", kind: "message", T: PullTriggerState },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PullTrigger {
-    return new PullTrigger().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): PullTrigger {
-    return new PullTrigger().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): PullTrigger {
-    return new PullTrigger().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: PullTrigger | PlainMessage<PullTrigger> | undefined, b: PullTrigger | PlainMessage<PullTrigger> | undefined): boolean {
-    return proto3.util.equals(PullTrigger, a, b);
-  }
-}
-
-/**
- * @generated from message rill.runtime.v1.PullTriggerSpec
- */
-export class PullTriggerSpec extends Message<PullTriggerSpec> {
-  constructor(data?: PartialMessage<PullTriggerSpec>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.PullTriggerSpec";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PullTriggerSpec {
-    return new PullTriggerSpec().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): PullTriggerSpec {
-    return new PullTriggerSpec().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): PullTriggerSpec {
-    return new PullTriggerSpec().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: PullTriggerSpec | PlainMessage<PullTriggerSpec> | undefined, b: PullTriggerSpec | PlainMessage<PullTriggerSpec> | undefined): boolean {
-    return proto3.util.equals(PullTriggerSpec, a, b);
-  }
-}
-
-/**
- * @generated from message rill.runtime.v1.PullTriggerState
- */
-export class PullTriggerState extends Message<PullTriggerState> {
-  constructor(data?: PartialMessage<PullTriggerState>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.PullTriggerState";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PullTriggerState {
-    return new PullTriggerState().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): PullTriggerState {
-    return new PullTriggerState().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): PullTriggerState {
-    return new PullTriggerState().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: PullTriggerState | PlainMessage<PullTriggerState> | undefined, b: PullTriggerState | PlainMessage<PullTriggerState> | undefined): boolean {
-    return proto3.util.equals(PullTriggerState, a, b);
-  }
-}
-
-/**
  * @generated from message rill.runtime.v1.RefreshTrigger
  */
 export class RefreshTrigger extends Message<RefreshTrigger> {
@@ -3989,204 +3868,6 @@ export class RefreshModelTrigger extends Message<RefreshModelTrigger> {
     return proto3.util.equals(RefreshModelTrigger, a, b);
   }
 }
-
-/**
- * @generated from message rill.runtime.v1.BucketPlanner
- */
-export class BucketPlanner extends Message<BucketPlanner> {
-  /**
-   * @generated from field: rill.runtime.v1.BucketPlannerSpec spec = 1;
-   */
-  spec?: BucketPlannerSpec;
-
-  /**
-   * @generated from field: rill.runtime.v1.BucketPlannerState state = 2;
-   */
-  state?: BucketPlannerState;
-
-  constructor(data?: PartialMessage<BucketPlanner>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.BucketPlanner";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "spec", kind: "message", T: BucketPlannerSpec },
-    { no: 2, name: "state", kind: "message", T: BucketPlannerState },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BucketPlanner {
-    return new BucketPlanner().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BucketPlanner {
-    return new BucketPlanner().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BucketPlanner {
-    return new BucketPlanner().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: BucketPlanner | PlainMessage<BucketPlanner> | undefined, b: BucketPlanner | PlainMessage<BucketPlanner> | undefined): boolean {
-    return proto3.util.equals(BucketPlanner, a, b);
-  }
-}
-
-/**
- * @generated from message rill.runtime.v1.BucketPlannerSpec
- */
-export class BucketPlannerSpec extends Message<BucketPlannerSpec> {
-  /**
-   * @generated from field: rill.runtime.v1.BucketExtractPolicy extract_policy = 1;
-   */
-  extractPolicy?: BucketExtractPolicy;
-
-  constructor(data?: PartialMessage<BucketPlannerSpec>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.BucketPlannerSpec";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "extract_policy", kind: "message", T: BucketExtractPolicy },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BucketPlannerSpec {
-    return new BucketPlannerSpec().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BucketPlannerSpec {
-    return new BucketPlannerSpec().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BucketPlannerSpec {
-    return new BucketPlannerSpec().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: BucketPlannerSpec | PlainMessage<BucketPlannerSpec> | undefined, b: BucketPlannerSpec | PlainMessage<BucketPlannerSpec> | undefined): boolean {
-    return proto3.util.equals(BucketPlannerSpec, a, b);
-  }
-}
-
-/**
- * @generated from message rill.runtime.v1.BucketPlannerState
- */
-export class BucketPlannerState extends Message<BucketPlannerState> {
-  /**
-   * @generated from field: string region = 1;
-   */
-  region = "";
-
-  constructor(data?: PartialMessage<BucketPlannerState>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.BucketPlannerState";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "region", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BucketPlannerState {
-    return new BucketPlannerState().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BucketPlannerState {
-    return new BucketPlannerState().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BucketPlannerState {
-    return new BucketPlannerState().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: BucketPlannerState | PlainMessage<BucketPlannerState> | undefined, b: BucketPlannerState | PlainMessage<BucketPlannerState> | undefined): boolean {
-    return proto3.util.equals(BucketPlannerState, a, b);
-  }
-}
-
-/**
- * @generated from message rill.runtime.v1.BucketExtractPolicy
- */
-export class BucketExtractPolicy extends Message<BucketExtractPolicy> {
-  /**
-   * @generated from field: rill.runtime.v1.BucketExtractPolicy.Strategy rows_strategy = 1;
-   */
-  rowsStrategy = BucketExtractPolicy_Strategy.UNSPECIFIED;
-
-  /**
-   * @generated from field: uint64 rows_limit_bytes = 2;
-   */
-  rowsLimitBytes = protoInt64.zero;
-
-  /**
-   * @generated from field: rill.runtime.v1.BucketExtractPolicy.Strategy files_strategy = 3;
-   */
-  filesStrategy = BucketExtractPolicy_Strategy.UNSPECIFIED;
-
-  /**
-   * @generated from field: uint64 files_limit = 4;
-   */
-  filesLimit = protoInt64.zero;
-
-  constructor(data?: PartialMessage<BucketExtractPolicy>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.BucketExtractPolicy";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "rows_strategy", kind: "enum", T: proto3.getEnumType(BucketExtractPolicy_Strategy) },
-    { no: 2, name: "rows_limit_bytes", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
-    { no: 3, name: "files_strategy", kind: "enum", T: proto3.getEnumType(BucketExtractPolicy_Strategy) },
-    { no: 4, name: "files_limit", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BucketExtractPolicy {
-    return new BucketExtractPolicy().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BucketExtractPolicy {
-    return new BucketExtractPolicy().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BucketExtractPolicy {
-    return new BucketExtractPolicy().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: BucketExtractPolicy | PlainMessage<BucketExtractPolicy> | undefined, b: BucketExtractPolicy | PlainMessage<BucketExtractPolicy> | undefined): boolean {
-    return proto3.util.equals(BucketExtractPolicy, a, b);
-  }
-}
-
-/**
- * @generated from enum rill.runtime.v1.BucketExtractPolicy.Strategy
- */
-export enum BucketExtractPolicy_Strategy {
-  /**
-   * @generated from enum value: STRATEGY_UNSPECIFIED = 0;
-   */
-  UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: STRATEGY_HEAD = 1;
-   */
-  HEAD = 1,
-
-  /**
-   * @generated from enum value: STRATEGY_TAIL = 2;
-   */
-  TAIL = 2,
-}
-// Retrieve enum metadata with: proto3.getEnumType(BucketExtractPolicy_Strategy)
-proto3.util.setEnumType(BucketExtractPolicy_Strategy, "rill.runtime.v1.BucketExtractPolicy.Strategy", [
-  { no: 0, name: "STRATEGY_UNSPECIFIED" },
-  { no: 1, name: "STRATEGY_HEAD" },
-  { no: 2, name: "STRATEGY_TAIL" },
-]);
 
 /**
  * @generated from message rill.runtime.v1.Theme
@@ -4625,6 +4306,13 @@ export class CanvasSpec extends Message<CanvasSpec> {
   timeRanges: ExploreTimeRange[] = [];
 
   /**
+   * Toggle custom time range
+   *
+   * @generated from field: bool allow_custom_time_range = 14;
+   */
+  allowCustomTimeRange = false;
+
+  /**
    * List of selectable time zones.
    * If the list is empty, a default list should be shown.
    * The values should be valid IANA location identifiers.
@@ -4668,13 +4356,6 @@ export class CanvasSpec extends Message<CanvasSpec> {
    */
   securityRules: SecurityRule[] = [];
 
-  /**
-   * Toggle custom time range
-   *
-   * @generated from field: bool allow_custom_time_range = 14;
-   */
-  allowCustomTimeRange = false;
-
   constructor(data?: PartialMessage<CanvasSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4691,13 +4372,13 @@ export class CanvasSpec extends Message<CanvasSpec> {
     { no: 7, name: "theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "embedded_theme", kind: "message", T: ThemeSpec },
     { no: 11, name: "time_ranges", kind: "message", T: ExploreTimeRange, repeated: true },
+    { no: 14, name: "allow_custom_time_range", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 12, name: "time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 13, name: "filters_enabled", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 15, name: "default_preset", kind: "message", T: CanvasPreset },
     { no: 5, name: "variables", kind: "message", T: ComponentVariable, repeated: true },
     { no: 18, name: "rows", kind: "message", T: CanvasRow, repeated: true },
     { no: 6, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
-    { no: 14, name: "allow_custom_time_range", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasSpec {
@@ -5427,14 +5108,6 @@ export class ConnectorSpec extends Message<ConnectorSpec> {
    */
   provisionArgs?: Struct;
 
-  /**
-   * DEPRECATED: properties_from_variables stores properties whose value is a variable.
-   * NOTE : properties_from_variables and properties both should be used to get all properties.
-   *
-   * @generated from field: map<string, string> properties_from_variables = 3;
-   */
-  propertiesFromVariables: { [key: string]: string } = {};
-
   constructor(data?: PartialMessage<ConnectorSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5448,7 +5121,6 @@ export class ConnectorSpec extends Message<ConnectorSpec> {
     { no: 4, name: "templated_properties", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 5, name: "provision", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 6, name: "provision_args", kind: "message", T: Struct },
-    { no: 3, name: "properties_from_variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectorSpec {

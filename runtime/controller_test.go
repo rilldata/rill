@@ -54,7 +54,7 @@ measures:
 			FilePaths: []string{"/sources/foo.yaml"},
 		},
 		Resource: &runtimev1.Resource_Model{
-			Model: &runtimev1.ModelV2{
+			Model: &runtimev1.Model{
 				Spec: &runtimev1.ModelSpec{
 					InputConnector:   "local_file",
 					OutputConnector:  "duckdb",
@@ -84,7 +84,7 @@ measures:
 			FilePaths: []string{"/models/bar.sql"},
 		},
 		Resource: &runtimev1.Resource_Model{
-			Model: &runtimev1.ModelV2{
+			Model: &runtimev1.Model{
 				Spec: &runtimev1.ModelSpec{
 					RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 					InputConnector:  "duckdb",
@@ -154,7 +154,7 @@ path
 			ReconcileError: "Table with name foo does not exist",
 		},
 		Resource: &runtimev1.Resource_Model{
-			Model: &runtimev1.ModelV2{
+			Model: &runtimev1.Model{
 				Spec: &runtimev1.ModelSpec{
 					RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 					InputConnector:  "duckdb",
@@ -218,7 +218,7 @@ path: data/foo.csv
 			FilePaths: []string{"/sources/foo.yaml"},
 		},
 		Resource: &runtimev1.Resource_Model{
-			Model: &runtimev1.ModelV2{
+			Model: &runtimev1.Model{
 				Spec: &runtimev1.ModelSpec{
 					InputConnector:   "local_file",
 					OutputConnector:  "duckdb",
@@ -291,7 +291,7 @@ path: data/foo.csv
 			FilePaths: []string{"/sources/foo.yaml"},
 		},
 		Resource: &runtimev1.Resource_Model{
-			Model: &runtimev1.ModelV2{
+			Model: &runtimev1.Model{
 				Spec: &runtimev1.ModelSpec{
 					InputConnector:   "local_file",
 					OutputConnector:  "duckdb",
@@ -1149,8 +1149,8 @@ measures:
 	testruntime.RequireResource(t, rt, id, metricsRes)
 }
 
-func newSource(name, path, localFileHash string) (*runtimev1.ModelV2, *runtimev1.Resource) {
-	source := &runtimev1.ModelV2{
+func newSource(name, path, localFileHash string) (*runtimev1.Model, *runtimev1.Resource) {
+	source := &runtimev1.Model{
 		Spec: &runtimev1.ModelSpec{
 			InputConnector:   "local_file",
 			OutputConnector:  "duckdb",
@@ -1179,8 +1179,8 @@ func newSource(name, path, localFileHash string) (*runtimev1.ModelV2, *runtimev1
 	return source, sourceRes
 }
 
-func newModel(query, name, source string) (*runtimev1.ModelV2, *runtimev1.Resource) {
-	model := &runtimev1.ModelV2{
+func newModel(query, name, source string) (*runtimev1.Model, *runtimev1.Resource) {
+	model := &runtimev1.Model{
 		Spec: &runtimev1.ModelSpec{
 			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 			InputConnector:  "duckdb",
