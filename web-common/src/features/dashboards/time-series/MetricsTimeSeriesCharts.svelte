@@ -3,6 +3,7 @@
   import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
+  import DashboardMetricsDraggableList from "@rilldata/web-common/components/menu/DashboardMetricsDraggableList.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
@@ -34,6 +35,8 @@
     type AvailableTimeGrain,
   } from "@rilldata/web-common/lib/time/types";
   import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
+  import { Button } from "../../../components/button";
+  import Pivot from "../../../components/icons/Pivot.svelte";
   import { TIME_GRAIN } from "../../../lib/time/config";
   import Spinner from "../../entity-management/Spinner.svelte";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
@@ -46,7 +49,6 @@
     getOrderedStartEnd,
     updateChartInteractionStore,
   } from "./utils";
-  import DashboardMetricsDraggableList from "@rilldata/web-common/components/menu/DashboardMetricsDraggableList.svelte";
 
   export let exploreName: string;
   export let workspaceWidth: number;
@@ -310,14 +312,16 @@
       />
 
       {#if !hideStartPivotButton}
-        <button
-          class="h-6 px-1.5 py-px rounded-sm hover:bg-gray-200 text-gray-700 ml-auto"
+        <div class="grow" />
+        <Button
+          type="toolbar"
           on:click={() => {
             startPivotForTimeseries();
           }}
         >
+          <Pivot size="16px" />
           Start Pivot
-        </button>
+        </Button>
       {/if}
     {/if}
   </div>
