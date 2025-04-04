@@ -12,10 +12,8 @@
   export let canvasName: string;
 
   $: ({
-    canvasEntity: { selectedComponent, _components },
+    canvasEntity: { selectedComponent, components },
   } = getCanvasStore(canvasName));
-
-  $: components = $_components;
 
   $: ({ editorContent, updateEditorContent, saveLocalContent, path } =
     fileArtifact);

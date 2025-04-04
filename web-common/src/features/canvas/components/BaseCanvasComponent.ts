@@ -39,7 +39,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
   abstract defaultSize: ComponentSize;
   abstract resetParams: string[];
   abstract isValid(spec: T): boolean;
-  abstract inputParams(): InputParams<T>;
+  abstract inputParams(type?: CanvasComponentType): InputParams<T>;
 
   constructor(
     resource: V1Resource,
@@ -64,11 +64,11 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
   }
 
   update(resource: V1Resource, path: ComponentPath) {
-    const yamlSpec = resource.component?.state?.validSpec?.rendererProperties;
-    const mergedSpec = { ...this.defaultSpec, ...yamlSpec };
+    const yamlSpec = resource.component?.state?.validSpec
+      ?.rendererProperties as T;
     this.resource.set(resource);
     this.pathInYAML = path;
-    this.specStore.set(mergedSpec);
+    this.specStore.set(yamlSpec);
   }
 
   get timeAndFilterStore() {

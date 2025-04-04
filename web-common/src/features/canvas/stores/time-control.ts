@@ -271,21 +271,17 @@ export class TimeControls {
           V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
         );
 
-        if (
-          defaultPreset?.comparisonMode ===
-          V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
-        ) {
-          const newComparisonRange = getComparisonTimeRange(
-            timeRanges,
-            allTimeRange,
-            newTimeRange,
-            comparisonTimeRange,
-          );
-          this.selectedComparisonTimeRange.set(newComparisonRange);
+        const newComparisonRange = getComparisonTimeRange(
+          timeRanges,
+          allTimeRange,
+          newTimeRange,
+          comparisonTimeRange,
+        );
 
-          if (!this.componentName) {
-            this.showTimeComparison.set(true);
-          }
+        this.selectedComparisonTimeRange.set(newComparisonRange);
+
+        if (!this.componentName) {
+          this.showTimeComparison.set(true);
         }
 
         this.selectedTimeRange.set(newTimeRange);

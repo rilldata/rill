@@ -2,14 +2,10 @@
   import ComponentHeader from "@rilldata/web-common/features/canvas/ComponentHeader.svelte";
   import { hideBorder } from "./layout-util";
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
-  import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
-  import {
-    isCanvasComponentType,
-    isChartComponentType,
-    getComponentFilterProperties,
-  } from "@rilldata/web-common/features/canvas/components/util";
+  import { getComponentFilterProperties } from "@rilldata/web-common/features/canvas/components/util";
   import Toolbar from "./Toolbar.svelte";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
+  import { ChartComponent } from "./components/charts";
 </script>
 
 <script lang="ts">
@@ -24,12 +20,9 @@
 
   let open = false;
 
-  $: ({ id: componentName, specStore, type: renderer, resource } = component);
+  $: ({ id: componentName, specStore, type: renderer } = component);
 
   $: rendererProperties = $specStore;
-  $: componentResource = $resource;
-
-  $: isChartType = isChartComponentType(renderer);
 
   $: title = rendererProperties?.["title"] as string | undefined;
   $: description = rendererProperties?.["description"] as string | undefined;
@@ -58,16 +51,12 @@
     class="size-full grow flex flex-col"
     on:mousedown={onMouseDown}
   >
-    {#if componentName}
-      {#if !isChartType}
+    {#if component}
+      {#if !(component instanceof ChartComponent)}
         <ComponentHeader {title} {description} filters={componentFilters} />
       {/if}
 
-      {#if rendererProperties && isCanvasComponentType(renderer)}
-        <svelte:component this={component.component} {component} />
-      {:else if componentResource}
-        <ComponentError error="Invalid component type" />
-      {/if}
+      <svelte:component this={component.component} {component} />
     {:else}
       <div class="size-full grid place-content-center">
         <LoadingSpinner size="36px" />

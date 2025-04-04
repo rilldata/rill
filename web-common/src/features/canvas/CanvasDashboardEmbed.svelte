@@ -28,10 +28,8 @@
   $: canvasData = $canvasResolverQuery?.data;
 
   $: ({
-    canvasEntity: { _components },
+    canvasEntity: { components },
   } = getCanvasStore(canvasName));
-
-  $: components = $_components;
 </script>
 
 {#if canvasName}

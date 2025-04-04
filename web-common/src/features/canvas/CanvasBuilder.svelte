@@ -1,8 +1,7 @@
 <script lang="ts">
   import { portal } from "@rilldata/web-common/lib/actions/portal";
   import {
-    type V1CanvasRow as APIV1CanvasRow,
-    type V1CanvasItem,
+    type V1CanvasRow,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -12,9 +11,7 @@
   import AddComponentDropdown from "./AddComponentDropdown.svelte";
   import CanvasComponent from "./CanvasComponent.svelte";
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
-  import DropZone from "./components/DropZone.svelte";
   import type { CanvasComponentType } from "./components/types";
-  import ElementDivider from "./ElementDivider.svelte";
   import ItemWrapper from "./ItemWrapper.svelte";
   import type { DragItem, Transaction, YAMLRow } from "./layout-util";
   import {
@@ -36,10 +33,6 @@
 
   const activelyEditing = writable(false);
 
-  type V1CanvasRow = Omit<APIV1CanvasRow, "items"> & {
-    items: V1CanvasItem[];
-  };
-
   export let fileArtifact: FileArtifact;
   export let canvasName: string;
   export let openSidebar: () => void;
@@ -48,14 +41,15 @@
     canvasEntity: {
       setSelectedComponent,
       selectedComponent,
-      _components,
+      components,
       processRows,
       specStore,
       unsubscribe,
+      _rows,
     },
   } = getCanvasStore(canvasName));
 
-  $: components = $_components;
+  $: layoutRows = $_rows;
 
   let initialMousePosition: { x: number; y: number } | null = null;
   let clientWidth: number;
@@ -202,7 +196,7 @@
     const baseSize = COLUMN_COUNT / specRow.items.length;
 
     yamlRow.items.forEach((_, i) => {
-      if (!specRow.items[i] || !yamlRow.items[i]) return;
+      if (!specRow?.items?.[i] || !yamlRow.items[i]) return;
       specRow.items[i].width = baseSize;
       yamlRow.items[i].width = baseSize;
     });
@@ -404,11 +398,16 @@
   showGrabCursor={!!dragItemInfo}
   bind:clientWidth
 >
-  {#each specCanvasRows as row, rowIndex (rowIndex)}
+  {#each layoutRows as row, rowIndex (rowIndex)}
     <EditableCanvasRow
       {row}
       {maxWidth}
       {rowIndex}
+      {components}
+      {dragItemInfo}
+      {spreadEvenly}
+      {addItems}
+      {selectedComponent}
       movingWidget={!!dragItemInfo}
       zIndex={50 - rowIndex * 2}
       {columnWidth}
@@ -416,117 +415,59 @@
       {onDrop}
       {initializeRow}
       {updateRowHeight}
-      let:widths
-      let:isSpreadEvenly
-      let:items
-      let:onColumnResizeStart
-    >
-      {#each items as item, columnIndex (columnIndex)}
-        {@const id = item?.component ?? getId(rowIndex, columnIndex)}
-        {@const component = components.get(id)}
-        {@const type = component?.type}
-        <ItemWrapper type={component?.type} zIndex={4 - columnIndex}>
-          {#if columnIndex === 0}
-            <ElementDivider
-              {rowIndex}
-              resizeIndex={-1}
-              addIndex={columnIndex}
-              rowLength={items.length}
-              dragging={!!dragItemInfo}
-              {isSpreadEvenly}
-              {spreadEvenly}
-              {addItems}
-            />
-          {/if}
+      onDelete={({ columnIndex }) =>
+        performTransaction({
+          operations: [
+            {
+              type: "delete",
+              target: {
+                row: rowIndex,
+                col: columnIndex,
+              },
+            },
+          ],
+        })}
+      onDuplicate={({ columnIndex }) => {
+        if (!defaultMetrics) return;
 
-          <ElementDivider
-            {isSpreadEvenly}
-            columnWidth={widths[columnIndex]}
-            {rowIndex}
-            dragging={!!dragItemInfo}
-            resizeIndex={columnIndex}
-            addIndex={columnIndex + 1}
-            rowLength={items.length}
-            {spreadEvenly}
-            {addItems}
-            {onColumnResizeStart}
-          />
+        performTransaction({
+          operations: [
+            {
+              type: "copy",
+              insertRow: true,
+              source: {
+                row: rowIndex,
+                col: columnIndex,
+              },
+              destination: {
+                row: rowIndex + 1,
+                col: 0,
+              },
+            },
+          ],
+        });
+      }}
+      onComponentMouseDown={({ event, id, columnIndex, type }) => {
+        if (event.button !== 0) return;
+        event.preventDefault();
 
-          <DropZone
-            column={columnIndex}
-            row={rowIndex}
-            maxColumns={items.length}
-            allowDrop={!!dragItemInfo}
-            {onDrop}
-          />
+        initialMousePosition = $mousePosition;
 
-          {#if component}
-            <CanvasComponent
-              {component}
-              editable
-              ghost={dragItemInfo?.position?.row === rowIndex &&
-                dragItemInfo?.position?.column === columnIndex}
-              selected={$selectedComponent === id}
-              allowPointerEvents={!$activeDivider}
-              onMouseDown={(e) => {
-                if (e.button !== 0) return;
-                e.preventDefault();
+        setSelectedComponent(id);
 
-                initialMousePosition = $mousePosition;
+        if (dragTimeout) clearTimeout(dragTimeout);
 
-                setSelectedComponent(id);
+        openSidebarAfterSelection = true;
 
-                if (dragTimeout) clearTimeout(dragTimeout);
-
-                openSidebarAfterSelection = true;
-
-                dragTimeout = setTimeout(() => {
-                  openSidebarAfterSelection = false;
-                  handleDragStart({
-                    position: { row: rowIndex, column: columnIndex },
-                    type: type ?? "line_chart",
-                  });
-                }, 150);
-              }}
-              onDuplicate={() => {
-                if (!defaultMetrics) return;
-
-                performTransaction({
-                  operations: [
-                    {
-                      type: "copy",
-                      insertRow: true,
-                      source: {
-                        row: rowIndex,
-                        col: columnIndex,
-                      },
-                      destination: {
-                        row: rowIndex + 1,
-                        col: 0,
-                      },
-                    },
-                  ],
-                });
-              }}
-              onDelete={() =>
-                performTransaction({
-                  operations: [
-                    {
-                      type: "delete",
-                      target: {
-                        row: rowIndex,
-                        col: columnIndex,
-                      },
-                    },
-                  ],
-                })}
-            />
-          {:else}
-            <ComponentError error="No valid component {id} in project" />
-          {/if}
-        </ItemWrapper>
-      {/each}
-    </EditableCanvasRow>
+        dragTimeout = setTimeout(() => {
+          openSidebarAfterSelection = false;
+          handleDragStart({
+            position: { row: rowIndex, column: columnIndex },
+            type: type ?? "line_chart",
+          });
+        }, 150);
+      }}
+    />
   {:else}
     <RowWrapper
       gridTemplate="12fr"

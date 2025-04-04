@@ -1,5 +1,5 @@
 import type {
-  V1CanvasRow as APIV1CanvasRow,
+  V1CanvasRow,
   V1CanvasItem,
   V1MetricsViewSpec,
   V1ResolveCanvasResponseResolvedComponents,
@@ -48,11 +48,6 @@ type YAMLItem = Record<string, unknown> & {
 export type YAMLRow = {
   items: YAMLItem[];
   height?: string;
-};
-
-// Items are nulled out when removed from the canvas
-type V1CanvasRow = Omit<APIV1CanvasRow, "items"> & {
-  items: V1CanvasItem[];
 };
 
 export type DragItem = {
@@ -130,7 +125,7 @@ export interface Transaction {
 }
 
 export function generateArrayRearrangeFunction(transaction: Transaction) {
-  return <I, R extends { items: I[] }>(
+  return <I, R extends { items?: I[] }>(
     array: R[],
     newItemGenerator: (pos: Position, type: CanvasComponentType) => I,
     rowUpdater: (row: R, index: number, touched: boolean) => R,
@@ -146,7 +141,7 @@ export function generateArrayRearrangeFunction(transaction: Transaction) {
         case "delete": {
           const { row, col } = op.target;
           const targetRow = newArray[row];
-          if (targetRow && targetRow.items[col] !== undefined) {
+          if (targetRow && targetRow?.items?.[col] !== undefined) {
             targetRow.items.splice(col, 1);
             touchedRows[row] = true;
           }
@@ -166,12 +161,12 @@ export function generateArrayRearrangeFunction(transaction: Transaction) {
 
           if (!sourceRow || !destinationRow) break;
 
-          const item = sourceRow.items[source.col];
+          const item = sourceRow?.items?.[source.col];
 
           if (item === undefined) break;
 
-          sourceRow.items.splice(source.col, 1);
-          destinationRow.items.splice(destination.col, 0, item);
+          sourceRow.items?.splice(source.col, 1);
+          destinationRow.items?.splice(destination.col, 0, item);
           touchedRows[source.row] = true;
           touchedRows[rowIndex] = true;
 
@@ -190,11 +185,11 @@ export function generateArrayRearrangeFunction(transaction: Transaction) {
           const destinationRow = newArray[rowIndex];
           if (!sourceRow || !destinationRow) break;
 
-          const item = sourceRow.items[source.col];
+          const item = sourceRow.items?.[source.col];
           if (item === undefined) break;
 
           const copy = structuredClone(item);
-          destinationRow.items.splice(destination.col, 0, copy);
+          destinationRow?.items?.splice(destination.col, 0, copy);
           touchedRows[rowIndex] = true;
           break;
         }
@@ -211,7 +206,7 @@ export function generateArrayRearrangeFunction(transaction: Transaction) {
           if (!row) break;
 
           const newItem = newItemGenerator(destination, componentType);
-          row.items.splice(destination.col, 0, newItem);
+          row.items?.splice(destination.col, 0, newItem);
           touchedRows[rowIndex] = true;
           break;
         }
@@ -219,7 +214,7 @@ export function generateArrayRearrangeFunction(transaction: Transaction) {
     }
 
     const cleaned = newArray.filter((row, index) => {
-      if (row.items.length === 0) {
+      if (row.items?.length === 0) {
         touchedRows[index] = null;
         return false;
       }
@@ -263,9 +258,10 @@ export function generateNewAssets(params: {
   const mover = generateArrayRearrangeFunction(transaction);
 
   const resolvedComponentsArray = specRows.map((row) => {
-    const items = row.items.map((item) => {
-      return resolvedComponents?.[item?.component ?? ""];
-    });
+    const items =
+      row.items?.map((item) => {
+        return resolvedComponents?.[item?.component ?? ""];
+      }) ?? [];
     return { ...row, items: items.filter(itemExists) };
   });
 
@@ -304,12 +300,12 @@ export function generateNewAssets(params: {
       };
     },
     (row, index, touched) => {
-      const updatedItems = row.items.map((item, col) => {
+      const updatedItems = row.items?.map((item, col) => {
         item.component = generateId(index, col, canvasName);
 
         return {
           ...item,
-          width: touched ? COLUMN_COUNT / row.items.length : item.width,
+          width: touched ? COLUMN_COUNT / (row.items?.length ?? 1) : item.width,
         };
       });
 
@@ -325,7 +321,6 @@ export function generateNewAssets(params: {
     (pos, type) => {
       return createOptimisticResource({
         type,
-
         ...defaultMetrics,
       });
     },

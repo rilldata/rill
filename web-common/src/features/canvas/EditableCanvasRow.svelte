@@ -1,8 +1,4 @@
 <script lang="ts">
-  import type {
-    V1CanvasRow as APIV1CanvasRow,
-    V1CanvasItem,
-  } from "@rilldata/web-common/runtime-client";
   import type { CanvasComponentType } from "./components/types";
   import RowDropZone from "./RowDropZone.svelte";
   import RowWrapper from "./RowWrapper.svelte";
@@ -13,19 +9,33 @@
     normalizeSizeArray,
   } from "./layout-util";
   import { mousePosition } from "./layout-util";
-  import type { Unsubscriber } from "svelte/store";
+  import { get, type Unsubscriber } from "svelte/store";
   import { clamp } from "@rilldata/web-common/lib/clamp";
+  import type { CanvasEntity, LayoutRow } from "./stores/canvas-entity";
+  import ComponentError from "./components/ComponentError.svelte";
+  import ItemWrapper from "./ItemWrapper.svelte";
+  import ElementDivider from "./ElementDivider.svelte";
+  import DropZone from "./components/DropZone.svelte";
+  import CanvasComponent from "./CanvasComponent.svelte";
+  import { activeDivider } from "./stores/ui-stores";
 
-  type V1CanvasRow = Omit<APIV1CanvasRow, "items"> & {
-    items: (V1CanvasItem | null)[];
-  };
-
-  export let row: V1CanvasRow;
+  export let row: LayoutRow;
   export let zIndex = 50;
   export let maxWidth: number;
+
   export let heightUnit: string = "px";
   export let rowIndex: number;
   export let movingWidget: boolean;
+
+  export let components: CanvasEntity["components"];
+  export let dragItemInfo;
+  export let addItems;
+  export let spreadEvenly;
+  export let selectedComponent;
+
+  export let onComponentMouseDown;
+  export let onDuplicate;
+  export let onDelete;
   export let onDrop: (row: number, column: number | null) => void;
   export let initializeRow: (row: number, type: CanvasComponentType) => void;
   export let updateRowHeight: (newHeight: number, index: number) => void;
@@ -35,23 +45,22 @@
   ) => void;
   export let columnWidth: number;
 
-  let rowHeight = row.height ?? MIN_HEIGHT;
-  let componentWidths: number[] = normalizeSizeArray(
-    row.items?.map((item) => item?.width ?? 0),
-  );
+  let rowHeight = get(row.height) ?? MIN_HEIGHT;
   let hasLocalChange = false;
   let initialMousePosition: { x: number; y: number };
   let initialHeight: number;
   let unsubscriber: Unsubscriber | undefined = undefined;
 
-  $: items = row.items ?? [];
+  $: ({ height, itemIds: _itemIds, itemWidths } = row);
 
-  $: isSpreadEvenly = componentWidths.every((w) => w === componentWidths[0]);
+  $: widths = normalizeSizeArray($itemWidths);
 
-  $: heightUnit = row.heightUnit ?? "px";
+  $: itemIds = $_itemIds;
 
-  $: updateHeightFromSpec(row.height);
-  $: updateWidthsFromSpec(row.items?.map((item) => item?.width ?? 0));
+  $: isSpreadEvenly = widths.every((w) => w === widths[0]);
+
+  $: updateHeightFromSpec($height);
+  $: updateWidthsFromSpec($itemWidths);
 
   $: id = `canvas-row-${rowIndex}`;
 
@@ -102,12 +111,12 @@
   function updateWidthsFromSpec(newWidths: number[]) {
     if (newWidths === undefined) return;
     const normalized = normalizeSizeArray(newWidths);
-    const matchesLocal = normalized.every((w, i) => w === componentWidths[i]);
+    const matchesLocal = normalized.every((w, i) => w === widths[i]);
 
     if (hasLocalChange && matchesLocal) {
       hasLocalChange = false;
     } else if (!hasLocalChange && !matchesLocal) {
-      componentWidths = normalized;
+      widths = normalized;
       hasLocalChange = false;
     }
   }
@@ -116,10 +125,10 @@
     initialMousePosition = $mousePosition;
     hasLocalChange = true;
 
-    const nextElementWidth = componentWidths[columnIndex + 1];
+    const nextElementWidth = widths[columnIndex + 1];
     if (nextElementWidth === undefined) return;
 
-    const maxWidth = componentWidths.reduce((acc, el, i) => {
+    const maxWidth = widths.reduce((acc, el, i) => {
       if (i === columnIndex) {
         return acc;
       } else if (i === columnIndex + 1) {
@@ -129,7 +138,7 @@
       }
     }, COLUMN_COUNT);
 
-    const width = componentWidths[columnIndex];
+    const width = widths[columnIndex];
 
     initialHeight =
       document.querySelector(`#canvas-row-${rowIndex}`)?.getBoundingClientRect()
@@ -145,9 +154,9 @@
 
       const clampedDelta = newValue - width;
 
-      componentWidths[columnIndex] = newValue;
+      widths[columnIndex] = newValue;
 
-      componentWidths[columnIndex + 1] = nextElementWidth - clampedDelta;
+      widths[columnIndex + 1] = nextElementWidth - clampedDelta;
     });
 
     window.addEventListener(
@@ -155,7 +164,7 @@
       () => {
         unsubscriber?.();
         unsubscriber = undefined;
-        updateComponentWidths(rowIndex, componentWidths);
+        updateComponentWidths(rowIndex, widths);
       },
       { once: true },
     );
@@ -168,15 +177,76 @@
   height={rowHeight}
   {heightUnit}
   {id}
-  gridTemplate={componentWidths.map((w) => `${w}fr`).join(" ")}
+  gridTemplate={widths.map((w) => `${w}fr`).join(" ")}
 >
-  <slot
-    widths={componentWidths}
-    {isSpreadEvenly}
-    {items}
-    {onColumnResizeStart}
-  />
+  {#each itemIds as id, columnIndex (columnIndex)}
+    {@const component = components.get(id)}
+    {@const type = component?.type}
+    {@const itemCount = itemIds.length}
 
+    <ItemWrapper type={component?.type} zIndex={4 - columnIndex}>
+      {#if columnIndex === 0}
+        <ElementDivider
+          {rowIndex}
+          resizeIndex={-1}
+          addIndex={columnIndex}
+          rowLength={itemCount}
+          dragging={!!dragItemInfo}
+          {isSpreadEvenly}
+          {spreadEvenly}
+          {addItems}
+        />
+      {/if}
+
+      <ElementDivider
+        {isSpreadEvenly}
+        columnWidth={widths[columnIndex]}
+        {rowIndex}
+        dragging={!!dragItemInfo}
+        resizeIndex={columnIndex}
+        addIndex={columnIndex + 1}
+        rowLength={itemCount}
+        {spreadEvenly}
+        {addItems}
+        {onColumnResizeStart}
+      />
+
+      <DropZone
+        column={columnIndex}
+        row={rowIndex}
+        maxColumns={itemCount}
+        allowDrop={!!dragItemInfo}
+        {onDrop}
+      />
+
+      {#if component}
+        <CanvasComponent
+          {component}
+          editable
+          ghost={dragItemInfo?.position?.row === rowIndex &&
+            dragItemInfo?.position?.column === columnIndex}
+          selected={$selectedComponent === id}
+          allowPointerEvents={!$activeDivider}
+          onMouseDown={(event) => {
+            onComponentMouseDown({
+              event,
+              id,
+              columnIndex,
+              type,
+            });
+          }}
+          onDuplicate={() => {
+            onDuplicate({ columnIndex });
+          }}
+          onDelete={() => {
+            onDelete({ columnIndex });
+          }}
+        />
+      {:else}
+        <ComponentError error="No valid component {id} in project" />
+      {/if}
+    </ItemWrapper>
+  {/each}
   <RowDropZone
     allowDrop={movingWidget}
     resizeIndex={rowIndex}

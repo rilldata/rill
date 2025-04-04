@@ -16,7 +16,6 @@ import { ChartComponent } from "./charts";
 import { ImageComponent } from "./image";
 import { MarkdownCanvasComponent } from "./markdown";
 import { PivotCanvasComponent } from "./pivot";
-import { TableCanvasComponent } from "./table";
 import type {
   CanvasComponentType,
   ComponentCommonProperties,
@@ -104,7 +103,7 @@ export const COMPONENT_CLASS_MAP: Record<
   markdown: MarkdownCanvasComponent,
   kpi_grid: KPIGridComponent,
   image: ImageComponent,
-  table: TableCanvasComponent,
+  table: PivotCanvasComponent,
   pivot: PivotCanvasComponent,
   bar_chart: ChartComponent,
   line_chart: ChartComponent,

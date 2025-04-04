@@ -15,7 +15,6 @@
   import TableTypeSelector from "./TableTypeSelector.svelte";
   import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
   import { ChartComponent } from "../components/charts";
-  import { TableCanvasComponent } from "../components/table";
   import { PivotCanvasComponent } from "../components/pivot";
   import type { AllKeys, ComponentInputParam } from "./types";
 
@@ -28,7 +27,13 @@
 
   $: localParamValues = $specStore;
 
-  $: inputParams = component.inputParams().options;
+  $: inputParams = component.inputParams(
+    component instanceof PivotCanvasComponent
+      ? "columns" in $specStore
+        ? "table"
+        : "pivot"
+      : undefined,
+  ).options;
 
   $: metricsView =
     "metrics_view" in localParamValues ? localParamValues.metrics_view : null;
@@ -43,7 +48,7 @@
   <ChartTypeSelector {component} />
 {/if}
 
-{#if metricsView && (component instanceof TableCanvasComponent || component instanceof PivotCanvasComponent)}
+{#if metricsView && component instanceof PivotCanvasComponent}
   <TableTypeSelector {canvasName} {component} metricsViewName={metricsView} />
 {/if}
 

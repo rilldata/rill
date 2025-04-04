@@ -4,10 +4,7 @@ import {
 } from "@rilldata/web-common/features/canvas/selector";
 import type { CanvasSpecResponseStore } from "@rilldata/web-common/features/canvas/types";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import {
-  type V1MetricsViewSpec,
-  type V1Resource,
-} from "@rilldata/web-common/runtime-client";
+import { type V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import {
   derived,
@@ -15,21 +12,36 @@ import {
   writable,
   type Readable,
   type Unsubscriber,
+  type Writable,
 } from "svelte/store";
 import { Filters } from "./filters";
 import { CanvasResolvedSpec } from "./spec";
 import { TimeControls } from "./time-control";
 import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
-import { COMPONENT_CLASS_MAP, createComponent } from "../components/util";
+import {
+  COMPONENT_CLASS_MAP,
+  createComponent,
+  isChartComponentType,
+  isTableComponentType,
+} from "../components/util";
 import type { FileArtifact } from "../../entity-management/file-artifact";
 import { parseDocument } from "yaml";
 import { fileArtifacts } from "../../entity-management/file-artifacts";
 import type { CanvasComponentType } from "../components/types";
 import { ResourceKind } from "../../entity-management/resource-selectors";
+import { COLUMN_COUNT } from "../layout-util";
+
+export interface LayoutRow {
+  itemIds: Writable<string[]>;
+  height: Writable<number>;
+  itemWidths: Writable<number[]>;
+}
 
 export class CanvasEntity {
   name: string;
-  _components = writable(new Map<string, BaseCanvasComponent>());
+  components = new Map<string, BaseCanvasComponent>();
+
+  _rows: Writable<LayoutRow[]> = writable([]);
 
   /**
    * Time controls for the canvas entity containing various
@@ -100,39 +112,105 @@ export class CanvasEntity {
   }
 
   unsubscribe = () => {
-    this.unsubscriber();
+    // this.unsubscriber();
   };
 
-  // This is not ideal behavior, we don't need to be recreating these components
-  // Once we have stable IDs, this can be easily updated.
+  // Once we have stable IDs, this can be simplified
   processRows = (canvasData: Partial<CanvasResponse>) => {
-    const components = canvasData.components;
+    const newComponents = canvasData.components;
+    const existingKeys = new Set(this.components.keys());
     const rows = canvasData.canvas?.rows ?? [];
 
-    const newComponents = new Map<string, BaseCanvasComponent>();
+    const set = new Set<string>();
+
+    const existingRows = get(this._rows);
+
+    let updatedRows = false;
+    let createdNewComponent = false;
+
+    if (rows.length < existingRows.length) {
+      updatedRows = true;
+      this._rows.update((current) => {
+        return current.slice(0, rows.length);
+      });
+    }
 
     rows.forEach((row, rowIndex) => {
       const items = row.items ?? [];
+      const itemIds = items.map((item) => item.component ?? "");
+      const existingRow = existingRows[rowIndex];
 
       items.forEach((item, columnIndex) => {
         const componentName = item.component;
+
         if (!componentName) return;
 
-        const resource = components?.[componentName];
-        if (!resource) {
+        set.add(componentName ?? "");
+
+        const newResource = newComponents?.[componentName];
+        if (!newResource) {
           throw new Error("No component found: " + componentName);
         }
-        const path = constructPath(
-          rowIndex,
-          columnIndex,
-          resource.component?.state?.validSpec?.renderer as CanvasComponentType,
-        );
 
-        newComponents.set(componentName, createComponent(resource, this, path));
+        const newType = newResource.component?.state?.validSpec
+          ?.renderer as CanvasComponentType;
+        const existingClass = this.components.get(componentName);
+        const path = constructPath(rowIndex, columnIndex, newType);
+
+        if (existingClass && areSameType(newType, existingClass.type)) {
+          existingClass.update(newResource, path);
+        } else {
+          createdNewComponent = true;
+          this.components.set(
+            componentName,
+            createComponent(newResource, this, path),
+          );
+        }
       });
+
+      if (existingRow) {
+        existingRow.height.set(row.height ?? 0);
+        const existingItemIds = get(existingRow.itemIds);
+
+        if (
+          existingItemIds.length !== itemIds.length ||
+          itemIds.some((itemId, index) => itemId !== existingItemIds[index])
+        ) {
+          existingRow.itemIds.set(itemIds);
+        }
+        existingRow.itemWidths.set(
+          items.map((item) => {
+            return item.width ?? COLUMN_COUNT / items.length;
+          }),
+        );
+      } else {
+        const height = writable(row.height ?? 0);
+        this._rows.update((existing) => {
+          existing[rowIndex] = {
+            itemIds: writable(itemIds),
+            height,
+            itemWidths: writable(
+              items.map((item) => {
+                return item.width ?? COLUMN_COUNT / items.length;
+              }),
+            ),
+          };
+          return existing;
+        });
+      }
     });
 
-    this._components.set(newComponents);
+    existingKeys.difference(set).forEach((componentName) => {
+      const component = this.components.get(componentName);
+      if (component) {
+        this.components.delete(componentName);
+      }
+    });
+
+    // Only necessary because we are not using stable IDs yet
+    if (!updatedRows && createdNewComponent) {
+      this._rows.update((r) => r);
+    }
   };
 
   generateId = (row: number | undefined, column: number | undefined) => {
@@ -179,34 +257,8 @@ export class CanvasEntity {
     this.selectedComponent.set(id);
   };
 
-  initializeOrUpdateComponent = (
-    resource: V1Resource,
-    row: number,
-    column: number,
-  ) => {
-    const id = resource.meta?.name?.name as string;
-    const component = get(this._components).get(id);
-    const path = constructPath(
-      row,
-      column,
-      resource.component?.state?.validSpec?.renderer as CanvasComponentType,
-    );
-    if (component) {
-      component.update(resource, path);
-    } else {
-      this._components.update((components) => {
-        const newComponent = createComponent(resource, this, path);
-        components.set(id, newComponent);
-        return components;
-      });
-    }
-  };
-
   removeComponent = (componentName: string) => {
-    this._components.update((components) => {
-      components.delete(componentName);
-      return components;
-    });
+    this.components.delete(componentName);
   };
 }
 
@@ -224,4 +276,15 @@ function constructPath(
   type: CanvasComponentType,
 ): ComponentPath {
   return ["rows", row, "items", column, type];
+}
+
+function areSameType(
+  newType: CanvasComponentType,
+  existingType: CanvasComponentType,
+) {
+  return (
+    newType === existingType ||
+    (isTableComponentType(existingType) && isTableComponentType(newType)) ||
+    (isChartComponentType(existingType) && isChartComponentType(newType))
+  );
 }
