@@ -6,7 +6,7 @@
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import MeasureFilterBody from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilterBody.svelte";
-  import type { MetricsViewSpecDimensionV2 } from "@rilldata/web-common/runtime-client";
+  import type { MetricsViewSpecDimension } from "@rilldata/web-common/runtime-client";
   import { fly } from "svelte/transition";
   import MeasureFilterForm from "./MeasureFilterForm.svelte";
 
@@ -20,7 +20,7 @@
     oldDimension: string;
     filter: MeasureFilterEntry;
   }) => void;
-  export let allDimensions: MetricsViewSpecDimensionV2[];
+  export let allDimensions: MetricsViewSpecDimension[];
 
   let open = !filter;
 </script>

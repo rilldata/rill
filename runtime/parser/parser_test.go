@@ -287,10 +287,10 @@ schema: default
 				Connector:   "duckdb",
 				Model:       "m2",
 				DisplayName: "D1",
-				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
+				Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
 					{Name: "a", DisplayName: "A", Column: "a"},
 				},
-				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
+				Measures: []*runtimev1.MetricsViewSpec_Measure{
 					{
 						Name:           "b",
 						DisplayName:    "B",
@@ -974,10 +974,10 @@ security:
 				Connector:   "duckdb",
 				Table:       "t1",
 				DisplayName: "Mv1",
-				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
+				Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
 					{Name: "a", DisplayName: "A", Column: "a"},
 				},
-				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
+				Measures: []*runtimev1.MetricsViewSpec_Measure{
 					{Name: "b", DisplayName: "B", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
 				},
 				FirstDayOfWeek: 7,
@@ -997,10 +997,10 @@ security:
 				Connector:   "duckdb",
 				Table:       "t2",
 				DisplayName: "Mv2",
-				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
+				Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
 					{Name: "a", DisplayName: "A", Column: "a"},
 				},
-				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
+				Measures: []*runtimev1.MetricsViewSpec_Measure{
 					{Name: "b", DisplayName: "B", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
 				},
 				FirstDayOfWeek: 1,
@@ -1120,10 +1120,10 @@ security:
 				Connector:   "duckdb",
 				Table:       "t1",
 				DisplayName: "D1",
-				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
+				Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
 					{Name: "a", DisplayName: "A", Column: "a"},
 				},
-				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
+				Measures: []*runtimev1.MetricsViewSpec_Measure{
 					{Name: "b", DisplayName: "B", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
 				},
 				SecurityRules: []*runtimev1.SecurityRule{
@@ -1409,10 +1409,10 @@ measures:
 				Connector:   "duckdb",
 				Table:       "d1",
 				DisplayName: "D1",
-				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
+				Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
 					{Name: "a", DisplayName: "A", Column: "a"},
 				},
-				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
+				Measures: []*runtimev1.MetricsViewSpec_Measure{
 					{Name: "b", DisplayName: "B", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
 				},
 			},
@@ -1959,10 +1959,10 @@ measures:
 				Table:         "t1",
 				DisplayName:   "D1",
 				TimeDimension: "t",
-				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
+				Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
 					{Name: "foo", DisplayName: "Foo", Column: "foo"},
 				},
-				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
+				Measures: []*runtimev1.MetricsViewSpec_Measure{
 					{
 						Name:        "a",
 						DisplayName: "A",
@@ -2226,10 +2226,10 @@ security:
 				Connector:   "duckdb",
 				Table:       "t1",
 				DisplayName: "D1",
-				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
+				Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
 					{Name: "foo", DisplayName: "Foo", Column: "foo"},
 				},
-				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
+				Measures: []*runtimev1.MetricsViewSpec_Measure{
 					{Name: "a", DisplayName: "A", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
 				},
 				SecurityRules: []*runtimev1.SecurityRule{

@@ -10,7 +10,7 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import type {
-    MetricsViewSpecMeasureV2,
+    MetricsViewSpecMeasure,
     V1ComponentSpecRendererProperties,
   } from "@rilldata/web-common/runtime-client";
   import type { Readable } from "svelte/store";
@@ -59,7 +59,7 @@
   $: measureName = sanitizeFieldName($measure?.name || "measure");
 
   $: measureFormatter = createMeasureValueFormatter<null | undefined>(
-    $measure as MetricsViewSpecMeasureV2,
+    $measure as MetricsViewSpecMeasure,
   );
 
   $: config = chartConfig.vl_config

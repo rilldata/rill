@@ -1,10 +1,10 @@
 import type {
-  MetricsViewSpecDimensionV2,
-  MetricsViewSpecMeasureV2,
+  MetricsViewSpecDimension,
+  MetricsViewSpecMeasure,
 } from "@rilldata/web-common/runtime-client";
 
 export function getDimensionDisplayName(
-  dimension: MetricsViewSpecDimensionV2 | undefined,
+  dimension: MetricsViewSpecDimension | undefined,
 ) {
   return (
     (dimension?.displayName?.length
@@ -14,7 +14,7 @@ export function getDimensionDisplayName(
 }
 
 export function getMeasureDisplayName(
-  measure: MetricsViewSpecMeasureV2 | undefined,
+  measure: MetricsViewSpecMeasure | undefined,
 ) {
   return (
     (measure?.displayName?.length

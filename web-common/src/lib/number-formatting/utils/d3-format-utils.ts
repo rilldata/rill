@@ -1,8 +1,8 @@
-import type { MetricsViewSpecMeasureV2FormatD3Locale } from "@rilldata/web-common/runtime-client";
+import type { MetricsViewSpecMeasureFormatD3Locale } from "@rilldata/web-common/runtime-client";
 import type { FormatLocaleDefinition } from "d3-format";
 
 export function isValidD3Locale(
-  config: MetricsViewSpecMeasureV2FormatD3Locale | undefined,
+  config: MetricsViewSpecMeasureFormatD3Locale | undefined,
 ): boolean {
   if (!config) return false;
   if (config.currency) {

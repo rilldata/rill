@@ -4,8 +4,8 @@ import type { DashboardDataSources } from "@rilldata/web-common/features/dashboa
 import type { AtLeast } from "@rilldata/web-common/features/dashboards/state-managers/types";
 import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
-  type MetricsViewSpecDimensionV2,
-  type MetricsViewSpecMeasureV2,
+  type MetricsViewSpecDimension,
+  type MetricsViewSpecMeasure,
 } from "@rilldata/web-common/runtime-client";
 
 export const measureHasFilter = (
@@ -21,13 +21,13 @@ export type MeasureFilterItem = {
   dimensionName: string;
   name: string;
   label: string;
-  dimensions?: MetricsViewSpecDimensionV2[];
+  dimensions?: MetricsViewSpecDimension[];
   filter?: MeasureFilterEntry;
 };
 export const getMeasureFilterItems = (
   dashData: AtLeast<DashboardDataSources, "dashboard">,
 ) => {
-  return (measureIdMap: Map<string, MetricsViewSpecMeasureV2>) => {
+  return (measureIdMap: Map<string, MetricsViewSpecMeasure>) => {
     return getMeasureFilters(
       measureIdMap,
       dashData.dashboard.dimensionThresholdFilters,
@@ -36,7 +36,7 @@ export const getMeasureFilterItems = (
 };
 
 export function getMeasureFilters(
-  measureIdMap: Map<string, MetricsViewSpecMeasureV2>,
+  measureIdMap: Map<string, MetricsViewSpecMeasure>,
   dimensionThresholdFilters: DimensionThresholdFilter[],
 ) {
   const filteredMeasures = new Array<MeasureFilterItem>();
@@ -57,7 +57,7 @@ export function getMeasureFilters(
 }
 
 export function getMeasureFilterForDimension(
-  measureIdMap: Map<string, MetricsViewSpecMeasureV2>,
+  measureIdMap: Map<string, MetricsViewSpecMeasure>,
   filters: MeasureFilterEntry[],
   name = "",
   addedMeasure = new Set<string>(),
@@ -92,7 +92,7 @@ export const getAllMeasureFilterItems = (
 ) => {
   return (
     measureFilterItems: Array<MeasureFilterItem>,
-    measureIdMap: Map<string, MetricsViewSpecMeasureV2>,
+    measureIdMap: Map<string, MetricsViewSpecMeasure>,
   ) => {
     const allMeasureFilterItems = [...measureFilterItems];
 

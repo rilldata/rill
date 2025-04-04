@@ -557,7 +557,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		}
 	}
 
-	measures := make([]*runtimev1.MetricsViewSpec_MeasureV2, 0, len(tmp.Measures))
+	measures := make([]*runtimev1.MetricsViewSpec_Measure, 0, len(tmp.Measures))
 	for i, measure := range tmp.Measures {
 		if measure == nil || measure.Ignore {
 			continue
@@ -696,7 +696,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			return fmt.Errorf(`invalid measure type %q (allowed values: simple, derived, time_comparison)`, measure.Type)
 		}
 
-		measures = append(measures, &runtimev1.MetricsViewSpec_MeasureV2{
+		measures = append(measures, &runtimev1.MetricsViewSpec_Measure{
 			Name:                measure.Name,
 			DisplayName:         measure.DisplayName,
 			Description:         measure.Description,
@@ -820,7 +820,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			continue
 		}
 
-		spec.Dimensions = append(spec.Dimensions, &runtimev1.MetricsViewSpec_DimensionV2{
+		spec.Dimensions = append(spec.Dimensions, &runtimev1.MetricsViewSpec_Dimension{
 			Name:        dim.Name,
 			DisplayName: dim.DisplayName,
 			Description: dim.Description,

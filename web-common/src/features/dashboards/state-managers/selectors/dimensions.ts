@@ -1,4 +1,4 @@
-import type { MetricsViewSpecDimensionV2 } from "@rilldata/web-common/runtime-client";
+import type { MetricsViewSpecDimension } from "@rilldata/web-common/runtime-client";
 import type { DashboardDataSources } from "./types";
 
 export const allDimensions = ({
@@ -7,7 +7,7 @@ export const allDimensions = ({
 }: Pick<
   DashboardDataSources,
   "validMetricsView" | "validExplore"
->): MetricsViewSpecDimensionV2[] => {
+>): MetricsViewSpecDimension[] => {
   if (!validMetricsView?.dimensions || !validExplore?.dimensions) return [];
 
   return (
@@ -26,12 +26,12 @@ export const visibleDimensions = ({
   validMetricsView,
   validExplore,
   dashboard,
-}: DashboardDataSources): MetricsViewSpecDimensionV2[] => {
+}: DashboardDataSources): MetricsViewSpecDimension[] => {
   if (!validMetricsView?.dimensions || !validExplore?.dimensions) return [];
 
   return dashboard.visibleDimensions
     .map((dim) => validMetricsView.dimensions?.find((d) => d.name === dim))
-    .filter(Boolean) as MetricsViewSpecDimensionV2[];
+    .filter(Boolean) as MetricsViewSpecDimension[];
 };
 
 export const dimensionTableColumnName = (
@@ -45,7 +45,7 @@ export const dimensionTableColumnName = (
 
 export const getDimensionByName = (
   dashData: DashboardDataSources,
-): ((name: string) => MetricsViewSpecDimensionV2 | undefined) => {
+): ((name: string) => MetricsViewSpecDimension | undefined) => {
   return (name: string) => {
     return allDimensions(dashData)?.find(
       (dimension) => dimension.name === name,
@@ -80,7 +80,7 @@ export const dimensionSelectors = {
   visibleDimensions,
 
   /**
-   * Returns a function that can be used to get a MetricsViewSpecDimensionV2
+   * Returns a function that can be used to get a MetricsViewSpecDimension
    * by name; this fn returns undefined if the dashboard has no dimension with that name.
    */
   getDimensionByName,

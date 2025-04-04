@@ -521,7 +521,7 @@ func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, inst
 		}
 	case parserpkg.ResourceKindMetricsView:
 		if existing == nil || !equalMetricsViewSpec(existing.GetMetricsView().Spec, def.MetricsViewSpec) {
-			res = &runtimev1.Resource{Resource: &runtimev1.Resource_MetricsView{MetricsView: &runtimev1.MetricsViewV2{Spec: def.MetricsViewSpec}}}
+			res = &runtimev1.Resource{Resource: &runtimev1.Resource_MetricsView{MetricsView: &runtimev1.MetricsView{Spec: def.MetricsViewSpec}}}
 		}
 	case parserpkg.ResourceKindExplore:
 		if existing == nil || !equalExploreSpec(existing.GetExplore().Spec, def.ExploreSpec) {

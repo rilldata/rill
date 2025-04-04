@@ -32,8 +32,8 @@ import {
   DashboardState_LeaderboardSortType,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
-  type MetricsViewSpecDimensionV2,
-  type MetricsViewSpecMeasureV2,
+  type MetricsViewSpecDimension,
+  type MetricsViewSpecMeasure,
   V1ExploreComparisonMode,
   type V1ExplorePreset,
   V1ExploreSortType,
@@ -110,7 +110,7 @@ export function convertPresetToExploreState(
 
 function fromTimeRangesParams(
   preset: V1ExplorePreset,
-  dimensions: Map<string, MetricsViewSpecDimensionV2>,
+  dimensions: Map<string, MetricsViewSpecDimension>,
 ) {
   const partialExploreState: Partial<MetricsExplorerEntity> = {};
   const errors: Error[] = [];
@@ -213,8 +213,8 @@ export function fromTimeRangeUrlParam(tr: string) {
 }
 
 function fromExploreUrlParams(
-  measures: Map<string, MetricsViewSpecMeasureV2>,
-  dimensions: Map<string, MetricsViewSpecDimensionV2>,
+  measures: Map<string, MetricsViewSpecMeasure>,
+  dimensions: Map<string, MetricsViewSpecDimension>,
   explore: V1ExploreSpec,
   preset: V1ExplorePreset,
 ) {
@@ -313,7 +313,7 @@ function fromExploreUrlParams(
 }
 
 function fromTimeDimensionUrlParams(
-  measures: Map<string, MetricsViewSpecMeasureV2>,
+  measures: Map<string, MetricsViewSpecMeasure>,
   preset: V1ExplorePreset,
 ): {
   partialExploreState: Partial<MetricsExplorerEntity>;
@@ -357,8 +357,8 @@ function fromTimeDimensionUrlParams(
 }
 
 function fromPivotUrlParams(
-  measures: Map<string, MetricsViewSpecMeasureV2>,
-  dimensions: Map<string, MetricsViewSpecDimensionV2>,
+  measures: Map<string, MetricsViewSpecMeasure>,
+  dimensions: Map<string, MetricsViewSpecDimension>,
   preset: V1ExplorePreset,
 ): {
   partialExploreState: Partial<MetricsExplorerEntity>;

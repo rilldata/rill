@@ -1,4 +1,4 @@
-import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
+import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
 
 /**
  * This enum represents all of the valid strings that can be
@@ -117,7 +117,7 @@ export const formatPresetToNumberKind = (type: FormatPreset) => {
  * This wrapper around formatPresetToNumberKind allows that innner
  * function to maintain a more strict type signature.
  */
-export const numberKindForMeasure = (measure: MetricsViewSpecMeasureV2) => {
+export const numberKindForMeasure = (measure: MetricsViewSpecMeasure) => {
   if (
     !measure ||
     measure.formatPreset === undefined ||

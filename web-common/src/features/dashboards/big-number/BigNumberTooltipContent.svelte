@@ -5,10 +5,10 @@
   import TooltipDescription from "@rilldata/web-common/components/tooltip/TooltipDescription.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
-  import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
+  import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
   import { isClipboardApiSupported } from "../../../lib/actions/copy-to-clipboard";
 
-  export let measure: MetricsViewSpecMeasureV2;
+  export let measure: MetricsViewSpecMeasure;
   export let isMeasureExpanded = false;
   export let value = "";
 

@@ -33,7 +33,7 @@
     TimeRangePreset,
     type AvailableTimeGrain,
   } from "@rilldata/web-common/lib/time/types";
-  import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
+  import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
   import { TIME_GRAIN } from "../../../lib/time/config";
   import Spinner from "../../entity-management/Spinner.svelte";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
@@ -106,7 +106,7 @@
   $: isAlternateChart = tddChartType !== TDDChart.DEFAULT;
 
   $: expandedMeasure = $getMeasureByName(expandedMeasureName);
-  let renderedMeasures: MetricsViewSpecMeasureV2[];
+  let renderedMeasures: MetricsViewSpecMeasure[];
   $: {
     renderedMeasures = expandedMeasure ? [expandedMeasure] : $visibleMeasures;
   }

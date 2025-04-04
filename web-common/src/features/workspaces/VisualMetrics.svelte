@@ -20,7 +20,7 @@
     createQueryServiceTableColumns,
     createRuntimeServiceAnalyzeConnectors,
     createRuntimeServiceGetInstance,
-    type MetricsViewSpecDimensionV2,
+    type MetricsViewSpecDimension,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -275,7 +275,7 @@
 
   function createDimensions(
     rawDimensions: YAMLSeq<YAMLMap<string, string>>,
-    metricsViewDimensions: MetricsViewSpecDimensionV2[],
+    metricsViewDimensions: MetricsViewSpecDimension[],
   ) {
     return rawDimensions.items.map((item, i) => {
       return new YAMLDimension(

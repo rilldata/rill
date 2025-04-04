@@ -6,7 +6,7 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { NO_COMPARISON_LABEL } from "@rilldata/web-common/lib/time/config";
-  import type { MetricsViewSpecDimensionV2 } from "@rilldata/web-common/runtime-client";
+  import type { MetricsViewSpecDimension } from "@rilldata/web-common/runtime-client";
   import { matchSorter } from "match-sorter";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
 
@@ -19,7 +19,7 @@
     },
   } = getStateManagers();
 
-  let dimensions: MetricsViewSpecDimensionV2[] | undefined = [];
+  let dimensions: MetricsViewSpecDimension[] | undefined = [];
   let searchText = "";
   let open = false;
 
