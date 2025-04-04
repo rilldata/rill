@@ -37,12 +37,17 @@ export const leaderboardSortByMeasureName = ({
 
 export const leaderboardMeasureNames = ({
   dashboard,
+  ...rest
 }: DashboardDataSources) => {
-  // TODO: shouldn't fallback to [], we should always have a value from visibleMeasures[0]
+  const visibleMeasuresList = visibleMeasures({ dashboard, ...rest });
+  const visibleMeasureNames = new Set(
+    visibleMeasuresList.map((measure) => measure.name),
+  );
+
   return (
-    dashboard.leaderboardMeasureNames ?? [
-      dashboard.leaderboardSortByMeasureName,
-    ]
+    dashboard.leaderboardMeasureNames?.filter((name) =>
+      visibleMeasureNames.has(name),
+    ) ?? []
   );
 };
 

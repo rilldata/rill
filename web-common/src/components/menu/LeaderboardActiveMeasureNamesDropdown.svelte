@@ -13,9 +13,8 @@
   export let searchText = "";
   export let measures: MetricsViewSpecMeasureV2[];
   export let sortBy: string = "Sort By";
-  export let selectedMeasureNames: string[] = [];
+  export let selectedMeasureNames: string[];
   export let onSelect: (names: string[]) => void;
-  export let onToggleSelectAll: () => void;
 
   let active = false;
 
@@ -130,7 +129,7 @@
           {/if}
         </div>
 
-        <footer>
+        <!-- <footer>
           <Button on:click={onToggleSelectAll} type="plain">
             {#if allSelected}
               Deselect all
@@ -138,7 +137,7 @@
               Select all
             {/if}
           </Button>
-        </footer>
+        </footer> -->
       </DropdownMenu.Content>
 
       <div slot="tooltip-content" transition:fly={{ duration: 300, y: 4 }}>

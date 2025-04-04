@@ -87,6 +87,7 @@ export const createStateManagerActions = (
     measuresFilter: createDashboardUpdaters(actionArgs, measureFilterActions),
 
     /**
+     * @deprecated
      * sets the number of measures to show in the leaderboard.
      */
     setLeaderboardMeasureCount: dashboardMutatorToUpdater(
