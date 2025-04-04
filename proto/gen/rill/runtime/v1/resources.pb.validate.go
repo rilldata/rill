@@ -10380,6 +10380,8 @@ func (m *CanvasSpec) validate(all bool) error {
 
 	}
 
+	// no validation rules for AllowCustomTimeRange
+
 	// no validation rules for FiltersEnabled
 
 	if all {
@@ -10512,8 +10514,6 @@ func (m *CanvasSpec) validate(all bool) error {
 		}
 
 	}
-
-	// no validation rules for AllowCustomTimeRange
 
 	if len(errors) > 0 {
 		return CanvasSpecMultiError(errors)

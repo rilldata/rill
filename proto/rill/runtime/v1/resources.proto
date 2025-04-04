@@ -434,6 +434,7 @@ message ExplorePreset {
   optional ExploreSortType explore_sort_type = 19;
   optional string explore_expanded_dimension = 20;
   optional uint32 explore_leaderboard_measure_count = 30;
+  repeated string explore_leaderboard_measures = 31;
 
   optional string time_dimension_measure = 21;
   optional string time_dimension_chart_type = 22;

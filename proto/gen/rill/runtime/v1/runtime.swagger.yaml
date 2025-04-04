@@ -3673,6 +3673,9 @@ definitions:
           List of selectable time ranges with comparison time ranges.
           If the list is empty, a default list should be shown.
           TODO: Once the canvas APIs have stabilized, rename ExploreTimeRange to a non-explore-specific name.
+      allowCustomTimeRange:
+        type: boolean
+        title: Toggle custom time range
       timeZones:
         type: array
         items:
@@ -3705,9 +3708,6 @@ definitions:
           type: object
           $ref: '#/definitions/v1SecurityRule'
         description: Security rules to apply for access to the canvas.
-      allowCustomTimeRange:
-        type: boolean
-        title: Toggle custom time range
   v1CanvasState:
     type: object
     properties:
@@ -4351,6 +4351,10 @@ definitions:
       exploreLeaderboardMeasureCount:
         type: integer
         format: int64
+      exploreLeaderboardMeasures:
+        type: array
+        items:
+          type: string
       timeDimensionMeasure:
         type: string
       timeDimensionChartType:

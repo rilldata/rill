@@ -2627,6 +2627,11 @@ export class ExplorePreset extends Message<ExplorePreset> {
   exploreLeaderboardMeasureCount?: number;
 
   /**
+   * @generated from field: repeated string explore_leaderboard_measures = 31;
+   */
+  exploreLeaderboardMeasures: string[] = [];
+
+  /**
    * @generated from field: optional string time_dimension_measure = 21;
    */
   timeDimensionMeasure?: string;
@@ -2693,6 +2698,7 @@ export class ExplorePreset extends Message<ExplorePreset> {
     { no: 19, name: "explore_sort_type", kind: "enum", T: proto3.getEnumType(ExploreSortType), opt: true },
     { no: 20, name: "explore_expanded_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 30, name: "explore_leaderboard_measure_count", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
+    { no: 31, name: "explore_leaderboard_measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 21, name: "time_dimension_measure", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 22, name: "time_dimension_chart_type", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 23, name: "time_dimension_pin", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
@@ -4625,6 +4631,13 @@ export class CanvasSpec extends Message<CanvasSpec> {
   timeRanges: ExploreTimeRange[] = [];
 
   /**
+   * Toggle custom time range
+   *
+   * @generated from field: bool allow_custom_time_range = 14;
+   */
+  allowCustomTimeRange = false;
+
+  /**
    * List of selectable time zones.
    * If the list is empty, a default list should be shown.
    * The values should be valid IANA location identifiers.
@@ -4668,13 +4681,6 @@ export class CanvasSpec extends Message<CanvasSpec> {
    */
   securityRules: SecurityRule[] = [];
 
-  /**
-   * Toggle custom time range
-   *
-   * @generated from field: bool allow_custom_time_range = 14;
-   */
-  allowCustomTimeRange = false;
-
   constructor(data?: PartialMessage<CanvasSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4691,13 +4697,13 @@ export class CanvasSpec extends Message<CanvasSpec> {
     { no: 7, name: "theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "embedded_theme", kind: "message", T: ThemeSpec },
     { no: 11, name: "time_ranges", kind: "message", T: ExploreTimeRange, repeated: true },
+    { no: 14, name: "allow_custom_time_range", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 12, name: "time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 13, name: "filters_enabled", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 15, name: "default_preset", kind: "message", T: CanvasPreset },
     { no: 5, name: "variables", kind: "message", T: ComponentVariable, repeated: true },
     { no: 18, name: "rows", kind: "message", T: CanvasRow, repeated: true },
     { no: 6, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
-    { no: 14, name: "allow_custom_time_range", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasSpec {
