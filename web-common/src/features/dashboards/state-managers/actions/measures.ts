@@ -13,6 +13,7 @@ export const toggleMeasureVisibility = (
       dashboard.visibleMeasures.length > 1
     ) {
       dashboard.leaderboardMeasureName = dashboard.visibleMeasures[0];
+      dashboard.leaderboardMeasures = [dashboard.visibleMeasures[0]];
     }
   } else {
     dashboard.visibleMeasures.push(measureName);

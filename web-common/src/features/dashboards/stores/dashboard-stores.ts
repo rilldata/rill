@@ -85,6 +85,7 @@ function syncMeasures(
   ) {
     const defaultMeasure = explore.measures[0];
     metricsExplorer.leaderboardMeasureName = defaultMeasure;
+    metricsExplorer.leaderboardMeasures = [defaultMeasure];
   }
 
   if (

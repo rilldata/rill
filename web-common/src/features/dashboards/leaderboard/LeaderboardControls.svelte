@@ -85,7 +85,7 @@
       <LeaderboardActiveMeasureNamesDropdown
         {measures}
         sortBy={$leaderboardMeasureName}
-        tooltipText="Choose measures to filter by"
+        tooltipText="Choose leaderboard measures to filter by"
         selectedMeasureNames={$leaderboardMeasures}
         onSelect={(names) => {
           setLeaderboardMeasures(names);

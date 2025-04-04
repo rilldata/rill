@@ -9,6 +9,8 @@
   export let setSortBy: (name: string) => void;
 
   let active = false;
+
+  $: console.log("activeLeaderboardMeasure: ", activeLeaderboardMeasure);
 </script>
 
 {#if activeLeaderboardMeasure}

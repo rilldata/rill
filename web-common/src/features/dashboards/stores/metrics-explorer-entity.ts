@@ -62,6 +62,7 @@ export interface MetricsExplorerEntity {
    * This "name" is the internal name of the measure from the YAML,
    * not the human readable name.
    */
+  // FIXME: revisit after https://github.com/rilldata/rill/pull/7067
   leaderboardMeasureName: string;
 
   /**

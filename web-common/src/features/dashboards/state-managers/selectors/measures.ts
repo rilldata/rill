@@ -28,7 +28,7 @@ export const allMeasures = ({
   );
 };
 
-// FIXME: to consolidate web-common/src/features/dashboards/state-managers/selectors/active-measure.ts
+// FIXME: revisit after https://github.com/rilldata/rill/pull/7067
 export const leaderboardMeasureName = ({ dashboard }: DashboardDataSources) => {
   return dashboard.leaderboardMeasureName;
 };

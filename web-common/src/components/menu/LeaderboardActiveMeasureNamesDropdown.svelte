@@ -50,12 +50,13 @@
 
   $: filteredMeasures = filterMeasures(searchText);
 
-  $: showingMeasuresText =
-    selectedMeasureNames?.length > 1
-      ? ` ${selectedMeasureNames.length} measures`
-      : selectedMeasureNames?.length === 1
-        ? getMeasureDisplayText(selectedMeasureNames[0])
-        : sortBy;
+  // $: showingMeasuresText =
+  //   selectedMeasureNames?.length > 1
+  //     ? ` ${selectedMeasureNames.length} measures`
+  //     : selectedMeasureNames?.length === 1
+  //       ? getMeasureDisplayText(selectedMeasureNames[0])
+  //       : sortBy;
+  $: showingMeasuresText = selectedMeasureNames?.length;
 
   $: allSelected = selectedMeasureNames.length === measures.length;
 </script>

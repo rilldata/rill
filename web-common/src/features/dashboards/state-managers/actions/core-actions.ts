@@ -14,6 +14,7 @@ export const setLeaderboardMeasureCount = (
   const visibleMeasures = dashboard.visibleMeasures.slice(0, count);
   if (!visibleMeasures.includes(dashboard.leaderboardMeasureName)) {
     dashboard.leaderboardMeasureName = visibleMeasures[0];
+    dashboard.leaderboardMeasures = [visibleMeasures[0]];
   }
 };
 
