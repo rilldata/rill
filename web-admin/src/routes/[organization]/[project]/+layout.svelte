@@ -23,7 +23,7 @@
     refetchOnWindowFocus: true,
     select: (data: V1GetProjectResponse) => {
       if (data?.prodDeployment?.runtimeHost) {
-        data.prodDeployment.runtimeHost
+        data.prodDeployment.runtimeHost;
       }
       return data;
     },
