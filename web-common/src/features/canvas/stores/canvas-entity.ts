@@ -176,10 +176,8 @@ export class CanvasEntity {
         const path = constructPath(rowIndex, columnIndex, newType);
 
         if (existingClass && areSameType(newType, existingClass.type)) {
-          console.log("Updating existing component", componentName);
           existingClass.update(newResource, path);
         } else {
-          console.log("Creating new component", componentName);
           createdNewComponent = true;
           this.components.set(
             componentName,
@@ -200,7 +198,6 @@ export class CanvasEntity {
 
     // Only necessary because we are not using stable IDs yet
     if ((!didUpdateRowCount && createdNewComponent) || this.firstLoad) {
-      console.log("refresh");
       this._rows.refresh();
     }
     this.firstLoad = false;
