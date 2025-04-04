@@ -1,7 +1,7 @@
 import { LeaderboardContextColumn } from "../../leaderboard-context-column";
 import { SortDirection, SortType } from "../../proto-state/derived-types";
+import { setLeaderboardSortByMeasureName } from "./core-actions";
 import type { DashboardMutables } from "./types";
-import { setLeaderboardMeasureName } from "./core-actions";
 
 // FIXME: similar to handleDimensionMeasureColumnHeaderClick, consolidate this
 export const toggleSort = (
@@ -15,13 +15,13 @@ export const toggleSort = (
   // update it for both value sorts and comparison sorts
   if (
     measureName !== undefined &&
-    measureName !== dashboard.leaderboardMeasureName &&
+    measureName !== dashboard.leaderboardSortByMeasureName &&
     (sortType === SortType.VALUE ||
       sortType === SortType.DELTA_ABSOLUTE ||
       sortType === SortType.DELTA_PERCENT ||
       sortType === SortType.PERCENT)
   ) {
-    setLeaderboardMeasureName(args, measureName);
+    setLeaderboardSortByMeasureName(args, measureName);
   }
 
   // if sortType is not provided, or if it is provided
