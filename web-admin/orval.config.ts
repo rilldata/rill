@@ -39,18 +39,21 @@ export default defineConfig({
             query: {
               useQuery: true,
               useInfinite: true,
+              useInfiniteQueryParam: "pageToken",
             },
           },
           AdminService_ListOrganizationInvites: {
             query: {
               useQuery: true,
               useInfinite: true,
+              useInfiniteQueryParam: "pageToken",
             },
           },
           AdminService_ListOrganizationMemberUsers: {
             query: {
               useQuery: true,
               useInfinite: true,
+              useInfiniteQueryParam: "pageToken",
             },
           },
         },

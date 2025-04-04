@@ -9,7 +9,6 @@ import type {
   CreateMutationOptions,
   CreateMutationResult,
   MutationFunction,
-  QueryClient,
 } from "@tanstack/svelte-query";
 
 import type {
@@ -86,17 +85,17 @@ export type AIServiceCompleteMutationError = RpcStatus;
 /**
  * @summary Complete sends the messages of a chat to the AI and asks it to generate a new message.
  */
-export const createAIServiceComplete = <TError = RpcStatus, TContext = unknown>(
-  options?: {
-    mutation?: CreateMutationOptions<
-      Awaited<ReturnType<typeof aIServiceComplete>>,
-      TError,
-      { data: V1CompleteRequest },
-      TContext
-    >;
-  },
-  queryClient?: QueryClient,
-): CreateMutationResult<
+export const createAIServiceComplete = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof aIServiceComplete>>,
+    TError,
+    { data: V1CompleteRequest },
+    TContext
+  >;
+}): CreateMutationResult<
   Awaited<ReturnType<typeof aIServiceComplete>>,
   TError,
   { data: V1CompleteRequest },
@@ -104,5 +103,5 @@ export const createAIServiceComplete = <TError = RpcStatus, TContext = unknown>(
 > => {
   const mutationOptions = getAIServiceCompleteMutationOptions(options);
 
-  return createMutation(mutationOptions, queryClient);
+  return createMutation(mutationOptions);
 };
