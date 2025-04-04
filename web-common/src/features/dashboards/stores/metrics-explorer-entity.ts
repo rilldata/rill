@@ -55,14 +55,12 @@ export interface MetricsExplorerEntity {
    */
   allDimensionsVisible: boolean;
 
+  // Question: is this still used by the dimension table?
   /**
-   * This is the name of the primary active measure in the dashboard.
-   * This is the measure that will be shown in leaderboards, and
-   * will be used for sorting the leaderboard and dimension detail table.
-   * This "name" is the internal name of the measure from the YAML,
-   * not the human readable name.
+   * This is the name of the currently-sorted measure in the leaderboards.
+   * Leaderboards can have one or more measures, so we need to know which one is currently sorted.
    */
-  leaderboardMeasureName: string;
+  leaderboardSortByMeasureName: string;
 
   /**
    * This is the number of measures to show in the leaderboard.

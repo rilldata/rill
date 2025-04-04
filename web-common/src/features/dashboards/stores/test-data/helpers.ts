@@ -117,7 +117,7 @@ export function assertMetricsViewRaw(
   const metricsView = get(metricsExplorerStore).entities[name];
   expect(metricsView.whereFilter).toEqual(filters);
   expect(metricsView.selectedTimeRange).toEqual(timeRange);
-  expect(metricsView.leaderboardMeasureName).toEqual(selectedMeasure);
+  expect(metricsView.leaderboardSortByMeasureName).toEqual(selectedMeasure);
 }
 
 export function initStateManagers(metricsViewName?: string) {

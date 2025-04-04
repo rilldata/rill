@@ -117,8 +117,8 @@ function getExploreFields(
     preset.dimensions = [...exploreState.visibleDimensions];
   }
 
-  if (exploreState.leaderboardMeasureName !== undefined) {
-    preset.exploreSortBy = exploreState.leaderboardMeasureName;
+  if (exploreState.leaderboardSortByMeasureName !== undefined) {
+    preset.exploreSortBy = exploreState.leaderboardSortByMeasureName;
   }
 
   if (exploreState.sortDirection) {
