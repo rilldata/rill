@@ -455,11 +455,11 @@ func (r *SecurityRuleYAML) Proto() (*runtimev1.SecurityRule, error) {
 	}
 }
 
-var comparisonModesMap = map[string]runtimev1.MetricsViewSpec_ComparisonMode{
-	"":          runtimev1.MetricsViewSpec_COMPARISON_MODE_UNSPECIFIED,
-	"none":      runtimev1.MetricsViewSpec_COMPARISON_MODE_NONE,
-	"time":      runtimev1.MetricsViewSpec_COMPARISON_MODE_TIME,
-	"dimension": runtimev1.MetricsViewSpec_COMPARISON_MODE_DIMENSION,
+var comparisonModesMap = map[string]runtimev1.ExploreComparisonMode{
+	"":          runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_UNSPECIFIED,
+	"none":      runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_NONE,
+	"time":      runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_TIME,
+	"dimension": runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_DIMENSION,
 }
 
 var validComparisonModes = []string{"none", "time", "dimension"}
@@ -838,43 +838,12 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	spec.CacheKeySql = tmp.Cache.KeySQL
 	spec.CacheKeyTtlSeconds = int64(cacheTTLDuration.Seconds())
 
-	// Backwards compatibility: When the version is 0, populate the deprecated fields and also emit an Explore resource for the metrics view.
+	// Backwards compatibility: When the version is 0, also emit an Explore resource for the metrics view.
 	if node.Version > 0 {
 		return nil
 	}
 
-	spec.DefaultTimeRange = tmp.DefaultTimeRange
-	spec.AvailableTimeZones = tmp.AvailableTimeZones
-	spec.DefaultTheme = tmp.DefaultTheme
-	spec.DefaultDimensions = tmp.DefaultDimensions
-	spec.DefaultMeasures = tmp.DefaultMeasures
-	spec.DefaultComparisonMode = comparisonModesMap[tmp.DefaultComparison.Mode]
-	if tmp.DefaultComparison.Dimension != "" {
-		spec.DefaultComparisonDimension = tmp.DefaultComparison.Dimension
-	}
-	if tmp.AvailableTimeRanges != nil {
-		for _, r := range tmp.AvailableTimeRanges {
-			// nolint:staticcheck // We still need to set it
-			t := &runtimev1.MetricsViewSpec_AvailableTimeRange{
-				Range: r.Range,
-			}
-			if r.ComparisonTimeRanges != nil {
-				// nolint:staticcheck // We still need to set it
-				t.ComparisonOffsets = make([]*runtimev1.MetricsViewSpec_AvailableComparisonOffset, len(r.ComparisonTimeRanges))
-				for i, o := range r.ComparisonTimeRanges {
-					// nolint:staticcheck // We still need to set it
-					t.ComparisonOffsets[i] = &runtimev1.MetricsViewSpec_AvailableComparisonOffset{
-						Offset: o.Offset,
-						Range:  o.Range,
-					}
-				}
-			}
-			spec.AvailableTimeRanges = append(spec.AvailableTimeRanges, t)
-		}
-	}
-
 	refs := []ResourceName{{Kind: ResourceKindMetricsView, Name: node.Name}}
-
 	if tmp.DefaultTheme != "" {
 		refs = append(refs, ResourceName{Kind: ResourceKindTheme, Name: tmp.DefaultTheme})
 	}
@@ -896,7 +865,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		e.ExploreSpec.Measures = append(e.ExploreSpec.Measures, m.Name)
 	}
 	e.ExploreSpec.MeasuresSelector = nil
-	e.ExploreSpec.Theme = spec.DefaultTheme
+	e.ExploreSpec.Theme = tmp.DefaultTheme
 	for _, tr := range tmp.AvailableTimeRanges {
 		res := &runtimev1.ExploreTimeRange{Range: tr.Range}
 		for _, ctr := range tr.ComparisonTimeRanges {
@@ -907,42 +876,30 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		}
 		e.ExploreSpec.TimeRanges = append(e.ExploreSpec.TimeRanges, res)
 	}
-	e.ExploreSpec.TimeZones = spec.AvailableTimeZones
-
-	var exploreComparisonMode runtimev1.ExploreComparisonMode
-	switch spec.DefaultComparisonMode {
-	case runtimev1.MetricsViewSpec_COMPARISON_MODE_UNSPECIFIED:
-		exploreComparisonMode = runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_UNSPECIFIED
-	case runtimev1.MetricsViewSpec_COMPARISON_MODE_NONE:
-		exploreComparisonMode = runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_NONE
-	case runtimev1.MetricsViewSpec_COMPARISON_MODE_TIME:
-		exploreComparisonMode = runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_TIME
-	case runtimev1.MetricsViewSpec_COMPARISON_MODE_DIMENSION:
-		exploreComparisonMode = runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_DIMENSION
-	}
+	e.ExploreSpec.TimeZones = tmp.AvailableTimeZones
 
 	var presetDimensionsSelector, presetMeasuresSelector *runtimev1.FieldSelector
-	if len(spec.DefaultDimensions) == 0 {
+	if len(tmp.DefaultDimensions) == 0 {
 		presetDimensionsSelector = &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}}
 	}
-	if len(spec.DefaultMeasures) == 0 {
+	if len(tmp.DefaultMeasures) == 0 {
 		presetMeasuresSelector = &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}}
 	}
 	var tr *string
-	if spec.DefaultTimeRange != "" {
-		tr = &spec.DefaultTimeRange
+	if tmp.DefaultTimeRange != "" {
+		tr = &tmp.DefaultTimeRange
 	}
 	var compareDim *string
-	if spec.DefaultComparisonDimension != "" {
-		compareDim = &spec.DefaultComparisonDimension
+	if tmp.DefaultComparison.Dimension != "" {
+		compareDim = &tmp.DefaultComparison.Dimension
 	}
 	e.ExploreSpec.DefaultPreset = &runtimev1.ExplorePreset{
-		Dimensions:          spec.DefaultDimensions,
+		Dimensions:          tmp.DefaultDimensions,
 		DimensionsSelector:  presetDimensionsSelector,
-		Measures:            spec.DefaultMeasures,
+		Measures:            tmp.DefaultMeasures,
 		MeasuresSelector:    presetMeasuresSelector,
 		TimeRange:           tr,
-		ComparisonMode:      exploreComparisonMode,
+		ComparisonMode:      comparisonModesMap[tmp.DefaultComparison.Mode],
 		ComparisonDimension: compareDim,
 	}
 

@@ -45,7 +45,7 @@ export function extractAlertFormValues(
     queryArgs.dimensions as V1MetricsViewAggregationDimension[];
 
   const timeRange = (queryArgs.timeRange as V1TimeRange) ?? {
-    isoDuration: metricsViewSpec.defaultTimeRange ?? TimeRangePreset.ALL_TIME,
+    isoDuration: TimeRangePreset.ALL_TIME,
   };
   if (!timeRange.end && allTimeRange.timeRangeSummary?.max) {
     // alerts only have duration optionally offset, end is added during execution by reconciler
