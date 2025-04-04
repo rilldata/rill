@@ -4,7 +4,7 @@
   import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
   import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
   import type {
-    MetricsViewSpecDimensionV2,
+    MetricsViewSpecDimension,
     V1Expression,
     V1MetricsViewAggregationMeasure,
     V1TimeRange,
@@ -48,7 +48,7 @@
   const maxValuesToShow = 15;
 
   // FIXME: clean up `sortBy` and `activeMeasureName`
-  export let dimension: MetricsViewSpecDimensionV2;
+  export let dimension: MetricsViewSpecDimension;
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
   export let selectedValues: CompoundQueryResult<string[]>;

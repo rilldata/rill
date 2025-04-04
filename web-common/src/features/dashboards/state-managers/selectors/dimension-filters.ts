@@ -10,7 +10,7 @@ import {
   matchExpressionByName,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type {
-  MetricsViewSpecDimensionV2,
+  MetricsViewSpecDimension,
   V1Expression,
 } from "@rilldata/web-common/runtime-client";
 import { V1Operation } from "@rilldata/web-common/runtime-client";
@@ -160,7 +160,7 @@ export type DimensionFilterItem = {
 export function getDimensionFilterItems(
   dashData: AtLeast<DashboardDataSources, "dashboard">,
 ) {
-  return (dimensionIdMap: Map<string, MetricsViewSpecDimensionV2>) => {
+  return (dimensionIdMap: Map<string, MetricsViewSpecDimension>) => {
     return getDimensionFilters(
       dimensionIdMap,
       dashData.dashboard.whereFilter,
@@ -170,7 +170,7 @@ export function getDimensionFilterItems(
 }
 
 export function getDimensionFilters(
-  dimensionIdMap: Map<string, MetricsViewSpecDimensionV2>,
+  dimensionIdMap: Map<string, MetricsViewSpecDimension>,
   filter: V1Expression | undefined,
   dimensionsWithInlistFilter: string[],
 ) {
@@ -221,7 +221,7 @@ export const getAllDimensionFilterItems = (
 ) => {
   return (
     dimensionFilterItem: DimensionFilterItem[],
-    dimensionIdMap: Map<string, MetricsViewSpecDimensionV2>,
+    dimensionIdMap: Map<string, MetricsViewSpecDimension>,
   ) => {
     const allDimensionFilterItem = [...dimensionFilterItem];
 

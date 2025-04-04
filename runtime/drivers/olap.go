@@ -299,7 +299,7 @@ func (d Dialect) EscapeTable(db, schema, table string) string {
 	return sb.String()
 }
 
-func (d Dialect) DimensionSelect(db, dbSchema, table string, dim *runtimev1.MetricsViewSpec_DimensionV2) (dimSelect, unnestClause string) {
+func (d Dialect) DimensionSelect(db, dbSchema, table string, dim *runtimev1.MetricsViewSpec_Dimension) (dimSelect, unnestClause string) {
 	colName := d.EscapeIdentifier(dim.Name)
 	if !dim.Unnest || d == DialectDruid {
 		return fmt.Sprintf(`(%s) as %s`, d.MetricsViewDimensionExpression(dim), colName), ""
@@ -319,7 +319,7 @@ func (d Dialect) DimensionSelect(db, dbSchema, table string, dim *runtimev1.Metr
 	return sel, fmt.Sprintf(`, LATERAL UNNEST(%s) %s(%s)`, dim.Expression, unnestTableName, unnestColName)
 }
 
-func (d Dialect) DimensionSelectPair(db, dbSchema, table string, dim *runtimev1.MetricsViewSpec_DimensionV2) (expr, alias, unnestClause string) {
+func (d Dialect) DimensionSelectPair(db, dbSchema, table string, dim *runtimev1.MetricsViewSpec_Dimension) (expr, alias, unnestClause string) {
 	colName := d.EscapeIdentifier(dim.Name)
 	if !dim.Unnest || d == DialectDruid {
 		return d.MetricsViewDimensionExpression(dim), colName, ""
@@ -350,7 +350,7 @@ func (d Dialect) AutoUnnest(expr string) string {
 	return expr
 }
 
-func (d Dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsViewSpec_DimensionV2) string {
+func (d Dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsViewSpec_Dimension) string {
 	if dimension.Expression != "" {
 		return dimension.Expression
 	}
@@ -389,7 +389,7 @@ func (d Dialect) JoinOnExpression(lhs, rhs string) string {
 	return fmt.Sprintf("%s IS NOT DISTINCT FROM %s", lhs, rhs)
 }
 
-func (d Dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_DimensionV2, grain runtimev1.TimeGrain, tz string, firstDayOfWeek, firstMonthOfYear int) (string, error) {
+func (d Dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain runtimev1.TimeGrain, tz string, firstDayOfWeek, firstMonthOfYear int) (string, error) {
 	if tz == "UTC" || tz == "Etc/UTC" {
 		tz = ""
 	}

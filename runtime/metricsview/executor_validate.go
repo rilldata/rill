@@ -270,7 +270,7 @@ func (e *Executor) validateIndividualDimensionsAndMeasures(ctx context.Context, 
 }
 
 // validateDimension validates a metrics view dimension.
-func (e *Executor) validateDimension(ctx context.Context, t *drivers.Table, d *runtimev1.MetricsViewSpec_DimensionV2, fields map[string]*runtimev1.StructType_Field) error {
+func (e *Executor) validateDimension(ctx context.Context, t *drivers.Table, d *runtimev1.MetricsViewSpec_Dimension, fields map[string]*runtimev1.StructType_Field) error {
 	// Validate with a simple check if it's a column
 	if d.Column != "" {
 		if _, isColumn := fields[strings.ToLower(d.Column)]; !isColumn {
@@ -297,7 +297,7 @@ func (e *Executor) validateDimension(ctx context.Context, t *drivers.Table, d *r
 }
 
 // validateMeasure validates a metrics view measure.
-func (e *Executor) validateMeasure(ctx context.Context, t *drivers.Table, m *runtimev1.MetricsViewSpec_MeasureV2) error {
+func (e *Executor) validateMeasure(ctx context.Context, t *drivers.Table, m *runtimev1.MetricsViewSpec_Measure) error {
 	err := e.olap.Exec(ctx, &drivers.Statement{
 		Query:  fmt.Sprintf("SELECT 1, (%s) FROM %s GROUP BY 1", m.Expression, e.olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name)),
 		DryRun: true,

@@ -3022,19 +3022,7 @@ definitions:
       dimension:
         type: string
       value: {}
-  MetricsViewSpecDimensionSelector:
-    type: object
-    properties:
-      name:
-        type: string
-      timeGrain:
-        $ref: '#/definitions/v1TimeGrain'
-        title: Only for time dimensions (optional)
-      desc:
-        type: boolean
-        title: Only for when ordering (optional)
-    title: Selector for a dimension
-  MetricsViewSpecDimensionV2:
+  MetricsViewSpecDimension:
     type: object
     properties:
       name:
@@ -3052,16 +3040,19 @@ definitions:
       uri:
         type: string
     title: Dimensions are columns to filter and group by
-  MetricsViewSpecMeasureType:
-    type: string
-    enum:
-      - MEASURE_TYPE_UNSPECIFIED
-      - MEASURE_TYPE_SIMPLE
-      - MEASURE_TYPE_DERIVED
-      - MEASURE_TYPE_TIME_COMPARISON
-    default: MEASURE_TYPE_UNSPECIFIED
-    title: Type of measure query to generate
-  MetricsViewSpecMeasureV2:
+  MetricsViewSpecDimensionSelector:
+    type: object
+    properties:
+      name:
+        type: string
+      timeGrain:
+        $ref: '#/definitions/v1TimeGrain'
+        title: Only for time dimensions (optional)
+      desc:
+        type: boolean
+        title: Only for when ordering (optional)
+    title: Selector for a dimension
+  MetricsViewSpecMeasure:
     type: object
     properties:
       name:
@@ -3101,6 +3092,15 @@ definitions:
       treatNullsAs:
         type: string
     title: Measures are aggregated computed values
+  MetricsViewSpecMeasureType:
+    type: string
+    enum:
+      - MEASURE_TYPE_UNSPECIFIED
+      - MEASURE_TYPE_SIMPLE
+      - MEASURE_TYPE_DERIVED
+      - MEASURE_TYPE_TIME_COMPARISON
+    default: MEASURE_TYPE_UNSPECIFIED
+    title: Type of measure query to generate
   MetricsViewSpecMeasureWindow:
     type: object
     properties:
@@ -4775,6 +4775,13 @@ definitions:
       valueType:
         $ref: '#/definitions/runtimev1Type'
     title: MapType is a complex type for mapping keys to values
+  v1MetricsView:
+    type: object
+    properties:
+      spec:
+        $ref: '#/definitions/v1MetricsViewSpec'
+      state:
+        $ref: '#/definitions/v1MetricsViewState'
   v1MetricsViewAggregationDimension:
     type: object
     properties:
@@ -5247,13 +5254,13 @@ definitions:
         type: array
         items:
           type: object
-          $ref: '#/definitions/MetricsViewSpecDimensionV2'
+          $ref: '#/definitions/MetricsViewSpecDimension'
         title: Dimensions in the metrics view
       measures:
         type: array
         items:
           type: object
-          $ref: '#/definitions/MetricsViewSpecMeasureV2'
+          $ref: '#/definitions/MetricsViewSpecMeasure'
         title: Measures in the metrics view
       securityRules:
         type: array
@@ -5468,13 +5475,6 @@ definitions:
       data:
         type: object
         title: Not optional, not null
-  v1MetricsViewV2:
-    type: object
-    properties:
-      spec:
-        $ref: '#/definitions/v1MetricsViewSpec'
-      state:
-        $ref: '#/definitions/v1MetricsViewState'
   v1Migration:
     type: object
     properties:
@@ -6063,7 +6063,7 @@ definitions:
       model:
         $ref: '#/definitions/v1Model'
       metricsView:
-        $ref: '#/definitions/v1MetricsViewV2'
+        $ref: '#/definitions/v1MetricsView'
       explore:
         $ref: '#/definitions/v1Explore'
       migration:

@@ -11,7 +11,7 @@
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import {
     createQueryServiceMetricsViewAggregation,
-    type MetricsViewSpecDimensionV2,
+    type MetricsViewSpecDimension,
     type V1Expression,
     type V1MetricsViewAggregationMeasure,
     type V1TimeRange,
@@ -40,7 +40,7 @@
   export let dimensionThresholdFilters: DimensionThresholdFilter[];
   export let visibleMeasureNames: string[];
   export let timeControlsReady: boolean;
-  export let dimension: MetricsViewSpecDimensionV2;
+  export let dimension: MetricsViewSpecDimension;
   export let hideStartPivotButton = false;
 
   const {
