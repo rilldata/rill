@@ -204,7 +204,7 @@
     },
   );
 
-  $: ({ data: sortedData, isFetching, isLoading } = $sortedQuery);
+  $: ({ data: sortedData, isFetching, isLoading, isPending } = $sortedQuery);
   $: ({ data: totalsData } = $totalsQuery);
 
   $: leaderboardTotals = totalsData?.data?.[0]
@@ -356,6 +356,7 @@
     <tbody>
       <DelayedLoadingRows
         {isLoading}
+        {isPending}
         {isFetching}
         rowCount={aboveTheFold.length}
         columnCount={columnCount + 1}

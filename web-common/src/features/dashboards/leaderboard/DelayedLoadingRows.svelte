@@ -5,6 +5,7 @@
 
   export let isLoading: boolean;
   export let isFetching: boolean;
+  export let isPending: boolean;
   export let delay: number = 300;
   export let rowCount: number;
   export let columnCount: number = 4;
@@ -17,7 +18,7 @@
   $: {
     if (timeoutId) clearTimeout(timeoutId);
 
-    if (isLoading || rowCount == 0) {
+    if (isLoading || isPending) {
       showPlaceholder.set(true);
     } else if (isFetching) {
       timeoutId = setTimeout(() => {
