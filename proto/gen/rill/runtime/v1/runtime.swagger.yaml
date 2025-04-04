@@ -4270,6 +4270,10 @@ definitions:
       exploreLeaderboardMeasureCount:
         type: integer
         format: int64
+      exploreLeaderboardMeasures:
+        type: array
+        items:
+          type: string
       timeDimensionMeasure:
         type: string
       timeDimensionChartType:

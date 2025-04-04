@@ -2669,6 +2669,7 @@ type ExplorePreset struct {
 	ExploreSortType                *ExploreSortType `protobuf:"varint,19,opt,name=explore_sort_type,json=exploreSortType,proto3,enum=rill.runtime.v1.ExploreSortType,oneof" json:"explore_sort_type,omitempty"`
 	ExploreExpandedDimension       *string          `protobuf:"bytes,20,opt,name=explore_expanded_dimension,json=exploreExpandedDimension,proto3,oneof" json:"explore_expanded_dimension,omitempty"`
 	ExploreLeaderboardMeasureCount *uint32          `protobuf:"varint,30,opt,name=explore_leaderboard_measure_count,json=exploreLeaderboardMeasureCount,proto3,oneof" json:"explore_leaderboard_measure_count,omitempty"`
+	ExploreLeaderboardMeasures     []string         `protobuf:"bytes,31,rep,name=explore_leaderboard_measures,json=exploreLeaderboardMeasures,proto3" json:"explore_leaderboard_measures,omitempty"`
 	TimeDimensionMeasure           *string          `protobuf:"bytes,21,opt,name=time_dimension_measure,json=timeDimensionMeasure,proto3,oneof" json:"time_dimension_measure,omitempty"`
 	TimeDimensionChartType         *string          `protobuf:"bytes,22,opt,name=time_dimension_chart_type,json=timeDimensionChartType,proto3,oneof" json:"time_dimension_chart_type,omitempty"`
 	TimeDimensionPin               *bool            `protobuf:"varint,23,opt,name=time_dimension_pin,json=timeDimensionPin,proto3,oneof" json:"time_dimension_pin,omitempty"`
@@ -2842,6 +2843,13 @@ func (x *ExplorePreset) GetExploreLeaderboardMeasureCount() uint32 {
 		return *x.ExploreLeaderboardMeasureCount
 	}
 	return 0
+}
+
+func (x *ExplorePreset) GetExploreLeaderboardMeasures() []string {
+	if x != nil {
+		return x.ExploreLeaderboardMeasures
+	}
+	return nil
 }
 
 func (x *ExplorePreset) GetTimeDimensionMeasure() string {
