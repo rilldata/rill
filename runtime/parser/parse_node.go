@@ -1,4 +1,4 @@
-package rillv1
+package parser
 
 import (
 	"context"

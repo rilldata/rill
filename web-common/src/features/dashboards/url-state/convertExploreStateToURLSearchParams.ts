@@ -292,11 +292,14 @@ function toExploreUrl(
   }
 
   if (
-    shouldSetParam(preset.exploreSortBy, exploreState.leaderboardMeasureName)
+    shouldSetParam(
+      preset.exploreSortBy,
+      exploreState.leaderboardSortByMeasureName,
+    )
   ) {
     searchParams.set(
       ExploreStateURLParams.SortBy,
-      exploreState.leaderboardMeasureName,
+      exploreState.leaderboardSortByMeasureName,
     );
   }
 
