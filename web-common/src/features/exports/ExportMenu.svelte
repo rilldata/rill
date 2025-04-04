@@ -23,6 +23,7 @@
   export let includeScheduledReport = false;
   export let getQuery: (isScheduled: boolean) => V1Query | undefined;
   export let exploreName: string | undefined = undefined;
+  export let includeIcon = false;
 
   let showScheduledReportDialog = false;
   let open = false;
@@ -79,6 +80,9 @@
         use:builderActions={{ builders: [builder] }}
         {...getAttrs([builder])}
       >
+        {#if includeIcon}
+          <Export size="15px" />
+        {/if}
         Export
         <CaretDownIcon
           className="transition-transform {open && '-rotate-180'}"
@@ -134,7 +138,7 @@
 
 <style lang="postcss">
   button {
-    @apply h-6 px-1.5 py-px flex items-center gap-[3px] rounded-sm text-gray-700 pointer-events-auto;
+    @apply h-6 px-1.5 py-px flex items-center gap-[3px] rounded-sm text-slate-600 pointer-events-auto;
   }
 
   button:hover {
