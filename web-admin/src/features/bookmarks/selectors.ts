@@ -186,7 +186,7 @@ export function getPrettySelectedTimeRange(
   );
 }
 
-export function getHomeBookmarkURLParams(
+export function getHomeBookmarkButtonUrl(
   projectId: string,
   instanceId: string,
   metricsViewName: string,
@@ -204,19 +204,22 @@ export function getHomeBookmarkURLParams(
         metricsViewName,
         exploreName,
       ),
+      page,
     ],
     ([
       exploreSpecResp,
       timeRangeResp,
       exploreState,
       homeBookmarkExploreState,
+      pageState,
     ]) => {
+      const baseUrlPath = pageState.url.pathname;
       if (
         !exploreSpecResp.data?.metricsView ||
         !exploreSpecResp.data?.explore ||
         !homeBookmarkExploreState.data
       ) {
-        return "";
+        return baseUrlPath;
       }
 
       const exploreSpec = exploreSpecResp.data.explore;
@@ -239,7 +242,7 @@ export function getHomeBookmarkURLParams(
         finalExploreState,
       );
 
-      const url = new URL(get(page).url);
+      const url = new URL(pageState.url);
       const homeBookmarkURLParams = convertExploreStateToURLSearchParams(
         finalExploreState,
         exploreSpec,
@@ -247,7 +250,7 @@ export function getHomeBookmarkURLParams(
         defaultExplorePreset,
         url,
       ).toString();
-      return homeBookmarkURLParams;
+      return `${baseUrlPath}?${homeBookmarkURLParams}`;
     },
   );
 }

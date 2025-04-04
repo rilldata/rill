@@ -38,6 +38,7 @@
   export let manageProjectMembers: boolean;
   export let organizationLogoUrl: string | undefined = undefined;
   export let planDisplayName: string | undefined;
+  export let projectId: string | undefined;
 
   const user = createAdminServiceGetCurrentUser();
   const { alerts: alertsFlag, dimensionSearch } = featureFlags;
@@ -202,6 +203,7 @@
             {#if $user.isSuccess && $user.data.user && !onPublicURLPage}
               <HomeBookmarkButton
                 {organization}
+                {projectId}
                 {project}
                 metricsViewName={exploreSpec.metricsView}
                 exploreName={dashboard}

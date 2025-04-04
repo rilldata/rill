@@ -34,6 +34,7 @@
     organizationLogoUrl,
     organizationFaviconUrl,
     planDisplayName,
+    project,
   } = data);
   $: ({
     params: { organization },
@@ -116,6 +117,7 @@
           manageProjectMembers={projectPermissions?.manageProjectMembers}
           {organizationLogoUrl}
           {planDisplayName}
+          projectId={project?.id}
         />
 
         {#if withinOnlyOrg}
