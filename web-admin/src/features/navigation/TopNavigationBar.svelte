@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import Bookmarks from "@rilldata/web-admin/features/bookmarks/Bookmarks.svelte";
+  import HomeBookmarkButton from "@rilldata/web-admin/features/bookmarks/HomeBookmarkButton.svelte";
   import ShareDashboardPopover from "@rilldata/web-admin/features/dashboards/share/ShareDashboardPopover.svelte";
   import ShareProjectPopover from "@rilldata/web-admin/features/projects/user-management/ShareProjectPopover.svelte";
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
@@ -37,6 +38,7 @@
   export let manageProjectMembers: boolean;
   export let organizationLogoUrl: string | undefined = undefined;
   export let planDisplayName: string | undefined;
+  export let projectId: string | undefined;
 
   const user = createAdminServiceGetCurrentUser();
   const { alerts: alertsFlag, dimensionSearch } = featureFlags;
@@ -199,13 +201,20 @@
               <GlobalDimensionSearch />
             {/if}
             {#if $user.isSuccess && $user.data.user && !onPublicURLPage}
-              {#if $alertsFlag}
-                <CreateAlert />
-              {/if}
+              <HomeBookmarkButton
+                {organization}
+                {projectId}
+                {project}
+                metricsViewName={exploreSpec.metricsView}
+                exploreName={dashboard}
+              />
               <Bookmarks
                 metricsViewName={exploreSpec.metricsView}
                 exploreName={dashboard}
               />
+              {#if $alertsFlag}
+                <CreateAlert />
+              {/if}
               <ShareDashboardPopover {createMagicAuthTokens} />
             {/if}
           </StateManagersProvider>

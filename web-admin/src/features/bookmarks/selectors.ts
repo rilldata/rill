@@ -1,9 +1,8 @@
 import { page } from "$app/stores";
+import type { CreateQueryResult } from "@rilldata/svelte-query";
 import {
-  adminServiceListBookmarks,
   createAdminServiceGetCurrentUser,
   createAdminServiceListBookmarks,
-  getAdminServiceListBookmarksQueryKey,
   type V1Bookmark,
   type V1ListBookmarksResponse,
 } from "@rilldata/web-admin/client";
@@ -20,6 +19,7 @@ import {
   timeControlStateSelector,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
+import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -34,7 +34,6 @@ import {
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryClient } from "@tanstack/query-core";
-import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, get, type Readable } from "svelte/store";
 
 export type BookmarkEntry = {
@@ -49,19 +48,6 @@ export type Bookmarks = {
   personal: BookmarkEntry[];
   shared: BookmarkEntry[];
 };
-
-export async function fetchBookmarks(projectId: string, exploreName: string) {
-  const params = {
-    projectId,
-    resourceKind: ResourceKind.Explore,
-    resourceName: exploreName,
-  };
-  const bookmarksResp = await queryClient.fetchQuery({
-    queryKey: getAdminServiceListBookmarksQueryKey(params),
-    queryFn: ({ signal }) => adminServiceListBookmarks(params, signal),
-  });
-  return bookmarksResp.bookmarks ?? [];
-}
 
 export function getBookmarks(projectId: string, exploreName: string) {
   return derived(createAdminServiceGetCurrentUser(), (userResp, set) =>
@@ -196,6 +182,75 @@ export function getPrettySelectedTimeRange(
         timeRangeState.selectedTimeRange?.name,
         metricsExplorerEntity?.selectedTimezone,
       );
+    },
+  );
+}
+
+export function getHomeBookmarkButtonUrl(
+  projectId: string,
+  instanceId: string,
+  metricsViewName: string,
+  exploreName: string,
+) {
+  // Since there is a single non-query store here (useExploreState) we cannot use getCompoundQuery
+  return derived(
+    [
+      useExploreValidSpec(instanceId, exploreName),
+      useMetricsViewTimeRange(instanceId, metricsViewName),
+      useExploreState(exploreName),
+      getHomeBookmarkExploreState(
+        projectId,
+        instanceId,
+        metricsViewName,
+        exploreName,
+      ),
+      page,
+    ],
+    ([
+      exploreSpecResp,
+      timeRangeResp,
+      exploreState,
+      homeBookmarkExploreState,
+      pageState,
+    ]) => {
+      const baseUrlPath = pageState.url.pathname;
+      if (
+        !exploreSpecResp.data?.metricsView ||
+        !exploreSpecResp.data?.explore ||
+        !homeBookmarkExploreState.data
+      ) {
+        return baseUrlPath;
+      }
+
+      const exploreSpec = exploreSpecResp.data.explore;
+      const metricsViewSpec = exploreSpecResp.data.metricsView;
+
+      const finalExploreState = {
+        ...(exploreState ?? {}),
+        ...homeBookmarkExploreState.data,
+      } as MetricsExplorerEntity;
+
+      const defaultExplorePreset = getDefaultExplorePreset(
+        exploreSpec,
+        metricsViewSpec,
+        timeRangeResp.data,
+      );
+      const timeControlState = getTimeControlState(
+        metricsViewSpec,
+        exploreSpec,
+        timeRangeResp.data?.timeRangeSummary,
+        finalExploreState,
+      );
+
+      const url = new URL(pageState.url);
+      const homeBookmarkURLParams = convertExploreStateToURLSearchParams(
+        finalExploreState,
+        exploreSpec,
+        timeControlState,
+        defaultExplorePreset,
+        url,
+      ).toString();
+      return `${baseUrlPath}?${homeBookmarkURLParams}`;
     },
   );
 }
