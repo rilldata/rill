@@ -116,13 +116,7 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 		context.AfterFunc(ctx, func() {
 			tctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
-
-			parsedURL, err := url.Parse(c.dsn)
-			if err != nil {
-				return
-			}
-			parsedURL.Path = urlutil.MustJoinURL(parsedURL.Path, dr.Context.SQLQueryID)
-			r, err := http.NewRequestWithContext(tctx, http.MethodDelete, parsedURL.String(), http.NoBody)
+			r, err := http.NewRequestWithContext(tctx, http.MethodDelete, urlutil.MustJoinURL(c.dsn, dr.Context.SQLQueryID), http.NoBody)
 			if err != nil {
 				return
 			}
