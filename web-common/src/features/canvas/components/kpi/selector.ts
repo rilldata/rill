@@ -9,12 +9,21 @@ export function validateKPISchema(
 ): Readable<{
   isValid: boolean;
   error?: string;
+  isLoading?: boolean;
 }> {
   const { metrics_view } = kpiSpec;
   return derived(
     ctx.canvasEntity.spec.getMetricsViewFromName(metrics_view),
-    (metricsView) => {
+    (metricsViewQuery) => {
       const measure = kpiSpec.measure;
+      if (metricsViewQuery.isLoading) {
+        return {
+          isValid: true,
+          error: undefined,
+          isLoading: true,
+        };
+      }
+      const metricsView = metricsViewQuery.metricsView;
       if (!metricsView) {
         return {
           isValid: false,

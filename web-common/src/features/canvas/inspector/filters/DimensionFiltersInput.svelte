@@ -11,9 +11,10 @@
   import { isExpressionUnsupported } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import { flip } from "svelte/animate";
+  import type { CanvasComponentState } from "../../stores/canvas-component";
 
   export let metricsView: string;
-  export let selectedComponentName: string;
+  export let componentStore: CanvasComponentState;
   export let id: string;
   export let filter: string;
   export let canvasName: string;
@@ -21,7 +22,6 @@
 
   $: ({
     canvasEntity: {
-      useComponent,
       spec: { getDimensionsForMetricView, getSimpleMeasuresForMetricView },
     },
   } = getCanvasStore(canvasName));
@@ -29,7 +29,6 @@
   let filterToggle = false;
 
   $: showFilter = !!filter || filterToggle;
-  $: componentStore = useComponent(selectedComponentName);
 
   $: allDimensions = getDimensionsForMetricView(metricsView);
   $: allSimpleMeasures = getSimpleMeasuresForMetricView(metricsView);

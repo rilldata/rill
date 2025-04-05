@@ -1,7 +1,7 @@
-import type { CanvasComponentObj } from "@rilldata/web-common/features/canvas/components/util";
+import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
 
 export function hasComponentFilters(
-  component: CanvasComponentObj | null,
+  component: BaseCanvasComponent | null,
 ): boolean {
   if (!component) return false;
   return Object.keys(component.inputParams().filter).length > 0;

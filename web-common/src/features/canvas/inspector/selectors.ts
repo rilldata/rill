@@ -27,17 +27,18 @@ export function useMetricFieldData(
 ) {
   const { spec, timeControls } = ctx.canvasEntity;
 
-  const metricViewSpec = spec.getMetricsViewFromName(metricViewName);
+  const metricsViewQuery = spec.getMetricsViewFromName(metricViewName);
 
   return derived(
-    [metricViewSpec, timeControls.minTimeGrain],
-    ([metricViewSpec, minTimeGrain]) => {
+    [metricsViewQuery, timeControls.minTimeGrain],
+    ([$metricsViewQuery, minTimeGrain]) => {
+      const metricsViewSpec = $metricsViewQuery.metricsView;
       let items: string[] = [];
       const displayMap: Record<string, { label: string; type: FieldType }> = {};
 
-      const measures = metricViewSpec?.measures ?? [];
-      const dimensions = metricViewSpec?.dimensions ?? [];
-      const timeDimension = metricViewSpec?.timeDimension;
+      const measures = metricsViewSpec?.measures ?? [];
+      const dimensions = metricsViewSpec?.dimensions ?? [];
+      const timeDimension = metricsViewSpec?.timeDimension;
 
       if (type.includes("measure")) {
         items = measures.map((m) => m.name as string);
@@ -77,7 +78,7 @@ export function useMetricFieldData(
           return {
             grain: grain,
             label: `Time ${TIME_GRAIN[grain].label}`,
-            id: `${metricViewSpec?.timeDimension}_rill_${grain}`,
+            id: `${metricsViewSpec?.timeDimension}_rill_${grain}`,
           };
         });
 

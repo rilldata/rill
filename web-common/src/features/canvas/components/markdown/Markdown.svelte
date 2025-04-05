@@ -1,12 +1,13 @@
 <script lang="ts">
-  import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
   import DOMPurify from "dompurify";
   import { marked } from "marked";
-  import type { MarkdownSpec } from "./";
+  import type { MarkdownCanvasComponent } from "./";
   import { getPositionClasses } from "./util";
 
-  export let rendererProperties: V1ComponentSpecRendererProperties;
-  $: markdownProperties = rendererProperties as unknown as MarkdownSpec;
+  export let component: MarkdownCanvasComponent;
+
+  $: ({ specStore } = component);
+  $: markdownProperties = $specStore;
 
   $: positionClasses = getPositionClasses(markdownProperties.alignment);
 </script>

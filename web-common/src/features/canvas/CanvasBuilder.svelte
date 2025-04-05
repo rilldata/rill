@@ -1,8 +1,8 @@
 <script lang="ts">
   import { portal } from "@rilldata/web-common/lib/actions/portal";
   import {
-    type V1CanvasRow as APIV1CanvasRow,
-    type V1CanvasItem,
+    type V1CanvasRow,
+    type V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { get, writable } from "svelte/store";
@@ -11,58 +11,55 @@
   import AddComponentDropdown from "./AddComponentDropdown.svelte";
   import CanvasComponent from "./CanvasComponent.svelte";
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
-  import DropZone from "./components/DropZone.svelte";
   import type { CanvasComponentType } from "./components/types";
-  import ElementDivider from "./ElementDivider.svelte";
   import ItemWrapper from "./ItemWrapper.svelte";
-  import type { DragItem, YAMLRow } from "./layout-util";
+  import type { Transaction, YAMLRow } from "./layout-util";
   import {
     COLUMN_COUNT,
     DEFAULT_DASHBOARD_WIDTH,
     mapGuard,
-    moveToRow,
     rowsGuard,
     mousePosition,
+    generateNewAssets,
   } from "./layout-util";
   import { activeDivider } from "./stores/ui-stores";
-
   import RowWrapper from "./RowWrapper.svelte";
-  import { useDefaultMetrics, type CanvasResponse } from "./selector";
+  import { useDefaultMetrics } from "./selector";
   import { getCanvasStore } from "./state-managers/state-managers";
   import { dropZone } from "./stores/ui-stores";
   import ComponentError from "./components/ComponentError.svelte";
   import EditableCanvasRow from "./EditableCanvasRow.svelte";
+  import { onDestroy } from "svelte";
+  import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
 
   const activelyEditing = writable(false);
 
-  type V1CanvasRow = Omit<APIV1CanvasRow, "items"> & {
-    items: (V1CanvasItem | null)[];
-  };
-
   export let fileArtifact: FileArtifact;
-  export let canvasData: CanvasResponse | undefined;
   export let canvasName: string;
   export let openSidebar: () => void;
 
   $: ({
-    canvasEntity: { setSelectedComponent },
+    canvasEntity: {
+      setSelectedComponent,
+      selectedComponent,
+      components,
+      processRows,
+      specStore,
+      unsubscribe,
+      _rows,
+    },
   } = getCanvasStore(canvasName));
+
+  $: layoutRows = $_rows;
 
   let initialMousePosition: { x: number; y: number } | null = null;
   let clientWidth: number;
-  let selected: Set<string> = new Set();
   let offset = { x: 0, y: 0 };
-
-  let dragItemInfo: DragItem | null = null;
+  let dragComponent: BaseCanvasComponent | null = null;
   let timeout: ReturnType<typeof setTimeout> | null = null;
   let dragTimeout: ReturnType<typeof setTimeout> | null = null;
   let dragItemPosition = { top: 0, left: 0 };
   let dragItemDimensions = { width: 0, height: 0 };
-  let spec = canvasData?.canvas ?? {
-    rows: [],
-    filtersEnabled: false,
-    maxWidth: DEFAULT_DASHBOARD_WIDTH,
-  };
   let openSidebarAfterSelection = false;
 
   $: ({ instanceId } = $runtime);
@@ -73,13 +70,22 @@
   $: ({ editorContent, updateEditorContent } = fileArtifact);
   $: contents = parseDocument($editorContent ?? "");
 
+  $: canvasData = $specStore.data;
+  $: resolvedComponents = canvasData?.components;
+
+  $: spec = canvasData?.canvas ?? {
+    rows: [],
+    filtersEnabled: false,
+    maxWidth: DEFAULT_DASHBOARD_WIDTH,
+  };
+
   $: if (canvasData?.canvas) {
     if (!get(activelyEditing)) {
       spec = structuredClone(canvasData?.canvas ?? spec);
     }
   }
 
-  $: activelyEditing.set(!!$activeDivider || !!dragItemInfo);
+  $: activelyEditing.set(!!$activeDivider || activelyDragging);
 
   $: ({ rows = [], filtersEnabled, maxWidth: canvasMaxWidth } = spec);
 
@@ -100,6 +106,8 @@
 
   $: defaultMetrics = $metricsViewQuery?.data;
 
+  $: activelyDragging = !!dragComponent;
+
   function updateComponentWidths(rowIndex: number, newWidths: number[]) {
     newWidths.forEach((width, i) => {
       try {
@@ -113,7 +121,7 @@
   }
 
   function getId(row: number | undefined, column: number | undefined) {
-    return `component-${row ?? 0}-${column ?? 0}`;
+    return `${canvasName}--component-${row ?? 0}-${column ?? 0}`;
   }
 
   function calculateMouseDelta(
@@ -123,10 +131,10 @@
     return Math.sqrt((pos1.x - pos2.x) ** 2 + (pos1.y - pos2.y) ** 2);
   }
 
-  function handleDragStart(metadata: DragItem) {
-    dragItemInfo = metadata;
+  function handleDragStart(component: BaseCanvasComponent) {
+    dragComponent = component;
 
-    const id = getId(metadata.position?.row, metadata.position?.column);
+    const id = component.id;
     const element = document.querySelector("#" + id);
     if (!element) return;
 
@@ -143,7 +151,7 @@
     };
   }
 
-  $: if (dragItemInfo) {
+  $: if (dragComponent) {
     dragItemPosition = {
       top: $mousePosition.y + offset.y,
       left: $mousePosition.x + offset.x,
@@ -151,7 +159,7 @@
   }
 
   function onDragEnd() {
-    dragItemInfo = null;
+    dragComponent = null;
   }
 
   function reset() {
@@ -159,7 +167,7 @@
       clearTimeout(dragTimeout);
     }
 
-    if (dragItemInfo) {
+    if (dragComponent) {
       onDragEnd();
     }
 
@@ -191,7 +199,7 @@
     const baseSize = COLUMN_COUNT / specRow.items.length;
 
     yamlRow.items.forEach((_, i) => {
-      if (!specRow.items[i] || !yamlRow.items[i]) return;
+      if (!specRow?.items?.[i] || !yamlRow.items[i]) return;
       specRow.items[i].width = baseSize;
       yamlRow.items[i].width = baseSize;
     });
@@ -202,14 +210,24 @@
   function updateAssets(
     specRows: V1CanvasRow[],
     yamlRows: YAMLRow[],
+    resolvedComponents?: Record<string, V1Resource>,
     clearSelection = true,
   ) {
     if (clearSelection) {
-      selected = new Set();
       setSelectedComponent(null);
     }
 
     specCanvasRows = specRows;
+
+    if (resolvedComponents) {
+      processRows({
+        components: resolvedComponents,
+
+        canvas: {
+          rows: specRows,
+        },
+      });
+    }
 
     try {
       contents.setIn(["rows"], yamlRows);
@@ -220,57 +238,40 @@
     updateContents();
   }
 
-  function dropItemsInExistingRow(
-    items: DragItem[],
-    row: number,
-    column: number,
-  ) {
-    const newYamlRows = moveToRow(yamlCanvasRows, items, { row, column });
-    const newSpecRows = moveToRow(specCanvasRows, items, { row, column });
+  function performTransaction(transaction: Transaction) {
+    if (!defaultMetrics) return;
 
-    updateAssets(newSpecRows, newYamlRows);
-  }
+    const { newSpecRows, newYamlRows, newResolvedComponents } =
+      generateNewAssets({
+        yamlRows: yamlCanvasRows,
+        specRows: specCanvasRows,
+        canvasName,
+        defaultMetrics,
+        resolvedComponents,
+        transaction,
+      });
 
-  function moveToNewRow(items: DragItem[], row: number) {
-    const newSpecRows = moveToRow(specCanvasRows, items, { row });
-    const newYamlRows = moveToRow(yamlCanvasRows, items, { row });
-
-    updateAssets(newSpecRows, newYamlRows);
-  }
-
-  function removeItems(items: { position: { row: number; column: number } }[]) {
-    const newSpecRows = moveToRow(specCanvasRows, items);
-    const newYamlRows = moveToRow(yamlCanvasRows, items);
-
-    updateAssets(newSpecRows, newYamlRows);
+    updateAssets(newSpecRows, newYamlRows, newResolvedComponents);
   }
 
   function addItems(
     position: { row: number; column: number },
     items: CanvasComponentType[],
   ) {
-    if (!defaultMetrics) return;
-    const newYamlRows = moveToRow(
-      yamlCanvasRows,
-      items.map((type) => ({ type })),
-      position,
-
-      defaultMetrics,
-    );
-
-    const newSpecRows = moveToRow(
-      specCanvasRows,
-      items.map((type) => ({ type })),
-      position,
-    );
-
-    updateAssets(newSpecRows, newYamlRows);
+    performTransaction({
+      operations: items.map((type, i) => ({
+        type: "add",
+        componentType: type,
+        destination: {
+          row: position.row,
+          col: position.column + i,
+        },
+      })),
+    });
 
     const id = getId(position.row, position.column);
 
-    selected = new Set([id]);
-
-    setSelectedComponent({ column: position.column, row: position.row });
+    setSelectedComponent(id);
   }
 
   function updateContents() {
@@ -285,46 +286,56 @@
   function initializeRow(row: number, type: CanvasComponentType) {
     if (!defaultMetrics) return;
 
-    const newYamlRows = moveToRow(
-      yamlCanvasRows,
-      [{ type }],
-      { row },
-      defaultMetrics,
-    );
-    const newSpecRows = moveToRow(specCanvasRows, [{ type }], { row });
-
-    updateAssets(newSpecRows, newYamlRows);
-
     const id = getId(row, 0);
 
-    selected = new Set([id]);
+    performTransaction({
+      operations: [
+        {
+          type: "add",
+          insertRow: true,
+          componentType: type,
+          destination: {
+            row,
+            col: 0,
+          },
+        },
+      ],
+    });
 
-    setSelectedComponent({ column: 0, row });
+    setSelectedComponent(id);
   }
 
   function onDrop(row: number, column: number | null) {
     if (!$dropZone) return;
     dropZone.clear();
 
-    if (dragItemInfo) {
-      if (
-        row === dragItemInfo.position?.row &&
-        (column === dragItemInfo.position.column ||
-          column === dragItemInfo.position?.column + 1)
-      ) {
+    if (dragComponent) {
+      const [, fromRow, , fromCol] = dragComponent.pathInYAML;
+      if (row === fromRow && (column === fromCol || column === fromCol + 1)) {
         return;
       }
-      if (column === null) {
-        moveToNewRow([dragItemInfo], row);
-      } else {
-        dropItemsInExistingRow([dragItemInfo], row, column);
-      }
+
+      performTransaction({
+        operations: [
+          {
+            type: "move",
+            insertRow: column === null,
+            source: {
+              row: fromRow,
+              col: fromCol,
+            },
+            destination: {
+              row,
+              col: column ?? 0,
+            },
+          },
+        ],
+      });
     }
   }
 
   function resetSelection() {
     setSelectedComponent(null);
-    selected = new Set();
   }
 
   function scrollToBottom() {
@@ -333,25 +344,48 @@
       element.scrollTop = element.scrollHeight;
     }
   }
+
+  onDestroy(() => {
+    if (dragTimeout) {
+      clearTimeout(dragTimeout);
+    }
+
+    if (timeout) {
+      clearTimeout(timeout);
+    }
+
+    unsubscribe();
+  });
 </script>
 
 <svelte:window
   on:mouseup={reset}
   on:keydown={(e) => {
-    if (e.key === "Backspace" && selected) {
-      if (
-        !(e.target instanceof HTMLElement) ||
-        (e.target.tagName !== "INPUT" &&
-          e.target.tagName !== "TEXTAREA" &&
-          !e.target.isContentEditable)
-      ) {
-        removeItems(
-          Array.from(selected).map((id) => {
-            const [row, column] = id.split("-").slice(1).map(Number);
-            return { position: { row, column } };
-          }),
-        );
-      }
+    const selected = $selectedComponent;
+    if (!selected || e.key !== "Backspace") return;
+
+    if (
+      !(e.target instanceof HTMLElement) ||
+      (e.target.tagName !== "INPUT" &&
+        e.target.tagName !== "TEXTAREA" &&
+        !e.target.isContentEditable)
+    ) {
+      const component = components.get(selected);
+      if (!component) return;
+
+      const [, row, , col] = component.pathInYAML;
+
+      performTransaction({
+        operations: [
+          {
+            type: "delete",
+            target: {
+              row,
+              col,
+            },
+          },
+        ],
+      });
     }
   }}
 />
@@ -361,129 +395,84 @@
   {maxWidth}
   {filtersEnabled}
   onClick={resetSelection}
-  showGrabCursor={!!dragItemInfo}
+  showGrabCursor={activelyDragging}
   bind:clientWidth
 >
-  {#each specCanvasRows as row, rowIndex (rowIndex)}
+  {#each layoutRows as row, rowIndex (rowIndex)}
     <EditableCanvasRow
       {row}
-      {canvasData}
       {maxWidth}
       {rowIndex}
-      movingWidget={!!dragItemInfo}
-      zIndex={50 - rowIndex * 2}
+      {components}
       {columnWidth}
-      {updateComponentWidths}
+      {dragComponent}
+      {selectedComponent}
+      zIndex={50 - rowIndex * 2}
       {onDrop}
+      {addItems}
+      {spreadEvenly}
       {initializeRow}
       {updateRowHeight}
-      let:widths
-      let:isSpreadEvenly
-      let:types
-      let:items
-      let:onColumnResizeStart
-    >
-      {#each items as item, columnIndex (columnIndex)}
-        {@const id = getId(rowIndex, columnIndex)}
-        {@const type = types[columnIndex]}
-        {@const componentResource =
-          canvasData?.components?.[item?.component ?? ""]}
-        <ItemWrapper {type} zIndex={4 - columnIndex}>
-          {#if columnIndex === 0}
-            <ElementDivider
-              {rowIndex}
-              resizeIndex={-1}
-              addIndex={columnIndex}
-              rowLength={items.length}
-              dragging={!!dragItemInfo}
-              {isSpreadEvenly}
-              {spreadEvenly}
-              {addItems}
-            />
-          {/if}
+      {updateComponentWidths}
+      onDelete={({ columnIndex }) => {
+        performTransaction({
+          operations: [
+            {
+              type: "delete",
+              target: {
+                row: rowIndex,
+                col: columnIndex,
+              },
+            },
+          ],
+        });
+      }}
+      onDuplicate={({ columnIndex }) => {
+        if (!defaultMetrics) return;
 
-          <ElementDivider
-            {isSpreadEvenly}
-            columnWidth={widths[columnIndex]}
-            {rowIndex}
-            dragging={!!dragItemInfo}
-            resizeIndex={columnIndex}
-            addIndex={columnIndex + 1}
-            rowLength={items.length}
-            {spreadEvenly}
-            {addItems}
-            {onColumnResizeStart}
-          />
+        performTransaction({
+          operations: [
+            {
+              type: "copy",
+              insertRow: true,
+              source: {
+                row: rowIndex,
+                col: columnIndex,
+              },
+              destination: {
+                row: rowIndex + 1,
+                col: 0,
+              },
+            },
+          ],
+        });
+      }}
+      onComponentMouseDown={({ event, id }) => {
+        if (event.button !== 0) return;
+        const component = components.get(id);
+        if (!component) return;
+        event.preventDefault();
 
-          <DropZone
-            column={columnIndex}
-            row={rowIndex}
-            maxColumns={items.length}
-            allowDrop={!!dragItemInfo}
-            {onDrop}
-          />
+        initialMousePosition = $mousePosition;
 
-          <CanvasComponent
-            {canvasName}
-            {componentResource}
-            canvasItem={item}
-            {id}
-            editable
-            ghost={dragItemInfo?.position?.row === rowIndex &&
-              dragItemInfo?.position?.column === columnIndex}
-            selected={selected.has(id)}
-            allowPointerEvents={!$activeDivider}
-            onMouseDown={(e) => {
-              if (e.button !== 0) return;
-              e.preventDefault();
+        setSelectedComponent(id);
 
-              initialMousePosition = $mousePosition;
+        if (dragTimeout) clearTimeout(dragTimeout);
 
-              setSelectedComponent({ column: columnIndex, row: rowIndex });
-              selected = new Set([id]);
+        openSidebarAfterSelection = true;
 
-              if (dragTimeout) clearTimeout(dragTimeout);
-
-              openSidebarAfterSelection = true;
-
-              dragTimeout = setTimeout(() => {
-                openSidebarAfterSelection = false;
-                handleDragStart({
-                  position: { row: rowIndex, column: columnIndex },
-                  type: type ?? "line_chart",
-                });
-              }, 150);
-            }}
-            onDuplicate={() => {
-              if (!defaultMetrics) return;
-
-              const newYamlRows = moveToRow(
-                yamlCanvasRows,
-                [{ position: { row: rowIndex, column: columnIndex } }],
-                { row: rowIndex + 1, copy: true },
-              );
-              const newSpecRows = moveToRow(
-                specCanvasRows,
-                [{ position: { row: rowIndex, column: columnIndex } }],
-                { row: rowIndex + 1, copy: true },
-              );
-
-              updateAssets(newSpecRows, newYamlRows);
-            }}
-            onDelete={() =>
-              removeItems([
-                { position: { row: rowIndex, column: columnIndex } },
-              ])}
-          />
-        </ItemWrapper>
-      {/each}
-    </EditableCanvasRow>
+        dragTimeout = setTimeout(() => {
+          openSidebarAfterSelection = false;
+          handleDragStart(component);
+        }, 150);
+      }}
+    />
   {:else}
     <RowWrapper
       gridTemplate="12fr"
       zIndex={0}
       {maxWidth}
-      rowIndex={specCanvasRows.length}
+      id="add-component-row"
     >
       <ItemWrapper zIndex={0}>
         {#if defaultMetrics}
@@ -514,33 +503,23 @@
   />
 {/if}
 
-{#if dragItemInfo && dragItemInfo.position}
-  {@const item =
-    specCanvasRows[dragItemInfo.position.row]?.items?.[
-      dragItemInfo.position.column
-    ]}
-  {@const componentResource = canvasData?.components?.[item?.component ?? ""]}
-  {#if item}
-    <div
-      use:portal
-      class="absolute pointer-events-none drag-container"
-      style:z-index="1000"
-      style:top="{dragItemPosition.top}px"
-      style:left="{dragItemPosition.left}px"
-      style:width="{dragItemDimensions.width}px"
-      style:height="{dragItemDimensions.height}px"
-    >
-      <CanvasComponent
-        {canvasName}
-        {componentResource}
-        id="canvas-drag-item"
-        canvasItem={item}
-        allowPointerEvents={false}
-        ghost
-        selected
-      />
-    </div>
-  {/if}
+{#if dragComponent}
+  <div
+    use:portal
+    class="absolute pointer-events-none drag-container"
+    style:z-index="1000"
+    style:top="{dragItemPosition.top}px"
+    style:left="{dragItemPosition.left}px"
+    style:width="{dragItemDimensions.width}px"
+    style:height="{dragItemDimensions.height}px"
+  >
+    <CanvasComponent
+      component={dragComponent}
+      allowPointerEvents={false}
+      ghost
+      selected
+    />
+  </div>
 {/if}
 
 <style lang="postcss">

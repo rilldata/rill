@@ -1,17 +1,25 @@
 import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
-import type { ChartConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
+import type {
+  ChartConfig,
+  ChartType,
+} from "@rilldata/web-common/features/canvas/components/charts/types";
 import {
   commonOptions,
   getFilterOptions,
 } from "@rilldata/web-common/features/canvas/components/util";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
-import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
 import { defaultPrimaryColors } from "@rilldata/web-common/features/themes/color-config";
-import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
+import type {
+  V1MetricsViewSpec,
+  V1Resource,
+} from "@rilldata/web-common/runtime-client";
 import type {
   ComponentCommonProperties,
   ComponentFilterProperties,
 } from "../types";
+import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
+import Chart from "./Chart.svelte";
+import { get, writable, type Writable } from "svelte/store";
 
 export { default as Chart } from "./Chart.svelte";
 
@@ -23,18 +31,21 @@ export class ChartComponent extends BaseCanvasComponent<ChartSpec> {
   minSize = { width: 4, height: 4 };
   defaultSize = { width: 6, height: 4 };
   resetParams = [];
+  type: ChartType;
+  chartType: Writable<ChartType>;
+  component = Chart;
 
-  constructor(
-    fileArtifact: FileArtifact | undefined = undefined,
-    path: (string | number)[] = [],
-    initialSpec: Partial<ChartSpec> = {},
-  ) {
+  constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
     const defaultSpec: ChartSpec = {
       metrics_view: "",
       title: "",
       description: "",
     };
-    super(fileArtifact, path, defaultSpec, initialSpec);
+
+    super(resource, parent, path, defaultSpec);
+
+    this.type = resource.component?.state?.validSpec?.renderer as ChartType;
+    this.chartType = writable(this.type);
   }
 
   isValid(spec: ChartSpec): boolean {
@@ -56,7 +67,7 @@ export class ChartComponent extends BaseCanvasComponent<ChartSpec> {
     };
   }
 
-  newComponentSpec(
+  static newComponentSpec(
     metricsViewName: string,
     metricsViewSpec: V1MetricsViewSpec | undefined,
   ): ChartSpec {
@@ -93,5 +104,25 @@ export class ChartComponent extends BaseCanvasComponent<ChartSpec> {
     };
 
     return spec;
+  }
+
+  updateChartType(key: ChartType) {
+    if (!this.parent.fileArtifact) return;
+    const currentSpec = get(this.specStore);
+
+    const parentPath = this.pathInYAML.slice(0, -1);
+
+    this.chartType.set(key);
+
+    const parseDocumentStore = this.parent.parsedContent;
+    const parsedDocument = get(parseDocumentStore);
+
+    const { updateEditorContent } = this.parent.fileArtifact;
+
+    const width = parsedDocument.getIn([...parentPath, "width"]);
+
+    parsedDocument.setIn(parentPath, { [key]: currentSpec, width });
+
+    updateEditorContent(parsedDocument.toString(), false, true);
   }
 }
