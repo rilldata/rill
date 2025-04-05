@@ -6,15 +6,20 @@ title: rill org delete
 
 Delete organization
 
+### Synopsis
+
+Delete an organization and all its associated projects.
+This operation cannot be undone. Use --force to skip confirmation.
+
 ```
 rill org delete [<org-name>] [flags]
 ```
 
-### Flags
+### Examples
 
 ```
-      --org string   Organization Name
-      --force        Delete forcefully, skips the confirmation
+  rill org delete myorg
+  rill org delete myorg --force
 ```
 
 ### Global flags

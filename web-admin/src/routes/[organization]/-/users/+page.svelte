@@ -1,15 +1,17 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
   import type { V1UserInvite } from "@rilldata/web-admin/client";
-  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
+  import {
+    createAdminServiceGetCurrentUser,
+    createAdminServiceListOrganizationInvitesInfinite,
+    createAdminServiceListOrganizationMemberUsersInfinite,
+  } from "@rilldata/web-admin/client";
+  import AddUsersDialog from "@rilldata/web-admin/features/organizations/users/AddUsersDialog.svelte";
   import OrgUsersTable from "@rilldata/web-admin/features/organizations/users/OrgUsersTable.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import { Plus } from "lucide-svelte";
-  import AddUsersDialog from "@rilldata/web-admin/features/organizations/users/AddUsersDialog.svelte";
   import { Search } from "@rilldata/web-common/components/search";
-  import { createAdminServiceListOrganizationMemberUsersInfiniteQuery } from "@rilldata/web-admin/features/organizations/users/create-infinite-query-org-users";
-  import { createAdminServiceListOrganizationInvitesInfiniteQuery } from "@rilldata/web-admin/features/organizations/users/create-infinite-query-org-invites";
+  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
+  import { Plus } from "lucide-svelte";
 
   const PAGE_SIZE = 12;
 
@@ -22,13 +24,39 @@
   $: organization = $page.params.organization;
 
   $: orgMemberUsersInfiniteQuery =
-    createAdminServiceListOrganizationMemberUsersInfiniteQuery(organization, {
-      pageSize: PAGE_SIZE,
-    });
+    createAdminServiceListOrganizationMemberUsersInfinite(
+      organization,
+      {
+        pageSize: PAGE_SIZE,
+      },
+      {
+        query: {
+          getNextPageParam: (lastPage) => {
+            if (lastPage.nextPageToken !== "") {
+              return lastPage.nextPageToken;
+            }
+            return undefined;
+          },
+        },
+      },
+    );
   $: orgInvitesInfiniteQuery =
-    createAdminServiceListOrganizationInvitesInfiniteQuery(organization, {
-      pageSize: PAGE_SIZE,
-    });
+    createAdminServiceListOrganizationInvitesInfinite(
+      organization,
+      {
+        pageSize: PAGE_SIZE,
+      },
+      {
+        query: {
+          getNextPageParam: (lastPage) => {
+            if (lastPage.nextPageToken !== "") {
+              return lastPage.nextPageToken;
+            }
+            return undefined;
+          },
+        },
+      },
+    );
 
   $: allOrgMemberUsersRows =
     $orgMemberUsersInfiniteQuery.data?.pages.flatMap(

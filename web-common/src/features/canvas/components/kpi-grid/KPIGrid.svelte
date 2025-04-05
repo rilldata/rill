@@ -4,17 +4,17 @@
   import type { Readable } from "svelte/store";
   import type { KPIGridSpec } from ".";
   import ComponentError from "../ComponentError.svelte";
-  import type { KPISpec } from "../kpi";
-  import KPI from "../kpi/KPI.svelte";
   import { validateKPIGridSchema } from "./selector";
   import { getMinWidth } from "../kpi";
+  import KPIProvider from "../kpi/KPIProvider.svelte";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
   export let timeAndFilterStore: Readable<TimeAndFilterStore>;
+  export let canvasName: string;
 
-  let kpis: KPISpec[];
+  let kpis: V1ComponentSpecRendererProperties[];
 
-  $: kpiGridProperties = rendererProperties as KPIGridSpec;
+  $: kpiGridProperties = rendererProperties as unknown as KPIGridSpec;
   $: schema = validateKPIGridSchema(kpiGridProperties);
 
   // Convert measures to KPI specs
@@ -42,7 +42,11 @@
     >
       {#each kpis as kpi, i (i)}
         <div class="min-h-32 kpi-wrapper">
-          <KPI rendererProperties={kpi} {timeAndFilterStore} />
+          <KPIProvider
+            rendererProperties={kpi}
+            {timeAndFilterStore}
+            {canvasName}
+          />
         </div>
       {/each}
     </div>

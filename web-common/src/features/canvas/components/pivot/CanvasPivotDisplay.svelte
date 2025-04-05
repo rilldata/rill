@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { PivotSpec } from "@rilldata/web-common/features/canvas/components/pivot";
-  import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
   import {
     type PivotDataStore,
@@ -23,9 +23,10 @@
   export let timeAndFilterStore: Readable<TimeAndFilterStore>;
   export let componentName: string;
   export let hasHeader: boolean;
+  export let canvasName: string;
 
-  const ctx = getCanvasStateManagers();
-  const tableSpecStore = writable(rendererProperties as PivotSpec);
+  $: ctx = getCanvasStore(canvasName);
+  const tableSpecStore = writable(rendererProperties as unknown as PivotSpec);
   const pivotState = writable<PivotState>({
     active: true,
     columns: [],
@@ -39,11 +40,11 @@
     activeCell: null,
   });
 
-  const { getMetricsViewFromName } = ctx.canvasEntity.spec;
+  $: ({ getMetricsViewFromName } = ctx.canvasEntity.spec);
   let pivotDataStore: PivotDataStore | undefined;
   let pivotConfig: Readable<PivotDataStoreConfig> | undefined;
 
-  $: tableSpec = rendererProperties as PivotSpec;
+  $: tableSpec = rendererProperties as unknown as PivotSpec;
   $: tableSpecStore.set(tableSpec);
 
   $: measures = tableSpec.measures || [];

@@ -1,34 +1,47 @@
-import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+import { derived, type Readable } from "svelte/store";
 import type {
   CreateQueryResult,
   QueryObserverResult,
 } from "@tanstack/svelte-query";
-import { derived, type Readable } from "svelte/store";
 
-/**
- * Temporary type for derived data based on multiple queries.
- * TODO: get rid of this once we move to tanstack v5
- */
+export type SupportedCompoundQueryResult<R = any, E = any> =
+  | CreateQueryResult<R, E>
+  | CompoundQueryResult<R>;
+
 export type CompoundQueryResult<T> = Readable<
   Pick<QueryObserverResult, "error" | "isFetching" | "isLoading"> & {
     data?: T;
   }
 >;
 
-export function getCompoundQuery<R, T>(
-  queries: CreateQueryResult<R, HTTPError>[],
-  getter: (data: (R | undefined)[]) => T,
-): CompoundQueryResult<T> {
+type ExtractQueryData<T> =
+  T extends CreateQueryResult<infer R, any>
+    ? R | undefined
+    : T extends CompoundQueryResult<infer R>
+      ? R | undefined
+      : never;
+
+export function getCompoundQuery<
+  T extends readonly SupportedCompoundQueryResult[],
+  R,
+>(
+  queries: [...T],
+  getter: (data: { [K in keyof T]: ExtractQueryData<T[K]> }) => R,
+): CompoundQueryResult<R> {
   return derived(queries, ($queries) => {
     const someQueryFetching = $queries.some((q) => q.isFetching);
     const someQueryLoading = $queries.some((q) => q.isLoading);
-    const errors = $queries.filter((q) => q.isError).map((q) => q.error);
-    const data = getter($queries.map((query) => query.data));
+    const errors = $queries.filter((q) => !!q.error).map((q) => q.error);
+
+    const data = getter(
+      $queries.map((q) => q.data) as {
+        [K in keyof T]: ExtractQueryData<T[K]>;
+      },
+    );
 
     return {
       data,
-      // TODO: merge multiple errors
-      error: errors[0]?.response?.data.message,
+      error: errors[0],
       isFetching: someQueryFetching,
       isLoading: someQueryLoading,
     };

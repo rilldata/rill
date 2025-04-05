@@ -103,15 +103,17 @@ export function extractAlertNotification(
   const slackNotifier = alertSpec.notifiers?.find(
     (n) => n.connector === "slack",
   );
-  const slackChannels: string[] | undefined =
-    slackNotifier?.properties?.channels;
-  const slackUsers: string[] | undefined = slackNotifier?.properties?.users;
+  const slackChannels = slackNotifier?.properties?.channels as
+    | string[]
+    | undefined;
+  const slackUsers = slackNotifier?.properties?.users as string[] | undefined;
 
   const emailNotifier = alertSpec.notifiers?.find(
     (n) => n.connector === "email",
   );
-  const emailRecipients: string[] | undefined =
-    emailNotifier?.properties?.recipients;
+  const emailRecipients = emailNotifier?.properties?.recipients as
+    | string[]
+    | undefined;
 
   return {
     enableSlackNotification: !!slackNotifier,

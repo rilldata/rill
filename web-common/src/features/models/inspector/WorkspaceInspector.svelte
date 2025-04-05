@@ -4,13 +4,13 @@
   import ColumnProfile from "@rilldata/web-common/features/column-profile/ColumnProfile.svelte";
   import { getSummaries } from "@rilldata/web-common/features/column-profile/queries";
   import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
-  import { useModels } from "@rilldata/web-common/features/models/selectors";
-  import { useSources } from "@rilldata/web-common/features/sources/selectors";
   import {
     formatConnectorType,
     getFileExtension,
   } from "@rilldata/web-common/features/sources/sourceUtils";
   import CollapsibleSectionTitle from "@rilldata/web-common/layout/CollapsibleSectionTitle.svelte";
+  import SimpleMessage from "@rilldata/web-common/layout/inspector/SimpleMessage.svelte";
+  import Inspector from "@rilldata/web-common/layout/workspace/Inspector.svelte";
   import {
     formatBigNumberPercentage,
     formatInteger,
@@ -27,12 +27,9 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import IncrementalProcessing from "../incremental/IncrementalProcessing.svelte";
   import PartitionsBrowser from "../partitions/PartitionsBrowser.svelte";
-  import { getTableReferences } from "../utils/get-table-references";
   import References from "./References.svelte";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
-  import { getMatchingReferencesAndEntries } from "./utils";
-  import Inspector from "@rilldata/web-common/layout/workspace/Inspector.svelte";
-  import SimpleMessage from "@rilldata/web-common/layout/inspector/SimpleMessage.svelte";
+  import { keepPreviousData } from "@tanstack/svelte-query";
 
   export let hasUnsavedChanges: boolean;
   export let connector: string;
@@ -43,7 +40,6 @@
   export let sourceIsReconciling: boolean = false;
   export let isEmpty = false;
   export let hasErrors: boolean;
-  export let showReferences = true;
   export let filePath: string;
 
   let showColumns = true;
@@ -75,7 +71,7 @@
     },
     {
       query: {
-        keepPreviousData: true,
+        placeholderData: keepPreviousData,
       },
     },
   );
@@ -112,45 +108,30 @@
       ? formatBigNumberPercentage(totalNulls / totalCells)
       : undefined;
 
-  $: sourceTableReferences =
-    model && getTableReferences(model?.spec?.inputProperties?.sql ?? "");
+  $: resourceRefs = resource?.meta?.refs ?? [];
 
-  $: getAllSources = useSources(instanceId);
-  $: getAllModels = useModels(instanceId);
-
-  $: allSources = $getAllSources?.data ?? [];
-  $: allModels = $getAllModels?.data ?? [];
-
-  $: referencedThings =
-    sourceTableReferences &&
-    getMatchingReferencesAndEntries(tableName, sourceTableReferences, [
-      ...allSources,
-      ...allModels,
-    ]);
-
-  $: cardinalityQueries =
-    referencedThings?.map(([resource]) => {
-      return createQueryServiceTableCardinality(
-        instanceId,
-        resource.meta?.name?.name ?? "",
-        {
-          connector,
-          database,
-          databaseSchema,
+  $: cardinalityQueries = resourceRefs.map((ref) => {
+    return createQueryServiceTableCardinality(
+      instanceId,
+      ref.name as string,
+      {
+        connector,
+        database,
+        databaseSchema,
+      },
+      {
+        query: {
+          select: (data) => +(data?.cardinality ?? 0),
         },
-        {
-          query: {
-            select: (data) => +(data?.cardinality ?? 0),
-          },
-        },
-      );
-    }) ?? [];
+      },
+    );
+  });
 
   $: sourceProfileColumns =
-    referencedThings?.map(([resource]) => {
+    resourceRefs.map((ref) => {
       return createQueryServiceTableColumns(
         instanceId,
-        resource.meta?.name?.name ?? "",
+        ref.name as string,
         {
           connector,
           database,
@@ -282,11 +263,8 @@
         </InspectorHeaderGrid>
 
         <hr />
-
-        {#if showReferences && referencedThings?.length}
-          <References modelHasError={hasErrors} {referencedThings} />
-          <hr />
-        {/if}
+        <References refs={resourceRefs} modelHasError={hasErrors} />
+        <hr />
 
         <div>
           <div class="px-4">

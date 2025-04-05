@@ -8,6 +8,7 @@
   export let selectedComponentName: string;
   export let component: CanvasComponentObj;
   export let paramValues: V1ComponentSpecRendererProperties;
+  export let canvasName: string;
 
   $: localParamValues = localParamValues || {};
   let oldParamValuesRef: V1ComponentSpecRendererProperties = {};
@@ -21,7 +22,7 @@
   $: inputParams = component.inputParams().filter;
 
   $: metricsView =
-    "metrics_view" in paramValues ? paramValues.metrics_view : null;
+    "metrics_view" in paramValues ? (paramValues.metrics_view as string) : null;
 
   onMount(() => {
     localParamValues = structuredClone(paramValues) || {};
@@ -29,10 +30,11 @@
 </script>
 
 <div>
-  {#each Object.entries(inputParams) as [key, config]}
+  {#each Object.entries(inputParams) as [key, config] (key)}
     <div class="component-param">
       {#if config.type === "time_filters"}
         <TimeFiltersInput
+          {canvasName}
           {selectedComponentName}
           id={key}
           timeFilter={localParamValues[key]}
@@ -45,6 +47,7 @@
         />
       {:else if config.type == "dimension_filters" && metricsView}
         <DimensionFiltersInput
+          {canvasName}
           {metricsView}
           {selectedComponentName}
           id={key}

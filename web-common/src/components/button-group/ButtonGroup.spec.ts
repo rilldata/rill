@@ -134,7 +134,6 @@ describe("ButtonGroup - adding buttons", () => {
   });
 
   it("added has correct tooltip, including on props change", async () => {
-    // window.scrollTo = vi.fn();
     component.$set({ values: [1, 2, 3, 4] });
 
     const button = await screen.findByRole("button", { name: `button-${4}` });

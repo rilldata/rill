@@ -1,37 +1,33 @@
 import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryClient } from "@tanstack/svelte-query";
-import { getContext } from "svelte";
-import { writable, type Writable } from "svelte/store";
+import { type Writable } from "svelte/store";
 import { useCanvasEntity } from "../stores/canvas-entities";
 import type { CanvasEntity } from "../stores/canvas-entity";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
-export type StateManagers = {
+export type CanvasStore = {
   runtime: Writable<Runtime>;
-  canvasName: Writable<string>;
   canvasEntity: CanvasEntity;
   queryClient: QueryClient;
 };
 
-export const DEFAULT_STORE_KEY = Symbol("canvas-state-managers");
+const canvasStores = new Map<string, CanvasStore>();
 
-export function getCanvasStateManagers(): StateManagers {
-  return getContext(DEFAULT_STORE_KEY);
+export function getCanvasStore(canvasName: string) {
+  let store = canvasStores.get(canvasName);
+  if (!store) {
+    store = createCanvasStore(canvasName);
+    canvasStores.set(canvasName, store);
+  }
+  return store;
 }
 
-export function createStateManagers({
-  queryClient,
-  canvasName,
-}: {
-  queryClient: QueryClient;
-  canvasName: string;
-}): StateManagers {
-  const canvasNameStore = writable(canvasName);
+export function createCanvasStore(canvasName: string): CanvasStore {
   const canvasEntity = useCanvasEntity(canvasName);
 
   return {
     runtime: runtime,
-    canvasName: canvasNameStore,
     canvasEntity,
     queryClient,
   };

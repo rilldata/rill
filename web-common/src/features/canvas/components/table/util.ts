@@ -1,5 +1,5 @@
 import { memoizePivotConfig } from "@rilldata/web-common/features/canvas/components/pivot/util";
-import type { StateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
 import {
   canEnablePivotComparison,
@@ -19,7 +19,7 @@ import type { TableSpec } from "./";
 let lastKey: string | undefined = undefined;
 
 function getTableConfig(
-  ctx: StateManagers,
+  ctx: CanvasStore,
   metricsViewName: string,
   tableSpecStore: Readable<TableSpec>,
   pivotState: Writable<PivotState>,

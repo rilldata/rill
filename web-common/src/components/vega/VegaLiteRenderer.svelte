@@ -1,17 +1,14 @@
 <script lang="ts">
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
-    type EmbedOptions,
     type SignalListeners,
     VegaLite,
     type View,
     type VisualizationSpec,
   } from "svelte-vega";
-  import { get } from "svelte/store";
   import type { Config } from "vega-lite";
   import type { ExpressionFunction, VLTooltipFormatter } from "./types";
-  import { getRillTheme } from "./vega-config";
+  import { createEmbedOptions } from "./vega-embed-options";
   import { VegaLiteTooltipHandler } from "./vega-tooltip";
 
   export let data: Record<string, unknown> = {};
@@ -20,14 +17,12 @@
   export let expressionFunctions: ExpressionFunction = {};
   export let error: string | null = null;
   export let canvasDashboard = false;
-  export let chartView = false;
   export let renderer: "canvas" | "svg" = "canvas";
   export let config: Config | undefined = undefined;
   export let tooltipFormatter: VLTooltipFormatter | undefined = undefined;
   export let viewVL: View;
 
   let contentRect = new DOMRect(0, 0, 0, 0);
-  let jwt = get(runtime).jwt;
 
   $: width = contentRect.width;
   $: height = contentRect.height - 10;
@@ -38,26 +33,14 @@
     void viewVL.runAsync();
   }
 
-  $: options = <EmbedOptions>{
-    config: config || getRillTheme(canvasDashboard),
+  $: options = createEmbedOptions({
+    canvasDashboard,
+    width,
+    height,
+    config,
     renderer,
-    actions: false,
-    logLevel: 0, // only show errors
-    width: canvasDashboard ? width : undefined,
     expressionFunctions,
-    height: chartView || !canvasDashboard ? undefined : height,
-    loader: {
-      baseURL: `${get(runtime).host}/v1/instances/${get(runtime).instanceId}/assets/`,
-      ...(jwt &&
-        jwt.token && {
-          http: {
-            headers: {
-              Authorization: `Bearer ${jwt.token}`,
-            },
-          },
-        }),
-    },
-  };
+  });
 
   const onError = (e: CustomEvent<{ error: Error }>) => {
     error = e.detail.error.message;
@@ -94,7 +77,8 @@
     width: 100%;
   }
 
-  :global(#vg-tooltip-element, #rill-vg-tooltip) {
+  :global(#vg-tooltip-element),
+  :global(#rill-vg-tooltip) {
     @apply absolute border border-slate-300 p-3 rounded-lg pointer-events-none;
     background: rgba(255, 255, 255, 0.9);
     & h2 {
