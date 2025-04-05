@@ -3,6 +3,7 @@
   import CanvasPivotRenderer from "./CanvasPivotRenderer.svelte";
   import { validateTableSchema } from "./selector";
   import { tableFieldMapper } from "./util";
+  import ComponentHeader from "../../ComponentHeader.svelte";
 
   export let component: PivotCanvasComponent;
 
@@ -18,7 +19,14 @@
 
   $: tableSpec = $specStore;
 
-  $: hasHeader = !!tableSpec?.title || !!tableSpec?.description;
+  $: ({ title, description, dimension_filters, time_filters } = tableSpec);
+
+  $: hasHeader = !!title || !!description;
+
+  $: filters = {
+    time_filters,
+    dimension_filters,
+  };
 
   $: _metricViewSpec = getMetricsViewFromName(tableSpec.metrics_view);
   $: metricsViewSpec = $_metricViewSpec.metricsView;
@@ -49,6 +57,8 @@
     }));
   }
 </script>
+
+<ComponentHeader {title} {description} {filters} />
 
 <CanvasPivotRenderer
   {hasHeader}

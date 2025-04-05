@@ -4,10 +4,11 @@ import type { ImageSpec } from "./image";
 import type { KPISpec } from "./kpi";
 import type { MarkdownSpec } from "./markdown";
 import type { PivotSpec, TableSpec } from "./pivot";
+import type { ChartSpec } from "./charts";
 
 // First, let's create a union type for all possible specs
 export type ComponentSpec =
-  | ChartConfig
+  | ChartSpec
   | PivotSpec
   | ImageSpec
   | TableSpec

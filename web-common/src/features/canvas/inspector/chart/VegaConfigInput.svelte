@@ -3,12 +3,11 @@
   import { EditorState } from "@codemirror/state";
   import { EditorView, placeholder } from "@codemirror/view";
   import { base as baseExtensions } from "@rilldata/web-common/components/editor/presets/base";
-  import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
   import { onDestroy, onMount } from "svelte";
   import type { BaseCanvasComponent } from "../../components/BaseCanvasComponent";
+  import { get } from "svelte/store";
 
   export let component: BaseCanvasComponent;
-  export let paramValues: V1ComponentSpecRendererProperties;
 
   const KEY = "vl_config";
   let error: string | null = null;
@@ -27,6 +26,7 @@
 }`;
 
   onMount(() => {
+    const paramValues = get(component.specStore);
     configEditor = new EditorView({
       state: EditorState.create({
         doc: (paramValues[KEY] as string | undefined) || "",

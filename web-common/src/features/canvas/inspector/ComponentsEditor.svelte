@@ -47,7 +47,7 @@
     {:else if currentTab === "filters"}
       <FiltersMapper {component} />
     {:else if currentTab === "config"}
-      <VegaConfigInput {component} paramValues={rendererProperties} />
+      <VegaConfigInput {component} />
     {/if}
   {:else if !type}
     <div class="inspector-center">

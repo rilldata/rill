@@ -8,7 +8,6 @@ import type {
 import type { CanvasResponse } from "@rilldata/web-common/features/canvas/selector";
 import type {
   RpcStatus,
-  V1ComponentSpecRendererProperties,
   V1MetricsViewSpec,
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
@@ -19,7 +18,6 @@ import { PivotCanvasComponent } from "./pivot";
 import type {
   CanvasComponentType,
   ComponentCommonProperties,
-  ComponentFilterProperties,
   ComponentSpec,
 } from "./types";
 import type { CanvasEntity, ComponentPath } from "../stores/canvas-entity";
@@ -159,17 +157,6 @@ export function isTableComponentType(
 ): value is TableType {
   if (!value) return false;
   return TABLE_TYPES.includes(value as TableType);
-}
-
-export function getComponentFilterProperties(
-  rendererProperties: V1ComponentSpecRendererProperties | undefined,
-): ComponentFilterProperties {
-  return {
-    dimension_filters: rendererProperties?.dimension_filters as
-      | string
-      | undefined,
-    time_filters: rendererProperties?.time_filters as string | undefined,
-  };
 }
 
 export function getHeaderForComponent(

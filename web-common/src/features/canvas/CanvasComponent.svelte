@@ -1,11 +1,8 @@
 <script lang="ts" context="module">
-  import ComponentHeader from "@rilldata/web-common/features/canvas/ComponentHeader.svelte";
   import { hideBorder } from "./layout-util";
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
-  import { getComponentFilterProperties } from "@rilldata/web-common/features/canvas/components/util";
   import Toolbar from "./Toolbar.svelte";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
-  import { ChartComponent } from "./components/charts";
 </script>
 
 <script lang="ts">
@@ -20,13 +17,7 @@
 
   let open = false;
 
-  $: ({ id: componentName, specStore, type: renderer } = component);
-
-  $: rendererProperties = $specStore;
-
-  $: title = rendererProperties?.["title"] as string | undefined;
-  $: description = rendererProperties?.["description"] as string | undefined;
-  $: componentFilters = getComponentFilterProperties(rendererProperties);
+  $: ({ id: componentName, type: renderer } = component);
 
   $: allowBorder = !hideBorder.has(renderer);
 </script>
@@ -52,10 +43,6 @@
     on:mousedown={onMouseDown}
   >
     {#if component}
-      {#if !(component instanceof ChartComponent)}
-        <ComponentHeader {title} {description} filters={componentFilters} />
-      {/if}
-
       <svelte:component this={component.component} {component} />
     {:else}
       <div class="size-full grid place-content-center">

@@ -3,7 +3,6 @@
   import ComponentHeader from "@rilldata/web-common/features/canvas/ComponentHeader.svelte";
   import type { ChartComponent } from "@rilldata/web-common/features/canvas/components/charts";
   import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
-  import { getComponentFilterProperties } from "@rilldata/web-common/features/canvas/components/util";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
@@ -41,6 +40,16 @@
 
   $: chartConfig = $specStore;
 
+  $: ({
+    title,
+    description,
+    metrics_view,
+    y,
+    vl_config,
+    time_filters,
+    dimension_filters,
+  } = chartConfig);
+
   $: schemaStore = validateChartSchema(store, chartConfig);
 
   $: schema = $schemaStore;
@@ -52,12 +61,12 @@
 
   $: spec = generateSpec(chartType, chartConfig, $chartQuery);
 
-  $: componentFilters = getComponentFilterProperties(chartConfig);
+  $: filters = {
+    time_filters,
+    dimension_filters,
+  };
 
-  $: measure = getMeasureForMetricView(
-    chartConfig.y?.field,
-    chartConfig.metrics_view,
-  );
+  $: measure = getMeasureForMetricView(y?.field, metrics_view);
 
   $: measureName = sanitizeFieldName($measure?.name || "measure");
 
@@ -65,12 +74,7 @@
     $measure as MetricsViewSpecMeasureV2,
   );
 
-  $: config = chartConfig.vl_config
-    ? mergedVlConfig(chartConfig.vl_config)
-    : undefined;
-
-  $: title = chartConfig?.title || getChartTitle(chartConfig, $chartQuery);
-  $: description = chartConfig?.description;
+  $: config = vl_config ? mergedVlConfig(vl_config) : undefined;
 </script>
 
 <div class="size-full flex flex-col overflow-hidden">
@@ -83,10 +87,10 @@
       <ComponentError error={error.message} />
     {:else}
       <ComponentHeader
-        faint={!chartConfig?.title}
-        {title}
+        faint={!title}
+        title={title || getChartTitle(chartConfig, $chartQuery)}
         {description}
-        filters={componentFilters}
+        {filters}
       />
       {#if hasNoData}
         <div

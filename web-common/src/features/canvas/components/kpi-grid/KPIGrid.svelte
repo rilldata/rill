@@ -4,6 +4,7 @@
   import { validateKPIGridSchema } from "./selector";
   import { getMinWidth, type KPISpec } from "../kpi";
   import KPIProvider from "../kpi/KPIProvider.svelte";
+  import ComponentHeader from "../../ComponentHeader.svelte";
 
   export let component: KPIGridComponent;
 
@@ -27,10 +28,20 @@
     time_filters: kpiGridProperties.time_filters,
   }));
 
+  $: filters = {
+    time_filters: kpiGridProperties.time_filters,
+    dimension_filters: kpiGridProperties.dimension_filters,
+  };
+
   $: sparkline = kpiGridProperties.sparkline;
 
   $: minWidth = getMinWidth(sparkline);
+
+  $: title = kpiGridProperties.title;
+  $: description = kpiGridProperties.description;
 </script>
+
+<ComponentHeader {title} {description} {filters} />
 
 {#if schema.isValid}
   <div class="h-fit p-0 grow relative" class:!p-0={kpis.length === 1}>

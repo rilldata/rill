@@ -4,6 +4,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { ImageComponent } from "./";
   import { getImagePosition } from "./util";
+  import ComponentHeader from "../../ComponentHeader.svelte";
 
   export let component: ImageComponent;
 
@@ -12,13 +13,15 @@
   $: ({ instanceId } = $runtime);
   $: imageProperties = $specStore;
 
-  $: objectPosition = getImagePosition(imageProperties.alignment);
+  $: ({ title, description, alignment, url } = imageProperties);
+
+  $: objectPosition = getImagePosition(alignment);
 
   let imageSrc: string | null = null;
   let errorMessage: string | null = null;
   $: {
-    if (imageProperties.url) {
-      fetchImage(imageProperties.url);
+    if (url) {
+      fetchImage(url);
     } else {
       imageSrc = null;
       errorMessage = "No image URL provided";
@@ -64,6 +67,7 @@
 {#if errorMessage}
   <ComponentError error={errorMessage} />
 {:else}
+  <ComponentHeader {title} {description} />
   <img
     src={imageSrc || ""}
     alt={"Canvas Image"}
