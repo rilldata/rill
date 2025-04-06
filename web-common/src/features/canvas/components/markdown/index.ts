@@ -8,7 +8,7 @@ import {
 
 export { default as Markdown } from "./Markdown.svelte";
 
-export const defaultAlignment: ComponentAlignment = {
+export const defaultMarkdownAlignment: ComponentAlignment = {
   vertical: "middle",
   horizontal: "left",
 };
@@ -21,6 +21,7 @@ export interface MarkdownSpec extends ComponentCommonProperties {
 export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
   minSize = { width: 1, height: 1 };
   defaultSize = { width: 3, height: 2 };
+  resetParams = [];
 
   constructor(
     fileArtifact: FileArtifact | undefined = undefined,
@@ -31,7 +32,7 @@ export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
       title: "",
       description: "",
       content: "Your text",
-      alignment: defaultAlignment,
+      alignment: defaultMarkdownAlignment,
     };
     super(fileArtifact, path, defaultSpec, initialSpec);
   }
@@ -48,7 +49,13 @@ export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
           label: "Markdown",
           description: "Write text using the markdown syntax",
         },
-        alignment: { type: "alignment", label: "Alignment" },
+        alignment: {
+          type: "alignment",
+          label: "Alignment",
+          meta: {
+            defaultAlignment: defaultMarkdownAlignment,
+          },
+        },
       },
       filter: {},
     };
@@ -70,7 +77,7 @@ Start writing in **Markdown** and see your text beautifully formatted! 🚀`;
 
     return {
       content: defaultContent,
-      alignment: defaultAlignment,
+      alignment: defaultMarkdownAlignment,
     };
   }
 }

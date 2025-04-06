@@ -1,125 +1,68 @@
 <script lang="ts">
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import Chart from "@rilldata/web-common/components/time-series-chart/Chart.svelte";
-  import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
-  import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-  import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
   import RangeDisplay from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/RangeDisplay.svelte";
-  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
-  import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
   import {
-    createQueryServiceMetricsViewAggregation,
-    createQueryServiceMetricsViewTimeSeries,
     V1TimeGrain,
-    type V1ComponentSpecRendererProperties,
+    type MetricsViewSpecMeasureV2,
+    type V1MetricsViewAggregationResponse,
+    type V1MetricsViewTimeSeriesResponse,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { DateTime, Interval } from "luxon";
-  import type { Readable } from "svelte/motion";
+  import { Interval } from "luxon";
   import type { KPISpec } from ".";
-  import { validateKPISchema } from "./selector";
+  import { BIG_NUMBER_MIN_WIDTH } from ".";
+  import type { QueryObserverResult } from "@tanstack/svelte-query";
+  import { AlertTriangleIcon } from "lucide-svelte";
+  import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 
-  export let rendererProperties: V1ComponentSpecRendererProperties;
-  export let timeAndFilterStore: Readable<TimeAndFilterStore>;
+  type Query<T> = QueryObserverResult<T, HTTPError>;
+  type TimeSeriesQuery = Query<V1MetricsViewTimeSeriesResponse>;
+  type AggregationQuery = Query<V1MetricsViewAggregationResponse>;
 
-  const ctx = getCanvasStateManagers();
-  const { spec } = ctx.canvasEntity;
+  export let primaryTotalResult: AggregationQuery;
+  export let comparisonTotalResult: AggregationQuery;
+  export let primarySparklineResult: TimeSeriesQuery;
+  export let comparisonSparklineResult: TimeSeriesQuery;
+  export let measure: MetricsViewSpecMeasureV2 | undefined;
+  export let timeGrain: V1TimeGrain | undefined;
+  export let timeZone: string | undefined;
+  export let interval: Interval;
+  export let sparkline: KPISpec["sparkline"];
+  export let comparisonOptions: KPISpec["comparison"];
+  export let showTimeComparison: boolean;
+  export let hasTimeSeries: boolean | undefined;
+  export let comparisonLabel: string | undefined;
 
   let hoveredPoints: {
     interval: Interval<true>;
     value: number | null | undefined;
   }[] = [];
 
-  $: ({ instanceId } = $runtime);
-
-  $: kpiProperties = rendererProperties as KPISpec;
-
-  $: ({
-    metrics_view: metricsViewName,
-    measure: measureName,
-    sparkline,
-    comparison: comparisonOptions,
-  } = kpiProperties);
-
-  $: ({
-    timeGrain,
-    timeRange: { timeZone, start, end },
-    where,
-    comparisonTimeRange,
-    showTimeComparison,
-    comparisonTimeRangeState,
-  } = $timeAndFilterStore);
-
-  $: schema = validateKPISchema(ctx, kpiProperties);
-  $: ({ isValid } = $schema);
-
-  $: measureStore = spec.getMeasureForMetricView(measureName, metricsViewName);
-  $: measure = $measureStore;
   $: measureIsPercentage = measure?.formatPreset === FormatPreset.PERCENTAGE;
 
   $: measureValueFormatter = measure
     ? createMeasureValueFormatter<null>(measure, "big-number")
     : () => "no data";
 
-  $: showSparkline = sparkline !== "none";
+  $: showSparkline = hasTimeSeries && sparkline !== "none";
   $: isSparkRight = sparkline === "right";
 
   $: showComparison = !!comparisonOptions?.length && showTimeComparison;
 
-  $: comparisonLabel =
-    comparisonTimeRangeState?.selectedComparisonTimeRange?.name &&
-    TIME_COMPARISON[comparisonTimeRangeState?.selectedComparisonTimeRange.name]
-      ?.label;
+  $: primaryTotal = (primaryTotalResult?.data?.data?.[0]?.[
+    measure?.name ?? ""
+  ] ?? null) as number | null;
 
-  // BIG NUMBER QUERIES
-  $: kpiTotalsQuery = createQueryServiceMetricsViewAggregation(
-    instanceId,
-    metricsViewName,
-    {
-      measures: [{ name: measureName }],
-      timeRange: {
-        start,
-        end,
-        timeZone,
-      },
-      where,
-    },
-    {
-      query: {
-        enabled: isValid && !!start && !!end,
-      },
-    },
-  );
+  $: comparisonTotal = (comparisonTotalResult?.data?.data?.[0]?.[
+    measure?.name ?? ""
+  ] ?? null) as number | null;
 
-  $: kpiComparisonTotalsQuery = createQueryServiceMetricsViewAggregation(
-    instanceId,
-    metricsViewName,
-    {
-      measures: [{ name: measureName }],
-      timeRange: comparisonTimeRange,
-      where,
-    },
-    {
-      query: {
-        enabled:
-          comparisonTimeRange && showComparison && isValid && !!start && !!end,
-      },
-    },
-  );
+  $: primaryData = primarySparklineResult?.data?.data ?? [];
 
-  $: ({ data: primaryTotalData, isFetching: primaryTotalIsFetching } =
-    $kpiTotalsQuery);
-  $: ({ data: comparisonTotalData } = $kpiComparisonTotalsQuery);
-
-  $: primaryTotal = (primaryTotalData?.data?.[0]?.[measureName] ?? null) as
-    | number
-    | null;
-  $: comparisonTotal = (comparisonTotalData?.data?.[0]?.[measureName] ??
-    null) as number | null;
+  $: comparisonData = comparisonSparklineResult?.data?.data ?? [];
 
   $: currentValue =
     hoveredPoints?.[0]?.value !== undefined
@@ -136,55 +79,7 @@
       ? (currentValue - comparisonVal) / comparisonVal
       : null;
 
-  // TIME SERIES QUERIES
-  $: sparklineDataQuery = createQueryServiceMetricsViewTimeSeries(
-    instanceId,
-    metricsViewName,
-    {
-      measureNames: [measureName],
-      timeStart: start,
-      timeEnd: end,
-      timeGranularity: timeGrain || V1TimeGrain.TIME_GRAIN_HOUR,
-      timeZone,
-      where,
-    },
-    {
-      query: {
-        enabled: !!start && !!end && $schema.isValid && showSparkline,
-      },
-    },
-  );
-
-  $: comparisonDataQuery = createQueryServiceMetricsViewTimeSeries(
-    instanceId,
-    metricsViewName,
-    {
-      measureNames: [measureName],
-      timeStart: comparisonTimeRange?.start,
-      timeEnd: comparisonTimeRange?.end,
-      timeGranularity: timeGrain || V1TimeGrain.TIME_GRAIN_HOUR,
-      timeZone,
-      where,
-    },
-    {
-      query: {
-        enabled:
-          comparisonTimeRange && isValid && showSparkline && showComparison,
-      },
-    },
-  );
-
-  $: ({ data: sparkDataResponse, isFetching: primaryDataIsFetching } =
-    $sparklineDataQuery);
-  $: primaryData = sparkDataResponse?.data ?? [];
-
-  $: ({ data: comparisonDataResponse } = $comparisonDataQuery);
-  $: comparisonData = comparisonDataResponse?.data ?? [];
-
-  $: interval = Interval.fromDateTimes(
-    DateTime.fromISO(start ?? "").setZone(timeZone),
-    DateTime.fromISO(end ?? "").setZone(timeZone),
-  );
+  $: adjustment = 30 - (comparisonOptions?.length ?? 0) * 10;
 
   function getFormattedDiff(comparisonValue: number, currentValue: number) {
     const delta = currentValue - comparisonValue;
@@ -192,129 +87,199 @@
   }
 </script>
 
-{#if isValid}
-  {#if measure && !primaryTotalIsFetching}
+<div class="wrapper" class:spark-right={isSparkRight}>
+  <div
+    class="data-wrapper"
+    style:min-width="{BIG_NUMBER_MIN_WIDTH - adjustment}px"
+  >
+    <h2 class="measure-name" title={measure?.displayName || measure?.name}>
+      {#if measure?.displayName}
+        {measure.displayName}
+      {:else if measure?.name}
+        {measure.name}
+      {:else}
+        <div class="loading h-[14px] w-24"></div>
+      {/if}
+    </h2>
+
     <div
-      class:flex-col={!isSparkRight}
-      class="flex gap-0 items-center justify-center size-full"
+      class="big-number h-9 grid place-content-center"
+      class:hovered-value={hoveredPoints?.[0]?.value != null}
     >
-      <div
-        class:!items-start={isSparkRight}
-        class="flex flex-col items-center w-full"
-      >
-        <h2
-          class:text-center={!isSparkRight}
-          class="font-medium text-sm text-gray-600 line-clamp-1 truncate"
-        >
-          {measure?.displayName || measureName}
-        </h2>
-        <span
-          class="text-3xl font-medium text-gray-600 flex gap-x-0.5 items-end"
-        >
-          {#if hoveredPoints?.[0]?.value != null}
-            <span class="text-primary-500">
-              {measureValueFormatter(currentValue)}
-            </span>
-            <span class="text-lg">/</span>
-            <span class="text-gray-600 text-lg">
-              {measureValueFormatter(primaryTotal)}
-            </span>
-          {:else}
-            {measureValueFormatter(primaryTotal)}
-          {/if}
+      {#if primaryTotalResult.isError}
+        <AlertTriangleIcon class=" text-red-300" size="34px" />
+      {:else if primaryTotalResult.isLoading}
+        <div class="loading h-6 w-16"></div>
+      {:else if primaryTotalResult.data}
+        <span class:opacity-50={primaryTotalResult.isFetching}>
+          {measureValueFormatter(
+            hoveredPoints?.[0]?.value != null ? currentValue : primaryTotal,
+          )}
         </span>
-      </div>
+      {/if}
+    </div>
 
-      <div class="flex flex-col items-center">
-        {#if showComparison}
-          <div class="flex items-baseline gap-x-2 text-sm -mb-[3px]">
-            {#if comparisonOptions?.includes("previous")}
-              <span class="comparison-value">
-                {measureValueFormatter(comparisonVal)}
-              </span>
-            {/if}
+    {#if showComparison}
+      <div class="comparison-value-wrapper">
+        {#if comparisonTotalResult.isError}
+          <div class="text-red-400">error loading comparison data</div>
+        {:else if comparisonTotalResult.isLoading}
+          <div class="loading h-[14px] w-6"></div>
+          <div class="loading h-[14px] w-6"></div>
+          <div class="loading h-[14px] w-6"></div>
+        {:else if comparisonTotalResult.data}
+          {#if comparisonOptions?.includes("previous")}
+            <span class="comparison-value">
+              {measureValueFormatter(comparisonVal)}
+            </span>
+          {/if}
 
-            {#if comparisonOptions?.includes("delta")}
-              <span
-                class="comparison-value"
-                class:text-red-500={primaryTotal !== null &&
-                  comparisonVal !== null &&
-                  primaryTotal - comparisonVal < 0}
-                class:ui-copy-disabled-faint={comparisonVal === null}
-                class:italic={comparisonVal === null}
-                class:text-sm={comparisonVal === null}
-              >
-                {#if comparisonVal != null && currentValue != null}
-                  {getFormattedDiff(comparisonVal, currentValue)}
-                {:else}
-                  no change
-                {/if}
-              </span>
-            {/if}
+          {#if comparisonOptions?.includes("delta")}
+            <span
+              class="comparison-value"
+              class:text-red-500={primaryTotal !== null &&
+                comparisonVal !== null &&
+                primaryTotal - comparisonVal < 0}
+              class:ui-copy-disabled-faint={comparisonVal === null}
+              class:italic={comparisonVal === null}
+              class:text-sm={comparisonVal === null}
+            >
+              {#if comparisonVal != null && currentValue != null}
+                {getFormattedDiff(comparisonVal, currentValue)}
+              {:else}
+                no change
+              {/if}
+            </span>
+          {/if}
 
-            {#if comparisonOptions?.includes("percent_change") && comparisonPercChange != null && !measureIsPercentage}
-              <div
-                class="w-fit font-semibold ui-copy-inactive"
-                class:text-red-500={primaryTotal && primaryTotal < 0}
-              >
-                <PercentageChange
-                  color="text-gray-500"
-                  showPosSign
-                  tabularNumber={false}
-                  value={formatMeasurePercentageDifference(
-                    comparisonPercChange,
-                  )}
-                />
-              </div>
-            {/if}
-          </div>
-
-          {#if comparisonLabel}
-            <div class="comparison-range">
-              vs {comparisonLabel?.toLowerCase()}
-            </div>
+          {#if comparisonOptions?.includes("percent_change") && comparisonPercChange != null && !measureIsPercentage}
+            <span
+              class="w-fit font-semibold ui-copy-inactive"
+              class:text-red-500={primaryTotal && primaryTotal < 0}
+            >
+              <PercentageChange
+                color="text-gray-500"
+                showPosSign
+                tabularNumber={false}
+                value={formatMeasurePercentageDifference(comparisonPercChange)}
+              />
+            </span>
           {/if}
         {/if}
       </div>
 
-      {#if showSparkline}
-        <div class="size-full flex items-center justify-center mt-2">
-          {#if primaryDataIsFetching}
-            <Spinner status={EntityStatus.Running} />
-          {:else if timeGrain && timeZone}
-            <Chart
-              bind:hoveredPoints
-              {primaryData}
-              secondaryData={showComparison ? comparisonData : []}
-              {timeGrain}
-              selectedTimeZone={timeZone}
-              yAccessor={kpiProperties.measure}
-              formatterFunction={measureValueFormatter}
-            />
-          {/if}
-        </div>
-      {:else if interval.isValid && timeGrain}
-        <span class="text-gray-500">
-          <RangeDisplay {interval} grain={timeGrain} />
-        </span>
+      {#if comparisonLabel}
+        <p class="text-sm text-gray-400 break-words">
+          vs {comparisonLabel?.toLowerCase()}
+        </p>
+      {/if}
+    {/if}
+
+    {#if !showSparkline && timeGrain && interval.isValid}
+      <span class="text-gray-500">
+        <RangeDisplay {interval} grain={timeGrain} />
+      </span>
+    {/if}
+  </div>
+
+  {#if showSparkline}
+    <div
+      class="sparkline-wrapper"
+      class:opacity-50={primarySparklineResult.isFetching}
+      class:saturate-0={primarySparklineResult.isFetching}
+    >
+      {#if primarySparklineResult.isError}
+        <AlertTriangleIcon class=" text-red-300" size="34px" />
+      {:else if primarySparklineResult.isLoading || !timeGrain || !timeZone || !measure?.name}
+        <div
+          class="size-full mt-2 !bg-primary-50 loading !rounded-md min-h-10"
+        ></div>
+      {:else if primarySparklineResult.data}
+        <Chart
+          bind:hoveredPoints
+          {primaryData}
+          secondaryData={showComparison ? comparisonData : []}
+          {timeGrain}
+          selectedTimeZone={timeZone}
+          yAccessor={measure?.name}
+          formatterFunction={measureValueFormatter}
+        />
       {/if}
     </div>
-  {:else}
-    <div class="flex items-center justify-center w-full h-full">
-      <Spinner size="36px" status={EntityStatus.Running} />
-    </div>
   {/if}
-{:else}
-  <ComponentError error={$schema.error} />
-{/if}
+</div>
 
 <style lang="postcss">
-  .comparison-range {
-    @apply text-sm text-gray-400;
+  .wrapper {
+    @apply flex items-center justify-center size-full gap-2 flex-col max-w-full;
+  }
+
+  .wrapper.spark-right {
+    @apply flex-row;
+  }
+
+  .data-wrapper {
+    @apply flex flex-col w-full h-fit justify-center items-center max-w-full;
+    @apply overflow-hidden text-ellipsis truncate;
+    flex: 1 0 auto;
+  }
+
+  .spark-right .data-wrapper {
+    @apply items-start h-full;
+    flex: 0 4 20%;
+  }
+
+  .measure-name {
+    @apply flex-none text-center font-medium text-sm text-gray-600 break-words line-clamp-1;
+  }
+
+  .spark-right .measure-name {
+    @apply line-clamp-2 text-left max-w-40;
+  }
+
+  .big-number {
+    @apply text-3xl font-medium text-gray-600;
+  }
+
+  .hovered-value {
+    @apply text-primary-500;
+  }
+
+  .comparison-value-wrapper {
+    @apply flex items-center gap-x-2 text-sm -mb-[3px] truncate flex-none h-5;
+  }
+
+  .sparkline-wrapper {
+    @apply size-full flex items-center justify-center flex-shrink;
+  }
+
+  .spark-right .sparkline-wrapper {
+    @apply mt-2;
+    flex: 4 1 80%;
   }
 
   .comparison-value {
     @apply w-fit max-w-full overflow-hidden;
     @apply font-medium text-ellipsis text-gray-500;
+  }
+
+  @container component-container (inline-size < 300px) {
+    .spark-right .sparkline-wrapper {
+      display: none;
+    }
+
+    .spark-right .data-wrapper {
+      align-items: center !important;
+      flex: 0 2 auto !important;
+    }
+
+    .spark-right .measure-name {
+      max-width: 100% !important;
+      text-align: center !important;
+    }
+  }
+
+  .loading {
+    @apply bg-slate-200 animate-pulse rounded-full;
   }
 </style>

@@ -32,10 +32,9 @@ import {
   applyMutationsToDashboard,
   type TestDashboardMutation,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
-import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import { deepClone } from "@vitest/utils";
 import { get } from "svelte/store";
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 const TestCases: {
   title: string;
@@ -84,10 +83,6 @@ const TestCasesOppositeMutations = [
 ];
 
 describe("sparse proto", () => {
-  beforeAll(() => {
-    initLocalUserPreferenceStore(AD_BIDS_EXPLORE_NAME);
-  });
-
   beforeEach(() => {
     resetDashboardStore();
   });
@@ -103,7 +98,10 @@ describe("sparse proto", () => {
             AD_BIDS_TIME_RANGE_SUMMARY,
           ),
         );
-        const defaultProto = getProtoFromDashboardState(dashboard);
+        const defaultProto = getProtoFromDashboardState(
+          dashboard,
+          AD_BIDS_EXPLORE_INIT,
+        );
 
         applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
 
@@ -127,7 +125,10 @@ describe("sparse proto", () => {
           AD_BIDS_EXPLORE_NAME,
           keys,
         );
-        const partialProto = getProtoFromDashboardState(partialDashboard);
+        const partialProto = getProtoFromDashboardState(
+          partialDashboard,
+          AD_BIDS_EXPLORE_INIT,
+        );
 
         applyMutationsToDashboard(
           AD_BIDS_EXPLORE_NAME,

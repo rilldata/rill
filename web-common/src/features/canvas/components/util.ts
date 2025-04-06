@@ -1,4 +1,4 @@
-import type { QueryObserverResult } from "@rilldata/svelte-query";
+import type { QueryObserverResult } from "@tanstack/svelte-query";
 import { KPIGridComponent } from "@rilldata/web-common/features/canvas/components/kpi-grid";
 import type {
   ComponentInputParam,
@@ -13,8 +13,8 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import { ChartComponent } from "./charts";
 import { ImageComponent } from "./image";
-import { KPIComponent } from "./kpi";
 import { MarkdownCanvasComponent } from "./markdown";
+import { PivotCanvasComponent } from "./pivot";
 import { TableCanvasComponent } from "./table";
 import type {
   CanvasComponentType,
@@ -56,6 +56,7 @@ export function getFilterOptions(
   };
 }
 
+const TABLE_TYPES = ["table", "pivot"] as const;
 const CHART_TYPES = [
   "line_chart",
   "bar_chart",
@@ -69,18 +70,20 @@ const NON_CHART_TYPES = [
   "kpi_grid",
   "image",
   "table",
+  "pivot",
 ] as const;
 const ALL_COMPONENT_TYPES = [...CHART_TYPES, ...NON_CHART_TYPES] as const;
 
 type ChartType = (typeof CHART_TYPES)[number];
+type TableType = (typeof TABLE_TYPES)[number];
 
 // Component type to class mapping
 const COMPONENT_CLASS_MAP = {
   markdown: MarkdownCanvasComponent,
-  kpi: KPIComponent,
   kpi_grid: KPIGridComponent,
   image: ImageComponent,
   table: TableCanvasComponent,
+  pivot: PivotCanvasComponent,
 } as const;
 
 // Component display names mapping
@@ -89,6 +92,7 @@ const DISPLAY_MAP: Record<CanvasComponentType, string> = {
   kpi_grid: "KPI Grid",
   markdown: "Markdown",
   table: "Table",
+  pivot: "Pivot",
   image: "Image",
   bar_chart: "Chart",
   line_chart: "Chart",
@@ -125,6 +129,13 @@ export function isChartComponentType(
 ): value is ChartType {
   if (!value) return false;
   return CHART_TYPES.includes(value as ChartType);
+}
+
+export function isTableComponentType(
+  value: string | undefined,
+): value is TableType {
+  if (!value) return false;
+  return TABLE_TYPES.includes(value as TableType);
 }
 
 export function getComponentFilterProperties(

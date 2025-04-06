@@ -8,7 +8,6 @@ import (
 	"io"
 	"time"
 
-	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
@@ -100,15 +99,15 @@ func (r *metricsResolver) CacheKey(ctx context.Context) ([]byte, bool, error) {
 		return nil, false, nil
 	}
 
-	queryMap := make(map[string]any)
-	err = mapstructure.Decode(r.query, &queryMap)
+	queryMap, err := r.query.AsMap()
 	if err != nil {
 		return nil, false, err
 	}
 
 	queryMap["mv_cache_key"] = key
-	bytes, err := json.Marshal(queryMap)
-	return bytes, true, err
+
+	b, err := json.Marshal(queryMap)
+	return b, true, err
 }
 
 func (r *metricsResolver) Refs() []*runtimev1.ResourceName {

@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"net/url"
-	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -322,7 +322,7 @@ func (c *connection) Driver() string {
 
 // Config used to open the Connection
 func (c *connection) Config() map[string]any {
-	return c.driverConfig
+	return maps.Clone(c.driverConfig)
 }
 
 // Close implements drivers.Connection.
@@ -390,6 +390,8 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 			return &sqlStoreToSelfExecutor{c}, true
 		case "https":
 			return &httpsToSelfExecutor{c}, true
+		case "motherduck":
+			return &mdToSelfExecutor{c}, true
 		}
 		if _, ok := opts.InputHandle.AsObjectStore(); ok {
 			return &objectStoreToSelfExecutor{c}, true
@@ -412,34 +414,6 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 // AsModelManager implements drivers.Handle.
 func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
 	return c, true
-}
-
-// AsTransporter implements drivers.Connection.
-func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
-	olap, _ := to.(*connection)
-	if c == to {
-		if from == to {
-			return newDuckDBToDuckDB(from, c, c.logger), true
-		}
-		switch from.Driver() {
-		case "motherduck":
-			return newMotherduckToDuckDB(from, c, c.logger), true
-		case "postgres":
-			return newDuckDBToDuckDB(from, c, c.logger), true
-		case "mysql":
-			return newDuckDBToDuckDB(from, c, c.logger), true
-		}
-		if store, ok := from.AsWarehouse(); ok {
-			return NewWarehouseToDuckDB(store, olap, c.logger), true
-		}
-		if store, ok := from.AsObjectStore(); ok { // objectstore to duckdb transfer
-			return NewObjectStoreToDuckDB(store, olap, c.logger), true
-		}
-		if store, ok := from.AsFileStore(); ok {
-			return NewFileStoreToDuckDB(store, olap, c.logger), true
-		}
-	}
-	return nil, false
 }
 
 func (c *connection) AsFileStore() (drivers.FileStore, bool) {
@@ -478,15 +452,15 @@ func (c *connection) reopenDB(ctx context.Context) error {
 	}
 	dbInitQueries = append(dbInitQueries,
 		"INSTALL 'json'",
-		"LOAD 'json'",
-		"INSTALL 'icu'",
-		"LOAD 'icu'",
-		"INSTALL 'parquet'",
-		"LOAD 'parquet'",
-		"INSTALL 'httpfs'",
-		"LOAD 'httpfs'",
 		"INSTALL 'sqlite'",
+		"INSTALL 'icu'",
+		"INSTALL 'parquet'",
+		"INSTALL 'httpfs'",
+		"LOAD 'json'",
 		"LOAD 'sqlite'",
+		"LOAD 'icu'",
+		"LOAD 'parquet'",
+		"LOAD 'httpfs'",
 		"SET GLOBAL timezone='UTC'",
 		"SET GLOBAL old_implicit_casting = true", // Implicit Cast to VARCHAR
 		"SET GLOBAL allow_community_extensions = false", // This locks the configuration, so it can't later be enabled.
@@ -502,7 +476,6 @@ func (c *connection) reopenDB(ctx context.Context) error {
 	if !c.config.AllowHostAccess {
 		dbInitQueries = append(dbInitQueries,
 			"SET GLOBAL preserve_insertion_order TO false",
-			fmt.Sprintf("SET GLOBAL secret_directory = %s", safeSQLString(filepath.Join(dataDir, ".duckdb", "secrets"))),
 		)
 	}
 

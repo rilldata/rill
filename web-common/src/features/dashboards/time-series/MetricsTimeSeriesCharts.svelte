@@ -3,7 +3,6 @@
   import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
-  import DashboardVisibilityDropdown from "@rilldata/web-common/components/menu/shadcn/DashboardVisibilityDropdown.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
@@ -47,6 +46,7 @@
     getOrderedStartEnd,
     updateChartInteractionStore,
   } from "./utils";
+  import DashboardMetricsDraggableList from "@rilldata/web-common/components/menu/DashboardMetricsDraggableList.svelte";
 
   export let exploreName: string;
   export let workspaceWidth: number;
@@ -64,7 +64,7 @@
       dimensionFilters: { includedDimensionValues },
     },
     actions: {
-      measures: { toggleMeasureVisibility },
+      measures: { setMeasureVisibility },
     },
     validSpecStore,
   } = getStateManagers();
@@ -106,15 +106,15 @@
   $: isAlternateChart = tddChartType !== TDDChart.DEFAULT;
 
   $: expandedMeasure = $getMeasureByName(expandedMeasureName);
-  // List of measures which will be shown on the dashboard
-  // List of measures which will be shown on the dashboard
   let renderedMeasures: MetricsViewSpecMeasureV2[];
   $: {
     renderedMeasures = expandedMeasure ? [expandedMeasure] : $visibleMeasures;
   }
 
-  $: totals = $timeSeriesDataStore.total;
-  $: totalsComparisons = $timeSeriesDataStore.comparisonTotal;
+  $: totals = $timeSeriesDataStore.total as { [key: string]: number };
+  $: totalsComparisons = $timeSeriesDataStore.comparisonTotal as {
+    [key: string]: number;
+  };
 
   // When changing the timeseries query and the cache is empty, $timeSeriesQuery.data?.data is
   // temporarily undefined as results are fetched.
@@ -303,18 +303,12 @@
         chartType={tddChartType}
       />
     {:else}
-      <DashboardVisibilityDropdown
-        category="Measures"
-        tooltipText="Choose measures to display"
-        onSelect={(name) => toggleMeasureVisibility(allMeasureNames, name)}
-        selectableItems={$allMeasures.map(({ name, displayName }) => ({
-          name: name || "",
-          label: displayName || name || "",
-        }))}
+      <DashboardMetricsDraggableList
+        type="measure"
+        onSelectedChange={(items) =>
+          setMeasureVisibility(items, allMeasureNames)}
+        allItems={$allMeasures}
         selectedItems={visibleMeasureNames}
-        onToggleSelectAll={() => {
-          toggleMeasureVisibility(allMeasureNames);
-        }}
       />
 
       {#if !hideStartPivotButton}
@@ -361,8 +355,8 @@
       <!-- FIXME: this is pending the remaining state work for show/hide measures and dimensions -->
       {#each renderedMeasures as measure (measure.name)}
         <!-- FIXME: I can't select the big number by the measure id. -->
-        <!-- for bigNum, catch nulls and convert to undefined.  -->
-        {@const bigNum = measure.name ? totals?.[measure.name] : undefined}
+
+        {@const bigNum = measure.name ? totals?.[measure.name] : null}
         {@const comparisonValue = measure.name
           ? totalsComparisons?.[measure.name]
           : undefined}

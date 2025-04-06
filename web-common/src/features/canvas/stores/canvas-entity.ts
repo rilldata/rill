@@ -56,12 +56,16 @@ export class CanvasEntity {
 
   constructor(name: string) {
     this.specStore = derived(runtime, (r, set) =>
-      useCanvas(r.instanceId, name, {
-        retry: 3,
-        retryDelay: (attemptIndex) =>
-          Math.min(1000 + 1000 * attemptIndex, 5000),
+      useCanvas(
+        r.instanceId,
+        name,
+        {
+          retry: 3,
+          retryDelay: (attemptIndex) =>
+            Math.min(1000 + 1000 * attemptIndex, 5000),
+        },
         queryClient,
-      }).subscribe(set),
+      ).subscribe(set),
     );
 
     this.name = name;
@@ -127,6 +131,7 @@ export class CanvasEntity {
       return derived(
         [
           timeControls.timeRangeStateStore,
+
           component.localTimeControls.timeRangeStateStore,
           timeControls.comparisonRangeStateStore,
           component.localTimeControls.comparisonRangeStateStore,
@@ -135,6 +140,7 @@ export class CanvasEntity {
           filters.dimensionThresholdFilters,
           dimensionsStore,
           measuresStore,
+          timeControls.hasTimeSeries,
         ],
         ([
           globalTimeRangeState,
@@ -146,6 +152,7 @@ export class CanvasEntity {
           dtf,
           dimensions,
           measures,
+          hasTimeSeries,
         ]) => {
           // Time Filters
           let timeRange: V1TimeRange = {
@@ -186,9 +193,8 @@ export class CanvasEntity {
               timeZone,
             };
 
-            if (!localShowTimeComparison) {
-              showTimeComparison = false;
-            }
+            showTimeComparison = localShowTimeComparison;
+
             timeGrain = localTimeRangeState?.selectedTimeRange?.interval;
 
             timeRangeState = localTimeRangeState;
@@ -207,9 +213,10 @@ export class CanvasEntity {
           let where: V1Expression | undefined = globalWhere;
 
           if (componentSpec?.rendererProperties?.dimension_filters) {
-            const componentWhere = component.localFilters.getFiltersFromText(
-              componentSpec.rendererProperties.dimension_filters as string,
-            );
+            const { expr: componentWhere } =
+              component.localFilters.getFiltersFromText(
+                componentSpec.rendererProperties.dimension_filters as string,
+              );
             where = mergeFilters(globalWhere, componentWhere);
           }
 
@@ -221,6 +228,7 @@ export class CanvasEntity {
             timeGrain,
             timeRangeState,
             comparisonTimeRangeState,
+            hasTimeSeries,
           };
         },
       ).subscribe(set);

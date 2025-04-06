@@ -1,9 +1,16 @@
 import { page } from "$app/stores";
 import {
   adminServiceListBookmarks,
+  createAdminServiceGetCurrentUser,
+  createAdminServiceListBookmarks,
   getAdminServiceListBookmarksQueryKey,
   type V1Bookmark,
+  type V1ListBookmarksResponse,
 } from "@rilldata/web-admin/client";
+import {
+  type CompoundQueryResult,
+  getCompoundQuery,
+} from "@rilldata/web-common/features/compound-query-result";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
 import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
@@ -19,13 +26,16 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
+  createQueryServiceMetricsViewSchema,
   type V1ExplorePreset,
   type V1ExploreSpec,
   type V1MetricsViewSpec,
   type V1StructType,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
+import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { QueryClient } from "@tanstack/query-core";
+import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, get, type Readable } from "svelte/store";
 
 export type BookmarkEntry = {
@@ -52,6 +62,24 @@ export async function fetchBookmarks(projectId: string, exploreName: string) {
     queryFn: ({ signal }) => adminServiceListBookmarks(params, signal),
   });
   return bookmarksResp.bookmarks ?? [];
+}
+
+export function getBookmarks(projectId: string, exploreName: string) {
+  return derived(createAdminServiceGetCurrentUser(), (userResp, set) =>
+    createAdminServiceListBookmarks(
+      {
+        projectId,
+        resourceKind: ResourceKind.Explore,
+        resourceName: exploreName,
+      },
+      {
+        query: {
+          enabled: !!userResp.data?.user && !!projectId,
+        },
+      },
+      queryClient,
+    ).subscribe(set),
+  ) as CreateQueryResult<V1ListBookmarksResponse, HTTPError>;
 }
 
 export function isHomeBookmark(bookmark: V1Bookmark) {
@@ -95,6 +123,36 @@ export function categorizeBookmarks(
   return bookmarks;
 }
 
+export function getHomeBookmarkExploreState(
+  projectId: string,
+  instanceId: string,
+  metricsViewName: string,
+  exploreName: string,
+): CompoundQueryResult<Partial<MetricsExplorerEntity> | null> {
+  return getCompoundQuery(
+    [
+      getBookmarks(projectId, exploreName),
+      useExploreValidSpec(instanceId, exploreName),
+      createQueryServiceMetricsViewSchema(instanceId, metricsViewName),
+    ],
+    ([bookmarksResp, exploreSpecResp, schemaResp]) => {
+      const homeBookmark = bookmarksResp?.bookmarks?.find(isHomeBookmark);
+      if (!homeBookmark) return null;
+
+      const exploreSpec = exploreSpecResp?.explore ?? {};
+      const metricsViewSpec = exploreSpecResp?.metricsView ?? {};
+
+      const exploreStateFromHomeBookmark = getDashboardStateFromUrl(
+        homeBookmark?.data ?? "",
+        metricsViewSpec,
+        exploreSpec,
+        schemaResp?.schema ?? {},
+      );
+      return exploreStateFromHomeBookmark;
+    },
+  );
+}
+
 export function searchBookmarks(
   bookmarks: Bookmarks | undefined,
   searchText: string,
@@ -120,9 +178,7 @@ export function getPrettySelectedTimeRange(
   return derived(
     [
       useExploreValidSpec(instanceId, exploreName),
-      useMetricsViewTimeRange(instanceId, metricsViewName, {
-        query: { queryClient },
-      }),
+      useMetricsViewTimeRange(instanceId, metricsViewName, {}, queryClient),
       useExploreState(metricsViewName),
     ],
     ([validSpec, timeRangeSummary, metricsExplorerEntity]) => {
@@ -175,7 +231,7 @@ function parseBookmark(
     ),
     defaultExplorePreset,
     url,
-  );
+  ).toString();
   return {
     resource: bookmarkResource,
     absoluteTimeRange:

@@ -1,3 +1,5 @@
 /.svelte-kit
 build
+tests/setup/projects/**/.rillcloud
+tests/setup/projects/**/tmp
 tests/embed.html

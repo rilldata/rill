@@ -1,5 +1,5 @@
 import { expect } from "@playwright/test";
-import { interactWithTimeRangeMenu } from "../utils/metricsViewHelpers";
+import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions";
 import { ResourceWatcher } from "../utils/ResourceWatcher";
 import { gotoNavEntry } from "../utils/waitHelpers";
 import { test } from "../setup/base";
@@ -66,7 +66,7 @@ dimensions:
   description: ""
 `;
 
-    await page.getByLabel("code").click();
+    await page.getByRole("button", { name: "switch to code editor" }).click();
     // update the code editor with the new spec
     await watcher.updateAndWaitForDashboard(formatterFlowDashboard);
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
@@ -138,10 +138,10 @@ dimensions:
     await interactWithTimeRangeMenu(page, async () => {
       await page.getByRole("menuitem", { name: "Last 4 Weeks" }).click();
     });
-    await page.getByRole("button", { name: "Comparing" }).click();
+    await page.getByLabel("Toggle time comparison").click();
 
     await expect(
-      page.getByRole("row", { name: "null 27 s -4.3 s -14%" }),
+      page.getByRole("row", { name: "null 27 s 33% -4.3 s -14%" }),
     ).toBeVisible();
 
     // try No Format...
@@ -151,7 +151,7 @@ dimensions:
 
     await expect(
       page.getByRole("row", {
-        name: "null 26,643 -4,349 -14%",
+        name: "null 26,643 33% -4,349 -14%",
       }),
     ).toBeVisible();
 

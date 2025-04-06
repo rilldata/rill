@@ -125,6 +125,8 @@ message ModelSpec {
   google.protobuf.Struct output_properties = 12;
   bool trigger = 9;
   bool trigger_full = 22;
+  // defined_as_source is true if it was defined by user as a source but converted internally to a model.
+  bool defined_as_source = 23;
   reserved 2, 3, 6, 7, 8;
 }
 
@@ -212,6 +214,7 @@ message MetricsViewSpec {
     string format_d3 = 7;
     google.protobuf.Struct format_d3_locale = 13;
     bool valid_percent_of_total = 6;
+    string treat_nulls_as = 14;
   }
   // Connector containing the table
   string connector = 1;
@@ -371,6 +374,10 @@ message ExploreSpec {
   repeated SecurityRule security_rules = 12;
   // Banner text that can be displayed in Rill Cloud.
   string banner = 18; 
+  // When set to true, dashboard will be locked to the first time zone in the time_zones key (or UTC)
+  bool lock_time_zone = 19;
+  // Allow custom time range
+  bool allow_custom_time_range = 20;
 }
 
 message ExploreState {
@@ -403,6 +410,8 @@ message ExplorePreset {
   FieldSelector measures_selector = 10;
 
   optional Expression where = 11;
+  // Temporary to differentiate between "select" and "in list" modes. Expression will be replaced with UI specific state in the future.
+  repeated string dimensions_with_inlist_filter = 29;
 
   // Time range for the explore.
   // It corresponds to the `range` property of the explore's `time_ranges`.
@@ -424,6 +433,7 @@ message ExplorePreset {
   optional bool explore_sort_asc = 18;
   optional ExploreSortType explore_sort_type = 19;
   optional string explore_expanded_dimension = 20;
+  optional uint32 explore_leaderboard_measure_count = 30;
 
   optional string time_dimension_measure = 21;
   optional string time_dimension_chart_type = 22;
@@ -729,6 +739,8 @@ message CanvasSpec {
   // If the list is empty, a default list should be shown.
   // TODO: Once the canvas APIs have stabilized, rename ExploreTimeRange to a non-explore-specific name.
   repeated ExploreTimeRange time_ranges = 11;
+  // Toggle custom time range
+  bool allow_custom_time_range = 14;
   // List of selectable time zones.
   // If the list is empty, a default list should be shown.
   // The values should be valid IANA location identifiers.

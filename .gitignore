@@ -45,6 +45,7 @@ node_modules
 !/web-local/tests/data/*.tsv
 !/runtime/testruntime/**/*.parquet
 !/runtime/testruntime/**/*.csv
+!/runtime/drivers/file/testdata/**/*.parquet
 
 # generated content
 log
@@ -78,3 +79,5 @@ sysroot/
 latest.txt
 /web-common/coverage
 
+/postgres/
+/clickhouse/

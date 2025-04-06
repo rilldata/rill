@@ -29,7 +29,7 @@
   onMount(() => {
     configEditor = new EditorView({
       state: EditorState.create({
-        doc: paramValues[KEY] || "",
+        doc: (paramValues[KEY] as string | undefined) || "",
         extensions: [
           baseExtensions(),
           json(),

@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/parser"
 )
 
 var ErrAdminNotConfigured = fmt.Errorf("an admin service is not configured for this instance")
@@ -326,10 +326,10 @@ func ResolveConnectorProperties(environment string, vars map[string]string, c *r
 		if !ok {
 			continue
 		}
-		v, err := rillv1.ResolveTemplate(v, rillv1.TemplateData{
+		v, err := parser.ResolveTemplate(v, parser.TemplateData{
 			Environment: environment,
 			Variables:   vars,
-		})
+		}, true)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve templated property %q: %w", k, err)
 		}

@@ -6,6 +6,7 @@ import {
   AD_BIDS_EXPLORE_INIT,
   AD_BIDS_EXPLORE_NAME,
   AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+  AD_BIDS_METRICS_INIT,
   AD_BIDS_PIVOT_PRESET,
   AD_BIDS_PRESET,
   AD_BIDS_TIME_DIMENSION_DETAILS_PRESET,
@@ -13,7 +14,9 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import { getInitExploreStateForTest } from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
 import {
+  AD_BIDS_APPLY_DOMAIN_CONTAINS_FILTER,
   AD_BIDS_APPLY_LARGE_FILTERS,
+  AD_BIDS_APPLY_PUBLISHER_INLIST_FILTER,
   AD_BIDS_CLOSE_DIMENSION_TABLE,
   AD_BIDS_CLOSE_TDD,
   AD_BIDS_DISABLE_COMPARE_TIME_RANGE_FILTER,
@@ -42,8 +45,11 @@ import {
   AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD,
   AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY,
   AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY,
+  AD_BIDS_TOGGLE_BID_PUBLISHER_DIMENSION_VISIBILITY,
+  AD_BIDS_TOGGLE_IMPRESSIONS_MEASURE_VISIBILITY,
   AD_BIDS_TOGGLE_PIVOT,
   AD_BIDS_TOGGLE_PIVOT_TABLE_MODE,
+  AD_BIDS_SET_LEADERBOARD_MEASURE_COUNT,
   applyMutationsToDashboard,
   type TestDashboardMutation,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
@@ -52,19 +58,20 @@ import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/featu
 
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
-import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import {
   type DashboardTimeControls,
   TimeComparisonOption,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
 import {
+  V1ExploreComparisonMode,
   type V1ExplorePreset,
   type V1ExploreSpec,
 } from "@rilldata/web-common/runtime-client";
 import { deepClone } from "@vitest/utils";
 import { get } from "svelte/store";
-import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ALL_TIME_RANGE_ALIAS } from "../time-controls/new-time-controls";
 
 vi.stubEnv("TZ", "UTC");
 
@@ -77,6 +84,16 @@ const TestCases: {
   // Closing view would retain some state of the old view in protobuf state
   legacyNotSupported?: boolean;
 }[] = [
+  {
+    title: "Different filter variations",
+    mutations: [
+      AD_BIDS_APPLY_PUBLISHER_INLIST_FILTER,
+      AD_BIDS_APPLY_DOMAIN_CONTAINS_FILTER,
+    ],
+    expectedUrl:
+      "http://localhost/?f=publisher+IN+LIST+%28%27Facebook%27%2C%27Google%27%29+AND+domain+LIKE+%27%25%25oo%25%25%27",
+  },
+
   {
     title: "Time range without preset",
     mutations: [
@@ -144,6 +161,16 @@ const TestCases: {
     expectedUrl: "http://localhost/?tr=P4W&grain=week",
     legacyNotSupported: true,
   },
+  {
+    title: "Time range comparison with non-standard time range in preset",
+    mutations: [AD_BIDS_DISABLE_COMPARE_TIME_RANGE_FILTER],
+    preset: {
+      timeRange: "P9D",
+      comparisonMode: V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME,
+    },
+    expectedUrl: "http://localhost/?compare_tr=",
+    legacyNotSupported: true,
+  },
 
   {
     title:
@@ -190,6 +217,17 @@ const TestCases: {
     ],
     preset: AD_BIDS_PRESET,
     expectedUrl: "http://localhost/?measures=*&dims=*",
+  },
+  {
+    title: "Show and hide measures/dimensions",
+    mutations: [
+      AD_BIDS_TOGGLE_IMPRESSIONS_MEASURE_VISIBILITY,
+      AD_BIDS_TOGGLE_IMPRESSIONS_MEASURE_VISIBILITY,
+      AD_BIDS_TOGGLE_BID_PUBLISHER_DIMENSION_VISIBILITY,
+      AD_BIDS_TOGGLE_BID_PUBLISHER_DIMENSION_VISIBILITY,
+    ],
+    expectedUrl:
+      "http://localhost/?measures=bid_price%2Cimpressions&dims=domain%2Cpublisher",
   },
 
   {
@@ -343,13 +381,14 @@ const TestCases: {
     expectedUrl: "http://localhost/?view=explore",
     legacyNotSupported: true,
   },
+  {
+    title: "Leaderboard measure count persists in URL",
+    mutations: [AD_BIDS_SET_LEADERBOARD_MEASURE_COUNT],
+    expectedUrl: "http://localhost/?leaderboard_measure_count=4",
+  },
 ];
 
 describe("Human readable URL state variations", () => {
-  beforeAll(() => {
-    initLocalUserPreferenceStore(AD_BIDS_EXPLORE_NAME);
-  });
-
   beforeEach(() => {
     sessionStorage.clear();
     metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
@@ -374,6 +413,7 @@ describe("Human readable URL state variations", () => {
         const initState = getCleanMetricsExploreForAssertion();
         const defaultExplorePreset = getDefaultExplorePreset(
           explore,
+          AD_BIDS_METRICS_INIT,
           AD_BIDS_TIME_RANGE_SUMMARY,
         );
 
@@ -392,7 +432,7 @@ describe("Human readable URL state variations", () => {
           ),
           defaultExplorePreset,
           url,
-        );
+        ).toString();
         expect(url.toString()).to.eq(expectedUrl);
 
         // load empty url into metrics
@@ -428,6 +468,7 @@ describe("Human readable URL state variations", () => {
         );
         const defaultExplorePreset = getDefaultExplorePreset(
           explore,
+          AD_BIDS_METRICS_INIT,
           AD_BIDS_TIME_RANGE_SUMMARY,
         );
 
@@ -438,7 +479,10 @@ describe("Human readable URL state variations", () => {
 
         const url = new URL("http://localhost");
         // load url with legacy protobuf state
-        url.searchParams.set("state", getProtoFromDashboardState(curState));
+        url.searchParams.set(
+          "state",
+          getProtoFromDashboardState(curState, explore),
+        );
         // get back the entity from url params
         const { partialExploreState: entityFromUrl } =
           convertURLSearchParamsToExploreState(
@@ -476,6 +520,7 @@ describe("Human readable URL state variations", () => {
     );
     const defaultExplorePreset = getDefaultExplorePreset(
       AD_BIDS_EXPLORE_INIT,
+      AD_BIDS_METRICS_INIT,
       AD_BIDS_TIME_RANGE_SUMMARY,
     );
 
@@ -499,7 +544,7 @@ describe("Human readable URL state variations", () => {
       ),
       defaultExplorePreset,
       url,
-    );
+    ).toString();
 
     // reset the explore state
     applyURLToExploreState(
@@ -547,11 +592,6 @@ export function getCleanMetricsExploreForAssertion() {
   const cleanedState = deepClone(
     get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
   ) as Partial<MetricsExplorerEntity>;
-  // these are not cloned
-  cleanedState.visibleMeasureKeys = new Set(cleanedState.visibleMeasureKeys);
-  cleanedState.visibleDimensionKeys = new Set(
-    cleanedState.visibleDimensionKeys,
-  );
 
   delete cleanedState.name;
   delete cleanedState.proto;
@@ -560,7 +600,7 @@ export function getCleanMetricsExploreForAssertion() {
   delete cleanedState.contextColumnWidths;
   if (cleanedState.selectedTimeRange) {
     cleanedState.selectedTimeRange = {
-      name: cleanedState.selectedTimeRange?.name ?? "inf",
+      name: cleanedState.selectedTimeRange?.name ?? ALL_TIME_RANGE_ALIAS,
       interval: cleanedState.selectedTimeRange?.interval,
     } as DashboardTimeControls;
   }

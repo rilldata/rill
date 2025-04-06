@@ -957,6 +957,13 @@ export class ModelSpec extends Message<ModelSpec> {
    */
   triggerFull = false;
 
+  /**
+   * defined_as_source is true if it was defined by user as a source but converted internally to a model.
+   *
+   * @generated from field: bool defined_as_source = 23;
+   */
+  definedAsSource = false;
+
   constructor(data?: PartialMessage<ModelSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -982,6 +989,7 @@ export class ModelSpec extends Message<ModelSpec> {
     { no: 12, name: "output_properties", kind: "message", T: Struct },
     { no: 9, name: "trigger", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 22, name: "trigger_full", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 23, name: "defined_as_source", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelSpec {
@@ -1752,6 +1760,11 @@ export class MetricsViewSpec_MeasureV2 extends Message<MetricsViewSpec_MeasureV2
    */
   validPercentOfTotal = false;
 
+  /**
+   * @generated from field: string treat_nulls_as = 14;
+   */
+  treatNullsAs = "";
+
   constructor(data?: PartialMessage<MetricsViewSpec_MeasureV2>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1773,6 +1786,7 @@ export class MetricsViewSpec_MeasureV2 extends Message<MetricsViewSpec_MeasureV2
     { no: 7, name: "format_d3", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "format_d3_locale", kind: "message", T: Struct },
     { no: 6, name: "valid_percent_of_total", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 14, name: "treat_nulls_as", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_MeasureV2 {
@@ -2305,6 +2319,20 @@ export class ExploreSpec extends Message<ExploreSpec> {
    */
   banner = "";
 
+  /**
+   * When set to true, dashboard will be locked to the first time zone in the time_zones key (or UTC)
+   *
+   * @generated from field: bool lock_time_zone = 19;
+   */
+  lockTimeZone = false;
+
+  /**
+   * Allow custom time range
+   *
+   * @generated from field: bool allow_custom_time_range = 20;
+   */
+  allowCustomTimeRange = false;
+
   constructor(data?: PartialMessage<ExploreSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2328,6 +2356,8 @@ export class ExploreSpec extends Message<ExploreSpec> {
     { no: 16, name: "embeds_hide_pivot", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 12, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
     { no: 18, name: "banner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 19, name: "lock_time_zone", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 20, name: "allow_custom_time_range", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExploreSpec {
@@ -2517,6 +2547,13 @@ export class ExplorePreset extends Message<ExplorePreset> {
   where?: Expression;
 
   /**
+   * Temporary to differentiate between "select" and "in list" modes. Expression will be replaced with UI specific state in the future.
+   *
+   * @generated from field: repeated string dimensions_with_inlist_filter = 29;
+   */
+  dimensionsWithInlistFilter: string[] = [];
+
+  /**
    * Time range for the explore.
    * It corresponds to the `range` property of the explore's `time_ranges`.
    * If not found in `time_ranges`, it should be added to the list.
@@ -2585,6 +2622,11 @@ export class ExplorePreset extends Message<ExplorePreset> {
   exploreExpandedDimension?: string;
 
   /**
+   * @generated from field: optional uint32 explore_leaderboard_measure_count = 30;
+   */
+  exploreLeaderboardMeasureCount?: number;
+
+  /**
    * @generated from field: optional string time_dimension_measure = 21;
    */
   timeDimensionMeasure?: string;
@@ -2637,6 +2679,7 @@ export class ExplorePreset extends Message<ExplorePreset> {
     { no: 4, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 10, name: "measures_selector", kind: "message", T: FieldSelector },
     { no: 11, name: "where", kind: "message", T: Expression, opt: true },
+    { no: 29, name: "dimensions_with_inlist_filter", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 6, name: "time_range", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 12, name: "timezone", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 13, name: "time_grain", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
@@ -2649,6 +2692,7 @@ export class ExplorePreset extends Message<ExplorePreset> {
     { no: 18, name: "explore_sort_asc", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 19, name: "explore_sort_type", kind: "enum", T: proto3.getEnumType(ExploreSortType), opt: true },
     { no: 20, name: "explore_expanded_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 30, name: "explore_leaderboard_measure_count", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
     { no: 21, name: "time_dimension_measure", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 22, name: "time_dimension_chart_type", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 23, name: "time_dimension_pin", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
@@ -4581,6 +4625,13 @@ export class CanvasSpec extends Message<CanvasSpec> {
   timeRanges: ExploreTimeRange[] = [];
 
   /**
+   * Toggle custom time range
+   *
+   * @generated from field: bool allow_custom_time_range = 14;
+   */
+  allowCustomTimeRange = false;
+
+  /**
    * List of selectable time zones.
    * If the list is empty, a default list should be shown.
    * The values should be valid IANA location identifiers.
@@ -4640,6 +4691,7 @@ export class CanvasSpec extends Message<CanvasSpec> {
     { no: 7, name: "theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "embedded_theme", kind: "message", T: ThemeSpec },
     { no: 11, name: "time_ranges", kind: "message", T: ExploreTimeRange, repeated: true },
+    { no: 14, name: "allow_custom_time_range", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 12, name: "time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 13, name: "filters_enabled", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 15, name: "default_preset", kind: "message", T: CanvasPreset },

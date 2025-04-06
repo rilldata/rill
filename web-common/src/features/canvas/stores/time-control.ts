@@ -38,7 +38,6 @@ import {
   get,
   writable,
   type Readable,
-  type Unsubscriber,
   type Writable,
 } from "svelte/store";
 
@@ -68,7 +67,6 @@ export class TimeControls {
 
   private componentName: string | undefined;
   private isInitialStateSet: boolean = false;
-  private initialStateSubscriber: Unsubscriber | undefined;
   private specStore: CanvasSpecResponseStore;
 
   constructor(specStore: CanvasSpecResponseStore, componentName?: string) {
@@ -96,6 +94,7 @@ export class TimeControls {
       const minTimeGrain = Object.keys(metricsViews).reduce<V1TimeGrain>(
         (min: V1TimeGrain, metricView) => {
           const metricsViewSpec = metricsViews[metricView]?.state?.validSpec;
+
           if (
             !metricsViewSpec?.smallestTimeGrain ||
             metricsViewSpec.smallestTimeGrain ===
@@ -103,7 +102,8 @@ export class TimeControls {
           )
             return min;
           const timeGrain = metricsViewSpec.smallestTimeGrain;
-          return isGrainBigger(min, timeGrain) ? timeGrain : min;
+
+          return !isGrainBigger(min, timeGrain) ? timeGrain : min;
         },
         V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
       );
@@ -294,11 +294,7 @@ export class TimeControls {
     );
 
     // Subscribe to ensure the derived code runs
-    this.initialStateSubscriber = defaultStore.subscribe(() => {});
-  };
-
-  destroy = () => {
-    this.initialStateSubscriber?.();
+    defaultStore.subscribe(() => {});
   };
 
   combinedTimeRangeSummaryStore = (
@@ -336,11 +332,13 @@ export class TimeControls {
           {},
           {
             query: {
-              queryClient: queryClient,
+              enabled:
+                !!metricsViews[metricView]?.state?.validSpec?.timeDimension,
               staleTime: Infinity,
-              cacheTime: Infinity,
+              gcTime: Infinity,
             },
           },
+          queryClient,
         );
       });
 
@@ -473,5 +471,7 @@ export class TimeControls {
     this.selectedTimeRange.set(selectedTimeRange);
     this.selectedComparisonTimeRange.set(selectedComparisonTimeRange);
     this.showTimeComparison.set(showTimeComparison);
+
+    this.isInitialStateSet = true;
   };
 }

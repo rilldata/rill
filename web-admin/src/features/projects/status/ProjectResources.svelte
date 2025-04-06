@@ -14,6 +14,7 @@
   import Button from "web-common/src/components/button/Button.svelte";
   import ProjectResourcesTable from "./ProjectResourcesTable.svelte";
   import RefreshAllSourcesAndModelsConfirmDialog from "./RefreshAllSourcesAndModelsConfirmDialog.svelte";
+  import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 
   const queryClient = useQueryClient();
   const createTrigger = createRuntimeServiceCreateTrigger();
@@ -44,7 +45,7 @@
   function calculateRefetchInterval(
     currentInterval: number,
     data: V1ListResourcesResponse,
-    query: Query<V1ListResourcesResponse>,
+    query: Query<V1ListResourcesResponse, HTTPError>,
   ): number | false {
     if (query.state.error) return false;
     if (!data) return INITIAL_REFETCH_INTERVAL;
@@ -81,8 +82,12 @@
               resource.meta.name.kind !== ResourceKind.RefreshTrigger,
           ),
         }),
-        refetchInterval: (data, query) =>
-          calculateRefetchInterval(currentRefetchInterval, data, query),
+        refetchInterval: (query) =>
+          calculateRefetchInterval(
+            currentRefetchInterval,
+            query.state.data,
+            query,
+          ),
       },
     },
   );
@@ -105,9 +110,12 @@
       })
       .then(() => {
         currentRefetchInterval = INITIAL_REFETCH_INTERVAL;
-        void queryClient.invalidateQueries(
-          getRuntimeServiceListResourcesQueryKey(instanceId, undefined),
-        );
+        void queryClient.invalidateQueries({
+          queryKey: getRuntimeServiceListResourcesQueryKey(
+            instanceId,
+            undefined,
+          ),
+        });
       });
   }
 </script>

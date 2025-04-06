@@ -35,6 +35,7 @@ export type AlertFormValues = {
   metricsViewName: string;
   exploreName: string;
   whereFilter: V1Expression;
+  dimensionsWithInlistFilter: string[];
   dimensionThresholdFilters: Array<DimensionThresholdFilter>;
   timeRange: V1TimeRange;
   comparisonTimeRange: V1TimeRange | undefined;

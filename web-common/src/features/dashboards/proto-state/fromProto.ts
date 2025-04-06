@@ -5,8 +5,8 @@ import {
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import {
-  PivotChipType,
   type PivotChipData,
+  PivotChipType,
   type PivotState,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import {
@@ -118,6 +118,9 @@ export function getDashboardStateFromProto(
   } else if (dashboard.where) {
     entity.whereFilter = fromExpressionProto(dashboard.where);
   }
+  if (dashboard.dimensionsWithInlistFilter) {
+    entity.dimensionsWithInlistFilter = dashboard.dimensionsWithInlistFilter;
+  }
   if (dashboard.having) {
     entity.dimensionThresholdFilters = dashboard.having.map((h) => {
       const expr = fromExpressionProto(h.filter as Expression);
@@ -163,8 +166,9 @@ export function getDashboardStateFromProto(
   }
 
   if (dashboard.leaderboardMeasure) {
-    entity.leaderboardMeasureName = dashboard.leaderboardMeasure;
+    entity.leaderboardSortByMeasureName = dashboard.leaderboardMeasure;
   }
+
   if (dashboard.comparisonDimension) {
     entity.selectedComparisonDimension = dashboard.comparisonDimension;
   } else {
@@ -176,7 +180,10 @@ export function getDashboardStateFromProto(
       chartType: chartTypeMap(dashboard.chartType),
       expandedMeasureName: dashboard.expandedMeasure,
     };
-  } else if (dashboard.activePage !== undefined) {
+  } else if (
+    dashboard.activePage !== undefined &&
+    dashboard.activePage !== DashboardState_ActivePage.UNSPECIFIED
+  ) {
     entity.tdd = {
       pinIndex: -1,
       chartType: TDDChart.DEFAULT,
@@ -188,18 +195,18 @@ export function getDashboardStateFromProto(
 
   if (dashboard.allMeasuresVisible) {
     entity.allMeasuresVisible = true;
-    entity.visibleMeasureKeys = new Set(explore.measures);
+    entity.visibleMeasures = [...(explore.measures ?? [])];
   } else if (dashboard.visibleMeasures?.length) {
     entity.allMeasuresVisible = false;
-    entity.visibleMeasureKeys = new Set(dashboard.visibleMeasures);
+    entity.visibleMeasures = [...dashboard.visibleMeasures];
   }
 
   if (dashboard.allDimensionsVisible) {
     entity.allDimensionsVisible = true;
-    entity.visibleDimensionKeys = new Set(explore.dimensions);
+    entity.visibleDimensions = [...(explore.dimensions ?? [])];
   } else if (dashboard.visibleDimensions?.length) {
     entity.allDimensionsVisible = false;
-    entity.visibleDimensionKeys = new Set(dashboard.visibleDimensions);
+    entity.visibleDimensions = [...dashboard.visibleDimensions];
   }
 
   if (dashboard.leaderboardContextColumn !== undefined) {
@@ -212,6 +219,9 @@ export function getDashboardStateFromProto(
   }
   if (dashboard.leaderboardSortType) {
     entity.dashboardSortType = dashboard.leaderboardSortType;
+  }
+  if (dashboard.leaderboardMeasureCount) {
+    entity.leaderboardMeasureCount = dashboard.leaderboardMeasureCount;
   }
 
   if (dashboard.pivotIsActive !== undefined) {

@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/pkg/timeutil"
 
 	// Load IANA time zone data
 	_ "time/tzdata"
@@ -32,6 +33,7 @@ type WithConnectionFunc func(wrappedCtx context.Context, ensuredCtx context.Cont
 
 type CreateTableOptions struct {
 	View         bool
+	InitQueries  []string
 	BeforeCreate string
 	AfterCreate  string
 	TableOpts    map[string]any
@@ -44,6 +46,7 @@ type TableWriteMetrics struct {
 }
 
 type InsertTableOptions struct {
+	InitQueries  []string
 	BeforeInsert string
 	AfterInsert  string
 	ByName       bool
@@ -168,6 +171,9 @@ func (r *Result) Close() error {
 type InformationSchema interface {
 	All(ctx context.Context, like string) ([]*Table, error)
 	Lookup(ctx context.Context, db, schema, name string) (*Table, error)
+	// LoadPhysicalSize populates the PhysicalSizeBytes field of the tables.
+	// It should be called after All or Lookup and not on manually created tables.
+	LoadPhysicalSize(ctx context.Context, tables []*Table) error
 }
 
 // Table represents a table in an information schema.
@@ -180,11 +186,7 @@ type Table struct {
 	View                    bool
 	Schema                  *runtimev1.StructType
 	UnsupportedCols         map[string]string
-}
-
-// IngestionSummary is details about ingestion
-type IngestionSummary struct {
-	BytesIngested int64
+	PhysicalSizeBytes       int64
 }
 
 // IncrementalStrategy is a strategy to use for incrementally inserting data into a SQL table.
@@ -510,9 +512,60 @@ func (d Dialect) DateDiff(grain runtimev1.TimeGrain, t1, t2 time.Time) (string, 
 	case DialectDuckDB:
 		return fmt.Sprintf("DATEDIFF('%s', TIMESTAMP '%s', TIMESTAMP '%s')", unit, t1.Format(time.RFC3339), t2.Format(time.RFC3339)), nil
 	case DialectPinot:
-		return fmt.Sprintf("CAST(DATEDIFF('%s', %d, %d) AS TIMESTAMP)", unit, t1.UnixMilli(), t2.UnixMilli()), nil
+		return fmt.Sprintf("DATEDIFF('%s', %d, %d)", unit, t1.UnixMilli(), t2.UnixMilli()), nil
 	default:
 		return "", fmt.Errorf("unsupported dialect %q", d)
+	}
+}
+
+func (d Dialect) IntervalSubtract(tsExpr, unitExpr string, grain runtimev1.TimeGrain) (string, error) {
+	switch d {
+	case DialectClickHouse, DialectDruid, DialectDuckDB:
+		return fmt.Sprintf("(%s - INTERVAL (%s) %s)", tsExpr, unitExpr, d.ConvertToDateTruncSpecifier(grain)), nil
+	case DialectPinot:
+		return fmt.Sprintf("(dateAdd('%s', -1 * %s, %s))", d.ConvertToDateTruncSpecifier(grain), unitExpr, tsExpr), nil
+	default:
+		return "", fmt.Errorf("unsupported dialect %q", d)
+	}
+}
+
+func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeGrain, alias string) (string, []any, error) {
+	var args []any
+	switch d {
+	case DialectDuckDB:
+		return fmt.Sprintf("SELECT range AS %s FROM range('%s'::TIMESTAMP, '%s'::TIMESTAMP, INTERVAL '1 %s')", d.EscapeIdentifier(alias), start.Format(time.RFC3339), end.Format(time.RFC3339), d.ConvertToDateTruncSpecifier(grain)), nil, nil
+	case DialectClickHouse:
+		// format - SELECT c1 AS "alias" FROM VALUES(toDateTime('2021-01-01 00:00:00'), toDateTime('2021-01-01 00:00:00'),...)
+		var sb strings.Builder
+		sb.WriteString(fmt.Sprintf("SELECT c1 AS %s FROM VALUES(", d.EscapeIdentifier(alias)))
+		for t := start; t.Before(end); t = timeutil.AddTimeProto(t, grain, 1) {
+			if t != start {
+				sb.WriteString(", ")
+			}
+			sb.WriteString("?")
+			args = append(args, t)
+		}
+		sb.WriteString(")")
+		return sb.String(), args, nil
+	case DialectDruid:
+		// generate select like - SELECT * FROM (
+		//  VALUES
+		//  (CAST('2006-01-02T15:04:05Z' AS TIMESTAMP)),
+		//  (CAST('2006-01-02T15:04:05Z' AS TIMESTAMP))
+		// ) t (time)
+		var sb strings.Builder
+		sb.WriteString("SELECT * FROM (VALUES ")
+		for t := start; t.Before(end); t = timeutil.AddTimeProto(t, grain, 1) {
+			if t != start {
+				sb.WriteString(", ")
+			}
+			sb.WriteString("(CAST(? AS TIMESTAMP))")
+			args = append(args, t)
+		}
+		sb.WriteString(fmt.Sprintf(") t (%s)", d.EscapeIdentifier(alias)))
+		return sb.String(), args, nil
+	default:
+		return "", nil, fmt.Errorf("unsupported dialect %q", d)
 	}
 }
 
@@ -542,7 +595,7 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, []any, erro
 		if err := result.Scan(valuePtrs...); err != nil {
 			return "", nil, nil, fmt.Errorf("select inline: failed to scan value: %w", err)
 		}
-		if d == DialectDruid || d == DialectDuckDB {
+		if d == DialectDruid || d == DialectDuckDB || d == DialectPinot {
 			// format - select * from (values (1, 2), (3, 4)) t(a, b)
 			if rows == 0 {
 				prefix = "SELECT * FROM (VALUES "
@@ -570,7 +623,7 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, []any, erro
 
 		dimVals = append(dimVals, values[0])
 		for i, v := range values {
-			if d == DialectDruid || d == DialectDuckDB {
+			if d == DialectDruid || d == DialectDuckDB || d == DialectPinot {
 				if i == 0 {
 					prefix += "("
 				} else {
@@ -604,7 +657,7 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, []any, erro
 			} else if d == DialectClickHouse {
 				suffix += "?"
 				args = append(args, v)
-			} else if d == DialectDruid {
+			} else if d == DialectDruid || d == DialectPinot {
 				ok, expr, err := d.GetValExpr(v, result.Schema.Fields[i].Type.Code)
 				if err != nil {
 					return "", nil, nil, fmt.Errorf("select inline: failed to get value expression: %w", err)
@@ -619,7 +672,7 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, []any, erro
 			}
 		}
 
-		if d == DialectDruid || d == DialectDuckDB {
+		if d == DialectDruid || d == DialectDuckDB || d == DialectPinot {
 			prefix += ")"
 			if rows == 0 {
 				suffix += ")"
@@ -630,8 +683,12 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, []any, erro
 
 		rows++
 	}
+	err := result.Err()
+	if err != nil {
+		return "", nil, nil, err
+	}
 
-	if d == DialectDruid || d == DialectDuckDB {
+	if d == DialectDruid || d == DialectDuckDB || d == DialectPinot {
 		prefix += ") "
 	} else if d == DialectClickHouse {
 		suffix += ")"
@@ -700,8 +757,10 @@ func (d Dialect) GetTimeExpr(t time.Time) (bool, string) {
 	switch d {
 	case DialectClickHouse:
 		return true, fmt.Sprintf("parseDateTimeBestEffort('%s')", t.Format(time.RFC3339Nano))
-	case DialectDuckDB, DialectDruid, DialectPinot:
+	case DialectDuckDB, DialectDruid:
 		return true, fmt.Sprintf("CAST('%s' AS TIMESTAMP)", t.Format(time.RFC3339Nano))
+	case DialectPinot:
+		return true, fmt.Sprintf("CAST(%d AS TIMESTAMP)", t.UnixMilli())
 	default:
 		return false, ""
 	}

@@ -64,10 +64,13 @@ func (w *Worker) runAutoscaler(ctx context.Context) error {
 				return err
 			}
 
-			overshoot := max(
-				rec.RecommendedSlots-projectOrg.QuotaSlotsPerDeployment,
-				usage.Slots-targetProject.ProdSlots+rec.RecommendedSlots-projectOrg.QuotaSlotsTotal,
-			)
+			var overshoot int
+			if projectOrg.QuotaSlotsPerDeployment >= 0 {
+				overshoot = max(overshoot, rec.RecommendedSlots-projectOrg.QuotaSlotsPerDeployment)
+			}
+			if projectOrg.QuotaSlotsTotal >= 0 {
+				overshoot = max(overshoot, usage.Slots-targetProject.ProdSlots+rec.RecommendedSlots-projectOrg.QuotaSlotsTotal)
+			}
 
 			// If the recommendation would exceed a quota, change it to scale to the limit of the quota.
 			if overshoot > 0 {

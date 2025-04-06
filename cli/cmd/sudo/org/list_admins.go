@@ -18,7 +18,7 @@ func ListAdminsCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			var members []*adminv1.MemberUser
+			var members []*adminv1.OrganizationMemberUser
 			pageSize := uint32(1000)
 			pageToken := ""
 			for {
@@ -48,7 +48,7 @@ func ListAdminsCmd(ch *cmdutil.Helper) *cobra.Command {
 				return nil
 			}
 
-			ch.PrintMemberUsers(members)
+			ch.PrintOrganizationMemberUsers(members)
 
 			return nil
 		},

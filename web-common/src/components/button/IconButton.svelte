@@ -32,14 +32,15 @@
     aria-label={ariaLabel}
     class:cursor-auto={disabled}
     class:rounded
-    class="{marginClasses} grid place-items-center
-{active ? 'bg-gray-100' : ''}
-{disabled ? 'text-gray-400' : 'text-gray-800'}
+    class="{marginClasses} grid place-items-center {disabled
+      ? 'text-gray-400'
+      : 'text-gray-800'}
 {disableHover || disabled
       ? ''
       : bgDark
         ? 'hover:bg-gray-600'
         : 'hover:bg-gray-50'}"
+    class:bg-gray-100={active}
     style:width="{compact ? 20 : 24}px"
     style:height="{compact ? 20 : 24}px"
     style:font-size="18px"

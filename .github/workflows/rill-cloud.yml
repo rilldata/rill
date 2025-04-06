@@ -16,17 +16,35 @@ env:
   DEPLOY_CLOUD: 1
 
 jobs:
+  validate-sequential:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Check Admin Migrations
+      run: |
+        ./scripts/check_migrations.sh admin/database/postgres/migrations
+
+    - name: Check Runtime Migrations
+      run: |
+        ./scripts/check_migrations.sh runtime/drivers/sqlite/migrations
+
   release:
     # https://github.com/orgs/community/discussions/54860
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || ( github.event_name == 'create' && startsWith(github.ref_name, 'release') )
+    needs: validate-sequential
     name: Deploy to Rill Cloud
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-tags: true
+          ref: ${{ github.ref }}
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: 1.23
 
@@ -40,9 +58,6 @@ jobs:
 
       - name: Build & Publish Rill docker image
         run: |-
-          echo "Fetch tags to get the last tagged version"
-          git fetch --all --tags;
-
           if [ "$RELEASE" == "true" ] || [ "$GITHUB_REF_NAME" == "main" ]; then
             echo "DEPLOY_CLOUD=1" >> $GITHUB_ENV
           else

@@ -13,13 +13,11 @@ import {
 } from "@rilldata/web-common/lib/time/config";
 import { getChildTimeRanges } from "@rilldata/web-common/lib/time/ranges";
 import { isoDurationToTimeRangeMeta } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
-import type {
-  DashboardTimeControls,
-  TimeRangeOption,
-} from "@rilldata/web-common/lib/time/types";
 import {
+  type DashboardTimeControls,
   TimeComparisonOption,
   type TimeRange,
+  type TimeRangeOption,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
 import {
@@ -222,21 +220,27 @@ export function getValidComparisonOption(
   selectedTimeRange: TimeRange,
   prevComparisonOption: TimeComparisonOption | undefined,
   allTimeRange: TimeRange,
-) {
+): TimeComparisonOption {
   if (!timeRanges?.length) {
-    return DEFAULT_TIME_RANGES[selectedTimeRange.name as TimeRangePreset]
-      ?.defaultComparison as TimeComparisonOption;
+    return (
+      (DEFAULT_TIME_RANGES[selectedTimeRange.name as TimeRangePreset]
+        ?.defaultComparison as TimeComparisonOption) ??
+      TimeComparisonOption.CONTIGUOUS
+    );
   }
 
   const timeRange = timeRanges.find(
     (tr) => tr.range === selectedTimeRange.name,
   );
-  if (!timeRange) return undefined;
 
   // If comparisonOffsets are not defined get default from presets.
-  if (!timeRange.comparisonTimeRanges?.length) {
-    return DEFAULT_TIME_RANGES[selectedTimeRange.name as TimeRangePreset]
-      ?.defaultComparison as TimeComparisonOption;
+  // This does not handle time ranges like P7M that are not in our defaults
+  if (!timeRange?.comparisonTimeRanges?.length) {
+    return (
+      DEFAULT_TIME_RANGES[selectedTimeRange.name as TimeRangePreset]
+        ?.defaultComparison ??
+      (TimeComparisonOption.CONTIGUOUS as TimeComparisonOption)
+    );
   }
 
   const existing = timeRange.comparisonTimeRanges?.find(
@@ -252,7 +256,7 @@ export function getValidComparisonOption(
   );
   // if currently selected comparison option is in allowed list and is valid select it
   if (existing && existingComparison.isComparisonRangeAvailable) {
-    return prevComparisonOption;
+    return prevComparisonOption ?? TimeComparisonOption.CONTIGUOUS;
   }
 
   return timeRange.comparisonTimeRanges[0].offset as TimeComparisonOption;

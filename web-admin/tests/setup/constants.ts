@@ -1,4 +1,3 @@
-export const GITHUB_STORAGE_STATE = "playwright/.auth/github.json";
 export const ADMIN_STORAGE_STATE = "playwright/.auth/admin.json";
 export const VIEWER_STORAGE_STATE = "playwright/.auth/viewer.json";
 

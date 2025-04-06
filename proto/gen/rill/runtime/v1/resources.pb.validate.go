@@ -2579,6 +2579,8 @@ func (m *ModelSpec) validate(all bool) error {
 
 	// no validation rules for TriggerFull
 
+	// no validation rules for DefinedAsSource
+
 	if len(errors) > 0 {
 		return ModelSpecMultiError(errors)
 	}
@@ -4433,6 +4435,10 @@ func (m *ExploreSpec) validate(all bool) error {
 
 	// no validation rules for Banner
 
+	// no validation rules for LockTimeZone
+
+	// no validation rules for AllowCustomTimeRange
+
 	if len(errors) > 0 {
 		return ExploreSpecMultiError(errors)
 	}
@@ -5037,6 +5043,10 @@ func (m *ExplorePreset) validate(all bool) error {
 
 	if m.ExploreExpandedDimension != nil {
 		// no validation rules for ExploreExpandedDimension
+	}
+
+	if m.ExploreLeaderboardMeasureCount != nil {
+		// no validation rules for ExploreLeaderboardMeasureCount
 	}
 
 	if m.TimeDimensionMeasure != nil {
@@ -10370,6 +10380,8 @@ func (m *CanvasSpec) validate(all bool) error {
 
 	}
 
+	// no validation rules for AllowCustomTimeRange
+
 	// no validation rules for FiltersEnabled
 
 	if all {
@@ -13130,6 +13142,8 @@ func (m *MetricsViewSpec_MeasureV2) validate(all bool) error {
 	}
 
 	// no validation rules for ValidPercentOfTotal
+
+	// no validation rules for TreatNullsAs
 
 	if len(errors) > 0 {
 		return MetricsViewSpec_MeasureV2MultiError(errors)

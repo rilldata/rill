@@ -21,6 +21,14 @@ func (n noop) Name() string {
 	return "noop"
 }
 
+func (n noop) DefaultQuotas() Quotas {
+	return Quotas{} // Unlimited
+}
+
+func (n noop) DefaultUserQuotas() UserQuotas {
+	return UserQuotas{} // Unlimited
+}
+
 func (n noop) GetDefaultPlan(ctx context.Context) (*Plan, error) {
 	return &Plan{Quotas: Quotas{}}, nil
 }

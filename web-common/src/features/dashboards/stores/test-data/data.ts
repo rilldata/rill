@@ -32,6 +32,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 
 export const AD_BIDS_NAME = "AdBids";
+export const AD_BIDS_METRICS_NAME = AD_BIDS_NAME + "_metrics";
 export const AD_BIDS_EXPLORE_NAME = AD_BIDS_NAME + "_explore";
 export const AD_BIDS_SOURCE_NAME = "AdBids_Source";
 export const AD_BIDS_MIRROR_NAME = "AdBids_mirror";
@@ -138,8 +139,8 @@ export const TestTimeOffsetConstants = {
   LAST_DAY: getOffsetByHour(TestTimeConstants.LAST_DAY),
 };
 export const AD_BIDS_DEFAULT_TIME_RANGE = {
-  name: TimeRangePreset.ALL_TIME,
-  interval: V1TimeGrain.TIME_GRAIN_HOUR,
+  name: TimeRangePreset.QUARTER_TO_DATE,
+  interval: V1TimeGrain.TIME_GRAIN_WEEK,
   start: TestTimeConstants.LAST_DAY,
   end: new Date(TestTimeConstants.NOW.getTime() + 1),
 };
@@ -147,6 +148,7 @@ export const AD_BIDS_DEFAULT_URL_TIME_RANGE = {
   name: TimeRangePreset.ALL_TIME,
   interval: V1TimeGrain.TIME_GRAIN_HOUR,
 };
+
 export const AD_BIDS_TIME_RANGE_SUMMARY: V1MetricsViewTimeRangeResponse = {
   timeRangeSummary: {
     min: TestTimeConstants.LAST_DAY.toISOString(),
@@ -197,7 +199,7 @@ export const AD_BIDS_METRICS_3_MEASURES_DIMENSIONS: V1MetricsViewSpec = {
 
 export const AD_BIDS_EXPLORE_INIT: V1ExploreSpec = {
   displayName: AD_BIDS_EXPLORE_NAME,
-  metricsView: AD_BIDS_NAME,
+  metricsView: AD_BIDS_METRICS_NAME,
   measures: AD_BIDS_INIT_MEASURES.map((m) => m.name!),
   dimensions: AD_BIDS_INIT_DIMENSIONS.map((d) => d.name!),
 };
@@ -245,6 +247,13 @@ export const AD_BIDS_PRESET: V1ExplorePreset = {
   exploreSortAsc: true,
   exploreSortType: V1ExploreSortType.EXPLORE_SORT_TYPE_PERCENT,
 };
+export const AD_BIDS_PRESET_WITHOUT_TIMESTAMP: V1ExplorePreset = {
+  measures: [AD_BIDS_IMPRESSIONS_MEASURE],
+  dimensions: [AD_BIDS_PUBLISHER_DIMENSION],
+  exploreSortBy: AD_BIDS_IMPRESSIONS_MEASURE,
+  exploreSortAsc: true,
+  exploreSortType: V1ExploreSortType.EXPLORE_SORT_TYPE_PERCENT,
+};
 export const AD_BIDS_DIMENSION_TABLE_PRESET: V1ExplorePreset = {
   exploreExpandedDimension: AD_BIDS_DOMAIN_DIMENSION,
 };
@@ -264,6 +273,7 @@ export const AD_BIDS_PIVOT_PRESET: V1ExplorePreset = {
 
 export const AD_BIDS_BASE_PRESET = getDefaultExplorePreset(
   AD_BIDS_EXPLORE_INIT,
+  AD_BIDS_METRICS_INIT,
   undefined,
 );
 
@@ -333,8 +343,8 @@ export const AD_BIDS_CLEARED_FILTER = createAndExpression([
 
 // parsed time controls won't have start & end
 export const ALL_TIME_PARSED_TEST_CONTROLS = {
-  name: TimeRangePreset.ALL_TIME,
-  interval: V1TimeGrain.TIME_GRAIN_HOUR,
+  name: TimeRangePreset.QUARTER_TO_DATE,
+  interval: V1TimeGrain.TIME_GRAIN_WEEK,
 } as DashboardTimeControls;
 
 export const LAST_6_HOURS_TEST_CONTROLS = {

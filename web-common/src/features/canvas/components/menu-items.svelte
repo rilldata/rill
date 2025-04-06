@@ -13,7 +13,7 @@
   };
 
   export const menuItems: MenuItem[] = [
-    { id: "bar_chart", label: "Chart", icon: ChartIcon },
+    { id: "stacked_bar", label: "Chart", icon: ChartIcon },
     { id: "table", label: "Table", icon: TableIcon },
     { id: "markdown", label: "Text", icon: TextIcon },
     { id: "kpi_grid", label: "KPI", icon: BigNumberIcon },

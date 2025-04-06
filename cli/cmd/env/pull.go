@@ -11,8 +11,8 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
-	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/parser"
 	"github.com/spf13/cobra"
 )
 
@@ -41,11 +41,11 @@ func PullCmd(ch *cmdutil.Helper) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			parser, err := rillv1.Parse(cmd.Context(), repo, instanceID, "prod", "duckdb")
+			p, err := parser.Parse(cmd.Context(), repo, instanceID, "prod", "duckdb")
 			if err != nil {
 				return fmt.Errorf("failed to parse project: %w", err)
 			}
-			if parser.RillYAML == nil {
+			if p.RillYAML == nil {
 				return fmt.Errorf("not a valid Rill project (missing a rill.yaml file)")
 			}
 
@@ -76,8 +76,10 @@ func PullCmd(ch *cmdutil.Helper) *cobra.Command {
 				resVars[v.Name] = v.Value
 			}
 
+			dotEnv := p.GetDotEnv()
+
 			// If the variables match any existing .env file, do nothing
-			if maps.Equal(resVars, parser.DotEnv) {
+			if maps.Equal(resVars, dotEnv) {
 				if len(res.Variables) == 0 {
 					ch.Printf("No cloud credentials found for project %q.\n", projectName)
 				} else {
@@ -88,7 +90,7 @@ func PullCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Merge the current .env file with pulled variables
 			vars := make(map[string]string)
-			for k, v := range parser.DotEnv {
+			for k, v := range dotEnv {
 				vars[k] = v
 			}
 			for k, v := range resVars {

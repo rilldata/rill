@@ -80,6 +80,10 @@ export function convertPresetToExploreState(
     partialExploreState.whereFilter = dimensionFilters;
     partialExploreState.dimensionThresholdFilters = dimensionThresholdFilters;
   }
+  if (preset.dimensionsWithInlistFilter) {
+    partialExploreState.dimensionsWithInlistFilter =
+      preset.dimensionsWithInlistFilter;
+  }
 
   const { partialExploreState: trPartialState, errors: trErrors } =
     fromTimeRangesParams(preset, dimensions);
@@ -226,7 +230,7 @@ function fromExploreUrlParams(
 
     partialExploreState.allMeasuresVisible =
       selectedMeasures.length === explore.measures?.length;
-    partialExploreState.visibleMeasureKeys = new Set(selectedMeasures);
+    partialExploreState.visibleMeasures = [...selectedMeasures];
   }
 
   if (preset.dimensions?.length) {
@@ -243,12 +247,12 @@ function fromExploreUrlParams(
 
     partialExploreState.allDimensionsVisible =
       selectedDimensions.length === explore.dimensions?.length;
-    partialExploreState.visibleDimensionKeys = new Set(selectedDimensions);
+    partialExploreState.visibleDimensions = [...selectedDimensions];
   }
 
   if (preset.exploreSortBy) {
     if (measures.has(preset.exploreSortBy)) {
-      partialExploreState.leaderboardMeasureName = preset.exploreSortBy;
+      partialExploreState.leaderboardSortByMeasureName = preset.exploreSortBy;
     } else {
       errors.push(getSingleFieldError("sort by measure", preset.exploreSortBy));
     }
@@ -267,6 +271,11 @@ function fromExploreUrlParams(
     partialExploreState.dashboardSortType =
       Number(ToLegacySortTypeMap[preset.exploreSortType]) ??
       DashboardState_LeaderboardSortType.UNSPECIFIED;
+  }
+
+  if (preset.exploreLeaderboardMeasureCount !== undefined) {
+    partialExploreState.leaderboardMeasureCount =
+      preset.exploreLeaderboardMeasureCount;
   }
 
   if (preset.exploreExpandedDimension !== undefined) {

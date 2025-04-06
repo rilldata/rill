@@ -35,6 +35,8 @@ import {
 import { inferResourceKind } from "./infer-resource-kind";
 import { debounce } from "@rilldata/web-common/lib/create-debouncer";
 import { AsyncSaveState } from "./async-save-state";
+import type { EditorSelection } from "@codemirror/state";
+import type { EditorView } from "@codemirror/view";
 
 const UNSUPPORTED_EXTENSIONS = [
   // Data formats
@@ -84,6 +86,10 @@ export class FileArtifact {
   readonly fileName: string;
   readonly disableAutoSave: boolean;
   readonly autoSave: Writable<boolean>;
+  readonly snapshot: Writable<{
+    scroll?: ReturnType<EditorView["scrollSnapshot"]>;
+    selection?: EditorSelection;
+  }> = writable({ scroll: undefined, selection: undefined });
 
   private editorCallback: (content: string) => void = () => {};
 
@@ -122,7 +128,7 @@ export class FileArtifact {
     };
     const queryKey = getRuntimeServiceGetFileQueryKey(instanceId, queryParams);
 
-    if (invalidate) await queryClient.invalidateQueries(queryKey);
+    if (invalidate) await queryClient.invalidateQueries({ queryKey });
 
     const queryFn: QueryFunction<
       Awaited<ReturnType<typeof runtimeServiceGetFile>>
@@ -253,6 +259,13 @@ export class FileArtifact {
     this.inConflict.set(false);
   };
 
+  saveSnapshot = (editor: EditorView) => {
+    this.snapshot.set({
+      scroll: editor.scrollSnapshot(),
+      selection: editor.state.selection,
+    });
+  };
+
   revertChanges = () => {
     this.updateEditorContent(get(this.remoteContent) ?? "", false, false);
     this.saveState.untouch(this.path);
@@ -293,9 +306,8 @@ export class FileArtifact {
         instanceId,
         name?.name as string,
         name?.kind as ResourceKind,
-        {
-          queryClient,
-        },
+        undefined,
+        queryClient,
       ).subscribe(set),
     ) as ReturnType<typeof useResource<V1Resource>>;
   };

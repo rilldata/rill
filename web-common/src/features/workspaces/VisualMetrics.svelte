@@ -41,7 +41,7 @@
   import { useSources } from "../sources/selectors";
   import AlertConfirmation from "../visual-metrics-editing/AlertConfirmation.svelte";
   import MetricsTable from "../visual-metrics-editing/MetricsTable.svelte";
-  import Sidebar from "../visual-metrics-editing/Sidebar.svelte";
+  import VisualMetricsSidebar from "../visual-metrics-editing/VisualMetricsSidebar.svelte";
   import type { Confirmation, ItemType } from "../visual-metrics-editing/lib";
   import {
     editingItemData,
@@ -73,7 +73,6 @@
   export let unsavedChanges = false;
 
   let searchValue = "";
-
   let confirmation: Confirmation | null = null;
   let tableSelectionOpen = false;
   let collapsed = {
@@ -789,7 +788,7 @@
   {#if $editingItemData !== null}
     {@const { index, type } = $editingItemData}
     {#key editingItem}
-      <Sidebar
+      <VisualMetricsSidebar
         item={editingItem ??
           (type === "measures" ? new YAMLMeasure() : new YAMLDimension())}
         {type}

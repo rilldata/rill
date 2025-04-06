@@ -4,7 +4,7 @@
   import type { ChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
   import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
   import { getComponentFilterProperties } from "@rilldata/web-common/features/canvas/components/util";
-  import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
@@ -20,29 +20,31 @@
   import {
     generateSpec,
     getChartTitle,
+    isChartLineLike,
     mergedVlConfig,
     sanitizeFieldName,
   } from "./util";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
   export let renderer: string;
+  export let canvasName: string;
   export let timeAndFilterStore: Readable<TimeAndFilterStore>;
 
-  const ctx = getCanvasStateManagers();
-  const {
+  $: store = getCanvasStore(canvasName);
+  $: ({
     canvasEntity: {
       spec: { getMeasureForMetricView },
     },
-  } = ctx;
+  } = store);
 
   let viewVL: View;
 
-  $: chartConfig = rendererProperties as ChartSpec;
+  $: chartConfig = rendererProperties as unknown as ChartSpec;
   $: chartType = renderer as ChartType;
 
-  $: schema = validateChartSchema(ctx, chartConfig);
+  $: schema = validateChartSchema(store, chartConfig);
 
-  $: data = getChartData(ctx, chartConfig, timeAndFilterStore);
+  $: data = getChartData(store, chartConfig, timeAndFilterStore);
   $: hasNoData = !$data.isFetching && $data.data.length === 0;
 
   $: spec = generateSpec(chartType, chartConfig, $data);
@@ -95,6 +97,7 @@
           canvasDashboard
           data={{ "metrics-view": $data.data }}
           {spec}
+          renderer={isChartLineLike(chartType) ? "svg" : "canvas"}
           expressionFunctions={{
             [measureName]: { fn: (val) => measureFormatter(val) },
           }}

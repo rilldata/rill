@@ -14,7 +14,8 @@ jobs:
     name: lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out code
+        uses: actions/checkout@v4
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
@@ -22,6 +23,6 @@ jobs:
       - name: Go report card
         uses: creekorful/goreportcard-action@v1.0
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v6.5.0
         with:
           version: v1.61

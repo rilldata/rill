@@ -128,7 +128,7 @@ func TestGlobHivePartitionedTransformSQL(t *testing.T) {
 			"path":          "mock://bucket/**/*.csv",
 			"partition":     "hive",
 			"rollup_files":  true,
-			"transform_sql": "SELECT path, LAG(path) OVER (ORDER BY path) AS prev_path, len(files) AS num_files FROM {{ .table }}",
+			"transform_sql": "SELECT path, LAG(path) OVER (ORDER BY path) AS prev_path, len(files) AS num_files, updated_on FROM {{ .table }}",
 		},
 		Args:   nil,
 		Claims: &runtime.SecurityClaims{},

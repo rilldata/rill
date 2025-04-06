@@ -2,7 +2,7 @@
   import { Button } from "@rilldata/web-common/components/button";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
-  import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import AdvancedFilter from "@rilldata/web-common/features/dashboards/filters/AdvancedFilter.svelte";
   import FilterButton from "@rilldata/web-common/features/dashboards/filters/FilterButton.svelte";
   import DimensionFilter from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilter.svelte";
@@ -16,14 +16,15 @@
   export let selectedComponentName: string;
   export let id: string;
   export let filter: string;
+  export let canvasName: string;
   export let onChange: (filter: string) => void = () => {};
 
-  const {
+  $: ({
     canvasEntity: {
       useComponent,
       spec: { getDimensionsForMetricView, getSimpleMeasuresForMetricView },
     },
-  } = getCanvasStateManagers();
+  } = getCanvasStore(canvasName));
 
   let filterToggle = false;
 
@@ -36,6 +37,8 @@
   $: ({
     whereFilter,
     toggleDimensionValueSelection,
+    applyDimensionInListMode,
+    applyDimensionContainsMode,
     removeDimensionFilter,
     toggleDimensionFilterMode,
     setMeasureFilter,
@@ -145,7 +148,7 @@
         {#if isComplexFilter}
           <AdvancedFilter advancedFilter={$whereFilter} />
         {:else if allDimensionFilters.length || allMeasureFilters.length}
-          {#each allDimensionFilters as { name, label, selectedValues } (name)}
+          {#each allDimensionFilters as { name, label, mode, selectedValues, inputText } (name)}
             {@const dimension = $allDimensions.find(
               (d) => d.name === name || d.column === name,
             )}
@@ -158,7 +161,9 @@
                   smallChip
                   {name}
                   {label}
+                  {mode}
                   {selectedValues}
+                  {inputText}
                   timeStart={new Date(0).toISOString()}
                   timeEnd={new Date().toISOString()}
                   timeControlsReady
@@ -167,6 +172,10 @@
                   onToggleFilterMode={() => toggleDimensionFilterMode(name)}
                   onSelect={(value) =>
                     toggleDimensionValueSelection(name, value, true)}
+                  onApplyInList={(values) =>
+                    applyDimensionInListMode(name, values)}
+                  onApplyContainsMode={(searchText) =>
+                    applyDimensionContainsMode(name, searchText)}
                 />
               {/if}
             </div>

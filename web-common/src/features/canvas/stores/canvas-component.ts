@@ -32,22 +32,12 @@ export class CanvasComponentState {
     this.localFilters = new Filters(spec);
     this.localTimeControls = new TimeControls(specStore, name);
 
-    if (
-      componentResource &&
-      componentResource.rendererProperties?.dimension_filters
-    ) {
-      this.localFilters.setFiltersFromText(
-        componentResource.rendererProperties?.dimension_filters as string,
-      );
+    if (componentResource && this.filterText) {
+      this.localFilters.setFiltersFromText(this.filterText);
     }
 
-    if (
-      componentResource &&
-      componentResource.rendererProperties?.time_filters
-    ) {
-      this.localTimeControls.setTimeFiltersFromText(
-        componentResource.rendererProperties?.time_filters as string,
-      );
+    if (componentResource && this.timeFilterText) {
+      this.localTimeControls.setTimeFiltersFromText(this.timeFilterText);
     }
   }
 }

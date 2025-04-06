@@ -2,6 +2,7 @@ import type {
   ChartConfig,
   TooltipValue,
 } from "@rilldata/web-common/features/canvas/components/charts/types";
+import { sanitizeFieldName } from "@rilldata/web-common/features/canvas/components/charts/util";
 import { sanitizeValueForVega } from "@rilldata/web-common/features/templates/charts/utils";
 import type { VisualizationSpec } from "svelte-vega";
 import {
@@ -31,7 +32,7 @@ export function generateVLAreaChartSpec(
     multiValueTooltipChannel = data.data?.map((value) => ({
       field: sanitizeValueForVega(value?.[colorField]),
       type: "quantitative",
-      formatType: yField,
+      formatType: sanitizeFieldName(yField),
     }));
 
     multiValueTooltipChannel.unshift({
@@ -40,31 +41,34 @@ export function generateVLAreaChartSpec(
       type: config.x?.type,
       ...(config.x.type === "temporal" && { format: "%b %d, %Y %H:%M" }),
     });
+
+    multiValueTooltipChannel = multiValueTooltipChannel.slice(0, 50);
   }
+
+  spec.encoding = { x: createXEncoding(config, data) };
 
   spec.layer = [
     {
       encoding: {
-        x: createXEncoding(config, data),
         y: { ...createYEncoding(config, data), stack: "zero" },
         color: createColorEncoding(config, data),
       },
       layer: [
         { mark: "area" },
         {
+          mark: { type: "line", opacity: 0.5 },
+        },
+        {
           transform: [{ filter: { param: "hover", empty: false } }],
           mark: {
             type: "point",
             filled: true,
             opacity: 1,
-            size: 40,
+            size: 50,
             clip: true,
             stroke: "white",
             strokeWidth: 1,
           },
-        },
-        {
-          mark: { type: "line", opacity: 0.5 },
         },
       ],
     },

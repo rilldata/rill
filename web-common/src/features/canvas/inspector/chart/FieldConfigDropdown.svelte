@@ -1,6 +1,7 @@
 <script lang="ts">
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import SettingsSlider from "@rilldata/web-common/components/icons/SettingsSlider.svelte";
@@ -16,6 +17,7 @@
   $: isDimension = key === "x";
   $: isTemporal = fieldConfig?.type === "temporal";
 
+  let limit = fieldConfig?.limit || 5000;
   let isDropdownOpen = false;
 
   const sortOptions: { label: string; value: ChartSortDirection }[] = [
@@ -51,6 +53,16 @@
       </div>
       {#if isDimension && !isTemporal}
         <div class="py-1.5 flex items-center justify-between">
+          <span class="text-xs">Show null values</span>
+          <Switch
+            small
+            checked={fieldConfig?.showNull}
+            on:click={() => {
+              onChange("showNull", !fieldConfig?.showNull);
+            }}
+          />
+        </div>
+        <div class="py-1.5 flex items-center justify-between">
           <span class="text-xs">Sort</span>
           <Select
             size="sm"
@@ -59,6 +71,22 @@
             options={sortOptions}
             value={fieldConfig?.sort || "x"}
             on:change={(e) => onChange("sort", e.detail)}
+          />
+        </div>
+        <div class="py-1.5 flex items-center justify-between">
+          <span class="text-xs">Limit</span>
+          <Input
+            size="sm"
+            width="72px"
+            id="limit-select"
+            inputType="number"
+            bind:value={limit}
+            onBlur={() => {
+              onChange("limit", limit);
+            }}
+            onEnter={() => {
+              onChange("limit", limit);
+            }}
           />
         </div>
       {/if}

@@ -4,24 +4,27 @@
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import {
     isChartComponentType,
+    isTableComponentType,
     type CanvasComponentObj,
   } from "@rilldata/web-common/features/canvas/components/util";
-  import AlignmentInput from "@rilldata/web-common/features/canvas/inspector/AlignmentInput.svelte";
-  import ComparisonInput from "@rilldata/web-common/features/canvas/inspector/ComparisonInput.svelte";
-  import MetricSelectorDropdown from "@rilldata/web-common/features/canvas/inspector/MetricSelectorDropdown.svelte";
-  import MultiFieldInput from "@rilldata/web-common/features/canvas/inspector/MultiFieldInput.svelte";
-  import SingleFieldInput from "@rilldata/web-common/features/canvas/inspector/SingleFieldInput.svelte";
-  import SparklineInput from "@rilldata/web-common/features/canvas/inspector/SparklineInput.svelte";
   import { type V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
   import type { CanvasComponentType } from "../components/types";
+  import AlignmentInput from "./AlignmentInput.svelte";
   import ChartTypeSelector from "./chart/ChartTypeSelector.svelte";
   import MarkSelector from "./chart/MarkSelector.svelte";
   import PositionalFieldConfig from "./chart/PositionalFieldConfig.svelte";
+  import ComparisonInput from "./ComparisonInput.svelte";
+  import MetricSelectorDropdown from "./MetricSelectorDropdown.svelte";
+  import MultiFieldInput from "./MultiFieldInput.svelte";
+  import SingleFieldInput from "./SingleFieldInput.svelte";
+  import SparklineInput from "./SparklineInput.svelte";
+  import TableTypeSelector from "./TableTypeSelector.svelte";
 
   export let component: CanvasComponentObj;
   export let componentType: CanvasComponentType;
   export let paramValues: V1ComponentSpecRendererProperties;
+  export let canvasName: string;
 
   $: localParamValues = localParamValues || {};
   let oldParamValuesRef: V1ComponentSpecRendererProperties = {};
@@ -35,7 +38,7 @@
   $: inputParams = component.inputParams().options;
 
   $: metricsView =
-    "metrics_view" in paramValues ? paramValues.metrics_view : null;
+    "metrics_view" in paramValues ? (paramValues.metrics_view as string) : null;
 
   onMount(() => {
     localParamValues = structuredClone(paramValues) || {};
@@ -44,6 +47,15 @@
 
 {#if isChartComponentType(componentType)}
   <ChartTypeSelector {component} {componentType} />
+{/if}
+
+{#if metricsView && isTableComponentType(componentType)}
+  <TableTypeSelector
+    {canvasName}
+    {component}
+    {componentType}
+    metricsViewName={metricsView}
+  />
 {/if}
 
 <div>
@@ -76,6 +88,7 @@
           <!-- MEASURE / DIMENSION -->
         {:else if metricsView && (config.type === "measure" || config.type === "dimension")}
           <SingleFieldInput
+            {canvasName}
             label={config.label ?? key}
             metricName={metricsView}
             id={key}
@@ -86,13 +99,14 @@
             }}
           />
 
-          <!-- MULTIPLE MEASURE / MULTIPLE DIMENSION -->
-        {:else if metricsView && (config.type === "multi_measures" || config.type === "multi_dimensions")}
+          <!-- MULTIPLE MEASURE / MULTIPLE DIMENSION / MULTIPLE FIELDS -->
+        {:else if metricsView && config.type === "multi_fields"}
           <MultiFieldInput
+            {canvasName}
             label={config.label ?? key}
             metricName={metricsView}
             id={key}
-            type={config.type === "multi_measures" ? "measure" : "dimension"}
+            types={config.meta?.allowedTypes ?? ["measure", "dimension"]}
             selectedItems={localParamValues[key]}
             onMultiSelect={async (field) => {
               component.updateProperty(key, field);
@@ -167,6 +181,7 @@
             {key}
             label={config.label ?? key}
             position={localParamValues[key]}
+            defaultAlignment={config.meta?.defaultAlignment}
             onChange={(updatedPosition) => {
               localParamValues[key] = updatedPosition;
               component.updateProperty(key, updatedPosition);
@@ -175,6 +190,7 @@
           <!-- POSITIONAL CONFIG -->
         {:else if metricsView && config.type === "positional"}
           <PositionalFieldConfig
+            {canvasName}
             {key}
             {config}
             {metricsView}
@@ -187,6 +203,7 @@
           <!-- COLOR CONFIG -->
         {:else if metricsView && config.type === "mark"}
           <MarkSelector
+            {canvasName}
             label={config.label ?? key}
             {key}
             {metricsView}

@@ -82,6 +82,7 @@
       label=""
       options={[
         { value: "viewer", label: "Viewer" },
+        { value: "editor", label: "Editor" },
         { value: "admin", label: "Admin" },
       ]}
     />
@@ -89,7 +90,7 @@
       type="primary"
       wide
       on:click={onApprove}
-      loading={$approveAccess.isLoading}
+      loading={$approveAccess.isPending}
       disabled={requested}
     >
       Grant access

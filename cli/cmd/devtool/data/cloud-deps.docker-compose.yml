@@ -28,6 +28,17 @@ services:
     restart: always
     ports:
       - "9411:9411"
+  mailpit:
+    container_name: mailpit
+    image: axllent/mailpit
+    restart: always
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    environment:
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+      MP_UI_BIND_ADDR: 0.0.0.0:8025
+      MP_SMTP_AUTH: "user:passwd"
   prometheus:
     container_name: prometheus
     image: prom/prometheus:v2.55.1
@@ -73,3 +84,12 @@ services:
     ports:
       - '9000:9000' # Native port
       - '8123:8123' # HTTP port
+  pgweb:
+    image: sosedoff/pgweb
+    restart: always
+    ports:
+      - "8082:8081"
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable
+    depends_on:
+      - postgres

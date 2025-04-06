@@ -49,7 +49,7 @@ type DB interface {
 	CreateTableAsSelect(ctx context.Context, name string, sql string, opts *CreateTableOptions) (*TableWriteMetrics, error)
 
 	// MutateTable allows mutating a table in the database by calling the mutateFn.
-	MutateTable(ctx context.Context, name string, mutateFn func(ctx context.Context, conn *sqlx.Conn) error) (*TableWriteMetrics, error)
+	MutateTable(ctx context.Context, name string, initQueries []string, mutateFn func(ctx context.Context, conn *sqlx.Conn) error) (*TableWriteMetrics, error)
 
 	// DropTable removes a table from the database.
 	DropTable(ctx context.Context, name string) error
@@ -157,6 +157,9 @@ func (d *DBOptions) ValidateSettings() error {
 type CreateTableOptions struct {
 	// View specifies whether the created table is a view.
 	View bool
+	// InitQueries are queries that are run during initialisation of write handle. Applies only to the current table.
+	// For queries that should apply to all tables refer to DBOptions.ConnInitQueries
+	InitQueries []string
 	// If BeforeCreateFn is set, it will be executed before the create query is executed.
 	BeforeCreateFn func(ctx context.Context, conn *sqlx.Conn) error
 	// If AfterCreateFn is set, it will be executed after the create query is executed.
@@ -266,7 +269,7 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 		opts.Logger,
 	)
 
-	db.dbHandle, err = db.openDBAndAttach(ctx, filepath.Join(db.localPath, "main.db"), "", true)
+	db.dbHandle, err = db.openDBAndAttach(ctx, filepath.Join(db.localPath, "main.db"), "", nil, true)
 	if err != nil {
 		if strings.Contains(err.Error(), "Symbol not found") {
 			fmt.Printf("Your version of macOS is not supported. Please upgrade to the latest major release of macOS. See this link for details: https://support.apple.com/en-in/macos/upgrade")
@@ -383,7 +386,7 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 	}
 
 	// need to attach existing table so that any views dependent on this table are correctly attached
-	conn, release, err := d.acquireWriteConn(ctx, dsn, name, true)
+	conn, release, err := d.acquireWriteConn(ctx, dsn, name, opts.InitQueries, true)
 	if err != nil {
 		return nil, err
 	}
@@ -452,7 +455,7 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 	return &TableWriteMetrics{Duration: duration}, nil
 }
 
-func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx context.Context, conn *sqlx.Conn) error) (*TableWriteMetrics, error) {
+func (d *db) MutateTable(ctx context.Context, name string, initQueries []string, mutateFn func(ctx context.Context, conn *sqlx.Conn) error) (*TableWriteMetrics, error) {
 	d.logger.Debug("mutate table", zap.String("name", name), observability.ZapCtx(ctx))
 	err := d.writeSem.Acquire(ctx, 1)
 	if err != nil {
@@ -485,7 +488,7 @@ func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx con
 
 	// acquire write connection
 	// need to ignore attaching table since it is already present in the db file
-	conn, release, err := d.acquireWriteConn(ctx, d.localDBPath(name, newVersion), name, false)
+	conn, release, err := d.acquireWriteConn(ctx, d.localDBPath(name, newVersion), name, initQueries, false)
 	if err != nil {
 		_ = os.RemoveAll(newDir)
 		return nil, err
@@ -712,12 +715,12 @@ func (d *db) Size() int64 {
 // acquireWriteConn syncs the write database, initializes the write handle and returns a write connection.
 // The release function should be called to release the connection.
 // It should be called with the writeMu locked.
-func (d *db) acquireWriteConn(ctx context.Context, dsn, table string, attachExisting bool) (*sqlx.Conn, func() error, error) {
+func (d *db) acquireWriteConn(ctx context.Context, dsn, table string, initQueries []string, attachExisting bool) (*sqlx.Conn, func() error, error) {
 	var ignoreTable string
 	if !attachExisting {
 		ignoreTable = table
 	}
-	db, err := d.openDBAndAttach(ctx, dsn, ignoreTable, false)
+	db, err := d.openDBAndAttach(ctx, dsn, ignoreTable, initQueries, false)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -743,7 +746,7 @@ func (d *db) acquireWriteConn(ctx context.Context, dsn, table string, attachExis
 	}, nil
 }
 
-func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, read bool) (db *sqlx.DB, dbErr error) {
+func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, initQueries []string, read bool) (db *sqlx.DB, dbErr error) {
 	d.logger.Debug("open db", zap.Bool("read", read), zap.String("uri", uri), observability.ZapCtx(ctx))
 	// open the db
 	var settings map[string]string
@@ -788,7 +791,15 @@ func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, read 
 		}
 	}()
 
+	// Run init queries applicable to all tables
 	for _, qry := range d.opts.DBInitQueries {
+		_, err := db.ExecContext(ctx, qry)
+		if err != nil {
+			return nil, err
+		}
+	}
+	// Run init queries specific to this table
+	for _, qry := range initQueries {
 		_, err := db.ExecContext(ctx, qry)
 		if err != nil {
 			return nil, err
@@ -836,6 +847,7 @@ func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, read 
 			array_agg(c.is_nullable = 'YES' order by c.ordinal_position) as "column_nullable"
 		from information_schema.tables t
 		join information_schema.columns c on t.table_schema = c.table_schema and t.table_name = c.table_name
+		where t.table_catalog = current_database() AND c.table_catalog= current_database()
 		group by 1, 2, 3, 4
 		order by 1, 2, 3, 4
 	`)

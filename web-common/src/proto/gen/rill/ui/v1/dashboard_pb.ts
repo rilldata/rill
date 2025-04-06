@@ -37,6 +37,13 @@ export class DashboardState extends Message<DashboardState> {
   where?: Expression;
 
   /**
+   * Temporary to differentiate between "select" and "in list" modes. Expression will be replaced with UI specific state in the future.
+   *
+   * @generated from field: repeated string dimensions_with_inlist_filter = 37;
+   */
+  dimensionsWithInlistFilter: string[] = [];
+
+  /**
    * Expression format for measure filters
    *
    * @generated from field: repeated rill.ui.v1.DashboardDimensionFilter having = 21;
@@ -131,6 +138,11 @@ export class DashboardState extends Message<DashboardState> {
    * @generated from field: optional rill.ui.v1.DashboardState.LeaderboardSortType leaderboard_sort_type = 16;
    */
   leaderboardSortType?: DashboardState_LeaderboardSortType;
+
+  /**
+   * @generated from field: optional uint32 leaderboard_measure_count = 38;
+   */
+  leaderboardMeasureCount?: number;
 
   /**
    * @generated from field: optional string comparison_dimension = 17;
@@ -255,6 +267,7 @@ export class DashboardState extends Message<DashboardState> {
     { no: 1, name: "time_range", kind: "message", T: DashboardTimeRange },
     { no: 2, name: "filters", kind: "message", T: MetricsViewFilter },
     { no: 20, name: "where", kind: "message", T: Expression },
+    { no: 37, name: "dimensions_with_inlist_filter", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 21, name: "having", kind: "message", T: DashboardDimensionFilter, repeated: true },
     { no: 3, name: "time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 4, name: "compare_time_range", kind: "message", T: DashboardTimeRange },
@@ -271,6 +284,7 @@ export class DashboardState extends Message<DashboardState> {
     { no: 14, name: "scrub_range", kind: "message", T: DashboardTimeRange, opt: true },
     { no: 15, name: "leaderboard_sort_direction", kind: "enum", T: proto3.getEnumType(DashboardState_LeaderboardSortDirection), opt: true },
     { no: 16, name: "leaderboard_sort_type", kind: "enum", T: proto3.getEnumType(DashboardState_LeaderboardSortType), opt: true },
+    { no: 38, name: "leaderboard_measure_count", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
     { no: 17, name: "comparison_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 18, name: "expanded_measure", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 19, name: "pin_index", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },

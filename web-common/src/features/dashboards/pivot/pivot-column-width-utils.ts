@@ -10,10 +10,11 @@ export const COLUMN_WIDTH_CONSTANTS = {
   MIN_COL_WIDTH: 100,
   MAX_COL_WIDTH: 600,
   MAX_INIT_COL_WIDTH: 400,
-  MIN_MEASURE_WIDTH: 70,
+  MIN_MEASURE_WIDTH: 40,
   MAX_MEASURE_WIDTH: 300,
   INIT_MEASURE_WIDTH: 100,
   MEASURE_PADDING: 24,
+  ROW_DIMENSION_MIN_WIDTH: 160,
 };
 
 export function calculateColumnWidth(
@@ -63,13 +64,13 @@ export function calculateMeasureWidth(
   if (totalsRow) {
     const isPercent = measureName.endsWith(COMPARISON_PERCENT);
     if (isPercent) {
-      maxValueLength = 6;
+      maxValueLength = 5;
     } else {
       const value = totalsRow[measureName];
       if (typeof value === "string" || typeof value === "number") {
         maxValueLength = String(formatter(value)).length;
       } else {
-        maxValueLength = 0;
+        maxValueLength = 8;
       }
     }
   } else {
@@ -92,5 +93,22 @@ export function calculateMeasureWidth(
     COLUMN_WIDTH_CONSTANTS.MIN_MEASURE_WIDTH,
     pixelLength + COLUMN_WIDTH_CONSTANTS.MEASURE_PADDING,
     COLUMN_WIDTH_CONSTANTS.MAX_MEASURE_WIDTH,
+  );
+}
+
+export function calculateRowDimensionWidth(
+  columnName: string,
+  timeDimension: string,
+  dataRows: PivotDataRow[],
+) {
+  let width = COLUMN_WIDTH_CONSTANTS.ROW_DIMENSION_MIN_WIDTH;
+  if (!isTimeDimension(columnName, timeDimension)) {
+    width = calculateColumnWidth(columnName, timeDimension, dataRows);
+  }
+
+  return clamp(
+    COLUMN_WIDTH_CONSTANTS.ROW_DIMENSION_MIN_WIDTH,
+    width,
+    COLUMN_WIDTH_CONSTANTS.MAX_INIT_COL_WIDTH,
   );
 }
