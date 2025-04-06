@@ -98,30 +98,31 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 
 	b.out.WriteString("SELECT ")
 
-	if len(n.DimFields) == 1 && n.DimFields[0].Expr == "*" {
-		b.out.WriteString("*")
-	} else {
-		for i, f := range n.DimFields {
-			if i > 0 {
-				b.out.WriteString(", ")
-			}
-
-			b.out.WriteByte('(')
-			b.out.WriteString(f.Expr)
-			b.out.WriteString(") AS ")
-			b.out.WriteString(b.ast.dialect.EscapeIdentifier(f.Name))
+	for i, f := range n.DimFields {
+		if i > 0 {
+			b.out.WriteString(", ")
 		}
 
-		for i, f := range n.MeasureFields {
-			if i > 0 || len(n.DimFields) > 0 {
-				b.out.WriteString(", ")
-			}
-
-			b.out.WriteByte('(')
-			b.out.WriteString(f.Expr)
-			b.out.WriteString(") AS ")
-			b.out.WriteString(b.ast.dialect.EscapeIdentifier(f.Name))
+		if f.Expr == "*" {
+			b.out.WriteString("*")
+			continue
 		}
+
+		b.out.WriteByte('(')
+		b.out.WriteString(f.Expr)
+		b.out.WriteString(") AS ")
+		b.out.WriteString(b.ast.dialect.EscapeIdentifier(f.Name))
+	}
+
+	for i, f := range n.MeasureFields {
+		if i > 0 || len(n.DimFields) > 0 {
+			b.out.WriteString(", ")
+		}
+
+		b.out.WriteByte('(')
+		b.out.WriteString(f.Expr)
+		b.out.WriteString(") AS ")
+		b.out.WriteString(b.ast.dialect.EscapeIdentifier(f.Name))
 	}
 
 	b.out.WriteString(" FROM ")

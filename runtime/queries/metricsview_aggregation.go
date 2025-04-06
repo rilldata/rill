@@ -250,8 +250,6 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 		if len(q.PivotOn) > 0 {
 			return nil, fmt.Errorf("pivot_on not supported when rows is set")
 		}
-
-		qry.Dimensions = []metricsview.Dimension{{Name: "*"}}
 	}
 
 	for _, d := range q.Dimensions {

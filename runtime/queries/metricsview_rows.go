@@ -322,7 +322,5 @@ func (q *MetricsViewRows) buildMetricsRowsSQL(mv *runtimev1.MetricsViewSpec, dia
 		q.Offset,
 	)
 
-	fmt.Println(sql)
-
 	return sql, args, nil
 }

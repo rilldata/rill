@@ -122,7 +122,7 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 	if len(qry.PivotOn) > 0 {
 		return nil, errors.New("cannot build AST for pivot queries")
 	}
-	if len(qry.Dimensions) == 0 && len(qry.Measures) == 0 {
+	if len(qry.Dimensions) == 0 && len(qry.Measures) == 0 && !qry.Rows {
 		return nil, fmt.Errorf("must specify at least one dimension or measure")
 	}
 
@@ -206,6 +206,13 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 
 		ast.dimFields = append(ast.dimFields, f)
 		ast.comparisonDimFields = append(ast.comparisonDimFields, cf)
+	}
+
+	if qry.Rows {
+		ast.dimFields = append(ast.dimFields, FieldNode{
+			Name: "*",
+			Expr: "*",
+		})
 	}
 
 	// Build underlying SELECT
@@ -465,13 +472,6 @@ func (a *AST) lookupDimension(name string, visible bool) (*runtimev1.MetricsView
 		return nil, errors.New("received empty dimension name")
 	}
 
-	if name == "*" {
-		return &runtimev1.MetricsViewSpec_DimensionV2{
-			Name:       "*",
-			Expression: "*",
-		}, nil
-	}
-
 	if name == a.metricsView.TimeDimension {
 		return &runtimev1.MetricsViewSpec_DimensionV2{
 			Name:   name,
@@ -640,7 +640,7 @@ func (a *AST) buildBaseSelect(alias string, comparison bool) (*SelectNode, error
 		Where:     a.underlyingWhere,
 	}
 
-	if len(a.dimFields) == 1 && a.dimFields[0].Name == "*" {
+	if a.query.Rows {
 		n.Group = false
 	}
 
