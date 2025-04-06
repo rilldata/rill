@@ -131,6 +131,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			SecurityClaims:      claims,
 			Aliases:             r.Aliases,
 			Exact:               r.Exact,
+			Rows:                r.Rows,
 		}
 	case *runtimev1.Query_MetricsViewToplistRequest:
 		r := v.MetricsViewToplistRequest

@@ -465,6 +465,13 @@ func (a *AST) lookupDimension(name string, visible bool) (*runtimev1.MetricsView
 		return nil, errors.New("received empty dimension name")
 	}
 
+	if name == "*" {
+		return &runtimev1.MetricsViewSpec_DimensionV2{
+			Name:       "*",
+			Expression: "*",
+		}, nil
+	}
+
 	if name == a.metricsView.TimeDimension {
 		return &runtimev1.MetricsViewSpec_DimensionV2{
 			Name:   name,
@@ -631,6 +638,10 @@ func (a *AST) buildBaseSelect(alias string, comparison bool) (*SelectNode, error
 		Group:     true,
 		FromTable: a.underlyingTable,
 		Where:     a.underlyingWhere,
+	}
+
+	if len(a.dimFields) == 1 && a.dimFields[0].Name == "*" {
+		n.Group = false
 	}
 
 	tr := a.query.TimeRange

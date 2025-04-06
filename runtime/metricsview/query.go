@@ -23,6 +23,7 @@ type Query struct {
 	Offset              *int64      `mapstructure:"offset"`
 	TimeZone            string      `mapstructure:"time_zone"`
 	UseDisplayNames     bool        `mapstructure:"use_display_names"`
+	Rows                bool        `mapstructure:"rows"`
 }
 
 type Dimension struct {

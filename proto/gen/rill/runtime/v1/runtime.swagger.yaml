@@ -1376,6 +1376,9 @@ paths:
                 title: Optional
               exact:
                 type: boolean
+              rows:
+                type: boolean
+                title: Optional. Defaults to false. Used to fetch rows from underlying model
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/compare-toplist:
@@ -4991,6 +4994,9 @@ definitions:
         title: Optional
       exact:
         type: boolean
+      rows:
+        type: boolean
+        title: Optional. Defaults to false. Used to fetch rows from underlying model
   v1MetricsViewAggregationResponse:
     type: object
     properties:

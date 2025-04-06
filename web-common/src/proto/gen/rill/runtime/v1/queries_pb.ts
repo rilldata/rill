@@ -1026,6 +1026,13 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
    */
   exact = false;
 
+  /**
+   * Optional. Defaults to false. Used to fetch rows from underlying model
+   *
+   * @generated from field: bool rows = 21;
+   */
+  rows = false;
+
   constructor(data?: PartialMessage<MetricsViewAggregationRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1054,6 +1061,7 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
     { no: 11, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 14, name: "filter", kind: "message", T: MetricsViewFilter },
     { no: 17, name: "exact", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 21, name: "rows", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationRequest {

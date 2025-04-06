@@ -333,6 +333,7 @@ export type QueryServiceMetricsViewAggregationBody = {
   priority?: number;
   filter?: V1MetricsViewFilter;
   exact?: boolean;
+  rows?: boolean;
 };
 
 export type QueryServiceExportBody = {
@@ -1654,6 +1655,7 @@ export interface V1MetricsViewAggregationRequest {
   priority?: number;
   filter?: V1MetricsViewFilter;
   exact?: boolean;
+  rows?: boolean;
 }
 
 export interface V1MapType {
