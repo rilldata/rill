@@ -350,7 +350,6 @@
       {toggleComparisonDimension}
       {sortBy}
       {measureLabel}
-      {leaderboardMeasureCountFeatureFlag}
     />
 
     <tbody>
