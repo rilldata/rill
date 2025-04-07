@@ -1,15 +1,23 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
-  import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes";
+  import {
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { WandIcon } from "lucide-svelte";
   import ExploreIcon from "../../../components/icons/ExploreIcon.svelte";
   import MetricsViewIcon from "../../../components/icons/MetricsViewIcon.svelte";
+  import Model from "../../../components/icons/Model.svelte";
+  import { behaviourEvent } from "../../../metrics/initMetrics";
   import { V1ReconcileStatus } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
+  import { createModelFromTable } from "../../connectors/olap/createModel";
+  import { getScreenNameFromPage } from "../../file-explorer/telemetry";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
 
   const { ai } = featureFlags;
@@ -29,6 +37,33 @@
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;
   $: disableCreateDashboard = $modelHasError || !modelIsIdle;
   $: tableName = $modelQuery.data?.model?.state?.resultTable ?? "";
+
+  async function handleCreateModel() {
+    try {
+      const previousActiveEntity = getScreenNameFromPage();
+      const addDevLimit = false; // Typically, the `dev` limit would be applied on the Source itself
+      const [newModelPath, newModelName] = await createModelFromTable(
+        queryClient,
+        connector,
+        "",
+        "",
+        tableName,
+        addDevLimit,
+      );
+
+      await goto(`/files${newModelPath}`);
+
+      await behaviourEvent?.fireNavigationEvent(
+        newModelName,
+        BehaviourEventMedium.Menu,
+        MetricsEventSpace.LeftPanel,
+        previousActiveEntity,
+        MetricsEventScreenName.Model,
+      );
+    } catch (err) {
+      console.error(err);
+    }
+  }
 
   $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
     instanceId,
@@ -52,6 +87,11 @@
     MetricsEventSpace.LeftPanel,
   );
 </script>
+
+<NavigationMenuItem on:click={handleCreateModel}>
+  <Model slot="icon" />
+  Create new model
+</NavigationMenuItem>
 
 <NavigationMenuItem
   disabled={disableCreateDashboard}
