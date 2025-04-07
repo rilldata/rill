@@ -109,7 +109,8 @@
     width: 100%;
   }
 
-  :global(#vg-tooltip-element, #rill-vg-tooltip) {
+  :global(#vg-tooltip-element),
+  :global(#rill-vg-tooltip) {
     @apply absolute border border-slate-300 p-3 rounded-lg pointer-events-none;
     background: rgba(255, 255, 255, 0.9);
     & h2 {

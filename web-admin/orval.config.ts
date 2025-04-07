@@ -20,16 +20,40 @@ export default defineConfig({
           AdminService_GetDeploymentCredentials: {
             query: {
               useQuery: true,
+              useMutation: false,
             },
           },
           AdminService_GenerateReportYAML: {
             query: {
               useQuery: true,
+              useMutation: false,
             },
           },
           AdminService_GetBillingProjectCredentials: {
             query: {
               useQuery: true,
+              useMutation: false,
+            },
+          },
+          AdminService_ListMagicAuthTokens: {
+            query: {
+              useQuery: true,
+              useInfinite: true,
+              useInfiniteQueryParam: "pageToken",
+            },
+          },
+          AdminService_ListOrganizationInvites: {
+            query: {
+              useQuery: true,
+              useInfinite: true,
+              useInfiniteQueryParam: "pageToken",
+            },
+          },
+          AdminService_ListOrganizationMemberUsers: {
+            query: {
+              useQuery: true,
+              useInfinite: true,
+              useInfiniteQueryParam: "pageToken",
             },
           },
         },

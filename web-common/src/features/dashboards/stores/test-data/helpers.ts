@@ -1,4 +1,4 @@
-import { QueryClient } from "@rilldata/svelte-query";
+import { QueryClient } from "@tanstack/svelte-query";
 import { createStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
@@ -117,7 +117,7 @@ export function assertMetricsViewRaw(
   const metricsView = get(metricsExplorerStore).entities[name];
   expect(metricsView.whereFilter).toEqual(filters);
   expect(metricsView.selectedTimeRange).toEqual(timeRange);
-  expect(metricsView.leaderboardMeasureName).toEqual(selectedMeasure);
+  expect(metricsView.leaderboardSortByMeasureName).toEqual(selectedMeasure);
 }
 
 export function initStateManagers(metricsViewName?: string) {

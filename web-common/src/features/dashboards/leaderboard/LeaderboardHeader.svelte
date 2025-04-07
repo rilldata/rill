@@ -26,7 +26,7 @@
   export let sortType: SortType;
   export let allowDimensionComparison: boolean;
   export let allowExpandTable: boolean;
-  export let activeMeasureNames: string[] = [];
+  export let leaderboardMeasureNames: string[] = [];
   export let sortBy: string | null;
   export let leaderboardMeasureCountFeatureFlag: boolean;
   export let toggleSort: (sortType: SortType, measureName?: string) => void;
@@ -90,7 +90,7 @@
       </Tooltip>
     </th>
 
-    {#each activeMeasureNames as measureName, index (index)}
+    {#each leaderboardMeasureNames as measureName, index (index)}
       <th data-measure-header>
         <button
           aria-label="Toggle sort leaderboards by value"

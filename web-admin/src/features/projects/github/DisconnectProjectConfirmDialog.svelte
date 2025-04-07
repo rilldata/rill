@@ -29,7 +29,7 @@
 
   $: ({ instanceId } = $runtime);
 
-  $: ({ error, isLoading } = $deleteProjectConnection);
+  $: ({ error, isPending } = $deleteProjectConnection);
   $: parsedError = extractGithubDisconnectError(
     error as unknown as AxiosError<RpcStatus>,
   );
@@ -77,7 +77,7 @@
           </a>
         </div>
       </AlertDialogDescription>
-      {#if parsedError?.message && !isLoading}
+      {#if parsedError?.message && !isPending}
         <div class="text-red-500 text-sm py-px">
           {parsedError.message}
         </div>
@@ -87,13 +87,13 @@
       <Button
         type="secondary"
         on:click={() => (open = false)}
-        disabled={isLoading}>Cancel</Button
+        disabled={isPending}>Cancel</Button
       >
       <Button
         type="primary"
         on:click={onDisconnect}
-        loading={isLoading}
-        disabled={isLoading}
+        loading={isPending}
+        disabled={isPending}
       >
         Yes, disconnect
       </Button>

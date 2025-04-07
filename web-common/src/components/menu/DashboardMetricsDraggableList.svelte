@@ -243,6 +243,7 @@
       <div
         role="presentation"
         class="shown-section flex flex-col flex-1 p-1.5 pt-0"
+        data-testid="shown-section"
         on:mousedown={handleMouseDown}
       >
         <header
@@ -280,6 +281,7 @@
                     role="presentation"
                     data-index={i}
                     data-item-name={id}
+                    data-testid={elementId}
                     id={elementId}
                     class:sr-only={isDragItem}
                     class:transition-margin={dragIndex !== -1 &&
@@ -297,6 +299,13 @@
                     style:height="{ITEM_HEIGHT}px"
                     class="w-full flex gap-x-1 flex-none px-2 py-1 pointer-events-auto cursor-grab items-center hover:bg-slate-50 rounded-sm"
                     class:cursor-not-allowed={selectedItems.length === 1}
+                    on:keydown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        selectedItems = selectedItems.filter((_, j) => j !== i);
+                        onSelectedChange(selectedItems);
+                      }
+                    }}
                   >
                     <DragHandle size="16px" className="text-gray-400" />
 
@@ -315,6 +324,8 @@
                       disabled={selectedItems.length === 1}
                       class:pointer-events-none={selectedItems.length === 1}
                       class:opacity-50={selectedItems.length === 1}
+                      aria-label="Toggle visibility"
+                      data-testid="toggle-visibility-button"
                     >
                       <EyeIcon size="14px" color="#6b7280" />
                     </button>
@@ -341,6 +352,7 @@
                 role="presentation"
                 data-index={i}
                 data-item-name={id}
+                data-testid={elementId}
                 id={elementId}
                 class:sr-only={isDragItem}
                 class:transition-margin={dragIndex !== -1 &&
@@ -358,6 +370,13 @@
                 style:height="{ITEM_HEIGHT}px"
                 class="w-full flex gap-x-1 flex-none px-2 py-1 pointer-events-auto cursor-grab items-center hover:bg-slate-50 rounded-sm"
                 class:cursor-not-allowed={selectedItems.length === 1}
+                on:keydown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    selectedItems = selectedItems.filter((_, j) => j !== i);
+                    onSelectedChange(selectedItems);
+                  }
+                }}
               >
                 <DragHandle size="16px" className="text-gray-400" />
 
@@ -413,7 +432,7 @@
             </div>
           {:else}
             {#each filteredHiddenItems as [id = "", item], i (i)}
-              {@const elementId = `all-${type === "measure" ? "measures" : "dimensions"}-${id}`}
+              {@const elementId = `hidden-${type === "measure" ? "measures" : "dimensions"}-${id}`}
               {@const isDragItem = dragId === elementId}
               <div
                 data-index={i + selectedItems.length - 1}
@@ -422,7 +441,19 @@
                 class:z-50={isDragItem}
                 class:opacity-0={isDragItem}
                 style:height="{ITEM_HEIGHT}px"
-                class="w-full flex gap-x-1 px-2 py-1 justify-between pointer-events-auto items-center p-1 rounded-sm"
+                class="w-full flex gap-x-1 px-2 py-1 justify-between pointer-events-auto items-center p-1 rounded-sm hover:bg-slate-50 cursor-pointer"
+                on:click={() => {
+                  selectedItems = [...selectedItems, id];
+                  onSelectedChange(selectedItems);
+                }}
+                on:keydown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    selectedItems = [...selectedItems, id];
+                    onSelectedChange(selectedItems);
+                  }
+                }}
+                role="presentation"
               >
                 {item.displayName}
 
@@ -432,6 +463,8 @@
                     selectedItems = [...selectedItems, id];
                     onSelectedChange(selectedItems);
                   }}
+                  aria-label="Toggle visibility"
+                  data-testid="toggle-visibility-button"
                 >
                   <EyeOffIcon size="14px" color="#9ca3af" />
                 </button>

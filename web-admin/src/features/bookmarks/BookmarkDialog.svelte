@@ -27,6 +27,7 @@
   export let onClose = () => {};
 
   const StateManagers = getStateManagers();
+  const { validSpecStore } = StateManagers;
 
   const bookmarkCreator = createAdminServiceCreateBookmark();
   const bookmarkUpdater = createAdminServiceUpdateBookmark();
@@ -54,6 +55,7 @@
             shared: values.shared === "true",
             data: getBookmarkDataForDashboard(
               $exploreState,
+              $validSpecStore.data?.explore ?? {},
               values.filtersOnly,
               values.absoluteTimeRange,
               $timeControlsStore,
@@ -71,6 +73,7 @@
             shared: values.shared === "true",
             data: getBookmarkDataForDashboard(
               $exploreState,
+              $validSpecStore.data?.explore ?? {},
               values.filtersOnly,
               values.absoluteTimeRange,
               $timeControlsStore,
@@ -81,13 +84,13 @@
       }
       onClose();
 
-      await queryClient.refetchQueries(
-        getAdminServiceListBookmarksQueryKey({
+      await queryClient.refetchQueries({
+        queryKey: getAdminServiceListBookmarksQueryKey({
           projectId: $projectId.data ?? "",
           resourceKind: ResourceKind.Explore,
           resourceName: exploreName,
         }),
-      );
+      });
       eventBus.emit("notification", {
         message: bookmark ? "Bookmark updated" : "Bookmark created",
       });
