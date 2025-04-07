@@ -28,17 +28,26 @@ import type { ComponentType, SvelteComponent } from "svelte";
 
 export abstract class BaseCanvasComponent<T = ComponentSpec> {
   id: string;
+  // Local copoy of the canvas component resource
   resource: Writable<V1Resource | null> = writable(null);
+  // Local copy of the spec (aka rendererProperties) for the component
   specStore: Writable<T>;
+  // Path in the YAML where the component is stored
   pathInYAML: ComponentPath;
+  // Local filters and local time controls (will be moved out of class)
   state: CanvasComponentState<T>;
-
   abstract type: CanvasComponentType;
+  // Component responsible for DOM rendering
   abstract component: ComponentType<SvelteComponent>;
+  // Will be deprecated
   abstract minSize: ComponentSize;
+  // Will be deprecated
   abstract defaultSize: ComponentSize;
+  // Parameters to reset when the metrics_view changes
   abstract resetParams: string[];
+  // Minimum condition needed for the component to be rendered
   abstract isValid(spec: T): boolean;
+  // Configuration for the sidebar editor
   abstract inputParams(type?: CanvasComponentType): InputParams<T>;
 
   constructor(
