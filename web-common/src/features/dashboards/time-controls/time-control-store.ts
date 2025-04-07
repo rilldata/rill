@@ -42,6 +42,7 @@ import type { QueryObserverResult } from "@tanstack/svelte-query";
 import type { Readable } from "svelte/store";
 import { derived } from "svelte/store";
 import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
 export type TimeRangeState = {
   // Selected ranges with start and end filled based on time range type
@@ -221,8 +222,8 @@ export function createTimeControlStoreFromName(
 ) {
   return derived(
     [
-      useExploreValidSpec(instanceId, exploreName),
-      useMetricsViewTimeRange(instanceId, metricsViewName),
+      useExploreValidSpec(instanceId, exploreName, undefined, queryClient),
+      useMetricsViewTimeRange(instanceId, metricsViewName, {}, queryClient),
       useExploreState(exploreName),
     ],
     ([validSpecResp, timeRangeSummaryResp, dashboardStore]) =>

@@ -61,16 +61,17 @@
         data: {},
       });
 
-      await queryClient.invalidateQueries(
-        getAdminServiceListOrganizationMemberUsersQueryKey(organization),
-      );
+      await queryClient.invalidateQueries({
+        queryKey:
+          getAdminServiceListOrganizationMemberUsersQueryKey(organization),
+      });
 
-      await queryClient.invalidateQueries(
-        getAdminServiceListUsergroupMemberUsersQueryKey(
+      await queryClient.invalidateQueries({
+        queryKey: getAdminServiceListUsergroupMemberUsersQueryKey(
           organization,
           usergroup,
         ),
-      );
+      });
 
       eventBus.emit("notification", {
         message: "User added to user group",
@@ -94,9 +95,10 @@
         },
       });
 
-      await queryClient.invalidateQueries(
-        getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
-      );
+      await queryClient.invalidateQueries({
+        queryKey:
+          getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
+      });
 
       eventBus.emit("notification", { message: "User group renamed" });
     } catch (error) {
@@ -116,12 +118,12 @@
         email: email,
       });
 
-      await queryClient.invalidateQueries(
-        getAdminServiceListUsergroupMemberUsersQueryKey(
+      await queryClient.invalidateQueries({
+        queryKey: getAdminServiceListUsergroupMemberUsersQueryKey(
           organization,
           groupName,
         ),
-      );
+      });
 
       eventBus.emit("notification", {
         message: "User removed from user group",

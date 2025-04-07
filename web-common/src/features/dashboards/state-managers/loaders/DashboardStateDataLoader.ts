@@ -66,11 +66,8 @@ export class DashboardStateDataLoader {
           instanceId,
           metricsViewName,
           {},
-          {
-            query: {
-              queryClient,
-            },
-          },
+          {},
+          queryClient,
         ).subscribe(set);
       },
     );
