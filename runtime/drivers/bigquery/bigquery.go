@@ -243,7 +243,11 @@ func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 }
 
 func (c *Connection) clientOption(ctx context.Context) ([]option.ClientOption, error) {
-	creds, err := gcputil.Credentials(ctx, c.config.SecretJSON, c.config.AllowHostAccess)
+	scopes := []string{
+		"https://www.googleapis.com/auth/cloud-platform",
+		"https://www.googleapis.com/auth/drive.readonly",
+	}
+	creds, err := gcputil.Credentials(ctx, c.config.SecretJSON, c.config.AllowHostAccess, scopes...)
 	if err != nil {
 		return nil, err
 	}
