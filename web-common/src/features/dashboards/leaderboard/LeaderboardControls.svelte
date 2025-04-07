@@ -1,11 +1,11 @@
 <script lang="ts">
   import DashboardMetricsDraggableList from "@rilldata/web-common/components/menu/DashboardMetricsDraggableList.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
-  import { getSimpleMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { getStateManagers } from "../state-managers/state-managers";
   import LeaderboardActiveMeasureNamesDropdown from "@rilldata/web-common/components/menu/LeaderboardActiveMeasureNamesDropdown.svelte";
+  import LeaderboardActions from "@rilldata/web-common/components/menu/LeaderboardActions.svelte";
 
   export let exploreName: string;
 
@@ -30,10 +30,11 @@
     },
   } = StateManagers;
 
+  let isDropdownOpen = false;
+  let showContextForAllMeasures = false;
+
   const { leaderboardMeasureCount: leaderboardMeasureCountFeatureFlag } =
     featureFlags;
-
-  $: measures = getSimpleMeasures($visibleMeasures);
 
   $: metricsExplorer = $metricsExplorerStore.entities[exploreName];
 
@@ -64,6 +65,10 @@
 
   function isDefined(value: string | undefined): value is string {
     return value !== undefined;
+  }
+
+  function setShowContextForAllMeasures(value: boolean) {
+    showContextForAllMeasures = value;
   }
 </script>
 
@@ -100,5 +105,11 @@
       setLeaderboardMeasureNames(names);
     }}
     {setLeaderboardSortByMeasureName}
+  />
+
+  <LeaderboardActions
+    {isDropdownOpen}
+    {showContextForAllMeasures}
+    {setShowContextForAllMeasures}
   />
 </div>
