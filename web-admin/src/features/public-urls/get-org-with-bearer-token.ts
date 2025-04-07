@@ -1,6 +1,4 @@
-import type {
-  V1GetOrganizationResponse,
-} from "@rilldata/web-admin/client";
+import type { V1GetOrganizationResponse } from "@rilldata/web-admin/client";
 import httpClient from "@rilldata/web-admin/client/http-client";
 
 export const getOrgWithBearerToken = (

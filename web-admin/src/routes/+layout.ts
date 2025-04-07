@@ -25,9 +25,7 @@ import { fixLocalhostRuntimePort } from "@rilldata/web-common/runtime-client/fix
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { error, redirect, type Page } from "@sveltejs/kit";
 import { isAxiosError } from "axios";
-import {
-  getOrgWithBearerToken,
-} from "@rilldata/web-admin/features/public-urls/get-org-with-bearer-token";
+import { getOrgWithBearerToken } from "@rilldata/web-admin/features/public-urls/get-org-with-bearer-token";
 
 export const load = async ({ params, url, route, depends }) => {
   depends("app:root");
@@ -102,10 +100,10 @@ export const load = async ({ params, url, route, depends }) => {
         if (!isAxiosError<RpcStatus>(e) || !e.response) {
           throw error(500, "Error fetching organization");
         }
-  
+
         const shouldRedirectToRequestAccess =
           e.response.status === 403 && !!project;
-  
+
         if (shouldRedirectToRequestAccess) {
           // The redirect is handled below after the call to `GetProject`
         } else {
@@ -114,7 +112,7 @@ export const load = async ({ params, url, route, depends }) => {
       }
     }
     if (token) {
-      const orgResp = await getOrgWithBearerToken(organization, token)
+      const orgResp = await getOrgWithBearerToken(organization, token);
       organizationPermissions = orgResp.permissions ?? {};
       organizationLogoUrl = orgResp.organization?.logoUrl;
       organizationFaviconUrl = orgResp.organization?.faviconUrl;
