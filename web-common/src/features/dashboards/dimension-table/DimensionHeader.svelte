@@ -26,7 +26,6 @@
   import LeaderboardActions from "@rilldata/web-common/components/menu/LeaderboardActions.svelte";
 
   export let dimensionName: string;
-  export let isFetching: boolean;
   export let areAllTableRowsSelected = false;
   export let isRowsEmpty = true;
   export let searchText: string;
@@ -136,14 +135,10 @@
 
 <div class="flex justify-start items-center p-1 pr-5 h-7 gap-x-2">
   <button class="flex items-center" on:click={() => goBackToLeaderboard()}>
-    {#if isFetching}
-      <DelayedSpinner isLoading={isFetching} size="16px" />
-    {:else}
-      <Button type="link" forcedStyle="padding: 0; gap: 4px;">
-        <Back size="16px" />
-        <span>All Dimensions</span>
-      </Button>
-    {/if}
+    <Button type="link" forcedStyle="padding: 0; gap: 4px;">
+      <Back size="16px" />
+      <span>All Dimensions</span>
+    </Button>
   </button>
 
   <!-- We fix the height to avoid a layout shift when the Search component is expanded. -->
