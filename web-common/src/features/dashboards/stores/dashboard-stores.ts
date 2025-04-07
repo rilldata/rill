@@ -84,7 +84,9 @@ function syncMeasures(
     !measuresSet.has(metricsExplorer.leaderboardSortByMeasureName)
   ) {
     const defaultMeasure = explore.measures[0];
-    metricsExplorer.leaderboardSortByMeasureName = defaultMeasure;
+    // metricsExplorer.leaderboardSortByMeasureName = defaultMeasure;
+    // Set default leaderboardMeasureNames to include the first measure
+    metricsExplorer.leaderboardMeasureNames = [defaultMeasure];
   }
 
   if (
