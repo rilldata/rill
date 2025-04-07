@@ -280,7 +280,10 @@ export class TimeControls {
 
         this.selectedComparisonTimeRange.set(newComparisonRange);
 
-        if (!this.componentName) {
+        if (
+          defaultPreset?.comparisonMode ===
+          V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
+        ) {
           this.showTimeComparison.set(true);
         }
 
