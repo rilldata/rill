@@ -18,7 +18,7 @@
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
   export let timeControlsReady: boolean;
-  export let activeMeasureName: string;
+  export let leaderboardSortByMeasureName: string;
   export let leaderboardMeasureNames: string[];
 
   const StateManagers = getStateManagers();
@@ -50,13 +50,15 @@
   $: ({ instanceId } = $runtime);
 
   // Reset column widths when the measure changes
-  $: if (activeMeasureName) {
+  $: if (leaderboardSortByMeasureName) {
     valueColumn.reset();
   }
 
   $: dimensionColumnWidth = 164;
 
-  $: showPercentOfTotal = $isMeasureValidPercentOfTotal(activeMeasureName);
+  $: showPercentOfTotal = $isMeasureValidPercentOfTotal(
+    leaderboardSortByMeasureName,
+  );
   $: showDeltaPercent = !!comparisonTimeRange;
 
   $: tableWidth =
@@ -95,7 +97,7 @@
               isValidPercentOfTotal={$isMeasureValidPercentOfTotal}
               {metricsViewName}
               sortBy={$sortByMeasure}
-              {activeMeasureName}
+              {leaderboardSortByMeasureName}
               {leaderboardMeasureNames}
               visibleMeasures={validVisibleMeasures}
               {whereFilter}
@@ -123,7 +125,7 @@
               isBeingCompared={$isBeingComparedReadable(dimension.name)}
               formatters={$leaderboardMeasureCountFeatureFlag
                 ? $measureFormatters
-                : { [activeMeasureName]: $activeMeasureFormatter }}
+                : { [leaderboardSortByMeasureName]: $activeMeasureFormatter }}
               {setPrimaryDimension}
               {toggleSort}
               {toggleDimensionValueSelection}
