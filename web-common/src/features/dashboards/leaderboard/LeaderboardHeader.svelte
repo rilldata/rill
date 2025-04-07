@@ -103,7 +103,7 @@
             class="measure-label line-clamp-2"
             title={measureLabel(measureName)}
           >
-            {#if leaderboardMeasureCountFeatureFlag}
+            {#if leaderboardMeasureNames.length > 1}
               {measureLabel(measureName)}
             {:else}
               #
