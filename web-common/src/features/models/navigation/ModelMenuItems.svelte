@@ -14,7 +14,7 @@
   import MetricsViewIcon from "../../../components/icons/MetricsViewIcon.svelte";
   import Model from "../../../components/icons/Model.svelte";
   import { behaviourEvent } from "../../../metrics/initMetrics";
-  import { V1ReconcileStatus } from "../../../runtime-client";
+  import { V1ReconcileStatus, type V1Resource } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { createModelFromTable } from "../../connectors/olap/createModel";
   import { getScreenNameFromPage } from "../../file-explorer/telemetry";
@@ -31,7 +31,8 @@
 
   $: modelHasError = fileArtifact.getHasErrors(queryClient, instanceId);
   $: modelQuery = fileArtifact.getResource(queryClient, instanceId);
-  $: connector = $modelQuery.data?.model?.spec?.outputConnector;
+  $: connector = ($modelQuery.data as V1Resource | undefined)?.model?.spec
+    ?.outputConnector;
   $: modelIsIdle =
     $modelQuery.data?.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;
@@ -44,7 +45,7 @@
       const addDevLimit = false; // Typically, the `dev` limit would be applied on the Source itself
       const [newModelPath, newModelName] = await createModelFromTable(
         queryClient,
-        connector,
+        connector as string,
         "",
         "",
         tableName,
