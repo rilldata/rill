@@ -7,6 +7,8 @@
   import Search from "@rilldata/web-common/components/search/Search.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
+  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
+  import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
 
   export let tooltipText: string;
   export let disabled = false;
@@ -14,8 +16,22 @@
   export let measures: MetricsViewSpecMeasureV2[];
   export let selectedMeasureNames: string[];
   export let setLeaderboardMeasureNames: (names: string[]) => void;
+  export let setLeaderboardSortByMeasureName: (name: string) => void;
 
   let active = false;
+  let multiSelect = false;
+
+  // TODO: in-memory cache of the selected measures before toggling off multi-select
+  // retain the last selected measure when multi-select is toggled off
+
+  $: filteredMeasures = filterMeasures(searchText);
+
+  $: showingMeasuresText =
+    selectedMeasureNames?.length > 1
+      ? ` ${selectedMeasureNames.length} measures`
+      : selectedMeasureNames?.length === 1
+        ? getMeasureDisplayText(selectedMeasureNames[0])
+        : "";
 
   function filterMeasures(searchText: string) {
     return measures.filter((item) =>
@@ -29,8 +45,14 @@
     if (!name) return;
     const currentSelection = selectedMeasureNames || [];
 
-    // If trying to deselect the last measure, prevent it
+    // Cannot deselect the last measure
     if (currentSelection.length === 1 && currentSelection[0] === name) {
+      return;
+    }
+
+    if (!multiSelect) {
+      setLeaderboardMeasureNames([name]);
+      setLeaderboardSortByMeasureName(name);
       return;
     }
 
@@ -46,16 +68,9 @@
     return measure?.displayName || measure?.name || measureName;
   }
 
-  $: filteredMeasures = filterMeasures(searchText);
-
-  $: showingMeasuresText =
-    selectedMeasureNames?.length > 1
-      ? ` ${selectedMeasureNames.length} measures`
-      : selectedMeasureNames?.length === 1
-        ? getMeasureDisplayText(selectedMeasureNames[0])
-        : "";
-
-  // $: allSelected = selectedMeasureNames.length === measures.length;
+  function toggleMultiSelect() {
+    multiSelect = !multiSelect;
+  }
 </script>
 
 <DropdownMenu.Root
@@ -128,15 +143,17 @@
           {/if}
         </div>
 
-        <!-- <footer>
-          <Button on:click={onToggleSelectAll} type="plain">
-            {#if allSelected}
-              Deselect all
-            {:else}
-              Select all
-            {/if}
-          </Button>
-        </footer> -->
+        <footer>
+          <div class="flex items-center space-x-2">
+            <Switch
+              checked={multiSelect}
+              id="multi-measure-select"
+              small
+              on:click={toggleMultiSelect}
+            />
+            <InputLabel small label="Multi-select" id="multi-measure-select" />
+          </div>
+        </footer>
       </DropdownMenu.Content>
 
       <div slot="tooltip-content" transition:fly={{ duration: 300, y: 4 }}>
@@ -153,7 +170,7 @@
     height: 42px;
     @apply border-t border-slate-300;
     @apply bg-slate-100;
-    @apply flex flex-row flex-none items-center justify-end;
+    @apply flex flex-row flex-none items-center justify-start;
     @apply gap-x-2 p-2 px-3.5;
   }
 
