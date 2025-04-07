@@ -23,6 +23,7 @@
   import { getStateManagers } from "../state-managers/state-managers";
   import SelectAllButton from "./SelectAllButton.svelte";
   import { getDimensionTableExportQuery } from "./dimension-table-export";
+  import LeaderboardActions from "@rilldata/web-common/components/menu/LeaderboardActions.svelte";
 
   export let dimensionName: string;
   export let isFetching: boolean;
@@ -38,12 +39,13 @@
       sorting: { sortedByDimensionValue },
       dimensions: { getDimensionDisplayName },
       dimensionFilters: { isFilterExcludeMode },
-      measures: { visibleMeasures },
+      measures: { visibleMeasures, leaderboardShowAllMeasures },
     },
     actions: {
       sorting: { toggleSort },
       dimensions: { setPrimaryDimension },
       dimensionsFilter: { toggleDimensionFilterMode },
+      leaderboard: { setLeaderboardShowAllMeasures },
     },
     timeRangeSummaryStore,
     dashboardStore,
@@ -60,6 +62,7 @@
   $: otherFilterKey = excludeMode ? "include" : "exclude";
 
   let searchBarOpen = false;
+  let isLeaderboardActionsOpen = false;
 
   function closeSearchBar() {
     searchText = "";
@@ -210,6 +213,11 @@
         Start Pivot
       </button>
     {/if}
+    <LeaderboardActions
+      isOpen={isLeaderboardActionsOpen}
+      leaderboardShowAllMeasures={$leaderboardShowAllMeasures}
+      {setLeaderboardShowAllMeasures}
+    />
   </div>
 </div>
 
