@@ -28,6 +28,7 @@
   export let allowExpandTable: boolean;
   export let leaderboardMeasureNames: string[] = [];
   export let sortBy: string | null;
+  export let leaderboardShowAllMeasures: boolean;
   export let toggleSort: (sortType: SortType, measureName?: string) => void;
   export let setPrimaryDimension: (dimensionName: string) => void;
   export let toggleComparisonDimension: (
@@ -124,7 +125,7 @@
         </button>
       </th>
 
-      {#if isValidPercentOfTotal(measureName)}
+      {#if isValidPercentOfTotal(measureName) && (leaderboardShowAllMeasures || measureName === sortBy)}
         <th data-percent-of-total-header>
           <button
             aria-label="Toggle sort leaderboards by percent of total"
@@ -154,7 +155,7 @@
         </th>
       {/if}
 
-      {#if isTimeComparisonActive}
+      {#if isTimeComparisonActive && (leaderboardShowAllMeasures || measureName === sortBy)}
         <th data-absolute-change-header>
           <button
             aria-label="Toggle sort leaderboards by absolute change"
@@ -184,7 +185,7 @@
         </th>
       {/if}
 
-      {#if isTimeComparisonActive}
+      {#if isTimeComparisonActive && (leaderboardShowAllMeasures || measureName === sortBy)}
         <th data-percent-change-header>
           <button
             aria-label="Toggle sort leaderboards by percent change"
