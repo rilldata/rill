@@ -14,7 +14,24 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/rilldata/rill/runtime/pkg/retrier"
 	"github.com/startreedata/pinot-client-go/pinot"
+)
+
+// Pinot error codes
+const (
+	// Non-retriable error codes
+	// from https://github.com/apache/pinot/blob/master/pinot-spi/src/main/java/org/apache/pinot/spi/exception/QueryErrorCode.java
+	JSON_PARSING         = 100 // "JsonParsingError"
+	SQL_PARSING          = 150 // "SQLParsingError"
+	SQL_RUNTIME          = 160 // "SQLRuntimeError"
+	ACCESS_DENIED        = 180 // "AccessDenied"
+	TABLE_DOES_NOT_EXIST = 190 // "TableDoesNotExistError"
+	TABLE_IS_DISABLED    = 191 // "TableIsDisabledError"
+	QUERY_EXECUTION      = 200 // "QueryExecutionError"
+	QUERY_VALIDATION     = 700 // "QueryValidationError"
+	UNKNOWN_COLUMN       = 710 // "UnknownColumnError"
+	QUERY_PLANNING       = 720 // "QueryPlanningError"
 )
 
 type pinotDriver struct{}
@@ -57,35 +74,44 @@ func (c *conn) Begin() (sqlDriver.Tx, error) {
 }
 
 func (c *conn) QueryContext(ctx context.Context, query string, args []sqlDriver.NamedValue) (sqlDriver.Rows, error) {
-	var resp *pinot.BrokerResponse
-	var err error
-	if len(args) > 0 {
-		var params []interface{}
-		for _, arg := range args {
-			params = append(params, arg.Value)
+	re := retrier.NewRetrier(6, 2*time.Second, nil)
+	return re.RunCtx(ctx, func(ctx context.Context) (sqlDriver.Rows, retrier.Action, error) {
+		var resp *pinot.BrokerResponse
+		var err error
+		if len(args) > 0 {
+			var params []interface{}
+			for _, arg := range args {
+				params = append(params, arg.Value)
+			}
+			// TODO: cancel the query if ctx is done
+			resp, err = c.pinotConn.ExecuteSQLWithParams("", query, params)
+		} else {
+			resp, err = c.pinotConn.ExecuteSQL("", query)
 		}
-		// TODO: cancel the query if ctx is done
-		resp, err = c.pinotConn.ExecuteSQLWithParams("", query, params)
-	} else {
-		resp, err = c.pinotConn.ExecuteSQL("", query)
-	}
-	if err != nil {
-		return nil, err
-	}
-	if len(resp.Exceptions) > 0 {
-		if len(resp.Exceptions) == 1 {
-			return nil, fmt.Errorf("query error: %q: %q", resp.Exceptions[0].ErrorCode, resp.Exceptions[0].Message)
+		if err != nil {
+			return nil, retrier.Fail, err
 		}
-		errMsg := "query errors:\n"
-		for _, e := range resp.Exceptions {
-			errMsg += fmt.Sprintf("\t%q: %q\n", e.ErrorCode, e.Message)
+		if len(resp.Exceptions) > 0 {
+			errMsg := "query errors:"
+			for _, e := range resp.Exceptions {
+				errMsg += fmt.Sprintf("\t%q: %q\n", e.ErrorCode, e.Message)
+			}
+			err := errors.New(errMsg)
+			for _, e := range resp.Exceptions {
+				switch e.ErrorCode {
+				case JSON_PARSING, SQL_PARSING, SQL_RUNTIME, ACCESS_DENIED, TABLE_DOES_NOT_EXIST, TABLE_IS_DISABLED, QUERY_EXECUTION, QUERY_VALIDATION, UNKNOWN_COLUMN, QUERY_PLANNING:
+					return nil, retrier.Fail, err
+				default:
+					return nil, retrier.Retry, err
+				}
+			}
+			return nil, retrier.Fail, err
 		}
-		return nil, errors.New(errMsg)
-	}
 
-	cols := colSchema(resp.ResultTable)
+		cols := colSchema(resp.ResultTable)
 
-	return &rows{results: resp.ResultTable, columns: cols, numRows: resp.ResultTable.GetRowCount(), currIdx: 0}, nil
+		return &rows{results: resp.ResultTable, columns: cols, numRows: resp.ResultTable.GetRowCount(), currIdx: 0}, retrier.Succeed, nil
+	})
 }
 
 func (c *conn) ExecContext(ctx context.Context, query string, args []sqlDriver.NamedValue) (sqlDriver.Result, error) {
