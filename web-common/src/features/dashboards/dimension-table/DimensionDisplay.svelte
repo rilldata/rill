@@ -26,7 +26,6 @@
   import DimensionHeader from "./DimensionHeader.svelte";
   import DimensionTable from "./DimensionTable.svelte";
   import { getDimensionFilterWithSearch } from "./dimension-table-utils";
-  import { featureFlags } from "../../feature-flags";
   import { selectedDimensionValuesV2 } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 
   const queryLimit = 250;
@@ -63,9 +62,6 @@
     dashboardStore,
   } = getStateManagers();
 
-  const { leaderboardMeasureCount: leaderboardMeasureCountFeatureFlag } =
-    featureFlags;
-
   $: ({ name: dimensionName = "" } = dimension);
 
   $: ({ instanceId } = $runtime);
@@ -80,9 +76,9 @@
     instanceId,
     metricsViewName,
     {
-      measures: visibleMeasureNames.map((measureName) => ({
-        name: measureName,
-      })),
+      measures: $leaderboardShowAllMeasures
+        ? visibleMeasureNames.map((measureName) => ({ name: measureName }))
+        : [{ name: leaderboardSortByMeasureName }],
       where: sanitiseExpression(
         mergeDimensionAndMeasureFilters(
           getFiltersForOtherDimensions(whereFilter, dimensionName),
@@ -100,7 +96,7 @@
     },
   );
 
-  $: unfilteredTotal = $leaderboardMeasureCountFeatureFlag
+  $: unfilteredTotal = $leaderboardShowAllMeasures
     ? visibleMeasureNames.reduce(
         (acc, measureName) => {
           acc[measureName] =
@@ -115,12 +111,12 @@
 
   $: columns = $virtualizedTableColumns(
     $totalsQuery,
-    $leaderboardMeasureCountFeatureFlag ? visibleMeasureNames : undefined,
+    $leaderboardShowAllMeasures ? visibleMeasureNames : undefined,
   );
 
   $: measures = [
     ...getMeasuresForDimensionTable(
-      $leaderboardMeasureCountFeatureFlag ? null : leaderboardSortByMeasureName,
+      $leaderboardShowAllMeasures ? null : leaderboardSortByMeasureName,
       dimensionThresholdFilters,
       visibleMeasureNames,
     ).map((name) => ({ name }) as V1MetricsViewAggregationMeasure),
