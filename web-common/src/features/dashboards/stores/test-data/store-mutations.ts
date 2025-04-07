@@ -3,7 +3,6 @@ import {
   MeasureFilterType,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
 import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
-import { setLeaderboardSortByMeasureName } from "@rilldata/web-common/features/dashboards/state-managers/actions/core-actions";
 import {
   applyDimensionContainsMode,
   applyDimensionInListMode,
@@ -50,6 +49,7 @@ import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimensio
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import { setLeaderboardSortByMeasureName } from "../../state-managers/actions/leaderboard";
 
 export type TestDashboardMutation = (mut: DashboardMutables) => void;
 export const AD_BIDS_APPLY_PUB_DIMENSION_FILTER: TestDashboardMutation = (

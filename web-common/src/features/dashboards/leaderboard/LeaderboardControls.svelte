@@ -1,7 +1,6 @@
 <script lang="ts">
   import DashboardMetricsDraggableList from "@rilldata/web-common/components/menu/DashboardMetricsDraggableList.svelte";
   import LeaderboardActiveMeasureDropdown from "@rilldata/web-common/components/menu/LeaderboardActiveMeasureDropdown.svelte";
-  import LeaderboardMeasureCountSelector from "@rilldata/web-common/components/menu/LeaderboardMeasureCountSelector.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import { getSimpleMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
@@ -25,8 +24,10 @@
     actions: {
       contextColumn: { setContextColumn },
       dimensions: { setDimensionVisibility },
-      setLeaderboardSortByMeasureName,
-      setLeaderboardMeasureNames,
+      leaderboard: {
+        setLeaderboardSortByMeasureName,
+        setLeaderboardMeasureNames,
+      },
     },
   } = StateManagers;
 
