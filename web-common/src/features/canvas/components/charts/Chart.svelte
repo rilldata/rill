@@ -39,7 +39,7 @@
 
   let viewVL: View;
 
-  $: chartConfig = rendererProperties as ChartSpec;
+  $: chartConfig = rendererProperties as unknown as ChartSpec;
   $: chartType = renderer as ChartType;
 
   $: schema = validateChartSchema(store, chartConfig);

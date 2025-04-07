@@ -398,7 +398,8 @@ export function createTimeDimensionDataStore(
       const dimensionName = dashboardStore?.selectedComparisonDimension;
 
       // Fix types in V1MetricsViewAggregationResponseDataItem
-      const total = timeSeries?.total && timeSeries?.total[measureName];
+      const total =
+        timeSeries?.total && (timeSeries?.total[measureName] as number);
       const unfilteredTotal =
         timeSeries?.unfilteredTotal && timeSeries?.unfilteredTotal[measureName];
       const comparisonTotal =
@@ -423,8 +424,8 @@ export function createTimeDimensionDataStore(
         data = prepareDimensionData(
           timeSeries?.timeSeriesData,
           tableDimensionData,
-          total,
-          unfilteredTotal,
+          total as number,
+          unfilteredTotal as number,
           measure,
           selectedValues,
           isAllTime,
@@ -446,8 +447,8 @@ export function createTimeDimensionDataStore(
 
         data = prepareTimeData(
           timeSeries?.timeSeriesData,
-          total,
-          comparisonTotal,
+          total as number,
+          comparisonTotal as number,
           currentLabel,
           comparisonLabel,
           measure,
