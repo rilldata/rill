@@ -61,7 +61,7 @@ type Config struct {
 	TracesExporter          observability.Exporter `default:"" split_words:"true"`
 	LogLevel                zapcore.Level          `default:"info" split_words:"true"`
 	HTTPPort                int                    `default:"8080" split_words:"true"`
-	GRPCPort                int                    `default:"9090" split_words:"true"`
+	GRPCPort                int                    `default:"8080" split_words:"true"`
 	DebugPort               int                    `default:"6060" split_words:"true"`
 	AllowedOrigins          []string               `default:"*" split_words:"true"`
 	SessionKeyPairs         []string               `split_words:"true"`
