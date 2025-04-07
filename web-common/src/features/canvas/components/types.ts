@@ -77,10 +77,14 @@ export interface ImageTemplateT {
 export interface PivotTemplateT {
   pivot: PivotSpec;
 }
+export interface TableTemplateT {
+  table: TableSpec;
+}
 
 export type TemplateSpec =
   | ChartTemplates
   | KPITemplateT
   | PivotTemplateT
   | MarkdownTemplateT
-  | ImageTemplateT;
+  | ImageTemplateT
+  | TableTemplateT;
