@@ -32,11 +32,11 @@ import {
   convertFilterParamToExpression,
 } from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
 import type {
-  MetricsViewSpecDimensionV2,
+  MetricsViewSpecDimension,
   V1Expression,
 } from "@rilldata/web-common/runtime-client";
 import {
-  type MetricsViewSpecMeasureV2,
+  type MetricsViewSpecMeasure,
   V1Operation,
 } from "@rilldata/web-common/runtime-client";
 import {
@@ -65,17 +65,17 @@ export class Filters {
   getAllMeasureFilterItems: Readable<
     (
       measureFilterItems: MeasureFilterItem[],
-      measureIdMap: Map<string, MetricsViewSpecMeasureV2>,
+      measureIdMap: Map<string, MetricsViewSpecMeasure>,
     ) => MeasureFilterItem[]
   >;
   getMeasureFilterItems: Readable<
-    (measureIdMap: Map<string, MetricsViewSpecMeasureV2>) => MeasureFilterItem[]
+    (measureIdMap: Map<string, MetricsViewSpecMeasure>) => MeasureFilterItem[]
   >;
 
   getAllDimensionFilterItems: Readable<
     (
       dimensionFilterItems: DimensionFilterItem[],
-      dimensionIdMap: Map<string, MetricsViewSpecDimensionV2>,
+      dimensionIdMap: Map<string, MetricsViewSpecDimension>,
     ) => DimensionFilterItem[]
   >;
   selectedDimensionValues: Readable<(dimName: string) => string[]>;
@@ -88,7 +88,7 @@ export class Filters {
   getWhereFilterExpressionIndex: Readable<(name: string) => number | undefined>;
   getDimensionFilterItems: Readable<
     (
-      dimensionIdMap: Map<string, MetricsViewSpecDimensionV2>,
+      dimensionIdMap: Map<string, MetricsViewSpecDimension>,
     ) => DimensionFilterItem[]
   >;
   unselectedDimensionValues: Readable<
@@ -133,7 +133,7 @@ export class Filters {
       (tempFilter) => {
         return (
           measureFilterItems: MeasureFilterItem[],
-          measureIdMap: Map<string, MetricsViewSpecMeasureV2>,
+          measureIdMap: Map<string, MetricsViewSpecMeasure>,
         ) => {
           const itemsCopy = [...measureFilterItems];
           if (tempFilter && measureIdMap.has(tempFilter)) {
@@ -153,7 +153,7 @@ export class Filters {
     this.getMeasureFilterItems = derived(
       this.dimensionThresholdFilters,
       ($dimensionThresholdFilters) => {
-        return (measureIdMap: Map<string, MetricsViewSpecMeasureV2>) => {
+        return (measureIdMap: Map<string, MetricsViewSpecMeasure>) => {
           return this.getMeasureFilters(
             measureIdMap,
             $dimensionThresholdFilters,
@@ -170,7 +170,7 @@ export class Filters {
       (tempFilter) => {
         return (
           dimensionFilterItems: DimensionFilterItem[],
-          dimensionIdMap: Map<string, MetricsViewSpecDimensionV2>,
+          dimensionIdMap: Map<string, MetricsViewSpecDimension>,
         ) => {
           const merged = [...dimensionFilterItems];
           if (tempFilter && dimensionIdMap.has(tempFilter)) {
@@ -254,7 +254,7 @@ export class Filters {
     this.getDimensionFilterItems = derived(
       [this.whereFilter, this.dimensionsWithInlistFilter],
       ([$whereFilter, $dimensionsWithInlistFilter]) => {
-        return (dimensionIdMap: Map<string, MetricsViewSpecDimensionV2>) => {
+        return (dimensionIdMap: Map<string, MetricsViewSpecDimension>) => {
           const dimensionFilters = getDimensionFilters(
             dimensionIdMap,
             $whereFilter,
@@ -333,7 +333,7 @@ export class Filters {
   }
 
   private getMeasureFilters = (
-    measureIdMap: Map<string, MetricsViewSpecMeasureV2>,
+    measureIdMap: Map<string, MetricsViewSpecMeasure>,
     dimensionThresholdFilters: DimensionThresholdFilter[],
   ): MeasureFilterItem[] => {
     const filteredMeasures: MeasureFilterItem[] = [];
@@ -352,7 +352,7 @@ export class Filters {
   };
 
   private getMeasureFilterForDimension = (
-    measureIdMap: Map<string, MetricsViewSpecMeasureV2>,
+    measureIdMap: Map<string, MetricsViewSpecMeasure>,
     filters: MeasureFilterEntry[],
     name: string,
     addedMeasure: Set<string>,

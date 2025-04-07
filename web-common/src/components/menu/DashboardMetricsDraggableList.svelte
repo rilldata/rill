@@ -3,8 +3,8 @@
   import DragHandle from "@rilldata/web-common/components/icons/DragHandle.svelte";
   import { clamp } from "@rilldata/web-common/lib/clamp";
   import type {
-    MetricsViewSpecMeasureV2,
-    MetricsViewSpecDimensionV2,
+    MetricsViewSpecMeasure,
+    MetricsViewSpecDimension,
   } from "@rilldata/web-common/runtime-client";
   import { Button } from "../button";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
@@ -17,7 +17,7 @@
   const ITEM_HEIGHT = 28;
   const THROTTLE_MS = 16; // ~60fps = 60 frames per second = 1000ms / 60 frames = ~16.67ms per frame
 
-  type SelectableItem = MetricsViewSpecMeasureV2 | MetricsViewSpecDimensionV2;
+  type SelectableItem = MetricsViewSpecMeasure | MetricsViewSpecDimension;
 
   export let selectedItems: string[];
   export let allItems: SelectableItem[] = [];

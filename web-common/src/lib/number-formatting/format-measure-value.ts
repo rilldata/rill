@@ -4,7 +4,7 @@ import {
   includesCurrencySymbol,
   isValidD3Locale,
 } from "@rilldata/web-common/lib/number-formatting/utils/d3-format-utils";
-import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
+import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
 import {
   format as d3format,
   formatLocale as d3FormatLocale,
@@ -169,7 +169,7 @@ const memoizedHumanizeDataTypeUnabridged = memoize(humanizeDataTypeUnabridged, {
  * as we switch to always using `null` to represent missing values.
  */
 export function createMeasureValueFormatter<T extends null | undefined = never>(
-  measureSpec: MetricsViewSpecMeasureV2,
+  measureSpec: MetricsViewSpecMeasure,
   type: FormatterContext = "table",
 ): (value: number | string | T) => string | T {
   const useUnabridged = type === "unabridged";
