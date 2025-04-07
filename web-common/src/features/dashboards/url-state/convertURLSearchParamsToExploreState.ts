@@ -251,7 +251,7 @@ function fromFilterUrlParam(
   }
 }
 
-function getTimeControlsFromURLParams(
+export function getTimeControlsFromURLParams(
   searchParams: URLSearchParams,
   dimensions: Map<string, MetricsViewSpecDimension>,
 ): {
