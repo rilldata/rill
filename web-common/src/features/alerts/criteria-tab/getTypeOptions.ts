@@ -5,11 +5,11 @@ import {
   MeasureFilterPercentOfTotalOption,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
 import { getComparisonLabel } from "@rilldata/web-common/lib/time/comparisons";
-import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
+import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
 
 export function getTypeOptions(
   formValues: AlertFormValues,
-  selectedMeasure: MetricsViewSpecMeasureV2 | undefined,
+  selectedMeasure: MetricsViewSpecMeasure | undefined,
 ) {
   const options: {
     value: string;

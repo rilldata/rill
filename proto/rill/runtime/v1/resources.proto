@@ -23,7 +23,7 @@ message Resource {
     ProjectParser project_parser = 2;
     Source source = 3;
     Model model = 4;
-    MetricsViewV2 metrics_view = 5;
+    MetricsView metrics_view = 5;
     Explore explore = 17;
     Migration migration = 9;
     Report report = 10;
@@ -159,14 +159,14 @@ message ModelState {
   int64 latest_execution_duration_ms = 13;
 }
 
-message MetricsViewV2 {
+message MetricsView {
   MetricsViewSpec spec = 1;
   MetricsViewState state = 2;
 }
 
 message MetricsViewSpec {
   // Dimensions are columns to filter and group by
-  message DimensionV2 {
+  message Dimension {
     string name = 1;
     string display_name = 3;
     string description = 4;
@@ -198,7 +198,7 @@ message MetricsViewSpec {
     string frame_expression = 2;
   }
   // Measures are aggregated computed values
-  message MeasureV2 {
+  message Measure {
     string name = 1;
     string display_name = 3;
     string description = 4;
@@ -236,60 +236,15 @@ message MetricsViewSpec {
   // Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension).
   string watermark_expression = 20;
   // Dimensions in the metrics view
-  repeated DimensionV2 dimensions = 6;
+  repeated Dimension dimensions = 6;
   // Measures in the metrics view
-  repeated MeasureV2 measures = 7;
+  repeated Measure measures = 7;
   // Security for the metrics view
   repeated SecurityRule security_rules = 23;
   // ISO 8601 weekday number to use as the base for time aggregations by week. Defaults to 1 (Monday).
   uint32 first_day_of_week = 12;
   // Month number to use as the base for time aggregations by year. Defaults to 1 (January).
   uint32 first_month_of_year = 13;
-  
-  // DEPRECATED FIELDS
-  // Deprecated: Now defined in the Explore resource.
-  enum ComparisonMode {
-    COMPARISON_MODE_UNSPECIFIED = 0;
-    COMPARISON_MODE_NONE = 1;
-    COMPARISON_MODE_TIME = 2;
-    COMPARISON_MODE_DIMENSION = 3;
-  }
-  // Deprecated: Now defined in the Explore resource.
-  message AvailableComparisonOffset {
-    string offset = 1;
-    // Used to override the range for the comparison with something other than the selected range.
-    string range = 2;
-  }
-  // Deprecated: Now defined in the Explore resource.
-  message AvailableTimeRange {
-    string range = 1;
-    // Available comparison offsets for this time range.
-    repeated AvailableComparisonOffset comparison_offsets = 2;
-  }
-  // List of selected dimensions by defaults.
-  // Deprecated: Now defined in the Explore resource.
-  repeated string default_dimensions = 18;
-  // List of selected measures by defaults.
-  // Deprecated: Now defined in the Explore resource.
-  repeated string default_measures = 19;
-  // Default time range for the dashboard. It should be a valid ISO 8601 duration string.
-  // Deprecated: Now defined in the Explore resource.
-  string default_time_range = 9;
-  // Selected default comparison mode.
-  // Deprecated: Now defined in the Explore resource.
-  ComparisonMode default_comparison_mode = 14;
-  // If comparison mode is dimension then this determines which is the default dimension.
-  // Deprecated: Now defined in the Explore resource.
-  string default_comparison_dimension = 15;
-  // Default theme to apply.
-  // Deprecated: Now defined in the Explore resource.
-  string default_theme = 17;
-  // List of available time ranges with comparison ranges that would replace the default list.
-  // Deprecated: Now defined in the Explore resource.
-  repeated AvailableTimeRange available_time_ranges = 16;
-  // Available time zones list preferred time zones using IANA location identifiers.
-  // Deprecated: Now defined in the Explore resource.
-  repeated string available_time_zones = 10;
   // Cache controls for the metrics view.
   optional bool cache_enabled = 25;
   string cache_key_sql = 26;

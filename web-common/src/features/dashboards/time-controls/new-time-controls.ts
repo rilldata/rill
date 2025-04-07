@@ -1,7 +1,7 @@
 // WIP as of 04/19/2024
 
 import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
-import type { MetricsViewSpecAvailableTimeRange } from "@rilldata/web-common/runtime-client";
+import type { V1ExploreTimeRange } from "@rilldata/web-common/runtime-client";
 import {
   DateTime,
   type DateTimeUnit,
@@ -404,7 +404,7 @@ const defaultBuckets = {
 };
 
 export function bucketYamlRanges(
-  availableRanges: MetricsViewSpecAvailableTimeRange[],
+  availableRanges: V1ExploreTimeRange[],
 ): RangeBuckets {
   const showDefaults = !availableRanges.length;
 
