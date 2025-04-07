@@ -388,6 +388,7 @@ message ExplorePreset {
   optional string explore_expanded_dimension = 20;
   optional uint32 explore_leaderboard_measure_count = 30;
   repeated string explore_leaderboard_measures = 31;
+  optional bool explore_leaderboard_show_all_measures = 32;
 
   optional string time_dimension_measure = 21;
   optional string time_dimension_chart_type = 22;

@@ -150,6 +150,11 @@ export class DashboardState extends Message<DashboardState> {
   leaderboardMeasures: string[] = [];
 
   /**
+   * @generated from field: optional bool leaderboard_show_all_measures = 40;
+   */
+  leaderboardShowAllMeasures?: boolean;
+
+  /**
    * @generated from field: optional string comparison_dimension = 17;
    */
   comparisonDimension?: string;
@@ -283,6 +288,7 @@ export class DashboardState extends Message<DashboardState> {
     { no: 16, name: "leaderboard_sort_type", kind: "enum", T: proto3.getEnumType(DashboardState_LeaderboardSortType), opt: true },
     { no: 38, name: "leaderboard_measure_count", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
     { no: 39, name: "leaderboard_measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 40, name: "leaderboard_show_all_measures", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 17, name: "comparison_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 18, name: "expanded_measure", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 19, name: "pin_index", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
