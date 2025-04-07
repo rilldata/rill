@@ -71,6 +71,7 @@
   export let parentElement: HTMLElement;
   export let suppressTooltip = false;
   export let leaderboardMeasureCountFeatureFlag: boolean;
+  export let leaderboardShowAllMeasures: boolean;
   export let measureLabel: (measureName: string) => string;
   export let formatters: Record<
     string,
@@ -147,7 +148,7 @@
 
     // Add comparison measures if there's a comparison time range
     ...(comparisonTimeRange
-      ? (leaderboardMeasureCountFeatureFlag
+      ? (leaderboardShowAllMeasures
           ? leaderboardMeasureNames
           : [leaderboardSortByMeasureName]
         ).flatMap((name) => getComparisonRequestMeasures(name))
@@ -315,15 +316,15 @@
     <colgroup>
       <col data-gutter-column style:width="{gutterWidth}px" />
       <col data-dimension-column style:width="{dimensionColumnWidth}px" />
-      {#each leaderboardMeasureNames as _, index (index)}
+      {#each leaderboardMeasureNames as measureName, index (index)}
         <col data-measure-column style:width="{$valueColumn}px" />
-        {#if isValidPercentOfTotal(leaderboardMeasureNames[index])}
+        {#if isValidPercentOfTotal(measureName) && (leaderboardShowAllMeasures || measureName === sortBy)}
           <col
             data-percent-of-total-column
             style:width="{COMPARISON_COLUMN_WIDTH}px"
           />
         {/if}
-        {#if isTimeComparisonActive}
+        {#if isTimeComparisonActive && (leaderboardShowAllMeasures || measureName === sortBy)}
           <col
             data-absolute-change-column
             style:width="{COMPARISON_COLUMN_WIDTH}px"
@@ -348,6 +349,7 @@
       {isTimeComparisonActive}
       {sortedAscending}
       {leaderboardMeasureNames}
+      {leaderboardShowAllMeasures}
       {toggleSort}
       {setPrimaryDimension}
       {toggleComparisonDimension}
@@ -373,9 +375,11 @@
             {dimensionName}
             {itemData}
             {isValidPercentOfTotal}
+            {leaderboardShowAllMeasures}
             {isTimeComparisonActive}
             {leaderboardMeasureNames}
             {toggleDimensionValueSelection}
+            {sortBy}
             {formatters}
           />
         {/each}
@@ -391,11 +395,13 @@
           {filterExcludeMode}
           {atLeastOneActive}
           {isValidPercentOfTotal}
+          {leaderboardShowAllMeasures}
           {isTimeComparisonActive}
           {leaderboardMeasureNames}
           borderTop={i === 0}
           borderBottom={i === belowTheFoldRows.length - 1}
           {toggleDimensionValueSelection}
+          {sortBy}
           {formatters}
         />
       {/each}

@@ -31,6 +31,8 @@
   export let isTimeComparisonActive: boolean;
   export let leaderboardMeasureNames: string[] = [];
   export let suppressTooltip: boolean;
+  export let leaderboardShowAllMeasures: boolean;
+  export let sortBy: string | null;
   export let isValidPercentOfTotal: (measureName: string) => boolean;
   export let toggleDimensionValueSelection: (
     dimensionName: string,
@@ -299,7 +301,7 @@
       {/if}
     </td>
 
-    {#if isValidPercentOfTotal(measureName)}
+    {#if isValidPercentOfTotal(measureName) && (leaderboardShowAllMeasures || measureName === sortBy)}
       <td
         data-comparison-cell
         title={pctOfTotals[measureName]?.toString() || ""}
@@ -318,7 +320,7 @@
       </td>
     {/if}
 
-    {#if isTimeComparisonActive}
+    {#if isTimeComparisonActive && (leaderboardShowAllMeasures || measureName === sortBy)}
       <td
         data-comparison-cell
         title={deltaAbsMap[measureName]?.toString() || ""}
@@ -342,7 +344,7 @@
       </td>
     {/if}
 
-    {#if isTimeComparisonActive}
+    {#if isTimeComparisonActive && (leaderboardShowAllMeasures || measureName === sortBy)}
       <td
         data-comparison-cell
         title={deltaRels[measureName]?.toString() || ""}

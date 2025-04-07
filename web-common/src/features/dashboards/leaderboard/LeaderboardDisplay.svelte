@@ -29,7 +29,12 @@
       dimensions: { visibleDimensions },
       comparison: { isBeingCompared: isBeingComparedReadable },
       sorting: { sortedAscending, sortType, sortByMeasure },
-      measures: { measureLabel, isMeasureValidPercentOfTotal, visibleMeasures },
+      measures: {
+        measureLabel,
+        isMeasureValidPercentOfTotal,
+        visibleMeasures,
+        leaderboardShowAllMeasures,
+      },
     },
     actions: {
       dimensions: { setPrimaryDimension },
@@ -132,6 +137,7 @@
               {toggleComparisonDimension}
               measureLabel={$measureLabel}
               leaderboardMeasureCountFeatureFlag={$leaderboardMeasureCountFeatureFlag}
+              leaderboardShowAllMeasures={$leaderboardShowAllMeasures}
             />
           {/if}
         {/each}
