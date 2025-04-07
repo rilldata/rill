@@ -51,6 +51,7 @@
         prepareDimTableRows,
       },
       sorting: { sortedAscending, sortType },
+      measures: { leaderboardShowAllMeasures },
     },
     actions: {
       dimensionsFilter: {
@@ -118,7 +119,6 @@
   );
 
   $: measures = [
-    // Get base measures
     ...getMeasuresForDimensionTable(
       $leaderboardMeasureCountFeatureFlag ? null : leaderboardSortByMeasureName,
       dimensionThresholdFilters,
@@ -127,7 +127,7 @@
 
     // Add comparison measures if comparison time range exists
     ...(comparisonTimeRange
-      ? ($leaderboardMeasureCountFeatureFlag
+      ? ($leaderboardShowAllMeasures
           ? visibleMeasureNames
           : [leaderboardSortByMeasureName]
         ).flatMap((name) => getComparisonRequestMeasures(name))
