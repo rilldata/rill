@@ -7,7 +7,7 @@
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { isString } from "../../workspaces/visual-util";
-  import type { AllKeys } from "node_modules/sveltekit-superforms/dist/utils";
+  import type { AllKeys } from "@rilldata/web-common/features/canvas/inspector/types";
   import type { ComponentSpec } from "../components/types";
   import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
 
