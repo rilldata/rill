@@ -28,7 +28,6 @@
   $: ctx = getCanvasStore(canvasName);
   const tableSpecStore = writable(rendererProperties as unknown as PivotSpec);
   const pivotState = writable<PivotState>({
-    active: true,
     columns: [],
     rows: [],
     expanded: {},

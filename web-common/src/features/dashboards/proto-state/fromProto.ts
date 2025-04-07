@@ -224,7 +224,7 @@ export function getDashboardStateFromProto(
     entity.leaderboardMeasureCount = dashboard.leaderboardMeasureCount;
   }
 
-  if (dashboard.pivotIsActive !== undefined) {
+  if (dashboard.activePage === DashboardState_ActivePage.PIVOT) {
     entity.pivot = fromPivotProto(dashboard, metricsView);
   }
 
@@ -417,7 +417,6 @@ function fromPivotProto(
   }
 
   return {
-    active: dashboard.pivotIsActive ?? false,
     rows: rowDimensions,
     columns: [
       ...colDimensions,
