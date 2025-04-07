@@ -33,13 +33,6 @@
 
   $: schema = validateTableSchema(metricsViewSpec, tableSpec);
 
-  $: tableType =
-    "columns" in tableSpec
-      ? "table"
-      : "col_dimensions" in tableSpec
-        ? "pivot"
-        : "table";
-
   $: if ("columns" in tableSpec && schema.isValid) {
     const columns = tableSpec?.columns || [];
     pivotState.update((state) => ({
@@ -63,18 +56,14 @@
       rows: tableFieldMapper(rowDimensions, metricsViewSpec),
     }));
   }
-
-  $: console.log({ tableType });
 </script>
 
 <ComponentHeader {title} {description} {filters} />
 
-{#key tableType}
-  <CanvasPivotRenderer
-    {hasHeader}
-    {schema}
-    {pivotDataStore}
-    pivotConfig={config}
-    {pivotState}
-  />
-{/key}
+<CanvasPivotRenderer
+  {hasHeader}
+  {schema}
+  {pivotDataStore}
+  pivotConfig={config}
+  {pivotState}
+/>
