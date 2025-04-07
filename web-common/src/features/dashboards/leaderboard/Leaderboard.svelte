@@ -23,6 +23,7 @@
     additionalMeasures,
     getFiltersForOtherDimensions,
   } from "../selectors";
+  import type { selectedDimensionValuesV2 } from "../state-managers/selectors/dimension-filters";
   import {
     createAndExpression,
     createOrExpression,
@@ -40,8 +41,6 @@
     prepareLeaderboardItemData,
   } from "./leaderboard-utils";
   import { COMPARISON_COLUMN_WIDTH, valueColumn } from "./leaderboard-widths";
-  import DelayedLoadingRows from "./DelayedLoadingRows.svelte";
-  import type { selectedDimensionValuesV2 } from "../state-managers/selectors/dimension-filters";
 
   const gutterWidth = 24;
 
