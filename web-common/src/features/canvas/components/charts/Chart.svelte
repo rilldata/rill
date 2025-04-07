@@ -7,7 +7,8 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
-  import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
+  import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
+
   import type { View } from "vega-typings";
   import { getChartData, validateChartSchema } from "./selector";
   import {
@@ -71,7 +72,7 @@
   $: measureName = sanitizeFieldName($measure?.name || "measure");
 
   $: measureFormatter = createMeasureValueFormatter<null | undefined>(
-    $measure as MetricsViewSpecMeasureV2,
+    $measure as MetricsViewSpecMeasure,
   );
 
   $: config = vl_config ? mergedVlConfig(vl_config) : undefined;

@@ -573,15 +573,15 @@ SELECT '2024-01-02T00:00:00Z'::TIMESTAMP as __time, 'Sweden' as country
 	require.Contains(t, emails[0].Body, "measure_0")
 }
 
-func newMetricsView(name, model, timeDim string, measures, dimensions []string) (*runtimev1.MetricsViewV2, *runtimev1.Resource) {
-	metrics := &runtimev1.MetricsViewV2{
+func newMetricsView(name, model, timeDim string, measures, dimensions []string) (*runtimev1.MetricsView, *runtimev1.Resource) {
+	metrics := &runtimev1.MetricsView{
 		Spec: &runtimev1.MetricsViewSpec{
 			Connector:     "duckdb",
 			Model:         model,
 			DisplayName:   parser.ToDisplayName(name),
 			TimeDimension: timeDim,
-			Measures:      make([]*runtimev1.MetricsViewSpec_MeasureV2, len(measures)),
-			Dimensions:    make([]*runtimev1.MetricsViewSpec_DimensionV2, len(dimensions)),
+			Measures:      make([]*runtimev1.MetricsViewSpec_Measure, len(measures)),
+			Dimensions:    make([]*runtimev1.MetricsViewSpec_Dimension, len(dimensions)),
 		},
 		State: &runtimev1.MetricsViewState{
 			ValidSpec: &runtimev1.MetricsViewSpec{
@@ -590,20 +590,20 @@ func newMetricsView(name, model, timeDim string, measures, dimensions []string) 
 				Model:         model,
 				DisplayName:   parser.ToDisplayName(name),
 				TimeDimension: timeDim,
-				Measures:      make([]*runtimev1.MetricsViewSpec_MeasureV2, len(measures)),
-				Dimensions:    make([]*runtimev1.MetricsViewSpec_DimensionV2, len(dimensions)),
+				Measures:      make([]*runtimev1.MetricsViewSpec_Measure, len(measures)),
+				Dimensions:    make([]*runtimev1.MetricsViewSpec_Dimension, len(dimensions)),
 			},
 		},
 	}
 	for i, measure := range measures {
 		name := fmt.Sprintf("measure_%d", i)
-		metrics.Spec.Measures[i] = &runtimev1.MetricsViewSpec_MeasureV2{
+		metrics.Spec.Measures[i] = &runtimev1.MetricsViewSpec_Measure{
 			Name:        name,
 			DisplayName: parser.ToDisplayName(name),
 			Expression:  measure,
 			Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 		}
-		metrics.State.ValidSpec.Measures[i] = &runtimev1.MetricsViewSpec_MeasureV2{
+		metrics.State.ValidSpec.Measures[i] = &runtimev1.MetricsViewSpec_Measure{
 			Name:        name,
 			DisplayName: parser.ToDisplayName(name),
 			Expression:  measure,
@@ -611,12 +611,12 @@ func newMetricsView(name, model, timeDim string, measures, dimensions []string) 
 		}
 	}
 	for i, dimension := range dimensions {
-		metrics.Spec.Dimensions[i] = &runtimev1.MetricsViewSpec_DimensionV2{
+		metrics.Spec.Dimensions[i] = &runtimev1.MetricsViewSpec_Dimension{
 			Name:        dimension,
 			DisplayName: parser.ToDisplayName(dimension),
 			Column:      dimension,
 		}
-		metrics.State.ValidSpec.Dimensions[i] = &runtimev1.MetricsViewSpec_DimensionV2{
+		metrics.State.ValidSpec.Dimensions[i] = &runtimev1.MetricsViewSpec_Dimension{
 			Name:        dimension,
 			DisplayName: parser.ToDisplayName(dimension),
 			Column:      dimension,

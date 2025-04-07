@@ -1,8 +1,8 @@
 import type { CanvasSpecResponseStore } from "@rilldata/web-common/features/canvas/types";
 import {
   MetricsViewSpecMeasureType,
-  type MetricsViewSpecDimensionV2,
-  type MetricsViewSpecMeasureV2,
+  type MetricsViewSpecDimension,
+  type MetricsViewSpecMeasure,
   type V1CanvasSpec,
   type V1ComponentSpec,
   type V1MetricsViewSpec,
@@ -28,36 +28,36 @@ export class CanvasResolvedSpec {
   /** Measure Selectors */
   getMeasuresForMetricView: (
     metricViewName: string,
-  ) => Readable<MetricsViewSpecMeasureV2[]>;
+  ) => Readable<MetricsViewSpecMeasure[]>;
 
   getSimpleMeasuresForMetricView: (
     metricViewName: string,
-  ) => Readable<MetricsViewSpecMeasureV2[]>;
+  ) => Readable<MetricsViewSpecMeasure[]>;
 
   getMeasureForMetricView: (
     measureName: string | undefined,
     metricViewName: string,
-  ) => Readable<MetricsViewSpecMeasureV2 | undefined>;
+  ) => Readable<MetricsViewSpecMeasure | undefined>;
 
-  allSimpleMeasures: Readable<MetricsViewSpecMeasureV2[]>;
+  allSimpleMeasures: Readable<MetricsViewSpecMeasure[]>;
 
   metricsViewMeasureMap: Readable<Record<string, Set<string>>>;
 
   /** Dimension Selectors */
   getDimensionsForMetricView: (
     metricViewName: string,
-  ) => Readable<MetricsViewSpecDimensionV2[]>;
+  ) => Readable<MetricsViewSpecDimension[]>;
 
   getDimensionForMetricView: (
     dimensionName: string,
     metricViewName: string,
-  ) => Readable<MetricsViewSpecDimensionV2 | undefined>;
+  ) => Readable<MetricsViewSpecDimension | undefined>;
 
   getTimeDimensionForMetricView: (
     metricViewName: string,
   ) => Readable<string | undefined>;
 
-  allDimensions: Readable<MetricsViewSpecDimensionV2[]>;
+  allDimensions: Readable<MetricsViewSpecDimension[]>;
   metricsViewDimensionsMap: Readable<Record<string, Set<string>>>;
 
   /** Component Selectors */
@@ -136,7 +136,7 @@ export class CanvasResolvedSpec {
       ).flatMap((metricsView) =>
         this.filterSimpleMeasures(metricsView?.state?.validSpec?.measures),
       );
-      const uniqueByName = new Map<string, MetricsViewSpecMeasureV2>();
+      const uniqueByName = new Map<string, MetricsViewSpecMeasure>();
       for (const measure of measures) {
         uniqueByName.set(measure.name as string, measure);
       }
@@ -150,7 +150,7 @@ export class CanvasResolvedSpec {
       ).flatMap(
         (metricsView) => metricsView?.state?.validSpec?.dimensions || [],
       );
-      const uniqueByName = new Map<string, MetricsViewSpecDimensionV2>();
+      const uniqueByName = new Map<string, MetricsViewSpecDimension>();
       for (const dimension of dimensions) {
         uniqueByName.set(
           (dimension.name || dimension.column) as string,
@@ -235,7 +235,7 @@ export class CanvasResolvedSpec {
 
   getDimensionsFromMeasure = (
     measureName: string,
-  ): MetricsViewSpecDimensionV2[] => {
+  ): MetricsViewSpecDimension[] => {
     const metricsMeasureMap = get(this.metricsViewMeasureMap);
     let metricViewName: string | undefined;
     for (const [key, value] of Object.entries(metricsMeasureMap)) {
@@ -257,8 +257,8 @@ export class CanvasResolvedSpec {
   };
 
   private filterSimpleMeasures = (
-    measures: MetricsViewSpecMeasureV2[] | undefined,
-  ): MetricsViewSpecMeasureV2[] => {
+    measures: MetricsViewSpecMeasure[] | undefined,
+  ): MetricsViewSpecMeasure[] => {
     return (
       measures?.filter(
         (m) =>

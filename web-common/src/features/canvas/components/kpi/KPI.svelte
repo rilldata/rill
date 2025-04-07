@@ -7,7 +7,7 @@
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import {
     V1TimeGrain,
-    type MetricsViewSpecMeasureV2,
+    type MetricsViewSpecMeasure,
     type V1MetricsViewAggregationResponse,
     type V1MetricsViewTimeSeriesResponse,
   } from "@rilldata/web-common/runtime-client";
@@ -26,7 +26,7 @@
   export let comparisonTotalResult: AggregationQuery;
   export let primarySparklineResult: TimeSeriesQuery;
   export let comparisonSparklineResult: TimeSeriesQuery;
-  export let measure: MetricsViewSpecMeasureV2 | undefined;
+  export let measure: MetricsViewSpecMeasure | undefined;
   export let timeGrain: V1TimeGrain | undefined;
   export let timeZone: string | undefined;
   export let interval: Interval;

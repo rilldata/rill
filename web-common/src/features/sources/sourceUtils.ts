@@ -2,7 +2,7 @@ import { extractFileExtension } from "@rilldata/web-common/features/entity-manag
 import {
   ConnectorDriverPropertyType,
   type V1ConnectorDriver,
-  type V1SourceV2,
+  type V1Source,
 } from "@rilldata/web-common/runtime-client";
 import { makeDotEnvConnectorKey } from "../connectors/code-utils";
 import { sanitizeEntityName } from "../entity-management/name-utils";
@@ -188,7 +188,7 @@ export function maybeRewriteToDuckDb(
   return [connectorCopy, formValues];
 }
 
-export function getFileExtension(source: V1SourceV2): string {
+export function getFileExtension(source: V1Source): string {
   const path = String(source?.spec?.properties?.path).toLowerCase();
   if (path?.includes(".csv")) return "CSV";
   if (path?.includes(".parquet")) return "Parquet";
@@ -197,7 +197,7 @@ export function getFileExtension(source: V1SourceV2): string {
   return "";
 }
 
-export function formatConnectorType(source: V1SourceV2) {
+export function formatConnectorType(source: V1Source) {
   switch (source?.spec?.sourceConnector) {
     case "s3":
       return "S3";

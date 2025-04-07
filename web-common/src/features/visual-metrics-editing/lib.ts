@@ -1,5 +1,5 @@
 import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
-import type { MetricsViewSpecDimensionV2 } from "@rilldata/web-common/runtime-client";
+import type { MetricsViewSpecDimension } from "@rilldata/web-common/runtime-client";
 import { writable } from "svelte/store";
 import type { YAMLMap } from "yaml";
 
@@ -36,7 +36,7 @@ export class YAMLDimension {
 
   constructor(
     item?: YAMLMap<string, string>,
-    dimension?: MetricsViewSpecDimensionV2,
+    dimension?: MetricsViewSpecDimension,
   ) {
     this.column = item?.get("column") ?? "";
     this.expression = item?.get("expression") ?? "";

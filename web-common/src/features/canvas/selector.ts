@@ -11,7 +11,7 @@ import {
   createQueryServiceResolveCanvas,
   type RpcStatus,
   type V1CanvasSpec,
-  type V1MetricsViewV2,
+  type V1MetricsView,
   type V1ResolveCanvasResponse,
   type V1ResolveCanvasResponseResolvedComponents,
 } from "@rilldata/web-common/runtime-client";
@@ -77,7 +77,7 @@ export function useDefaultMetrics(
 export interface CanvasResponse {
   canvas: V1CanvasSpec | undefined;
   components: V1ResolveCanvasResponseResolvedComponents | undefined;
-  metricsViews: Record<string, V1MetricsViewV2 | undefined>;
+  metricsViews: Record<string, V1MetricsView | undefined>;
   filePath: string | undefined;
 }
 
@@ -100,7 +100,7 @@ export function useCanvas(
     {
       query: {
         select: (data) => {
-          const metricsViews: Record<string, V1MetricsViewV2 | undefined> = {};
+          const metricsViews: Record<string, V1MetricsView | undefined> = {};
           const refMetricsViews = data?.referencedMetricsViews;
           if (refMetricsViews) {
             Object.keys(refMetricsViews).forEach((key) => {

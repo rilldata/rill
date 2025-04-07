@@ -6,8 +6,8 @@ import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-man
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import {
-  type MetricsViewSpecDimensionV2,
-  type MetricsViewSpecMeasureV2,
+  type MetricsViewSpecDimension,
+  type MetricsViewSpecMeasure,
   type V1MetricsViewAggregationResponseDataItem,
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
@@ -22,8 +22,8 @@ export type ChartDataResult = {
   isFetching: boolean;
   fields: Record<
     string,
-    | MetricsViewSpecMeasureV2
-    | MetricsViewSpecDimensionV2
+    | MetricsViewSpecMeasure
+    | MetricsViewSpecDimension
     | TimeDimensionDefinition
     | undefined
   >;
@@ -77,8 +77,8 @@ export function getChartData(
         },
         {} as Record<
           string,
-          | MetricsViewSpecMeasureV2
-          | MetricsViewSpecDimensionV2
+          | MetricsViewSpecMeasure
+          | MetricsViewSpecDimension
           | TimeDimensionDefinition
           | undefined
         >,
