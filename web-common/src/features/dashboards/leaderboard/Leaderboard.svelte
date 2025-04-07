@@ -55,7 +55,7 @@
   export let instanceId: string;
   export let whereFilter: V1Expression;
   export let dimensionThresholdFilters: DimensionThresholdFilter[];
-  export let activeMeasureName: string;
+  export let leaderboardSortByMeasureName: string;
   export let leaderboardMeasureNames: string[];
   export let visibleMeasures: string[];
   export let metricsViewName: string;
@@ -135,7 +135,10 @@
               name,
             }) as V1MetricsViewAggregationMeasure,
         )
-      : additionalMeasures(activeMeasureName, dimensionThresholdFilters).map(
+      : additionalMeasures(
+          leaderboardSortByMeasureName,
+          dimensionThresholdFilters,
+        ).map(
           (n) =>
             ({
               name: n,
@@ -146,7 +149,7 @@
     ...(comparisonTimeRange
       ? (leaderboardMeasureCountFeatureFlag
           ? leaderboardMeasureNames
-          : [activeMeasureName]
+          : [leaderboardSortByMeasureName]
         ).flatMap((name) => getComparisonRequestMeasures(name))
       : []),
 
@@ -157,7 +160,7 @@
   $: sort = getSort(
     sortedAscending,
     sortType,
-    activeMeasureName,
+    leaderboardSortByMeasureName,
     dimensionName,
     !!comparisonTimeRange,
   );
@@ -191,7 +194,7 @@
             measures: visibleMeasures.map((name) => ({ name })),
           }
         : {
-            measures: [{ name: activeMeasureName }],
+            measures: [{ name: leaderboardSortByMeasureName }],
           }),
       where,
       timeStart: timeRange.start,
@@ -273,7 +276,7 @@
     ? data?.data
     : belowTheFoldValues.map((value) => ({
         [dimensionName]: value,
-        [activeMeasureName]: null,
+        [leaderboardSortByMeasureName]: null,
       }));
 
   $: belowTheFoldRows = belowTheFoldData.map((item) =>
@@ -295,7 +298,7 @@
     leaderboardMeasureNames.length + // Value column for each measure
     (isTimeComparisonActive
       ? leaderboardMeasureNames.length * // For each measure
-        ((isValidPercentOfTotal(activeMeasureName) ? 1 : 0) + // Percent of total column
+        ((isValidPercentOfTotal(leaderboardSortByMeasureName) ? 1 : 0) + // Percent of total column
           (isTimeComparisonActive ? 2 : 0)) // Delta absolute and delta percent columns
       : 0);
 </script>

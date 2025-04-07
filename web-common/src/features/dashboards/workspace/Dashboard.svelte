@@ -224,7 +224,7 @@
               {dimensionThresholdFilters}
               {timeRange}
               {comparisonTimeRange}
-              activeMeasureName={$leaderboardSortByMeasureName}
+              leaderboardSortByMeasureName={$leaderboardSortByMeasureName}
               {timeControlsReady}
               {visibleMeasureNames}
               hideStartPivotButton={hidePivot}
@@ -232,7 +232,7 @@
           {:else}
             <LeaderboardDisplay
               {metricsViewName}
-              activeMeasureName={$leaderboardSortByMeasureName}
+              leaderboardSortByMeasureName={$leaderboardSortByMeasureName}
               leaderboardMeasureNames={$leaderboardMeasureNames}
               {whereFilter}
               {dimensionThresholdFilters}
