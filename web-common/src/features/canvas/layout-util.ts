@@ -4,6 +4,7 @@ import type {
   V1MetricsViewSpec,
   V1ResolveCanvasResponseResolvedComponents,
   V1Resource,
+  V1ComponentSpecRendererProperties,
 } from "@rilldata/web-common/runtime-client";
 import { YAMLMap, YAMLSeq } from "yaml";
 import type { CanvasComponentType } from "./components/types";
@@ -358,7 +359,7 @@ function createOptimisticResource(options: {
   type: CanvasComponentType;
   metricsViewName: string;
   metricsViewSpec: V1MetricsViewSpec | undefined;
-}) {
+}): V1Resource {
   const { type, metricsViewName, metricsViewSpec } = options;
 
   const spec = COMPONENT_CLASS_MAP[type].newComponentSpec(
@@ -377,12 +378,14 @@ function createOptimisticResource(options: {
       state: {
         validSpec: {
           renderer: type,
-          rendererProperties: spec,
+          rendererProperties:
+            spec as unknown as V1ComponentSpecRendererProperties,
         },
       },
       spec: {
         renderer: type,
-        rendererProperties: spec,
+        rendererProperties:
+          spec as unknown as V1ComponentSpecRendererProperties,
       },
     },
   };
