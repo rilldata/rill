@@ -67,41 +67,37 @@
   }
 </script>
 
-<div>
-  {#if measures.length}
-    <div
-      class="flex flex-row items-center ui-copy-muted gap-x-1"
-      style:max-width="768px"
-    >
-      <DashboardMetricsDraggableList
-        type="dimension"
-        onSelectedChange={(items) =>
-          setDimensionVisibility(items, allDimensionNames)}
-        allItems={$allDimensions}
-        selectedItems={visibleDimensionsNames}
-      />
-      <!-- <LeaderboardMeasureCountSelector
-        measures={$visibleMeasures}
-        count={$leaderboardMeasureCount}
-        onMeasureCountChange={(count) => {
-          setLeaderboardMeasureCount(count);
-        }}
-      /> -->
-      <!-- <LeaderboardActiveMeasureDropdown
-        leaderboardSortByMeasureName={$leaderboardSortByMeasureName}
-        {setLeaderboardSortByMeasureName}
-        {measures}
-        {activeLeaderboardMeasure}
-      /> -->
-      <LeaderboardActiveMeasureNamesDropdown
-        tooltipText="Choose measures to filter by"
-        measures={$visibleMeasures}
-        selectedMeasureNames={$leaderboardMeasureNames}
-        setLeaderboardMeasureNames={(names) => {
-          setLeaderboardMeasureNames(names);
-        }}
-        {setLeaderboardSortByMeasureName}
-      />
-    </div>
-  {/if}
+<div
+  class="flex flex-row items-center ui-copy-muted gap-x-1"
+  style:max-width="768px"
+>
+  <DashboardMetricsDraggableList
+    type="dimension"
+    onSelectedChange={(items) =>
+      setDimensionVisibility(items, allDimensionNames)}
+    allItems={$allDimensions}
+    selectedItems={visibleDimensionsNames}
+  />
+  <!-- <LeaderboardMeasureCountSelector
+      measures={$visibleMeasures}
+      count={$leaderboardMeasureCount}
+      onMeasureCountChange={(count) => {
+        setLeaderboardMeasureCount(count);
+      }}
+    /> -->
+  <!-- <LeaderboardActiveMeasureDropdown
+      leaderboardSortByMeasureName={$leaderboardSortByMeasureName}
+      {setLeaderboardSortByMeasureName}
+      {measures}
+      {activeLeaderboardMeasure}
+    /> -->
+  <LeaderboardActiveMeasureNamesDropdown
+    tooltipText="Choose measures to filter by"
+    measures={$visibleMeasures}
+    selectedMeasureNames={$leaderboardMeasureNames}
+    setLeaderboardMeasureNames={(names) => {
+      setLeaderboardMeasureNames(names);
+    }}
+    {setLeaderboardSortByMeasureName}
+  />
 </div>
