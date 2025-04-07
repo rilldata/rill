@@ -75,8 +75,7 @@ func New(t *testing.T) *Fixture {
 
 	// Ports and external URLs
 	httpPort := findPort(t)
-	grpcPort := findPort(t)
-	externalURL := fmt.Sprintf("http://localhost:%d", grpcPort)
+	externalURL := fmt.Sprintf("http://localhost:%d", httpPort)
 	externalHTTPURL := fmt.Sprintf("http://localhost:%d", httpPort)
 	frontendURL := "http://frontend.mock"
 
@@ -134,7 +133,6 @@ func New(t *testing.T) *Fixture {
 	// Server
 	srvOpts := &server.Options{
 		HTTPPort:         httpPort,
-		GRPCPort:         grpcPort,
 		AllowedOrigins:   []string{"*"},
 		SessionKeyPairs:  [][]byte{randomBytes(16), randomBytes(16)},
 		ServePrometheus:  true,
@@ -202,7 +200,7 @@ func (f *Fixture) NewClient(t *testing.T, token string) *client.Client {
 
 // ExternalURL returns the localhost URL of the fixture's server.
 func (f *Fixture) ExternalURL() string {
-	return fmt.Sprintf("http://localhost:%d", f.ServerOpts.GRPCPort)
+	return fmt.Sprintf("http://localhost:%d", f.ServerOpts.HTTPPort)
 }
 
 // mockGithub provides a mock implementation of admin.Github.
