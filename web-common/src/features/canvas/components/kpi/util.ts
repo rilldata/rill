@@ -1,15 +1,25 @@
 import { getTimeControlsFromURLParams } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
-import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 
 export function getLocalComparison(timeFilter: string | undefined) {
-  let showLocalTimeComparison = false;
-  let localComparisonTimeRange: DashboardTimeControls | undefined = undefined;
   if (!timeFilter) {
-    return { showLocalTimeComparison, localComparisonTimeRange };
+    return {
+      showLocalTimeComparison: false,
+      localComparisonTimeRange: undefined,
+    };
   }
   const urlParams = new URLSearchParams(timeFilter);
 
-  const { exploreState } = getTimeControlsFromURLParams(urlParams, new Map()); // TODO: this function should not be coupled to ExploreState
+  const { exploreState, errors } = getTimeControlsFromURLParams(
+    urlParams,
+    new Map(),
+  ); // TODO: this function should not be coupled to ExploreState
+
+  if (errors?.length) {
+    return {
+      showLocalTimeComparison: false,
+      localComparisonTimeRange: undefined,
+    };
+  }
 
   return {
     showLocalTimeComparison: !!exploreState.selectedComparisonTimeRange,
