@@ -1,6 +1,6 @@
 import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
 import type {
-  MetricsViewSpecDimensionV2,
+  MetricsViewSpecDimension,
   RpcStatus,
   V1MetricsViewAggregationResponse,
 } from "@rilldata/web-common/runtime-client";
@@ -27,7 +27,7 @@ export const selectedDimensionValueNames = (
 
 export const primaryDimension = (
   dashData: DashboardDataSources,
-): MetricsViewSpecDimensionV2 | undefined => {
+): MetricsViewSpecDimension | undefined => {
   const dimName = dashData.dashboard.selectedDimensionName;
   return dashData.validMetricsView?.dimensions?.find(
     (dim) => dim.name === dimName,
@@ -115,7 +115,7 @@ export const dimensionTableSelectors = {
   virtualizedTableColumns,
 
   /**
-   * gets the MetricsViewSpecDimensionV2 for the dimension table's
+   * gets the MetricsViewSpecDimension for the dimension table's
    * primary dimension.
    */
   primaryDimension,

@@ -21,7 +21,7 @@
   import { numberKindForMeasure } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import type {
-    MetricsViewSpecMeasureV2,
+    MetricsViewSpecMeasure,
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
   import { extent } from "d3-array";
@@ -43,7 +43,7 @@
     niceMeasureExtents,
   } from "./utils";
 
-  export let measure: MetricsViewSpecMeasureV2;
+  export let measure: MetricsViewSpecMeasure;
   export let exploreName: string;
   export let width: number | undefined = undefined;
   export let height: number | undefined = undefined;
