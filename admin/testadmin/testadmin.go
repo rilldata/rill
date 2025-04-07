@@ -74,9 +74,9 @@ func New(t *testing.T) *Fixture {
 	require.NoError(t, err)
 
 	// Ports and external URLs
-	httpPort := findPort(t)
-	externalURL := fmt.Sprintf("http://localhost:%d", httpPort)
-	externalHTTPURL := fmt.Sprintf("http://localhost:%d", httpPort)
+	port := findPort(t)
+	externalURL := fmt.Sprintf("http://localhost:%d", port)
+	externalHTTPURL := fmt.Sprintf("http://localhost:%d", port)
 	frontendURL := "http://frontend.mock"
 
 	// JWT issuer
@@ -86,7 +86,7 @@ func New(t *testing.T) *Fixture {
 	// Runtime provisioner.
 	// NOTE: Only gives the appearance of a static runtime, but does not actually start one.
 	// TODO: Support actually starting a runtime.
-	runtimeExternalURL := "http://localhost:9091"
+	runtimeExternalURL := "http://localhost:8081"
 	runtimeAudienceURL := "http://localhost:8081"
 	defaultProvisioner := "static"
 	provisionerSetJSON := must(json.Marshal(map[string]any{
@@ -132,7 +132,7 @@ func New(t *testing.T) *Fixture {
 
 	// Server
 	srvOpts := &server.Options{
-		HTTPPort:         httpPort,
+		HTTPPort:         port,
 		AllowedOrigins:   []string{"*"},
 		SessionKeyPairs:  [][]byte{randomBytes(16), randomBytes(16)},
 		ServePrometheus:  true,

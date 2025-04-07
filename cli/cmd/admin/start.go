@@ -59,7 +59,7 @@ type Config struct {
 	MetricsExporter           observability.Exporter `default:"prometheus" split_words:"true"`
 	TracesExporter            observability.Exporter `default:"" split_words:"true"`
 	HTTPPort                  int                    `default:"8080" split_words:"true"`
-	GRPCPort                  int                    `default:"9090" split_words:"true"`
+	GRPCPort                  int                    `default:"8080" split_words:"true"`
 	DebugPort                 int                    `split_words:"true"`
 	ExternalURL               string                 `default:"http://localhost:8080" split_words:"true"`
 	ExternalGRPCURL           string                 `envconfig:"external_grpc_url"`
@@ -134,7 +134,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			// NOTE: This is temporary until we migrate to a server that can host HTTP and gRPC on the same port.
 			if conf.ExternalGRPCURL == "" {
 				if conf.ExternalURL == "http://localhost:8080" {
-					conf.ExternalGRPCURL = "http://localhost:9090"
+					conf.ExternalGRPCURL = "http://localhost:8080"
 				} else {
 					conf.ExternalGRPCURL = conf.ExternalURL
 				}
