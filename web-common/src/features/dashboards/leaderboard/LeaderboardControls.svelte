@@ -1,6 +1,5 @@
 <script lang="ts">
   import DashboardMetricsDraggableList from "@rilldata/web-common/components/menu/DashboardMetricsDraggableList.svelte";
-  import LeaderboardActiveMeasureDropdown from "@rilldata/web-common/components/menu/LeaderboardActiveMeasureDropdown.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import { getSimpleMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
@@ -88,12 +87,12 @@
           setLeaderboardMeasureCount(count);
         }}
       /> -->
-      <LeaderboardActiveMeasureDropdown
+      <!-- <LeaderboardActiveMeasureDropdown
         leaderboardSortByMeasureName={$leaderboardSortByMeasureName}
         {setLeaderboardSortByMeasureName}
         {measures}
         {activeLeaderboardMeasure}
-      />
+      /> -->
       <LeaderboardActiveMeasureNamesDropdown
         tooltipText="Choose measures to filter by"
         measures={$visibleMeasures}
@@ -101,6 +100,7 @@
         setLeaderboardMeasureNames={(names) => {
           setLeaderboardMeasureNames(names);
         }}
+        {setLeaderboardSortByMeasureName}
       />
     </div>
   {/if}
