@@ -59,6 +59,7 @@ export class CanvasEntity {
   fileArtifact: FileArtifact | undefined;
   parsedContent: Readable<ReturnType<typeof parseDocument>>;
   specStore: CanvasSpecResponseStore;
+  // Tracks whether the canvas been loaded (and rows processed) for the first time
   firstLoad = true;
   unsubscriber: Unsubscriber;
 
@@ -114,6 +115,7 @@ export class CanvasEntity {
     });
   }
 
+  // Not currently being used
   unsubscribe = () => {
     // this.unsubscriber();
   };
@@ -205,7 +207,8 @@ export class CanvasEntity {
       }
     });
 
-    // Only necessary because we are not using stable IDs yet
+    // Calling this function triggers the rows to rerender, ensuring they're up to date
+    // with the components Map, which is not reactive
     if ((!didUpdateRowCount && createdNewComponent) || this.firstLoad) {
       this._rows.refresh();
     }

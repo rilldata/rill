@@ -135,7 +135,7 @@
 </script>
 
 {#if mappedData.length}
-  <div role="presentation" class="flex flex-col grow h-full relative outline">
+  <div role="presentation" class="flex flex-col grow h-full relative">
     {#if nearPoints.filter(Boolean).length && clientPosition}
       <div
         use:portal
