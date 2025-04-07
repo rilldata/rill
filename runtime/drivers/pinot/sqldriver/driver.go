@@ -22,16 +22,16 @@ import (
 const (
 	// Non-retriable error codes
 	// from https://github.com/apache/pinot/blob/master/pinot-spi/src/main/java/org/apache/pinot/spi/exception/QueryErrorCode.java
-	JSON_PARSING         = 100 // "JsonParsingError"
-	SQL_PARSING          = 150 // "SQLParsingError"
-	SQL_RUNTIME          = 160 // "SQLRuntimeError"
-	ACCESS_DENIED        = 180 // "AccessDenied"
-	TABLE_DOES_NOT_EXIST = 190 // "TableDoesNotExistError"
-	TABLE_IS_DISABLED    = 191 // "TableIsDisabledError"
-	QUERY_EXECUTION      = 200 // "QueryExecutionError"
-	QUERY_VALIDATION     = 700 // "QueryValidationError"
-	UNKNOWN_COLUMN       = 710 // "UnknownColumnError"
-	QUERY_PLANNING       = 720 // "QueryPlanningError"
+	JSONParsing       = 100
+	SQLParsing        = 150
+	SQLRuntime        = 160
+	AccessDenied      = 180
+	TableDoesNotExist = 190
+	TableIsDisabled   = 191
+	QueryExecution    = 200
+	QueryValidation   = 700
+	UnknownColumn     = 710
+	QueryPlanning     = 720
 )
 
 type pinotDriver struct{}
@@ -99,7 +99,7 @@ func (c *conn) QueryContext(ctx context.Context, query string, args []sqlDriver.
 			err := errors.New(errMsg)
 			for _, e := range resp.Exceptions {
 				switch e.ErrorCode {
-				case JSON_PARSING, SQL_PARSING, SQL_RUNTIME, ACCESS_DENIED, TABLE_DOES_NOT_EXIST, TABLE_IS_DISABLED, QUERY_EXECUTION, QUERY_VALIDATION, UNKNOWN_COLUMN, QUERY_PLANNING:
+				case JSONParsing, SQLParsing, SQLRuntime, AccessDenied, TableDoesNotExist, TableIsDisabled, QueryExecution, QueryValidation, UnknownColumn, QueryPlanning:
 					return nil, retrier.Fail, err
 				default:
 					return nil, retrier.Retry, err
