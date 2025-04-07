@@ -41,11 +41,7 @@
     dashboardStore,
   } = StateManagers;
 
-  const {
-    cloudDataViewer,
-    readOnly,
-    leaderboardMeasureCount: leaderboardMeasureCountFeatureFlag,
-  } = featureFlags;
+  const { cloudDataViewer, readOnly } = featureFlags;
 
   const timeControlsStore = useTimeControlStore(StateManagers);
 
@@ -55,7 +51,6 @@
   // $: leaderboardMeasureNamesTest = $leaderboardMeasureCountFeatureFlag
   //   ? $activeMeasuresFromMeasureCount
   //   : [$leaderboardSortByMeasureName];
-  $: console.log("leaderboardMeasureNames: ", $leaderboardMeasureNames);
 
   $: ({ instanceId } = $runtime);
 
