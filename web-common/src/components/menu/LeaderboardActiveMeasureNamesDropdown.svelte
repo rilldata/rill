@@ -9,6 +9,7 @@
   import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
+  import { writable } from "svelte/store";
 
   export let tooltipText: string;
   export let disabled = false;
@@ -21,13 +22,12 @@
 
   let active = false;
   let multiSelect = false;
-
-  $: console.log("leaderboardSortByMeasureName", leaderboardSortByMeasureName);
-
-  // TODO: in-memory cache of the selected measures before toggling off multi-select
-  // retain the last selected measure when multi-select is toggled off
+  const lastSelectedMeasures = writable<string[]>([]);
 
   function onToggleOff() {
+    // Store the current selection before toggling off
+    lastSelectedMeasures.set(selectedMeasureNames);
+
     // When toggling off multi-select, keep only the first selected measure
     if (selectedMeasureNames?.length > 0) {
       const firstMeasure = selectedMeasureNames[0];
@@ -40,6 +40,13 @@
     const newMultiSelect = !multiSelect;
     if (!newMultiSelect) {
       onToggleOff();
+    } else {
+      // When toggling back to multi-select, restore the last selection
+      const lastMeasures = $lastSelectedMeasures;
+      if (lastMeasures && lastMeasures.length > 0) {
+        setLeaderboardMeasureNames(lastMeasures);
+        setLeaderboardSortByMeasureName(lastMeasures[0]);
+      }
     }
     multiSelect = newMultiSelect;
   }
