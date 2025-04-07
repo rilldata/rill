@@ -135,7 +135,7 @@
 </script>
 
 {#if mappedData.length}
-  <div role="presentation" class="flex flex-col size-full relative">
+  <div role="presentation" class="flex flex-col grow h-full relative outline">
     {#if nearPoints.filter(Boolean).length && clientPosition}
       <div
         use:portal
@@ -203,13 +203,12 @@
       class="w-full h-fit flex justify-between text-gray-500 mt-0.5 relative"
     >
       {#if hoveredPoints.length > 0}
+        {@const jsDate = hoveredPoints[0].interval.start.toJSDate()}
+        {@const percentage = xScales[0](jsDate) / 100}
         <span
           class="relative"
-          style:transform="translateX(-{xScales[0](
-            hoveredPoints[0].interval.start.toJSDate(),
-          ) / 10}%)"
-          style:left="{xScales[0](hoveredPoints[0].interval.start.toJSDate()) /
-            10}%"
+          style:transform="translateX(-{percentage}%)"
+          style:left="{percentage}%"
         >
           <RangeDisplay
             interval={hoveredPoints[0].interval}

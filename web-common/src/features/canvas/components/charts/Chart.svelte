@@ -8,7 +8,6 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
-
   import type { View } from "vega-typings";
   import { getChartData, validateChartSchema } from "./selector";
   import {
