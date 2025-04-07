@@ -63,20 +63,19 @@
   export let sortBy: string | null;
   export let tableWidth: number;
   export let sortedAscending: boolean;
-  export let isValidPercentOfTotal: (measureName: string) => boolean;
   export let timeControlsReady: boolean;
   export let dimensionColumnWidth: number;
   export let filterExcludeMode: boolean;
   export let isBeingCompared: boolean;
   export let parentElement: HTMLElement;
   export let suppressTooltip = false;
-  export let leaderboardMeasureCountFeatureFlag: boolean;
   export let leaderboardShowAllMeasures: boolean;
-  export let measureLabel: (measureName: string) => string;
   export let formatters: Record<
     string,
     (value: number | string | null | undefined) => string | null | undefined
   >;
+  export let isValidPercentOfTotal: (measureName: string) => boolean;
+  export let measureLabel: (measureName: string) => string;
   export let toggleDimensionValueSelection: (
     dimensionName: string,
     dimensionValue: string,
@@ -129,22 +128,12 @@
       );
 
   $: measures = [
-    ...(leaderboardMeasureCountFeatureFlag
-      ? leaderboardMeasureNames.map(
-          (name) =>
-            ({
-              name,
-            }) as V1MetricsViewAggregationMeasure,
-        )
-      : additionalMeasures(
-          leaderboardSortByMeasureName,
-          dimensionThresholdFilters,
-        ).map(
-          (n) =>
-            ({
-              name: n,
-            }) as V1MetricsViewAggregationMeasure,
-        )),
+    ...leaderboardMeasureNames.map(
+      (name) =>
+        ({
+          name,
+        }) as V1MetricsViewAggregationMeasure,
+    ),
 
     // Add comparison measures if there's a comparison time range
     ...(comparisonTimeRange
@@ -190,13 +179,7 @@
     instanceId,
     metricsViewName,
     {
-      ...(leaderboardMeasureCountFeatureFlag
-        ? {
-            measures: visibleMeasures.map((name) => ({ name })),
-          }
-        : {
-            measures: [{ name: leaderboardSortByMeasureName }],
-          }),
+      measures: leaderboardMeasureNames.map((name) => ({ name })),
       where,
       timeStart: timeRange.start,
       timeEnd: timeRange.end,
@@ -213,10 +196,7 @@
 
   $: leaderboardTotals = totalsData?.data?.[0]
     ? Object.fromEntries(
-        (leaderboardMeasureCountFeatureFlag
-          ? visibleMeasures
-          : leaderboardMeasureNames
-        ).map((name) => [
+        leaderboardMeasureNames.map((name) => [
           name,
           (totalsData?.data?.[0]?.[name] as number) ?? null,
         ]),
