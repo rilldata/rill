@@ -21,8 +21,8 @@ import PercentOfTotal from "./PercentOfTotal.svelte";
 
 import { PERC_DIFF } from "../../../components/data-types/type-utils";
 import type {
-  MetricsViewSpecDimensionV2,
-  MetricsViewSpecMeasureV2,
+  MetricsViewSpecDimension,
+  MetricsViewSpecMeasure,
   V1Expression,
   V1MetricsViewToplistResponseDataItem,
 } from "../../../runtime-client";
@@ -115,7 +115,7 @@ export function computePercentOfTotal(
 
 export function getComparisonProperties(
   measureName: string,
-  selectedMeasure: MetricsViewSpecMeasureV2,
+  selectedMeasure: MetricsViewSpecMeasure,
 ): {
   component: typeof SvelteComponent<any>;
   type: string;
@@ -238,9 +238,9 @@ export function estimateColumnSizes(
 
 export function prepareVirtualizedDimTableColumns(
   dash: MetricsExplorerEntity,
-  allMeasures: MetricsViewSpecMeasureV2[],
+  allMeasures: MetricsViewSpecMeasure[],
   measureTotals: { [key: string]: number },
-  dimension: MetricsViewSpecDimensionV2,
+  dimension: MetricsViewSpecDimension,
   timeComparison: boolean,
   validPercentOfTotal: boolean,
   activeMeasures?: string[],
@@ -388,7 +388,7 @@ export function addContextColumnNames(
   columnNames: string[],
   timeComparison: boolean,
   validPercentOfTotal: boolean,
-  selectedMeasure: MetricsViewSpecMeasureV2,
+  selectedMeasure: MetricsViewSpecMeasure,
 ) {
   const name = selectedMeasure?.name;
   if (!name) return;
@@ -439,7 +439,7 @@ export function prepareDimensionTableRows(
   queryRows: V1MetricsViewAggregationResponseDataItem[],
   // all of the measures defined for this metrics spec,
   // including those that are not visible
-  allMeasuresForSpec: MetricsViewSpecMeasureV2[],
+  allMeasuresForSpec: MetricsViewSpecMeasure[],
   activeMeasureName: string,
   dimensionColumn: string,
   addDeltas: boolean,
