@@ -136,7 +136,6 @@
               {toggleDimensionValueSelection}
               {toggleComparisonDimension}
               measureLabel={$measureLabel}
-              leaderboardMeasureCountFeatureFlag={$leaderboardMeasureCountFeatureFlag}
               leaderboardShowAllMeasures={$leaderboardShowAllMeasures}
             />
           {/if}
