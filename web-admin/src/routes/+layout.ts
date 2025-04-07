@@ -25,6 +25,9 @@ import { fixLocalhostRuntimePort } from "@rilldata/web-common/runtime-client/fix
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { error, redirect, type Page } from "@sveltejs/kit";
 import { isAxiosError } from "axios";
+import {
+  getOrgWithBearerToken,
+} from "@rilldata/web-admin/features/public-urls/get-org-with-bearer-token";
 
 export const load = async ({ params, url, route, depends }) => {
   depends("app:root");
@@ -85,28 +88,37 @@ export const load = async ({ params, url, route, depends }) => {
   let organizationLogoUrl: string | undefined = undefined;
   let organizationFaviconUrl: string | undefined = undefined;
   let planDisplayName: string | undefined = undefined;
-  if (organization && !token) {
-    try {
-      const organizationResp = await queryClient.fetchQuery(
-        getFetchOrganizationQueryOptions(organization),
-      );
-      organizationPermissions = organizationResp.permissions ?? {};
-      organizationLogoUrl = organizationResp.organization?.logoUrl;
-      organizationFaviconUrl = organizationResp.organization?.faviconUrl;
-      planDisplayName = organizationResp.organization?.billingPlanDisplayName;
-    } catch (e: unknown) {
-      if (!isAxiosError<RpcStatus>(e) || !e.response) {
-        throw error(500, "Error fetching organization");
+  if (organization) {
+    if (!token) {
+      try {
+        const organizationResp = await queryClient.fetchQuery(
+          getFetchOrganizationQueryOptions(organization),
+        );
+        organizationPermissions = organizationResp.permissions ?? {};
+        organizationLogoUrl = organizationResp.organization?.logoUrl;
+        organizationFaviconUrl = organizationResp.organization?.faviconUrl;
+        planDisplayName = organizationResp.organization?.billingPlanDisplayName;
+      } catch (e: unknown) {
+        if (!isAxiosError<RpcStatus>(e) || !e.response) {
+          throw error(500, "Error fetching organization");
+        }
+  
+        const shouldRedirectToRequestAccess =
+          e.response.status === 403 && !!project;
+  
+        if (shouldRedirectToRequestAccess) {
+          // The redirect is handled below after the call to `GetProject`
+        } else {
+          throw error(e.response.status, e.response.data.message);
+        }
       }
-
-      const shouldRedirectToRequestAccess =
-        e.response.status === 403 && !!project;
-
-      if (shouldRedirectToRequestAccess) {
-        // The redirect is handled below after the call to `GetProject`
-      } else {
-        throw error(e.response.status, e.response.data.message);
-      }
+    }
+    if (token) {
+      const orgResp = await getOrgWithBearerToken(organization, token)
+      organizationPermissions = orgResp.permissions ?? {};
+      organizationLogoUrl = orgResp.organization?.logoUrl;
+      organizationFaviconUrl = orgResp.organization?.faviconUrl;
+      planDisplayName = orgResp.organization?.billingPlanDisplayName;
     }
   }
 
