@@ -74,6 +74,11 @@ export interface MetricsExplorerEntity {
   leaderboardMeasureCount: number;
 
   /**
+   * Whether to show all measures in the leaderboard.
+   */
+  leaderboardShowAllMeasures: boolean;
+
+  /**
    * This is the sort type that will be used for the leaderboard
    * and dimension detail table. See SortType for more details.
    */

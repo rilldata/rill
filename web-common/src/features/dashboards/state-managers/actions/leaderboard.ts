@@ -35,8 +35,16 @@ export const setLeaderboardMeasureNames = (
   dashboard.leaderboardMeasureNames = names;
 };
 
+export const setLeaderboardShowAllMeasures = (
+  { dashboard }: DashboardMutables,
+  showAllMeasures: boolean,
+) => {
+  dashboard.leaderboardShowAllMeasures = showAllMeasures;
+};
+
 export const leaderboardActions = {
   setLeaderboardMeasureCount,
   setLeaderboardSortByMeasureName,
   setLeaderboardMeasureNames,
+  setLeaderboardShowAllMeasures,
 };

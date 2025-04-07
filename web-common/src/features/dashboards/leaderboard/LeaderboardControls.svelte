@@ -17,6 +17,7 @@
         leaderboardMeasureNames,
         getMeasureByName,
         visibleMeasures,
+        leaderboardShowAllMeasures,
       },
       dimensions: { visibleDimensions, allDimensions },
     },
@@ -26,6 +27,7 @@
       leaderboard: {
         setLeaderboardSortByMeasureName,
         setLeaderboardMeasureNames,
+        setLeaderboardShowAllMeasures,
       },
     },
   } = StateManagers;
@@ -66,10 +68,6 @@
   function isDefined(value: string | undefined): value is string {
     return value !== undefined;
   }
-
-  function setShowContextForAllMeasures(value: boolean) {
-    showContextForAllMeasures = value;
-  }
 </script>
 
 <div
@@ -109,7 +107,7 @@
 
   <LeaderboardActions
     {isDropdownOpen}
-    {showContextForAllMeasures}
-    {setShowContextForAllMeasures}
+    showContextForAllMeasures={$leaderboardShowAllMeasures}
+    setShowContextForAllMeasures={setLeaderboardShowAllMeasures}
   />
 </div>

@@ -44,17 +44,25 @@ export const leaderboardMeasureNames = ({
     visibleMeasuresList.map((measure) => measure.name),
   );
 
-  return (
-    dashboard.leaderboardMeasureNames?.filter((name) =>
-      visibleMeasureNames.has(name),
-    ) ?? []
+  const filteredNames = dashboard.leaderboardMeasureNames?.filter((name) =>
+    visibleMeasureNames.has(name),
   );
+
+  return filteredNames?.length
+    ? filteredNames
+    : [dashboard.leaderboardSortByMeasureName];
 };
 
 export const leaderboardMeasureCount = ({
   dashboard,
 }: DashboardDataSources) => {
   return dashboard.leaderboardMeasureCount ?? 1;
+};
+
+export const leaderboardShowAllMeasures = ({
+  dashboard,
+}: DashboardDataSources) => {
+  return dashboard.leaderboardShowAllMeasures ?? false;
 };
 
 // @deprecated
@@ -231,4 +239,6 @@ export const measureSelectors = {
   activeMeasuresFromMeasureCount,
 
   leaderboardMeasureNames,
+
+  leaderboardShowAllMeasures,
 };
