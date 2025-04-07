@@ -138,12 +138,11 @@ export function getPartialExploreStateFromSessionStorage(
     if (!storedUrlSearch) return undefined;
     const storedUrlSearchParams = new URLSearchParams(storedUrlSearch);
 
-    const { partialExploreState: storedExploreState } =
+    const { exploreState: storedExploreState } =
       convertURLSearchParamsToExploreState(
         storedUrlSearchParams,
         metricsViewSpec,
         exploreSpec,
-        {},
       );
 
     // TDD is different from other views. It has a variable that is expanded measure.

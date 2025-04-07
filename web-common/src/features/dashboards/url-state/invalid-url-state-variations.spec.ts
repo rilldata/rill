@@ -8,11 +8,9 @@ import {
   AD_BIDS_EXPLORE_INIT,
   AD_BIDS_EXPLORE_NAME,
   AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-  AD_BIDS_METRICS_INIT,
   AD_BIDS_TIME_RANGE_SUMMARY,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import { getInitExploreStateForTest } from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
-import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import {
   applyURLToExploreState,
   getCleanMetricsExploreForAssertion,
@@ -147,16 +145,10 @@ describe("Invalid Human readable URL State", () => {
         ),
       );
       const initState = getCleanMetricsExploreForAssertion();
-      const defaultExplorePreset = getDefaultExplorePreset(
-        AD_BIDS_EXPLORE_INIT,
-        AD_BIDS_METRICS_INIT,
-        AD_BIDS_TIME_RANGE_SUMMARY,
-      );
 
       const errorsFromUrl = applyURLToExploreState(
         new URL(url),
         AD_BIDS_EXPLORE_INIT,
-        defaultExplorePreset,
       );
       expect(errorsFromUrl.map((e) => e.message)).toEqual(errors);
       const currentState = getCleanMetricsExploreForAssertion();
