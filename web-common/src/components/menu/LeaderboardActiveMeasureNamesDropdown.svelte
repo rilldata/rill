@@ -11,7 +11,6 @@
   export let tooltipText: string;
   export let disabled = false;
   export let searchText = "";
-  export let sortBy: string;
   export let measures: MetricsViewSpecMeasureV2[];
   export let selectedMeasureNames: string[];
   export let setLeaderboardMeasureNames: (names: string[]) => void;
@@ -54,9 +53,9 @@
       ? ` ${selectedMeasureNames.length} measures`
       : selectedMeasureNames?.length === 1
         ? getMeasureDisplayText(selectedMeasureNames[0])
-        : sortBy;
+        : "";
 
-  $: allSelected = selectedMeasureNames.length === measures.length;
+  // $: allSelected = selectedMeasureNames.length === measures.length;
 </script>
 
 <DropdownMenu.Root
@@ -75,7 +74,7 @@
       location="bottom"
       suppress={active}
     >
-      <Button builders={[builder]} type="text" label={sortBy} on:click>
+      <Button builders={[builder]} type="text" label="" on:click>
         <div
           class="flex items-center gap-x-0.5 px-1 text-gray-700 hover:text-inherit"
         >
