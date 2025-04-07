@@ -28,7 +28,6 @@
   export let allowExpandTable: boolean;
   export let leaderboardMeasureNames: string[] = [];
   export let sortBy: string | null;
-  export let leaderboardMeasureCountFeatureFlag: boolean;
   export let toggleSort: (sortType: SortType, measureName?: string) => void;
   export let setPrimaryDimension: (dimensionName: string) => void;
   export let toggleComparisonDimension: (
