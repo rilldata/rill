@@ -18,7 +18,7 @@ import {
   TIME_COMPARISON,
 } from "@rilldata/web-common/lib/time/config";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
-import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
+import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
 import { derived, writable, type Readable } from "svelte/store";
 import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
 import type {
@@ -91,7 +91,7 @@ function prepareDimensionData(
   data: DimensionDataItem[],
   total: number,
   unfilteredTotal: number,
-  measure: MetricsViewSpecMeasureV2 | undefined,
+  measure: MetricsViewSpecMeasure | undefined,
   selectedValues: string[],
   isAllTime: boolean,
   pinIndex: number,
@@ -212,7 +212,7 @@ function prepareTimeData(
   comparisonTotal: number,
   currentLabel: string,
   comparisonLabel: string,
-  measure: MetricsViewSpecMeasureV2 | undefined,
+  measure: MetricsViewSpecMeasure | undefined,
   hasTimeComparison: boolean,
   isAllTime: boolean,
 ): TableData | undefined {

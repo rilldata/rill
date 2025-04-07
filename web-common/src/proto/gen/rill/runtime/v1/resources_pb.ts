@@ -223,9 +223,9 @@ export class Resource extends Message<Resource> {
     case: "model";
   } | {
     /**
-     * @generated from field: rill.runtime.v1.MetricsViewV2 metrics_view = 5;
+     * @generated from field: rill.runtime.v1.MetricsView metrics_view = 5;
      */
-    value: MetricsViewV2;
+    value: MetricsView;
     case: "metricsView";
   } | {
     /**
@@ -301,7 +301,7 @@ export class Resource extends Message<Resource> {
     { no: 2, name: "project_parser", kind: "message", T: ProjectParser, oneof: "resource" },
     { no: 3, name: "source", kind: "message", T: Source, oneof: "resource" },
     { no: 4, name: "model", kind: "message", T: Model, oneof: "resource" },
-    { no: 5, name: "metrics_view", kind: "message", T: MetricsViewV2, oneof: "resource" },
+    { no: 5, name: "metrics_view", kind: "message", T: MetricsView, oneof: "resource" },
     { no: 17, name: "explore", kind: "message", T: Explore, oneof: "resource" },
     { no: 9, name: "migration", kind: "message", T: Migration, oneof: "resource" },
     { no: 10, name: "report", kind: "message", T: Report, oneof: "resource" },
@@ -1133,9 +1133,9 @@ export class ModelState extends Message<ModelState> {
 }
 
 /**
- * @generated from message rill.runtime.v1.MetricsViewV2
+ * @generated from message rill.runtime.v1.MetricsView
  */
-export class MetricsViewV2 extends Message<MetricsViewV2> {
+export class MetricsView extends Message<MetricsView> {
   /**
    * @generated from field: rill.runtime.v1.MetricsViewSpec spec = 1;
    */
@@ -1146,32 +1146,32 @@ export class MetricsViewV2 extends Message<MetricsViewV2> {
    */
   state?: MetricsViewState;
 
-  constructor(data?: PartialMessage<MetricsViewV2>) {
+  constructor(data?: PartialMessage<MetricsView>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.MetricsViewV2";
+  static readonly typeName = "rill.runtime.v1.MetricsView";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "spec", kind: "message", T: MetricsViewSpec },
     { no: 2, name: "state", kind: "message", T: MetricsViewState },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewV2 {
-    return new MetricsViewV2().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsView {
+    return new MetricsView().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewV2 {
-    return new MetricsViewV2().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsView {
+    return new MetricsView().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewV2 {
-    return new MetricsViewV2().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsView {
+    return new MetricsView().fromJsonString(jsonString, options);
   }
 
-  static equals(a: MetricsViewV2 | PlainMessage<MetricsViewV2> | undefined, b: MetricsViewV2 | PlainMessage<MetricsViewV2> | undefined): boolean {
-    return proto3.util.equals(MetricsViewV2, a, b);
+  static equals(a: MetricsView | PlainMessage<MetricsView> | undefined, b: MetricsView | PlainMessage<MetricsView> | undefined): boolean {
+    return proto3.util.equals(MetricsView, a, b);
   }
 }
 
@@ -1253,16 +1253,16 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   /**
    * Dimensions in the metrics view
    *
-   * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.DimensionV2 dimensions = 6;
+   * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.Dimension dimensions = 6;
    */
-  dimensions: MetricsViewSpec_DimensionV2[] = [];
+  dimensions: MetricsViewSpec_Dimension[] = [];
 
   /**
    * Measures in the metrics view
    *
-   * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.MeasureV2 measures = 7;
+   * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.Measure measures = 7;
    */
-  measures: MetricsViewSpec_MeasureV2[] = [];
+  measures: MetricsViewSpec_Measure[] = [];
 
   /**
    * Security for the metrics view
@@ -1320,8 +1320,8 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 5, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "smallest_time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 20, name: "watermark_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "dimensions", kind: "message", T: MetricsViewSpec_DimensionV2, repeated: true },
-    { no: 7, name: "measures", kind: "message", T: MetricsViewSpec_MeasureV2, repeated: true },
+    { no: 6, name: "dimensions", kind: "message", T: MetricsViewSpec_Dimension, repeated: true },
+    { no: 7, name: "measures", kind: "message", T: MetricsViewSpec_Measure, repeated: true },
     { no: 23, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
     { no: 12, name: "first_day_of_week", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 13, name: "first_month_of_year", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
@@ -1384,9 +1384,9 @@ proto3.util.setEnumType(MetricsViewSpec_MeasureType, "rill.runtime.v1.MetricsVie
 /**
  * Dimensions are columns to filter and group by
  *
- * @generated from message rill.runtime.v1.MetricsViewSpec.DimensionV2
+ * @generated from message rill.runtime.v1.MetricsViewSpec.Dimension
  */
-export class MetricsViewSpec_DimensionV2 extends Message<MetricsViewSpec_DimensionV2> {
+export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension> {
   /**
    * @generated from field: string name = 1;
    */
@@ -1422,13 +1422,13 @@ export class MetricsViewSpec_DimensionV2 extends Message<MetricsViewSpec_Dimensi
    */
   uri = "";
 
-  constructor(data?: PartialMessage<MetricsViewSpec_DimensionV2>) {
+  constructor(data?: PartialMessage<MetricsViewSpec_Dimension>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.MetricsViewSpec.DimensionV2";
+  static readonly typeName = "rill.runtime.v1.MetricsViewSpec.Dimension";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -1439,20 +1439,20 @@ export class MetricsViewSpec_DimensionV2 extends Message<MetricsViewSpec_Dimensi
     { no: 7, name: "uri", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_DimensionV2 {
-    return new MetricsViewSpec_DimensionV2().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Dimension {
+    return new MetricsViewSpec_Dimension().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewSpec_DimensionV2 {
-    return new MetricsViewSpec_DimensionV2().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewSpec_Dimension {
+    return new MetricsViewSpec_Dimension().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewSpec_DimensionV2 {
-    return new MetricsViewSpec_DimensionV2().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewSpec_Dimension {
+    return new MetricsViewSpec_Dimension().fromJsonString(jsonString, options);
   }
 
-  static equals(a: MetricsViewSpec_DimensionV2 | PlainMessage<MetricsViewSpec_DimensionV2> | undefined, b: MetricsViewSpec_DimensionV2 | PlainMessage<MetricsViewSpec_DimensionV2> | undefined): boolean {
-    return proto3.util.equals(MetricsViewSpec_DimensionV2, a, b);
+  static equals(a: MetricsViewSpec_Dimension | PlainMessage<MetricsViewSpec_Dimension> | undefined, b: MetricsViewSpec_Dimension | PlainMessage<MetricsViewSpec_Dimension> | undefined): boolean {
+    return proto3.util.equals(MetricsViewSpec_Dimension, a, b);
   }
 }
 
@@ -1571,9 +1571,9 @@ export class MetricsViewSpec_MeasureWindow extends Message<MetricsViewSpec_Measu
 /**
  * Measures are aggregated computed values
  *
- * @generated from message rill.runtime.v1.MetricsViewSpec.MeasureV2
+ * @generated from message rill.runtime.v1.MetricsViewSpec.Measure
  */
-export class MetricsViewSpec_MeasureV2 extends Message<MetricsViewSpec_MeasureV2> {
+export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
   /**
    * @generated from field: string name = 1;
    */
@@ -1644,13 +1644,13 @@ export class MetricsViewSpec_MeasureV2 extends Message<MetricsViewSpec_MeasureV2
    */
   treatNullsAs = "";
 
-  constructor(data?: PartialMessage<MetricsViewSpec_MeasureV2>) {
+  constructor(data?: PartialMessage<MetricsViewSpec_Measure>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.MetricsViewSpec.MeasureV2";
+  static readonly typeName = "rill.runtime.v1.MetricsViewSpec.Measure";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -1668,20 +1668,20 @@ export class MetricsViewSpec_MeasureV2 extends Message<MetricsViewSpec_MeasureV2
     { no: 14, name: "treat_nulls_as", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_MeasureV2 {
-    return new MetricsViewSpec_MeasureV2().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Measure {
+    return new MetricsViewSpec_Measure().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewSpec_MeasureV2 {
-    return new MetricsViewSpec_MeasureV2().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewSpec_Measure {
+    return new MetricsViewSpec_Measure().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewSpec_MeasureV2 {
-    return new MetricsViewSpec_MeasureV2().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewSpec_Measure {
+    return new MetricsViewSpec_Measure().fromJsonString(jsonString, options);
   }
 
-  static equals(a: MetricsViewSpec_MeasureV2 | PlainMessage<MetricsViewSpec_MeasureV2> | undefined, b: MetricsViewSpec_MeasureV2 | PlainMessage<MetricsViewSpec_MeasureV2> | undefined): boolean {
-    return proto3.util.equals(MetricsViewSpec_MeasureV2, a, b);
+  static equals(a: MetricsViewSpec_Measure | PlainMessage<MetricsViewSpec_Measure> | undefined, b: MetricsViewSpec_Measure | PlainMessage<MetricsViewSpec_Measure> | undefined): boolean {
+    return proto3.util.equals(MetricsViewSpec_Measure, a, b);
   }
 }
 

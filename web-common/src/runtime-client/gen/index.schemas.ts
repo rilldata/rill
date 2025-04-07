@@ -882,7 +882,7 @@ export interface V1Resource {
   projectParser?: V1ProjectParser;
   source?: V1Source;
   model?: V1Model;
-  metricsView?: V1MetricsViewV2;
+  metricsView?: V1MetricsView;
   explore?: V1Explore;
   migration?: V1Migration;
   report?: V1Report;
@@ -1287,11 +1287,6 @@ export interface V1Migration {
   state?: V1MigrationState;
 }
 
-export interface V1MetricsViewV2 {
-  spec?: V1MetricsViewSpec;
-  state?: V1MetricsViewState;
-}
-
 export type V1MetricsViewTotalsResponseData = { [key: string]: any };
 
 export interface V1MetricsViewTotalsResponse {
@@ -1317,6 +1312,24 @@ export type V1MetricsViewToplistResponseDataItem = { [key: string]: any };
 export interface V1MetricsViewToplistResponse {
   meta?: V1MetricsViewColumn[];
   data?: V1MetricsViewToplistResponseDataItem[];
+}
+
+export interface V1MetricsViewToplistRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimensionName?: string;
+  measureNames?: string[];
+  timeStart?: string;
+  timeEnd?: string;
+  limit?: string;
+  offset?: string;
+  sort?: V1MetricsViewSort[];
+  where?: V1Expression;
+  whereSql?: string;
+  having?: V1Expression;
+  havingSql?: string;
+  priority?: number;
+  filter?: V1MetricsViewFilter;
 }
 
 export interface V1MetricsViewTimeSeriesResponse {
@@ -1363,8 +1376,8 @@ export interface V1MetricsViewSpec {
   smallestTimeGrain?: V1TimeGrain;
   /** Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension). */
   watermarkExpression?: string;
-  dimensions?: MetricsViewSpecDimensionV2[];
-  measures?: MetricsViewSpecMeasureV2[];
+  dimensions?: MetricsViewSpecDimension[];
+  measures?: MetricsViewSpecMeasure[];
   securityRules?: V1SecurityRule[];
   /** ISO 8601 weekday number to use as the base for time aggregations by week. Defaults to 1 (Monday). */
   firstDayOfWeek?: number;
@@ -1411,24 +1424,6 @@ export interface V1MetricsViewFilter {
   exclude?: MetricsViewFilterCond[];
 }
 
-export interface V1MetricsViewToplistRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimensionName?: string;
-  measureNames?: string[];
-  timeStart?: string;
-  timeEnd?: string;
-  limit?: string;
-  offset?: string;
-  sort?: V1MetricsViewSort[];
-  where?: V1Expression;
-  whereSql?: string;
-  having?: V1Expression;
-  havingSql?: string;
-  priority?: number;
-  filter?: V1MetricsViewFilter;
-}
-
 export interface V1MetricsViewRowsRequest {
   instanceId?: string;
   metricsViewName?: string;
@@ -1469,13 +1464,6 @@ export const V1MetricsViewComparisonSortType = {
     "METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA",
 } as const;
 
-export interface V1MetricsViewComparisonSort {
-  name?: string;
-  desc?: boolean;
-  type?: V1MetricsViewComparisonSortType;
-  sortType?: V1MetricsViewComparisonMeasureType;
-}
-
 export interface V1MetricsViewComparisonRow {
   dimensionValue?: unknown;
   measureValues?: V1MetricsViewComparisonValue[];
@@ -1501,6 +1489,13 @@ export const V1MetricsViewComparisonMeasureType = {
   METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA:
     "METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA",
 } as const;
+
+export interface V1MetricsViewComparisonSort {
+  name?: string;
+  desc?: boolean;
+  type?: V1MetricsViewComparisonSortType;
+  sortType?: V1MetricsViewComparisonMeasureType;
+}
 
 export interface V1MetricsViewComparisonMeasureAlias {
   name?: string;
@@ -1622,6 +1617,11 @@ export interface V1MetricsViewComparisonRequest {
   priority?: number;
   exact?: boolean;
   filter?: V1MetricsViewFilter;
+}
+
+export interface V1MetricsView {
+  spec?: V1MetricsViewSpec;
+  state?: V1MetricsViewState;
 }
 
 export interface V1MapType {
@@ -2667,15 +2667,6 @@ export interface NumericHistogramBinsBin {
   count?: number;
 }
 
-export interface MetricsViewSpecMeasureWindow {
-  partition?: boolean;
-  /** Dimensions to order the window by. Must be present in required_dimensions. */
-  orderBy?: MetricsViewSpecDimensionSelector[];
-  frameExpression?: string;
-}
-
-export type MetricsViewSpecMeasureV2FormatD3Locale = { [key: string]: any };
-
 export type MetricsViewSpecMeasureType =
   (typeof MetricsViewSpecMeasureType)[keyof typeof MetricsViewSpecMeasureType];
 
@@ -2687,7 +2678,22 @@ export const MetricsViewSpecMeasureType = {
   MEASURE_TYPE_TIME_COMPARISON: "MEASURE_TYPE_TIME_COMPARISON",
 } as const;
 
-export interface MetricsViewSpecMeasureV2 {
+export type MetricsViewSpecMeasureFormatD3Locale = { [key: string]: any };
+
+export interface MetricsViewSpecDimensionSelector {
+  name?: string;
+  timeGrain?: V1TimeGrain;
+  desc?: boolean;
+}
+
+export interface MetricsViewSpecMeasureWindow {
+  partition?: boolean;
+  /** Dimensions to order the window by. Must be present in required_dimensions. */
+  orderBy?: MetricsViewSpecDimensionSelector[];
+  frameExpression?: string;
+}
+
+export interface MetricsViewSpecMeasure {
   name?: string;
   displayName?: string;
   description?: string;
@@ -2699,12 +2705,12 @@ export interface MetricsViewSpecMeasureV2 {
   referencedMeasures?: string[];
   formatPreset?: string;
   formatD3?: string;
-  formatD3Locale?: MetricsViewSpecMeasureV2FormatD3Locale;
+  formatD3Locale?: MetricsViewSpecMeasureFormatD3Locale;
   validPercentOfTotal?: boolean;
   treatNullsAs?: string;
 }
 
-export interface MetricsViewSpecDimensionV2 {
+export interface MetricsViewSpecDimension {
   name?: string;
   displayName?: string;
   description?: string;
@@ -2712,12 +2718,6 @@ export interface MetricsViewSpecDimensionV2 {
   expression?: string;
   unnest?: boolean;
   uri?: string;
-}
-
-export interface MetricsViewSpecDimensionSelector {
-  name?: string;
-  timeGrain?: V1TimeGrain;
-  desc?: boolean;
 }
 
 export interface MetricsViewSearchResponseSearchResult {

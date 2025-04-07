@@ -107,8 +107,8 @@ measures:
 	mvSpec := &runtimev1.MetricsViewSpec{
 		Connector:   "duckdb",
 		Model:       "bar",
-		Dimensions:  []*runtimev1.MetricsViewSpec_DimensionV2{{Name: "a", DisplayName: "A", Column: "a"}},
-		Measures:    []*runtimev1.MetricsViewSpec_MeasureV2{{Name: "b", DisplayName: "B", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE}},
+		Dimensions:  []*runtimev1.MetricsViewSpec_Dimension{{Name: "a", DisplayName: "A", Column: "a"}},
+		Measures:    []*runtimev1.MetricsViewSpec_Measure{{Name: "b", DisplayName: "B", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE}},
 		DisplayName: "Foobar",
 	}
 	testruntime.RequireResource(t, rt, id, &runtimev1.Resource{
@@ -119,7 +119,7 @@ measures:
 			FilePaths: []string{"/metrics/foobar.yaml"},
 		},
 		Resource: &runtimev1.Resource_MetricsView{
-			MetricsView: &runtimev1.MetricsViewV2{
+			MetricsView: &runtimev1.MetricsView{
 				Spec: mvSpec,
 				State: &runtimev1.MetricsViewState{
 					ValidSpec: &runtimev1.MetricsViewSpec{
@@ -127,8 +127,8 @@ measures:
 						Table:       "bar",
 						Model:       "bar",
 						DisplayName: "Foobar",
-						Dimensions:  []*runtimev1.MetricsViewSpec_DimensionV2{{Name: "a", DisplayName: "A", Column: "a"}},
-						Measures:    []*runtimev1.MetricsViewSpec_MeasureV2{{Name: "b", DisplayName: "B", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE}},
+						Dimensions:  []*runtimev1.MetricsViewSpec_Dimension{{Name: "a", DisplayName: "A", Column: "a"}},
+						Measures:    []*runtimev1.MetricsViewSpec_Measure{{Name: "b", DisplayName: "B", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE}},
 					},
 				},
 			},
@@ -177,7 +177,7 @@ path
 			ReconcileError: "does not exist",
 		},
 		Resource: &runtimev1.Resource_MetricsView{
-			MetricsView: &runtimev1.MetricsViewV2{
+			MetricsView: &runtimev1.MetricsView{
 				Spec:  mvSpec,
 				State: &runtimev1.MetricsViewState{},
 			},
@@ -1208,14 +1208,14 @@ func newModel(query, name, source string) (*runtimev1.Model, *runtimev1.Resource
 	return model, modelRes
 }
 
-func newMetricsView(name, model string, measures, dimensions []string) (*runtimev1.MetricsViewV2, *runtimev1.Resource) {
-	metrics := &runtimev1.MetricsViewV2{
+func newMetricsView(name, model string, measures, dimensions []string) (*runtimev1.MetricsView, *runtimev1.Resource) {
+	metrics := &runtimev1.MetricsView{
 		Spec: &runtimev1.MetricsViewSpec{
 			Connector:   "duckdb",
 			Model:       model,
 			DisplayName: parser.ToDisplayName(name),
-			Measures:    make([]*runtimev1.MetricsViewSpec_MeasureV2, len(measures)),
-			Dimensions:  make([]*runtimev1.MetricsViewSpec_DimensionV2, len(dimensions)),
+			Measures:    make([]*runtimev1.MetricsViewSpec_Measure, len(measures)),
+			Dimensions:  make([]*runtimev1.MetricsViewSpec_Dimension, len(dimensions)),
 		},
 		State: &runtimev1.MetricsViewState{
 			ValidSpec: &runtimev1.MetricsViewSpec{
@@ -1223,21 +1223,21 @@ func newMetricsView(name, model string, measures, dimensions []string) (*runtime
 				Table:       model,
 				Model:       model,
 				DisplayName: parser.ToDisplayName(name),
-				Measures:    make([]*runtimev1.MetricsViewSpec_MeasureV2, len(measures)),
-				Dimensions:  make([]*runtimev1.MetricsViewSpec_DimensionV2, len(dimensions)),
+				Measures:    make([]*runtimev1.MetricsViewSpec_Measure, len(measures)),
+				Dimensions:  make([]*runtimev1.MetricsViewSpec_Dimension, len(dimensions)),
 			},
 		},
 	}
 
 	for i, measure := range measures {
 		name := fmt.Sprintf("measure_%d", i)
-		metrics.Spec.Measures[i] = &runtimev1.MetricsViewSpec_MeasureV2{
+		metrics.Spec.Measures[i] = &runtimev1.MetricsViewSpec_Measure{
 			Name:        name,
 			DisplayName: parser.ToDisplayName(name),
 			Expression:  measure,
 			Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 		}
-		metrics.State.ValidSpec.Measures[i] = &runtimev1.MetricsViewSpec_MeasureV2{
+		metrics.State.ValidSpec.Measures[i] = &runtimev1.MetricsViewSpec_Measure{
 			Name:        name,
 			DisplayName: parser.ToDisplayName(name),
 			Expression:  measure,
@@ -1245,12 +1245,12 @@ func newMetricsView(name, model string, measures, dimensions []string) (*runtime
 		}
 	}
 	for i, dimension := range dimensions {
-		metrics.Spec.Dimensions[i] = &runtimev1.MetricsViewSpec_DimensionV2{
+		metrics.Spec.Dimensions[i] = &runtimev1.MetricsViewSpec_Dimension{
 			Name:        dimension,
 			DisplayName: parser.ToDisplayName(dimension),
 			Column:      dimension,
 		}
-		metrics.State.ValidSpec.Dimensions[i] = &runtimev1.MetricsViewSpec_DimensionV2{
+		metrics.State.ValidSpec.Dimensions[i] = &runtimev1.MetricsViewSpec_Dimension{
 			Name:        dimension,
 			DisplayName: parser.ToDisplayName(dimension),
 			Column:      dimension,
