@@ -32,8 +32,7 @@
     },
   } = StateManagers;
 
-  let isDropdownOpen = false;
-  let showContextForAllMeasures = false;
+  let isLeaderboardActionsOpen = false;
 
   const { leaderboardMeasureCount: leaderboardMeasureCountFeatureFlag } =
     featureFlags;
@@ -106,8 +105,8 @@
   />
 
   <LeaderboardActions
-    {isDropdownOpen}
-    showContextForAllMeasures={$leaderboardShowAllMeasures}
-    setShowContextForAllMeasures={setLeaderboardShowAllMeasures}
+    isOpen={isLeaderboardActionsOpen}
+    leaderboardShowAllMeasures={$leaderboardShowAllMeasures}
+    {setLeaderboardShowAllMeasures}
   />
 </div>

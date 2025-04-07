@@ -8,16 +8,14 @@
     PopoverTrigger,
   } from "@rilldata/web-common/components/popover";
 
-  export let isDropdownOpen: boolean;
-  export let showContextForAllMeasures: boolean;
-  export let setShowContextForAllMeasures: (value: boolean) => void;
-
-  $: console.log("showContextForAllMeasures: ", showContextForAllMeasures);
+  export let isOpen: boolean;
+  export let leaderboardShowAllMeasures: boolean;
+  export let setLeaderboardShowAllMeasures: (value: boolean) => void;
 </script>
 
-<Popover bind:open={isDropdownOpen}>
+<Popover bind:open={isOpen}>
   <PopoverTrigger>
-    <IconButton rounded active={isDropdownOpen} compact>
+    <IconButton rounded active={isOpen} compact>
       <ThreeDot size="16px" />
     </IconButton>
   </PopoverTrigger>
@@ -28,9 +26,9 @@
   >
     <span>Show context for all measures</span>
     <Switch
-      checked={showContextForAllMeasures}
+      checked={leaderboardShowAllMeasures}
       on:click={() => {
-        setShowContextForAllMeasures(!showContextForAllMeasures);
+        setLeaderboardShowAllMeasures(!leaderboardShowAllMeasures);
       }}
       small
     />
