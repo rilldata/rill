@@ -5,7 +5,7 @@
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { getStateManagers } from "../state-managers/state-managers";
   import LeaderboardActiveMeasureNamesDropdown from "@rilldata/web-common/components/menu/LeaderboardActiveMeasureNamesDropdown.svelte";
-  import LeaderboardActions from "@rilldata/web-common/components/menu/LeaderboardActions.svelte";
+  import LeaderboardAdvancedActions from "@rilldata/web-common/components/menu/LeaderboardAdvancedActions.svelte";
 
   export let exploreName: string;
 
@@ -103,8 +103,7 @@
     }}
     {setLeaderboardSortByMeasureName}
   />
-
-  <LeaderboardActions
+  <LeaderboardAdvancedActions
     isOpen={isLeaderboardActionsOpen}
     leaderboardShowAllMeasures={$leaderboardShowAllMeasures}
     {setLeaderboardShowAllMeasures}

@@ -23,14 +23,14 @@
   import { getStateManagers } from "../state-managers/state-managers";
   import SelectAllButton from "./SelectAllButton.svelte";
   import { getDimensionTableExportQuery } from "./dimension-table-export";
-  import LeaderboardActions from "@rilldata/web-common/components/menu/LeaderboardActions.svelte";
+  import LeaderboardAdvancedActions from "@rilldata/web-common/components/menu/LeaderboardAdvancedActions.svelte";
 
   export let dimensionName: string;
   export let areAllTableRowsSelected = false;
   export let isRowsEmpty = true;
   export let searchText: string;
-  export let onToggleSearchItems: () => void;
   export let hideStartPivotButton = false;
+  export let onToggleSearchItems: () => void;
 
   const stateManagers = getStateManagers();
   const {
@@ -208,7 +208,7 @@
         Start Pivot
       </button>
     {/if}
-    <LeaderboardActions
+    <LeaderboardAdvancedActions
       isOpen={isLeaderboardActionsOpen}
       leaderboardShowAllMeasures={$leaderboardShowAllMeasures}
       {setLeaderboardShowAllMeasures}
