@@ -95,10 +95,10 @@
       />
       <LeaderboardActiveMeasureNamesDropdown
         tooltipText="Choose measures to filter by"
-        {measures}
+        measures={$visibleMeasures}
         sortBy={$leaderboardSortByMeasureName}
         selectedMeasureNames={$leaderboardMeasureNames}
-        onSelect={(names) => {
+        setLeaderboardMeasureNames={(names) => {
           setLeaderboardMeasureNames(names);
         }}
       />

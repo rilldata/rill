@@ -10,12 +10,12 @@ export const setLeaderboardMeasureCount = (
 ) => {
   dashboard.leaderboardMeasureCount = count;
 
-  // If the current leaderboard measure is not in the first N visible measures,
-  // set it to the first visible measure
-  const visibleMeasures = dashboard.visibleMeasures.slice(0, count);
-  if (!visibleMeasures.includes(dashboard.leaderboardSortByMeasureName)) {
-    dashboard.leaderboardSortByMeasureName = visibleMeasures[0];
-  }
+  // // If the current leaderboard measure is not in the first N visible measures,
+  // // set it to the first visible measure
+  // const visibleMeasures = dashboard.visibleMeasures.slice(0, count);
+  // if (!visibleMeasures.includes(dashboard.leaderboardSortByMeasureName)) {
+  //   dashboard.leaderboardSortByMeasureName = visibleMeasures[0];
+  // }
 };
 
 export const setLeaderboardSortByMeasureName = (

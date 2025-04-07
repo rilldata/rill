@@ -11,10 +11,10 @@
   export let tooltipText: string;
   export let disabled = false;
   export let searchText = "";
+  export let sortBy: string;
   export let measures: MetricsViewSpecMeasureV2[];
-  export let sortBy: string = "Sort By";
   export let selectedMeasureNames: string[];
-  export let onSelect: (names: string[]) => void;
+  export let setLeaderboardMeasureNames: (names: string[]) => void;
 
   let active = false;
 
@@ -39,7 +39,7 @@
       ? currentSelection.filter((n) => n !== name)
       : [...currentSelection, name];
 
-    onSelect(newSelection);
+    setLeaderboardMeasureNames(newSelection);
   }
 
   function getMeasureDisplayText(measureName: string) {
