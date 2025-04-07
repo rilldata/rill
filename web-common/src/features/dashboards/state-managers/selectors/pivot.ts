@@ -1,11 +1,13 @@
 import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
 import { filteredSimpleMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
+import { DashboardState_ActivePage } from "../../../../proto/gen/rill/ui/v1/dashboard_pb";
 import { PivotChipType } from "../../pivot/types";
 import { allDimensions } from "./dimensions";
 import type { DashboardDataSources } from "./types";
 
 export const pivotSelectors = {
-  showPivot: ({ dashboard }: DashboardDataSources) => dashboard.pivot.active,
+  showPivot: ({ dashboard }: DashboardDataSources) =>
+    dashboard.activePage === DashboardState_ActivePage.PIVOT,
   rows: ({ dashboard }: DashboardDataSources) => dashboard.pivot.rows,
   originalColumns: ({ dashboard }: DashboardDataSources) =>
     dashboard.pivot.columns,
