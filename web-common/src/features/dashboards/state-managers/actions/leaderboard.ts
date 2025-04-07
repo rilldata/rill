@@ -34,3 +34,9 @@ export const setLeaderboardMeasureNames = (
 ) => {
   dashboard.leaderboardMeasureNames = names;
 };
+
+export const leaderboardActions = {
+  setLeaderboardMeasureCount,
+  setLeaderboardSortByMeasureName,
+  setLeaderboardMeasureNames,
+};
