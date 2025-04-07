@@ -24,6 +24,23 @@
   // TODO: in-memory cache of the selected measures before toggling off multi-select
   // retain the last selected measure when multi-select is toggled off
 
+  function onToggleOff() {
+    // When toggling off multi-select, keep only the first selected measure
+    if (selectedMeasureNames?.length > 0) {
+      const firstMeasure = selectedMeasureNames[0];
+      setLeaderboardMeasureNames([firstMeasure]);
+      setLeaderboardSortByMeasureName(firstMeasure);
+    }
+  }
+
+  function toggleMultiSelect() {
+    const newMultiSelect = !multiSelect;
+    if (!newMultiSelect) {
+      onToggleOff();
+    }
+    multiSelect = newMultiSelect;
+  }
+
   $: filteredMeasures = filterMeasures(searchText);
 
   $: showingMeasuresText =
@@ -66,10 +83,6 @@
   function getMeasureDisplayText(measureName: string) {
     const measure = measures.find((m) => m.name === measureName);
     return measure?.displayName || measure?.name || measureName;
-  }
-
-  function toggleMultiSelect() {
-    multiSelect = !multiSelect;
   }
 </script>
 
