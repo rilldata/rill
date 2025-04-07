@@ -12,6 +12,7 @@
   import { writable } from "svelte/store";
 
   // FIXME: when we hide a measure from visibleMeasures on the left, the visibleMeasures are not updated here
+  // FIXME: sync multiSelect to the url params, otherwise we see leaderboardMeasures but multiSelect is off
 
   export let tooltipText: string;
   export let disabled = false;
