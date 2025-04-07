@@ -15,7 +15,7 @@ import type {
 } from "../types";
 import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
 import CanvasPivotDisplay from "./CanvasPivotDisplay.svelte";
-import { derived, get, writable } from "svelte/store";
+import { derived, get, writable, type Writable } from "svelte/store";
 import { createPivotConfig, usePivotForCanvas } from "./util";
 import type {
   PivotDataStoreConfig,
@@ -51,18 +51,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
   component = CanvasPivotDisplay;
   config: Readable<PivotDataStoreConfig>;
   pivotDataStore: ReturnType<typeof usePivotForCanvas>;
-  pivotState = writable<PivotState>({
-    active: true,
-    columns: [],
-    rows: [],
-    expanded: {},
-    sorting: [],
-    columnPage: 1,
-    rowPage: 1,
-    enableComparison: false,
-    tableMode: "nest",
-    activeCell: null,
-  });
+  pivotState: Writable<PivotState>;
 
   constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
     const type = resource.component?.state?.validSpec
@@ -95,6 +84,8 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
 
     this.type = type;
 
+    this.pivotState = writable(this.getInitPivotState(type));
+
     this.config = createPivotConfig(
       this.parent,
       this.specStore,
@@ -107,6 +98,21 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
       derived(this.specStore, ($specStore) => $specStore.metrics_view),
       this.config,
     );
+  }
+
+  getInitPivotState(type: "pivot" | "table"): PivotState {
+    return {
+      active: true,
+      columns: [],
+      rows: [],
+      expanded: {},
+      sorting: [],
+      columnPage: 1,
+      rowPage: 1,
+      enableComparison: false,
+      tableMode: type === "pivot" ? "nest" : "flat",
+      activeCell: null,
+    };
   }
 
   isValid(spec: PivotSpec): boolean {
@@ -175,6 +181,8 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
     if (!this.parent.fileArtifact) return;
 
     this.type = newTableType;
+
+    this.pivotState.set(this.getInitPivotState(newTableType));
 
     const parentPath = this.pathInYAML.slice(0, -1);
     const parseDocumentStore = this.parent.parsedContent;
