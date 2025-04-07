@@ -84,6 +84,7 @@
     if (!multiSelect) {
       setLeaderboardMeasureNames([name]);
       setLeaderboardSortByMeasureName(name);
+      active = false;
       return;
     }
 
