@@ -34,6 +34,7 @@
   $: ({
     canvasEntity: {
       spec: { getDimensionsForMetricView, getMeasuresForMetricView },
+      filters: { toggleDimensionValueSelection },
     },
   } = store);
 
@@ -89,17 +90,6 @@
         ? COMPARISON_COLUMN_WIDTH
         : 0);
 
-  function getSelectedValues(dimensionName: string) {
-    return selectedDimensionValuesV2(
-      $runtime.instanceId,
-      [metricsViewName],
-      whereFilter,
-      dimensionName,
-      timeRange.start,
-      timeRange.end,
-    );
-  }
-
   function isValidPercentOfTotal(measureName: string) {
     return (
       visibleMeasures.find((m) => m.name === measureName)
@@ -148,11 +138,18 @@
               timeControlsReady={true}
               allowExpandTable={false}
               allowDimensionComparison={false}
-              selectedValues={getSelectedValues(dimension.name)}
+              selectedValues={selectedDimensionValuesV2(
+                $runtime.instanceId,
+                [metricsViewName],
+                whereFilter,
+                dimension.name,
+                timeRange.start,
+                timeRange.end,
+              )}
               isBeingCompared={false}
               formatters={measureFormatters}
               toggleSort={() => {}}
-              toggleDimensionValueSelection={() => {}}
+              {toggleDimensionValueSelection}
               sortBy={null}
               measureLabel={(measureName) =>
                 visibleMeasures.find((m) => m.name === measureName)
