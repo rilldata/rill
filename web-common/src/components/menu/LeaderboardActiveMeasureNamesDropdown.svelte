@@ -14,12 +14,15 @@
   export let disabled = false;
   export let searchText = "";
   export let measures: MetricsViewSpecMeasureV2[];
+  export let leaderboardSortByMeasureName: string;
   export let selectedMeasureNames: string[];
   export let setLeaderboardMeasureNames: (names: string[]) => void;
   export let setLeaderboardSortByMeasureName: (name: string) => void;
 
   let active = false;
   let multiSelect = false;
+
+  $: console.log("leaderboardSortByMeasureName", leaderboardSortByMeasureName);
 
   // TODO: in-memory cache of the selected measures before toggling off multi-select
   // retain the last selected measure when multi-select is toggled off
@@ -48,7 +51,7 @@
       ? ` ${selectedMeasureNames.length} measures`
       : selectedMeasureNames?.length === 1
         ? getMeasureDisplayText(selectedMeasureNames[0])
-        : "";
+        : getMeasureDisplayText(leaderboardSortByMeasureName);
 
   function filterMeasures(searchText: string) {
     return measures.filter((item) =>
@@ -131,9 +134,12 @@
             {#each filteredMeasures as measure (measure.name)}
               <DropdownMenu.CheckboxItem
                 class="text-[12px]"
-                checked={measure.name
-                  ? selectedMeasureNames.includes(measure.name)
-                  : false}
+                checked={multiSelect
+                  ? Boolean(
+                      measure.name &&
+                        selectedMeasureNames.includes(measure.name),
+                    )
+                  : leaderboardSortByMeasureName === measure.name}
                 onCheckedChange={() => {
                   if (measure.name) toggleMeasure(measure.name);
                 }}
