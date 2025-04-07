@@ -41,6 +41,9 @@
 
   $: leaderboardProperties = rendererProperties as LeaderboardSpec;
 
+  $: ({ showTimeComparison, comparisonTimeRange, timeRange, where } =
+    $timeAndFilterStore);
+
   $: {
     metricsViewName = leaderboardProperties.metrics_view;
     leaderboardMeasureNames = leaderboardProperties.measures ?? [];
@@ -49,7 +52,7 @@
   }
 
   $: ({ dimensionFilters: whereFilter, dimensionThresholdFilters } =
-    splitWhereFilter($timeAndFilterStore.where));
+    splitWhereFilter(where));
 
   $: allDimensions = getDimensionsForMetricView(metricsViewName);
   $: allMeasures = getMeasuresForMetricView(metricsViewName);
@@ -70,7 +73,7 @@
     ]),
   );
 
-  $: showDeltaPercent = !!$timeAndFilterStore.comparisonTimeRange;
+  $: showDeltaPercent = showTimeComparison;
 
   // Reset column widths when the measure changes
   $: if (leaderboardMeasureNames) {
@@ -80,7 +83,7 @@
   $: tableWidth =
     DIMENSION_COLUMN_WIDTH +
     $valueColumn +
-    ($timeAndFilterStore.comparisonTimeRange
+    (showTimeComparison
       ? COMPARISON_COLUMN_WIDTH * (showDeltaPercent ? 2 : 1)
       : showPercentOfTotal
         ? COMPARISON_COLUMN_WIDTH
@@ -92,8 +95,8 @@
       [metricsViewName],
       whereFilter,
       dimensionName,
-      $timeAndFilterStore.timeRange.start,
-      $timeAndFilterStore.timeRange.end,
+      timeRange.start,
+      timeRange.end,
     );
   }
 
@@ -103,8 +106,6 @@
         ?.validPercentOfTotal ?? false
     );
   }
-
-  $: console.log($timeAndFilterStore.comparisonTimeRange);
 </script>
 
 <div class="flex flex-col overflow-hidden size-full" aria-label="Leaderboards">
@@ -137,8 +138,10 @@
               sortedAscending={false}
               sortType={SortType.VALUE}
               filterExcludeMode={false}
-              timeRange={$timeAndFilterStore.timeRange}
-              comparisonTimeRange={$timeAndFilterStore.comparisonTimeRange}
+              {timeRange}
+              comparisonTimeRange={showTimeComparison
+                ? comparisonTimeRange
+                : undefined}
               {dimension}
               {parentElement}
               {suppressTooltip}
