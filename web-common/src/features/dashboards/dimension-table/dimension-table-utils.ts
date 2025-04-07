@@ -263,8 +263,8 @@ export function prepareVirtualizedDimTableColumns(
 
   // Show context columns based on selected context columns and time comparison settings
   if (selectedMeasure) {
-    // If activeMeasures is provided, add context columns for each active measure
-    if (activeMeasures?.length) {
+    // If activeMeasures is provided and leaderboardShowAllMeasures is true, add context columns for each active measure
+    if (activeMeasures?.length && dash.leaderboardShowAllMeasures) {
       activeMeasures.forEach((measureName) => {
         const measure = allMeasures.find((m) => m.name === measureName);
         if (measure) {
@@ -277,6 +277,7 @@ export function prepareVirtualizedDimTableColumns(
         }
       });
     } else {
+      // Only add context columns for the leaderboardSortByMeasureName
       addContextColumnNames(
         columnNames,
         timeComparison,
