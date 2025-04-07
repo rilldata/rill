@@ -55,7 +55,6 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
-
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import {
@@ -461,11 +460,6 @@ describe("Human readable URL state variations", () => {
             explore,
             AD_BIDS_TIME_RANGE_SUMMARY,
           ),
-        );
-        const defaultExplorePreset = getDefaultExplorePreset(
-          explore,
-          AD_BIDS_METRICS_INIT,
-          AD_BIDS_TIME_RANGE_SUMMARY,
         );
 
         const initState = getCleanMetricsExploreForAssertion();
