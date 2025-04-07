@@ -62,7 +62,7 @@ func (e *Executor) handleExpression(expr *Expression, dictMeta map[string]*looku
 					subquery.RawSQL += ", " + e.olap.Dialect().EscapeStringValue(fmt.Sprintf("%v", exprs[i].Value))
 				}
 			} else {
-				// could find expected expression values, don't rewrite
+				// could not find expected expression values, don't rewrite
 				return
 			}
 		}
