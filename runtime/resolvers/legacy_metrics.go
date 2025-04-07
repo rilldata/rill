@@ -13,6 +13,8 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/formatter"
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"github.com/rilldata/rill/runtime/queries"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -95,6 +97,10 @@ func (r *legacyMetricsResolver) Validate(ctx context.Context) error {
 }
 
 func (r *legacyMetricsResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
+	ctx, span := tracer.Start(ctx, "legacyMetricsResolver.ResolveInteractive", trace.WithAttributes(
+		attribute.String("metrics_view", r.metricsViewName),
+	))
+	defer span.End()
 	ctrl, err := r.runtime.Controller(ctx, r.instanceID)
 	if err != nil {
 		return nil, err

@@ -11,6 +11,8 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 func init() {
@@ -114,6 +116,11 @@ func (r *metricsViewCacheKeyResolver) Validate(ctx context.Context) error {
 }
 
 func (r *metricsViewCacheKeyResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
+	ctx, span := tracer.Start(ctx, "metricsViewCacheKeyResolver.ResolveInteractive", trace.WithAttributes(
+		attribute.String("metrics_view", r.mvName),
+		attribute.Bool("streaming", r.streaming),
+	))
+	defer span.End()
 	key, ok, err := r.executor.CacheKey(ctx)
 	if err != nil {
 		return nil, err

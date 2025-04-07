@@ -6,7 +6,10 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime"
+	"go.opentelemetry.io/otel"
 )
+
+var tracer = otel.Tracer("github.com/rilldata/rill/runtime/resolvers")
 
 func init() {
 	runtime.RegisterResolverInitializer("api", newAPI)

@@ -11,6 +11,8 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 func init() {
@@ -104,6 +106,10 @@ func (r *metricsViewTimeRangeResolver) Validate(ctx context.Context) error {
 }
 
 func (r *metricsViewTimeRangeResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
+	ctx, span := tracer.Start(ctx, "metricsViewTimeRangeResolver.ResolveInteractive", trace.WithAttributes(
+		attribute.String("metrics_view", r.mvName),
+	))
+	defer span.End()
 	ts, err := r.executor.Timestamps(ctx)
 	if err != nil {
 		return nil, err

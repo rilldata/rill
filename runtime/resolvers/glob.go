@@ -23,6 +23,8 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/globutil"
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"github.com/rilldata/rill/runtime/pkg/typepb"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 )
@@ -155,6 +157,15 @@ func (r *globResolver) Validate(ctx context.Context) error {
 }
 
 func (r *globResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
+	ctx, span := tracer.Start(ctx, "glob.ResolveInteractive", trace.WithAttributes(
+		attribute.String("connector", r.props.Connector),
+		attribute.String("path", r.props.Path),
+		attribute.String("partition", string(r.props.Partition)),
+		attribute.Bool("rollup_files", r.props.RollupFiles),
+		attribute.String("transform_sql", r.props.TransformSQL),
+	))
+	defer span.End()
+
 	h, release, err := r.runtime.AcquireHandle(ctx, r.instanceID, r.props.Connector)
 	if err != nil {
 		return nil, err
