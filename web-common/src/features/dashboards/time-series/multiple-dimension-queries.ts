@@ -31,9 +31,10 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import {
-  keepPreviousData,
   type CreateQueryResult,
+  keepPreviousData,
 } from "@tanstack/svelte-query";
+import { DashboardState_ActivePage } from "../../../proto/gen/rill/ui/v1/dashboard_pb";
 import { dimensionSearchText } from "../stores/dashboard-stores";
 import {
   getFilterForComparedDimension,
@@ -88,7 +89,10 @@ export function getDimensionValuesForComparison(
         measures?.length > 0 && measures?.every((m) => m !== undefined);
 
       const dimensionName = dashboardStore?.selectedComparisonDimension;
-      const isInTimeDimensionView = dashboardStore?.tdd.expandedMeasureName;
+      const showTimeDimensionDetail = Boolean(
+        dashboardStore?.activePage ===
+          DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL,
+      );
 
       if (!isValidMeasureList || !dimensionName) return;
 
@@ -103,7 +107,7 @@ export function getDimensionValuesForComparison(
           // For TDD view max 11 allowed, for Explore max 7 allowed
           comparisonValues = dimensionValues.slice(
             0,
-            isInTimeDimensionView ? 11 : 7,
+            showTimeDimensionDetail ? 11 : 7,
           ) as (string | null)[];
         }
         return set({
@@ -111,7 +115,7 @@ export function getDimensionValuesForComparison(
           filter: dashboardStore?.whereFilter,
         });
       } else if (surface === "table") {
-        let sortBy = isInTimeDimensionView
+        let sortBy = showTimeDimensionDetail
           ? dashboardStore.tdd.expandedMeasureName
           : dashboardStore.leaderboardSortByMeasureName;
         if (dashboardStore?.dashboardSortType === SortType.DIMENSION) {

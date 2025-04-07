@@ -29,7 +29,7 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
-  import type { V1SourceV2 } from "@rilldata/web-common/runtime-client";
+  import type { V1Source } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { fade } from "svelte/transition";
   import { createModelFromTable } from "../connectors/olap/createModel";
@@ -58,10 +58,10 @@
   $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
   $: resource = $resourceQuery.data;
   $: source = $resourceQuery.data?.source;
-  $: connector = (source as V1SourceV2)?.spec?.sinkConnector as string;
+  $: connector = (source as V1Source)?.spec?.sinkConnector as string;
   const database = ""; // Sources are ingested into the default database
   const databaseSchema = ""; // Sources are ingested into the default database schema
-  $: tableName = (source as V1SourceV2)?.state?.table as string;
+  $: tableName = (source as V1Source)?.state?.table as string;
   $: refreshedOn = source?.state?.refreshedOn;
   $: resourceIsReconciling = resourceIsLoading($resourceQuery.data);
 
