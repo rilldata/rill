@@ -11,10 +11,12 @@
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import { writable } from "svelte/store";
 
+  // FIXME: when we hide a measure from visibleMeasures on the left, the visibleMeasures are not updated here
+
   export let tooltipText: string;
   export let disabled = false;
   export let searchText = "";
-  export let measures: MetricsViewSpecMeasureV2[];
+  export let visibleMeasures: MetricsViewSpecMeasureV2[];
   export let leaderboardSortByMeasureName: string;
   export let selectedMeasureNames: string[];
   export let setLeaderboardMeasureNames: (names: string[]) => void;
@@ -22,6 +24,7 @@
 
   let active = false;
   let multiSelect = false;
+
   const lastSelectedMeasures = writable<string[]>([]);
 
   function onToggleOff() {
@@ -61,7 +64,7 @@
         : getMeasureDisplayText(leaderboardSortByMeasureName);
 
   function filterMeasures(searchText: string) {
-    return measures.filter((item) =>
+    return visibleMeasures.filter((item) =>
       ((item.displayName || item.name) ?? "")
         .toLowerCase()
         .includes(searchText.toLowerCase()),
@@ -91,7 +94,7 @@
   }
 
   function getMeasureDisplayText(measureName: string) {
-    const measure = measures.find((m) => m.name === measureName);
+    const measure = visibleMeasures.find((m) => m.name === measureName);
     return measure?.displayName || measure?.name || measureName;
   }
 </script>
@@ -169,17 +172,23 @@
           {/if}
         </div>
 
-        <footer>
-          <div class="flex items-center space-x-2">
-            <Switch
-              checked={multiSelect}
-              id="multi-measure-select"
-              small
-              on:click={toggleMultiSelect}
-            />
-            <InputLabel small label="Multi-select" id="multi-measure-select" />
-          </div>
-        </footer>
+        {#if visibleMeasures.length > 1}
+          <footer>
+            <div class="flex items-center space-x-2">
+              <Switch
+                checked={multiSelect}
+                id="multi-measure-select"
+                small
+                on:click={toggleMultiSelect}
+              />
+              <InputLabel
+                small
+                label="Multi-select"
+                id="multi-measure-select"
+              />
+            </div>
+          </footer>
+        {/if}
       </DropdownMenu.Content>
 
       <div slot="tooltip-content" transition:fly={{ duration: 300, y: 4 }}>
