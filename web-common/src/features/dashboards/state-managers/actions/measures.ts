@@ -43,8 +43,8 @@ export const setMeasureVisibility = (
 
   // If the current leaderboard measure is hidden, select a new one from visible measures
   if (
-    measures.length > 0 &&
-    !measures.includes(dashboard.leaderboardSortByMeasureName)
+    !measures.includes(dashboard.leaderboardSortByMeasureName) &&
+    measures.length > 0
   ) {
     dashboard.leaderboardSortByMeasureName = measures[0];
   }
