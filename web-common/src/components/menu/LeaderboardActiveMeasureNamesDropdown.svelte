@@ -12,7 +12,6 @@
   import { writable } from "svelte/store";
 
   // FIXME: when we hide a measure from visibleMeasures on the left, the visibleMeasures are not updated here
-  // FIXME: sync multiSelect to the url params, otherwise we see leaderboardMeasures but multiSelect is off
 
   export let tooltipText: string;
   export let disabled = false;
@@ -24,7 +23,7 @@
   export let setLeaderboardSortByMeasureName: (name: string) => void;
 
   let active = false;
-  let multiSelect = false;
+  let multiSelect = selectedMeasureNames?.length > 1;
 
   const lastSelectedMeasures = writable<string[]>([]);
 
@@ -146,12 +145,12 @@
             {#each filteredMeasures as measure (measure.name)}
               <DropdownMenu.CheckboxItem
                 class="text-[12px]"
-                checked={multiSelect
-                  ? Boolean(
-                      measure.name &&
-                        selectedMeasureNames.includes(measure.name),
-                    )
-                  : leaderboardSortByMeasureName === measure.name}
+                checked={Boolean(
+                  measure.name &&
+                    (multiSelect
+                      ? selectedMeasureNames.includes(measure.name)
+                      : leaderboardSortByMeasureName === measure.name),
+                )}
                 onCheckedChange={() => {
                   if (measure.name) toggleMeasure(measure.name);
                 }}
