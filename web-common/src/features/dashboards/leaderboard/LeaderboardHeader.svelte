@@ -35,6 +35,10 @@
     dimensionName: string | undefined,
   ) => void;
   export let measureLabel: (measureName: string) => string;
+
+  function shouldShowContextColumns(measureName: string): boolean {
+    return leaderboardShowAllMeasures || measureName === sortBy;
+  }
 </script>
 
 <thead>
@@ -125,7 +129,7 @@
         </button>
       </th>
 
-      {#if isValidPercentOfTotal(measureName) && (leaderboardShowAllMeasures || measureName === sortBy)}
+      {#if isValidPercentOfTotal(measureName) && shouldShowContextColumns(measureName)}
         <th data-percent-of-total-header>
           <button
             aria-label="Toggle sort leaderboards by percent of total"
@@ -155,7 +159,7 @@
         </th>
       {/if}
 
-      {#if isTimeComparisonActive && (leaderboardShowAllMeasures || measureName === sortBy)}
+      {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
         <th data-absolute-change-header>
           <button
             aria-label="Toggle sort leaderboards by absolute change"
@@ -185,7 +189,7 @@
         </th>
       {/if}
 
-      {#if isTimeComparisonActive && (leaderboardShowAllMeasures || measureName === sortBy)}
+      {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
         <th data-percent-change-header>
           <button
             aria-label="Toggle sort leaderboards by percent change"

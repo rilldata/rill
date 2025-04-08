@@ -45,6 +45,10 @@
     (value: number | string | null | undefined) => string | null | undefined
   >;
 
+  function shouldShowContextColumns(measureName: string): boolean {
+    return leaderboardShowAllMeasures || measureName === sortBy;
+  }
+
   let hovered = false;
   let valueRect = new DOMRect(0, 0, DEFAULT_COLUMN_WIDTH);
   let deltaRect = new DOMRect(0, 0, COMPARISON_COLUMN_WIDTH);
@@ -301,7 +305,7 @@
       {/if}
     </td>
 
-    {#if isValidPercentOfTotal(measureName) && (leaderboardShowAllMeasures || measureName === sortBy)}
+    {#if isValidPercentOfTotal(measureName) && shouldShowContextColumns(measureName)}
       <td
         data-comparison-cell
         title={pctOfTotals[measureName]?.toString() || ""}
@@ -320,7 +324,7 @@
       </td>
     {/if}
 
-    {#if isTimeComparisonActive && (leaderboardShowAllMeasures || measureName === sortBy)}
+    {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
       <td
         data-comparison-cell
         title={deltaAbsMap[measureName]?.toString() || ""}
@@ -344,7 +348,7 @@
       </td>
     {/if}
 
-    {#if isTimeComparisonActive && (leaderboardShowAllMeasures || measureName === sortBy)}
+    {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
       <td
         data-comparison-cell
         title={deltaRels[measureName]?.toString() || ""}

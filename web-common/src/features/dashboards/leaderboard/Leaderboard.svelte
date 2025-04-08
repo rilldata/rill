@@ -282,6 +282,10 @@
         ((isValidPercentOfTotal(leaderboardSortByMeasureName) ? 1 : 0) + // Percent of total column
           (isTimeComparisonActive ? 2 : 0)) // Delta absolute and delta percent columns
       : 0);
+
+  function shouldShowContextColumns(measureName: string): boolean {
+    return leaderboardShowAllMeasures || measureName === sortBy;
+  }
 </script>
 
 <div
@@ -298,13 +302,13 @@
       <col data-dimension-column style:width="{dimensionColumnWidth}px" />
       {#each leaderboardMeasureNames as measureName, index (index)}
         <col data-measure-column style:width="{$valueColumn}px" />
-        {#if isValidPercentOfTotal(measureName) && (leaderboardShowAllMeasures || measureName === sortBy)}
+        {#if isValidPercentOfTotal(measureName) && shouldShowContextColumns(measureName)}
           <col
             data-percent-of-total-column
             style:width="{COMPARISON_COLUMN_WIDTH}px"
           />
         {/if}
-        {#if isTimeComparisonActive && (leaderboardShowAllMeasures || measureName === sortBy)}
+        {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
           <col
             data-absolute-change-column
             style:width="{COMPARISON_COLUMN_WIDTH}px"
