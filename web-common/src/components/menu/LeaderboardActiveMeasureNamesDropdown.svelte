@@ -25,6 +25,19 @@
 
   const lastSelectedMeasures = writable<string[]>([]);
 
+  $: filteredMeasures = filterMeasures(searchText).sort((a, b) => {
+    const aIndex = visibleMeasures.findIndex((m) => m.name === a.name);
+    const bIndex = visibleMeasures.findIndex((m) => m.name === b.name);
+    return aIndex - bIndex;
+  });
+
+  $: showingMeasuresText =
+    selectedMeasureNames?.length > 1
+      ? ` ${selectedMeasureNames.length} measures`
+      : selectedMeasureNames?.length === 1
+        ? getMeasureDisplayText(selectedMeasureNames[0])
+        : getMeasureDisplayText(leaderboardSortByMeasureName);
+
   function onToggleOff() {
     // Store the current selection before toggling off
     lastSelectedMeasures.set(selectedMeasureNames);
@@ -51,19 +64,6 @@
     }
     multiSelect = newMultiSelect;
   }
-
-  $: filteredMeasures = filterMeasures(searchText).sort((a, b) => {
-    const aIndex = visibleMeasures.findIndex((m) => m.name === a.name);
-    const bIndex = visibleMeasures.findIndex((m) => m.name === b.name);
-    return aIndex - bIndex;
-  });
-
-  $: showingMeasuresText =
-    selectedMeasureNames?.length > 1
-      ? ` ${selectedMeasureNames.length} measures`
-      : selectedMeasureNames?.length === 1
-        ? getMeasureDisplayText(selectedMeasureNames[0])
-        : getMeasureDisplayText(leaderboardSortByMeasureName);
 
   function filterMeasures(searchText: string) {
     return visibleMeasures.filter((item) =>
