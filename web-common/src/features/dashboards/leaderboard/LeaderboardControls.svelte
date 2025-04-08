@@ -4,7 +4,7 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { getStateManagers } from "../state-managers/state-managers";
-  import LeaderboardActiveMeasureNamesDropdown from "@rilldata/web-common/components/menu/LeaderboardActiveMeasureNamesDropdown.svelte";
+  import LeaderboardMeasureNamesDropdown from "@rilldata/web-common/components/menu/LeaderboardMeasureNamesDropdown.svelte";
   import LeaderboardAdvancedActions from "@rilldata/web-common/components/menu/LeaderboardAdvancedActions.svelte";
 
   export let exploreName: string;
@@ -87,13 +87,7 @@
         setLeaderboardMeasureCount(count);
       }}
     /> -->
-  <!-- <LeaderboardActiveMeasureDropdown
-      leaderboardSortByMeasureName={$leaderboardSortByMeasureName}
-      {setLeaderboardSortByMeasureName}
-      {measures}
-      {activeLeaderboardMeasure}
-    /> -->
-  <LeaderboardActiveMeasureNamesDropdown
+  <LeaderboardMeasureNamesDropdown
     tooltipText="Choose measures to filter by"
     visibleMeasures={$visibleMeasures}
     leaderboardSortByMeasureName={$leaderboardSortByMeasureName}
