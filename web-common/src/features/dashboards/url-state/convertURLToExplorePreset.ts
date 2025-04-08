@@ -450,14 +450,6 @@ function fromExploreUrlParams(
       ExploreStateURLParams.LeaderboardMeasures,
     ) as string;
     preset.exploreLeaderboardMeasures = leaderboardMeasures.split(",");
-
-    // const missingMeasures = getMissingValues(
-    //   preset.exploreLeaderboardMeasures,
-    //   leaderboardMeasures.split(","),
-    // );
-    // if (missingMeasures.length) {
-    //   errors.push(getMultiFieldError("leaderboard measures", missingMeasures));
-    // }
   }
 
   return { preset, errors };
