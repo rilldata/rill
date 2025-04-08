@@ -1,7 +1,7 @@
 import { type TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import type {
-  MetricsViewSpecDimensionV2,
-  MetricsViewSpecMeasureV2,
+  MetricsViewSpecDimension,
+  MetricsViewSpecMeasure,
   V1Expression,
   V1MetricsViewAggregationResponseDataItem,
   V1TimeGrain,
@@ -90,8 +90,8 @@ export interface PivotDataStoreConfig {
   measureNames: string[];
   rowDimensionNames: string[];
   colDimensionNames: string[];
-  allMeasures: MetricsViewSpecMeasureV2[];
-  allDimensions: MetricsViewSpecDimensionV2[];
+  allMeasures: MetricsViewSpecMeasure[];
+  allDimensions: MetricsViewSpecDimension[];
   whereFilter: V1Expression;
   pivot: PivotState;
   time: PivotTimeConfig;

@@ -620,7 +620,7 @@ func (r *ModelReconciler) updateTriggerFalse(ctx context.Context, n *runtimev1.R
 // Note the ambiguity around "state" in models – all resources have a "spec" and a "state",
 // but models also have a resolver for "incremental state" that enables incremental/stateful computation by persisting data from the previous execution.
 // It returns nil results if an incremental state resolver is not configured or does not return any data.
-func (r *ModelReconciler) resolveIncrementalState(ctx context.Context, mdl *runtimev1.ModelV2) (*structpb.Struct, *runtimev1.StructType, error) {
+func (r *ModelReconciler) resolveIncrementalState(ctx context.Context, mdl *runtimev1.Model) (*structpb.Struct, *runtimev1.StructType, error) {
 	if !mdl.Spec.Incremental {
 		return nil, nil, nil
 	}
@@ -658,7 +658,7 @@ func (r *ModelReconciler) resolveIncrementalState(ctx context.Context, mdl *runt
 }
 
 // resolveAndSyncPartitions resolves the model's partitions using its configured partitions resolver and inserts or updates them in the catalog.
-func (r *ModelReconciler) resolveAndSyncPartitions(ctx context.Context, self *runtimev1.Resource, mdl *runtimev1.ModelV2, incrementalState map[string]any) error {
+func (r *ModelReconciler) resolveAndSyncPartitions(ctx context.Context, self *runtimev1.Resource, mdl *runtimev1.Model, incrementalState map[string]any) error {
 	// Log
 	r.C.Logger.Debug("Resolving model partitions", zap.String("model", self.Meta.Name.Name), zap.String("resolver", mdl.Spec.PartitionsResolver), observability.ZapCtx(ctx))
 
@@ -734,7 +734,7 @@ func (r *ModelReconciler) resolveAndSyncPartitions(ctx context.Context, self *ru
 //
 // NOTE: This implementation inserts/updates partitions one-by-one in the catalog.
 // If we start using another DB than SQLite for the catalog, it may make sense to implement batched writes.
-func (r *ModelReconciler) syncPartitions(ctx context.Context, mdl *runtimev1.ModelV2, startIdx int, rows []map[string]any) error {
+func (r *ModelReconciler) syncPartitions(ctx context.Context, mdl *runtimev1.Model, startIdx int, rows []map[string]any) error {
 	if len(rows) == 0 {
 		return nil
 	}
@@ -837,7 +837,7 @@ func (r *ModelReconciler) syncPartitions(ctx context.Context, mdl *runtimev1.Mod
 }
 
 // clearPartitions drops all partitions for a model from the catalog.
-func (r *ModelReconciler) clearPartitions(ctx context.Context, mdl *runtimev1.ModelV2) error {
+func (r *ModelReconciler) clearPartitions(ctx context.Context, mdl *runtimev1.Model) error {
 	if mdl.State.PartitionsModelId == "" {
 		return nil
 	}
@@ -853,7 +853,7 @@ func (r *ModelReconciler) clearPartitions(ctx context.Context, mdl *runtimev1.Mo
 
 // executeAll executes all partitions (if any) of a model with the given execution options.
 // Note that triggerReset only denotes if a reset is required. Even if it is false, the model will still be reset if it's not an incremental model.
-func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resource, model *runtimev1.ModelV2, env *drivers.ModelEnv, triggerReset bool, prevResult *drivers.ModelResult) (string, *drivers.ModelResult, bool, error) {
+func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resource, model *runtimev1.Model, env *drivers.ModelEnv, triggerReset bool, prevResult *drivers.ModelResult) (string, *drivers.ModelResult, bool, error) {
 	// Prepare the incremental state to pass to the executor
 	usePartitions := model.Spec.PartitionsResolver != ""
 	incrementalRun := false
@@ -1097,7 +1097,7 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 
 // executePartition processes a drivers.ModelPartition by calling executeSingle and then updating the partition's state in the catalog.
 // The returned bool will be false if execution failed, but the error was written to the partition in the catalog instead of being returned.
-func (r *ModelReconciler) executePartition(ctx context.Context, catalog drivers.CatalogStore, executor *wrappedModelExecutor, self *runtimev1.Resource, mdl *runtimev1.ModelV2, prevResult *drivers.ModelResult, incrementalRun bool, incrementalState map[string]any, partition drivers.ModelPartition, returnErr bool) (*drivers.ModelResult, bool, error) {
+func (r *ModelReconciler) executePartition(ctx context.Context, catalog drivers.CatalogStore, executor *wrappedModelExecutor, self *runtimev1.Resource, mdl *runtimev1.Model, prevResult *drivers.ModelResult, incrementalRun bool, incrementalState map[string]any, partition drivers.ModelPartition, returnErr bool) (*drivers.ModelResult, bool, error) {
 	// Get partition data
 	data := map[string]any{}
 	err := json.Unmarshal(partition.DataJSON, &data)
@@ -1144,7 +1144,7 @@ func (r *ModelReconciler) executePartition(ctx context.Context, catalog drivers.
 }
 
 // executeSingle executes a single step of a model. Passing a previous result, incremental state, and/or a partition is optional.
-func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedModelExecutor, self *runtimev1.Resource, mdl *runtimev1.ModelV2, prevResult *drivers.ModelResult, incrementalRun bool, incrementalState, partition map[string]any) (*drivers.ModelResult, error) {
+func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedModelExecutor, self *runtimev1.Resource, mdl *runtimev1.Model, prevResult *drivers.ModelResult, incrementalRun bool, incrementalState, partition map[string]any) (*drivers.ModelResult, error) {
 	// Resolve templating in the input and output props
 	inputProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, partition, mdl.Spec.InputConnector, mdl.Spec.InputProperties.AsMap())
 	if err != nil {
@@ -1234,7 +1234,7 @@ type wrappedModelExecutor struct {
 
 // acquireExecutor acquires the executor(s) necessary for executing the given model.
 // If the model has a stage connector, it will acquire and combine two executors: one from the input to the stage connector, and another from the stage to the output connector.
-func (r *ModelReconciler) acquireExecutor(ctx context.Context, self *runtimev1.Resource, mdl *runtimev1.ModelV2, env *drivers.ModelEnv) (*wrappedModelExecutor, func(), error) {
+func (r *ModelReconciler) acquireExecutor(ctx context.Context, self *runtimev1.Resource, mdl *runtimev1.Model, env *drivers.ModelEnv) (*wrappedModelExecutor, func(), error) {
 	// Handle the simple case where there is no stage connector
 	if mdl.Spec.StageConnector == "" {
 		opts := &drivers.ModelExecutorOptions{

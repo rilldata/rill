@@ -11,7 +11,7 @@ test.describe("canvas time filters", () => {
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_canvas.yaml");
 
     await page
-      .locator("#component-0-0 div")
+      .locator("#AdBids_metrics_canvas--component-0-0 div")
       .filter({ hasText: "Total records 1,122 -5 ~0% vs previous day" })
       .first()
       .click();
@@ -29,7 +29,6 @@ test.describe("canvas time filters", () => {
       .getByLabel("Select time range")
       .click();
     await page.getByText("Last 7 Days").click();
-    await page.getByRole("button", { name: "Comparing", exact: true }).click();
 
     await expect(
       page.getByText("Total records 7,863 -15 ~0% vs previous week"),
@@ -50,7 +49,7 @@ test.describe("canvas time filters", () => {
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_canvas.yaml");
 
     await page
-      .locator("#component-0-0 div")
+      .locator("#AdBids_metrics_canvas--component-0-0 div")
       .filter({ hasText: "Total records 1,122 -5 ~0% vs previous day" })
       .first()
       .click();

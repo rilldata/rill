@@ -19,7 +19,7 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
-  import type { V1SourceV2 } from "@rilldata/web-common/runtime-client";
+  import type { V1Source } from "@rilldata/web-common/runtime-client";
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { WandIcon } from "lucide-svelte";
@@ -43,7 +43,7 @@
   const { ai } = featureFlags;
 
   $: sourceQuery = fileArtifact.getResource(queryClient, instanceId);
-  let source: V1SourceV2 | undefined;
+  let source: V1Source | undefined;
   $: source = $sourceQuery.data?.source;
   $: sinkConnector = $sourceQuery.data?.source?.spec?.sinkConnector;
   $: sourceHasError = fileArtifact.getHasErrors(queryClient, instanceId);

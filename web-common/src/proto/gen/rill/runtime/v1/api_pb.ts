@@ -599,13 +599,6 @@ export class Connector extends Message<Connector> {
    */
   provisionArgs?: Struct;
 
-  /**
-   * DEPRECATED: config_from_variables stores configs whose value is a variable. This is only set for configs obtained from `connector.yaml`
-   *
-   * @generated from field: map<string, string> config_from_variables = 4;
-   */
-  configFromVariables: { [key: string]: string } = {};
-
   constructor(data?: PartialMessage<Connector>) {
     super();
     proto3.util.initPartial(data, this);
@@ -620,7 +613,6 @@ export class Connector extends Message<Connector> {
     { no: 5, name: "templated_properties", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 6, name: "provision", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "provision_args", kind: "message", T: Struct },
-    { no: 4, name: "config_from_variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Connector {

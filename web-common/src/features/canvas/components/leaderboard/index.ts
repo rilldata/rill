@@ -4,13 +4,18 @@ import {
   getFilterOptions,
 } from "@rilldata/web-common/features/canvas/components/util";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
-import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
-import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 import type {
+  V1MetricsViewSpec,
+  V1Resource,
+} from "@rilldata/web-common/runtime-client";
+import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
+import type {
+  CanvasComponentType,
   ComponentCommonProperties,
   ComponentComparisonOptions,
   ComponentFilterProperties,
 } from "../types";
+import Leaderboard from "./LeaderboardDisplay.svelte";
 
 export { default as Leaderboard } from "./LeaderboardDisplay.svelte";
 
@@ -32,19 +37,17 @@ export class LeaderboardComponent extends BaseCanvasComponent<LeaderboardSpec> {
   minSize = { width: 3, height: 3 };
   defaultSize = { width: 6, height: 3 };
   resetParams = ["measures", "dimensions"];
+  type: CanvasComponentType = "leaderboard";
+  component = Leaderboard;
 
-  constructor(
-    fileArtifact: FileArtifact | undefined = undefined,
-    path: (string | number)[] = [],
-    initialSpec: Partial<LeaderboardSpec> = {},
-  ) {
+  constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
     const defaultSpec: LeaderboardSpec = {
       metrics_view: "",
       measures: [],
       dimensions: [],
       num_rows: 7,
     };
-    super(fileArtifact, path, defaultSpec, initialSpec);
+    super(resource, parent, path, defaultSpec);
   }
 
   isValid(spec: LeaderboardSpec): boolean {
@@ -72,7 +75,7 @@ export class LeaderboardComponent extends BaseCanvasComponent<LeaderboardSpec> {
     };
   }
 
-  newComponentSpec(
+  static newComponentSpec(
     metricsViewName: string,
     metricsViewSpec: V1MetricsViewSpec | undefined,
   ): LeaderboardSpec {

@@ -1,7 +1,6 @@
 <script lang="ts">
-  import type { LeaderboardSpec } from "@rilldata/web-common/features/canvas/components/leaderboard";
+  import type { LeaderboardComponent } from "@rilldata/web-common/features/canvas/components/leaderboard";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-  import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
   import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
   import {
     COMPARISON_COLUMN_WIDTH,
@@ -11,13 +10,10 @@
   import { SortType } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
   import { selectedDimensionValuesV2 } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
-  import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import type { Readable } from "svelte/store";
+  import ComponentHeader from "../../ComponentHeader.svelte";
 
-  export let rendererProperties: V1ComponentSpecRendererProperties;
-  export let timeAndFilterStore: Readable<TimeAndFilterStore>;
-  export let canvasName: string;
+  export let component: LeaderboardComponent;
 
   const DIMENSION_COLUMN_WIDTH = 164;
 
@@ -30,6 +26,13 @@
   let suppressTooltip = false;
   let showPercentOfTotal = false; // TODO: update this
 
+  $: ({
+    specStore,
+    timeAndFilterStore,
+    parent: { name: canvasName },
+  } = component);
+  $: leaderboardProperties = $specStore;
+
   $: store = getCanvasStore(canvasName);
   $: ({
     canvasEntity: {
@@ -39,8 +42,6 @@
   } = store);
 
   $: ({ instanceId } = $runtime);
-
-  $: leaderboardProperties = rendererProperties as LeaderboardSpec;
 
   $: ({ showTimeComparison, comparisonTimeRange, timeRange, where } =
     $timeAndFilterStore);
@@ -90,6 +91,14 @@
         ? COMPARISON_COLUMN_WIDTH
         : 0);
 
+  $: ({ title, description, time_filters, dimension_filters } =
+    leaderboardProperties);
+
+  $: filters = {
+    time_filters,
+    dimension_filters,
+  };
+
   function isValidPercentOfTotal(measureName: string) {
     return (
       visibleMeasures.find((m) => m.name === measureName)
@@ -97,6 +106,8 @@
     );
   }
 </script>
+
+<ComponentHeader {title} {description} {filters} />
 
 <div class="flex flex-col overflow-hidden size-full" aria-label="Leaderboards">
   <div

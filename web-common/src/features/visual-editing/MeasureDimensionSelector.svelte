@@ -3,8 +3,8 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import type {
-    MetricsViewSpecDimensionV2,
-    MetricsViewSpecMeasureV2,
+    MetricsViewSpecDimension,
+    MetricsViewSpecMeasure,
   } from "@rilldata/web-common/runtime-client";
   import SelectionDropdown from "./SelectionDropdown.svelte";
 
@@ -13,7 +13,7 @@
   export let type: "measures" | "dimensions";
   export let mode: "all" | "subset" | "expression" | null;
   export let expression: string = "";
-  export let items: (MetricsViewSpecMeasureV2 | MetricsViewSpecDimensionV2)[];
+  export let items: (MetricsViewSpecMeasure | MetricsViewSpecDimension)[];
   export let selectedItems: Set<string> | undefined;
   export let excludeMode: boolean;
   export let onSelectAll: () => void;
