@@ -8,6 +8,7 @@ import {
   type PivotChipData,
   PivotChipType,
   type PivotState,
+  type PivotTableMode,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import {
   FromProtoOperationMap,
@@ -226,6 +227,8 @@ export function getDashboardStateFromProto(
 
   if (dashboard.activePage === DashboardState_ActivePage.PIVOT) {
     entity.pivot = fromPivotProto(dashboard, metricsView);
+  } else {
+    entity.pivot = blankPivotState();
   }
 
   Object.assign(entity, fromActivePageProto(dashboard));
@@ -432,6 +435,20 @@ function fromPivotProto(
       FromProtoPivotTableModeMap[
         dashboard.pivotTableMode || DashboardState_PivotTableMode.NEST
       ],
+  };
+}
+
+function blankPivotState(): PivotState {
+  return {
+    rows: [],
+    columns: [],
+    expanded: {},
+    sorting: [],
+    columnPage: 1,
+    rowPage: 1,
+    enableComparison: true,
+    activeCell: null,
+    tableMode: "nest" as PivotTableMode,
   };
 }
 
