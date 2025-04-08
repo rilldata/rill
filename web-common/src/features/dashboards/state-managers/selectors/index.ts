@@ -20,6 +20,7 @@ import { pivotSelectors } from "./pivot";
 import { sortingSelectors } from "./sorting";
 import { timeRangeSelectors } from "./time-range";
 import type { ReadablesObj, SelectorFnsObj } from "./types";
+import { leaderboardSelectors } from "./leaderboard";
 
 export type DashboardDataReadables = {
   dashboardStore: Readable<MetricsExplorerEntity>;
@@ -146,6 +147,14 @@ export const createStateManagerReadables = (
      */
     charts: createReadablesFromSelectors(
       chartSelectors,
+      dashboardDataReadables,
+    ),
+
+    /**
+     * Readables related to the leaderboard
+     */
+    leaderboard: createReadablesFromSelectors(
+      leaderboardSelectors,
       dashboardDataReadables,
     ),
   };

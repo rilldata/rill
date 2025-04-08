@@ -17,6 +17,8 @@
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
   export let timeControlsReady: boolean;
+
+  // FIXME: access selectors from store, instead of props
   export let leaderboardSortByMeasureName: string;
   export let leaderboardMeasureNames: string[];
 
@@ -28,11 +30,8 @@
       dimensions: { visibleDimensions },
       comparison: { isBeingCompared: isBeingComparedReadable },
       sorting: { sortedAscending, sortType, sortByMeasure },
-      measures: {
-        measureLabel,
-        isMeasureValidPercentOfTotal,
-        leaderboardShowAllMeasures,
-      },
+      measures: { measureLabel, isMeasureValidPercentOfTotal },
+      leaderboard: { leaderboardShowAllMeasures },
     },
     actions: {
       dimensions: { setPrimaryDimension },

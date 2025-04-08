@@ -38,8 +38,8 @@
       sorting: { sortedByDimensionValue },
       dimensions: { getDimensionDisplayName },
       dimensionFilters: { isFilterExcludeMode },
-      measures: {
-        visibleMeasures,
+      measures: { visibleMeasures },
+      leaderboard: {
         leaderboardShowAllMeasures,
         leaderboardMeasureNames,
         leaderboardSortByMeasureName,
