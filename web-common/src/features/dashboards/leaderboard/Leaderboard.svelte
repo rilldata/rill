@@ -19,11 +19,8 @@
   } from "../dashboard-utils";
   import { mergeDimensionAndMeasureFilters } from "../filters/measure-filters/measure-filter-utils";
   import { SortType } from "../proto-state/derived-types";
-  import {
-    additionalMeasures,
-    getFiltersForOtherDimensions,
-  } from "../selectors";
   import type { selectedDimensionValuesV2 } from "../state-managers/selectors/dimension-filters";
+  import { getFiltersForOtherDimensions } from "../selectors";
   import {
     createAndExpression,
     createOrExpression,
