@@ -744,7 +744,7 @@ func (d *db) acquireWriteConn(ctx context.Context, dsn, table string, initQuerie
 	// So it is better to drop all views and detach all databases before closing the write handle.
 	dropViews := func() error {
 		// remove all views created on top of attached table
-		rows, err := conn.QueryxContext(ctx, "SELECT view_name FROM duckdb_views WHERE database_name = current_database() AND internal = false")
+		rows, err := db.QueryxContext(ctx, "SELECT view_name FROM duckdb_views WHERE database_name = current_database() AND internal = false")
 		if err != nil {
 			return err
 		}
@@ -756,7 +756,7 @@ func (d *db) acquireWriteConn(ctx context.Context, dsn, table string, initQuerie
 			if err != nil {
 				return err
 			}
-			_, err = conn.ExecContext(ctx, "DROP VIEW IF EXISTS "+safeSQLName(name))
+			_, err = db.ExecContext(ctx, "DROP VIEW IF EXISTS "+safeSQLName(name))
 			if err != nil {
 				return err
 			}
@@ -766,7 +766,7 @@ func (d *db) acquireWriteConn(ctx context.Context, dsn, table string, initQuerie
 
 	detach := func() error {
 		// detach all attached databases
-		rows, err := conn.QueryxContext(ctx, "SELECT database_name FROM duckdb_databases() WHERE database_name != current_database() AND internal = false AND type NOT LIKE 'motherduck%'")
+		rows, err := db.QueryxContext(ctx, "SELECT database_name FROM duckdb_databases() WHERE database_name != current_database() AND internal = false AND type NOT LIKE 'motherduck%'")
 		if err != nil {
 			return err
 		}
@@ -778,7 +778,7 @@ func (d *db) acquireWriteConn(ctx context.Context, dsn, table string, initQuerie
 			if err != nil {
 				return err
 			}
-			_, err = conn.ExecContext(ctx, "DETACH "+safeSQLName(name))
+			_, err = db.ExecContext(ctx, "DETACH "+safeSQLName(name))
 			if err != nil {
 				return err
 			}
