@@ -157,17 +157,32 @@ export function convertURLToExplorePreset(
     }
   }
 
-  if (searchParams.has(ExploreStateURLParams.LeaderboardMeasureCount)) {
-    const count = searchParams.get(
-      ExploreStateURLParams.LeaderboardMeasureCount,
+  // if (searchParams.has(ExploreStateURLParams.LeaderboardMeasureCount)) {
+  //   const count = searchParams.get(
+  //     ExploreStateURLParams.LeaderboardMeasureCount,
+  //   );
+  //   const parsedCount = parseInt(count ?? "", 10);
+  //   if (!isNaN(parsedCount) && parsedCount > 0) {
+  //     preset.exploreLeaderboardMeasureCount = parsedCount;
+  //   } else {
+  //     errors.push(
+  //       getSingleFieldError("leaderboard measure count", count ?? ""),
+  //     );
+  //   }
+  // }
+
+  if (searchParams.has(ExploreStateURLParams.LeaderboardMeasures)) {
+    const measures = searchParams.get(
+      ExploreStateURLParams.LeaderboardMeasures,
+    ) as string;
+    preset.exploreLeaderboardMeasures = measures.split(",");
+
+    const missingMeasures = getMissingValues(
+      preset.exploreLeaderboardMeasures,
+      measures.split(","),
     );
-    const parsedCount = parseInt(count ?? "", 10);
-    if (!isNaN(parsedCount) && parsedCount > 0) {
-      preset.exploreLeaderboardMeasureCount = parsedCount;
-    } else {
-      errors.push(
-        getSingleFieldError("leaderboard measure count", count ?? ""),
-      );
+    if (missingMeasures.length) {
+      errors.push(getMultiFieldError("measure", missingMeasures));
     }
   }
 
@@ -459,17 +474,32 @@ function fromExploreUrlParams(
     }
   }
 
-  if (searchParams.has(ExploreStateURLParams.LeaderboardMeasureCount)) {
-    const count = searchParams.get(
-      ExploreStateURLParams.LeaderboardMeasureCount,
+  // if (searchParams.has(ExploreStateURLParams.LeaderboardMeasureCount)) {
+  //   const count = searchParams.get(
+  //     ExploreStateURLParams.LeaderboardMeasureCount,
+  //   );
+  //   const parsedCount = parseInt(count ?? "", 10);
+  //   if (!isNaN(parsedCount) && parsedCount > 0) {
+  //     preset.exploreLeaderboardMeasureCount = parsedCount;
+  //   } else {
+  //     errors.push(
+  //       getSingleFieldError("leaderboard measure count", count ?? ""),
+  //     );
+  //   }
+  // }
+
+  if (searchParams.has(ExploreStateURLParams.LeaderboardMeasures)) {
+    const measures = searchParams.get(
+      ExploreStateURLParams.LeaderboardMeasures,
+    ) as string;
+    preset.exploreLeaderboardMeasures = measures.split(",");
+
+    const missingMeasures = getMissingValues(
+      preset.exploreLeaderboardMeasures,
+      measures.split(","),
     );
-    const parsedCount = parseInt(count ?? "", 10);
-    if (!isNaN(parsedCount) && parsedCount > 0) {
-      preset.exploreLeaderboardMeasureCount = parsedCount;
-    } else {
-      errors.push(
-        getSingleFieldError("leaderboard measure count", count ?? ""),
-      );
+    if (missingMeasures.length) {
+      errors.push(getMultiFieldError("measure", missingMeasures));
     }
   }
 
