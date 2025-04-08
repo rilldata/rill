@@ -33,9 +33,9 @@
     // Store the current selection before toggling off
     lastSelectedMeasures.set(selectedMeasureNames);
 
-    // When toggling off multi-select, keep only the first selected measure
-    if (selectedMeasureNames?.length > 0) {
-      const firstMeasure = selectedMeasureNames[0];
+    // When toggling off multi-select, keep only the first visible measure
+    if (selectedMeasureNames?.length > 0 && visibleMeasures[0]?.name) {
+      const firstMeasure = visibleMeasures[0].name;
       setLeaderboardMeasureNames([firstMeasure]);
       setLeaderboardSortByMeasureName(firstMeasure);
     }
