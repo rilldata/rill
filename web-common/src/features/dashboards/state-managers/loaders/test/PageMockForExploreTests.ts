@@ -45,7 +45,10 @@ export class PageMockForExploreTests {
   private readonly update: (updater: Updater<Page>) => void;
   private afterNavigateCallback: (navigation: AfterNavigate) => void;
   // Save the url search history to assert that extra entries are not added.
-  public urlSearchHistory: string[] = [];
+  public urlSearchHistory: string[] = [
+    // This is to simulate user going to url without any search params 1st
+    "",
+  ];
 
   public constructor(
     private readonly hoistedPage: HoistedPageForExploreTests,
@@ -123,7 +126,7 @@ export class PageMockForExploreTests {
   }
 
   public reset() {
-    this.gotoSearch("");
     this.urlSearchHistory = [];
+    this.gotoSearch("");
   }
 }

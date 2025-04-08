@@ -108,9 +108,9 @@ export class DashboardStateSync {
 
     console.log(
       "handleExploreInit:",
-      redirectUrl.search,
-      " ==> ",
       pageState.url.search,
+      " ==> ",
+      redirectUrl.search,
     );
     // using `replaceState` directly messes up the navigation entries,
     // `from` and `to` have the old url before being replaced in `afterNavigate` calls leading to incorrect handling.
@@ -176,14 +176,15 @@ export class DashboardStateSync {
     this.updating = false;
     // redirect loop breaker
     if (redirectUrl.search === pageState.url.search) {
+      console.log("handleURLChange:", redirectUrl.search);
       return;
     }
 
     console.log(
       "handleURLChange:",
-      redirectUrl.search,
-      " ==> ",
       pageState.url.search,
+      " ==> ",
+      redirectUrl.search,
     );
     // using `replaceState` directly messes up the navigation entries,
     // `from` and `to` have the old url before being replaced in `afterNavigate` calls leading to incorrect handling.
@@ -223,6 +224,7 @@ export class DashboardStateSync {
     this.updating = false;
     // redirect loop breaker
     if (newUrl.search === pageState.url.search) {
+      console.log("gotoNewState:", newUrl.search);
       return;
     }
 

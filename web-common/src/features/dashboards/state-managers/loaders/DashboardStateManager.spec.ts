@@ -39,7 +39,7 @@ const hoistedPage: HoistedPageForExploreTests = vi.hoisted(() => ({}) as any);
 
 vi.mock("$app/navigation", () => {
   return {
-    goto: (url) => hoistedPage.goto(url),
+    goto: (url, opts) => hoistedPage.goto(url, opts),
     afterNavigate: (cb) => hoistedPage.afterNavigate(cb),
   };
 });
@@ -85,7 +85,7 @@ describe("DashboardStateManager", () => {
         name: "P7D",
         interval: V1TimeGrain.TIME_GRAIN_DAY,
       } as DashboardTimeControls,
-      showTimeComparison: undefined,
+      showTimeComparison: false,
       selectedComparisonTimeRange: undefined,
 
       visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE],
@@ -109,8 +109,9 @@ describe("DashboardStateManager", () => {
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
 
       assertExploreStateSubset(ExploreStateSubsetForBaseState);
-      // no additional goto is called
-      expect(pageMock.urlSearchHistory).toEqual([]);
+      expect(pageMock.urlSearchHistory).toEqual([
+        "view=explore&tr=P7D&tz=Asia%2FKathmandu&grain=day&measures=impressions&dims=publisher&sort_by=impressions&sort_type=percent&sort_dir=ASC&leaderboard_measure_count=1",
+      ]);
     });
 
     it("Should load 'other source' of dashboard state", async () => {

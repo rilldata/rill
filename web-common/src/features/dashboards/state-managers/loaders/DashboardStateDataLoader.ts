@@ -176,7 +176,7 @@ export class DashboardStateDataLoader {
         // TODO: find a better way
         derived(page, (pageState) => ({
           data: pageState,
-          error: undefined,
+          error: null,
           isLoading: false,
           isFetching: false,
         })),
@@ -198,6 +198,9 @@ export class DashboardStateDataLoader {
         return this.getCascadingUrlParams(
           pageState!.url.searchParams,
           sessionStorageUrlParams,
+          this.bookmarkOrTokenUrlParams
+            ? get(this.bookmarkOrTokenUrlParams).data
+            : undefined,
           yamlConfigUrlParams,
           blankDashboardUrlParams,
         );
@@ -230,6 +233,7 @@ export class DashboardStateDataLoader {
       return this.getCascadingUrlParams(
         urlSearchParams,
         undefined,
+        undefined,
         yamlConfigUrlParams.data,
         blankDashboardUrlParams.data,
       );
@@ -244,6 +248,9 @@ export class DashboardStateDataLoader {
     return this.getCascadingUrlParams(
       urlSearchParams,
       sessionStorageUrlParams,
+      this.bookmarkOrTokenUrlParams
+        ? get(this.bookmarkOrTokenUrlParams).data
+        : undefined,
       yamlConfigUrlParams.data,
       blankDashboardUrlParams.data,
     );
@@ -252,6 +259,7 @@ export class DashboardStateDataLoader {
   private getCascadingUrlParams(
     pageUrlParams: URLSearchParams,
     sessionStorageUrlParams: URLSearchParams | undefined,
+    bookmarkOrTokenUrlParams: URLSearchParams | undefined | null,
     yamlConfigUrlParams: URLSearchParams,
     blankDashboardUrlParams: URLSearchParams,
   ) {
@@ -266,9 +274,7 @@ export class DashboardStateDataLoader {
     const urlParamsInOrder = [
       pageUrlParams,
       sessionStorageUrlParams,
-      this.bookmarkOrTokenUrlParams
-        ? get(this.bookmarkOrTokenUrlParams).data
-        : null,
+      bookmarkOrTokenUrlParams,
       yamlConfigUrlParams,
       blankDashboardUrlParams,
     ].filter(Boolean) as URLSearchParams[];
@@ -284,7 +290,7 @@ export class DashboardStateDataLoader {
       exploreSpec,
       {},
     );
-    convertExploreStateToURLSearchParams(
+    return convertExploreStateToURLSearchParams(
       partialExploreState as MetricsExplorerEntity,
       exploreSpec,
       getTimeControlState(
@@ -295,7 +301,5 @@ export class DashboardStateDataLoader {
       ),
       {},
     );
-
-    return newUrlParams;
   }
 }

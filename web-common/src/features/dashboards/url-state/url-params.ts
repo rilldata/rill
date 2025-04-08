@@ -1,3 +1,5 @@
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+
 export enum ExploreStateURLParams {
   WebView = "view",
 
@@ -31,3 +33,18 @@ export enum ExploreStateURLParams {
 
   GzippedParams = "gzipped_state",
 }
+
+export const ExploreStateKeyToURLParamMap: Partial<
+  Record<keyof MetricsExplorerEntity, ExploreStateURLParams>
+> = {
+  activePage: ExploreStateURLParams.WebView,
+
+  selectedTimezone: ExploreStateURLParams.TimeZone,
+  selectedComparisonDimension: ExploreStateURLParams.ComparisonDimension,
+
+  selectedDimensionName: ExploreStateURLParams.ExpandedDimension,
+  leaderboardSortByMeasureName: ExploreStateURLParams.SortBy,
+  dashboardSortType: ExploreStateURLParams.SortType,
+  sortDirection: ExploreStateURLParams.SortDirection,
+  leaderboardMeasureCount: ExploreStateURLParams.LeaderboardMeasureCount,
+};
