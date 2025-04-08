@@ -13,7 +13,6 @@
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
   import { onDestroy } from "svelte";
@@ -39,11 +38,7 @@
       dimensions: { getDimensionDisplayName },
       dimensionFilters: { isFilterExcludeMode },
       measures: { visibleMeasures },
-      leaderboard: {
-        leaderboardShowAllMeasures,
-        leaderboardMeasureNames,
-        leaderboardSortByMeasureName,
-      },
+      leaderboard: { leaderboardShowAllMeasures, leaderboardMeasureNames },
     },
     actions: {
       sorting: { toggleSort },
