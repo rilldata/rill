@@ -157,21 +157,6 @@ export function convertURLToExplorePreset(
     }
   }
 
-  if (searchParams.has(ExploreStateURLParams.LeaderboardMeasures)) {
-    const measures = searchParams.get(
-      ExploreStateURLParams.LeaderboardMeasures,
-    ) as string;
-    preset.exploreLeaderboardMeasures = measures.split(",");
-
-    const missingMeasures = getMissingValues(
-      preset.exploreLeaderboardMeasures,
-      measures.split(","),
-    );
-    if (missingMeasures.length) {
-      errors.push(getMultiFieldError("measure", missingMeasures));
-    }
-  }
-
   return { preset, errors };
 }
 
@@ -461,18 +446,18 @@ function fromExploreUrlParams(
   }
 
   if (searchParams.has(ExploreStateURLParams.LeaderboardMeasures)) {
-    const measures = searchParams.get(
+    const leaderboardMeasures = searchParams.get(
       ExploreStateURLParams.LeaderboardMeasures,
     ) as string;
-    preset.exploreLeaderboardMeasures = measures.split(",");
+    preset.exploreLeaderboardMeasures = leaderboardMeasures.split(",");
 
-    const missingMeasures = getMissingValues(
-      preset.exploreLeaderboardMeasures,
-      measures.split(","),
-    );
-    if (missingMeasures.length) {
-      errors.push(getMultiFieldError("measure", missingMeasures));
-    }
+    // const missingMeasures = getMissingValues(
+    //   preset.exploreLeaderboardMeasures,
+    //   leaderboardMeasures.split(","),
+    // );
+    // if (missingMeasures.length) {
+    //   errors.push(getMultiFieldError("leaderboard measures", missingMeasures));
+    // }
   }
 
   return { preset, errors };
