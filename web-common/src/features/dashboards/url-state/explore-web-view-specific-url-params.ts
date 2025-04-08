@@ -13,7 +13,6 @@ export const ExploreWebViewSpecificURLParams: Record<
     ExploreStateURLParams.SortBy,
     ExploreStateURLParams.SortType,
     ExploreStateURLParams.SortDirection,
-    ExploreStateURLParams.LeaderboardMeasureCount,
     ExploreStateURLParams.LeaderboardMeasures,
     ExploreStateURLParams.TimeGrain,
     ExploreStateURLParams.HighlightedTimeRange,

@@ -48,9 +48,6 @@ class FeatureFlags {
   alerts = new FeatureFlag("user", true);
   reports = new FeatureFlag("user", true);
 
-  // @deprecated
-  leaderboardMeasureCount = new FeatureFlag("user", false);
-
   constructor() {
     const updateFlags = (userFlags: V1InstanceFeatureFlags) => {
       for (const key in userFlags) {

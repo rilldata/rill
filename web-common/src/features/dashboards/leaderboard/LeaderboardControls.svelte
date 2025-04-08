@@ -1,7 +1,6 @@
 <script lang="ts">
   import DashboardMetricsDraggableList from "@rilldata/web-common/components/menu/DashboardMetricsDraggableList.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { getStateManagers } from "../state-managers/state-managers";
   import LeaderboardMeasureNamesDropdown from "@rilldata/web-common/components/menu/LeaderboardMeasureNamesDropdown.svelte";
@@ -33,18 +32,13 @@
 
   let isLeaderboardActionsOpen = false;
 
-  const { leaderboardMeasureCount: leaderboardMeasureCountFeatureFlag } =
-    featureFlags;
-
   $: metricsExplorer = $metricsExplorerStore.entities[exploreName];
 
   $: activeLeaderboardMeasure = $getMeasureByName(
     $leaderboardSortByMeasureName,
   );
-
-  $: validPercentOfTotal = leaderboardMeasureCountFeatureFlag
-    ? $visibleMeasures.some((measure) => measure.validPercentOfTotal)
-    : activeLeaderboardMeasure?.validPercentOfTotal || false;
+  $: validPercentOfTotal =
+    activeLeaderboardMeasure?.validPercentOfTotal || false;
 
   $: visibleDimensionsNames = $visibleDimensions
     .map(({ name }) => name)
@@ -79,13 +73,6 @@
     allItems={$allDimensions}
     selectedItems={visibleDimensionsNames}
   />
-  <!-- <LeaderboardMeasureCountSelector
-      measures={$visibleMeasures}
-      count={$leaderboardMeasureCount}
-      onMeasureCountChange={(count) => {
-        setLeaderboardMeasureCount(count);
-      }}
-    /> -->
   <LeaderboardMeasureNamesDropdown
     tooltipText="Choose measures to filter by"
     visibleMeasures={$visibleMeasures}

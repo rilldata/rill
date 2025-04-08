@@ -125,8 +125,12 @@ export function getProtoFromDashboardState(
     state.leaderboardMeasure = metrics.leaderboardSortByMeasureName;
   }
 
-  if (metrics.leaderboardMeasureCount) {
-    state.leaderboardMeasureCount = metrics.leaderboardMeasureCount;
+  if (metrics.leaderboardShowAllMeasures) {
+    state.leaderboardShowAllMeasures = metrics.leaderboardShowAllMeasures;
+  }
+
+  if (metrics.leaderboardMeasureNames) {
+    state.leaderboardMeasures = metrics.leaderboardMeasureNames;
   }
 
   if (metrics.tdd?.pinIndex !== undefined) {
