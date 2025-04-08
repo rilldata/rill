@@ -5,6 +5,7 @@ import {
   AD_BIDS_DOMAIN_DIMENSION,
   AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS,
   AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+  AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
   AD_BIDS_PUBLISHER_COUNT_MEASURE,
   AD_BIDS_TIME_RANGE_SUMMARY,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
@@ -14,9 +15,9 @@ import { describe, it, expect } from "vitest";
 describe("getDefaultExploreUrlParams", () => {
   it("Metrics explore without a preset", () => {
     const defaultExploreUrlParams = getDefaultExploreUrlParams(
-      AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+      AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
       AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS,
-      AD_BIDS_TIME_RANGE_SUMMARY,
+      AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
     );
     expect(defaultExploreUrlParams.toString()).toEqual(
       "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measure_count=1",
@@ -45,7 +46,7 @@ describe("getDefaultExploreUrlParams", () => {
           exploreLeaderboardMeasureCount: 2,
         },
       },
-      AD_BIDS_TIME_RANGE_SUMMARY,
+      AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
     );
     expect(defaultExploreUrlParams.toString()).toEqual(
       "view=explore&tr=P7D&tz=Asia%2FKolkata&compare_tr=&grain=day&compare_dim=&f=&measures=bid_price%2Cpublisher_count&dims=domain%2Ccountry&expand_dim=&sort_by=bid_price&sort_type=percent&sort_dir=ASC&leaderboard_measure_count=2",

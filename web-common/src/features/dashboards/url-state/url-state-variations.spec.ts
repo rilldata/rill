@@ -81,6 +81,8 @@ const TestCases: {
   mutations: TestDashboardMutation[];
   preset?: V1ExplorePreset;
   expectedSearch: string;
+  // This is to assert edge case when some state gets populated from timeControlStore
+  extraExploreState?: Partial<MetricsExplorerEntity>;
   // Mainly tests that close certain views.
   // Closing view would retain some state of the old view in protobuf state
   legacyNotSupported?: boolean;
@@ -111,12 +113,22 @@ const TestCases: {
     ],
     preset: AD_BIDS_PRESET,
     expectedSearch: "compare_tr=rill-PW",
+    extraExploreState: {
+      selectedComparisonTimeRange: {
+        name: "rill-PP",
+      } as DashboardTimeControls,
+    },
   },
   {
     title: "Time range with preset and state not matching preset",
     mutations: [AD_BIDS_SET_P4W_TIME_RANGE_FILTER, AD_BIDS_SET_LA_TIMEZONE],
     preset: AD_BIDS_PRESET,
     expectedSearch: "tr=P4W&tz=America%2FLos_Angeles&grain=week",
+    extraExploreState: {
+      selectedComparisonTimeRange: {
+        name: "rill-PP",
+      } as DashboardTimeControls,
+    },
   },
   {
     title: "Time range with preset and ALL_TIME selected",
@@ -420,7 +432,6 @@ describe("Human readable URL state variations", () => {
           AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
           AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
         );
-        console.log(defaultExploreUrlSearch.toString());
 
         applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
 
@@ -454,7 +465,13 @@ describe("Human readable URL state variations", () => {
   });
 
   describe("Should set correct state for legacy protobuf state and restore default state on empty params", () => {
-    for (const { title, mutations, preset, legacyNotSupported } of TestCases) {
+    for (const {
+      title,
+      mutations,
+      preset,
+      extraExploreState,
+      legacyNotSupported,
+    } of TestCases) {
       if (legacyNotSupported) continue;
       it(title, () => {
         const explore: V1ExploreSpec = {
@@ -470,7 +487,7 @@ describe("Human readable URL state variations", () => {
           ),
         );
         const defaultExplorePreset = getDefaultExplorePreset(
-          AD_BIDS_EXPLORE_INIT,
+          explore,
           AD_BIDS_METRICS_INIT,
           AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
         );
@@ -494,7 +511,10 @@ describe("Human readable URL state variations", () => {
             explore,
             defaultExplorePreset,
           );
-        expect(entityFromUrl).toEqual(curState);
+        expect(entityFromUrl).toEqual({
+          ...curState,
+          ...(extraExploreState ?? {}),
+        });
 
         // go back to default url
         const defaultUrl = new URL("http://localhost");
@@ -615,7 +635,6 @@ export function getCleanMetricsExploreForAssertion() {
   delete cleanedState.lastDefinedScrubRange;
 
   // TODO
-  delete cleanedState.selectedScrubRange;
   delete cleanedState.leaderboardContextColumn;
 
   return cleanedState;

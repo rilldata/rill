@@ -60,7 +60,7 @@ export function convertPartialExploreStateToUrlSearch(
   );
 
   // timeControlsState will be undefined for dashboards without timeseries
-  if (timeControlsState) {
+  if (timeControlsState?.selectedTimeRange) {
     copyParamsToTarget(
       toTimeRangesUrl(
         partialExploreState,

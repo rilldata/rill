@@ -147,6 +147,7 @@ function fromTimeRangesParams(
     preset.comparisonMode ===
     V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
   ) {
+    partialExploreState.selectedComparisonTimeRange = undefined;
     partialExploreState.showTimeComparison = true;
   }
 
@@ -169,6 +170,11 @@ function fromTimeRangesParams(
         getSingleFieldError("compare dimension", preset.comparisonDimension),
       );
     }
+  } else if (
+    preset.comparisonMode !==
+    V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_DIMENSION
+  ) {
+    partialExploreState.selectedComparisonDimension = "";
   }
 
   if (preset.selectTimeRange) {

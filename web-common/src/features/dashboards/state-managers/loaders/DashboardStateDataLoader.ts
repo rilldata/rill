@@ -5,6 +5,7 @@ import {
 } from "@rilldata/web-common/features/compound-query-result";
 import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
 import { getPartialExploreStateFromSessionStorage } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
+import { getBlankExploreState } from "@rilldata/web-common/features/dashboards/stores/get-blank-explore-state";
 import { getDefaultExploreUrlParams } from "@rilldata/web-common/features/dashboards/stores/get-default-explore-url-params";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
@@ -31,18 +32,17 @@ export class DashboardStateDataLoader {
     typeof useMetricsViewTimeRange
   >;
 
-  private readonly defaultExploreStateAndErrors: CompoundQueryResult<{
-    defaultExploreState: Partial<MetricsExplorerEntity> | undefined;
-    errors: Error[];
-  }>;
+  private readonly blankPartialExploreState: CompoundQueryResult<
+    Partial<MetricsExplorerEntity>
+  >;
   private readonly exploreStateFromYAMLConfigAndErrors: CompoundQueryResult<{
     exploreStateFromYAMLConfig: Partial<MetricsExplorerEntity>;
     errors: Error[];
   }>;
-  // This is used to decide defaults and show/hide url params. TODO: is this the correct preset?
-  public readonly explorePresetFromYAMLConfig: CompoundQueryResult<
+  private readonly explorePresetFromYAMLConfig: CompoundQueryResult<
     V1ExplorePreset | undefined
   >;
+  // This is used to decide defaults and show/hide url params.
   public readonly defaultExploreUrlParams: CompoundQueryResult<URLSearchParams>;
 
   private readonly exploreStateFromSessionStorage: CompoundQueryResult<
@@ -102,54 +102,42 @@ export class DashboardStateDataLoader {
       },
     );
 
-    this.defaultExploreStateAndErrors = getCompoundQuery(
+    this.blankPartialExploreState = getCompoundQuery(
       [this.validSpecQuery, this.fullTimeRangeQuery],
       ([validSpecResp, metricsViewTimeRangeResp]) => {
-        const metricsViewSpec = validSpecResp?.metricsView ?? {};
-        const exploreSpec = validSpecResp?.explore ?? {};
+        const metricsViewSpec = validSpecResp?.metricsView;
+        const exploreSpec = validSpecResp?.explore;
 
-        // safeguard to make sure time range summary is loaded for metrics view with time dimension
         if (
-          metricsViewSpec.timeDimension &&
-          !metricsViewTimeRangeResp?.timeRangeSummary
+          !metricsViewSpec ||
+          !exploreSpec ||
+          // safeguard to make sure time range summary is loaded for metrics view with time dimension
+          (metricsViewSpec.timeDimension &&
+            !metricsViewTimeRangeResp?.timeRangeSummary)
         ) {
-          return {
-            defaultExploreState: undefined,
-            errors: [],
-          };
+          return undefined;
         }
 
-        const defaultExplorePreset = getDefaultExplorePreset(
-          {
-            ...exploreSpec,
-            defaultPreset: {},
-          },
+        return getBlankExploreState(
           metricsViewSpec,
+          exploreSpec,
           metricsViewTimeRangeResp?.timeRangeSummary,
         );
-        const { partialExploreState: defaultExploreState, errors } =
-          convertPresetToExploreState(
-            metricsViewSpec,
-            exploreSpec,
-            defaultExplorePreset,
-          );
-        return {
-          defaultExploreState,
-          errors,
-        };
       },
     );
 
     this.explorePresetFromYAMLConfig = getCompoundQuery(
       [this.validSpecQuery, this.fullTimeRangeQuery],
       ([validSpecResp, metricsViewTimeRangeResp]) => {
-        const metricsViewSpec = validSpecResp?.metricsView ?? {};
-        const exploreSpec = validSpecResp?.explore ?? {};
+        const metricsViewSpec = validSpecResp?.metricsView;
+        const exploreSpec = validSpecResp?.explore;
 
-        // safeguard to make sure time range summary is loaded for metrics view with time dimension
         if (
-          metricsViewSpec.timeDimension &&
-          !metricsViewTimeRangeResp?.timeRangeSummary
+          !metricsViewSpec ||
+          !exploreSpec ||
+          // safeguard to make sure time range summary is loaded for metrics view with time dimension
+          (metricsViewSpec.timeDimension &&
+            !metricsViewTimeRangeResp?.timeRangeSummary)
         ) {
           return undefined;
         }
@@ -168,10 +156,12 @@ export class DashboardStateDataLoader {
         const metricsViewSpec = validSpecResp?.metricsView ?? {};
         const exploreSpec = validSpecResp?.explore ?? {};
 
-        // safeguard to make sure time range summary is loaded for metrics view with time dimension
         if (
-          metricsViewSpec.timeDimension &&
-          !metricsViewTimeRangeResp?.timeRangeSummary
+          !metricsViewSpec ||
+          !exploreSpec ||
+          // safeguard to make sure time range summary is loaded for metrics view with time dimension
+          (metricsViewSpec.timeDimension &&
+            !metricsViewTimeRangeResp?.timeRangeSummary)
         ) {
           return undefined;
         }
@@ -259,14 +249,14 @@ export class DashboardStateDataLoader {
 
     this.initExploreState = getCompoundQuery(
       [
-        this.defaultExploreStateAndErrors,
+        this.blankPartialExploreState,
         this.exploreStateFromSessionStorage,
         this.partialExploreStateFromUrlForInitAndErrors,
         this.exploreStateFromYAMLConfigAndErrors,
         ...(bookmarkOrTokenExploreState ? [bookmarkOrTokenExploreState] : []),
       ],
       ([
-        defaultExploreStateAndErrors,
+        blankPartialExploreState,
         exploreStateFromSessionStorage,
         partialExploreStateFromUrlForInitAndErrors,
         exploreStateFromYAMLConfigAndErrors,
@@ -274,7 +264,7 @@ export class DashboardStateDataLoader {
       ]) => {
         // type guards. other fields dont need it since we have chaining `??`
         if (
-          !defaultExploreStateAndErrors?.defaultExploreState ||
+          !blankPartialExploreState ||
           !exploreStateFromYAMLConfigAndErrors?.exploreStateFromYAMLConfig
         ) {
           return undefined;
@@ -282,7 +272,7 @@ export class DashboardStateDataLoader {
 
         // Old behaviour where the base of the dashboard is a combination of settings for blank dashboard and yaml defaults.
         const baseExploreState = {
-          ...defaultExploreStateAndErrors.defaultExploreState,
+          ...blankPartialExploreState,
           ...exploreStateFromYAMLConfigAndErrors.exploreStateFromYAMLConfig,
         };
 

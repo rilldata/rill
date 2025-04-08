@@ -18,15 +18,15 @@ import {
 import {
   type V1ExploreSpec,
   type V1MetricsViewSpec,
-  type V1MetricsViewTimeRangeResponse,
   V1TimeGrain,
+  type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 import { DateTime, IANAZone, Interval } from "luxon";
 
 export function getBlankExploreState(
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
-  fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
+  timeRangeSummary: V1TimeRangeSummary | undefined,
 ) {
   return <Partial<MetricsExplorerEntity>>{
     activePage: DashboardState_ActivePage.DEFAULT,
@@ -35,7 +35,7 @@ export function getBlankExploreState(
     dimensionThresholdFilters: [],
     dimensionsWithInlistFilter: [],
 
-    ...getBlankExploreTimeState(metricsViewSpec, exploreSpec, fullTimeRange),
+    ...getBlankExploreTimeState(metricsViewSpec, exploreSpec, timeRangeSummary),
     ...getBlankExploreViewState(exploreSpec),
 
     tdd: {
@@ -62,18 +62,15 @@ export function getBlankExploreState(
 function getBlankExploreTimeState(
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
-  fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
+  timeRangeSummary: V1TimeRangeSummary | undefined,
 ): Partial<MetricsExplorerEntity> {
-  if (
-    !fullTimeRange?.timeRangeSummary?.min ||
-    !fullTimeRange?.timeRangeSummary?.max
-  ) {
+  if (!timeRangeSummary?.min || !timeRangeSummary?.max) {
     return {};
   }
 
   const timeRangeName = getDefaultTimeRange(
     metricsViewSpec.smallestTimeGrain,
-    fullTimeRange,
+    timeRangeSummary,
   );
 
   const timeZone = getDefaultTimeZone(exploreSpec);
@@ -92,14 +89,11 @@ function getBlankExploreTimeState(
   };
 }
 
-function getDefaultTimeRange(
+export function getDefaultTimeRange(
   smallestTimeGrain: V1TimeGrain | undefined,
-  fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
+  timeRangeSummary: V1TimeRangeSummary | undefined,
 ) {
-  if (
-    !fullTimeRange?.timeRangeSummary?.min ||
-    !fullTimeRange?.timeRangeSummary?.max
-  ) {
+  if (!timeRangeSummary?.min || !timeRangeSummary?.max) {
     return undefined;
   }
 
@@ -126,8 +120,8 @@ function getDefaultTimeRange(
     }
   } else {
     const dayCount = Interval.fromDateTimes(
-      DateTime.fromISO(fullTimeRange?.timeRangeSummary?.min),
-      DateTime.fromISO(fullTimeRange?.timeRangeSummary?.max),
+      DateTime.fromISO(timeRangeSummary?.min),
+      DateTime.fromISO(timeRangeSummary?.max),
     )
       .toDuration()
       .as("days");
@@ -148,7 +142,7 @@ function getDefaultTimeRange(
   }
 }
 
-function getDefaultTimeZone(explore: V1ExploreSpec) {
+export function getDefaultTimeZone(explore: V1ExploreSpec) {
   const preference = explore.timeZones?.[0] ?? DEFAULT_TIMEZONES[0];
 
   if (preference === "Local") {
