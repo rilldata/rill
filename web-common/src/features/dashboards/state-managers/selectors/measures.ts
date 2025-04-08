@@ -28,7 +28,6 @@ export const allMeasures = ({
   );
 };
 
-// FIXME: to consolidate web-common/src/features/dashboards/state-managers/selectors/active-measure.ts
 export const leaderboardSortByMeasureName = ({
   dashboard,
 }: DashboardDataSources) => {

@@ -11,8 +11,6 @@
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import { writable } from "svelte/store";
 
-  // FIXME: when we hide a measure from visibleMeasures on the left, the visibleMeasures are not updated here
-
   export let tooltipText: string;
   export let disabled = false;
   export let searchText = "";
@@ -21,8 +19,6 @@
   export let selectedMeasureNames: string[];
   export let setLeaderboardMeasureNames: (names: string[]) => void;
   export let setLeaderboardSortByMeasureName: (name: string) => void;
-
-  $: console.log("visibleMeasures :", visibleMeasures);
 
   let active = false;
   let multiSelect = selectedMeasureNames?.length > 1;
