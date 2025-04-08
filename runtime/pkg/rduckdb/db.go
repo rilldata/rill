@@ -744,46 +744,62 @@ func (d *db) acquireWriteConn(ctx context.Context, dsn, table string, initQuerie
 	// So it is better to drop all views and detach all databases before closing the write handle.
 	dropViews := func() error {
 		// remove all views created on top of attached table
-		rows, err := db.QueryxContext(ctx, "SELECT view_name FROM duckdb_views WHERE database_name = current_database() AND internal = false")
+		rows, err := conn.QueryxContext(ctx, "SELECT view_name FROM duckdb_views WHERE database_name = current_database() AND internal = false")
 		if err != nil {
 			return err
 		}
-		defer rows.Close()
 
-		var name string
+		var names []string
 		for rows.Next() {
+			var name string
 			err = rows.Scan(&name)
 			if err != nil {
+				rows.Close()
 				return err
 			}
-			_, err = db.ExecContext(ctx, "DROP VIEW IF EXISTS "+safeSQLName(name))
+			names = append(names, name)
+		}
+		rows.Close()
+		if err := rows.Err(); err != nil {
+			return err
+		}
+		for _, name := range names {
+			_, err = conn.ExecContext(ctx, "DROP VIEW "+safeSQLName(name))
 			if err != nil {
 				return err
 			}
 		}
-		return rows.Err()
+		return nil
 	}
 
 	detach := func() error {
 		// detach all attached databases
-		rows, err := db.QueryxContext(ctx, "SELECT database_name FROM duckdb_databases() WHERE database_name != current_database() AND internal = false AND type NOT LIKE 'motherduck%'")
+		rows, err := conn.QueryxContext(ctx, "SELECT database_name FROM duckdb_databases() WHERE database_name != current_database() AND internal = false AND type NOT LIKE 'motherduck%'")
 		if err != nil {
 			return err
 		}
-		defer rows.Close()
 
-		var name string
+		var names []string
 		for rows.Next() {
+			var name string
 			err = rows.Scan(&name)
 			if err != nil {
+				rows.Close()
 				return err
 			}
-			_, err = db.ExecContext(ctx, "DETACH "+safeSQLName(name))
+			names = append(names, name)
+		}
+		rows.Close()
+		if err := rows.Err(); err != nil {
+			return err
+		}
+		for _, name := range names {
+			_, err = conn.ExecContext(ctx, "DETACH DATABASE "+safeSQLName(name))
 			if err != nil {
 				return err
 			}
 		}
-		return rows.Err()
+		return nil
 	}
 
 	release := func() (err error) {
