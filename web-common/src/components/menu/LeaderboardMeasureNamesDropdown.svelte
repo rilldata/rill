@@ -25,11 +25,17 @@
 
   const lastSelectedMeasures = writable<string[]>([]);
 
-  $: filteredMeasures = filterMeasures(searchText).sort((a, b) => {
-    const aIndex = visibleMeasures.findIndex((m) => m.name === a.name);
-    const bIndex = visibleMeasures.findIndex((m) => m.name === b.name);
-    return aIndex - bIndex;
-  });
+  $: filteredMeasures = visibleMeasures
+    .filter((item) =>
+      ((item.displayName || item.name) ?? "")
+        .toLowerCase()
+        .includes(searchText.toLowerCase()),
+    )
+    .sort((a, b) => {
+      const aIndex = visibleMeasures.findIndex((m) => m.name === a.name);
+      const bIndex = visibleMeasures.findIndex((m) => m.name === b.name);
+      return aIndex - bIndex;
+    });
 
   $: showingMeasuresText =
     selectedMeasureNames?.length > 1
@@ -50,6 +56,12 @@
     }
   }
 
+  function toggleSingleSelect(name: string) {
+    setLeaderboardSortByMeasureName(name);
+    setLeaderboardMeasureNames([name]);
+    active = false;
+  }
+
   function toggleMultiSelect() {
     const newMultiSelect = !multiSelect;
     if (!newMultiSelect) {
@@ -63,20 +75,6 @@
       }
     }
     multiSelect = newMultiSelect;
-  }
-
-  function filterMeasures(searchText: string) {
-    return visibleMeasures.filter((item) =>
-      ((item.displayName || item.name) ?? "")
-        .toLowerCase()
-        .includes(searchText.toLowerCase()),
-    );
-  }
-
-  function toggleSingleSelect(name: string) {
-    setLeaderboardSortByMeasureName(name);
-    setLeaderboardMeasureNames([name]);
-    active = false;
   }
 
   function toggleMeasure(name: string) {
@@ -176,8 +174,8 @@
               </DropdownMenu.CheckboxItem>
             {/each}
           {:else}
-            <div class="ui-copy-disabled text-center p-2 w-full">
-              no results
+            <div class="ui-copy-disabled p-2 w-full">
+              No matching leaderboard measures shown
             </div>
           {/if}
         </div>
