@@ -172,10 +172,6 @@
                   <div>
                     {measure.displayName || measure.name}
                   </div>
-
-                  <p class="ui-copy-muted" style:font-size="11px">
-                    {measure.description}
-                  </p>
                 </div>
               </DropdownMenu.CheckboxItem>
             {/each}
