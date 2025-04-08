@@ -63,6 +63,8 @@
     {
       query: {
         enabled: !!$user.data?.user,
+        retry: 2,
+        refetchOnMount: true,
       },
     },
   );
@@ -75,6 +77,8 @@
     {
       query: {
         enabled: !!organization,
+        retry: 2,
+        refetchOnMount: true,
       },
     },
   );

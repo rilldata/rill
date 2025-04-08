@@ -42,9 +42,10 @@
         },
       });
 
-      await queryClient.invalidateQueries(
-        getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
-      );
+      await queryClient.invalidateQueries({
+        queryKey:
+          getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
+      });
 
       groupName = "";
       open = false;

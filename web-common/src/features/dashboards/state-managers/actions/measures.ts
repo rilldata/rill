@@ -9,10 +9,10 @@ export const toggleMeasureVisibility = (
   if (index > -1) {
     dashboard.visibleMeasures.splice(index, 1);
     if (
-      dashboard.leaderboardMeasureName === measureName &&
+      dashboard.leaderboardSortByMeasureName === measureName &&
       dashboard.visibleMeasures.length > 1
     ) {
-      dashboard.leaderboardMeasureName = dashboard.visibleMeasures[0];
+      dashboard.leaderboardSortByMeasureName = dashboard.visibleMeasures[0];
     }
   } else {
     dashboard.visibleMeasures.push(measureName);
@@ -44,9 +44,9 @@ export const setMeasureVisibility = (
   // If the current leaderboard measure is hidden, select a new one from visible measures
   if (
     measures.length > 0 &&
-    !measures.includes(dashboard.leaderboardMeasureName)
+    !measures.includes(dashboard.leaderboardSortByMeasureName)
   ) {
-    dashboard.leaderboardMeasureName = measures[0];
+    dashboard.leaderboardSortByMeasureName = measures[0];
   }
 
   dashboard.allMeasuresVisible =

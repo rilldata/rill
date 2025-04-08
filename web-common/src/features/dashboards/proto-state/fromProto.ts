@@ -47,7 +47,7 @@ import {
   PivotElement,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
-  MetricsViewSpecDimensionV2,
+  MetricsViewSpecDimension,
   StructTypeField,
   V1ExploreSpec,
   V1Expression,
@@ -166,8 +166,9 @@ export function getDashboardStateFromProto(
   }
 
   if (dashboard.leaderboardMeasure) {
-    entity.leaderboardMeasureName = dashboard.leaderboardMeasure;
+    entity.leaderboardSortByMeasureName = dashboard.leaderboardMeasure;
   }
+
   if (dashboard.comparisonDimension) {
     entity.selectedComparisonDimension = dashboard.comparisonDimension;
   } else {
@@ -267,7 +268,7 @@ export function fromExpressionProto(
 
 function correctFilterValues(
   filter: V1Expression,
-  dimensions: MetricsViewSpecDimensionV2[],
+  dimensions: MetricsViewSpecDimension[],
   schema: V1StructType,
 ) {
   return filterIdentifiers(filter, (e, ident) => {

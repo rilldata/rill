@@ -1,10 +1,9 @@
 <script lang="ts">
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
   import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
   import type {
-    MetricsViewSpecDimensionV2,
+    MetricsViewSpecDimension,
     V1Expression,
     V1MetricsViewAggregationMeasure,
     V1TimeRange,
@@ -41,6 +40,7 @@
   } from "./leaderboard-utils";
   import { valueColumn, COMPARISON_COLUMN_WIDTH } from "./leaderboard-widths";
   import DelayedLoadingRows from "./DelayedLoadingRows.svelte";
+  import type { selectedDimensionValuesV2 } from "../state-managers/selectors/dimension-filters";
 
   const slice = 7;
   const gutterWidth = 24;
@@ -48,10 +48,10 @@
   const maxValuesToShow = 15;
 
   // FIXME: clean up `sortBy` and `activeMeasureName`
-  export let dimension: MetricsViewSpecDimensionV2;
+  export let dimension: MetricsViewSpecDimension;
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
-  export let selectedValues: CompoundQueryResult<string[]>;
+  export let selectedValues: ReturnType<typeof selectedDimensionValuesV2>;
   export let instanceId: string;
   export let whereFilter: V1Expression;
   export let dimensionThresholdFilters: DimensionThresholdFilter[];
@@ -204,7 +204,7 @@
     },
   );
 
-  $: ({ data: sortedData, isFetching, isLoading } = $sortedQuery);
+  $: ({ data: sortedData, isFetching, isLoading, isPending } = $sortedQuery);
   $: ({ data: totalsData } = $totalsQuery);
 
   $: leaderboardTotals = totalsData?.data?.[0]
@@ -339,7 +339,7 @@
       dimensionDescription={description}
       {dimensionName}
       {isBeingCompared}
-      {isFetching}
+      isFetching={isLoading}
       {sortType}
       {isValidPercentOfTotal}
       {isTimeComparisonActive}
@@ -356,6 +356,7 @@
     <tbody>
       <DelayedLoadingRows
         {isLoading}
+        {isPending}
         {isFetching}
         rowCount={aboveTheFold.length}
         columnCount={columnCount + 1}
@@ -411,7 +412,7 @@
         Expand dimension to see more values
       </TooltipContent>
     </Tooltip>
-  {:else if noAvailableValues && !isFetching}
+  {:else if noAvailableValues}
     <div class="table-message ui-copy-muted">
       <div class="pl-8">(No available values)</div>
     </div>

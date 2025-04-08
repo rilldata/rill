@@ -93,7 +93,7 @@ describe("DashboardStateManager", () => {
       visibleDimensions: [AD_BIDS_PUBLISHER_DIMENSION],
       allDimensionsVisible: false,
 
-      leaderboardMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
+      leaderboardSortByMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
       leaderboardContextColumn: undefined,
       sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
     };
@@ -108,7 +108,7 @@ describe("DashboardStateManager", () => {
           name: TimeComparisonOption.CONTIGUOUS,
         } as DashboardTimeControls,
       },
-      error: undefined,
+      error: null,
       isFetching: false,
       isLoading: false,
     });
@@ -174,7 +174,7 @@ describe("DashboardStateManager", () => {
         visibleDimensions: [AD_BIDS_DOMAIN_DIMENSION],
         allDimensionsVisible: false,
 
-        leaderboardMeasureName: AD_BIDS_BID_PRICE_MEASURE,
+        leaderboardSortByMeasureName: AD_BIDS_BID_PRICE_MEASURE,
         leaderboardContextColumn: undefined,
         sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
       });
@@ -202,7 +202,7 @@ describe("DashboardStateManager", () => {
       visibleDimensions: [AD_BIDS_PUBLISHER_DIMENSION],
       allDimensionsVisible: false,
 
-      leaderboardMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
+      leaderboardSortByMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
       leaderboardContextColumn: undefined,
       sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
     };
@@ -244,7 +244,7 @@ describe("DashboardStateManager", () => {
         visibleDimensions: [AD_BIDS_DOMAIN_DIMENSION],
         allDimensionsVisible: false,
 
-        leaderboardMeasureName: AD_BIDS_BID_PRICE_MEASURE,
+        leaderboardSortByMeasureName: AD_BIDS_BID_PRICE_MEASURE,
         leaderboardContextColumn: undefined,
         sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
       });
@@ -297,7 +297,7 @@ function assertExploreStateSubset(
     visibleDimensions: curExploreState.visibleDimensions,
     allDimensionsVisible: curExploreState.allDimensionsVisible,
 
-    leaderboardMeasureName: curExploreState.leaderboardMeasureName,
+    leaderboardSortByMeasureName: curExploreState.leaderboardSortByMeasureName,
     leaderboardContextColumn: curExploreState.leaderboardContextColumn,
     sortDirection: curExploreState.sortDirection,
   };

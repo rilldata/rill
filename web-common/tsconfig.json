@@ -2,5 +2,5 @@
   "compilerOptions": {
     "types": ["@testing-library/jest-dom"]
   },
-  "extends": "../tsconfig.json"
+  "extends": ["./.svelte-kit/tsconfig.json", "../tsconfig.json"]
 }
