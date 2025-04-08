@@ -45,7 +45,6 @@ import type { SortingState } from "@tanstack/svelte-table";
 
 /**
  * Converts a V1ExplorePreset to our internal metrics explore state.
- * V1ExplorePreset could come from url state, bookmark, alert or report.
  */
 export function convertPresetToExploreState(
   metricsView: V1MetricsViewSpec,
