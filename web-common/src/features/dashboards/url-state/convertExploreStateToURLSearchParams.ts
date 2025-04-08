@@ -291,19 +291,12 @@ function toExploreUrl(
     );
   }
 
-  // UNCOMMENT TO HIDE THE DEFAULT SORT BY MEASURE
-  // if (
-  //   shouldSetParam(
-  //     preset.exploreSortBy,
-  //     exploreState.leaderboardSortByMeasureName,
-  //   )
-  // ) {
-  //   searchParams.set(
-  //     ExploreStateURLParams.SortBy,
-  //     exploreState.leaderboardSortByMeasureName,
-  //   );
-  // }
-  if (exploreState.leaderboardSortByMeasureName) {
+  if (
+    shouldSetParam(
+      preset.exploreSortBy,
+      exploreState.leaderboardSortByMeasureName,
+    )
+  ) {
     searchParams.set(
       ExploreStateURLParams.SortBy,
       exploreState.leaderboardSortByMeasureName,
