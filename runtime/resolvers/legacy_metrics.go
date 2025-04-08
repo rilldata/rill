@@ -101,7 +101,7 @@ func (r *legacyMetricsResolver) ResolveInteractive(ctx context.Context) (runtime
 	if span.SpanContext().IsValid() {
 		span.SetAttributes(attribute.String("metrics_view", r.metricsViewName))
 	}
-	defer span.End()
+
 	ctrl, err := r.runtime.Controller(ctx, r.instanceID)
 	if err != nil {
 		return nil, err

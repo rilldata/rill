@@ -167,7 +167,6 @@ func (r *globResolver) ResolveInteractive(ctx context.Context) (runtime.Resolver
 			attribute.String("transform_sql", r.props.TransformSQL),
 		)
 	}
-	defer span.End()
 
 	h, release, err := r.runtime.AcquireHandle(ctx, r.instanceID, r.props.Connector)
 	if err != nil {
