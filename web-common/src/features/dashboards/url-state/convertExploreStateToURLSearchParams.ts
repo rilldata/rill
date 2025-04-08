@@ -338,7 +338,13 @@ function toExploreUrl(
     );
   }
 
-  if (exploreState.leaderboardMeasureNames) {
+  // FIXME: Seeing `leaderboard_measures=` in the URL when undefined
+  if (
+    shouldSetParam(
+      preset.exploreLeaderboardMeasures,
+      exploreState.leaderboardMeasureNames,
+    )
+  ) {
     searchParams.set(
       ExploreStateURLParams.LeaderboardMeasures,
       exploreState.leaderboardMeasureNames.join(","),
