@@ -97,9 +97,10 @@ func (r *legacyMetricsResolver) Validate(ctx context.Context) error {
 }
 
 func (r *legacyMetricsResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
-	ctx, span := tracer.Start(ctx, "legacyMetricsResolver.ResolveInteractive", trace.WithAttributes(
-		attribute.String("metrics_view", r.metricsViewName),
-	))
+	span := trace.SpanFromContext(ctx)
+	if span.SpanContext().IsValid() {
+		span.SetAttributes(attribute.String("metrics_view", r.metricsViewName))
+	}
 	defer span.End()
 	ctrl, err := r.runtime.Controller(ctx, r.instanceID)
 	if err != nil {

@@ -116,11 +116,13 @@ func (r *metricsViewCacheKeyResolver) Validate(ctx context.Context) error {
 }
 
 func (r *metricsViewCacheKeyResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
-	ctx, span := tracer.Start(ctx, "metricsViewCacheKeyResolver.ResolveInteractive", trace.WithAttributes(
-		attribute.String("metrics_view", r.mvName),
-		attribute.Bool("streaming", r.streaming),
-	))
-	defer span.End()
+	span := trace.SpanFromContext(ctx)
+	if span.SpanContext().IsValid() {
+		span.SetAttributes(
+			attribute.String("metrics_view", r.mvName),
+			attribute.Bool("streaming", r.streaming),
+		)
+	}
 	key, ok, err := r.executor.CacheKey(ctx)
 	if err != nil {
 		return nil, err

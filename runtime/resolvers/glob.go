@@ -157,13 +157,16 @@ func (r *globResolver) Validate(ctx context.Context) error {
 }
 
 func (r *globResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
-	ctx, span := tracer.Start(ctx, "glob.ResolveInteractive", trace.WithAttributes(
-		attribute.String("connector", r.props.Connector),
-		attribute.String("path", r.props.Path),
-		attribute.String("partition", string(r.props.Partition)),
-		attribute.Bool("rollup_files", r.props.RollupFiles),
-		attribute.String("transform_sql", r.props.TransformSQL),
-	))
+	span := trace.SpanFromContext(ctx)
+	if span.SpanContext().IsValid() {
+		span.SetAttributes(
+			attribute.String("connector", r.props.Connector),
+			attribute.String("path", r.props.Path),
+			attribute.String("partition", string(r.props.Partition)),
+			attribute.Bool("rollup_files", r.props.RollupFiles),
+			attribute.String("transform_sql", r.props.TransformSQL),
+		)
+	}
 	defer span.End()
 
 	h, release, err := r.runtime.AcquireHandle(ctx, r.instanceID, r.props.Connector)

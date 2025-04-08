@@ -121,10 +121,10 @@ func (r *metricsResolver) Validate(ctx context.Context) error {
 }
 
 func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
-	ctx, span := tracer.Start(ctx, "metrics.ResolveInteractive", trace.WithAttributes(
-		attribute.String("metrics_view", r.query.MetricsView),
-	))
-	defer span.End()
+	span := trace.SpanFromContext(ctx)
+	if span.SpanContext().IsValid() {
+		span.SetAttributes(attribute.String("metrics_view", r.query.MetricsView))
+	}
 	if r.metricsHasTime {
 		tsRes, err := resolveTimestampResult(ctx, r.runtime, r.instanceID, r.query.MetricsView, r.claims, r.args.Priority)
 		if err != nil {

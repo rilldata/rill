@@ -106,10 +106,10 @@ func (r *metricsViewTimeRangeResolver) Validate(ctx context.Context) error {
 }
 
 func (r *metricsViewTimeRangeResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
-	ctx, span := tracer.Start(ctx, "metricsViewTimeRangeResolver.ResolveInteractive", trace.WithAttributes(
-		attribute.String("metrics_view", r.mvName),
-	))
-	defer span.End()
+	span := trace.SpanFromContext(ctx)
+	if span.SpanContext().IsValid() {
+		span.SetAttributes(attribute.String("metrics_view", r.mvName))
+	}
 	ts, err := r.executor.Timestamps(ctx)
 	if err != nil {
 		return nil, err

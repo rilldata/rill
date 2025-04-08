@@ -15,6 +15,8 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/jsonval"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var ErrMetricsViewCachingDisabled = errors.New("metrics_cache_key: caching is disabled")
@@ -108,6 +110,8 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (ResolverRe
 		panic("received nil claims")
 	}
 
+	ctx, span := tracer.Start(ctx, "runtime.Resolve", trace.WithAttributes(attribute.String("resolver", opts.Resolver)))
+	defer span.End()
 	// Initialize the resolver
 	initializer, ok := ResolverInitializers[opts.Resolver]
 	if !ok {
@@ -132,6 +136,7 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (ResolverRe
 		return nil, err
 	}
 	if !ok {
+		span.SetAttributes(attribute.Bool("cache_hit", false))
 		// If not cacheable, just resolve and return
 		return resolver.ResolveInteractive(ctx)
 	}
@@ -179,18 +184,21 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (ResolverRe
 
 	// Try to get from cache
 	if val, ok := r.queryCache.cache.Get(key); ok {
+		span.SetAttributes(attribute.Bool("cache_hit", true))
 		return val.(*cachedResolverResult).copy(), nil
 	}
-
 	// Load with singleflight
 	val, err := r.queryCache.singleflight.Do(ctx, key, func(ctx context.Context) (any, error) {
 		// Try cache again
 		if val, ok := r.queryCache.cache.Get(key); ok {
+			span.SetAttributes(attribute.Bool("cache_hit", true))
 			return val.(*cachedResolverResult), nil
 		}
 
 		// Resolve
 		// NOTE: We can under no circumstances return the res directly since we're in a singleflight and results can have iterator state.
+		span.SetAttributes(attribute.Bool("cache_hit", false))
+		ctx = trace.ContextWithSpan(ctx, span)
 		res, err := resolver.ResolveInteractive(ctx)
 		if err != nil {
 			return nil, err

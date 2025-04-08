@@ -66,8 +66,6 @@ func (r *resourceStatusResolver) Validate(ctx context.Context) error {
 }
 
 func (r *resourceStatusResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
-	ctx, span := tracer.Start(ctx, "resourceStatusResolver.ResolveInteractive")
-	defer span.End()
 	ctrl, err := r.runtime.Controller(ctx, r.instanceID)
 	if err != nil {
 		return nil, err
