@@ -319,18 +319,6 @@ function toExploreUrl(
     );
   }
 
-  if (
-    shouldSetParam(
-      preset.exploreLeaderboardMeasureCount,
-      exploreState.leaderboardMeasureCount,
-    )
-  ) {
-    searchParams.set(
-      ExploreStateURLParams.LeaderboardMeasureCount,
-      exploreState.leaderboardMeasureCount?.toString(),
-    );
-  }
-
   // FIXME: Seeing `leaderboard_measures=` in the URL when undefined
   if (
     shouldSetParam(

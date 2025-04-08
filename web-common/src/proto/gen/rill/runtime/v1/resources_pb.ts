@@ -2407,17 +2407,12 @@ export class ExplorePreset extends Message<ExplorePreset> {
   exploreExpandedDimension?: string;
 
   /**
-   * @generated from field: optional uint32 explore_leaderboard_measure_count = 30;
-   */
-  exploreLeaderboardMeasureCount?: number;
-
-  /**
-   * @generated from field: repeated string explore_leaderboard_measures = 31;
+   * @generated from field: repeated string explore_leaderboard_measures = 30;
    */
   exploreLeaderboardMeasures: string[] = [];
 
   /**
-   * @generated from field: optional bool explore_leaderboard_show_all_measures = 32;
+   * @generated from field: optional bool explore_leaderboard_show_all_measures = 31;
    */
   exploreLeaderboardShowAllMeasures?: boolean;
 
@@ -2487,9 +2482,8 @@ export class ExplorePreset extends Message<ExplorePreset> {
     { no: 18, name: "explore_sort_asc", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 19, name: "explore_sort_type", kind: "enum", T: proto3.getEnumType(ExploreSortType), opt: true },
     { no: 20, name: "explore_expanded_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 30, name: "explore_leaderboard_measure_count", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
-    { no: 31, name: "explore_leaderboard_measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 32, name: "explore_leaderboard_show_all_measures", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 30, name: "explore_leaderboard_measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 31, name: "explore_leaderboard_show_all_measures", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 21, name: "time_dimension_measure", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 22, name: "time_dimension_chart_type", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 23, name: "time_dimension_pin", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },

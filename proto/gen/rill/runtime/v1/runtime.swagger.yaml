@@ -4267,9 +4267,6 @@ definitions:
         $ref: '#/definitions/v1ExploreSortType'
       exploreExpandedDimension:
         type: string
-      exploreLeaderboardMeasureCount:
-        type: integer
-        format: int64
       exploreLeaderboardMeasures:
         type: array
         items:
