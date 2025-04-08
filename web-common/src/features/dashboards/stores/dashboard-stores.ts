@@ -235,7 +235,6 @@ const metricsViewReducers = {
 
   setPivotMode(name: string, mode: boolean) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.pivot = { ...metricsExplorer.pivot };
       if (mode) {
         metricsExplorer.activePage = DashboardState_ActivePage.PIVOT;
       } else if (metricsExplorer.selectedDimensionName) {

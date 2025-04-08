@@ -227,7 +227,7 @@ export function getDashboardStateFromProto(
 
   if (dashboard.activePage === DashboardState_ActivePage.PIVOT) {
     entity.pivot = fromPivotProto(dashboard, metricsView);
-  } else {
+  } else if (dashboard.activePage !== DashboardState_ActivePage.UNSPECIFIED) {
     entity.pivot = blankPivotState();
   }
 
