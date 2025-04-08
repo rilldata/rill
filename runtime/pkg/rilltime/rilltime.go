@@ -388,7 +388,7 @@ func (p *PeriodToGrain) time(evalOpts EvalOptions, start time.Time, tz *time.Loc
 }
 
 func (t *TimeAnchor) time(evalOpts EvalOptions, start, end time.Time, tz *time.Location, higherTg timeutil.TimeGrain, isFirstPart bool) (time.Time, time.Time, timeutil.TimeGrain) {
-	num := 1
+	num := 0
 	if t.Num != nil {
 		num = *t.Num
 	}
@@ -403,9 +403,8 @@ func (t *TimeAnchor) time(evalOpts EvalOptions, start, end time.Time, tz *time.L
 	}
 
 	if t.Prefix == nil {
-		if !isFirstPart && num == 1 {
-			// For anchors not in the 1st part of a link, M & 0M are the same so do not offset by setting num to 0
-			num = 0
+		if !t.IncludeCurrent {
+			num--
 		}
 		if num > 0 {
 			start = timeutil.OffsetTime(start, curTg, -num)
@@ -413,11 +412,8 @@ func (t *TimeAnchor) time(evalOpts EvalOptions, start, end time.Time, tz *time.L
 
 		start = timeutil.TruncateTime(start, curTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 
-		if !t.IncludeCurrent {
-			end = timeutil.TruncateTime(end, curTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
-		} else {
-			end = timeutil.CeilTime(end, curTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
-		}
+		end = timeutil.TruncateTime(end, curTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+		end = timeutil.OffsetTime(end, curTg, 1)
 	} else {
 		switch *t.Prefix {
 		// -<grain> is used as an offset rather than a range.
@@ -482,8 +478,13 @@ func (o *Ordinal) time(evalOpts EvalOptions, start time.Time, tz *time.Location,
 
 	offset := o.Num - 1
 	if curTg == timeutil.TimeGrainWeek {
+		weekday := int(start.Weekday())
+		if weekday == 0 {
+			// time package's week starts on sunday
+			weekday = 7
+		}
 		// https://en.wikipedia.org/wiki/ISO_week_date#First_week
-		if start.Weekday() >= 5 {
+		if weekday >= 5 {
 			offset++
 		}
 
