@@ -133,7 +133,7 @@
 
   $: if (initEmbedPublicAPI) {
     try {
-      initEmbedPublicAPI(instanceId);
+      initEmbedPublicAPI();
     } catch (error) {
       console.error("Error running initEmbedPublicAPI:", error);
     }

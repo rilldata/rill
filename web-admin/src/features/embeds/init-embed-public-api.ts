@@ -1,12 +1,9 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
+import { getDefaultExploreUrlParams } from "@rilldata/web-common/features/dashboards/stores/get-default-explore-url-params";
+import { convertPartialExploreStateToUrlSearch } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-search";
 import { derived, get, type Readable } from "svelte/store";
-
-import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
 import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
-import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
-
 import {
   getTimeControlState,
   type TimeControlState,
@@ -15,44 +12,21 @@ import {
   emitNotification,
   registerRPCMethod,
 } from "@rilldata/web-common/lib/rpc";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
-export default function initEmbedPublicAPI(instanceId: string): () => void {
-  const {
-    metricsViewName,
-    validSpecStore,
-    dashboardStore,
-    timeRangeSummaryStore,
-  } = getStateManagers();
-
-  const metricsViewNameValue = get(metricsViewName);
-  const metricsViewTimeRange = useMetricsViewTimeRange(
-    instanceId,
-    metricsViewNameValue,
-    {},
-    queryClient,
-  );
+export default function initEmbedPublicAPI(): () => void {
+  const { validSpecStore, dashboardStore, timeRangeSummaryStore } =
+    getStateManagers();
 
   const derivedState: Readable<string> = derived(
-    [
-      validSpecStore,
-      dashboardStore,
-      timeRangeSummaryStore,
-      metricsViewTimeRange,
-    ],
-    ([
-      $validSpecStore,
-      $dashboardStore,
-      $timeRangeSummaryStore,
-      $metricsViewTimeRange,
-    ]) => {
+    [validSpecStore, dashboardStore, timeRangeSummaryStore],
+    ([$validSpecStore, $dashboardStore, $timeRangeSummaryStore]) => {
       const exploreSpec = $validSpecStore.data?.explore ?? {};
       const metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
 
-      const defaultExplorePreset = getDefaultExplorePreset(
-        exploreSpec,
+      const defaultExploreUrlParams = getDefaultExploreUrlParams(
         metricsViewSpec,
-        $metricsViewTimeRange?.data,
+        exploreSpec,
+        $timeRangeSummaryStore.data?.timeRangeSummary,
       );
 
       let timeControlsState: TimeControlState | undefined = undefined;
@@ -66,11 +40,11 @@ export default function initEmbedPublicAPI(instanceId: string): () => void {
       }
 
       return decodeURIComponent(
-        convertExploreStateToURLSearchParams(
+        convertPartialExploreStateToUrlSearch(
           $dashboardStore,
           exploreSpec,
           timeControlsState,
-          defaultExplorePreset,
+          defaultExploreUrlParams,
         ).toString(),
       );
     },
@@ -84,15 +58,14 @@ export default function initEmbedPublicAPI(instanceId: string): () => void {
     const validSpec = get(validSpecStore);
     const dashboard = get(dashboardStore);
     const timeSummary = get(timeRangeSummaryStore).data;
-    const metricsTime = get(metricsViewTimeRange);
 
     const exploreSpec = validSpec.data?.explore ?? {};
     const metricsViewSpec = validSpec.data?.metricsView ?? {};
 
-    const defaultExplorePreset = getDefaultExplorePreset(
-      exploreSpec,
+    const defaultExploreUrlParams = getDefaultExploreUrlParams(
       metricsViewSpec,
-      metricsTime?.data,
+      exploreSpec,
+      timeSummary?.timeRangeSummary,
     );
 
     let timeControlsState: TimeControlState | undefined = undefined;
@@ -105,11 +78,11 @@ export default function initEmbedPublicAPI(instanceId: string): () => void {
       );
     }
     const stateString = decodeURIComponent(
-      convertExploreStateToURLSearchParams(
+      convertPartialExploreStateToUrlSearch(
         dashboard,
         exploreSpec,
         timeControlsState,
-        defaultExplorePreset,
+        defaultExploreUrlParams,
       ).toString(),
     );
     return { state: stateString };

@@ -5,6 +5,7 @@ import {
 } from "@rilldata/web-common/features/compound-query-result";
 import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
 import { getPartialExploreStateFromSessionStorage } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
+import { getDefaultExploreUrlParams } from "@rilldata/web-common/features/dashboards/stores/get-default-explore-url-params";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
@@ -42,6 +43,7 @@ export class DashboardStateDataLoader {
   public readonly explorePresetFromYAMLConfig: CompoundQueryResult<
     V1ExplorePreset | undefined
   >;
+  public readonly defaultExploreUrlParams: CompoundQueryResult<URLSearchParams>;
 
   private readonly exploreStateFromSessionStorage: CompoundQueryResult<
     Partial<MetricsExplorerEntity> | undefined
@@ -123,7 +125,7 @@ export class DashboardStateDataLoader {
             defaultPreset: {},
           },
           metricsViewSpec,
-          metricsViewTimeRangeResp,
+          metricsViewTimeRangeResp?.timeRangeSummary,
         );
         const { partialExploreState: defaultExploreState, errors } =
           convertPresetToExploreState(
@@ -155,7 +157,29 @@ export class DashboardStateDataLoader {
         return getDefaultExplorePreset(
           exploreSpec,
           metricsViewSpec,
-          metricsViewTimeRangeResp,
+          metricsViewTimeRangeResp?.timeRangeSummary,
+        );
+      },
+    );
+
+    this.defaultExploreUrlParams = getCompoundQuery(
+      [this.validSpecQuery, this.fullTimeRangeQuery],
+      ([validSpecResp, metricsViewTimeRangeResp]) => {
+        const metricsViewSpec = validSpecResp?.metricsView ?? {};
+        const exploreSpec = validSpecResp?.explore ?? {};
+
+        // safeguard to make sure time range summary is loaded for metrics view with time dimension
+        if (
+          metricsViewSpec.timeDimension &&
+          !metricsViewTimeRangeResp?.timeRangeSummary
+        ) {
+          return undefined;
+        }
+
+        return getDefaultExploreUrlParams(
+          metricsViewSpec,
+          exploreSpec,
+          metricsViewTimeRangeResp?.timeRangeSummary,
         );
       },
     );

@@ -14,12 +14,13 @@ import {
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
 import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+import { getDefaultExploreUrlParams } from "@rilldata/web-common/features/dashboards/stores/get-default-explore-url-params";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
   getTimeControlState,
   timeControlStateSelector,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
+import { convertPartialExploreStateToUrlSearch } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-search";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -27,7 +28,6 @@ import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
   createQueryServiceMetricsViewSchema,
-  type V1ExplorePreset,
   type V1ExploreSpec,
   type V1MetricsViewSpec,
   type V1StructType,
@@ -92,7 +92,6 @@ export function categorizeBookmarks(
   exploreSpec: V1ExploreSpec | undefined,
   schema: V1StructType | undefined,
   exploreState: MetricsExplorerEntity,
-  defaultExplorePreset: V1ExplorePreset,
   timeRangeSummary: V1TimeRangeSummary | undefined,
 ) {
   const bookmarks: Bookmarks = {
@@ -101,6 +100,13 @@ export function categorizeBookmarks(
     shared: [],
   };
   if (!exploreState) return bookmarks;
+
+  const defaultExploreUrlParams = getDefaultExploreUrlParams(
+    metricsSpec,
+    exploreSpec,
+    timeRangeSummary,
+  );
+
   bookmarkResp?.forEach((bookmarkResource) => {
     const bookmark = parseBookmark(
       bookmarkResource,
@@ -108,7 +114,7 @@ export function categorizeBookmarks(
       exploreSpec ?? {},
       schema ?? {},
       exploreState,
-      defaultExplorePreset,
+      defaultExploreUrlParams,
       timeRangeSummary,
     );
     if (isHomeBookmark(bookmarkResource)) {
@@ -205,7 +211,7 @@ function parseBookmark(
   exploreSpec: V1ExploreSpec,
   schema: V1StructType,
   exploreState: MetricsExplorerEntity,
-  defaultExplorePreset: V1ExplorePreset,
+  defaultExploreUrlParams: URLSearchParams,
   timeRangeSummary: V1TimeRangeSummary | undefined,
 ): BookmarkEntry {
   const exploreStateFromBookmark = getDashboardStateFromUrl(
@@ -220,7 +226,7 @@ function parseBookmark(
   } as MetricsExplorerEntity;
 
   const url = new URL(get(page).url);
-  url.search = convertExploreStateToURLSearchParams(
+  url.search = convertPartialExploreStateToUrlSearch(
     finalExploreState,
     exploreSpec,
     getTimeControlState(
@@ -229,7 +235,7 @@ function parseBookmark(
       timeRangeSummary,
       finalExploreState,
     ),
-    defaultExplorePreset,
+    defaultExploreUrlParams,
     url,
   ).toString();
   return {

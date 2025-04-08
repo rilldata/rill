@@ -21,7 +21,6 @@ import {
   type V1ExplorePreset,
   type V1ExploreSpec,
   type V1MetricsViewSpec,
-  type V1MetricsViewTimeRangeResponse,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 import { ALL_TIME_RANGE_ALIAS } from "../time-controls/new-time-controls";
@@ -31,7 +30,7 @@ import { DEFAULT_TIMEZONES } from "@rilldata/web-common/lib/time/config";
 export function getDefaultExplorePreset(
   explore: V1ExploreSpec,
   metricsViewSpec: V1MetricsViewSpec,
-  fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
+  timeRangeSummary: V1TimeRangeSummary | undefined,
 ) {
   const defaultExplorePreset: V1ExplorePreset = {
     view: V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE,
@@ -44,7 +43,7 @@ export function getDefaultExplorePreset(
     timeRange: getDefaultTimeRange(
       explore,
       metricsViewSpec.smallestTimeGrain,
-      fullTimeRange,
+      timeRangeSummary,
     ),
     timezone: getDefaultTimeZone(explore),
     timeGrain: "",
@@ -75,7 +74,7 @@ export function getDefaultExplorePreset(
   if (!defaultExplorePreset.timeGrain) {
     defaultExplorePreset.timeGrain = getDefaultPresetTimeGrain(
       defaultExplorePreset,
-      fullTimeRange,
+      timeRangeSummary,
     );
   }
 
@@ -85,7 +84,7 @@ export function getDefaultExplorePreset(
       getDefaultComparisonFields(
         defaultExplorePreset,
         explore,
-        fullTimeRange?.timeRangeSummary,
+        timeRangeSummary,
       ),
     );
   }
@@ -95,17 +94,17 @@ export function getDefaultExplorePreset(
 
 function getDefaultPresetTimeGrain(
   defaultExplorePreset: V1ExplorePreset,
-  fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
+  timeRangeSummary: V1TimeRangeSummary | undefined,
 ) {
   if (
     !defaultExplorePreset.timeRange ||
-    !fullTimeRange?.timeRangeSummary?.min ||
-    !fullTimeRange?.timeRangeSummary?.max
+    !timeRangeSummary?.min ||
+    !timeRangeSummary?.max
   )
     return "";
 
-  const fullTimeStart = new Date(fullTimeRange.timeRangeSummary.min);
-  const fullTimeEnd = new Date(fullTimeRange.timeRangeSummary.max);
+  const fullTimeStart = new Date(timeRangeSummary.min);
+  const fullTimeEnd = new Date(timeRangeSummary.max);
   const timeRange = isoDurationToFullTimeRange(
     defaultExplorePreset.timeRange,
     fullTimeStart,
@@ -194,16 +193,13 @@ function getDefaultComparisonFields(
 export function getDefaultTimeRange(
   exploreSpec: V1ExploreSpec,
   smallestTimeGrain: V1TimeGrain | undefined,
-  fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
+  timeRangeSummary: V1TimeRangeSummary | undefined,
 ) {
   if (exploreSpec.defaultPreset?.timeRange) {
     return exploreSpec.defaultPreset.timeRange;
   }
 
-  if (
-    !fullTimeRange?.timeRangeSummary?.min ||
-    !fullTimeRange?.timeRangeSummary?.max
-  ) {
+  if (!timeRangeSummary?.min || !timeRangeSummary?.max) {
     return undefined;
   }
 
@@ -230,8 +226,8 @@ export function getDefaultTimeRange(
     }
   } else {
     const dayCount = Interval.fromDateTimes(
-      DateTime.fromISO(fullTimeRange?.timeRangeSummary?.min),
-      DateTime.fromISO(fullTimeRange?.timeRangeSummary?.max),
+      DateTime.fromISO(timeRangeSummary?.min),
+      DateTime.fromISO(timeRangeSummary?.max),
     )
       .toDuration()
       .as("days");

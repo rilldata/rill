@@ -8,13 +8,13 @@ import {
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
   createTimeControlStoreFromName,
+  type TimeControlState,
   type TimeControlStore,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import {
-  convertExploreStateToURLSearchParams,
-  getUpdatedUrlForExploreState,
-} from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
+import { convertPartialExploreStateToUrlSearch } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-search";
 import { updateExploreSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
+import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
+import type { V1ExploreSpec } from "@rilldata/web-common/runtime-client";
 import type { AfterNavigate } from "@sveltejs/kit";
 import { derived, get, type Readable } from "svelte/store";
 
@@ -81,18 +81,19 @@ export class DashboardStateSync {
     const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
     const exploreSpec = validSpecData?.explore ?? {};
     const pageState = get(page);
-    const { data: explorePresetFromYAMLConfig } = get(
-      this.dataLoader.explorePresetFromYAMLConfig,
+    const { data: defaultExploreUrlParams } = get(
+      this.dataLoader.defaultExploreUrlParams,
     );
+    if (!defaultExploreUrlParams) return;
 
     metricsExplorerStore.init(this.exploreName, initExploreState);
     // Get time controls state after explore state is initialized.
     const timeControlsState = get(this.timeControlStore);
     const redirectUrl = new URL(pageState.url);
-    redirectUrl.search = getUpdatedUrlForExploreState(
+    redirectUrl.search = this.getUpdatedUrlForExploreState(
       exploreSpec,
       timeControlsState,
-      explorePresetFromYAMLConfig ?? {},
+      defaultExploreUrlParams,
       initExploreState,
       pageState.url,
     );
@@ -142,9 +143,10 @@ export class DashboardStateSync {
     const metricsViewSpec = validSpecData?.metricsView ?? {};
     const exploreSpec = validSpecData?.explore ?? {};
     const pageState = get(page);
-    const { data: explorePresetFromYAMLConfig } = get(
-      this.dataLoader.explorePresetFromYAMLConfig,
+    const { data: defaultExploreUrlParams } = get(
+      this.dataLoader.defaultExploreUrlParams,
     );
+    if (!defaultExploreUrlParams) return;
 
     const redirectUrl = new URL(pageState.url);
     metricsExplorerStore.mergePartialExplorerEntity(
@@ -155,10 +157,10 @@ export class DashboardStateSync {
     // Get time controls state after explore state is updated.
     const timeControlsState = get(this.timeControlStore);
     // if we added extra url params from session storage then update the url
-    redirectUrl.search = getUpdatedUrlForExploreState(
+    redirectUrl.search = this.getUpdatedUrlForExploreState(
       exploreSpec,
       timeControlsState,
-      explorePresetFromYAMLConfig ?? {},
+      defaultExploreUrlParams,
       partialExplore,
       pageState.url,
     );
@@ -195,16 +197,17 @@ export class DashboardStateSync {
     const exploreSpec = validSpecData?.explore ?? {};
     const timeControlsState = get(this.timeControlStore);
     const pageState = get(page);
-    const { data: explorePresetFromYAMLConfig } = get(
-      this.dataLoader.explorePresetFromYAMLConfig,
+    const { data: defaultExploreUrlParams } = get(
+      this.dataLoader.defaultExploreUrlParams,
     );
+    if (!defaultExploreUrlParams) return;
 
     const newUrl = new URL(pageState.url);
-    const exploreStateParams = convertExploreStateToURLSearchParams(
+    const exploreStateParams = convertPartialExploreStateToUrlSearch(
       exploreState,
       exploreSpec,
       timeControlsState,
-      explorePresetFromYAMLConfig ?? {},
+      defaultExploreUrlParams,
       newUrl,
     );
     newUrl.search = exploreStateParams.toString();
@@ -225,5 +228,39 @@ export class DashboardStateSync {
 
     // dashboard changed so we should update the url
     return goto(newUrl);
+  }
+
+  /**
+   * Sometimes data is loaded from sources other than the url.
+   * In that case update the URL to make sure the state matches the current url.
+   */
+  private getUpdatedUrlForExploreState(
+    exploreSpec: V1ExploreSpec,
+    timeControlsState: TimeControlState | undefined,
+    defaultExploreUrlParams: URLSearchParams,
+    partialExploreState: Partial<MetricsExplorerEntity>,
+    url: URL,
+  ): string {
+    // Create params from the explore state
+    const stateParams = convertPartialExploreStateToUrlSearch(
+      partialExploreState,
+      exploreSpec,
+      timeControlsState,
+      defaultExploreUrlParams,
+      url,
+    );
+
+    // Filter out the default view parameter if needed
+    url.searchParams.forEach((value, key) => {
+      if (
+        key === ExploreStateURLParams.WebView &&
+        value === defaultExploreUrlParams.get(ExploreStateURLParams.WebView)
+      ) {
+        return; // Skip this parameter
+      }
+      stateParams.set(key, value);
+    });
+
+    return stateParams.toString();
   }
 }

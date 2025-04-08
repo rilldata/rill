@@ -5,18 +5,18 @@ import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboard
 import type {
   V1ExploreSpec,
   V1MetricsViewSpec,
-  V1MetricsViewTimeRangeResponse,
+  V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 
 export function getDefaultExploreUrlParams(
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
-  fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
+  timeRangeSummary: V1TimeRangeSummary | undefined,
 ) {
   const defaultExplorePreset = getDefaultExplorePreset(
     exploreSpec,
     metricsViewSpec,
-    fullTimeRange,
+    timeRangeSummary,
   );
   const { partialExploreState } = convertPresetToExploreState(
     metricsViewSpec,
@@ -26,7 +26,7 @@ export function getDefaultExploreUrlParams(
   const timeControlState = getTimeControlState(
     metricsViewSpec,
     exploreSpec,
-    fullTimeRange?.timeRangeSummary,
+    timeRangeSummary,
     partialExploreState as any,
   );
   return convertPartialExploreStateToUrlSearch(

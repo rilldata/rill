@@ -22,7 +22,6 @@
   import { Search } from "@rilldata/web-common/components/search";
   import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
   import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { createQueryServiceMetricsViewSchema } from "@rilldata/web-common/runtime-client";
@@ -51,11 +50,6 @@
     {},
     queryClient,
   );
-  $: defaultExplorePreset = getDefaultExplorePreset(
-    exploreSpec,
-    metricsViewSpec,
-    $metricsViewTimeRange.data,
-  );
   $: schemaResp = createQueryServiceMetricsViewSchema(
     instanceId,
     metricsViewName,
@@ -71,7 +65,6 @@
     exploreSpec,
     $schemaResp.data?.schema,
     $exploreState,
-    defaultExplorePreset,
     $metricsViewTimeRange.data?.timeRangeSummary,
   );
   $: filteredBookmarks = searchBookmarks(categorizedBookmarks, searchText);
