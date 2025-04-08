@@ -1,16 +1,11 @@
 import type { CanvasSpecResponseStore } from "@rilldata/web-common/features/canvas/types";
-import { get } from "svelte/store";
+import { type Writable } from "svelte/store";
 import { Filters } from "./filters";
 import type { CanvasResolvedSpec } from "./spec";
 import { TimeControls } from "./time-control";
+import type { ComponentSpec } from "../components/types";
 
-export class CanvasComponentState {
-  name: string;
-
-  metricsViewName: string | undefined;
-  filterText: string | undefined;
-  timeFilterText: string | undefined;
-
+export class CanvasComponentState<T = ComponentSpec> {
   localFilters: Filters;
   localTimeControls: TimeControls;
 
@@ -18,26 +13,19 @@ export class CanvasComponentState {
     name: string,
     specStore: CanvasSpecResponseStore,
     spec: CanvasResolvedSpec,
+    localSpec: Writable<T>,
   ) {
-    const componentResourceStore = spec.getComponentResourceFromName(name);
-    const componentResource = get(componentResourceStore);
-
-    this.metricsViewName = componentResource?.rendererProperties
-      ?.metrics_view as string | undefined;
-    this.filterText = componentResource?.rendererProperties
-      ?.dimension_filters as string | undefined;
-    this.timeFilterText = componentResource?.rendererProperties
-      ?.time_filters as string | undefined;
-    this.name = name;
     this.localFilters = new Filters(spec);
     this.localTimeControls = new TimeControls(specStore, name);
 
-    if (componentResource && this.filterText) {
-      this.localFilters.setFiltersFromText(this.filterText);
-    }
+    localSpec.subscribe((spec) => {
+      if (spec?.["dimension_filters"]) {
+        this.localFilters.setFiltersFromText(spec?.["dimension_filters"]);
+      }
 
-    if (componentResource && this.timeFilterText) {
-      this.localTimeControls.setTimeFiltersFromText(this.timeFilterText);
-    }
+      if (spec?.["time_filters"]) {
+        this.localTimeControls.setTimeFiltersFromText(spec?.["time_filters"]);
+      }
+    });
   }
 }
