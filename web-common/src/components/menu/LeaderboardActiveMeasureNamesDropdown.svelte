@@ -82,8 +82,8 @@
       return;
     }
 
+    // Single select mode
     if (!multiSelect) {
-      setLeaderboardMeasureNames([name]);
       setLeaderboardSortByMeasureName(name);
       active = false;
       return;
