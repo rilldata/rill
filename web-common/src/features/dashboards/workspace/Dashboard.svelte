@@ -31,7 +31,6 @@
   const {
     selectors: {
       measures: { visibleMeasures },
-      leaderboard: { leaderboardSortByMeasureName, leaderboardMeasureNames },
       dimensions: { getDimensionByName },
       pivot: { showPivot },
     },
@@ -216,7 +215,6 @@
               {dimensionThresholdFilters}
               {timeRange}
               {comparisonTimeRange}
-              leaderboardSortByMeasureName={$leaderboardSortByMeasureName}
               {timeControlsReady}
               {visibleMeasureNames}
               hideStartPivotButton={hidePivot}
@@ -224,8 +222,6 @@
           {:else}
             <LeaderboardDisplay
               {metricsViewName}
-              leaderboardSortByMeasureName={$leaderboardSortByMeasureName}
-              leaderboardMeasureNames={$leaderboardMeasureNames}
               {whereFilter}
               {dimensionThresholdFilters}
               {timeRange}

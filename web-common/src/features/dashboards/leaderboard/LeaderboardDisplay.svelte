@@ -19,10 +19,6 @@
   export let comparisonTimeRange: V1TimeRange | undefined;
   export let timeControlsReady: boolean;
 
-  // FIXME: access selectors from store, instead of props
-  export let leaderboardSortByMeasureName: string;
-  export let leaderboardMeasureNames: string[];
-
   const StateManagers = getStateManagers();
   const {
     selectors: {
@@ -32,7 +28,11 @@
       comparison: { isBeingCompared: isBeingComparedReadable },
       sorting: { sortedAscending, sortType, sortByMeasure },
       measures: { measureLabel, isMeasureValidPercentOfTotal },
-      leaderboard: { leaderboardShowAllMeasures },
+      leaderboard: {
+        leaderboardShowAllMeasures,
+        leaderboardMeasureNames,
+        leaderboardSortByMeasureName,
+      },
     },
     actions: {
       dimensions: { setPrimaryDimension },
@@ -50,14 +50,14 @@
   $: ({ instanceId } = $runtime);
 
   // Reset column widths when the measure changes
-  $: if (leaderboardSortByMeasureName) {
+  $: if ($leaderboardSortByMeasureName) {
     valueColumn.reset();
   }
 
   $: dimensionColumnWidth = 164;
 
   $: showPercentOfTotal = $isMeasureValidPercentOfTotal(
-    leaderboardSortByMeasureName,
+    $leaderboardSortByMeasureName,
   );
   $: showDeltaPercent = !!comparisonTimeRange;
 
@@ -93,8 +93,8 @@
               isValidPercentOfTotal={$isMeasureValidPercentOfTotal}
               {metricsViewName}
               sortBy={$sortByMeasure}
-              {leaderboardSortByMeasureName}
-              {leaderboardMeasureNames}
+              leaderboardSortByMeasureName={$leaderboardSortByMeasureName}
+              leaderboardMeasureNames={$leaderboardMeasureNames}
               {whereFilter}
               {dimensionThresholdFilters}
               {instanceId}
@@ -118,9 +118,9 @@
                 timeRange.end,
               )}
               isBeingCompared={$isBeingComparedReadable(dimension.name)}
-              formatters={leaderboardMeasureNames.length > 1
+              formatters={$leaderboardMeasureNames.length > 1
                 ? $measureFormatters
-                : { [leaderboardSortByMeasureName]: $activeMeasureFormatter }}
+                : { [$leaderboardSortByMeasureName]: $activeMeasureFormatter }}
               {setPrimaryDimension}
               {toggleSort}
               {toggleDimensionValueSelection}
