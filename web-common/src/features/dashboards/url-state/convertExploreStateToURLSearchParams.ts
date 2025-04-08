@@ -382,7 +382,6 @@ function toVisibleDimensionsUrlParam(
 
 function toLeaderboardMeasuresUrlParam(
   exploreState: MetricsExplorerEntity,
-  preset: V1ExplorePreset,
 ): string | undefined {
   if (!exploreState.leaderboardMeasureNames?.length) {
     return undefined;
