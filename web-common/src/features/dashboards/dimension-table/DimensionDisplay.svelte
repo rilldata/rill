@@ -76,9 +76,9 @@
     instanceId,
     metricsViewName,
     {
-      measures: $leaderboardShowAllMeasures
-        ? visibleMeasureNames.map((measureName) => ({ name: measureName }))
-        : [{ name: leaderboardSortByMeasureName }],
+      measures: visibleMeasureNames.map((measureName) => ({
+        name: measureName,
+      })),
       where: sanitiseExpression(
         mergeDimensionAndMeasureFilters(
           getFiltersForOtherDimensions(whereFilter, dimensionName),
