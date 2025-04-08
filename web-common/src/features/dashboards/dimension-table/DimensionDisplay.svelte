@@ -50,7 +50,7 @@
         prepareDimTableRows,
       },
       sorting: { sortedAscending, sortType },
-      measures: { leaderboardShowAllMeasures },
+      leaderboard: { leaderboardShowAllMeasures },
     },
     actions: {
       dimensionsFilter: {

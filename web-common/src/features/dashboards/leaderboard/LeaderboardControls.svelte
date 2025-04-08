@@ -12,11 +12,10 @@
   const StateManagers = getStateManagers();
   const {
     selectors: {
-      measures: {
+      measures: { getMeasureByName, visibleMeasures },
+      leaderboard: {
         leaderboardSortByMeasureName,
         leaderboardMeasureNames,
-        getMeasureByName,
-        visibleMeasures,
         leaderboardShowAllMeasures,
       },
       dimensions: { visibleDimensions, allDimensions },
