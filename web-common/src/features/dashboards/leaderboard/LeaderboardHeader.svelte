@@ -65,7 +65,7 @@
             <svelte:fragment slot="description" />
           </TooltipTitle>
           <TooltipShortcutContainer>
-            <div>
+            <div class="line-clamp-2">
               {#if dimensionDescription}
                 {dimensionDescription}
               {:else}
