@@ -30,7 +30,6 @@
 
   const queryLimit = 250;
 
-  export let leaderboardSortByMeasureName: string;
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
   export let whereFilter: V1Expression;
@@ -50,7 +49,7 @@
         prepareDimTableRows,
       },
       sorting: { sortedAscending, sortType },
-      leaderboard: { leaderboardShowAllMeasures },
+      leaderboard: { leaderboardShowAllMeasures, leaderboardSortByMeasureName },
     },
     actions: {
       dimensionsFilter: {
@@ -106,7 +105,7 @@
         {} as { [key: string]: number },
       )
     : (($totalsQuery?.data?.data?.[0]?.[
-        leaderboardSortByMeasureName
+        $leaderboardSortByMeasureName
       ] as number) ?? 0);
 
   $: columns = $virtualizedTableColumns(
@@ -116,7 +115,7 @@
 
   $: measures = [
     ...getMeasuresForDimensionTable(
-      $leaderboardShowAllMeasures ? null : leaderboardSortByMeasureName,
+      $leaderboardShowAllMeasures ? null : $leaderboardSortByMeasureName,
       dimensionThresholdFilters,
       visibleMeasureNames,
     ).map((name) => ({ name }) as V1MetricsViewAggregationMeasure),
@@ -125,7 +124,7 @@
     ...(comparisonTimeRange
       ? ($leaderboardShowAllMeasures
           ? visibleMeasureNames
-          : [leaderboardSortByMeasureName]
+          : [$leaderboardSortByMeasureName]
         ).flatMap((name) => getComparisonRequestMeasures(name))
       : []),
   ];
@@ -133,7 +132,7 @@
   $: sort = getSort(
     $sortedAscending,
     $sortType,
-    leaderboardSortByMeasureName,
+    $leaderboardSortByMeasureName,
     dimensionName,
     !!comparisonTimeRange,
   );
