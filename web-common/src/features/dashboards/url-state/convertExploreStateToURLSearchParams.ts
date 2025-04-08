@@ -14,7 +14,6 @@ import { convertExpressionToFilterParam } from "@rilldata/web-common/features/da
 import { FromLegacySortTypeMap } from "@rilldata/web-common/features/dashboards/url-state/legacyMappers";
 import {
   FromActivePageMap,
-  FromURLParamViewMap,
   ToURLParamSortTypeMap,
   ToURLParamTDDChartMap,
   ToURLParamTimeDimensionMap,
@@ -35,40 +34,6 @@ import {
   type V1ExplorePreset,
   type V1ExploreSpec,
 } from "@rilldata/web-common/runtime-client";
-
-/**
- * Sometimes data is loaded from sources other than the url.
- * In that case update the URL to make sure the state matches the current url.
- */
-export function getUpdatedUrlForExploreState(
-  exploreSpec: V1ExploreSpec,
-  timeControlsState: TimeControlState | undefined,
-  defaultExplorePreset: V1ExplorePreset,
-  partialExploreState: Partial<MetricsExplorerEntity>,
-  url: URL,
-): string {
-  // Create params from the explore state
-  const stateParams = convertExploreStateToURLSearchParams(
-    partialExploreState as MetricsExplorerEntity,
-    exploreSpec,
-    timeControlsState,
-    defaultExplorePreset,
-    url,
-  );
-
-  // Filter out the default view parameter if needed
-  url.searchParams.forEach((value, key) => {
-    if (
-      key === ExploreStateURLParams.WebView &&
-      FromURLParamViewMap[value] === defaultExplorePreset.view
-    ) {
-      return; // Skip this parameter
-    }
-    stateParams.set(key, value);
-  });
-
-  return stateParams.toString();
-}
 
 export function convertExploreStateToURLSearchParams(
   exploreState: MetricsExplorerEntity,

@@ -39,7 +39,7 @@ const hoistedPage: HoistedPageForExploreTests = vi.hoisted(() => ({}) as any);
 
 vi.mock("$app/navigation", () => {
   return {
-    goto: (url) => hoistedPage.goto(url),
+    goto: (url, opts) => hoistedPage.goto(url, opts),
     afterNavigate: (cb) => hoistedPage.afterNavigate(cb),
   };
 });
@@ -98,16 +98,7 @@ describe("DashboardStateManager", () => {
       sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
     };
     const BookmarkSourceQueryResult = readable({
-      data: {
-        selectedTimeRange: {
-          name: "PT24H",
-          interval: V1TimeGrain.TIME_GRAIN_HOUR,
-        } as DashboardTimeControls,
-        showTimeComparison: true,
-        selectedComparisonTimeRange: {
-          name: TimeComparisonOption.CONTIGUOUS,
-        } as DashboardTimeControls,
-      },
+      data: new URLSearchParams("tr=PT24H&compare_tr=rill-PP&grain=hour"),
       error: null,
       isFetching: false,
       isLoading: false,
@@ -118,8 +109,9 @@ describe("DashboardStateManager", () => {
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
 
       assertExploreStateSubset(ExploreStateSubsetForBaseState);
-      // no additional goto is called
-      expect(pageMock.urlSearchHistory).toEqual([]);
+      expect(pageMock.urlSearchHistory).toEqual([
+        "view=explore&tr=P7D&tz=Asia%2FKathmandu&grain=day&measures=impressions&dims=publisher&sort_by=impressions&sort_type=percent&sort_dir=ASC&leaderboard_measure_count=1",
+      ]);
     });
 
     it("Should load 'other source' of dashboard state", async () => {
@@ -138,7 +130,8 @@ describe("DashboardStateManager", () => {
           name: TimeComparisonOption.CONTIGUOUS,
         } as DashboardTimeControls,
       });
-      const initUrlSearch = "tr=PT24H&grain=hour";
+      const initUrlSearch =
+        "view=explore&tr=PT24H&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=hour&measures=impressions&dims=publisher&sort_by=impressions&sort_type=percent&sort_dir=ASC&leaderboard_measure_count=1";
       pageMock.assertSearchParams(initUrlSearch);
 
       pageMock.popState("");
@@ -266,7 +259,7 @@ describe("DashboardStateManager", () => {
 // TODO: find if there is a way to share code.
 function renderDashboardStateManager(
   bookmarkOrTokenExploreState:
-    | CompoundQueryResult<Partial<MetricsExplorerEntity> | undefined>
+    | CompoundQueryResult<URLSearchParams | undefined>
     | undefined = undefined,
 ) {
   const renderResults = render(DashboardStateManagerTest, {

@@ -258,7 +258,7 @@ export function getPinnedTimeZones(explore: V1ExploreSpec) {
   return yamlTimeZones;
 }
 
-function getDefaultTimeZone(explore: V1ExploreSpec) {
+export function getDefaultTimeZone(explore: V1ExploreSpec) {
   const preference = explore.timeZones?.[0] ?? DEFAULT_TIMEZONES[0];
 
   if (preference === "Local") {

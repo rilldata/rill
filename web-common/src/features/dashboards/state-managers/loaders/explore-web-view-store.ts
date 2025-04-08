@@ -1,7 +1,5 @@
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
-import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
 import {
   ExploreUrlWebView,
   FromActivePageMap,
@@ -12,7 +10,6 @@ import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/
 import {
   type V1ExploreSpec,
   V1ExploreWebView,
-  type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
 import { convertExploreStateToURLSearchParams } from "web-common/src/features/dashboards/url-state/convertExploreStateToURLSearchParams";
 import { copyUrlSearchParamsForView } from "web-common/src/features/dashboards/url-state/explore-web-view-specific-url-params";
@@ -108,8 +105,6 @@ export function getPartialExploreStateFromSessionStorage(
   exploreName: string,
   storageNamespacePrefix: string | undefined,
   searchParams: URLSearchParams,
-  metricsViewSpec: V1MetricsViewSpec,
-  exploreSpec: V1ExploreSpec,
 ) {
   if (
     // exactly one param is set, but it is not `view`
@@ -138,30 +133,17 @@ export function getPartialExploreStateFromSessionStorage(
     if (!storedUrlSearch) return undefined;
     const storedUrlSearchParams = new URLSearchParams(storedUrlSearch);
 
-    const { partialExploreState: storedExploreState } =
-      convertURLSearchParamsToExploreState(
-        storedUrlSearchParams,
-        metricsViewSpec,
-        exploreSpec,
-        {},
-      );
-
     // TDD is different from other views. It has a variable that is expanded measure.
     // So we need to copy over the actual measure from current url but keep other params.
     if (viewFromUrl === ExploreUrlWebView.TimeDimension) {
-      // type safety
-      storedExploreState.tdd ??= {
-        expandedMeasureName: "",
-        chartType: TDDChart.DEFAULT,
-        pinIndex: -1,
-      };
       // copy over the expanded measure from current url search params.
-      storedExploreState.tdd.expandedMeasureName = searchParams.get(
+      storedUrlSearchParams.set(
         ExploreStateURLParams.ExpandedMeasure,
-      ) as string;
+        searchParams.get(ExploreStateURLParams.ExpandedMeasure) as string,
+      );
     }
 
-    return storedExploreState;
+    return storedUrlSearchParams;
   } catch {
     return undefined;
   }
