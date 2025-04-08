@@ -73,6 +73,12 @@
     );
   }
 
+  function toggleSingleSelect(name: string) {
+    setLeaderboardSortByMeasureName(name);
+    setLeaderboardMeasureNames([name]);
+    active = false;
+  }
+
   function toggleMeasure(name: string) {
     if (!name) return;
     const currentSelection = selectedMeasureNames || [];
@@ -84,8 +90,7 @@
 
     // Single select mode
     if (!multiSelect) {
-      setLeaderboardSortByMeasureName(name);
-      active = false;
+      toggleSingleSelect(name);
       return;
     }
 
@@ -95,7 +100,7 @@
 
     setLeaderboardMeasureNames(newSelection);
 
-    // If the toggled-off measure was the current sort measurem
+    // If the toggled-off measure was the current sort measure
     // set the sort to the first remaining measure
     if (name === leaderboardSortByMeasureName && newSelection.length > 0) {
       setLeaderboardSortByMeasureName(newSelection[0]);
