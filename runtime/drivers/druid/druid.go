@@ -2,9 +2,12 @@ package druid
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/XSAM/otelsql"
@@ -100,6 +103,8 @@ type configProperties struct {
 	LogQueries bool `mapstructure:"log_queries"`
 	// MaxOpenConns is the maximum number of open connections to the database. Set to 0 to use the default value or -1 for unlimited.
 	MaxOpenConns int `mapstructure:"max_open_conns"`
+	// SkipVersionCheck skips the version check.
+	SkipVersionCheck bool `mapstructure:"skip_version_check"`
 }
 
 // Opens a connection to Apache Druid using HTTP API.
@@ -142,6 +147,13 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		return nil, fmt.Errorf("druid: %w", err)
 	}
 
+	if !conf.SkipVersionCheck {
+		err = d.checkVersion(dsn)
+		if err != nil {
+			return nil, fmt.Errorf("druid: %w", err)
+		}
+	}
+
 	conn := &connection{
 		db:     dbx,
 		config: conf,
@@ -160,6 +172,53 @@ func (d *driver) HasAnonymousSourceAccess(ctx context.Context, src map[string]an
 
 func (d *driver) TertiarySourceConnectors(ctx context.Context, src map[string]any, logger *zap.Logger) ([]string, error) {
 	return nil, fmt.Errorf("not implemented")
+}
+
+func (d driver) checkVersion(dsn string) error {
+	parsedURL, err := url.Parse(dsn)
+	if err != nil {
+		return err
+	}
+	parsedURL.Path = "/status"
+	statusURL := parsedURL.String()
+
+	req, err := http.NewRequest(http.MethodGet, statusURL, http.NoBody)
+	if err != nil {
+		return err
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("druid version check failed with status code: %d", resp.StatusCode)
+	}
+
+	var statusResponse map[string]any
+	if err := json.NewDecoder(resp.Body).Decode(&statusResponse); err != nil {
+		return fmt.Errorf("failed to decode Druid status response: %w", err)
+	}
+
+	// Check if druid version is greater than or equal to 28.0.0, because of SQL NULL compatibility
+	if version, ok := statusResponse["version"]; ok {
+		versionStr := fmt.Sprintf("%v", version)
+		majorVersion := strings.Split(versionStr, ".")[0]
+		if ver, err := strconv.Atoi(majorVersion); err == nil {
+			if ver < 28 {
+				return fmt.Errorf("druid version %s is not supported, please use 28.0.0 or higher", versionStr)
+			}
+		} else {
+			return fmt.Errorf("failed to parse Druid version: %w", err)
+		}
+	} else {
+		return fmt.Errorf("druid version information not found in the response")
+	}
+
+	return nil
 }
 
 type connection struct {
