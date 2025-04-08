@@ -54,7 +54,6 @@
   export let dimensionThresholdFilters: DimensionThresholdFilter[];
   export let leaderboardSortByMeasureName: string;
   export let leaderboardMeasureNames: string[];
-  export let visibleMeasures: string[];
   export let metricsViewName: string;
   export let sortType: SortType;
   export let sortBy: string | null;

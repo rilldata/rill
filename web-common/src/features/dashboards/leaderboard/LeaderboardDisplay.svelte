@@ -32,7 +32,6 @@
       measures: {
         measureLabel,
         isMeasureValidPercentOfTotal,
-        visibleMeasures,
         leaderboardShowAllMeasures,
       },
     },
@@ -48,9 +47,6 @@
 
   let parentElement: HTMLDivElement;
   let suppressTooltip = false;
-
-  const { leaderboardMeasureCount: leaderboardMeasureCountFeatureFlag } =
-    featureFlags;
 
   $: ({ instanceId } = $runtime);
 
@@ -74,10 +70,6 @@
       : showPercentOfTotal
         ? COMPARISON_COLUMN_WIDTH
         : 0);
-
-  $: validVisibleMeasures = $visibleMeasures
-    .map((m) => m.name)
-    .filter((name) => name !== undefined);
 </script>
 
 <div class="flex flex-col overflow-hidden size-full" aria-label="Leaderboards">
@@ -104,7 +96,6 @@
               sortBy={$sortByMeasure}
               {leaderboardSortByMeasureName}
               {leaderboardMeasureNames}
-              visibleMeasures={validVisibleMeasures}
               {whereFilter}
               {dimensionThresholdFilters}
               {instanceId}
