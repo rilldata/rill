@@ -89,9 +89,10 @@
       () => {
         unsubscriber?.();
         unsubscriber = undefined;
-        const actualHeight =
+        const actualHeight = Math.floor(
           document.querySelector(`#${id}`)?.getBoundingClientRect().height ??
-          rowHeight;
+            rowHeight,
+        );
 
         rowHeight = actualHeight;
         updateRowHeight(actualHeight, rowIndex);
