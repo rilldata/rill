@@ -27,7 +27,13 @@ export const visibleDimensions = ({
   validExplore,
   dashboard,
 }: DashboardDataSources): MetricsViewSpecDimension[] => {
-  if (!validMetricsView?.dimensions || !validExplore?.dimensions) return [];
+  if (
+    !validMetricsView?.dimensions ||
+    !validExplore?.dimensions ||
+    !dashboard?.visibleDimensions
+  ) {
+    return [];
+  }
 
   return dashboard.visibleDimensions
     .map((dim) => validMetricsView.dimensions?.find((d) => d.name === dim))
