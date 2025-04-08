@@ -279,6 +279,19 @@ function toExploreUrl(
     );
   }
 
+  const leaderboardMeasuresParam = toLeaderboardMeasuresUrlParam(
+    exploreState,
+    preset,
+  );
+  if (leaderboardMeasuresParam !== undefined) {
+    searchParams.set(
+      ExploreStateURLParams.LeaderboardMeasures,
+      leaderboardMeasuresParam,
+    );
+  } else {
+    searchParams.delete(ExploreStateURLParams.LeaderboardMeasures);
+  }
+
   if (
     shouldSetParam(
       preset.exploreExpandedDimension,
@@ -316,19 +329,6 @@ function toExploreUrl(
     searchParams.set(
       ExploreStateURLParams.SortDirection,
       sortAsc ? "ASC" : "DESC",
-    );
-  }
-
-  // FIXME: Seeing `leaderboard_measures=` in the URL when undefined
-  if (
-    shouldSetParam(
-      preset.exploreLeaderboardMeasures,
-      exploreState.leaderboardMeasureNames,
-    )
-  ) {
-    searchParams.set(
-      ExploreStateURLParams.LeaderboardMeasures,
-      exploreState.leaderboardMeasureNames.join(","),
     );
   }
 
@@ -378,6 +378,17 @@ function toVisibleDimensionsUrlParam(
     return "*";
   }
   return exploreState.visibleDimensions.join(",");
+}
+
+function toLeaderboardMeasuresUrlParam(
+  exploreState: MetricsExplorerEntity,
+  preset: V1ExplorePreset,
+): string | undefined {
+  if (!exploreState.leaderboardMeasureNames?.length) {
+    return undefined;
+  }
+
+  return exploreState.leaderboardMeasureNames.join(",");
 }
 
 function toTimeDimensionUrlParams(
