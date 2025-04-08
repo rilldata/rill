@@ -15,7 +15,9 @@
   $: resourceKind = resource?.meta?.name?.kind as ResourceKind | undefined;
   $: resourceName = resource?.meta?.name?.name;
 
-  $: resourcesQuery = createRuntimeServiceListResources(instanceId);
+  $: resourcesQuery = createRuntimeServiceListResources(instanceId, undefined, {
+    query: { retry: 2, refetchOnMount: true },
+  });
   $: allResources = $resourcesQuery.data?.resources ?? [];
 
   $: lateralResources = allResources.filter(({ meta }) => {

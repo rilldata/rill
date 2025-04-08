@@ -15,6 +15,7 @@ import {
   emitNotification,
   registerRPCMethod,
 } from "@rilldata/web-common/lib/rpc";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
 export default function initEmbedPublicAPI(instanceId: string): () => void {
   const {
@@ -28,6 +29,8 @@ export default function initEmbedPublicAPI(instanceId: string): () => void {
   const metricsViewTimeRange = useMetricsViewTimeRange(
     instanceId,
     metricsViewNameValue,
+    {},
+    queryClient,
   );
 
   const derivedState: Readable<string> = derived(

@@ -1,12 +1,12 @@
 <script lang="ts">
+  import DashboardMetricsDraggableList from "@rilldata/web-common/components/menu/DashboardMetricsDraggableList.svelte";
+  import LeaderboardActiveMeasureDropdown from "@rilldata/web-common/components/menu/LeaderboardActiveMeasureDropdown.svelte";
+  import LeaderboardMeasureCountSelector from "@rilldata/web-common/components/menu/LeaderboardMeasureCountSelector.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import { getSimpleMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { getStateManagers } from "../state-managers/state-managers";
-  import LeaderboardMeasureCountSelector from "@rilldata/web-common/components/menu/LeaderboardMeasureCountSelector.svelte";
-  import LeaderboardActiveMeasureDropdown from "@rilldata/web-common/components/menu/LeaderboardActiveMeasureDropdown.svelte";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import DashboardMetricsDraggableList from "@rilldata/web-common/components/menu/DashboardMetricsDraggableList.svelte";
 
   export let exploreName: string;
 
@@ -15,7 +15,7 @@
     selectors: {
       measures: {
         leaderboardMeasureCount,
-        leaderboardMeasureName,
+        leaderboardSortByMeasureName,
         getMeasureByName,
         visibleMeasures,
       },
@@ -25,7 +25,7 @@
       contextColumn: { setContextColumn },
       dimensions: { setDimensionVisibility },
       setLeaderboardMeasureCount,
-      setLeaderboardMeasureName,
+      setLeaderboardSortByMeasureName,
     },
   } = StateManagers;
 
@@ -36,7 +36,9 @@
 
   $: metricsExplorer = $metricsExplorerStore.entities[exploreName];
 
-  $: activeLeaderboardMeasure = $getMeasureByName($leaderboardMeasureName);
+  $: activeLeaderboardMeasure = $getMeasureByName(
+    $leaderboardSortByMeasureName,
+  );
 
   $: validPercentOfTotal = leaderboardMeasureCountFeatureFlag
     ? $visibleMeasures.some((measure) => measure.validPercentOfTotal)
@@ -87,8 +89,8 @@
         />
       {:else}
         <LeaderboardActiveMeasureDropdown
-          leaderboardMeasureName={$leaderboardMeasureName}
-          {setLeaderboardMeasureName}
+          leaderboardSortByMeasureName={$leaderboardSortByMeasureName}
+          {setLeaderboardSortByMeasureName}
           {measures}
           {activeLeaderboardMeasure}
         />

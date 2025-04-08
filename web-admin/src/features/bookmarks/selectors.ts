@@ -33,6 +33,7 @@ import {
   type V1StructType,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
+import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { QueryClient } from "@tanstack/query-core";
 import { derived, get, type Readable } from "svelte/store";
 
@@ -60,11 +61,11 @@ export function getBookmarks(projectId: string, exploreName: string) {
       {
         query: {
           enabled: !!userResp.data?.user && !!projectId,
-          queryClient,
         },
       },
+      queryClient,
     ).subscribe(set),
-  ) as CreateQueryResult<V1ListBookmarksResponse>;
+  ) as CreateQueryResult<V1ListBookmarksResponse, HTTPError>;
 }
 
 export function isHomeBookmark(bookmark: V1Bookmark) {
@@ -163,9 +164,7 @@ export function getPrettySelectedTimeRange(
   return derived(
     [
       useExploreValidSpec(instanceId, exploreName),
-      useMetricsViewTimeRange(instanceId, metricsViewName, {
-        query: { queryClient },
-      }),
+      useMetricsViewTimeRange(instanceId, metricsViewName, {}, queryClient),
       useExploreState(metricsViewName),
     ],
     ([validSpec, timeRangeSummary, metricsExplorerEntity]) => {

@@ -22,7 +22,7 @@
   $: inputParams = component.inputParams().filter;
 
   $: metricsView =
-    "metrics_view" in paramValues ? paramValues.metrics_view : null;
+    "metrics_view" in paramValues ? (paramValues.metrics_view as string) : null;
 
   onMount(() => {
     localParamValues = structuredClone(paramValues) || {};

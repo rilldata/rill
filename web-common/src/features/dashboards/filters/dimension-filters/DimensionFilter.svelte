@@ -293,14 +293,9 @@
         on:remove={onRemove}
         removable={!readOnly}
         {readOnly}
+        removeTooltipText="remove {selectedValues.length} value{selectedValues.length !==
+          1 && 's'}"
       >
-        <svelte:fragment slot="remove-tooltip">
-          <slot name="remove-tooltip-content">
-            remove {selectedValues.length}
-            value{#if selectedValues.length !== 1}s{/if} for {name}</slot
-          >
-        </svelte:fragment>
-
         <DimensionFilterChipBody
           slot="body"
           label={curExcludeMode ? `Exclude ${label}` : label}

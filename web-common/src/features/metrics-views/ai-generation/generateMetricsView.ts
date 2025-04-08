@@ -72,7 +72,7 @@ export function useCreateMetricsViewFromTableUIAction(
         component: OptionToCancelAIGeneration,
         props: {
           onCancel: () => {
-            abortController.abort();
+            abortController.abort("User canceled the AI generation");
             isAICancelled = true;
           },
         },
@@ -109,6 +109,7 @@ export function useCreateMetricsViewFromTableUIAction(
           await runtimeServiceGetFile(instanceId, {
             path: newMetricsViewFilePath,
           });
+
           // success, AI is done
           break;
         } catch {
@@ -150,6 +151,7 @@ export function useCreateMetricsViewFromTableUIAction(
       const metricsViewResource = fileArtifacts
         .getFileArtifact(newMetricsViewFilePath)
         .getResource(queryClient, instanceId);
+
       await waitUntil(() => get(metricsViewResource).data !== undefined, 5000);
 
       const resource = get(metricsViewResource).data;

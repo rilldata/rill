@@ -7,21 +7,26 @@
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import {
     V1TimeGrain,
-    type MetricsViewSpecMeasureV2,
+    type MetricsViewSpecMeasure,
     type V1MetricsViewAggregationResponse,
     type V1MetricsViewTimeSeriesResponse,
   } from "@rilldata/web-common/runtime-client";
   import { Interval } from "luxon";
   import type { KPISpec } from ".";
   import { BIG_NUMBER_MIN_WIDTH } from ".";
-  import type { QueryObserverResult } from "@rilldata/svelte-query";
+  import type { QueryObserverResult } from "@tanstack/svelte-query";
   import { AlertTriangleIcon } from "lucide-svelte";
+  import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 
-  export let primaryTotalResult: QueryObserverResult<V1MetricsViewAggregationResponse>;
-  export let comparisonTotalResult: QueryObserverResult<V1MetricsViewAggregationResponse>;
-  export let primarySparklineResult: QueryObserverResult<V1MetricsViewTimeSeriesResponse>;
-  export let comparisonSparklineResult: QueryObserverResult<V1MetricsViewTimeSeriesResponse>;
-  export let measure: MetricsViewSpecMeasureV2 | undefined;
+  type Query<T> = QueryObserverResult<T, HTTPError>;
+  type TimeSeriesQuery = Query<V1MetricsViewTimeSeriesResponse>;
+  type AggregationQuery = Query<V1MetricsViewAggregationResponse>;
+
+  export let primaryTotalResult: AggregationQuery;
+  export let comparisonTotalResult: AggregationQuery;
+  export let primarySparklineResult: TimeSeriesQuery;
+  export let comparisonSparklineResult: TimeSeriesQuery;
+  export let measure: MetricsViewSpecMeasure | undefined;
   export let timeGrain: V1TimeGrain | undefined;
   export let timeZone: string | undefined;
   export let interval: Interval;

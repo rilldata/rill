@@ -304,7 +304,7 @@ func TestResolveMetricsView(t *testing.T) {
 					"admin":  true,
 				},
 				mv: &runtimev1.MetricsViewSpec{
-					Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
+					Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
 						{Name: "col1"},
 						{Name: "col2"},
 					},
@@ -340,7 +340,7 @@ func TestResolveMetricsView(t *testing.T) {
 					"admin":  true,
 				},
 				mv: &runtimev1.MetricsViewSpec{
-					Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
+					Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
 						{Name: "col1"},
 						{Name: "col2"},
 					},
@@ -484,7 +484,7 @@ func TestResolveMetricsView(t *testing.T) {
 					StateUpdatedOn: timestamppb.Now(),
 				},
 				Resource: &runtimev1.Resource_MetricsView{
-					MetricsView: &runtimev1.MetricsViewV2{
+					MetricsView: &runtimev1.MetricsView{
 						Spec: tt.args.mv,
 						State: &runtimev1.MetricsViewState{
 							ValidSpec: tt.args.mv,

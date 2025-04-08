@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import {
+    createAdminServiceListMagicAuthTokensInfinite,
     createAdminServiceRevokeMagicAuthToken,
     getAdminServiceListMagicAuthTokensQueryKey,
   } from "@rilldata/web-admin/client";
@@ -8,7 +9,6 @@
   import { useDashboardsV2 } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import NoPublicURLCTA from "@rilldata/web-admin/features/public-urls/NoPublicURLCTA.svelte";
   import PublicURLsTable from "@rilldata/web-admin/features/public-urls/PublicURLsTable.svelte";
-  import { createAdminServiceListMagicAuthTokensInfiniteQuery } from "@rilldata/web-admin/features/public-urls/create-infinite-query-public-urls";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -21,9 +21,23 @@
   const PAGE_SIZE = 12;
 
   $: magicAuthTokensInfiniteQuery =
-    createAdminServiceListMagicAuthTokensInfiniteQuery(organization, project, {
-      pageSize: PAGE_SIZE,
-    });
+    createAdminServiceListMagicAuthTokensInfinite(
+      organization,
+      project,
+      {
+        pageSize: PAGE_SIZE,
+      },
+      {
+        query: {
+          getNextPageParam: (lastPage) => {
+            if (lastPage.nextPageToken !== "") {
+              return lastPage.nextPageToken;
+            }
+            return undefined;
+          },
+        },
+      },
+    );
 
   function useValidDashboardTitle(dashboard: DashboardResource) {
     return (
@@ -61,9 +75,12 @@
     try {
       await $revokeMagicAuthToken.mutateAsync({ tokenId: deletedTokenId });
 
-      await queryClient.invalidateQueries(
-        getAdminServiceListMagicAuthTokensQueryKey(organization, project),
-      );
+      await queryClient.invalidateQueries({
+        queryKey: getAdminServiceListMagicAuthTokensQueryKey(
+          organization,
+          project,
+        ),
+      });
 
       eventBus.emit("notification", { message: "Public URL deleted" });
     } catch {

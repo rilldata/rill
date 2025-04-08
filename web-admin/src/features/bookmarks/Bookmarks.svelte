@@ -64,13 +64,13 @@
     eventBus.emit("notification", {
       message: "Home bookmark created",
     });
-    return queryClient.refetchQueries(
-      getAdminServiceListBookmarksQueryKey({
+    return queryClient.refetchQueries({
+      queryKey: getAdminServiceListBookmarksQueryKey({
         projectId: $projectId.data ?? "",
         resourceKind: ResourceKind.Explore,
         resourceName: exploreName,
       }),
-    );
+    });
   }
 
   async function deleteBookmark(bookmark: BookmarkEntry) {
@@ -81,13 +81,13 @@
     eventBus.emit("notification", {
       message: `Bookmark ${bookmark.resource.displayName} deleted`,
     });
-    return queryClient.refetchQueries(
-      getAdminServiceListBookmarksQueryKey({
+    return queryClient.refetchQueries({
+      queryKey: getAdminServiceListBookmarksQueryKey({
         projectId: $projectId.data ?? "",
         resourceKind: ResourceKind.Explore,
         resourceName: exploreName,
       }),
-    );
+    });
   }
 
   let open = false;

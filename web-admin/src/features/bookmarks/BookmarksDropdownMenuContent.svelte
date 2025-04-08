@@ -24,6 +24,7 @@
   import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { createQueryServiceMetricsViewSchema } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { BookmarkPlusIcon } from "lucide-svelte";
@@ -47,6 +48,8 @@
   $: metricsViewTimeRange = useMetricsViewTimeRange(
     instanceId,
     metricsViewName,
+    {},
+    queryClient,
   );
   $: defaultExplorePreset = getDefaultExplorePreset(
     exploreSpec,

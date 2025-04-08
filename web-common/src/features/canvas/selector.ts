@@ -1,17 +1,17 @@
 import type {
   CreateQueryOptions,
   CreateQueryResult,
-} from "@rilldata/svelte-query";
+  QueryClient,
+} from "@tanstack/svelte-query";
 import {
   ResourceKind,
   useFilteredResources,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   createQueryServiceResolveCanvas,
   type RpcStatus,
   type V1CanvasSpec,
-  type V1MetricsViewV2,
+  type V1MetricsView,
   type V1ResolveCanvasResponse,
   type V1ResolveCanvasResponseResolvedComponents,
 } from "@rilldata/web-common/runtime-client";
@@ -77,50 +77,47 @@ export function useDefaultMetrics(
 export interface CanvasResponse {
   canvas: V1CanvasSpec | undefined;
   components: V1ResolveCanvasResponseResolvedComponents | undefined;
-  metricsViews: Record<string, V1MetricsViewV2 | undefined>;
+  metricsViews: Record<string, V1MetricsView | undefined>;
 }
 
 export function useCanvas(
   instanceId: string,
   canvasName: string,
-  queryOptions?: CreateQueryOptions<
-    V1ResolveCanvasResponse,
-    ErrorType<RpcStatus>,
-    CanvasResponse
+  queryOptions?: Partial<
+    CreateQueryOptions<
+      V1ResolveCanvasResponse,
+      ErrorType<RpcStatus>,
+      CanvasResponse
+    >
   >,
+  queryClient?: QueryClient,
 ): CreateQueryResult<CanvasResponse, ErrorType<RpcStatus>> {
-  const defaultQueryOptions: CreateQueryOptions<
-    V1ResolveCanvasResponse,
-    ErrorType<RpcStatus>,
-    CanvasResponse
-  > = {
-    select: (data) => {
-      const metricsViews: Record<string, V1MetricsViewV2 | undefined> = {};
-      const refMetricsViews = data?.referencedMetricsViews;
-      if (refMetricsViews) {
-        Object.keys(refMetricsViews).forEach((key) => {
-          metricsViews[key] = refMetricsViews?.[key]?.metricsView;
-        });
-      }
-
-      return {
-        canvas: data.canvas?.canvas?.state?.validSpec,
-        components: data.resolvedComponents,
-        metricsViews,
-      };
-    },
-    queryClient,
-    enabled: !!canvasName,
-  };
   return createQueryServiceResolveCanvas(
     instanceId,
     canvasName,
     {},
     {
       query: {
-        ...defaultQueryOptions,
+        select: (data) => {
+          const metricsViews: Record<string, V1MetricsView | undefined> = {};
+          const refMetricsViews = data?.referencedMetricsViews;
+          if (refMetricsViews) {
+            Object.keys(refMetricsViews).forEach((key) => {
+              metricsViews[key] = refMetricsViews?.[key]?.metricsView;
+            });
+          }
+
+          return {
+            canvas: data.canvas?.canvas?.state?.validSpec,
+            components: data.resolvedComponents,
+            metricsViews,
+          };
+        },
+
+        enabled: !!canvasName,
         ...queryOptions,
       },
     },
+    queryClient,
   );
 }

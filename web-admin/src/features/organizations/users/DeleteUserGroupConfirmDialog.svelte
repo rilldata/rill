@@ -32,9 +32,10 @@
         usergroup: deletedUserGroupName,
       });
 
-      await queryClient.invalidateQueries(
-        getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
-      );
+      await queryClient.invalidateQueries({
+        queryKey:
+          getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
+      });
 
       eventBus.emit("notification", { message: "User group deleted" });
     } catch (error) {
