@@ -20,8 +20,10 @@ export type SourceFromYaml = {
 export function useSources(instanceId: string) {
   return useClientFilteredResources(
     instanceId,
-    ResourceKind.Source,
-    (res) => !!res.source?.state?.table,
+    ResourceKind.Model,
+    (res) =>
+      res.meta?.name?.name === res.model?.state?.resultTable &&
+      !!res.model?.spec?.definedAsSource,
   );
 }
 
