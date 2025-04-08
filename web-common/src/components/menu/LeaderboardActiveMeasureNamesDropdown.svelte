@@ -22,6 +22,8 @@
   export let setLeaderboardMeasureNames: (names: string[]) => void;
   export let setLeaderboardSortByMeasureName: (name: string) => void;
 
+  $: console.log("visibleMeasures :", visibleMeasures);
+
   let active = false;
   let multiSelect = selectedMeasureNames?.length > 1;
 
@@ -92,6 +94,12 @@
       : [...currentSelection, name];
 
     setLeaderboardMeasureNames(newSelection);
+
+    // If the toggled-off measure was the current sort measurem
+    // set the sort to the first remaining measure
+    if (name === leaderboardSortByMeasureName && newSelection.length > 0) {
+      setLeaderboardSortByMeasureName(newSelection[0]);
+    }
   }
 
   function getMeasureDisplayText(measureName: string) {

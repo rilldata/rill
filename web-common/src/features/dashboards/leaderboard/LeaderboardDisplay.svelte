@@ -128,7 +128,7 @@
                 timeRange.end,
               )}
               isBeingCompared={$isBeingComparedReadable(dimension.name)}
-              formatters={$leaderboardMeasureCountFeatureFlag
+              formatters={leaderboardMeasureNames.length > 1
                 ? $measureFormatters
                 : { [leaderboardSortByMeasureName]: $activeMeasureFormatter }}
               {setPrimaryDimension}

@@ -47,11 +47,6 @@
 
   let exploreContainerWidth: number;
 
-  // TODO: replace with the new leaderboardMeasureNames
-  // $: leaderboardMeasureNamesTest = $leaderboardMeasureCountFeatureFlag
-  //   ? $activeMeasuresFromMeasureCount
-  //   : [$leaderboardSortByMeasureName];
-
   $: ({ instanceId } = $runtime);
 
   $: ({ whereFilter, dimensionThresholdFilters } = $dashboardStore);
