@@ -279,10 +279,7 @@ function toExploreUrl(
     );
   }
 
-  const leaderboardMeasuresParam = toLeaderboardMeasuresUrlParam(
-    exploreState,
-    preset,
-  );
+  const leaderboardMeasuresParam = toLeaderboardMeasuresUrlParam(exploreState);
   if (leaderboardMeasuresParam !== undefined) {
     searchParams.set(
       ExploreStateURLParams.LeaderboardMeasures,
