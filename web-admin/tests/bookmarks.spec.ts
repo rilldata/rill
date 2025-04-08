@@ -1,7 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 import { assertUrlParams } from "@rilldata/web-common/tests/utils/assert-url-params";
-import { test } from "./setup/base";
 import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions";
+import { test } from "./setup/base";
 
 test.describe("Bookmarks", () => {
   // TODO: use a separate explore to isolate bookmarks to avoid conflicts.
@@ -89,6 +89,17 @@ test.describe("Bookmarks", () => {
         adminPage,
         `view=tdd&tr=PT6H&grain=hour&f=app_site_name IN ('FuboTV','Philo')&measure=requests`,
       );
+    });
+
+    test("Should delete filter-only bookmark", async ({ adminPage }) => {
+      await adminPage.goto("/e2e/openrtb/explore/auction_explore_bookmarks");
+      await adminPage.getByLabel("Bookmark dropdown").click();
+      const menuItem = adminPage.getByLabel("Filter-Only Bookmark Entry");
+      await menuItem.hover();
+      await menuItem.getByRole("button", { name: "Delete bookmark" }).click();
+      await expect(
+        adminPage.getByText("Bookmark Filter-Only deleted"),
+      ).toBeVisible();
     });
   });
 
@@ -178,6 +189,17 @@ test.describe("Bookmarks", () => {
         `tr=PT6H&compare_tr=rill-PP&grain=hour&f=app_site_name IN ('FuboTV','Philo')&expand_dim=app_site_domain`,
       );
     });
+
+    test("Should delete complete bookmark", async ({ adminPage }) => {
+      await adminPage.goto("/e2e/openrtb/explore/auction_explore_bookmarks");
+      await adminPage.getByLabel("Bookmark dropdown").click();
+      const menuItem = adminPage.getByLabel("Complete Bookmark Entry");
+      await menuItem.hover();
+      await menuItem.getByRole("button", { name: "Delete bookmark" }).click();
+      await expect(
+        adminPage.getByText("Bookmark Complete deleted"),
+      ).toBeVisible();
+    });
   });
 
   // Home bookmark interferes with other bookmark creation since we are adding some filters.
@@ -265,6 +287,15 @@ test.describe("Bookmarks", () => {
       // In "App Site Name" dimension table
       await expect(adminPage.getByLabel("Dimension Display")).toBeVisible();
       await expect(adminPage.getByText("App Site Name")).toBeVisible();
+    });
+
+    test("Should delete home bookmark", async ({ adminPage }) => {
+      await adminPage.goto("/e2e/openrtb/explore/auction_explore_bookmarks");
+      await adminPage.getByLabel("Bookmark dropdown").click();
+      const menuItem = adminPage.getByLabel("Home Bookmark Entry");
+      await menuItem.hover();
+      await menuItem.getByRole("button", { name: "Delete bookmark" }).click();
+      await expect(adminPage.getByText("Bookmark Home deleted")).toBeVisible();
     });
 
     // TODO: verify editing home bookmark. since these are changing in a future feature, these tests should be part of that PR
