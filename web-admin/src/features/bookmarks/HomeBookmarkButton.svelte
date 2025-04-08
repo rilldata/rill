@@ -28,14 +28,16 @@
 </script>
 
 <Tooltip.Root portal="body">
-  <Tooltip.Trigger>
+  <Tooltip.Trigger asChild let:builder>
     <Button
-      type="link"
+      type="secondary"
       compact
       preload={false}
       href={$homeBookmarkUrl}
       on:click={goToDashboardHome}
       class="border border-primary-300"
+      builders={[builder]}
+      label="Go to home bookmark"
     >
       <HomeBookmark size="16px" />
     </Button>

@@ -1,5 +1,4 @@
 import { page } from "$app/stores";
-import type { CreateQueryResult } from "@rilldata/svelte-query";
 import {
   createAdminServiceGetCurrentUser,
   createAdminServiceListBookmarks,
@@ -35,6 +34,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { QueryClient } from "@tanstack/query-core";
+import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, get, type Readable } from "svelte/store";
 
 export type BookmarkEntry = {
@@ -195,7 +195,12 @@ export function getHomeBookmarkButtonUrl(
   return derived(
     [
       useExploreValidSpec(instanceId, exploreName),
-      useMetricsViewTimeRange(instanceId, metricsViewName),
+      useMetricsViewTimeRange(
+        instanceId,
+        metricsViewName,
+        undefined,
+        queryClient,
+      ),
       useExploreState(exploreName),
       getHomeBookmarkExploreState(
         projectId,

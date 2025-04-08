@@ -234,19 +234,6 @@ test.describe("Bookmarks", () => {
         adminPage,
         `tr=PT24H&grain=hour&f=app_site_domain IN ('Not Available') AND pub_name IN ('Not Available')`,
       );
-
-      // Open the bookmarks dropdown
-      await adminPage.getByLabel("Bookmark dropdown").click();
-      // Verify that a home bookmark was created
-      await expect(adminPage.getByLabel("Home Bookmark Entry")).toHaveText(
-        "Home Main view for this dashboard",
-      );
-      // Verify that the bookmark has the correct icon
-      await expect(
-        adminPage
-          .getByLabel("Home Bookmark Entry")
-          .getByLabel("Home Bookmark Icon"),
-      ).toBeVisible();
     });
 
     test("Visiting dashboard with params should not apply home bookmark", async ({
@@ -265,6 +252,20 @@ test.describe("Bookmarks", () => {
       // In "App Site Name" dimension table
       await expect(adminPage.getByLabel("Dimension Display")).toBeVisible();
       await expect(adminPage.getByText("App Site Name")).toBeVisible();
+
+      // Click on "Go to home bookmark"
+      await adminPage.getByLabel("Go to home bookmark").click();
+      // saved home bookmark is restored
+      await expect(adminPage.getByText("Last 24 Hours")).toBeVisible();
+      await expect(
+        adminPage.getByText("App Site Domain Not Available"),
+      ).toBeVisible();
+      await expect(adminPage.getByText("Pub Name Not Available")).toBeVisible();
+      // make sure the url has the correct params
+      assertUrlParams(
+        adminPage,
+        `tr=PT24H&grain=hour&f=app_site_domain IN ('Not Available') AND pub_name IN ('Not Available')`,
+      );
     });
 
     // TODO: verify editing home bookmark. since these are changing in a future feature, these tests should be part of that PR
