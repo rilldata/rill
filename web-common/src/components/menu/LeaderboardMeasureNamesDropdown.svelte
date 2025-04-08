@@ -6,7 +6,7 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
+  import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import { writable } from "svelte/store";
@@ -14,7 +14,7 @@
   export let tooltipText: string;
   export let disabled = false;
   export let searchText = "";
-  export let visibleMeasures: MetricsViewSpecMeasureV2[];
+  export let visibleMeasures: MetricsViewSpecMeasure[];
   export let leaderboardSortByMeasureName: string;
   export let selectedMeasureNames: string[];
   export let setLeaderboardMeasureNames: (names: string[]) => void;
