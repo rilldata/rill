@@ -78,9 +78,7 @@
     visibleMeasures={$visibleMeasures}
     leaderboardSortByMeasureName={$leaderboardSortByMeasureName}
     selectedMeasureNames={$leaderboardMeasureNames}
-    setLeaderboardMeasureNames={(names) => {
-      setLeaderboardMeasureNames(names);
-    }}
+    {setLeaderboardMeasureNames}
     {setLeaderboardSortByMeasureName}
   />
   <LeaderboardAdvancedActions
