@@ -3,15 +3,15 @@ import type { ChartConfig, ChartType } from "./charts/types";
 import type { ImageSpec } from "./image";
 import type { KPISpec } from "./kpi";
 import type { MarkdownSpec } from "./markdown";
-import type { PivotSpec } from "./pivot";
-import type { TableSpec } from "./table";
+import type { PivotSpec, TableSpec } from "./pivot";
+import type { ChartSpec } from "./charts";
 
 // First, let's create a union type for all possible specs
 export type ComponentSpec =
-  | ChartConfig
-  | TableSpec
+  | ChartSpec
   | PivotSpec
   | ImageSpec
+  | TableSpec
   | KPISpec
   | KPIGridSpec
   | MarkdownSpec;
@@ -46,7 +46,6 @@ export interface ComponentSize {
 export type CanvasComponentType =
   | ChartType
   | "markdown"
-  | "kpi"
   | "kpi_grid"
   | "image"
   | "pivot"
@@ -74,18 +73,18 @@ export interface MarkdownTemplateT {
 export interface ImageTemplateT {
   image: ImageSpec;
 }
-export interface TableTemplateT {
-  table: TableSpec;
-}
 
 export interface PivotTemplateT {
   pivot: PivotSpec;
+}
+export interface TableTemplateT {
+  table: TableSpec;
 }
 
 export type TemplateSpec =
   | ChartTemplates
   | KPITemplateT
-  | TableTemplateT
   | PivotTemplateT
   | MarkdownTemplateT
-  | ImageTemplateT;
+  | ImageTemplateT
+  | TableTemplateT;
