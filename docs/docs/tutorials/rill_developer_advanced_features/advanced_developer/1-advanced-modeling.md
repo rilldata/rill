@@ -78,8 +78,3 @@ Using this model, we can create a new dashboard with more informative capabiliti
 It can be confusing to be able to create measures in the SQL model layer as well as the dashboard's metric layer. This is intentional due to how the underlying OLAP engine works. For a more detailed reasoning, we have created a guide, Average of Averages, that explains further why this might not be the best to do on the SQL layer.
 :::
 
-
-import DocsRating from '@site/src/components/DocsRating';
-
----
-<DocsRating />

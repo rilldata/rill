@@ -42,7 +42,3 @@ Instead, after materializing the final output model table, you can create a meas
 
 
 
-import DocsRating from '@site/src/components/DocsRating';
-
----
-<DocsRating />

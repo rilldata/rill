@@ -127,7 +127,3 @@ Depending on the method used during development, pushing to Rill Cloud can be as
 
 
 
-import DocsRating from '@site/src/components/DocsRating';
-
----
-<DocsRating />

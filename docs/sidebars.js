@@ -49,7 +49,7 @@ const sidebars = {
 
         {
           type: 'category',
-          label: "Rill's Advanced Features",
+          label: "Rill Advanced Features",
           description: 'Advanced Features and beyond',
           link: {
             type: 'doc',
@@ -91,14 +91,14 @@ const sidebars = {
                 'tutorials/rill_developer_advanced_features/incremental_models/staging-connectors'
               ]
             },
-            // {
-            //   type: 'category',
-            //   label: 'Advanced Measures and Dimensions',
-            //   description: "Define and Aggregate Measures in the Metrics View ",
-            //   items: [
-            //     'tutorials/rill_developer_advanced_features/advanced_measures/advanced_measures'
-            //   ]
-            // },
+            {
+              type: 'category',
+              label: 'Advanced Measures',
+              description: "Advanced Measures and Dimensions",
+              items: [
+                'tutorials/rill_developer_advanced_features/advanced_measures/advanced_measures'
+              ]
+            },
 
             {
               type: 'category',
@@ -110,36 +110,14 @@ const sidebars = {
                 'tutorials/rill_developer_advanced_features/custom_api/test-api',
               ]
             },
-          ]
-        },
-        {
-          type: 'category',
-          label: 'Administration Topics',
-          description: 'Rill Administration Topics',
-          link: {
-            type: 'doc',
-            id: 'tutorials/administration/index',
-
-          },
-          items: [
             {
               type: 'category',
-              label: 'User Management',
+              label: 'Alerts',
+              description: "Create Alerts to monitor your Project",
               items: [
-                'tutorials/administration/user/user-management',
-                'tutorials/administration/user/user-group-management',
+                'tutorials/rill_developer_advanced_features/alerts/create-alert'
               ]
-            },
-            {
-              type: 'category',
-              label: 'Project Management',
-              items: [
-                'tutorials/administration/project/project-maintanence',
-                'tutorials/administration/project/alerts',
-                'tutorials/administration/project/credentials-env-variable-management',
-                'tutorials/administration/project/github',
-              ]
-            },
+            }
 
           ]
         },
@@ -168,6 +146,36 @@ const sidebars = {
 
             },
 
+
+          ]
+        },
+        {
+          type: 'category',
+          label: 'Administration Topics',
+          description: 'Rill Administration Topics',
+          link: {
+            type: 'doc',
+            id: 'tutorials/administration/index',
+
+          },
+          items: [
+            {
+              type: 'category',
+              label: 'User Management',
+              items: [
+                'tutorials/administration/user/user-management',
+                'tutorials/administration/user/user-group-management',
+              ]
+            },
+            {
+              type: 'category',
+              label: 'Project Management',
+              items: [
+                'tutorials/administration/project/project-maintanence',
+                'tutorials/administration/project/credentials-env-variable-management',
+                'tutorials/administration/project/github',
+              ]
+            },
 
           ]
         },

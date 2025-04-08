@@ -11,16 +11,21 @@ Let's start at the beginning of all data pipelines, **the source**.
 
 ### What is a Source?
 
-In Rill, the source is your data. Whether this is from a data warehouse, cloud storage, or a RDBMS, Rill can read and import this data.
+In Rill, the source is your data. Whether you need to connect to the data warehouse via SQL or provide a folder in your cloud storage, Rill can read this data. Depending on the source type, you will need to either explicitly provide the credentials (Snowflake, Athena, etc.) or Rill can dynamically retrieve them via the CLI (AWS, GCP, Azure). Either way, the credentials will [be stored in a `.env` file](/build/credentials#deploying-to-rill-cloud), that is pushed with your Rill project.
+
+
 
 :::tip Where is the data being imported?
 By default, the underlying OLAP engine utilized is DuckDB (see <a href='https://docs.rilldata.com/build/olap/' target="_blank"> Connect OLAP engines</a>). 
 Please see our docs for the 
 <a href="https://docs.rilldata.com/build/connect/" target="_blank">supported list</a> of connectors.
+
+
+We support various difference OLAP engines, if you have a different OLAP engine that you're interested in using, please let us know! 
 :::
 
 
-### Adding a source is simple! 
+### Add a Data Source
 
 Select the `+Add` dropdown and select `Data`, this will open a UI of supported connectors.
 
@@ -39,11 +44,11 @@ gs://rilldata-public/github-analytics/Clickhouse/2025/03/commits_*.parquet
 These are datasets derived from the commit history and modified files of our friends at ClickHouse's GitHub repository. In our example, we'll ingest a single month of data however, Rill supports glob patterns in which you could modify the URL to `gs://rilldata-public/github-analytics/Clickhouse/**/modified_files_*.parquet` which would ingest all years and months of data. 
 :::
 
-Once imported, youll see the UI change with a few things..
-1. The `source_name`.YAML file created in the file explorer
-2. DuckDB database, created in the Connectors explorer
-3. Within the DuckDB database, our imported data as a table with a preview.
-4. The right panel giving a summary of the data
+Once imported, youll see the UI change with a few things.
+1. The `source_name`.YAML file created in the file explorer.
+2. DuckDB database, created in the Connectors explorer.
+3. Within the DuckDB database, under main, the source table with a preview when selected.
+4. The right panel giving a summary of the data source and the column values.
 
 <img src = '/img/tutorials/102/Add-GCS.gif' class='rounded-gif' />
 <br />
@@ -60,16 +65,10 @@ Now we're ready to create a `model`.
     
 </details>
 
-:::note Too much data?
+:::tip Too much data?
 By default, all environments running locally are considered `dev` environments. This means that you can use environmental variables to filter the input data as Rill Developer is designed for testing purposes. For example, you can filter the repository data on the `author_date` column or simply use `limit ####`.
 ```
 sql: "select * from read_parquet('gs://rilldata-public/github-analytics/Clickhouse/*/*/commits_*.parquet')
-         {{if dev}} where author_date < TIMESTAMPTZ '2015-01-01 00:00:00 Z'  {{end}}"
+         {{if dev}} where author_date > '2025-01-01' {{end}}"
 ```
 :::
-
-
-import DocsRating from '@site/src/components/DocsRating';
-
----
-<DocsRating />

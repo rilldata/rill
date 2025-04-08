@@ -71,7 +71,4 @@ output:
 Unlike partitions, states do not paritition the dataset per refresh so you will not be able to via the UI or CLI, see if there is a specific partition that errored and manually refresh this. In the cases of data disrecpancies in a state incremented model, please run a full refresh. 
 :::
 
-import DocsRating from '@site/src/components/DocsRating';
 
----
-<DocsRating />

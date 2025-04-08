@@ -8,18 +8,18 @@ tags:
 ---
 
 ### What is a Metrics View? 
-A metrics view is a layer in which you can create and define your measures and dimensions. Think of it as the layer that takes all of your raw data and makes sense of it. In this layer, you can define, for example, what Net Revenue is defined at using basic to advanced [arithmetic functions available in DuckDB](https://duckdb.org/docs/stable/sql/functions/numeric.html). You also define what dimensions to use to slice-and-dice your data in the Explore Dashboard. If using Canvas dashboards, you can view multiple metrics views in a single page! 
+A metrics view is a layer in which you can create and define your measures and dimensions. Think of it as the layer that takes all of your raw data and makes sense of it. In this layer, you can define, for example, what Net Revenue is defined as using basic to advanced [arithmetic functions available in DuckDB](https://duckdb.org/docs/stable/sql/functions/numeric.html). You also define what dimensions to use to slice-and-dice your data in the Explore Dashboard. If using Canvas dashboards, you can view multiple metrics views in a single page! 
 
 ### Let's create a metrics view!
 
-Now that the model is created, we can create a metrics view. There are two ways to do so:
+Now that the data is ready in your model file, we can create a metrics view. There are two ways to do so:
 1. Generate metrics with AI
 2. Start Simple using the +Add, Metrics 
 
 <details>
   <summary>How does Generate metrics with AI work?</summary>
   
-    We send a set of YAML and project files to OpenAI to suggest the dimensions, measures, and various other key pairs for your dashboard. 
+    We send a set of YAML files along with some contextto OpenAI to suggest the dimensions, measures, and various other key pairs for your dashboard. 
 </details>
 
 Let's go ahead and create a simple metrics layer via the UI and build onto it. 
@@ -61,8 +61,6 @@ Starting from version 0.50, we have introduced the [visual-metric-editor](/build
 ## Via the Visual Metrics Editor
 In the top right of the UI, select the viz button to navigate to the visual metrics editor. The below is an example of a completed visual metrics editor. We will make some modifcations to our current file to build something similar.
 
-<img src = '/img/tutorials/102/new-viz-editor.png' class='rounded-gif' />
-<br />
 
 We can go ahead and change the following components as directed in the UI:
 
@@ -155,8 +153,7 @@ From our dataset, we can add more dimensions to allow more filtering and explora
 
 You may need to reference the <a href='https://docs.rilldata.com/reference/project-files/explore-dashboards' target="_blank">metrics view YAML </a> reference guide to figure out the above. Your final output should look something like this! 
 
-<img src = '/img/tutorials/103/Completed-100-dashboard.png' class='rounded-gif' />
-<br />
+
 
 
 <details>
@@ -207,10 +204,8 @@ measures:
 
 If you decide to build out the metrics view via the UI, it should look something like below!
 
-![img](/img/tutorials/103/visual-metric-editor.png)
+
+<img src = '/img/tutorials/102/new-viz-editor.png' class='rounded-gif' />
+<br />
 
 
-import DocsRating from '@site/src/components/DocsRating';
-
----
-<DocsRating />

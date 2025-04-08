@@ -6,9 +6,9 @@ hide_table_of_contents: false
 ---
 ### Advanced Features of Rill
 
-Now that you have deployed your project onto Rill Cloud, we can go back and take more time to learn all of what Rill has to offer! 
+Deploying to Rill Cloud is only the first step. In this course, we will return back to Rill Developer to utilize some of Rill's advanced features such as Advanced Modeling, Custom APIs, Alerts and more. 
 
-First, we will head back to Developer to make some changes to the existing model and dashboard. Once this is ready, we can make use of the new features and finally push our updates to Rill Cloud.
+After making these changes, we'll have to push the changes to Rill Cloud to implement. 
 
 import CustomDocCardList from '@site/src/components/CustomDocCardList';
 

@@ -75,7 +75,3 @@ Our team is continuously working to add additional features to staging connector
 :::
 
 
-import DocsRating from '@site/src/components/DocsRating';
-
----
-<DocsRating />

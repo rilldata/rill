@@ -5,6 +5,8 @@ sidebar_label: "DEV and PROD Sources"
 sidebar_position: 00
 ---
 
+Before we discuss the advanced features, we'll go over how to make changes in Rill Developer and push to Rill Cloud.
+
 In our initial ingestion of the data, we brought in only a month's worth of data to ensure that we do not try to download **all the data** from our source. However, we would want our dashboards in Rill Cloud to display all the data. We can do this by defining the behavior of the source via the YAML. See [our reference documentation](/reference/project-files/sources) for more information.
 
 ```
@@ -33,7 +35,7 @@ connector: "duckdb"
 sql: "select * from read_parquet('gs://rilldata-public/github-analytics/Clickhouse/2025/03/commits_*.parquet')"
 ```
 
-At the current setup, whether the source will only ingest the single month of data. Instead, lets change that to our `dev` SQL and create a new line for the full data. This way, when we push the source to Rill Cloud, it won't be just for the month of March but historical, too!
+At the current setup, the source will only ingest data from March 2025. Instead, lets change that to our `dev` SQL and create a new line for the full data. This way, when we push the source to Rill Cloud, it won't be just for the month of March but historical, too!
 
 
 ```yaml
@@ -59,6 +61,15 @@ dev:
   
 sql:  "select * from read_parquet('gs://rilldata-public/github-analytics/Clickhouse/*/*/modified*.parquet')"
 ```
+
+
+:::tip `{{if dev}} {{end}}`
+Similar to separating the SQL file into two separate keys, you can also use `{{if dev}}` to define a rule for the source data.
+
+```yaml
+sql: "select * from read_parquet('gs://rilldata-public/github-analytics/Clickhouse/*/*/commits_*.parquet')
+         {{if dev}} where author_date > '2025-01-01' {{end}}"```
+:::
 
 ## Adding automatic source refresh
 In order to keep the files from being static, you'll need to add a project refresh to the source! 

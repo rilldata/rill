@@ -40,7 +40,4 @@ Let's go ahead and select `Start with an empty project`.
 </details>
 
 
-import DocsRating from '@site/src/components/DocsRating';
 
----
-<DocsRating />

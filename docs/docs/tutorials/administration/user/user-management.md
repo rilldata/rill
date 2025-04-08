@@ -137,7 +137,3 @@ No members found
 Next let's review user groups.
 
 
-import DocsRating from '@site/src/components/DocsRating';
-
----
-<DocsRating />

@@ -64,8 +64,4 @@ Once completed, select `Preview`. You should see something like the following im
 <img src = '/img/tutorials/103/complete-canvas-dashboard.png' class='rounded-gif' />
 <br />
 
-import DocsRating from '@site/src/components/DocsRating';
-
----
-<DocsRating />
 

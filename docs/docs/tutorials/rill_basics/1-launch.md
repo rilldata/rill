@@ -11,8 +11,8 @@ tags:
 You will need to [install Rill](https://docs.rilldata.com/home/install).
 :::
 
-The goal of this 6 part tutorial is to deploy your instance of your project on to Rill Cloud, and this will start you [30 day 
-trial](./launch). This also prepares you for the [Advanced Features Course](../rill_developer_advanced_features/overview.md) that builds on top of this project.
+The goal of this six part tutorial is to get started with Rill and deploy your project to Rill Cloud. Upon deployment, your [30 day 
+trial will start](./launch). The basics course prepares you for the [Advanced Features Course](../rill_developer_advanced_features/overview.md) that builds on top of this project. Let's get started.
 
 ## Start Rill Developer
 
@@ -45,7 +45,7 @@ Let's go ahead and select `Start with an empty project`.
 
 </details>
 
-import DocsRating from '@site/src/components/DocsRating';
 
----
-<DocsRating />
+:::note What is Rill Developer? 
+Rill Developer is used to develop your Rill project as editing in Rill Cloud is not yet available. In Rill Developer, you will create connections to your source files, do some last mile ETL, define metrics in the metrics layer and finally create a dashboard. For more details on the differences between Rill Developer and Rill Cloud, see our documention, [here](/concepts/developerVsCloud.md).
+:::

@@ -96,7 +96,3 @@ SELECT
 
 
 
-import DocsRating from '@site/src/components/DocsRating';
-
----
-<DocsRating />

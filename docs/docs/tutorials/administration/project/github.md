@@ -115,7 +115,3 @@ rill project edit
 ? Make project public No
 ```
 
-import DocsRating from '@site/src/components/DocsRating';
-
----
-<DocsRating />

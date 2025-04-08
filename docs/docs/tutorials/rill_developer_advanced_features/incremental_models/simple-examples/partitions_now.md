@@ -115,7 +115,3 @@ refresh:
 :::
 Now that we've gone over the basics, let's take a look at a more realistic example, our ClickHouse project.
 
-import DocsRating from '@site/src/components/DocsRating';
-
----
-<DocsRating />

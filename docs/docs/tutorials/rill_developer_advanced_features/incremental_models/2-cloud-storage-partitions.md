@@ -125,7 +125,3 @@ sql: SELECT * FROM read_parquet('{{ .partition.uri }}')
 You now have a working incremental model that refreshed new data based on the `updated_on` key at 8AM UTC everyday. Along with writing to the default OLAP engine, DuckDB, we have also added some features to use staging tables for connectors that do not have direct read/write capabilities.
 
 
-import DocsRating from '@site/src/components/DocsRating';
-
----
-<DocsRating />
