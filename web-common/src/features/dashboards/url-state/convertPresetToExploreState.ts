@@ -278,9 +278,14 @@ function fromExploreUrlParams(
       DashboardState_LeaderboardSortType.UNSPECIFIED;
   }
 
-  if (preset.exploreLeaderboardMeasureCount !== undefined) {
-    partialExploreState.leaderboardMeasureCount =
-      preset.exploreLeaderboardMeasureCount;
+  // if (preset.exploreLeaderboardMeasureCount !== undefined) {
+  //   partialExploreState.leaderboardMeasureCount =
+  //     preset.exploreLeaderboardMeasureCount;
+  // }
+
+  if (preset.exploreLeaderboardMeasures !== undefined) {
+    partialExploreState.leaderboardMeasureNames =
+      preset.exploreLeaderboardMeasures;
   }
 
   if (preset.exploreExpandedDimension !== undefined) {
