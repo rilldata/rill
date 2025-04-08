@@ -4,11 +4,11 @@ import {
   getCompoundQuery,
 } from "@rilldata/web-common/features/compound-query-result";
 import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
+import { getPartialExploreStateFromSessionStorage } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
-import { getExploreStateFromSessionStorage } from "@rilldata/web-common/features/dashboards/url-state/getExploreStateFromSessionStorage";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
@@ -94,11 +94,8 @@ export class DashboardStateDataLoader {
           instanceId,
           metricsViewName,
           {},
-          {
-            query: {
-              queryClient,
-            },
-          },
+          {},
+          queryClient,
         ).subscribe(set);
       },
     );
@@ -182,18 +179,17 @@ export class DashboardStateDataLoader {
     );
 
     this.exploreStateFromSessionStorage = derived(
-      [this.validSpecQuery, this.explorePresetFromYAMLConfig, page],
-      ([validSpecResp, explorePresetFromYAMLConfig, pageState]) => {
+      [this.validSpecQuery, page],
+      ([validSpecResp, pageState]) => {
         const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
         const exploreSpec = validSpecResp.data?.explore ?? {};
-        const { exploreStateFromSessionStorage } =
-          getExploreStateFromSessionStorage(
+        const exploreStateFromSessionStorage =
+          getPartialExploreStateFromSessionStorage(
             exploreName,
             storageNamespacePrefix,
             pageState.url.searchParams,
             metricsViewSpec,
             exploreSpec,
-            explorePresetFromYAMLConfig.data ?? {},
           );
 
         return {
@@ -313,14 +309,13 @@ export class DashboardStateDataLoader {
     // regardless if there is exploreStateFromSessionStorage for current url params or not.
     if (skipSessionStorage) return partialExploreStateFromUrl;
 
-    const { exploreStateFromSessionStorage } =
-      getExploreStateFromSessionStorage(
+    const exploreStateFromSessionStorage =
+      getPartialExploreStateFromSessionStorage(
         this.exploreName,
         this.storageNamespacePrefix,
         urlSearchParams,
         metricsViewSpec,
         exploreSpec,
-        explorePresetFromYAMLConfig.data,
       );
 
     return (

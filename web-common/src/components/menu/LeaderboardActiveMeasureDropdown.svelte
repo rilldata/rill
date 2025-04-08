@@ -1,12 +1,12 @@
 <script lang="ts">
-  import * as Select from "@rilldata/web-common/components/select";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
+  import * as Select from "@rilldata/web-common/components/select";
+  import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
 
-  export let leaderboardMeasureName: string;
-  export let activeLeaderboardMeasure: MetricsViewSpecMeasureV2 | undefined;
-  export let measures: MetricsViewSpecMeasureV2[];
-  export let setLeaderboardMeasureName: (name: string) => void;
+  export let leaderboardSortByMeasureName: string;
+  export let activeLeaderboardMeasure: MetricsViewSpecMeasure | undefined;
+  export let measures: MetricsViewSpecMeasure[];
+  export let setLeaderboardSortByMeasureName: (name: string) => void;
 
   let active = false;
 </script>
@@ -21,7 +21,7 @@
     }))}
     onSelectedChange={(newSelection) => {
       if (!newSelection?.value) return;
-      setLeaderboardMeasureName(newSelection.value);
+      setLeaderboardSortByMeasureName(newSelection.value);
     }}
   >
     <Select.Trigger class="outline-none border-none w-fit  px-0 gap-x-0.5">
@@ -47,7 +47,9 @@
           class="text-[12px]"
         >
           <div class="flex flex-col">
-            <div class:font-bold={leaderboardMeasureName === measure.name}>
+            <div
+              class:font-bold={leaderboardSortByMeasureName === measure.name}
+            >
               {measure.displayName || measure.name}
             </div>
 

@@ -24,7 +24,7 @@
 
   $: ({ instanceId } = $runtime);
 
-  $: kpiProperties = rendererProperties as KPISpec;
+  $: kpiProperties = rendererProperties as unknown as KPISpec;
 
   $: ({
     metrics_view: metricsViewName,
@@ -146,8 +146,8 @@
   {hasTimeSeries}
   {comparisonLabel}
   {interval}
-  sparkline={rendererProperties.sparkline}
-  comparisonOptions={rendererProperties.comparison}
+  sparkline={kpiProperties.sparkline}
+  comparisonOptions={kpiProperties.comparison}
   primaryTotalResult={$totalQuery}
   comparisonTotalResult={$comparisonTotalQuery}
   primarySparklineResult={$primarySparklineQuery}

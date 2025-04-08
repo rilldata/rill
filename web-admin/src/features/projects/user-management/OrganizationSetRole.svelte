@@ -36,12 +36,12 @@
         },
       });
 
-      await queryClient.invalidateQueries(
-        getAdminServiceListProjectMemberUsergroupsQueryKey(
+      await queryClient.invalidateQueries({
+        queryKey: getAdminServiceListProjectMemberUsergroupsQueryKey(
           organization,
           project,
         ),
-      );
+      });
 
       eventBus.emit("notification", {
         message: "User group role updated",
@@ -63,12 +63,12 @@
         usergroup: groupName,
       });
 
-      await queryClient.invalidateQueries(
-        getAdminServiceListProjectMemberUsergroupsQueryKey(
+      await queryClient.invalidateQueries({
+        queryKey: getAdminServiceListProjectMemberUsergroupsQueryKey(
           organization,
           project,
         ),
-      );
+      });
 
       eventBus.emit("notification", {
         message: "User group removed",

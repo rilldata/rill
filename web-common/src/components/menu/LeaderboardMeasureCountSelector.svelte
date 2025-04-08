@@ -1,11 +1,11 @@
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
+  import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
   import IconButton from "../button/IconButton.svelte";
   import MinusIcon from "../icons/MinusIcon.svelte";
   import PlusIcon from "../icons/PlusIcon.svelte";
 
-  export let measures: MetricsViewSpecMeasureV2[];
+  export let measures: MetricsViewSpecMeasure[];
   export let count: number = 1;
   export let onMeasureCountChange: (count: number) => void;
 

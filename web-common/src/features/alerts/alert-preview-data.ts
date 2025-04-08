@@ -50,12 +50,9 @@ export function getAlertPreviewData(
         formValues.metricsViewName,
         getAlertPreviewQueryRequest(formValues),
         {
-          query: getAlertPreviewQueryOptions(
-            queryClient,
-            formValues,
-            metricsViewResp.data,
-          ),
+          query: getAlertPreviewQueryOptions(formValues, metricsViewResp.data),
         },
+        queryClient,
       ).subscribe(set),
   );
 }
@@ -75,13 +72,14 @@ function getAlertPreviewQueryRequest(
 }
 
 function getAlertPreviewQueryOptions(
-  queryClient: QueryClient,
   formValues: AlertFormValues,
   metricsViewSpec: V1MetricsViewSpec | undefined,
-): CreateQueryOptions<
-  Awaited<ReturnType<typeof queryServiceMetricsViewAggregation>>,
-  unknown,
-  AlertPreviewResponse
+): Partial<
+  CreateQueryOptions<
+    Awaited<ReturnType<typeof queryServiceMetricsViewAggregation>>,
+    unknown,
+    AlertPreviewResponse
+  >
 > {
   return {
     enabled:
@@ -97,7 +95,6 @@ function getAlertPreviewQueryOptions(
           .filter(Boolean) ?? []) as VirtualizedTableColumns[],
       };
     },
-    queryClient,
   };
 }
 

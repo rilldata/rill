@@ -24,7 +24,7 @@ var _ trace.SpanExporter = (*FileExporter)(nil)
 
 // NewFileExporter initializes a file exporter with log rotation
 func NewFileExporter() (*FileExporter, error) {
-	filepath, err := dotrill.ResolveFilename("otel_traces.log", true)
+	filepath, err := dotrill.New("").ResolveFilename("otel_traces.log", true)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +90,7 @@ func SearchTracesFile(ctx context.Context, traceID, resourceName string) ([]byte
 	}
 	defer db.Close()
 
-	fp, err := dotrill.ResolveFilename("otel_traces*.log", true)
+	fp, err := dotrill.New("").ResolveFilename("otel_traces*.log", true)
 	if err != nil {
 		return nil, err
 	}

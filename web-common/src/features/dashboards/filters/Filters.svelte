@@ -7,10 +7,8 @@
   import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import { isExpressionUnsupported } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
-  import { useModelHasTimeSeries } from "../selectors";
   import { getStateManagers } from "../state-managers/state-managers";
   import ComparisonPill from "../time-controls/comparison-pill/ComparisonPill.svelte";
   import SuperPill from "../time-controls/super-pill/SuperPill.svelte";
@@ -48,6 +46,7 @@
   export let readOnly = false;
   export let timeRanges: V1ExploreTimeRange[];
   export let metricsViewName: string;
+  export let hasTimeSeries: boolean;
 
   /** the height of a row of chips */
   const ROW_HEIGHT = "26px";
@@ -103,8 +102,6 @@
     ready: timeControlsReady,
   } = $timeControlsStore);
 
-  $: ({ instanceId } = $runtime);
-
   $: exploreSpec = $validSpecStore.data?.explore ?? {};
   $: metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
 
@@ -139,8 +136,6 @@
   // hasFilter only checks for complete filters and excludes temporary ones
   $: hasFilters =
     currentDimensionFilters.length > 0 || currentMeasureFilters.length > 0;
-  $: metricTimeSeries = useModelHasTimeSeries(instanceId, metricsViewName);
-  $: hasTimeSeries = $metricTimeSeries.data;
 
   $: isComplexFilter = isExpressionUnsupported($dashboardStore.whereFilter);
 
