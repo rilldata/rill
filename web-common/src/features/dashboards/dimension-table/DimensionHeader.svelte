@@ -38,13 +38,20 @@
       sorting: { sortedByDimensionValue },
       dimensions: { getDimensionDisplayName },
       dimensionFilters: { isFilterExcludeMode },
-      measures: { visibleMeasures, leaderboardShowAllMeasures },
+      measures: {
+        visibleMeasures,
+        leaderboardShowAllMeasures,
+        leaderboardMeasureNames,
+      },
     },
     actions: {
       sorting: { toggleSort },
       dimensions: { setPrimaryDimension },
       dimensionsFilter: { toggleDimensionFilterMode },
-      leaderboard: { setLeaderboardShowAllMeasures },
+      leaderboard: {
+        setLeaderboardShowAllMeasures,
+        setLeaderboardSortByMeasureName,
+      },
     },
     timeRangeSummaryStore,
     dashboardStore,
@@ -79,7 +86,12 @@
     if ($sortedByDimensionValue) {
       toggleSort(SortType.VALUE);
     }
+
+    // Reset expanded dimension
     setPrimaryDimension("");
+
+    // Set the first leaderboard measure as the sort measure
+    setLeaderboardSortByMeasureName($leaderboardMeasureNames[0]);
   };
   function toggleFilterMode() {
     toggleDimensionFilterMode(dimensionName);
