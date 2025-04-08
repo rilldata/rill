@@ -4,10 +4,20 @@ import {
   getFilterOptions,
 } from "@rilldata/web-common/features/canvas/components/util";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
+import type { LeaderboardState } from "@rilldata/web-common/features/dashboards/leaderboard/types";
+import {
+  SortDirection,
+  SortType,
+} from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
+import {
+  isValueBasedSort,
+  toggleSortDirection,
+} from "@rilldata/web-common/features/dashboards/state-managers/actions/sorting";
 import type {
   V1MetricsViewSpec,
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
+import { derived, get, writable, type Writable } from "svelte/store";
 import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
 import type {
   CanvasComponentType,
@@ -39,6 +49,7 @@ export class LeaderboardComponent extends BaseCanvasComponent<LeaderboardSpec> {
   resetParams = ["measures", "dimensions"];
   type: CanvasComponentType = "leaderboard";
   component = Leaderboard;
+  leaderboardState: Writable<LeaderboardState>;
 
   constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
     const defaultSpec: LeaderboardSpec = {
@@ -48,6 +59,13 @@ export class LeaderboardComponent extends BaseCanvasComponent<LeaderboardSpec> {
       num_rows: 7,
     };
     super(resource, parent, path, defaultSpec);
+
+    const { measures } = get(this.specStore);
+    this.leaderboardState = writable({
+      sortType: SortType.VALUE,
+      sortDirection: SortDirection.DESCENDING,
+      leaderboardSortByMeasureName: measures?.[0] ?? null,
+    });
   }
 
   isValid(spec: LeaderboardSpec): boolean {
@@ -94,4 +112,47 @@ export class LeaderboardComponent extends BaseCanvasComponent<LeaderboardSpec> {
       num_rows: 7,
     };
   }
+
+  get sortByMeasure() {
+    return derived(this.leaderboardState, (state) => {
+      return state.sortType !== SortType.DIMENSION &&
+        state.sortType !== SortType.UNSPECIFIED
+        ? state.leaderboardSortByMeasureName
+        : null;
+    });
+  }
+
+  // Rewrite of @toggleSort from actions/sorting.ts
+  toggleSort = (sortType: SortType, measureName?: string) => {
+    const state = get(this.leaderboardState);
+
+    // Handle measure name change if provided
+    if (
+      measureName !== undefined &&
+      measureName !== state.leaderboardSortByMeasureName &&
+      isValueBasedSort(sortType)
+    ) {
+      this.leaderboardState.set({
+        ...state,
+        leaderboardSortByMeasureName: measureName,
+        sortType,
+        sortDirection: SortDirection.DESCENDING,
+      });
+      return;
+    }
+
+    // Handle sort type and direction changes
+    if (sortType === undefined || state.sortType === sortType) {
+      this.leaderboardState.set({
+        ...state,
+        sortDirection: toggleSortDirection(state.sortDirection),
+      });
+    } else {
+      this.leaderboardState.set({
+        ...state,
+        sortType,
+        sortDirection: SortDirection.DESCENDING,
+      });
+    }
+  };
 }

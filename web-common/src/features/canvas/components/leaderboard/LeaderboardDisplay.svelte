@@ -7,7 +7,7 @@
     valueColumn,
   } from "@rilldata/web-common/features/dashboards/leaderboard/leaderboard-widths";
   import Leaderboard from "@rilldata/web-common/features/dashboards/leaderboard/Leaderboard.svelte";
-  import { SortType } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
+  import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
   import { selectedDimensionValuesV2 } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -29,6 +29,9 @@
   $: ({
     specStore,
     timeAndFilterStore,
+    leaderboardState,
+    sortByMeasure,
+    toggleSort,
     parent: { name: canvasName },
   } = component);
   $: leaderboardProperties = $specStore;
@@ -37,7 +40,7 @@
   $: ({
     canvasEntity: {
       spec: { getDimensionsForMetricView, getMeasuresForMetricView },
-      filters: { toggleDimensionValueSelection },
+      filters: { isFilterExcludeMode, toggleDimensionValueSelection },
     },
   } = store);
 
@@ -66,7 +69,9 @@
   $: visibleMeasures = $allMeasures.filter((m) =>
     leaderboardMeasureNames.includes(m.name as string),
   );
-  $: activeMeasureName = leaderboardMeasureNames?.[0] || "measure";
+
+  $: activeMeasureName =
+    $sortByMeasure || leaderboardMeasureNames?.[0] || "measure";
 
   $: measureFormatters = Object.fromEntries(
     visibleMeasures.map((m) => [
@@ -136,9 +141,10 @@
               {dimensionThresholdFilters}
               {tableWidth}
               dimensionColumnWidth={DIMENSION_COLUMN_WIDTH}
-              sortedAscending={false}
-              sortType={SortType.VALUE}
-              filterExcludeMode={false}
+              sortedAscending={$leaderboardState.sortDirection ===
+                SortDirection.ASCENDING}
+              sortType={$leaderboardState.sortType}
+              filterExcludeMode={$isFilterExcludeMode(dimension.name)}
               {timeRange}
               comparisonTimeRange={showTimeComparison
                 ? comparisonTimeRange
@@ -159,9 +165,9 @@
               )}
               isBeingCompared={false}
               formatters={measureFormatters}
-              toggleSort={() => {}}
+              {toggleSort}
               {toggleDimensionValueSelection}
-              sortBy={null}
+              sortBy={$sortByMeasure}
               measureLabel={(measureName) =>
                 visibleMeasures.find((m) => m.name === measureName)
                   ?.displayName || measureName}
