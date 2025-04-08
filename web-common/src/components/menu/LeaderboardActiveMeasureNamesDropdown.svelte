@@ -56,7 +56,11 @@
     multiSelect = newMultiSelect;
   }
 
-  $: filteredMeasures = filterMeasures(searchText);
+  $: filteredMeasures = filterMeasures(searchText).sort((a, b) => {
+    const aIndex = visibleMeasures.findIndex((m) => m.name === a.name);
+    const bIndex = visibleMeasures.findIndex((m) => m.name === b.name);
+    return aIndex - bIndex;
+  });
 
   $: showingMeasuresText =
     selectedMeasureNames?.length > 1
