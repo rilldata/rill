@@ -9,12 +9,13 @@
     type PivotDataStoreConfig,
     type PivotState,
   } from "@rilldata/web-common/features/dashboards/pivot/types";
+
   import type { Readable, Writable } from "svelte/store";
 
-  export let schema: Readable<{
+  export let schema: {
     isValid: boolean;
     error?: string;
-  }>;
+  };
   export let pivotDataStore: PivotDataStore | undefined;
   export let pivotConfig: Readable<PivotDataStoreConfig> | undefined;
   export let pivotState: Writable<PivotState>;
@@ -32,8 +33,8 @@
   class:p-4={hasHeader}
   class:pt-1={hasHeader}
 >
-  {#if !$schema.isValid}
-    <ComponentError error={$schema.error} />
+  {#if !schema.isValid}
+    <ComponentError error={schema.error} />
   {:else if pivotDataStore && $pivotDataStore && pivotConfig && $pivotConfig}
     {#if $pivotDataStore?.error?.length}
       <PivotError errors={$pivotDataStore.error} />
