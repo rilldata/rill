@@ -538,8 +538,6 @@
   </Popover.Content>
 </Popover.Root>
 
-<div class="absolute bottom-0 left-0 right-0 h-[100px]" />
-
 <style lang="postcss">
   .transition-margin {
     transition-property: margin-top, margin-bottom;
