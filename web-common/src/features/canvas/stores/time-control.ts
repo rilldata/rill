@@ -242,6 +242,8 @@ export class TimeControls {
           return;
         }
 
+        const isLocalComponentControl = Boolean(this.componentName);
+
         const selectedTimezone = get(this.selectedTimezone);
         const comparisonTimeRange = get(this.selectedComparisonTimeRange);
 
@@ -267,21 +269,22 @@ export class TimeControls {
           V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
         );
 
+        const newComparisonRange = getComparisonTimeRange(
+          timeRanges,
+          allTimeRange,
+          newTimeRange,
+          comparisonTimeRange,
+        );
+
+        this.selectedComparisonTimeRange.set(newComparisonRange);
+
+        console.log({ isLocalComponentControl });
         if (
           defaultPreset?.comparisonMode ===
-          V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
+            V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME &&
+          !isLocalComponentControl
         ) {
-          const newComparisonRange = getComparisonTimeRange(
-            timeRanges,
-            allTimeRange,
-            newTimeRange,
-            comparisonTimeRange,
-          );
-          this.selectedComparisonTimeRange.set(newComparisonRange);
-
-          if (!this.componentName) {
-            this.showTimeComparison.set(true);
-          }
+          this.showTimeComparison.set(true);
         }
 
         this.selectedTimeRange.set(newTimeRange);
@@ -429,9 +432,11 @@ export class TimeControls {
     const { exploreState } = getTimeControlsFromURLParams(urlParams, new Map()); // TODO: this function should not be coupled to ExploreState
 
     this.selectedTimeRange.set(exploreState.selectedTimeRange);
-    this.selectedComparisonTimeRange.set(
-      exploreState.selectedComparisonTimeRange,
-    );
+    if (exploreState.selectedComparisonTimeRange) {
+      this.selectedComparisonTimeRange.set(
+        exploreState.selectedComparisonTimeRange,
+      );
+    }
     this.showTimeComparison.set(!!exploreState.selectedComparisonTimeRange);
 
     this.isInitialStateSet = true;
