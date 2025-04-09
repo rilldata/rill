@@ -12,10 +12,13 @@
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import ComponentHeader from "../../ComponentHeader.svelte";
+  import {
+    getDimensionColumnWidth,
+    LEADERBOARD_WRAPPER_PADDING,
+    MIN_DIMENSION_COLUMN_WIDTH,
+  } from "./util";
 
   export let component: LeaderboardComponent;
-
-  const DIMENSION_COLUMN_WIDTH = 164;
 
   let metricsViewName: string;
   let leaderboardMeasureNames: string[] = [];
@@ -25,6 +28,7 @@
   let parentElement: HTMLDivElement;
   let suppressTooltip = false;
   let showPercentOfTotal = false; // TODO: update this
+  let leaderboardWrapperWidth = 0;
 
   $: ({
     specStore,
@@ -95,10 +99,16 @@
         ? COMPARISON_COLUMN_WIDTH
         : 0);
 
-  $: tableWidthForPctBars = DIMENSION_COLUMN_WIDTH + contextColumnWidth;
+  $: dimensionColumnWidth = getDimensionColumnWidth(
+    leaderboardWrapperWidth,
+    contextColumnWidth,
+    leaderboardMeasureNames,
+  );
+
+  $: tableWidthForPctBars = dimensionColumnWidth + contextColumnWidth;
 
   $: tableWidth =
-    DIMENSION_COLUMN_WIDTH +
+    MIN_DIMENSION_COLUMN_WIDTH +
     contextColumnWidth * leaderboardMeasureNames.length;
 
   $: ({ title, description, time_filters, dimension_filters } =
@@ -126,9 +136,9 @@
   <span class="border-overlay" />
   <div
     bind:this={parentElement}
-    class="grid-wrapper gap-px overflow-hidden size-full"
+    class="grid-wrapper gap-px size-full overflow-y-auto"
     style:grid-template-columns="repeat(auto-fit, minmax(min({tableWidth +
-      36}px, 100%), 1fr))"
+      LEADERBOARD_WRAPPER_PADDING}px, 100%), 1fr))"
     on:scroll={() => {
       suppressTooltip = true;
     }}
@@ -139,7 +149,10 @@
     {#if parentElement}
       {#each visibleDimensions as dimension (dimension.name)}
         {#if dimension.name}
-          <div class="leaderboard-wrapper">
+          <div
+            class="leaderboard-wrapper"
+            bind:clientWidth={leaderboardWrapperWidth}
+          >
             <Leaderboard
               slice={numRows}
               {instanceId}
@@ -151,7 +164,7 @@
               {whereFilter}
               {dimensionThresholdFilters}
               tableWidth={tableWidthForPctBars}
-              dimensionColumnWidth={DIMENSION_COLUMN_WIDTH}
+              {dimensionColumnWidth}
               sortedAscending={$leaderboardState.sortDirection ===
                 SortDirection.ASCENDING}
               sortType={$leaderboardState.sortType}
