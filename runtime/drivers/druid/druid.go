@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/XSAM/otelsql"
 	"github.com/jmoiron/sqlx"
@@ -204,11 +205,12 @@ func (d driver) checkVersion(dsn string) error {
 	if err := json.NewDecoder(resp.Body).Decode(&statusResponse); err != nil {
 		return fmt.Errorf("failed to decode Druid status response: %w", err)
 	}
-		versionStr := fmt.Sprintf("%v", version)
-		majorVersion := strings.Split(versionStr, ".")[0]
+
+	if statusResponse.Version != "" {
+		majorVersion := strings.Split(statusResponse.Version, ".")[0]
 		if ver, err := strconv.Atoi(majorVersion); err == nil {
 			if ver < 28 {
-				return fmt.Errorf("druid version %s is not supported, please use 28.0.0 or higher", versionStr)
+				return fmt.Errorf("druid version %s is not supported, please use 28.0.0 or higher", statusResponse.Version)
 			}
 		} else {
 			return fmt.Errorf("failed to parse Druid version: %w", err)
