@@ -482,7 +482,10 @@ func TestViews(t *testing.T) {
 }
 
 func TestConcurrentWrites(t *testing.T) {
-	localDir := t.TempDir()
+	localDir := filepath.Join(t.TempDir(), "directory with space's and sp$ci@l chars")
+	require.NoError(t, os.MkdirAll(localDir, 0755))
+	defer os.RemoveAll(localDir)
+
 	ctx := context.Background()
 	db, err := NewDB(ctx, &DBOptions{
 		LocalPath:      localDir,

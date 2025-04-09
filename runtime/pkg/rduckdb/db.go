@@ -821,7 +821,7 @@ func (d *db) acquireWriteConn(ctx context.Context, dbPath, table string, attachE
 	var attachName string
 	if dbPath != "" {
 		attachName = safeSQLName(dbName(table, newVersion()))
-		_, err = conn.ExecContext(ctx, fmt.Sprintf("ATTACH '%s' AS %s", dbPath, attachName))
+		_, err = conn.ExecContext(ctx, fmt.Sprintf("ATTACH %s AS %s", safeSQLString(dbPath), attachName))
 		if err != nil {
 			return nil, nil, err
 		}
