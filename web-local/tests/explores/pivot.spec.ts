@@ -623,10 +623,7 @@ test.describe("pivot run through", () => {
     await addRowField.click();
     await clickMenuButton(page, "Publisher");
 
-    const expandButton = page
-      .locator("td")
-      .filter({ hasText: "Jan" })
-      .getByRole("presentation");
+    const expandButton = page.locator("td").filter({ hasText: "Jan" });
 
     await expandButton.click();
     await expect(page.locator(".status.running")).toHaveCount(0);
