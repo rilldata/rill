@@ -150,7 +150,7 @@
     <span class="border-overlay" />
     <div
       bind:this={parentElement}
-      class="grid-wrapper gap-px size-full overflow-x-auto"
+      class="grid-wrapper gap-px overflow-x-auto"
       style:grid-template-columns="repeat(auto-fit, minmax({tableWidth +
         LEADERBOARD_WRAPPER_PADDING}px, 1fr))"
       on:scroll={() => {
