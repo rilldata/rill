@@ -109,7 +109,7 @@ func (s *Server) WatchFilesHandler(w http.ResponseWriter, req *http.Request) {
 				continue
 			}
 
-			fmt.Fprintf(w, "data: %s\n\n", data)
+			fmt.Fprintf(w, "data: %s\n", data)
 			flusher.Flush()
 		}
 	}
