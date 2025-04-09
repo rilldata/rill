@@ -5,15 +5,12 @@ export const LEADERBOARD_WRAPPER_PADDING = 56;
 export function getDimensionColumnWidth(
   wrapperWidth: number,
   contextColWidth: number,
-  measureNames: string[],
 ) {
   if (!wrapperWidth) {
     return DEFAULT_DIMENSION_COLUMN_WIDTH;
   }
   return Math.max(
     MIN_DIMENSION_COLUMN_WIDTH,
-    wrapperWidth -
-      contextColWidth * measureNames.length -
-      LEADERBOARD_WRAPPER_PADDING,
+    wrapperWidth - contextColWidth - LEADERBOARD_WRAPPER_PADDING,
   );
 }

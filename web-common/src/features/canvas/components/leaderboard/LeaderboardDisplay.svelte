@@ -93,33 +93,29 @@
       createMeasureValueFormatter<null | undefined>(m),
     ]),
   );
-  $: showPercentOfTotal = isValidPercentOfTotal(activeMeasureName);
 
   // Reset column widths when the measure changes
   $: if (leaderboardMeasureNames) {
     valueColumn.reset();
   }
 
-  $: contextColumnWidth =
-    $valueColumn +
-    (showTimeComparison ? COMPARISON_COLUMN_WIDTH * 2 : 0) +
-    (showPercentOfTotal ? COMPARISON_COLUMN_WIDTH : 0);
+  $: totalContextWidth = leaderboardMeasureNames.reduce(
+    (sum, measureName) =>
+      sum +
+      $valueColumn +
+      (showTimeComparison ? COMPARISON_COLUMN_WIDTH * 2 : 0) +
+      (isValidPercentOfTotal(measureName) ? COMPARISON_COLUMN_WIDTH : 0),
+    0,
+  );
 
   $: dimensionColumnWidth = getDimensionColumnWidth(
     leaderboardWrapperWidth,
-    contextColumnWidth,
-    leaderboardMeasureNames,
+    totalContextWidth,
   );
 
-  $: tableWidthForPctBars = dimensionColumnWidth + contextColumnWidth;
+  $: estimatedTableWidth = MIN_DIMENSION_COLUMN_WIDTH + totalContextWidth;
 
-  $: tableWidth =
-    MIN_DIMENSION_COLUMN_WIDTH +
-    contextColumnWidth * leaderboardMeasureNames.length;
-
-  $: console.log("tableWidth", tableWidth, leaderboardWrapperWidth);
-
-  $: hasOverflow = tableWidth > parentElement?.clientWidth;
+  $: hasOverflow = estimatedTableWidth > parentElement?.clientWidth;
 
   $: ({ title, description, time_filters, dimension_filters } =
     leaderboardProperties);
@@ -148,7 +144,7 @@
     <div
       bind:this={parentElement}
       class="grid-wrapper gap-px overflow-x-auto"
-      style:grid-template-columns="repeat(auto-fit, minmax({tableWidth +
+      style:grid-template-columns="repeat(auto-fit, minmax({estimatedTableWidth +
         LEADERBOARD_WRAPPER_PADDING}px, 1fr))"
       on:scroll={() => {
         suppressTooltip = true;
@@ -175,7 +171,7 @@
                 visibleMeasures={leaderboardMeasureNames}
                 {whereFilter}
                 {dimensionThresholdFilters}
-                tableWidth={tableWidthForPctBars}
+                tableWidth={dimensionColumnWidth + totalContextWidth}
                 {dimensionColumnWidth}
                 sortedAscending={$leaderboardState.sortDirection ===
                   SortDirection.ASCENDING}
