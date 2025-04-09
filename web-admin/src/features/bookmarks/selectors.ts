@@ -315,6 +315,13 @@ function parseBookmark(
   };
 }
 
+// These are the only parameters that are stored in a filter-only bookmark
+const filterOnlyParams = new Set([
+  ExploreStateURLParams.Filters,
+  ExploreStateURLParams.TimeRange,
+  ExploreStateURLParams.TimeGrain,
+]) as Set<string>;
+
 function isFilterOnlyBookmark(
   bookmarkState: Partial<MetricsExplorerEntity>,
   metricsViewSpec: V1MetricsViewSpec,
@@ -337,14 +344,20 @@ function isFilterOnlyBookmark(
     url,
   );
 
-  // These are the only parameters that are stored in a filter-only bookmark
-  const allowedFilterParams = new Set([
-    ExploreStateURLParams.Filters,
-    ExploreStateURLParams.TimeRange,
-    ExploreStateURLParams.TimeGrain,
-  ]) as Set<string>;
-
   // Check if all the bookmark's search params are in the allowed list
   const urlParams = Array.from(searchParams.keys());
-  return urlParams.every((param) => allowedFilterParams.has(param));
+  return urlParams.every((param) => filterOnlyParams.has(param));
+}
+
+export function isBookmarkActive(entry: BookmarkEntry, curUrl: URL) {
+  const bookmarkUrl = new URL(entry.url);
+
+  if (entry.filtersOnly) {
+    return bookmarkUrl.searchParams.entries().every(([key, value]) => {
+      const curValue = curUrl.searchParams.get(key);
+      return curValue === value;
+    });
+  }
+
+  return bookmarkUrl.search === curUrl.search;
 }
