@@ -41,6 +41,11 @@ func newMetricsViewTimeRangeResolver(ctx context.Context, opts *runtime.Resolver
 		return nil, err
 	}
 
+	span := trace.SpanFromContext(ctx)
+	if span.SpanContext().IsValid() {
+		span.SetAttributes(attribute.String("metrics_view", tr.MetricsView))
+	}
+
 	args := &metricsViewTimeRangeResolverArgs{}
 	if err := mapstructureutil.WeakDecode(opts.Args, args); err != nil {
 		return nil, err
@@ -106,10 +111,6 @@ func (r *metricsViewTimeRangeResolver) Validate(ctx context.Context) error {
 }
 
 func (r *metricsViewTimeRangeResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
-	span := trace.SpanFromContext(ctx)
-	if span.SpanContext().IsValid() {
-		span.SetAttributes(attribute.String("metrics_view", r.mvName))
-	}
 	ts, err := r.executor.Timestamps(ctx)
 	if err != nil {
 		return nil, err

@@ -65,6 +65,11 @@ func newLegacyMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runti
 		return nil, fmt.Errorf("failed extract metrics view name from query: %w", err)
 	}
 
+	span := trace.SpanFromContext(ctx)
+	if span.SpanContext().IsValid() {
+		span.SetAttributes(attribute.String("metrics_view", metricsViewName))
+	}
+
 	q, err := queries.ProtoToQuery(qpb, opts.Claims)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build query: %w", err)
@@ -97,11 +102,6 @@ func (r *legacyMetricsResolver) Validate(ctx context.Context) error {
 }
 
 func (r *legacyMetricsResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
-	span := trace.SpanFromContext(ctx)
-	if span.SpanContext().IsValid() {
-		span.SetAttributes(attribute.String("metrics_view", r.metricsViewName))
-	}
-
 	ctrl, err := r.runtime.Controller(ctx, r.instanceID)
 	if err != nil {
 		return nil, err

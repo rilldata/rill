@@ -41,6 +41,11 @@ func newMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Res
 		return nil, err
 	}
 
+	span := trace.SpanFromContext(ctx)
+	if span.SpanContext().IsValid() {
+		span.SetAttributes(attribute.String("metrics_view", qry.MetricsView))
+	}
+
 	args := &metricsResolverArgs{}
 	if err := mapstructureutil.WeakDecode(opts.Args, args); err != nil {
 		return nil, err
@@ -121,10 +126,6 @@ func (r *metricsResolver) Validate(ctx context.Context) error {
 }
 
 func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
-	span := trace.SpanFromContext(ctx)
-	if span.SpanContext().IsValid() {
-		span.SetAttributes(attribute.String("metrics_view", r.query.MetricsView))
-	}
 	if r.metricsHasTime {
 		tsRes, err := resolveTimestampResult(ctx, r.runtime, r.instanceID, r.query.MetricsView, r.claims, r.args.Priority)
 		if err != nil {

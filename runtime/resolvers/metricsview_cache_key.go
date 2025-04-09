@@ -63,6 +63,14 @@ func newMetricsViewCacheKeyResolver(ctx context.Context, opts *runtime.ResolverO
 		return nil, fmt.Errorf("metrics view %q is invalid", res.Meta.Name.Name)
 	}
 
+	span := trace.SpanFromContext(ctx)
+	if span.SpanContext().IsValid() {
+		span.SetAttributes(
+			attribute.String("metrics_view", tr.MetricsView),
+			attribute.Bool("streaming", res.GetMetricsView().State.Streaming),
+		)
+	}
+
 	security, err := opts.Runtime.ResolveSecurity(opts.InstanceID, opts.Claims, res)
 	if err != nil {
 		return nil, err
@@ -116,13 +124,6 @@ func (r *metricsViewCacheKeyResolver) Validate(ctx context.Context) error {
 }
 
 func (r *metricsViewCacheKeyResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
-	span := trace.SpanFromContext(ctx)
-	if span.SpanContext().IsValid() {
-		span.SetAttributes(
-			attribute.String("metrics_view", r.mvName),
-			attribute.Bool("streaming", r.streaming),
-		)
-	}
 	key, ok, err := r.executor.CacheKey(ctx)
 	if err != nil {
 		return nil, err

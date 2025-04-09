@@ -103,7 +103,7 @@ type ResolveOptions struct {
 
 // Resolve resolves a query using the given options.
 // The caller must call Close on the result when done consuming it.
-func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (ResolverResult, error) {
+func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (res ResolverResult, resErr error) {
 	// Since claims don't really make sense for some resolver use cases, it's easy to forget to set them.
 	// Adding an early panic to catch this.
 	if opts.Claims == nil {
@@ -111,7 +111,15 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (ResolverRe
 	}
 
 	ctx, span := tracer.Start(ctx, "runtime.Resolve", trace.WithAttributes(attribute.String("resolver", opts.Resolver)))
-	defer span.End()
+	var cacheHit bool
+	defer func() {
+		span.SetAttributes(attribute.Bool("cache_hit", cacheHit))
+		if resErr != nil {
+			span.SetAttributes(attribute.String("err", resErr.Error()))
+		}
+		span.End()
+	}()
+
 	// Initialize the resolver
 	initializer, ok := ResolverInitializers[opts.Resolver]
 	if !ok {
@@ -136,7 +144,7 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (ResolverRe
 		return nil, err
 	}
 	if !ok {
-		span.SetAttributes(attribute.Bool("cache_hit", false))
+		cacheHit = false
 		// If not cacheable, just resolve and return
 		return resolver.ResolveInteractive(ctx)
 	}
@@ -184,21 +192,20 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (ResolverRe
 
 	// Try to get from cache
 	if val, ok := r.queryCache.cache.Get(key); ok {
-		span.SetAttributes(attribute.Bool("cache_hit", true))
+		cacheHit = true
 		return val.(*cachedResolverResult).copy(), nil
 	}
 	// Load with singleflight
 	val, err := r.queryCache.singleflight.Do(ctx, key, func(ctx context.Context) (any, error) {
 		// Try cache again
 		if val, ok := r.queryCache.cache.Get(key); ok {
-			span.SetAttributes(attribute.Bool("cache_hit", true))
+			cacheHit = true
 			return val.(*cachedResolverResult), nil
 		}
 
 		// Resolve
 		// NOTE: We can under no circumstances return the res directly since we're in a singleflight and results can have iterator state.
-		span.SetAttributes(attribute.Bool("cache_hit", false))
-		ctx = trace.ContextWithSpan(ctx, span)
+		cacheHit = false
 		res, err := resolver.ResolveInteractive(ctx)
 		if err != nil {
 			return nil, err

@@ -119,6 +119,18 @@ func newGlob(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolv
 		return nil, err
 	}
 
+	// set props to span attributes
+	span := trace.SpanFromContext(ctx)
+	if span.SpanContext().IsValid() {
+		span.SetAttributes(
+			attribute.String("connector", props.Connector),
+			attribute.String("path", props.Path),
+			attribute.String("partition", string(props.Partition)),
+			attribute.Bool("rollup_files", props.RollupFiles),
+			attribute.String("transform_sql", props.TransformSQL),
+		)
+	}
+
 	// Parse the bucket URI without the path (e.g. for "s3://bucket/path", it is "s3://bucket")
 	bucketURI, err := globutil.ParseBucketURL(props.Path)
 	if err != nil {
@@ -157,17 +169,6 @@ func (r *globResolver) Validate(ctx context.Context) error {
 }
 
 func (r *globResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
-	span := trace.SpanFromContext(ctx)
-	if span.SpanContext().IsValid() {
-		span.SetAttributes(
-			attribute.String("connector", r.props.Connector),
-			attribute.String("path", r.props.Path),
-			attribute.String("partition", string(r.props.Partition)),
-			attribute.Bool("rollup_files", r.props.RollupFiles),
-			attribute.String("transform_sql", r.props.TransformSQL),
-		)
-	}
-
 	h, release, err := r.runtime.AcquireHandle(ctx, r.instanceID, r.props.Connector)
 	if err != nil {
 		return nil, err
