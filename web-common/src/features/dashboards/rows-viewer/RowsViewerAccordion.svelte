@@ -39,12 +39,17 @@
   let manualClose = false;
 
   const stateManagers = getStateManagers();
+  const {
+    selectors: {
+      pivot: { showPivot: showPivotStore },
+    },
+  } = stateManagers;
 
   $: ({ instanceId } = $runtime);
 
   $: exploreState = useExploreState(exploreName);
   $: pivotDataStore = usePivotForExplore(stateManagers);
-  $: showPivot = $exploreState.pivot.active;
+  $: showPivot = $showPivotStore;
   $: activeCellFilters = $pivotDataStore.activeCellFilters;
   $: hasDimensionThresholdFilters =
     $exploreState.dimensionThresholdFilters.length > 0;
