@@ -246,6 +246,8 @@ export class TimeControls {
           return;
         }
 
+        const isLocalComponentControl = Boolean(this.componentName);
+
         const selectedTimezone = get(this.selectedTimezone);
         const comparisonTimeRange = get(this.selectedComparisonTimeRange);
 
@@ -282,7 +284,8 @@ export class TimeControls {
 
         if (
           defaultPreset?.comparisonMode ===
-          V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
+            V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME &&
+          !isLocalComponentControl
         ) {
           this.showTimeComparison.set(true);
         }

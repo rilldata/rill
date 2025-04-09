@@ -1,25 +1,25 @@
 <script lang="ts">
+  import { clamp } from "@rilldata/web-common/lib/clamp";
+  import { get, type Unsubscriber, type Writable } from "svelte/store";
+  import CanvasComponent from "./CanvasComponent.svelte";
+  import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
+  import ComponentError from "./components/ComponentError.svelte";
+  import DropZone from "./components/DropZone.svelte";
   import type { CanvasComponentType } from "./components/types";
-  import RowDropZone from "./RowDropZone.svelte";
-  import RowWrapper from "./RowWrapper.svelte";
+  import ElementDivider from "./ElementDivider.svelte";
+  import ItemWrapper from "./ItemWrapper.svelte";
   import {
     COLUMN_COUNT,
     MIN_HEIGHT,
     MIN_WIDTH,
+    mousePosition,
     normalizeSizeArray,
   } from "./layout-util";
-  import { mousePosition } from "./layout-util";
-  import { get, type Unsubscriber, type Writable } from "svelte/store";
-  import { clamp } from "@rilldata/web-common/lib/clamp";
+  import RowDropZone from "./RowDropZone.svelte";
+  import RowWrapper from "./RowWrapper.svelte";
   import type { CanvasEntity } from "./stores/canvas-entity";
-  import ComponentError from "./components/ComponentError.svelte";
-  import ItemWrapper from "./ItemWrapper.svelte";
-  import ElementDivider from "./ElementDivider.svelte";
-  import DropZone from "./components/DropZone.svelte";
-  import CanvasComponent from "./CanvasComponent.svelte";
-  import { activeDivider } from "./stores/ui-stores";
   import type { Row } from "./stores/row";
-  import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
+  import { activeDivider } from "./stores/ui-stores";
 
   export let row: Row;
   export let zIndex = 50;
@@ -89,9 +89,10 @@
       () => {
         unsubscriber?.();
         unsubscriber = undefined;
-        const actualHeight =
+        const actualHeight = Math.floor(
           document.querySelector(`#${id}`)?.getBoundingClientRect().height ??
-          rowHeight;
+            rowHeight,
+        );
 
         rowHeight = actualHeight;
         updateRowHeight(actualHeight, rowIndex);

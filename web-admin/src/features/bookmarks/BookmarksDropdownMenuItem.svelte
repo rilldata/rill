@@ -79,6 +79,7 @@
             class="bg-gray-100 hover:bg-primary-100 px-2 h-7 text-gray-400 hover:text-gray-500"
             disabled={disableDelete}
             aria-disabled={disableDelete}
+            aria-label="Delete bookmark"
           >
             <Trash size="16px" />
           </button>

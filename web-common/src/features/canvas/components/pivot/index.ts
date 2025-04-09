@@ -5,23 +5,23 @@ import {
 } from "@rilldata/web-common/features/canvas/components/util";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
 import type {
+  PivotDataStoreConfig,
+  PivotState,
+} from "@rilldata/web-common/features/dashboards/pivot/types";
+import type {
   V1MetricsViewSpec,
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
+import type { Readable } from "svelte/motion";
+import { derived, get, writable, type Writable } from "svelte/store";
+import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
 import type {
   CanvasComponentType,
   ComponentCommonProperties,
   ComponentFilterProperties,
 } from "../types";
-import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
 import CanvasPivotDisplay from "./CanvasPivotDisplay.svelte";
-import { derived, get, writable, type Writable } from "svelte/store";
 import { createPivotConfig, usePivotForCanvas } from "./util";
-import type {
-  PivotDataStoreConfig,
-  PivotState,
-} from "@rilldata/web-common/features/dashboards/pivot/types";
-import type { Readable } from "svelte/motion";
 
 export interface PivotSpec
   extends ComponentCommonProperties,
@@ -102,7 +102,6 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
 
   getInitPivotState(type: "pivot" | "table"): PivotState {
     return {
-      active: true,
       columns: [],
       rows: [],
       expanded: {},
