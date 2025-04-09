@@ -52,14 +52,14 @@ test.describe("leaderboard context column", () => {
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
 
     async function clickMenuItem(itemName: string, wait = true) {
-      await clickMenuButton(page, itemName, "option");
+      await clickMenuButton(page, itemName, "menuitem");
       if (wait) {
         await page.getByRole("menu").waitFor({ state: "hidden" });
       }
     }
 
     const measuresButton = page.getByRole("button", {
-      name: "Select a measure to filter by",
+      name: "Choose measures to display",
     });
 
     async function escape() {

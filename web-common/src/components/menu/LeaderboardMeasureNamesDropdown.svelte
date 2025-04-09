@@ -11,7 +11,6 @@
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import { writable } from "svelte/store";
 
-  export let tooltipText: string;
   export let disabled = false;
   export let searchText = "";
   export let visibleMeasures: MetricsViewSpecMeasure[];
@@ -127,7 +126,11 @@
       location="bottom"
       suppress={active}
     >
-      <Button builders={[builder]} type="text" label="" on:click>
+      <Button
+        builders={[builder]}
+        type="text"
+        label="Choose measures to display"
+      >
         <div
           class="flex items-center gap-x-0.5 px-1 text-gray-700 hover:text-inherit"
         >
@@ -201,7 +204,7 @@
 
       <div slot="tooltip-content" transition:fly={{ duration: 300, y: 4 }}>
         <TooltipContent maxWidth="400px">
-          {tooltipText}
+          Choose measures to display
         </TooltipContent>
       </div>
     </Tooltip>

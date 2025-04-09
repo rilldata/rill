@@ -74,7 +74,6 @@
     selectedItems={visibleDimensionsNames}
   />
   <LeaderboardMeasureNamesDropdown
-    tooltipText="Choose measures to filter by"
     visibleMeasures={$visibleMeasures}
     leaderboardSortByMeasureName={$leaderboardSortByMeasureName}
     selectedMeasureNames={$leaderboardMeasureNames}
