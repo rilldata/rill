@@ -122,6 +122,8 @@
     MIN_DIMENSION_COLUMN_WIDTH +
     contextColumnWidth * leaderboardMeasureNames.length;
 
+  $: hasOverflow = tableWidth > parentElement?.clientWidth;
+
   $: ({ title, description, time_filters, dimension_filters } =
     leaderboardProperties);
 
@@ -163,6 +165,7 @@
           {#if dimension.name}
             <div
               class="leaderboard-wrapper"
+              class:leaderboard-outline={!hasOverflow}
               bind:clientWidth={leaderboardWrapperWidth}
             >
               <Leaderboard
@@ -227,6 +230,9 @@
 
   .leaderboard-wrapper {
     @apply relative p-4 pr-6 grid justify-center;
+  }
+
+  .leaderboard-outline {
     @apply outline outline-1 outline-gray-200;
   }
 
