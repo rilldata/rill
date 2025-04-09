@@ -383,7 +383,6 @@ export const CUSTOM_TEST_CONTROLS = {
 export const AD_BIDS_PIVOT_ENTITY: Partial<MetricsExplorerEntity> = {
   activePage: DashboardState_ActivePage.PIVOT,
   pivot: {
-    active: true,
     rows: [
       {
         id: AD_BIDS_PUBLISHER_DIMENSION,

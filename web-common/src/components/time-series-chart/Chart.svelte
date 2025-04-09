@@ -48,7 +48,7 @@
   ]);
 
   $: xScales = xExtents.map((extents) =>
-    scaleTime().domain(extents).range([0, 1000]),
+    scaleTime().domain(extents).range([0, 10000]),
   );
 
   $: allYExtents = mappedData.map((line) =>
@@ -162,7 +162,7 @@
       role="presentation"
       class="cursor-default size-full overflow-visible"
       preserveAspectRatio="none"
-      viewBox="0 0 1000 100"
+      viewBox="0 0 10000 100"
       on:mousemove={(e) => {
         offsetPosition = { x: e.offsetX, y: e.offsetY };
         clientPosition = { x: e.clientX, y: e.clientY };
@@ -203,13 +203,12 @@
       class="w-full h-fit flex justify-between text-gray-500 mt-0.5 relative"
     >
       {#if hoveredPoints.length > 0}
+        {@const jsDate = hoveredPoints[0].interval.start.toJSDate()}
+        {@const percentage = xScales[0](jsDate) / 100}
         <span
           class="relative"
-          style:transform="translateX(-{xScales[0](
-            hoveredPoints[0].interval.start.toJSDate(),
-          ) / 10}%)"
-          style:left="{xScales[0](hoveredPoints[0].interval.start.toJSDate()) /
-            10}%"
+          style:transform="translateX(-{percentage}%)"
+          style:left="{percentage}%"
         >
           <RangeDisplay
             interval={hoveredPoints[0].interval}

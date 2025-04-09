@@ -315,7 +315,12 @@ function toTimeDimensionUrlParams(
 
 function toPivotUrlParams(partialExploreState: Partial<MetricsExplorerEntity>) {
   const searchParams = new URLSearchParams();
-  if (!partialExploreState.pivot?.active) return searchParams;
+  if (
+    !partialExploreState.pivot ||
+    partialExploreState.activePage !== DashboardState_ActivePage.PIVOT
+  ) {
+    return searchParams;
+  }
 
   const mapPivotEntry = (data: PivotChipData) => {
     if (data.type === PivotChipType.Time)

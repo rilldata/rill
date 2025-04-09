@@ -139,6 +139,10 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 		req.Header.Add("Content-Type", "application/json")
 		resp, err := c.client.Do(req)
 		if err != nil {
+			// return context error if present
+			if ctx.Err() != nil {
+				return nil, retrier.Fail, ctx.Err()
+			}
 			if strings.Contains(err.Error(), c.dsn) { // avoid returning the actual DSN with the password which will be logged
 				return nil, retrier.Fail, fmt.Errorf("%s", strings.ReplaceAll(err.Error(), c.dsn, "<masked>"))
 			}

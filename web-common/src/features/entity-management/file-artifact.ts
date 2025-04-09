@@ -205,7 +205,11 @@ export class FileArtifact {
     }
 
     if (autoSave) {
-      this.debounceSave(newContent);
+      if (fromEditor) {
+        this.debounceSave(newContent);
+      } else {
+        this.saveContent(newContent).catch(console.error);
+      }
     }
 
     if (fromEditor) return;

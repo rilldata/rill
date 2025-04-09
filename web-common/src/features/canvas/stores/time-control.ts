@@ -246,6 +246,8 @@ export class TimeControls {
           return;
         }
 
+        const isLocalComponentControl = Boolean(this.componentName);
+
         const selectedTimezone = get(this.selectedTimezone);
         const comparisonTimeRange = get(this.selectedComparisonTimeRange);
 
@@ -271,21 +273,22 @@ export class TimeControls {
           V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
         );
 
+        const newComparisonRange = getComparisonTimeRange(
+          timeRanges,
+          allTimeRange,
+          newTimeRange,
+          comparisonTimeRange,
+        );
+
+        this.selectedComparisonTimeRange.set(newComparisonRange);
+
+        console.log({ isLocalComponentControl });
         if (
           defaultPreset?.comparisonMode ===
-          V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
+            V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME &&
+          !isLocalComponentControl
         ) {
-          const newComparisonRange = getComparisonTimeRange(
-            timeRanges,
-            allTimeRange,
-            newTimeRange,
-            comparisonTimeRange,
-          );
-          this.selectedComparisonTimeRange.set(newComparisonRange);
-
-          if (!this.componentName) {
-            this.showTimeComparison.set(true);
-          }
+          this.showTimeComparison.set(true);
         }
 
         this.selectedTimeRange.set(newTimeRange);
@@ -469,7 +472,8 @@ export class TimeControls {
     }
 
     this.selectedTimeRange.set(selectedTimeRange);
-    this.selectedComparisonTimeRange.set(selectedComparisonTimeRange);
+    if (selectedComparisonTimeRange)
+      this.selectedComparisonTimeRange.set(selectedComparisonTimeRange);
     this.showTimeComparison.set(showTimeComparison);
 
     this.isInitialStateSet = true;
