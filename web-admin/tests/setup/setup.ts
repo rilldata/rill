@@ -122,10 +122,9 @@ setup.describe("global setup", () => {
     await page.goto("/");
 
     // Fill in the email
-    await page.getByRole("button", { name: "Continue with Email" }).click();
-    await page.getByPlaceholder("Enter your email address").click();
+    await page.locator('input[name="username"]').click();
     await page
-      .getByPlaceholder("Enter your email address")
+      .locator('input[name="username"]')
       .fill(process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL);
 
     // Click the continue button
@@ -138,7 +137,7 @@ setup.describe("global setup", () => {
     // Fill in the password
     await page.locator('input[name="password"]').click();
     await page
-      .getByPlaceholder("Enter your password")
+      .locator('input[name="password"]')
       .fill(process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_PASSWORD);
 
     // Click the continue button
