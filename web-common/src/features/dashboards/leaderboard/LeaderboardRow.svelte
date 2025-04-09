@@ -207,8 +207,7 @@
   //     name,
   //     length
   //       ? `linear-gradient(to right, ${barColor}
-  //   ${length}px, transparent ${length}px)`
-  //       : undefined,
+  //   ${length}px, transparent ${length}px)`  //       : undefined,
   //   ]),
   // );
 

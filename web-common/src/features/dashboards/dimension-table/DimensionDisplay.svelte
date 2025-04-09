@@ -19,14 +19,14 @@
   import { mergeDimensionAndMeasureFilters } from "../filters/measure-filters/measure-filter-utils";
   import { getSort } from "../leaderboard/leaderboard-utils";
   import { getFiltersForOtherDimensions } from "../selectors";
-  import { getMeasuresForDimensionTable } from "../state-managers/selectors/dashboard-queries";
-  import { dimensionSearchText } from "../stores/dashboard-stores";
+  import { getMeasuresForDimensionOrLeaderboardDisplay } from "../state-managers/selectors/dashboard-queries";
   import { sanitiseExpression } from "../stores/filter-utils";
   import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
   import DimensionHeader from "./DimensionHeader.svelte";
   import DimensionTable from "./DimensionTable.svelte";
   import { getDimensionFilterWithSearch } from "./dimension-table-utils";
   import { selectedDimensionValuesV2 } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
+  import { dimensionSearchText } from "../stores/dashboard-stores";
 
   const queryLimit = 250;
 
@@ -114,7 +114,7 @@
   );
 
   $: measures = [
-    ...getMeasuresForDimensionTable(
+    ...getMeasuresForDimensionOrLeaderboardDisplay(
       $leaderboardShowAllMeasures ? null : $leaderboardSortByMeasureName,
       dimensionThresholdFilters,
       visibleMeasureNames,

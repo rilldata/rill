@@ -19,7 +19,6 @@
   } from "../dashboard-utils";
   import { mergeDimensionAndMeasureFilters } from "../filters/measure-filters/measure-filter-utils";
   import { SortType } from "../proto-state/derived-types";
-  import type { selectedDimensionValuesV2 } from "../state-managers/selectors/dimension-filters";
   import { getFiltersForOtherDimensions } from "../selectors";
   import {
     createAndExpression,
@@ -37,7 +36,9 @@
     getSort,
     prepareLeaderboardItemData,
   } from "./leaderboard-utils";
-  import { COMPARISON_COLUMN_WIDTH, valueColumn } from "./leaderboard-widths";
+  import { valueColumn, COMPARISON_COLUMN_WIDTH } from "./leaderboard-widths";
+  import type { selectedDimensionValuesV2 } from "../state-managers/selectors/dimension-filters";
+  import { getMeasuresForDimensionOrLeaderboardDisplay } from "../state-managers/selectors/dashboard-queries";
 
   const gutterWidth = 24;
 
@@ -127,12 +128,11 @@
       );
 
   $: measures = [
-    ...leaderboardMeasureNames.map(
-      (name) =>
-        ({
-          name,
-        }) as V1MetricsViewAggregationMeasure,
-    ),
+    ...getMeasuresForDimensionOrLeaderboardDisplay(
+      leaderboardShowAllMeasures ? null : leaderboardSortByMeasureName,
+      dimensionThresholdFilters,
+      leaderboardMeasureNames,
+    ).map((name) => ({ name }) as V1MetricsViewAggregationMeasure),
 
     // Add comparison measures if there's a comparison time range
     ...(comparisonTimeRange
