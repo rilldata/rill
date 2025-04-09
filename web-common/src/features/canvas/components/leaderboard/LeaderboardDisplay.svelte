@@ -29,7 +29,6 @@
 
   let parentElement: HTMLDivElement;
   let suppressTooltip = false;
-  let showPercentOfTotal = false; // TODO: update this
   let leaderboardWrapperWidth = 0;
 
   $: ({
@@ -94,8 +93,7 @@
       createMeasureValueFormatter<null | undefined>(m),
     ]),
   );
-
-  $: showDeltaPercent = showTimeComparison;
+  $: showPercentOfTotal = isValidPercentOfTotal(activeMeasureName);
 
   // Reset column widths when the measure changes
   $: if (leaderboardMeasureNames) {
@@ -104,11 +102,8 @@
 
   $: contextColumnWidth =
     $valueColumn +
-    (showTimeComparison
-      ? COMPARISON_COLUMN_WIDTH * (showDeltaPercent ? 2 : 1)
-      : showPercentOfTotal
-        ? COMPARISON_COLUMN_WIDTH
-        : 0);
+    (showTimeComparison ? COMPARISON_COLUMN_WIDTH * 2 : 0) +
+    (showPercentOfTotal ? COMPARISON_COLUMN_WIDTH : 0);
 
   $: dimensionColumnWidth = getDimensionColumnWidth(
     leaderboardWrapperWidth,
@@ -121,6 +116,8 @@
   $: tableWidth =
     MIN_DIMENSION_COLUMN_WIDTH +
     contextColumnWidth * leaderboardMeasureNames.length;
+
+  $: console.log("tableWidth", tableWidth, leaderboardWrapperWidth);
 
   $: hasOverflow = tableWidth > parentElement?.clientWidth;
 
