@@ -192,10 +192,17 @@
 
     const rowId = e.target.dataset.rowid;
     const columnId = e.target.dataset.columnid;
+    const rowHeader = e.target.dataset.rowheader === "true";
 
     if (rowId === undefined || columnId === undefined) return;
 
-    setPivotActiveCell(rowId, columnId);
+    const row = rows[Number(rowId)];
+
+    if (rowHeader) {
+      if (row.getCanExpand()) row.getToggleExpandedHandler()();
+    } else {
+      setPivotActiveCell(rowId, columnId);
+    }
   }
 
   function onTableLeave() {
@@ -236,7 +243,9 @@
     if (!leftCell || !(e.target instanceof HTMLElement)) return;
 
     const value = e.target.dataset.value;
-    if (value === undefined) return;
+    const rowHeader = e.target.dataset.rowheader === "true";
+
+    if (value === undefined || rowHeader) return;
 
     leftCell = false;
     e.target.addEventListener("mouseleave", () => (leftCell = true), {
