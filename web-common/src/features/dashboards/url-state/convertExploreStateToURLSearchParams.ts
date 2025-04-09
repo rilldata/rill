@@ -413,8 +413,12 @@ function toPivotUrlParams(
   preset: V1ExplorePreset,
 ) {
   const searchParams = new URLSearchParams();
-  if (exploreState.activePage !== DashboardState_ActivePage.PIVOT)
-    return searchParams;
+
+  const noPivotState =
+    exploreState.activePage !== DashboardState_ActivePage.PIVOT ||
+    !exploreState.pivot;
+
+  if (noPivotState) return searchParams;
 
   const mapPivotEntry = (data: PivotChipData) => {
     if (data.type === PivotChipType.Time)

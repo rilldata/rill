@@ -593,7 +593,6 @@ function getPivotViewStateFromURLParams(
     return {
       exploreState: {
         pivot: {
-          active: false,
           rows: [],
           columns: [],
           sorting: [],
@@ -637,7 +636,6 @@ function getPivotViewStateFromURLParams(
   return {
     exploreState: {
       pivot: {
-        active: true,
         rows: rowDimensions,
         columns: colDimensions,
         sorting,
@@ -659,22 +657,31 @@ function getViewSpecificStateFromURLParams(
   dimensions: Map<string, MetricsViewSpecDimension>,
   explore: V1ExploreSpec,
 ): { exploreState: Partial<MetricsExplorerEntity>; errors: Error[] } {
-  // Get the view from the URL params
-  let view: V1ExploreWebView;
   const viewParamValue = searchParams.get(ExploreStateURLParams.WebView);
 
-  if (viewParamValue && viewParamValue in FromURLParamViewMap) {
-    view = FromURLParamViewMap[viewParamValue];
-  } else {
+  // If no view parameter, default to explore view
+  if (!viewParamValue) {
+    return getExploreViewStateFromURLParams(
+      searchParams,
+      measures,
+      dimensions,
+      explore,
+    );
+  }
+
+  // If view parameter exists but isn't valid, return error
+  if (!(viewParamValue in FromURLParamViewMap)) {
     return {
       exploreState: {},
-      errors: [getSingleFieldError("view", viewParamValue ?? "unknown")],
+      errors: [getSingleFieldError("view", viewParamValue)],
     };
   }
 
+  // At this point we know we have a valid view
+  const view = FromURLParamViewMap[viewParamValue];
+
   // Get the view-specific state
   switch (view) {
-    case V1ExploreWebView.EXPLORE_WEB_VIEW_UNSPECIFIED:
     case V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE:
       return getExploreViewStateFromURLParams(
         searchParams,
@@ -689,7 +696,7 @@ function getViewSpecificStateFromURLParams(
     default:
       return {
         exploreState: {},
-        errors: [getSingleFieldError("view", view ?? "unknown")],
+        errors: [getSingleFieldError("view", viewParamValue)],
       };
   }
 }

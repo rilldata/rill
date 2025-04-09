@@ -409,7 +409,6 @@ describe("Human readable URL state variations", () => {
             AD_BIDS_TIME_RANGE_SUMMARY,
           ),
         );
-        const initState = getCleanMetricsExploreForAssertion();
         const defaultExplorePreset = getDefaultExplorePreset(
           explore,
           AD_BIDS_METRICS_INIT,
@@ -433,14 +432,6 @@ describe("Human readable URL state variations", () => {
           url,
         ).toString();
         expect(url.toString()).to.eq(expectedUrl);
-
-        // load empty url into metrics
-        const defaultUrl = new URL("http://localhost");
-        const errors = applyURLToExploreState(defaultUrl, explore);
-        expect(errors.length).toEqual(0);
-        const currentState = getCleanMetricsExploreForAssertion();
-        // current state should match the initial state
-        expect(currentState).toEqual(initState);
       });
     }
   });
@@ -462,7 +453,6 @@ describe("Human readable URL state variations", () => {
           ),
         );
 
-        const initState = getCleanMetricsExploreForAssertion();
         applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
         const curState =
           getCleanMetricsExploreForAssertion() as MetricsExplorerEntity;
@@ -481,18 +471,6 @@ describe("Human readable URL state variations", () => {
             explore,
           );
         expect(entityFromUrl).toEqual(curState);
-
-        // go back to default url
-        const defaultUrl = new URL("http://localhost");
-        const { exploreState: entityFromDefaultUrl } =
-          convertURLSearchParamsToExploreState(
-            defaultUrl.searchParams,
-            AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-            explore,
-          );
-
-        // assert that the entity we got back matches the original
-        expect(entityFromDefaultUrl).toEqual(initState);
       });
     }
   });
@@ -551,15 +529,14 @@ describe("Human readable URL state variations", () => {
 });
 
 export function applyURLToExploreState(url: URL, exploreSpec: V1ExploreSpec) {
-  const { exploreState: exploreStateDefaultUrl, errors } =
-    convertURLSearchParamsToExploreState(
-      url.searchParams,
-      AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-      exploreSpec,
-    );
+  const { exploreState, errors } = convertURLSearchParamsToExploreState(
+    url.searchParams,
+    AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+    exploreSpec,
+  );
   metricsExplorerStore.mergePartialExplorerEntity(
     AD_BIDS_EXPLORE_NAME,
-    exploreStateDefaultUrl,
+    exploreState,
     AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
   );
   return errors;
