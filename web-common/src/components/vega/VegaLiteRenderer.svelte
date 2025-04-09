@@ -10,6 +10,7 @@
   import type { ExpressionFunction, VLTooltipFormatter } from "./types";
   import { createEmbedOptions } from "./vega-embed-options";
   import { VegaLiteTooltipHandler } from "./vega-tooltip";
+  import "./vega.css";
 
   export let data: Record<string, unknown> = {};
   export let spec: VisualizationSpec;
@@ -71,36 +72,3 @@
     />
   {/if}
 </div>
-
-<style lang="postcss">
-  :global(.vega-embed) {
-    width: 100%;
-  }
-
-  :global(#vg-tooltip-element),
-  :global(#rill-vg-tooltip) {
-    @apply absolute border border-slate-300 p-3 rounded-lg pointer-events-none;
-    background: rgba(255, 255, 255, 0.9);
-    & h2 {
-      @apply text-slate-500 text-sm font-semibold mb-2;
-    }
-
-    & table {
-      @apply border-spacing-0;
-    }
-
-    & td {
-      @apply truncate py-0.5;
-    }
-
-    & td.key {
-      @apply text-left px-1 font-normal truncate;
-      max-width: 250px;
-    }
-
-    & td.value {
-      @apply text-left truncate font-semibold ui-copy-number;
-      max-width: 250px;
-    }
-  }
-</style>

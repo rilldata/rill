@@ -5,7 +5,6 @@
     createQueryServiceMetricsViewAggregation,
     createQueryServiceMetricsViewTimeSeries,
     V1TimeGrain,
-    type V1ComponentSpecRendererProperties,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { DateTime, Interval } from "luxon";
@@ -15,23 +14,23 @@
   import { KPI } from ".";
   import { getCanvasStore } from "../../state-managers/state-managers";
 
-  export let rendererProperties: V1ComponentSpecRendererProperties;
+  export let spec: KPISpec;
   export let timeAndFilterStore: Readable<TimeAndFilterStore>;
   export let canvasName: string;
 
   $: ctx = getCanvasStore(canvasName);
-  $: ({ spec } = ctx.canvasEntity);
+  $: ({
+    spec: { getMeasureForMetricView },
+  } = ctx.canvasEntity);
 
   $: ({ instanceId } = $runtime);
-
-  $: kpiProperties = rendererProperties as unknown as KPISpec;
 
   $: ({
     metrics_view: metricsViewName,
     measure: measureName,
     sparkline,
     comparison: comparisonOptions,
-  } = kpiProperties);
+  } = spec);
 
   $: ({
     timeGrain,
@@ -43,10 +42,10 @@
     hasTimeSeries,
   } = $timeAndFilterStore);
 
-  $: schema = validateKPISchema(ctx, kpiProperties);
+  $: schema = validateKPISchema(ctx, spec);
   $: ({ isValid } = $schema);
 
-  $: measureStore = spec.getMeasureForMetricView(measureName, metricsViewName);
+  $: measureStore = getMeasureForMetricView(measureName, metricsViewName);
   $: measure = $measureStore;
 
   $: showSparkline = sparkline !== "none" && hasTimeSeries;
@@ -146,8 +145,8 @@
   {hasTimeSeries}
   {comparisonLabel}
   {interval}
-  sparkline={kpiProperties.sparkline}
-  comparisonOptions={kpiProperties.comparison}
+  sparkline={spec.sparkline}
+  comparisonOptions={spec.comparison}
   primaryTotalResult={$totalQuery}
   comparisonTotalResult={$comparisonTotalQuery}
   primarySparklineResult={$primarySparklineQuery}

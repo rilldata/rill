@@ -1,23 +1,27 @@
 <script lang="ts">
   import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
-  import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
   import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import type { ImageSpec } from "./";
+  import type { ImageComponent } from "./";
   import { getImagePosition } from "./util";
+  import ComponentHeader from "../../ComponentHeader.svelte";
 
-  export let rendererProperties: V1ComponentSpecRendererProperties;
+  export let component: ImageComponent;
 
-  const instanceId = $runtime.instanceId;
-  $: imageProperties = rendererProperties as unknown as ImageSpec;
+  $: ({ specStore } = component);
 
-  $: objectPosition = getImagePosition(imageProperties.alignment);
+  $: ({ instanceId } = $runtime);
+  $: imageProperties = $specStore;
+
+  $: ({ title, description, alignment, url } = imageProperties);
+
+  $: objectPosition = getImagePosition(alignment);
 
   let imageSrc: string | null = null;
   let errorMessage: string | null = null;
   $: {
-    if (imageProperties.url) {
-      fetchImage(imageProperties.url);
+    if (url) {
+      fetchImage(url);
     } else {
       imageSrc = null;
       errorMessage = "No image URL provided";
@@ -63,6 +67,7 @@
 {#if errorMessage}
   <ComponentError error={errorMessage} />
 {:else}
+  <ComponentHeader {title} {description} />
   <img
     src={imageSrc || ""}
     alt={"Canvas Image"}
