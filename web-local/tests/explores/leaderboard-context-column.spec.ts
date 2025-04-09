@@ -51,13 +51,6 @@ test.describe("leaderboard context column", () => {
     await watcher.updateAndWaitForDashboard(metricsWithValidPercentOfTotal);
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
 
-    async function clickMenuItem(itemName: string, wait = true) {
-      await clickMenuButton(page, itemName, "menuitem");
-      if (wait) {
-        await page.getByRole("menu").waitFor({ state: "hidden" });
-      }
-    }
-
     const measuresButton = page.getByTestId(
       "leaderboard-measure-names-dropdown",
     );
