@@ -945,6 +945,8 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		ComparisonMode:      exploreComparisonMode,
 		ComparisonDimension: compareDim,
 	}
+	// Backwards compatibility: explore parser will default to true so also emit true on the emitted explore spec
+	e.ExploreSpec.AllowCustomTimeRange = true
 
 	return nil
 }
