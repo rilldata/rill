@@ -33,7 +33,7 @@ import {
   runtime,
   type Runtime,
 } from "@rilldata/web-common/runtime-client/runtime-store";
-import { Settings, type WeekdayNumbers } from "luxon";
+import { Settings } from "luxon";
 import {
   derived,
   get,
@@ -41,6 +41,7 @@ import {
   type Readable,
   type Writable,
 } from "svelte/store";
+import { normalizeWeekday } from "../../dashboards/time-controls/new-time-controls";
 
 type AllTimeRange = TimeRange & { isFetching: boolean };
 
@@ -150,11 +151,11 @@ export class TimeControls {
 
         // This is not a great solution - bgh
         const firstMetricsView = Object.values(spec.data.metricsViews)?.[0];
-        const firstDayOfWeekOfFirstMetricsView = (firstMetricsView?.state
-          ?.validSpec?.firstDayOfWeek || 1) as WeekdayNumbers;
+        const firstDayOfWeekOfFirstMetricsView =
+          firstMetricsView?.state?.validSpec?.firstDayOfWeek;
 
         Settings.defaultWeekSettings = {
-          firstDay: firstDayOfWeekOfFirstMetricsView,
+          firstDay: normalizeWeekday(firstDayOfWeekOfFirstMetricsView),
           weekend: [6, 7],
           minimalDays: 4,
         };

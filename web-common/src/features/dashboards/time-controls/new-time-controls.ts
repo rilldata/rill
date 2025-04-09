@@ -9,6 +9,7 @@ import {
   type DurationObjectUnits,
   IANAZone,
   Interval,
+  type WeekdayNumbers,
 } from "luxon";
 import { get, writable, type Writable } from "svelte/store";
 
@@ -301,6 +302,19 @@ export function getPeriodToDate(date: DateTime, period: DateTimeUnit) {
   const exclusiveEnd = date.endOf("day").plus({ millisecond: 1 });
 
   return Interval.fromDateTimes(periodStart, exclusiveEnd);
+}
+
+export function normalizeWeekday(
+  possibleWeekday: number | undefined,
+): WeekdayNumbers {
+  if (
+    possibleWeekday === undefined ||
+    possibleWeekday <= 0 ||
+    possibleWeekday >= 8
+  )
+    return 1;
+
+  return possibleWeekday as WeekdayNumbers;
 }
 
 export function getPreviousPeriodComplete(
