@@ -5,7 +5,7 @@
   import Day from "./Day.svelte";
 
   export let startDay: DateTime<true>;
-  export let firstDayOfWeek: WeekdayNumbers = 2;
+  export let firstDayOfWeek: WeekdayNumbers;
   export let interval: Interval<true> | undefined;
   export let selectingStart: boolean;
   export let visibleMonths = 2;
@@ -18,16 +18,16 @@
   export let onPan: (direction: 1 | -1) => void;
   export let onSelectDay: (date: DateTime<true>) => void;
 
-  $: firstDay = startDay.startOf("month").localWeekday;
+  $: weekDayOfFirstDay = startDay.startOf("month").localWeekday;
 
-  $: weekCount = Math.ceil((firstDay + startDay.daysInMonth) / 7);
+  $: weekCount = Math.ceil((weekDayOfFirstDay + startDay.daysInMonth) / 7);
 
   $: inclusiveEnd = interval?.end?.minus({ millisecond: 0 });
 
   $: forwardPanEnabled = !maxDate || startDay.plus({ month: 1 }) < maxDate;
 
   $: days = Array.from({ length: weekCount * 7 }, (_, i) =>
-    startDay.plus({ day: i + 1 - firstDay }),
+    startDay.plus({ day: i + 1 - weekDayOfFirstDay }),
   );
 
   $: weekdays = Array.from({ length: 7 }, (_, i) =>

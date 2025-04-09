@@ -21,7 +21,7 @@
   let potentialEnd: DateTime<true> | undefined;
   let potentialStart: DateTime<true> | undefined;
 
-  // This is set globally in DashboardStateManager or canvas/stores/time-control.ts
+  // This is set globally in DashboardStateDataLoader or canvas/stores/time-control.ts
   $: firstDayOfWeek = Settings.defaultWeekSettings?.firstDay ?? 1;
 
   $: finalInterval = isValidDateTime(selection)
