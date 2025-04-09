@@ -135,7 +135,7 @@ setup.describe("global setup", () => {
       .click();
 
     // Wait for navigation to complete and password field to be visible
-    await page.waitForURL("https://auth.rilldata.io/u/login/password*");
+    await page.waitForURL("**/u/login/password*");
 
     // Fill in the password
     const passwordInput = page.locator('input[name="password"]');
