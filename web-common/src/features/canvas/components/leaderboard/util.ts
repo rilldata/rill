@@ -1,5 +1,5 @@
 export const MIN_DIMENSION_COLUMN_WIDTH = 150;
-export const LEADERBOARD_WRAPPER_PADDING = 36;
+export const LEADERBOARD_WRAPPER_PADDING = 56;
 
 export function getDimensionColumnWidth(
   wrapperWidth: number,

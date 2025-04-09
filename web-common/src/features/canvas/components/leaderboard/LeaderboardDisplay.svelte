@@ -1,5 +1,7 @@
 <script lang="ts">
+  import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
   import type { LeaderboardComponent } from "@rilldata/web-common/features/canvas/components/leaderboard";
+  import { validateLeaderboardSchema } from "@rilldata/web-common/features/canvas/components/leaderboard/selector";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
   import {
@@ -43,15 +45,16 @@
   $: store = getCanvasStore(canvasName);
   $: ({
     canvasEntity: {
-      spec: { getDimensionsForMetricView, getMeasuresForMetricView },
+      spec: {
+        getMetricsViewFromName,
+        getDimensionsForMetricView,
+        getMeasuresForMetricView,
+      },
       filters: { isFilterExcludeMode, toggleDimensionValueSelection },
     },
   } = store);
 
   $: ({ instanceId } = $runtime);
-
-  $: ({ showTimeComparison, comparisonTimeRange, timeRange, where } =
-    $timeAndFilterStore);
 
   $: {
     metricsViewName = leaderboardProperties.metrics_view;
@@ -59,6 +62,14 @@
     dimensionNames = leaderboardProperties.dimensions ?? [];
     numRows = leaderboardProperties.num_rows ?? 7;
   }
+
+  $: _metricViewSpec = getMetricsViewFromName(metricsViewName);
+  $: metricsViewSpec = $_metricViewSpec.metricsView;
+
+  $: schema = validateLeaderboardSchema(leaderboardProperties, metricsViewSpec);
+
+  $: ({ showTimeComparison, comparisonTimeRange, timeRange, where } =
+    $timeAndFilterStore);
 
   $: ({ dimensionFilters: whereFilter, dimensionThresholdFilters } =
     splitWhereFilter(where));
@@ -127,82 +138,86 @@
   }
 </script>
 
-<ComponentHeader {title} {description} {filters} />
+{#if schema.isValid}
+  <ComponentHeader {title} {description} {filters} />
 
-<div
-  class="h-fit p-0 grow relative"
-  class:!p-0={visibleDimensions.length === 1}
->
-  <span class="border-overlay" />
   <div
-    bind:this={parentElement}
-    class="grid-wrapper gap-px size-full overflow-y-auto"
-    style:grid-template-columns="repeat(auto-fit, minmax(min({tableWidth +
-      LEADERBOARD_WRAPPER_PADDING}px, 100%), 1fr))"
-    on:scroll={() => {
-      suppressTooltip = true;
-    }}
-    on:scrollend={() => {
-      suppressTooltip = false;
-    }}
+    class="h-fit p-0 grow relative"
+    class:!p-0={visibleDimensions.length === 1}
   >
-    {#if parentElement}
-      {#each visibleDimensions as dimension (dimension.name)}
-        {#if dimension.name}
-          <div
-            class="leaderboard-wrapper"
-            bind:clientWidth={leaderboardWrapperWidth}
-          >
-            <Leaderboard
-              slice={numRows}
-              {instanceId}
-              {isValidPercentOfTotal}
-              {metricsViewName}
-              {activeMeasureName}
-              {leaderboardMeasureNames}
-              visibleMeasures={leaderboardMeasureNames}
-              {whereFilter}
-              {dimensionThresholdFilters}
-              tableWidth={tableWidthForPctBars}
-              {dimensionColumnWidth}
-              sortedAscending={$leaderboardState.sortDirection ===
-                SortDirection.ASCENDING}
-              sortType={$leaderboardState.sortType}
-              filterExcludeMode={$isFilterExcludeMode(dimension.name)}
-              {timeRange}
-              comparisonTimeRange={showTimeComparison
-                ? comparisonTimeRange
-                : undefined}
-              {dimension}
-              {parentElement}
-              {suppressTooltip}
-              timeControlsReady={true}
-              allowExpandTable={false}
-              allowDimensionComparison={false}
-              selectedValues={selectedDimensionValuesV2(
-                $runtime.instanceId,
-                [metricsViewName],
-                whereFilter,
-                dimension.name,
-                timeRange.start,
-                timeRange.end,
-              )}
-              isBeingCompared={false}
-              formatters={measureFormatters}
-              {toggleSort}
-              {toggleDimensionValueSelection}
-              sortBy={$sortByMeasure}
-              measureLabel={(measureName) =>
-                visibleMeasures.find((m) => m.name === measureName)
-                  ?.displayName || measureName}
-              leaderboardMeasureCountFeatureFlag={true}
-            />
-          </div>
-        {/if}
-      {/each}
-    {/if}
+    <span class="border-overlay" />
+    <div
+      bind:this={parentElement}
+      class="grid-wrapper gap-px size-full overflow-y-auto"
+      style:grid-template-columns="repeat(auto-fit, minmax({tableWidth +
+        LEADERBOARD_WRAPPER_PADDING}px, 1fr))"
+      on:scroll={() => {
+        suppressTooltip = true;
+      }}
+      on:scrollend={() => {
+        suppressTooltip = false;
+      }}
+    >
+      {#if parentElement}
+        {#each visibleDimensions as dimension (dimension.name)}
+          {#if dimension.name}
+            <div
+              class="leaderboard-wrapper"
+              bind:clientWidth={leaderboardWrapperWidth}
+            >
+              <Leaderboard
+                slice={numRows}
+                {instanceId}
+                {isValidPercentOfTotal}
+                {metricsViewName}
+                {activeMeasureName}
+                {leaderboardMeasureNames}
+                visibleMeasures={leaderboardMeasureNames}
+                {whereFilter}
+                {dimensionThresholdFilters}
+                tableWidth={tableWidthForPctBars}
+                {dimensionColumnWidth}
+                sortedAscending={$leaderboardState.sortDirection ===
+                  SortDirection.ASCENDING}
+                sortType={$leaderboardState.sortType}
+                filterExcludeMode={$isFilterExcludeMode(dimension.name)}
+                {timeRange}
+                comparisonTimeRange={showTimeComparison
+                  ? comparisonTimeRange
+                  : undefined}
+                {dimension}
+                {parentElement}
+                {suppressTooltip}
+                timeControlsReady={true}
+                allowExpandTable={false}
+                allowDimensionComparison={false}
+                selectedValues={selectedDimensionValuesV2(
+                  $runtime.instanceId,
+                  [metricsViewName],
+                  whereFilter,
+                  dimension.name,
+                  timeRange.start,
+                  timeRange.end,
+                )}
+                isBeingCompared={false}
+                formatters={measureFormatters}
+                {toggleSort}
+                {toggleDimensionValueSelection}
+                sortBy={$sortByMeasure}
+                measureLabel={(measureName) =>
+                  visibleMeasures.find((m) => m.name === measureName)
+                    ?.displayName || measureName}
+                leaderboardMeasureCountFeatureFlag={true}
+              />
+            </div>
+          {/if}
+        {/each}
+      {/if}
+    </div>
   </div>
-</div>
+{:else}
+  <ComponentError error={schema.error} />
+{/if}
 
 <style lang="postcss">
   .grid-wrapper {
@@ -218,10 +233,4 @@
     @apply absolute border-[12.5px] pointer-events-none border-white size-full;
     z-index: 20;
   }
-
-  /* @container component-container (inline-size < 440px) {
-    .grid-wrapper {
-      grid-template-columns: repeat(1, 1fr) !important;
-    }
-  } */
 </style>
