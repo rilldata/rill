@@ -187,7 +187,7 @@ func (d driver) checkVersion(dsn string) error {
 		return err
 	}
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		return err
