@@ -147,7 +147,12 @@
         </div>
       </Button>
 
-      <DropdownMenu.Content align="start" class="flex flex-col w-72 p-0 ">
+      <DropdownMenu.Content
+        align="start"
+        class="flex flex-col w-72 p-0"
+        strategy="absolute"
+        fitViewport={true}
+      >
         <div class="px-3 pt-3 pb-1">
           <Search
             bind:value={searchText}

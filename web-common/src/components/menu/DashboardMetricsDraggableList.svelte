@@ -219,7 +219,6 @@
   <Popover.Content
     class="p-0 z-popover"
     align="start"
-    collisionPadding={100}
     strategy="absolute"
     fitViewport={true}
     overflowY="auto"
@@ -538,6 +537,8 @@
     </div>
   </Popover.Content>
 </Popover.Root>
+
+<div class="absolute bottom-0 left-0 right-0 h-[100px]" />
 
 <style lang="postcss">
   .transition-margin {
