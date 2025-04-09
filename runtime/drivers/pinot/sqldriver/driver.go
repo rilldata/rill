@@ -10,29 +10,64 @@ import (
 	"io"
 	"math"
 	"math/big"
+	"net"
 	"net/url"
 	"reflect"
+	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/rilldata/rill/runtime/pkg/retrier"
 	"github.com/startreedata/pinot-client-go/pinot"
 )
 
-// Pinot error codes
-const (
-	// Non-retriable error codes
-	// from https://github.com/apache/pinot/blob/master/pinot-spi/src/main/java/org/apache/pinot/spi/exception/QueryErrorCode.java
-	JSONParsing       = 100
-	SQLParsing        = 150
-	SQLRuntime        = 160
-	AccessDenied      = 180
-	TableDoesNotExist = 190
-	TableIsDisabled   = 191
-	QueryExecution    = 200
-	QueryValidation   = 700
-	UnknownColumn     = 710
-	QueryPlanning     = 720
-)
+func isRetryableHTTPError(err error) bool {
+	var netErr net.Error
+	if errors.As(err, &netErr) {
+		if netErr.Timeout() {
+			return true
+		}
+	}
+	errStr := err.Error()
+	re := regexp.MustCompile(`Pinot: (\d{3})`)
+	matches := re.FindStringSubmatch(errStr)
+	if len(matches) == 2 {
+		if code, convErr := strconv.Atoi(matches[1]); convErr == nil {
+			return isRetryableHTTPCode(code)
+		}
+	}
+	return false
+}
+
+func isRetryableHTTPCode(code int) bool {
+	switch code {
+	case 408: // Request Timeout — client didn't produce a request in time
+	case 429: // Too Many Requests — server is rate-limiting, often includes Retry-After
+	case 502: // Bad Gateway — server got invalid response from upstream
+	case 503: // Service Unavailable — server is overloaded or down for maintenance
+	case 504: // Gateway Timeout — server acting as a gateway timed out waiting for upstream
+	default:
+		return false
+	}
+	return true
+}
+
+func isRetryablePinotErrorCode(code int) bool {
+	// Pinot code are from https://github.com/apache/pinot/blob/master/pinot-spi/src/main/java/org/apache/pinot/spi/exception/QueryErrorCode.java
+	switch code {
+	case 210: // SERVER_SHUTTING_DOWN
+	case 211: // SERVER_OUT_OF_CAPACITY
+	case 240: // QUERY_SCHEDULING_TIMEOUT
+	case 245: // SERVER_RESOURCE_LIMIT_EXCEEDED
+	case 250: // EXECUTION_TIMEOUT
+	case 400: // BROKER_TIMEOUT
+	case 427: // SERVER_NOT_RESPONDING
+	case 429: // TOO_MANY_REQUESTS
+	default:
+		return false
+	}
+	return true
+}
 
 type pinotDriver struct{}
 
@@ -89,19 +124,19 @@ func (c *conn) QueryContext(ctx context.Context, query string, args []sqlDriver.
 			resp, err = c.pinotConn.ExecuteSQL("", query)
 		}
 		if err != nil {
+			if isRetryableHTTPError(err) {
+				return nil, retrier.Retry, err
+			}
 			return nil, retrier.Fail, err
 		}
 		if len(resp.Exceptions) > 0 {
 			errMsg := "query errors:"
 			for _, e := range resp.Exceptions {
-				errMsg += fmt.Sprintf("\t%q: %q\n", e.ErrorCode, e.Message)
+				errMsg += fmt.Sprintf("\t%d: %q\n", e.ErrorCode, e.Message)
 			}
 			err := errors.New(errMsg)
 			for _, e := range resp.Exceptions {
-				switch e.ErrorCode {
-				case JSONParsing, SQLParsing, SQLRuntime, AccessDenied, TableDoesNotExist, TableIsDisabled, QueryExecution, QueryValidation, UnknownColumn, QueryPlanning:
-					return nil, retrier.Fail, err
-				default:
+				if isRetryablePinotErrorCode(e.ErrorCode) {
 					return nil, retrier.Retry, err
 				}
 			}
