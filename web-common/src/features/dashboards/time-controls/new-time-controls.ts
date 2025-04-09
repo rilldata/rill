@@ -297,7 +297,7 @@ export function deriveInterval(
 }
 
 export function getPeriodToDate(date: DateTime, period: DateTimeUnit) {
-  const periodStart = date.startOf(period);
+  const periodStart = date.startOf(period, { useLocaleWeeks: true });
   const exclusiveEnd = date.endOf("day").plus({ millisecond: 1 });
 
   return Interval.fromDateTimes(periodStart, exclusiveEnd);
@@ -308,9 +308,11 @@ export function getPreviousPeriodComplete(
   period: DateTimeUnit,
   steps = 0,
 ) {
-  const startOfCurrentPeriod = anchor.startOf(period);
+  const startOfCurrentPeriod = anchor.startOf(period, { useLocaleWeeks: true });
   const shiftedStart = startOfCurrentPeriod.minus({ [period + "s"]: steps });
-  const exclusiveEnd = shiftedStart.endOf(period).plus({ millisecond: 1 });
+  const exclusiveEnd = shiftedStart
+    .endOf(period, { useLocaleWeeks: true })
+    .plus({ millisecond: 1 });
 
   return Interval.fromDateTimes(shiftedStart, exclusiveEnd);
 }
@@ -325,7 +327,9 @@ export function getInterval(
 
   const end =
     smallestUnit && full
-      ? endDate.endOf(smallestUnit).plus({ millisecond: 1 })
+      ? endDate
+          .endOf(smallestUnit, { useLocaleWeeks: true })
+          .plus({ millisecond: 1 })
       : endDate;
 
   return Interval.before(end, durationUnits);

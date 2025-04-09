@@ -16,6 +16,7 @@ import {
   type V1ExplorePreset,
 } from "@rilldata/web-common/runtime-client";
 import type { AfterNavigate } from "@sveltejs/kit";
+import { Settings, type WeekdayNumbers } from "luxon";
 import { derived, get } from "svelte/store";
 
 /**
@@ -77,6 +78,13 @@ export class DashboardStateDataLoader {
     this.fullTimeRangeQuery = derived(
       [this.validSpecQuery],
       ([validSpecResp], set) => {
+        Settings.defaultWeekSettings = {
+          firstDay: (validSpecResp.data?.metricsView?.firstDayOfWeek ??
+            1) as WeekdayNumbers,
+          weekend: [6, 7],
+          minimalDays: 4,
+        };
+
         const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
         if (!metricsViewSpec.timeDimension) {
           // We return early to avoid having isLoading=true when time dimension is not present.

@@ -7,7 +7,7 @@
     V1ExploreTimeRange,
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
-  import { DateTime, Interval } from "luxon";
+  import { DateTime, Interval, type WeekdayNumbers } from "luxon";
   import {
     bucketYamlRanges,
     type ISODurationString,

@@ -33,6 +33,7 @@ import {
   runtime,
   type Runtime,
 } from "@rilldata/web-common/runtime-client/runtime-store";
+import { Settings, type WeekdayNumbers } from "luxon";
 import {
   derived,
   get,
@@ -146,6 +147,18 @@ export class TimeControls {
         if (!spec?.data || !selectedTimeRange) {
           return undefined;
         }
+
+        // This is not a great solution - bgh
+        const firstMetricsView = Object.values(spec.data.metricsViews)?.[0];
+        const firstDayOfWeekOfFirstMetricsView = (firstMetricsView?.state
+          ?.validSpec?.firstDayOfWeek || 1) as WeekdayNumbers;
+
+        Settings.defaultWeekSettings = {
+          firstDay: firstDayOfWeekOfFirstMetricsView,
+          weekend: [6, 7],
+          minimalDays: 4,
+        };
+
         const { defaultPreset } = spec.data?.canvas || {};
         const defaultTimeRange = isoDurationToFullTimeRange(
           defaultPreset?.timeRange,

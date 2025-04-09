@@ -11,6 +11,7 @@
   export let interval: Interval<true> | undefined;
   export let zone: string;
   export let firstVisibleMonth: DateTime<true>;
+
   export let minDate: DateTime | undefined = undefined;
   export let maxDate: DateTime | undefined = undefined;
   export let applyRange: (range: Interval<true>) => void;
