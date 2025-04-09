@@ -126,11 +126,7 @@
       location="bottom"
       suppress={active}
     >
-      <Button
-        builders={[builder]}
-        type="text"
-        label="Choose measures to display"
-      >
+      <Button builders={[builder]} type="text">
         <div
           class="flex items-center gap-x-0.5 px-1 text-gray-700 hover:text-inherit"
         >
