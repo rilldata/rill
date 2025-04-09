@@ -201,6 +201,7 @@
               />
               <InputLabel
                 small
+                capitalize={false}
                 label="Multi-select"
                 id="multi-measure-select"
               />
