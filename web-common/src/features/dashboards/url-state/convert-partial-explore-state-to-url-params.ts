@@ -35,7 +35,7 @@ import { copyParamsToTarget } from "@rilldata/web-common/lib/url-utils";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import { type V1ExploreSpec } from "@rilldata/web-common/runtime-client";
 
-export function convertPartialExploreStateToUrlSearch(
+export function convertPartialExploreStateToUrlParams(
   partialExploreState: Partial<MetricsExplorerEntity>,
   exploreSpec: V1ExploreSpec,
   // We have quite a bit of logic in TimeControlState to validate selections and update them
@@ -89,7 +89,7 @@ export function convertPartialExploreStateToUrlSearch(
     case DashboardState_ActivePage.DIMENSION_TABLE:
     case undefined:
       copyParamsToTarget(
-        toExploreUrl(partialExploreState, exploreSpec),
+        toExploreUrlParams(partialExploreState, exploreSpec),
         searchParams,
       );
       break;
@@ -112,7 +112,12 @@ export function convertPartialExploreStateToUrlSearch(
   if (defaultExploreUrlParams) {
     [...searchParams.entries()].forEach(([key, value]) => {
       const defaultValue = defaultExploreUrlParams.get(key);
-      if (value !== defaultValue) return;
+      if (
+        (defaultValue === null && value !== "") ||
+        (defaultValue !== null && value !== defaultValue)
+      ) {
+        return;
+      }
       searchParams.delete(key);
     });
   }
@@ -201,7 +206,7 @@ export function toTimeRangeParam(timeRange: TimeRange | undefined) {
   return `${timeRange.start.toISOString()},${timeRange.end.toISOString()}`;
 }
 
-function toExploreUrl(
+function toExploreUrlParams(
   partialExploreState: Partial<MetricsExplorerEntity>,
   exploreSpec: V1ExploreSpec,
 ) {

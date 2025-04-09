@@ -166,11 +166,13 @@ export class DashboardStateDataLoader {
           return undefined;
         }
 
-        return getDefaultExploreUrlParams(
+        const defaultExploreUrlParams = getDefaultExploreUrlParams(
           metricsViewSpec,
           exploreSpec,
           metricsViewTimeRangeResp?.timeRangeSummary,
         );
+
+        return defaultExploreUrlParams;
       },
     );
 

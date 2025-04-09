@@ -3,7 +3,7 @@ import { getDefaultExploreUrlParams } from "@rilldata/web-common/features/dashbo
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { PreviousCompleteRangeMap } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
-import { convertPartialExploreStateToUrlSearch } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-search";
+import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
@@ -200,7 +200,7 @@ export async function getExplorePageUrlSearchParams(
     });
   }
 
-  const searchParams = convertPartialExploreStateToUrlSearch(
+  const searchParams = convertPartialExploreStateToUrlParams(
     exploreState,
     exploreSpec,
     getTimeControlState(
@@ -212,7 +212,7 @@ export async function getExplorePageUrlSearchParams(
     getDefaultExploreUrlParams(
       metricsViewSpec,
       exploreSpec,
-      fullTimeRange.timeRangeSummary,
+      fullTimeRange?.timeRangeSummary,
     ),
     url,
   );

@@ -1,7 +1,7 @@
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
-import { convertPartialExploreStateToUrlSearch } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-search";
+import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
 import {
   ExploreUrlWebView,
@@ -45,7 +45,7 @@ export function updateExploreSessionStore(
   if (!curWebView) return;
 
   // Build the url search params for the entire state
-  const urlSearchParams = convertPartialExploreStateToUrlSearch(
+  const urlSearchParams = convertPartialExploreStateToUrlParams(
     exploreState,
     exploreSpec,
     timeControlsState,

@@ -1,5 +1,5 @@
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { convertPartialExploreStateToUrlSearch } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-search";
+import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
 import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import type {
@@ -29,7 +29,7 @@ export function getDefaultExploreUrlParams(
     timeRangeSummary,
     partialExploreState as any,
   );
-  return convertPartialExploreStateToUrlSearch(
+  return convertPartialExploreStateToUrlParams(
     partialExploreState,
     exploreSpec,
     timeControlState,

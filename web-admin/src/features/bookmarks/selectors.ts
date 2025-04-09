@@ -20,7 +20,7 @@ import {
   getTimeControlState,
   timeControlStateSelector,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { convertPartialExploreStateToUrlSearch } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-search";
+import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
@@ -89,9 +89,9 @@ export function isHomeBookmark(bookmark: V1Bookmark) {
 
 export function categorizeBookmarks(
   bookmarkResp: V1Bookmark[],
-  metricsSpec: V1MetricsViewSpec | undefined,
-  exploreSpec: V1ExploreSpec | undefined,
-  schema: V1StructType | undefined,
+  metricsSpec: V1MetricsViewSpec,
+  exploreSpec: V1ExploreSpec,
+  schema: V1StructType,
   exploreState: MetricsExplorerEntity,
   timeRangeSummary: V1TimeRangeSummary | undefined,
 ) {
@@ -111,9 +111,9 @@ export function categorizeBookmarks(
   bookmarkResp?.forEach((bookmarkResource) => {
     const bookmark = parseBookmark(
       bookmarkResource,
-      metricsSpec ?? {},
-      exploreSpec ?? {},
-      schema ?? {},
+      metricsSpec,
+      exploreSpec,
+      schema,
       exploreState,
       defaultExploreUrlParams,
       timeRangeSummary,
@@ -229,7 +229,7 @@ function parseBookmark(
 
   const url = new URL(get(page).url);
 
-  const searchParams = convertPartialExploreStateToUrlSearch(
+  const searchParams = convertPartialExploreStateToUrlParams(
     finalExploreState,
     exploreSpec,
     getTimeControlState(
@@ -270,7 +270,7 @@ function isFilterOnlyBookmark(
   url: URL,
 ): boolean {
   // Get the bookmark's search params
-  const searchParams = convertPartialExploreStateToUrlSearch(
+  const searchParams = convertPartialExploreStateToUrlParams(
     bookmarkState as MetricsExplorerEntity,
     exploreSpec,
     getTimeControlState(

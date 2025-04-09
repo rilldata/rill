@@ -11,7 +11,7 @@ import {
   type TimeControlState,
   type TimeControlStore,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { convertPartialExploreStateToUrlSearch } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-search";
+import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
 import { updateExploreSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import type { V1ExploreSpec } from "@rilldata/web-common/runtime-client";
@@ -203,7 +203,7 @@ export class DashboardStateSync {
     if (!defaultExploreUrlParams) return;
 
     const newUrl = new URL(pageState.url);
-    const exploreStateParams = convertPartialExploreStateToUrlSearch(
+    const exploreStateParams = convertPartialExploreStateToUrlParams(
       exploreState,
       exploreSpec,
       timeControlsState,
@@ -242,7 +242,7 @@ export class DashboardStateSync {
     url: URL,
   ): string {
     // Create params from the explore state
-    const stateParams = convertPartialExploreStateToUrlSearch(
+    const stateParams = convertPartialExploreStateToUrlParams(
       partialExploreState,
       exploreSpec,
       timeControlsState,

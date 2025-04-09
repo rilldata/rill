@@ -63,7 +63,7 @@
     $bookamrksResp.data?.bookmarks ?? [],
     metricsViewSpec,
     exploreSpec,
-    $schemaResp.data?.schema,
+    $schemaResp.data?.schema ?? {},
     $exploreState,
     $metricsViewTimeRange.data?.timeRangeSummary,
   );

@@ -10,6 +10,7 @@ import {
   AD_BIDS_METRICS_INIT,
   AD_BIDS_PIVOT_PRESET,
   AD_BIDS_PRESET,
+  AD_BIDS_PUBLISHER_DIMENSION,
   AD_BIDS_TIME_DIMENSION_DETAILS_PRESET,
   AD_BIDS_TIME_RANGE_SUMMARY,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
@@ -53,9 +54,11 @@ import {
   AD_BIDS_SET_LEADERBOARD_MEASURE_COUNT,
   applyMutationsToDashboard,
   type TestDashboardMutation,
+  AD_BIDS_SET_PUBLISHER_COMPARE_DIMENSION,
+  AD_BIDS_SET_DOMAIN_COMPARE_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { convertPartialExploreStateToUrlSearch } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-search";
+import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import {
   type DashboardTimeControls,
@@ -183,6 +186,30 @@ const TestCases: {
     },
     expectedSearch: "compare_tr=",
     legacyNotSupported: true,
+  },
+
+  {
+    title: "Dimension comparison without preset",
+    mutations: [AD_BIDS_SET_PUBLISHER_COMPARE_DIMENSION],
+    expectedSearch: "compare_dim=publisher",
+  },
+  {
+    title: "Dimension comparison with preset and matching preset",
+    mutations: [AD_BIDS_SET_PUBLISHER_COMPARE_DIMENSION],
+    preset: {
+      comparisonDimension: AD_BIDS_PUBLISHER_DIMENSION,
+      comparisonMode: V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_DIMENSION,
+    },
+    expectedSearch: "",
+  },
+  {
+    title: "Dimension comparison with preset and not matching preset",
+    mutations: [AD_BIDS_SET_DOMAIN_COMPARE_DIMENSION],
+    preset: {
+      comparisonDimension: AD_BIDS_PUBLISHER_DIMENSION,
+      comparisonMode: V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_DIMENSION,
+    },
+    expectedSearch: "compare_dim=domain",
   },
 
   {
@@ -337,7 +364,7 @@ const TestCases: {
     mutations: [AD_BIDS_CLOSE_TDD],
     preset: AD_BIDS_TIME_DIMENSION_DETAILS_PRESET,
     expectedSearch:
-      "view=explore&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measure_count=1",
+      "view=explore&measures=*&dims=*&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measure_count=1",
     legacyNotSupported: true,
   },
 
@@ -367,7 +394,7 @@ const TestCases: {
       AD_BIDS_TOGGLE_PIVOT_TABLE_MODE,
     ],
     expectedSearch:
-      "view=pivot&rows=&cols=domain%2Ctime.day%2Cimpressions&sort_by=&table_mode=flat",
+      "view=pivot&cols=domain%2Ctime.day%2Cimpressions&sort_by=&table_mode=flat",
     legacyNotSupported: true,
   },
   {
@@ -394,7 +421,7 @@ const TestCases: {
     mutations: [AD_BIDS_TOGGLE_PIVOT],
     preset: AD_BIDS_PIVOT_PRESET,
     expectedSearch:
-      "view=explore&grain=hour&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measure_count=1",
+      "view=explore&grain=hour&measures=*&dims=*&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measure_count=1",
     legacyNotSupported: true,
   },
 ];
@@ -436,7 +463,7 @@ describe("Human readable URL state variations", () => {
         applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
 
         // load url params with updated metrics state
-        const updateUrlParams = convertPartialExploreStateToUrlSearch(
+        const updateUrlParams = convertPartialExploreStateToUrlParams(
           get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
           explore,
           getTimeControlState(
@@ -561,7 +588,7 @@ describe("Human readable URL state variations", () => {
 
     // load url params with updated metrics state
     const url = new URL("http://localhost");
-    url.search = convertPartialExploreStateToUrlSearch(
+    url.search = convertPartialExploreStateToUrlParams(
       get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
       AD_BIDS_EXPLORE_INIT,
       getTimeControlState(

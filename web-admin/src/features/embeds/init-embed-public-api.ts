@@ -1,7 +1,7 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
 import { getDefaultExploreUrlParams } from "@rilldata/web-common/features/dashboards/stores/get-default-explore-url-params";
-import { convertPartialExploreStateToUrlSearch } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-search";
+import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
 import { derived, get, type Readable } from "svelte/store";
 import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import {
@@ -40,7 +40,7 @@ export default function initEmbedPublicAPI(): () => void {
       }
 
       return decodeURIComponent(
-        convertPartialExploreStateToUrlSearch(
+        convertPartialExploreStateToUrlParams(
           $dashboardStore,
           exploreSpec,
           timeControlsState,
@@ -78,7 +78,7 @@ export default function initEmbedPublicAPI(): () => void {
       );
     }
     const stateString = decodeURIComponent(
-      convertPartialExploreStateToUrlSearch(
+      convertPartialExploreStateToUrlParams(
         dashboard,
         exploreSpec,
         timeControlsState,
