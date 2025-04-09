@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"slices"
 	"strings"
 
@@ -85,6 +86,111 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 	}
 
 	return &runtimev1.ListResourcesResponse{Resources: rs}, nil
+}
+
+// WatchResourcesHandler implements an HTTP handler for runtimev1.RuntimeServiceServer
+func (s *Server) WatchResourcesHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	instanceID := r.PathValue("instance_id")
+	kind := r.URL.Query().Get("kind")
+	replay := r.URL.Query().Get("replay") == "true"
+
+	if !auth.GetClaims(ctx).CanInstance(instanceID, auth.ReadObjects) {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
+	ctrl, err := s.runtime.Controller(ctx, instanceID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Set up streaming response headers
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("Transfer-Encoding", "chunked")
+	w.WriteHeader(http.StatusOK)
+
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "streaming not supported", http.StatusInternalServerError)
+		return
+	}
+
+	// Handle initial replay of existing resources
+	if replay {
+		rs, err := ctrl.List(ctx, kind, "", false)
+		if err != nil {
+			s.logger.Info("failed to list resources for replay", zap.Error(err))
+			return
+		}
+
+		for _, r := range rs {
+			r, access, err := s.applySecurityPolicy(ctx, instanceID, r)
+			if err != nil {
+				s.logger.Info("failed to apply security policy", zap.String("name", r.Meta.Name.Name), zap.Error(err))
+				continue
+			}
+			if !access {
+				continue
+			}
+
+			resp := &runtimev1.WatchResourcesResponse{
+				Event:    runtimev1.ResourceEvent_RESOURCE_EVENT_WRITE,
+				Resource: r,
+			}
+
+			if err := writeJSONResponse(w, resp); err != nil {
+				s.logger.Info("failed to send resource event", zap.Error(err))
+				return
+			}
+			flusher.Flush()
+		}
+	}
+
+	// Create a context that is cancelled when the client disconnects
+	clientCtx, clientCancel := context.WithCancel(ctx)
+	defer clientCancel()
+
+	// Detect client disconnect
+	go func() {
+		<-r.Context().Done()
+		clientCancel()
+	}()
+
+	// Subscribe to resource events
+	err = ctrl.Subscribe(clientCtx, func(e runtimev1.ResourceEvent, n *runtimev1.ResourceName, r *runtimev1.Resource) {
+		if r != nil { // r is nil for deletion events
+			var access bool
+			var err error
+			r, access, err = s.applySecurityPolicy(clientCtx, instanceID, r)
+			if err != nil {
+				s.logger.Info("failed to apply security policy", zap.String("name", n.Name), zap.Error(err))
+				return
+			}
+			if !access {
+				return
+			}
+		}
+
+		resp := &runtimev1.WatchResourcesResponse{
+			Event:    e,
+			Name:     n,
+			Resource: r,
+		}
+
+		if err := writeJSONResponse(w, resp); err != nil {
+			s.logger.Info("failed to send resource event", zap.Error(err))
+			return
+		}
+		flusher.Flush()
+	})
+
+	if err != nil {
+		s.logger.Info("subscription ended with error", zap.Error(err))
+	}
 }
 
 // WatchResources implements runtimev1.RuntimeServiceServer
@@ -615,4 +721,17 @@ func must[T any](v T, err error) T {
 		panic(err)
 	}
 	return v
+}
+
+func writeJSONResponse(w http.ResponseWriter, data interface{}) error {
+	jsonData, err := json.Marshal(struct {
+		Result interface{} `json:"result"`
+	}{
+		Result: data,
+	})
+	if err != nil {
+		return err
+	}
+	_, err = fmt.Fprintf(w, "%s\n", jsonData)
+	return err
 }

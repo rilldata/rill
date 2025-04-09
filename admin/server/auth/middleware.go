@@ -75,6 +75,18 @@ func (a *Authenticator) HTTPMiddlewareLenient(next http.Handler) http.Handler {
 	return a.httpMiddleware(next, true)
 }
 
+// CookieToAuthHeader is a middleware that reads the access token from the cookie and sets it in the "Authorization" header.
+func (a *Authenticator) CookieToAuthHeader(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		sess := a.cookies.Get(r, cookieName)
+		authToken, ok := sess.Values[cookieFieldAccessToken].(string)
+		if ok && authToken != "" {
+			r.Header.Set("Authorization", fmt.Sprintf("Bearer %s", authToken))
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 // httpMiddleware is the actual implementation of HTTPMiddleware and HTTPMiddlewareLenient.
 func (a *Authenticator) httpMiddleware(next http.Handler, lenient bool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
