@@ -148,7 +148,7 @@
     <span class="border-overlay" />
     <div
       bind:this={parentElement}
-      class="grid-wrapper gap-px size-full overflow-y-auto"
+      class="grid-wrapper gap-px size-full overflow-x-auto"
       style:grid-template-columns="repeat(auto-fit, minmax({tableWidth +
         LEADERBOARD_WRAPPER_PADDING}px, 1fr))"
       on:scroll={() => {
@@ -226,7 +226,8 @@
   }
 
   .leaderboard-wrapper {
-    @apply relative p-4 pr-6 grid outline outline-1 outline-gray-200 justify-center;
+    @apply relative p-4 pr-6 grid justify-center;
+    @apply outline outline-1 outline-gray-200;
   }
 
   .border-overlay {

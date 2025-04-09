@@ -66,6 +66,10 @@ export class LeaderboardComponent extends BaseCanvasComponent<LeaderboardSpec> {
       sortDirection: SortDirection.DESCENDING,
       leaderboardSortByMeasureName: measures?.[0] ?? null,
     });
+
+    this.specStore.subscribe((spec) => {
+      this.validateAndResetSortMeasure(spec);
+    });
   }
 
   isValid(spec: LeaderboardSpec): boolean {
@@ -121,6 +125,23 @@ export class LeaderboardComponent extends BaseCanvasComponent<LeaderboardSpec> {
         : null;
     });
   }
+
+  validateAndResetSortMeasure = (spec: LeaderboardSpec) => {
+    const state = get(this.leaderboardState);
+    const { measures } = spec;
+    if (
+      measures?.length &&
+      state.leaderboardSortByMeasureName &&
+      !measures.includes(state.leaderboardSortByMeasureName)
+    ) {
+      this.leaderboardState.set({
+        ...state,
+        leaderboardSortByMeasureName: measures[0],
+        sortType: SortType.VALUE,
+        sortDirection: SortDirection.DESCENDING,
+      });
+    }
+  };
 
   // Rewrite of @toggleSort from actions/sorting.ts
   toggleSort = (sortType: SortType, measureName?: string) => {
