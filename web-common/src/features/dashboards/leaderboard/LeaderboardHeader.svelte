@@ -24,7 +24,7 @@
   export let hovered: boolean;
   export let sortType: SortType;
   export let leaderboardMeasureNames: string[] = [];
-  export let sortBy: string | null;
+  export let leaderboardSortByMeasureName: string | null;
   export let leaderboardShowAllMeasures: boolean;
   export let toggleSort: (sortType: SortType, measureName?: string) => void;
   export let setPrimaryDimension: (dimensionName: string) => void;
@@ -34,7 +34,9 @@
   export let measureLabel: (measureName: string) => string;
 
   function shouldShowContextColumns(measureName: string): boolean {
-    return leaderboardShowAllMeasures || measureName === sortBy;
+    return (
+      leaderboardShowAllMeasures || measureName === leaderboardSortByMeasureName
+    );
   }
 </script>
 
@@ -103,7 +105,7 @@
               #
             {/if}
           </span>
-          {#if measureName === sortBy && sortType === SortType.VALUE}
+          {#if measureName === leaderboardSortByMeasureName && sortType === SortType.VALUE}
             <div class="ui-copy-icon">
               {#if sortedAscending}
                 <div in:fly|global={{ duration: 200, y: 8 }} style:opacity={1}>
@@ -126,7 +128,7 @@
             on:click={() => toggleSort(SortType.PERCENT, measureName)}
           >
             <PercentOfTotal />
-            {#if sortType === SortType.PERCENT && measureName === sortBy}
+            {#if sortType === SortType.PERCENT && measureName === leaderboardSortByMeasureName}
               <div class="ui-copy-icon">
                 {#if sortedAscending}
                   <div
@@ -156,7 +158,7 @@
             on:click={() => toggleSort(SortType.DELTA_ABSOLUTE, measureName)}
           >
             <DeltaChange />
-            {#if sortType === SortType.DELTA_ABSOLUTE && measureName === sortBy}
+            {#if sortType === SortType.DELTA_ABSOLUTE && measureName === leaderboardSortByMeasureName}
               <div class="ui-copy-icon">
                 {#if sortedAscending}
                   <div
@@ -186,7 +188,7 @@
             on:click={() => toggleSort(SortType.DELTA_PERCENT, measureName)}
           >
             <DeltaChangePercentage />
-            {#if sortType === SortType.DELTA_PERCENT && measureName === sortBy}
+            {#if sortType === SortType.DELTA_PERCENT && measureName === leaderboardSortByMeasureName}
               <div class="ui-copy-icon">
                 {#if sortedAscending}
                   <div

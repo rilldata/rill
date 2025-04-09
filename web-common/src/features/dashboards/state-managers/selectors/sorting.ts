@@ -15,6 +15,7 @@ export const sortingSelectors = {
     dashboard.sortDirection === SortDirection.ASCENDING,
 
   /**
+   * @deprecated use leaderboardSortByMeasureName instead
    * Returns the measure name that the dashboard is sorted by,
    * or null if the dashboard is sorted by dimension value.
    */

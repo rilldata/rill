@@ -32,7 +32,7 @@
   export let leaderboardMeasureNames: string[] = [];
   export let suppressTooltip: boolean;
   export let leaderboardShowAllMeasures: boolean;
-  export let sortBy: string | null;
+  export let leaderboardSortByMeasureName: string | null;
   export let isValidPercentOfTotal: (measureName: string) => boolean;
   export let toggleDimensionValueSelection: (
     dimensionName: string,
@@ -46,7 +46,9 @@
   >;
 
   function shouldShowContextColumns(measureName: string): boolean {
-    return leaderboardShowAllMeasures || measureName === sortBy;
+    return (
+      leaderboardShowAllMeasures || measureName === leaderboardSortByMeasureName
+    );
   }
 
   let hovered = false;

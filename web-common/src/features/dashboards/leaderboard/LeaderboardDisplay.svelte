@@ -25,7 +25,7 @@
       dimensionFilters: { isFilterExcludeMode },
       dimensions: { visibleDimensions },
       comparison: { isBeingCompared: isBeingComparedReadable },
-      sorting: { sortedAscending, sortType, sortByMeasure },
+      sorting: { sortedAscending, sortType },
       measures: { measureLabel, isMeasureValidPercentOfTotal },
       leaderboard: {
         leaderboardShowAllMeasures,
@@ -91,7 +91,6 @@
             <Leaderboard
               isValidPercentOfTotal={$isMeasureValidPercentOfTotal}
               {metricsViewName}
-              sortBy={$sortByMeasure}
               leaderboardSortByMeasureName={$leaderboardSortByMeasureName}
               leaderboardMeasureNames={$leaderboardMeasureNames}
               {whereFilter}

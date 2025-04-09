@@ -44,7 +44,6 @@
   const queryLimit = 8;
   const maxValuesToShow = 15;
 
-  // FIXME: clean up `sortBy` and `activeMeasureName`
   export let dimension: MetricsViewSpecDimension;
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
@@ -56,7 +55,6 @@
   export let leaderboardMeasureNames: string[];
   export let metricsViewName: string;
   export let sortType: SortType;
-  export let sortBy: string | null;
   export let tableWidth: number;
   export let sortedAscending: boolean;
   export let timeControlsReady: boolean;
@@ -280,7 +278,9 @@
       : 0);
 
   function shouldShowContextColumns(measureName: string): boolean {
-    return leaderboardShowAllMeasures || measureName === sortBy;
+    return (
+      leaderboardShowAllMeasures || measureName === leaderboardSortByMeasureName
+    );
   }
 </script>
 
@@ -333,7 +333,7 @@
       {toggleSort}
       {setPrimaryDimension}
       {toggleComparisonDimension}
-      {sortBy}
+      {leaderboardSortByMeasureName}
       {measureLabel}
     />
 
@@ -359,7 +359,7 @@
             {isTimeComparisonActive}
             {leaderboardMeasureNames}
             {toggleDimensionValueSelection}
-            {sortBy}
+            {leaderboardSortByMeasureName}
             {formatters}
           />
         {/each}
@@ -381,7 +381,7 @@
           borderTop={i === 0}
           borderBottom={i === belowTheFoldRows.length - 1}
           {toggleDimensionValueSelection}
-          {sortBy}
+          {leaderboardSortByMeasureName}
           {formatters}
         />
       {/each}
