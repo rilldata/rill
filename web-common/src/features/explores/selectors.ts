@@ -1,4 +1,8 @@
-import type { CreateQueryOptions, QueryFunction } from "@rilldata/svelte-query";
+import type {
+  CreateQueryOptions,
+  QueryFunction,
+  QueryClient,
+} from "@tanstack/svelte-query";
 import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -20,11 +24,14 @@ import { error } from "@sveltejs/kit";
 export function useExplore(
   instanceId: string,
   exploreName: string,
-  queryOptions?: CreateQueryOptions<
-    V1GetExploreResponse,
-    ErrorType<RpcStatus>,
-    V1GetExploreResponse
+  queryOptions?: Partial<
+    CreateQueryOptions<
+      V1GetExploreResponse,
+      ErrorType<RpcStatus>,
+      V1GetExploreResponse
+    >
   >,
+  queryClient?: QueryClient,
 ) {
   return createRuntimeServiceGetExplore(
     instanceId,
@@ -32,6 +39,7 @@ export function useExplore(
     {
       query: queryOptions,
     },
+    queryClient,
   );
 }
 
@@ -42,34 +50,31 @@ export type ExploreValidSpecResponse = {
 export function useExploreValidSpec(
   instanceId: string,
   exploreName: string,
-  queryOptions?: CreateQueryOptions<
-    V1GetExploreResponse,
-    ErrorType<RpcStatus>,
-    ExploreValidSpecResponse
+  queryOptions?: Partial<
+    CreateQueryOptions<
+      V1GetExploreResponse,
+      ErrorType<RpcStatus>,
+      ExploreValidSpecResponse
+    >
   >,
+  queryClient?: QueryClient,
 ) {
-  const defaultQueryOptions: CreateQueryOptions<
-    V1GetExploreResponse,
-    ErrorType<RpcStatus>,
-    ExploreValidSpecResponse
-  > = {
-    select: (data) =>
-      <ExploreValidSpecResponse>{
-        explore: data.explore?.explore?.state?.validSpec,
-        metricsView: data.metricsView?.metricsView?.state?.validSpec,
-      },
-    queryClient,
-    enabled: !!exploreName,
-  };
   return createRuntimeServiceGetExplore(
     instanceId,
     { name: exploreName },
     {
       query: {
-        ...defaultQueryOptions,
+        select: (data) =>
+          <ExploreValidSpecResponse>{
+            explore: data.explore?.explore?.state?.validSpec,
+            metricsView: data.metricsView?.metricsView?.state?.validSpec,
+          },
+
+        enabled: !!exploreName,
         ...queryOptions,
       },
     },
+    queryClient,
   );
 }
 
@@ -117,7 +122,7 @@ export async function fetchExploreSpec(
         {},
       ),
       staleTime: Infinity,
-      cacheTime: Infinity,
+      gcTime: Infinity,
     });
   }
 

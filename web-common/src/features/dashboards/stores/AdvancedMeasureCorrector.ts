@@ -4,7 +4,7 @@ import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   MetricsViewSpecMeasureType,
-  type MetricsViewSpecMeasureV2,
+  type MetricsViewSpecMeasure,
   type V1MetricsViewSpec,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
@@ -16,7 +16,7 @@ import {
  * TODO: this should not be necessary once we use V1ExplorePreset for everything
  */
 export class AdvancedMeasureCorrector {
-  private measuresMap: Map<string, MetricsViewSpecMeasureV2>;
+  private measuresMap: Map<string, MetricsViewSpecMeasure>;
   private measuresGrains: Map<string, V1TimeGrain>;
 
   private constructor(
@@ -68,9 +68,9 @@ export class AdvancedMeasureCorrector {
 
   private correctLeaderboards() {
     if (
-      this.dashboard.leaderboardMeasureName &&
+      this.dashboard.leaderboardSortByMeasureName &&
       !this.measureIsValidForComponent(
-        this.dashboard.leaderboardMeasureName,
+        this.dashboard.leaderboardSortByMeasureName,
         true,
         false,
       )
@@ -78,10 +78,10 @@ export class AdvancedMeasureCorrector {
       return;
     }
 
-    this.dashboard.leaderboardMeasureName = "";
+    this.dashboard.leaderboardSortByMeasureName = "";
     for (const measure of this.metricsViewSpec.measures ?? []) {
       if (!this.measureIsValidForComponent(measure.name ?? "", true, false)) {
-        this.dashboard.leaderboardMeasureName = measure.name ?? "";
+        this.dashboard.leaderboardSortByMeasureName = measure.name ?? "";
         break;
       }
     }

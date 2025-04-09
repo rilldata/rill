@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { selectedDimensionValuesV2 } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
-
   /**
    * DimensionDisplay.svelte
    * -------------------------
@@ -11,7 +9,7 @@
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import {
     createQueryServiceMetricsViewAggregation,
-    type MetricsViewSpecDimensionV2,
+    type MetricsViewSpecDimension,
     type V1Expression,
     type V1MetricsViewAggregationMeasure,
     type V1TimeRange,
@@ -29,6 +27,7 @@
   import DimensionTable from "./DimensionTable.svelte";
   import { getDimensionFilterWithSearch } from "./dimension-table-utils";
   import { featureFlags } from "../../feature-flags";
+  import { selectedDimensionValuesV2 } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 
   const queryLimit = 250;
 
@@ -40,7 +39,7 @@
   export let dimensionThresholdFilters: DimensionThresholdFilter[];
   export let visibleMeasureNames: string[];
   export let timeControlsReady: boolean;
-  export let dimension: MetricsViewSpecDimensionV2;
+  export let dimension: MetricsViewSpecDimension;
   export let hideStartPivotButton = false;
 
   const {
@@ -103,12 +102,13 @@
   $: unfilteredTotal = $leaderboardMeasureCountFeatureFlag
     ? visibleMeasureNames.reduce(
         (acc, measureName) => {
-          acc[measureName] = $totalsQuery?.data?.data?.[0]?.[measureName] ?? 0;
+          acc[measureName] =
+            ($totalsQuery?.data?.data?.[0]?.[measureName] as number) ?? 0;
           return acc;
         },
         {} as { [key: string]: number },
       )
-    : ($totalsQuery?.data?.data?.[0]?.[activeMeasureName] ?? 0);
+    : (($totalsQuery?.data?.data?.[0]?.[activeMeasureName] as number) ?? 0);
 
   $: columns = $virtualizedTableColumns(
     $totalsQuery,

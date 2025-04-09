@@ -292,11 +292,14 @@ function toExploreUrl(
   }
 
   if (
-    shouldSetParam(preset.exploreSortBy, exploreState.leaderboardMeasureName)
+    shouldSetParam(
+      preset.exploreSortBy,
+      exploreState.leaderboardSortByMeasureName,
+    )
   ) {
     searchParams.set(
       ExploreStateURLParams.SortBy,
-      exploreState.leaderboardMeasureName,
+      exploreState.leaderboardSortByMeasureName,
     );
   }
 
@@ -410,7 +413,8 @@ function toPivotUrlParams(
   preset: V1ExplorePreset,
 ) {
   const searchParams = new URLSearchParams();
-  if (!exploreState.pivot?.active) return searchParams;
+  if (exploreState.activePage !== DashboardState_ActivePage.PIVOT)
+    return searchParams;
 
   const mapPivotEntry = (data: PivotChipData) => {
     if (data.type === PivotChipType.Time)

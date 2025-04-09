@@ -1,33 +1,44 @@
-import { useCanvas } from "@rilldata/web-common/features/canvas/selector";
-import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
-import type { CanvasSpecResponseStore } from "@rilldata/web-common/features/canvas/types";
-import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import {
-  buildValidMetricsViewFilter,
-  createAndExpression,
-} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type {
-  ComparisonTimeRangeState,
-  TimeRangeState,
-} from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  useCanvas,
+  type CanvasResponse,
+} from "@rilldata/web-common/features/canvas/selector";
+import type { CanvasSpecResponseStore } from "@rilldata/web-common/features/canvas/types";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
-  type V1Expression,
-  type V1TimeRange,
+  type V1ComponentSpecRendererProperties,
+  type V1MetricsViewSpec,
+  type V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import type { GridStack } from "gridstack";
-import { derived, writable, type Readable, type Writable } from "svelte/store";
-import { CanvasComponentState } from "./canvas-component";
+import {
+  derived,
+  get,
+  writable,
+  type Readable,
+  type Unsubscriber,
+} from "svelte/store";
 import { Filters } from "./filters";
 import { CanvasResolvedSpec } from "./spec";
 import { TimeControls } from "./time-control";
+import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
+import {
+  COMPONENT_CLASS_MAP,
+  createComponent,
+  isChartComponentType,
+  isTableComponentType,
+} from "../components/util";
+import type { FileArtifact } from "../../entity-management/file-artifact";
+import { parseDocument } from "yaml";
+import { fileArtifacts } from "../../entity-management/file-artifacts";
+import type { CanvasComponentType } from "../components/types";
+import { ResourceKind } from "../../entity-management/resource-selectors";
+import { Grid } from "./grid";
 
 export class CanvasEntity {
   name: string;
+  components = new Map<string, BaseCanvasComponent>();
 
-  /** Local state store for canvas components */
-  components: Map<string, CanvasComponentState>;
+  _rows: Grid = new Grid(this);
 
   /**
    * Time controls for the canvas entity containing various
@@ -44,190 +55,240 @@ export class CanvasEntity {
    * Spec store containing selectors derived from ResolveCanvas query
    */
   spec: CanvasResolvedSpec;
-
-  gridstack?: GridStack | null;
-
-  /**
-   * Index of the component higlighted or selected in the canvas
-   */
-  selectedComponent: Writable<{ row: number; column: number } | null>;
-
-  private specStore: CanvasSpecResponseStore;
+  selectedComponent = writable<string | null>(null);
+  fileArtifact: FileArtifact | undefined;
+  parsedContent: Readable<ReturnType<typeof parseDocument>>;
+  specStore: CanvasSpecResponseStore;
+  // Tracks whether the canvas been loaded (and rows processed) for the first time
+  firstLoad = true;
+  unsubscriber: Unsubscriber;
 
   constructor(name: string) {
-    this.specStore = derived(runtime, (r, set) =>
-      useCanvas(r.instanceId, name, {
+    const instanceId = get(runtime).instanceId;
+    this.specStore = useCanvas(
+      instanceId,
+      name,
+      {
         retry: 3,
         retryDelay: (attemptIndex) =>
           Math.min(1000 + 1000 * attemptIndex, 5000),
-        queryClient,
-      }).subscribe(set),
+      },
+      queryClient,
     );
 
     this.name = name;
 
-    this.components = new Map();
-    this.selectedComponent = writable<{ row: number; column: number } | null>(
-      null,
-    );
     this.spec = new CanvasResolvedSpec(this.specStore);
     this.timeControls = new TimeControls(this.specStore);
     this.filters = new Filters(this.spec);
+
+    this.unsubscriber = this.specStore.subscribe((spec) => {
+      const filePath = spec.data?.filePath;
+
+      if (!filePath) {
+        return;
+      }
+
+      if (!this.fileArtifact) {
+        const fileArtifact = fileArtifacts.getFileArtifact(filePath);
+
+        if (!fileArtifact) {
+          return;
+        }
+
+        this.fileArtifact = fileArtifact;
+
+        if (!this.parsedContent) {
+          this.parsedContent = derived(
+            fileArtifact.editorContent,
+            (editorContent) => {
+              const parsed = parseDocument(editorContent ?? "");
+              return parsed;
+            },
+          );
+        }
+      }
+
+      if (spec.data) {
+        this.processRows(spec.data);
+      }
+    });
   }
 
-  setSelectedComponent = (pos: { row: number; column: number } | null) => {
-    this.selectedComponent.set(pos);
+  // Not currently being used
+  unsubscribe = () => {
+    // this.unsubscriber();
   };
 
-  useComponent = (componentName: string): CanvasComponentState => {
-    let componentEntity = this.components.get(componentName);
+  duplicateItem = (id: string) => {
+    const component = this.components.get(id);
+    if (!component) return;
+    const { pathInYAML, type, resource } = component;
+    const [, rowIndex, , columnIndex] = pathInYAML;
+    const path = constructPath(rowIndex, columnIndex, type);
 
-    if (!componentEntity) {
-      componentEntity = new CanvasComponentState(
-        componentName,
-        this.specStore,
-        this.spec,
-      );
-      this.components.set(componentName, componentEntity);
+    const existingResource = get(resource);
+
+    const metricsViewName = existingResource?.component?.state?.validSpec
+      ?.rendererProperties?.metrics_view as string | undefined;
+
+    if (!metricsViewName) {
+      throw new Error("No metrics view name found");
     }
-    return componentEntity;
+
+    const metricsViewSpec = get(
+      this.spec.getMetricsViewFromName(metricsViewName),
+    ).metricsView;
+
+    if (!metricsViewSpec) {
+      throw new Error("No metrics view spec found");
+    }
+
+    const newResource = this.createOptimisticResource({
+      type,
+      row: rowIndex + 1,
+      column: columnIndex,
+      metricsViewName,
+      metricsViewSpec,
+    });
+
+    const newComponent = createComponent(newResource, this, path);
+    return newComponent.id;
+  };
+
+  // Once we have stable IDs, this can be simplified
+  processRows = (canvasData: Partial<CanvasResponse>) => {
+    const newComponents = canvasData.components;
+    const existingKeys = new Set(this.components.keys());
+    const rows = canvasData.canvas?.rows ?? [];
+
+    const set = new Set<string>();
+
+    let createdNewComponent = false;
+
+    rows.forEach((row, rowIndex) => {
+      const items = row.items ?? [];
+
+      items.forEach((item, columnIndex) => {
+        const componentName = item.component;
+
+        if (!componentName) return;
+
+        set.add(componentName ?? "");
+
+        const newResource = newComponents?.[componentName];
+        if (!newResource) {
+          throw new Error("No component found: " + componentName);
+        }
+
+        const newType = newResource.component?.state?.validSpec
+          ?.renderer as CanvasComponentType;
+        const existingClass = this.components.get(componentName);
+        const path = constructPath(rowIndex, columnIndex, newType);
+
+        if (existingClass && areSameType(newType, existingClass.type)) {
+          existingClass.update(newResource, path);
+        } else {
+          createdNewComponent = true;
+          this.components.set(
+            componentName,
+            createComponent(newResource, this, path),
+          );
+        }
+      });
+    });
+
+    const didUpdateRowCount = this._rows.updateFromCanvasRows(rows);
+
+    existingKeys.difference(set).forEach((componentName) => {
+      const component = this.components.get(componentName);
+      if (component) {
+        this.components.delete(componentName);
+      }
+    });
+
+    // Calling this function triggers the rows to rerender, ensuring they're up to date
+    // with the components Map, which is not reactive
+    if ((!didUpdateRowCount && createdNewComponent) || this.firstLoad) {
+      this._rows.refresh();
+    }
+    this.firstLoad = false;
+  };
+
+  generateId = (row: number | undefined, column: number | undefined) => {
+    return `${this.name}--component-${row ?? 0}-${column ?? 0}`;
+  };
+
+  createOptimisticResource = (options: {
+    type: CanvasComponentType;
+    row: number;
+    column: number;
+    metricsViewName: string;
+    metricsViewSpec: V1MetricsViewSpec | undefined;
+  }): V1Resource => {
+    const { type, row, column, metricsViewName, metricsViewSpec } = options;
+
+    const spec = COMPONENT_CLASS_MAP[type].newComponentSpec(
+      metricsViewName,
+      metricsViewSpec,
+    );
+
+    return {
+      meta: {
+        name: {
+          name: this.generateId(row, column),
+          kind: ResourceKind.Component,
+        },
+      },
+      component: {
+        state: {
+          validSpec: {
+            renderer: type,
+            rendererProperties:
+              spec as unknown as V1ComponentSpecRendererProperties,
+          },
+        },
+        spec: {
+          renderer: type,
+          rendererProperties:
+            spec as unknown as V1ComponentSpecRendererProperties,
+        },
+      },
+    };
+  };
+
+  setSelectedComponent = (id: string | null) => {
+    this.selectedComponent.set(id);
   };
 
   removeComponent = (componentName: string) => {
     this.components.delete(componentName);
   };
+}
 
-  setGridstack(gridstack: GridStack | null) {
-    this.gridstack = gridstack;
-  }
+export type ComponentPath = [
+  "rows",
+  number,
+  "items",
+  number,
+  CanvasComponentType,
+];
 
-  /**
-   * Helper method to get the time range and where clause for a given metrics view
-   * with the ability to override the time range and filter
-   */
-  componentTimeAndFilterStore = (
-    componentName: string,
-  ): Readable<TimeAndFilterStore> => {
-    const { timeControls, filters, spec, useComponent } = this;
+function constructPath(
+  row: number,
+  column: number,
+  type: CanvasComponentType,
+): ComponentPath {
+  return ["rows", row, "items", column, type];
+}
 
-    const componentSpecStore = spec.getComponentResourceFromName(componentName);
-
-    return derived(componentSpecStore, (componentSpec, set) => {
-      const metricsViewName = componentSpec?.rendererProperties
-        ?.metrics_view as string;
-
-      // if (!metricsViewName) {
-      //   throw new Error("Metrics view name is not set for component");
-      // }
-
-      const component = useComponent(componentName);
-      const dimensionsStore = spec.getDimensionsForMetricView(metricsViewName);
-      const measuresStore = spec.getMeasuresForMetricView(metricsViewName);
-
-      return derived(
-        [
-          timeControls.timeRangeStateStore,
-
-          component.localTimeControls.timeRangeStateStore,
-          timeControls.comparisonRangeStateStore,
-          component.localTimeControls.comparisonRangeStateStore,
-          timeControls.selectedTimezone,
-          filters.whereFilter,
-          filters.dimensionThresholdFilters,
-          dimensionsStore,
-          measuresStore,
-          timeControls.hasTimeSeries,
-        ],
-        ([
-          globalTimeRangeState,
-          localTimeRangeState,
-          globalComparisonRangeState,
-          localComparisonRangeState,
-          timeZone,
-          whereFilter,
-          dtf,
-          dimensions,
-          measures,
-          hasTimeSeries,
-        ]) => {
-          // Time Filters
-          let timeRange: V1TimeRange = {
-            start: globalTimeRangeState?.timeStart,
-            end: globalTimeRangeState?.timeEnd,
-            timeZone,
-          };
-
-          let timeGrain = globalTimeRangeState?.selectedTimeRange?.interval;
-
-          const localShowTimeComparison =
-            !!localComparisonRangeState?.showTimeComparison;
-          const globalShowTimeComparison =
-            !!globalComparisonRangeState?.showTimeComparison;
-
-          let showTimeComparison = globalShowTimeComparison;
-
-          let comparisonTimeRange: V1TimeRange | undefined = {
-            start: globalComparisonRangeState?.comparisonTimeStart,
-            end: globalComparisonRangeState?.comparisonTimeEnd,
-            timeZone,
-          };
-
-          let timeRangeState: TimeRangeState | undefined = globalTimeRangeState;
-          let comparisonTimeRangeState: ComparisonTimeRangeState | undefined =
-            globalComparisonRangeState;
-
-          if (componentSpec?.rendererProperties?.time_filters) {
-            timeRange = {
-              start: localTimeRangeState?.timeStart,
-              end: localTimeRangeState?.timeEnd,
-              timeZone,
-            };
-
-            comparisonTimeRange = {
-              start: localComparisonRangeState?.comparisonTimeStart,
-              end: localComparisonRangeState?.comparisonTimeEnd,
-              timeZone,
-            };
-
-            showTimeComparison = localShowTimeComparison;
-
-            timeGrain = localTimeRangeState?.selectedTimeRange?.interval;
-
-            timeRangeState = localTimeRangeState;
-            comparisonTimeRangeState = localComparisonRangeState;
-          }
-
-          // Dimension Filters
-          const globalWhere =
-            buildValidMetricsViewFilter(
-              whereFilter,
-              dtf,
-              dimensions,
-              measures,
-            ) ?? createAndExpression([]);
-
-          let where: V1Expression | undefined = globalWhere;
-
-          if (componentSpec?.rendererProperties?.dimension_filters) {
-            const { expr: componentWhere } =
-              component.localFilters.getFiltersFromText(
-                componentSpec.rendererProperties.dimension_filters as string,
-              );
-            where = mergeFilters(globalWhere, componentWhere);
-          }
-
-          return {
-            timeRange,
-            showTimeComparison,
-            comparisonTimeRange,
-            where,
-            timeGrain,
-            timeRangeState,
-            comparisonTimeRangeState,
-            hasTimeSeries,
-          };
-        },
-      ).subscribe(set);
-    });
-  };
+function areSameType(
+  newType: CanvasComponentType,
+  existingType: CanvasComponentType,
+) {
+  return (
+    newType === existingType ||
+    (isTableComponentType(existingType) && isTableComponentType(newType)) ||
+    (isChartComponentType(existingType) && isChartComponentType(newType))
+  );
 }

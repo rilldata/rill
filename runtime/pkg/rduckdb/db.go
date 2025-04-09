@@ -768,11 +768,85 @@ func (d *db) acquireWriteConn(ctx context.Context, dsn, table string, initQuerie
 		}
 	}
 
-	return conn, func() error {
-		_ = conn.Close()
-		err = db.Close()
+	// We can leave the attached databases and views in the db but we don't need them once data has been ingested in the table.
+	// This can lead to performance issues when running catalog queries across whole database.
+	// So it is better to drop all views and detach all databases before closing the write handle.
+	dropViews := func() error {
+		// remove all views created on top of attached table
+		rows, err := conn.QueryxContext(ctx, "SELECT view_name FROM duckdb_views WHERE database_name = current_database() AND internal = false")
+		if err != nil {
+			return err
+		}
+
+		var names []string
+		for rows.Next() {
+			var name string
+			err = rows.Scan(&name)
+			if err != nil {
+				rows.Close()
+				return err
+			}
+			names = append(names, name)
+		}
+		rows.Close()
+		if err := rows.Err(); err != nil {
+			return err
+		}
+		for _, name := range names {
+			_, err = conn.ExecContext(ctx, "DROP VIEW "+safeSQLName(name))
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	detach := func() error {
+		// detach all attached databases
+		rows, err := conn.QueryxContext(ctx, "SELECT database_name FROM duckdb_databases() WHERE database_name != current_database() AND internal = false AND type NOT LIKE 'motherduck%'")
+		if err != nil {
+			return err
+		}
+
+		var names []string
+		for rows.Next() {
+			var name string
+			err = rows.Scan(&name)
+			if err != nil {
+				rows.Close()
+				return err
+			}
+			names = append(names, name)
+		}
+		rows.Close()
+		if err := rows.Err(); err != nil {
+			return err
+		}
+		for _, name := range names {
+			_, err = conn.ExecContext(ctx, "DETACH DATABASE "+safeSQLName(name))
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	release := func() (err error) {
+		defer func() {
+			// close the connection and db handle
+			err = errors.Join(err, conn.Close(), db.Close())
+		}()
+		err = dropViews()
+		if err != nil {
+			return err
+		}
+		err = detach()
+		if err != nil {
+			return err
+		}
 		return err
-	}, nil
+	}
+	return conn, release, nil
 }
 
 func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, initQueries []string, read bool) (db *sqlx.DB, dbErr error) {

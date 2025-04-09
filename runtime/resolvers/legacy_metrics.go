@@ -186,7 +186,7 @@ func (r *legacyMetricsResolver) ResolveExport(ctx context.Context, w io.Writer, 
 	return errors.New("not implemented")
 }
 
-func (r *legacyMetricsResolver) formatMetricsViewAggregationResult(row map[string]interface{}, q *queries.MetricsViewAggregation, measures []*runtimev1.MetricsViewSpec_MeasureV2) map[string]any {
+func (r *legacyMetricsResolver) formatMetricsViewAggregationResult(row map[string]interface{}, q *queries.MetricsViewAggregation, measures []*runtimev1.MetricsViewSpec_Measure) map[string]any {
 	res := make(map[string]any)
 	for k, v := range row {
 		measureLabel, f := r.getComparisonMeasureLabelAndFormatter(k, q.Measures, measures)
@@ -195,7 +195,7 @@ func (r *legacyMetricsResolver) formatMetricsViewAggregationResult(row map[strin
 	return res
 }
 
-func (r *legacyMetricsResolver) formatMetricsViewComparisonResult(row *runtimev1.MetricsViewComparisonRow, q *queries.MetricsViewComparison, measures []*runtimev1.MetricsViewSpec_MeasureV2) map[string]any {
+func (r *legacyMetricsResolver) formatMetricsViewComparisonResult(row *runtimev1.MetricsViewComparisonRow, q *queries.MetricsViewComparison, measures []*runtimev1.MetricsViewSpec_Measure) map[string]any {
 	res := make(map[string]any)
 	res[q.DimensionName] = row.DimensionValue
 	for _, v := range row.MeasureValues {
@@ -224,7 +224,7 @@ func (r *legacyMetricsResolver) formatMetricsViewComparisonResult(row *runtimev1
 // if a measure is not found in the request list, it returns the measure name as the label and no formatter.
 // if the measure is not found in the metrics view measures, it returns the measure name as the label and no formatter.
 // if the formatter fails to load, it logs the error and returns the measure name as the label and no formatter.
-func (r *legacyMetricsResolver) getComparisonMeasureLabelAndFormatter(measureName string, reqMeasures []*runtimev1.MetricsViewAggregationMeasure, measures []*runtimev1.MetricsViewSpec_MeasureV2) (string, formatter.Formatter) {
+func (r *legacyMetricsResolver) getComparisonMeasureLabelAndFormatter(measureName string, reqMeasures []*runtimev1.MetricsViewAggregationMeasure, measures []*runtimev1.MetricsViewSpec_Measure) (string, formatter.Formatter) {
 	var reqMeasure *runtimev1.MetricsViewAggregationMeasure
 	effectiveMeasure := measureName
 	for _, m := range reqMeasures {
@@ -248,7 +248,7 @@ func (r *legacyMetricsResolver) getComparisonMeasureLabelAndFormatter(measureNam
 		return measureName, nil
 	}
 
-	var measure *runtimev1.MetricsViewSpec_MeasureV2
+	var measure *runtimev1.MetricsViewSpec_Measure
 	for _, m := range measures {
 		if effectiveMeasure == m.Name {
 			measure = m
@@ -294,8 +294,8 @@ func (r *legacyMetricsResolver) getComparisonMeasureLabelAndFormatter(measureNam
 // getMeasureLabelAndFormatter gets the measure label and formatter by a measure name.
 // if the measure is not found, it returns the measure name as the label and no formatter.
 // if the formatter fails to load, it logs the error and returns the measure name as the label and no formatter.
-func (r *legacyMetricsResolver) getMeasureLabelAndFormatter(measureName string, measures []*runtimev1.MetricsViewSpec_MeasureV2) (string, formatter.Formatter) {
-	var measure *runtimev1.MetricsViewSpec_MeasureV2
+func (r *legacyMetricsResolver) getMeasureLabelAndFormatter(measureName string, measures []*runtimev1.MetricsViewSpec_Measure) (string, formatter.Formatter) {
+	var measure *runtimev1.MetricsViewSpec_Measure
 	for _, m := range measures {
 		if measureName == m.Name {
 			measure = m

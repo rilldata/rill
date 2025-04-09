@@ -1,3 +1,4 @@
+import { test } from "./setup/base";
 import {
   deleteFile,
   renameFileUsingMenu,
@@ -7,37 +8,33 @@ import {
 } from "./utils/commonHelpers";
 import { createModel, modelHasError } from "./utils/modelHelpers";
 import { createSource } from "./utils/sourceHelpers";
-import { test } from "./setup/base";
 import { fileNotPresent, waitForFileNavEntry } from "./utils/waitHelpers";
 
 test.describe("models", () => {
   test.use({ project: "Blank" });
 
   test("Create and edit model", async ({ page }) => {
+    // Add the AdBids source
     await createSource(page, "AdBids.csv", "/sources/AdBids.yaml");
-    await createSource(
-      page,
-      "AdImpressions.tsv",
-      "/sources/AdImpressions.yaml",
-    );
 
-    await createModel(page, "AdBids_model_t.sql");
-    await waitForFileNavEntry(page, "/models/AdBids_model_t.sql", true);
-    await Promise.all([
-      waitForProfiling(page, "AdBids_model_t", [
-        "publisher",
-        "domain",
-        "timestamp",
-      ]),
-      updateCodeEditor(page, "select * from AdBids"),
+    // Create a "Hello world" model named AdBids_model.sql
+    await createModel(page, "AdBids_model.sql");
+    await waitForFileNavEntry(page, "/models/AdBids_model.sql", true);
+
+    // Edit the model to select all columns from the AdBids source
+    await updateCodeEditor(page, "select * from AdBids");
+    await waitForProfiling(page, "AdBids_model", [
+      "publisher",
+      "domain",
+      "timestamp",
     ]);
     await wrapRetryAssertion(() => modelHasError(page, false));
 
-    // Catalog error
+    // Break the model to see a catalog error
     await updateCodeEditor(page, "select * from AdBid");
     await wrapRetryAssertion(() => modelHasError(page, true, "Catalog Error"));
 
-    // Query parse error
+    // Break the model to see a query parse error
     await updateCodeEditor(page, "select from AdBids");
     await wrapRetryAssertion(() =>
       modelHasError(page, true, "SELECT clause without selection list"),

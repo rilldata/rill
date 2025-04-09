@@ -39,9 +39,10 @@
         },
       });
 
-      await queryClient.invalidateQueries(
-        getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
-      );
+      await queryClient.invalidateQueries({
+        queryKey:
+          getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
+      });
 
       eventBus.emit("notification", { message: "User group role added" });
     } catch (error) {
@@ -63,9 +64,10 @@
         },
       });
 
-      await queryClient.invalidateQueries(
-        getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
-      );
+      await queryClient.invalidateQueries({
+        queryKey:
+          getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
+      });
 
       eventBus.emit("notification", { message: "User group role updated" });
     } catch (error) {
@@ -84,9 +86,10 @@
         usergroup: name,
       });
 
-      await queryClient.invalidateQueries(
-        getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
-      );
+      await queryClient.invalidateQueries({
+        queryKey:
+          getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
+      });
 
       eventBus.emit("notification", { message: "User group role revoked" });
     } catch (error) {

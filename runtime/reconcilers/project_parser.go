@@ -513,15 +513,15 @@ func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, inst
 	switch def.Name.Kind {
 	case parserpkg.ResourceKindSource:
 		if existing == nil || !equalSourceSpec(existing.GetSource().Spec, def.SourceSpec) {
-			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Source{Source: &runtimev1.SourceV2{Spec: def.SourceSpec}}}
+			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Source{Source: &runtimev1.Source{Spec: def.SourceSpec}}}
 		}
 	case parserpkg.ResourceKindModel:
 		if existing == nil || !equalModelSpec(existing.GetModel().Spec, def.ModelSpec) {
-			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Model{Model: &runtimev1.ModelV2{Spec: def.ModelSpec}}}
+			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Model{Model: &runtimev1.Model{Spec: def.ModelSpec}}}
 		}
 	case parserpkg.ResourceKindMetricsView:
 		if existing == nil || !equalMetricsViewSpec(existing.GetMetricsView().Spec, def.MetricsViewSpec) {
-			res = &runtimev1.Resource{Resource: &runtimev1.Resource_MetricsView{MetricsView: &runtimev1.MetricsViewV2{Spec: def.MetricsViewSpec}}}
+			res = &runtimev1.Resource{Resource: &runtimev1.Resource_MetricsView{MetricsView: &runtimev1.MetricsView{Spec: def.MetricsViewSpec}}}
 		}
 	case parserpkg.ResourceKindExplore:
 		if existing == nil || !equalExploreSpec(existing.GetExplore().Spec, def.ExploreSpec) {

@@ -106,7 +106,7 @@ Note that you must `cd` into the Git repository that your project was deployed f
 
 ## Supported versions
 
-Rill supports connecting to Druid v26.0 or newer versions.
+Rill supports connecting to Druid v28.0 or newer versions.
 
 
 ## Additional Notes
