@@ -2,7 +2,6 @@ import { expect } from "@playwright/test";
 import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions";
 import { ResourceWatcher } from "../utils/ResourceWatcher";
 import { gotoNavEntry } from "../utils/waitHelpers";
-import { clickMenuButton } from "../utils/commonHelpers";
 import { test } from "../setup/base";
 
 test.describe("leaderboard context column", () => {
