@@ -49,7 +49,6 @@ export function updateExploreSessionStore(
     exploreState,
     exploreSpec,
     timeControlsState,
-    new URLSearchParams(),
   );
   try {
     // Store the full url for the web view

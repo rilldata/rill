@@ -33,6 +33,5 @@ export function getDefaultExploreUrlParams(
     partialExploreState,
     exploreSpec,
     timeControlState,
-    new URLSearchParams(),
   );
 }

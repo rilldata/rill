@@ -42,17 +42,17 @@ export function convertPartialExploreStateToUrlSearch(
   // Eg: if a selected grain is not applicable for the current grain then we change it
   // But it is only available in TimeControlState and not MetricsExplorerEntity
   timeControlsState: TimeControlState | undefined,
-  defaultExploreUrlParams: URLSearchParams,
+  // Used to remove params that are equal to defaults. This helps keep the url shorter.
+  defaultExploreUrlParams?: URLSearchParams,
   // Used to decide whether to compress or not based on the full url length
   urlForCompressionCheck?: URL,
 ) {
   const searchParams = new URLSearchParams();
 
-  setParam(
+  maybeSetParam(
     searchParams,
     partialExploreState,
     "activePage",
-    defaultExploreUrlParams,
     (ap) =>
       ToURLParamViewMap[
         FromActivePageMap[ap ?? DashboardState_ActivePage.DEFAULT]
@@ -62,11 +62,7 @@ export function convertPartialExploreStateToUrlSearch(
   // timeControlsState will be undefined for dashboards without timeseries
   if (timeControlsState?.selectedTimeRange) {
     copyParamsToTarget(
-      toTimeRangesUrl(
-        partialExploreState,
-        timeControlsState,
-        defaultExploreUrlParams,
-      ),
+      toTimeRangesUrl(partialExploreState, timeControlsState),
       searchParams,
     );
   }
@@ -84,14 +80,7 @@ export function convertPartialExploreStateToUrlSearch(
       );
     }
 
-    if (
-      shouldSetParamValue(
-        filterParam,
-        defaultExploreUrlParams.get(ExploreStateURLParams.Filters),
-      )
-    ) {
-      searchParams.set(ExploreStateURLParams.Filters, filterParam);
-    }
+    searchParams.set(ExploreStateURLParams.Filters, filterParam);
   }
 
   switch (partialExploreState.activePage) {
@@ -100,27 +89,32 @@ export function convertPartialExploreStateToUrlSearch(
     case DashboardState_ActivePage.DIMENSION_TABLE:
     case undefined:
       copyParamsToTarget(
-        toExploreUrl(partialExploreState, defaultExploreUrlParams, exploreSpec),
+        toExploreUrl(partialExploreState, exploreSpec),
         searchParams,
       );
       break;
 
     case DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL:
       copyParamsToTarget(
-        toTimeDimensionUrlParams(partialExploreState, defaultExploreUrlParams),
+        toTimeDimensionUrlParams(partialExploreState),
         searchParams,
       );
       break;
 
     case DashboardState_ActivePage.PIVOT:
-      copyParamsToTarget(
-        toPivotUrlParams(partialExploreState, defaultExploreUrlParams),
-        searchParams,
-      );
+      copyParamsToTarget(toPivotUrlParams(partialExploreState), searchParams);
       // Since we do a shallow merge, we cannot remove time grain from the state for pivot as it is a deeper key.
       // So this is a patch to remove it from the final url.
       searchParams.delete(ExploreStateURLParams.TimeGrain);
       break;
+  }
+
+  if (defaultExploreUrlParams) {
+    [...searchParams.entries()].forEach(([key, value]) => {
+      const defaultValue = defaultExploreUrlParams.get(key);
+      if (value !== defaultValue) return;
+      searchParams.delete(key);
+    });
   }
 
   if (!urlForCompressionCheck) return searchParams;
@@ -141,42 +135,22 @@ export function convertPartialExploreStateToUrlSearch(
 function toTimeRangesUrl(
   partialExploreState: Partial<MetricsExplorerEntity>,
   timeControlsState: TimeControlState,
-  defaultExploreUrlParams: URLSearchParams,
 ) {
   const searchParams = new URLSearchParams();
 
   const timeRangeParam = toTimeRangeParam(timeControlsState.selectedTimeRange);
-  if (
-    shouldSetParamValue(
-      timeRangeParam,
-      defaultExploreUrlParams.get(ExploreStateURLParams.TimeRange),
-    )
-  ) {
-    searchParams.set(ExploreStateURLParams.TimeRange, timeRangeParam);
-  }
+  searchParams.set(ExploreStateURLParams.TimeRange, timeRangeParam);
 
-  setParam(
-    searchParams,
-    partialExploreState,
-    "selectedTimezone",
-    defaultExploreUrlParams,
-  );
+  maybeSetParam(searchParams, partialExploreState, "selectedTimezone");
 
   if ("selectedComparisonTimeRange" in partialExploreState) {
     const compareTimeRangeParam = partialExploreState.showTimeComparison
       ? toTimeRangeParam(timeControlsState.selectedComparisonTimeRange)
       : undefined;
-    if (
-      shouldSetParamValue(
-        compareTimeRangeParam,
-        defaultExploreUrlParams.get(ExploreStateURLParams.ComparisonTimeRange),
-      )
-    ) {
-      searchParams.set(
-        ExploreStateURLParams.ComparisonTimeRange,
-        compareTimeRangeParam ?? "",
-      );
-    }
+    searchParams.set(
+      ExploreStateURLParams.ComparisonTimeRange,
+      compareTimeRangeParam ?? "",
+    );
   }
 
   if (
@@ -187,21 +161,13 @@ function toTimeRangesUrl(
       ToURLParamTimeGrainMapMap[
         timeControlsState.selectedTimeRange?.interval ?? ""
       ] ?? "";
-    if (
-      shouldSetParamValue(
-        mappedTimeGrain,
-        defaultExploreUrlParams.get(ExploreStateURLParams.TimeGrain),
-      )
-    ) {
-      searchParams.set(ExploreStateURLParams.TimeGrain, mappedTimeGrain);
-    }
+    searchParams.set(ExploreStateURLParams.TimeGrain, mappedTimeGrain);
   }
 
-  setParam(
+  maybeSetParam(
     searchParams,
     partialExploreState,
     "selectedComparisonDimension",
-    defaultExploreUrlParams,
   );
 
   if (
@@ -237,14 +203,12 @@ export function toTimeRangeParam(timeRange: TimeRange | undefined) {
 
 function toExploreUrl(
   partialExploreState: Partial<MetricsExplorerEntity>,
-  defaultExploreUrlParams: URLSearchParams,
   exploreSpec: V1ExploreSpec,
 ) {
   const searchParams = new URLSearchParams();
 
   const visibleMeasuresParam = toVisibleMeasuresUrlParam(
     partialExploreState,
-    defaultExploreUrlParams,
     exploreSpec,
   );
   if (visibleMeasuresParam) {
@@ -256,7 +220,6 @@ function toExploreUrl(
 
   const visibleDimensionsParam = toVisibleDimensionsUrlParam(
     partialExploreState,
-    defaultExploreUrlParams,
     exploreSpec,
   );
   if (visibleDimensionsParam) {
@@ -266,70 +229,36 @@ function toExploreUrl(
     );
   }
 
-  setParam(
-    searchParams,
-    partialExploreState,
-    "selectedDimensionName",
-    defaultExploreUrlParams,
-  );
+  maybeSetParam(searchParams, partialExploreState, "selectedDimensionName");
 
-  setParam(
+  maybeSetParam(
     searchParams,
     partialExploreState,
     "leaderboardSortByMeasureName",
-    defaultExploreUrlParams,
   );
 
-  setParam(
+  maybeSetParam(
     searchParams,
     partialExploreState,
     "dashboardSortType",
-    defaultExploreUrlParams,
     // TODO: update mappers
     (st) => ToURLParamSortTypeMap[FromLegacySortTypeMap[st ?? ""]],
   );
 
-  setParam(
-    searchParams,
-    partialExploreState,
-    "sortDirection",
-    defaultExploreUrlParams,
-    (sd) => (sd === SortDirection.ASCENDING ? "ASC" : "DESC"),
+  maybeSetParam(searchParams, partialExploreState, "sortDirection", (sd) =>
+    sd === SortDirection.ASCENDING ? "ASC" : "DESC",
   );
 
-  setParam(
-    searchParams,
-    partialExploreState,
-    "leaderboardMeasureCount",
-    defaultExploreUrlParams,
-  );
+  maybeSetParam(searchParams, partialExploreState, "leaderboardMeasureCount");
 
   return searchParams;
 }
 
 function toVisibleMeasuresUrlParam(
   partialExploreState: Partial<MetricsExplorerEntity>,
-  defaultExploreUrlParams: URLSearchParams,
   exploreSpec: V1ExploreSpec,
 ) {
   if (!partialExploreState.visibleMeasures) return undefined;
-
-  const defaultVisibleMeasuresParam = defaultExploreUrlParams.get(
-    ExploreStateURLParams.VisibleMeasures,
-  );
-  const defaultVisibleMeasures =
-    defaultVisibleMeasuresParam === "*"
-      ? (exploreSpec.measures ?? [])
-      : (defaultVisibleMeasuresParam?.split(",") ?? []);
-  if (
-    // if the measures are exactly equal to defaults then do not add a param
-    arrayOrderedEquals(
-      partialExploreState.visibleMeasures,
-      defaultVisibleMeasures,
-    )
-  ) {
-    return undefined;
-  }
 
   if (
     // if the measures are exactly equal to measures from explore then show "*"
@@ -347,27 +276,9 @@ function toVisibleMeasuresUrlParam(
 
 function toVisibleDimensionsUrlParam(
   partialExploreState: Partial<MetricsExplorerEntity>,
-  defaultExploreUrlParams: URLSearchParams,
   exploreSpec: V1ExploreSpec,
 ) {
   if (!partialExploreState.visibleDimensions) return undefined;
-
-  const defaultVisibleDimensionsParam = defaultExploreUrlParams.get(
-    ExploreStateURLParams.VisibleDimensions,
-  );
-  const defaultVisibleDimensions =
-    defaultVisibleDimensionsParam === "*"
-      ? (exploreSpec.dimensions ?? [])
-      : (defaultVisibleDimensionsParam?.split(",") ?? []);
-  if (
-    // if the dimensions are exactly equal to defaults then do not add a param
-    arrayOrderedEquals(
-      partialExploreState.visibleDimensions,
-      defaultVisibleDimensions,
-    )
-  ) {
-    return undefined;
-  }
 
   if (
     // if the dimensions are exactly equal to dimensions from explore then show "*"
@@ -385,42 +296,24 @@ function toVisibleDimensionsUrlParam(
 
 function toTimeDimensionUrlParams(
   partialExploreState: Partial<MetricsExplorerEntity>,
-  defaultExploreUrlParams: URLSearchParams,
 ) {
   const searchParams = new URLSearchParams();
   if (!partialExploreState.tdd) return searchParams;
 
-  if (
-    shouldSetParamValue(
-      partialExploreState.tdd.expandedMeasureName,
-      defaultExploreUrlParams.get(ExploreStateURLParams.ExpandedMeasure),
-    )
-  ) {
-    searchParams.set(
-      ExploreStateURLParams.ExpandedMeasure,
-      partialExploreState.tdd.expandedMeasureName ?? "",
-    );
-  }
+  searchParams.set(
+    ExploreStateURLParams.ExpandedMeasure,
+    partialExploreState.tdd.expandedMeasureName ?? "",
+  );
 
   const chartType = ToURLParamTDDChartMap[partialExploreState.tdd.chartType];
-  if (
-    shouldSetParamValue(
-      chartType,
-      defaultExploreUrlParams.get(ExploreStateURLParams.ChartType),
-    )
-  ) {
-    searchParams.set(ExploreStateURLParams.ChartType, chartType ?? "");
-  }
+  searchParams.set(ExploreStateURLParams.ChartType, chartType ?? "");
 
   // TODO: pin
   // TODO: what should be done when chartType is set but expandedMeasureName is not
   return searchParams;
 }
 
-function toPivotUrlParams(
-  partialExploreState: Partial<MetricsExplorerEntity>,
-  defaultExploreUrlParams: URLSearchParams,
-) {
+function toPivotUrlParams(partialExploreState: Partial<MetricsExplorerEntity>) {
   const searchParams = new URLSearchParams();
   if (!partialExploreState.pivot?.active) return searchParams;
 
@@ -432,25 +325,12 @@ function toPivotUrlParams(
 
   const rows = partialExploreState.pivot.rows.map(mapPivotEntry);
   const rowsParams = rows.join(",");
-  if (
-    shouldSetParamValue(
-      rowsParams,
-      defaultExploreUrlParams.get(ExploreStateURLParams.PivotRows),
-    )
-  ) {
-    searchParams.set(ExploreStateURLParams.PivotRows, rowsParams);
-  }
+  searchParams.set(ExploreStateURLParams.PivotRows, rowsParams);
 
   const cols = partialExploreState.pivot.columns.map(mapPivotEntry);
   const colsParams = cols.join(",");
-  if (
-    shouldSetParamValue(
-      colsParams,
-      defaultExploreUrlParams.get(ExploreStateURLParams.PivotColumns),
-    )
-  ) {
-    searchParams.set(ExploreStateURLParams.PivotColumns, colsParams);
-  }
+
+  searchParams.set(ExploreStateURLParams.PivotColumns, colsParams);
 
   const sort = partialExploreState.pivot.sorting?.[0];
   const sortId =
@@ -458,46 +338,24 @@ function toPivotUrlParams(
       ? ToURLParamTimeDimensionMap[sort?.id]
       : sort?.id;
 
-  if (
-    shouldSetParamValue(
-      sortId,
-      defaultExploreUrlParams.get(ExploreStateURLParams.SortBy),
-    )
-  ) {
-    searchParams.set(ExploreStateURLParams.SortBy, sortId ?? "");
-  }
+  searchParams.set(ExploreStateURLParams.SortBy, sortId ?? "");
 
   if (sort) {
     const sortDirParam = sort.desc ? "DESC" : "ASC";
-    if (
-      shouldSetParamValue(
-        sortDirParam,
-        defaultExploreUrlParams.get(ExploreStateURLParams.SortDirection),
-      )
-    ) {
-      searchParams.set(ExploreStateURLParams.SortDirection, sortDirParam);
-    }
+    searchParams.set(ExploreStateURLParams.SortDirection, sortDirParam);
   }
 
   const tableModeParam = partialExploreState.pivot?.tableMode ?? "nest";
-  if (
-    shouldSetParamValue(
-      tableModeParam,
-      defaultExploreUrlParams.get(ExploreStateURLParams.PivotTableMode),
-    )
-  ) {
-    searchParams.set(ExploreStateURLParams.PivotTableMode, tableModeParam);
-  }
+  searchParams.set(ExploreStateURLParams.PivotTableMode, tableModeParam);
 
   // TODO: other fields like expanded state and pin are not supported right now
   return searchParams;
 }
 
-function setParam<K extends keyof MetricsExplorerEntity>(
+function maybeSetParam<K extends keyof MetricsExplorerEntity>(
   searchParams: URLSearchParams,
   partialExploreState: Partial<MetricsExplorerEntity>,
   key: K,
-  defaultExploreUrlParams: URLSearchParams,
   mapper: (value: Partial<MetricsExplorerEntity>[K]) => string | undefined = (
     x,
   ) => x?.toString(),
@@ -512,25 +370,5 @@ function setParam<K extends keyof MetricsExplorerEntity>(
   }
 
   const mappedValue = mapper(partialExploreState[key]);
-  if (!shouldSetParamValue(mappedValue, defaultExploreUrlParams.get(param))) {
-    return;
-  }
-
   searchParams.set(param, mappedValue ?? "");
-}
-
-function shouldSetParamValue<T>(
-  exploreStateValue: T | undefined,
-  defaultValue: string | null,
-) {
-  // Always set the param if there is no default.
-  if (defaultValue === null) {
-    return true;
-  }
-
-  // If exploreStateValue is falsy and defaultValue is "" then do not set a param.
-  if (defaultValue === "" && !exploreStateValue) return false;
-
-  const exploreStateValueStr = exploreStateValue?.toString();
-  return defaultValue !== exploreStateValueStr;
 }
