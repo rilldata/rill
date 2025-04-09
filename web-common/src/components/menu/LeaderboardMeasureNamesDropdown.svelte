@@ -126,7 +126,13 @@
       location="bottom"
       suppress={active}
     >
-      <Button builders={[builder]} type="text">
+      <Button
+        builders={[builder]}
+        type="text"
+        dataAttributes={{
+          "data-testid": "leaderboard-measure-names-dropdown",
+        }}
+      >
         <div
           class="flex items-center gap-x-0.5 px-1 text-gray-700 hover:text-inherit"
         >
