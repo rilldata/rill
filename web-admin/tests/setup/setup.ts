@@ -134,8 +134,11 @@ setup.describe("global setup", () => {
       })
       .click();
 
-    // Wait for navigation to complete and password field to be visible
-    await page.waitForURL("**/u/login/password*");
+    // Wait for navigation to complete and page to be fully loaded
+    await Promise.all([
+      page.waitForNavigation({ waitUntil: "networkidle" }),
+      page.waitForLoadState("domcontentloaded"),
+    ]);
 
     // Fill in the password
     const passwordInput = page.locator('input[name="password"]');
