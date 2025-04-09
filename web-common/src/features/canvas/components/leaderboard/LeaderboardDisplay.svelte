@@ -87,14 +87,19 @@
     valueColumn.reset();
   }
 
-  $: tableWidth =
-    DIMENSION_COLUMN_WIDTH +
+  $: contextColumnWidth =
     $valueColumn +
     (showTimeComparison
       ? COMPARISON_COLUMN_WIDTH * (showDeltaPercent ? 2 : 1)
       : showPercentOfTotal
         ? COMPARISON_COLUMN_WIDTH
         : 0);
+
+  $: tableWidthForPctBars = DIMENSION_COLUMN_WIDTH + contextColumnWidth;
+
+  $: tableWidth =
+    DIMENSION_COLUMN_WIDTH +
+    contextColumnWidth * leaderboardMeasureNames.length;
 
   $: ({ title, description, time_filters, dimension_filters } =
     leaderboardProperties);
@@ -114,10 +119,16 @@
 
 <ComponentHeader {title} {description} {filters} />
 
-<div class="flex flex-col overflow-hidden size-full" aria-label="Leaderboards">
+<div
+  class="h-fit p-0 grow relative"
+  class:!p-0={visibleDimensions.length === 1}
+>
+  <span class="border-overlay" />
   <div
     bind:this={parentElement}
-    class="overflow-y-auto leaderboard-display"
+    class="grid-wrapper gap-px overflow-hidden size-full"
+    style:grid-template-columns="repeat(auto-fit, minmax(min({tableWidth +
+      36}px, 100%), 1fr))"
     on:scroll={() => {
       suppressTooltip = true;
     }}
@@ -126,9 +137,9 @@
     }}
   >
     {#if parentElement}
-      <div class="leaderboard-grid overflow-hidden pb-4">
-        {#each visibleDimensions as dimension (dimension.name)}
-          {#if dimension.name}
+      {#each visibleDimensions as dimension (dimension.name)}
+        {#if dimension.name}
+          <div class="leaderboard-wrapper">
             <Leaderboard
               slice={numRows}
               {instanceId}
@@ -139,7 +150,7 @@
               visibleMeasures={leaderboardMeasureNames}
               {whereFilter}
               {dimensionThresholdFilters}
-              {tableWidth}
+              tableWidth={tableWidthForPctBars}
               dimensionColumnWidth={DIMENSION_COLUMN_WIDTH}
               sortedAscending={$leaderboardState.sortDirection ===
                 SortDirection.ASCENDING}
@@ -173,15 +184,31 @@
                   ?.displayName || measureName}
               leaderboardMeasureCountFeatureFlag={true}
             />
-          {/if}
-        {/each}
-      </div>
+          </div>
+        {/if}
+      {/each}
     {/if}
   </div>
 </div>
 
 <style lang="postcss">
-  .leaderboard-grid {
-    @apply flex flex-row flex-wrap gap-4 overflow-x-auto;
+  .grid-wrapper {
+    @apply size-full grid;
+    grid-auto-rows: auto;
   }
+
+  .leaderboard-wrapper {
+    @apply relative p-4 pr-6 grid outline outline-1 outline-gray-200 justify-center;
+  }
+
+  .border-overlay {
+    @apply absolute border-[12.5px] pointer-events-none border-white size-full;
+    z-index: 20;
+  }
+
+  /* @container component-container (inline-size < 440px) {
+    .grid-wrapper {
+      grid-template-columns: repeat(1, 1fr) !important;
+    }
+  } */
 </style>
