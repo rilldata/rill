@@ -198,13 +198,12 @@ func (d driver) checkVersion(dsn string) error {
 		return fmt.Errorf("druid version check failed with status code: %d", resp.StatusCode)
 	}
 
-	var statusResponse map[string]any
+	var statusResponse struct {
+		Version string `json:"version"`
+	}
 	if err := json.NewDecoder(resp.Body).Decode(&statusResponse); err != nil {
 		return fmt.Errorf("failed to decode Druid status response: %w", err)
 	}
-
-	// Check if druid version is greater than or equal to 28.0.0, because of SQL NULL compatibility
-	if version, ok := statusResponse["version"]; ok {
 		versionStr := fmt.Sprintf("%v", version)
 		majorVersion := strings.Split(versionStr, ".")[0]
 		if ver, err := strconv.Atoi(majorVersion); err == nil {
