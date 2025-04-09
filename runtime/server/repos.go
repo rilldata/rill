@@ -52,6 +52,103 @@ func (s *Server) ListFiles(ctx context.Context, req *runtimev1.ListFilesRequest)
 	return &runtimev1.ListFilesResponse{Files: entries}, nil
 }
 
+// WatchFilesHandler is a HTTP handler for watching files like WatchFiles.
+func (s *Server) WatchFilesHandler(w http.ResponseWriter, req *http.Request) {
+	ctx := req.Context()
+	instanceID := req.PathValue("instance_id")
+
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", instanceID),
+	)
+
+	// Check permissions
+	if !auth.GetClaims(ctx).CanInstance(instanceID, auth.ReadRepo) {
+		http.Error(w, "action not allowed", http.StatusUnauthorized)
+		return
+	}
+
+	// Get the replay parameter
+	replayStr := req.URL.Query().Get("replay")
+	replay := replayStr == "true"
+
+	// Set up SSE headers
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "Streaming not supported", http.StatusInternalServerError)
+		return
+	}
+
+	repo, release, err := s.runtime.Repo(ctx, instanceID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer release()
+
+	// Handle replay if requested
+	if replay {
+		files, err := repo.ListRecursive(ctx, "**", false)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		for _, f := range files {
+			event := &runtimev1.WatchFilesResponse{
+				Event: runtimev1.FileEvent_FILE_EVENT_WRITE,
+				Path:  f.Path,
+				IsDir: f.IsDir,
+			}
+
+			data, err := protojson.Marshal(event)
+			if err != nil {
+				s.logger.Info("failed to marshal event", zap.Error(err))
+				continue
+			}
+
+			fmt.Fprintf(w, "data: %s\n\n", data)
+			flusher.Flush()
+		}
+	}
+
+	// Create a context that is cancelled when the client disconnects
+	clientCtx, clientCancel := context.WithCancel(ctx)
+	defer clientCancel()
+
+	// Detect client disconnect
+	go func() {
+		<-req.Context().Done()
+		clientCancel()
+	}()
+
+	// Set up the watch
+	err = repo.Watch(clientCtx, func(events []drivers.WatchEvent) {
+		for _, event := range events {
+			response := &runtimev1.WatchFilesResponse{
+				Event: event.Type,
+				Path:  event.Path,
+				IsDir: event.Dir,
+			}
+
+			data, err := protojson.Marshal(response)
+			if err != nil {
+				s.logger.Info("failed to marshal watch event", zap.Error(err))
+				continue
+			}
+
+			fmt.Fprintf(w, "data: %s\n\n", data)
+			flusher.Flush()
+		}
+	})
+
+	if err != nil && err != context.Canceled && !strings.Contains(err.Error(), "client disconnected") {
+		s.logger.Info("watch error", zap.Error(err))
+	}
+}
+
 // WatchFiles implements RuntimeService.
 func (s *Server) WatchFiles(req *runtimev1.WatchFilesRequest, ss runtimev1.RuntimeService_WatchFilesServer) error {
 	observability.AddRequestAttributes(ss.Context(),
