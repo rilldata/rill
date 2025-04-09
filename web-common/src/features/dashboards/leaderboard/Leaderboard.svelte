@@ -38,6 +38,7 @@
   import { valueColumn, COMPARISON_COLUMN_WIDTH } from "./leaderboard-widths";
   import DelayedLoadingRows from "./DelayedLoadingRows.svelte";
   import type { selectedDimensionValuesV2 } from "../state-managers/selectors/dimension-filters";
+  import { getMeasuresForDimensionOrLeaderboardDisplay } from "../state-managers/selectors/dashboard-queries";
 
   const slice = 7;
   const gutterWidth = 24;
@@ -122,12 +123,11 @@
       );
 
   $: measures = [
-    ...leaderboardMeasureNames.map(
-      (name) =>
-        ({
-          name,
-        }) as V1MetricsViewAggregationMeasure,
-    ),
+    ...getMeasuresForDimensionOrLeaderboardDisplay(
+      leaderboardShowAllMeasures ? null : leaderboardSortByMeasureName,
+      dimensionThresholdFilters,
+      leaderboardMeasureNames,
+    ).map((name) => ({ name }) as V1MetricsViewAggregationMeasure),
 
     // Add comparison measures if there's a comparison time range
     ...(comparisonTimeRange
