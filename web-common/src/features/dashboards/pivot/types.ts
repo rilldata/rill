@@ -44,7 +44,6 @@ export interface PivotDashboardContext {
 }
 
 export interface PivotState {
-  active: boolean;
   columns: PivotChipData[];
   rows: PivotChipData[];
   expanded: ExpandedState;
