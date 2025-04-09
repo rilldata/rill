@@ -26,7 +26,7 @@ func AssumeCmd(ch *cmdutil.Helper) *cobra.Command {
 				ch.PrintfWarn("Could not parse representing user email\n\n")
 			}
 			if representingUser != "" {
-				ch.Printf("You are already a assumed user %q. so unassuming it first.\n", representingUser)
+				// If a user is already assumed, silently unassume and revert to the original user before assuming another one.
 				err = UnassumeUser(ctx, ch)
 				if err != nil {
 					return err

@@ -118,12 +118,12 @@ func SetDefaultOrg(orgName string) error {
 	return Set(ConfigFilename, DefaultOrgConfigKey, orgName)
 }
 
-// GetDefaultOrg loads the default org
+// GetBackupDefaultOrg loads the backedup default org
 func GetBackupDefaultOrg() (string, error) {
 	return Get(ConfigFilename, BackupDefaultOrgConfigKey)
 }
 
-// SetDefaultOrg saves the default org
+// SetBackupDefaultOrg saves the backedup default org
 func SetBackupDefaultOrg(orgName string) error {
 	return Set(ConfigFilename, BackupDefaultOrgConfigKey, orgName)
 }
