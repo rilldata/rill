@@ -429,9 +429,9 @@ dimensions:
 
     // Change the leaderboard metric
     await page
-      .getByRole("button", { name: "Select a measure to filter by" })
+      .getByRole("button", { name: "Choose measures to display" })
       .click();
-    await page.getByRole("option", { name: "Avg Bid Price" }).click();
+    await page.getByRole("menuitem", { name: "Avg Bid Price" }).click();
 
     // Check domain and sample value in leaderboard
     await expect(page.getByText("Domain Name")).toBeVisible();
