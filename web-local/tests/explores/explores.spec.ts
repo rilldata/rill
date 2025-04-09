@@ -431,7 +431,16 @@ dimensions:
     await page
       .getByRole("button", { name: "Choose measures to display" })
       .click();
-    await page.getByRole("menuitem", { name: "Avg Bid Price" }).click();
+
+    // Wait for the menu to be visible
+    await page.getByRole("menu").waitFor({ state: "visible" });
+
+    // Wait for and click the Avg Bid Price menu item
+    const avgBidPriceMenuItem = page.getByRole("menuitem", {
+      name: "Avg Bid Price",
+    });
+    await avgBidPriceMenuItem.waitFor({ state: "visible" });
+    await avgBidPriceMenuItem.click();
 
     // Check domain and sample value in leaderboard
     await expect(page.getByText("Domain Name")).toBeVisible();
