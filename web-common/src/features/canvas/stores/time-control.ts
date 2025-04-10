@@ -149,7 +149,8 @@ export class TimeControls {
           return undefined;
         }
 
-        // This is not a great solution - bgh
+        // TODO: figure out a better way of handling this property
+        // when it's not consistent across all metrics views - bgh
         const firstMetricsView = Object.values(spec.data.metricsViews)?.[0];
         const firstDayOfWeekOfFirstMetricsView =
           firstMetricsView?.state?.validSpec?.firstDayOfWeek;
