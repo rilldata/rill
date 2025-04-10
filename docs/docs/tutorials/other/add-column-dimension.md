@@ -6,7 +6,7 @@ hide_table_of_contents: false
 tags:
   - OLAP:DuckDB
 ---
-You will need to add the dimension/s back in Rill Developer and [push the changes to Rill Cloud](/tutorials/rill_advanced_features/advanced_developer/update-rill-cloud) when you're ready.
+You will need to add the dimension/s back in Rill Developer and [push the changes to Rill Cloud](/tutorials/rill_developer_advanced_features/advanced_developer/update-rill-cloud) when you're ready.
 
 ## Rill Developer
 
@@ -18,8 +18,8 @@ You need to check that the new column is being ingested into Rill. If you have a
 
 If your dashboard is created directly from the source, navigate to [adding the new dimension to the metrics view](/tutorials/other/add-column-dimension#adding-the-new-dimension-to-the-metrics-view). If not, continue to the model to make changes.
 
-![source](/img/tutorials/other/new-dimension/source-new-dimension.png)
-
+<img src = '/img/tutorials/other/new-dimension/source-new-dimension.png' class='rounded-gif' />
+<br />
 ---
 
 ### Metrics View created from a Model
@@ -27,27 +27,30 @@ If your dashboard is created directly from the source, navigate to [adding the n
 After confirming that the sources have ingested the new data, you can [modify the model to include these new dimensions / measures](https://docs.rilldata.com/build/models/). If you need to make any transformations, you can do so here or [in the metrics view layer](https://docs.rilldata.com/build/dashboards/expressions).
 
 
-![model](/img/tutorials/other/new-dimension/model-new-dimension.png)
 
+<img src = '/img/tutorials/other/new-dimension/model-new-dimension.png' class='rounded-gif' />
+<br />
 ---
 ### Adding the new Dimension to the Metrics view
 
 You can add the dimension / measure to the metrics layer. Notice in the right panel, your newly created dimension or metric can be seen in the right panel. You can add either from the Visual metric editor or the YAML.
 
-![metrics](/img/tutorials/other/new-dimension/metrics-new-dimension.png)
 
+<img src = '/img/tutorials/other/new-dimension/metrics-new-dimension.png' class='rounded-gif' />
+<br />
 
 ### Adding the dimension to the Dashboard
 
 Finally, you can preview the dashboard to see if the new dimension/measure is viewable. If not, please double check the dashboard YAML.
 
 
-![dashboard](/img/tutorials/other/new-dimension/dashboard-new-dimension.png)
 
+<img src = '/img/tutorials/other/new-dimension/dashboard-new-dimension.png' class='rounded-gif' />
+<br />
 ## Rill Cloud
 
 ### Pushing Changes
-Once you have finished making all the changes to your dashboard you can [push the new changes to Rill Cloud](/tutorials/rill_advanced_features/advanced_developer/update-rill-cloud) either via the UI by selecting `Update` or via GitHub by pushing the changes to your repository.
+Once you have finished making all the changes to your dashboard you can [push the new changes to Rill Cloud](/tutorials/rill_developer_advanced_features/advanced_developer/update-rill-cloud) either via the UI by selecting `Update` or via GitHub by pushing the changes to your repository.
 
 <img src = '/img/tutorials/other/redeploy.gif' class='rounded-gif' />
 <br />

@@ -26,13 +26,13 @@ Once this is enabled, you'll be able to create model files and add sources in th
 Currently not all the functionality is supported but our team is working on this to add more features! Please reach out to us on our community or via GitHub for any specific missing functionality that you looking for.
 :::
 
-### Ingestion directly on ClickHouse or Rill?
+## Ingestion directly from Snowflake to ClickHouse
 
-Our team created some functionality within Rill for you to be able to import data directly from your warehouses to ClickHouse. 
-
-In the below example, we are importing data from snowflake to ClickHouse using S3 as an intermediate stage.
+In the below example, we are importing data from Snowflake to ClickHouse using S3 as an intermediate stage.
 ```yaml
 type: model
+materialize: true 
+
 -- the source of data in Snowflake
 connector: snowflake
 sql: >
@@ -61,3 +61,38 @@ connector.s3.aws_secret_access_key=""
 :::note
 If you already set up ClickHouse via the .env file, you will just need to add your snowflake and s3 credentials.
 :::
+
+
+## Ingestion directly from BigQuery to ClickHouse
+
+In the below example, we are importing data from Big Query directly to ClickHouse using GCS as an intermediate stage.
+
+
+```yaml
+type: model
+materialize: true 
+
+connector: bigquery
+sql: |
+    SELECT
+      *
+    FROM `<project_id>.<dataset_name>.<table>`
+
+project_id: "<project_id>"
+
+stage:
+  connector: gcs
+  path: 'gs://rill-bq-ch/temp/'
+
+
+output:
+  connector: clickhouse
+```
+
+You'll need to ensure that your provided `google_application_credentials` have all the required permissions on both [BigQuery](https://cloud.google.com/bigquery/docs/access-control) and [GCS](https://cloud.google.com/storage/docs/access-control/iam-roles). Ensure that your .env has the following:
+
+```
+connector.clickhouse.host="localhost"
+connector.clickhouse.port=9000
+google_application_credentials=""
+```

@@ -35,9 +35,3 @@ Steps to deploy to Rill Cloud:
 ## Welcome to Rill Cloud!
 Take note of the following features in the UI, we'll go over the them later.
 <img src = '/img/tutorials/106/ui-explained.gif' class='rounded-gif' />
-
-
-import DocsRating from '@site/src/components/DocsRating';
-
----
-<DocsRating />
