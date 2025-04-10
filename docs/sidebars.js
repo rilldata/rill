@@ -66,7 +66,16 @@ const sidebars = {
               items: [
                 'tutorials/rill_developer_advanced_features/advanced_developer/advanced-sources',
                 'tutorials/rill_developer_advanced_features/advanced_developer/advanced-modeling',
-                'tutorials/rill_developer_advanced_features/advanced_developer/advanced-dashboard',
+                {
+                  type: 'category',
+                  label: 'Advanced Measures and Dimensions',
+                  description: "Advanced Measures and Dimensions",
+                  items: [
+                    'tutorials/rill_developer_advanced_features/advanced_developer/advanced-metrics/new-metrics-view',
+                    'tutorials/rill_developer_advanced_features/advanced_developer/advanced-metrics/advanced-measures',
+
+                  ]
+                },
                 'tutorials/rill_developer_advanced_features/advanced_developer/update-rill-cloud',
 
               ]
@@ -91,14 +100,7 @@ const sidebars = {
                 'tutorials/rill_developer_advanced_features/incremental_models/staging-connectors'
               ]
             },
-            {
-              type: 'category',
-              label: 'Advanced Measures',
-              description: "Advanced Measures and Dimensions",
-              items: [
-                'tutorials/rill_developer_advanced_features/advanced_measures/advanced_measures'
-              ]
-            },
+
 
             {
               type: 'category',
@@ -115,7 +117,8 @@ const sidebars = {
               label: 'Alerts',
               description: "Create Alerts to monitor your Project",
               items: [
-                'tutorials/rill_developer_advanced_features/alerts/create-alert'
+                'tutorials/rill_developer_advanced_features/alerts/create-alert',
+                'tutorials/rill_developer_advanced_features/alerts/data-accuracy-check',
               ]
             }
 

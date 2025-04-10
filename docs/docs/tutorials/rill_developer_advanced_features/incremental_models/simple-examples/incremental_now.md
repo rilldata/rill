@@ -26,7 +26,7 @@ Since we're using Rill Developer, we will need to add the `--local` flag to the 
 
 After the model refreshes, you should see the inserted_on value change.
 
-<img src = '/img/tutorials/302/now.png' class='rounded-gif' />
+<img src = '/img/tutorials/advanced-models/now.png' class='rounded-gif' />
 <br />
 
 
@@ -41,14 +41,24 @@ sql: SELECT now() AS inserted_on
 incremental: true
 ```
 
-After adding the following, what's different?
+:::tip After adding the following, what's different?
 
 When selecting the refresh button, a new drop down appears. In this case, we have the choice to [incremental refresh or full refresh](https://docs.rilldata.com/build/incremental-models/#refreshing-an-incremental-model).
+:::
+<br/>
 
-<img src = '/img/tutorials/302/now-incremental.png' class='rounded-gif' />
+<img src = '/img/tutorials/advanced-models/now-incremental.png' class='rounded-gif' />
 <br />
 
-When select `Incremental Refresh`, instead of overwriting the same row, we are now appending the new values of now() into the table. 
+When you select `Incremental Refresh`, instead of overwriting the same row, we are now appending the new values of now() into the table. 
+
+
+<img src = '/img/tutorials/advanced-models/now-incremental-refresh.png' class='rounded-gif' />
+<br />
+
+:::tip Made changed to the model.yaml
+Any changes to the model.yaml file will initiate a full refresh of the data. You can disable the auto-save feature to allow you some time to make all the needed changes before manually saving the file so as not to start multiple refreshes. Rill will be able to cancel a query if the file keeps changing.
+:::
 
 :::note CLI Equivalent
 Running the incremental refresh is the same as the following command in the CLI:
@@ -69,29 +79,31 @@ Next, let's take a moment to review `states:`.
 
 ## States in Incremental Models
 
-Next, we can add a `state:` key that allows us to manually define some sort of state to increment by.
+Next, we can add a `state:` key that allows us to manually define some sort of state in the model. In the following example, on a full refresh, we reset the date and new_date columns back to "2025-01-01". Each incremental refresh will run the query within `{{if incremental}}`, updating the column of date with `max_date` coming from our state query.
+
 
 ```yaml
-type: model
-
-sql: SELECT {{ if incremental }} {{ .state.max_val }} + 1 {{ else }} 0 {{ end}} AS val, now() AS inserted_on
-state:
-  sql: SELECT MAX(val) as max_val FROM incremental_state
+type:model 
 incremental: true
-```
-:::note
-In more realistic cases, we could select the MAX(time_stamp) which will grab the latest time_stamp that your current model includes. Then, based on this it would incrementally refresh your model to only insert the new data. However, keep in mind that any 'old' data that gets added outside of Rill would not be detected.
-:::
-Along with the inserted_on column, we are also creating a val column that defaults to 0. Then on each run, if incremental, increases this value. The state retrieves the max value of 'val' as max_val. In the case of a full refresh, where the if incremental returns false, we default to the else statement and clear the table and insert a single row of 0.
 
-```SQL
-SELECT 
-{{ if incremental }} 
-        {{ .state.max_val }} + 1 {{ else }} 0 
-{{ end}}
+sql: >
+  SELECT 
+    {{ if incremental }} 
+        '{{ .state.max_date }}' as date,
+        DATE '{{ .state.max_date }}' + (CAST((random() * 20) - 10 AS INT)) * INTERVAL 1 DAY AS new_date
+    {{ else }}
+        DATE '2025-01-01' AS date,
+        DATE '2025-01-01' AS new_date
+    {{ end }},
+    now() AS inserted_on
+
+state:
+  sql: SELECT MAX(new_date) as max_date FROM incremental_state
 ```
 
-<img src = '/img/tutorials/302/now-state.png' class='rounded-gif' />
+The following screenshot shows that for values of `new_date` that were smaller than the date, did not change the state but when `new_date` > `date` the following row was updated. This can be useful in states where the data is a timeseries dataset and you need to know to keep the `max_date` of your data. However, we will next discuss `partitions` which is a special state management system.
+
+<img src = '/img/tutorials/advanced-models/state-example.png' class='rounded-gif' />
 <br />
 
 

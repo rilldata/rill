@@ -49,7 +49,7 @@ During our first deployment onto Rill Cloud, we opted for a one-time upload. By 
 
 When a dashboard fails to load, you will see an `Error` in the UI. There are a few potential causes for a dashboard to fail to load, but the best place to start is the Status page. For example, you might see the following in the UI: 
 
-<img src = '/img/tutorials/admin/failing-dashboard.png' class='rounded-gif' />
+<img src = '/img/tutorials/alert/failing-dashboard.png' class='rounded-gif' />
 <br />
 In order to understand why this is failing, you can navigate to the Status page and find the dashboard's error message:
 

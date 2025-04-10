@@ -4,9 +4,9 @@ description:  "Start with basics"
 sidebar_label: "Basic Partition Models"
 sidebar_position: 2
 ---
-<img src = '/img/tutorials/302/partitions.png' class='rounded-gif' />
+<img src = '/img/tutorials/advanced-models/partitions.png' class='rounded-gif' />
 <br />
-Partitioned models are a special state of incremental models. Partitioned models are defined by defining a partition in the `partitions` key.
+Partitioned models are a special `state` model. Partitioned models are defined by defining a partition in the `partitions` key. Similar to `states`, this allows you to increment your model based on the `glob` or `sql`.
 Let's look at the following example.
 
 ```yaml
@@ -18,7 +18,7 @@ sql: SELECT {{ .partition.num }} AS num, now() AS inserted_on
 ```
 
 :::note
-Using the partitions key in the model's sql requires you to reference the partition and column name, `{{.partition.<col_name>}}`. For more information, please review [the documentation on SQL based partitioned models](https://docs.rilldata.com/build/incremental-models/#sql).
+Using the partitions key in the model's sql requires you to reference the partition and column name, `{{.partition.<col_name>}}`. For more information, please review [the documentation on SQL based partitioned models](https://docs.rilldata.com/build/incremental-models/#sql). For `glob`, you'll need to use `partition.path` or `partition.uri` depending on how you have partitioned.
 
 :::
 

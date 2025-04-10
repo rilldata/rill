@@ -7,7 +7,7 @@ sidebar_position: 12
 
 Now that we understand what [Incremental Models](/build/advanced-models/incremental-models) and [Partitions](/build/advanced-models/partitions) are, let's apply to them to our ClickHouse project.
 
-Since our ClickHouse data is hosted in GCS, we will be using glob based partitions, instead of the example's sql select statements.
+Since our ClickHouse data is hosted in GCS, we will be using glob based partitions, instead of the example's SQL select statements.
 
 
 ### Let's create a basic partitioned model.
@@ -16,8 +16,8 @@ In the previous courses, we used a GCS connection to import ClickHouse's reposit
 ```
 #gs://rilldata-public/github-analytics/Clickhouse/YYYY/MM/filename_YYYY_MM.parquet
 
-gs://rilldata-public/github-analytics/Clickhouse/*/*/commits_.parquet
-gs://rilldata-public/github-analytics/Clickhouse/*/*/modified_files_*.parquet
+gs://rilldata-public/github-analytics/Clickhouse/**/commits_.parquet
+gs://rilldata-public/github-analytics/Clickhouse/**/modified_files_*.parquet
 ```
 1. Create a YAML file: `partitions-tutorial.yaml`
 
@@ -46,7 +46,7 @@ Once you save the file, Rill will start to ingest all the partitions from GCS. T
 
 Once completed you should see the following:
 
-<img src = '/img/tutorials/302/partitions.png' class='rounded-gif' />
+<img src = '/img/tutorials/advanced-models/ch-incremental.png' class='rounded-gif' />
 <br />
 
 
@@ -54,7 +54,7 @@ Once completed you should see the following:
 
 If you see any errors in the UI regarding your partitions, you may need to check the status by selecting "View partitions"
 
-<img src = '/img/tutorials/302/partitions-refresh-ui.png' class='rounded-gif' />
+<img src = '/img/tutorials/advanced-models/partitions-refresh-ui.png' class='rounded-gif' />
 <br />
 
 Or, you can check this via the CLI running:
@@ -71,12 +71,12 @@ rill project partitions <model_name> --local
 
 When issues arise in partitions in your model, you will need to fix the underlying issue then refresh this specific partitions in Rill. In the UI, you can select the dropdown `Showing` and select errors.
 
-<img src = '/img/tutorials/302/errored-partitions.png' class='rounded-gif' />
+<img src = '/img/tutorials/advanced-models/errored-partitions.png' class='rounded-gif' />
 <br />
 Or, if you prefer to refresh in the CLI, you can run the command to refresh all errored partitions.
 
 ```bash
-rill project refresh --model partitions_tutorial --errored-partitions --project my-rill-tutorial-1 --local
+rill project refresh --model partitions_tutorial --errored-partitions --project my-rill-tutorial --local
 Error: can't refresh partitions on model "partitions_tutorial" because it is not incremental
 
 ```
@@ -84,7 +84,7 @@ Error: can't refresh partitions on model "partitions_tutorial" because it is not
 As we reviewed before, this is only possible when the model is an incremental one! Did you catch the issue before running the command? 
 
 ## What is Incremental Modeling?
-Once partitions are set up, you can use incremental modeling to load only new data when refreshing a dataset. This becomes important when your data is large and it does not make sense to reload all the data when trying to ingest new data.
+Once partitions are set up, you can use incremental modeling to load only new data when refreshing a dataset. This becomes important when your data is large, and it does not make sense to reload all the data when trying to ingest new data.
 
 ### Let's create an Incremental model for our commits and modified files sources.
 
@@ -102,7 +102,7 @@ refresh:
 
 Once Rill ingests the data, your UI should look something like this: 
 
-<img src = '/img/tutorials/302/incremental.png' class='rounded-gif' />
+<img src = '/img/tutorials/advanced-models/incremental.png' class='rounded-gif' />
 <br />
 
 Your YAML should look like the following:

@@ -65,10 +65,10 @@ output:
 - when selecting incremental refresh, it will **append** values to the inital 10 values in the full refresh. 
 
 
-<img src = '/img/tutorials/302/data-warehouse-refresh.png' class='rounded-gif' />
+<img src = '/img/tutorials/advanced-models/data-warehouse-refresh.png' class='rounded-gif' />
 <br />
 :::note Partition vs. State
-Unlike partitions, states do not paritition the dataset per refresh so you will not be able to via the UI or CLI, see if there is a specific partition that errored and manually refresh this. In the cases of data disrecpancies in a state incremented model, please run a full refresh. 
+Unlike partitions, states do not partition the dataset per refresh so you will not be able to via the UI or CLI, see if there is a specific partition that errored and manually refresh this. In the cases of data disrecpancies in a state incremented model, please run a full refresh. 
 :::
 
 

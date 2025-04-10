@@ -45,6 +45,7 @@ WITH commit_file_stats AS (
 SELECT
     author_date,
     author_name,
+    author_email,
     directory_path,
     filename,
     STRING_AGG(DISTINCT commit_msg, ', ') AS commit_msg,

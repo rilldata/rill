@@ -120,10 +120,20 @@ connector.clickhouse.port=9000
 connector.clickhouse.username 
 connector.clickhouse.password 
 connector.clickhouse.ssl 
+
+or
+
+connector.clickhouse.dsn="..."
 ```
 
   </TabItem>
 </Tabs>
+
+:::tip Via the UI
+
+If you connect to ClickHouse via the UI, this will automatically create a template with connectors/clickhouse.yaml as well as a reference of your DSN to the .env folder. This will automatically get pushed along with your project to Rill Cloud. 
+
+:::
 
 You should now be able to see the contents of your ClickHouse database in the left panel of your UI.
 

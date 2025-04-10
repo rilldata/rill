@@ -1,7 +1,7 @@
 ---
 title: "Alerts in Rill"
 description: Project Maintanence
-sidebar_label: "Alerting"
+sidebar_label: " Project Resource Alerting"
 tags:
   - CLI
   - Administration
@@ -10,7 +10,7 @@ tags:
 There are two different types of alerting in Rill. 
 
 1. [Project Error Alerting](https://docs.rilldata.com/deploy/project-errors)
-2. [Dashboard Alerting](https://docs.rilldata.com/explore/alerts/)
+2. [Rill Cloud Dashboard Alerting](https://docs.rilldata.com/explore/alerts/)
 
 ## Project Error Alerting
 
@@ -48,27 +48,21 @@ So as not to spam our own inbox, let's change the alert to run the 1st of every 
 
 Once complete, we can go ahead and create a broken dashboard or model. The easiest would be to create a new dashboard via +Add, and leaving it as is. There will be a solid red border around the text editor. 
 
-<img src = '/img/tutorials/admin/new-dashboard.png' class='rounded-gif' />
+<img src = '/img/tutorials/alert/new-dashboard.png' class='rounded-gif' />
 <br />
 
 Once we've created this, let's [push our changes to Rill Cloud](/tutorials/rill_developer_advanced_features/advanced_developer/update-rill-cloud). 
 
 
-<img src = '/img/tutorials/admin/failing-dashboard.png' class='rounded-gif' />
+<img src = '/img/tutorials/alert/failing-dashboard.png' class='rounded-gif' />
 <br />
 Now, you'll receive an email that gives you more information on the failing resource, in this case the dashboard. 
 
 
-<img src = '/img/tutorials/admin/alert-email.png' class='rounded-gif' />
+<img src = '/img/tutorials/alert/alert-email.png' class='rounded-gif' />
 <br />
 You can view all the alerts (project and dashboard) from the Alerts page
 
-<img src = '/img/tutorials/admin/alert-code.png' class='rounded-gif' />
+<img src = '/img/tutorials/alert/alert-code.png' class='rounded-gif' />
 <br />
-## Dashboard Alerts
 
-[Alerts created on individual dashboards](https://docs.rilldata.com/explore/alerts/) can be viewed from a project's alert page. As an admin, you can edit or delete the alert as needed.
-
-
-<img src = '/img/tutorials/admin/alert-admin.png' class='rounded-gif' />
-<br />

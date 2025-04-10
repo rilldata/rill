@@ -7,7 +7,7 @@ sidebar_position: 12
 
 ## Creating the custom API YAML in Developer
 
-<img src = '/img/tutorials/303/create-api.gif' class='rounded-gif' />
+<img src = '/img/tutorials/api/create-api.gif' class='rounded-gif' />
 <br />
 
 Now that the access has been created, we can make the actual custom APIs. For this example, we'll keep it fairly simple and create 2 files as outlined in [our documentation](https://docs.rilldata.com/integrate/custom-apis/):
@@ -59,5 +59,5 @@ Once you have confirmed that the local running APIs work as expected, we can sel
 If the `update` button is not available on your current UI, you can find this on the dashboard page!
 :::
 
-<img src = '/img/tutorials/303/api-status.png' class='rounded-gif' />
+<img src = '/img/tutorials/api/api-status.png' class='rounded-gif' />
 <br />

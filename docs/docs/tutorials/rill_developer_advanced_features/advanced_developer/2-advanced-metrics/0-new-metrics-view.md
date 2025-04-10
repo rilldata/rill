@@ -1,20 +1,42 @@
 ---
-title: "Dashboard with more functionality"
+title: "Create a New Metrics View"
 description:  Further build on project
-sidebar_label: "Dashboards Features"
-sidebar_position: 16
+sidebar_display_name: "New Metrics View and Modifications"
+sidebar_position: 1
 ---
+For reference on the following measures and dimensions, see our documentation on [advanced measures](/build/metrics-view/advanced-expressions/)
 
-## Let's update the Metrics view
+## Let's Create a new Metrics View
 
-As we have learned in the previous course, we will need to set up the metrics view based on the new column names. 
-Let's create a new metrics view via the UI. It should be named `advanced_metrics.yaml`. Let's copy the contents from our old dashboard and make some changes.
+
+As we have learned in the previous course, any modifications to the measures and dimensions need to be in the metrics_view.yaml. We can set up the new columns based on the previous editted model. 
+
+Let's create a new metrics view via the UI. It should be named `advanced_metrics.yaml`. Let's copy the contents from our old metrics view and make some changes.
 
 First, we will want to change the `table` value to the new model name `advanced_commits_model`
+```yaml
+table: advanced_commits___model # Choose a table to underpin your metrics
+```
 
 Add two new dimensions: `directory path` and `commit_msg`.
 
-Add four new measures: `SUM(total_line_changes)`, `SUM(net_line_changes)`, `SUM(num_commits)` and lastly let's create a percentage Code Deletion measure.
+```yaml
+  - column: directory_path
+    display_name: "The directory"
+    description: "The directory path"
+    name: directory_path
+
+  - column: commit_msg
+    display_name: "The commit message"
+    description: "The commit description attached."
+    name: commit_msg
+```
+
+Add four new measures: 
+- **`SUM(total_line_changes)`**,
+- **`SUM(net_line_changes)`**, 
+- **`SUM(num_commits)`**,
+- **`Percentage Code Deletion`**
 
 On the `SUM(net_line_changes)` measure, add the following `name: net_line_changes`. While name is not required, this can be used by other components for reference, which will be discussed later.
 
@@ -24,16 +46,17 @@ Like the SQL Model, our dashboards also use the same OLAP engine, and you can us
 ```
  SUM(deleted_lines) / (SUM(added_lines) + SUM(deleted_lines))
 ```
+
 :::tip
 When to create measures in the SQL Model layer vs the metric-view layer?
 It depends.
 
-Depending on the size of data, type of measure, and what you are calculating, you can choose either. Sometimes it would be better if you are dealing with a lot of data to front load the calculation on the SQL level so your dashboards load faster. However, [the way OLAP engines work](../../other/avg_avg.md), you might get incorrect data by doing certain calculations in the SQL level. You'll have to test and see which works for you!
+Depending on the size of data, type of measure, and what you are calculating, you can choose either. Sometimes it would be better if you are dealing with a lot of data to front load the calculation on the SQL level so your dashboards load faster. However, [the way OLAP engines work](/tutorials/other/avg_avg.md), you might get incorrect data by doing certain calculations in the SQL level. You'll have to test and see which works for you!
 :::
 
 
 <details>
-  <summary> Example Working metrics view</summary>
+  <summary>Working Metrics View</summary>
 ```yaml
 # Metrics View YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/metrics_views
@@ -46,44 +69,44 @@ timeseries: author_date # Choose a timestamp column (if any) from your table
 
 dimensions: 
 - column: directory_path
-  label: "The directory"
+  display_name: "The directory"
   description: "The directory path"
   name: directory_path
 
 - column: filename
-  label: "The filename"
+  display_name: "The filename"
   description: "The name of the modified filename"
   name: filename
 
 - column: author_name
-  label: "The Author's Name"
+  display_name: "The Author's Name"
   description: "The name of the author of the commit"
   name: author_name
 
 - column: commit_msg
-  label: "The commit message"
+  display_name: "The commit message"
   description: "The commit description attached."
   name: commit_msg
 
 measures:
 - expression: "SUM(total_line_changes)"
-  label: "Total number of Lines changed"
+  display_name: "Total number of Lines changed"
   description: "the total number of lines changes, addition and deletion"
   name: total_line_changes
 
 - expression: "SUM(net_line_changes)"
-  label: "Net number of Lines changed"
+  display_name: "Net number of Lines changed"
   description: "the total net number of lines changes"
   name: net_line_changes
 
-
 - expression: "SUM(num_commits)"
-  label: "Number of Commits"
+  display_name: "Number of Commits"
   description: "The total number of commits"
   name: num_commits
 
-- expression: "(SUM(deleted_lines)/(SUM(deleted_lines)+SUM(added_lines)))"
-  label: "Code Deletion Percent %"
+- requires: [total_line_changes, net_line_changes]
+  expression: "(SUM(deleted_lines)/(SUM(deleted_lines)+SUM(added_lines)))"
+  display_name: "Code Deletion Percent %"
   description: "The percent of code deletion"
   format_preset: percentage
 ```

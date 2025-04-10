@@ -11,7 +11,7 @@ Let's start at the beginning of all data pipelines, **the source**.
 
 ### What is a Source?
 
-In Rill, the source is your data. Whether you need to connect to the data warehouse via SQL or provide a folder in your cloud storage, Rill can read this data. Depending on the source type, you will need to either explicitly provide the credentials (Snowflake, Athena, etc.) or Rill can dynamically retrieve them via the CLI (AWS, GCP, Azure). Either way, the credentials will [be stored in a `.env` file](/build/credentials#deploying-to-rill-cloud), that is pushed with your Rill project.
+In Rill, the source is your data. Whether you need to connect to the data warehouse via SQL or provide a folder in your cloud storage, Rill can read this data. Depending on the source type, you will need to either explicitly provide the credentials (Snowflake, Athena, etc.) or Rill can dynamically retrieve them via the CLI (AWS, GCP, Azure). Either way, the credentials will [be stored in a `.env` file](/build/credentials), that is pushed with your Rill project.
 
 
 
