@@ -139,9 +139,11 @@ func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, insta
 	defer func() { _ = os.Remove(path) }()
 
 	filename := q.generateFilename(q.MetricsView)
-	err = opts.PreWriteHook(filename)
-	if err != nil {
-		return err
+	if opts.PreWriteHook != nil {
+		err = opts.PreWriteHook(filename)
+		if err != nil {
+			return err
+		}
 	}
 
 	f, err := os.Open(path)
@@ -175,6 +177,10 @@ func (q *MetricsViewRows) rewriteToMetricsViewQuery() (*metricsview.Query, error
 	qry.TimeRange = res
 
 	qry.Limit = q.Limit
+
+	if qry.Limit != nil && *qry.Limit == 0 {
+		*qry.Limit = 100
+	}
 
 	if q.Offset != 0 {
 		qry.Offset = &q.Offset
