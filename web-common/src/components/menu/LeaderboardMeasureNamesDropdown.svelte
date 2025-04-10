@@ -176,10 +176,8 @@
                   if (measure.name) toggleMeasure(measure.name);
                 }}
               >
-                <div class="flex flex-col">
-                  <div>
-                    {measure.displayName || measure.name}
-                  </div>
+                <div class="truncate flex-1 text-left">
+                  {measure.displayName || measure.name}
                 </div>
               </DropdownMenu.CheckboxItem>
             {/each}
