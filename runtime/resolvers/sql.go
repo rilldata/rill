@@ -14,6 +14,8 @@ import (
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/queries"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -48,6 +50,12 @@ func newSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolve
 	if err := mapstructure.Decode(opts.Properties, props); err != nil {
 		return nil, err
 	}
+
+	span := trace.SpanFromContext(ctx)
+	if span.SpanContext().IsValid() {
+		span.SetAttributes(attribute.String("sql", props.SQL))
+	}
+
 	// trim semicolon
 	props.SQL = strings.TrimSuffix(strings.TrimSpace(props.SQL), ";")
 

@@ -6,6 +6,8 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 func init() {
@@ -23,6 +25,11 @@ func newAPI(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolve
 	props := &apiProps{}
 	if err := mapstructure.Decode(opts.Properties, props); err != nil {
 		return nil, err
+	}
+
+	span := trace.SpanFromContext(ctx)
+	if span.SpanContext().IsValid() {
+		span.SetAttributes(attribute.String("api", props.API))
 	}
 
 	// Find the API

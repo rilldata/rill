@@ -13,6 +13,8 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/formatter"
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"github.com/rilldata/rill/runtime/queries"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -61,6 +63,11 @@ func newLegacyMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runti
 	metricsViewName, err := queries.MetricsViewFromQuery(props.QueryName, props.QueryArgsJSON)
 	if err != nil {
 		return nil, fmt.Errorf("failed extract metrics view name from query: %w", err)
+	}
+
+	span := trace.SpanFromContext(ctx)
+	if span.SpanContext().IsValid() {
+		span.SetAttributes(attribute.String("metrics_view", metricsViewName))
 	}
 
 	q, err := queries.ProtoToQuery(qpb, opts.Claims)
