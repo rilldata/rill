@@ -263,8 +263,8 @@ export function prepareVirtualizedDimTableColumns(
 
   // Show context columns based on selected context columns and time comparison settings
   if (selectedMeasure) {
-    // If activeMeasures is provided and leaderboardShowAllMeasures is true, add context columns for each active measure
-    if (activeMeasures?.length && dash.leaderboardShowAllMeasures) {
+    // If activeMeasures is provided and leaderboardShowContextForAllMeasures is true, add context columns for each active measure
+    if (activeMeasures?.length && dash.leaderboardShowContextForAllMeasures) {
       activeMeasures.forEach((measureName) => {
         const measure = allMeasures.find((m) => m.name === measureName);
         if (measure) {

@@ -25,10 +25,10 @@ export const leaderboardMeasureNames = ({
     : [dashboard.leaderboardSortByMeasureName];
 };
 
-export const leaderboardShowAllMeasures = ({
+export const leaderboardShowContextForAllMeasures = ({
   dashboard,
 }: DashboardDataSources) => {
-  return dashboard.leaderboardShowAllMeasures ?? false;
+  return dashboard.leaderboardShowContextForAllMeasures ?? false;
 };
 
 export const leaderboardSelectors = {
@@ -36,5 +36,5 @@ export const leaderboardSelectors = {
 
   leaderboardMeasureNames,
 
-  leaderboardShowAllMeasures,
+  leaderboardShowContextForAllMeasures,
 };

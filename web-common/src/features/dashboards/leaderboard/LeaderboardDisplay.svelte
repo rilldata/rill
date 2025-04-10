@@ -29,7 +29,7 @@
       sorting: { sortedAscending, sortType },
       measures: { measureLabel, isMeasureValidPercentOfTotal },
       leaderboard: {
-        leaderboardShowAllMeasures,
+        leaderboardShowContextForAllMeasures,
         leaderboardMeasureNames,
         leaderboardSortByMeasureName,
       },
@@ -125,7 +125,7 @@
               {toggleDimensionValueSelection}
               {toggleComparisonDimension}
               measureLabel={$measureLabel}
-              leaderboardShowAllMeasures={$leaderboardShowAllMeasures}
+              leaderboardShowContextForAllMeasures={$leaderboardShowContextForAllMeasures}
             />
           {/if}
         {/each}

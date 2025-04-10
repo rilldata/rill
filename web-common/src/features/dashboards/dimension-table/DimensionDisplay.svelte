@@ -49,7 +49,10 @@
         prepareDimTableRows,
       },
       sorting: { sortedAscending, sortType },
-      leaderboard: { leaderboardShowAllMeasures, leaderboardSortByMeasureName },
+      leaderboard: {
+        leaderboardShowContextForAllMeasures,
+        leaderboardSortByMeasureName,
+      },
     },
     actions: {
       dimensionsFilter: {
@@ -95,7 +98,7 @@
     },
   );
 
-  $: unfilteredTotal = $leaderboardShowAllMeasures
+  $: unfilteredTotal = $leaderboardShowContextForAllMeasures
     ? visibleMeasureNames.reduce(
         (acc, measureName) => {
           acc[measureName] =
@@ -110,19 +113,21 @@
 
   $: columns = $virtualizedTableColumns(
     $totalsQuery,
-    $leaderboardShowAllMeasures ? visibleMeasureNames : undefined,
+    $leaderboardShowContextForAllMeasures ? visibleMeasureNames : undefined,
   );
 
   $: measures = [
     ...getMeasuresForDimensionOrLeaderboardDisplay(
-      $leaderboardShowAllMeasures ? null : $leaderboardSortByMeasureName,
+      $leaderboardShowContextForAllMeasures
+        ? null
+        : $leaderboardSortByMeasureName,
       dimensionThresholdFilters,
       visibleMeasureNames,
     ).map((name) => ({ name }) as V1MetricsViewAggregationMeasure),
 
     // Add comparison measures if comparison time range exists
     ...(comparisonTimeRange
-      ? ($leaderboardShowAllMeasures
+      ? ($leaderboardShowContextForAllMeasures
           ? visibleMeasureNames
           : [$leaderboardSortByMeasureName]
         ).flatMap((name) => getComparisonRequestMeasures(name))

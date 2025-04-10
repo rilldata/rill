@@ -67,6 +67,7 @@
   export let allowExpandTable = true;
   export let allowDimensionComparison = true;
   export let leaderboardShowAllMeasures: boolean;
+  export let leaderboardShowContextForAllMeasures: boolean;
   export let formatters: Record<
     string,
     (value: number | string | null | undefined) => string | null | undefined
@@ -129,14 +130,16 @@
 
   $: measures = [
     ...getMeasuresForDimensionOrLeaderboardDisplay(
-      leaderboardShowAllMeasures ? null : leaderboardSortByMeasureName,
+      leaderboardShowContextForAllMeasures
+        ? null
+        : leaderboardSortByMeasureName,
       dimensionThresholdFilters,
       leaderboardMeasureNames,
     ).map((name) => ({ name }) as V1MetricsViewAggregationMeasure),
 
     // Add comparison measures if there's a comparison time range
     ...(comparisonTimeRange
-      ? (leaderboardShowAllMeasures
+      ? (leaderboardShowContextForAllMeasures
           ? leaderboardMeasureNames
           : [leaderboardSortByMeasureName]
         ).flatMap((name) => getComparisonRequestMeasures(name))
@@ -284,7 +287,8 @@
 
   function shouldShowContextColumns(measureName: string): boolean {
     return (
-      leaderboardShowAllMeasures || measureName === leaderboardSortByMeasureName
+      leaderboardShowContextForAllMeasures ||
+      measureName === leaderboardSortByMeasureName
     );
   }
 </script>
@@ -336,7 +340,7 @@
       {isTimeComparisonActive}
       {sortedAscending}
       {leaderboardMeasureNames}
-      {leaderboardShowAllMeasures}
+      {leaderboardShowContextForAllMeasures}
       {toggleSort}
       {setPrimaryDimension}
       {toggleComparisonDimension}
@@ -362,7 +366,7 @@
             {dimensionName}
             {itemData}
             {isValidPercentOfTotal}
-            {leaderboardShowAllMeasures}
+            {leaderboardShowContextForAllMeasures}
             {isTimeComparisonActive}
             {leaderboardMeasureNames}
             {toggleDimensionValueSelection}
@@ -382,7 +386,7 @@
           {filterExcludeMode}
           {atLeastOneActive}
           {isValidPercentOfTotal}
-          {leaderboardShowAllMeasures}
+          {leaderboardShowContextForAllMeasures}
           {isTimeComparisonActive}
           {leaderboardMeasureNames}
           borderTop={i === 0}
