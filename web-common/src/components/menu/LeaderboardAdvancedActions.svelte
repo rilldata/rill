@@ -9,8 +9,8 @@
   } from "@rilldata/web-common/components/popover";
 
   export let isOpen: boolean;
-  export let leaderboardShowAllMeasures: boolean;
-  export let setLeaderboardShowAllMeasures: (value: boolean) => void;
+  export let leaderboardShowContextForAllMeasures: boolean;
+  export let setLeaderboardShowContextForAllMeasures: (value: boolean) => void;
 </script>
 
 <Popover bind:open={isOpen}>
@@ -26,9 +26,11 @@
   >
     <span>Show context for all measures</span>
     <Switch
-      checked={leaderboardShowAllMeasures}
+      checked={leaderboardShowContextForAllMeasures}
       on:click={() => {
-        setLeaderboardShowAllMeasures(!leaderboardShowAllMeasures);
+        setLeaderboardShowContextForAllMeasures(
+          !leaderboardShowContextForAllMeasures,
+        );
       }}
       small
     />

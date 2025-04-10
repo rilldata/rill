@@ -125,8 +125,9 @@ export function getProtoFromDashboardState(
     state.leaderboardMeasure = metrics.leaderboardSortByMeasureName;
   }
 
-  if (metrics.leaderboardShowAllMeasures) {
-    state.leaderboardShowAllMeasures = metrics.leaderboardShowAllMeasures;
+  if (metrics.leaderboardShowContextForAllMeasures) {
+    state.leaderboardShowContextForAllMeasures =
+      metrics.leaderboardShowContextForAllMeasures;
   }
 
   if (metrics.leaderboardMeasureNames) {

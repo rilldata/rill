@@ -38,14 +38,17 @@
       dimensions: { getDimensionDisplayName },
       dimensionFilters: { isFilterExcludeMode },
       measures: { visibleMeasures },
-      leaderboard: { leaderboardShowAllMeasures, leaderboardMeasureNames },
+      leaderboard: {
+        leaderboardShowContextForAllMeasures,
+        leaderboardMeasureNames,
+      },
     },
     actions: {
       sorting: { toggleSort },
       dimensions: { setPrimaryDimension },
       dimensionsFilter: { toggleDimensionFilterMode },
       leaderboard: {
-        setLeaderboardShowAllMeasures,
+        setLeaderboardShowContextForAllMeasures,
         setLeaderboardSortByMeasureName,
       },
     },
@@ -225,8 +228,8 @@
     {/if}
     <LeaderboardAdvancedActions
       isOpen={isLeaderboardActionsOpen}
-      leaderboardShowAllMeasures={$leaderboardShowAllMeasures}
-      {setLeaderboardShowAllMeasures}
+      leaderboardShowContextForAllMeasures={$leaderboardShowContextForAllMeasures}
+      {setLeaderboardShowContextForAllMeasures}
     />
   </div>
 </div>

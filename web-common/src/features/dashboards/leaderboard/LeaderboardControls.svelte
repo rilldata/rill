@@ -15,7 +15,7 @@
       leaderboard: {
         leaderboardSortByMeasureName,
         leaderboardMeasureNames,
-        leaderboardShowAllMeasures,
+        leaderboardShowContextForAllMeasures,
       },
       dimensions: { visibleDimensions, allDimensions },
     },
@@ -25,7 +25,7 @@
       leaderboard: {
         setLeaderboardSortByMeasureName,
         setLeaderboardMeasureNames,
-        setLeaderboardShowAllMeasures,
+        setLeaderboardShowContextForAllMeasures,
       },
     },
   } = StateManagers;
@@ -82,7 +82,7 @@
   />
   <LeaderboardAdvancedActions
     isOpen={isLeaderboardActionsOpen}
-    leaderboardShowAllMeasures={$leaderboardShowAllMeasures}
-    {setLeaderboardShowAllMeasures}
+    leaderboardShowContextForAllMeasures={$leaderboardShowContextForAllMeasures}
+    {setLeaderboardShowContextForAllMeasures}
   />
 </div>

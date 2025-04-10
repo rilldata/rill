@@ -221,8 +221,9 @@ export function getDashboardStateFromProto(
   if (dashboard.leaderboardSortType) {
     entity.dashboardSortType = dashboard.leaderboardSortType;
   }
-  if (dashboard.leaderboardShowAllMeasures) {
-    entity.leaderboardShowAllMeasures = dashboard.leaderboardShowAllMeasures;
+  if (dashboard.leaderboardShowContextForAllMeasures) {
+    entity.leaderboardShowContextForAllMeasures =
+      dashboard.leaderboardShowContextForAllMeasures;
   }
   if (dashboard.leaderboardMeasures) {
     entity.leaderboardMeasureNames = dashboard.leaderboardMeasures;

@@ -4919,8 +4919,8 @@ func (m *ExplorePreset) validate(all bool) error {
 		// no validation rules for ExploreExpandedDimension
 	}
 
-	if m.ExploreLeaderboardShowAllMeasures != nil {
-		// no validation rules for ExploreLeaderboardShowAllMeasures
+	if m.ExploreLeaderboardShowContextForAllMeasures != nil {
+		// no validation rules for ExploreLeaderboardShowContextForAllMeasures
 	}
 
 	if m.TimeDimensionMeasure != nil {

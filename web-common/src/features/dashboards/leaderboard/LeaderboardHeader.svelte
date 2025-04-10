@@ -25,7 +25,7 @@
   export let sortType: SortType;
   export let leaderboardMeasureNames: string[] = [];
   export let leaderboardSortByMeasureName: string | null;
-  export let leaderboardShowAllMeasures: boolean;
+  export let leaderboardShowContextForAllMeasures: boolean;
   export let toggleSort: (sortType: SortType, measureName?: string) => void;
   export let setPrimaryDimension: (dimensionName: string) => void;
   export let toggleComparisonDimension: (
@@ -35,7 +35,8 @@
 
   function shouldShowContextColumns(measureName: string): boolean {
     return (
-      leaderboardShowAllMeasures || measureName === leaderboardSortByMeasureName
+      leaderboardShowContextForAllMeasures ||
+      measureName === leaderboardSortByMeasureName
     );
   }
 </script>

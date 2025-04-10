@@ -4271,7 +4271,7 @@ definitions:
         type: array
         items:
           type: string
-      exploreLeaderboardShowAllMeasures:
+      exploreLeaderboardShowContextForAllMeasures:
         type: boolean
       timeDimensionMeasure:
         type: string

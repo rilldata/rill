@@ -31,7 +31,7 @@
   export let isTimeComparisonActive: boolean;
   export let leaderboardMeasureNames: string[] = [];
   export let suppressTooltip: boolean;
-  export let leaderboardShowAllMeasures: boolean;
+  export let leaderboardShowContextForAllMeasures: boolean;
   export let leaderboardSortByMeasureName: string | null;
   export let isValidPercentOfTotal: (measureName: string) => boolean;
   export let toggleDimensionValueSelection: (
@@ -47,7 +47,8 @@
 
   function shouldShowContextColumns(measureName: string): boolean {
     return (
-      leaderboardShowAllMeasures || measureName === leaderboardSortByMeasureName
+      leaderboardShowContextForAllMeasures ||
+      measureName === leaderboardSortByMeasureName
     );
   }
 

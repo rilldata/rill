@@ -18,15 +18,15 @@ export const setLeaderboardMeasureNames = (
   dashboard.leaderboardMeasureNames = names;
 };
 
-export const setLeaderboardShowAllMeasures = (
+export const setLeaderboardShowContextForAllMeasures = (
   { dashboard }: DashboardMutables,
   showAllMeasures: boolean,
 ) => {
-  dashboard.leaderboardShowAllMeasures = showAllMeasures;
+  dashboard.leaderboardShowContextForAllMeasures = showAllMeasures;
 };
 
 export const leaderboardActions = {
   setLeaderboardSortByMeasureName,
   setLeaderboardMeasureNames,
-  setLeaderboardShowAllMeasures,
+  setLeaderboardShowContextForAllMeasures,
 };

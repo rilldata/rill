@@ -68,9 +68,9 @@ export interface MetricsExplorerEntity {
   leaderboardMeasureNames: string[];
 
   /**
-   * Whether to show all measures in the leaderboard.
+   * Whether to show context for all measures in the leaderboard.
    */
-  leaderboardShowAllMeasures: boolean;
+  leaderboardShowContextForAllMeasures: boolean;
 
   /**
    * This is the sort type that will be used for the leaderboard
