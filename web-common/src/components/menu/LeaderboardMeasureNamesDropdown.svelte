@@ -196,6 +196,7 @@
                 id="multi-measure-select"
                 small
                 on:click={toggleMultiSelect}
+                data-testid="multi-measure-select-switch"
               />
               <InputLabel
                 small
