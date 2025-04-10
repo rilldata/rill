@@ -309,8 +309,10 @@
                   >
                     <DragHandle size="16px" className="text-gray-400" />
 
-                    {allItemsMap.get(id)?.displayName ??
-                      `Unknown ${type === "measure" ? "measure" : "dimension"}`}
+                    <span class="truncate flex-1 text-left pointer-events-none"
+                      >{allItemsMap.get(id)?.displayName ??
+                        `Unknown ${type === "measure" ? "measure" : "dimension"}`}</span
+                    >
 
                     <button
                       class="ml-auto hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
@@ -347,7 +349,6 @@
                 </Tooltip.Content>
               </Tooltip.Root>
             {:else}
-              <!-- FIXME: hoist to DraggableListItem -->
               <div
                 role="presentation"
                 data-index={i}
@@ -380,8 +381,10 @@
               >
                 <DragHandle size="16px" className="text-gray-400" />
 
-                {allItemsMap.get(id)?.displayName ??
-                  `Unknown ${type === "measure" ? "measure" : "dimension"}`}
+                <span class="truncate flex-1 text-left pointer-events-none"
+                  >{allItemsMap.get(id)?.displayName ??
+                    `Unknown ${type === "measure" ? "measure" : "dimension"}`}</span
+                >
 
                 <button
                   class="ml-auto hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
@@ -455,7 +458,9 @@
                 }}
                 role="presentation"
               >
-                {item.displayName}
+                <span class="truncate flex-1 text-left pointer-events-none"
+                  >{item.displayName}</span
+                >
 
                 <button
                   class="hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
