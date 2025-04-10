@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"strconv"
-	"strings"
+	"os"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/metricsview"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -26,6 +26,7 @@ type MetricsViewRows struct {
 	TimeZone           string                       `json:"time_zone,omitempty"`
 	MetricsView        *runtimev1.MetricsViewSpec   `json:"-"`
 	ResolvedMVSecurity *runtime.ResolvedSecurity    `json:"security"`
+	Streaming          bool                         `json:"streaming,omitempty"`
 
 	// backwards compatibility
 	Filter *runtimev1.MetricsViewFilter `json:"filter,omitempty"`
@@ -66,42 +67,33 @@ func (q *MetricsViewRows) UnmarshalResult(v any) error {
 }
 
 func (q *MetricsViewRows) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	olap, release, err := rt.OLAP(ctx, instanceID, q.MetricsView.Connector)
-	if err != nil {
-		return err
-	}
-	defer release()
-
-	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectDruid && olap.Dialect() != drivers.DialectClickHouse && olap.Dialect() != drivers.DialectPinot {
-		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
-	}
-
 	if q.MetricsView.TimeDimension == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
-	timeRollupColumnName, err := q.resolveTimeRollupColumnName(ctx, olap, q.MetricsView)
+	qry, err := q.rewriteToMetricsViewQuery()
+	if err != nil {
+		return fmt.Errorf("error rewriting to metrics query: %w", err)
+	}
+
+	e, err := metricsview.NewExecutor(ctx, rt, instanceID, q.MetricsView, q.Streaming, q.ResolvedMVSecurity, priority)
+	if err != nil {
+		return err
+	}
+	defer e.Close()
+
+	res, err := e.Query(ctx, qry, nil)
+	if err != nil {
+		return err
+	}
+	defer res.Close()
+
+	data, err := rowsToData(res)
 	if err != nil {
 		return err
 	}
 
-	// backwards compatibility
-	if q.Filter != nil {
-		if q.Where != nil {
-			return fmt.Errorf("both filter and where is provided")
-		}
-		q.Where = convertFilterToExpression(q.Filter)
-	}
-
-	ql, args, err := q.buildMetricsRowsSQL(q.MetricsView, olap.Dialect(), timeRollupColumnName, q.ResolvedMVSecurity)
-	if err != nil {
-		return fmt.Errorf("error building query: %w", err)
-	}
-
-	meta, data, err := metricsQuery(ctx, olap, priority, ql, args)
-	if err != nil {
-		return err
-	}
+	meta := structTypeToMetricsViewColumn(res.Schema)
 
 	q.Result = &runtimev1.MetricsViewRowsResponse{
 		Meta: meta,
@@ -112,215 +104,104 @@ func (q *MetricsViewRows) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 }
 
 func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
-	olap, release, err := rt.OLAP(ctx, instanceID, q.MetricsView.Connector)
+	if q.MetricsView.TimeDimension == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
+		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
+	}
+
+	qry, err := q.rewriteToMetricsViewQuery()
+	if err != nil {
+		return fmt.Errorf("error rewriting to metrics query: %w", err)
+	}
+	qry.Rows = true
+
+	e, err := metricsview.NewExecutor(ctx, rt, instanceID, q.MetricsView, q.Streaming, q.ResolvedMVSecurity, opts.Priority)
 	if err != nil {
 		return err
 	}
-	defer release()
+	defer e.Close()
 
-	switch olap.Dialect() {
-	case drivers.DialectDuckDB:
-		if opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_CSV || opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET {
-			if q.MetricsView.TimeDimension == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
-				return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
-			}
-
-			// temporary backwards compatibility
-			if q.Filter != nil {
-				if q.Where != nil {
-					return fmt.Errorf("both filter and where is provided")
-				}
-				q.Where = convertFilterToExpression(q.Filter)
-			}
-
-			timeRollupColumnName, err := q.resolveTimeRollupColumnName(ctx, olap, q.MetricsView)
-			if err != nil {
-				return err
-			}
-
-			sql, args, err := q.buildMetricsRowsSQL(q.MetricsView, olap.Dialect(), timeRollupColumnName, q.ResolvedMVSecurity)
-			if err != nil {
-				return err
-			}
-
-			filename := q.generateFilename(q.MetricsView)
-			if err := DuckDBCopyExport(ctx, w, opts, sql, args, filename, olap, opts.Format); err != nil {
-				return err
-			}
-		} else {
-			if err := q.generalExport(ctx, rt, instanceID, w, opts, q.MetricsView); err != nil {
-				return err
-			}
-		}
-	case drivers.DialectDruid, drivers.DialectClickHouse, drivers.DialectPinot:
-		if err := q.generalExport(ctx, rt, instanceID, w, opts, q.MetricsView); err != nil {
-			return err
-		}
-	default:
-		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
-	}
-
-	return nil
-}
-
-func (q *MetricsViewRows) generalExport(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions, mv *runtimev1.MetricsViewSpec) error {
-	err := q.Resolve(ctx, rt, instanceID, opts.Priority)
-	if err != nil {
-		return err
-	}
-
-	if opts.PreWriteHook != nil {
-		err = opts.PreWriteHook(q.generateFilename(mv))
-		if err != nil {
-			return err
-		}
-	}
-
+	var format drivers.FileFormat
 	switch opts.Format {
-	case runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED:
-		return fmt.Errorf("unspecified format")
 	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
-		return WriteCSV(q.Result.Meta, q.Result.Data, w)
+		format = drivers.FileFormatCSV
 	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
-		return WriteXLSX(q.Result.Meta, q.Result.Data, w)
+		format = drivers.FileFormatXLSX
 	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
-		return WriteParquet(q.Result.Meta, q.Result.Data, w)
+		format = drivers.FileFormatParquet
+	default:
+		return fmt.Errorf("unsupported format: %s", opts.Format.String())
+	}
+
+	path, err := e.Export(ctx, qry, nil, format)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = os.Remove(path) }()
+
+	filename := q.generateFilename(q.MetricsView)
+	err = opts.PreWriteHook(filename)
+	if err != nil {
+		return err
+	}
+
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = io.Copy(w, f)
+	if err != nil {
+		return err
 	}
 
 	return nil
 }
 
-// resolveTimeRollupColumnName infers a column name for time rollup values.
-// The rollup column name takes the format "{time dimension name}__{granularity}[optional number]".
-// The optional number is appended in case of collision with an existing column name.
-// It returns an empty string for cases where no time rollup should be calculated (such as when q.TimeGranularity is not set).
-func (q *MetricsViewRows) resolveTimeRollupColumnName(ctx context.Context, olap drivers.OLAPStore, mv *runtimev1.MetricsViewSpec) (string, error) {
-	// Skip if no time info is available
-	if mv.TimeDimension == "" || q.TimeGranularity == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
-		return "", nil
+func (q *MetricsViewRows) rewriteToMetricsViewQuery() (*metricsview.Query, error) {
+	if q.TimeGranularity != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+		return nil, fmt.Errorf("time_granularity is not supported in metrics view rows query")
 	}
 
-	t, err := olap.InformationSchema().Lookup(ctx, mv.Database, mv.DatabaseSchema, mv.Table)
-	if err != nil {
-		return "", err
+	qry := &metricsview.Query{MetricsView: q.MetricsViewName}
+
+	res := &metricsview.TimeRange{}
+	if q.TimeStart != nil {
+		res.Start = q.TimeStart.AsTime()
+	}
+	if q.TimeEnd != nil {
+		res.End = q.TimeEnd.AsTime()
+	}
+	qry.TimeRange = res
+
+	qry.Limit = q.Limit
+
+	if q.Offset != 0 {
+		qry.Offset = &q.Offset
 	}
 
-	// Create name stem
-	stem := fmt.Sprintf("%s__%s", mv.TimeDimension, strings.ToLower(olap.Dialect().ConvertToDateTruncSpecifier(q.TimeGranularity)))
-
-	// Try new candidate names until we find an available one (capping the search at 10 names)
-	for i := 0; i < 10; i++ {
-		candidate := stem
-		if i != 0 {
-			candidate += strconv.Itoa(i)
-		}
-
-		// Do a case-insensitive search for the candidate name
-		found := false
-		for _, col := range t.Schema.Fields {
-			if strings.EqualFold(candidate, col.Name) {
-				found = true
-				break
-			}
-		}
-		if !found {
-			return candidate, nil
-		}
-	}
-
-	// Very unlikely case where no available candidate name was found.
-	// By returning the empty string, the downstream logic will skip computing the rollup.
-	return "", nil
-}
-
-func (q *MetricsViewRows) buildMetricsRowsSQL(mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, timeRollupColumnName string, policy *runtime.ResolvedSecurity) (string, []any, error) {
-	whereClause := "1=1"
-	args := []any{}
-	if mv.TimeDimension != "" {
-		td := safeName(mv.TimeDimension)
-		if dialect == drivers.DialectDuckDB {
-			td = fmt.Sprintf("%s::TIMESTAMP", td)
-		}
-
-		if q.TimeStart != nil {
-			whereClause += fmt.Sprintf(" AND %s >= ?", td)
-			args = append(args, q.TimeStart.AsTime())
-		}
-		if q.TimeEnd != nil {
-			whereClause += fmt.Sprintf(" AND %s < ?", td)
-			args = append(args, q.TimeEnd.AsTime())
-		}
-	}
-
-	if q.Where != nil {
-		builder := &ExpressionBuilder{
-			mv:      mv,
-			dialect: dialect,
-		}
-		clause, clauseArgs, err := builder.buildExpression(q.Where)
-		if err != nil {
-			return "", nil, err
-		}
-		if strings.TrimSpace(clause) != "" {
-			whereClause += fmt.Sprintf(" AND (%s)", clause)
-		}
-		args = append(args, clauseArgs...)
-	}
-
-	if rf := policy.RowFilter(); rf != "" {
-		whereClause += fmt.Sprintf(" AND (%s)", rf)
-	}
-
-	sortingCriteria := make([]string, 0, len(q.Sort))
 	for _, s := range q.Sort {
-		sortCriterion := safeName(s.Name)
-		if !s.Ascending {
-			sortCriterion += " DESC"
-		}
-		if dialect == drivers.DialectDuckDB {
-			sortCriterion += " NULLS LAST"
-		}
-		sortingCriteria = append(sortingCriteria, sortCriterion)
-	}
-	orderClause := ""
-	if len(sortingCriteria) > 0 {
-		orderClause = "ORDER BY " + strings.Join(sortingCriteria, ", ")
+		qry.Sort = append(qry.Sort, metricsview.Sort{
+			Name: s.Name,
+			Desc: !s.Ascending,
+		})
 	}
 
-	var limitClause string
-	if q.Limit != nil {
-		if *q.Limit == 0 {
-			*q.Limit = 100
+	if q.Filter != nil { // Backwards compatibility
+		if q.Where != nil {
+			return nil, fmt.Errorf("both filter and where is provided")
 		}
-		limitClause = fmt.Sprintf("LIMIT %d", *q.Limit)
+		q.Where = convertFilterToExpression(q.Filter)
 	}
 
-	selectColumns := []string{"*"}
-
-	if timeRollupColumnName != "" {
-		if mv.TimeDimension == "" || q.TimeGranularity == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
-			panic("timeRollupColumnName is set, but time dimension info is missing")
-		}
-
-		timezone := "UTC"
-		if q.TimeZone != "" {
-			timezone = q.TimeZone
-		}
-		args = append([]any{timezone, timezone}, args...)
-		rollup := fmt.Sprintf("timezone(?, date_trunc('%s', timezone(?, %s::TIMESTAMPTZ))) AS %s", dialect.ConvertToDateTruncSpecifier(q.TimeGranularity), safeName(mv.TimeDimension), safeName(timeRollupColumnName))
-
-		// Prepend the rollup column
-		selectColumns = append([]string{rollup}, selectColumns...)
+	var err error
+	qry.Where, err = metricViewExpression(q.Where, "")
+	if err != nil {
+		return nil, fmt.Errorf("error converting where clause: %w", err)
 	}
 
-	sql := fmt.Sprintf("SELECT %s FROM %s WHERE %s %s %s OFFSET %d",
-		strings.Join(selectColumns, ","),
-		escapeMetricsViewTable(dialect, mv),
-		whereClause,
-		orderClause,
-		limitClause,
-		q.Offset,
-	)
+	qry.TimeZone = q.TimeZone
+	qry.Rows = true
 
-	return sql, args, nil
+	return qry, nil
 }

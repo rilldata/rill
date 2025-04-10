@@ -229,30 +229,6 @@ func ResolveTimestampResult(ctx context.Context, rt *runtime.Runtime, instanceID
 func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metricsview.Query, error) {
 	qry := &metricsview.Query{MetricsView: q.MetricsViewName}
 
-	if q.Rows {
-		if len(q.Dimensions) > 0 {
-			return nil, fmt.Errorf("dimensions not supported when rows is set, all model columns will be returned")
-		}
-		if len(q.Measures) > 0 {
-			return nil, fmt.Errorf("measures not supported when rows is set, all model columns will be returned")
-		}
-		if len(q.Sort) > 0 {
-			return nil, fmt.Errorf("sort not supported when rows is set")
-		}
-		if q.ComparisonTimeRange != nil {
-			return nil, fmt.Errorf("comparison_time_range not supported when rows is set")
-		}
-		if len(q.Aliases) > 0 {
-			return nil, fmt.Errorf("aliases not supported when rows is set")
-		}
-		if q.Having != nil || q.HavingSQL != "" {
-			return nil, fmt.Errorf("having not supported when rows is set")
-		}
-		if len(q.PivotOn) > 0 {
-			return nil, fmt.Errorf("pivot_on not supported when rows is set")
-		}
-	}
-
 	for _, d := range q.Dimensions {
 		res := metricsview.Dimension{Name: d.Name}
 		if d.Alias != "" {

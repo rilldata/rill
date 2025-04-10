@@ -184,6 +184,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			TimeZone:           r.TimeZone,
 			MetricsView:        mv.ValidSpec,
 			ResolvedMVSecurity: security,
+			Streaming:          mv.Streaming,
 		}
 	case *runtimev1.Query_MetricsViewTimeSeriesRequest:
 		r := v.MetricsViewTimeSeriesRequest
