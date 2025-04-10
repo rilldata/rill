@@ -1,27 +1,32 @@
-<!-- @component 
-  This component is used to only show loading rows if the loading state is true after a delay.
-  This is handy for preventing the loading rows from flickering.
--->
 <script lang="ts">
   import { onDestroy } from "svelte";
   import { writable } from "svelte/store";
   import LoadingRows from "./LoadingRows.svelte";
 
   export let isLoading: boolean;
+  export let isFetching: boolean;
+  export let isPending: boolean;
   export let delay: number = 300;
-  export let rows: number = 7;
-  export let columns: number = 4;
+  export let rowCount: number;
+  export let columnCount: number = 4;
 
-  const showLoading = writable(false);
+  const showPlaceholder = writable(true);
 
-  let timeoutId;
+  let timeoutId: ReturnType<typeof setTimeout> | undefined = undefined;
+  let previousRowCount = rowCount ?? 7;
 
   $: {
-    clearTimeout(timeoutId);
-    if (isLoading) {
-      timeoutId = setTimeout(() => showLoading.set(true), delay);
+    if (timeoutId) clearTimeout(timeoutId);
+
+    if (isLoading || isPending) {
+      showPlaceholder.set(true);
+    } else if (isFetching) {
+      timeoutId = setTimeout(() => {
+        showPlaceholder.set(true);
+      }, delay);
     } else {
-      showLoading.set(false);
+      showPlaceholder.set(false);
+      previousRowCount = rowCount;
     }
   }
 
@@ -30,6 +35,8 @@
   });
 </script>
 
-{#if $showLoading}
-  <LoadingRows {rows} {columns} />
+{#if $showPlaceholder}
+  <LoadingRows rows={previousRowCount || 7} columns={columnCount} />
+{:else}
+  <slot />
 {/if}

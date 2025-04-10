@@ -7,7 +7,7 @@ sidebar_position: 00
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
-<img src = '/img/tutorials/102/Adding-Data.gif' class='rounded-gif' />
+<img src = '/img/build/connect/sources.png' class='rounded-gif' />
 <br />
 
 Rill supports a multitude of connectors to ingest data from various sources: local files, S3 or GCS buckets, download using HTTP(S), databases, data warehouses, and the list goes on. Rill supports ingestion of `.csv`, `.tsv`, `.json`, and `.parquet` files, including compressed versions (`.gz`). This can be done either through the UI directly, when working with Rill Developer, or by pushing the logic into the [source YAML](../../reference/project-files/sources.md) definition directly (see _Using Code_ sections below).
@@ -36,7 +36,7 @@ Rill is continually adding new sources and connectors in our releases. For a com
 
 :::tip Avoid Pre-aggregated Metrics
 
-Rill works best for slicing and dicing data meaning keeping data closer to raw to retain that granularity for flexible analysis. When loading data - be careful with adding pre-aggregated metrics like averages as that could lead to unintended results like a sum of an average. Instead load the two raw metrics and calculate the derived metric in your model or dashboard.
+Rill works best for slicing and dicing data meaning keeping data closer to raw to retain that granularity for flexible analysis. When loading data, be careful with adding pre-aggregated metrics like averages as that could lead to unintended results like a sum of an average. Instead, load the two raw metrics and calculate the derived metric in your model or dashboard.
 
 :::
 
@@ -44,7 +44,7 @@ Rill works best for slicing and dicing data meaning keeping data closer to raw t
 
 ### Using the UI
 
-To import a file using the UI, click "+" by Sources in the left hand navigation pane, select "Local File", and navigate to the specific file. Alternately, try dragging and dropping the file directly onto the Rill interface.
+To import a file using the UI, click "+" by Sources in the left-hand navigation pane, select "Local File", and navigate to the specific file. Alternately, try dragging and dropping the file directly onto the Rill interface.
 
 ### Using code
 When you add a source using the UI, a code definition will automatically be created as a `.yaml` file in your Rill project in the `sources` directory. However, you can also create sources more directly by creating the artifact.
@@ -62,7 +62,7 @@ Rill will ingest the data next time you run `rill start`.
 Note that if you provide a relative path, _the path should be relative to your Rill project root_ (where your `rill.yaml` file is located), **not** relative to the `sources` directory.
 
 :::tip Import from multiple files
-To import data from multiple files, you can use a glob pattern to specify the files you want to include. To learn more about the syntax and details of glob patterns, please refer to the documentation on [glob patterns](../connect/glob-patterns.md).
+To import data from multiple files, you can use a glob pattern to specify the files you want to include. To learn more about the syntax and details of glob patterns, please refer to the duckdb documentation on [reading multiple files](https://duckdb.org/docs/stable/data/multiple_files/overview.html).
 :::
 
 :::note Source Properties
@@ -114,7 +114,7 @@ You can also push filters to your source definition using inline editing. Common
 - Resolve ingestion issues by declaring types (examples: STRUCT with different values to VARCHAR, fields mixed with INT and VARCHAR values)
 
 :::tip Import from multiple files
-To import data from multiple files, you can use a glob pattern to specify the files you want to include. To learn more about the syntax and details of glob patterns, please refer to the documentation on [glob patterns](glob-patterns.md).
+To import data from multiple files, you can use a glob pattern to specify the files you want to include. To learn more about the syntax and details of glob patterns, please refer to the duckdb documentation on [reading multiple files](https://duckdb.org/docs/stable/data/multiple_files/overview.html).
 :::
 
 :::note Source Properties
@@ -133,6 +133,9 @@ Please see our [Configuring Credentials](../credentials/credentials.md) and [Dep
 
 :::
 
+### Templating 
+When creating your sources, you can template the YAML file to ensure that locally you are only using `dev` data but when pushing to Rill Cloud, use `prod` data. Doing so will simplify the deployment process. For more information, see [templating](/deploy/templating).
+
 ## External OLAP tables
 
 Rill also has the ability to set up a "live connection" with an [OLAP engine](../olap/olap.md) to discover existing tables and execute OLAP queries directly on the engine without having to transfer data to another OLAP engine. By default, the embedded OLAP engine that comes with Rill is [DuckDB](/reference/olap-engines/duckdb.md).
@@ -145,7 +148,7 @@ For more details about configuring and/or changing the OLAP engine used by Rill,
 
 ## Rill Developer vs Rill Cloud
 
-_There is a difference_ between Rill Developer and Rill Cloud and they work hand-in-hand to provide a shared experience. For distributed teams, Rill Developer is primarily meant for local development and modeling purposes while Rill Cloud is where the primary dashboard consumption occurs and helps to enable shared collaboration at scale. For Rill Developer, as the size or volume of source data continues to grow (or reaches a certain size), it is strongly recommended to [work with a segment of the data for modeling purposes](../../deploy/performance.md#work-with-a-subset-of-your-source-data-for-local-development-and-modeling) instead of the full dataset (i.e. think of it as a "dev partition"), which is meant to help the developer validate the model logic and verify that the correct results are being produced. Then, after the [model](../models/models.md) and [dashboard](../dashboards/dashboards.md) configurations have been finalized, the project can be [deployed to Rill Cloud](../../deploy/deploy-dashboard/) against the full range of data and dashboards can be [explored](../../explore/dashboard-101.md) by other end users.
+_There is a difference_ between Rill Developer and Rill Cloud and they work hand-in-hand to provide a shared experience. For distributed teams, Rill Developer is primarily meant for local development and modeling purposes while Rill Cloud is where the primary dashboard consumption occurs and helps to enable shared collaboration at scale. For Rill Developer, as the size or volume of source data continues to grow (or reaches a certain size), it is strongly recommended to [work with a segment of the data for modeling purposes](../../deploy/performance.md#work-with-a-subset-of-your-source-data-for-local-development-and-modeling) instead of the full dataset (i.e. think of it as a "dev partition"), which is meant to help the developer validate the model logic and verify that the correct results are being produced. Then, after the [model](../models/models.md) and [dashboard](../dashboards/dashboards.md) configurations have been finalized, the project can be [deployed to Rill Cloud](../../deploy/deploy-dashboard/) against the full range of data and dashboards can be [explored](/explore/dashboard-101/) by other end users.
 
 :::info Have questions?
 

@@ -1,15 +1,13 @@
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
+  import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
   import IconButton from "../button/IconButton.svelte";
   import MinusIcon from "../icons/MinusIcon.svelte";
   import PlusIcon from "../icons/PlusIcon.svelte";
 
-  export let measures: MetricsViewSpecMeasureV2[];
+  export let measures: MetricsViewSpecMeasure[];
   export let count: number = 1;
-  export let sortByMeasure: string | null;
   export let onMeasureCountChange: (count: number) => void;
-  export let resetSort: () => void;
 
   let isHovered = false;
 
@@ -27,24 +25,7 @@
     }
   }
 
-  function getFilteredMeasuresByMeasureCount(
-    measures: MetricsViewSpecMeasureV2[],
-    count: number,
-  ) {
-    return measures.slice(0, count);
-  }
-
-  $: filteredMeasures = getFilteredMeasuresByMeasureCount(measures, count);
   $: visibleMeasuresCount = measures.length;
-
-  // Workaround for feature flag `leaderboardMeasureCount`
-  // If the sortByMeasure isn't in the filtered measures, we need to reset the sort
-  $: if (
-    sortByMeasure &&
-    !filteredMeasures.some((measure) => measure.name === sortByMeasure)
-  ) {
-    resetSort();
-  }
 
   // Update count to match visible measures when filtered count is greater
   $: if (visibleMeasuresCount < count) {

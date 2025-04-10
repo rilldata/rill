@@ -71,9 +71,9 @@
       project,
       name: $reportQuery.data.resource.meta.name.name,
     });
-    queryClient.invalidateQueries(
-      getRuntimeServiceListResourcesQueryKey(instanceId),
-    );
+    queryClient.invalidateQueries({
+      queryKey: getRuntimeServiceListResourcesQueryKey(instanceId),
+    });
     goto(`/${organization}/${project}/-/reports`);
   }
 </script>
@@ -200,7 +200,9 @@
 {#if reportSpec}
   <ScheduledReportDialog
     bind:open={showEditReportDialog}
-    {reportSpec}
-    exploreName={$dashboardName.data}
+    props={{
+      mode: "edit",
+      reportSpec,
+    }}
   />
 {/if}

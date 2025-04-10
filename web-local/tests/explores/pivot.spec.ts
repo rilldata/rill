@@ -546,6 +546,8 @@ test.describe("pivot run through", () => {
   test.use({ project: "AdBids" });
 
   test("pivot run through", async ({ page }) => {
+    test.setTimeout(45_000); // Note: we should make this test smaller!
+
     const watcher = new ResourceWatcher(page);
 
     await page.getByLabel("/metrics").click();
@@ -621,10 +623,7 @@ test.describe("pivot run through", () => {
     await addRowField.click();
     await clickMenuButton(page, "Publisher");
 
-    const expandButton = page
-      .locator("td")
-      .filter({ hasText: "Jan" })
-      .getByRole("presentation");
+    const expandButton = page.locator("td").filter({ hasText: "Jan" });
 
     await expandButton.click();
     await expect(page.locator(".status.running")).toHaveCount(0);

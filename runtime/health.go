@@ -50,6 +50,19 @@ func (r *Runtime) Health(ctx context.Context) (*Health, error) {
 		if err != nil && !errors.Is(err, drivers.ErrNotFound) {
 			return nil, err
 		}
+		// if there is a single instance hosted on this runtime then instead of returning error msgs throw error if OLAP/repo/controller are in error state
+		if len(instances) == 1 {
+			h := ih[inst.ID]
+			if h.OLAP != "" {
+				return nil, errors.New(h.OLAP)
+			}
+			if h.Repo != "" {
+				return nil, errors.New(h.Repo)
+			}
+			if h.Controller != "" {
+				return nil, errors.New(h.Controller)
+			}
+		}
 	}
 	return &Health{
 		HangingConn:     r.connCache.HangingErr(),

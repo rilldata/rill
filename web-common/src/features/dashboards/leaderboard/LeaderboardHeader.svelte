@@ -15,7 +15,7 @@
 
   export let dimensionName: string;
   export let isFetching: boolean;
-  export let isValidPercentOfTotal: boolean;
+  export let isValidPercentOfTotal: (measureName: string) => boolean;
   export let isTimeComparisonActive: boolean;
   export let dimensionDescription: string;
   export let isBeingCompared: boolean;
@@ -23,7 +23,7 @@
   export let displayName: string;
   export let hovered: boolean;
   export let sortType: SortType;
-  export let activeMeasureNames: string[] = [];
+  export let leaderboardMeasureNames: string[] = [];
   export let sortBy: string | null;
   export let leaderboardMeasureCountFeatureFlag: boolean;
   export let toggleSort: (sortType: SortType, measureName?: string) => void;
@@ -36,7 +36,7 @@
 
 <thead>
   <tr>
-    <th aria-label="Comparison column">
+    <th aria-label="Comparison column" class="grid place-content-center">
       {#if isFetching}
         <DelayedSpinner isLoading={isFetching} size="16px" />
       {:else if hovered || isBeingCompared}
@@ -80,7 +80,7 @@
       </Tooltip>
     </th>
 
-    {#each activeMeasureNames as measureName, index (index)}
+    {#each leaderboardMeasureNames as measureName, index (index)}
       <th data-measure-header>
         <button
           aria-label="Toggle sort leaderboards by value"
@@ -115,7 +115,7 @@
         </button>
       </th>
 
-      {#if isValidPercentOfTotal}
+      {#if isValidPercentOfTotal(measureName)}
         <th data-percent-of-total-header>
           <button
             aria-label="Toggle sort leaderboards by percent of total"

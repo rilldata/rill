@@ -1,0 +1,245 @@
+package testadmin
+
+import (
+	"context"
+	"crypto/rand"
+	"encoding/json"
+	"fmt"
+	"net"
+	"strings"
+	"testing"
+
+	"github.com/google/go-github/v50/github"
+	"github.com/rilldata/rill/admin"
+	"github.com/rilldata/rill/admin/ai"
+	"github.com/rilldata/rill/admin/billing"
+	"github.com/rilldata/rill/admin/billing/payment"
+	"github.com/rilldata/rill/admin/client"
+	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/jobs/river"
+	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
+	"github.com/rilldata/rill/admin/server"
+	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/email"
+	"github.com/rilldata/rill/runtime/pkg/ratelimit"
+	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
+
+	// Register database driver and supported provisioners
+	_ "github.com/rilldata/rill/admin/database/postgres"
+	_ "github.com/rilldata/rill/admin/provisioner/static"
+)
+
+// Fixture is a test fixture for an admin service and server.
+// It wraps an admin service with a server running on a random port backed by a testcontainer Postgres database.
+// The service, server and other resources will be cleaned up when the test that created the Fixture stops.
+//
+// The service has several limitations compared to a production server:
+// - Cannot provision runtimes
+// - Github operation are no-ops
+// - Billing operations are no-ops
+// - No configured metrics project
+// - Does not run background jobs
+type Fixture struct {
+	Admin      *admin.Service
+	Server     *server.Server
+	ServerOpts *server.Options
+}
+
+// New creates an ephemeral admin service and server for testing.
+// See the docstring for the returned Fixture for details.
+func New(t *testing.T) *Fixture {
+	ctx := context.Background()
+
+	// Postgres
+	pg := pgtestcontainer.New(t)
+	t.Cleanup(func() { pg.Terminate(t) })
+
+	// Logger
+	cfg := zap.NewProductionConfig()
+	cfg.Level.SetLevel(zap.ErrorLevel)
+	logger, err := cfg.Build()
+	require.NoError(t, err)
+
+	// Sender
+	sender := email.NewTestSender()
+	emailClient := email.New(sender)
+
+	// Application-managed column encryption keyring
+	keyring, err := database.NewRandomKeyring()
+	require.NoError(t, err)
+	keyringJSON, err := json.Marshal(keyring)
+	require.NoError(t, err)
+
+	// Ports and external URLs
+	httpPort := findPort(t)
+	grpcPort := findPort(t)
+	externalURL := fmt.Sprintf("http://localhost:%d", grpcPort)
+	externalHTTPURL := fmt.Sprintf("http://localhost:%d", httpPort)
+	frontendURL := "http://frontend.mock"
+
+	// JWT issuer
+	issuer, err := runtimeauth.NewEphemeralIssuer(externalHTTPURL)
+	require.NoError(t, err)
+
+	// Runtime provisioner.
+	// NOTE: Only gives the appearance of a static runtime, but does not actually start one.
+	// TODO: Support actually starting a runtime.
+	runtimeExternalURL := "http://localhost:9091"
+	runtimeAudienceURL := "http://localhost:8081"
+	defaultProvisioner := "static"
+	provisionerSetJSON := must(json.Marshal(map[string]any{
+		"static": map[string]any{
+			"type": "static",
+			"spec": map[string]any{
+				"runtimes": []map[string]any{
+					{
+						"host":         runtimeExternalURL,
+						"slots":        1000000,
+						"audience_url": runtimeAudienceURL,
+					},
+				},
+			},
+		},
+	}))
+
+	// Admin service
+	admOpts := &admin.Options{
+		DatabaseDriver:            "postgres",
+		DatabaseDSN:               pg.DatabaseURL,
+		DatabaseEncryptionKeyring: string(keyringJSON),
+		ExternalURL:               externalURL,
+		FrontendURL:               frontendURL,
+		ProvisionerSetJSON:        string(provisionerSetJSON),
+		DefaultProvisioner:        defaultProvisioner,
+		VersionNumber:             "",
+		VersionCommit:             "",
+		MetricsProjectOrg:         "",
+		MetricsProjectName:        "",
+		AutoscalerCron:            "",
+		ScaleDownConstraint:       0,
+	}
+	adm, err := admin.New(ctx, admOpts, logger, issuer, emailClient, &mockGithub{}, ai.NewNoop(), nil, billing.NewNoop(), payment.NewNoop())
+	require.NoError(t, err)
+	t.Cleanup(func() { adm.Close() })
+
+	// Background jobs
+	jobs, err := river.New(ctx, pg.DatabaseURL, adm)
+	require.NoError(t, err)
+	t.Cleanup(func() { jobs.Close(ctx) })
+	adm.Jobs = jobs
+
+	// Server
+	srvOpts := &server.Options{
+		HTTPPort:         httpPort,
+		GRPCPort:         grpcPort,
+		AllowedOrigins:   []string{"*"},
+		SessionKeyPairs:  [][]byte{randomBytes(16), randomBytes(16)},
+		ServePrometheus:  true,
+		AuthDomain:       "gorillio-stage.auth0.com",
+		AuthClientID:     "",
+		AuthClientSecret: "",
+	}
+	srv, err := server.New(logger, adm, issuer, ratelimit.NewNoop(), activity.NewNoopClient(), srvOpts)
+	require.NoError(t, err)
+
+	// Serve
+	ctx, cancel := context.WithCancel(ctx)
+	t.Cleanup(cancel)
+	group, ctx := errgroup.WithContext(ctx)
+	group.Go(func() error { return srv.ServeGRPC(ctx) })
+	group.Go(func() error { return srv.ServeHTTP(ctx) })
+	require.NoError(t, srv.AwaitServing(ctx))
+
+	return &Fixture{
+		Admin:      adm,
+		Server:     srv,
+		ServerOpts: srvOpts,
+	}
+}
+
+// NewUser creates a new user in the fixture's admin service.
+func (f *Fixture) NewUser(t *testing.T) (*database.User, *client.Client) {
+	return f.NewUserWithDomain(t, "test-user.com")
+}
+
+// NewSuperuser creates a new user with superuser permission in the fixture's admin service.
+func (f *Fixture) NewSuperuser(t *testing.T) (*database.User, *client.Client) {
+	u, c := f.NewUserWithDomain(t, "test-superuser.com")
+	err := f.Admin.DB.UpdateSuperuser(context.Background(), u.ID, true)
+	require.NoError(t, err)
+	return u, c
+}
+
+// NewUserWithDomain creates a new user with a random email with the given email domain in the fixture's admin service.
+func (f *Fixture) NewUserWithDomain(t *testing.T, domain string) (*database.User, *client.Client) {
+	data := randomBytes(16)
+	emailAddr := fmt.Sprintf("test-%x@%s", data, domain)
+	return f.NewUserWithEmail(t, emailAddr)
+}
+
+// NewUserWithEmail creates a new user with the given email in the fixture's admin service.
+func (f *Fixture) NewUserWithEmail(t *testing.T, emailAddr string) (*database.User, *client.Client) {
+	name := fmt.Sprintf("Test %s", strings.Split(emailAddr, "@")[0])
+
+	u, err := f.Admin.CreateOrUpdateUser(context.Background(), emailAddr, name, "")
+	require.NoError(t, err)
+
+	tkn, err := f.Admin.IssueUserAuthToken(context.Background(), u.ID, database.AuthClientIDRillWeb, "Test session", nil, nil)
+	require.NoError(t, err)
+
+	return u, f.NewClient(t, tkn.Token().String())
+}
+
+// NewClient creates a new client for the fixture's server.
+func (f *Fixture) NewClient(t *testing.T, token string) *client.Client {
+	c, err := client.New(f.ExternalURL(), token, "test")
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, c.Close()) })
+	return c
+}
+
+// ExternalURL returns the localhost URL of the fixture's server.
+func (f *Fixture) ExternalURL() string {
+	return fmt.Sprintf("http://localhost:%d", f.ServerOpts.GRPCPort)
+}
+
+// mockGithub provides a mock implementation of admin.Github.
+type mockGithub struct{}
+
+func (m *mockGithub) AppClient() *github.Client {
+	return nil
+}
+
+func (m *mockGithub) InstallationClient(installationID int64) (*github.Client, error) {
+	return nil, nil
+}
+
+func (m *mockGithub) InstallationToken(ctx context.Context, installationID int64) (string, error) {
+	return "", nil
+}
+
+func findPort(t *testing.T) int {
+	lis, err := net.Listen("tcp", "localhost:0")
+	require.NoError(t, err)
+	defer lis.Close()
+	return lis.Addr().(*net.TCPAddr).Port
+}
+
+func randomBytes(n int) []byte {
+	b := make([]byte, n)
+	_, err := rand.Read(b)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
+func must[T any](v T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return v
+}

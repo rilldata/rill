@@ -65,7 +65,7 @@ func (e *embedClickHouse) start() (*clickhouse.Options, error) {
 	}
 
 	// Store the ClickHouse binary under .rill/clickhouse so that every project can use the same binary
-	destDir, err := dotrill.ResolveFilename("clickhouse", true)
+	destDir, err := dotrill.New("").ResolveFilename("clickhouse", true)
 	if err != nil {
 		return nil, err
 	}

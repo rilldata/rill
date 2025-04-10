@@ -1,7 +1,7 @@
 <script lang="ts">
   import Chip from "@rilldata/web-common/components/chip/core/Chip.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import {
     getAllowedTimeGrains,
@@ -17,8 +17,9 @@
 
   export let selectedTimeRange: DashboardTimeControls | undefined;
   export let selectedComparisonTimeRange: DashboardTimeControls | undefined;
+  export let canvasName: string;
 
-  const { canvasEntity } = getCanvasStateManagers();
+  $: ({ canvasEntity } = getCanvasStore(canvasName));
 
   let timeGrainOptions: TimeGrain[];
   // TODO: Change this

@@ -49,9 +49,12 @@
   ) as V1MetricsViewAggregationRequest;
 
   $: metricsViewSpec = useMetricsViewValidSpec(instanceId, metricsViewName);
-  $: timeRange = useMetricsViewTimeRange(instanceId, metricsViewName, {
-    query: { queryClient },
-  });
+  $: timeRange = useMetricsViewTimeRange(
+    instanceId,
+    metricsViewName,
+    undefined,
+    queryClient,
+  );
 
   const exploreName = getExploreName(
     alertSpec.annotations?.web_open_path ?? "",
@@ -70,7 +73,7 @@
         queryArgsJson,
         $metricsViewSpec?.data ?? {},
         $timeRange?.data ?? {},
-        $dashboardState.data ?? {},
+        $dashboardState?.data ?? {},
       ),
     },
     validationSchema: alertFormValidationSchema,
@@ -106,15 +109,15 @@
             },
           },
         });
-        void queryClient.invalidateQueries(
-          getRuntimeServiceGetResourceQueryKey(instanceId, {
+        void queryClient.invalidateQueries({
+          queryKey: getRuntimeServiceGetResourceQueryKey(instanceId, {
             "name.name": alertName,
             "name.kind": ResourceKind.Alert,
           }),
-        );
-        void queryClient.invalidateQueries(
-          getRuntimeServiceListResourcesQueryKey(instanceId),
-        );
+        });
+        void queryClient.invalidateQueries({
+          queryKey: getRuntimeServiceListResourcesQueryKey(instanceId),
+        });
         dispatch("close");
         eventBus.emit("notification", {
           message: "Alert edited",

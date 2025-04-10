@@ -1,20 +1,29 @@
 import type { KPISpec } from "@rilldata/web-common/features/canvas/components/kpi";
 import { validateMeasures } from "@rilldata/web-common/features/canvas/components/validators";
-import type { StateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import { derived, type Readable } from "svelte/store";
 
 export function validateKPISchema(
-  ctx: StateManagers,
+  ctx: CanvasStore,
   kpiSpec: KPISpec,
 ): Readable<{
   isValid: boolean;
   error?: string;
+  isLoading?: boolean;
 }> {
   const { metrics_view } = kpiSpec;
   return derived(
     ctx.canvasEntity.spec.getMetricsViewFromName(metrics_view),
-    (metricsView) => {
+    (metricsViewQuery) => {
       const measure = kpiSpec.measure;
+      if (metricsViewQuery.isLoading) {
+        return {
+          isValid: true,
+          error: undefined,
+          isLoading: true,
+        };
+      }
+      const metricsView = metricsViewQuery.metricsView;
       if (!metricsView) {
         return {
           isValid: false,

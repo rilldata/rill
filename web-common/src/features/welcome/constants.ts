@@ -6,7 +6,7 @@ export const EXAMPLES = [
     title: "Cost Monitoring",
     description: "Monitoring cloud infrastructure",
     image: "/img/welcome-bg-cost-monitoring.png",
-    firstFile: "metrics_margin_explore.yaml",
+    firstFile: "margin_scorecard.yaml",
   },
   {
     name: "rill-openrtb-prog-ads",
