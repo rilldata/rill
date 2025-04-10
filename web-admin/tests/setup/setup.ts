@@ -120,16 +120,35 @@ setup.describe("global setup", () => {
 
     // Log in with the admin account
     await page.goto("/");
-    await page.getByRole("button", { name: "Continue with Email" }).click();
-    await page.getByPlaceholder("Enter your email address").click();
+
+    // Fill in the email
+    const emailInput = page.locator('input[name="username"]');
+    await emailInput.waitFor({ state: "visible" });
+    await emailInput.click();
+    await emailInput.fill(process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL);
+
+    // Click the continue button
     await page
-      .getByPlaceholder("Enter your email address")
-      .fill(process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL);
-    await page.getByPlaceholder("Enter your email address").press("Tab");
+      .locator('button[type="submit"][data-action-button-primary="true"]', {
+        hasText: "Continue",
+      })
+      .click();
+
+    // Fill in the password
+    const passwordInput = page.locator('input[name="password"]');
+    await passwordInput.waitFor({ state: "visible" });
+    await passwordInput.click();
+    await passwordInput.fill(
+      process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_PASSWORD,
+    );
+
+    // Click the continue button
     await page
-      .getByPlaceholder("Enter your password")
-      .fill(process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_PASSWORD);
-    await page.getByRole("button", { name: "Continue with Email" }).click();
+      .locator('button[type="submit"][data-action-button-primary="true"]', {
+        hasText: "Continue",
+      })
+      .click();
+
     await page.waitForURL("/");
 
     // Save the admin's Rill auth cookies to file.
