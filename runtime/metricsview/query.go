@@ -25,6 +25,7 @@ type Query struct {
 	Offset              *int64      `mapstructure:"offset"`
 	TimeZone            string      `mapstructure:"time_zone"`
 	UseDisplayNames     bool        `mapstructure:"use_display_names"`
+	Rows                bool        `mapstructure:"rows"`
 }
 
 type Dimension struct {
@@ -81,6 +82,30 @@ func (q *Query) AsMap() (map[string]any, error) {
 		return nil, err
 	}
 	return queryMap, nil
+}
+
+func (q *Query) Validate() error {
+	if q.Rows {
+		if len(q.Dimensions) > 0 {
+			return fmt.Errorf("dimensions not supported when rows is set, all model columns will be returned")
+		}
+		if len(q.Measures) > 0 {
+			return fmt.Errorf("measures not supported when rows is set, all model columns will be returned")
+		}
+		if len(q.Sort) > 0 {
+			return fmt.Errorf("sort not supported when rows is set")
+		}
+		if q.ComparisonTimeRange != nil {
+			return fmt.Errorf("comparison_time_range not supported when rows is set")
+		}
+		if q.Having != nil {
+			return fmt.Errorf("having not supported when rows is set")
+		}
+		if len(q.PivotOn) > 0 {
+			return fmt.Errorf("pivot_on not supported when rows is set")
+		}
+	}
+	return nil
 }
 
 func (m *MeasureCompute) Validate() error {

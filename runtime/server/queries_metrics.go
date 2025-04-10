@@ -65,6 +65,7 @@ func (s *Server) MetricsViewAggregation(ctx context.Context, req *runtimev1.Metr
 		Exact:               req.Exact,
 		Aliases:             req.Aliases,
 		FillMissing:         req.FillMissing,
+		Rows:                req.Rows,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -303,6 +304,7 @@ func (s *Server) MetricsViewRows(ctx context.Context, req *runtimev1.MetricsView
 		TimeZone:           req.TimeZone,
 		MetricsView:        mv.ValidSpec,
 		ResolvedMVSecurity: security,
+		Streaming:          mv.Streaming,
 		Filter:             req.Filter,
 	}
 	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))

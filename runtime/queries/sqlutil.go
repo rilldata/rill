@@ -75,7 +75,3 @@ func addInterval(t time.Time, timeGrain runtimev1.TimeGrain) time.Time {
 		return t
 	}
 }
-
-func escapeMetricsViewTable(d drivers.Dialect, mv *runtimev1.MetricsViewSpec) string {
-	return d.EscapeTable(mv.Database, mv.DatabaseSchema, mv.Table)
-}

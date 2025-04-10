@@ -131,6 +131,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			SecurityClaims:      claims,
 			Aliases:             r.Aliases,
 			Exact:               r.Exact,
+			Rows:                r.Rows,
 		}
 	case *runtimev1.Query_MetricsViewToplistRequest:
 		r := v.MetricsViewToplistRequest
@@ -183,6 +184,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			TimeZone:           r.TimeZone,
 			MetricsView:        mv.ValidSpec,
 			ResolvedMVSecurity: security,
+			Streaming:          mv.Streaming,
 		}
 	case *runtimev1.Query_MetricsViewTimeSeriesRequest:
 		r := v.MetricsViewTimeSeriesRequest

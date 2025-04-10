@@ -103,6 +103,11 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 			b.out.WriteString(", ")
 		}
 
+		if f.Expr == "*" {
+			b.out.WriteString("*")
+			continue
+		}
+
 		b.out.WriteByte('(')
 		b.out.WriteString(f.Expr)
 		b.out.WriteString(") AS ")

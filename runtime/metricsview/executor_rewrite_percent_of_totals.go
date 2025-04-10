@@ -39,6 +39,7 @@ func (e *Executor) rewritePercentOfTotals(ctx context.Context, qry *Query) error
 		Offset:              nil,
 		TimeZone:            qry.TimeZone,
 		UseDisplayNames:     false,
+		Rows:                false,
 	} //exhaustruct:enforce
 
 	// Build an AST for the totals query.

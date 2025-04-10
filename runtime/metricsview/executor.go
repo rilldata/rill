@@ -244,6 +244,11 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		return nil, runtime.ErrForbidden
 	}
 
+	err := qry.Validate()
+	if err != nil {
+		return nil, err
+	}
+
 	// preserve the original limit, required in 2 phase comparison
 	ogLimit := qry.Limit
 
@@ -473,6 +478,7 @@ func (e *Executor) Search(ctx context.Context, qry *SearchQuery, executionTime *
 			Offset:              nil,
 			TimeZone:            "",
 			UseDisplayNames:     false,
+			Rows:                false,
 		} //exhaustruct:enforce
 		q.Where = whereExprForSearch(qry.Where, d, qry.Search)
 
@@ -553,6 +559,7 @@ func (e *Executor) executeSearchInDruid(ctx context.Context, qry *SearchQuery, e
 		Offset:              nil,
 		TimeZone:            "",
 		UseDisplayNames:     false,
+		Rows:                false,
 	} //exhaustruct:enforce
 
 	if err := e.rewriteQueryTimeRanges(ctx, q, executionTime); err != nil {

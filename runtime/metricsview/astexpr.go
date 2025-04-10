@@ -96,6 +96,7 @@ func (b *sqlExprBuilder) writeSubquery(sub *Subquery) error {
 		Offset:              nil,
 		TimeZone:            outer.TimeZone,
 		UseDisplayNames:     false,
+		Rows:                false,
 	} //exhaustruct:enforce
 
 	// Generate SQL for the subquery
