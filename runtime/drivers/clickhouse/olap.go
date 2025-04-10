@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/jmoiron/sqlx"
 	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -55,10 +56,20 @@ func (c *connection) WithConnection(ctx context.Context, priority int, longRunni
 }
 
 func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
+	ctx = contextWithQueryID(ctx)
 	// Log query if enabled (usually disabled)
 	if c.config.LogQueries {
 		c.logger.Info("clickhouse query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
 	}
+
+	settings := map[string]any{
+		"cast_keep_nullable":        1,
+		"insert_distributed_sync":   1,
+		"prefer_global_in_and_join": 1,
+		"session_timezone":          "UTC",
+		"join_use_nulls":            1,
+	}
+	ctx = clickhouse.Context(ctx, clickhouse.WithSettings(settings))
 
 	// We use the meta conn for dry run queries
 	if stmt.DryRun {
@@ -93,6 +104,7 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 }
 
 func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res *drivers.Result, outErr error) {
+	ctx = contextWithQueryID(ctx)
 	// Log query if enabled (usually disabled)
 	if c.config.LogQueries {
 		c.logger.Info("clickhouse query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args))
@@ -207,6 +219,7 @@ func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName
 
 // CreateTableAsSelect implements drivers.OLAPStore.
 func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, opts *drivers.CreateTableOptions) (*drivers.TableWriteMetrics, error) {
+	ctx = contextWithQueryID(ctx)
 	outputProps := &ModelOutputProperties{}
 	if err := mapstructure.WeakDecode(opts.TableOpts, outputProps); err != nil {
 		return nil, fmt.Errorf("failed to parse output properties: %w", err)
@@ -251,6 +264,7 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, 
 
 // InsertTableAsSelect implements drivers.OLAPStore.
 func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, opts *drivers.InsertTableOptions) (*drivers.TableWriteMetrics, error) {
+	ctx = contextWithQueryID(ctx)
 	if !opts.InPlace {
 		return nil, fmt.Errorf("clickhouse: inserts does not support inPlace=false")
 	}
@@ -376,6 +390,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 
 // DropTable implements drivers.OLAPStore.
 func (c *connection) DropTable(ctx context.Context, name string) error {
+	ctx = contextWithQueryID(ctx)
 	typ, onCluster, err := informationSchema{c: c}.entityType(ctx, c.config.Database, name)
 	if err != nil {
 		return err
@@ -430,6 +445,7 @@ func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
 
 // RenameTable implements drivers.OLAPStore.
 func (c *connection) RenameTable(ctx context.Context, oldName, newName string) error {
+	ctx = contextWithQueryID(ctx)
 	typ, onCluster, err := informationSchema{c: c}.entityType(ctx, c.config.Database, oldName)
 	if err != nil {
 		return err
@@ -468,6 +484,10 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string) e
 				res.Close()
 				return err
 			}
+		}
+		err = res.Err()
+		if err != nil {
+			return err
 		}
 		res.Close()
 		engineFull = strings.ReplaceAll(engineFull, localTableName(oldName), safelocalTableName(newName))
@@ -524,6 +544,10 @@ func (c *connection) renameView(ctx context.Context, oldName, newName, onCluster
 			res.Close()
 			return err
 		}
+	}
+	err = res.Err()
+	if err != nil {
+		return err
 	}
 	res.Close()
 
@@ -589,7 +613,7 @@ func (c *connection) createTable(ctx context.Context, name, sql string, outputPr
 			return fmt.Errorf("clickhouse: no columns specified for table %q", name)
 		}
 		// infer columns
-		v := fmt.Sprintf("__rill_temp_%s_%x", name, md5.Sum([]byte(sql)))
+		v := safeSQLName(fmt.Sprintf("__rill_temp_%s_%x", name, md5.Sum([]byte(sql))))
 		defer func() {
 			// cleanup using a different ctx to prevent cleanups being impacted by the main ctx cancellation
 			// this is a best effort cleanup and query can still timeout and we don't want to wait forever due to blocked calls
@@ -725,6 +749,10 @@ func (c *connection) columnClause(ctx context.Context, table string) (string, er
 		columnClause.WriteString(" ")
 		columnClause.WriteString(typ)
 	}
+	err = res.Err()
+	if err != nil {
+		return "", err
+	}
 	columnClause.WriteRune(')')
 	return columnClause.String(), nil
 }
@@ -828,6 +856,10 @@ func (c *connection) getTableEngine(ctx context.Context, name string) (string, e
 			return "", err
 		}
 	}
+	err = res.Err()
+	if err != nil {
+		return "", err
+	}
 	return engine, nil
 }
 
@@ -849,6 +881,10 @@ func (c *connection) getTablePartitions(ctx context.Context, name string) ([]str
 			return nil, err
 		}
 		partitions = append(partitions, part)
+	}
+	err = res.Err()
+	if err != nil {
+		return nil, err
 	}
 	return partitions, nil
 }

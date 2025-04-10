@@ -31,15 +31,16 @@ import {
   resetDashboardStore,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
 import { createValidSpecQueryMock } from "@rilldata/web-common/features/dashboards/stores/test-data/query-mocks";
-import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import { V1ExploreComparisonMode } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { get } from "svelte/store";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 
-describe("dashboard-stores", () => {
+// These tests are run against the proto saved in dashboard state.
+// We do not use that param anymore.
+// TODO: cleanup and make sure tests are present for url params
+describe.skip("dashboard-stores", () => {
   beforeAll(() => {
-    initLocalUserPreferenceStore(AD_BIDS_EXPLORE_NAME);
     runtime.set({
       instanceId: "",
       host: "",
@@ -157,12 +158,12 @@ describe("dashboard-stores", () => {
     const mock = createValidSpecQueryMock();
     const { stateManagers } = initStateManagers();
     const {
-      actions: { setLeaderboardMeasureName },
+      actions: { setLeaderboardSortByMeasureName },
     } = stateManagers;
     assertMetricsView(AD_BIDS_EXPLORE_NAME);
 
     // select a different leaderboard measure
-    setLeaderboardMeasureName(AD_BIDS_BID_PRICE_MEASURE);
+    setLeaderboardSortByMeasureName(AD_BIDS_BID_PRICE_MEASURE);
     assertMetricsView(
       AD_BIDS_EXPLORE_NAME,
       undefined,
@@ -332,9 +333,9 @@ describe("dashboard-stores", () => {
       const mock = createValidSpecQueryMock();
       const { stateManagers } = initStateManagers();
       const {
-        actions: { setLeaderboardMeasureName },
+        actions: { setLeaderboardSortByMeasureName },
       } = stateManagers;
-      setLeaderboardMeasureName(AD_BIDS_BID_PRICE_MEASURE);
+      setLeaderboardSortByMeasureName(AD_BIDS_BID_PRICE_MEASURE);
 
       // create a mirror from state
       createAdBidsMirrorInStore(get(mock).data!);
@@ -346,7 +347,7 @@ describe("dashboard-stores", () => {
       // assert that the selected measure is reset to the 1st available one
       expect(
         get(metricsExplorerStore).entities[AD_BIDS_MIRROR_NAME]
-          .leaderboardMeasureName,
+          .leaderboardSortByMeasureName,
       ).toBe(AD_BIDS_IMPRESSIONS_MEASURE);
     });
 

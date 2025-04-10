@@ -9,7 +9,7 @@
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import {
     createQueryServiceMetricsViewAggregation,
-    type MetricsViewSpecDimensionV2,
+    type MetricsViewSpecDimension,
     type V1Expression,
     type V1MetricsViewAggregationMeasure,
     type V1TimeRange,
@@ -26,6 +26,8 @@
   import DimensionHeader from "./DimensionHeader.svelte";
   import DimensionTable from "./DimensionTable.svelte";
   import { getDimensionFilterWithSearch } from "./dimension-table-utils";
+  import { featureFlags } from "../../feature-flags";
+  import { selectedDimensionValuesV2 } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 
   const queryLimit = 250;
 
@@ -37,7 +39,7 @@
   export let dimensionThresholdFilters: DimensionThresholdFilter[];
   export let visibleMeasureNames: string[];
   export let timeControlsReady: boolean;
-  export let dimension: MetricsViewSpecDimensionV2;
+  export let dimension: MetricsViewSpecDimension;
   export let hideStartPivotButton = false;
 
   const {
@@ -57,7 +59,11 @@
         deselectItemsInFilter,
       },
     },
+    dashboardStore,
   } = getStateManagers();
+
+  const { leaderboardMeasureCount: leaderboardMeasureCountFeatureFlag } =
+    featureFlags;
 
   $: ({ name: dimensionName = "" } = dimension);
 
@@ -93,26 +99,51 @@
     },
   );
 
-  $: unfilteredTotal = $totalsQuery?.data?.data?.[0]?.[activeMeasureName] ?? 0;
+  $: unfilteredTotal = $leaderboardMeasureCountFeatureFlag
+    ? visibleMeasureNames.reduce(
+        (acc, measureName) => {
+          acc[measureName] =
+            ($totalsQuery?.data?.data?.[0]?.[measureName] as number) ?? 0;
+          return acc;
+        },
+        {} as { [key: string]: number },
+      )
+    : (($totalsQuery?.data?.data?.[0]?.[activeMeasureName] as number) ?? 0);
 
-  $: columns = $virtualizedTableColumns($totalsQuery);
+  $: columns = $virtualizedTableColumns(
+    $totalsQuery,
+    $leaderboardMeasureCountFeatureFlag ? visibleMeasureNames : undefined,
+  );
 
-  $: measures = getMeasuresForDimensionTable(
+  $: measures = [
+    // Get base measures
+    ...getMeasuresForDimensionTable(
+      $leaderboardMeasureCountFeatureFlag ? null : activeMeasureName,
+      dimensionThresholdFilters,
+      visibleMeasureNames,
+    ).map((name) => ({ name }) as V1MetricsViewAggregationMeasure),
+
+    // Add comparison measures if comparison time range exists
+    ...(comparisonTimeRange
+      ? ($leaderboardMeasureCountFeatureFlag
+          ? visibleMeasureNames
+          : [activeMeasureName]
+        ).flatMap((name) => getComparisonRequestMeasures(name))
+      : []),
+  ];
+
+  $: sort = getSort(
+    $sortedAscending,
+    $sortType,
     activeMeasureName,
-    dimensionThresholdFilters,
-    visibleMeasureNames,
-  )
-    .map(
-      (n) =>
-        ({
-          name: n,
-        }) as V1MetricsViewAggregationMeasure,
-    )
-    .concat(
-      ...(comparisonTimeRange
-        ? getComparisonRequestMeasures(activeMeasureName)
-        : []),
-    );
+    dimensionName,
+    !!comparisonTimeRange,
+  );
+
+  $: where = sanitiseExpression(
+    mergeDimensionAndMeasureFilters(filterSet, dimensionThresholdFilters),
+    undefined,
+  );
 
   $: sortedQuery = createQueryServiceMetricsViewAggregation(
     instanceId,
@@ -122,17 +153,8 @@
       measures,
       timeRange,
       comparisonTimeRange,
-      sort: getSort(
-        $sortedAscending,
-        $sortType,
-        activeMeasureName,
-        dimensionName,
-        !!comparisonTimeRange,
-      ),
-      where: sanitiseExpression(
-        mergeDimensionAndMeasureFilters(filterSet, dimensionThresholdFilters),
-        undefined,
-      ),
+      sort,
+      where,
       limit: queryLimit.toString(),
       offset: "0",
     },
@@ -198,16 +220,20 @@
 </script>
 
 {#if $sortedQuery}
-  <div class="h-full flex flex-col w-full" style:min-width="365px">
+  <div
+    class="h-full flex flex-col w-full"
+    style:min-width="365px"
+    aria-label="Dimension Display"
+  >
     <div class="flex-none" style:height="50px">
       <DimensionHeader
         {dimensionName}
         {areAllTableRowsSelected}
         isRowsEmpty={!tableRows.length}
         isFetching={$sortedQuery?.isFetching}
+        {hideStartPivotButton}
         bind:searchText={$dimensionSearchText}
         onToggleSearchItems={toggleAllSearchItems}
-        {hideStartPivotButton}
       />
     </div>
 
@@ -218,7 +244,14 @@
           isFetching={$sortedQuery?.isFetching}
           {dimensionName}
           {columns}
-          selectedValues={$selectedDimensionValueNames}
+          selectedValues={selectedDimensionValuesV2(
+            $runtime.instanceId,
+            [metricsViewName],
+            $dashboardStore.whereFilter,
+            dimensionName,
+            timeRange.start,
+            timeRange.end,
+          )}
           rows={tableRows}
         />
       </div>

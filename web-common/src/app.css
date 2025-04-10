@@ -3,15 +3,12 @@
 @tailwind utilities;
 
 @layer utilities {
-
-
   .surface {
-    @apply bg-white ;
+    @apply bg-white;
   }
 
-
   .ui-copy {
-    @apply text-gray-900 ;
+    @apply text-gray-900;
   }
 
   .ui-copy-dashboard-header {
@@ -21,11 +18,10 @@
 
   .ui-copy-muted {
     @apply text-gray-600;
-   
   }
 
   .ui-header-primary {
-    @apply text-slate-600 ;
+    @apply text-slate-600;
     @apply hover:text-primary-700 group-hover:text-primary-700;
   }
 
@@ -38,10 +34,35 @@
   }
 
   .ui-copy-number {
-    font-feature-settings: "case" 0, "cpsp" 0, "dlig" 0, "frac" 0, "dnom" 0,
-      "numr" 0, "salt" 0, "subs" 0, "sups" 0, "tnum", "zero" 0, "ss01", "ss02" 0,
-      "ss03" 0, "ss04" 0, "cv01" 0, "cv02" 0, "cv03" 0, "cv04" 0, "cv05" 0,
-      "cv06" 0, "cv07" 0, "cv08" 0, "cv09" 0, "cv10" 0, "cv11" 0, "calt", "ccmp",
+    font-feature-settings:
+      "case" 0,
+      "cpsp" 0,
+      "dlig" 0,
+      "frac" 0,
+      "dnom" 0,
+      "numr" 0,
+      "salt" 0,
+      "subs" 0,
+      "sups" 0,
+      "tnum",
+      "zero" 0,
+      "ss01",
+      "ss02" 0,
+      "ss03" 0,
+      "ss04" 0,
+      "cv01" 0,
+      "cv02" 0,
+      "cv03" 0,
+      "cv04" 0,
+      "cv05" 0,
+      "cv06" 0,
+      "cv07" 0,
+      "cv08" 0,
+      "cv09" 0,
+      "cv10" 0,
+      "cv11" 0,
+      "calt",
+      "ccmp",
       "kern";
   }
 
@@ -64,7 +85,6 @@
     @apply text-gray-600;
   }
 
-
   .ui-measure-bar-included {
     @apply bg-primary-100;
   }
@@ -84,8 +104,6 @@
   .ui-editor-bg-error {
     @apply bg-red-50;
   }
-
-
 }
 
 @layer base {
@@ -94,18 +112,18 @@
 
     --background: 210 40% 98%;
     --surface: 0 0% 100%;
-    
+
     --foreground: 222.2 84% 4.9%;
-  
+
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
-  
+
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-  
+
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
-  
+
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
 
@@ -116,7 +134,7 @@
     translations/approximations in HSL, but this is fine for
      the initial roll out
      */
-    
+
     /* 
     `246, 57%, 20%` approximates primary color 
     from our new palette vs previous color:
@@ -129,7 +147,7 @@
     `--primary-foreground: 210 40% 98%;`
     */
     --primary-foreground: 227 100% 96%;
-  
+
     /* 
     `202, 100%, 94%` approximates secondary color 
     from our new palette vs previous color:
@@ -145,21 +163,20 @@
     lighter than the previous --secondary-foreground color.
     */
     --secondary-foreground: 202 90% 16%;
-  
+
     --accent: 210 40% 96.1%;
     --accent-foreground: 222.2 47.4% 11.2%;
-  
+
     --destructive: 0 72.2% 50.6%;
     --destructive-foreground: 210 40% 98%;
-  
+
     --ring: 222.2 84% 4.9%;
-  
+
     --radius: 0.5rem;
 
     /* Used to set svg gradient */
     --color-slate-200: theme("colors.slate.200");
     --color-slate-300: theme("colors.slate.300");
-
   }
 
   :root[data-theme="dark"] {
@@ -193,7 +210,7 @@ body {
   --system: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
     Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 
-  --monospace: 'Source Code Variable';
+  --monospace: "Source Code Variable";
   margin: 0;
   padding: 0;
 
@@ -228,4 +245,3 @@ a {
 .left-shift {
   @apply pl-8;
 }
-

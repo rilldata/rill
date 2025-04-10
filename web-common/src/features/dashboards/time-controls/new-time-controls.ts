@@ -1,7 +1,7 @@
 // WIP as of 04/19/2024
 
 import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
-import type { MetricsViewSpecAvailableTimeRange } from "@rilldata/web-common/runtime-client";
+import type { V1ExploreTimeRange } from "@rilldata/web-common/runtime-client";
 import {
   DateTime,
   type DateTimeUnit,
@@ -384,6 +384,7 @@ export type RangeBuckets = {
   latest: { label: string; range: ISODurationString }[];
   previous: { range: RillPreviousPeriod; label: string }[];
   periodToDate: { range: RillPeriodToDate; label: string }[];
+  allTime: boolean;
 };
 
 const defaultBuckets = {
@@ -399,10 +400,11 @@ const defaultBuckets = {
     range,
     label: RILL_TO_LABEL[range],
   })),
+  allTime: false,
 };
 
 export function bucketYamlRanges(
-  availableRanges: MetricsViewSpecAvailableTimeRange[],
+  availableRanges: V1ExploreTimeRange[],
 ): RangeBuckets {
   const showDefaults = !availableRanges.length;
 
@@ -420,6 +422,8 @@ export function bucketYamlRanges(
         record.previous.push({ range, label: RILL_TO_LABEL[range] });
       } else if (isValidISODuration(range)) {
         record.latest.push({ range, label: getDurationLabel(range) });
+      } else if (range === ALL_TIME_RANGE_ALIAS) {
+        record.allTime = true;
       }
 
       return record;
@@ -428,6 +432,7 @@ export function bucketYamlRanges(
       previous: [],
       latest: [],
       periodToDate: [],
+      allTime: false,
     },
   );
 }

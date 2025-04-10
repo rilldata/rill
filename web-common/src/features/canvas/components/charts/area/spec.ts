@@ -45,29 +45,30 @@ export function generateVLAreaChartSpec(
     multiValueTooltipChannel = multiValueTooltipChannel.slice(0, 50);
   }
 
+  spec.encoding = { x: createXEncoding(config, data) };
+
   spec.layer = [
     {
       encoding: {
-        x: createXEncoding(config, data),
         y: { ...createYEncoding(config, data), stack: "zero" },
         color: createColorEncoding(config, data),
       },
       layer: [
         { mark: "area" },
         {
+          mark: { type: "line", opacity: 0.5 },
+        },
+        {
           transform: [{ filter: { param: "hover", empty: false } }],
           mark: {
             type: "point",
             filled: true,
             opacity: 1,
-            size: 40,
+            size: 50,
             clip: true,
             stroke: "white",
             strokeWidth: 1,
           },
-        },
-        {
-          mark: { type: "line", opacity: 0.5 },
         },
       ],
     },

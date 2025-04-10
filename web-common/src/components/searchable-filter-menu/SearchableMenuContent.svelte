@@ -1,9 +1,9 @@
 <script lang="ts">
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import type { SearchableFilterSelectableGroup } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
+  import { matchSorter } from "match-sorter";
   import Button from "../button/Button.svelte";
   import { Search } from "../search";
-  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import { matchSorter } from "match-sorter";
 
   const voidFn = () => {};
 
@@ -14,6 +14,7 @@
   export let fadeUnselected = false;
   export let showXForSelected = false;
   export let showSelection = false;
+  export let allowSelectAll = true;
   export let searchText = "";
   export let showHiddenSelectionsCount = false;
   export let onSelect: (name: string) => void;
@@ -73,11 +74,11 @@
   </div>
 
   <div class="flex flex-col flex-1 overflow-y-auto w-full h-fit pb-1">
-    {#each filteredGroups as { name, items }, index (name)}
+    {#each filteredGroups as { name, label, items }, index (name)}
       <DropdownMenu.Group class="px-1">
         {#if filteredGroups.length > 1}
           <DropdownMenu.Label>
-            {name}
+            {label ?? name}
           </DropdownMenu.Label>
         {/if}
         {#each items as { name, label } (name)}
@@ -113,7 +114,12 @@
             </span>
           </svelte:component>
         {:else}
-          <div class="ui-copy-disabled text-center p-2 w-full">no results</div>
+          <div
+            data-testid="searchable-menu-no-results"
+            class="ui-copy-disabled text-center p-2 w-full"
+          >
+            no results
+          </div>
         {/each}
 
         {#if index !== filteredGroups.length - 1}
@@ -123,7 +129,7 @@
     {/each}
   </div>
 
-  {#if allowMultiSelect}
+  {#if allowSelectAll && allowMultiSelect}
     <footer>
       <Button on:click={onToggleSelectAll} type="plain">
         {#if allSelected}

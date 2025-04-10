@@ -1,13 +1,6 @@
 import { expect } from "@playwright/test";
-import {
-  createExploreFromModel,
-  createExploreFromSource,
-} from "../utils/exploreHelpers";
-import {
-  assertLeaderboards,
-  interactWithTimeRangeMenu,
-} from "../utils/metricsViewHelpers";
-import { ResourceWatcher } from "../utils/ResourceWatcher";
+import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions";
+import { test } from "../setup/base";
 import { updateCodeEditor, wrapRetryAssertion } from "../utils/commonHelpers";
 import {
   AD_BIDS_EXPLORE_PATH,
@@ -15,8 +8,13 @@ import {
   assertAdBidsDashboard,
   createAdBidsModel,
 } from "../utils/dataSpecifcHelpers";
+import {
+  createExploreFromModel,
+  createExploreFromSource,
+} from "../utils/exploreHelpers";
+import { assertLeaderboards } from "../utils/metricsViewHelpers";
+import { ResourceWatcher } from "../utils/ResourceWatcher";
 import { createSource } from "../utils/sourceHelpers";
-import { test } from "../setup/base";
 import { gotoNavEntry } from "../utils/waitHelpers";
 
 test.describe("explores", () => {
@@ -52,6 +50,8 @@ test.describe("explores", () => {
   });
 
   test("Dashboard runthrough", async ({ page }) => {
+    test.setTimeout(45_000); // Note: we should make this test smaller!
+
     // Enable to get logs in CI
     // page.on("console", async (msg) => {
     //   console.log(msg.text());
@@ -61,13 +61,54 @@ test.describe("explores", () => {
     //     `Uncaught exception: "${exception.message}"\n${exception.stack}`
     //   );
     // });
+
     const watcher = new ResourceWatcher(page);
 
     await createAdBidsModel(page);
-    await createExploreFromModel(page, true);
+    await createExploreFromModel(page);
+
+    await page.getByRole("button", { name: "switch to code editor" }).click();
+
+    // Add `inf` alias to the time range
+    const addAllTime = `
+type: explore
+
+title: "Adbids dashboard"
+metrics_view: AdBids_model_metrics
+
+dimensions: '*'
+measures: '*'
+
+time_ranges:
+  - PT6H
+  - PT24H
+  - P7D
+  - P14D
+  - P4W
+  - P12M
+  - rill-TD
+  - rill-WTD
+  - rill-MTD
+  - rill-QTD
+  - rill-YTD
+  - rill-PDC
+  - rill-PWC
+  - rill-PMC
+  - rill-PQC
+  - rill-PYC
+  - inf
+`;
+
+    await watcher.updateAndWaitForExplore(addAllTime);
+
+    await page.getByRole("button", { name: "Preview" }).click();
+
+    await page.waitForTimeout(1000);
 
     // Check the total records are 100k
-    await expect(page.getByText("Total records 100k")).toBeVisible();
+    await page
+      .getByRole("button", { name: "Total records 100k" })
+      .waitFor({ timeout: 2000 });
 
     // Check the row viewer accordion is visible
     await expect(page.getByText("Model Data 100k of 100k rows")).toBeVisible();
@@ -85,7 +126,7 @@ test.describe("explores", () => {
       await page.getByRole("menuitem", { name: "Last 6 Hours" }).click();
     });
 
-    await page.getByRole("button", { name: "Comparing" }).click();
+    await page.getByLabel("Toggle time comparison").click();
 
     // Check that the total records are 272 and have comparisons
     await expect(page.getByText("272 -23 -8%")).toBeVisible();
@@ -136,13 +177,13 @@ test.describe("explores", () => {
     expect(parquetRegex.test(downloadParquet.suggestedFilename())).toBe(true);
 
     // Turn off comparison
-    await page.getByRole("button", { name: "Comparing" }).click();
+    await page.getByLabel("Toggle time comparison").click();
 
     // Check number
     await expect(page.getByText("272", { exact: true })).toBeVisible();
 
     // Add comparison back
-    await page.getByRole("button", { name: "Comparing" }).click();
+    await page.getByLabel("Toggle time comparison").click();
 
     /*
       There is a bug where if you programmatically click the Time Range Selector button right after clicking the "Previous Period" menu item,
@@ -182,14 +223,14 @@ test.describe("explores", () => {
 
     // Change filter to excluded
     await page.getByText("Publisher Facebook").click();
-    await page.getByRole("button", { name: "Exclude" }).click();
+    await page.getByLabel("Include exclude toggle").click();
     await page.getByText("Exclude Publisher Facebook").click();
 
     // Check number
     await expect(page.getByText("Total records 80,659")).toBeVisible();
 
     // Clear the filter from filter bar
-    await page.getByLabel("View filter").getByLabel("Remove").click();
+    await page.getByLabel("publisher filter").getByLabel("Remove").click();
 
     // Apply a different filter
     await page.getByRole("row", { name: "google.com 15.1k" }).click();
@@ -222,8 +263,27 @@ metrics_view: AdBids_model_metrics
 
 dimensions: '*'
 measures: '*'
+
+time_ranges:
+  - PT6H
+  - PT24H
+  - P7D
+  - P14D
+  - P4W
+  - P12M
+  - rill-TD
+  - rill-WTD
+  - rill-MTD
+  - rill-QTD
+  - rill-YTD
+  - rill-PDC
+  - rill-PWC
+  - rill-PMC
+  - rill-PQC
+  - rill-PYC
+  - inf
 `;
-    await page.getByLabel("code").click();
+
     await watcher.updateAndWaitForExplore(changeDisplayNameDoc);
 
     // Remove timestamp column
@@ -272,7 +332,7 @@ measures: '*'
 
         `;
 
-    await page.getByLabel("code").click();
+    await page.getByRole("button", { name: "switch to code editor" }).click();
     await watcher.updateAndWaitForDashboard(addBackTimestampColumnDoc);
     await page.getByRole("button", { name: "Create resource menu" }).click();
     await page
@@ -358,6 +418,12 @@ dimensions:
     // Preview
     await page.getByRole("button", { name: "Preview" }).click();
 
+    await page.waitForTimeout(500);
+
+    await interactWithTimeRangeMenu(page, async () => {
+      await page.getByRole("menuitem", { name: "All Time" }).click();
+    });
+
     // Check Avg Bid Price
     await expect(page.getByText("Avg Bid Price $3.01")).toBeVisible();
 
@@ -402,7 +468,7 @@ dimensions:
 
     // Check that filter was applied
     await expect(
-      page.getByLabel("View filter").getByText("Publisher Microsoft"),
+      page.getByLabel("publisher filter").getByText("Publisher Microsoft"),
     ).toBeVisible();
 
     // go back to the leaderboards.
@@ -435,7 +501,7 @@ dimensions:
 
     await page.getByRole("cell", { name: "Total rows" }).locator("div").click();
 
-    await page.getByRole("button", { name: "Total rows", exact: true }).click();
+    await page.getByLabel("Open Total rows").click();
     await page.getByRole("menuitem", { name: "Avg Bid Price" }).click();
 
     await expect(page.getByText(" Avg Bid Price $3.02")).toBeVisible();
@@ -451,7 +517,7 @@ dimensions:
     await page
       .getByRole("menuitem", { name: "No comparison dimension" })
       .click();
-    await page.getByRole("button", { name: "Comparing" }).click();
+    await page.getByLabel("Toggle time comparison").click();
 
     await expect(page.getByText("~0%")).toBeVisible();
 

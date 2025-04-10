@@ -106,29 +106,34 @@ export class WatchResourcesClient {
           return;
 
         // Refetch `ListResources` queries
-        void queryClient.refetchQueries(
-          getRuntimeServiceListResourcesQueryKey(this.instanceId, undefined),
-        );
-        void queryClient.refetchQueries(
-          getRuntimeServiceListResourcesQueryKey(this.instanceId, {
+        void queryClient.refetchQueries({
+          queryKey: getRuntimeServiceListResourcesQueryKey(
+            this.instanceId,
+            undefined,
+          ),
+        });
+        void queryClient.refetchQueries({
+          queryKey: getRuntimeServiceListResourcesQueryKey(this.instanceId, {
             kind: res.name.kind,
           }),
-        );
+        });
 
         switch (res.name.kind as ResourceKind) {
           case ResourceKind.Connector:
             // Invalidate the list of connectors
-            void queryClient.invalidateQueries(
-              getRuntimeServiceAnalyzeConnectorsQueryKey(this.instanceId),
-            );
+            void queryClient.invalidateQueries({
+              queryKey: getRuntimeServiceAnalyzeConnectorsQueryKey(
+                this.instanceId,
+              ),
+            });
 
             // Invalidate the connector's list of tables
-            void queryClient.invalidateQueries(
-              getConnectorServiceOLAPListTablesQueryKey({
+            void queryClient.invalidateQueries({
+              queryKey: getConnectorServiceOLAPListTablesQueryKey({
                 instanceId: this.instanceId,
                 connector: res.name.name,
               }),
-            );
+            });
 
             // Done
             return;
@@ -157,12 +162,12 @@ export class WatchResourcesClient {
                 new Set([connectorName, previousConnectorName].filter(Boolean)),
               );
               for (const connector of connectorsToInvalidate) {
-                void queryClient.invalidateQueries(
-                  getConnectorServiceOLAPListTablesQueryKey({
+                void queryClient.invalidateQueries({
+                  queryKey: getConnectorServiceOLAPListTablesQueryKey({
                     instanceId: this.instanceId,
                     connector: connector,
                   }),
-                );
+                });
               }
             }
 
@@ -170,9 +175,11 @@ export class WatchResourcesClient {
             // (This is needed because Sources and Models can implicitly create Connectors)
             if (connectorName && !this.connectorNames.has(connectorName)) {
               this.connectorNames.add(connectorName);
-              void queryClient.invalidateQueries(
-                getRuntimeServiceAnalyzeConnectorsQueryKey(this.instanceId),
-              );
+              void queryClient.invalidateQueries({
+                queryKey: getRuntimeServiceAnalyzeConnectorsQueryKey(
+                  this.instanceId,
+                ),
+              });
             }
 
             // Note: Sources/Models that fail to ingest will not have a table name
@@ -186,7 +193,8 @@ export class WatchResourcesClient {
 
             // If it's a new source, show the "Source imported successfully" modal
             const isNewSource =
-              res.name.kind === ResourceKind.Source &&
+              res.name.kind === ResourceKind.Model &&
+              res.resource.model?.spec?.definedAsSource &&
               res.resource.meta.specVersion === "1" && // First file version
               res.resource.meta.stateVersion === "2" && // First ingest is complete
               (await isLeafResource(res.resource, this.instanceId)); // Protects against existing projects reconciling anew
@@ -197,12 +205,12 @@ export class WatchResourcesClient {
 
             // Invalidate the model partitions query
             if ((res.name.kind as ResourceKind) === ResourceKind.Model) {
-              void queryClient.invalidateQueries(
-                getRuntimeServiceGetModelPartitionsQueryKey(
+              void queryClient.invalidateQueries({
+                queryKey: getRuntimeServiceGetModelPartitionsQueryKey(
                   this.instanceId,
                   res.name.name,
                 ),
-              );
+              });
             }
 
             // Invalidate profiling queries
@@ -231,24 +239,23 @@ export class WatchResourcesClient {
               );
             }
 
-            queryClient
-              .refetchQueries(
-                getRuntimeServiceGetExploreQueryKey(this.instanceId, {
-                  name: res.name.name,
-                }),
-              )
-              .catch(console.error);
+            void queryClient.refetchQueries({
+              queryKey: getRuntimeServiceGetExploreQueryKey(this.instanceId, {
+                name: res.name.name,
+              }),
+            });
+
             return;
           }
 
           case ResourceKind.Canvas: {
-            void queryClient.refetchQueries(
-              getQueryServiceResolveCanvasQueryKey(
+            void queryClient.refetchQueries({
+              queryKey: getQueryServiceResolveCanvasQueryKey(
                 this.instanceId,
                 res.name.name,
                 {},
               ),
-            );
+            });
             return;
           }
 
@@ -273,21 +280,26 @@ export class WatchResourcesClient {
        */
       case V1ResourceEvent.RESOURCE_EVENT_DELETE:
         // Refetch `ListResources` queries
-        void queryClient.refetchQueries(
-          getRuntimeServiceListResourcesQueryKey(this.instanceId, undefined),
-        );
-        void queryClient.refetchQueries(
-          getRuntimeServiceListResourcesQueryKey(this.instanceId, {
+        void queryClient.refetchQueries({
+          queryKey: getRuntimeServiceListResourcesQueryKey(
+            this.instanceId,
+            undefined,
+          ),
+        });
+        void queryClient.refetchQueries({
+          queryKey: getRuntimeServiceListResourcesQueryKey(this.instanceId, {
             kind: res.name.kind,
           }),
-        );
+        });
 
         switch (res.name.kind as ResourceKind) {
           case ResourceKind.Connector:
             // Invalidate the list of connectors
-            void queryClient.invalidateQueries(
-              getRuntimeServiceAnalyzeConnectorsQueryKey(this.instanceId),
-            );
+            void queryClient.invalidateQueries({
+              queryKey: getRuntimeServiceAnalyzeConnectorsQueryKey(
+                this.instanceId,
+              ),
+            });
 
             // Remove the connector's state from the connector explorer store
             connectorExplorerStore.deleteItem(res.name.name);
@@ -304,12 +316,12 @@ export class WatchResourcesClient {
                 : previousResource?.model?.state?.resultConnector;
 
             // Invalidate the connector's list of tables
-            void queryClient.invalidateQueries(
-              getConnectorServiceOLAPListTablesQueryKey({
+            void queryClient.invalidateQueries({
+              queryKey: getConnectorServiceOLAPListTablesQueryKey({
                 instanceId: this.instanceId,
                 connector: connectorName,
               }),
-            );
+            });
 
             // Done
             return;

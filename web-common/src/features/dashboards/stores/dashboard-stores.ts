@@ -1,6 +1,5 @@
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
-import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import { getWhereFilterExpressionIndex } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import { AdvancedMeasureCorrector } from "@rilldata/web-common/features/dashboards/stores/AdvancedMeasureCorrector";
 import { getFullInitExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
@@ -44,10 +43,6 @@ const { update, subscribe } = writable({
   entities: {},
 } as MetricsExplorerStoreType);
 
-function updateMetricsExplorerProto(metricsExplorer: MetricsExplorerEntity) {
-  metricsExplorer.proto = getProtoFromDashboardState(metricsExplorer);
-}
-
 export const updateMetricsExplorerByName = (
   name: string,
   callback: (metricsExplorer: MetricsExplorerEntity) => void,
@@ -58,8 +53,6 @@ export const updateMetricsExplorerByName = (
     }
 
     callback(state.entities[name]);
-    // every change triggers a proto update
-    updateMetricsExplorerProto(state.entities[name]);
     return state;
   });
 };
@@ -68,7 +61,11 @@ function includeExcludeModeFromFilters(filters: V1Expression | undefined) {
   const map = new Map<string, boolean>();
   if (!filters) return map;
   forEachIdentifier(filters, (e, ident) => {
-    if (e.cond?.op === V1Operation.OPERATION_NIN) {
+    if (
+      e.cond?.op === V1Operation.OPERATION_NIN ||
+      e.cond?.op === V1Operation.OPERATION_NLIKE ||
+      e.cond?.op === V1Operation.OPERATION_NEQ
+    ) {
       map.set(ident, true);
     }
   });
@@ -84,9 +81,10 @@ function syncMeasures(
   // sync measures with selected leaderboard measure.
   if (
     explore.measures?.length &&
-    !measuresSet.has(metricsExplorer.leaderboardMeasureName)
+    !measuresSet.has(metricsExplorer.leaderboardSortByMeasureName)
   ) {
-    metricsExplorer.leaderboardMeasureName = explore.measures[0];
+    const defaultMeasure = explore.measures[0];
+    metricsExplorer.leaderboardSortByMeasureName = defaultMeasure;
   }
 
   if (
@@ -102,20 +100,18 @@ function syncMeasures(
 
   if (metricsExplorer.allMeasuresVisible) {
     // this makes sure that the visible keys is in sync with list of measures
-    metricsExplorer.visibleMeasureKeys = measuresSet;
+    metricsExplorer.visibleMeasures = [...measuresSet];
   } else {
-    // remove any keys from visible measure if it doesn't exist anymore
-    for (const measureKey of metricsExplorer.visibleMeasureKeys) {
-      if (!measuresSet.has(measureKey)) {
-        metricsExplorer.visibleMeasureKeys.delete(measureKey);
-      }
-    }
+    // remove any visible measures that doesn't exist anymore
+    metricsExplorer.visibleMeasures = metricsExplorer.visibleMeasures.filter(
+      (m) => measuresSet.has(m),
+    );
     // If there are no visible measures, make the first measure visible
     if (
       explore.measures?.length &&
-      metricsExplorer.visibleMeasureKeys.size === 0
+      metricsExplorer.visibleMeasures.length === 0
     ) {
-      metricsExplorer.visibleMeasureKeys = new Set([explore.measures[0]]);
+      metricsExplorer.visibleMeasures = [explore.measures[0]];
     }
   }
 }
@@ -152,23 +148,22 @@ function syncDimensions(
 
   if (metricsExplorer.allDimensionsVisible) {
     // this makes sure that the visible keys is in sync with list of dimensions
-    metricsExplorer.visibleDimensionKeys = dimensionsSet;
+    metricsExplorer.visibleDimensions = [...dimensionsSet];
   } else {
-    // remove any keys from visible dimension if it doesn't exist anymore
-    for (const dimensionKey of metricsExplorer.visibleDimensionKeys) {
-      if (!dimensionsSet.has(dimensionKey)) {
-        metricsExplorer.visibleDimensionKeys.delete(dimensionKey);
-      }
-    }
+    // remove any visible dimensions that doesn't exist anymore
+    metricsExplorer.visibleDimensions =
+      metricsExplorer.visibleDimensions.filter((d) => dimensionsSet.has(d));
   }
 }
 
 const metricsViewReducers = {
   init(name: string, initState: Partial<MetricsExplorerEntity> = {}) {
     update((state) => {
+      // TODO: revisit this during the url state / restore user refactor
+      initState.dimensionFilterExcludeMode = includeExcludeModeFromFilters(
+        initState.whereFilter,
+      );
       state.entities[name] = getFullInitExploreState(name, initState);
-
-      updateMetricsExplorerProto(state.entities[name]);
 
       return state;
     });
@@ -240,7 +235,6 @@ const metricsViewReducers = {
 
   setPivotMode(name: string, mode: boolean) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.pivot = { ...metricsExplorer.pivot, active: mode };
       if (mode) {
         metricsExplorer.activePage = DashboardState_ActivePage.PIVOT;
       } else if (metricsExplorer.selectedDimensionName) {
@@ -379,7 +373,6 @@ const metricsViewReducers = {
       metricsExplorer.activePage = DashboardState_ActivePage.PIVOT;
       metricsExplorer.pivot = {
         ...metricsExplorer.pivot,
-        active: true,
         rows,
         columns,
         expanded: {},
@@ -561,21 +554,21 @@ export function useExploreState(name: string): Readable<MetricsExplorerEntity> {
 }
 
 export function sortTypeForContextColumnType(
-  contextCol: LeaderboardContextColumn,
+  contextColumn: LeaderboardContextColumn,
 ): SortType {
   const sortType = {
     [LeaderboardContextColumn.DELTA_PERCENT]: SortType.DELTA_PERCENT,
     [LeaderboardContextColumn.DELTA_ABSOLUTE]: SortType.DELTA_ABSOLUTE,
     [LeaderboardContextColumn.PERCENT]: SortType.PERCENT,
     [LeaderboardContextColumn.HIDDEN]: SortType.VALUE,
-  }[contextCol];
+  }[contextColumn];
 
   // Note: the above map needs to be EXHAUSTIVE over
   // LeaderboardContextColumn variants. If we ever add a new
   // context column type, we need to add it to the map above.
   // Otherwise, we will throw an error here.
   if (!sortType) {
-    throw new Error(`Invalid context column type: ${contextCol}`);
+    throw new Error(`Invalid context column type: ${contextColumn}`);
   }
   return sortType;
 }

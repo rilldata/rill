@@ -104,7 +104,6 @@ func (c *Connection) DownloadFiles(ctx context.Context, props map[string]any) (d
 	if err != nil {
 		return nil, err
 	}
-	defer bucketObj.Close()
 
 	var batchSize datasize.ByteSize
 	if conf.BatchSize == "-1" {

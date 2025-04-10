@@ -1,14 +1,12 @@
 <script lang="ts">
+  import { beforeNavigate } from "$app/navigation";
+  import { MergeView } from "@codemirror/merge";
   import type { Extension } from "@codemirror/state";
-  import { EditorState, Compartment, EditorSelection } from "@codemirror/state";
+  import { Compartment, EditorSelection, EditorState } from "@codemirror/state";
   import { EditorView, type ViewUpdate } from "@codemirror/view";
   import { onMount } from "svelte";
   import { base as baseExtensions } from "../../components/editor/presets/base";
   import { FileArtifact } from "../entity-management/file-artifact";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { underlineSelection } from "./highlight-field";
-  import { MergeView } from "@codemirror/merge";
-  import { beforeNavigate } from "$app/navigation";
 
   export let fileArtifact: FileArtifact;
   export let extensions: Extension[] = [];
@@ -45,11 +43,7 @@
   onMount(() => {
     const unsubLocal = onEditorContentChange(dispatchEditorChange);
 
-    const unsubHighlighter = eventBus.on("highlightSelection", (refs) => {
-      if (editor) underlineSelection(editor, refs);
-    });
-
-    unsubscribers.push(unsubLocal, unsubHighlighter);
+    unsubscribers.push(unsubLocal);
 
     return () => {
       editor?.destroy();
@@ -170,15 +164,8 @@
   bind:this={parent}
   class="size-full overflow-hidden"
   role="textbox"
-  aria-label="Code editor"
+  aria-label="codemirror editor"
   tabindex="0"
-  on:click={() => {
-    /** give the editor focus no matter where we click */
-    if (!editor?.hasFocus) editor?.focus();
-  }}
-  on:keydown={() => {
-    /** no op for now */
-  }}
 />
 
 <style lang="postcss">

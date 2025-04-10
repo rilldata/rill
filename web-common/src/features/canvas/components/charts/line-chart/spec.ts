@@ -61,7 +61,7 @@ export function generateVLLineChartSpec(
             type: "point",
             filled: true,
             opacity: 1,
-            size: 40,
+            size: 50,
             clip: true,
             stroke: "white",
             strokeWidth: 1,

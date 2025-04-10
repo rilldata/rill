@@ -5,81 +5,52 @@ sidebar_label: Roles and Permissions
 sidebar_position: 30
 ---
 
-Access permissions in Rill Cloud are organized into roles at the project and organization level. In most cases, it should be sufficient to grant access at the organization level because those permissions are _inherited_ for projects by default. 
+Access permissions in Rill Cloud are organized into roles at the organization and project level.
 
 ## Role inheritance
 
-Some project-level roles can be inherited from the organization-level:
-
-- Users with `read_projects` permission on an organization get *viewer* role on all projects in the organization.
-- Users with `manage_projects` permission on an organization get *admin* role on all projects in the organization.
+Organization and project level roles are managed separately, but are connected in several ways:
+1. By default, all organization members (but not guests) are added to new projects through a user group membership with the **viewer** role. You can manually remove this relationship in the project's member settings.
+2. If you grant a project level role to someone who is not a member of the parent organization, they will automatically be added to the organization with the **guest** role.
+3. Removing an organization member or guest automatically also removes them from all projects in the organization.
+4. Organization admins implicitly have admin privileges on all projects in the organization.
 
 ## Organization-level permissions
 
-There are two roles available at the organization-level: **Viewer** and **Admin**.
+There are four roles available at the organization-level: **Admin**, **Editor**, **Viewer** and **Guest**.
 
-| Permission           | Description                                         | Viewer | Admin |
-| :------------------- | :-------------------------------------------------- | -----: | ----: |
-| `read_org`           | View basic info about the organization              |      ✔ |     ✔ |
-| `manage_org`         | Change organization settings                        |        |     ✔ |
-| `read_projects`      | Act as a viewer on all projects in the organization |      ✔ |     ✔ |
-| `create_projects`    | Create new projects in the organization             |        |     ✔ |
-| `manage_projects`    | Act as an admin on all projects in the organization |        |     ✔ |
-| `read_org_members`   | View members of the organization                    |        |     ✔ |
-| `manage_org_members` | Add, remove or change roles of organization members |        |     ✔ |
+| Permission           | Description                                          | Admin | Editor | Viewer | Guest |
+| :------------------- | :--------------------------------------------------- | ----: | -----: | -----: | ----: |
+| `read_org`           | View basic info about the organization               |     ✔ |      ✔ |      ✔ |     ✔ |
+| `manage_org`         | Change organization settings                         |     ✔ |        |        |       |
+| `read_projects`      | View projects you're a member of in the organization |     ✔ |      ✔ |      ✔ |     ✔ |
+| `create_projects`    | Create new projects in the organization              |     ✔ |      ✔ |        |       |
+| `manage_projects`    | Act as an admin on all projects in the organization  |     ✔ |        |        |       |
+| `read_org_members`   | View members of the organization                     |     ✔ |      ✔ |        |       |
+| `manage_org_members` | Add and edit non-admin organization members          |     ✔ |      ✔ |        |       |
+| `manage_org_admins`  | Add and edit organization admins                     |     ✔ |        |        |       |
 
 ## Project-level permissions
 
-There are two roles available at the project-level: **Viewer** and **Admin**.
+There are three roles available at the project-level: **Admin**, **Editor**, and **Viewer**.
 
-| Permission                     | Description                                                | Viewer | Admin |
-| :----------------------------- | :--------------------------------------------------------- | -----: | ----: |
-| `read_project`                 | View basic info about the project                          |      ✔ |     ✔ |
-| `manage_project`               | Change project settings                                    |        |     ✔ |
-| `read_prod`                    | View dashboards deployed from the production (main) branch |      ✔ |     ✔ |
-| `read_prod_status`             | View logs for the production deployment                    |        |     ✔ |
-| `manage_prod`                  | Trigger actions on the production deployment               |        |     ✔ |
-| `read_provisioner_resources`   | View managed resources for the project                     |        |     ✔ |
-| `manage_provisioner_resources` | Add or remove managed resources for the project            |        |     ✔ |
-| `read_project_members`         | View members of the project                                |        |     ✔ |
-| `manage_project_members`       | Add, remove or change roles of project members             |        |     ✔ |
-| `create_magic_auth_tokens`     | Create shareable URLs                                      |        |     ✔ |
-| `manage_magic_auth_tokens`     | Remove shareable URLs created by others                    |        |     ✔ |
-| `create_reports`               | Create and edit new scheduled reports                      |      ✔ |     ✔ |
-| `manage_reports`               | Edit and change scheduled reports created by others        |        |     ✔ |
-| `create_alerts`                | Create and edit new alerts                                 |      ✔ |     ✔ |
-| `manage_alerts`                | Edit and change alerts created by others                   |        |     ✔ |
-| `create_bookmarks`             | Create and edit new bookmarks                              |      ✔ |     ✔ |
-| `manage_bookmarks`             | Edit and change bookmarks created by others                |        |     ✔ |
-<!--
-| `read_dev`                 | View dashboards deployed from non-production branches      |        |     ✔ |
-| `read_dev_status`          | View logs for non-production deployments                   |        |     ✔ |
-| `manage_dev`               | Trigger actions on non-production deployments              |        |     ✔ |
- -->
-
-## User group-level permissions
-
-There are two roles available at the user group-level: **Viewer** and **Admin**.
-
-| Permission                 | Description                                                | Viewer | Admin |
-| :------------------------- | :--------------------------------------------------------- | -----: | ----: |
-| `read_project`             | View basic info about the project                          |      ✔ |     ✔ |
-| `manage_project`           | Change project settings                                    |        |     ✔ |
-| `read_prod`                | View dashboards deployed from the production (main) branch |      ✔ |     ✔ |
-| `read_prod_status`         | View logs for the production deployment                    |        |     ✔ |
-| `manage_prod`              | Trigger actions on the production deployment               |        |     ✔ |
-| `read_project_members`     | View members of the project                                |        |     ✔ |
-| `manage_project_members`   | Add, remove or change roles of project members             |        |     ✔ |
-| `create_magic_auth_tokens` | Create shareable URLs                                      |        |     ✔ |
-| `manage_magic_auth_tokens` | Remove shareable URLs created by others                    |        |     ✔ |
-| `create_reports`           | Create and edit new scheduled reports                      |      ✔ |     ✔ |
-| `manage_reports`           | Edit and change scheduled reports created by others        |        |     ✔ |
-| `create_alerts`            | Create and edit new alerts                                 |      ✔ |     ✔ |
-| `manage_alerts`            | Edit and change alerts created by others                   |        |     ✔ |
-| `create_bookmarks`         | Create and edit new bookmarks                              |      ✔ |     ✔ |
-| `manage_bookmarks`         | Edit and change bookmarks created by others                |        |     ✔ |
-<!--
-| `read_dev`                 | View dashboards deployed from non-production branches      |        |     ✔ |
-| `read_dev_status`          | View logs for non-production deployments                   |        |     ✔ |
-| `manage_dev`               | Trigger actions on non-production deployments              |        |     ✔ |
- -->
+| Permission                     | Description                                                | Admin | Editor | Viewer |
+| :----------------------------- | :--------------------------------------------------------- | ----: | -----: | -----: |
+| `read_project`                 | View basic info about the project                          |     ✔ |      ✔ |      ✔ |
+| `manage_project`               | Change project settings                                    |     ✔ |        |        |
+| `read_prod`                    | View dashboards deployed from the production (main) branch |     ✔ |      ✔ |      ✔ |
+| `read_prod_status`             | View logs for the production deployment                    |     ✔ |      ✔ |        |
+| `manage_prod`                  | Trigger actions on the production deployment               |     ✔ |        |        |
+| `read_provisioner_resources`   | View managed resources for the project                     |     ✔ |        |        |
+| `manage_provisioner_resources` | Add or remove managed resources for the project            |     ✔ |        |        |
+| `read_project_members`         | View members of the project                                |     ✔ |      ✔ |        |
+| `manage_project_members`       | Add and edit non-admin project members                     |     ✔ |      ✔ |        |
+| `manage_project_admins`        | Add and edit project admins                                |     ✔ |        |        |
+| `create_magic_auth_tokens`     | Create shareable URLs                                      |     ✔ |      ✔ |        |
+| `manage_magic_auth_tokens`     | Remove shareable URLs created by others                    |     ✔ |      ✔ |        |
+| `create_reports`               | Create and edit new scheduled reports                      |     ✔ |      ✔ |      ✔ |
+| `manage_reports`               | Edit and change scheduled reports created by others        |     ✔ |        |        |
+| `create_alerts`                | Create and edit new alerts                                 |     ✔ |      ✔ |      ✔ |
+| `manage_alerts`                | Edit and change alerts created by others                   |     ✔ |        |        |
+| `create_bookmarks`             | Create and edit new bookmarks                              |     ✔ |      ✔ |      ✔ |
+| `manage_bookmarks`             | Edit and change bookmarks created by others                |     ✔ |        |        |

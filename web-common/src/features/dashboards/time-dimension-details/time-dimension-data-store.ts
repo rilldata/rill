@@ -18,7 +18,7 @@ import {
   TIME_COMPARISON,
 } from "@rilldata/web-common/lib/time/config";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
-import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
+import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
 import { derived, writable, type Readable } from "svelte/store";
 import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
 import type {
@@ -91,7 +91,7 @@ function prepareDimensionData(
   data: DimensionDataItem[],
   total: number,
   unfilteredTotal: number,
-  measure: MetricsViewSpecMeasureV2 | undefined,
+  measure: MetricsViewSpecMeasure | undefined,
   selectedValues: string[],
   isAllTime: boolean,
   pinIndex: number,
@@ -212,7 +212,7 @@ function prepareTimeData(
   comparisonTotal: number,
   currentLabel: string,
   comparisonLabel: string,
-  measure: MetricsViewSpecMeasureV2 | undefined,
+  measure: MetricsViewSpecMeasure | undefined,
   hasTimeComparison: boolean,
   isAllTime: boolean,
 ): TableData | undefined {
@@ -398,7 +398,8 @@ export function createTimeDimensionDataStore(
       const dimensionName = dashboardStore?.selectedComparisonDimension;
 
       // Fix types in V1MetricsViewAggregationResponseDataItem
-      const total = timeSeries?.total && timeSeries?.total[measureName];
+      const total =
+        timeSeries?.total && (timeSeries?.total[measureName] as number);
       const unfilteredTotal =
         timeSeries?.unfilteredTotal && timeSeries?.unfilteredTotal[measureName];
       const comparisonTotal =
@@ -423,8 +424,8 @@ export function createTimeDimensionDataStore(
         data = prepareDimensionData(
           timeSeries?.timeSeriesData,
           tableDimensionData,
-          total,
-          unfilteredTotal,
+          total as number,
+          unfilteredTotal as number,
           measure,
           selectedValues,
           isAllTime,
@@ -446,8 +447,8 @@ export function createTimeDimensionDataStore(
 
         data = prepareTimeData(
           timeSeries?.timeSeriesData,
-          total,
-          comparisonTotal,
+          total as number,
+          comparisonTotal as number,
           currentLabel,
           comparisonLabel,
           measure,

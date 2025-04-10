@@ -545,7 +545,7 @@ func randomAlertName(displayName string) string {
 	return name
 }
 
-// alertYAML is derived from rillv1.AlertYAML, but adapted for generating (as opposed to parsing) the alert YAML.
+// alertYAML is derived from runtime/parser.AlertYAML, but adapted for generating (as opposed to parsing) the alert YAML.
 type alertYAML struct {
 	Type        string   `yaml:"type"`
 	Refs        []string `yaml:"refs"`

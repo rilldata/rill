@@ -34,6 +34,7 @@ const (
 type Helper struct {
 	*printer.Printer
 	Version            Version
+	DotRill            dotrill.DotRill
 	Interactive        bool
 	Org                string
 	AdminURLDefault    string
@@ -45,6 +46,31 @@ type Helper struct {
 	adminClientHash    string
 	activityClient     *activity.Client
 	activityClientHash string
+}
+
+func NewHelper(ver Version, homeDir string) (*Helper, error) {
+	// Create it
+	ch := &Helper{
+		Printer:     printer.NewPrinter(printer.FormatHuman),
+		DotRill:     dotrill.New(homeDir),
+		Version:     ver,
+		Interactive: true,
+	}
+
+	// Load base admin config from ~/.rill
+	err := ch.ReloadAdminConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	// Load default org
+	defaultOrg, err := ch.DotRill.GetDefaultOrg()
+	if err != nil {
+		return nil, fmt.Errorf("could not parse default org from ~/.rill: %w", err)
+	}
+	ch.Org = defaultOrg
+
+	return ch, nil
 }
 
 func (h *Helper) Close() error {
@@ -80,12 +106,12 @@ func (h *Helper) IsAuthenticated() bool {
 
 // ReloadAdminConfig populates the helper's AdminURL, AdminTokenDefault, and Org properties from ~/.rill.
 func (h *Helper) ReloadAdminConfig() error {
-	adminToken, err := dotrill.GetAccessToken()
+	adminToken, err := h.DotRill.GetAccessToken()
 	if err != nil {
 		return fmt.Errorf("could not parse access token from ~/.rill: %w", err)
 	}
 
-	adminURL, err := dotrill.GetDefaultAdminURL()
+	adminURL, err := h.DotRill.GetDefaultAdminURL()
 	if err != nil {
 		return fmt.Errorf("could not parse default api URL from ~/.rill: %w", err)
 	}
@@ -169,7 +195,7 @@ func (h *Helper) Telemetry(ctx context.Context) *activity.Client {
 	h.activityClientHash = hash
 
 	// Load telemetry config
-	installID, analyticsEnabled, err := dotrill.AnalyticsInfo()
+	installID, analyticsEnabled, err := h.DotRill.AnalyticsInfo()
 	if err != nil {
 		analyticsEnabled = false
 	}
@@ -231,13 +257,13 @@ func (h *Helper) CurrentUserID(ctx context.Context) (string, error) {
 
 	newHash := hashStr(h.AdminToken(), h.AdminURL())
 
-	oldHash, err := dotrill.GetUserCheckHash()
+	oldHash, err := h.DotRill.GetUserCheckHash()
 	if err != nil {
 		return "", err
 	}
 
 	if oldHash == newHash {
-		userID, err := dotrill.GetUserID()
+		userID, err := h.DotRill.GetUserID()
 		if err != nil {
 			return "", err
 		}
@@ -259,12 +285,12 @@ func (h *Helper) CurrentUserID(ctx context.Context) (string, error) {
 		userID = res.User.Id
 	}
 
-	err = dotrill.SetUserID(userID)
+	err = h.DotRill.SetUserID(userID)
 	if err != nil {
 		return "", err
 	}
 
-	err = dotrill.SetUserCheckHash(newHash)
+	err = h.DotRill.SetUserCheckHash(newHash)
 	if err != nil {
 		return "", err
 	}

@@ -1,23 +1,48 @@
 import { LeaderboardContextColumn } from "../../leaderboard-context-column";
 import { SortDirection, SortType } from "../../proto-state/derived-types";
+import { setLeaderboardSortByMeasureName } from "./core-actions";
 import type { DashboardMutables } from "./types";
 
+const isValueBasedSort = (sortType: SortType): boolean => {
+  return (
+    sortType === SortType.VALUE ||
+    sortType === SortType.DELTA_ABSOLUTE ||
+    sortType === SortType.DELTA_PERCENT ||
+    sortType === SortType.PERCENT
+  );
+};
+
+const toggleSortDirection = (
+  currentDirection: SortDirection,
+): SortDirection => {
+  return currentDirection === SortDirection.ASCENDING
+    ? SortDirection.DESCENDING
+    : SortDirection.ASCENDING;
+};
+
 export const toggleSort = (
-  { dashboard }: DashboardMutables,
+  args: DashboardMutables,
   sortType: SortType,
+  measureName?: string,
 ) => {
-  // if sortType is not provided,  or if it is provided
-  // and is the same as the current sort type,
-  // then just toggle the current sort direction
+  const { dashboard } = args;
+
+  // Handle measure name change if provided
+  if (
+    measureName !== undefined &&
+    measureName !== dashboard.leaderboardSortByMeasureName &&
+    isValueBasedSort(sortType)
+  ) {
+    setLeaderboardSortByMeasureName(args, measureName);
+    dashboard.dashboardSortType = sortType;
+    dashboard.sortDirection = SortDirection.DESCENDING;
+    return;
+  }
+
+  // Handle sort type and direction changes
   if (sortType === undefined || dashboard.dashboardSortType === sortType) {
-    dashboard.sortDirection =
-      dashboard.sortDirection === SortDirection.ASCENDING
-        ? SortDirection.DESCENDING
-        : SortDirection.ASCENDING;
+    dashboard.sortDirection = toggleSortDirection(dashboard.sortDirection);
   } else {
-    // if the sortType is different from the current sort type,
-    //  then update the sort type and set the sort direction
-    // to descending
     dashboard.dashboardSortType = sortType;
     dashboard.sortDirection = SortDirection.DESCENDING;
   }
@@ -29,14 +54,21 @@ const contextColumnToSortType = {
   [LeaderboardContextColumn.PERCENT]: SortType.PERCENT,
 };
 
-export const toggleSortByActiveContextColumn = (args: DashboardMutables) => {
+export const toggleSortByActiveContextColumn = (
+  args: DashboardMutables,
+  measureName?: string,
+) => {
   const contextColumnSortType =
     contextColumnToSortType[args.dashboard.leaderboardContextColumn];
-  toggleSort(args, contextColumnSortType);
+  toggleSort(args, contextColumnSortType, measureName);
 };
 
 export const setSortDescending = ({ dashboard }: DashboardMutables) => {
   dashboard.sortDirection = SortDirection.DESCENDING;
+};
+
+export const sortByDimensionValue = (args: DashboardMutables) => {
+  toggleSort(args, SortType.DIMENSION);
 };
 
 export const sortActions = {
@@ -54,8 +86,7 @@ export const sortActions = {
    * Sets the dashboard to be sorted by dimension value.
    * Note that this should only be used in the dimension table
    */
-  sortByDimensionValue: (mutatorArgs: DashboardMutables) =>
-    toggleSort(mutatorArgs, SortType.DIMENSION),
+  sortByDimensionValue,
 
   /**
    * Sets the sort direction to descending.

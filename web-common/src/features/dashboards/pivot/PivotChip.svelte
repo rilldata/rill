@@ -26,7 +26,7 @@
 >
   <Chip
     type={item.type}
-    label={item.title}
+    label={`${item.title} pivot chip`}
     caret={false}
     {grab}
     {active}

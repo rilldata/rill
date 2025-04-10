@@ -1,20 +1,21 @@
 <script lang="ts">
-  import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
-  import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
-  import type { Readable } from "svelte/store";
-  import type { KPIGridSpec } from ".";
+  import type { KPIGridComponent } from ".";
   import ComponentError from "../ComponentError.svelte";
-  import type { KPISpec } from "../kpi";
-  import KPI from "../kpi/KPI.svelte";
   import { validateKPIGridSchema } from "./selector";
-  import { getMinWidth } from "../kpi";
+  import { getMinWidth, type KPISpec } from "../kpi";
+  import KPIProvider from "../kpi/KPIProvider.svelte";
+  import ComponentHeader from "../../ComponentHeader.svelte";
 
-  export let rendererProperties: V1ComponentSpecRendererProperties;
-  export let timeAndFilterStore: Readable<TimeAndFilterStore>;
+  export let component: KPIGridComponent;
 
   let kpis: KPISpec[];
 
-  $: kpiGridProperties = rendererProperties as KPIGridSpec;
+  $: ({
+    specStore,
+    timeAndFilterStore,
+    parent: { name: canvasName },
+  } = component);
+  $: kpiGridProperties = $specStore;
   $: schema = validateKPIGridSchema(kpiGridProperties);
 
   // Convert measures to KPI specs
@@ -27,10 +28,20 @@
     time_filters: kpiGridProperties.time_filters,
   }));
 
+  $: filters = {
+    time_filters: kpiGridProperties.time_filters,
+    dimension_filters: kpiGridProperties.dimension_filters,
+  };
+
   $: sparkline = kpiGridProperties.sparkline;
 
   $: minWidth = getMinWidth(sparkline);
+
+  $: title = kpiGridProperties.title;
+  $: description = kpiGridProperties.description;
 </script>
+
+<ComponentHeader {title} {description} {filters} />
 
 {#if schema.isValid}
   <div class="h-fit p-0 grow relative" class:!p-0={kpis.length === 1}>
@@ -41,10 +52,8 @@
       class="grid-wrapper gap-px overflow-hidden size-full"
     >
       {#each kpis as kpi, i (i)}
-        <div
-          class="min-h-32 kpi-wrapper before:absolute before:z-20 before:top-full before:h-px before:w-full before:bg-gray-200 after:absolute after:left-full after:h-full after:w-px after:bg-gray-200"
-        >
-          <KPI rendererProperties={kpi} {timeAndFilterStore} />
+        <div class="min-h-32 kpi-wrapper">
+          <KPIProvider spec={kpi} {timeAndFilterStore} {canvasName} />
         </div>
       {/each}
     </div>
@@ -60,11 +69,12 @@
   }
 
   .kpi-wrapper {
-    @apply relative p-4 grid;
+    @apply relative p-4 grid outline outline-1 outline-gray-200;
   }
 
   .border-overlay {
-    @apply border-[16px] pointer-events-none border-white absolute size-full z-50;
+    @apply absolute border-[12.5px] pointer-events-none border-white size-full;
+    z-index: 50;
   }
 
   @container component-container (inline-size < 440px) {

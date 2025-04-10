@@ -10,7 +10,6 @@ import (
 	"sync"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"golang.org/x/sync/errgroup"
 )
@@ -135,23 +134,6 @@ func (e *Executor) ValidateMetricsView(ctx context.Context) (*ValidateMetricsVie
 	// Pinot does have any native support for time shift using time grain specifiers
 	if e.olap.Dialect() == drivers.DialectPinot && (mv.FirstDayOfWeek > 1 || mv.FirstMonthOfYear > 1) {
 		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("time shift not supported for Pinot dialect, so FirstDayOfWeek and FirstMonthOfYear should be 1"))
-	}
-
-	// Check the default theme exists
-	if mv.DefaultTheme != "" {
-		ctrl, err := e.rt.Controller(ctx, e.instanceID)
-		if err != nil {
-			return nil, fmt.Errorf("could not get controller: %w", err)
-		}
-
-		_, err = ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindTheme, Name: mv.DefaultTheme}, false)
-		if err != nil {
-			if errors.Is(err, drivers.ErrNotFound) {
-				res.OtherErrs = append(res.OtherErrs, fmt.Errorf("theme %q does not exist", mv.DefaultTheme))
-			} else {
-				return nil, fmt.Errorf("could not find theme %q: %w", mv.DefaultTheme, err)
-			}
-		}
 	}
 
 	// Validate the metrics view schema.
@@ -288,7 +270,7 @@ func (e *Executor) validateIndividualDimensionsAndMeasures(ctx context.Context, 
 }
 
 // validateDimension validates a metrics view dimension.
-func (e *Executor) validateDimension(ctx context.Context, t *drivers.Table, d *runtimev1.MetricsViewSpec_DimensionV2, fields map[string]*runtimev1.StructType_Field) error {
+func (e *Executor) validateDimension(ctx context.Context, t *drivers.Table, d *runtimev1.MetricsViewSpec_Dimension, fields map[string]*runtimev1.StructType_Field) error {
 	// Validate with a simple check if it's a column
 	if d.Column != "" {
 		if _, isColumn := fields[strings.ToLower(d.Column)]; !isColumn {
@@ -315,7 +297,7 @@ func (e *Executor) validateDimension(ctx context.Context, t *drivers.Table, d *r
 }
 
 // validateMeasure validates a metrics view measure.
-func (e *Executor) validateMeasure(ctx context.Context, t *drivers.Table, m *runtimev1.MetricsViewSpec_MeasureV2) error {
+func (e *Executor) validateMeasure(ctx context.Context, t *drivers.Table, m *runtimev1.MetricsViewSpec_Measure) error {
 	err := e.olap.Exec(ctx, &drivers.Statement{
 		Query:  fmt.Sprintf("SELECT 1, (%s) FROM %s GROUP BY 1", m.Expression, e.olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name)),
 		DryRun: true,

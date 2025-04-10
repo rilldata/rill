@@ -179,6 +179,8 @@ func RequireResource(t testing.TB, rt *runtime.Runtime, id string, a *runtimev1.
 		state.SpecHash = ""
 	case runtime.ResourceKindModel:
 		state := b.GetModel().State
+		state.LatestExecutionDurationMs = 0
+		state.TotalExecutionDurationMs = 0
 		state.RefreshedOn = nil
 		state.SpecHash = ""
 		state.RefsHash = ""

@@ -10,10 +10,10 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { DuckDBSQL } from "../../../components/editor/presets/duckDBDialect";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { useAllSourceColumns } from "../../sources/selectors";
-  import { useAllModelColumns } from "../selectors";
   import Editor from "../../editor/Editor.svelte";
   import { FileArtifact } from "../../entity-management/file-artifact";
+  import { useAllSourceColumns } from "../../sources/selectors";
+  import { useAllModelColumns } from "../selectors";
 
   const schema: { [table: string]: string[] } = {};
 
@@ -40,7 +40,7 @@
     }
   }
 
-  //Auto complete: model tables
+  // Autocomplete: model tables
   $: allModelColumns = useAllModelColumns(queryClient, instanceId);
   $: if ($allModelColumns?.length) {
     for (const modelTable of $allModelColumns) {

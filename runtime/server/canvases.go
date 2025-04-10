@@ -6,8 +6,8 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
@@ -53,7 +53,7 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	td := rillv1.TemplateData{
+	td := parser.TemplateData{
 		Environment: inst.Environment,
 		User:        auth.GetClaims(ctx).SecurityClaims().UserAttributes,
 		Variables:   inst.ResolveVariables(false),
@@ -84,7 +84,7 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 			// Resolve the renderer properties in the valid_spec.
 			validSpec := cmp.GetComponent().State.ValidSpec
 			if validSpec != nil && validSpec.RendererProperties != nil {
-				v, err := rillv1.ResolveTemplateRecursively(validSpec.RendererProperties.AsMap(), td)
+				v, err := parser.ResolveTemplateRecursively(validSpec.RendererProperties.AsMap(), td, false)
 				if err != nil {
 					return nil, status.Errorf(codes.InvalidArgument, "component %q: failed to resolve templating: %s", item.Component, err.Error())
 				}
@@ -191,7 +191,7 @@ func (s *Server) ResolveComponent(ctx context.Context, req *runtimev1.ResolveCom
 	args := req.Args.AsMap()
 
 	// Setup templating data
-	td := rillv1.TemplateData{
+	td := parser.TemplateData{
 		Environment: inst.Environment,
 		User:        auth.GetClaims(ctx).SecurityClaims().UserAttributes,
 		Variables:   inst.ResolveVariables(false),
@@ -203,7 +203,7 @@ func (s *Server) ResolveComponent(ctx context.Context, req *runtimev1.ResolveCom
 	// Resolve templating in the renderer properties
 	var rendererProps *structpb.Struct
 	if spec.RendererProperties != nil {
-		v, err := rillv1.ResolveTemplateRecursively(spec.RendererProperties.AsMap(), td)
+		v, err := parser.ResolveTemplateRecursively(spec.RendererProperties.AsMap(), td, false)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}

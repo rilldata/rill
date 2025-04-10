@@ -1,20 +1,23 @@
 import { filterActions } from "@rilldata/web-common/features/dashboards/state-managers/actions/filters";
 import { measureFilterActions } from "@rilldata/web-common/features/dashboards/state-managers/actions/measure-filters";
-import { sortActions } from "./sorting";
-import { contextColActions } from "./context-columns";
 import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
-import { setLeaderboardMeasureName } from "./core-actions";
+import { comparisonActions } from "./comparison";
+import { contextColActions } from "./context-columns";
+import {
+  setLeaderboardMeasureCount,
+  setLeaderboardSortByMeasureName,
+} from "./core-actions";
+import { dimensionFilterActions } from "./dimension-filters";
 import { dimensionTableActions } from "./dimension-table";
+import { dimensionActions } from "./dimensions";
+import { measureActions } from "./measures";
+import { sortActions } from "./sorting";
 import type {
   DashboardCallbackExecutor,
   DashboardMutatorFn,
   DashboardMutatorFns,
   DashboardUpdaters,
 } from "./types";
-import { dimensionActions } from "./dimensions";
-import { comparisonActions } from "./comparison";
-import { dimensionFilterActions } from "./dimension-filters";
-import { measureActions } from "./measures";
 
 export type StateManagerActions = ReturnType<typeof createStateManagerActions>;
 
@@ -47,7 +50,7 @@ export const createStateManagerActions = (
     /**
      * Actions related to the dashboard context columns.
      */
-    contextCol: createDashboardUpdaters(actionArgs, contextColActions),
+    contextColumn: createDashboardUpdaters(actionArgs, contextColActions),
 
     /**
      * Actions related to dimensions.
@@ -82,14 +85,22 @@ export const createStateManagerActions = (
      */
     measuresFilter: createDashboardUpdaters(actionArgs, measureFilterActions),
 
+    /**
+     * sets the number of measures to show in the leaderboard.
+     */
+    setLeaderboardMeasureCount: dashboardMutatorToUpdater(
+      actionArgs,
+      setLeaderboardMeasureCount,
+    ),
+
     // Note: for now, some core actions are kept in the root of the
     // actions object. Can revisit that later if we want to move them.
     /**
      * sets the main measure name for the dashboard.
      */
-    setLeaderboardMeasureName: dashboardMutatorToUpdater(
+    setLeaderboardSortByMeasureName: dashboardMutatorToUpdater(
       actionArgs,
-      setLeaderboardMeasureName,
+      setLeaderboardSortByMeasureName,
     ),
   };
 };

@@ -7,10 +7,11 @@ import {
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 import type { StateManagers } from "../state-managers/state-managers";
+import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 
 export function createTimeRangeSummary(
   ctx: StateManagers,
-): CreateQueryResult<V1MetricsViewTimeRangeResponse> {
+): CreateQueryResult<V1MetricsViewTimeRangeResponse, HTTPError> {
   return derived(
     [ctx.runtime, ctx.metricsViewName, ctx.validSpecStore],
     ([runtime, metricsViewName, validSpec], set) =>
@@ -20,18 +21,18 @@ export function createTimeRangeSummary(
         {},
         {
           query: {
-            queryClient: ctx.queryClient,
             enabled:
               !validSpec.error && !!validSpec.data?.metricsView?.timeDimension,
           },
         },
+        ctx.queryClient,
       ).subscribe(set),
   );
 }
 
 export function createMetricsViewSchema(
   ctx: StateManagers,
-): CreateQueryResult<V1MetricsViewSchemaResponse> {
+): CreateQueryResult<V1MetricsViewSchemaResponse, HTTPError> {
   return derived(
     [ctx.runtime, ctx.metricsViewName],
     ([runtime, metricsViewName], set) =>
@@ -39,11 +40,8 @@ export function createMetricsViewSchema(
         runtime.instanceId,
         metricsViewName,
         {},
-        {
-          query: {
-            queryClient: ctx.queryClient,
-          },
-        },
+        {},
+        ctx.queryClient,
       ).subscribe(set),
   );
 }

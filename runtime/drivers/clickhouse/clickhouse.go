@@ -38,7 +38,8 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			Required:    false,
 			DisplayName: "Connection string",
-			Placeholder: "clickhouse://localhost:9000?username=default&password=",
+			Placeholder: "clickhouse://localhost:9000?username=default&password=password",
+			Secret:      true,
 			NoPrompt:    true,
 		},
 		{
@@ -80,13 +81,6 @@ var spec = drivers.Spec{
 			Required:    true,
 			DisplayName: "SSL",
 			Description: "Use SSL to connect to the ClickHouse server",
-		},
-		{
-			Key:         "database",
-			Type:        drivers.StringPropertyType,
-			Required:    false,
-			DisplayName: "Database",
-			Description: "Specify the database within the ClickHouse server",
 		},
 	},
 	ImplementsOLAP: true,
@@ -150,7 +144,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	// build clickhouse options
 	var opts *clickhouse.Options
 	var embed *embedClickHouse
-	maxOpenConnections := 20 // Very roughly approximating the number of queries required for a typical page load.
+	maxOpenConnections := 20 // based on observations
 	if conf.DSN != "" {
 		opts, err = clickhouse.ParseDSN(conf.DSN)
 		if err != nil {
@@ -452,8 +446,8 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 	if opts.InputHandle == c {
 		return &selfToSelfExecutor{c}, true
 	}
-	if opts.InputHandle.Driver() == "s3" {
-		return &s3ToSelfExecutor{opts.InputHandle, c}, true
+	if opts.InputHandle.Driver() == "s3" || opts.InputHandle.Driver() == "gcs" {
+		return &objectStoreToSelfExecutor{opts.InputHandle, c}, true
 	}
 	if opts.InputHandle.Driver() == "local_file" {
 		return &localFileToSelfExecutor{opts.InputHandle, c}, true
@@ -464,11 +458,6 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 // AsModelManager implements drivers.Handle.
 func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
 	return c, true
-}
-
-// AsTransporter implements drivers.Connection.
-func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
-	return nil, false
 }
 
 // AsFileStore implements drivers.Connection.

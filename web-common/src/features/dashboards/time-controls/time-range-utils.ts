@@ -5,10 +5,7 @@
  * */
 import type { TimeRange } from "@rilldata/web-common/lib/time/types";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import {
-  lastXTimeRangeNames,
-  TimeRangeName_DEPRECATE,
-} from "./time-control-types";
+import { TimeRangeName_DEPRECATE } from "./time-control-types";
 
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { durationToMillis } from "@rilldata/web-common/lib/time/grains";
@@ -32,47 +29,6 @@ export const supportedTimeGrainEnums = () => {
   return supportedEnums;
 };
 
-// NOTE: we will need to keep this for the duration amounts in the runtime / config.
-// let's plan to deprecate it later.
-export function getRelativeTimeRangeOptions(
-  allTimeRange: TimeRange,
-  minTimeGrain: V1TimeGrain,
-): TimeRange[] {
-  const allTimeRangeDurationMs = +allTimeRange.end - +allTimeRange.start;
-  const timeRanges: TimeRange[] = [];
-
-  for (const timeRangeName of lastXTimeRangeNames) {
-    const timeRangeDurationMs = getLastXTimeRangeDurationMs(timeRangeName);
-
-    // only show a time range if it is within the time range of the data and supports minTimeGrain
-    const showTimeRange = timeRangeDurationMs <= allTimeRangeDurationMs;
-
-    const allowedTimeGrains = getAllowedTimeGrains(timeRangeDurationMs);
-    const allowedMaxGrain = allowedTimeGrains[allowedTimeGrains.length - 1];
-    const isGrainPossible = !isGrainBigger(minTimeGrain, allowedMaxGrain);
-
-    if (showTimeRange && isGrainPossible) {
-      const timeRange = makeRelativeTimeRange(timeRangeName, allTimeRange);
-      timeRanges.push(timeRange);
-    }
-  }
-
-  // All time is always an option
-  timeRanges.push({
-    name: TimeRangeName_DEPRECATE.ALL_TIME,
-    start: allTimeRange.start,
-    end: allTimeRange.end,
-  });
-
-  return timeRanges;
-}
-
-//TODO: Co locate with TimeControls
-// export function getDefaultTimeRange(allTimeRange: TimeRange): TimeRange {
-//   // Use AllTime for now. When we go to production real-time datasets, we'll want to change this.
-//   return allTimeRange;
-// }
-
 // Moved to time range and renamed to isTimeRangeValidForMinTimeGrain
 export function isTimeRangeValidForTimeGrain(
   minTimeGrain: V1TimeGrain,
@@ -94,52 +50,6 @@ export function isTimeRangeValidForTimeGrain(
   const maxAllowedTimeGrain = allowedTimeGrains[allowedTimeGrains.length - 1];
   return !isGrainBigger(minTimeGrain, maxAllowedTimeGrain);
 }
-
-// Maps a TimeRangeName to an ISO duration.
-// This should eventually be deprecated once we have
-// changed the runtime definition for default_time_range to be a preset string.
-// see https://github.com/rilldata/rill/issues/1961
-export const timeRangeToISODuration = (
-  timeRangeName: TimeRangeName_DEPRECATE,
-): string => {
-  switch (timeRangeName) {
-    case TimeRangeName_DEPRECATE.LAST_SIX_HOURS:
-      return "PT6H";
-    case TimeRangeName_DEPRECATE.LAST_24_HOURS:
-      return "P1D";
-    case TimeRangeName_DEPRECATE.LAST_7_DAYS:
-      return "P7D";
-    case TimeRangeName_DEPRECATE.LAST_4_WEEKS:
-      return "P4W";
-    case TimeRangeName_DEPRECATE.ALL_TIME:
-      return "inf";
-    default:
-      return undefined;
-  }
-};
-
-// This should eventually be deprecated once we have
-// changed the runtime definition for default_time_range to be a preset string.
-// see https://github.com/rilldata/rill/issues/1961
-export const ISODurationToTimeRange = (
-  isoDuration: string,
-  defaultToAllTime = true,
-): TimeRangeName_DEPRECATE => {
-  switch (isoDuration) {
-    case "PT6H":
-      return TimeRangeName_DEPRECATE.LAST_SIX_HOURS;
-    case "P1D":
-      return TimeRangeName_DEPRECATE.LAST_24_HOURS;
-    case "P7D":
-      return TimeRangeName_DEPRECATE.LAST_7_DAYS;
-    case "P4W":
-      return TimeRangeName_DEPRECATE.LAST_4_WEEKS;
-    case "inf":
-      return TimeRangeName_DEPRECATE.ALL_TIME;
-    default:
-      return defaultToAllTime ? TimeRangeName_DEPRECATE.ALL_TIME : undefined;
-  }
-};
 
 // Moved to time-grain and renamed
 export function isGrainBigger(

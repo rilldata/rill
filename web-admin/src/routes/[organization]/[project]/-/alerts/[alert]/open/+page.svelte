@@ -5,7 +5,7 @@
   import { mapQueryToDashboard } from "@rilldata/web-admin/features/dashboards/query-mappers/mapQueryToDashboard";
   import {
     getExploreName,
-    getExplorePageUrl,
+    getExplorePageUrlSearchParams,
   } from "@rilldata/web-admin/features/dashboards/query-mappers/utils.js";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
@@ -28,11 +28,15 @@
 
   let dashboardStateForAlert: ReturnType<typeof mapQueryToDashboard>;
   $: queryName =
-    $alert.data?.resource?.alert?.spec?.resolverProperties?.query_name ??
+    ($alert.data?.resource?.alert?.spec?.resolverProperties?.query_name as
+      | string
+      | undefined) ??
     $alert.data?.resource?.alert?.spec?.queryName ??
     "";
   $: queryArgsJson =
-    $alert.data?.resource?.alert?.spec?.resolverProperties?.query_args_json ??
+    ($alert.data?.resource?.alert?.spec?.resolverProperties?.query_args_json as
+      | string
+      | undefined) ??
     $alert.data?.resource?.alert?.spec?.queryArgsJson ??
     "";
   $: dashboardStateForAlert = mapQueryToDashboard(
@@ -52,20 +56,24 @@
   }
 
   async function gotoExplorePage() {
-    const explorePageUrl = await getExplorePageUrl(
-      $page.url,
-      organization,
-      project,
-      $dashboardStateForAlert.data.exploreName,
-      $dashboardStateForAlert.data.exploreState,
+    const url = new URL(
+      `/${organization}/${project}/explore/${exploreName}`,
+      window.location.origin,
     );
-    return goto(explorePageUrl);
+    url.search = (
+      await getExplorePageUrlSearchParams(
+        $dashboardStateForAlert.data.exploreName,
+        $dashboardStateForAlert.data.exploreState,
+        url,
+      )
+    ).toString();
+    return goto(url.toString());
   }
 </script>
 
 <CtaLayoutContainer>
   <CtaContentContainer>
-    {#if $dashboardStateForAlert.isFetching}
+    {#if $dashboardStateForAlert.isLoading}
       <div class="h-36 mt-10">
         <Spinner status={EntityStatus.Running} size="7rem" duration={725} />
       </div>

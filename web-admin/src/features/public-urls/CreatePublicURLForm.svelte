@@ -9,6 +9,7 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
+  import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import {
     Popover,
     PopoverContent,
@@ -16,6 +17,7 @@
   } from "@rilldata/web-common/components/popover";
   import FilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/FilterChipsReadOnly.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
@@ -32,7 +34,6 @@
     hasDashboardDimensionThresholdFilter,
     hasDashboardWhereFilter,
   } from "./form-utils";
-  import Check from "@rilldata/web-common/components/icons/Check.svelte";
 
   const queryClient = useQueryClient();
   const StateManagers = getStateManagers();
@@ -44,9 +45,12 @@
       measures: { visibleMeasures },
       dimensions: { visibleDimensions },
     },
+    validSpecStore,
   } = StateManagers;
 
   $: ({ organization, project, dashboard } = $page.params);
+
+  const timeControlStore = useTimeControlStore(StateManagers);
 
   $: isTitleEmpty = $form.title.trim() === "";
 
@@ -59,6 +63,7 @@
   $: sanitizedState = getSanitizedDashboardStateParam(
     $dashboardStore,
     exploreFields,
+    $validSpecStore.data?.explore,
   );
 
   let url: string | null = null;
@@ -108,9 +113,12 @@
 
           url = _url;
 
-          void queryClient.invalidateQueries(
-            getAdminServiceListMagicAuthTokensQueryKey(organization, project),
-          );
+          void queryClient.invalidateQueries({
+            queryKey: getAdminServiceListMagicAuthTokensQueryKey(
+              organization,
+              project,
+            ),
+          });
         } catch (error) {
           const typedError = error as HTTPError;
           apiError = typedError.response?.data?.message ?? typedError.message;
@@ -181,7 +189,7 @@
             </label>
             <Popover bind:open={popoverOpen}>
               <PopoverTrigger>
-                <IconButton>
+                <IconButton ariaLabel="Edit expiration date">
                   <Pencil size="14px" class="text-primary-600" />
                 </IconButton>
               </PopoverTrigger>
@@ -242,9 +250,12 @@
             <FilterChipsReadOnly
               exploreName={$exploreName}
               filters={$dashboardStore.whereFilter}
+              dimensionsWithInlistFilter={$dashboardStore.dimensionsWithInlistFilter}
               dimensionThresholdFilters={$dashboardStore.dimensionThresholdFilters}
-              timeRange={undefined}
-              comparisonTimeRange={undefined}
+              displayTimeRange={undefined}
+              displayComparisonTimeRange={undefined}
+              queryTimeStart={$timeControlStore.timeStart}
+              queryTimeEnd={$timeControlStore.timeEnd}
             />
           </div>
         </div>
@@ -275,14 +286,18 @@
 {:else}
   <div class="flex flex-col gap-y-4">
     <h3>Success! A public URL has been created.</h3>
-    <Button type="secondary" on:click={onCopy}>
+    <Button
+      type="secondary"
+      on:click={onCopy}
+      dataAttributes={{ "data-public-url": url }}
+    >
       {#if copied}
         <Check size="16px" />
         Copied URL
       {:else}
         Copy Public URL
-      {/if}</Button
-    >
+      {/if}
+    </Button>
   </div>
 {/if}
 

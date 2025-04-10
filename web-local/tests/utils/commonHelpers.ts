@@ -130,12 +130,20 @@ export async function deleteFile(page: Page, filePath: string) {
 }
 
 export async function updateCodeEditor(page: Page, code: string) {
-  await page.getByRole("textbox", { name: "Code editor" }).click();
+  // Focus the editor
+  const editor = page.getByRole("textbox", { name: "codemirror editor" });
+  await editor.waitFor({ state: "visible" });
+  await page.keyboard.press("Escape"); // Closes any tooltips
+  await editor.click();
+
+  // Select all text
   if (process.platform === "darwin") {
     await page.keyboard.press("Meta+A");
   } else {
     await page.keyboard.press("Control+A");
   }
+
+  // Insert new text and wait for it to settle
   await page.keyboard.insertText(code);
   await page.waitForTimeout(600);
 }

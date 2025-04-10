@@ -29,11 +29,14 @@
   export let canPanRight: boolean;
   export let interval: Interval;
   export let showPan = false;
+  export let lockTimeZone = false;
+  export let allowCustomTimeRange = true;
   export let showFullRange = true;
   export let complete: boolean;
   export let activeTimeZone: string;
   export let timeStart: string | undefined;
   export let timeEnd: string | undefined;
+  export let context = "dashboard";
   export let onSelectRange: (range: NamedRange | ISODurationString) => void;
   export let onPan: (direction: "left" | "right") => void;
   export let onTimeGrainSelect: (timeGrain: V1TimeGrain) => void;
@@ -57,6 +60,7 @@
       {showDefaultItem}
       {showFullRange}
       {defaultTimeRange}
+      {allowCustomTimeRange}
       selected={selectedRangeAlias ?? ""}
       grain={activeTimeGrain}
       {onSelectRange}
@@ -72,14 +76,14 @@
     />
   {/if}
 
-  {#if availableTimeZones.length}
-    <Elements.Zone
-      watermark={interval.end?.toJSDate() ?? new Date()}
-      {activeTimeZone}
-      {availableTimeZones}
-      {onSelectTimeZone}
-    />
-  {/if}
+  <Elements.Zone
+    watermark={DateTime.fromISO(timeStart ?? "")}
+    {activeTimeZone}
+    {availableTimeZones}
+    {onSelectTimeZone}
+    {lockTimeZone}
+    {context}
+  />
 
   {#if !showPivot && minTimeGrain}
     <TimeGrainSelector
@@ -111,6 +115,10 @@
   :global(.wrapper > button) {
     @apply border;
     @apply px-2 flex items-center justify-center bg-white;
+  }
+
+  :global(.wrapper > button:focus) {
+    @apply z-50;
   }
 
   :global(.wrapper > button:first-child) {

@@ -6,7 +6,6 @@ import type { TeamPlanDialogTypes } from "@rilldata/web-admin/features/billing/p
 import { isTeamPlan } from "@rilldata/web-admin/features/billing/plans/utils";
 import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
 import { areAllProjectsHibernating } from "@rilldata/web-admin/features/organizations/selectors";
-import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
 import type { BannerMessage } from "@rilldata/web-common/lib/event-bus/events";
 import { derived } from "svelte/store";
 
@@ -25,9 +24,7 @@ export type BillingIssueMessageCTA = {
   teamPlanEndDate?: string;
 };
 
-export function useBillingIssueMessage(
-  organization: string,
-): CompoundQueryResult<BillingIssueMessage> {
+export function useBillingIssueMessage(organization: string) {
   return derived(
     [
       createAdminServiceGetOrganization(organization),
@@ -36,12 +33,13 @@ export function useBillingIssueMessage(
     ],
     ([orgResp, categorisedIssuesResp, allProjectsHibernatingResp]) => {
       if (
-        orgResp.isFetching ||
-        categorisedIssuesResp.isFetching ||
-        allProjectsHibernatingResp.isFetching
+        orgResp.isLoading ||
+        categorisedIssuesResp.isLoading ||
+        allProjectsHibernatingResp.isLoading
       ) {
         return {
           isFetching: true,
+          isLoading: true,
           error: undefined,
         };
       }
@@ -52,6 +50,7 @@ export function useBillingIssueMessage(
       ) {
         return {
           isFetching: false,
+          isLoading: false,
           error:
             orgResp.error ??
             categorisedIssuesResp.error ??
@@ -62,6 +61,7 @@ export function useBillingIssueMessage(
       if (categorisedIssuesResp.data?.cancelled) {
         return {
           isFetching: false,
+          isLoading: false,
           error: undefined,
           data: getMessageForCancelledIssue(
             categorisedIssuesResp.data.cancelled,
@@ -72,6 +72,7 @@ export function useBillingIssueMessage(
       if (categorisedIssuesResp.data?.trial) {
         return {
           isFetching: false,
+          isLoading: false,
           error: undefined,
           data: getMessageForTrialPlan(categorisedIssuesResp.data.trial),
         };
@@ -89,6 +90,7 @@ export function useBillingIssueMessage(
         if (paymentIssue)
           return {
             isFetching: false,
+            isLoading: false,
             error: undefined,
             data: paymentIssue,
           };
@@ -97,6 +99,7 @@ export function useBillingIssueMessage(
       if (allProjectsHibernatingResp.data) {
         return {
           isFetching: false,
+          isLoading: false,
           error: undefined,
           data: <BillingIssueMessage>{
             type: "default",
@@ -113,6 +116,7 @@ export function useBillingIssueMessage(
 
       return {
         isFetching: false,
+        isLoading: false,
         error: undefined,
       };
     },

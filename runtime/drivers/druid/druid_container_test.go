@@ -112,7 +112,7 @@ func TestContainer(t *testing.T) {
 	require.NoError(t, err)
 
 	dd := &driver{}
-	conn, err := dd.Open("default", map[string]any{"dsn": druidAPIURL}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := dd.Open("default", map[string]any{"dsn": druidAPIURL}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.Must(zap.NewDevelopment()))
 	require.NoError(t, err)
 
 	olap, ok := conn.AsOLAP("")
@@ -179,15 +179,18 @@ func testTimeFloor(t *testing.T, olap drivers.OLAPStore) {
 		require.Equal(t, 15, tm.Minute())
 		count += 1
 	}
+	require.NoError(t, rows.Err())
 	require.Equal(t, 9, count)
 }
 
 func testSchemaAll(t *testing.T, olap drivers.OLAPStore) {
 	tables, err := olap.InformationSchema().All(context.Background(), "")
 	require.NoError(t, err)
+	require.NoError(t, olap.InformationSchema().LoadPhysicalSize(context.Background(), tables))
 
 	require.Equal(t, 1, len(tables))
 	require.Equal(t, testTable, tables[0].Name)
+	require.Greater(t, tables[0].PhysicalSizeBytes, int64(0))
 
 	require.Equal(t, 5, len(tables[0].Schema.Fields))
 

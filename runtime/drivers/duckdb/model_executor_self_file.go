@@ -131,7 +131,7 @@ func exportSQL(qry, path string, format drivers.FileFormat) (string, error) {
 	case drivers.FileFormatParquet:
 		return fmt.Sprintf("COPY (%s\n) TO '%s' (FORMAT PARQUET)", qry, path), nil
 	case drivers.FileFormatCSV:
-		return fmt.Sprintf("COPY (%s\n) TO '%s' (FORMAT CSV, HEADER true)", qry, path), nil
+		return fmt.Sprintf("COPY (%s\n) TO '%s' (FORMAT CSV, HEADER true, DATEFORMAT '%%x', TIMESTAMPFORMAT '%%c')", qry, path), nil
 	case drivers.FileFormatJSON:
 		return fmt.Sprintf("COPY (%s\n) TO '%s' (FORMAT JSON)", qry, path), nil
 	default:

@@ -12,7 +12,7 @@
   import type { TimeSeriesDatum } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import {
-    type MetricsViewSpecMeasureV2,
+    type MetricsViewSpecMeasure,
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher, onDestroy } from "svelte";
@@ -196,7 +196,7 @@
   };
 
   $: measureFormatter = createMeasureValueFormatter<null | undefined>(
-    measure as MetricsViewSpecMeasureV2,
+    measure as MetricsViewSpecMeasure,
   );
 
   function vegaCustomFormatter(val) {
@@ -217,6 +217,7 @@
     {expressionFunctions}
     {tooltipFormatter}
     {isScrubbing}
+    renderer="svg"
   />
 {:else}
   <!-- JIC we add a new chart type without brush param -->

@@ -1,109 +1,211 @@
-import type { ChartType } from "@rilldata/web-common/features/canvas/components/charts/types";
-import type { ComponentSize } from "@rilldata/web-common/features/canvas/components/types";
-import { getParsedDocument } from "@rilldata/web-common/features/canvas/inspector/selectors";
-import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
-import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
-import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
-import { get, writable, type Writable } from "svelte/store";
+import type {
+  CanvasComponentType,
+  ComponentSize,
+  ComponentSpec,
+} from "@rilldata/web-common/features/canvas/components/types";
+import type {
+  AllKeys,
+  InputParams,
+} from "@rilldata/web-common/features/canvas/inspector/types";
+import type {
+  V1Expression,
+  V1Resource,
+  V1TimeRange,
+} from "@rilldata/web-common/runtime-client";
+import { derived, get, writable, type Writable } from "svelte/store";
+import { CanvasComponentState } from "../stores/canvas-component";
+import type { CanvasEntity, ComponentPath } from "../stores/canvas-entity";
+import type {
+  ComparisonTimeRangeState,
+  TimeRangeState,
+} from "../../dashboards/time-controls/time-control-store";
+import {
+  buildValidMetricsViewFilter,
+  createAndExpression,
+} from "../../dashboards/stores/filter-utils";
+import { mergeFilters } from "../../dashboards/pivot/pivot-merge-filters";
+import type { ComponentType, SvelteComponent } from "svelte";
 
-// A base class that implements all the store logic
-export abstract class BaseCanvasComponent<T> {
-  /**
-   * Local copy of the spec as a svelte writable store
-   */
+export abstract class BaseCanvasComponent<T = ComponentSpec> {
+  id: string;
+  // Local copoy of the canvas component resource
+  resource: Writable<V1Resource | null> = writable(null);
+  // Local copy of the spec (aka rendererProperties) for the component
   specStore: Writable<T>;
-  /**
-   * Path in the YAML where the component is stored
-   */
-  pathInYAML: (string | number)[] = [];
-  /**
-   * File artifact where the component
-   * is stored
-   */
-  fileArtifact: FileArtifact | undefined = undefined;
-
-  // Let child classes define these
-  /**
-   * Minimum allowed size for the component
-   * container on the canvas
-   */
+  // Path in the YAML where the component is stored
+  pathInYAML: ComponentPath;
+  // Local filters and local time controls (will be moved out of class)
+  state: CanvasComponentState<T>;
+  abstract type: CanvasComponentType;
+  // Component responsible for DOM rendering
+  abstract component: ComponentType<SvelteComponent>;
+  // Will be deprecated
   abstract minSize: ComponentSize;
-
-  /**
-   * The default size of the container when the component
-   * is added to the canvas
-   */
+  // Will be deprecated
   abstract defaultSize: ComponentSize;
-
-  /**
-   * The parameters that should be reset when the metrics_view
-   * is changed
-   */
+  // Parameters to reset when the metrics_view changes
   abstract resetParams: string[];
-
-  /**
-   * The minimum condition needed for the spec to be valid
-   * for the given component and to be rendered on the canvas
-   */
+  // Minimum condition needed for the component to be rendered
   abstract isValid(spec: T): boolean;
-
-  /**
-   * A map of input params which will be used in the visual
-   * UI builder
-   */
-  abstract inputParams(): InputParams<T>;
-
-  /**
-   * Get the spec when the component is added to the canvas
-   */
-  abstract newComponentSpec(
-    metricsViewName: string,
-    metricsViewSpec: V1MetricsViewSpec | undefined,
-  ): T;
+  // Configuration for the sidebar editor
+  abstract inputParams(type?: CanvasComponentType): InputParams<T>;
 
   constructor(
-    fileArtifact: FileArtifact | undefined,
-    path: (string | number)[],
-    defaultSpec: T,
-    initialSpec: Partial<T> = {},
+    resource: V1Resource,
+    public parent: CanvasEntity,
+    path: ComponentPath,
+    public defaultSpec: T,
   ) {
-    // Initialize the store with merged spec
-    const mergedSpec = { ...defaultSpec, ...initialSpec };
+    const yamlSpec = resource.component?.state?.validSpec?.rendererProperties;
+
+    const mergedSpec = { ...defaultSpec, ...yamlSpec };
     this.specStore = writable(mergedSpec);
     this.pathInYAML = path;
-    this.fileArtifact = fileArtifact;
+
+    this.resource.set(resource);
+    this.id = resource.meta?.name?.name as string;
+    this.state = new CanvasComponentState(
+      this.id,
+      this.parent.specStore,
+      this.parent.spec,
+      this.specStore,
+    );
   }
 
-  private async updateYAML(newSpec: T): Promise<void> {
-    if (!this.fileArtifact) return;
-    const parseDocumentStore = getParsedDocument(this.fileArtifact);
+  update(resource: V1Resource, path: ComponentPath) {
+    const yamlSpec = resource.component?.state?.validSpec
+      ?.rendererProperties as T;
+    this.resource.set(resource);
+    this.pathInYAML = path;
+    this.specStore.set(yamlSpec);
+  }
+
+  get timeAndFilterStore() {
+    return derived(
+      [
+        this.parent.timeControls.timeRangeStateStore,
+        this.state.localTimeControls.timeRangeStateStore,
+        this.parent.timeControls.comparisonRangeStateStore,
+        this.state.localTimeControls.comparisonRangeStateStore,
+        this.parent.timeControls.selectedTimezone,
+        this.parent.filters.whereFilter,
+        this.parent.filters.dimensionThresholdFilters,
+        this.parent.specStore,
+        this.parent.timeControls.hasTimeSeries,
+        this.specStore,
+      ],
+      ([
+        globalTimeRangeState,
+        localTimeRangeState,
+        globalComparisonRangeState,
+        localComparisonRangeState,
+        timeZone,
+        whereFilter,
+        dtf,
+        canvasData,
+        hasTimeSeries,
+        componentSpec,
+      ]) => {
+        const metricsViewName = componentSpec["metrics_view"];
+        const metricsView = canvasData.data?.metricsViews?.[metricsViewName];
+        const dimensions = metricsView?.state?.validSpec?.dimensions ?? [];
+        const measures = metricsView?.state?.validSpec?.measures ?? [];
+
+        let timeRange: V1TimeRange = {
+          start: globalTimeRangeState?.timeStart,
+          end: globalTimeRangeState?.timeEnd,
+          timeZone,
+        };
+
+        let timeGrain = globalTimeRangeState?.selectedTimeRange?.interval;
+
+        const localShowTimeComparison =
+          !!localComparisonRangeState?.showTimeComparison;
+        const globalShowTimeComparison =
+          !!globalComparisonRangeState?.showTimeComparison;
+
+        let showTimeComparison = globalShowTimeComparison;
+
+        let comparisonTimeRange: V1TimeRange | undefined = {
+          start: globalComparisonRangeState?.comparisonTimeStart,
+          end: globalComparisonRangeState?.comparisonTimeEnd,
+          timeZone,
+        };
+
+        let timeRangeState: TimeRangeState | undefined = globalTimeRangeState;
+        let comparisonTimeRangeState: ComparisonTimeRangeState | undefined =
+          globalComparisonRangeState;
+
+        if (componentSpec?.["time_filters"]) {
+          timeRange = {
+            start: localTimeRangeState?.timeStart,
+            end: localTimeRangeState?.timeEnd,
+            timeZone,
+          };
+
+          comparisonTimeRange = {
+            start: localComparisonRangeState?.comparisonTimeStart,
+            end: localComparisonRangeState?.comparisonTimeEnd,
+            timeZone,
+          };
+
+          showTimeComparison = localShowTimeComparison;
+
+          timeGrain = localTimeRangeState?.selectedTimeRange?.interval;
+
+          timeRangeState = localTimeRangeState;
+          comparisonTimeRangeState = localComparisonRangeState;
+        }
+
+        // Dimension Filters
+        const globalWhere =
+          buildValidMetricsViewFilter(whereFilter, dtf, dimensions, measures) ??
+          createAndExpression([]);
+
+        let where: V1Expression | undefined = globalWhere;
+
+        if (componentSpec?.["dimension_filters"]) {
+          const { expr: componentWhere } =
+            this.state.localFilters.getFiltersFromText(
+              componentSpec?.["dimension_filters"] as string,
+            );
+          where = mergeFilters(globalWhere, componentWhere);
+        }
+
+        return {
+          timeRange,
+          showTimeComparison,
+          comparisonTimeRange,
+          where,
+          timeGrain,
+          timeRangeState,
+          comparisonTimeRangeState,
+          hasTimeSeries,
+        };
+      },
+    );
+  }
+
+  private updateYAML(newSpec: T) {
+    if (!this.parent.fileArtifact) return;
+    const parseDocumentStore = this.parent.parsedContent;
     const parsedDocument = get(parseDocumentStore);
 
-    const { updateEditorContent, saveLocalContent } = this.fileArtifact;
+    const { updateEditorContent } = this.parent.fileArtifact;
 
-    // Update the Item
     parsedDocument.setIn(this.pathInYAML, newSpec);
 
-    // Save the updated document
-    updateEditorContent(parsedDocument.toString(), false);
-    await saveLocalContent();
+    updateEditorContent(parsedDocument.toString(), false, true);
   }
 
-  /**
-   * Set the spec store and YAML with the new values
-   */
-  async setSpec(newSpec: T): Promise<void> {
+  setSpec(newSpec: T) {
     if (this.isValid(newSpec)) {
-      await this.updateYAML(newSpec);
+      this.updateYAML(newSpec);
     }
     this.specStore.set(newSpec);
   }
 
-  /**
-   * Update the spec store and YAML with the new values
-   */
-  // TODO: Add stricter type definition for keys and value deriving from spec
-  async updateProperty(key: string, value: unknown): Promise<void> {
+  updateProperty(key: AllKeys<T>, value: T[AllKeys<T>]) {
     const currentSpec = get(this.specStore);
 
     const newSpec = { ...currentSpec, [key]: value };
@@ -128,31 +230,8 @@ export abstract class BaseCanvasComponent<T> {
     }
 
     if (this.isValid(newSpec)) {
-      await this.updateYAML(newSpec);
+      this.updateYAML(newSpec);
     }
     this.specStore.set(newSpec);
-  }
-
-  /**
-   * Update the chart type of chart component in store and YAML
-   */
-  async updateChartType(key: ChartType) {
-    if (!this.fileArtifact) return;
-    const currentSpec = get(this.specStore);
-
-    const parentPath = this.pathInYAML.slice(0, -1);
-
-    const parseDocumentStore = getParsedDocument(this.fileArtifact);
-    const parsedDocument = get(parseDocumentStore);
-
-    const { updateEditorContent, saveLocalContent } = this.fileArtifact;
-
-    const width = parsedDocument.getIn([...parentPath, "width"]);
-
-    parsedDocument.setIn(parentPath, { [key]: currentSpec, width });
-
-    // Save the updated document
-    updateEditorContent(parsedDocument.toString(), true);
-    await saveLocalContent();
   }
 }

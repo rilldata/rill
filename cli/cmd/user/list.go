@@ -8,6 +8,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	userTokenPrefix   = "usr" // User token prefix
+	inviteTokenPrefix = "inv" // Invite token prefix
+)
+
 func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 	var projectName string
 	var groupName string
@@ -24,13 +29,13 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 					return err
 				}
 			} else if projectName != "" {
-				if strings.HasPrefix(pageToken, "usr") {
-					err := listProjectMembers(cmd, ch, ch.Org, projectName, strings.TrimPrefix(pageToken, "usr"), pageSize)
+				if strings.HasPrefix(pageToken, userTokenPrefix) {
+					err := listProjectMembers(cmd, ch, ch.Org, projectName, strings.TrimPrefix(pageToken, userTokenPrefix), pageSize)
 					if err != nil {
 						return err
 					}
-				} else if strings.HasPrefix(pageToken, "inv") {
-					err := listProjectInvites(cmd, ch, ch.Org, projectName, strings.TrimPrefix(pageToken, "inv"), pageSize)
+				} else if strings.HasPrefix(pageToken, inviteTokenPrefix) {
+					err := listProjectInvites(cmd, ch, ch.Org, projectName, strings.TrimPrefix(pageToken, inviteTokenPrefix), pageSize)
 					if err != nil {
 						return err
 					}
@@ -46,13 +51,13 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 					}
 				}
 			} else {
-				if strings.HasPrefix(pageToken, "usr") {
-					err := listOrgMembers(cmd, ch, ch.Org, strings.TrimPrefix(pageToken, "usr"), pageSize)
+				if strings.HasPrefix(pageToken, userTokenPrefix) {
+					err := listOrgMembers(cmd, ch, ch.Org, strings.TrimPrefix(pageToken, userTokenPrefix), pageSize)
 					if err != nil {
 						return err
 					}
-				} else if strings.HasPrefix(pageToken, "inv") {
-					err := listOrgInvites(cmd, ch, ch.Org, strings.TrimPrefix(pageToken, "inv"), pageSize)
+				} else if strings.HasPrefix(pageToken, inviteTokenPrefix) {
+					err := listOrgInvites(cmd, ch, ch.Org, strings.TrimPrefix(pageToken, inviteTokenPrefix), pageSize)
 					if err != nil {
 						return err
 					}
@@ -67,8 +72,6 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 						return err
 					}
 				}
-
-				ch.Printf("\nShowing organization members only. Use the --project flag to list members of a specific project.\n")
 			}
 
 			return nil
@@ -100,7 +103,7 @@ func listUsergroupMembers(cmd *cobra.Command, ch *cmdutil.Helper, org, group, pa
 		return err
 	}
 
-	ch.PrintUsergroupMembers(members.Members)
+	ch.PrintUsergroupMemberUsers(members.Members)
 
 	if members.NextPageToken != "" {
 		cmd.Println()
@@ -126,7 +129,7 @@ func listProjectMembers(cmd *cobra.Command, ch *cmdutil.Helper, org, project, pa
 		return err
 	}
 
-	ch.PrintMemberUsers(members.Members)
+	ch.PrintProjectMemberUsers(members.Members)
 
 	if members.NextPageToken != "" {
 		cmd.Println()
@@ -186,7 +189,7 @@ func listOrgMembers(cmd *cobra.Command, ch *cmdutil.Helper, org, pageToken strin
 		return err
 	}
 
-	ch.PrintMemberUsers(members.Members)
+	ch.PrintOrganizationMemberUsers(members.Members)
 
 	if members.NextPageToken != "" {
 		cmd.Println()

@@ -50,7 +50,7 @@ In your `rill.yaml`, the top level property for the resource type needs to be **
 For example, the following YAML configuration below will set a project-wide default for:
 - **Sources** - Configure a [source refresh](/build/connect/source-refresh.md).
 - **Models** - Automatically materialize the models as tables instead of views (the default behavior if unspecified).
-- **Metrics View** - Set the [first day of the week](metrics-view.md) for timeseries aggregations to be Sunday along with setting the smallest_time_grain.
+- **Metrics View** - Set the [first day of the week](metrics-views.md) for timeseries aggregations to be Sunday along with setting the smallest_time_grain.
 - **Explore Dashboards** - Set the [default](explore-dashboards.md) values when a user opens a dashboard, and available time zones and/or time ranges.
 
 ```yaml
@@ -121,7 +121,7 @@ env:
 
 :::info Overriding variables locally
 
-Variables also follow an order of precedence and can be overriden locally. By default, any variables defined will be inherited from `rill.yaml`. However, if you manually pass in a variable when starting Rill Developer locally via the CLI, this value will be used instead for the current instance of your running project:
+Variables also follow an order of precedence and can be overridden locally. By default, any variables defined will be inherited from `rill.yaml`. However, if you manually pass in a variable when starting Rill Developer locally via the CLI, this value will be used instead for the current instance of your running project:
 
 ```bash
 rill start --env numeric_var=100 --env string_var="different_value"
@@ -172,8 +172,8 @@ mock_users:
 ```
 
 
-![View as User](/img/reference/project-files/View-as.png)
-
+<img src = '/img/reference/project-files/View-as.png' class='centered' />
+<br />
 
 :::info The View as selector is not visible in my dashboard, why?
 

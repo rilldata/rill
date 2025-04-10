@@ -1,6 +1,5 @@
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { writable } from "svelte/store";
-import { debounce } from "../lib/create-debouncer";
 import {
   createRuntimeServiceGetInstance,
   type V1InstanceFeatureFlags,
@@ -42,31 +41,37 @@ class FeatureFlags {
   ai = new FeatureFlag("user", !import.meta.env.VITE_PLAYWRIGHT_TEST);
   exports = new FeatureFlag("user", true);
   cloudDataViewer = new FeatureFlag("user", false);
-  canvasDashboards = new FeatureFlag("user", false);
   dimensionSearch = new FeatureFlag("user", false);
   clickhouseModeling = new FeatureFlag("user", false);
   twoTieredNavigation = new FeatureFlag("user", false);
   hidePublicUrl = new FeatureFlag("user", false);
+  alerts = new FeatureFlag("user", true);
+  reports = new FeatureFlag("user", true);
+  leaderboardMeasureCount = new FeatureFlag("user", false);
 
   constructor() {
-    const updateFlags = debounce((userFlags: V1InstanceFeatureFlags) => {
+    const updateFlags = (userFlags: V1InstanceFeatureFlags) => {
       for (const key in userFlags) {
         const flag = this[key] as FeatureFlag | undefined;
-        if (!flag || flag.internalOnly) return;
+        if (!flag || flag.internalOnly) continue;
         flag.set(userFlags[key]);
       }
-    }, 400);
+    };
 
     // Responsively update flags based rill.yaml
     runtime.subscribe((runtime) => {
       if (!runtime?.instanceId) return;
 
-      createRuntimeServiceGetInstance(runtime.instanceId, undefined, {
-        query: {
-          select: (data) => data?.instance?.featureFlags,
-          queryClient,
+      createRuntimeServiceGetInstance(
+        runtime.instanceId,
+        undefined,
+        {
+          query: {
+            select: (data) => data?.instance?.featureFlags,
+          },
         },
-      }).subscribe((features) => {
+        queryClient,
+      ).subscribe((features) => {
         if (features.data) updateFlags(features.data);
       });
     });

@@ -5,11 +5,14 @@
     width,
     position,
   } from "@rilldata/web-admin//components/nav/Tab.svelte";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
 
   export let projectPermissions: V1ProjectPermissions;
   export let organization: string;
   export let project: string;
   export let pathname: string;
+
+  const { alerts, reports } = featureFlags;
 
   $: tabs = [
     {
@@ -20,12 +23,12 @@
     {
       route: `/${organization}/${project}/-/reports`,
       label: "Reports",
-      hasPermission: true,
+      hasPermission: $reports,
     },
     {
       route: `/${organization}/${project}/-/alerts`,
       label: "Alerts",
-      hasPermission: true,
+      hasPermission: $alerts,
     },
     {
       route: `/${organization}/${project}/-/status`,

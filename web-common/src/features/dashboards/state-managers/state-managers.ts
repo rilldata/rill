@@ -1,10 +1,5 @@
-import {
-  type ContextColWidths,
-  type MetricsExplorerEntity,
-  contextColWidthDefaults,
-} from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { type MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
-import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import {
   type ExploreValidSpecResponse,
   useExploreValidSpec,
@@ -38,6 +33,10 @@ import {
   type StateManagerReadables,
   createStateManagerReadables,
 } from "./selectors";
+import {
+  contextColWidthDefaults,
+  type ContextColWidths,
+} from "../leaderboard-context-column";
 
 export type StateManagers = {
   runtime: Writable<Runtime>;
@@ -100,9 +99,12 @@ export function createStateManagers({
   const validSpecStore: Readable<
     QueryObserverResult<ExploreValidSpecResponse, RpcStatus>
   > = derived([runtime, exploreNameStore], ([r, exploreName], set) =>
-    useExploreValidSpec(r.instanceId, exploreName, { queryClient }).subscribe(
-      set,
-    ),
+    useExploreValidSpec(
+      r.instanceId,
+      exploreName,
+      undefined,
+      queryClient,
+    ).subscribe(set),
   );
 
   const timeRangeSummaryStore: Readable<
@@ -116,12 +118,12 @@ export function createStateManagers({
         {},
         {
           query: {
-            queryClient,
             enabled: !!validSpec?.data?.metricsView?.timeDimension,
             staleTime: Infinity,
-            cacheTime: Infinity,
+            gcTime: Infinity,
           },
         },
+        queryClient,
       ).subscribe(set),
   );
 
@@ -129,6 +131,7 @@ export function createStateManagers({
     callback: (metricsExplorer: MetricsExplorerEntity) => void,
   ) => {
     const name = get(dashboardStore).name;
+
     // TODO: Remove dependency on MetricsExplorerStore singleton and its exports
     updateMetricsExplorerByName(name, callback);
   };
@@ -145,12 +148,11 @@ export function createStateManagers({
       }
       return getDefaultExplorePreset(
         validSpec.data?.explore ?? {},
+        validSpec.data.metricsView ?? {},
         timeRangeSummary.data,
       );
     },
   );
-
-  initLocalUserPreferenceStore(exploreName);
 
   return {
     runtime: runtime,

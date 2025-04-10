@@ -60,13 +60,13 @@ You can easily check the version of Rill that you are using in Rill Developer by
 rill --version
 ```
 
-If you are on an older version of Rill, it is **strongly recommended** to [upgrade](home/install.md#upgrade-to-the-newest-version) to the latest version.
+If you are on an older version of Rill, it is **strongly recommended** to [upgrade](home/install.md#upgrade-to-the-newest-version-of-rill-developer) to the latest version.
 
 :::
 
 ### Syncing your GitHub Repository
 :::note GitHub app permissions
-This assumes that the installed Github app in your organization has write access. If unsure, please check with your Github admin.
+This assumes that the installed GitHub app in your organization has write access. If unsure, please check with your GitHub admin.
 
 The required permissions are:
  - Read access to metadata and pull requests
@@ -78,24 +78,31 @@ At this point, you have the option to connect your Rill project to a GitHub Repo
 
 Navigating to the Status page and selecting `Connect to GitHub` will prompt you to login and create a repository for your project. If you've already created a repository, check the box 'I've created a GitHub Repo' and add the permissions for Rill to access the repository.
 
-:::info Check with your Github organization admin
+:::info Check with your GitHub organization admin
 
-If you're not the admin of your Github organization, they will likely need to first install the Rill Cloud app in your organization before you can proceed with deploying a project. After the Rill Cloud app is installed, it should have the following privileges:
-
+If you're not the admin of your GitHub organization, they will likely need to first install the Rill Cloud app in your organization before you can proceed with deploying a project. After the Rill Cloud app is installed, it should have the following privileges:
 :::
 
-![img](/img/deploy/existing-project/install-rill-cloud.png)
+
+
+<img src = '/img/deploy/existing-project/install-rill-cloud.png' class='rounded-gif' />
+<br />
+
 
 Once the permissions to the repository have been confirmed and set, you can continue to select the repository in the dropdown.
+<img src = '/img/deploy/existing-project/select-repo.png' class='rounded-gif' />
+<br />
 
-![img](/img/deploy/existing-project/select-repo.png)
 
 Once completed, you'll see the newly updated repository on the UI of your status page!
 
+<img src = '/img/deploy/existing-project/finished.png' class='rounded-gif' />
+<br />
 
-![img](/img/deploy/existing-project/finished.png)
 
-
+:::warning Still unable to connect?
+If you encounter issues, check that the app installation is not pending. Go to your organization's settings and click on Installed GitHub Apps. You will see a section of Pending GitHub Apps installation requests. If you're an Owner or App Manager, grant access to the Rill app if it is pending."
+:::
 
 
 ## Deploying a project via the CLI
@@ -127,14 +134,18 @@ If you have not already [configured your connections' credentials](https://docs.
 
 If this is your first deployment to Rill Cloud, you will get prompted to either sign up or log in (if you have an existing account on [Rill Cloud](https://ui.rilldata.com/)). Proceed with the sign up and email verification process for new users or authorization process for existing users. As a new user, you can expect to see the following page:
 
-![Sign in to Rill Cloud](/img/deploy/existing-project/rill-cloud-sign-in.png)
+<img src = '/img/deploy/existing-project/rill-cloud-sign-in.png' class='rounded-gif' />
+<br />
+
 
 
 **Project Uploaded Successfully**
 
 Once the project has been uploaded to Rill Cloud, you should be able to see the following page: 
 
-![img](/img/deploy/existing-project/status.png)
+<img src = '/img/deploy/existing-project/status.png' class='rounded-gif' />
+<br />
+
 
 
 
@@ -147,7 +158,7 @@ If you do not set any parameters, Rill will infer the project name based on the 
 rill project connect-github
 No git remote was found.
 ? Do you want to create a repo? Yes
-? Select a Github account for the new repository royendo
+? Select a GitHub account for the new repository royendo
 Repository name "my-rill-tutorial" is already taken
 ? Please provide alternate name my-rill-tutorial-cli
 
@@ -155,15 +166,15 @@ Request submitted for creating repository. Checking completion status
 
 Successfully created repository on "https://github.com/royendo/my-rill-tutorial-cli"
 
-Pushing local project to Github
+Pushing local project to GitHub
 
-Successfully pushed your local project to Github
+Successfully pushed your local project to GitHub
 
 Using org "Rill_Learn".
 
 Created project "Rill_Learn/my-rill-tutorial-cli". Use `rill project rename` to change name if required.
 
-Rill projects deploy continuously when you push changes to Github.
+Rill projects deploy continuously when you push changes to GitHub.
 
 ...
 
@@ -173,12 +184,14 @@ Opening project in browser...
 
 Once completed, you will see the following the in the status page. Note that the GitHub repository is already setup!
 
-![img](/img/deploy/existing-project/cli-upload.png)
+<img src = '/img/deploy/existing-project/cli-upload.png' class='rounded-gif' />
+<br />
+
 
 
 ## Continuous Deployment 
 
-Whether you decide to manage your Rill projects using Github or re-running `rill project deploy`, Rill should automatically detect changes that you have pushed locally and update your deployed project accordingly. Depending on the changes, this may results in a project reconcile to occur. If you are experiencing some issues with the project after pushing changes to the CLI, please refer the the project's status page for more information or you can run via the CLI:
+Whether you decide to manage your Rill projects using GitHub or re-running `rill project deploy`, Rill should automatically detect changes that you have pushed locally and update your deployed project accordingly. Depending on the changes, this may results in a project reconcile to occur. If you are experiencing some issues with the project after pushing changes to the CLI, please refer the the project's status page for more information or you can run via the CLI:
 
 ```
 rill project status

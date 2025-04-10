@@ -38,7 +38,6 @@ import {
   get,
   writable,
   type Readable,
-  type Unsubscriber,
   type Writable,
 } from "svelte/store";
 
@@ -68,7 +67,6 @@ export class TimeControls {
 
   private componentName: string | undefined;
   private isInitialStateSet: boolean = false;
-  private initialStateSubscriber: Unsubscriber | undefined;
   private specStore: CanvasSpecResponseStore;
 
   constructor(specStore: CanvasSpecResponseStore, componentName?: string) {
@@ -248,6 +246,8 @@ export class TimeControls {
           return;
         }
 
+        const isLocalComponentControl = Boolean(this.componentName);
+
         const selectedTimezone = get(this.selectedTimezone);
         const comparisonTimeRange = get(this.selectedComparisonTimeRange);
 
@@ -273,21 +273,22 @@ export class TimeControls {
           V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
         );
 
+        const newComparisonRange = getComparisonTimeRange(
+          timeRanges,
+          allTimeRange,
+          newTimeRange,
+          comparisonTimeRange,
+        );
+
+        this.selectedComparisonTimeRange.set(newComparisonRange);
+
+        console.log({ isLocalComponentControl });
         if (
           defaultPreset?.comparisonMode ===
-          V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
+            V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME &&
+          !isLocalComponentControl
         ) {
-          const newComparisonRange = getComparisonTimeRange(
-            timeRanges,
-            allTimeRange,
-            newTimeRange,
-            comparisonTimeRange,
-          );
-          this.selectedComparisonTimeRange.set(newComparisonRange);
-
-          if (!this.componentName) {
-            this.showTimeComparison.set(true);
-          }
+          this.showTimeComparison.set(true);
         }
 
         this.selectedTimeRange.set(newTimeRange);
@@ -296,11 +297,7 @@ export class TimeControls {
     );
 
     // Subscribe to ensure the derived code runs
-    this.initialStateSubscriber = defaultStore.subscribe(() => {});
-  };
-
-  destroy = () => {
-    this.initialStateSubscriber?.();
+    defaultStore.subscribe(() => {});
   };
 
   combinedTimeRangeSummaryStore = (
@@ -338,11 +335,13 @@ export class TimeControls {
           {},
           {
             query: {
-              queryClient: queryClient,
+              enabled:
+                !!metricsViews[metricView]?.state?.validSpec?.timeDimension,
               staleTime: Infinity,
-              cacheTime: Infinity,
+              gcTime: Infinity,
             },
           },
+          queryClient,
         );
       });
 
@@ -473,7 +472,8 @@ export class TimeControls {
     }
 
     this.selectedTimeRange.set(selectedTimeRange);
-    this.selectedComparisonTimeRange.set(selectedComparisonTimeRange);
+    if (selectedComparisonTimeRange)
+      this.selectedComparisonTimeRange.set(selectedComparisonTimeRange);
     this.showTimeComparison.set(showTimeComparison);
 
     this.isInitialStateSet = true;

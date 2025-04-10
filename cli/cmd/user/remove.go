@@ -10,7 +10,6 @@ func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 	var projectName string
 	var groupName string
 	var email string
-	var keepProjectRoles bool
 
 	removeCmd := &cobra.Command{
 		Use:   "remove",
@@ -51,9 +50,8 @@ func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 				ch.PrintfSuccess("Removed user %q from project \"%s/%s\"\n", email, ch.Org, projectName)
 			} else {
 				_, err = client.RemoveOrganizationMemberUser(cmd.Context(), &adminv1.RemoveOrganizationMemberUserRequest{
-					Organization:     ch.Org,
-					Email:            email,
-					KeepProjectRoles: keepProjectRoles,
+					Organization: ch.Org,
+					Email:        email,
 				})
 				if err != nil {
 					return err
@@ -69,7 +67,6 @@ func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 	removeCmd.Flags().StringVar(&projectName, "project", "", "Project")
 	removeCmd.Flags().StringVar(&groupName, "group", "", "User group")
 	removeCmd.Flags().StringVar(&email, "email", "", "Email of the user")
-	removeCmd.Flags().BoolVar(&keepProjectRoles, "keep-project-roles", false, "Keep roles granted directly on projects in the org")
 
 	return removeCmd
 }

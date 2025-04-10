@@ -2,7 +2,7 @@
   import { Button } from "@rilldata/web-common/components/button";
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
-  import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import AdvancedFilter from "@rilldata/web-common/features/dashboards/filters/AdvancedFilter.svelte";
   import FilterButton from "@rilldata/web-common/features/dashboards/filters/FilterButton.svelte";
   import DimensionFilter from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilter.svelte";
@@ -16,7 +16,6 @@
     deriveInterval,
   } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls";
   import SuperPill from "@rilldata/web-common/features/dashboards/time-controls/super-pill/SuperPill.svelte";
-  import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
   import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
@@ -28,21 +27,24 @@
   } from "@rilldata/web-common/lib/time/types";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { DateTime, Interval } from "luxon";
-  import { onDestroy, onMount } from "svelte";
+  import { onMount } from "svelte";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
   import CanvasComparisonPill from "./CanvasComparisonPill.svelte";
 
   export let readOnly = false;
+  export let maxWidth: number;
+  export let canvasName: string;
 
   /** the height of a row of chips */
   const ROW_HEIGHT = "26px";
-  const {
-    canvasName,
+  $: ({
     canvasEntity: {
       filters: {
         whereFilter,
         toggleDimensionValueSelection,
+        applyDimensionInListMode,
+        applyDimensionContainsMode,
         removeDimensionFilter,
         toggleDimensionFilterMode,
         setMeasureFilter,
@@ -69,10 +71,9 @@
         displayTimeComparison,
         setSelectedComparisonRange,
         setInitialState,
-        destroy,
       },
     },
-  } = getCanvasStateManagers();
+  } = getCanvasStore(canvasName));
 
   let showDefaultItem = false;
 
@@ -100,8 +101,6 @@
         DateTime.fromJSDate(selectedTimeRange.end).setZone($selectedTimezone),
       )
     : Interval.fromDateTimes($allTimeRange.start, $allTimeRange.end);
-
-  $: localUserPreferences = initLocalUserPreferenceStore($canvasName);
 
   $: dimensionIdMap = getMapFromArray(
     $allDimensions,
@@ -188,7 +187,7 @@
       ?.defaultComparison as TimeComparisonOption;
 
     // Get valid option for the new time range
-    const validComparison = allTimeRange && comparisonOption;
+    const validComparison = $allTimeRange && comparisonOption;
 
     makeTimeSeriesTimeRangeAndUpdateAppState(range, defaultTimeGrain, {
       name: validComparison,
@@ -261,7 +260,6 @@
     }
 
     setTimeZone(timeZone);
-    localUserPreferences.set({ timeZone });
   }
 
   onMount(() => {
@@ -269,10 +267,12 @@
       setInitialState();
     }
   });
-  onDestroy(destroy);
 </script>
 
-<div class="flex flex-col gap-y-2 size-full pointer-events-none">
+<div
+  class="flex flex-col gap-y-2 size-full pointer-events-none"
+  style:max-width="{maxWidth}px"
+>
   <div
     class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center ml-2 pointer-events-auto w-fit"
   >
@@ -291,6 +291,7 @@
       {timeEnd}
       {activeTimeGrain}
       activeTimeZone={$selectedTimezone}
+      allowCustomTimeRange={$canvasSpec?.allowCustomTimeRange}
       canPanLeft
       canPanRight
       showPan
@@ -330,7 +331,7 @@
           No filters selected
         </div>
       {:else}
-        {#each allDimensionFilters as { name, label, selectedValues, metricsViewNames } (name)}
+        {#each allDimensionFilters as { name, label, mode, selectedValues, inputText, metricsViewNames } (name)}
           {@const dimension = $allDimensions.find(
             (d) => d.name === name || d.column === name,
           )}
@@ -342,7 +343,9 @@
                 {readOnly}
                 {name}
                 {label}
+                {mode}
                 {selectedValues}
+                {inputText}
                 {timeStart}
                 {timeEnd}
                 timeControlsReady={!!$timeRangeStateStore}
@@ -351,6 +354,10 @@
                 onToggleFilterMode={() => toggleDimensionFilterMode(name)}
                 onSelect={(value) =>
                   toggleDimensionValueSelection(name, value, true)}
+                onApplyInList={(values) =>
+                  applyDimensionInListMode(name, values)}
+                onApplyContainsMode={(searchText) =>
+                  applyDimensionContainsMode(name, searchText)}
               />
             {/if}
           </div>

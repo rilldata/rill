@@ -100,5 +100,6 @@ func TestHTTPToDuckDBTransfer(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, 3, count)
 	}
+	require.NoError(t, res.Err())
 	require.NoError(t, res.Close())
 }
