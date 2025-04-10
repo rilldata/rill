@@ -1,7 +1,6 @@
 package user
 
 import (
-	"strconv"
 	"time"
 
 	"github.com/rilldata/rill/cli/cmd/auth"
@@ -33,9 +32,9 @@ func AssumeCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			// saving expiryTime before the actual call to get token
-			// we can get it from server too but i think it is not required.
-			expiryTime := time.Now().Unix() + int64(ttlMinutes*60)
+			// Store expiryTime before requesting the token.
+			// It could be fetched from the server, but that may not be needed.
+			expiry := time.Now().Add(time.Duration(ttlMinutes) * time.Minute)
 
 			client, err := ch.Client()
 			if err != nil {
@@ -59,17 +58,6 @@ func AssumeCmd(ch *cmdutil.Helper) *cobra.Command {
 			if err != nil {
 				return err
 			}
-
-			// Backup current token expiry as original token expiry
-			originalTokenExpiry, err := dotrill.GetAccessTokenExpiry()
-			if err != nil {
-				return err
-			}
-			err = dotrill.SetBackupTokenExpiry(originalTokenExpiry)
-			if err != nil {
-				return err
-			}
-
 			// Backup current org as backup org
 			defaultOrg, err := dotrill.GetDefaultOrg()
 			if err != nil {
@@ -86,7 +74,8 @@ func AssumeCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			err = dotrill.SetAccessTokenExpiry(strconv.FormatInt(expiryTime, 10))
+			// Set the new token expiry
+			err = dotrill.SetRepresentingUserAccessTokenExpiry(&expiry)
 			if err != nil {
 				return err
 			}

@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
@@ -28,14 +29,22 @@ func UnassumeUser(ctx context.Context, ch *cmdutil.Helper) error {
 	if err != nil {
 		return err
 	}
-	_, err = client.RevokeCurrentAuthToken(ctx, &adminv1.RevokeCurrentAuthTokenRequest{})
-	if err != nil {
-		ch.Printf("Failed to revoke token (it may have expired). Clearing local token anyway.\n")
-	}
-	return RestoreOriginalUserState(ctx, ch)
-}
 
-func RestoreOriginalUserState(ctx context.Context, ch *cmdutil.Helper) error {
+	// Revoke the current token if it's not expired
+	expiryTime, err := dotrill.GetRepresentingUserAccessTokenExpiry()
+	if err == nil && expiryTime != nil && time.Now().Before(*expiryTime) {
+		_, err = client.RevokeCurrentAuthToken(ctx, &adminv1.RevokeCurrentAuthTokenRequest{})
+		if err != nil {
+			ch.Printf("Failed to revoke token. Clearing local token anyway.\n")
+		}
+	}
+
+	// Clear local token and expiry
+	err = dotrill.SetRepresentingUserAccessTokenExpiry(nil)
+	if err != nil {
+		return err
+	}
+
 	// Fetch the original token
 	originalToken, err := dotrill.GetBackupToken()
 	if err != nil {
@@ -64,26 +73,8 @@ func RestoreOriginalUserState(ctx context.Context, ch *cmdutil.Helper) error {
 	}
 	ch.Org = originalDefaultOrg
 
-	// Fetch the original token expiry
-	originalTokenExpiry, err := dotrill.GetBackupTokenExpiry()
-	if err != nil {
-		return err
-	}
-
-	// Restore the original token expiry as the access token
-	err = dotrill.SetAccessTokenExpiry(originalTokenExpiry)
-	if err != nil {
-		return err
-	}
-
 	// Clear backup token
 	err = dotrill.SetBackupToken("")
-	if err != nil {
-		return err
-	}
-
-	// Clear backup token expiry
-	err = dotrill.SetBackupTokenExpiry("")
 	if err != nil {
 		return err
 	}

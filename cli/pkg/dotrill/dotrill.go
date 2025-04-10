@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"gopkg.in/yaml.v2"
@@ -21,22 +22,19 @@ const (
 
 // Constants for YAML keys
 const (
-	DefaultOrgConfigKey       = "org"
-	BackupDefaultOrgConfigKey = "backup_org"
-	DefaultAdminURLConfigKey  = "api_url"
-	AnalyticsEnabledConfigKey = "analytics_enabled"
-	AccessTokenCredentialsKey = "token"
-	//nolint:gosec // This is a key name, not a credential
-	AccessTokenExpiryKey           = "token_expiry"
-	InstallIDStateKey              = "install_id"
-	RepresentingUserCredentialsKey = "representing_user"
-	BackupTokenCredentialsKey      = "backup_token"
-	//nolint:gosec // This is a key name, not a credential
-	BackupAccessTokenExpiryKey     = "backup_token_expiry"
-	LatestVersionStateKey          = "latest_version"
-	LatestVersionCheckedAtStateKey = "latest_version_checked_at"
-	UserIDStateKey                 = "user_id"
-	UserCheckHashStateKey          = "user_check_hash"
+	DefaultOrgConfigKey                             = "org"
+	BackupDefaultOrgConfigKey                       = "backup_org"
+	DefaultAdminURLConfigKey                        = "api_url"
+	AnalyticsEnabledConfigKey                       = "analytics_enabled"
+	AccessTokenCredentialsKey                       = "token"
+	InstallIDStateKey                               = "install_id"
+	RepresentingUserCredentialsKey                  = "representing_user"
+	RepresentingUserAccessTokenExpiryCredentialsKey = "representing_user_token_expiry"
+	BackupTokenCredentialsKey                       = "backup_token"
+	LatestVersionStateKey                           = "latest_version"
+	LatestVersionCheckedAtStateKey                  = "latest_version_checked_at"
+	UserIDStateKey                                  = "user_id"
+	UserCheckHashStateKey                           = "user_check_hash"
 )
 
 // homeDir is the user's home directory. We keep this as a global to override in unit tests.
@@ -148,14 +146,29 @@ func SetAccessToken(token string) error {
 	return Set(CredentialsFilename, AccessTokenCredentialsKey, token)
 }
 
-// GetAccessTokenExpiry loads the current auth token expiry
-func GetAccessTokenExpiry() (string, error) {
-	return Get(CredentialsFilename, AccessTokenExpiryKey)
+// GetRepresentingUserAccessTokenExpiry loads the current auth token expiry
+func GetRepresentingUserAccessTokenExpiry() (*time.Time, error) {
+	expiryStr, err := Get(CredentialsFilename, RepresentingUserAccessTokenExpiryCredentialsKey)
+	if err != nil {
+		return nil, err
+	}
+	if expiryStr == "" {
+		return nil, nil
+	}
+	expiry, err := time.Parse(time.RFC3339Nano, expiryStr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse token expiry: %w", err)
+	}
+	return &expiry, nil
 }
 
-// SetAccessTokenExpiry saves an auth token expiry
-func SetAccessTokenExpiry(expiry string) error {
-	return Set(CredentialsFilename, AccessTokenExpiryKey, expiry)
+// SetRepresentingUserAccessTokenExpiry saves an auth token expiry
+func SetRepresentingUserAccessTokenExpiry(expiry *time.Time) error {
+	var expiryStr string
+	if expiry != nil {
+		expiryStr = expiry.Format(time.RFC3339Nano)
+	}
+	return Set(CredentialsFilename, RepresentingUserAccessTokenExpiryCredentialsKey, expiryStr)
 }
 
 // GetBackupToken loads the original auth token
@@ -166,16 +179,6 @@ func GetBackupToken() (string, error) {
 // SetBackupToken saves original auth token
 func SetBackupToken(token string) error {
 	return Set(CredentialsFilename, BackupTokenCredentialsKey, token)
-}
-
-// GetBackupTokenExpiry loads the original auth token expiry
-func GetBackupTokenExpiry() (string, error) {
-	return Get(CredentialsFilename, BackupAccessTokenExpiryKey)
-}
-
-// SetBackupTokenExpiry saves original auth token expiry
-func SetBackupTokenExpiry(expiry string) error {
-	return Set(CredentialsFilename, BackupAccessTokenExpiryKey, expiry)
 }
 
 // GetRepresentingUser loads the current representing user email

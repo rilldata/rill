@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -110,16 +109,13 @@ func runCmd(ctx context.Context, ver cmdutil.Version) error {
 		ch.PrintfWarn("Could not parse representing user email\n\n")
 	}
 	if representingUser != "" {
-		tokenExpiryStr, err := dotrill.GetAccessTokenExpiry()
+		expiryTime, err := dotrill.GetRepresentingUserAccessTokenExpiry()
 		if err != nil {
-			ch.PrintfWarn("Could not parse token expiry\n\n")
-		} else if tokenExpiryStr != "" {
-			expiryTime, err := strconv.ParseInt(tokenExpiryStr, 10, 64)
-			if err != nil {
-				ch.PrintfWarn("Could not parse token expiry time\n\n")
-			} else if time.Now().Unix() > expiryTime {
+			ch.PrintfWarn("Could not parse token expiry %v\n\n", err)
+		} else if expiryTime != nil {
+			if time.Now().After(*expiryTime) {
 				// If the assumed user's token has expired, silently unassume and revert to the original user before executing the command.
-				err := sudouser.RestoreOriginalUserState(ctx, ch)
+				err := sudouser.UnassumeUser(ctx, ch)
 				if err != nil {
 					return err
 				}
