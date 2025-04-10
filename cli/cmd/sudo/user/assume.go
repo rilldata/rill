@@ -22,7 +22,7 @@ func AssumeCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			representingUser, err := dotrill.GetRepresentingUser()
 			if err != nil {
-				ch.PrintfWarn("Could not parse representing user email\n\n")
+				ch.PrintfWarn("Could not parse representing user email: %v\n\n", err)
 			}
 			if representingUser != "" {
 				// If a user is already assumed, silently unassume and revert to the original user before assuming another one.
