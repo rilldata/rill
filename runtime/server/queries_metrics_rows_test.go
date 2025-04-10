@@ -97,8 +97,8 @@ func TestServer_MetricsViewRows_export_xlsx(t *testing.T) {
 
 	require.Equal(t, 3, len(rows))
 	require.Equal(t, []string{"timestamp", "publisher", "domain", "bid_price", "volume", "impressions", "ad words", "clicks", "numeric_dim", "device"}, rows[0][1:])
-	require.Equal(t, []string{"2022-01-01T14:49:50.459Z", "", "msn.com", "2", "4", "2", "cars", "", "1", "iphone"}, rows[1][1:])
-	require.Equal(t, []string{"2022-01-02T11:58:12.475Z", "Yahoo", "yahoo.com", "2", "4", "1", "cars", "1", "1"}, rows[2][1:])
+	require.Equal(t, []string{"1/1/22 14:49", "", "msn.com", "2", "4", "2", "cars", "", "1", "iphone"}, rows[1][1:])
+	require.Equal(t, []string{"1/2/22 11:58", "Yahoo", "yahoo.com", "2", "4", "1", "cars", "1", "1"}, rows[2][1:])
 }
 
 func getColumnChunk(tbl arrow.Table, col int) arrow.Array {
