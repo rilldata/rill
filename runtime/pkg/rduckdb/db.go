@@ -189,7 +189,7 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 		metaSem:          semaphore.NewWeighted(1),
 		localDirty:       true,
 		writesInProgress: make(map[string]any),
-		progressMu:       &sync.Mutex{},
+		progressMu:       sync.Mutex{},
 		logger:           opts.Logger,
 		ctx:              bgctx,
 		cancel:           cancel,
@@ -302,7 +302,7 @@ type db struct {
 	write *sqlx.DB
 	// writeSem controls total number of concurrent write operations
 	writeSem *semaphore.Weighted
-	// metaSem enures only one meta operation can run on a duckb handle.
+	// metaSem enures only one meta operation can run on the duckb read handle.
 	// Meta operations are attach, detach, create view queries done on the db handle
 	metaSem *semaphore.Weighted
 	// localDirty is set to true when a change is committed to the remote but not yet reflected in the local db
@@ -313,7 +313,7 @@ type db struct {
 	// This is to prevent concurrent writes operating on the same table which can corrupt the database.
 	// Using a separate mutex and not writeSem to allow calling untrackWrite without acquiring writeSem.
 	writesInProgress map[string]any
-	progressMu       *sync.Mutex
+	progressMu       sync.Mutex
 
 	logger *zap.Logger
 
@@ -1148,18 +1148,29 @@ func (d *db) initLocalTable(name, version string) error {
 
 // removeTableVersion removes the table version from the catalog and deletes the local table files.
 func (d *db) removeTableVersion(ctx context.Context, name, version string) error {
-	err := d.metaSem.Acquire(ctx, 1)
-	if err != nil {
-		return err
-	}
-	defer d.metaSem.Release(1)
+	detachWrite := func() error {
+		err := d.writeSem.Acquire(ctx, 1)
+		if err != nil {
+			return err
+		}
+		defer d.writeSem.Release(1)
 
-	// detach from both read and write handle
-	_, err = d.read.ExecContext(ctx, "DETACH DATABASE IF EXISTS "+safeSQLName(dbName(name, version)))
-	if err != nil {
+		_, err = d.write.ExecContext(ctx, "DETACH DATABASE IF EXISTS "+safeSQLName(dbName(name, version)))
 		return err
 	}
-	_, err = d.write.ExecContext(ctx, "DETACH DATABASE IF EXISTS "+safeSQLName(dbName(name, version)))
+
+	detachRead := func() error {
+		err := d.metaSem.Acquire(ctx, 1)
+		if err != nil {
+			return err
+		}
+		defer d.metaSem.Release(1)
+
+		_, err = d.read.ExecContext(ctx, "DETACH DATABASE IF EXISTS "+safeSQLName(dbName(name, version)))
+		return err
+	}
+
+	err := errors.Join(detachWrite(), detachRead())
 	if err != nil {
 		return err
 	}
