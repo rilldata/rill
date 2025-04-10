@@ -21,54 +21,6 @@ import (
 	"github.com/startreedata/pinot-client-go/pinot"
 )
 
-func isRetryableHTTPError(err error) bool {
-	var netErr net.Error
-	if errors.As(err, &netErr) {
-		if netErr.Timeout() {
-			return true
-		}
-	}
-	errStr := err.Error()
-	re := regexp.MustCompile(`Pinot: (\d{3})`)
-	matches := re.FindStringSubmatch(errStr)
-	if len(matches) == 2 {
-		if code, convErr := strconv.Atoi(matches[1]); convErr == nil {
-			return isRetryableHTTPCode(code)
-		}
-	}
-	return false
-}
-
-func isRetryableHTTPCode(code int) bool {
-	switch code {
-	case 408: // Request Timeout — client didn't produce a request in time
-	case 429: // Too Many Requests — server is rate-limiting, often includes Retry-After
-	case 502: // Bad Gateway — server got invalid response from upstream
-	case 503: // Service Unavailable — server is overloaded or down for maintenance
-	case 504: // Gateway Timeout — server acting as a gateway timed out waiting for upstream
-	default:
-		return false
-	}
-	return true
-}
-
-func isRetryablePinotErrorCode(code int) bool {
-	// Pinot code are from https://github.com/apache/pinot/blob/master/pinot-spi/src/main/java/org/apache/pinot/spi/exception/QueryErrorCode.java
-	switch code {
-	case 210: // SERVER_SHUTTING_DOWN
-	case 211: // SERVER_OUT_OF_CAPACITY
-	case 240: // QUERY_SCHEDULING_TIMEOUT
-	case 245: // SERVER_RESOURCE_LIMIT_EXCEEDED
-	case 250: // EXECUTION_TIMEOUT
-	case 400: // BROKER_TIMEOUT
-	case 427: // SERVER_NOT_RESPONDING
-	case 429: // TOO_MANY_REQUESTS
-	default:
-		return false
-	}
-	return true
-}
-
 type pinotDriver struct{}
 
 func (d *pinotDriver) Open(dsn string) (sqlDriver.Conn, error) {
@@ -317,4 +269,52 @@ func ParseDSN(dsn string) (string, string, map[string]string, error) {
 
 	u.RawQuery = ""
 	return u.String(), controllerURL, authHeader, nil
+}
+
+func isRetryableHTTPError(err error) bool {
+	var netErr net.Error
+	if errors.As(err, &netErr) {
+		if netErr.Timeout() {
+			return true
+		}
+	}
+	errStr := err.Error()
+	re := regexp.MustCompile(`Pinot: (\d{3})`)
+	matches := re.FindStringSubmatch(errStr)
+	if len(matches) == 2 {
+		if code, convErr := strconv.Atoi(matches[1]); convErr == nil {
+			return isRetryableHTTPCode(code)
+		}
+	}
+	return false
+}
+
+func isRetryableHTTPCode(code int) bool {
+	switch code {
+	case 408: // Request Timeout — client didn't produce a request in time
+	case 429: // Too Many Requests — server is rate-limiting, often includes Retry-After
+	case 502: // Bad Gateway — server got invalid response from upstream
+	case 503: // Service Unavailable — server is overloaded or down for maintenance
+	case 504: // Gateway Timeout — server acting as a gateway timed out waiting for upstream
+	default:
+		return false
+	}
+	return true
+}
+
+func isRetryablePinotErrorCode(code int) bool {
+	// Pinot code are from https://github.com/apache/pinot/blob/master/pinot-spi/src/main/java/org/apache/pinot/spi/exception/QueryErrorCode.java
+	switch code {
+	case 210: // SERVER_SHUTTING_DOWN
+	case 211: // SERVER_OUT_OF_CAPACITY
+	case 240: // QUERY_SCHEDULING_TIMEOUT
+	case 245: // SERVER_RESOURCE_LIMIT_EXCEEDED
+	case 250: // EXECUTION_TIMEOUT
+	case 400: // BROKER_TIMEOUT
+	case 427: // SERVER_NOT_RESPONDING
+	case 429: // TOO_MANY_REQUESTS
+	default:
+		return false
+	}
+	return true
 }
