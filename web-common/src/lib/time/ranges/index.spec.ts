@@ -1,6 +1,13 @@
 import { getAdjustedFetchTime } from "../ranges";
 import { V1TimeGrain } from "../../../runtime-client";
 import { describe, it, expect } from "vitest";
+import { Settings } from "luxon";
+
+Settings.defaultWeekSettings = {
+  minimalDays: 4,
+  firstDay: 1,
+  weekend: [6, 7],
+};
 
 const getAdjustedFetchTimeTestCases = [
   {
