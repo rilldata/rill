@@ -14,6 +14,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
@@ -44,7 +45,7 @@ func newEmbedClickHouse(tcpPort int, dataDir, tempDir string, logger *zap.Logger
 	once.Do(func() {
 		embed = &embedClickHouse{tcpPort: tcpPort, dataDir: dataDir, tempDir: tempDir, logger: logger}
 	})
-	if tcpPort != embed.tcpPort {
+	if tcpPort != 0 && tcpPort != embed.tcpPort {
 		return nil, fmt.Errorf("change of `embed_port` is not allowed while the application is running, please restart Rill")
 	}
 	return embed, nil
@@ -149,11 +150,13 @@ func (e *embedClickHouse) stop() error {
 		return nil
 	}
 
-	err := e.cmd.Process.Signal(os.Interrupt)
+	err := e.cmd.Process.Signal(syscall.SIGTERM)
 	if err != nil {
 		return err
 	}
+	_ = e.cmd.Wait()
 	e.opts = nil
+	e.cmd = nil
 	return nil
 }
 
