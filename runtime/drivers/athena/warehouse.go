@@ -18,18 +18,15 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"github.com/aws/smithy-go/tracing/smithyoteltracing"
 	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	rillblob "github.com/rilldata/rill/runtime/drivers/blob"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	"gocloud.dev/blob"
 	"gocloud.dev/blob/s3blob"
 )
-
-var tracer = otel.Tracer("github.com/rilldata/rill/runtime/drivers/unload")
 
 var _ drivers.Warehouse = &Connection{}
 
@@ -44,7 +41,9 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 		return nil, err
 	}
 
-	client := athena.NewFromConfig(awsConfig)
+	client := athena.NewFromConfig(awsConfig, func(o *athena.Options) {
+		o.TracerProvider = smithyoteltracing.Adapt(otel.GetTracerProvider())
+	})
 	outputLocation, err := resolveOutputLocation(ctx, client, conf)
 	if err != nil {
 		return nil, err
@@ -156,9 +155,6 @@ func (c *Connection) awsConfig(ctx context.Context, awsRegion string) (aws.Confi
 }
 
 func (c *Connection) unload(ctx context.Context, client *athena.Client, conf *sourceProperties, unloadLocation string) error {
-	ctx, span := tracer.Start(ctx, "athenaUnload", trace.WithAttributes(attribute.String("sql", conf.SQL), attribute.String("location", unloadLocation)))
-	defer span.End()
-
 	finalSQL := fmt.Sprintf("UNLOAD (%s\n) TO '%s' WITH (format = 'PARQUET')", conf.SQL, unloadLocation)
 
 	executeParams := &athena.StartQueryExecutionInput{
