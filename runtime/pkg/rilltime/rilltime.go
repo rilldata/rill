@@ -404,16 +404,8 @@ func (o *Ordinal) eval(evalOpts EvalOptions, start, cur, end time.Time, tz *time
 	curDiff := cur.Sub(start)
 
 	offset := o.Num - 1
-	if o.tg == timeutil.TimeGrainWeek {
-		weekday := int(start.Weekday())
-		if weekday == 0 {
-			// time package's week starts on sunday
-			weekday = 7
-		}
-		// https://en.wikipedia.org/wiki/ISO_week_date#First_week
-		if weekday >= 5 {
-			offset++
-		}
+	if o.tg == timeutil.TimeGrainWeek && shouldShiftWeek(start) {
+		offset++
 	}
 
 	start = timeutil.OffsetTime(start, o.tg, offset)
@@ -481,7 +473,19 @@ func (t *TimeAnchor) eval(evalOpts EvalOptions, start, cur, end time.Time, tz *t
 			start = timeutil.OffsetTime(start, t.from, offset)
 		}
 
-		end := timeutil.CeilTime(cur, t.tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+		// X-to-week should give buckets in week. Should also follow week rules https://en.wikipedia.org/wiki/ISO_week_date#First_week
+		if t.tg == timeutil.TimeGrainWeek {
+			tmBeforeTrunc := start
+			start = timeutil.TruncateTime(start, timeutil.TimeGrainWeek, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+			if shouldShiftWeek(tmBeforeTrunc) {
+				start = timeutil.OffsetTime(start, timeutil.TimeGrainWeek, 1)
+			}
+		}
+
+		end := timeutil.TruncateTime(cur, t.tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+		if t.IncludeCurrent {
+			end = timeutil.OffsetTime(end, t.tg, 1)
+		}
 
 		return start, cur, end
 	}
@@ -526,6 +530,7 @@ func (t *TimeAnchor) eval(evalOpts EvalOptions, start, cur, end time.Time, tz *t
 	case "<":
 		// Anchor the range to the beginning of the higher order start
 		// EG: <4d of M : gives 1st 4 days of the current month regardless of current date.
+		start = timeutil.TruncateTime(start, t.tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 		end = timeutil.OffsetTime(start, t.tg, t.offset)
 		end = timeutil.TruncateTime(end, t.tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 
@@ -534,6 +539,7 @@ func (t *TimeAnchor) eval(evalOpts EvalOptions, start, cur, end time.Time, tz *t
 	case ">":
 		// Anchor the range to the end of the higher order end
 		// EG: >4d of M : gives last 4 days of the current month regardless of current date.
+		end = timeutil.CeilTime(end, t.tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 		start = timeutil.OffsetTime(end, t.tg, -t.offset)
 		start = timeutil.TruncateTime(start, t.tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 
@@ -593,29 +599,47 @@ func (a *AbsoluteTime) parse(isFirstPart bool) error {
 		}
 	}
 
-	// Since we use this to build a time, month and day cannot be zero
-	if a.month == 0 {
-		a.month = 1
-	}
-	if a.day == 0 {
-		a.day = 1
-	}
-
 	a.isFirstPart = isFirstPart
 
 	return nil
 }
 
 func (a *AbsoluteTime) eval(evalOpts EvalOptions, start, cur, end time.Time, tz *time.Location) (time.Time, time.Time, time.Time) {
-	start = time.Date(a.year, time.Month(a.month), a.day, a.hour, a.minute, a.second, 0, tz)
+	// Since we use this to build a time, month and day cannot be zero
+	start = time.Date(a.year, time.Month(max(1, a.month)), max(1, a.day), a.hour, a.minute, a.second, 0, tz)
 	end = start
 
-	if a.isFirstPart {
-		end = timeutil.OffsetTime(start, a.tg, 1)
+	end = timeutil.OffsetTime(start, a.tg, 1)
+
+	// update cur to match the abs time
+	year := cur.Year()
+	if a.year != 0 {
+		year = a.year
 	}
+	month := cur.Month()
+	if a.month != 0 {
+		month = time.Month(a.month)
+	}
+	day := cur.Day()
+	if a.day != 0 {
+		day = a.day
+	}
+	hour := cur.Hour()
+	if a.hour != 0 {
+		hour = a.hour
+	}
+	minute := cur.Minute()
+	if a.minute != 0 {
+		minute = a.minute
+	}
+	second := cur.Second()
+	if a.second != 0 {
+		second = a.second
+	}
+	cur = time.Date(year, month, day, hour, minute, second, 0, tz)
 
 	// TODO: should we move cur relative to current date?
-	return start, start, end
+	return start, cur, end
 }
 
 func (a *AbsoluteTime) grain() timeutil.TimeGrain {
@@ -689,4 +713,14 @@ func getMinGrain(d duration.StandardDuration) string {
 		return "Y"
 	}
 	return ""
+}
+
+// shouldShiftWeek returns true if time is on or after friday. Follows https://en.wikipedia.org/wiki/ISO_week_date#First_week
+func shouldShiftWeek(tm time.Time) bool {
+	weekday := int(tm.Weekday())
+	if weekday == 0 {
+		// time package's week starts on sunday
+		weekday = 7
+	}
+	return weekday >= 5
 }
