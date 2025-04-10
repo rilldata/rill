@@ -2,6 +2,10 @@ connectors:
   - clickhouse
   - azure
 project_files:
+  duckdb.yaml:
+    type: connector
+    connector: duckdb
+    init_sql: INSTALL AZURE; LOAD AZURE;
   all_datatypes_clickhouse_csv.yaml:
     type: model
     connector: clickhouse
