@@ -267,6 +267,13 @@ func ParseCompatibility(timeRange, offset string) error {
 }
 
 func (e *Expression) Eval(evalOpts EvalOptions) (time.Time, time.Time, timeutil.TimeGrain) {
+	if evalOpts.FirstDay == 0 {
+		evalOpts.FirstDay = 1
+	}
+	if evalOpts.FirstMonth == 0 {
+		evalOpts.FirstMonth = 1
+	}
+
 	cur := evalOpts.Watermark
 	if e.AnchorOverride != nil {
 		cur, _, _ = e.AnchorOverride.eval(evalOpts, time.Time{}, time.Time{}, time.Time{}, e.timeZone)
