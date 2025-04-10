@@ -320,10 +320,6 @@ func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 	return nil, drivers.ErrNotNotifier
 }
 
-func (c *connection) AcquireLongRunning(ctx context.Context) (func(), error) {
-	return func() {}, nil
-}
-
 func dsnFromConfig(conf *configProperties) (string, error) {
 	var dsn string
 	var err error

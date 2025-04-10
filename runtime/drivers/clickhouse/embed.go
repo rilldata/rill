@@ -14,6 +14,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
@@ -21,7 +22,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const embedVersion = "24.7.4.51"
+const embedVersion = "25.2.2.39"
 
 var (
 	embed *embedClickHouse
@@ -44,7 +45,7 @@ func newEmbedClickHouse(tcpPort int, dataDir, tempDir string, logger *zap.Logger
 	once.Do(func() {
 		embed = &embedClickHouse{tcpPort: tcpPort, dataDir: dataDir, tempDir: tempDir, logger: logger}
 	})
-	if tcpPort != embed.tcpPort {
+	if tcpPort != 0 && tcpPort != embed.tcpPort {
 		return nil, fmt.Errorf("change of `embed_port` is not allowed while the application is running, please restart Rill")
 	}
 	return embed, nil
@@ -88,10 +89,16 @@ func (e *embedClickHouse) start() (*clickhouse.Options, error) {
 	}
 
 	e.cmd = exec.Command(binPath, "server", "--config-file", configPath)
+	e.cmd.Stdout = io.Discard
+
+	stderr, err := e.cmd.StderrPipe()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get stderr pipe: %w", err)
+	}
 
 	ready := make(chan error, 1)
 	go func() {
-		err := e.startAndWaitUntilReady()
+		err := e.startAndWaitUntilReady(stderr)
 		ready <- err
 		if err != nil && e.cmd != nil && e.cmd.Process != nil {
 			_ = e.cmd.Process.Kill()
@@ -106,6 +113,14 @@ func (e *embedClickHouse) start() (*clickhouse.Options, error) {
 	if err := <-ready; err != nil {
 		return nil, err
 	}
+
+	// If you're using cmd.StdoutPipe() or cmd.StderrPipe() and not reading from them fast enough,
+	// the buffer can fill up, and the subprocess will block on writing output.
+	// We read StderrPipe initially to check for clickhouse running status.
+	// Once the process is closed the stderr pipe will be closed too, io.Copy will return EOF and the goroutine will exit.
+	go func() {
+		_, _ = io.Copy(io.Discard, stderr)
+	}()
 
 	addr := net.JoinHostPort("localhost", fmt.Sprintf("%d", e.tcpPort))
 	e.logger.Info("Running an embedded ClickHouse server", zap.String("addr", addr))
@@ -135,11 +150,13 @@ func (e *embedClickHouse) stop() error {
 		return nil
 	}
 
-	err := e.cmd.Process.Signal(os.Interrupt)
+	err := e.cmd.Process.Signal(syscall.SIGTERM)
 	if err != nil {
 		return err
 	}
+	_ = e.cmd.Wait()
 	e.opts = nil
+	e.cmd = nil
 	return nil
 }
 
@@ -275,7 +292,6 @@ func (e *embedClickHouse) getConfigContent() ([]byte, error) {
             <quota>default</quota>
 
             <access_management>1</access_management>
-            <named_collection_control>1</named_collection_control>
         </default>
     </users>
 
@@ -290,12 +306,7 @@ func (e *embedClickHouse) getConfigContent() ([]byte, error) {
 	return config, nil
 }
 
-func (e *embedClickHouse) startAndWaitUntilReady() error {
-	stderr, err := e.cmd.StderrPipe()
-	if err != nil {
-		return fmt.Errorf("failed to get stderr pipe: %w", err)
-	}
-
+func (e *embedClickHouse) startAndWaitUntilReady(stderr io.Reader) error {
 	if err := e.cmd.Start(); err != nil {
 		return fmt.Errorf("failed to start clickhouse: %w", err)
 	}
