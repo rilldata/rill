@@ -8,6 +8,7 @@ import {
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
   createTimeControlStoreFromName,
+  getTimeControlState,
   type TimeControlStore,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { updateExploreSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
@@ -56,18 +57,31 @@ export class DashboardStateSync {
     this.cachedDefaultExploreUrlParams = derived(
       [
         dataLoader.validSpecQuery,
-        this.timeControlStore,
+        dataLoader.fullTimeRangeQuery,
         dataLoader.defaultExploreState,
       ],
-      ([validSpecResp, timeControlState, defaultExploreState]) => {
+      ([validSpecResp, metricsViewTimeRangeResp, defaultExploreState]) => {
+        const metricsViewSpec = validSpecResp.data?.metricsView;
         const exploreSpec = validSpecResp.data?.explore;
 
         if (
+          !metricsViewSpec ||
           !exploreSpec ||
-          !timeControlState.ready ||
+          // safeguard to make sure time range summary is loaded for metrics view with time dimension
+          (metricsViewSpec.timeDimension &&
+            !metricsViewTimeRangeResp.data?.timeRangeSummary) ||
           !defaultExploreState?.data
         )
           return undefined;
+
+        // we cant use timeControlStore since that depends on metricsExplorerStore
+        // whereas defaultExploreUrlParams is needed to init the state in metricsExplorerStore as well
+        const timeControlState = getTimeControlState(
+          metricsViewSpec,
+          exploreSpec,
+          metricsViewTimeRangeResp.data?.timeRangeSummary,
+          defaultExploreState.data as MetricsExplorerEntity,
+        );
 
         const defaultExploreUrlParams = convertPartialExploreStateToUrlParams(
           exploreSpec,
@@ -105,7 +119,6 @@ export class DashboardStateSync {
 
   private handleExploreInit(initExploreState: MetricsExplorerEntity) {
     if (this.initialized) return;
-    this.initialized = true;
 
     const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
     const exploreSpec = validSpecData?.explore ?? {};
@@ -113,6 +126,7 @@ export class DashboardStateSync {
     const defaultExploreUrlParams = get(this.cachedDefaultExploreUrlParams);
     if (!defaultExploreUrlParams) return;
 
+    this.initialized = true;
     metricsExplorerStore.init(this.exploreName, initExploreState);
     // Get time controls state after explore state is initialized.
     const timeControlsState = get(this.timeControlStore);

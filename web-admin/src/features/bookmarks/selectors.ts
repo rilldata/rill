@@ -257,6 +257,7 @@ function parseBookmark(
       metricsViewSpec,
       exploreSpec,
       timeRangeSummary,
+      defaultExploreUrlParams,
     ),
     url: url.toString(),
   };
@@ -267,10 +268,10 @@ function isFilterOnlyBookmark(
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
   timeRangeSummary: V1TimeRangeSummary | undefined,
+  defaultExploreUrlParams: URLSearchParams,
 ): boolean {
-  // Get the bookmark's search params.
-  // Since we only need to check for certain params, we dont need a "cleaned" url params.
-  const searchParams = convertPartialExploreStateToUrlParams(
+  // We need to remove defaults like time grain and timezone otherwise we will have extra fields here
+  const searchParams = getCleanedUrlParamsForGoto(
     exploreSpec,
     bookmarkState as MetricsExplorerEntity,
     getTimeControlState(
@@ -279,6 +280,7 @@ function isFilterOnlyBookmark(
       timeRangeSummary,
       bookmarkState as MetricsExplorerEntity,
     ),
+    defaultExploreUrlParams,
   );
 
   // These are the only parameters that are stored in a filter-only bookmark

@@ -1,6 +1,7 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
-import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
+import { getDefaultExploreUrlParams } from "@rilldata/web-common/features/dashboards/stores/get-default-explore-url-params";
+import { getCleanedUrlParamsForGoto } from "@rilldata/web-common/features/dashboards/url-state/get-cleaned-url-params-for-goto";
 import { derived, get, type Readable } from "svelte/store";
 import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import {
@@ -16,9 +17,35 @@ export default function initEmbedPublicAPI(): () => void {
   const { validSpecStore, dashboardStore, timeRangeSummaryStore } =
     getStateManagers();
 
+  const cachedDefaultUrlParamsStore = derived(
+    [validSpecStore, timeRangeSummaryStore],
+    ([$validSpecStore, $timeRangeSummaryStore]) => {
+      const exploreSpec = $validSpecStore.data?.explore ?? {};
+      const metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
+
+      const defaultExploreUrlParams = getDefaultExploreUrlParams(
+        metricsViewSpec,
+        exploreSpec,
+        $timeRangeSummaryStore.data?.timeRangeSummary,
+      );
+
+      return defaultExploreUrlParams;
+    },
+  );
+
   const derivedState: Readable<string> = derived(
-    [validSpecStore, dashboardStore, timeRangeSummaryStore],
-    ([$validSpecStore, $dashboardStore, $timeRangeSummaryStore]) => {
+    [
+      validSpecStore,
+      dashboardStore,
+      timeRangeSummaryStore,
+      cachedDefaultUrlParamsStore,
+    ],
+    ([
+      $validSpecStore,
+      $dashboardStore,
+      $timeRangeSummaryStore,
+      $cachedDefaultUrlParams,
+    ]) => {
       const exploreSpec = $validSpecStore.data?.explore ?? {};
       const metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
 
@@ -33,10 +60,13 @@ export default function initEmbedPublicAPI(): () => void {
       }
 
       return decodeURIComponent(
-        convertPartialExploreStateToUrlParams(
+        // to not change the existing behaviour of not adding default params, we use getCleanedUrlParamsForGoto
+        // TODO: revisit to see if we can send the full params
+        getCleanedUrlParamsForGoto(
           exploreSpec,
           $dashboardStore,
           timeControlsState,
+          $cachedDefaultUrlParams,
         ).toString(),
       );
     },
@@ -50,6 +80,7 @@ export default function initEmbedPublicAPI(): () => void {
     const validSpec = get(validSpecStore);
     const dashboard = get(dashboardStore);
     const timeSummary = get(timeRangeSummaryStore).data;
+    const cachedDefaultUrlParams = get(cachedDefaultUrlParamsStore);
 
     const exploreSpec = validSpec.data?.explore ?? {};
     const metricsViewSpec = validSpec.data?.metricsView ?? {};
@@ -64,10 +95,11 @@ export default function initEmbedPublicAPI(): () => void {
       );
     }
     const stateString = decodeURIComponent(
-      convertPartialExploreStateToUrlParams(
+      getCleanedUrlParamsForGoto(
         exploreSpec,
         dashboard,
         timeControlsState,
+        cachedDefaultUrlParams,
       ).toString(),
     );
     return { state: stateString };

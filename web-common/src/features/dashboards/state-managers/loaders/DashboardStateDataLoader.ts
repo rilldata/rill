@@ -230,7 +230,8 @@ export class DashboardStateDataLoader {
             bookmarkOrTokenExploreState),
         } as MetricsExplorerEntity;
 
-        return initExploreState;
+        // since we use defaultExploreState further down to calculate default url params we should make a copy to avoid changes to defaultExploreState
+        return structuredClone(initExploreState);
       },
     );
   }
