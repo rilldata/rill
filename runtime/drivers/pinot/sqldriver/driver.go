@@ -10,10 +10,14 @@ import (
 	"io"
 	"math"
 	"math/big"
+	"net"
 	"net/url"
 	"reflect"
+	"regexp"
+	"strconv"
 	"time"
 
+	"github.com/rilldata/rill/runtime/pkg/retrier"
 	"github.com/startreedata/pinot-client-go/pinot"
 )
 
@@ -57,35 +61,44 @@ func (c *conn) Begin() (sqlDriver.Tx, error) {
 }
 
 func (c *conn) QueryContext(ctx context.Context, query string, args []sqlDriver.NamedValue) (sqlDriver.Rows, error) {
-	var resp *pinot.BrokerResponse
-	var err error
-	if len(args) > 0 {
-		var params []interface{}
-		for _, arg := range args {
-			params = append(params, arg.Value)
+	re := retrier.NewRetrier(6, 2*time.Second, nil)
+	return re.RunCtx(ctx, func(ctx context.Context) (sqlDriver.Rows, retrier.Action, error) {
+		var resp *pinot.BrokerResponse
+		var err error
+		if len(args) > 0 {
+			var params []interface{}
+			for _, arg := range args {
+				params = append(params, arg.Value)
+			}
+			// TODO: cancel the query if ctx is done
+			resp, err = c.pinotConn.ExecuteSQLWithParams("", query, params)
+		} else {
+			resp, err = c.pinotConn.ExecuteSQL("", query)
 		}
-		// TODO: cancel the query if ctx is done
-		resp, err = c.pinotConn.ExecuteSQLWithParams("", query, params)
-	} else {
-		resp, err = c.pinotConn.ExecuteSQL("", query)
-	}
-	if err != nil {
-		return nil, err
-	}
-	if len(resp.Exceptions) > 0 {
-		if len(resp.Exceptions) == 1 {
-			return nil, fmt.Errorf("query error: %q: %q", resp.Exceptions[0].ErrorCode, resp.Exceptions[0].Message)
+		if err != nil {
+			if isRetryableHTTPError(err) {
+				return nil, retrier.Retry, err
+			}
+			return nil, retrier.Fail, err
 		}
-		errMsg := "query errors:\n"
-		for _, e := range resp.Exceptions {
-			errMsg += fmt.Sprintf("\t%q: %q\n", e.ErrorCode, e.Message)
+		if len(resp.Exceptions) > 0 {
+			errMsg := "query errors:"
+			for _, e := range resp.Exceptions {
+				errMsg += fmt.Sprintf("\t%d: %q\n", e.ErrorCode, e.Message)
+			}
+			err := errors.New(errMsg)
+			for _, e := range resp.Exceptions {
+				if isRetryablePinotErrorCode(e.ErrorCode) {
+					return nil, retrier.Retry, err
+				}
+			}
+			return nil, retrier.Fail, err
 		}
-		return nil, errors.New(errMsg)
-	}
 
-	cols := colSchema(resp.ResultTable)
+		cols := colSchema(resp.ResultTable)
 
-	return &rows{results: resp.ResultTable, columns: cols, numRows: resp.ResultTable.GetRowCount(), currIdx: 0}, nil
+		return &rows{results: resp.ResultTable, columns: cols, numRows: resp.ResultTable.GetRowCount(), currIdx: 0}, retrier.Succeed, nil
+	})
 }
 
 func (c *conn) ExecContext(ctx context.Context, query string, args []sqlDriver.NamedValue) (sqlDriver.Result, error) {
@@ -256,4 +269,52 @@ func ParseDSN(dsn string) (string, string, map[string]string, error) {
 
 	u.RawQuery = ""
 	return u.String(), controllerURL, authHeader, nil
+}
+
+func isRetryableHTTPError(err error) bool {
+	var netErr net.Error
+	if errors.As(err, &netErr) {
+		if netErr.Timeout() {
+			return true
+		}
+	}
+	errStr := err.Error()
+	re := regexp.MustCompile(`Pinot: (\d{3})`)
+	matches := re.FindStringSubmatch(errStr)
+	if len(matches) == 2 {
+		if code, convErr := strconv.Atoi(matches[1]); convErr == nil {
+			return isRetryableHTTPCode(code)
+		}
+	}
+	return false
+}
+
+func isRetryableHTTPCode(code int) bool {
+	switch code {
+	case 408: // Request Timeout — client didn't produce a request in time
+	case 429: // Too Many Requests — server is rate-limiting, often includes Retry-After
+	case 502: // Bad Gateway — server got invalid response from upstream
+	case 503: // Service Unavailable — server is overloaded or down for maintenance
+	case 504: // Gateway Timeout — server acting as a gateway timed out waiting for upstream
+	default:
+		return false
+	}
+	return true
+}
+
+func isRetryablePinotErrorCode(code int) bool {
+	// Pinot code are from https://github.com/apache/pinot/blob/master/pinot-spi/src/main/java/org/apache/pinot/spi/exception/QueryErrorCode.java
+	switch code {
+	case 210: // SERVER_SHUTTING_DOWN
+	case 211: // SERVER_OUT_OF_CAPACITY
+	case 240: // QUERY_SCHEDULING_TIMEOUT
+	case 245: // SERVER_RESOURCE_LIMIT_EXCEEDED
+	case 250: // EXECUTION_TIMEOUT
+	case 400: // BROKER_TIMEOUT
+	case 427: // SERVER_NOT_RESPONDING
+	case 429: // TOO_MANY_REQUESTS
+	default:
+		return false
+	}
+	return true
 }

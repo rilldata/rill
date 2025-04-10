@@ -18,7 +18,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/rilldata/rill/admin/pkg/urlutil"
-	"github.com/rilldata/rill/runtime/drivers/druid/retrier"
+	"github.com/rilldata/rill/runtime/pkg/retrier"
 )
 
 var (
