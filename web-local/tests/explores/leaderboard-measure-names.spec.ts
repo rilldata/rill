@@ -1,6 +1,4 @@
 import { expect } from "@playwright/test";
-import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions";
-import { ResourceWatcher } from "../utils/ResourceWatcher";
 import { gotoNavEntry } from "../utils/waitHelpers";
 import { test } from "../setup/base";
 
@@ -24,7 +22,7 @@ test.describe("leaderboard measure names", () => {
     ).toHaveAttribute("aria-checked", "true");
   });
 
-  test.skip("multiple selection", async ({ page }) => {
+  test("multiple selection", async ({ page }) => {
     await page.getByTestId("leaderboard-measure-names-dropdown").click();
 
     await page.getByTestId("multi-measure-select-switch").click();
