@@ -25,12 +25,12 @@
   $: ({ instanceId } = $runtime);
 
   $: proj = createAdminServiceGetProject(organization, project);
-  $: isGithubConnected = !!$proj.data?.project?.githubUrl;
-  $: repoName =
-    $proj.data?.project?.githubUrl &&
-    getRepoNameFromGithubUrl($proj.data.project.githubUrl);
-  $: subpath = $proj.data?.project?.subpath;
-  $: branch = $proj.data?.project?.prodBranch;
+  $: ({
+    project: { githubUrl, subpath, prodBranch },
+  } = $proj.data);
+
+  $: isGithubConnected = !!githubUrl;
+  $: repoName = getRepoNameFromGithubUrl(githubUrl);
   $: githubLastSynced = useGithubLastSynced(instanceId);
   $: dashboardsLastUpdated = useDashboardsLastUpdated(
     instanceId,
@@ -132,7 +132,7 @@
         <div class="flex items-center">
           <span class="font-mono">branch</span>
           <span class="text-gray-800">
-            : {branch}
+            : {prodBranch}
           </span>
         </div>
         {#if lastUpdated}
