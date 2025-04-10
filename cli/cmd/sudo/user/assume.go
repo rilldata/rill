@@ -1,6 +1,8 @@
 package user
 
 import (
+	"time"
+
 	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -16,6 +18,22 @@ func AssumeCmd(ch *cmdutil.Helper) *cobra.Command {
 		Short: "Temporarily act as another user",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
+
+			representingUser, err := ch.DotRill.GetRepresentingUser()
+			if err != nil {
+				ch.PrintfWarn("Could not parse representing user email\n\n")
+			}
+			if representingUser != "" {
+				// If a user is already assumed, silently unassume and revert to the original user before assuming another one.
+				err = UnassumeUser(ctx, ch)
+				if err != nil {
+					return err
+				}
+			}
+
+			// Store expiryTime before requesting the token.
+			// It could be fetched from the server, but that may not be needed.
+			expiry := time.Now().Add(time.Duration(ttlMinutes) * time.Minute)
 
 			client, err := ch.Client()
 			if err != nil {
@@ -46,8 +64,24 @@ func AssumeCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
+			// Backup current org as backup org
+			defaultOrg, err := ch.DotRill.GetDefaultOrg()
+			if err != nil {
+				return err
+			}
+			err = ch.DotRill.SetBackupDefaultOrg(defaultOrg)
+			if err != nil {
+				return err
+			}
+
 			// Set representing user email
 			err = ch.DotRill.SetRepresentingUser(args[0])
+			if err != nil {
+				return err
+			}
+
+			// Set the representing user token expiry
+			err = ch.DotRill.SetRepresentingUserAccessTokenExpiry(&expiry)
 			if err != nil {
 				return err
 			}

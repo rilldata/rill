@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/rilldata/rill/cli/cmd/admin"
 	"github.com/rilldata/rill/cli/cmd/auth"
@@ -21,6 +22,7 @@ import (
 	"github.com/rilldata/rill/cli/cmd/service"
 	"github.com/rilldata/rill/cli/cmd/start"
 	"github.com/rilldata/rill/cli/cmd/sudo"
+	sudouser "github.com/rilldata/rill/cli/cmd/sudo/user"
 	"github.com/rilldata/rill/cli/cmd/uninstall"
 	"github.com/rilldata/rill/cli/cmd/upgrade"
 	"github.com/rilldata/rill/cli/cmd/user"
@@ -56,10 +58,25 @@ func Run(ctx context.Context, ver cmdutil.Version) {
 	// Print warning if currently acting as an assumed user
 	representingUser, err := ch.DotRill.GetRepresentingUser()
 	if err != nil {
-		ch.PrintfWarn("Could not parse representing user email\n\n")
+		ch.PrintfWarn("Could not parse representing user email: %v\n\n", err)
 	}
 	if representingUser != "" {
-		ch.PrintfWarn("Warning: Running action as %q\n\n", representingUser)
+		expiryTime, err := ch.DotRill.GetRepresentingUserAccessTokenExpiry()
+		if err != nil {
+			ch.PrintfWarn("Could not parse token expiry %v\n\n", err)
+		} else if expiryTime != nil {
+			if time.Now().After(*expiryTime) {
+				// If the assumed user's token has expired, silently unassume and revert to the original user before executing the command.
+				err := sudouser.UnassumeUser(ctx, ch)
+				if err != nil {
+					ch.PrintfWarn("Could not unassume user after the token expired: %v\n\n", err)
+				}
+			} else {
+				ch.PrintfWarn("Warning: Running action as %q\n\n", representingUser)
+			}
+		} else {
+			ch.PrintfWarn("Warning: Running action as %q\n\n", representingUser)
+		}
 	}
 
 	// Execute the root command
