@@ -1,7 +1,6 @@
 package rilltime
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -20,12 +19,14 @@ func Test_Eval(t *testing.T) {
 		end       string
 		grain     timeutil.TimeGrain
 	}{
-		{"m", "2025-03-10T06:32:00Z", "2025-03-10T06:33:00Z", timeutil.TimeGrainSecond},
+		{"m", "2025-03-10T06:31:00Z", "2025-03-10T06:32:00Z", timeutil.TimeGrainSecond},
+		{"0m", "2025-03-10T06:31:00Z", "2025-03-10T06:32:00Z", timeutil.TimeGrainSecond},
 		{"m~", "2025-03-10T06:32:00Z", "2025-03-10T06:33:00Z", timeutil.TimeGrainSecond},
 		{"-1m", "2025-03-10T06:31:00Z", "2025-03-10T06:32:00Z", timeutil.TimeGrainSecond},
 		{"<m", "2025-03-10T06:00:00Z", "2025-03-10T06:01:00Z", timeutil.TimeGrainSecond},
 		{">m", "2025-03-10T06:59:00Z", "2025-03-10T07:00:00Z", timeutil.TimeGrainSecond},
 		{"dTm", "2025-03-10T00:00:00Z", "2025-03-10T06:33:00Z", timeutil.TimeGrainMinute},
+		{"-1dTm", "2025-03-10T00:00:00Z", "2025-03-10T06:33:00Z", timeutil.TimeGrainMinute},
 		{"-3dTm", "2025-03-08T00:00:00Z", "2025-03-10T06:33:00Z", timeutil.TimeGrainMinute},
 
 		{"-2d", "2025-03-08T00:00:00Z", "2025-03-09T00:00:00Z", timeutil.TimeGrainDay},
@@ -48,12 +49,12 @@ func Test_Eval(t *testing.T) {
 		// 1st of March is on a friday so we take the next monday to start.
 		{"W1", "2025-03-03T00:00:00Z", "2025-03-10T00:00:00Z", timeutil.TimeGrainDay},
 		{"W1 by H", "2025-03-03T00:00:00Z", "2025-03-10T00:00:00Z", timeutil.TimeGrainHour},
-		// `of M` means current month, so this will be of March.
-		{"W1 of M", "2025-03-03T00:00:00Z", "2025-03-10T00:00:00Z", timeutil.TimeGrainDay},
-		// `of 0M` means current month as well.
-		{"W1 of 0M", "2025-03-03T00:00:00Z", "2025-03-10T00:00:00Z", timeutil.TimeGrainDay},
-		// `~` doesn't add anything when it is not on the anchor in the 1st position. So this is still March.
+		// `of M` means previous month, so this will be of Feb. Since 1st of feb is on a friday we take the next monday as start.
+		{"W1 of M", "2025-02-03T00:00:00Z", "2025-02-10T00:00:00Z", timeutil.TimeGrainDay},
+		// `of M~` means to use current month unlike `of M`
 		{"W1 of M~", "2025-03-03T00:00:00Z", "2025-03-10T00:00:00Z", timeutil.TimeGrainDay},
+		// `of 0M` means previous month.
+		{"W1 of 0M", "2025-02-03T00:00:00Z", "2025-02-10T00:00:00Z", timeutil.TimeGrainDay},
 		// 1st of Jan is on a Wednesday, so include the 2 days from Dec 2024.
 		{"W1 of -2M", "2024-12-30T00:00:00Z", "2025-01-06T00:00:00Z", timeutil.TimeGrainDay},
 		// 1st of May is on a Thursday, so include the 2 days from Dec 2024.
@@ -86,8 +87,6 @@ func Test_Eval(t *testing.T) {
 		// Meant to mimic comparison with previous period
 		{"-2D to D~", "2025-03-08T00:00:00Z", "2025-03-11T00:00:00Z", timeutil.TimeGrainDay},
 		{"-2D of -3D to D~ of -3D", "2025-03-05T00:00:00Z", "2025-03-08T00:00:00Z", timeutil.TimeGrainDay},
-
-		{">12H of -1D", "2025-03-05T00:00:00Z", "2025-03-08T00:00:00Z", timeutil.TimeGrainDay},
 	}
 
 	for _, testCase := range testCases {
@@ -103,46 +102,9 @@ func Test_Eval(t *testing.T) {
 				FirstDay:   1,
 				FirstMonth: 1,
 			})
-			fmt.Println(start, end)
 			require.Equal(t, parseTestTime(t, testCase.start), start)
 			require.Equal(t, parseTestTime(t, testCase.end), end)
 			require.Equal(t, testCase.grain, grain)
-		})
-	}
-}
-
-func Test_Eval_watermark_on_boundary(t *testing.T) {
-	now := parseTestTime(t, "2017-12-30T00:00:00Z")
-	minTime := parseTestTime(t, "2014-01-01T00:00:00Z")
-	maxTime := parseTestTime(t, "2017-12-30T00:00:00Z")
-	watermark := parseTestTime(t, "2017-12-30T00:00:00Z")
-	testCases := []struct {
-		timeRange string
-		start     string
-		end       string
-		grain     timeutil.TimeGrain
-	}{
-		{"m", "2025-03-05T00:00:00Z", "2025-03-08T00:00:00Z", timeutil.TimeGrainDay},
-		{"Y", "2025-03-05T00:00:00Z", "2025-03-08T00:00:00Z", timeutil.TimeGrainDay},
-		{">12H of -1D", "2025-03-05T00:00:00Z", "2025-03-08T00:00:00Z", timeutil.TimeGrainDay},
-		{"H12 of -1D", "2025-03-05T00:00:00Z", "2025-03-08T00:00:00Z", timeutil.TimeGrainDay},
-		{"W1 of Y", "2025-03-05T00:00:00Z", "2025-03-08T00:00:00Z", timeutil.TimeGrainDay},
-	}
-
-	for _, testCase := range testCases {
-		t.Run(testCase.timeRange, func(t *testing.T) {
-			rt, err := Parse(testCase.timeRange, ParseOptions{})
-			require.NoError(t, err)
-
-			start, end, _ := rt.Eval(EvalOptions{
-				Now:        now,
-				MinTime:    minTime,
-				MaxTime:    maxTime,
-				Watermark:  watermark,
-				FirstDay:   1,
-				FirstMonth: 1,
-			})
-			fmt.Println(testCase.timeRange, start, end)
 		})
 	}
 }
