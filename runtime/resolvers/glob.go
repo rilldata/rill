@@ -335,7 +335,7 @@ func (r *globResolver) transformResult(ctx context.Context, rows []map[string]an
 		}()
 
 		// Execute the transform SQL
-		rows, err := olap.Execute(wrappedCtx, &drivers.Statement{
+		rows, err := olap.Query(wrappedCtx, &drivers.Statement{
 			Query: sql,
 		})
 		if err != nil {
