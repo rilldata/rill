@@ -19,12 +19,12 @@ func AssumeCmd(ch *cmdutil.Helper) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
+			// If a user is already assumed, silently unassume and revert to the original user before assuming another one.
 			representingUser, err := ch.DotRill.GetRepresentingUser()
 			if err != nil {
 				ch.PrintfWarn("Could not parse representing user email\n\n")
 			}
 			if representingUser != "" {
-				// If a user is already assumed, silently unassume and revert to the original user before assuming another one.
 				err = UnassumeUser(ctx, ch)
 				if err != nil {
 					return err
