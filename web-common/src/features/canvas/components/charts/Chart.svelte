@@ -1,7 +1,7 @@
 <script lang="ts">
   import VegaLiteRenderer from "@rilldata/web-common/components/vega/VegaLiteRenderer.svelte";
   import ComponentHeader from "@rilldata/web-common/features/canvas/ComponentHeader.svelte";
-  import type { ChartComponent } from "@rilldata/web-common/features/canvas/components/charts";
+  import type { CartesianChartComponent } from "@rilldata/web-common/features/canvas/components/charts/CartesianChart";
   import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
@@ -18,7 +18,7 @@
     sanitizeFieldName,
   } from "./util";
 
-  export let component: ChartComponent;
+  export let component: CartesianChartComponent;
 
   $: ({
     specStore,

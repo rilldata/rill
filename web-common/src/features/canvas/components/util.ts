@@ -1,4 +1,4 @@
-import type { QueryObserverResult } from "@tanstack/svelte-query";
+import { CartesianChartComponent } from "@rilldata/web-common/features/canvas/components/charts/CartesianChart";
 import { KPIGridComponent } from "@rilldata/web-common/features/canvas/components/kpi-grid";
 import type {
   ComponentInputParam,
@@ -11,7 +11,9 @@ import type {
   V1MetricsViewSpec,
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
-import { ChartComponent } from "./charts";
+import type { QueryObserverResult } from "@tanstack/svelte-query";
+import type { CanvasEntity, ComponentPath } from "../stores/canvas-entity";
+import type { BaseCanvasComponent } from "./BaseCanvasComponent";
 import { ImageComponent } from "./image";
 import { MarkdownCanvasComponent } from "./markdown";
 import { PivotCanvasComponent } from "./pivot";
@@ -20,8 +22,6 @@ import type {
   ComponentCommonProperties,
   ComponentSpec,
 } from "./types";
-import type { CanvasEntity, ComponentPath } from "../stores/canvas-entity";
-import type { BaseCanvasComponent } from "./BaseCanvasComponent";
 
 export const commonOptions: Record<
   keyof ComponentCommonProperties,
@@ -103,11 +103,11 @@ export const COMPONENT_CLASS_MAP: Record<
   image: ImageComponent,
   table: PivotCanvasComponent,
   pivot: PivotCanvasComponent,
-  bar_chart: ChartComponent,
-  line_chart: ChartComponent,
-  stacked_bar: ChartComponent,
-  stacked_bar_normalized: ChartComponent,
-  area_chart: ChartComponent,
+  bar_chart: CartesianChartComponent,
+  line_chart: CartesianChartComponent,
+  stacked_bar: CartesianChartComponent,
+  stacked_bar_normalized: CartesianChartComponent,
+  area_chart: CartesianChartComponent,
 } as const;
 
 // Component display names mapping
@@ -135,7 +135,7 @@ export function createComponent(
   if (ComponentClass) {
     return new ComponentClass(resource, parent, path);
   }
-  return new ChartComponent(resource, parent, path);
+  return new CartesianChartComponent(resource, parent, path);
 }
 
 export function isCanvasComponentType(

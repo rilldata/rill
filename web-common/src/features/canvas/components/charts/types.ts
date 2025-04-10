@@ -13,8 +13,14 @@ export interface FieldConfig {
   showNull?: boolean;
 }
 
-export interface ChartConfig {
+export interface CommonChartProperties {
   metrics_view: string;
+  tooltip?: FieldConfig;
+  vl_config?: string;
+}
+
+// TODO: Remove this once we have a better way to handle chart config
+export interface ChartConfig extends CommonChartProperties {
   x?: FieldConfig;
   y?: FieldConfig;
   color?: FieldConfig | string;

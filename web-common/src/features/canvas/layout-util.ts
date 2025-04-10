@@ -1,16 +1,16 @@
 import type {
-  V1CanvasRow,
   V1CanvasItem,
+  V1CanvasRow,
+  V1ComponentSpecRendererProperties,
   V1MetricsViewSpec,
   V1ResolveCanvasResponseResolvedComponents,
   V1Resource,
-  V1ComponentSpecRendererProperties,
 } from "@rilldata/web-common/runtime-client";
-import { YAMLMap, YAMLSeq } from "yaml";
-import type { CanvasComponentType } from "./components/types";
 import { writable } from "svelte/store";
-import { COMPONENT_CLASS_MAP } from "./components/util";
+import { YAMLMap, YAMLSeq } from "yaml";
 import { ResourceKind } from "../entity-management/resource-selectors";
+import type { CanvasComponentType } from "./components/types";
+import { COMPONENT_CLASS_MAP } from "./components/util";
 
 export const initialHeights: Record<CanvasComponentType, number> = {
   line_chart: 320,

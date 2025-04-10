@@ -3,11 +3,11 @@
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import type { CartesianChartComponent } from "@rilldata/web-common/features/canvas/components/charts/CartesianChart";
   import type { ChartMetadata } from "@rilldata/web-common/features/canvas/components/charts/types";
   import { chartMetadata } from "@rilldata/web-common/features/canvas/components/charts/util";
-  import type { ChartComponent } from "../../components/charts";
 
-  export let component: ChartComponent;
+  export let component: CartesianChartComponent;
 
   $: ({ chartType } = component);
 
