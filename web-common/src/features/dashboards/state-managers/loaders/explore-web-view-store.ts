@@ -46,8 +46,8 @@ export function updateExploreSessionStore(
 
   // Build the url search params for the entire state
   const urlSearchParams = convertPartialExploreStateToUrlParams(
-    exploreState,
     exploreSpec,
+    exploreState,
     timeControlsState,
   );
   try {

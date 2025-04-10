@@ -4,6 +4,7 @@ import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashbo
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { PreviousCompleteRangeMap } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
 import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
+import { getCleanedUrlParamsForGoto } from "@rilldata/web-common/features/dashboards/url-state/get-cleaned-url-params-for-goto";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
@@ -158,7 +159,6 @@ export async function convertQueryFilterToToplistQuery(
 export async function getExplorePageUrlSearchParams(
   exploreName: string,
   exploreState: MetricsExplorerEntity,
-  url: URL,
 ): Promise<URLSearchParams> {
   const instanceId = get(runtime).instanceId;
   const { explore, metricsView } = await queryClient.fetchQuery({
@@ -200,21 +200,18 @@ export async function getExplorePageUrlSearchParams(
     });
   }
 
+  // This is just for an initial redirect.
+  // DashboardStateDataLoader will handle compression etc. during init
+  // So no need to use getCleanedUrlParamsForGoto
   const searchParams = convertPartialExploreStateToUrlParams(
-    exploreState,
     exploreSpec,
+    exploreState,
     getTimeControlState(
       metricsViewSpec,
       exploreSpec,
       fullTimeRange?.timeRangeSummary,
       exploreState,
     ),
-    getDefaultExploreUrlParams(
-      metricsViewSpec,
-      exploreSpec,
-      fullTimeRange?.timeRangeSummary,
-    ),
-    url,
   );
 
   return searchParams;

@@ -36,8 +36,8 @@ import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/u
 import { type V1ExploreSpec } from "@rilldata/web-common/runtime-client";
 
 export function convertPartialExploreStateToUrlParams(
-  partialExploreState: Partial<MetricsExplorerEntity>,
   exploreSpec: V1ExploreSpec,
+  partialExploreState: Partial<MetricsExplorerEntity>,
   // We have quite a bit of logic in TimeControlState to validate selections and update them
   // Eg: if a selected grain is not applicable for the current grain then we change it
   // But it is only available in TimeControlState and not MetricsExplorerEntity
@@ -45,6 +45,7 @@ export function convertPartialExploreStateToUrlParams(
   // Used to remove params that are equal to defaults. This helps keep the url shorter.
   defaultExploreUrlParams?: URLSearchParams,
   // Used to decide whether to compress or not based on the full url length
+  // TODO: move this to getCleanedUrlParamsForGoto
   urlForCompressionCheck?: URL,
 ) {
   const searchParams = new URLSearchParams();

@@ -58,7 +58,7 @@ import {
   AD_BIDS_SET_DOMAIN_COMPARE_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
+import { getCleanedUrlParamsForGoto } from "@rilldata/web-common/features/dashboards/url-state/get-cleaned-url-params-for-goto";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import {
   type DashboardTimeControls,
@@ -463,9 +463,9 @@ describe("Human readable URL state variations", () => {
         applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
 
         // load url params with updated metrics state
-        const updateUrlParams = convertPartialExploreStateToUrlParams(
-          get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
+        const updateUrlParams = getCleanedUrlParamsForGoto(
           explore,
+          get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
           getTimeControlState(
             AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
             explore,
@@ -588,9 +588,9 @@ describe("Human readable URL state variations", () => {
 
     // load url params with updated metrics state
     const url = new URL("http://localhost");
-    url.search = convertPartialExploreStateToUrlParams(
-      get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
+    url.search = getCleanedUrlParamsForGoto(
       AD_BIDS_EXPLORE_INIT,
+      get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
       getTimeControlState(
         AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
         AD_BIDS_EXPLORE_INIT,

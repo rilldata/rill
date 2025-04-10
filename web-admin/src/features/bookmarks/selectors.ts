@@ -21,6 +21,7 @@ import {
   timeControlStateSelector,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
+import { getCleanedUrlParamsForGoto } from "@rilldata/web-common/features/dashboards/url-state/get-cleaned-url-params-for-goto";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
@@ -229,9 +230,11 @@ function parseBookmark(
 
   const url = new URL(get(page).url);
 
-  const searchParams = convertPartialExploreStateToUrlParams(
-    finalExploreState,
+  // We need to check if the bookmark's url is equal to current url or not to show an "active" state.
+  // To avoid calculating it everytime we directly convert it to final url.
+  const searchParams = getCleanedUrlParamsForGoto(
     exploreSpec,
+    finalExploreState,
     getTimeControlState(
       metricsViewSpec,
       exploreSpec,
@@ -254,8 +257,6 @@ function parseBookmark(
       metricsViewSpec,
       exploreSpec,
       timeRangeSummary,
-      defaultExploreUrlParams,
-      url,
     ),
     url: url.toString(),
   };
@@ -266,21 +267,18 @@ function isFilterOnlyBookmark(
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
   timeRangeSummary: V1TimeRangeSummary | undefined,
-  defaultExploreUrlParams: URLSearchParams,
-  url: URL,
 ): boolean {
-  // Get the bookmark's search params
+  // Get the bookmark's search params.
+  // Since we only need to check for certain params, we dont need a "cleaned" url params.
   const searchParams = convertPartialExploreStateToUrlParams(
-    bookmarkState as MetricsExplorerEntity,
     exploreSpec,
+    bookmarkState as MetricsExplorerEntity,
     getTimeControlState(
       metricsViewSpec,
       exploreSpec,
       timeRangeSummary,
       bookmarkState as MetricsExplorerEntity,
     ),
-    defaultExploreUrlParams,
-    url,
   );
 
   // These are the only parameters that are stored in a filter-only bookmark

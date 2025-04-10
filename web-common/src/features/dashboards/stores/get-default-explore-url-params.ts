@@ -1,7 +1,6 @@
+import { getExploreStateFromYAMLConfig } from "@rilldata/web-common/features/dashboards/stores/get-explore-state-from-yaml-config";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
-import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
-import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import type {
   V1ExploreSpec,
   V1MetricsViewSpec,
@@ -13,15 +12,10 @@ export function getDefaultExploreUrlParams(
   exploreSpec: V1ExploreSpec,
   timeRangeSummary: V1TimeRangeSummary | undefined,
 ) {
-  const defaultExplorePreset = getDefaultExplorePreset(
-    exploreSpec,
+  const partialExploreState = getExploreStateFromYAMLConfig(
     metricsViewSpec,
+    exploreSpec,
     timeRangeSummary,
-  );
-  const { partialExploreState } = convertPresetToExploreState(
-    metricsViewSpec,
-    exploreSpec,
-    defaultExplorePreset,
   );
   const timeControlState = getTimeControlState(
     metricsViewSpec,
@@ -30,8 +24,8 @@ export function getDefaultExploreUrlParams(
     partialExploreState as any,
   );
   return convertPartialExploreStateToUrlParams(
-    partialExploreState,
     exploreSpec,
+    partialExploreState,
     timeControlState,
   );
 }
