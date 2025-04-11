@@ -298,12 +298,6 @@ const TestCases: {
     expectedSearch: "sort_by=bid_price&sort_type=delta_abs&sort_dir=DESC",
   },
   {
-    title: "Leaderboard measure count persists in URL",
-    mutations: [AD_BIDS_SET_LEADERBOARD_MEASURE_COUNT],
-    expectedSearch: "leaderboard_measure_count=4",
-  },
-
-  {
     title: "Dimension table with no preset and dimension table active in state",
     mutations: [AD_BIDS_OPEN_PUB_DIMENSION_TABLE],
     expectedSearch: "expand_dim=publisher",
@@ -363,7 +357,7 @@ const TestCases: {
     mutations: [AD_BIDS_CLOSE_TDD],
     preset: AD_BIDS_TIME_DIMENSION_DETAILS_PRESET,
     expectedSearch:
-      "view=explore&measures=*&dims=*&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measure_count=1",
+      "view=explore&measures=*&dims=*&sort_by=impressions&sort_type=value&sort_dir=DESC",
     legacyNotSupported: true,
   },
 
@@ -420,7 +414,7 @@ const TestCases: {
     mutations: [AD_BIDS_TOGGLE_PIVOT],
     preset: AD_BIDS_PIVOT_PRESET,
     expectedSearch:
-      "view=explore&grain=hour&measures=*&dims=*&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measure_count=1",
+      "view=explore&grain=hour&measures=*&dims=*&sort_by=impressions&sort_type=value&sort_dir=DESC",
     legacyNotSupported: true,
   },
 ];
