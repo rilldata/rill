@@ -173,12 +173,11 @@ export class DashboardStateDataLoader {
         const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
         const exploreSpec = validSpecResp.data?.explore ?? {};
 
-        const { partialExploreState: partialExploreStateFromUrl, errors } =
+        const { exploreState: partialExploreStateFromUrl, errors } =
           convertURLSearchParamsToExploreState(
             pageState.url.searchParams,
             metricsViewSpec,
             exploreSpec,
-            explorePresetFromYAMLConfig.data ?? {},
           );
         const partialExploreStateFromUrlForInit =
           pageState.url.searchParams.size === 0
@@ -254,12 +253,11 @@ export class DashboardStateDataLoader {
     const backButtonUsed = type === "popstate";
     const skipSessionStorage = backButtonUsed;
 
-    const { partialExploreState: partialExploreStateFromUrl } =
+    const { exploreState: partialExploreStateFromUrl } =
       convertURLSearchParamsToExploreState(
         urlSearchParams,
         metricsViewSpec,
         exploreSpec,
-        explorePresetFromYAMLConfig.data,
       );
     // If we are skipping using state from session storage then exit early with partialExploreStateFromUrl
     // regardless if there is exploreStateFromSessionStorage for current url params or not.

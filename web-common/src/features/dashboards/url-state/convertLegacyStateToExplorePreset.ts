@@ -49,11 +49,8 @@ export function convertLegacyStateToExplorePreset(
   legacyState: DashboardState,
   metricsView: V1MetricsViewSpec,
   explore: V1ExploreSpec,
-  defaultExplorePreset: V1ExplorePreset,
 ) {
-  const preset: V1ExplorePreset = {
-    ...defaultExplorePreset,
-  };
+  const preset: V1ExplorePreset = {};
   const errors: Error[] = [];
 
   const measures = getMapFromArray(
