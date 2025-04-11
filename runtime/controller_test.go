@@ -257,7 +257,7 @@ path: data/foo.csv
 	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "foo"}, false)
 	require.NoError(t, err)
 	fooModel := r.GetModel()
-	h, release, err := rt.AcquireHandle(context.TODO(), id, fooModel.State.ResultConnector)
+	h, release, err := rt.AcquireHandle(context.Background(), id, fooModel.State.ResultConnector)
 	require.NoError(t, err)
 	defer release()
 	modelManager, ok := h.AsModelManager(id)

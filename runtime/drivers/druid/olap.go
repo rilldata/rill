@@ -26,6 +26,10 @@ func (c *connection) Dialect() drivers.Dialect {
 	return drivers.DialectDruid
 }
 
+func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
+	return false
+}
+
 func (c *connection) WithConnection(ctx context.Context, priority int, fn drivers.WithConnectionFunc) error {
 	return fmt.Errorf("druid: WithConnection not supported")
 }
@@ -113,10 +117,6 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 	})
 
 	return r, nil
-}
-
-func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
-	return false
 }
 
 func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {

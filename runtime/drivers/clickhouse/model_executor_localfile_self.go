@@ -135,7 +135,7 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 		}
 	} else if stagingTableName != tableName {
 		// Rename the staging table to the final table name
-		err = e.c.olapForceRenameTable(ctx, stagingTableName, false, tableName)
+		err = e.c.forceRenameTable(ctx, stagingTableName, false, tableName)
 		if err != nil {
 			return nil, fmt.Errorf("failed to rename staged model: %w", err)
 		}

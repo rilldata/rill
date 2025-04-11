@@ -179,7 +179,7 @@ func (c *Connection) Rename(ctx context.Context, res *drivers.ModelResult, newNa
 		return res, nil
 	}
 
-	err := c.olapForceRenameTable(ctx, resProps.Table, resProps.View, newName)
+	err := c.forceRenameTable(ctx, resProps.Table, resProps.View, newName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to rename model: %w", err)
 	}
@@ -231,9 +231,9 @@ func (c *Connection) MergePartitionResults(a, b *drivers.ModelResult) (*drivers.
 	return a, nil
 }
 
-// olapForceRenameTable renames a table or view from fromName to toName.
+// forceRenameTable renames a table or view from fromName to toName.
 // If a view or table already exists with toName, it is overwritten.
-func (c *Connection) olapForceRenameTable(ctx context.Context, fromName string, fromIsView bool, toName string) error {
+func (c *Connection) forceRenameTable(ctx context.Context, fromName string, fromIsView bool, toName string) error {
 	if fromName == "" || toName == "" {
 		return fmt.Errorf("cannot rename empty table name: fromName=%q, toName=%q", fromName, toName)
 	}

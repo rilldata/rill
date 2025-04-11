@@ -29,6 +29,10 @@ func (c *connection) Dialect() drivers.Dialect {
 	return drivers.DialectDuckDB
 }
 
+func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
+	return false
+}
+
 func (c *connection) WithConnection(ctx context.Context, priority int, fn drivers.WithConnectionFunc) error {
 	// Check not nested
 	if connFromContext(ctx) != nil {
@@ -170,10 +174,6 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 	})
 
 	return res, nil
-}
-
-func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
-	return false
 }
 
 func (c *connection) estimateSize() int64 {

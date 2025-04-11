@@ -32,14 +32,20 @@ var (
 type WithConnectionFunc func(wrappedCtx context.Context, ensuredCtx context.Context, conn *sql.Conn) error
 
 // OLAPStore is implemented by drivers that are capable of storing, transforming and serving analytical queries.
-// NOTE crud APIs are not safe to be called with `WithConnection`
 type OLAPStore interface {
+	// Dialect is the SQL dialect that the driver uses.
 	Dialect() Dialect
-	WithConnection(ctx context.Context, priority int, fn WithConnectionFunc) error
-	Exec(ctx context.Context, stmt *Statement) error
-	Query(ctx context.Context, stmt *Statement) (*Result, error)
-	InformationSchema() InformationSchema
+	// MayBeScaledToZero returns true if the driver might currently be scaled to zero.
 	MayBeScaledToZero(ctx context.Context) bool
+	// WithConnection acquires a connection from the pool and keeps it open until the callback returns.
+	WithConnection(ctx context.Context, priority int, fn WithConnectionFunc) error
+	// Exec executes a query against the OLAP driver.
+	Exec(ctx context.Context, stmt *Statement) error
+	// Query executes a query against the OLAP driver and returns an iterator for the resulting rows and schema.
+	// The result MUST be closed after use.
+	Query(ctx context.Context, stmt *Statement) (*Result, error)
+	// InformationSchema enables introspecting the tables and views available in the OLAP driver.
+	InformationSchema() InformationSchema
 }
 
 // Statement wraps a query to execute against an OLAP driver.

@@ -35,6 +35,10 @@ func (c *Connection) Dialect() drivers.Dialect {
 	return drivers.DialectClickHouse
 }
 
+func (c *Connection) MayBeScaledToZero(ctx context.Context) bool {
+	return c.config.CanScaleToZero
+}
+
 func (c *Connection) WithConnection(ctx context.Context, priority int, fn drivers.WithConnectionFunc) error {
 	// Check not nested
 	if connFromContext(ctx) != nil {
@@ -204,10 +208,6 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 	})
 
 	return res, nil
-}
-
-func (c *Connection) MayBeScaledToZero(ctx context.Context) bool {
-	return c.config.CanScaleToZero
 }
 
 // acquireMetaConn gets a connection from the pool for "meta" queries like information schema (i.e. fast queries).
