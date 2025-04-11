@@ -43,7 +43,7 @@ test.describe("leaderboard measure names", () => {
 
     await page.keyboard.press("Escape");
     await expect(
-      page.getByTestId("data-leaderboard-measures-count"),
-    ).toHaveText("2");
+      page.getByTestId("leaderboard-measure-names-dropdown"),
+    ).toHaveAttribute("data-leaderboard-measures-count", "2");
   });
 });
