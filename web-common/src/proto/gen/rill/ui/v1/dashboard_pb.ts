@@ -140,12 +140,12 @@ export class DashboardState extends Message<DashboardState> {
   leaderboardSortType?: DashboardState_LeaderboardSortType;
 
   /**
-   * @generated from field: repeated string leaderboard_measures = 38;
+   * @generated from field: repeated string leaderboard_measures = 39;
    */
   leaderboardMeasures: string[] = [];
 
   /**
-   * @generated from field: optional bool leaderboard_show_context_for_all_measures = 39;
+   * @generated from field: optional bool leaderboard_show_context_for_all_measures = 40;
    */
   leaderboardShowContextForAllMeasures?: boolean;
 
@@ -281,8 +281,8 @@ export class DashboardState extends Message<DashboardState> {
     { no: 14, name: "scrub_range", kind: "message", T: DashboardTimeRange, opt: true },
     { no: 15, name: "leaderboard_sort_direction", kind: "enum", T: proto3.getEnumType(DashboardState_LeaderboardSortDirection), opt: true },
     { no: 16, name: "leaderboard_sort_type", kind: "enum", T: proto3.getEnumType(DashboardState_LeaderboardSortType), opt: true },
-    { no: 38, name: "leaderboard_measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 39, name: "leaderboard_show_context_for_all_measures", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 39, name: "leaderboard_measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 40, name: "leaderboard_show_context_for_all_measures", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 17, name: "comparison_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 18, name: "expanded_measure", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 19, name: "pin_index", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
