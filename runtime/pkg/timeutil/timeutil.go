@@ -184,3 +184,69 @@ func AddTimeProto(to time.Time, tg runtimev1.TimeGrain, count int) time.Time {
 
 	return to
 }
+
+func OffsetTime(tm time.Time, tg TimeGrain, n int) time.Time {
+	switch tg {
+	case TimeGrainUnspecified:
+		return tm
+	case TimeGrainMillisecond:
+		return tm.Add(time.Duration(n) * time.Millisecond)
+	case TimeGrainSecond:
+		return tm.Add(time.Duration(n) * time.Second)
+	case TimeGrainMinute:
+		return tm.Add(time.Duration(n) * time.Minute)
+	case TimeGrainHour:
+		return tm.Add(time.Duration(n) * time.Hour)
+	case TimeGrainDay:
+		return tm.AddDate(0, 0, n)
+	case TimeGrainWeek:
+		return tm.AddDate(0, 0, n*7)
+	case TimeGrainMonth:
+		return tm.AddDate(0, n, 0)
+	case TimeGrainQuarter:
+		return tm.AddDate(0, n*3, 0)
+	case TimeGrainYear:
+		return tm.AddDate(n, 0, 0)
+	}
+
+	return tm
+}
+
+func CopyTimeTill(from, to time.Time, tg TimeGrain, tz *time.Location) time.Time {
+	year := to.Year()
+	month := to.Month()
+	day := to.Day()
+	hour := to.Hour()
+	minute := to.Minute()
+	second := to.Second()
+
+	g := TimeGrainYear
+	for g >= tg {
+		switch g {
+		case TimeGrainUnspecified:
+		case TimeGrainMillisecond:
+		case TimeGrainSecond:
+			second = from.Second()
+		case TimeGrainMinute:
+			minute = from.Minute()
+		case TimeGrainHour:
+			hour = from.Hour()
+		case TimeGrainDay:
+			day = from.Day()
+		case TimeGrainWeek:
+			toWeekday := to.Weekday()
+			if toWeekday == 0 {
+				toWeekday = 7
+			}
+			day = from.Day() - int(from.Weekday()-toWeekday)
+		case TimeGrainMonth, TimeGrainQuarter:
+			month = from.Month()
+		case TimeGrainYear:
+			year = from.Year()
+		}
+
+		g--
+	}
+
+	return time.Date(year, month, day, hour, minute, second, 0, tz)
+}

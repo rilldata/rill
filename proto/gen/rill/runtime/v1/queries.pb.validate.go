@@ -9615,6 +9615,8 @@ func (m *MetricsViewTimeRangesRequest) validate(all bool) error {
 
 	// no validation rules for Priority
 
+	// no validation rules for TimeZone
+
 	if len(errors) > 0 {
 		return MetricsViewTimeRangesRequestMultiError(errors)
 	}
