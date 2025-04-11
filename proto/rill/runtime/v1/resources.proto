@@ -386,6 +386,9 @@ message ExplorePreset {
   optional bool explore_sort_asc = 18;
   optional ExploreSortType explore_sort_type = 19;
   optional string explore_expanded_dimension = 20;
+
+  // Deprecated
+  optional uint32 explore_leaderboard_measure_count = 30;
   repeated string explore_leaderboard_measures = 31;
   optional bool explore_leaderboard_show_context_for_all_measures = 32;
 
