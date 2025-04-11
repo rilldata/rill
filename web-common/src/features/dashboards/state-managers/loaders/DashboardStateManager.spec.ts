@@ -30,7 +30,10 @@ import {
   TimeComparisonOption,
 } from "@rilldata/web-common/lib/time/types";
 import { DashboardState_LeaderboardSortDirection } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import {
+  V1ExploreComparisonMode,
+  V1TimeGrain,
+} from "@rilldata/web-common/runtime-client";
 import { render, screen, waitFor } from "@testing-library/svelte";
 import { readable } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -65,7 +68,10 @@ describe("DashboardStateManager", () => {
       AD_BIDS_METRICS_INIT_WITH_TIME,
       {
         ...AD_BIDS_EXPLORE_INIT,
-        defaultPreset: AD_BIDS_PRESET,
+        defaultPreset: {
+          ...AD_BIDS_PRESET,
+          comparisonMode: V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_NONE,
+        },
       },
     );
     mocks.mockTimeRangeSummary(AD_BIDS_METRICS_NAME, {
@@ -138,7 +144,7 @@ describe("DashboardStateManager", () => {
           name: TimeComparisonOption.CONTIGUOUS,
         } as DashboardTimeControls,
       });
-      const initUrlSearch = "tr=PT24H&grain=hour";
+      const initUrlSearch = "tr=PT24H&compare_tr=rill-PP&grain=hour";
       pageMock.assertSearchParams(initUrlSearch);
 
       pageMock.popState("");

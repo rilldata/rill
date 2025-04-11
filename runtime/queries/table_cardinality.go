@@ -60,7 +60,7 @@ func (q *TableCardinality) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 	}
 
 	countSQL := fmt.Sprintf("SELECT count(*) AS count FROM %s", olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName))
-	rows, err := olap.Execute(ctx, &drivers.Statement{
+	rows, err := olap.Query(ctx, &drivers.Statement{
 		Query:            countSQL,
 		Priority:         priority,
 		ExecutionTimeout: defaultExecutionTimeout,
