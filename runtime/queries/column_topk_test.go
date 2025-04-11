@@ -151,7 +151,7 @@ func TestColumnTopKStruct(t *testing.T) {
 }
 
 func TestColumnTopKJSON(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceWithModel(t, "test", `SELECT '[10]'::JSON AS col, 1 AS val`)
+	rt, instanceID := testruntime.NewInstanceWithModel(t, "test", `SELECT '{"a": 10}'::JSON AS col, 1 AS val`)
 	q := &queries.ColumnTopK{
 		TableName:  "test",
 		ColumnName: "col",
@@ -162,7 +162,7 @@ func TestColumnTopKJSON(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	require.Equal(t, 1, len(q.Result.Entries))
-	require.Equal(t, "[10]", q.Result.Entries[0].Value.GetStringValue())
+	require.Equal(t, 10.0, q.Result.Entries[0].Value.GetStructValue().AsMap()["a"])
 	require.Equal(t, 1, int(q.Result.Entries[0].Count))
 }
 

@@ -33,7 +33,7 @@ type fromNode struct {
 }
 
 func Parse(sql string) (*AST, error) {
-	sqlAst, err := queryString("select json_serialize_sql(?::VARCHAR)", sql)
+	sqlAst, err := queryString("select json_serialize_sql(?::VARCHAR)::BLOB", sql)
 	if err != nil {
 		return nil, err
 	}
