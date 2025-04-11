@@ -66,7 +66,7 @@ export function getInitExploreStateForTest(
   const defaultExplorePreset = getDefaultExplorePreset(
     exploreSpec,
     metricsViewSpec,
-    timeRangeSummary,
+    timeRangeSummary?.timeRangeSummary,
   );
   const { partialExploreState } = convertPresetToExploreState(
     metricsViewSpec,
