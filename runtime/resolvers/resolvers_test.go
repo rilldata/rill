@@ -84,6 +84,10 @@ func TestResolvers(t *testing.T) {
 		t.Run(fileutil.Stem(f), func(t *testing.T) {
 			// Load the test file.
 			data, err := os.ReadFile(f)
+			fileName := fileutil.Stem(f)
+			if shouldSkipResolverTest(fileName) {
+				t.Skipf("Skipping test for resolver test: %s", fileName)
+			}
 			require.NoError(t, err)
 			var tf TestFileYAML
 			err = yaml.Unmarshal(data, &tf)
@@ -227,6 +231,21 @@ func TestResolvers(t *testing.T) {
 		})
 	}
 
+}
+
+func shouldSkipResolverTest(connector string) bool {
+	skipEnv := os.Getenv("RILL_RUNTIME_RESOLVERS_TEST_SKIP")
+	if skipEnv == "" {
+		return false
+	}
+
+	skipList := strings.Split(skipEnv, ",")
+	for _, skip := range skipList {
+		if strings.TrimSpace(skip) == connector {
+			return true
+		}
+	}
+	return false
 }
 
 // resultToCSV serializes the rows to a CSV formatted string.
