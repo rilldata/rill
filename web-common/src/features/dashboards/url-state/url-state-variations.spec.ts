@@ -55,6 +55,7 @@ import {
   type TestDashboardMutation,
   AD_BIDS_SET_PUBLISHER_COMPARE_DIMENSION,
   AD_BIDS_SET_DOMAIN_COMPARE_DIMENSION,
+  AD_BIDS_MEASURE_NAMES_BID_PRICE_AND_IMPRESSIONS,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { getCleanedUrlParamsForGoto } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
@@ -296,6 +297,11 @@ const TestCases: {
     ],
     preset: AD_BIDS_PRESET,
     expectedSearch: "sort_by=bid_price&sort_type=delta_abs&sort_dir=DESC",
+  },
+  {
+    title: "Leaderboard configs with multiple measures",
+    mutations: [AD_BIDS_MEASURE_NAMES_BID_PRICE_AND_IMPRESSIONS],
+    expectedSearch: "leaderboard_measures=bid_price%2Cimpressions",
   },
   {
     title: "Dimension table with no preset and dimension table active in state",
