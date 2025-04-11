@@ -456,11 +456,13 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		"INSTALL 'icu'",
 		"INSTALL 'parquet'",
 		"INSTALL 'httpfs'",
+		"INSTALL 'aws'",
 		"LOAD 'json'",
 		"LOAD 'sqlite'",
 		"LOAD 'icu'",
 		"LOAD 'parquet'",
 		"LOAD 'httpfs'",
+		"LOAD 'aws'",
 		"SET GLOBAL timezone='UTC'",
 		"SET GLOBAL old_implicit_casting = true", // Implicit Cast to VARCHAR
 		"SET GLOBAL allow_community_extensions = false", // This locks the configuration, so it can't later be enabled.

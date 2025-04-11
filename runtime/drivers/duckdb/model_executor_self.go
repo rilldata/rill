@@ -135,9 +135,6 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 				BeforeCreate: inputProps.PreExec,
 				AfterCreate:  inputProps.PostExec,
 			}
-			if inputProps.InitQueries != "" {
-				createTableOpts.InitQueries = []string{inputProps.InitQueries}
-			}
 			res, err := olap.CreateTableAsSelect(ctx, stagingTableName, inputProps.SQL, createTableOpts)
 			if err != nil {
 				_ = olap.DropTable(ctx, stagingTableName)
@@ -162,9 +159,6 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 			InPlace:      true,
 			Strategy:     outputProps.IncrementalStrategy,
 			UniqueKey:    outputProps.UniqueKey,
-		}
-		if inputProps.InitQueries != "" {
-			insertTableOpts.InitQueries = []string{inputProps.InitQueries}
 		}
 		res, err := olap.InsertTableAsSelect(ctx, tableName, inputProps.SQL, insertTableOpts)
 		if err != nil {
@@ -204,9 +198,12 @@ func (e *selfToSelfExecutor) createFromExternalDuckDB(ctx context.Context, input
 			}
 		}
 
-		if _, err := conn.ExecContext(ctx, fmt.Sprintf("ATTACH %s AS %s (READ_ONLY)", safeSQLString(inputProps.Database), safeDBName)); err != nil {
+		if _, err := conn.ExecContext(ctx, fmt.Sprintf("ATTACH IF NOT EXISTS %s AS %s (READ_ONLY)", safeSQLString(inputProps.Database), safeDBName)); err != nil {
 			return err
 		}
+		defer func() {
+			_, _ = conn.ExecContext(ctx, fmt.Sprintf("DETACH %s;", safeDBName))
+		}()
 
 		var localDB, localSchema string
 		if err := conn.QueryRowxContext(ctx, "SELECT current_database(),current_schema();").Scan(&localDB, &localSchema); err != nil {
@@ -222,7 +219,7 @@ func (e *selfToSelfExecutor) createFromExternalDuckDB(ctx context.Context, input
 		query := fmt.Sprintf("CREATE OR REPLACE TABLE %s.%s.%s AS (%s\n);", safeName(localDB), safeName(localSchema), safeTempTable, userQuery)
 		_, execErr := conn.ExecContext(ctx, query)
 		// revert to localdb and schema before returning
-		_, err := conn.ExecContext(ctx, fmt.Sprintf("USE %s.%s;", safeName(localDB), safeName(localSchema)))
+		_, err := conn.ExecContext(context.Background(), fmt.Sprintf("USE %s.%s;", safeName(localDB), safeName(localSchema)))
 		return errors.Join(execErr, err)
 	}
 	afterCreateFn := func(ctx context.Context, conn *sqlx.Conn) error {

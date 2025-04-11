@@ -244,7 +244,6 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, 
 	}
 	res, err := db.CreateTableAsSelect(ctx, name, sql, &rduckdb.CreateTableOptions{
 		View:           opts.View,
-		InitQueries:    opts.InitQueries,
 		BeforeCreateFn: beforeCreateFn,
 		AfterCreateFn:  afterCreateFn,
 	})
