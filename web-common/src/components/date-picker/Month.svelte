@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { DateTime, Interval } from "luxon";
+  import { DateTime, Interval, type WeekdayNumbers } from "luxon";
   import { ChevronLeft } from "lucide-svelte";
   import ChevronRight from "@rilldata/web-common/components/icons/ChevronRight.svelte";
   import Day from "./Day.svelte";
 
   export let startDay: DateTime<true>;
-  export let startOfWeek = 0;
+  export let firstDayOfWeek: WeekdayNumbers;
   export let interval: Interval<true> | undefined;
   export let selectingStart: boolean;
   export let visibleMonths = 2;
@@ -18,24 +18,20 @@
   export let onPan: (direction: 1 | -1) => void;
   export let onSelectDay: (date: DateTime<true>) => void;
 
-  $: firstDay = startDay.startOf("month").weekday % 7;
+  $: weekDayOfFirstDay = startDay.startOf("month").localWeekday;
 
-  $: weekCount = Math.ceil((firstDay + startDay.daysInMonth) / 7);
+  $: weekCount = Math.ceil((weekDayOfFirstDay + startDay.daysInMonth) / 7);
 
   $: inclusiveEnd = interval?.end?.minus({ millisecond: 0 });
 
   $: forwardPanEnabled = !maxDate || startDay.plus({ month: 1 }) < maxDate;
 
-  $: days = Array.from({ length: weekCount * 7 }, (_, i) => {
-    if (i < firstDay) {
-      return startDay.minus({ day: firstDay - i });
-    } else {
-      return startDay.plus({ day: i - firstDay });
-    }
-  });
+  $: days = Array.from({ length: weekCount * 7 }, (_, i) =>
+    startDay.plus({ day: i + 1 - weekDayOfFirstDay }),
+  );
 
   $: weekdays = Array.from({ length: 7 }, (_, i) =>
-    new Date(0, 0, i + startOfWeek).toLocaleString("default", {
+    new Date(0, 0, i + firstDayOfWeek).toLocaleString("default", {
       weekday: "short",
     }),
   );

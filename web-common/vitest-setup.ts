@@ -1,5 +1,6 @@
 import "@testing-library/jest-dom";
 import { vi } from "vitest";
+import { Settings } from "luxon";
 
 // required for svelte5 + jsdom as jsdom does not support matchMedia
 Object.defineProperty(window, "matchMedia", {
@@ -20,3 +21,9 @@ Object.defineProperty(window, "scrollTo", {
   enumerable: true,
   value: vi.fn(),
 });
+
+Settings.defaultWeekSettings = {
+  minimalDays: 4,
+  firstDay: 1,
+  weekend: [6, 7],
+};

@@ -5,7 +5,6 @@ import {
   TimeTruncationType,
 } from "../types";
 import { getDurationMultiple, transformDate } from "./";
-
 import { durationToMillis } from "../grains";
 import { getEndOfPeriod, getOffset, getStartOfPeriod, getTimeWidth } from "./";
 import { describe, it, expect } from "vitest";
