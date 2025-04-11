@@ -466,7 +466,7 @@
 
                     <button
                       class="hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
-                      on:click={() => {
+                      on:click|stopPropagation={() => {
                         selectedItems = [...selectedItems, id];
                         onSelectedChange(selectedItems);
                       }}
