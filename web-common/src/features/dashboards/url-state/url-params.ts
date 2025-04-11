@@ -45,5 +45,5 @@ export const ExploreStateKeyToURLParamMap: Partial<
   leaderboardSortByMeasureName: ExploreStateURLParams.SortBy,
   dashboardSortType: ExploreStateURLParams.SortType,
   sortDirection: ExploreStateURLParams.SortDirection,
-  leaderboardMeasureCount: ExploreStateURLParams.LeaderboardMeasureCount,
+  leaderboardMeasureNames: ExploreStateURLParams.LeaderboardMeasures,
 };
