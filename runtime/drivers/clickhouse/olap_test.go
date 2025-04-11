@@ -24,18 +24,20 @@ func TestClickhouseSingle(t *testing.T) {
 	defer conn.Close()
 	prepareConn(t, conn)
 
+	c := conn.(*clickhouse.Connection)
 	olap, ok := conn.AsOLAP("default")
 	require.True(t, ok)
+
 	t.Run("WithConnection", func(t *testing.T) { testWithConnection(t, olap) })
-	t.Run("RenameView", func(t *testing.T) { testRenameView(t, olap) })
-	t.Run("RenameTable", func(t *testing.T) { testRenameTable(t, olap) })
-	t.Run("CreateTableAsSelect", func(t *testing.T) { testCreateTableAsSelect(t, olap) })
-	t.Run("InsertTableAsSelect_WithAppend", func(t *testing.T) { testInsertTableAsSelect_WithAppend(t, olap) })
-	t.Run("InsertTableAsSelect_WithMerge", func(t *testing.T) { testInsertTableAsSelect_WithMerge(t, olap) })
-	t.Run("InsertTableAsSelect_WithPartitionOverwrite", func(t *testing.T) { testInsertTableAsSelect_WithPartitionOverwrite(t, olap) })
-	t.Run("InsertTableAsSelect_WithPartitionOverwrite_DatePartition", func(t *testing.T) { testInsertTableAsSelect_WithPartitionOverwrite_DatePartition(t, olap) })
-	t.Run("TestDictionary", func(t *testing.T) { testDictionary(t, olap) })
-	t.Run("TestIntervalType", func(t *testing.T) { testIntervalType(t, olap) })
+	t.Run("RenameView", func(t *testing.T) { testRenameView(t, c, olap) })
+	t.Run("RenameTable", func(t *testing.T) { testRenameTable(t, c, olap) })
+	t.Run("CreateTableAsSelect", func(t *testing.T) { testCreateTableAsSelect(t, c, olap) })
+	t.Run("InsertTableAsSelect_WithAppend", func(t *testing.T) { testInsertTableAsSelect_WithAppend(t, c, olap) })
+	t.Run("InsertTableAsSelect_WithMerge", func(t *testing.T) { testInsertTableAsSelect_WithMerge(t, c, olap) })
+	t.Run("InsertTableAsSelect_WithPartitionOverwrite", func(t *testing.T) { testInsertTableAsSelect_WithPartitionOverwrite(t, c, olap) })
+	t.Run("InsertTableAsSelect_WithPartitionOverwrite_DatePartition", func(t *testing.T) { testInsertTableAsSelect_WithPartitionOverwrite_DatePartition(t, c, olap) })
+	t.Run("TestDictionary", func(t *testing.T) { testDictionary(t, c, olap) })
+	t.Run("TestIntervalType", func(t *testing.T) { testIntervalType(t, c, olap) })
 }
 
 func TestClickhouseCluster(t *testing.T) {
@@ -49,24 +51,25 @@ func TestClickhouseCluster(t *testing.T) {
 	require.NoError(t, err)
 	defer conn.Close()
 
+	c := conn.(*clickhouse.Connection)
 	olap, ok := conn.AsOLAP("default")
 	require.True(t, ok)
 
-	prepareClusterConn(t, olap, cluster)
+	prepareClusterConn(t, c, olap, cluster)
 
 	t.Run("WithConnection", func(t *testing.T) { testWithConnection(t, olap) })
-	t.Run("RenameView", func(t *testing.T) { testRenameView(t, olap) })
-	t.Run("RenameTable", func(t *testing.T) { testRenameTable(t, olap) })
-	t.Run("CreateTableAsSelect", func(t *testing.T) { testCreateTableAsSelect(t, olap) })
-	t.Run("InsertTableAsSelect_WithAppend", func(t *testing.T) { testInsertTableAsSelect_WithAppend(t, olap) })
-	t.Run("InsertTableAsSelect_WithMerge", func(t *testing.T) { testInsertTableAsSelect_WithMerge(t, olap) })
-	t.Run("InsertTableAsSelect_WithPartitionOverwrite", func(t *testing.T) { testInsertTableAsSelect_WithPartitionOverwrite(t, olap) })
-	t.Run("InsertTableAsSelect_WithPartitionOverwrite_DatePartition", func(t *testing.T) { testInsertTableAsSelect_WithPartitionOverwrite_DatePartition(t, olap) })
-	t.Run("TestDictionary", func(t *testing.T) { testDictionary(t, olap) })
+	t.Run("RenameView", func(t *testing.T) { testRenameView(t, c, olap) })
+	t.Run("RenameTable", func(t *testing.T) { testRenameTable(t, c, olap) })
+	t.Run("CreateTableAsSelect", func(t *testing.T) { testCreateTableAsSelect(t, c, olap) })
+	t.Run("InsertTableAsSelect_WithAppend", func(t *testing.T) { testInsertTableAsSelect_WithAppend(t, c, olap) })
+	t.Run("InsertTableAsSelect_WithMerge", func(t *testing.T) { testInsertTableAsSelect_WithMerge(t, c, olap) })
+	t.Run("InsertTableAsSelect_WithPartitionOverwrite", func(t *testing.T) { testInsertTableAsSelect_WithPartitionOverwrite(t, c, olap) })
+	t.Run("InsertTableAsSelect_WithPartitionOverwrite_DatePartition", func(t *testing.T) { testInsertTableAsSelect_WithPartitionOverwrite_DatePartition(t, c, olap) })
+	t.Run("TestDictionary", func(t *testing.T) { testDictionary(t, c, olap) })
 }
 
 func testWithConnection(t *testing.T, olap drivers.OLAPStore) {
-	err := olap.WithConnection(context.Background(), 1, false, func(ctx, ensuredCtx context.Context, conn *sql.Conn) error {
+	err := olap.WithConnection(context.Background(), 1, func(ctx, ensuredCtx context.Context, conn *sql.Conn) error {
 		err := olap.Exec(ctx, &drivers.Statement{
 			Query: "CREATE table tbl engine=Memory AS SELECT 1 AS id, 'Earth' AS planet",
 		})
@@ -92,29 +95,26 @@ func testWithConnection(t *testing.T, olap drivers.OLAPStore) {
 	require.NoError(t, err)
 }
 
-func testRenameView(t *testing.T, olap drivers.OLAPStore) {
+func testRenameView(t *testing.T, c *clickhouse.Connection, olap drivers.OLAPStore) {
 	ctx := context.Background()
-	opts := &drivers.CreateTableOptions{
-		View:      true,
-		TableOpts: map[string]any{"type": "VIEW"},
-	}
-	_, err := olap.CreateTableAsSelect(ctx, "foo_view", "SELECT 1 AS id", opts)
+	opts := map[string]any{"type": "VIEW"}
+	_, err := c.CreateTableAsSelect(ctx, "foo_view", "SELECT 1 AS id", opts)
 	require.NoError(t, err)
 
-	_, err = olap.CreateTableAsSelect(ctx, "bar_view", "SELECT 'city' AS name", opts)
+	_, err = c.CreateTableAsSelect(ctx, "bar_view", "SELECT 'city' AS name", opts)
 	require.NoError(t, err)
 
 	// rename to unknown view
-	err = olap.RenameTable(ctx, "foo_view", "foo_view1")
+	err = c.RenameTable(ctx, "foo_view", "foo_view1")
 	require.NoError(t, err)
 
 	// rename to existing view
-	err = olap.RenameTable(ctx, "foo_view1", "bar_view")
+	err = c.RenameTable(ctx, "foo_view1", "bar_view")
 	require.NoError(t, err)
 
 	// check that views no longer exist
-	notExists(t, olap, "foo_view")
-	notExists(t, olap, "foo_view1")
+	notExists(t, c, olap, "foo_view")
+	notExists(t, c, olap, "foo_view1")
 
 	res, err := olap.Query(ctx, &drivers.Statement{Query: "SELECT id FROM bar_view"})
 	require.NoError(t, err)
@@ -125,19 +125,19 @@ func testRenameView(t *testing.T, olap drivers.OLAPStore) {
 	require.NoError(t, res.Close())
 }
 
-func testRenameTable(t *testing.T, olap drivers.OLAPStore) {
+func testRenameTable(t *testing.T, c *clickhouse.Connection, olap drivers.OLAPStore) {
 	ctx := context.Background()
-	err := olap.RenameTable(ctx, "foo", "foo1")
+	err := c.RenameTable(ctx, "foo", "foo1")
 	require.NoError(t, err)
 
-	err = olap.RenameTable(ctx, "foo1", "bar")
+	err = c.RenameTable(ctx, "foo1", "bar")
 	require.NoError(t, err)
 
-	notExists(t, olap, "foo")
-	notExists(t, olap, "foo1")
+	notExists(t, c, olap, "foo")
+	notExists(t, c, olap, "foo1")
 }
 
-func notExists(t *testing.T, olap drivers.OLAPStore, tbl string) {
+func notExists(t *testing.T, c *clickhouse.Connection, olap drivers.OLAPStore, tbl string) {
 	result, err := olap.Query(context.Background(), &drivers.Statement{
 		Query: "EXISTS " + tbl,
 	})
@@ -149,35 +149,24 @@ func notExists(t *testing.T, olap drivers.OLAPStore, tbl string) {
 	require.NoError(t, result.Close())
 }
 
-func testCreateTableAsSelect(t *testing.T, olap drivers.OLAPStore) {
-	opts := &drivers.CreateTableOptions{
-		View:      false,
-		TableOpts: map[string]any{"engine": "MergeTree", "table": "tbl", "distributed.sharding_key": "rand()"},
-	}
-	_, err := olap.CreateTableAsSelect(context.Background(), "tbl", "SELECT 1 AS id, 'Earth' AS planet", opts)
+func testCreateTableAsSelect(t *testing.T, c *clickhouse.Connection, olap drivers.OLAPStore) {
+	opts := map[string]any{"engine": "MergeTree", "table": "tbl", "distributed.sharding_key": "rand()"}
+	_, err := c.CreateTableAsSelect(context.Background(), "tbl", "SELECT 1 AS id, 'Earth' AS planet", opts)
 	require.NoError(t, err)
 }
 
-func testInsertTableAsSelect_WithAppend(t *testing.T, olap drivers.OLAPStore) {
-	opts := &drivers.CreateTableOptions{
-		View: false,
-		TableOpts: map[string]any{
-			"engine":                   "MergeTree",
-			"table":                    "tbl",
-			"distributed.sharding_key": "rand()",
-			"incremental_strategy":     drivers.IncrementalStrategyAppend,
-		},
+func testInsertTableAsSelect_WithAppend(t *testing.T, c *clickhouse.Connection, olap drivers.OLAPStore) {
+	opts := map[string]any{
+		"engine":                   "MergeTree",
+		"table":                    "tbl",
+		"distributed.sharding_key": "rand()",
+		"incremental_strategy":     drivers.IncrementalStrategyAppend,
 	}
-	_, err := olap.CreateTableAsSelect(context.Background(), "append_tbl", "SELECT 1 AS id, 'Earth' AS planet", opts)
+	_, err := c.CreateTableAsSelect(context.Background(), "append_tbl", "SELECT 1 AS id, 'Earth' AS planet", opts)
 	require.NoError(t, err)
 
-	insertOpts := &drivers.InsertTableOptions{
-		ByName:    false,
-		InPlace:   true,
-		Strategy:  drivers.IncrementalStrategyAppend,
-		UniqueKey: nil,
-	}
-	_, err = olap.InsertTableAsSelect(context.Background(), "append_tbl", "SELECT 2 AS id, 'Mars' AS planet", insertOpts)
+	insertOpts := &clickhouse.InsertTableOptions{Strategy: drivers.IncrementalStrategyAppend}
+	_, err = c.InsertTableAsSelect(context.Background(), "append_tbl", "SELECT 2 AS id, 'Mars' AS planet", insertOpts)
 	require.NoError(t, err)
 
 	res, err := olap.Query(context.Background(), &drivers.Statement{Query: "SELECT id, planet FROM append_tbl ORDER BY id"})
@@ -221,29 +210,20 @@ func testInsertTableAsSelect_WithAppend(t *testing.T, olap drivers.OLAPStore) {
 	}
 }
 
-func testInsertTableAsSelect_WithMerge(t *testing.T, olap drivers.OLAPStore) {
-	opts := &drivers.CreateTableOptions{
-		View: false,
-		TableOpts: map[string]any{
-			"typs":                     "TABLE",
-			"engine":                   "ReplacingMergeTree",
-			"table":                    "tbl",
-			"distributed.sharding_key": "rand()",
-			"incremental_strategy":     drivers.IncrementalStrategyMerge,
-			"order_by":                 "id",
-		},
+func testInsertTableAsSelect_WithMerge(t *testing.T, c *clickhouse.Connection, olap drivers.OLAPStore) {
+	opts := map[string]any{
+		"typs":                     "TABLE",
+		"engine":                   "ReplacingMergeTree",
+		"table":                    "tbl",
+		"distributed.sharding_key": "rand()",
+		"incremental_strategy":     drivers.IncrementalStrategyMerge,
+		"order_by":                 "id",
 	}
-
-	_, err := olap.CreateTableAsSelect(context.Background(), "merge_tbl", "SELECT generate_series AS id, 'insert' AS value FROM generate_series(0, 4)", opts)
+	_, err := c.CreateTableAsSelect(context.Background(), "merge_tbl", "SELECT generate_series AS id, 'insert' AS value FROM generate_series(0, 4)", opts)
 	require.NoError(t, err)
 
-	insertOpts := &drivers.InsertTableOptions{
-		ByName:    false,
-		InPlace:   true,
-		Strategy:  drivers.IncrementalStrategyMerge,
-		UniqueKey: []string{"id"},
-	}
-	_, err = olap.InsertTableAsSelect(context.Background(), "merge_tbl", "SELECT generate_series AS id, 'merge' AS value FROM generate_series(2, 5)", insertOpts)
+	insertOpts := &clickhouse.InsertTableOptions{Strategy: drivers.IncrementalStrategyMerge}
+	_, err = c.InsertTableAsSelect(context.Background(), "merge_tbl", "SELECT generate_series AS id, 'merge' AS value FROM generate_series(2, 5)", insertOpts)
 	require.NoError(t, err)
 
 	var result []struct {
@@ -294,28 +274,23 @@ func testInsertTableAsSelect_WithMerge(t *testing.T, olap drivers.OLAPStore) {
 	}
 }
 
-func testInsertTableAsSelect_WithPartitionOverwrite(t *testing.T, olap drivers.OLAPStore) {
-	opts := &drivers.CreateTableOptions{
-		View: false,
-		TableOpts: map[string]any{
-			"engine":                   "MergeTree",
-			"table":                    "tbl",
-			"distributed.sharding_key": "rand()",
-			"incremental_strategy":     drivers.IncrementalStrategyPartitionOverwrite,
-			"partition_by":             "id",
-			"order_by":                 "value",
-			"primary_key":              "value",
-		},
+func testInsertTableAsSelect_WithPartitionOverwrite(t *testing.T, c *clickhouse.Connection, olap drivers.OLAPStore) {
+	opts := map[string]any{
+		"engine":                   "MergeTree",
+		"table":                    "tbl",
+		"distributed.sharding_key": "rand()",
+		"incremental_strategy":     drivers.IncrementalStrategyPartitionOverwrite,
+		"partition_by":             "id",
+		"order_by":                 "value",
+		"primary_key":              "value",
 	}
-	_, err := olap.CreateTableAsSelect(context.Background(), "replace_tbl", "SELECT generate_series AS id, 'insert' AS value FROM generate_series(0, 4)", opts)
+	_, err := c.CreateTableAsSelect(context.Background(), "replace_tbl", "SELECT generate_series AS id, 'insert' AS value FROM generate_series(0, 4)", opts)
 	require.NoError(t, err)
 
-	insertOpts := &drivers.InsertTableOptions{
-		ByName:   false,
-		InPlace:  true,
+	insertOpts := &clickhouse.InsertTableOptions{
 		Strategy: drivers.IncrementalStrategyPartitionOverwrite,
 	}
-	_, err = olap.InsertTableAsSelect(context.Background(), "replace_tbl", "SELECT generate_series AS id, 'replace' AS value FROM generate_series(2, 5)", insertOpts)
+	_, err = c.InsertTableAsSelect(context.Background(), "replace_tbl", "SELECT generate_series AS id, 'replace' AS value FROM generate_series(2, 5)", insertOpts)
 	require.NoError(t, err)
 
 	res, err := olap.Query(context.Background(), &drivers.Statement{Query: "SELECT id, value FROM replace_tbl ORDER BY id"})
@@ -362,28 +337,23 @@ func testInsertTableAsSelect_WithPartitionOverwrite(t *testing.T, olap drivers.O
 	}
 }
 
-func testInsertTableAsSelect_WithPartitionOverwrite_DatePartition(t *testing.T, olap drivers.OLAPStore) {
-	opts := &drivers.CreateTableOptions{
-		View: false,
-		TableOpts: map[string]any{
-			"engine":                   "MergeTree",
-			"table":                    "tbl",
-			"distributed.sharding_key": "rand()",
-			"incremental_strategy":     drivers.IncrementalStrategyPartitionOverwrite,
-			"partition_by":             "dt",
-			"order_by":                 "value",
-			"primary_key":              "value",
-		},
+func testInsertTableAsSelect_WithPartitionOverwrite_DatePartition(t *testing.T, c *clickhouse.Connection, olap drivers.OLAPStore) {
+	opts := map[string]any{
+		"engine":                   "MergeTree",
+		"table":                    "tbl",
+		"distributed.sharding_key": "rand()",
+		"incremental_strategy":     drivers.IncrementalStrategyPartitionOverwrite,
+		"partition_by":             "dt",
+		"order_by":                 "value",
+		"primary_key":              "value",
 	}
-	_, err := olap.CreateTableAsSelect(context.Background(), "replace_tbl", "SELECT date_add(hour, generate_series, toDate('2024-12-01')) AS dt, 'insert' AS value FROM generate_series(0, 4)", opts)
+	_, err := c.CreateTableAsSelect(context.Background(), "replace_tbl", "SELECT date_add(hour, generate_series, toDate('2024-12-01')) AS dt, 'insert' AS value FROM generate_series(0, 4)", opts)
 	require.NoError(t, err)
 
-	insertOpts := &drivers.InsertTableOptions{
-		ByName:   false,
-		InPlace:  true,
+	insertOpts := &clickhouse.InsertTableOptions{
 		Strategy: drivers.IncrementalStrategyPartitionOverwrite,
 	}
-	_, err = olap.InsertTableAsSelect(context.Background(), "replace_tbl", "SELECT date_add(hour, generate_series, toDate('2024-12-01')) AS dt, 'replace' AS value FROM generate_series(2, 5)", insertOpts)
+	_, err = c.InsertTableAsSelect(context.Background(), "replace_tbl", "SELECT date_add(hour, generate_series, toDate('2024-12-01')) AS dt, 'replace' AS value FROM generate_series(2, 5)", insertOpts)
 	require.NoError(t, err)
 
 	res, err := olap.Query(context.Background(), &drivers.Statement{Query: "SELECT dt, value FROM replace_tbl ORDER BY dt"})
@@ -430,15 +400,12 @@ func testInsertTableAsSelect_WithPartitionOverwrite_DatePartition(t *testing.T, 
 	}
 }
 
-func testDictionary(t *testing.T, olap drivers.OLAPStore) {
-	opts := &drivers.CreateTableOptions{
-		View:      false,
-		TableOpts: map[string]any{"table": "Dictionary", "primary_key": "id"},
-	}
-	_, err := olap.CreateTableAsSelect(context.Background(), "dict", "SELECT 1 AS id, 'Earth' AS planet", opts)
+func testDictionary(t *testing.T, c *clickhouse.Connection, olap drivers.OLAPStore) {
+	opts := map[string]any{"table": "Dictionary", "primary_key": "id"}
+	_, err := c.CreateTableAsSelect(context.Background(), "dict", "SELECT 1 AS id, 'Earth' AS planet", opts)
 	require.NoError(t, err)
 
-	err = olap.RenameTable(context.Background(), "dict", "dict1")
+	err = c.RenameTable(context.Background(), "dict", "dict1")
 	require.NoError(t, err)
 
 	res, err := olap.Query(context.Background(), &drivers.Statement{Query: "SELECT id, planet FROM dict1"})
@@ -452,10 +419,10 @@ func testDictionary(t *testing.T, olap drivers.OLAPStore) {
 	require.Equal(t, "Earth", planet)
 	require.NoError(t, res.Close())
 
-	require.NoError(t, olap.DropTable(context.Background(), "dict1"))
+	require.NoError(t, c.DropTable(context.Background(), "dict1"))
 }
 
-func testIntervalType(t *testing.T, olap drivers.OLAPStore) {
+func testIntervalType(t *testing.T, c *clickhouse.Connection, olap drivers.OLAPStore) {
 	cases := []struct {
 		query string
 		ms    int64
@@ -482,7 +449,7 @@ func testIntervalType(t *testing.T, olap drivers.OLAPStore) {
 	}
 }
 
-func prepareClusterConn(t *testing.T, olap drivers.OLAPStore, cluster string) {
+func prepareClusterConn(t *testing.T, c *clickhouse.Connection, olap drivers.OLAPStore, cluster string) {
 	err := olap.Exec(context.Background(), &drivers.Statement{
 		Query: fmt.Sprintf("CREATE OR REPLACE TABLE foo_local ON CLUSTER %s (bar VARCHAR, baz INTEGER) engine=MergeTree ORDER BY tuple()", cluster),
 	})

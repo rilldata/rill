@@ -312,7 +312,7 @@ func (r *globResolver) transformResult(ctx context.Context, rows []map[string]an
 	defer os.Remove(jsonFile)
 
 	var result []map[string]any
-	err = olap.WithConnection(ctx, 0, false, func(wrappedCtx context.Context, ensuredCtx context.Context, _ *databasesql.Conn) error {
+	err = olap.WithConnection(ctx, 0, func(wrappedCtx context.Context, ensuredCtx context.Context, _ *databasesql.Conn) error {
 		// Load the JSON file into a temporary table
 		err = olap.Exec(wrappedCtx, &drivers.Statement{
 			Query: fmt.Sprintf("CREATE TEMPORARY TABLE %s AS (SELECT * FROM read_ndjson_auto(%s))", olap.Dialect().EscapeIdentifier(r.tmpTableName), olap.Dialect().EscapeStringValue(jsonFile)),

@@ -9,6 +9,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
@@ -250,10 +251,24 @@ path: data/foo.csv
 	testruntime.RequireOLAPTable(t, rt, id, "foo")
 	testruntime.RequireOLAPTableCount(t, rt, id, "foo", 1)
 
-	// Delete the underlying table
-	olap, release, err := rt.OLAP(context.Background(), id, "")
+	// Get the model and the ModelManager for its output
+	ctrl, err := rt.Controller(context.Background(), id)
 	require.NoError(t, err)
-	err = olap.DropTable(context.Background(), "foo")
+	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "foo"}, false)
+	require.NoError(t, err)
+	fooModel := r.GetModel()
+	h, release, err := rt.AcquireHandle(context.Background(), id, fooModel.State.ResultConnector)
+	require.NoError(t, err)
+	defer release()
+	modelManager, ok := h.AsModelManager(id)
+	require.True(t, ok)
+
+	// Delete the underlying table
+	modelManager.Delete(context.Background(), &drivers.ModelResult{
+		Connector:  fooModel.State.ResultConnector,
+		Properties: fooModel.State.ResultProperties.AsMap(),
+		Table:      fooModel.State.ResultTable,
+	})
 	require.NoError(t, err)
 	release()
 	testruntime.RequireNoOLAPTable(t, rt, id, "foo")
