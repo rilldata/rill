@@ -85,8 +85,8 @@ func TestResolvers(t *testing.T) {
 			// Load the test file.
 			data, err := os.ReadFile(f)
 			fileName := fileutil.Stem(f)
-			if shouldSkipResolverTest(fileName) {
-				t.Skipf("Skipping test for resolver test: %s", fileName)
+			if isRestrictedConnector(fileName) && !isRestrictedTestEnabled(fileName) {
+				t.Skipf("Skipping restricted test: %s (can be enabled via RILL_RUNTIME_RUN_RESTRICTED_RESOLVERS_TESTS)", fileName)
 			}
 			require.NoError(t, err)
 			var tf TestFileYAML
@@ -233,15 +233,23 @@ func TestResolvers(t *testing.T) {
 
 }
 
-func shouldSkipResolverTest(connector string) bool {
-	skipEnv := os.Getenv("RILL_RUNTIME_RESOLVERS_TEST_SKIP")
-	if skipEnv == "" {
+func isRestrictedConnector(connector string) bool {
+	switch connector {
+	case "snowflake_connector":
+		return true
+	default:
+		return false
+	}
+}
+
+func isRestrictedTestEnabled(connector string) bool {
+	env := os.Getenv("RILL_RUNTIME_RUN_RESTRICTED_RESOLVERS_TESTS")
+	if env == "" {
 		return false
 	}
 
-	skipList := strings.Split(skipEnv, ",")
-	for _, skip := range skipList {
-		if strings.TrimSpace(skip) == connector {
+	for _, name := range strings.Split(env, ",") {
+		if strings.TrimSpace(name) == connector {
 			return true
 		}
 	}
