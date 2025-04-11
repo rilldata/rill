@@ -8,7 +8,6 @@ import {
   type ComparisonTimeRangeState,
   type TimeRangeState,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { toTimeRangeParam } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
 import { getTimeControlsFromURLParams } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
 import { ToURLParamTimeGrainMapMap } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
@@ -36,6 +35,7 @@ import {
   type Readable,
   type Writable,
 } from "svelte/store";
+import { toTimeRangeParam } from "../../dashboards/url-state/convert-partial-explore-state-to-url-params";
 
 type AllTimeRange = TimeRange & { isFetching: boolean };
 
