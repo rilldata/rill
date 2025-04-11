@@ -271,12 +271,12 @@ function toExploreUrlParams(
     sd === SortDirection.ASCENDING ? "ASC" : "DESC",
   );
 
-  // maybeSetParam(
-  //   searchParams,
-  //   partialExploreState,
-  //   "leaderboardMeasureNames",
-  //   (names) => names?.join(","),
-  // );
+  maybeSetParam(
+    searchParams,
+    partialExploreState,
+    "leaderboardMeasureNames",
+    (names) => names?.join(","),
+  );
 
   return searchParams;
 }
