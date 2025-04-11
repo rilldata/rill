@@ -20,7 +20,7 @@ describe("getDefaultExploreUrlParams", () => {
       AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
     );
     expect(defaultExploreUrlParams.toString()).toEqual(
-      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC",
+      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measures=impressions",
     );
   });
 
