@@ -18,5 +18,6 @@
     { id: "markdown", label: "Text", icon: TextIcon },
     { id: "kpi_grid", label: "KPI", icon: BigNumberIcon },
     { id: "image", label: "Image", icon: ChartIcon },
+    { id: "leaderboard", label: "Leaderboard", icon: TableIcon },
   ];
 </script>

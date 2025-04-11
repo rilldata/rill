@@ -1,17 +1,18 @@
 <script lang="ts">
+  import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
+  import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
+  import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { SortType } from "../proto-state/derived-types";
-  import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
-  import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
-  import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
+  import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
-  import DimensionCompareMenu from "./DimensionCompareMenu.svelte";
-  import DeltaChangePercentage from "../dimension-table/DeltaChangePercentage.svelte";
-  import DeltaChange from "../dimension-table/DeltaChange.svelte";
-  import PercentOfTotal from "../dimension-table/PercentOfTotal.svelte";
   import { fly } from "svelte/transition";
+  import DeltaChange from "../dimension-table/DeltaChange.svelte";
+  import DeltaChangePercentage from "../dimension-table/DeltaChangePercentage.svelte";
+  import PercentOfTotal from "../dimension-table/PercentOfTotal.svelte";
+  import { SortType } from "../proto-state/derived-types";
+  import DimensionCompareMenu from "./DimensionCompareMenu.svelte";
 
   export let dimensionName: string;
   export let isFetching: boolean;
@@ -23,6 +24,8 @@
   export let displayName: string;
   export let hovered: boolean;
   export let sortType: SortType;
+  export let allowDimensionComparison: boolean;
+  export let allowExpandTable: boolean;
   export let leaderboardMeasureNames: string[] = [];
   export let sortBy: string | null;
   export let leaderboardMeasureCountFeatureFlag: boolean;
@@ -39,19 +42,24 @@
     <th aria-label="Comparison column" class="grid place-content-center">
       {#if isFetching}
         <DelayedSpinner isLoading={isFetching} size="16px" />
-      {:else if hovered || isBeingCompared}
+      {:else if allowDimensionComparison && (hovered || isBeingCompared)}
         <DimensionCompareMenu
           {dimensionName}
           {isBeingCompared}
           {toggleComparisonDimension}
         />
+      {:else}
+        <Spacer size="14px" />
       {/if}
     </th>
 
     <th data-dimension-header>
       <Tooltip distance={16} location="top">
         <button
-          class="ui-header-primary"
+          disabled={!allowExpandTable}
+          class="text-slate-600 {allowExpandTable
+            ? 'hover:text-primary-700'
+            : ''}"
           aria-label="Open dimension details"
           on:click={() => setPrimaryDimension(dimensionName)}
         >
@@ -73,8 +81,10 @@
               {/if}
             </div>
             <Shortcut />
-            <div>Expand leaderboard</div>
-            <Shortcut>Click</Shortcut>
+            {#if allowExpandTable}
+              <div>Expand leaderboard</div>
+              <Shortcut>Click</Shortcut>
+            {/if}
           </TooltipShortcutContainer>
         </TooltipContent>
       </Tooltip>

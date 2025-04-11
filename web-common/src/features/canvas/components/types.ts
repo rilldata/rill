@@ -2,6 +2,7 @@ import type { KPIGridSpec } from "@rilldata/web-common/features/canvas/component
 import type { ChartConfig, ChartType } from "./charts/types";
 import type { ImageSpec } from "./image";
 import type { KPISpec } from "./kpi";
+import type { LeaderboardSpec } from "./leaderboard";
 import type { MarkdownSpec } from "./markdown";
 import type { PivotSpec, TableSpec } from "./pivot";
 import type { ChartSpec } from "./charts";
@@ -14,6 +15,7 @@ export type ComponentSpec =
   | TableSpec
   | KPISpec
   | KPIGridSpec
+  | LeaderboardSpec
   | MarkdownSpec;
 
 export interface ComponentCommonProperties {
@@ -49,7 +51,8 @@ export type CanvasComponentType =
   | "kpi_grid"
   | "image"
   | "pivot"
-  | "table";
+  | "table"
+  | "leaderboard";
 
 interface LineChart {
   line_chart: ChartConfig;

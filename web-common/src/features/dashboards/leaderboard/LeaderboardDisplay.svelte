@@ -6,11 +6,11 @@
     V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { featureFlags } from "../../feature-flags";
   import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardControls from "./LeaderboardControls.svelte";
   import { COMPARISON_COLUMN_WIDTH, valueColumn } from "./leaderboard-widths";
-  import { featureFlags } from "../../feature-flags";
 
   export let metricsViewName: string;
   export let whereFilter: V1Expression;

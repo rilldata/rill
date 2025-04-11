@@ -282,7 +282,6 @@ export class TimeControls {
 
         this.selectedComparisonTimeRange.set(newComparisonRange);
 
-        console.log({ isLocalComponentControl });
         if (
           defaultPreset?.comparisonMode ===
             V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME &&

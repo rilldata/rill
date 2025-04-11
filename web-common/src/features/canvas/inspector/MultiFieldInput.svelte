@@ -102,7 +102,12 @@
     <DropdownMenu.Trigger asChild let:builder>
       <div class="flex justify-between gap-x-2">
         <InputLabel small {label} {id} />
-        <button use:builder.action {...builder} class="text-sm px-2 h-6">
+        <button
+          aria-label={`Add ${types.join(", ")} fields`}
+          use:builder.action
+          {...builder}
+          class="text-sm px-2 h-6"
+        >
           <PlusIcon size="14px" />
         </button>
       </div>

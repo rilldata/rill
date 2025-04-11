@@ -1,14 +1,16 @@
 <script lang="ts">
+  import type { LeaderboardSpec } from "@rilldata/web-common/features/canvas/components/leaderboard";
   import DimensionFiltersInput from "@rilldata/web-common/features/canvas/inspector/filters/DimensionFiltersInput.svelte";
   import TimeFiltersInput from "@rilldata/web-common/features/canvas/inspector/filters/TimeFiltersInput.svelte";
   import type { BaseCanvasComponent } from "../../components/BaseCanvasComponent";
-  import type { AllKeys, FilterInputParam } from "../types";
   import type { ComponentSpec } from "../../components/types";
+  import type { AllKeys, FilterInputParam } from "../types";
 
   export let component: BaseCanvasComponent;
 
   $: ({
     specStore,
+    type,
     state: componentStore,
     parent: { name: canvasName },
   } = component);
@@ -19,6 +21,11 @@
 
   $: metricsView =
     "metrics_view" in localParamValues ? localParamValues.metrics_view : null;
+
+  $: excludedDimensions =
+    type === "leaderboard"
+      ? (localParamValues as LeaderboardSpec).dimensions
+      : [];
 
   $: entries = Object.entries(inputParams) as [
     AllKeys<ComponentSpec>,
@@ -47,6 +54,7 @@
           {canvasName}
           {metricsView}
           {componentStore}
+          {excludedDimensions}
           id={key}
           filter={localParamValues[key]}
           onChange={async (filter) => {

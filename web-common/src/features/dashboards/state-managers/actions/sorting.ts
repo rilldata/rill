@@ -3,7 +3,7 @@ import { SortDirection, SortType } from "../../proto-state/derived-types";
 import { setLeaderboardSortByMeasureName } from "./core-actions";
 import type { DashboardMutables } from "./types";
 
-const isValueBasedSort = (sortType: SortType): boolean => {
+export const isValueBasedSort = (sortType: SortType): boolean => {
   return (
     sortType === SortType.VALUE ||
     sortType === SortType.DELTA_ABSOLUTE ||
@@ -12,7 +12,7 @@ const isValueBasedSort = (sortType: SortType): boolean => {
   );
 };
 
-const toggleSortDirection = (
+export const toggleSortDirection = (
   currentDirection: SortDirection,
 ): SortDirection => {
   return currentDirection === SortDirection.ASCENDING
