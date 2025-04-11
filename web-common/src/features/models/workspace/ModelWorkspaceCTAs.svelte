@@ -16,9 +16,9 @@
   import { ResourceKind } from "../../entity-management/resource-selectors";
   import ExportMenu from "../../exports/ExportMenu.svelte";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
+  import NavigateOrDropdown from "../../metrics-views/NavigateOrDropdown.svelte";
   import ModelRefreshButton from "../incremental/ModelRefreshButton.svelte";
   import CreateDashboardButton from "./CreateDashboardButton.svelte";
-  import NavigateOrDropdown from "../../metrics-views/NavigateOrDropdown.svelte";
 
   export let resource: V1Resource | undefined;
   export let modelName: string;
@@ -57,6 +57,7 @@
     return {
       tableRowsRequest: {
         instanceId,
+        connector,
         tableName: modelName,
       },
     };

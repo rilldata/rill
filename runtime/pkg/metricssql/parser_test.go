@@ -169,7 +169,7 @@ func TestCompile(t *testing.T) {
 		require.Equal(t, test.outSQL, sql)
 		require.ElementsMatch(t, test.args, args)
 
-		res, err := olap.Execute(context.Background(), &drivers.Statement{Query: sql, Args: args})
+		res, err := olap.Query(context.Background(), &drivers.Statement{Query: sql, Args: args})
 		require.NoError(t, err)
 		require.NoError(t, res.Close())
 	}

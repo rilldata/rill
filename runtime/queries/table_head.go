@@ -73,7 +73,7 @@ func (q *TableHead) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID
 		return err
 	}
 
-	rows, err := olap.Execute(ctx, &drivers.Statement{
+	rows, err := olap.Query(ctx, &drivers.Statement{
 		Query:            query,
 		Priority:         priority,
 		ExecutionTimeout: defaultExecutionTimeout,

@@ -122,7 +122,6 @@ message DashboardState {
   /**
    * Pivot related fields
    */
-  optional bool pivot_is_active = 22;
   /*
   * These pivot fields are preserved to support backward
   * compatibility with existing URLs

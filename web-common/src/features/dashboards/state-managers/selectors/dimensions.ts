@@ -27,10 +27,19 @@ export const visibleDimensions = ({
   validExplore,
   dashboard,
 }: DashboardDataSources): MetricsViewSpecDimension[] => {
-  if (!validMetricsView?.dimensions || !validExplore?.dimensions) return [];
+  if (
+    !validMetricsView?.dimensions ||
+    !validExplore?.dimensions ||
+    !dashboard?.visibleDimensions ||
+    !Array.isArray(dashboard.visibleDimensions)
+  ) {
+    return [];
+  }
+
+  const dimensions = validMetricsView.dimensions || [];
 
   return dashboard.visibleDimensions
-    .map((dim) => validMetricsView.dimensions?.find((d) => d.name === dim))
+    .map((dim) => dimensions.find((d) => d.name === dim))
     .filter(Boolean) as MetricsViewSpecDimension[];
 };
 

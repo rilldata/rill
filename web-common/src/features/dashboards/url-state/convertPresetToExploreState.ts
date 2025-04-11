@@ -421,13 +421,12 @@ function fromPivotUrlParams(
     hasSomePivotFields = true;
   }
 
-  const pivotIsActive = preset.view === V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT;
+  const showPivot = preset.view === V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT;
 
-  if (!hasSomePivotFields && !pivotIsActive) {
+  if (!hasSomePivotFields && !showPivot) {
     return {
       partialExploreState: {
         pivot: {
-          active: false,
           rows: [],
           columns: [],
           sorting: [],
@@ -470,7 +469,6 @@ function fromPivotUrlParams(
   return {
     partialExploreState: {
       pivot: {
-        active: pivotIsActive,
         rows: rowDimensions,
         columns: colChips,
         sorting,

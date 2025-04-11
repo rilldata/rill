@@ -311,6 +311,7 @@
             data-value={cell.getValue()}
             data-rowid={cell.row.id}
             data-columnid={cell.column.id}
+            data-rowheader={i === 0 || undefined}
             class:totals-column={i > 0 && i <= measureCount}
           >
             {#if result?.component && result?.props}

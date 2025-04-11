@@ -61,7 +61,7 @@ func (c *connection) WithConnection(ctx context.Context, priority int, longRunni
 }
 
 func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
-	res, err := c.Execute(ctx, stmt)
+	res, err := c.Query(ctx, stmt)
 	if err != nil {
 		return err
 	}
@@ -71,7 +71,7 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 	return res.Close()
 }
 
-func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
+func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
 	// Log query if enabled (usually disabled)
 	if c.config.LogQueries {
 		c.logger.Info("druid query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
