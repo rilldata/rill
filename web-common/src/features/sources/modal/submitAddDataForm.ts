@@ -23,13 +23,10 @@ import {
   updateRillYAMLWithOlapConnector,
 } from "../../connectors/code-utils";
 import { testOLAPConnector } from "../../connectors/olap/test-connection";
+import { runtimeServicePutFileAndWaitForReconciliation } from "../../entity-management/actions";
 import { getFileAPIPathFromNameAndType } from "../../entity-management/entity-mappers";
 import { fileArtifacts } from "../../entity-management/file-artifacts";
 import { getName } from "../../entity-management/name-utils";
-import {
-  getProjectParserVersion,
-  waitForProjectParserVersion,
-} from "../../entity-management/project-parser";
 import { ResourceKind } from "../../entity-management/resource-selectors";
 import { EntityType } from "../../entity-management/types";
 import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
@@ -95,8 +92,6 @@ export async function submitAddOLAPConnectorForm(
     fileArtifacts.getNamesForKind(ResourceKind.Connector),
   );
 
-  const projectParserStartingVersion = getProjectParserVersion(instanceId); // So we can track when the next reconcilation happens
-
   /**
    * Optimistic updates:
    * 1. Make a new `<connector>.yaml` file
@@ -136,13 +131,14 @@ export async function submitAddOLAPConnectorForm(
   }
 
   // Create or update the `.env` file
+  // Make sure the file has reconciled before testing the connection
   const newEnvBlob = await updateDotEnvWithSecrets(
     queryClient,
     connector,
     formValues,
     "connector",
   );
-  await runtimeServicePutFile(instanceId, {
+  await runtimeServicePutFileAndWaitForReconciliation(instanceId, {
     path: ".env",
     blob: newEnvBlob,
     create: true,
@@ -154,12 +150,6 @@ export async function submitAddOLAPConnectorForm(
    * 1. Ensure the file has reconciled and has no errors
    * 2. Test the connection to the OLAP database
    */
-
-  // Wait until the project parser has reconciled the new connector file
-  await waitForProjectParserVersion(
-    instanceId,
-    projectParserStartingVersion + 1,
-  );
 
   // Check for file errors
   // If the connector file has errors, rollback the changes
@@ -208,7 +198,7 @@ export async function submitAddOLAPConnectorForm(
 
 async function beforeSubmitForm(instanceId: string) {
   // Emit telemetry
-  await behaviourEvent?.fireSourceTriggerEvent(
+  behaviourEvent?.fireSourceTriggerEvent(
     BehaviourEventAction.SourceAdd,
     BehaviourEventMedium.Button,
     getScreenNameFromPage(),

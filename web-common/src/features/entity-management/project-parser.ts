@@ -24,22 +24,22 @@ export async function waitForProjectParserVersion(
   instanceId: string,
   version: number,
 ) {
-  const projectParserQuery = queryClient.getQueryData<V1GetResourceResponse>(
-    getRuntimeServiceGetResourceQueryKey(instanceId, {
-      "name.kind": ResourceKind.ProjectParser,
-      "name.name": SingletonProjectParserName,
-    }),
-  );
+  while (true) {
+    const projectParserQuery = queryClient.getQueryData<V1GetResourceResponse>(
+      getRuntimeServiceGetResourceQueryKey(instanceId, {
+        "name.kind": ResourceKind.ProjectParser,
+        "name.name": SingletonProjectParserName,
+      }),
+    );
 
-  if (!projectParserQuery?.resource?.meta?.version) {
-    throw new Error("Project parser version not found");
+    if (!projectParserQuery?.resource?.meta?.version) {
+      throw new Error("Project parser version not found");
+    }
+
+    if (Number(projectParserQuery.resource.meta.version) >= version) {
+      return;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 300));
   }
-
-  if (Number(projectParserQuery.resource.meta.version) >= version) {
-    return;
-  }
-
-  await new Promise((resolve) => setTimeout(resolve, 300));
-
-  return waitForProjectParserVersion(instanceId, version);
 }
