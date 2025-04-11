@@ -1,4 +1,3 @@
-import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
 import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-mode";
 import { useDimensionSearch } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-values";
 import { getDimensionDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
@@ -10,7 +9,7 @@ import {
   matchExpressionByName,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type {
-  MetricsViewSpecDimensionV2,
+  MetricsViewSpecDimension,
   V1Expression,
 } from "@rilldata/web-common/runtime-client";
 import { V1Operation } from "@rilldata/web-common/runtime-client";
@@ -50,7 +49,7 @@ export const selectedDimensionValuesV2 = (
   dimensionName: string,
   timeStart?: string,
   timeEnd?: string,
-): CompoundQueryResult<string[]> => {
+) => {
   // if it is a complex filter unsupported by UI then no values are selected
   if (!whereFilter || isExpressionUnsupported(whereFilter))
     return readable({
@@ -58,7 +57,7 @@ export const selectedDimensionValuesV2 = (
       isLoading: false,
       // This will be replaced with an "Advanced Filter" pill.
       // So do not error here to make sure leaderboards work.
-      error: undefined,
+      error: null,
       data: [],
     });
 
@@ -69,7 +68,7 @@ export const selectedDimensionValuesV2 = (
     return readable({
       isFetching: false,
       isLoading: false,
-      error: undefined,
+      error: null,
       // No filter present. So selected values are empty
       data: [],
     });
@@ -81,7 +80,7 @@ export const selectedDimensionValuesV2 = (
     return readable({
       isFetching: false,
       isLoading: false,
-      error: undefined,
+      error: null,
       data: [...new Set(getValuesInExpression(dimExpr) as string[])],
     });
   }
@@ -103,7 +102,7 @@ export const selectedDimensionValuesV2 = (
   return readable({
     isFetching: false,
     isLoading: false,
-    error: "Unknown dimension filter",
+    error: new Error("Unknown dimension filter"),
     data: [],
   });
 };
@@ -160,7 +159,7 @@ export type DimensionFilterItem = {
 export function getDimensionFilterItems(
   dashData: AtLeast<DashboardDataSources, "dashboard">,
 ) {
-  return (dimensionIdMap: Map<string, MetricsViewSpecDimensionV2>) => {
+  return (dimensionIdMap: Map<string, MetricsViewSpecDimension>) => {
     return getDimensionFilters(
       dimensionIdMap,
       dashData.dashboard.whereFilter,
@@ -170,7 +169,7 @@ export function getDimensionFilterItems(
 }
 
 export function getDimensionFilters(
-  dimensionIdMap: Map<string, MetricsViewSpecDimensionV2>,
+  dimensionIdMap: Map<string, MetricsViewSpecDimension>,
   filter: V1Expression | undefined,
   dimensionsWithInlistFilter: string[],
 ) {
@@ -221,7 +220,7 @@ export const getAllDimensionFilterItems = (
 ) => {
   return (
     dimensionFilterItem: DimensionFilterItem[],
-    dimensionIdMap: Map<string, MetricsViewSpecDimensionV2>,
+    dimensionIdMap: Map<string, MetricsViewSpecDimension>,
   ) => {
     const allDimensionFilterItem = [...dimensionFilterItem];
 

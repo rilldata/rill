@@ -18,10 +18,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"github.com/aws/smithy-go/tracing/smithyoteltracing"
 	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	rillblob "github.com/rilldata/rill/runtime/drivers/blob"
+	"go.opentelemetry.io/otel"
 	"gocloud.dev/blob"
 	"gocloud.dev/blob/s3blob"
 )
@@ -39,7 +41,9 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 		return nil, err
 	}
 
-	client := athena.NewFromConfig(awsConfig)
+	client := athena.NewFromConfig(awsConfig, func(o *athena.Options) {
+		o.TracerProvider = smithyoteltracing.Adapt(otel.GetTracerProvider())
+	})
 	outputLocation, err := resolveOutputLocation(ctx, client, conf)
 	if err != nil {
 		return nil, err

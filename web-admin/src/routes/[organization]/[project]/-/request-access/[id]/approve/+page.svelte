@@ -90,7 +90,7 @@
       type="primary"
       wide
       on:click={onApprove}
-      loading={$approveAccess.isLoading}
+      loading={$approveAccess.isPending}
       disabled={requested}
     >
       Grant access

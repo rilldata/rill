@@ -81,10 +81,10 @@ function syncMeasures(
   // sync measures with selected leaderboard measure.
   if (
     explore.measures?.length &&
-    !measuresSet.has(metricsExplorer.leaderboardMeasureName)
+    !measuresSet.has(metricsExplorer.leaderboardSortByMeasureName)
   ) {
     const defaultMeasure = explore.measures[0];
-    metricsExplorer.leaderboardMeasureName = defaultMeasure;
+    metricsExplorer.leaderboardSortByMeasureName = defaultMeasure;
   }
 
   if (
@@ -235,7 +235,6 @@ const metricsViewReducers = {
 
   setPivotMode(name: string, mode: boolean) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.pivot = { ...metricsExplorer.pivot, active: mode };
       if (mode) {
         metricsExplorer.activePage = DashboardState_ActivePage.PIVOT;
       } else if (metricsExplorer.selectedDimensionName) {
@@ -374,7 +373,6 @@ const metricsViewReducers = {
       metricsExplorer.activePage = DashboardState_ActivePage.PIVOT;
       metricsExplorer.pivot = {
         ...metricsExplorer.pivot,
-        active: true,
         rows,
         columns,
         expanded: {},

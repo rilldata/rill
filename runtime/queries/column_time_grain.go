@@ -166,7 +166,7 @@ func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	rows, err := olap.Execute(ctx, &drivers.Statement{
+	rows, err := olap.Query(ctx, &drivers.Statement{
 		Query:            estimateSQL,
 		Priority:         priority,
 		ExecutionTimeout: defaultExecutionTimeout,

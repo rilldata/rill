@@ -1,12 +1,9 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
+import { getDefaultExploreUrlParams } from "@rilldata/web-common/features/dashboards/stores/get-default-explore-url-params";
+import { getCleanedUrlParamsForGoto } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
 import { derived, get, type Readable } from "svelte/store";
-
-import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
 import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
-import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
-
 import {
   getTimeControlState,
   type TimeControlState,
@@ -16,18 +13,24 @@ import {
   registerRPCMethod,
 } from "@rilldata/web-common/lib/rpc";
 
-export default function initEmbedPublicAPI(instanceId: string): () => void {
-  const {
-    metricsViewName,
-    validSpecStore,
-    dashboardStore,
-    timeRangeSummaryStore,
-  } = getStateManagers();
+export default function initEmbedPublicAPI(): () => void {
+  const { validSpecStore, dashboardStore, timeRangeSummaryStore } =
+    getStateManagers();
 
-  const metricsViewNameValue = get(metricsViewName);
-  const metricsViewTimeRange = useMetricsViewTimeRange(
-    instanceId,
-    metricsViewNameValue,
+  const cachedDefaultUrlParamsStore = derived(
+    [validSpecStore, timeRangeSummaryStore],
+    ([$validSpecStore, $timeRangeSummaryStore]) => {
+      const exploreSpec = $validSpecStore.data?.explore ?? {};
+      const metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
+
+      const defaultExploreUrlParams = getDefaultExploreUrlParams(
+        metricsViewSpec,
+        exploreSpec,
+        $timeRangeSummaryStore.data?.timeRangeSummary,
+      );
+
+      return defaultExploreUrlParams;
+    },
   );
 
   const derivedState: Readable<string> = derived(
@@ -35,22 +38,16 @@ export default function initEmbedPublicAPI(instanceId: string): () => void {
       validSpecStore,
       dashboardStore,
       timeRangeSummaryStore,
-      metricsViewTimeRange,
+      cachedDefaultUrlParamsStore,
     ],
     ([
       $validSpecStore,
       $dashboardStore,
       $timeRangeSummaryStore,
-      $metricsViewTimeRange,
+      $cachedDefaultUrlParams,
     ]) => {
       const exploreSpec = $validSpecStore.data?.explore ?? {};
       const metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
-
-      const defaultExplorePreset = getDefaultExplorePreset(
-        exploreSpec,
-        metricsViewSpec,
-        $metricsViewTimeRange?.data,
-      );
 
       let timeControlsState: TimeControlState | undefined = undefined;
       if (metricsViewSpec && exploreSpec && $dashboardStore) {
@@ -63,11 +60,13 @@ export default function initEmbedPublicAPI(instanceId: string): () => void {
       }
 
       return decodeURIComponent(
-        convertExploreStateToURLSearchParams(
-          $dashboardStore,
+        // to not change the existing behaviour of not adding default params, we use getCleanedUrlParamsForGoto
+        // TODO: revisit to see if we can send the full params
+        getCleanedUrlParamsForGoto(
           exploreSpec,
+          $dashboardStore,
           timeControlsState,
-          defaultExplorePreset,
+          $cachedDefaultUrlParams,
         ).toString(),
       );
     },
@@ -81,16 +80,10 @@ export default function initEmbedPublicAPI(instanceId: string): () => void {
     const validSpec = get(validSpecStore);
     const dashboard = get(dashboardStore);
     const timeSummary = get(timeRangeSummaryStore).data;
-    const metricsTime = get(metricsViewTimeRange);
+    const cachedDefaultUrlParams = get(cachedDefaultUrlParamsStore);
 
     const exploreSpec = validSpec.data?.explore ?? {};
     const metricsViewSpec = validSpec.data?.metricsView ?? {};
-
-    const defaultExplorePreset = getDefaultExplorePreset(
-      exploreSpec,
-      metricsViewSpec,
-      metricsTime?.data,
-    );
 
     let timeControlsState: TimeControlState | undefined = undefined;
     if (metricsViewSpec && exploreSpec && dashboard) {
@@ -102,11 +95,11 @@ export default function initEmbedPublicAPI(instanceId: string): () => void {
       );
     }
     const stateString = decodeURIComponent(
-      convertExploreStateToURLSearchParams(
-        dashboard,
+      getCleanedUrlParamsForGoto(
         exploreSpec,
+        dashboard,
         timeControlsState,
-        defaultExplorePreset,
+        cachedDefaultUrlParams,
       ).toString(),
     );
     return { state: stateString };

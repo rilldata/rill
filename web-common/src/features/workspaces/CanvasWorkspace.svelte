@@ -127,7 +127,6 @@
             <DelayedSpinner isLoading={true} size="48px" />
           {:else if canvasData}
             <CanvasBuilder
-              {canvasData}
               {canvasName}
               openSidebar={workspace.inspector.open}
               {fileArtifact}

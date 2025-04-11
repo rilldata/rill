@@ -248,13 +248,13 @@ export function transformAggregateDimensionData(
   for (const cell of response) {
     const { [dimensionName]: key, [timeDimension]: ts, ...rest } = cell;
     const timeSeriesCell: V1TimeSeriesValue = {
-      ts,
+      ts: ts as string | undefined,
       bin: 0,
       records: { ...rest },
     };
 
-    const rowIndex = dimensionValuesMap.get(key);
-    const colIndex = headersMap.get(ts);
+    const rowIndex = dimensionValuesMap.get(key as string | null);
+    const colIndex = headersMap.get(ts as string | undefined);
 
     if (rowIndex !== undefined && colIndex !== undefined) {
       data[rowIndex][colIndex] = timeSeriesCell;

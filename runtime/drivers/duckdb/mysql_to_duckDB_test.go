@@ -143,7 +143,7 @@ func mysqlToDuckDB(t *testing.T, dsn string) {
 	olap, ok := duckDB.AsOLAP("default")
 	require.True(t, ok)
 
-	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "select count(*) from sink"})
+	res, err := olap.Query(context.Background(), &drivers.Statement{Query: "select count(*) from sink"})
 	require.NoError(t, err)
 	for res.Next() {
 		var count int

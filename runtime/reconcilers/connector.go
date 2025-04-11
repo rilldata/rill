@@ -135,7 +135,6 @@ func (r *ConnectorReconciler) executionSpecHash(ctx context.Context, spec *runti
 		TemplatedProperties: spec.TemplatedProperties,
 		Provision:           spec.Provision,
 		ProvisionArgs:       spec.ProvisionArgs,
-		ConfigFromVariables: spec.PropertiesFromVariables,
 	})
 	if err != nil {
 		return "", err

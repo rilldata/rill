@@ -16,6 +16,7 @@ export interface HTTPError {
     };
   };
   message: string;
+  name: string;
 }
 
 export function isHTTPError(error: unknown): error is HTTPError {

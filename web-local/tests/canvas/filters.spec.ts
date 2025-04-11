@@ -11,7 +11,7 @@ test.describe("canvas time filters", () => {
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_canvas.yaml");
 
     await page
-      .locator("#component-0-0 div")
+      .locator("#AdBids_metrics_canvas--component-0-0 div")
       .filter({ hasText: "Total records 1,122 -5 ~0% vs previous day" })
       .first()
       .click();
@@ -50,7 +50,7 @@ test.describe("canvas time filters", () => {
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_canvas.yaml");
 
     await page
-      .locator("#component-0-0 div")
+      .locator("#AdBids_metrics_canvas--component-0-0 div")
       .filter({ hasText: "Total records 1,122 -5 ~0% vs previous day" })
       .first()
       .click();

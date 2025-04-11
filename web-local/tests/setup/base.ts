@@ -58,7 +58,7 @@ export const test = base.extend<MyFixtures>({
     await page.goto(`http://localhost:${TEST_PORT}`);
 
     // Seems to help with issues related to DOM elements not being ready
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(1500);
 
     await use(page);
 

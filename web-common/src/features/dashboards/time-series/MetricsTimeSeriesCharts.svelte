@@ -34,10 +34,11 @@
     TimeRangePreset,
     type AvailableTimeGrain,
   } from "@rilldata/web-common/lib/time/types";
-  import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
   import { Button } from "../../../components/button";
   import Pivot from "../../../components/icons/Pivot.svelte";
+  import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
   import { TIME_GRAIN } from "../../../lib/time/config";
+  import { DashboardState_ActivePage } from "../../../proto/gen/rill/ui/v1/dashboard_pb";
   import Spinner from "../../entity-management/Spinner.svelte";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
   import ChartInteractions from "./ChartInteractions.svelte";
@@ -86,8 +87,11 @@
 
   $: exploreState = useExploreState(exploreName);
 
+  $: activePage = $exploreState?.activePage;
+  $: showTimeDimensionDetail = Boolean(
+    activePage === DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL,
+  );
   $: expandedMeasureName = $exploreState?.tdd?.expandedMeasureName;
-  $: isInTimeDimensionView = Boolean(expandedMeasureName);
 
   $: comparisonDimension = $exploreState?.selectedComparisonDimension;
   $: showComparison = Boolean($timeControlsStore.showTimeComparison);
@@ -108,13 +112,18 @@
   $: isAlternateChart = tddChartType !== TDDChart.DEFAULT;
 
   $: expandedMeasure = $getMeasureByName(expandedMeasureName);
-  let renderedMeasures: MetricsViewSpecMeasureV2[];
+  let renderedMeasures: MetricsViewSpecMeasure[];
   $: {
-    renderedMeasures = expandedMeasure ? [expandedMeasure] : $visibleMeasures;
+    renderedMeasures =
+      showTimeDimensionDetail && expandedMeasure
+        ? [expandedMeasure]
+        : $visibleMeasures;
   }
 
-  $: totals = $timeSeriesDataStore.total;
-  $: totalsComparisons = $timeSeriesDataStore.comparisonTotal;
+  $: totals = $timeSeriesDataStore.total as { [key: string]: number };
+  $: totalsComparisons = $timeSeriesDataStore.comparisonTotal as {
+    [key: string]: number;
+  };
 
   // When changing the timeseries query and the cache is empty, $timeSeriesQuery.data?.data is
   // temporarily undefined as results are fetched.
@@ -211,7 +220,7 @@
   }
 
   $: if (
-    isInTimeDimensionView &&
+    showTimeDimensionDetail &&
     formattedData &&
     $timeControlsStore.selectedTimeRange &&
     !isScrubbing
@@ -286,14 +295,14 @@
 </script>
 
 <TimeSeriesChartContainer
-  enableFullWidth={isInTimeDimensionView}
+  enableFullWidth={showTimeDimensionDetail}
   end={endValue}
   start={startValue}
   {workspaceWidth}
   {timeSeriesWidth}
 >
   <div class:mb-6={isAlternateChart} class="flex items-center gap-x-1 px-2.5">
-    {#if isInTimeDimensionView}
+    {#if showTimeDimensionDetail}
       <BackToExplore />
       <ChartTypeSelector
         hasComparison={Boolean(
@@ -337,7 +346,7 @@
               overflowHidden={false}
               top={29}
               bottom={0}
-              right={isInTimeDimensionView ? 10 : 25}
+              right={showTimeDimensionDetail ? 10 : 25}
               xMin={startValue}
               xMax={endValue}
             >
@@ -351,14 +360,14 @@
 
   {#if renderedMeasures}
     <div
-      class:pb-4={!isInTimeDimensionView}
+      class:pb-4={!showTimeDimensionDetail}
       class="flex flex-col gap-y-2 overflow-y-scroll h-full max-h-fit"
     >
       <!-- FIXME: this is pending the remaining state work for show/hide measures and dimensions -->
       {#each renderedMeasures as measure (measure.name)}
         <!-- FIXME: I can't select the big number by the measure id. -->
-        <!-- for bigNum, catch nulls and convert to undefined.  -->
-        {@const bigNum = measure.name ? totals?.[measure.name] : undefined}
+
+        {@const bigNum = measure.name ? totals?.[measure.name] : null}
         {@const comparisonValue = measure.name
           ? totalsComparisons?.[measure.name]
           : undefined}
@@ -370,7 +379,7 @@
           <MeasureBigNumber
             {measure}
             value={bigNum}
-            isMeasureExpanded={isInTimeDimensionView}
+            isMeasureExpanded={showTimeDimensionDetail}
             {showComparison}
             {comparisonValue}
             errorMessage={$timeSeriesDataStore?.error?.totals}
@@ -393,7 +402,7 @@
                 <span>Unable to fetch data from the API</span>
               {/if}
             </div>
-          {:else if expandedMeasureName && tddChartType != TDDChart.DEFAULT}
+          {:else if showTimeDimensionDetail && expandedMeasureName && tddChartType != TDDChart.DEFAULT}
             <TDDAlternateChart
               timeGrain={interval}
               chartType={tddChartType}
@@ -454,7 +463,7 @@
             <MeasureChart
               bind:mouseoverValue
               {measure}
-              {isInTimeDimensionView}
+              {showTimeDimensionDetail}
               {isScrubbing}
               {scrubStart}
               {scrubEnd}

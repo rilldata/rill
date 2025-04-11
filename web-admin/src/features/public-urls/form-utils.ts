@@ -4,8 +4,8 @@ import { getAllIdentifiers } from "@rilldata/web-common/features/dashboards/stor
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
-  MetricsViewSpecDimensionV2,
-  MetricsViewSpecMeasureV2,
+  MetricsViewSpecDimension,
+  MetricsViewSpecMeasure,
   V1ExploreSpec,
 } from "@rilldata/web-common/runtime-client";
 
@@ -21,8 +21,8 @@ export function hasDashboardDimensionThresholdFilter(
 
 export function getExploreFields(
   dashboardStore: MetricsExplorerEntity,
-  visibleDimensions: MetricsViewSpecDimensionV2[],
-  visibleMeasures: MetricsViewSpecMeasureV2[],
+  visibleDimensions: MetricsViewSpecDimension[],
+  visibleMeasures: MetricsViewSpecMeasure[],
 ): string[] | undefined {
   const hasFilter = hasDashboardWhereFilter(dashboardStore);
 
@@ -80,7 +80,7 @@ export function getSanitizedDashboardStateParam(
       metricsViewFields?.includes(dimension),
     ),
     allDimensionsVisible: dashboard.allDimensionsVisible,
-    leaderboardMeasureName: dashboard.leaderboardMeasureName,
+    leaderboardSortByMeasureName: dashboard.leaderboardSortByMeasureName,
     dashboardSortType: dashboard.dashboardSortType,
     sortDirection: dashboard.sortDirection,
     // Remove the where filter

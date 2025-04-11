@@ -97,7 +97,7 @@ func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, olap d
 		olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 	)
 
-	rows, err := olap.Execute(ctx, &drivers.Statement{
+	rows, err := olap.Query(ctx, &drivers.Statement{
 		Query:            querySQL,
 		Priority:         priority,
 		ExecutionTimeout: defaultExecutionTimeout,
@@ -230,7 +230,7 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 		*rng,
 	)
 
-	histogramRows, err := olap.Execute(ctx, &drivers.Statement{
+	histogramRows, err := olap.Query(ctx, &drivers.Statement{
 		Query:            histogramSQL,
 		Priority:         priority,
 		ExecutionTimeout: defaultExecutionTimeout,
@@ -365,7 +365,7 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 		endTick-startTick,
 	)
 
-	histogramRows, err := olap.Execute(ctx, &drivers.Statement{
+	histogramRows, err := olap.Query(ctx, &drivers.Statement{
 		Query:            histogramSQL,
 		Priority:         priority,
 		ExecutionTimeout: defaultExecutionTimeout,
@@ -414,7 +414,7 @@ func getMinMaxRange(ctx context.Context, olap drivers.OLAPStore, columnName, dat
 		selectColumn,
 	)
 
-	minMaxRow, err := olap.Execute(ctx, &drivers.Statement{
+	minMaxRow, err := olap.Query(ctx, &drivers.Statement{
 		Query:            minMaxSQL,
 		Priority:         priority,
 		ExecutionTimeout: defaultExecutionTimeout,

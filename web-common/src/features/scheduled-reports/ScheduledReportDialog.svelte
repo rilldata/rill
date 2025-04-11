@@ -160,17 +160,17 @@
       });
 
       if (props.mode === "edit") {
-        await queryClient.invalidateQueries(
-          getRuntimeServiceGetResourceQueryKey(instanceId, {
+        await queryClient.invalidateQueries({
+          queryKey: getRuntimeServiceGetResourceQueryKey(instanceId, {
             "name.name": reportName,
             "name.kind": ResourceKind.Report,
           }),
-        );
+        });
       }
 
-      await queryClient.invalidateQueries(
-        getRuntimeServiceListResourcesQueryKey(instanceId),
-      );
+      await queryClient.invalidateQueries({
+        queryKey: getRuntimeServiceListResourcesQueryKey(instanceId),
+      });
 
       open = false;
 

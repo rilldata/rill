@@ -60,7 +60,7 @@ func TestDuckDBToDuckDBTransfer(t *testing.T) {
 	_, err = me.Execute(context.Background(), execOpts)
 	require.NoError(t, err)
 
-	rows, err := duckDB.(*connection).Execute(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM sink"})
+	rows, err := duckDB.(*connection).Query(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM sink"})
 	require.NoError(t, err)
 
 	var count int
@@ -73,7 +73,7 @@ func TestDuckDBToDuckDBTransfer(t *testing.T) {
 	_, err = me.Execute(context.Background(), execOpts)
 	require.NoError(t, err)
 
-	rows, err = duckDB.(*connection).Execute(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM sink"})
+	rows, err = duckDB.(*connection).Query(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM sink"})
 	require.NoError(t, err)
 
 	rows.Next()
