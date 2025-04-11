@@ -18,6 +18,7 @@
   import { slideRight } from "@rilldata/web-common/lib/transitions";
   import { onDestroy } from "svelte";
   import { fly } from "svelte/transition";
+  import Pivot from "../../../components/icons/Pivot.svelte";
   import ExportMenu from "../../exports/ExportMenu.svelte";
   import { SortType } from "../proto-state/derived-types";
   import { getStateManagers } from "../state-managers/state-managers";
@@ -131,7 +132,7 @@
   });
 </script>
 
-<div class="flex justify-between items-center p-1 pr-5 h-7">
+<div class="flex justify-between items-center p-1 pr-3 h-7">
   <button class="flex items-center" on:click={() => goBackToLeaderboard()}>
     {#if isFetching}
       <DelayedSpinner isLoading={isFetching} size="16px" />
@@ -201,14 +202,15 @@
       />
     {/if}
     {#if !hideStartPivotButton}
-      <button
-        class="h-6 px-1.5 py-px rounded-sm hover:bg-gray-200 text-gray-700"
+      <Button
+        type="toolbar"
         on:click={() => {
           startPivotForDimensionTable();
         }}
       >
+        <Pivot size="16px" />
         Start Pivot
-      </button>
+      </Button>
     {/if}
   </div>
 </div>

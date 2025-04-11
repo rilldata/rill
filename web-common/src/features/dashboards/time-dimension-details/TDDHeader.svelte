@@ -31,6 +31,7 @@
   import { slideRight } from "@rilldata/web-common/lib/transitions";
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { fly } from "svelte/transition";
+  import Pivot from "../../../components/icons/Pivot.svelte";
   import ExportMenu from "../../exports/ExportMenu.svelte";
   import { featureFlags } from "../../feature-flags";
   import { PivotChipType } from "../pivot/types";
@@ -234,7 +235,7 @@
   </div>
 
   {#if comparing === "dimension"}
-    <div class="flex items-center mr-4 gap-x-3" style:cursor="pointer">
+    <div class="flex items-center gap-x-1" style:cursor="pointer">
       {#if !isRowsEmpty}
         <SelectAllButton
           {areAllTableRowsSelected}
@@ -244,7 +245,7 @@
 
       {#if !searchToggle}
         <button
-          class="flex items-center ui-copy-icon"
+          class="flex items-center ui-copy-icon px-1.5"
           in:fly|global={{ x: 10, duration: 300 }}
           style:grid-column-gap=".2rem"
           on:click={() => (searchToggle = !searchToggle)}
@@ -255,7 +256,7 @@
       {:else}
         <div
           transition:slideRight={{ leftOffset: 8 }}
-          class="flex items-center gap-x-1"
+          class="flex items-center gap-x-1 px-1.5"
         >
           <Search bind:value={$dimensionSearchText} on:submit={onSubmit} />
           <button
@@ -269,7 +270,7 @@
       {/if}
 
       <Tooltip distance={16} location="left">
-        <div class="ui-copy-icon" style:grid-column-gap=".4rem">
+        <div class="ui-copy-icon px-1.5" style:grid-column-gap=".4rem">
           <Switch checked={excludeMode} on:click={() => toggleFilterMode()}>
             Exclude
           </Switch>
@@ -299,11 +300,12 @@
       {#if !hideStartPivotButton}
         <Button
           compact
-          type="text"
+          type="toolbar"
           on:click={() => {
             startPivotForTDD();
           }}
         >
+          <Pivot size="16px" />
           Start Pivot
         </Button>
       {/if}

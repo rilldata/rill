@@ -11,7 +11,6 @@
     V1ExportFormat,
     type V1Query,
   } from "@rilldata/web-common/runtime-client";
-  import { builderActions, getAttrs } from "bits-ui";
   import { onMount } from "svelte";
   import { get } from "svelte/store";
   import { runtime } from "../../runtime-client/runtime-store";
@@ -23,7 +22,6 @@
   export let includeScheduledReport = false;
   export let getQuery: (isScheduled: boolean) => V1Query | undefined;
   export let exploreName: string | undefined = undefined;
-  export let includeIcon = false;
 
   let showScheduledReportDialog = false;
   let open = false;
@@ -75,20 +73,14 @@
         <TooltipContent slot="tooltip-content">Export model</TooltipContent>
       </Tooltip>
     {:else}
-      <button
-        aria-label={label}
-        use:builderActions={{ builders: [builder] }}
-        {...getAttrs([builder])}
-      >
-        {#if includeIcon}
-          <Export size="15px" />
-        {/if}
+      <Button {label} {disabled} type="toolbar" builders={[builder]}>
+        <Export size="15px" />
         Export
         <CaretDownIcon
           className="transition-transform {open && '-rotate-180'}"
           size="10px"
         />
-      </button>
+      </Button>
     {/if}
   </DropdownMenu.Trigger>
 

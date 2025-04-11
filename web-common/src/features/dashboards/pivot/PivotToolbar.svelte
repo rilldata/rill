@@ -154,7 +154,6 @@
         getQuery={(isScheduled) =>
           getPivotExportQuery(stateManagers, isScheduled)}
         exploreName={$exploreName}
-        includeIcon
       />
     {/if}
 
