@@ -3,6 +3,17 @@ import { test } from "./setup/base";
 import { ClickHouseTestContainer } from "./utils/clickhouse";
 
 test.describe("ClickHouse connector", () => {
+  /*
+   * NOTE: These tests are flaky due to a race condition:
+   * 1. When navigation to the new connector file is in progress
+   * 2. An edit to `rill.yaml` triggers `invalidate("init")`
+   * 3. This re-runs the root load function with its own navigation logic
+   *
+   * Note: This issue occurs during automated test runs (both CI and local),
+   * but has not been reproduced when performing the steps manually.
+   */
+  test.describe.configure({ retries: 3 });
+
   test.use({ project: "Blank" });
 
   const clickhouse = new ClickHouseTestContainer();
