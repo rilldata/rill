@@ -67,7 +67,7 @@ func (q *ColumnCardinality) Resolve(ctx context.Context, rt *runtime.Runtime, in
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	rows, err := olap.Execute(ctx, &drivers.Statement{
+	rows, err := olap.Query(ctx, &drivers.Statement{
 		Query:            requestSQL,
 		Priority:         priority,
 		ExecutionTimeout: defaultExecutionTimeout,
