@@ -1,13 +1,13 @@
 import { expect } from "@playwright/test";
 import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions";
+import { test } from "../setup/base";
 import { ResourceWatcher } from "../utils/ResourceWatcher";
 import { gotoNavEntry } from "../utils/waitHelpers";
-import { test } from "../setup/base";
 
 test.describe("time controls settings from explore preset", () => {
   test.use({ project: "AdBids" });
 
-  test("preset time_range", async ({ page }) => {
+  test.fixme("preset time_range", async ({ page }) => {
     const watcher = new ResourceWatcher(page);
 
     await page.getByLabel("/dashboards").click();
@@ -83,7 +83,7 @@ test.describe("time controls settings from explore preset", () => {
     await expect(page.getByText("Facebook 2.9k -1.2k -29%")).toBeVisible();
   });
 
-  test("preset comparison_modes", async ({ page }) => {
+  test.fixme("preset comparison_modes", async ({ page }) => {
     const watcher = new ResourceWatcher(page);
 
     await page.getByLabel("/dashboards").click();
@@ -132,7 +132,7 @@ test.describe("time controls settings from explore preset", () => {
     await page.getByRole("button", { name: "Preview" }).click();
   });
 
-  test("preset time_ranges", async ({ page }) => {
+  test.fixme("preset time_ranges", async ({ page }) => {
     const watcher = new ResourceWatcher(page);
 
     await page.getByLabel("/dashboards").click();

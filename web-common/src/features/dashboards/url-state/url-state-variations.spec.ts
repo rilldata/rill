@@ -60,7 +60,6 @@ import {
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { getCleanedUrlParamsForGoto } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
-import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import {
   type DashboardTimeControls,
   TimeComparisonOption,
@@ -452,11 +451,6 @@ describe("Human readable URL state variations", () => {
         const defaultExploreUrlSearch = getDefaultExploreUrlParams(
           AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
           explore,
-          AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
-        );
-        const defaultExplorePreset = getDefaultExplorePreset(
-          explore,
-          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
           AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
         );
 
