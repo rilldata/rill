@@ -40,5 +40,10 @@ test.describe("leaderboard measure names", () => {
     await expect(
       page.getByRole("menuitem", { name: "Total records" }),
     ).toHaveAttribute("aria-checked", "true");
+
+    await page.keyboard.press("Escape");
+    await expect(
+      page.getByTestId("data-leaderboard-measures-count"),
+    ).toHaveText("2");
   });
 });

@@ -129,6 +129,8 @@
         type="text"
         dataAttributes={{
           "data-testid": "leaderboard-measure-names-dropdown",
+          "data-leaderboard-measures-count":
+            selectedMeasureNames.length.toString(),
         }}
       >
         <div
