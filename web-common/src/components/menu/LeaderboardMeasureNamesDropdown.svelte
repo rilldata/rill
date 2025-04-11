@@ -39,7 +39,7 @@
   $: showingMeasuresText =
     selectedMeasureNames.length > 1
       ? `${selectedMeasureNames.length} measures`
-      : getMeasureDisplayText(selectedMeasureNames[0]);
+      : getMeasureDisplayText(leaderboardSortByMeasureName);
 
   function onToggleOff() {
     // Store the current selection before toggling off
