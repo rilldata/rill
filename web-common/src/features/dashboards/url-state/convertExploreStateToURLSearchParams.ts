@@ -285,8 +285,6 @@ function toExploreUrl(
       ExploreStateURLParams.LeaderboardMeasures,
       leaderboardMeasuresParam,
     );
-  } else {
-    searchParams.delete(ExploreStateURLParams.LeaderboardMeasures);
   }
 
   if (
