@@ -210,3 +210,42 @@ func OffsetTime(tm time.Time, tg TimeGrain, n int) time.Time {
 
 	return tm
 }
+
+func CopyTimeTill(from, to time.Time, tg TimeGrain, tz *time.Location) time.Time {
+	year := to.Year()
+	month := to.Month()
+	day := to.Day()
+	hour := to.Hour()
+	minute := to.Minute()
+	second := to.Second()
+
+	g := TimeGrainYear
+	for g >= tg {
+		switch g {
+		case TimeGrainUnspecified:
+		case TimeGrainMillisecond:
+		case TimeGrainSecond:
+			second = from.Second()
+		case TimeGrainMinute:
+			minute = from.Minute()
+		case TimeGrainHour:
+			hour = from.Hour()
+		case TimeGrainDay:
+			day = from.Day()
+		case TimeGrainWeek:
+			toWeekday := to.Weekday()
+			if toWeekday == 0 {
+				toWeekday = 7
+			}
+			day = from.Day() - int(from.Weekday()-toWeekday)
+		case TimeGrainMonth, TimeGrainQuarter:
+			month = from.Month()
+		case TimeGrainYear:
+			year = from.Year()
+		}
+
+		g--
+	}
+
+	return time.Date(year, month, day, hour, minute, second, 0, tz)
+}

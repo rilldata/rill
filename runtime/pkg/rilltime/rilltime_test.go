@@ -1,7 +1,6 @@
 package rilltime
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -76,11 +75,11 @@ func Test_Eval(t *testing.T) {
 		{"D3 of W1 of 2022", "2022-01-05T00:00:00Z", "2022-01-06T00:00:00Z", timeutil.TimeGrainHour},
 		{"<3m of H2 of 2025-02-04", "2025-02-04T01:00:00Z", "2025-02-04T01:03:00Z", timeutil.TimeGrainMinute},
 
-		{"W1 to W3", "2025-03-03T00:00:00Z", "2025-03-24T00:00:00Z", timeutil.TimeGrainDay},
-		{"W1 to W3 by W", "2025-03-03T00:00:00Z", "2025-03-24T00:00:00Z", timeutil.TimeGrainWeek},
-		{"W1 of -2M to D", "2024-12-30T00:00:00Z", "2025-03-10T00:00:00Z", timeutil.TimeGrainDay},
-		{"W1 of -2M to D~", "2024-12-30T00:00:00Z", "2025-03-11T00:00:00Z", timeutil.TimeGrainDay},
-		{"-4D to -2D", "2025-03-06T00:00:00Z", "2025-03-09T00:00:00Z", timeutil.TimeGrainDay},
+		{"W1 to W3", "2025-03-03T00:00:00Z", "2025-03-17T00:00:00Z", timeutil.TimeGrainDay},
+		{"W1 to W3 by W", "2025-03-03T00:00:00Z", "2025-03-17T00:00:00Z", timeutil.TimeGrainWeek},
+		{"W1 of -2M to D", "2024-12-30T00:00:00Z", "2025-03-09T00:00:00Z", timeutil.TimeGrainDay},
+		{"W1 of -2M to D~", "2024-12-30T00:00:00Z", "2025-03-10T00:00:00Z", timeutil.TimeGrainDay},
+		{"-4D to -2D", "2025-03-06T00:00:00Z", "2025-03-08T00:00:00Z", timeutil.TimeGrainDay},
 
 		{"inf", "2020-01-01T00:32:36Z", "2025-03-11T06:32:36Z", timeutil.TimeGrainUnspecified},
 		{"P2DT10H", "2025-03-08T20:00:00Z", "2025-03-10T06:00:00Z", timeutil.TimeGrainHour},
@@ -89,13 +88,14 @@ func Test_Eval(t *testing.T) {
 		{"rill-PW", "2025-03-03T00:00:00Z", "2025-03-10T00:00:00Z", timeutil.TimeGrainDay},
 
 		// Meant to mimic comparison with previous period
-		{"-2D to D~", "2025-03-08T00:00:00Z", "2025-03-11T00:00:00Z", timeutil.TimeGrainDay},
-		{"-2D of -3D to D~ of -3D", "2025-03-05T00:00:00Z", "2025-03-08T00:00:00Z", timeutil.TimeGrainDay},
+		{"-2D to D~", "2025-03-08T00:00:00Z", "2025-03-10T00:00:00Z", timeutil.TimeGrainDay},
+		{"-2D of -3D to D~ of -3D", "2025-03-05T00:00:00Z", "2025-03-07T00:00:00Z", timeutil.TimeGrainDay},
 
 		// Edge cases around week
 		{"YTW", "2024-12-30T00:00:00Z", "2025-03-10T00:00:00Z", timeutil.TimeGrainWeek},
 		{"YTW of 2022", "2022-01-03T00:00:00Z", "2022-03-07T00:00:00Z", timeutil.TimeGrainWeek},
-		{"<3W", "2024-12-30T00:00:00Z", "2025-03-10T00:00:00Z", timeutil.TimeGrainWeek},
+		{"<3W", "2025-03-03T00:00:00Z", "2025-03-24T00:00:00Z", timeutil.TimeGrainWeek},
+		{"6h~ of D3 of W1 of -1M", "2025-02-05T01:00:00Z", "2025-02-05T07:00:00Z", timeutil.TimeGrainHour},
 	}
 
 	for _, testCase := range testCases {
@@ -111,7 +111,6 @@ func Test_Eval(t *testing.T) {
 				FirstDay:   1,
 				FirstMonth: 1,
 			})
-			fmt.Println(start, end)
 			require.Equal(t, parseTestTime(t, testCase.start), start)
 			require.Equal(t, parseTestTime(t, testCase.end), end)
 			require.Equal(t, testCase.grain, grain)
