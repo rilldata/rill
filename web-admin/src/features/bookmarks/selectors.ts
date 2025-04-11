@@ -20,8 +20,7 @@ import {
   getTimeControlState,
   timeControlStateSelector,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
-import { getCleanedUrlParamsForGoto } from "@rilldata/web-common/features/dashboards/url-state/get-cleaned-url-params-for-goto";
+import { getCleanedUrlParamsForGoto } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";

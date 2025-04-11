@@ -1,7 +1,7 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
 import { getDefaultExploreUrlParams } from "@rilldata/web-common/features/dashboards/stores/get-default-explore-url-params";
-import { getCleanedUrlParamsForGoto } from "@rilldata/web-common/features/dashboards/url-state/get-cleaned-url-params-for-goto";
+import { getCleanedUrlParamsForGoto } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
 import { derived, get, type Readable } from "svelte/store";
 import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import {

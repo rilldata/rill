@@ -35,6 +35,52 @@ import { copyParamsToTarget } from "@rilldata/web-common/lib/url-utils";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import { type V1ExploreSpec } from "@rilldata/web-common/runtime-client";
 
+/**
+ * getCleanedUrlParamsForGoto returns url params with defaults removed.
+ * If the params size is greater than a threshold it is compressed as well.
+ */
+export function getCleanedUrlParamsForGoto(
+  exploreSpec: V1ExploreSpec,
+  partialExploreState: Partial<MetricsExplorerEntity>,
+  timeControlsState: TimeControlState | undefined,
+  defaultExploreUrlParams: URLSearchParams,
+  urlForCompressionCheck?: URL,
+) {
+  // Create params from the explore state
+  const stateParams = convertPartialExploreStateToUrlParams(
+    exploreSpec,
+    partialExploreState,
+    timeControlsState,
+  );
+
+  // Remove params with default values
+  [...stateParams.entries()].forEach(([key, value]) => {
+    const defaultValue = defaultExploreUrlParams.get(key);
+    if (
+      (defaultValue === null && value !== "") ||
+      (defaultValue !== null && value !== defaultValue)
+    ) {
+      return;
+    }
+    stateParams.delete(key);
+  });
+
+  if (!urlForCompressionCheck) return stateParams;
+
+  // compression
+  const urlCopy = new URL(urlForCompressionCheck);
+  urlCopy.search = stateParams.toString();
+  const shouldCompress = shouldCompressParams(urlCopy);
+  if (!shouldCompress) return stateParams;
+
+  const compressedUrlParams = new URLSearchParams();
+  compressedUrlParams.set(
+    ExploreStateURLParams.GzippedParams,
+    compressUrlParams(stateParams.toString()),
+  );
+  return compressedUrlParams;
+}
+
 export function convertPartialExploreStateToUrlParams(
   exploreSpec: V1ExploreSpec,
   partialExploreState: Partial<MetricsExplorerEntity>,
@@ -42,11 +88,6 @@ export function convertPartialExploreStateToUrlParams(
   // Eg: if a selected grain is not applicable for the current grain then we change it
   // But it is only available in TimeControlState and not MetricsExplorerEntity
   timeControlsState: TimeControlState | undefined,
-  // Used to remove params that are equal to defaults. This helps keep the url shorter.
-  defaultExploreUrlParams?: URLSearchParams,
-  // Used to decide whether to compress or not based on the full url length
-  // TODO: move this to getCleanedUrlParamsForGoto
-  urlForCompressionCheck?: URL,
 ) {
   const searchParams = new URLSearchParams();
 
@@ -110,32 +151,7 @@ export function convertPartialExploreStateToUrlParams(
       break;
   }
 
-  if (defaultExploreUrlParams) {
-    [...searchParams.entries()].forEach(([key, value]) => {
-      const defaultValue = defaultExploreUrlParams.get(key);
-      if (
-        (defaultValue === null && value !== "") ||
-        (defaultValue !== null && value !== defaultValue)
-      ) {
-        return;
-      }
-      searchParams.delete(key);
-    });
-  }
-
-  if (!urlForCompressionCheck) return searchParams;
-
-  const urlCopy = new URL(urlForCompressionCheck);
-  urlCopy.search = searchParams.toString();
-  const shouldCompress = shouldCompressParams(urlCopy);
-  if (!shouldCompress) return searchParams;
-
-  const compressedUrlParams = new URLSearchParams();
-  compressedUrlParams.set(
-    ExploreStateURLParams.GzippedParams,
-    compressUrlParams(searchParams.toString()),
-  );
-  return compressedUrlParams;
+  return searchParams;
 }
 
 function toTimeRangesUrl(

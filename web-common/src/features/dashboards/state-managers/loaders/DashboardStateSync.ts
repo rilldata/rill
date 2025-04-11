@@ -12,8 +12,10 @@ import {
   type TimeControlStore,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { updateExploreSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
-import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
-import { getCleanedUrlParamsForGoto } from "@rilldata/web-common/features/dashboards/url-state/get-cleaned-url-params-for-goto";
+import {
+  convertPartialExploreStateToUrlParams,
+  getCleanedUrlParamsForGoto,
+} from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
 import type { AfterNavigate } from "@sveltejs/kit";
 import { derived, get, type Readable } from "svelte/store";
 

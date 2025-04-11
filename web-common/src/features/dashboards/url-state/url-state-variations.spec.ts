@@ -58,7 +58,7 @@ import {
   AD_BIDS_SET_DOMAIN_COMPARE_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { getCleanedUrlParamsForGoto } from "@rilldata/web-common/features/dashboards/url-state/get-cleaned-url-params-for-goto";
+import { getCleanedUrlParamsForGoto } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import {
   type DashboardTimeControls,

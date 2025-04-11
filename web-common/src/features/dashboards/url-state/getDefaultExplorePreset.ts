@@ -2,7 +2,7 @@ import { createAndExpression } from "@rilldata/web-common/features/dashboards/st
 import {
   getDefaultTimeRange,
   getDefaultTimeZone,
-} from "@rilldata/web-common/features/dashboards/stores/get-blank-explore-state";
+} from "@rilldata/web-common/features/dashboards/stores/get-rill-default-explore-state";
 import { getValidComparisonOption } from "@rilldata/web-common/features/dashboards/time-controls/time-range-store";
 import { getDefaultTimeGrain } from "@rilldata/web-common/features/dashboards/time-controls/time-range-utils";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
