@@ -299,9 +299,12 @@ function toExploreUrl(
     );
   }
 
-  // NOTE: avoid using shouldSetParam since multiple measures can be selected
-  // We used to only show `sort_by` when the sort by measure is different from the default sort by measure
-  if (exploreState.leaderboardSortByMeasureName) {
+  if (
+    shouldSetParam(
+      preset.exploreSortBy,
+      exploreState.leaderboardSortByMeasureName,
+    )
+  ) {
     searchParams.set(
       ExploreStateURLParams.SortBy,
       exploreState.leaderboardSortByMeasureName,
