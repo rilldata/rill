@@ -1,7 +1,7 @@
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
   MetricsViewSpecMeasureType,
-  type MetricsViewSpecMeasureV2,
+  type MetricsViewSpecMeasure,
   type V1MetricsViewSpec,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
@@ -13,7 +13,7 @@ export const allMeasures = ({
 }: Pick<
   DashboardDataSources,
   "validMetricsView" | "validExplore"
->): MetricsViewSpecMeasureV2[] => {
+>): MetricsViewSpecMeasure[] => {
   if (!validMetricsView?.measures || !validExplore?.measures) return [];
 
   return (
@@ -29,8 +29,10 @@ export const allMeasures = ({
 };
 
 // FIXME: to consolidate web-common/src/features/dashboards/state-managers/selectors/active-measure.ts
-export const leaderboardMeasureName = ({ dashboard }: DashboardDataSources) => {
-  return dashboard.leaderboardMeasureName;
+export const leaderboardSortByMeasureName = ({
+  dashboard,
+}: DashboardDataSources) => {
+  return dashboard.leaderboardSortByMeasureName;
 };
 
 export const leaderboardMeasureCount = ({
@@ -39,21 +41,15 @@ export const leaderboardMeasureCount = ({
   return dashboard.leaderboardMeasureCount ?? 1;
 };
 
-export const activeMeasuresFromMeasureCount = ({
-  validMetricsView,
-  validExplore,
-  dashboard,
-}: DashboardDataSources): string[] => {
+export const activeMeasuresFromMeasureCount = (
+  dashboardDataSources: DashboardDataSources,
+): string[] => {
+  const { validMetricsView, validExplore, dashboard } = dashboardDataSources;
   if (!validMetricsView?.measures || !validExplore?.measures) return [];
 
-  const visibleMeasures = Array.from(dashboard.visibleMeasureKeys).map(
-    (key) =>
-      validMetricsView.measures?.find(
-        (m) => m.name === key,
-      ) as MetricsViewSpecMeasureV2,
-  );
+  const visibleMeasureSpecs = visibleMeasures(dashboardDataSources);
 
-  return visibleMeasures
+  return visibleMeasureSpecs
     .slice(0, dashboard.leaderboardMeasureCount ?? 1)
     .map(({ name }) => name)
     .filter((name): name is string => name !== undefined);
@@ -63,20 +59,17 @@ export const visibleMeasures = ({
   validMetricsView,
   validExplore,
   dashboard,
-}: DashboardDataSources): MetricsViewSpecMeasureV2[] => {
+}: DashboardDataSources): MetricsViewSpecMeasure[] => {
   if (!validMetricsView?.measures || !validExplore?.measures) return [];
 
-  return Array.from(dashboard.visibleMeasureKeys).map(
-    (key) =>
-      validMetricsView.measures?.find(
-        (m) => m.name === key,
-      ) as MetricsViewSpecMeasureV2,
-  );
+  return dashboard.visibleMeasures
+    .map((mes) => validMetricsView.measures?.find((m) => m.name === mes))
+    .filter(Boolean) as MetricsViewSpecMeasure[];
 };
 
 export const getMeasureByName = (
   dashData: DashboardDataSources,
-): ((name: string | undefined) => MetricsViewSpecMeasureV2 | undefined) => {
+): ((name: string | undefined) => MetricsViewSpecMeasure | undefined) => {
   return (name: string | undefined) => {
     return allMeasures(dashData)?.find((measure) => measure.name === name);
   };
@@ -177,7 +170,7 @@ export const removeSomeAdvancedMeasures = (
   return [...measures];
 };
 
-export const getSimpleMeasures = (measures: MetricsViewSpecMeasureV2[]) => {
+export const getSimpleMeasures = (measures: MetricsViewSpecMeasure[]) => {
   return (
     measures?.filter(
       (m) =>
@@ -194,7 +187,7 @@ export const measureSelectors = {
   allMeasures,
 
   /**
-   * Returns a function that can be used to get a MetricsViewSpecMeasureV2
+   * Returns a function that can be used to get a MetricsViewSpecMeasure
    * by name; this fn returns undefined if the dashboard has no measure with that name.
    */
   getMeasureByName,
@@ -214,7 +207,7 @@ export const measureSelectors = {
 
   filteredSimpleMeasures,
 
-  leaderboardMeasureName,
+  leaderboardSortByMeasureName,
 
   leaderboardMeasureCount,
 

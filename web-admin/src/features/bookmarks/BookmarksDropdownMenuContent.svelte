@@ -22,8 +22,8 @@
   import { Search } from "@rilldata/web-common/components/search";
   import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
   import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { createQueryServiceMetricsViewSchema } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { BookmarkPlusIcon } from "lucide-svelte";
@@ -47,11 +47,8 @@
   $: metricsViewTimeRange = useMetricsViewTimeRange(
     instanceId,
     metricsViewName,
-  );
-  $: defaultExplorePreset = getDefaultExplorePreset(
-    exploreSpec,
-    metricsViewSpec,
-    $metricsViewTimeRange.data,
+    {},
+    queryClient,
   );
   $: schemaResp = createQueryServiceMetricsViewSchema(
     instanceId,
@@ -66,9 +63,8 @@
     $bookamrksResp.data?.bookmarks ?? [],
     metricsViewSpec,
     exploreSpec,
-    $schemaResp.data?.schema,
+    $schemaResp.data?.schema ?? {},
     $exploreState,
-    defaultExplorePreset,
     $metricsViewTimeRange.data?.timeRangeSummary,
   );
   $: filteredBookmarks = searchBookmarks(categorizedBookmarks, searchText);

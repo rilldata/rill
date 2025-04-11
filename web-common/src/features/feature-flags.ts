@@ -48,7 +48,6 @@ class FeatureFlags {
   alerts = new FeatureFlag("user", true);
   reports = new FeatureFlag("user", true);
   leaderboardMeasureCount = new FeatureFlag("user", false);
-  reorderMeasuresDimensions = new FeatureFlag("user", false);
 
   constructor() {
     const updateFlags = (userFlags: V1InstanceFeatureFlags) => {
@@ -63,12 +62,16 @@ class FeatureFlags {
     runtime.subscribe((runtime) => {
       if (!runtime?.instanceId) return;
 
-      createRuntimeServiceGetInstance(runtime.instanceId, undefined, {
-        query: {
-          select: (data) => data?.instance?.featureFlags,
-          queryClient,
+      createRuntimeServiceGetInstance(
+        runtime.instanceId,
+        undefined,
+        {
+          query: {
+            select: (data) => data?.instance?.featureFlags,
+          },
         },
-      }).subscribe((features) => {
+        queryClient,
+      ).subscribe((features) => {
         if (features.data) updateFlags(features.data);
       });
     });

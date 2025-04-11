@@ -102,6 +102,21 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		require.NotEmpty(t, gac, "Bigquery RILL_RUNTIME_BIGQUERY_TEST_GOOGLE_APPLICATION_CREDENTIALS_JSON not configured")
 		return map[string]string{"google_application_credentials": gac}
 	},
+	// Snowflake connector connects to a real snowflake cloud using dsn in RILL_RUNTIME_SNOWFLAKE_TEST_DSN
+	// The test dataset is pre-populated with tables defined in testdata/init_data/snowflake_init_data.sql:
+	"snowflake": func(t TestingT) map[string]string {
+		// Load .env file at the repo root (if any)
+		_, currentFile, _, _ := goruntime.Caller(0)
+		envPath := filepath.Join(currentFile, "..", "..", "..", ".env")
+		_, err := os.Stat(envPath)
+		if err == nil {
+			require.NoError(t, godotenv.Load(envPath))
+		}
+
+		dsn := os.Getenv("RILL_RUNTIME_SNOWFLAKE_TEST_DSN")
+		require.NotEmpty(t, dsn, "SNOWFLAKE test DSN not configured")
+		return map[string]string{"dsn": dsn}
+	},
 	// gcs connector uses an actual gcs bucket with data populated from testdata/init_data/azure.
 	"gcs": func(t TestingT) map[string]string {
 		// Load .env file at the repo root (if any)
@@ -113,9 +128,15 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		}
 		gac := os.Getenv("RILL_RUNTIME_GCS_TEST_GOOGLE_APPLICATION_CREDENTIALS_JSON")
 		require.NotEmpty(t, gac, "GCS RILL_RUNTIME_GCS_TEST_GOOGLE_APPLICATION_CREDENTIALS_JSON not configured")
+		hmacKey := os.Getenv("RILL_RUNTIME_GCS_TEST_HMAC_KEY")
+		hmacSecret := os.Getenv("RILL_RUNTIME_GCS_TEST_HMAC_SECRET")
+		require.NotEmpty(t, hmacKey, "GCS RILL_RUNTIME_GCS_TEST_HMAC_KEY not configured")
+		require.NotEmpty(t, hmacSecret, "GCS RILL_RUNTIME_GCS_TEST_HMAC_SECRET not configured")
 
 		return map[string]string{
 			"google_application_credentials": gac,
+			"key_id":                         hmacKey,
+			"secret":                         hmacSecret,
 		}
 	},
 	"gcs_s3_compat": func(t TestingT) map[string]string {

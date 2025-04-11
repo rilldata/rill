@@ -71,7 +71,7 @@
 </script>
 
 <AccessRequestContainer>
-  {#if $denyAccess.isLoading && $requestAccess.data}
+  {#if $denyAccess.isPending && $requestAccess.data}
     <Spinner status={EntityStatus.Running} size="2rem" duration={725} />
     <div>
       Denying <b>{$requestAccess.data.email}</b> access to

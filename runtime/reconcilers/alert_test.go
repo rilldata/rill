@@ -8,7 +8,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/compilers/rillv1"
+	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
@@ -573,52 +573,52 @@ SELECT '2024-01-02T00:00:00Z'::TIMESTAMP as __time, 'Sweden' as country
 	require.Contains(t, emails[0].Body, "measure_0")
 }
 
-func newMetricsView(name, model, timeDim string, measures, dimensions []string) (*runtimev1.MetricsViewV2, *runtimev1.Resource) {
-	metrics := &runtimev1.MetricsViewV2{
+func newMetricsView(name, model, timeDim string, measures, dimensions []string) (*runtimev1.MetricsView, *runtimev1.Resource) {
+	metrics := &runtimev1.MetricsView{
 		Spec: &runtimev1.MetricsViewSpec{
 			Connector:     "duckdb",
 			Model:         model,
-			DisplayName:   rillv1.ToDisplayName(name),
+			DisplayName:   parser.ToDisplayName(name),
 			TimeDimension: timeDim,
-			Measures:      make([]*runtimev1.MetricsViewSpec_MeasureV2, len(measures)),
-			Dimensions:    make([]*runtimev1.MetricsViewSpec_DimensionV2, len(dimensions)),
+			Measures:      make([]*runtimev1.MetricsViewSpec_Measure, len(measures)),
+			Dimensions:    make([]*runtimev1.MetricsViewSpec_Dimension, len(dimensions)),
 		},
 		State: &runtimev1.MetricsViewState{
 			ValidSpec: &runtimev1.MetricsViewSpec{
 				Connector:     "duckdb",
 				Table:         model,
 				Model:         model,
-				DisplayName:   rillv1.ToDisplayName(name),
+				DisplayName:   parser.ToDisplayName(name),
 				TimeDimension: timeDim,
-				Measures:      make([]*runtimev1.MetricsViewSpec_MeasureV2, len(measures)),
-				Dimensions:    make([]*runtimev1.MetricsViewSpec_DimensionV2, len(dimensions)),
+				Measures:      make([]*runtimev1.MetricsViewSpec_Measure, len(measures)),
+				Dimensions:    make([]*runtimev1.MetricsViewSpec_Dimension, len(dimensions)),
 			},
 		},
 	}
 	for i, measure := range measures {
 		name := fmt.Sprintf("measure_%d", i)
-		metrics.Spec.Measures[i] = &runtimev1.MetricsViewSpec_MeasureV2{
+		metrics.Spec.Measures[i] = &runtimev1.MetricsViewSpec_Measure{
 			Name:        name,
-			DisplayName: rillv1.ToDisplayName(name),
+			DisplayName: parser.ToDisplayName(name),
 			Expression:  measure,
 			Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 		}
-		metrics.State.ValidSpec.Measures[i] = &runtimev1.MetricsViewSpec_MeasureV2{
+		metrics.State.ValidSpec.Measures[i] = &runtimev1.MetricsViewSpec_Measure{
 			Name:        name,
-			DisplayName: rillv1.ToDisplayName(name),
+			DisplayName: parser.ToDisplayName(name),
 			Expression:  measure,
 			Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 		}
 	}
 	for i, dimension := range dimensions {
-		metrics.Spec.Dimensions[i] = &runtimev1.MetricsViewSpec_DimensionV2{
+		metrics.Spec.Dimensions[i] = &runtimev1.MetricsViewSpec_Dimension{
 			Name:        dimension,
-			DisplayName: rillv1.ToDisplayName(dimension),
+			DisplayName: parser.ToDisplayName(dimension),
 			Column:      dimension,
 		}
-		metrics.State.ValidSpec.Dimensions[i] = &runtimev1.MetricsViewSpec_DimensionV2{
+		metrics.State.ValidSpec.Dimensions[i] = &runtimev1.MetricsViewSpec_Dimension{
 			Name:        dimension,
-			DisplayName: rillv1.ToDisplayName(dimension),
+			DisplayName: parser.ToDisplayName(dimension),
 			Column:      dimension,
 		}
 	}

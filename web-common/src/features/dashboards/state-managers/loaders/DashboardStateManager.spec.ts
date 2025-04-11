@@ -1,5 +1,7 @@
 import { type CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
 import { useDashboardFetchMocksForComponentTests } from "@rilldata/web-common/features/dashboards/filters/test/filter-test-utils";
+import { setExploreStateForWebView } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
+import DashboardStateManagerTest from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/DashboardStateManagerTest.svelte";
 import {
   type HoistedPageForExploreTests,
   PageMockForExploreTests,
@@ -19,7 +21,7 @@ import {
   AD_BIDS_PRESET_WITHOUT_TIMESTAMP,
   AD_BIDS_PUBLISHER_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
-import { getKeyForSessionStore } from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-store";
+import { ExploreUrlWebView } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import { getCleanMetricsExploreForAssertion } from "@rilldata/web-common/features/dashboards/url-state/url-state-variations.spec";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { mockAnimationsForComponentTesting } from "@rilldata/web-common/lib/test/mock-animations";
@@ -29,14 +31,12 @@ import {
 } from "@rilldata/web-common/lib/time/types";
 import { DashboardState_LeaderboardSortDirection } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
-  type V1ExplorePreset,
-  V1ExploreWebView,
+  V1ExploreComparisonMode,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import { render, screen, waitFor } from "@testing-library/svelte";
 import { readable } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import DashboardStateManagerTest from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/DashboardStateManagerTest.svelte";
 
 const hoistedPage: HoistedPageForExploreTests = vi.hoisted(() => ({}) as any);
 
@@ -68,7 +68,10 @@ describe("DashboardStateManager", () => {
       AD_BIDS_METRICS_INIT_WITH_TIME,
       {
         ...AD_BIDS_EXPLORE_INIT,
-        defaultPreset: AD_BIDS_PRESET,
+        defaultPreset: {
+          ...AD_BIDS_PRESET,
+          comparisonMode: V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_NONE,
+        },
       },
     );
     mocks.mockTimeRangeSummary(AD_BIDS_METRICS_NAME, {
@@ -91,12 +94,12 @@ describe("DashboardStateManager", () => {
       showTimeComparison: false,
       selectedComparisonTimeRange: undefined,
 
-      visibleMeasureKeys: new Set([AD_BIDS_IMPRESSIONS_MEASURE]),
+      visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE],
       allMeasuresVisible: false,
-      visibleDimensionKeys: new Set([AD_BIDS_PUBLISHER_DIMENSION]),
+      visibleDimensions: [AD_BIDS_PUBLISHER_DIMENSION],
       allDimensionsVisible: false,
 
-      leaderboardMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
+      leaderboardSortByMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
       leaderboardContextColumn: undefined,
       sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
     };
@@ -111,7 +114,7 @@ describe("DashboardStateManager", () => {
           name: TimeComparisonOption.CONTIGUOUS,
         } as DashboardTimeControls,
       },
-      error: undefined,
+      error: null,
       isFetching: false,
       isLoading: false,
     });
@@ -141,7 +144,7 @@ describe("DashboardStateManager", () => {
           name: TimeComparisonOption.CONTIGUOUS,
         } as DashboardTimeControls,
       });
-      const initUrlSearch = "tr=PT24H&grain=hour";
+      const initUrlSearch = "tr=PT24H&compare_tr=rill-PP&grain=hour";
       pageMock.assertSearchParams(initUrlSearch);
 
       pageMock.popState("");
@@ -153,18 +156,11 @@ describe("DashboardStateManager", () => {
     });
 
     it("Should load from session dashboard state", async () => {
-      mockLocalStorageEntry(
-        {
-          timeRange: "P14D",
-          compareTimeRange: "rill-PW",
-          timeGrain: "day",
-        },
-        {
-          measures: [AD_BIDS_BID_PRICE_MEASURE],
-          dimensions: [AD_BIDS_DOMAIN_DIMENSION],
-          exploreSortBy: AD_BIDS_BID_PRICE_MEASURE,
-          exploreSortAsc: false,
-        },
+      setExploreStateForWebView(
+        AD_BIDS_EXPLORE_NAME,
+        undefined,
+        ExploreUrlWebView.Explore,
+        "view=explore&tr=P14D&compare_tr=rill-PW&grain=day&measures=bid_price&dims=domain&sort_by=bid_price&sort_dir=DESC",
       );
       renderDashboardStateManager(BookmarkSourceQueryResult);
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
@@ -179,12 +175,12 @@ describe("DashboardStateManager", () => {
           name: TimeComparisonOption.WEEK,
         } as DashboardTimeControls,
 
-        visibleMeasureKeys: new Set([AD_BIDS_BID_PRICE_MEASURE]),
+        visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
         allMeasuresVisible: false,
-        visibleDimensionKeys: new Set([AD_BIDS_DOMAIN_DIMENSION]),
+        visibleDimensions: [AD_BIDS_DOMAIN_DIMENSION],
         allDimensionsVisible: false,
 
-        leaderboardMeasureName: AD_BIDS_BID_PRICE_MEASURE,
+        leaderboardSortByMeasureName: AD_BIDS_BID_PRICE_MEASURE,
         leaderboardContextColumn: undefined,
         sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
       });
@@ -207,12 +203,12 @@ describe("DashboardStateManager", () => {
       showTimeComparison: false,
       selectedComparisonTimeRange: undefined,
 
-      visibleMeasureKeys: new Set([AD_BIDS_IMPRESSIONS_MEASURE]),
+      visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE],
       allMeasuresVisible: false,
-      visibleDimensionKeys: new Set([AD_BIDS_PUBLISHER_DIMENSION]),
+      visibleDimensions: [AD_BIDS_PUBLISHER_DIMENSION],
       allDimensionsVisible: false,
 
-      leaderboardMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
+      leaderboardSortByMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
       leaderboardContextColumn: undefined,
       sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
     };
@@ -235,14 +231,11 @@ describe("DashboardStateManager", () => {
     });
 
     it("Should load from session dashboard state", async () => {
-      mockLocalStorageEntry(
-        {},
-        {
-          measures: [AD_BIDS_BID_PRICE_MEASURE],
-          dimensions: [AD_BIDS_DOMAIN_DIMENSION],
-          exploreSortBy: AD_BIDS_BID_PRICE_MEASURE,
-          exploreSortAsc: false,
-        },
+      setExploreStateForWebView(
+        AD_BIDS_EXPLORE_NAME,
+        undefined,
+        ExploreUrlWebView.Explore,
+        "view=explore&measures=bid_price&dims=domain&sort_by=bid_price&sort_dir=DESC",
       );
       renderDashboardStateManager();
 
@@ -252,12 +245,12 @@ describe("DashboardStateManager", () => {
         showTimeComparison: false,
         selectedComparisonTimeRange: undefined,
 
-        visibleMeasureKeys: new Set([AD_BIDS_BID_PRICE_MEASURE]),
+        visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
         allMeasuresVisible: false,
-        visibleDimensionKeys: new Set([AD_BIDS_DOMAIN_DIMENSION]),
+        visibleDimensions: [AD_BIDS_DOMAIN_DIMENSION],
         allDimensionsVisible: false,
 
-        leaderboardMeasureName: AD_BIDS_BID_PRICE_MEASURE,
+        leaderboardSortByMeasureName: AD_BIDS_BID_PRICE_MEASURE,
         leaderboardContextColumn: undefined,
         sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
       });
@@ -304,34 +297,15 @@ function assertExploreStateSubset(
     showTimeComparison: curExploreState.showTimeComparison,
     selectedComparisonTimeRange: curExploreState.selectedComparisonTimeRange,
 
-    visibleMeasureKeys: curExploreState.visibleMeasureKeys,
+    visibleMeasures: curExploreState.visibleMeasures,
     allMeasuresVisible: curExploreState.allMeasuresVisible,
 
-    visibleDimensionKeys: curExploreState.visibleDimensionKeys,
+    visibleDimensions: curExploreState.visibleDimensions,
     allDimensionsVisible: curExploreState.allDimensionsVisible,
 
-    leaderboardMeasureName: curExploreState.leaderboardMeasureName,
+    leaderboardSortByMeasureName: curExploreState.leaderboardSortByMeasureName,
     leaderboardContextColumn: curExploreState.leaderboardContextColumn,
     sortDirection: curExploreState.sortDirection,
   };
   expect(curExploreStateSubset).toEqual(exploreStateSubset);
-}
-
-// Temporary helper until we have sessionStorage refactors.
-function mockLocalStorageEntry(
-  sharedPreset: V1ExplorePreset,
-  exploreViewPreset: V1ExplorePreset,
-) {
-  sessionStorage.setItem(
-    getKeyForSessionStore(AD_BIDS_EXPLORE_NAME, undefined, "__shared"),
-    JSON.stringify(sharedPreset),
-  );
-  sessionStorage.setItem(
-    getKeyForSessionStore(
-      AD_BIDS_EXPLORE_NAME,
-      undefined,
-      V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE,
-    ),
-    JSON.stringify(exploreViewPreset),
-  );
 }

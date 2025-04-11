@@ -15,7 +15,10 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import type { CreateQueryResult } from "@tanstack/svelte-query";
+import {
+  keepPreviousData,
+  type CreateQueryResult,
+} from "@tanstack/svelte-query";
 import { type Readable, derived, readable } from "svelte/store";
 import { mergeFilters } from "./pivot-merge-filters";
 import {
@@ -97,10 +100,10 @@ export function createPivotAggregationRowQuery(
         {
           query: {
             enabled: ctx.enabled,
-            queryClient: ctx.queryClient,
-            keepPreviousData: true,
+            placeholderData: keepPreviousData,
           },
         },
+        ctx.queryClient,
       ).subscribe(set),
   );
 }

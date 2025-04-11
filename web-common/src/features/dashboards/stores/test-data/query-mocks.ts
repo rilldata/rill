@@ -1,4 +1,4 @@
-import type { CreateQueryResult } from "@rilldata/svelte-query";
+import type { CreateQueryResult } from "@tanstack/svelte-query";
 import {
   AD_BIDS_INIT_DIMENSIONS,
   AD_BIDS_INIT_MEASURES,
@@ -7,8 +7,8 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import type { ExploreValidSpecResponse } from "@rilldata/web-common/features/explores/selectors";
 import type {
-  MetricsViewSpecDimensionV2,
-  MetricsViewSpecMeasureV2,
+  MetricsViewSpecDimension,
+  MetricsViewSpecMeasure,
   RpcStatus,
   V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
@@ -18,8 +18,8 @@ import { writable } from "svelte/store";
 export function createMetricsMetaQueryMock(
   shouldInit = true,
 ): CreateQueryResult<V1MetricsViewSpec, RpcStatus> & {
-  setMeasures: (measures: Array<MetricsViewSpecMeasureV2>) => void;
-  setDimensions: (dimensions: Array<MetricsViewSpecDimensionV2>) => void;
+  setMeasures: (measures: Array<MetricsViewSpecMeasure>) => void;
+  setDimensions: (dimensions: Array<MetricsViewSpecDimension>) => void;
 } {
   const { update, subscribe } = writable<
     QueryObserverResult<V1MetricsViewSpec, RpcStatus>
@@ -31,7 +31,7 @@ export function createMetricsMetaQueryMock(
 
   const mock = {
     subscribe,
-    setMeasures: (measures: MetricsViewSpecMeasureV2[]) =>
+    setMeasures: (measures: MetricsViewSpecMeasure[]) =>
       update((value) => {
         value.isSuccess = true;
         value.data ??= {
@@ -41,7 +41,7 @@ export function createMetricsMetaQueryMock(
         value.data.measures = measures;
         return value;
       }),
-    setDimensions: (dimensions: MetricsViewSpecDimensionV2[]) =>
+    setDimensions: (dimensions: MetricsViewSpecDimension[]) =>
       update((value) => {
         value.isSuccess = true;
         value.data ??= {
@@ -66,8 +66,8 @@ export function createValidSpecQueryMock(
   shouldInit = true,
   initMetrics: V1MetricsViewSpec = AD_BIDS_METRICS_INIT,
 ): CreateQueryResult<ExploreValidSpecResponse, RpcStatus> & {
-  setMeasures: (measures: Array<MetricsViewSpecMeasureV2>) => void;
-  setDimensions: (dimensions: Array<MetricsViewSpecDimensionV2>) => void;
+  setMeasures: (measures: Array<MetricsViewSpecMeasure>) => void;
+  setDimensions: (dimensions: Array<MetricsViewSpecDimension>) => void;
 } {
   const { update, subscribe } = writable<
     QueryObserverResult<ExploreValidSpecResponse, RpcStatus>
@@ -94,7 +94,7 @@ export function createValidSpecQueryMock(
   const mock = {
     subscribe,
     setMeasures: (
-      measures: MetricsViewSpecMeasureV2[],
+      measures: MetricsViewSpecMeasure[],
       exploreMeasures?: string[],
     ) => {
       exploreMeasures ??= measures.map((m) => m.name!);
@@ -107,7 +107,7 @@ export function createValidSpecQueryMock(
       });
     },
     setDimensions: (
-      dimensions: MetricsViewSpecDimensionV2[],
+      dimensions: MetricsViewSpecDimension[],
       exploreDimensions?: string[],
     ) => {
       exploreDimensions ??= dimensions.map((d) => d.name!);

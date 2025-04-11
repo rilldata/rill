@@ -29,6 +29,7 @@
   import PartitionsBrowser from "../partitions/PartitionsBrowser.svelte";
   import References from "./References.svelte";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
+  import { keepPreviousData } from "@tanstack/svelte-query";
 
   export let hasUnsavedChanges: boolean;
   export let connector: string;
@@ -70,7 +71,7 @@
     },
     {
       query: {
-        keepPreviousData: true,
+        placeholderData: keepPreviousData,
       },
     },
   );
