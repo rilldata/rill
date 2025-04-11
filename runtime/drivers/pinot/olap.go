@@ -20,16 +20,6 @@ import (
 
 var _ drivers.OLAPStore = &connection{}
 
-// AddTableColumn implements drivers.OLAPStore.
-func (c *connection) AddTableColumn(ctx context.Context, tableName, columnName, typ string) error {
-	return fmt.Errorf("pinot: data transformation not yet supported")
-}
-
-// AlterTableColumn implements drivers.OLAPStore.
-func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName, newType string) error {
-	return fmt.Errorf("pinot: data transformation not yet supported")
-}
-
 // CreateTableAsSelect implements drivers.OLAPStore.
 func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, opts *drivers.CreateTableOptions) (*drivers.TableWriteMetrics, error) {
 	return nil, fmt.Errorf("pinot: data transformation not yet supported")

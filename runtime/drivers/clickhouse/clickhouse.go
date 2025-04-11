@@ -296,7 +296,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	c := &connection{
+	c := &Connection{
 		db:         db,
 		config:     conf,
 		logger:     logger,
@@ -328,7 +328,7 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 	return nil, fmt.Errorf("not implemented")
 }
 
-type connection struct {
+type Connection struct {
 	db         *sqlx.DB
 	config     *configProperties
 	logger     *zap.Logger
@@ -360,26 +360,26 @@ type connection struct {
 }
 
 // Ping implements drivers.Handle.
-func (c *connection) Ping(ctx context.Context) error {
+func (c *Connection) Ping(ctx context.Context) error {
 	err := c.db.PingContext(ctx)
 	c.used()
 	return err
 }
 
 // Driver implements drivers.Connection.
-func (c *connection) Driver() string {
+func (c *Connection) Driver() string {
 	return "clickhouse"
 }
 
 // Config used to open the Connection
-func (c *connection) Config() map[string]any {
+func (c *Connection) Config() map[string]any {
 	m := make(map[string]any, 0)
 	_ = mapstructure.Decode(c.config, &m)
 	return m
 }
 
 // Close implements drivers.Connection.
-func (c *connection) Close() error {
+func (c *Connection) Close() error {
 	c.cancel()
 
 	errDB := c.db.Close()
@@ -393,53 +393,53 @@ func (c *connection) Close() error {
 }
 
 // Registry implements drivers.Connection.
-func (c *connection) AsRegistry() (drivers.RegistryStore, bool) {
+func (c *Connection) AsRegistry() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
 // Catalog implements drivers.Connection.
-func (c *connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
+func (c *Connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
 // Repo implements drivers.Connection.
-func (c *connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
+func (c *Connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 	return nil, false
 }
 
 // AsAdmin implements drivers.Handle.
-func (c *connection) AsAdmin(instanceID string) (drivers.AdminService, bool) {
+func (c *Connection) AsAdmin(instanceID string) (drivers.AdminService, bool) {
 	return nil, false
 }
 
 // AsAI implements drivers.Handle.
-func (c *connection) AsAI(instanceID string) (drivers.AIService, bool) {
+func (c *Connection) AsAI(instanceID string) (drivers.AIService, bool) {
 	return nil, false
 }
 
 // OLAP implements drivers.Connection.
-func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
+func (c *Connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	c.instanceID = instanceID
 	return c, true
 }
 
 // Migrate implements drivers.Connection.
-func (c *connection) Migrate(ctx context.Context) (err error) {
+func (c *Connection) Migrate(ctx context.Context) (err error) {
 	return nil
 }
 
 // MigrationStatus implements drivers.Connection.
-func (c *connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
+func (c *Connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
 	return 0, 0, nil
 }
 
 // AsObjectStore implements drivers.Connection.
-func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
+func (c *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
 	return nil, false
 }
 
 // AsModelExecutor implements drivers.Handle.
-func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
+func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
 	if opts.OutputHandle != c {
 		return nil, false
 	}
@@ -456,26 +456,26 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 }
 
 // AsModelManager implements drivers.Handle.
-func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
+func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
 	return c, true
 }
 
 // AsFileStore implements drivers.Connection.
-func (c *connection) AsFileStore() (drivers.FileStore, bool) {
+func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
 	return nil, false
 }
 
 // AsWarehouse implements drivers.Handle.
-func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
+func (c *Connection) AsWarehouse() (drivers.Warehouse, bool) {
 	return nil, false
 }
 
 // AsNotifier implements drivers.Connection.
-func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
+func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
 }
 
-func (c *connection) AcquireLongRunning(ctx context.Context) (func(), error) {
+func (c *Connection) AcquireLongRunning(ctx context.Context) (func(), error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
@@ -483,18 +483,18 @@ func (c *connection) AcquireLongRunning(ctx context.Context) (func(), error) {
 // It bumps the result of lastUsedOn(), which can be used to guess if the DB may currently be scaled to zero.
 //
 // Periodic background jobs that rely on lastUsedOn should not call this function since it will lead to the database never scaling to zero.
-func (c *connection) used() {
+func (c *Connection) used() {
 	c.lastUsedUnixTime.Store(time.Now().Unix())
 }
 
 // lastUsedOn returns the time we last queried the connection.
 // This can be used to guess if the DB may currently be scaled to zero.
-func (c *connection) lastUsedOn() time.Time {
+func (c *Connection) lastUsedOn() time.Time {
 	return time.Unix(c.lastUsedUnixTime.Load(), 0)
 }
 
 // Periodically collects stats about the database and emit them as activity events.
-func (c *connection) periodicallyEmitStats(d time.Duration) {
+func (c *Connection) periodicallyEmitStats(d time.Duration) {
 	if c.activity == nil {
 		// Activity client isn't set, there is no need to report stats
 		return
@@ -530,7 +530,7 @@ func (c *connection) periodicallyEmitStats(d time.Duration) {
 }
 
 // estimateSize returns the estimated combined disk size of all resources in the database in bytes.
-func (c *connection) estimateSize(ctx context.Context) (int64, error) {
+func (c *Connection) estimateSize(ctx context.Context) (int64, error) {
 	var size int64
 	err := c.db.QueryRowxContext(ctx, `SELECT sum(bytes_on_disk) AS size FROM system.parts WHERE (active = 1) AND lower(database) NOT IN ('information_schema', 'system')`).Scan(&size)
 	if err != nil {

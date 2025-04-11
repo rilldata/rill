@@ -263,38 +263,6 @@ func Test_connection_RenameToExistingTable(t *testing.T) {
 	require.NoError(t, res.Close())
 }
 
-func Test_connection_AddTableColumn(t *testing.T) {
-	temp := t.TempDir()
-	os.Mkdir(temp, fs.ModePerm)
-
-	handle, err := Driver{}.Open("default", map[string]any{}, storage.MustNew(temp, nil), activity.NewNoopClient(), zap.NewNop())
-	require.NoError(t, err)
-	c := handle.(*connection)
-	require.NoError(t, c.Migrate(context.Background()))
-	c.AsOLAP("default")
-
-	_, err = c.CreateTableAsSelect(context.Background(), "test alter column", "select 1 as data", &drivers.CreateTableOptions{})
-	require.NoError(t, err)
-
-	res, err := c.Query(context.Background(), &drivers.Statement{Query: "SELECT data_type FROM information_schema.columns WHERE table_name='test alter column'"})
-	require.NoError(t, err)
-	require.True(t, res.Next())
-	var typ string
-	require.NoError(t, res.Scan(&typ))
-	require.Equal(t, "INTEGER", typ)
-	require.NoError(t, res.Close())
-
-	err = c.AlterTableColumn(context.Background(), "test alter column", "data", "VARCHAR")
-	require.NoError(t, err)
-
-	res, err = c.Query(context.Background(), &drivers.Statement{Query: "SELECT data_type FROM information_schema.columns WHERE table_name='test alter column' AND table_schema=current_schema()"})
-	require.NoError(t, err)
-	require.True(t, res.Next())
-	require.NoError(t, res.Scan(&typ))
-	require.Equal(t, "VARCHAR", typ)
-	require.NoError(t, res.Close())
-}
-
 func Test_connection_RenameToExistingTableOld(t *testing.T) {
 	handle, err := Driver{}.Open("default", map[string]any{}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)

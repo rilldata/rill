@@ -32,11 +32,6 @@ func (e *selfToSelfExecutor) Concurrency(desired int) (int, bool) {
 }
 
 func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
-	olap, ok := e.c.AsOLAP(e.c.instanceID)
-	if !ok {
-		return nil, fmt.Errorf("output connector is not OLAP")
-	}
-
 	inputProps := &ModelInputProperties{}
 	if err := mapstructure.WeakDecode(opts.InputProperties, inputProps); err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
@@ -108,7 +103,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		if opts.Env.StageChanges {
 			stagingTableName = stagingTableNameFor(tableName)
 		}
-		_ = olap.DropTable(ctx, stagingTableName)
+		_ = e.c.DropTable(ctx, stagingTableName)
 
 		// Create the table
 		if inputProps.Database != "" {
@@ -125,7 +120,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 			}
 			res, err := e.createFromExternalDuckDB(ctx, inputProps, stagingTableName)
 			if err != nil {
-				_ = olap.DropTable(ctx, stagingTableName)
+				_ = e.c.DropTable(ctx, stagingTableName)
 				return nil, fmt.Errorf("failed to create model: %w", err)
 			}
 			duration = res.Duration
@@ -138,9 +133,9 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 			if inputProps.InitQueries != "" {
 				createTableOpts.InitQueries = []string{inputProps.InitQueries}
 			}
-			res, err := olap.CreateTableAsSelect(ctx, stagingTableName, inputProps.SQL, createTableOpts)
+			res, err := e.c.CreateTableAsSelect(ctx, stagingTableName, inputProps.SQL, createTableOpts)
 			if err != nil {
-				_ = olap.DropTable(ctx, stagingTableName)
+				_ = e.c.DropTable(ctx, stagingTableName)
 				return nil, fmt.Errorf("failed to create model: %w", err)
 			}
 			duration = res.Duration
@@ -148,7 +143,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 
 		// Rename the staging table to the final table name
 		if stagingTableName != tableName {
-			err := olapForceRenameTable(ctx, olap, stagingTableName, asView, tableName)
+			err := e.c.forceRenameTable(ctx, stagingTableName, asView, tableName)
 			if err != nil {
 				return nil, fmt.Errorf("failed to rename staged model: %w", err)
 			}
@@ -166,7 +161,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		if inputProps.InitQueries != "" {
 			insertTableOpts.InitQueries = []string{inputProps.InitQueries}
 		}
-		res, err := olap.InsertTableAsSelect(ctx, tableName, inputProps.SQL, insertTableOpts)
+		res, err := e.c.InsertTableAsSelect(ctx, tableName, inputProps.SQL, insertTableOpts)
 		if err != nil {
 			return nil, fmt.Errorf("failed to incrementally insert into table: %w", err)
 		}

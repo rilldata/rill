@@ -63,14 +63,6 @@ type OLAPStore interface {
 	Exec(ctx context.Context, stmt *Statement) error
 	Query(ctx context.Context, stmt *Statement) (*Result, error)
 	InformationSchema() InformationSchema
-
-	CreateTableAsSelect(ctx context.Context, name, sql string, opts *CreateTableOptions) (*TableWriteMetrics, error)
-	InsertTableAsSelect(ctx context.Context, name, sql string, opts *InsertTableOptions) (*TableWriteMetrics, error)
-	DropTable(ctx context.Context, name string) error
-	RenameTable(ctx context.Context, name, newName string) error
-	AddTableColumn(ctx context.Context, tableName, columnName string, typ string) error
-	AlterTableColumn(ctx context.Context, tableName, columnName string, newType string) error
-
 	MayBeScaledToZero(ctx context.Context) bool
 }
 

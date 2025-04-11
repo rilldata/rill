@@ -9,7 +9,7 @@ import (
 )
 
 type selfToSelfExecutor struct {
-	c *connection
+	c *Connection
 }
 
 var _ drivers.ModelExecutor = &selfToSelfExecutor{}
@@ -84,7 +84,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 
 		// Rename the staging table to the final table name
 		if stagingTableName != tableName {
-			err = olapForceRenameTable(ctx, e.c, stagingTableName, asView, tableName)
+			err = e.c.olapForceRenameTable(ctx, stagingTableName, asView, tableName)
 			if err != nil {
 				return nil, fmt.Errorf("failed to rename staged model: %w", err)
 			}
