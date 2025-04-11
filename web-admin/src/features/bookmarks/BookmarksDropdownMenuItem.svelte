@@ -1,11 +1,17 @@
 <script lang="ts">
-  import type { BookmarkEntry } from "@rilldata/web-admin/features/bookmarks/selectors";
+  import { page } from "$app/stores";
+  import {
+    type BookmarkEntry,
+    isBookmarkActive,
+  } from "@rilldata/web-admin/features/bookmarks/selectors";
   import { DropdownMenuItem } from "@rilldata/web-common/components/dropdown-menu";
+  import BookmarkFilled from "@rilldata/web-common/components/icons/BookmarkFilled.svelte";
+  import BookmarkOutline from "@rilldata/web-common/components/icons/BookmarkOutline.svelte";
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
-  import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
+  import FilterFilled from "@rilldata/web-common/components/icons/FilterFilled.svelte";
+  import FilterOutline from "@rilldata/web-common/components/icons/FilterOutline.svelte";
   import HomeBookmark from "@rilldata/web-common/components/icons/HomeBookmark.svelte";
   import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
-  import { BookmarkIcon } from "lucide-svelte";
 
   export let bookmark: BookmarkEntry;
   export let readOnly = false;
@@ -31,6 +37,28 @@
   }
 
   let hovered = false;
+
+  const IconsByType = {
+    home: {
+      active: HomeBookmark,
+      inactive: HomeBookmark,
+    },
+    filter: {
+      active: FilterFilled,
+      inactive: FilterOutline,
+    },
+    complete: {
+      active: BookmarkFilled,
+      inactive: BookmarkOutline,
+    },
+  };
+  $: icons = bookmark.resource.default
+    ? IconsByType.home
+    : bookmark.filtersOnly
+      ? IconsByType.filter
+      : IconsByType.complete;
+  $: isActive = isBookmarkActive(bookmark, $page.url);
+  $: icon = isActive ? icons.active : icons.inactive;
 </script>
 
 <DropdownMenuItem class="py-2">
@@ -43,13 +71,7 @@
     aria-label={`${bookmark.resource.displayName ?? ""} Bookmark Entry`}
   >
     <a href={bookmark.url} class="flex flex-row gap-x-2 w-full min-h-7">
-      {#if bookmark.resource.default}
-        <HomeBookmark size="16px" />
-      {:else if bookmark.filtersOnly}
-        <Filter size="16px" />
-      {:else}
-        <BookmarkIcon size="16px" aria-label="Bookmark Icon" />
-      {/if}
+      <svelte:component this={icon} size="16px" className="text-gray-700" />
       <div class="flex flex-col gap-y-0.5">
         <div
           class="text-xs font-medium text-gray-700 h-4 text-ellipsis overflow-hidden"
