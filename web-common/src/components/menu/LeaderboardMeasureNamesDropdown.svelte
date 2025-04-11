@@ -37,11 +37,9 @@
     });
 
   $: showingMeasuresText =
-    selectedMeasureNames?.length > 1
-      ? ` ${selectedMeasureNames.length} measures`
-      : selectedMeasureNames?.length === 1
-        ? getMeasureDisplayText(selectedMeasureNames[0])
-        : getMeasureDisplayText(leaderboardSortByMeasureName);
+    selectedMeasureNames.length > 1
+      ? `${selectedMeasureNames.length} measures`
+      : getMeasureDisplayText(selectedMeasureNames[0]);
 
   function onToggleOff() {
     // Store the current selection before toggling off
@@ -136,7 +134,7 @@
         <div
           class="flex items-center gap-x-0.5 px-1 text-gray-700 hover:text-inherit"
         >
-          Showing <strong>{showingMeasuresText}</strong>
+          Showing <strong> {showingMeasuresText}</strong>
           <span
             class="transition-transform"
             class:hidden={disabled}
