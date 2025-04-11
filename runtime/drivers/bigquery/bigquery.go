@@ -186,6 +186,15 @@ func (c *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
 
 // AsModelExecutor implements drivers.Handle.
 func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
+	if opts.InputHandle == c {
+		store, ok := opts.OutputHandle.AsObjectStore()
+		if ok && opts.OutputHandle.Driver() == "gcs" {
+			return &selfToGCSExecutor{
+				c:     c,
+				store: store,
+			}, true
+		}
+	}
 	return nil, false
 }
 
@@ -229,7 +238,11 @@ func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 }
 
 func (c *Connection) clientOption(ctx context.Context) ([]option.ClientOption, error) {
-	creds, err := gcputil.Credentials(ctx, c.config.SecretJSON, c.config.AllowHostAccess)
+	scopes := []string{
+		"https://www.googleapis.com/auth/cloud-platform",
+		"https://www.googleapis.com/auth/drive.readonly",
+	}
+	creds, err := gcputil.Credentials(ctx, c.config.SecretJSON, c.config.AllowHostAccess, scopes...)
 	if err != nil {
 		return nil, err
 	}

@@ -50,7 +50,7 @@ func (s *Server) Query(ctx context.Context, req *runtimev1.QueryRequest) (*runti
 		}
 	}
 
-	res, err := olap.Execute(ctx, &drivers.Statement{
+	res, err := olap.Query(ctx, &drivers.Statement{
 		Query:            transformedSQL,
 		Args:             args,
 		DryRun:           req.DryRun,
@@ -109,7 +109,7 @@ func rowsToData(rows *drivers.Result) ([]*structpb.Struct, error) {
 }
 
 func ensureLimits(ctx context.Context, olap drivers.OLAPStore, inputSQL string, limit int) (string, error) {
-	r, err := olap.Execute(ctx, &drivers.Statement{
+	r, err := olap.Query(ctx, &drivers.Statement{
 		Query: "select json_serialize_sql(?::VARCHAR)::BLOB",
 		Args:  []any{inputSQL},
 	})
@@ -139,7 +139,7 @@ func ensureLimits(ctx context.Context, olap drivers.OLAPStore, inputSQL string, 
 	}
 
 	transformedJSON := v.MustMarshalString()
-	r, err = olap.Execute(ctx, &drivers.Statement{
+	r, err = olap.Query(ctx, &drivers.Statement{
 		Query: "select json_deserialize_sql(json(?))",
 		Args:  []any{transformedJSON},
 	})

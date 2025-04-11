@@ -19,24 +19,23 @@
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { DateTime, Interval } from "luxon";
   import { tick } from "svelte";
+  import type { CanvasComponentState } from "../../stores/canvas-component";
 
-  export let selectedComponentName: string;
   export let id: string;
   export let timeFilter: string;
   export let showComparison: boolean;
   export let showGrain: boolean;
   export let canvasName: string;
+  export let componentStore: CanvasComponentState;
   export let onChange: (filter: string) => void = () => {};
 
   $: ({
     canvasEntity: {
-      useComponent,
       spec: { canvasSpec },
     },
   } = getCanvasStore(canvasName));
 
   $: showLocalFilters = Boolean(timeFilter && timeFilter !== "");
-  $: componentStore = useComponent(selectedComponentName);
 
   $: ({
     allTimeRange,
@@ -91,7 +90,7 @@
     onChange($timeRangeText);
   }
 
-  function selectRange(range: TimeRange) {
+  async function selectRange(range: TimeRange) {
     const defaultTimeGrain = getDefaultTimeGrain(range.start, range.end).grain;
 
     const comparisonOption = DEFAULT_TIME_RANGES[range.name as TimeRangePreset]
@@ -100,18 +99,18 @@
     // Get valid option for the new time range
     const validComparison = allTimeRange && comparisonOption;
 
-    makeTimeSeriesTimeRangeAndUpdateAppState(range, defaultTimeGrain, {
+    await makeTimeSeriesTimeRangeAndUpdateAppState(range, defaultTimeGrain, {
       name: validComparison,
     } as DashboardTimeControls);
   }
 
-  function onSelectRange(name: string) {
+  async function onSelectRange(name: string) {
     if (!$allTimeRange?.end) {
       return;
     }
 
     if (name === ALL_TIME_RANGE_ALIAS) {
-      makeTimeSeriesTimeRangeAndUpdateAppState(
+      await makeTimeSeriesTimeRangeAndUpdateAppState(
         $allTimeRange,
         "TIME_GRAIN_DAY",
         undefined,
@@ -145,9 +144,9 @@
     }
   }
 
-  function onTimeGrainSelect(timeGrain: V1TimeGrain) {
+  async function onTimeGrainSelect(timeGrain: V1TimeGrain) {
     if (baseTimeRange) {
-      makeTimeSeriesTimeRangeAndUpdateAppState(
+      await makeTimeSeriesTimeRangeAndUpdateAppState(
         baseTimeRange,
         timeGrain,
         selectedComparisonTimeRange,

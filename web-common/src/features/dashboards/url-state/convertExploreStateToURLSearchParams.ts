@@ -22,10 +22,7 @@ import {
   ToURLParamViewMap,
 } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
-import {
-  arrayOrderedEquals,
-  arrayUnorderedEquals,
-} from "@rilldata/web-common/lib/arrayUtils";
+import { arrayOrderedEquals } from "@rilldata/web-common/lib/arrayUtils";
 import {
   TimeComparisonOption,
   type TimeRange,
@@ -137,6 +134,9 @@ export function convertExploreStateToURLSearchParams(
 
     case DashboardState_ActivePage.PIVOT:
       copyParamsToTarget(toPivotUrlParams(exploreState, preset), searchParams);
+      // Since we do a shallow merge, we cannot remove time grain from the state for pivot as it is a deeper key.
+      // So this is a patch to remove it from the final url.
+      searchParams.delete(ExploreStateURLParams.TimeGrain);
       break;
   }
 
@@ -292,11 +292,14 @@ function toExploreUrl(
   }
 
   if (
-    shouldSetParam(preset.exploreSortBy, exploreState.leaderboardMeasureName)
+    shouldSetParam(
+      preset.exploreSortBy,
+      exploreState.leaderboardSortByMeasureName,
+    )
   ) {
     searchParams.set(
       ExploreStateURLParams.SortBy,
-      exploreState.leaderboardMeasureName,
+      exploreState.leaderboardSortByMeasureName,
     );
   }
 
@@ -336,17 +339,20 @@ function toVisibleMeasuresUrlParam(
   exploreSpec: V1ExploreSpec,
   preset: V1ExplorePreset,
 ) {
-  if (!exploreState.visibleMeasureKeys) return undefined;
+  if (!exploreState.visibleMeasures) return undefined;
 
-  const measures = [...exploreState.visibleMeasureKeys];
   const presetMeasures = preset.measures ?? exploreSpec.measures ?? [];
-  if (arrayUnorderedEquals(measures, presetMeasures)) {
+  if (arrayOrderedEquals(exploreState.visibleMeasures, presetMeasures)) {
     return undefined;
   }
-  if (exploreState.allMeasuresVisible) {
+  if (
+    // if the measures are exactly equal to measures from explore then show "*"
+    // else the measures are re-ordered, so retain them in url param
+    arrayOrderedEquals(exploreState.visibleMeasures, exploreSpec.measures ?? [])
+  ) {
     return "*";
   }
-  return measures.join(",");
+  return exploreState.visibleMeasures.join(",");
 }
 
 function toVisibleDimensionsUrlParam(
@@ -354,17 +360,23 @@ function toVisibleDimensionsUrlParam(
   exploreSpec: V1ExploreSpec,
   preset: V1ExplorePreset,
 ) {
-  if (!exploreState.visibleDimensionKeys) return undefined;
+  if (!exploreState.visibleDimensions) return undefined;
 
-  const dimensions = [...exploreState.visibleDimensionKeys];
   const presetDimensions = preset.dimensions ?? exploreSpec.dimensions ?? [];
-  if (arrayUnorderedEquals(dimensions, presetDimensions)) {
+  if (arrayOrderedEquals(exploreState.visibleDimensions, presetDimensions)) {
     return undefined;
   }
-  if (exploreState.allDimensionsVisible) {
+  if (
+    // if the dimensions are exactly equal to dimensions from explore then show "*"
+    // else the dimensions are re-ordered, so retain them in url param
+    arrayOrderedEquals(
+      exploreState.visibleDimensions,
+      exploreSpec.dimensions ?? [],
+    )
+  ) {
     return "*";
   }
-  return dimensions.join(",");
+  return exploreState.visibleDimensions.join(",");
 }
 
 function toTimeDimensionUrlParams(
@@ -401,7 +413,8 @@ function toPivotUrlParams(
   preset: V1ExplorePreset,
 ) {
   const searchParams = new URLSearchParams();
-  if (!exploreState.pivot?.active) return searchParams;
+  if (exploreState.activePage !== DashboardState_ActivePage.PIVOT)
+    return searchParams;
 
   const mapPivotEntry = (data: PivotChipData) => {
     if (data.type === PivotChipType.Time)

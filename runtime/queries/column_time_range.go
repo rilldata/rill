@@ -81,7 +81,7 @@ func (q *ColumnTimeRange) resolveDuckDBAndClickhouse(ctx context.Context, olap d
 		drivers.DialectDuckDB.EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 	)
 
-	rows, err := olap.Execute(ctx, &drivers.Statement{
+	rows, err := olap.Query(ctx, &drivers.Statement{
 		Query:            rangeSQL,
 		Priority:         priority,
 		ExecutionTimeout: defaultExecutionTimeout,
@@ -129,7 +129,7 @@ func (q *ColumnTimeRange) resolveDruid(ctx context.Context, olap drivers.OLAPSto
 			drivers.DialectDruid.EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 		)
 
-		rows, err := olap.Execute(ctx, &drivers.Statement{
+		rows, err := olap.Query(ctx, &drivers.Statement{
 			Query:            minSQL,
 			Priority:         priority,
 			ExecutionTimeout: defaultExecutionTimeout,
@@ -162,7 +162,7 @@ func (q *ColumnTimeRange) resolveDruid(ctx context.Context, olap drivers.OLAPSto
 			drivers.DialectDruid.EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 		)
 
-		rows, err := olap.Execute(ctx, &drivers.Statement{
+		rows, err := olap.Query(ctx, &drivers.Statement{
 			Query:            maxSQL,
 			Priority:         priority,
 			ExecutionTimeout: defaultExecutionTimeout,

@@ -15,10 +15,12 @@ import (
 	redshift_types "github.com/aws/aws-sdk-go-v2/service/redshiftdata/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/aws/smithy-go/tracing/smithyoteltracing"
 	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	rillblob "github.com/rilldata/rill/runtime/drivers/blob"
+	"go.opentelemetry.io/otel"
 	"gocloud.dev/blob"
 	"gocloud.dev/blob/s3blob"
 )
@@ -36,7 +38,9 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 		return nil, err
 	}
 
-	client := redshiftdata.NewFromConfig(awsConfig)
+	client := redshiftdata.NewFromConfig(awsConfig, func(o *redshiftdata.Options) {
+		o.TracerProvider = smithyoteltracing.Adapt(otel.GetTracerProvider())
+	})
 
 	outputURL, err := url.Parse(conf.OutputLocation)
 	if err != nil {
