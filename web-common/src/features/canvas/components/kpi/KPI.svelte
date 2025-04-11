@@ -89,7 +89,7 @@
 
 <div class="wrapper" class:spark-right={isSparkRight}>
   <div
-    class="data-wrapper"
+    class="data-wrapper overflow-hidden"
     style:min-width="{BIG_NUMBER_MIN_WIDTH - adjustment}px"
   >
     <h2 class="measure-name" title={measure?.displayName || measure?.name}>
@@ -211,7 +211,8 @@
 
 <style lang="postcss">
   .wrapper {
-    @apply flex items-center justify-center size-full gap-2 flex-col max-w-full;
+    @apply flex flex-col items-center justify-center size-full gap-2;
+    container-type: inline-size;
   }
 
   .wrapper.spark-right {
@@ -219,8 +220,7 @@
   }
 
   .data-wrapper {
-    @apply flex flex-col w-full h-fit justify-center items-center max-w-full;
-    @apply overflow-hidden text-ellipsis truncate;
+    @apply flex flex-col w-full h-fit justify-center items-center;
     flex: 1 0 auto;
   }
 
@@ -230,11 +230,12 @@
   }
 
   .measure-name {
-    @apply flex-none text-center font-medium text-sm text-gray-600 break-words line-clamp-1;
+    @apply w-full truncate flex-none;
+    @apply text-center font-medium text-sm text-gray-600;
   }
 
   .spark-right .measure-name {
-    @apply line-clamp-2 text-left max-w-40;
+    @apply text-left max-w-40;
   }
 
   .big-number {
