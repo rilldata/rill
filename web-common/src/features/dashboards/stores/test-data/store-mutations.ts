@@ -49,7 +49,10 @@ import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimensio
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import { setLeaderboardSortByMeasureName } from "../../state-managers/actions/leaderboard";
+import {
+  setLeaderboardMeasureNames,
+  setLeaderboardSortByMeasureName,
+} from "../../state-managers/actions/leaderboard";
 
 export type TestDashboardMutation = (mut: DashboardMutables) => void;
 export const AD_BIDS_APPLY_PUB_DIMENSION_FILTER: TestDashboardMutation = (
@@ -222,6 +225,15 @@ export const AD_BIDS_SORT_DESC_BY_BID_PRICE: TestDashboardMutation = (mut) => {
   setLeaderboardSortByMeasureName(mut, AD_BIDS_BID_PRICE_MEASURE);
   setSortDescending(mut);
 };
+
+export const AD_BIDS_MEASURE_NAMES_BID_PRICE_AND_IMPRESSIONS: TestDashboardMutation =
+  (mut) => {
+    setLeaderboardMeasureNames(mut, [
+      AD_BIDS_BID_PRICE_MEASURE,
+      AD_BIDS_IMPRESSIONS_MEASURE,
+    ]);
+  };
+
 export const AD_BIDS_SORT_BY_VALUE: TestDashboardMutation = (mut) => {
   toggleSort(mut, DashboardState_LeaderboardSortType.VALUE);
 };
