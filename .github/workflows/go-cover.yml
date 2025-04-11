@@ -6,6 +6,7 @@ on:
       - ".github/workflows/go-cover.yml"
       - "**.go"
       - "go.mod"
+      - "**/testdata/**"
 name: Test Go code with coverage
 jobs:
   test:
