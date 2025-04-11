@@ -71,7 +71,7 @@ func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *Query) er
 	if err != nil {
 		return err
 	}
-	res, err := e.olap.Execute(ctx, &drivers.Statement{
+	res, err := e.olap.Query(ctx, &drivers.Statement{
 		Query:            sql,
 		Args:             args,
 		Priority:         e.priority,

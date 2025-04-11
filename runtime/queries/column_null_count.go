@@ -65,7 +65,7 @@ func (q *ColumnNullCount) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 		safeName(q.ColumnName),
 	)
 
-	rows, err := olap.Execute(ctx, &drivers.Statement{
+	rows, err := olap.Query(ctx, &drivers.Statement{
 		Query:            nullCountSQL,
 		Priority:         priority,
 		ExecutionTimeout: defaultExecutionTimeout,

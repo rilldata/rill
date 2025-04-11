@@ -72,7 +72,7 @@ func testWithConnection(t *testing.T, olap drivers.OLAPStore) {
 		})
 		require.NoError(t, err)
 
-		res, err := olap.Execute(ctx, &drivers.Statement{
+		res, err := olap.Query(ctx, &drivers.Statement{
 			Query: "SELECT id, planet FROM tbl",
 		})
 		require.NoError(t, err)
@@ -116,7 +116,7 @@ func testRenameView(t *testing.T, olap drivers.OLAPStore) {
 	notExists(t, olap, "foo_view")
 	notExists(t, olap, "foo_view1")
 
-	res, err := olap.Execute(ctx, &drivers.Statement{Query: "SELECT id FROM bar_view"})
+	res, err := olap.Query(ctx, &drivers.Statement{Query: "SELECT id FROM bar_view"})
 	require.NoError(t, err)
 	require.True(t, res.Next())
 	var id int
@@ -138,7 +138,7 @@ func testRenameTable(t *testing.T, olap drivers.OLAPStore) {
 }
 
 func notExists(t *testing.T, olap drivers.OLAPStore, tbl string) {
-	result, err := olap.Execute(context.Background(), &drivers.Statement{
+	result, err := olap.Query(context.Background(), &drivers.Statement{
 		Query: "EXISTS " + tbl,
 	})
 	require.NoError(t, err)
@@ -180,7 +180,7 @@ func testInsertTableAsSelect_WithAppend(t *testing.T, olap drivers.OLAPStore) {
 	_, err = olap.InsertTableAsSelect(context.Background(), "append_tbl", "SELECT 2 AS id, 'Mars' AS planet", insertOpts)
 	require.NoError(t, err)
 
-	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT id, planet FROM append_tbl ORDER BY id"})
+	res, err := olap.Query(context.Background(), &drivers.Statement{Query: "SELECT id, planet FROM append_tbl ORDER BY id"})
 	require.NoError(t, err)
 
 	var result []struct {
@@ -251,7 +251,7 @@ func testInsertTableAsSelect_WithMerge(t *testing.T, olap drivers.OLAPStore) {
 		Value string
 	}
 
-	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT id, value FROM merge_tbl ORDER BY id"})
+	res, err := olap.Query(context.Background(), &drivers.Statement{Query: "SELECT id, value FROM merge_tbl ORDER BY id"})
 	require.NoError(t, err)
 
 	for res.Next() {
@@ -318,7 +318,7 @@ func testInsertTableAsSelect_WithPartitionOverwrite(t *testing.T, olap drivers.O
 	_, err = olap.InsertTableAsSelect(context.Background(), "replace_tbl", "SELECT generate_series AS id, 'replace' AS value FROM generate_series(2, 5)", insertOpts)
 	require.NoError(t, err)
 
-	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT id, value FROM replace_tbl ORDER BY id"})
+	res, err := olap.Query(context.Background(), &drivers.Statement{Query: "SELECT id, value FROM replace_tbl ORDER BY id"})
 	require.NoError(t, err)
 
 	var result []struct {
@@ -386,7 +386,7 @@ func testInsertTableAsSelect_WithPartitionOverwrite_DatePartition(t *testing.T, 
 	_, err = olap.InsertTableAsSelect(context.Background(), "replace_tbl", "SELECT date_add(hour, generate_series, toDate('2024-12-01')) AS dt, 'replace' AS value FROM generate_series(2, 5)", insertOpts)
 	require.NoError(t, err)
 
-	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT dt, value FROM replace_tbl ORDER BY dt"})
+	res, err := olap.Query(context.Background(), &drivers.Statement{Query: "SELECT dt, value FROM replace_tbl ORDER BY dt"})
 	require.NoError(t, err)
 
 	var result []struct {
@@ -441,7 +441,7 @@ func testDictionary(t *testing.T, olap drivers.OLAPStore) {
 	err = olap.RenameTable(context.Background(), "dict", "dict1")
 	require.NoError(t, err)
 
-	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT id, planet FROM dict1"})
+	res, err := olap.Query(context.Background(), &drivers.Statement{Query: "SELECT id, planet FROM dict1"})
 	require.NoError(t, err)
 
 	require.True(t, res.Next())
@@ -468,7 +468,7 @@ func testIntervalType(t *testing.T, olap drivers.OLAPStore) {
 		{query: "SELECT INTERVAL '6' YEAR", ms: 6 * 365 * 24 * 60 * 60 * 1000},
 	}
 	for _, c := range cases {
-		rows, err := olap.Execute(context.Background(), &drivers.Statement{Query: c.query})
+		rows, err := olap.Query(context.Background(), &drivers.Statement{Query: c.query})
 		require.NoError(t, err)
 		require.Equal(t, runtimev1.Type_CODE_INTERVAL, rows.Schema.Fields[0].Type.Code)
 
