@@ -405,9 +405,9 @@ func (o *Ordinal) eval(evalOpts EvalOptions, start, cur, end time.Time, tz *time
 	// update cur to match the shifted ordinal
 	cur = timeutil.CopyTimeTill(start, cur, o.tg, tz)
 
-	end = timeutil.OffsetTime(start, o.tg, 1)
+	updatedEnd := timeutil.OffsetTime(start, o.tg, 1)
 
-	return start, cur, end
+	return start, cur, updatedEnd
 }
 
 func (o *Ordinal) grain() timeutil.TimeGrain {
@@ -458,7 +458,7 @@ func (t *TimeAnchor) eval(evalOpts EvalOptions, start, cur, end time.Time, tz *t
 			if t.Prefix == nil || *t.Prefix == "-" {
 				offset = -offset + 1
 			} else if *t.Prefix == "+" {
-				offset = offset - 1
+				offset--
 			}
 			start = timeutil.OffsetTime(start, t.from, offset)
 		}
@@ -590,16 +590,14 @@ func (a *AbsoluteTime) parse() error {
 
 func (a *AbsoluteTime) eval(evalOpts EvalOptions, start, cur, end time.Time, tz *time.Location) (time.Time, time.Time, time.Time) {
 	// Since we use this to build a time, month and day cannot be zero, hence the max(1, xx)
-	start = time.Date(a.year, time.Month(max(1, a.month)), max(1, a.day), a.hour, a.minute, a.second, 0, tz)
-	end = start
+	absStart := time.Date(a.year, time.Month(max(1, a.month)), max(1, a.day), a.hour, a.minute, a.second, 0, tz)
 
-	end = timeutil.OffsetTime(start, a.tg, 1)
+	absEnd := timeutil.OffsetTime(absStart, a.tg, 1)
 
 	// update cur to match the absolute time
-	cur = timeutil.CopyTimeTill(start, cur, a.tg, tz)
+	absCur := timeutil.CopyTimeTill(absStart, cur, a.tg, tz)
 
-	// TODO: should we move cur relative to current date?
-	return start, cur, end
+	return absStart, absCur, absEnd
 }
 
 func (a *AbsoluteTime) grain() timeutil.TimeGrain {

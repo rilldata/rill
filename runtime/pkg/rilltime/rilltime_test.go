@@ -118,6 +118,42 @@ func Test_Eval(t *testing.T) {
 	}
 }
 
+func Test_Eval_watermark_on_boundary(t *testing.T) {
+	now := parseTestTime(t, "2025-03-12T10:32:36Z")
+	minTime := parseTestTime(t, "2020-01-01T00:32:36Z")
+	maxTime := parseTestTime(t, "2025-03-06T00:00:00Z")
+	watermark := parseTestTime(t, "2025-03-06T00:00:00Z")
+	testCases := []struct {
+		timeRange string
+		start     string
+		end       string
+		grain     timeutil.TimeGrain
+	}{
+		{"2D", "2025-03-04T00:00:00Z", "2025-03-06T00:00:00Z", timeutil.TimeGrainDay},
+		{"2D~", "2025-03-05T00:00:00Z", "2025-03-07T00:00:00Z", timeutil.TimeGrainDay},
+		{"2D of -2D", "2025-03-02T00:00:00Z", "2025-03-04T00:00:00Z", timeutil.TimeGrainDay},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.timeRange, func(t *testing.T) {
+			rt, err := Parse(testCase.timeRange, ParseOptions{})
+			require.NoError(t, err)
+
+			start, end, grain := rt.Eval(EvalOptions{
+				Now:        now,
+				MinTime:    minTime,
+				MaxTime:    maxTime,
+				Watermark:  watermark,
+				FirstDay:   1,
+				FirstMonth: 1,
+			})
+			require.Equal(t, parseTestTime(t, testCase.start), start)
+			require.Equal(t, parseTestTime(t, testCase.end), end)
+			require.Equal(t, testCase.grain, grain)
+		})
+	}
+}
+
 func parseTestTime(tst *testing.T, t string) time.Time {
 	ts, err := time.Parse(time.RFC3339, t)
 	require.NoError(tst, err)
