@@ -363,7 +363,7 @@ const TestCases: {
     mutations: [AD_BIDS_CLOSE_TDD],
     preset: AD_BIDS_TIME_DIMENSION_DETAILS_PRESET,
     expectedSearch:
-      "view=explore&measures=*&dims=*&sort_by=impressions&sort_type=value&sort_dir=DESC",
+      "view=explore&measures=*&dims=*&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measures=impressions",
     legacyNotSupported: true,
   },
 
@@ -420,7 +420,7 @@ const TestCases: {
     mutations: [AD_BIDS_TOGGLE_PIVOT],
     preset: AD_BIDS_PIVOT_PRESET,
     expectedSearch:
-      "view=explore&grain=hour&measures=*&dims=*&sort_by=impressions&sort_type=value&sort_dir=DESC",
+      "view=explore&grain=hour&measures=*&dims=*&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measures=impressions",
     legacyNotSupported: true,
   },
 ];
