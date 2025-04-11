@@ -78,13 +78,15 @@ function syncMeasures(
 ) {
   const measuresSet = new Set(explore.measures ?? []);
 
-  // sync measures with selected leaderboard measure.
-  if (
-    explore.measures?.length &&
-    !measuresSet.has(metricsExplorer.leaderboardSortByMeasureName)
-  ) {
+  // sync measures with selected leaderboard measure and ensure default measure is set
+  if (explore.measures?.length) {
     const defaultMeasure = explore.measures[0];
-    metricsExplorer.leaderboardSortByMeasureName = defaultMeasure;
+    if (!measuresSet.has(metricsExplorer.leaderboardSortByMeasureName)) {
+      metricsExplorer.leaderboardSortByMeasureName = defaultMeasure;
+    }
+    if (!metricsExplorer.leaderboardMeasureNames?.length) {
+      metricsExplorer.leaderboardMeasureNames = [defaultMeasure];
+    }
   }
 
   if (

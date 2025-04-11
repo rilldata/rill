@@ -248,8 +248,8 @@ function fromLegacyExploreFields(
       FromLegacySortTypeMap[legacyState.leaderboardSortType];
   }
 
-  if (legacyState.leaderboardMeasureCount) {
-    preset.exploreLeaderboardMeasureCount = legacyState.leaderboardMeasureCount;
+  if (legacyState.leaderboardMeasures) {
+    preset.exploreLeaderboardMeasures = legacyState.leaderboardMeasures;
   }
 
   if (legacyState.selectedDimension) {

@@ -51,11 +51,11 @@ import {
   AD_BIDS_TOGGLE_IMPRESSIONS_MEASURE_VISIBILITY,
   AD_BIDS_TOGGLE_PIVOT,
   AD_BIDS_TOGGLE_PIVOT_TABLE_MODE,
-  AD_BIDS_SET_LEADERBOARD_MEASURE_COUNT,
   applyMutationsToDashboard,
   type TestDashboardMutation,
   AD_BIDS_SET_PUBLISHER_COMPARE_DIMENSION,
   AD_BIDS_SET_DOMAIN_COMPARE_DIMENSION,
+  AD_BIDS_MEASURE_NAMES_BID_PRICE_AND_IMPRESSIONS,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { getCleanedUrlParamsForGoto } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
@@ -299,11 +299,10 @@ const TestCases: {
     expectedSearch: "sort_by=bid_price&sort_type=delta_abs&sort_dir=DESC",
   },
   {
-    title: "Leaderboard measure count persists in URL",
-    mutations: [AD_BIDS_SET_LEADERBOARD_MEASURE_COUNT],
-    expectedSearch: "leaderboard_measure_count=4",
+    title: "Leaderboard configs with multiple measures",
+    mutations: [AD_BIDS_MEASURE_NAMES_BID_PRICE_AND_IMPRESSIONS],
+    expectedSearch: "leaderboard_measures=bid_price%2Cimpressions",
   },
-
   {
     title: "Dimension table with no preset and dimension table active in state",
     mutations: [AD_BIDS_OPEN_PUB_DIMENSION_TABLE],
@@ -364,7 +363,7 @@ const TestCases: {
     mutations: [AD_BIDS_CLOSE_TDD],
     preset: AD_BIDS_TIME_DIMENSION_DETAILS_PRESET,
     expectedSearch:
-      "view=explore&measures=*&dims=*&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measure_count=1",
+      "view=explore&measures=*&dims=*&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measures=impressions",
     legacyNotSupported: true,
   },
 
@@ -421,7 +420,7 @@ const TestCases: {
     mutations: [AD_BIDS_TOGGLE_PIVOT],
     preset: AD_BIDS_PIVOT_PRESET,
     expectedSearch:
-      "view=explore&grain=hour&measures=*&dims=*&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measure_count=1",
+      "view=explore&grain=hour&measures=*&dims=*&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measures=impressions",
     legacyNotSupported: true,
   },
 ];

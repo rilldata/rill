@@ -30,30 +30,18 @@
   const StateManagers = getStateManagers();
   const {
     selectors: {
-      measures: {
-        visibleMeasures,
-        leaderboardSortByMeasureName,
-        activeMeasuresFromMeasureCount,
-      },
+      measures: { visibleMeasures },
       dimensions: { getDimensionByName },
       pivot: { showPivot },
     },
     dashboardStore,
   } = StateManagers;
 
-  const {
-    cloudDataViewer,
-    readOnly,
-    leaderboardMeasureCount: leaderboardMeasureCountFeatureFlag,
-  } = featureFlags;
+  const { cloudDataViewer, readOnly } = featureFlags;
 
   const timeControlsStore = useTimeControlStore(StateManagers);
 
   let exploreContainerWidth: number;
-
-  $: leaderboardMeasureNames = $leaderboardMeasureCountFeatureFlag
-    ? $activeMeasuresFromMeasureCount
-    : [$leaderboardSortByMeasureName];
 
   $: ({ instanceId } = $runtime);
 
@@ -227,7 +215,6 @@
               {dimensionThresholdFilters}
               {timeRange}
               {comparisonTimeRange}
-              activeMeasureName={$leaderboardSortByMeasureName}
               {timeControlsReady}
               {visibleMeasureNames}
               hideStartPivotButton={hidePivot}
@@ -235,8 +222,6 @@
           {:else}
             <LeaderboardDisplay
               {metricsViewName}
-              activeMeasureName={$leaderboardSortByMeasureName}
-              {leaderboardMeasureNames}
               {whereFilter}
               {dimensionThresholdFilters}
               {timeRange}

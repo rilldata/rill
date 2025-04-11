@@ -1,7 +1,7 @@
 import { LeaderboardContextColumn } from "../../leaderboard-context-column";
 import { SortType } from "../../proto-state/derived-types";
 import { setContextColumn } from "./context-columns";
-import { setLeaderboardSortByMeasureName } from "./core-actions";
+import { setLeaderboardSortByMeasureName } from "./leaderboard";
 import { sortActions, toggleSort } from "./sorting";
 import type { DashboardMutables } from "./types";
 

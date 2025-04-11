@@ -4923,6 +4923,10 @@ func (m *ExplorePreset) validate(all bool) error {
 		// no validation rules for ExploreLeaderboardMeasureCount
 	}
 
+	if m.ExploreLeaderboardShowContextForAllMeasures != nil {
+		// no validation rules for ExploreLeaderboardShowContextForAllMeasures
+	}
+
 	if m.TimeDimensionMeasure != nil {
 		// no validation rules for TimeDimensionMeasure
 	}

@@ -63,9 +63,14 @@ export interface MetricsExplorerEntity {
   leaderboardSortByMeasureName: string;
 
   /**
-   * This is the number of measures to show in the leaderboard.
+   * This is the list of measure names to show in the leaderboard.
    */
-  leaderboardMeasureCount: number;
+  leaderboardMeasureNames: string[];
+
+  /**
+   * Whether to show context for all measures in the leaderboard.
+   */
+  leaderboardShowContextForAllMeasures: boolean;
 
   /**
    * This is the sort type that will be used for the leaderboard

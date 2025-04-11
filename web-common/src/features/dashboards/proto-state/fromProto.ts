@@ -221,8 +221,12 @@ export function getDashboardStateFromProto(
   if (dashboard.leaderboardSortType) {
     entity.dashboardSortType = dashboard.leaderboardSortType;
   }
-  if (dashboard.leaderboardMeasureCount) {
-    entity.leaderboardMeasureCount = dashboard.leaderboardMeasureCount;
+  if (dashboard.leaderboardShowContextForAllMeasures) {
+    entity.leaderboardShowContextForAllMeasures =
+      dashboard.leaderboardShowContextForAllMeasures;
+  }
+  if (dashboard.leaderboardMeasures) {
+    entity.leaderboardMeasureNames = dashboard.leaderboardMeasures;
   }
 
   if (dashboard.activePage === DashboardState_ActivePage.PIVOT) {

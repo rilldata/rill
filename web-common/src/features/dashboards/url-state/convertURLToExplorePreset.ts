@@ -157,17 +157,26 @@ export function convertURLToExplorePreset(
     }
   }
 
-  if (searchParams.has(ExploreStateURLParams.LeaderboardMeasureCount)) {
-    const count = searchParams.get(
-      ExploreStateURLParams.LeaderboardMeasureCount,
+  // Validate that the measures here are actually present and visible.
+  // Unset if any are invalid.
+  if (searchParams.has(ExploreStateURLParams.LeaderboardMeasures)) {
+    const leaderboardMeasures = searchParams.get(
+      ExploreStateURLParams.LeaderboardMeasures,
+    ) as string;
+    const measuresList = leaderboardMeasures.split(",");
+
+    // Check if all measures exist and are visible
+    const allMeasuresValid = measuresList.every(
+      (measure) =>
+        measures.has(measure) &&
+        (!preset.measures || preset.measures.includes(measure)),
     );
-    const parsedCount = parseInt(count ?? "", 10);
-    if (!isNaN(parsedCount) && parsedCount > 0) {
-      preset.exploreLeaderboardMeasureCount = parsedCount;
+
+    if (allMeasuresValid) {
+      preset.exploreLeaderboardMeasures = measuresList;
     } else {
-      errors.push(
-        getSingleFieldError("leaderboard measure count", count ?? ""),
-      );
+      // Unset leaderboard measures if any are invalid
+      preset.exploreLeaderboardMeasures = [];
     }
   }
 
@@ -456,20 +465,6 @@ function fromExploreUrlParams(
       preset.exploreSortType = FromURLParamsSortTypeMap[sortType];
     } else {
       errors.push(getSingleFieldError("sort type", sortType));
-    }
-  }
-
-  if (searchParams.has(ExploreStateURLParams.LeaderboardMeasureCount)) {
-    const count = searchParams.get(
-      ExploreStateURLParams.LeaderboardMeasureCount,
-    );
-    const parsedCount = parseInt(count ?? "", 10);
-    if (!isNaN(parsedCount) && parsedCount > 0) {
-      preset.exploreLeaderboardMeasureCount = parsedCount;
-    } else {
-      errors.push(
-        getSingleFieldError("leaderboard measure count", count ?? ""),
-      );
     }
   }
 

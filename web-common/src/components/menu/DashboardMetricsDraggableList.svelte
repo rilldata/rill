@@ -219,7 +219,6 @@
   <Popover.Content
     class="p-0 z-popover"
     align="start"
-    collisionPadding={100}
     strategy="absolute"
     fitViewport={true}
     overflowY="auto"
