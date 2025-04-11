@@ -125,9 +125,8 @@ func (e *warehouseToSelfExecutor) queryAndInsert(ctx context.Context, opts *driv
 		qry := fmt.Sprintf("SELECT * FROM %s", from)
 
 		if !create && opts.IncrementalRun {
-			insertOpts := &drivers.InsertTableOptions{
+			insertOpts := &InsertTableOptions{
 				ByName:    false,
-				InPlace:   true,
 				Strategy:  outputProps.IncrementalStrategy,
 				UniqueKey: outputProps.UniqueKey,
 			}
@@ -140,9 +139,8 @@ func (e *warehouseToSelfExecutor) queryAndInsert(ctx context.Context, opts *driv
 		}
 
 		if !create {
-			insertOpts := &drivers.InsertTableOptions{
+			insertOpts := &InsertTableOptions{
 				ByName:   false,
-				InPlace:  true,
 				Strategy: drivers.IncrementalStrategyAppend,
 			}
 			metrics, err := e.c.InsertTableAsSelect(ctx, outputTable, qry, insertOpts)
@@ -153,7 +151,7 @@ func (e *warehouseToSelfExecutor) queryAndInsert(ctx context.Context, opts *driv
 			continue
 		}
 
-		metrics, err := e.c.CreateTableAsSelect(ctx, outputTable, qry, &drivers.CreateTableOptions{})
+		metrics, err := e.c.CreateTableAsSelect(ctx, outputTable, qry, &CreateTableOptions{})
 		if err != nil {
 			return fmt.Errorf("failed to create table: %w", err)
 		}

@@ -475,10 +475,6 @@ func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 	return nil, drivers.ErrNotNotifier
 }
 
-func (c *Connection) AcquireLongRunning(ctx context.Context) (func(), error) {
-	return nil, fmt.Errorf("not implemented")
-}
-
 // used should be called after a query to the database completes.
 // It bumps the result of lastUsedOn(), which can be used to guess if the DB may currently be scaled to zero.
 //

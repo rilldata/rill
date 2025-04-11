@@ -22,31 +22,11 @@ const (
 
 var _ drivers.OLAPStore = &connection{}
 
-// CreateTableAsSelect implements drivers.OLAPStore.
-func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, opts *drivers.CreateTableOptions) (*drivers.TableWriteMetrics, error) {
-	return nil, fmt.Errorf("druid: data transformation not yet supported")
-}
-
-// InsertTableAsSelect implements drivers.OLAPStore.
-func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, opts *drivers.InsertTableOptions) (*drivers.TableWriteMetrics, error) {
-	return nil, fmt.Errorf("druid: data transformation not yet supported")
-}
-
-// DropTable implements drivers.OLAPStore.
-func (c *connection) DropTable(ctx context.Context, name string) error {
-	return fmt.Errorf("druid: data transformation not yet supported")
-}
-
-// RenameTable implements drivers.OLAPStore.
-func (c *connection) RenameTable(ctx context.Context, name, newName string) error {
-	return fmt.Errorf("druid: data transformation not yet supported")
-}
-
 func (c *connection) Dialect() drivers.Dialect {
 	return drivers.DialectDruid
 }
 
-func (c *connection) WithConnection(ctx context.Context, priority int, longRunning bool, fn drivers.WithConnectionFunc) error {
+func (c *connection) WithConnection(ctx context.Context, priority int, fn drivers.WithConnectionFunc) error {
 	return fmt.Errorf("druid: WithConnection not supported")
 }
 

@@ -125,7 +125,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 			}
 			duration = res.Duration
 		} else {
-			createTableOpts := &drivers.CreateTableOptions{
+			createTableOpts := &CreateTableOptions{
 				View:         asView,
 				BeforeCreate: inputProps.PreExec,
 				AfterCreate:  inputProps.PostExec,
@@ -150,11 +150,10 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		}
 	} else {
 		// Insert into the table
-		insertTableOpts := &drivers.InsertTableOptions{
+		insertTableOpts := &InsertTableOptions{
 			BeforeInsert: inputProps.PreExec,
 			AfterInsert:  inputProps.PostExec,
 			ByName:       false,
-			InPlace:      true,
 			Strategy:     outputProps.IncrementalStrategy,
 			UniqueKey:    outputProps.UniqueKey,
 		}

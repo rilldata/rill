@@ -14,11 +14,16 @@ import (
 	"go.uber.org/zap"
 )
 
-// CreateTableAsSelect implements drivers.OLAPStore.
-func (c *Connection) CreateTableAsSelect(ctx context.Context, name, sql string, opts *drivers.CreateTableOptions) (*drivers.TableWriteMetrics, error) {
+// TableWriteMetrics reports metrics for an execution that mutates table data.
+type TableWriteMetrics struct {
+	// Duration is the time taken to run user queries only.
+	Duration time.Duration
+}
+
+func (c *Connection) CreateTableAsSelect(ctx context.Context, name, sql string, tableOpts map[string]any) (*TableWriteMetrics, error) {
 	ctx = contextWithQueryID(ctx)
 	outputProps := &ModelOutputProperties{}
-	if err := mapstructure.WeakDecode(opts.TableOpts, outputProps); err != nil {
+	if err := mapstructure.WeakDecode(tableOpts, outputProps); err != nil {
 		return nil, fmt.Errorf("failed to parse output properties: %w", err)
 	}
 	var onClusterClause string
@@ -35,13 +40,13 @@ func (c *Connection) CreateTableAsSelect(ctx context.Context, name, sql string, 
 		if err != nil {
 			return nil, err
 		}
-		return &drivers.TableWriteMetrics{Duration: time.Since(t)}, nil
+		return &TableWriteMetrics{Duration: time.Since(t)}, nil
 	} else if outputProps.Typ == "DICTIONARY" {
 		err := c.createDictionary(ctx, name, sql, outputProps)
 		if err != nil {
 			return nil, err
 		}
-		return &drivers.TableWriteMetrics{Duration: time.Since(t)}, nil
+		return &TableWriteMetrics{Duration: time.Since(t)}, nil
 	}
 	// on replicated databases `create table t as select * from ...` is prohibited
 	// so we need to create a table first and then insert data into it
@@ -56,26 +61,25 @@ func (c *Connection) CreateTableAsSelect(ctx context.Context, name, sql string, 
 	if err != nil {
 		return nil, err
 	}
-	return &drivers.TableWriteMetrics{Duration: time.Since(t)}, nil
+	return &TableWriteMetrics{Duration: time.Since(t)}, nil
 }
 
-// InsertTableAsSelect implements drivers.OLAPStore.
-func (c *Connection) InsertTableAsSelect(ctx context.Context, name, sql string, opts *drivers.InsertTableOptions) (*drivers.TableWriteMetrics, error) {
+type InsertTableOptions struct {
+	Strategy drivers.IncrementalStrategy
+}
+
+func (c *Connection) InsertTableAsSelect(ctx context.Context, name, sql string, opts *InsertTableOptions) (*TableWriteMetrics, error) {
 	ctx = contextWithQueryID(ctx)
-	if !opts.InPlace {
-		return nil, fmt.Errorf("clickhouse: inserts does not support inPlace=false")
-	}
 	if opts.Strategy == drivers.IncrementalStrategyAppend {
 		t := time.Now()
 		err := c.Exec(ctx, &drivers.Statement{
-			Query:       fmt.Sprintf("INSERT INTO %s %s", safeSQLName(name), sql),
-			Priority:    1,
-			LongRunning: true,
+			Query:    fmt.Sprintf("INSERT INTO %s %s", safeSQLName(name), sql),
+			Priority: 1,
 		})
 		if err != nil {
 			return nil, err
 		}
-		return &drivers.TableWriteMetrics{Duration: time.Since(t)}, nil
+		return &TableWriteMetrics{Duration: time.Since(t)}, nil
 	}
 
 	if opts.Strategy == drivers.IncrementalStrategyPartitionOverwrite {
@@ -124,14 +128,13 @@ func (c *Connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		// insert into temp table
 		t := time.Now()
 		err = c.Exec(ctx, &drivers.Statement{
-			Query:       fmt.Sprintf("INSERT INTO %s %s", safeSQLName(tempName), sql),
-			Priority:    1,
-			LongRunning: true,
+			Query:    fmt.Sprintf("INSERT INTO %s %s", safeSQLName(tempName), sql),
+			Priority: 1,
 		})
 		if err != nil {
 			return nil, err
 		}
-		metrics := &drivers.TableWriteMetrics{Duration: time.Since(t)}
+		metrics := &TableWriteMetrics{Duration: time.Since(t)}
 		// list partitions from the temp table
 		partitions, err := c.getTablePartitions(ctx, tempName)
 		if err != nil {
@@ -173,19 +176,17 @@ func (c *Connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		t := time.Now()
 		// insert into table using the merge strategy
 		err = c.Exec(ctx, &drivers.Statement{
-			Query:       fmt.Sprintf("INSERT INTO %s %s %s", safeSQLName(name), onClusterClause, sql),
-			Priority:    1,
-			LongRunning: true,
+			Query:    fmt.Sprintf("INSERT INTO %s %s %s", safeSQLName(name), onClusterClause, sql),
+			Priority: 1,
 		})
 		if err != nil {
 			return nil, err
 		}
-		return &drivers.TableWriteMetrics{Duration: time.Since(t)}, nil
+		return &TableWriteMetrics{Duration: time.Since(t)}, nil
 	}
 	return nil, fmt.Errorf("incremental insert strategy %q not supported", opts.Strategy)
 }
 
-// DropTable implements drivers.OLAPStore.
 func (c *Connection) DropTable(ctx context.Context, name string) error {
 	ctx = contextWithQueryID(ctx)
 	typ, onCluster, err := informationSchema{c: c}.entityType(ctx, c.config.Database, name)
@@ -236,7 +237,6 @@ func (c *Connection) DropTable(ctx context.Context, name string) error {
 	}
 }
 
-// RenameTable implements drivers.OLAPStore.
 func (c *Connection) RenameTable(ctx context.Context, oldName, newName string) error {
 	ctx = contextWithQueryID(ctx)
 	typ, onCluster, err := informationSchema{c: c}.entityType(ctx, c.config.Database, oldName)

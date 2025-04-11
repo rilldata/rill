@@ -69,7 +69,7 @@ func TestClickhouseCluster(t *testing.T) {
 }
 
 func testWithConnection(t *testing.T, olap drivers.OLAPStore) {
-	err := olap.WithConnection(context.Background(), 1, false, func(ctx, ensuredCtx context.Context, conn *sql.Conn) error {
+	err := olap.WithConnection(context.Background(), 1, func(ctx, ensuredCtx context.Context, conn *sql.Conn) error {
 		err := olap.Exec(ctx, &drivers.Statement{
 			Query: "CREATE table tbl engine=Memory AS SELECT 1 AS id, 'Earth' AS planet",
 		})
@@ -97,10 +97,7 @@ func testWithConnection(t *testing.T, olap drivers.OLAPStore) {
 
 func testRenameView(t *testing.T, c *clickhouse.Connection, olap drivers.OLAPStore) {
 	ctx := context.Background()
-	opts := &drivers.CreateTableOptions{
-		View:      true,
-		TableOpts: map[string]any{"type": "VIEW"},
-	}
+	opts := map[string]any{"type": "VIEW"}
 	_, err := c.CreateTableAsSelect(ctx, "foo_view", "SELECT 1 AS id", opts)
 	require.NoError(t, err)
 
@@ -153,33 +150,22 @@ func notExists(t *testing.T, c *clickhouse.Connection, olap drivers.OLAPStore, t
 }
 
 func testCreateTableAsSelect(t *testing.T, c *clickhouse.Connection, olap drivers.OLAPStore) {
-	opts := &drivers.CreateTableOptions{
-		View:      false,
-		TableOpts: map[string]any{"engine": "MergeTree", "table": "tbl", "distributed.sharding_key": "rand()"},
-	}
+	opts := map[string]any{"engine": "MergeTree", "table": "tbl", "distributed.sharding_key": "rand()"}
 	_, err := c.CreateTableAsSelect(context.Background(), "tbl", "SELECT 1 AS id, 'Earth' AS planet", opts)
 	require.NoError(t, err)
 }
 
 func testInsertTableAsSelect_WithAppend(t *testing.T, c *clickhouse.Connection, olap drivers.OLAPStore) {
-	opts := &drivers.CreateTableOptions{
-		View: false,
-		TableOpts: map[string]any{
-			"engine":                   "MergeTree",
-			"table":                    "tbl",
-			"distributed.sharding_key": "rand()",
-			"incremental_strategy":     drivers.IncrementalStrategyAppend,
-		},
+	opts := map[string]any{
+		"engine":                   "MergeTree",
+		"table":                    "tbl",
+		"distributed.sharding_key": "rand()",
+		"incremental_strategy":     drivers.IncrementalStrategyAppend,
 	}
 	_, err := c.CreateTableAsSelect(context.Background(), "append_tbl", "SELECT 1 AS id, 'Earth' AS planet", opts)
 	require.NoError(t, err)
 
-	insertOpts := &drivers.InsertTableOptions{
-		ByName:    false,
-		InPlace:   true,
-		Strategy:  drivers.IncrementalStrategyAppend,
-		UniqueKey: nil,
-	}
+	insertOpts := &clickhouse.InsertTableOptions{Strategy: drivers.IncrementalStrategyAppend}
 	_, err = c.InsertTableAsSelect(context.Background(), "append_tbl", "SELECT 2 AS id, 'Mars' AS planet", insertOpts)
 	require.NoError(t, err)
 
@@ -225,27 +211,18 @@ func testInsertTableAsSelect_WithAppend(t *testing.T, c *clickhouse.Connection, 
 }
 
 func testInsertTableAsSelect_WithMerge(t *testing.T, c *clickhouse.Connection, olap drivers.OLAPStore) {
-	opts := &drivers.CreateTableOptions{
-		View: false,
-		TableOpts: map[string]any{
-			"typs":                     "TABLE",
-			"engine":                   "ReplacingMergeTree",
-			"table":                    "tbl",
-			"distributed.sharding_key": "rand()",
-			"incremental_strategy":     drivers.IncrementalStrategyMerge,
-			"order_by":                 "id",
-		},
+	opts := map[string]any{
+		"typs":                     "TABLE",
+		"engine":                   "ReplacingMergeTree",
+		"table":                    "tbl",
+		"distributed.sharding_key": "rand()",
+		"incremental_strategy":     drivers.IncrementalStrategyMerge,
+		"order_by":                 "id",
 	}
-
 	_, err := c.CreateTableAsSelect(context.Background(), "merge_tbl", "SELECT generate_series AS id, 'insert' AS value FROM generate_series(0, 4)", opts)
 	require.NoError(t, err)
 
-	insertOpts := &drivers.InsertTableOptions{
-		ByName:    false,
-		InPlace:   true,
-		Strategy:  drivers.IncrementalStrategyMerge,
-		UniqueKey: []string{"id"},
-	}
+	insertOpts := &clickhouse.InsertTableOptions{Strategy: drivers.IncrementalStrategyMerge}
 	_, err = c.InsertTableAsSelect(context.Background(), "merge_tbl", "SELECT generate_series AS id, 'merge' AS value FROM generate_series(2, 5)", insertOpts)
 	require.NoError(t, err)
 
@@ -298,24 +275,19 @@ func testInsertTableAsSelect_WithMerge(t *testing.T, c *clickhouse.Connection, o
 }
 
 func testInsertTableAsSelect_WithPartitionOverwrite(t *testing.T, c *clickhouse.Connection, olap drivers.OLAPStore) {
-	opts := &drivers.CreateTableOptions{
-		View: false,
-		TableOpts: map[string]any{
-			"engine":                   "MergeTree",
-			"table":                    "tbl",
-			"distributed.sharding_key": "rand()",
-			"incremental_strategy":     drivers.IncrementalStrategyPartitionOverwrite,
-			"partition_by":             "id",
-			"order_by":                 "value",
-			"primary_key":              "value",
-		},
+	opts := map[string]any{
+		"engine":                   "MergeTree",
+		"table":                    "tbl",
+		"distributed.sharding_key": "rand()",
+		"incremental_strategy":     drivers.IncrementalStrategyPartitionOverwrite,
+		"partition_by":             "id",
+		"order_by":                 "value",
+		"primary_key":              "value",
 	}
 	_, err := c.CreateTableAsSelect(context.Background(), "replace_tbl", "SELECT generate_series AS id, 'insert' AS value FROM generate_series(0, 4)", opts)
 	require.NoError(t, err)
 
-	insertOpts := &drivers.InsertTableOptions{
-		ByName:   false,
-		InPlace:  true,
+	insertOpts := &clickhouse.InsertTableOptions{
 		Strategy: drivers.IncrementalStrategyPartitionOverwrite,
 	}
 	_, err = c.InsertTableAsSelect(context.Background(), "replace_tbl", "SELECT generate_series AS id, 'replace' AS value FROM generate_series(2, 5)", insertOpts)
@@ -366,24 +338,19 @@ func testInsertTableAsSelect_WithPartitionOverwrite(t *testing.T, c *clickhouse.
 }
 
 func testInsertTableAsSelect_WithPartitionOverwrite_DatePartition(t *testing.T, c *clickhouse.Connection, olap drivers.OLAPStore) {
-	opts := &drivers.CreateTableOptions{
-		View: false,
-		TableOpts: map[string]any{
-			"engine":                   "MergeTree",
-			"table":                    "tbl",
-			"distributed.sharding_key": "rand()",
-			"incremental_strategy":     drivers.IncrementalStrategyPartitionOverwrite,
-			"partition_by":             "dt",
-			"order_by":                 "value",
-			"primary_key":              "value",
-		},
+	opts := map[string]any{
+		"engine":                   "MergeTree",
+		"table":                    "tbl",
+		"distributed.sharding_key": "rand()",
+		"incremental_strategy":     drivers.IncrementalStrategyPartitionOverwrite,
+		"partition_by":             "dt",
+		"order_by":                 "value",
+		"primary_key":              "value",
 	}
 	_, err := c.CreateTableAsSelect(context.Background(), "replace_tbl", "SELECT date_add(hour, generate_series, toDate('2024-12-01')) AS dt, 'insert' AS value FROM generate_series(0, 4)", opts)
 	require.NoError(t, err)
 
-	insertOpts := &drivers.InsertTableOptions{
-		ByName:   false,
-		InPlace:  true,
+	insertOpts := &clickhouse.InsertTableOptions{
 		Strategy: drivers.IncrementalStrategyPartitionOverwrite,
 	}
 	_, err = c.InsertTableAsSelect(context.Background(), "replace_tbl", "SELECT date_add(hour, generate_series, toDate('2024-12-01')) AS dt, 'replace' AS value FROM generate_series(2, 5)", insertOpts)
@@ -434,10 +401,7 @@ func testInsertTableAsSelect_WithPartitionOverwrite_DatePartition(t *testing.T, 
 }
 
 func testDictionary(t *testing.T, c *clickhouse.Connection, olap drivers.OLAPStore) {
-	opts := &drivers.CreateTableOptions{
-		View:      false,
-		TableOpts: map[string]any{"table": "Dictionary", "primary_key": "id"},
-	}
+	opts := map[string]any{"table": "Dictionary", "primary_key": "id"}
 	_, err := c.CreateTableAsSelect(context.Background(), "dict", "SELECT 1 AS id, 'Earth' AS planet", opts)
 	require.NoError(t, err)
 

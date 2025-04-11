@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -12,9 +13,18 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/rduckdb"
 )
 
-// CreateTableAsSelect implements drivers.OLAPStore.
-// We add a \n at the end of the any user query to ensure any comment at the end of model doesn't make the query incomplete.
-func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, opts *drivers.CreateTableOptions) (*drivers.TableWriteMetrics, error) {
+type TableWriteMetrics struct {
+	Duration time.Duration
+}
+
+type CreateTableOptions struct {
+	View         bool
+	InitQueries  []string
+	BeforeCreate string
+	AfterCreate  string
+}
+
+func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, opts *CreateTableOptions) (*TableWriteMetrics, error) {
 	db, release, err := c.acquireDB()
 	if err != nil {
 		return nil, err
@@ -44,13 +54,21 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, 
 	if err != nil {
 		return nil, c.checkErr(err)
 	}
-	return &drivers.TableWriteMetrics{
+	return &TableWriteMetrics{
 		Duration: res.Duration,
 	}, nil
 }
 
-// InsertTableAsSelect implements drivers.OLAPStore.
-func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, opts *drivers.InsertTableOptions) (*drivers.TableWriteMetrics, error) {
+type InsertTableOptions struct {
+	InitQueries  []string
+	BeforeInsert string
+	AfterInsert  string
+	ByName       bool
+	Strategy     drivers.IncrementalStrategy
+	UniqueKey    []string
+}
+
+func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, opts *InsertTableOptions) (*TableWriteMetrics, error) {
 	db, release, err := c.acquireDB()
 	if err != nil {
 		return nil, err
@@ -81,7 +99,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		if err != nil {
 			return nil, c.checkErr(err)
 		}
-		return &drivers.TableWriteMetrics{
+		return &TableWriteMetrics{
 			Duration: res.Duration,
 		}, nil
 	}
@@ -141,7 +159,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		if err != nil {
 			return nil, c.checkErr(err)
 		}
-		return &drivers.TableWriteMetrics{
+		return &TableWriteMetrics{
 			Duration: res.Duration,
 		}, nil
 	}
@@ -149,7 +167,6 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 	return nil, fmt.Errorf("incremental insert strategy %q not supported", opts.Strategy)
 }
 
-// DropTable implements drivers.OLAPStore.
 func (c *connection) DropTable(ctx context.Context, name string) error {
 	db, release, err := c.acquireDB()
 	if err != nil {
@@ -162,7 +179,6 @@ func (c *connection) DropTable(ctx context.Context, name string) error {
 	return c.checkErr(err)
 }
 
-// RenameTable implements drivers.OLAPStore.
 func (c *connection) RenameTable(ctx context.Context, oldName, newName string) error {
 	db, release, err := c.acquireDB()
 	if err != nil {
