@@ -106,7 +106,7 @@ func pgxToDuckDB(t *testing.T, pgdb *sql.DB, dbURL string) {
 	olap, ok := duckDB.AsOLAP("default")
 	require.True(t, ok)
 
-	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "select count(*) from sink"})
+	res, err := olap.Query(context.Background(), &drivers.Statement{Query: "select count(*) from sink"})
 	require.NoError(t, err)
 	for res.Next() {
 		var count int
@@ -131,7 +131,7 @@ func pgxToDuckDB(t *testing.T, pgdb *sql.DB, dbURL string) {
 	_, err = me.Execute(context.Background(), execOpts)
 	require.NoError(t, err)
 
-	res, err = olap.Execute(context.Background(), &drivers.Statement{Query: "select count(*) from sink"})
+	res, err = olap.Query(context.Background(), &drivers.Statement{Query: "select count(*) from sink"})
 	require.NoError(t, err)
 	for res.Next() {
 		var count int

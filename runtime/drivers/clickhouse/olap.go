@@ -103,7 +103,7 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 	return err
 }
 
-func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res *drivers.Result, outErr error) {
+func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (res *drivers.Result, outErr error) {
 	ctx = contextWithQueryID(ctx)
 	// Log query if enabled (usually disabled)
 	if c.config.LogQueries {
@@ -470,7 +470,7 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string) e
 			args = []any{nil, oldName}
 		}
 		var engineFull string
-		res, err := c.Execute(ctx, &drivers.Statement{
+		res, err := c.Query(ctx, &drivers.Statement{
 			Query:    "SELECT engine_full FROM system.tables WHERE database = coalesce(?, currentDatabase()) AND name = ?",
 			Args:     args,
 			Priority: 100,
@@ -529,7 +529,7 @@ func (c *connection) renameView(ctx context.Context, oldName, newName, onCluster
 	if c.config.Database == "" {
 		args = []any{nil, oldName}
 	}
-	res, err := c.Execute(ctx, &drivers.Statement{
+	res, err := c.Query(ctx, &drivers.Statement{
 		Query:    "SELECT as_select FROM system.tables WHERE database = coalesce(?, currentDatabase()) AND name = ?",
 		Args:     args,
 		Priority: 100,
@@ -726,7 +726,7 @@ func (c *connection) columnClause(ctx context.Context, table string) (string, er
 	if c.config.Database == "" {
 		args = []any{nil, table}
 	}
-	res, err := c.Execute(ctx, &drivers.Statement{
+	res, err := c.Query(ctx, &drivers.Statement{
 		Query:    "SELECT name, type FROM system.columns WHERE database = coalesce(?, currentDatabase()) AND table = ?",
 		Args:     args,
 		Priority: 100,
@@ -842,7 +842,7 @@ func (c *connection) getTableEngine(ctx context.Context, name string) (string, e
 	if c.config.Database == "" {
 		args = []any{nil, name}
 	}
-	res, err := c.Execute(ctx, &drivers.Statement{
+	res, err := c.Query(ctx, &drivers.Statement{
 		Query:    "SELECT engine FROM system.tables WHERE database = coalesce(?, currentDatabase()) AND name = ?",
 		Args:     args,
 		Priority: 1,
@@ -864,7 +864,7 @@ func (c *connection) getTableEngine(ctx context.Context, name string) (string, e
 }
 
 func (c *connection) getTablePartitions(ctx context.Context, name string) ([]string, error) {
-	res, err := c.Execute(ctx, &drivers.Statement{
+	res, err := c.Query(ctx, &drivers.Statement{
 		Query:    "SELECT DISTINCT partition FROM system.parts WHERE table = ?",
 		Args:     []any{name},
 		Priority: 1,
