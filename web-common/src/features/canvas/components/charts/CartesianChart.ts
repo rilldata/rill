@@ -22,8 +22,6 @@ export class CartesianChartComponent extends BaseChart<CartesianChartConfig> {
       x: { type: "positional", label: "X-axis" },
       y: { type: "positional", label: "Y-axis" },
       color: { type: "mark", label: "Color", meta: { type: "color" } },
-      tooltip: { type: "tooltip", label: "Tooltip", showInUI: false },
-      vl_config: { type: "config", showInUI: false },
     };
   }
 

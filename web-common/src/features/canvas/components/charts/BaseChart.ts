@@ -57,6 +57,8 @@ export abstract class BaseChart<
     return {
       options: {
         metrics_view: { type: "metrics", label: "Metrics view" },
+        tooltip: { type: "tooltip", label: "Tooltip", showInUI: false },
+        vl_config: { type: "config", showInUI: false },
         ...this.getChartSpecificOptions(),
         ...commonOptions,
       },

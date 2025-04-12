@@ -1,3 +1,4 @@
+import { getChartComponent } from "@rilldata/web-common/features/canvas/components/charts";
 import { CartesianChartComponent } from "@rilldata/web-common/features/canvas/components/charts/CartesianChart";
 import { KPIGridComponent } from "@rilldata/web-common/features/canvas/components/kpi-grid";
 import type {
@@ -103,11 +104,11 @@ export const COMPONENT_CLASS_MAP: Record<
   image: ImageComponent,
   table: PivotCanvasComponent,
   pivot: PivotCanvasComponent,
-  bar_chart: CartesianChartComponent,
-  line_chart: CartesianChartComponent,
-  stacked_bar: CartesianChartComponent,
-  stacked_bar_normalized: CartesianChartComponent,
-  area_chart: CartesianChartComponent,
+  bar_chart: getChartComponent("bar_chart"),
+  line_chart: getChartComponent("line_chart"),
+  stacked_bar: getChartComponent("stacked_bar"),
+  stacked_bar_normalized: getChartComponent("stacked_bar_normalized"),
+  area_chart: getChartComponent("area_chart"),
 } as const;
 
 // Component display names mapping
