@@ -1,5 +1,5 @@
 import { getChartComponent } from "@rilldata/web-common/features/canvas/components/charts";
-import { CartesianChartComponent } from "@rilldata/web-common/features/canvas/components/charts/CartesianChart";
+import { CartesianChartComponent } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/CartesianChart";
 import { KPIGridComponent } from "@rilldata/web-common/features/canvas/components/kpi-grid";
 import type {
   ComponentInputParam,

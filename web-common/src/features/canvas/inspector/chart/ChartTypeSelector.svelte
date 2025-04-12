@@ -4,7 +4,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import type { BaseChart } from "@rilldata/web-common/features/canvas/components/charts/BaseChart";
-  import type { CartesianChartConfig } from "@rilldata/web-common/features/canvas/components/charts/CartesianChart";
+  import type { CartesianChartConfig } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/CartesianChart";
   import type { ChartMetadata } from "@rilldata/web-common/features/canvas/components/charts/types";
   import { chartMetadata } from "@rilldata/web-common/features/canvas/components/charts/util";
 

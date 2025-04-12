@@ -1,6 +1,7 @@
 import type { ChartDataResult } from "@rilldata/web-common/features/canvas/components/charts/selector";
 import type {
   ChartConfig,
+  FieldConfig,
   TooltipValue,
 } from "@rilldata/web-common/features/canvas/components/charts/types";
 import { sanitizeFieldName } from "@rilldata/web-common/features/canvas/components/charts/util";
@@ -27,7 +28,7 @@ export function createMultiLayerBaseSpec() {
 }
 
 export function createSingleLayerBaseSpec(
-  mark: "line" | "bar" | "point",
+  mark: "line" | "bar" | "point" | "area" | "arc",
 ): TopLevelUnitSpec<Field> {
   return {
     $schema: "https://vega.github.io/schema/vega-lite/v5.json",
@@ -40,48 +41,47 @@ export function createSingleLayerBaseSpec(
 }
 
 export function createXEncoding(
-  config: ChartConfig,
+  xField: FieldConfig | undefined,
   data: ChartDataResult,
 ): PositionDef<Field> {
-  if (!config.x) return {};
-  const metaData = data.fields[config.x.field];
+  if (!xField) return {};
+  const metaData = data.fields[xField.field];
   return {
-    field: sanitizeValueForVega(config.x.field),
-    title: metaData?.displayName || config.x.field,
-    type: config.x.type,
+    field: sanitizeValueForVega(xField.field),
+    title: metaData?.displayName || xField.field,
+    type: xField.type,
     ...(metaData && "timeUnit" in metaData && { timeUnit: metaData.timeUnit }),
-    ...(config.x.sort &&
-      config.x.type !== "temporal" && { sort: config.x.sort }),
+    ...(xField.sort && xField.type !== "temporal" && { sort: xField.sort }),
     axis: {
-      ...(config.x.type === "quantitative" && {
-        formatType: sanitizeFieldName(config.x.field),
+      ...(xField.type === "quantitative" && {
+        formatType: sanitizeFieldName(xField.field),
       }),
       ...(metaData && "format" in metaData && { format: metaData.format }),
-      ...(!config.x.showAxisTitle && { title: null }),
+      ...(!xField.showAxisTitle && { title: null }),
     },
   };
 }
 
 export function createYEncoding(
-  config: ChartConfig,
+  yField: FieldConfig | undefined,
   data: ChartDataResult,
 ): PositionDef<Field> {
-  if (!config.y) return {};
-  const metaData = data.fields[config.y.field];
+  if (!yField) return {};
+  const metaData = data.fields[yField.field];
   return {
-    field: sanitizeValueForVega(config.y.field),
-    title: metaData?.displayName || config.y.field,
-    type: config.y.type,
-    ...(config.y.zeroBasedOrigin !== true && {
+    field: sanitizeValueForVega(yField.field),
+    title: metaData?.displayName || yField.field,
+    type: yField.type,
+    ...(yField.zeroBasedOrigin !== true && {
       scale: {
         zero: false,
       },
     }),
     axis: {
-      ...(config.y.type === "quantitative" && {
-        formatType: sanitizeFieldName(config.y.field),
+      ...(yField.type === "quantitative" && {
+        formatType: sanitizeFieldName(yField.field),
       }),
-      ...(!config.y.showAxisTitle && { title: null }),
+      ...(!yField.showAxisTitle && { title: null }),
       ...(metaData && "format" in metaData && { format: metaData.format }),
     },
     ...(metaData && "timeUnit" in metaData && { timeUnit: metaData.timeUnit }),
@@ -89,23 +89,23 @@ export function createYEncoding(
 }
 
 export function createColorEncoding(
-  config: ChartConfig,
+  colorField: FieldConfig | string | undefined,
   data: ChartDataResult,
 ): ColorDef<Field> {
-  if (!config.color) return {};
-  if (typeof config.color === "object") {
-    const metaData = data.fields[config.color.field];
+  if (!colorField) return {};
+  if (typeof colorField === "object") {
+    const metaData = data.fields[colorField.field];
 
     return {
-      field: sanitizeValueForVega(config.color.field),
-      title: metaData?.displayName || config.color.field,
-      type: config.color.type,
+      field: sanitizeValueForVega(colorField.field),
+      title: metaData?.displayName || colorField.field,
+      type: colorField.type,
       ...(metaData &&
         "timeUnit" in metaData && { timeUnit: metaData.timeUnit }),
     };
   }
-  if (typeof config.color === "string") {
-    return { value: config.color };
+  if (typeof colorField === "string") {
+    return { value: colorField };
   }
   return {};
 }
@@ -138,38 +138,40 @@ export function createLegendParam(
 }
 
 export function createDefaultTooltipEncoding(
-  config: ChartConfig,
+  xField: FieldConfig | undefined,
+  yField: FieldConfig | undefined,
+  colorField: FieldConfig | string | undefined,
   data: ChartDataResult,
 ) {
   const tooltip: TooltipValue[] = [];
 
-  if (config.x) {
+  if (xField) {
     tooltip.push({
-      field: sanitizeValueForVega(config.x.field),
-      title: data.fields[config.x.field]?.displayName || config.x.field,
-      type: config.x.type,
-      ...(config.x.type === "quantitative" && {
-        formatType: sanitizeFieldName(config.x.field),
+      field: sanitizeValueForVega(xField.field),
+      title: data.fields[xField.field]?.displayName || xField.field,
+      type: xField.type,
+      ...(xField.type === "quantitative" && {
+        formatType: sanitizeFieldName(xField.field),
       }),
-      ...(config.x.type === "temporal" && { format: "%b %d, %Y %H:%M" }),
+      ...(xField.type === "temporal" && { format: "%b %d, %Y %H:%M" }),
     });
   }
-  if (config.y) {
+  if (yField) {
     tooltip.push({
-      field: sanitizeValueForVega(config.y.field),
-      title: data.fields[config.y.field]?.displayName || config.y.field,
-      type: config.y.type,
-      ...(config.y.type === "quantitative" && {
-        formatType: sanitizeFieldName(config.y.field),
+      field: sanitizeValueForVega(yField.field),
+      title: data.fields[yField.field]?.displayName || yField.field,
+      type: yField.type,
+      ...(yField.type === "quantitative" && {
+        formatType: sanitizeFieldName(yField.field),
       }),
-      ...(config.y.type === "temporal" && { format: "%b %d, %Y %H:%M" }),
+      ...(yField.type === "temporal" && { format: "%b %d, %Y %H:%M" }),
     });
   }
-  if (typeof config.color === "object" && config.color.field) {
+  if (typeof colorField === "object" && colorField.field) {
     tooltip.push({
-      field: sanitizeValueForVega(config.color.field),
-      title: data.fields[config.color.field]?.displayName || config.color.field,
-      type: config.color.type,
+      field: sanitizeValueForVega(colorField.field),
+      title: data.fields[colorField.field]?.displayName || colorField.field,
+      type: colorField.type,
     });
   }
 
@@ -181,9 +183,14 @@ export function createEncoding(
   data: ChartDataResult,
 ): Encoding<Field> {
   return {
-    x: createXEncoding(config, data),
-    y: createYEncoding(config, data),
-    color: createColorEncoding(config, data),
-    tooltip: createDefaultTooltipEncoding(config, data),
+    x: createXEncoding(config.x, data),
+    y: createYEncoding(config.y, data),
+    color: createColorEncoding(config.color, data),
+    tooltip: createDefaultTooltipEncoding(
+      config.x,
+      config.y,
+      config.color,
+      data,
+    ),
   };
 }

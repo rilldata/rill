@@ -1,4 +1,4 @@
-import { CartesianChartComponent } from "./CartesianChart";
+import { CartesianChartComponent } from "./cartesian-charts/CartesianChart";
 import type { ChartType } from "./types";
 
 export { default as Chart } from "./Chart.svelte";
