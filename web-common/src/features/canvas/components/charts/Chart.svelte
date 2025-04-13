@@ -2,7 +2,8 @@
   import VegaLiteRenderer from "@rilldata/web-common/components/vega/VegaLiteRenderer.svelte";
   import ComponentHeader from "@rilldata/web-common/features/canvas/ComponentHeader.svelte";
   import type { BaseChart } from "@rilldata/web-common/features/canvas/components/charts/BaseChart";
-  import type { CartesianChartConfig } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/CartesianChart";
+  import type { CartesianChartSpec } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/CartesianChart";
+  import type { CircularChartSpec } from "@rilldata/web-common/features/canvas/components/charts/circular-charts/CircularChart";
   import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
@@ -19,7 +20,7 @@
     sanitizeFieldName,
   } from "./util";
 
-  export let component: BaseChart<CartesianChartConfig>;
+  export let component: BaseChart<CartesianChartSpec | CircularChartSpec>;
 
   $: ({
     specStore,
@@ -39,35 +40,34 @@
 
   let viewVL: View;
 
-  $: chartConfig = $specStore;
+  $: chartSpec = $specStore;
 
   $: ({
     title,
     description,
     metrics_view,
-    y,
     vl_config,
     time_filters,
     dimension_filters,
-  } = chartConfig);
+  } = chartSpec);
 
-  $: schemaStore = validateChartSchema(store, chartConfig);
+  $: schemaStore = validateChartSchema(store, chartSpec);
 
   $: schema = $schemaStore;
 
-  $: chartQuery = getChartData(store, chartConfig, timeAndFilterStore);
+  $: chartQuery = getChartData(store, chartSpec, timeAndFilterStore);
 
   $: ({ isFetching, data, error } = $chartQuery);
   $: hasNoData = !isFetching && data.length === 0;
 
-  $: spec = generateSpec(chartType, chartConfig, $chartQuery);
+  $: spec = generateSpec(chartType, chartSpec, $chartQuery);
 
   $: filters = {
     time_filters,
     dimension_filters,
   };
 
-  $: measure = getMeasureForMetricView(y?.field, metrics_view);
+  $: measure = getMeasureForMetricView(chartSpec.y?.field, metrics_view);
 
   $: measureName = sanitizeFieldName($measure?.name || "measure");
 
@@ -89,7 +89,7 @@
     {:else}
       <ComponentHeader
         faint={!title}
-        title={title || getChartTitle(chartConfig, $chartQuery)}
+        title={title || getChartTitle(chartSpec, $chartQuery)}
         {description}
         {filters}
       />

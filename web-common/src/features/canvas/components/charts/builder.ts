@@ -1,6 +1,6 @@
+import type { CartesianChartSpec } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/CartesianChart";
 import type { ChartDataResult } from "@rilldata/web-common/features/canvas/components/charts/selector";
 import type {
-  ChartConfig,
   FieldConfig,
   TooltipValue,
 } from "@rilldata/web-common/features/canvas/components/charts/types";
@@ -138,48 +138,32 @@ export function createLegendParam(
 }
 
 export function createDefaultTooltipEncoding(
-  xField: FieldConfig | undefined,
-  yField: FieldConfig | undefined,
-  colorField: FieldConfig | string | undefined,
+  fields: Array<FieldConfig | string | undefined>,
   data: ChartDataResult,
-) {
+): TooltipValue[] {
   const tooltip: TooltipValue[] = [];
 
-  if (xField) {
-    tooltip.push({
-      field: sanitizeValueForVega(xField.field),
-      title: data.fields[xField.field]?.displayName || xField.field,
-      type: xField.type,
-      ...(xField.type === "quantitative" && {
-        formatType: sanitizeFieldName(xField.field),
-      }),
-      ...(xField.type === "temporal" && { format: "%b %d, %Y %H:%M" }),
-    });
-  }
-  if (yField) {
-    tooltip.push({
-      field: sanitizeValueForVega(yField.field),
-      title: data.fields[yField.field]?.displayName || yField.field,
-      type: yField.type,
-      ...(yField.type === "quantitative" && {
-        formatType: sanitizeFieldName(yField.field),
-      }),
-      ...(yField.type === "temporal" && { format: "%b %d, %Y %H:%M" }),
-    });
-  }
-  if (typeof colorField === "object" && colorField.field) {
-    tooltip.push({
-      field: sanitizeValueForVega(colorField.field),
-      title: data.fields[colorField.field]?.displayName || colorField.field,
-      type: colorField.type,
-    });
+  for (const field of fields) {
+    if (!field) continue;
+
+    if (typeof field === "object") {
+      tooltip.push({
+        field: sanitizeValueForVega(field.field),
+        title: data.fields[field.field]?.displayName || field.field,
+        type: field.type,
+        ...(field.type === "quantitative" && {
+          formatType: sanitizeFieldName(field.field),
+        }),
+        ...(field.type === "temporal" && { format: "%b %d, %Y %H:%M" }),
+      });
+    }
   }
 
   return tooltip;
 }
 
 export function createEncoding(
-  config: ChartConfig,
+  config: CartesianChartSpec,
   data: ChartDataResult,
 ): Encoding<Field> {
   return {
@@ -187,9 +171,7 @@ export function createEncoding(
     y: createYEncoding(config.y, data),
     color: createColorEncoding(config.color, data),
     tooltip: createDefaultTooltipEncoding(
-      config.x,
-      config.y,
-      config.color,
+      [config.x, config.y, config.color],
       data,
     ),
   };

@@ -1,0 +1,61 @@
+import type { FieldConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
+import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
+import type {
+  V1MetricsViewSpec,
+  V1Resource,
+} from "@rilldata/web-common/runtime-client";
+import type {
+  CanvasEntity,
+  ComponentPath,
+} from "../../../stores/canvas-entity";
+import { BaseChart, type BaseChartConfig } from "../BaseChart";
+
+type CircularChartEncoding = {
+  measure?: FieldConfig;
+  color?: FieldConfig;
+};
+export type CircularChartSpec = BaseChartConfig & CircularChartEncoding;
+
+export class CartesianChartComponent extends BaseChart<CircularChartSpec> {
+  constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
+    super(resource, parent, path);
+  }
+
+  protected getChartSpecificOptions(): Record<string, ComponentInputParam> {
+    return {
+      measure: { type: "positional", label: "Measure" },
+      color: { type: "mark", label: "Color", meta: { type: "color" } },
+    };
+  }
+
+  static newComponentSpec(
+    metricsViewName: string,
+    metricsViewSpec: V1MetricsViewSpec | undefined,
+  ): CircularChartSpec {
+    // Randomly select a measure and dimension if available
+    const measures = metricsViewSpec?.measures || [];
+    const dimensions = metricsViewSpec?.dimensions || [];
+
+    const randomMeasure = measures[Math.floor(Math.random() * measures.length)]
+      ?.name as string;
+
+    const randomDimension = dimensions[
+      Math.floor(Math.random() * dimensions.length)
+    ]?.name as string;
+
+    return {
+      metrics_view: metricsViewName,
+      color: {
+        type: "nominal",
+        field: randomDimension,
+        sort: "-y",
+        limit: 20,
+      },
+      measure: {
+        type: "quantitative",
+        field: randomMeasure,
+        zeroBasedOrigin: true,
+      },
+    };
+  }
+}

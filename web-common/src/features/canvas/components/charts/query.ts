@@ -1,8 +1,5 @@
-import type {
-  ChartConfig,
-  ChartSortDirection,
-} from "@rilldata/web-common/features/canvas/components/charts/types";
-import type { ComponentFilterProperties } from "@rilldata/web-common/features/canvas/components/types";
+import type { CartesianChartSpec } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/CartesianChart";
+import type { ChartSortDirection } from "@rilldata/web-common/features/canvas/components/charts/types";
 import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
@@ -25,7 +22,7 @@ import { derived, readable, type Readable } from "svelte/store";
 
 export function createChartDataQuery(
   ctx: CanvasStore,
-  config: ChartConfig & ComponentFilterProperties,
+  config: CartesianChartSpec,
   timeAndFilterStore: Readable<TimeAndFilterStore>,
 ): Readable<{
   isFetching: boolean;
@@ -160,7 +157,7 @@ export function createChartDataQuery(
 
 function vegaSortToAggregationSort(
   sort: ChartSortDirection | undefined,
-  config: ChartConfig,
+  config: CartesianChartSpec,
 ): V1MetricsViewAggregationSort | undefined {
   if (!sort) return undefined;
   const field =

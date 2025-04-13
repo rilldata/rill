@@ -1,3 +1,4 @@
+import type { CartesianChartSpec } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/CartesianChart";
 import {
   validateDimensions,
   validateMeasures,
@@ -12,9 +13,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import { derived, type Readable } from "svelte/store";
-import type { ChartSpec } from "./";
 import { createChartDataQuery } from "./query";
-import type { ChartConfig } from "./types";
 import { timeGrainToVegaTimeUnitMap } from "./util";
 
 export type ChartDataResult = {
@@ -39,7 +38,7 @@ export interface TimeDimensionDefinition {
 
 export function getChartData(
   ctx: CanvasStore,
-  config: ChartConfig,
+  config: CartesianChartSpec,
   timeAndFilterStore: Readable<TimeAndFilterStore>,
 ): Readable<ChartDataResult> {
   const chartDataQuery = createChartDataQuery(ctx, config, timeAndFilterStore);
@@ -120,7 +119,7 @@ export function getTimeDimensionDefinition(
 
 export function validateChartSchema(
   ctx: CanvasStore,
-  chartSpec: ChartSpec,
+  chartSpec: CartesianChartSpec,
 ): Readable<{
   isValid: boolean;
   error?: string;

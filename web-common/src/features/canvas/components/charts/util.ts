@@ -10,29 +10,32 @@ import merge from "deepmerge";
 import type { Config } from "vega-lite";
 import { generateVLAreaChartSpec } from "./cartesian-charts/area/spec";
 import { generateVLBarChartSpec } from "./cartesian-charts/bar-chart/spec";
+import type { CartesianChartSpec } from "./cartesian-charts/CartesianChart";
 import { generateVLLineChartSpec } from "./cartesian-charts/line-chart/spec";
 import { generateVLStackedBarChartSpec } from "./cartesian-charts/stacked-bar/default";
 import { generateVLStackedBarNormalizedSpec } from "./cartesian-charts/stacked-bar/normalized";
 import type { ChartDataResult } from "./selector";
-import type { ChartConfig, ChartMetadata, ChartType } from "./types";
+import type { ChartMetadata, ChartType } from "./types";
 
 export function generateSpec(
   chartType: ChartType,
-  chartConfig: ChartConfig,
+  rillChartSpec: CartesianChartSpec,
   data: ChartDataResult,
 ) {
   if (data.isFetching || data.error) return {};
   switch (chartType) {
     case "bar_chart":
-      return generateVLBarChartSpec(chartConfig, data);
+      return generateVLBarChartSpec(rillChartSpec, data);
     case "stacked_bar":
-      return generateVLStackedBarChartSpec(chartConfig, data);
+      return generateVLStackedBarChartSpec(rillChartSpec, data);
     case "stacked_bar_normalized":
-      return generateVLStackedBarNormalizedSpec(chartConfig, data);
+      return generateVLStackedBarNormalizedSpec(rillChartSpec, data);
     case "line_chart":
-      return generateVLLineChartSpec(chartConfig, data);
+      return generateVLLineChartSpec(rillChartSpec, data);
     case "area_chart":
-      return generateVLAreaChartSpec(chartConfig, data);
+      return generateVLAreaChartSpec(rillChartSpec, data);
+    // case "pie_chart":
+    //   return generateVLPieChartSpec(rillChartSpec, data);
   }
 }
 
@@ -71,7 +74,10 @@ export function mergedVlConfig(config: string): Config {
   return merge(defaultConfig, parsedConfig, { arrayMerge: reverseArrayMerge });
 }
 
-export function getChartTitle(config: ChartConfig, data: ChartDataResult) {
+export function getChartTitle(
+  config: CartesianChartSpec,
+  data: ChartDataResult,
+) {
   const xLabel = config.x?.field
     ? data.fields[config.x.field]?.displayName || config.x.field
     : "";
@@ -116,3 +122,10 @@ export function sanitizeFieldName(fieldName: string) {
    */
   return `rill_${sanitizedFieldName}`;
 }
+
+// export function getMeasureForMetricView(
+//   spec: Record<string, unknown>,
+//   metricsView: MetricsView,
+// ) {
+//   return metricsView.measures.find((measure) => measure.name === yField);
+// }
