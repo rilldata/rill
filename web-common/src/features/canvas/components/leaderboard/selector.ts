@@ -7,11 +7,23 @@ import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 
 export function validateLeaderboardSchema(
   leaderboardSpec: LeaderboardSpec,
-  metricsView: V1MetricsViewSpec | undefined,
+  metricsViewQuery: {
+    metricsView: V1MetricsViewSpec | undefined;
+    isLoading: boolean;
+  },
 ): {
   isValid: boolean;
   error?: string;
+  isLoading?: boolean;
 } {
+  if (metricsViewQuery.isLoading) {
+    return {
+      isValid: true,
+      error: undefined,
+      isLoading: true,
+    };
+  }
+  const metricsView = metricsViewQuery.metricsView;
   if (!metricsView) {
     return {
       isValid: false,

@@ -62,10 +62,12 @@
     numRows = leaderboardProperties.num_rows ?? 7;
   }
 
-  $: _metricViewSpec = getMetricsViewFromName(metricsViewName);
-  $: metricsViewSpec = $_metricViewSpec.metricsView;
+  $: metricsViewQuery = getMetricsViewFromName(metricsViewName);
 
-  $: schema = validateLeaderboardSchema(leaderboardProperties, metricsViewSpec);
+  $: schema = validateLeaderboardSchema(
+    leaderboardProperties,
+    $metricsViewQuery,
+  );
 
   $: ({ showTimeComparison, comparisonTimeRange, timeRange, where } =
     $timeAndFilterStore);
