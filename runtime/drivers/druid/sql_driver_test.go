@@ -25,7 +25,7 @@ func Ignore_TestDriver_types(t *testing.T) {
 	olap, ok := handle.AsOLAP("")
 	require.True(t, ok)
 
-	res, err := olap.Execute(context.Background(), &drivers.Statement{
+	res, err := olap.Query(context.Background(), &drivers.Statement{
 		Query: `select 
 		cast(1 as boolean) as bool1, 
 		cast(1 as bigint) as bigint1, 
@@ -62,7 +62,7 @@ func Ignore_TestDriver_array_type(t *testing.T) {
 	olap, ok := handle.AsOLAP("")
 	require.True(t, ok)
 
-	res, err := olap.Execute(context.Background(), &drivers.Statement{
+	res, err := olap.Query(context.Background(), &drivers.Statement{
 		Query: `select 
 		array [1,2] as array1
 		`,
@@ -88,7 +88,7 @@ func Ignore_TestDriver_json_type(t *testing.T) {
 	olap, ok := handle.AsOLAP("")
 	require.True(t, ok)
 
-	res, err := olap.Execute(context.Background(), &drivers.Statement{
+	res, err := olap.Query(context.Background(), &drivers.Statement{
 		Query: `select 
 			json_object('a':'b') as json1 
 		`,
@@ -113,7 +113,7 @@ func Ignore_TestDriver_multiple_rows(t *testing.T) {
 	olap, ok := handle.AsOLAP("")
 	require.True(t, ok)
 
-	res, err := olap.Execute(context.Background(), &drivers.Statement{
+	res, err := olap.Query(context.Background(), &drivers.Statement{
 		Query: `
 		select 
 			cast(1 as boolean) as bool1,
@@ -149,7 +149,7 @@ func Ignore_TestDriver_error(t *testing.T) {
 	olap, ok := handle.AsOLAP("")
 	require.True(t, ok)
 
-	_, err = olap.Execute(context.Background(), &drivers.Statement{
+	_, err = olap.Query(context.Background(), &drivers.Statement{
 		Query: `select select`,
 	})
 	require.Error(t, err)

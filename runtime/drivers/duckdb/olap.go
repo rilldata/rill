@@ -52,7 +52,7 @@ func (c *connection) WithConnection(ctx context.Context, priority int, longRunni
 }
 
 func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
-	res, err := c.Execute(ctx, stmt)
+	res, err := c.Query(ctx, stmt)
 	if err != nil {
 		return err
 	}
@@ -63,7 +63,7 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 	return c.checkErr(err)
 }
 
-func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res *drivers.Result, outErr error) {
+func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (res *drivers.Result, outErr error) {
 	// Log query if enabled (usually disabled)
 	if c.config.LogQueries {
 		c.logger.Info("duckdb query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))

@@ -24,13 +24,19 @@ import (
 	"github.com/marcboeker/go-duckdb"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"gocloud.dev/blob"
 	"golang.org/x/sync/semaphore"
 )
 
-var errNotFound = errors.New("rduckdb: not found")
+var (
+	errNotFound       = errors.New("rduckdb: not found")
+	createSecretRegex = regexp.MustCompile(`(?i)\bcreate\b(?:\s+\w+)*\s+\bsecret\b`)
+	tracer            = otel.Tracer("github.com/rilldata/rill/runtime/pkg/rduckdb")
+)
 
 type DB interface {
 	// Close closes the database.
@@ -85,6 +91,7 @@ type DBOptions struct {
 	DBInitQueries []string
 	// ConnInitQueries are run when a new connection is created. These are typically local duckdb configurations.
 	ConnInitQueries []string
+	LogQueries      bool
 
 	Logger         *zap.Logger
 	OtelAttributes []attribute.KeyValue
@@ -354,6 +361,13 @@ func (d *db) AcquireReadConnection(ctx context.Context) (*sqlx.Conn, func() erro
 }
 
 func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *CreateTableOptions) (res *TableWriteMetrics, createErr error) {
+	ctx, span := tracer.Start(ctx, "CreateTableAsSelect", trace.WithAttributes(
+		attribute.String("name", name),
+		attribute.String("query", query),
+		attribute.Bool("view", opts.View),
+	))
+	defer span.End()
+
 	d.logger.Debug("create: create table", zap.String("name", name), zap.Bool("view", opts.View), observability.ZapCtx(ctx))
 	// track write operation
 	err := d.trackWrite(name)
@@ -414,11 +428,13 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 		}()
 	}
 
+	t := time.Now()
 	// need to attach existing table so that any views dependent on this table are correctly attached
 	conn, release, err := d.acquireWriteConn(ctx, dbPath, name, true)
 	if err != nil {
 		return nil, err
 	}
+	span.SetAttributes(attribute.Float64("acquire_write_conn_duration", time.Since(t).Seconds()))
 	defer func() {
 		_ = release()
 	}()
@@ -430,7 +446,7 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 	// 2. Reconciler makes sure that dependent resources are not reconciled concurrently
 	d.writeSem.Release(1)
 	writeSemAcquired = false
-	t := time.Now()
+	t = time.Now()
 	safeName := safeSQLName(name)
 	var typ string
 	if opts.View {
@@ -465,6 +481,7 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 		return nil, err
 	}
 	duration := time.Since(t)
+	span.SetAttributes(attribute.Float64("query_duration", duration.Seconds()))
 
 	// close write handle before syncing local so that temp files or wal files are removed
 	err = release()
@@ -499,6 +516,9 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 }
 
 func (d *db) MutateTable(ctx context.Context, name string, initQueries []string, mutateFn func(ctx context.Context, conn *sqlx.Conn) error) (*TableWriteMetrics, error) {
+	ctx, span := tracer.Start(ctx, "MutateTable", trace.WithAttributes(attribute.String("name", name)))
+	defer span.End()
+
 	d.logger.Debug("mutate table", zap.String("name", name), observability.ZapCtx(ctx))
 
 	// track write operation
@@ -544,16 +564,18 @@ func (d *db) MutateTable(ctx context.Context, name string, initQueries []string,
 
 	// acquire write connection
 	// need to ignore attaching table since it is already present in the db file
+	t := time.Now()
 	conn, release, err := d.acquireWriteConn(ctx, d.localDBPath(name, newVersion), name, false)
 	if err != nil {
 		_ = os.RemoveAll(newDir)
 		return nil, err
 	}
+	span.SetAttributes(attribute.Float64("acquire_write_conn_duration", time.Since(t).Seconds()))
 
 	// run user queries
 	d.writeSem.Release(1)
 	writeSemAcquired = false
-	t := time.Now()
+	t = time.Now()
 	err = mutateFn(ctx, conn)
 	if err != nil {
 		_ = os.RemoveAll(newDir)
@@ -562,6 +584,7 @@ func (d *db) MutateTable(ctx context.Context, name string, initQueries []string,
 	}
 
 	duration := time.Since(t)
+	span.SetAttributes(attribute.Float64("query_duration", duration.Seconds()))
 
 	// acquire write mutex again
 	err = d.writeSem.Acquire(ctx, 1)
@@ -606,6 +629,9 @@ func (d *db) MutateTable(ctx context.Context, name string, initQueries []string,
 
 // DropTable implements DB.
 func (d *db) DropTable(ctx context.Context, name string) error {
+	ctx, span := tracer.Start(ctx, "DropTable", trace.WithAttributes(attribute.String("name", name)))
+	defer span.End()
+
 	d.logger.Debug("drop table", zap.String("name", name), observability.ZapCtx(ctx))
 
 	// track write operation
@@ -650,6 +676,9 @@ func (d *db) DropTable(ctx context.Context, name string) error {
 }
 
 func (d *db) RenameTable(ctx context.Context, oldName, newName string) error {
+	ctx, span := tracer.Start(ctx, "RenameTable", trace.WithAttributes(attribute.String("old_name", oldName), attribute.String("new_name", newName)))
+	defer span.End()
+
 	d.logger.Debug("rename table", zap.String("from", oldName), zap.String("to", newName), observability.ZapCtx(ctx))
 	if strings.EqualFold(oldName, newName) {
 		return fmt.Errorf("rename: Table with name %q already exists", newName)
@@ -909,7 +938,23 @@ func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, initQ
 		return nil, err
 	}
 
-	db = sqlx.NewDb(otelsql.OpenDB(connector), "duckdb")
+	var spanOptions otelsql.SpanOptions
+	if read {
+		spanOptions = otelsql.SpanOptions{}
+	} else {
+		spanOptions = otelsql.SpanOptions{
+			SpanFilter: func(ctx context.Context, method otelsql.Method, query string, args []driver.NamedValue) bool {
+				// if debug is not set do not create spans for queries
+				// we run a lot of metadata queries like attach, detach, drop view etc which can create a lot of spans and clutter the trace
+				if !d.opts.LogQueries {
+					return false
+				}
+				// log all queries except create secret which can contain sensitive data
+				return !createSecretRegex.MatchString(query)
+			},
+		}
+	}
+	db = sqlx.NewDb(otelsql.OpenDB(connector, otelsql.WithSpanOptions(spanOptions)), "duckdb")
 	defer func() {
 		// there are too many error paths after this so closing the db in a defer seems better
 		// but the dbErr can be non nil even before function reaches this point so need to check for db is non nil

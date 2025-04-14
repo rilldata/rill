@@ -8,7 +8,7 @@ import {
   type ComparisonTimeRangeState,
   type TimeRangeState,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { toTimeRangeParam } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
+import { toTimeRangeParam } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
 import { fromTimeRangeUrlParam } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import { fromTimeRangesParams } from "@rilldata/web-common/features/dashboards/url-state/convertURLToExplorePreset";
 import {
@@ -282,7 +282,6 @@ export class TimeControls {
 
         this.selectedComparisonTimeRange.set(newComparisonRange);
 
-        console.log({ isLocalComponentControl });
         if (
           defaultPreset?.comparisonMode ===
             V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME &&

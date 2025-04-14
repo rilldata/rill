@@ -46,7 +46,7 @@ func Test_specialCharInPath(t *testing.T) {
 	olap, ok := conn.AsOLAP("")
 	require.True(t, ok)
 
-	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT 1"})
+	res, err := olap.Query(context.Background(), &drivers.Statement{Query: "SELECT 1"})
 	require.NoError(t, err)
 	require.NoError(t, res.Close())
 	require.NoError(t, conn.Close())
