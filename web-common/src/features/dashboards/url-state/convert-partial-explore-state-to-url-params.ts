@@ -43,7 +43,6 @@ export function getCleanedUrlParamsForGoto(
   exploreSpec: V1ExploreSpec,
   partialExploreState: Partial<MetricsExplorerEntity>,
   timeControlsState: TimeControlState | undefined,
-  defaultExploreUrlParams: URLSearchParams,
   urlForCompressionCheck?: URL,
 ) {
   // Create params from the explore state
@@ -53,17 +52,7 @@ export function getCleanedUrlParamsForGoto(
     timeControlsState,
   );
 
-  // Remove params with default values
-  // [...stateParams.entries()].forEach(([key, value]) => {
-  //   const defaultValue = defaultExploreUrlParams.get(key);
-  //   if (
-  //     (defaultValue === null && value !== "") ||
-  //     (defaultValue !== null && value !== defaultValue)
-  //   ) {
-  //     return;
-  //   }
-  //   stateParams.delete(key);
-  // });
+  // TODO: do we want to keep default params from the rill default dashboard?
 
   if (!urlForCompressionCheck) return stateParams;
 

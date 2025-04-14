@@ -74,7 +74,6 @@ import { deepClone } from "@vitest/utils";
 import { get } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ALL_TIME_RANGE_ALIAS } from "../time-controls/new-time-controls";
-import { getDefaultExploreUrlParams } from "../stores/get-default-explore-url-params";
 import { convertURLSearchParamsToExploreState } from "./convertURLSearchParamsToExploreState";
 
 vi.stubEnv("TZ", "UTC");
@@ -481,11 +480,6 @@ describe("Human readable URL state variations", () => {
           ),
         );
         const initState = getCleanMetricsExploreForAssertion();
-        const defaultExploreUrlSearch = getDefaultExploreUrlParams(
-          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
-          explore,
-          AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
-        );
         const defaultExplorePreset = getDefaultExplorePreset(
           explore,
           AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
@@ -504,7 +498,6 @@ describe("Human readable URL state variations", () => {
             AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
             get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
           ),
-          defaultExploreUrlSearch,
         );
         expect(updateUrlParams.toString()).to.eq(expectedSearch);
 
@@ -605,11 +598,6 @@ describe("Human readable URL state variations", () => {
       AD_BIDS_METRICS_INIT,
       AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
     );
-    const defaultExploreUrlSearch = getDefaultExploreUrlParams(
-      AD_BIDS_METRICS_INIT,
-      AD_BIDS_EXPLORE_INIT,
-      AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
-    );
 
     applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, [
       AD_BIDS_APPLY_LARGE_FILTERS,
@@ -629,7 +617,6 @@ describe("Human readable URL state variations", () => {
         AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
         get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
       ),
-      defaultExploreUrlSearch,
       url,
     ).toString();
 

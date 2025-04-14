@@ -8,14 +8,10 @@ import {
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
   createTimeControlStoreFromName,
-  getTimeControlState,
   type TimeControlStore,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { updateExploreSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
-import {
-  convertPartialExploreStateToUrlParams,
-  getCleanedUrlParamsForGoto,
-} from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
+import { getCleanedUrlParamsForGoto } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
 import type { AfterNavigate } from "@sveltejs/kit";
 import { derived, get, type Readable } from "svelte/store";
 
@@ -28,11 +24,6 @@ import { derived, get, type Readable } from "svelte/store";
 export class DashboardStateSync {
   private readonly exploreStore: Readable<MetricsExplorerEntity | undefined>;
   private readonly timeControlStore: TimeControlStore;
-  // This is used to decide defaults and show/hide url params.
-  // To avoid converting the default explore state to url evey time it is needed we maintain a cached version here.
-  public readonly cachedDefaultExploreUrlParams: Readable<
-    URLSearchParams | undefined
-  >;
 
   private readonly unsubInit: (() => void) | undefined;
   private readonly unsubExploreState: (() => void) | undefined;
@@ -54,45 +45,6 @@ export class DashboardStateSync {
       instanceId,
       metricsViewName,
       exploreName,
-    );
-
-    this.cachedDefaultExploreUrlParams = derived(
-      [
-        dataLoader.validSpecQuery,
-        dataLoader.fullTimeRangeQuery,
-        dataLoader.exploreStateFromYAMLConfig,
-      ],
-      ([validSpecResp, metricsViewTimeRangeResp, defaultExploreState]) => {
-        const metricsViewSpec = validSpecResp.data?.metricsView;
-        const exploreSpec = validSpecResp.data?.explore;
-
-        if (
-          !metricsViewSpec ||
-          !exploreSpec ||
-          // safeguard to make sure time range summary is loaded for metrics view with time dimension
-          (metricsViewSpec.timeDimension &&
-            !metricsViewTimeRangeResp.data?.timeRangeSummary) ||
-          !defaultExploreState?.data
-        )
-          return undefined;
-
-        // we cant use timeControlStore since that depends on metricsExplorerStore
-        // whereas defaultExploreUrlParams is needed to init the state in metricsExplorerStore as well
-        const timeControlState = getTimeControlState(
-          metricsViewSpec,
-          exploreSpec,
-          metricsViewTimeRangeResp.data?.timeRangeSummary,
-          defaultExploreState.data as MetricsExplorerEntity,
-        );
-
-        const defaultExploreUrlParams = convertPartialExploreStateToUrlParams(
-          exploreSpec,
-          defaultExploreState.data,
-          timeControlState,
-        );
-
-        return defaultExploreUrlParams;
-      },
     );
 
     this.unsubInit = derived(
@@ -125,8 +77,6 @@ export class DashboardStateSync {
     const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
     const exploreSpec = validSpecData?.explore ?? {};
     const pageState = get(page);
-    const defaultExploreUrlParams = get(this.cachedDefaultExploreUrlParams);
-    if (!defaultExploreUrlParams) return;
 
     this.initialized = true;
     metricsExplorerStore.init(this.exploreName, initExploreState);
@@ -137,7 +87,6 @@ export class DashboardStateSync {
       exploreSpec,
       initExploreState,
       timeControlsState,
-      defaultExploreUrlParams,
       pageState.url,
     );
     redirectUrl.search = exploreStateParams.toString();
@@ -188,8 +137,6 @@ export class DashboardStateSync {
     const metricsViewSpec = validSpecData?.metricsView ?? {};
     const exploreSpec = validSpecData?.explore ?? {};
     const pageState = get(page);
-    const defaultExploreUrlParams = get(this.cachedDefaultExploreUrlParams);
-    if (!defaultExploreUrlParams) return;
 
     const redirectUrl = new URL(pageState.url);
     metricsExplorerStore.mergePartialExplorerEntity(
@@ -204,7 +151,6 @@ export class DashboardStateSync {
       exploreSpec,
       partialExplore,
       timeControlsState,
-      defaultExploreUrlParams,
       pageState.url,
     );
     redirectUrl.search = exploreStateParams.toString();
@@ -242,15 +188,12 @@ export class DashboardStateSync {
     const exploreSpec = validSpecData?.explore ?? {};
     const timeControlsState = get(this.timeControlStore);
     const pageState = get(page);
-    const defaultExploreUrlParams = get(this.cachedDefaultExploreUrlParams);
-    if (!defaultExploreUrlParams) return;
 
     const newUrl = new URL(pageState.url);
     const exploreStateParams = getCleanedUrlParamsForGoto(
       exploreSpec,
       exploreState,
       timeControlsState,
-      defaultExploreUrlParams,
       newUrl,
     );
     newUrl.search = exploreStateParams.toString();

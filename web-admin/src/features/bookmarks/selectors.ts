@@ -14,7 +14,6 @@ import {
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
 import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-import { getDefaultExploreUrlParams } from "@rilldata/web-common/features/dashboards/stores/get-default-explore-url-params";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
   getTimeControlState,
@@ -102,12 +101,6 @@ export function categorizeBookmarks(
   };
   if (!exploreState) return bookmarks;
 
-  const defaultExploreUrlParams = getDefaultExploreUrlParams(
-    metricsSpec,
-    exploreSpec,
-    timeRangeSummary,
-  );
-
   bookmarkResp?.forEach((bookmarkResource) => {
     const bookmark = parseBookmark(
       bookmarkResource,
@@ -115,7 +108,6 @@ export function categorizeBookmarks(
       exploreSpec,
       schema,
       exploreState,
-      defaultExploreUrlParams,
       timeRangeSummary,
     );
     if (isHomeBookmark(bookmarkResource)) {
@@ -212,7 +204,6 @@ function parseBookmark(
   exploreSpec: V1ExploreSpec,
   schema: V1StructType,
   exploreState: MetricsExplorerEntity,
-  defaultExploreUrlParams: URLSearchParams,
   timeRangeSummary: V1TimeRangeSummary | undefined,
 ): BookmarkEntry {
   const exploreStateFromBookmark = getDashboardStateFromUrl(
@@ -240,7 +231,6 @@ function parseBookmark(
       timeRangeSummary,
       finalExploreState,
     ),
-    defaultExploreUrlParams,
     url,
   );
 
@@ -256,7 +246,6 @@ function parseBookmark(
       metricsViewSpec,
       exploreSpec,
       timeRangeSummary,
-      defaultExploreUrlParams,
     ),
     url: url.toString(),
   };
@@ -267,7 +256,6 @@ function isFilterOnlyBookmark(
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
   timeRangeSummary: V1TimeRangeSummary | undefined,
-  defaultExploreUrlParams: URLSearchParams,
 ): boolean {
   // We need to remove defaults like time grain and timezone otherwise we will have extra fields here
   const searchParams = getCleanedUrlParamsForGoto(
@@ -279,7 +267,6 @@ function isFilterOnlyBookmark(
       timeRangeSummary,
       bookmarkState as MetricsExplorerEntity,
     ),
-    defaultExploreUrlParams,
   );
 
   // These are the only parameters that are stored in a filter-only bookmark
