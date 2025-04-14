@@ -13,10 +13,10 @@ import (
 )
 
 type informationSchema struct {
-	c *connection
+	c *Connection
 }
 
-func (c *connection) InformationSchema() drivers.InformationSchema {
+func (c *Connection) InformationSchema() drivers.InformationSchema {
 	return informationSchema{c: c}
 }
 

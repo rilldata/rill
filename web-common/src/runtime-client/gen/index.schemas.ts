@@ -1222,6 +1222,7 @@ export interface V1MetricsViewAggregationRequest {
   filter?: V1MetricsViewFilter;
   exact?: boolean;
   fillMissing?: boolean;
+  rows?: boolean;
 }
 
 export type V1MetricsViewAggregationResponseDataItem = {
@@ -2475,6 +2476,7 @@ export type QueryServiceMetricsViewAggregationBody = {
   filter?: V1MetricsViewFilter;
   exact?: boolean;
   fillMissing?: boolean;
+  rows?: boolean;
 };
 
 export type QueryServiceMetricsViewComparisonBody = {
