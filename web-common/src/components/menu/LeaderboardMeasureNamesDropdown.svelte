@@ -78,20 +78,21 @@
     if (!name) return;
     const currentSelection = selectedMeasureNames || [];
 
-    // Cannot deselect the last measure
-    if (currentSelection.length === 1 && currentSelection[0] === name) {
-      return;
-    }
-
     // Single select mode
     if (!multiSelect) {
       toggleSingleSelect(name);
       return;
     }
 
+    // Multi-select mode
     const newSelection = currentSelection.includes(name)
       ? currentSelection.filter((n) => n !== name)
       : [...currentSelection, name];
+
+    // Ensure we always have at least one measure selected
+    if (newSelection.length === 0) {
+      return;
+    }
 
     setLeaderboardMeasureNames(newSelection);
 
