@@ -9,9 +9,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	goruntime "runtime"
 	"strings"
 	"testing"
 
+	"github.com/joho/godotenv"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
@@ -29,6 +31,7 @@ import (
 type TestFileYAML struct {
 	Connectors   []string             `yaml:"connectors,omitempty"`
 	Variables    map[string]string    `yaml:"variables,omitempty"`
+	DataFiles    map[string]string    `yaml:"data_files,omitempty"`
 	ProjectFiles map[string]yaml.Node `yaml:"project_files"`
 	Tests        []*TestYAML          `yaml:"tests"`
 }
@@ -78,6 +81,13 @@ func TestResolvers(t *testing.T) {
 	files, err := filepath.Glob("./testdata/*.yaml")
 	require.NoError(t, err)
 
+	// Load .env file at the repo root (if any)
+	_, currentFile, _, _ := goruntime.Caller(0)
+	envPath := filepath.Join(currentFile, "..", "..", "..", ".env")
+	_, err = os.Stat(envPath)
+	if err == nil {
+		require.NoError(t, godotenv.Load(envPath))
+	}
 	// Run each test file as a subtest.
 	for _, f := range files {
 		t.Run(fileutil.Stem(f), func(t *testing.T) {
@@ -97,11 +107,25 @@ func TestResolvers(t *testing.T) {
 				projectFiles[name] = string(bytes)
 			}
 
+			// Add local data files to project files
+			for name, data := range tf.DataFiles {
+				bytes, err := os.ReadFile(data)
+				require.NoError(t, err)
+				projectFiles[name] = string(bytes)
+			}
+
 			// Acquire the connectors for the runtime instance.
 			vars := make(map[string]string)
 			for k, v := range tf.Variables {
 				vars[k] = v
 			}
+
+			for _, connector := range tf.Connectors {
+				if isRestrictedConnector(connector) {
+					t.Skipf("test skipped for connector: %q remove it from RILL_RUNTIME_RESOLVERS_TEST_RESTRICTED_CONNECTORS to enable", connector)
+				}
+			}
+
 			for _, connector := range tf.Connectors {
 				acquire, ok := testruntime.Connectors[connector]
 				require.True(t, ok, "unknown connector %q", connector)
@@ -219,6 +243,20 @@ func TestResolvers(t *testing.T) {
 		})
 	}
 
+}
+
+func isRestrictedConnector(connector string) bool {
+	env := os.Getenv("RILL_RUNTIME_RESOLVERS_TEST_RESTRICTED_CONNECTORS")
+	if env == "" {
+		return false
+	}
+
+	for _, name := range strings.Split(env, ",") {
+		if strings.TrimSpace(name) == connector {
+			return true
+		}
+	}
+	return false
 }
 
 // resultToCSV serializes the rows to a CSV formatted string.

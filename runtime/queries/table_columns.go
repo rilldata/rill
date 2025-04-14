@@ -90,7 +90,7 @@ func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanc
 				})
 			}()
 
-			rows, err := olap.Execute(ctx, &drivers.Statement{
+			rows, err := olap.Query(ctx, &drivers.Statement{
 				Query: fmt.Sprintf(`
 					SELECT column_name AS name, data_type AS type
 					FROM information_schema.columns
@@ -116,6 +116,10 @@ func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanc
 				}
 				pcs = append(pcs, &pc)
 				i++
+			}
+			err = rows.Err()
+			if err != nil {
+				return err
 			}
 
 			q.Result = &runtimev1.TableColumnsResponse{

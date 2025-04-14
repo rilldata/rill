@@ -3,7 +3,6 @@ package local
 import (
 	"os"
 
-	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"go.uber.org/zap"
 	"go.uber.org/zap/buffer"
 	"go.uber.org/zap/zapcore"
@@ -29,16 +28,12 @@ func ParseLogFormat(format string) (LogFormat, bool) {
 	}
 }
 
-func initLogger(isVerbose bool, logFormat LogFormat) (logger *zap.Logger, cleanupFn func()) {
+func initLogger(isVerbose bool, logFormat LogFormat, logPath string) (logger *zap.Logger, cleanupFn func()) {
 	logLevel := zapcore.InfoLevel
 	if isVerbose {
 		logLevel = zapcore.DebugLevel
 	}
 
-	logPath, err := dotrill.ResolveFilename("rill.log", true)
-	if err != nil {
-		panic(err)
-	}
 	// lumberjack.Logger is already safe for concurrent use, so we don't need to
 	// lock it.
 	luLogger := &lumberjack.Logger{

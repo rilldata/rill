@@ -49,7 +49,7 @@ type DB interface {
 	CreateTableAsSelect(ctx context.Context, name string, sql string, opts *CreateTableOptions) (*TableWriteMetrics, error)
 
 	// MutateTable allows mutating a table in the database by calling the mutateFn.
-	MutateTable(ctx context.Context, name string, mutateFn func(ctx context.Context, conn *sqlx.Conn) error) (*TableWriteMetrics, error)
+	MutateTable(ctx context.Context, name string, initQueries []string, mutateFn func(ctx context.Context, conn *sqlx.Conn) error) (*TableWriteMetrics, error)
 
 	// DropTable removes a table from the database.
 	DropTable(ctx context.Context, name string) error
@@ -455,7 +455,7 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 	return &TableWriteMetrics{Duration: duration}, nil
 }
 
-func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx context.Context, conn *sqlx.Conn) error) (*TableWriteMetrics, error) {
+func (d *db) MutateTable(ctx context.Context, name string, initQueries []string, mutateFn func(ctx context.Context, conn *sqlx.Conn) error) (*TableWriteMetrics, error) {
 	d.logger.Debug("mutate table", zap.String("name", name), observability.ZapCtx(ctx))
 	err := d.writeSem.Acquire(ctx, 1)
 	if err != nil {
@@ -488,7 +488,7 @@ func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx con
 
 	// acquire write connection
 	// need to ignore attaching table since it is already present in the db file
-	conn, release, err := d.acquireWriteConn(ctx, d.localDBPath(name, newVersion), name, nil, false)
+	conn, release, err := d.acquireWriteConn(ctx, d.localDBPath(name, newVersion), name, initQueries, false)
 	if err != nil {
 		_ = os.RemoveAll(newDir)
 		return nil, err
@@ -739,11 +739,85 @@ func (d *db) acquireWriteConn(ctx context.Context, dsn, table string, initQuerie
 		}
 	}
 
-	return conn, func() error {
-		_ = conn.Close()
-		err = db.Close()
+	// We can leave the attached databases and views in the db but we don't need them once data has been ingested in the table.
+	// This can lead to performance issues when running catalog queries across whole database.
+	// So it is better to drop all views and detach all databases before closing the write handle.
+	dropViews := func() error {
+		// remove all views created on top of attached table
+		rows, err := conn.QueryxContext(ctx, "SELECT view_name FROM duckdb_views WHERE database_name = current_database() AND internal = false")
+		if err != nil {
+			return err
+		}
+
+		var names []string
+		for rows.Next() {
+			var name string
+			err = rows.Scan(&name)
+			if err != nil {
+				rows.Close()
+				return err
+			}
+			names = append(names, name)
+		}
+		rows.Close()
+		if err := rows.Err(); err != nil {
+			return err
+		}
+		for _, name := range names {
+			_, err = conn.ExecContext(ctx, "DROP VIEW "+safeSQLName(name))
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	detach := func() error {
+		// detach all attached databases
+		rows, err := conn.QueryxContext(ctx, "SELECT database_name FROM duckdb_databases() WHERE database_name != current_database() AND internal = false AND type NOT LIKE 'motherduck%'")
+		if err != nil {
+			return err
+		}
+
+		var names []string
+		for rows.Next() {
+			var name string
+			err = rows.Scan(&name)
+			if err != nil {
+				rows.Close()
+				return err
+			}
+			names = append(names, name)
+		}
+		rows.Close()
+		if err := rows.Err(); err != nil {
+			return err
+		}
+		for _, name := range names {
+			_, err = conn.ExecContext(ctx, "DETACH DATABASE "+safeSQLName(name))
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	release := func() (err error) {
+		defer func() {
+			// close the connection and db handle
+			err = errors.Join(err, conn.Close(), db.Close())
+		}()
+		err = dropViews()
+		if err != nil {
+			return err
+		}
+		err = detach()
+		if err != nil {
+			return err
+		}
 		return err
-	}, nil
+	}
+	return conn, release, nil
 }
 
 func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, initQueries []string, read bool) (db *sqlx.DB, dbErr error) {
@@ -847,6 +921,7 @@ func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, initQ
 			array_agg(c.is_nullable = 'YES' order by c.ordinal_position) as "column_nullable"
 		from information_schema.tables t
 		join information_schema.columns c on t.table_schema = c.table_schema and t.table_name = c.table_name
+		where t.table_catalog = current_database() AND c.table_catalog= current_database()
 		group by 1, 2, 3, 4
 		order by 1, 2, 3, 4
 	`)

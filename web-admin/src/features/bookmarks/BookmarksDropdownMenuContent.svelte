@@ -1,13 +1,10 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import {
-    createAdminServiceGetCurrentUser,
-    createAdminServiceListBookmarks,
-  } from "@rilldata/web-admin/client";
   import BookmarkItem from "@rilldata/web-admin/features/bookmarks/BookmarksDropdownMenuItem.svelte";
   import {
     type BookmarkEntry,
     categorizeBookmarks,
+    getBookmarks,
     searchBookmarks,
   } from "@rilldata/web-admin/features/bookmarks/selectors";
   import {
@@ -25,9 +22,8 @@
   import { Search } from "@rilldata/web-common/components/search";
   import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
   import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { createQueryServiceMetricsViewSchema } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { BookmarkPlusIcon } from "lucide-svelte";
@@ -51,11 +47,8 @@
   $: metricsViewTimeRange = useMetricsViewTimeRange(
     instanceId,
     metricsViewName,
-  );
-  $: defaultExplorePreset = getDefaultExplorePreset(
-    exploreSpec,
-    metricsViewSpec,
-    $metricsViewTimeRange.data,
+    {},
+    queryClient,
   );
   $: schemaResp = createQueryServiceMetricsViewSchema(
     instanceId,
@@ -63,28 +56,15 @@
   );
 
   $: projectIdResp = useProjectId(organization, project);
-  const userResp = createAdminServiceGetCurrentUser();
-  $: bookamrksResp = createAdminServiceListBookmarks(
-    {
-      projectId: $projectIdResp.data,
-      resourceKind: ResourceKind.Explore,
-      resourceName: exploreName,
-    },
-    {
-      query: {
-        enabled: !!$projectIdResp.data && !!$userResp.data.user,
-      },
-    },
-  );
+  $: bookamrksResp = getBookmarks($projectIdResp.data, exploreName);
 
   let searchText: string;
   $: categorizedBookmarks = categorizeBookmarks(
     $bookamrksResp.data?.bookmarks ?? [],
     metricsViewSpec,
     exploreSpec,
-    $schemaResp.data?.schema,
+    $schemaResp.data?.schema ?? {},
     $exploreState,
-    defaultExplorePreset,
     $metricsViewTimeRange.data?.timeRangeSummary,
   );
   $: filteredBookmarks = searchBookmarks(categorizedBookmarks, searchText);

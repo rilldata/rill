@@ -7,7 +7,6 @@ import (
 	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/pkg/adminenv"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/dotrill"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/maps"
@@ -21,7 +20,7 @@ func SwitchEnvCmd(ch *cmdutil.Helper) *cobra.Command {
 		Short: "Switch between admin environments",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			backupToken, err := dotrill.GetBackupToken()
+			backupToken, err := ch.DotRill.GetBackupToken()
 			if err != nil {
 				return err
 			}
@@ -51,7 +50,7 @@ func SwitchEnvCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			ch.PrintfSuccess("Set default env to %q (%q)\n", toEnv, adminenv.AdminURL(toEnv))
 
-			return auth.SelectOrgFlow(cmd.Context(), ch, true)
+			return auth.SelectOrgFlow(cmd.Context(), ch, true, "")
 		},
 	}
 
@@ -59,28 +58,28 @@ func SwitchEnvCmd(ch *cmdutil.Helper) *cobra.Command {
 }
 
 func switchEnv(ch *cmdutil.Helper, fromEnv, toEnv string) error {
-	token, err := dotrill.GetAccessToken()
+	token, err := ch.DotRill.GetAccessToken()
 	if err != nil {
 		return err
 	}
 
-	err = dotrill.SetEnvToken(fromEnv, token)
+	err = ch.DotRill.SetEnvToken(fromEnv, token)
 	if err != nil {
 		return err
 	}
 
-	toToken, err := dotrill.GetEnvToken(toEnv)
+	toToken, err := ch.DotRill.GetEnvToken(toEnv)
 	if err != nil {
 		return err
 	}
 
-	err = dotrill.SetAccessToken(toToken)
+	err = ch.DotRill.SetAccessToken(toToken)
 	if err != nil {
 		return err
 	}
 
 	toURL := adminenv.AdminURL(toEnv)
-	err = dotrill.SetDefaultAdminURL(toURL)
+	err = ch.DotRill.SetDefaultAdminURL(toURL)
 	if err != nil {
 		return err
 	}
@@ -123,16 +122,16 @@ func switchEnvToDevTemporarily(ctx context.Context, ch *cmdutil.Helper) {
 	var prevOrg string
 	if authenticated {
 		prevOrg = ch.Org
-		err = auth.SelectOrgFlow(ctx, ch, false)
+		err = auth.SelectOrgFlow(ctx, ch, false, "")
 		if err != nil {
 			logWarn.Printf("Failed to select org in dev environment: %v\n", err)
 		}
 	} else {
 		// Since dev environments are frequently reset, clear the token if it's invalid
-		_ = dotrill.SetAccessToken("")
+		_ = ch.DotRill.SetAccessToken("")
 		_ = ch.ReloadAdminConfig()
 
-		_ = dotrill.SetDefaultOrg("")
+		_ = ch.DotRill.SetDefaultOrg("")
 		ch.Org = ""
 	}
 
@@ -147,7 +146,7 @@ func switchEnvToDevTemporarily(ctx context.Context, ch *cmdutil.Helper) {
 
 	logInfo.Printf("Switched CLI back to %s environment\n", env)
 
-	err = dotrill.SetDefaultOrg(prevOrg)
+	err = ch.DotRill.SetDefaultOrg(prevOrg)
 	if err != nil {
 		logErr.Printf("Failed to set default org back to %q: %v\n", prevOrg, err)
 		return

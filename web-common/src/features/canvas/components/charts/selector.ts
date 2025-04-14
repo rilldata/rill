@@ -2,12 +2,12 @@ import {
   validateDimensions,
   validateMeasures,
 } from "@rilldata/web-common/features/canvas/components/validators";
-import type { StateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import {
-  type MetricsViewSpecDimensionV2,
-  type MetricsViewSpecMeasureV2,
+  type MetricsViewSpecDimension,
+  type MetricsViewSpecMeasure,
   type V1MetricsViewAggregationResponseDataItem,
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
@@ -22,8 +22,8 @@ export type ChartDataResult = {
   isFetching: boolean;
   fields: Record<
     string,
-    | MetricsViewSpecMeasureV2
-    | MetricsViewSpecDimensionV2
+    | MetricsViewSpecMeasure
+    | MetricsViewSpecDimension
     | TimeDimensionDefinition
     | undefined
   >;
@@ -38,7 +38,7 @@ export interface TimeDimensionDefinition {
 }
 
 export function getChartData(
-  ctx: StateManagers,
+  ctx: CanvasStore,
   config: ChartConfig,
   timeAndFilterStore: Readable<TimeAndFilterStore>,
 ): Readable<ChartDataResult> {
@@ -77,8 +77,8 @@ export function getChartData(
         },
         {} as Record<
           string,
-          | MetricsViewSpecMeasureV2
-          | MetricsViewSpecDimensionV2
+          | MetricsViewSpecMeasure
+          | MetricsViewSpecDimension
           | TimeDimensionDefinition
           | undefined
         >,
@@ -119,11 +119,12 @@ export function getTimeDimensionDefinition(
 }
 
 export function validateChartSchema(
-  ctx: StateManagers,
+  ctx: CanvasStore,
   chartSpec: ChartSpec,
 ): Readable<{
   isValid: boolean;
   error?: string;
+  isLoading?: boolean;
 }> {
   const { metrics_view, x, y, color } = chartSpec;
   let measures: string[] = [];
@@ -135,7 +136,14 @@ export function validateChartSchema(
 
   return derived(
     ctx.canvasEntity.spec.getMetricsViewFromName(metrics_view),
-    (metricsView) => {
+    (metricsViewQuery) => {
+      if (metricsViewQuery.isLoading) {
+        return {
+          isValid: true,
+          isLoading: true,
+        };
+      }
+      const metricsView = metricsViewQuery.metricsView;
       if (!metricsView) {
         return {
           isValid: false,

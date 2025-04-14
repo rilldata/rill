@@ -1195,8 +1195,6 @@ func (m *Connector) validate(all bool) error {
 		}
 	}
 
-	// no validation rules for ConfigFromVariables
-
 	if len(errors) > 0 {
 		return ConnectorMultiError(errors)
 	}

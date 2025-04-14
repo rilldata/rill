@@ -71,7 +71,7 @@ func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *Query) er
 	if err != nil {
 		return err
 	}
-	res, err := e.olap.Execute(ctx, &drivers.Statement{
+	res, err := e.olap.Query(ctx, &drivers.Statement{
 		Query:            sql,
 		Args:             args,
 		Priority:         e.priority,
@@ -98,6 +98,10 @@ func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *Query) er
 		}
 
 		vals = append(vals, val)
+	}
+	err = res.Err()
+	if err != nil {
+		return err
 	}
 
 	// Add the dimensions values as a "<dim> IN (<vals...>)" expression in the outer query's WHERE clause.

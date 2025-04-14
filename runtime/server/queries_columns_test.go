@@ -606,7 +606,7 @@ func getColumnTestServerWithModel(t *testing.T, sql string, expectation int) (*s
 	olap, release, err := rt.OLAP(testCtx(), instanceID, "")
 	require.NoError(t, err)
 	defer release()
-	res, err := olap.Execute(testCtx(), &drivers.Statement{Query: "SELECT count(*) FROM test"})
+	res, err := olap.Query(testCtx(), &drivers.Statement{Query: "SELECT count(*) FROM test"})
 	require.NoError(t, err)
 	defer res.Close()
 
@@ -615,6 +615,7 @@ func getColumnTestServerWithModel(t *testing.T, sql string, expectation int) (*s
 		err := res.Scan(&n)
 		require.NoError(t, err)
 	}
+	require.NoError(t, res.Err())
 	if expectation >= 0 {
 		require.Equal(t, expectation, n)
 	}

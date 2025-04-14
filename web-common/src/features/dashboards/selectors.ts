@@ -8,14 +8,13 @@ import {
   useFilteredResources,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import type {
-  RpcStatus,
-  V1Expression,
-  V1GetResourceResponse,
-  V1MetricsViewSpec,
-  V1MetricsViewTimeRangeResponse,
-  V1Resource,
+import {
+  type RpcStatus,
+  type V1Expression,
+  type V1GetResourceResponse,
+  type V1MetricsViewSpec,
+  type V1MetricsViewTimeRangeResponse,
+  type V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import {
   createQueryServiceMetricsViewTimeRange,
@@ -24,6 +23,7 @@ import {
 import type {
   CreateQueryOptions,
   CreateQueryResult,
+  QueryClient,
 } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 import type { ErrorType } from "../../runtime-client/http-client";
@@ -89,21 +89,10 @@ export const useMetricsViewValidSpec = <T = V1MetricsViewSpec>(
   return useResource<T>(instanceId, metricsViewName, ResourceKind.MetricsView, {
     select: (data) =>
       selector
-        ? selector(data.resource?.metricsView?.state?.validSpec)
+        ? selector(data.resource?.metricsView?.state?.validSpec ?? {})
         : (data.resource?.metricsView?.state?.validSpec as T),
   });
 };
-
-// TODO: cleanup usage of useModelHasTimeSeries and useModelAllTimeRange
-export const useModelHasTimeSeries = (
-  instanceId: string,
-  metricsViewName: string,
-) =>
-  useMetricsViewValidSpec(
-    instanceId,
-    metricsViewName,
-    (meta) => !!meta?.timeDimension,
-  );
 
 export function useMetricsViewTimeRange(
   instanceId: string,
@@ -111,6 +100,7 @@ export function useMetricsViewTimeRange(
   options?: {
     query?: CreateQueryOptions<V1MetricsViewTimeRangeResponse>;
   },
+  queryClient?: QueryClient,
 ): CreateQueryResult<V1MetricsViewTimeRangeResponse> {
   const { query: queryOptions } = options ?? {};
 
@@ -125,9 +115,9 @@ export function useMetricsViewTimeRange(
           query: {
             ...queryOptions,
             enabled: !!metricsView.data?.timeDimension && queryOptions?.enabled,
-            queryClient,
           },
         },
+        queryClient,
       ).subscribe(set),
   );
 }
@@ -149,10 +139,12 @@ export function getFiltersForOtherDimensions(
 }
 
 export function additionalMeasures(
-  activeMeasureName: string,
+  activeMeasureName: string | null,
   dimensionThresholdFilters: DimensionThresholdFilter[],
 ) {
-  const measures = new Set<string>([activeMeasureName]);
+  const measures = new Set<string>(
+    activeMeasureName ? [activeMeasureName] : [],
+  );
   dimensionThresholdFilters.forEach(({ filters }) => {
     filters.forEach((filter) => {
       measures.add(filter.measure);

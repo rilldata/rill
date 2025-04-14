@@ -6,7 +6,7 @@ import (
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
-	"github.com/rilldata/rill/runtime/compilers/rillv1"
+	"github.com/rilldata/rill/runtime/parser"
 	"github.com/spf13/cobra"
 )
 
@@ -21,7 +21,7 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 				var err error
 				projectPath, err = normalizeProjectPath(projectPath)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to normalize project path: %w", err)
 				}
 			}
 
@@ -32,13 +32,13 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Parse and verify the project directory
 			repo, instanceID, err := cmdutil.RepoForProjectPath(projectPath)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to get repo for project path: %w", err)
 			}
-			parser, err := rillv1.Parse(cmd.Context(), repo, instanceID, "prod", "duckdb")
+			p, err := parser.Parse(cmd.Context(), repo, instanceID, "prod", "duckdb")
 			if err != nil {
 				return fmt.Errorf("failed to parse project: %w", err)
 			}
-			if parser.RillYAML == nil {
+			if p.RillYAML == nil {
 				return fmt.Errorf("not a valid Rill project (missing a rill.yaml file)")
 			}
 
@@ -53,7 +53,7 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Fetch the project variables from the cloud
 			client, err := ch.Client()
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to create client: %w", err)
 			}
 			res, err := client.GetProjectVariables(cmd.Context(), &adminv1.GetProjectVariablesRequest{
 				Organization: ch.Org,
@@ -61,7 +61,7 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 				Environment:  environment,
 			})
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to get project variables: %w", err)
 			}
 
 			// Merge the current .env file with the cloud variables
@@ -71,11 +71,14 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 			added := 0
 			changed := 0
-			for k, v := range parser.DotEnv {
+			changedVars := make(map[string]string)
+			for k, v := range p.GetDotEnv() {
 				if _, ok := vars[k]; !ok {
 					added++
+					changedVars[k] = v
 				} else if vars[k] != v {
 					changed++
+					changedVars[k] = v
 				}
 				vars[k] = v
 			}
@@ -86,29 +89,31 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 				return nil
 			}
 
-			// Prompt for confirmation if any existing variables have changed
-			if changed != 0 {
-				ch.Printf("Found %d variable(s) in your local .env file that will overwrite existing variables in the cloud env for project %q.\n", changed, projectName)
-				ok, err := cmdutil.ConfirmPrompt("Do you want to continue?", "", true)
-				if err != nil {
-					return err
-				}
-				if !ok {
-					return nil
-				}
+			// Always prompt for confirmation when there are changes
+			message := fmt.Sprintf("Found %d new and %d changed variable(s) to push to project %q:\n", added, changed, projectName)
+			ch.Print(message)
+
+			for k, v := range changedVars {
+				ch.Printf("  %s=%s\n", k, v)
+			}
+
+			ok, err := cmdutil.ConfirmPrompt("Do you want to continue?", "", true)
+			if err != nil {
+				return fmt.Errorf("failed to prompt for confirmation: %w", err)
+			}
+			if !ok {
+				return nil
 			}
 
 			// Write the merged variables back to the cloud project
-			if added+changed != 0 {
-				_, err = client.UpdateProjectVariables(cmd.Context(), &adminv1.UpdateProjectVariablesRequest{
-					Organization: ch.Org,
-					Project:      projectName,
-					Environment:  environment,
-					Variables:    vars,
-				})
-				if err != nil {
-					return err
-				}
+			_, err = client.UpdateProjectVariables(cmd.Context(), &adminv1.UpdateProjectVariablesRequest{
+				Organization: ch.Org,
+				Project:      projectName,
+				Environment:  environment,
+				Variables:    vars,
+			})
+			if err != nil {
+				return fmt.Errorf("failed to update project variables: %w", err)
 			}
 
 			ch.Printf("Updated cloud env for project %q with variables from %q.\n", projectName, filepath.Join(projectPath, ".env"))

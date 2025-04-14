@@ -12,14 +12,12 @@
   import { createVirtualizer } from "@tanstack/svelte-virtual";
   import { writable } from "svelte/store";
   import {
-    type RpcStatus,
-    type V1GetModelPartitionsResponse,
     type V1ModelPartition,
     type V1Resource,
     getRuntimeServiceGetModelPartitionsQueryKey,
     runtimeServiceGetModelPartitions,
   } from "../../../runtime-client";
-  import type { ErrorType } from "../../../runtime-client/http-client";
+
   import { runtime } from "../../../runtime-client/runtime-store";
   import DataCell from "./DataCell.svelte";
   import ErrorCell from "./ErrorCell.svelte";
@@ -39,10 +37,8 @@
     ...(whereErrored ? { errored: true } : {}),
     ...(wherePending ? { pending: true } : {}),
   };
-  $: query = createInfiniteQuery<
-    V1GetModelPartitionsResponse,
-    ErrorType<RpcStatus>
-  >({
+  $: query = createInfiniteQuery({
+    initialPageParam: "1",
     queryKey: getRuntimeServiceGetModelPartitionsQueryKey(
       instanceId,
       modelName,

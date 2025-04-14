@@ -32,8 +32,8 @@ import {
   DashboardState_LeaderboardSortType,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
-  type MetricsViewSpecDimensionV2,
-  type MetricsViewSpecMeasureV2,
+  type MetricsViewSpecDimension,
+  type MetricsViewSpecMeasure,
   V1ExploreComparisonMode,
   type V1ExplorePreset,
   V1ExploreSortType,
@@ -45,7 +45,6 @@ import type { SortingState } from "@tanstack/svelte-table";
 
 /**
  * Converts a V1ExplorePreset to our internal metrics explore state.
- * V1ExplorePreset could come from url state, bookmark, alert or report.
  */
 export function convertPresetToExploreState(
   metricsView: V1MetricsViewSpec,
@@ -80,6 +79,10 @@ export function convertPresetToExploreState(
     partialExploreState.whereFilter = dimensionFilters;
     partialExploreState.dimensionThresholdFilters = dimensionThresholdFilters;
   }
+  if (preset.dimensionsWithInlistFilter) {
+    partialExploreState.dimensionsWithInlistFilter =
+      preset.dimensionsWithInlistFilter;
+  }
 
   const { partialExploreState: trPartialState, errors: trErrors } =
     fromTimeRangesParams(preset, dimensions);
@@ -106,7 +109,7 @@ export function convertPresetToExploreState(
 
 function fromTimeRangesParams(
   preset: V1ExplorePreset,
-  dimensions: Map<string, MetricsViewSpecDimensionV2>,
+  dimensions: Map<string, MetricsViewSpecDimension>,
 ) {
   const partialExploreState: Partial<MetricsExplorerEntity> = {};
   const errors: Error[] = [];
@@ -144,6 +147,7 @@ function fromTimeRangesParams(
     preset.comparisonMode ===
     V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
   ) {
+    partialExploreState.selectedComparisonTimeRange = undefined;
     partialExploreState.showTimeComparison = true;
   }
 
@@ -166,6 +170,11 @@ function fromTimeRangesParams(
         getSingleFieldError("compare dimension", preset.comparisonDimension),
       );
     }
+  } else if (
+    preset.comparisonMode !==
+    V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_DIMENSION
+  ) {
+    partialExploreState.selectedComparisonDimension = "";
   }
 
   if (preset.selectTimeRange) {
@@ -209,8 +218,8 @@ export function fromTimeRangeUrlParam(tr: string) {
 }
 
 function fromExploreUrlParams(
-  measures: Map<string, MetricsViewSpecMeasureV2>,
-  dimensions: Map<string, MetricsViewSpecDimensionV2>,
+  measures: Map<string, MetricsViewSpecMeasure>,
+  dimensions: Map<string, MetricsViewSpecDimension>,
   explore: V1ExploreSpec,
   preset: V1ExplorePreset,
 ) {
@@ -226,7 +235,7 @@ function fromExploreUrlParams(
 
     partialExploreState.allMeasuresVisible =
       selectedMeasures.length === explore.measures?.length;
-    partialExploreState.visibleMeasureKeys = new Set(selectedMeasures);
+    partialExploreState.visibleMeasures = [...selectedMeasures];
   }
 
   if (preset.dimensions?.length) {
@@ -243,12 +252,12 @@ function fromExploreUrlParams(
 
     partialExploreState.allDimensionsVisible =
       selectedDimensions.length === explore.dimensions?.length;
-    partialExploreState.visibleDimensionKeys = new Set(selectedDimensions);
+    partialExploreState.visibleDimensions = [...selectedDimensions];
   }
 
   if (preset.exploreSortBy) {
     if (measures.has(preset.exploreSortBy)) {
-      partialExploreState.leaderboardMeasureName = preset.exploreSortBy;
+      partialExploreState.leaderboardSortByMeasureName = preset.exploreSortBy;
     } else {
       errors.push(getSingleFieldError("sort by measure", preset.exploreSortBy));
     }
@@ -267,6 +276,11 @@ function fromExploreUrlParams(
     partialExploreState.dashboardSortType =
       Number(ToLegacySortTypeMap[preset.exploreSortType]) ??
       DashboardState_LeaderboardSortType.UNSPECIFIED;
+  }
+
+  if (preset.exploreLeaderboardMeasureCount !== undefined) {
+    partialExploreState.leaderboardMeasureCount =
+      preset.exploreLeaderboardMeasureCount;
   }
 
   if (preset.exploreExpandedDimension !== undefined) {
@@ -304,7 +318,7 @@ function fromExploreUrlParams(
 }
 
 function fromTimeDimensionUrlParams(
-  measures: Map<string, MetricsViewSpecMeasureV2>,
+  measures: Map<string, MetricsViewSpecMeasure>,
   preset: V1ExplorePreset,
 ): {
   partialExploreState: Partial<MetricsExplorerEntity>;
@@ -348,8 +362,8 @@ function fromTimeDimensionUrlParams(
 }
 
 function fromPivotUrlParams(
-  measures: Map<string, MetricsViewSpecMeasureV2>,
-  dimensions: Map<string, MetricsViewSpecDimensionV2>,
+  measures: Map<string, MetricsViewSpecMeasure>,
+  dimensions: Map<string, MetricsViewSpecDimension>,
   preset: V1ExplorePreset,
 ): {
   partialExploreState: Partial<MetricsExplorerEntity>;
@@ -412,13 +426,12 @@ function fromPivotUrlParams(
     hasSomePivotFields = true;
   }
 
-  const pivotIsActive = preset.view === V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT;
+  const showPivot = preset.view === V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT;
 
-  if (!hasSomePivotFields && !pivotIsActive) {
+  if (!hasSomePivotFields && !showPivot) {
     return {
       partialExploreState: {
         pivot: {
-          active: false,
           rows: [],
           columns: [],
           sorting: [],
@@ -461,7 +474,6 @@ function fromPivotUrlParams(
   return {
     partialExploreState: {
       pivot: {
-        active: pivotIsActive,
         rows: rowDimensions,
         columns: colChips,
         sorting,

@@ -6,6 +6,7 @@
   export let dark = false;
   export let value;
   export let truncate = false;
+  export let color = "";
 </script>
 
 <Base
@@ -13,6 +14,7 @@
   {isNull}
   classes="font-semibold truncate w-full {inTable && 'block text-right'}"
   {dark}
+  {color}
 >
   <slot name="value">
     {value ? formatDuckdbIntervalLossless(value) : ""}

@@ -1,11 +1,13 @@
-package server
+package server_test
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/hex"
 	"testing"
 
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/testadmin"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/stretchr/testify/require"
@@ -13,12 +15,12 @@ import (
 
 func TestRBAC(t *testing.T) {
 	ctx := context.Background()
-	svr := newTestServer(t)
+	fix := testadmin.New(t)
 
 	t.Run("Adding org and project members", func(t *testing.T) {
 		// Create users
-		u1, c1 := newTestUser(t, svr)
-		u2, c2 := newTestUser(t, svr)
+		u1, c1 := fix.NewUser(t)
+		u2, c2 := fix.NewUser(t)
 
 		// Create org and project
 		r1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
@@ -132,10 +134,251 @@ func TestRBAC(t *testing.T) {
 		require.Error(t, err)
 	})
 
+	t.Run("Ability to filter by role in member listings", func(t *testing.T) {
+		// Create org, project and usergroup
+		_, c1 := fix.NewUser(t)
+		r1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
+		require.NoError(t, err)
+		r2, err := c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
+			OrganizationName: r1.Organization.Name,
+			Name:             "proj1",
+			ProdSlots:        1,
+			SkipDeploy:       true,
+		})
+		require.NoError(t, err)
+		r3, err := c1.CreateUsergroup(ctx, &adminv1.CreateUsergroupRequest{
+			Organization: r1.Organization.Name,
+			Name:         "group1",
+		})
+		require.NoError(t, err)
+
+		// Add a user as viewer to the org and project, and to the usergroup
+		u2, _ := fix.NewUser(t)
+		_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
+			Organization: r1.Organization.Name,
+			Email:        u2.Email,
+			Role:         database.OrganizationRoleNameViewer,
+		})
+		require.NoError(t, err)
+		_, err = c1.AddProjectMemberUser(ctx, &adminv1.AddProjectMemberUserRequest{
+			Organization: r1.Organization.Name,
+			Project:      r2.Project.Name,
+			Email:        u2.Email,
+			Role:         database.ProjectRoleNameViewer,
+		})
+		require.NoError(t, err)
+		_, err = c1.AddUsergroupMemberUser(ctx, &adminv1.AddUsergroupMemberUserRequest{
+			Organization: r1.Organization.Name,
+			Usergroup:    r3.Usergroup.GroupName,
+			Email:        u2.Email,
+		})
+		require.NoError(t, err)
+
+		// Add the usergroup as viewer on the org and project
+		_, err = c1.AddOrganizationMemberUsergroup(ctx, &adminv1.AddOrganizationMemberUsergroupRequest{
+			Organization: r1.Organization.Name,
+			Usergroup:    r3.Usergroup.GroupName,
+			Role:         database.OrganizationRoleNameViewer,
+		})
+		require.NoError(t, err)
+		_, err = c1.AddProjectMemberUsergroup(ctx, &adminv1.AddProjectMemberUsergroupRequest{
+			Organization: r1.Organization.Name,
+			Project:      r2.Project.Name,
+			Usergroup:    r3.Usergroup.GroupName,
+			Role:         database.ProjectRoleNameViewer,
+		})
+		require.NoError(t, err)
+
+		// Check listing counts for various role filters
+		cases := []struct {
+			roleName           string
+			orgUserCount       int
+			projUserCount      int
+			orgUsergroupCount  int
+			projUsergroupCount int
+		}{
+			{"", 2, 2, 4, 2},
+			{database.OrganizationRoleNameAdmin, 1, 1, 0, 0},
+			{database.OrganizationRoleNameEditor, 0, 0, 0, 0},
+			{database.OrganizationRoleNameViewer, 1, 1, 1, 2},
+		}
+		for _, c := range cases {
+			t.Run(c.roleName, func(t *testing.T) {
+				r4, err := c1.ListOrganizationMemberUsers(ctx, &adminv1.ListOrganizationMemberUsersRequest{
+					Organization: r1.Organization.Name,
+					Role:         c.roleName,
+				})
+				require.NoError(t, err)
+				require.Len(t, r4.Members, c.orgUserCount)
+				r5, err := c1.ListProjectMemberUsers(ctx, &adminv1.ListProjectMemberUsersRequest{
+					Organization: r1.Organization.Name,
+					Project:      r2.Project.Name,
+					Role:         c.roleName,
+				})
+				require.NoError(t, err)
+				require.Len(t, r5.Members, c.projUserCount)
+				r6, err := c1.ListOrganizationMemberUsergroups(ctx, &adminv1.ListOrganizationMemberUsergroupsRequest{
+					Organization: r1.Organization.Name,
+					Role:         c.roleName,
+				})
+				require.NoError(t, err)
+				require.Len(t, r6.Members, c.orgUsergroupCount)
+				r7, err := c1.ListProjectMemberUsergroups(ctx, &adminv1.ListProjectMemberUsergroupsRequest{
+					Organization: r1.Organization.Name,
+					Project:      r2.Project.Name,
+					Role:         c.roleName,
+				})
+				require.NoError(t, err)
+				require.Len(t, r7.Members, c.projUsergroupCount)
+			})
+		}
+	})
+
+	t.Run("Ability to include project and usergroup counts in org member listings", func(t *testing.T) {
+		// Create org, two projects and two usergroup
+		u1, c1 := fix.NewUser(t)
+		r1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
+		require.NoError(t, err)
+		r2, err := c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
+			OrganizationName: r1.Organization.Name,
+			Name:             "proj1",
+			ProdSlots:        1,
+			SkipDeploy:       true,
+		})
+		require.NoError(t, err)
+		_, err = c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
+			OrganizationName: r1.Organization.Name,
+			Name:             "proj2",
+			ProdSlots:        1,
+			SkipDeploy:       true,
+		})
+		require.NoError(t, err)
+		r4, err := c1.CreateUsergroup(ctx, &adminv1.CreateUsergroupRequest{
+			Organization: r1.Organization.Name,
+			Name:         "group1",
+		})
+		require.NoError(t, err)
+		_, err = c1.CreateUsergroup(ctx, &adminv1.CreateUsergroupRequest{
+			Organization: r1.Organization.Name,
+			Name:         "group2",
+		})
+		require.NoError(t, err)
+
+		// Add a user to the org, one of the usergroups, and one of the projects
+		u2, _ := fix.NewUser(t)
+		_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
+			Organization: r1.Organization.Name,
+			Email:        u2.Email,
+			Role:         database.OrganizationRoleNameViewer,
+		})
+		require.NoError(t, err)
+		_, err = c1.AddProjectMemberUser(ctx, &adminv1.AddProjectMemberUserRequest{
+			Organization: r1.Organization.Name,
+			Project:      r2.Project.Name,
+			Email:        u2.Email,
+			Role:         database.ProjectRoleNameViewer,
+		})
+		require.NoError(t, err)
+		_, err = c1.AddUsergroupMemberUser(ctx, &adminv1.AddUsergroupMemberUserRequest{
+			Organization: r1.Organization.Name,
+			Usergroup:    r4.Usergroup.GroupName,
+			Email:        u2.Email,
+		})
+		require.NoError(t, err)
+
+		// Check the counts for the user
+		r6, err := c1.ListOrganizationMemberUsers(ctx, &adminv1.ListOrganizationMemberUsersRequest{
+			Organization:  r1.Organization.Name,
+			IncludeCounts: true,
+		})
+		require.NoError(t, err)
+		require.Len(t, r6.Members, 2)
+		for _, m := range r6.Members {
+			m.CreatedOn = nil
+			m.UpdatedOn = nil
+		}
+		require.Contains(t, r6.Members, &adminv1.OrganizationMemberUser{
+			UserId:          u1.ID,
+			UserEmail:       u1.Email,
+			UserName:        u1.DisplayName,
+			RoleName:        database.OrganizationRoleNameAdmin,
+			ProjectsCount:   2,
+			UsergroupsCount: 2, // The autogroups
+		})
+		require.Contains(t, r6.Members, &adminv1.OrganizationMemberUser{
+			UserId:          u2.ID,
+			UserEmail:       u2.Email,
+			UserName:        u2.DisplayName,
+			RoleName:        database.OrganizationRoleNameViewer,
+			ProjectsCount:   2, // Through the autogroup:member being added by default
+			UsergroupsCount: 3, // The autogroups and the one added
+		})
+	})
+
+	t.Run("Ability to include users counts in usergroup listings", func(t *testing.T) {
+		// Create org and usergroup
+		_, c1 := fix.NewUser(t)
+		r1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
+		require.NoError(t, err)
+		r2, err := c1.CreateUsergroup(ctx, &adminv1.CreateUsergroupRequest{
+			Organization: r1.Organization.Name,
+			Name:         "group1",
+		})
+		require.NoError(t, err)
+
+		// Add a user to the usergroup
+		u2, _ := fix.NewUser(t)
+		_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
+			Organization: r1.Organization.Name,
+			Email:        u2.Email,
+			Role:         database.OrganizationRoleNameGuest,
+		})
+		require.NoError(t, err)
+		_, err = c1.AddUsergroupMemberUser(ctx, &adminv1.AddUsergroupMemberUserRequest{
+			Organization: r1.Organization.Name,
+			Usergroup:    r2.Usergroup.GroupName,
+			Email:        u2.Email,
+		})
+		require.NoError(t, err)
+
+		// Check the counts for the usergroup
+		r3, err := c1.ListOrganizationMemberUsergroups(ctx, &adminv1.ListOrganizationMemberUsergroupsRequest{
+			Organization:  r1.Organization.Name,
+			IncludeCounts: true,
+		})
+		require.NoError(t, err)
+		require.Len(t, r3.Members, 4) // There are three system-managed autogroups and the one we added
+		for _, m := range r3.Members {
+			m.GroupId = ""
+			m.CreatedOn = nil
+			m.UpdatedOn = nil
+		}
+		require.Contains(t, r3.Members, &adminv1.MemberUsergroup{
+			GroupName:    database.UsergroupNameAutogroupUsers,
+			GroupManaged: true,
+			UsersCount:   2,
+		})
+		require.Contains(t, r3.Members, &adminv1.MemberUsergroup{
+			GroupName:    database.UsergroupNameAutogroupMembers,
+			GroupManaged: true,
+			UsersCount:   1,
+		})
+		require.Contains(t, r3.Members, &adminv1.MemberUsergroup{
+			GroupName:    database.UsergroupNameAutogroupGuests,
+			GroupManaged: true,
+			UsersCount:   1,
+		})
+		require.Contains(t, r3.Members, &adminv1.MemberUsergroup{
+			GroupName:    r2.Usergroup.GroupName,
+			GroupManaged: false,
+			UsersCount:   1,
+		})
+	})
+
 	t.Run("Visibility of public projects", func(t *testing.T) {
 		// Create users
-		_, c1 := newTestUser(t, svr)
-		_, c2 := newTestUser(t, svr)
+		_, c1 := fix.NewUser(t)
+		_, c2 := fix.NewUser(t)
 
 		// Create org and public and private projects
 		r1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
@@ -185,7 +428,7 @@ func TestRBAC(t *testing.T) {
 
 	t.Run("Inviting users who have not signed up yet", func(t *testing.T) {
 		// Create admin user with org, project and group
-		_, c1 := newTestUser(t, svr)
+		_, c1 := fix.NewUser(t)
 		org1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
 		require.NoError(t, err)
 		proj1, err := c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
@@ -224,7 +467,7 @@ func TestRBAC(t *testing.T) {
 		require.NoError(t, err)
 
 		// Check that two emails were sent (org and project addition)
-		sender := svr.admin.Email.Sender.(*email.TestSender)
+		sender := fix.Admin.Email.Sender.(*email.TestSender)
 		var count int
 		for _, email := range sender.Emails {
 			if email.ToEmail == userEmail {
@@ -249,7 +492,7 @@ func TestRBAC(t *testing.T) {
 		require.Equal(t, database.ProjectRoleNameAdmin, projInvites.Invites[0].Role)
 
 		// Create the user and check they can access the org and project, and check they are in the list of members
-		_, c2 := newTestUserWithEmail(t, svr, userEmail)
+		_, c2 := fix.NewUserWithEmail(t, userEmail)
 		_, err = c2.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: org1.Organization.Name})
 		require.NoError(t, err)
 		_, err = c2.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: org1.Organization.Name, Name: proj1.Project.Name})
@@ -304,7 +547,7 @@ func TestRBAC(t *testing.T) {
 
 	t.Run("Inviting project users who haven't signed up yet become org guests", func(t *testing.T) {
 		// Create admin user with org and project
-		_, c1 := newTestUser(t, svr)
+		_, c1 := fix.NewUser(t)
 		org1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
 		require.NoError(t, err)
 		proj1, err := c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
@@ -326,7 +569,7 @@ func TestRBAC(t *testing.T) {
 		require.NoError(t, err)
 
 		// Sign up the user
-		_, _ = newTestUserWithEmail(t, svr, userEmail)
+		_, _ = fix.NewUserWithEmail(t, userEmail)
 
 		// Check that the user is a guest in the org
 		orgMembers, err := c1.ListOrganizationMemberUsers(ctx, &adminv1.ListOrganizationMemberUsersRequest{Organization: org1.Organization.Name})
@@ -349,9 +592,72 @@ func TestRBAC(t *testing.T) {
 		require.Len(t, allUsers.Members, 2)
 	})
 
+	t.Run("Project invites are connected to org invites", func(t *testing.T) {
+		// Create an org and project
+		_, c1 := fix.NewUser(t)
+		org1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
+		require.NoError(t, err)
+		proj1, err := c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
+			OrganizationName: org1.Organization.Name,
+			Name:             "proj1",
+			ProdSlots:        1,
+			SkipDeploy:       true,
+		})
+		require.NoError(t, err)
+
+		// Invite a user to the project
+		userEmail := randomName() + "@example.com"
+		_, err = c1.AddProjectMemberUser(ctx, &adminv1.AddProjectMemberUserRequest{
+			Organization: org1.Organization.Name,
+			Project:      proj1.Project.Name,
+			Email:        userEmail,
+			Role:         database.ProjectRoleNameAdmin,
+		})
+		require.NoError(t, err)
+
+		// Check invites were created for both the org and project
+		orgInvites, err := c1.ListOrganizationInvites(ctx, &adminv1.ListOrganizationInvitesRequest{Organization: org1.Organization.Name})
+		require.NoError(t, err)
+		require.Len(t, orgInvites.Invites, 1)
+		require.Equal(t, userEmail, orgInvites.Invites[0].Email)
+		require.Equal(t, database.OrganizationRoleNameGuest, orgInvites.Invites[0].Role)
+		projInvites, err := c1.ListProjectInvites(ctx, &adminv1.ListProjectInvitesRequest{
+			Organization: org1.Organization.Name,
+			Project:      proj1.Project.Name,
+		})
+		require.NoError(t, err)
+		require.Len(t, projInvites.Invites, 1)
+		require.Equal(t, userEmail, projInvites.Invites[0].Email)
+		require.Equal(t, database.ProjectRoleNameAdmin, projInvites.Invites[0].Role)
+
+		// Delete the org invite
+		_, err = c1.RemoveOrganizationMemberUser(ctx, &adminv1.RemoveOrganizationMemberUserRequest{
+			Organization: org1.Organization.Name,
+			Email:        userEmail,
+		})
+		require.NoError(t, err)
+
+		// Check that both invites were deleted
+		orgInvites, err = c1.ListOrganizationInvites(ctx, &adminv1.ListOrganizationInvitesRequest{Organization: org1.Organization.Name})
+		require.NoError(t, err)
+		require.Len(t, orgInvites.Invites, 0)
+		projInvites, err = c1.ListProjectInvites(ctx, &adminv1.ListProjectInvitesRequest{
+			Organization: org1.Organization.Name,
+			Project:      proj1.Project.Name,
+		})
+		require.NoError(t, err)
+		require.Len(t, projInvites.Invites, 0)
+
+		// Signup the user and check they are not added to the org
+		_, c2 := fix.NewUserWithEmail(t, userEmail)
+		orgs, err := c2.ListOrganizations(ctx, &adminv1.ListOrganizationsRequest{})
+		require.NoError(t, err)
+		require.Len(t, orgs.Organizations, 0)
+	})
+
 	t.Run("Whitelisting domains on orgs", func(t *testing.T) {
 		// Create admin user with four orgs
-		u1, c1 := newTestUserWithDomain(t, svr, "whitelist-orgs.test")
+		u1, c1 := fix.NewUserWithDomain(t, "whitelist-orgs.test")
 		adminEmail := u1.Email
 		org1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
 		require.NoError(t, err)
@@ -364,7 +670,7 @@ func TestRBAC(t *testing.T) {
 
 		// Create a user matching a domain BEFORE whitelisting
 		userEmail := randomName() + "@whitelist-orgs.test"
-		_, _ = newTestUserWithEmail(t, svr, userEmail)
+		_, _ = fix.NewUserWithEmail(t, userEmail)
 
 		// Whitelist one domain on org1 and org2, another on org3, and none on org4
 		_, err = c1.CreateWhitelistedDomain(ctx, &adminv1.CreateWhitelistedDomainRequest{
@@ -380,7 +686,7 @@ func TestRBAC(t *testing.T) {
 		})
 		require.NoError(t, err)
 		// Since normal admins can only whitelist their own domain, we need to create and add a separate user on the other domain to whitelist it.
-		uTemp, cTemp := newTestUserWithDomain(t, svr, "whitelist-orgs2.test")
+		uTemp, cTemp := fix.NewUserWithDomain(t, "whitelist-orgs2.test")
 		_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
 			Organization: org3.Organization.Name,
 			Email:        uTemp.Email,
@@ -413,7 +719,7 @@ func TestRBAC(t *testing.T) {
 
 		// Create a user matching a domain AFTER whitelisting
 		userEmail2 := randomName() + "@whitelist-orgs.test"
-		_, _ = newTestUserWithEmail(t, svr, userEmail2)
+		_, _ = fix.NewUserWithEmail(t, userEmail2)
 
 		// Utils for checking org and group members
 		checkOrgMember := func(email string, orgName string, role string, totalMembers int) {
@@ -473,7 +779,7 @@ func TestRBAC(t *testing.T) {
 
 	t.Run("Whitelisting domains on projects", func(t *testing.T) {
 		// Create an admin user and two orgs with a project each
-		u1, c1 := newTestUserWithDomain(t, svr, "whitelist-projs.test")
+		u1, c1 := fix.NewUserWithDomain(t, "whitelist-projs.test")
 		adminEmail := u1.Email
 		org1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
 		require.NoError(t, err)
@@ -496,9 +802,9 @@ func TestRBAC(t *testing.T) {
 
 		// Create two users before adding the whitelist
 		userEmail1 := randomName() + "@whitelist-projs.test"
-		_, _ = newTestUserWithEmail(t, svr, userEmail1)
+		_, _ = fix.NewUserWithEmail(t, userEmail1)
 		userEmail2 := randomName() + "@whitelist-projs.test"
-		_, _ = newTestUserWithEmail(t, svr, userEmail2)
+		_, _ = fix.NewUserWithEmail(t, userEmail2)
 
 		// Add one of the users to the org
 		_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
@@ -515,6 +821,7 @@ func TestRBAC(t *testing.T) {
 			Domain:       "whitelist-projs.test",
 			Role:         database.ProjectRoleNameAdmin,
 		})
+		require.NoError(t, err)
 
 		// Check we can't whitelist the same domain on the same project again
 		_, err = c1.CreateProjectWhitelistedDomain(ctx, &adminv1.CreateProjectWhitelistedDomainRequest{
@@ -551,9 +858,9 @@ func TestRBAC(t *testing.T) {
 		require.NoError(t, err)
 
 		// Create two users matching the domain, one of whom matches the org-level invite
-		_, _ = newTestUserWithEmail(t, svr, userEmail3)
+		_, _ = fix.NewUserWithEmail(t, userEmail3)
 		userEmail4 := randomName() + "@whitelist-projs.test"
-		_, _ = newTestUserWithEmail(t, svr, userEmail4)
+		_, _ = fix.NewUserWithEmail(t, userEmail4)
 
 		// Utils for checking org, group and project members
 		checkOrgMember := func(email string, orgName string, role string, totalMembers int) {
@@ -632,7 +939,7 @@ func TestRBAC(t *testing.T) {
 
 	t.Run("Managed usergroup memberships", func(t *testing.T) {
 		// Create an admin user and an org
-		u1, c1 := newTestUser(t, svr)
+		u1, c1 := fix.NewUser(t)
 		org1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
 		require.NoError(t, err)
 
@@ -663,7 +970,7 @@ func TestRBAC(t *testing.T) {
 		checkGroupMember(database.UsergroupNameAutogroupGuests, "", 0)
 
 		// Create another user, add them to the org, and check memberships
-		u2, _ := newTestUser(t, svr)
+		u2, _ := fix.NewUser(t)
 		_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
 			Organization: org1.Organization.Name,
 			Email:        u2.Email,
@@ -698,7 +1005,7 @@ func TestRBAC(t *testing.T) {
 
 	t.Run("Editors can manage non-admin users only", func(t *testing.T) {
 		// Create an org, project and usergroup
-		_, c1 := newTestUser(t, svr)
+		_, c1 := fix.NewUser(t)
 		org1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
 		require.NoError(t, err)
 		proj1, err := c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
@@ -715,7 +1022,7 @@ func TestRBAC(t *testing.T) {
 		require.NoError(t, err)
 
 		// Create an editor user and add them to the org and project
-		u2, c2 := newTestUser(t, svr)
+		u2, c2 := fix.NewUser(t)
 		_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
 			Organization: org1.Organization.Name,
 			Email:        u2.Email,
@@ -731,7 +1038,7 @@ func TestRBAC(t *testing.T) {
 		require.NoError(t, err)
 
 		// Check that the editor can add a user and usergroup to the org and project
-		u3, _ := newTestUser(t, svr)
+		u3, _ := fix.NewUser(t)
 		_, err = c2.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
 			Organization: org1.Organization.Name,
 			Email:        u3.Email,
@@ -876,7 +1183,7 @@ func TestRBAC(t *testing.T) {
 		require.NoError(t, err)
 
 		// Check that the editor can't add a member to the usergroup now that it has an admin role
-		u4, _ := newTestUser(t, svr)
+		u4, _ := fix.NewUser(t)
 		_, err = c2.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
 			Organization: org1.Organization.Name,
 			Email:        u4.Email,
@@ -943,9 +1250,89 @@ func TestRBAC(t *testing.T) {
 		require.ErrorContains(t, err, "non-admin")
 	})
 
+	t.Run("Organization admins can inspect the projects and usergroups of a user", func(t *testing.T) {
+		// Create an org, project and usergroup
+		_, c1 := fix.NewUser(t)
+		org1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
+		require.NoError(t, err)
+		proj1, err := c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
+			OrganizationName: org1.Organization.Name,
+			Name:             "proj1",
+			ProdSlots:        1,
+			SkipDeploy:       true,
+		})
+		require.NoError(t, err)
+		group1, err := c1.CreateUsergroup(ctx, &adminv1.CreateUsergroupRequest{
+			Organization: org1.Organization.Name,
+			Name:         "group1",
+		})
+		require.NoError(t, err)
+
+		// Create a user and add them to the org
+		u2, _ := fix.NewUser(t)
+		_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
+			Organization: org1.Organization.Name,
+			Email:        u2.Email,
+			Role:         database.OrganizationRoleNameViewer,
+		})
+		require.NoError(t, err)
+
+		// Introspect the user's projects and usergroups
+		projects, err := c1.ListProjectsForOrganizationAndUser(ctx, &adminv1.ListProjectsForOrganizationAndUserRequest{
+			Organization: org1.Organization.Name,
+			UserId:       u2.ID,
+		})
+		require.NoError(t, err)
+		require.Len(t, projects.Projects, 1) // Through the default group access for autogroup:members
+		require.Equal(t, proj1.Project.Name, projects.Projects[0].Name)
+		usergroups, err := c1.ListUsergroupsForOrganizationAndUser(ctx, &adminv1.ListUsergroupsForOrganizationAndUserRequest{
+			Organization: org1.Organization.Name,
+			UserId:       u2.ID,
+		})
+		require.NoError(t, err)
+		require.Len(t, usergroups.Usergroups, 2) // The default autogroups
+		require.Equal(t, database.UsergroupNameAutogroupMembers, usergroups.Usergroups[0].GroupName)
+		require.Equal(t, database.UsergroupNameAutogroupUsers, usergroups.Usergroups[1].GroupName)
+
+		// Add the user explicitly to the project and usergroup
+		_, err = c1.AddProjectMemberUser(ctx, &adminv1.AddProjectMemberUserRequest{
+			Organization: org1.Organization.Name,
+			Project:      proj1.Project.Name,
+			Email:        u2.Email,
+			Role:         database.ProjectRoleNameViewer,
+		})
+		require.NoError(t, err)
+		_, err = c1.AddUsergroupMemberUser(ctx, &adminv1.AddUsergroupMemberUserRequest{
+			Organization: org1.Organization.Name,
+			Usergroup:    group1.Usergroup.GroupName,
+			Email:        u2.Email,
+		})
+		require.NoError(t, err)
+
+		// Check that the user has the project and usergroup
+		projects, err = c1.ListProjectsForOrganizationAndUser(ctx, &adminv1.ListProjectsForOrganizationAndUserRequest{
+			Organization: org1.Organization.Name,
+			UserId:       u2.ID,
+		})
+		require.NoError(t, err)
+		require.Len(t, projects.Projects, 1)
+		require.Equal(t, proj1.Project.Name, projects.Projects[0].Name)
+		usergroups, err = c1.ListUsergroupsForOrganizationAndUser(ctx, &adminv1.ListUsergroupsForOrganizationAndUserRequest{
+			Organization: org1.Organization.Name,
+			UserId:       u2.ID,
+		})
+		require.NoError(t, err)
+		require.Len(t, usergroups.Usergroups, 3)
+		require.Equal(t, group1.Usergroup.GroupName, usergroups.Usergroups[2].GroupName)
+	})
+
 }
 
 func randomName() string {
-	id := randomBytes(16)
+	id := make([]byte, 16)
+	_, err := rand.Read(id)
+	if err != nil {
+		panic(err)
+	}
 	return "test_" + hex.EncodeToString(id)
 }

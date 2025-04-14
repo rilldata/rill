@@ -154,7 +154,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 			})
 		}()
 
-		rows, err := olap.Execute(ctx, &drivers.Statement{
+		rows, err := olap.Query(ctx, &drivers.Statement{
 			Query:            fmt.Sprintf(`SELECT * FROM %q`, temporaryTableName),
 			Priority:         priority,
 			ExecutionTimeout: defaultExecutionTimeout,
@@ -465,7 +465,7 @@ func (q *ColumnTimeseries) CreateTimestampRollupReduction(
 	}
 
 	if rowCount < int64(q.Pixels*4) {
-		rows, err := olap.Execute(ctx, &drivers.Statement{
+		rows, err := olap.Query(ctx, &drivers.Statement{
 			Query:            `SELECT ` + safeTimestampColumnName + ` as ts, "` + valueColumn + `"::DOUBLE as count FROM "` + tableName + `"`,
 			Priority:         priority,
 			ExecutionTimeout: defaultExecutionTimeout,
@@ -499,6 +499,10 @@ func (q *ColumnTimeseries) CreateTimestampRollupReduction(
 			}
 
 			results = append(results, tsv)
+		}
+		err = rows.Err()
+		if err != nil {
+			return nil, err
 		}
 
 		return results, nil
@@ -536,7 +540,7 @@ func (q *ColumnTimeseries) CreateTimestampRollupReduction(
       ORDER BY bin
     `
 
-	rows, err := olap.Execute(ctx, &drivers.Statement{
+	rows, err := olap.Query(ctx, &drivers.Statement{
 		Query:            querySQL,
 		Priority:         priority,
 		ExecutionTimeout: defaultExecutionTimeout,
@@ -592,12 +596,16 @@ func (q *ColumnTimeseries) CreateTimestampRollupReduction(
 			results[i-3], results[i-2] = results[i-2], results[i-3]
 		}
 	}
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
 
 	return results, nil
 }
 
 func (q *ColumnTimeseries) resolveRowCount(ctx context.Context, olap drivers.OLAPStore, priority int) (int64, error) {
-	rows, err := olap.Execute(ctx, &drivers.Statement{
+	rows, err := olap.Query(ctx, &drivers.Statement{
 		Query:    fmt.Sprintf("SELECT count(*) AS count FROM %s", olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName)),
 		Priority: priority,
 	})

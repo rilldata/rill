@@ -5,7 +5,7 @@
 1. Define spec and state schemas in `proto/rill/runtime/v1/resource.proto`
 2. Define a reconciler for it in `runtime/reconcilers/`
 3. If the resource should be defined in code files,
-    - Define parser logic for it in `runtime/compilers/rillv1`
+    - Define parser logic for it in `runtime/parser`
     - Define mapping from parser output to catalog in `runtime/reconcilers/project_parser.go`
 
 ## When reconcile is invoked

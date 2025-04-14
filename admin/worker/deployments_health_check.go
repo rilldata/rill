@@ -109,7 +109,7 @@ func (w *Worker) deploymentsHealthCheck(ctx context.Context) error {
 }
 
 func (w *Worker) deploymentHealthCheck(ctx context.Context, d *database.Deployment) (instances []string, runtimeOK bool) {
-	ctx, span := tracer.Start(ctx, "deploymentHealthCheck", trace.WithAttributes(attribute.String("project_id", d.ID), attribute.String("deployment_id", d.ID)))
+	ctx, span := tracer.Start(ctx, "deploymentHealthCheck", trace.WithAttributes(attribute.String("project_id", d.ProjectID), attribute.String("deployment_id", d.ID)))
 	defer span.End()
 
 	client, err := w.admin.OpenRuntimeClient(d)

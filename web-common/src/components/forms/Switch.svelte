@@ -3,6 +3,7 @@
   import { cn } from "@rilldata/web-common/lib/shadcn";
 
   type $$Props = SwitchPrimitive.Props & {
+    label?: string;
     small?: boolean;
     medium?: boolean;
   };
@@ -13,6 +14,7 @@
   export { className as class };
   export let small = false;
   export let medium = false;
+  export let label: string | undefined = undefined;
 </script>
 
 <SwitchPrimitive.Root
@@ -26,6 +28,7 @@
   )}
   on:click
   on:keydown
+  aria-label={label}
 >
   <SwitchPrimitive.Thumb
     class={cn(

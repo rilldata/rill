@@ -84,7 +84,7 @@ export const getYupSchema = {
         "Must be an Azure URI (e.g. azure://container/path)",
       )
       .required("Path is required"),
-    account: yup.string(),
+    azure_storage_account: yup.string(),
     name: yup
       .string()
       .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
@@ -223,10 +223,6 @@ export const getYupSchema = {
   }),
 };
 
-export function toYupFriendlyKey(key: string) {
-  return key.replace(/\./g, "_");
-}
-
-export function fromYupFriendlyKey(key: string) {
-  return key.replace(/_/g, ".");
-}
+export const dsnSchema = yup.object().shape({
+  dsn: yup.string().required("DSN is required"),
+});

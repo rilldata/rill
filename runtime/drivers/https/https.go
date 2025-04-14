@@ -131,7 +131,12 @@ func (c *connection) Driver() string {
 
 // Config implements drivers.Connection.
 func (c *connection) Config() map[string]any {
-	return c.config
+	m := make(map[string]any)
+	err := mapstructure.Decode(c.config, &m)
+	if err != nil {
+		c.logger.Warn("error in generating https config", zap.Error(err))
+	}
+	return m
 }
 
 // Close implements drivers.Connection.
@@ -191,11 +196,6 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 
 // AsModelManager implements drivers.Handle.
 func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
-	return nil, false
-}
-
-// AsTransporter implements drivers.Connection.
-func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
 	return nil, false
 }
 

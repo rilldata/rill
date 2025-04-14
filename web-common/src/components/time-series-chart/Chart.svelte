@@ -10,9 +10,9 @@
   import { extent, max, min } from "d3-array";
   import { scaleLinear, scaleTime } from "d3-scale";
   import { DateTime, Interval } from "luxon";
-  import Crosshairs from "./Crosshairs.svelte";
   import Line from "./Line.svelte";
   import Point from "./Point.svelte";
+  import { portal } from "@rilldata/web-common/lib/actions/portal";
 
   const SNAP_RANGE = 0.05;
 
@@ -30,6 +30,7 @@
   };
 
   let offsetPosition: { x: number; y: number } | null = null;
+  let clientPosition: { x: number; y: number } = { x: 0, y: 0 };
   let contentRect = new DOMRectReadOnly(0, 0, 0, 0);
   let yScale = scaleLinear();
 
@@ -47,7 +48,7 @@
   ]);
 
   $: xScales = xExtents.map((extents) =>
-    scaleTime().domain(extents).range([0, 1000]),
+    scaleTime().domain(extents).range([0, 10000]),
   );
 
   $: allYExtents = mappedData.map((line) =>
@@ -57,6 +58,8 @@
   $: mins = allYExtents.map((extents) => extents[0]).filter(isNumber);
   $: maxes = allYExtents.map((extents) => extents[1]).filter(isNumber);
 
+  $: maxDataLength = Math.max(...mappedData.map((line) => line.length));
+
   $: yExtents = [Math.min(0, min(mins) ?? 0), max(maxes) ?? 0];
   $: yScale = yScale.domain(yExtents).range([100, 0]);
   $: ySpan = yExtents[1] - yExtents[0];
@@ -64,26 +67,41 @@
   $: hoverIndex =
     offsetPosition === null
       ? null
-      : Math.floor((offsetPosition.x / width) * mappedData[0].length);
+      : Math.round((offsetPosition.x / width) * (maxDataLength - 1));
 
   $: hoveredPoints = getPoints(hoverIndex);
 
-  $: snappedPoint =
-    !!offsetPosition?.y &&
-    hoveredPoints[0]?.value !== null &&
-    hoveredPoints[0]?.value !== undefined &&
-    Math.abs(
-      hoveredPoints[0]?.value -
-        yScale.invert((offsetPosition?.y / height) * 100),
-    ) /
-      ySpan <
-      SNAP_RANGE &&
-    hoveredPoints[0];
+  $: nearPoints = offsetPosition
+    ? hoveredPoints
+        .map((point, index) => {
+          if (
+            point === null ||
+            point.value === null ||
+            point.value === undefined
+          )
+            return null;
 
-  $: svgCoordinateCursor = offsetPosition && {
-    x: (offsetPosition.x / width) * 1000,
-    y: (offsetPosition.y / height) * 100,
-  };
+          if (
+            Math.abs(
+              point?.value -
+                yScale.invert(((offsetPosition?.y as number) / height) * 100),
+            ) /
+              ySpan <
+            SNAP_RANGE
+          )
+            return {
+              point,
+              index,
+            };
+          return null;
+        })
+        .sort((a, b) => {
+          if (a === null) return 1;
+          if (b === null) return -1;
+
+          return (b.point?.value ?? 0) - (a.point?.value ?? 0);
+        })
+    : [];
 
   function getColor(index: number) {
     return index === 0 ? MainLineColor : "rgba(0, 0, 0, 0.22)";
@@ -114,118 +132,107 @@
       value: point.records?.[yAccessor] as number | null | undefined,
     } as MappedPoint;
   }
-
-  function getPos(pos: number, width: number) {
-    const percentage = pos / width;
-
-    if (percentage < 0.2) return "-right-0";
-    if (percentage > 0.8) return "-left-0";
-
-    if (percentage <= 0.5) return "-left-0";
-    return "-right-0";
-  }
 </script>
 
-<div role="presentation" class="flex flex-col grow h-full relative">
-  {#if hoveredPoints.length > 0 && offsetPosition}
-    <div
-      class="{getPos(
-        offsetPosition.x,
-        width,
-      )} w-fit label text-[10px] bg-white border-dashed text-gray-500 border-gray-300 -translate-y-1/2 py-0.5 border rounded-sm px-1 font-medium absolute pointer-events-none"
-      style:top="{snappedPoint && snappedPoint.value
-        ? (yScale(snappedPoint.value) / 100) * height
-        : offsetPosition.y}px"
-      class:!text-primary-500={!!snappedPoint}
-      class:border-primary-400={!!snappedPoint}
-      class:!font-semibold={!!snappedPoint}
-    >
-      {formatterFunction(
-        snappedPoint
-          ? snappedPoint.value
-          : yScale.invert((offsetPosition?.y / height) * 100),
-      )}
-    </div>
-  {/if}
-
-  <svg
-    bind:contentRect
-    role="presentation"
-    class="cursor-default size-full overflow-visible"
-    preserveAspectRatio="none"
-    viewBox="0 0 1000 100"
-    on:mousemove={(e) => {
-      offsetPosition = { x: e.offsetX, y: e.offsetY };
-    }}
-    on:mouseleave={() => {
-      offsetPosition = null;
-    }}
-  >
-    {#each mappedData as mappedDataLine, i (i)}
-      <Line
-        data={mappedDataLine}
-        xScale={xScales[i]}
-        color={getColor(i)}
-        {yScale}
-        fill={i === 0}
-        strokeWidth={1}
-      />
-    {/each}
-
-    <Crosshairs
-      snapped={!!snappedPoint}
-      cursor={snappedPoint
-        ? {
-            x: xScales[0](snappedPoint.interval.start.toJSDate()),
-            y: snappedPoint.value ? yScale(snappedPoint.value) : 50,
-          }
-        : svgCoordinateCursor}
-    />
-
-    <g>
-      {#each [...mappedData].reverse() as mappedDataLine, reversedIndex (reversedIndex)}
-        {@const i = mappedData.length - reversedIndex - 1}
-        {#each mappedDataLine as { interval, value }, pointIndex (pointIndex)}
-          {@const xScale = xScales[i]}
-          {#if value !== null && value !== undefined && (hoverIndex === pointIndex || (mappedDataLine[pointIndex - 1]?.value === null && mappedDataLine[pointIndex + 1]?.value === null))}
-            <Point
-              x={xScale(interval.start.toJSDate())}
-              y={yScale(value)}
-              color={getColor(i)}
-            />
+{#if mappedData.length}
+  <div role="presentation" class="flex flex-col grow h-full relative">
+    {#if nearPoints.filter(Boolean).length && clientPosition}
+      <div
+        use:portal
+        class=" w-fit label text-[10px] font-semibold flex flex-col z-[1000] shadow-sm bg-white text-gray-500 border-gray-200 -translate-y-1/2 py-0.5 border rounded-sm px-1 absolute pointer-events-none"
+        style:top="{clientPosition.y}px"
+        style:left="{clientPosition.x + 10}px"
+      >
+        {#each nearPoints as possiblePoint, i (i)}
+          {#if possiblePoint}
+            <div class="flex gap-x-1 items-center">
+              <span
+                class="size-[6.5px] rounded-full"
+                style:background-color={getColor(possiblePoint.index)}
+              />
+              {formatterFunction(possiblePoint?.point.value)}
+            </div>
           {/if}
         {/each}
-      {/each}
-    </g>
-  </svg>
-
-  <div class="w-full h-fit flex justify-between text-gray-500 mt-0.5 relative">
-    {#if hoveredPoints.length > 0}
-      <span
-        class="relative"
-        style:transform="translateX(-{xScales[0](
-          hoveredPoints[0].interval.start.toJSDate(),
-        ) / 10}%)"
-        style:left="{xScales[0](hoveredPoints[0].interval.start.toJSDate()) /
-          10}%"
-      >
-        <RangeDisplay interval={hoveredPoints[0].interval} grain={timeGrain} />
-      </span>
-    {:else}
-      <span>
-        {mappedData[0][0].interval.start.toLocaleString({
-          month: "short",
-          day: "numeric",
-        })}
-      </span>
-      <span>
-        {mappedData[0][mappedData[0].length - 1].interval.end
-          .minus({ millisecond: 1 })
-          .toLocaleString({
-            month: "short",
-            day: "numeric",
-          })}
-      </span>
+      </div>
     {/if}
+
+    <svg
+      bind:contentRect
+      role="presentation"
+      class="cursor-default size-full overflow-visible"
+      preserveAspectRatio="none"
+      viewBox="0 0 10000 100"
+      on:mousemove={(e) => {
+        offsetPosition = { x: e.offsetX, y: e.offsetY };
+        clientPosition = { x: e.clientX, y: e.clientY };
+      }}
+      on:mouseleave={() => {
+        offsetPosition = null;
+      }}
+    >
+      {#each mappedData as mappedDataLine, i (i)}
+        <Line
+          data={mappedDataLine}
+          xScale={xScales[i]}
+          color={getColor(i)}
+          {yScale}
+          fill={i === 0}
+          strokeWidth={1}
+        />
+      {/each}
+
+      <g>
+        {#each [...mappedData].reverse() as mappedDataLine, reversedIndex (reversedIndex)}
+          {@const i = mappedData.length - reversedIndex - 1}
+          {#each mappedDataLine as { interval, value }, pointIndex (pointIndex)}
+            {@const xScale = xScales[i]}
+            {#if value !== null && value !== undefined && (hoverIndex === pointIndex || (mappedDataLine[pointIndex - 1]?.value === null && mappedDataLine[pointIndex + 1]?.value === null))}
+              <Point
+                x={xScale(interval.start.toJSDate())}
+                y={yScale(value)}
+                color={getColor(i)}
+              />
+            {/if}
+          {/each}
+        {/each}
+      </g>
+    </svg>
+
+    <div
+      class="w-full h-fit flex justify-between text-gray-500 mt-0.5 relative"
+    >
+      {#if hoveredPoints.length > 0}
+        {@const jsDate = hoveredPoints[0].interval.start.toJSDate()}
+        {@const percentage = xScales[0](jsDate) / 100}
+        <span
+          class="relative"
+          style:transform="translateX(-{percentage}%)"
+          style:left="{percentage}%"
+        >
+          <RangeDisplay
+            interval={hoveredPoints[0].interval}
+            grain={timeGrain}
+          />
+        </span>
+      {:else if mappedData.length}
+        {@const firstPoint = mappedData?.[0]?.[0]}
+        {@const lastPoint = mappedData?.[0]?.[mappedData?.[0]?.length - 1]}
+        {#if firstPoint && lastPoint}
+          <span>
+            {firstPoint.interval.start.toLocaleString({
+              month: "short",
+              day: "numeric",
+            })}
+          </span>
+          <span>
+            {lastPoint.interval.end.minus({ millisecond: 1 }).toLocaleString({
+              month: "short",
+              day: "numeric",
+            })}
+          </span>
+        {/if}
+      {/if}
+    </div>
   </div>
-</div>
+{/if}

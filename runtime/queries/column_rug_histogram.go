@@ -147,7 +147,7 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 		*rng,                     // 7
 	)
 
-	outlierResults, err := olap.Execute(ctx, &drivers.Statement{
+	outlierResults, err := olap.Query(ctx, &drivers.Statement{
 		Query:            rugSQL,
 		Priority:         priority,
 		ExecutionTimeout: defaultExecutionTimeout,

@@ -1,14 +1,17 @@
 import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
-import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
 import {
+  type CanvasComponentType,
   type ComponentAlignment,
   type ComponentCommonProperties,
 } from "../types";
+import type { V1Resource } from "@rilldata/web-common/runtime-client";
+import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
+import Markdown from "./Markdown.svelte";
 
 export { default as Markdown } from "./Markdown.svelte";
 
-export const defaultAlignment: ComponentAlignment = {
+export const defaultMarkdownAlignment: ComponentAlignment = {
   vertical: "middle",
   horizontal: "left",
 };
@@ -22,19 +25,17 @@ export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
   minSize = { width: 1, height: 1 };
   defaultSize = { width: 3, height: 2 };
   resetParams = [];
+  type: CanvasComponentType = "markdown";
+  component = Markdown;
 
-  constructor(
-    fileArtifact: FileArtifact | undefined = undefined,
-    path: (string | number)[] = [],
-    initialSpec: Partial<MarkdownSpec> = {},
-  ) {
+  constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
     const defaultSpec: MarkdownSpec = {
       title: "",
       description: "",
       content: "Your text",
-      alignment: defaultAlignment,
+      alignment: defaultMarkdownAlignment,
     };
-    super(fileArtifact, path, defaultSpec, initialSpec);
+    super(resource, parent, path, defaultSpec);
   }
 
   isValid(spec: MarkdownSpec): boolean {
@@ -49,13 +50,19 @@ export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
           label: "Markdown",
           description: "Write text using the markdown syntax",
         },
-        alignment: { type: "alignment", label: "Alignment" },
+        alignment: {
+          type: "alignment",
+          label: "Alignment",
+          meta: {
+            defaultAlignment: defaultMarkdownAlignment,
+          },
+        },
       },
       filter: {},
     };
   }
 
-  newComponentSpec(): MarkdownSpec {
+  static newComponentSpec(): MarkdownSpec {
     const defaultContent = `# H1 Markdown Text
 ## H2 Markdown text
 ### H3 Markdown text
@@ -71,7 +78,7 @@ Start writing in **Markdown** and see your text beautifully formatted! 🚀`;
 
     return {
       content: defaultContent,
-      alignment: defaultAlignment,
+      alignment: defaultMarkdownAlignment,
     };
   }
 }

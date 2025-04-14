@@ -9,7 +9,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/compilers/rillv1"
+	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -49,21 +49,25 @@ measures:
 	// Verify the source
 	testruntime.RequireResource(t, rt, id, &runtimev1.Resource{
 		Meta: &runtimev1.ResourceMeta{
-			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindSource, Name: "foo"},
+			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "foo"},
 			Owner:     runtime.GlobalProjectParserName,
 			FilePaths: []string{"/sources/foo.yaml"},
 		},
-		Resource: &runtimev1.Resource_Source{
-			Source: &runtimev1.SourceV2{
-				Spec: &runtimev1.SourceSpec{
-					SourceConnector: "local_file",
-					SinkConnector:   "duckdb",
-					Properties:      must(structpb.NewStruct(map[string]any{"path": "data/foo.csv"})),
-					RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+		Resource: &runtimev1.Resource_Model{
+			Model: &runtimev1.Model{
+				Spec: &runtimev1.ModelSpec{
+					InputConnector:   "local_file",
+					OutputConnector:  "duckdb",
+					InputProperties:  must(structpb.NewStruct(map[string]any{"path": "data/foo.csv", "local_files_hash": localFileHash(t, rt, id, []string{"data/foo.csv"})})),
+					OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
+					RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
+					DefinedAsSource:  true,
 				},
-				State: &runtimev1.SourceState{
-					Connector: "duckdb",
-					Table:     "foo",
+				State: &runtimev1.ModelState{
+					ExecutorConnector: "duckdb",
+					ResultConnector:   "duckdb",
+					ResultProperties:  must(structpb.NewStruct(map[string]any{"table": "foo", "used_model_name": true, "view": false})),
+					ResultTable:       "foo",
 				},
 			},
 		},
@@ -75,12 +79,12 @@ measures:
 	testruntime.RequireResource(t, rt, id, &runtimev1.Resource{
 		Meta: &runtimev1.ResourceMeta{
 			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "bar"},
-			Refs:      []*runtimev1.ResourceName{{Kind: runtime.ResourceKindSource, Name: "foo"}},
+			Refs:      []*runtimev1.ResourceName{{Kind: runtime.ResourceKindModel, Name: "foo"}},
 			Owner:     runtime.GlobalProjectParserName,
 			FilePaths: []string{"/models/bar.sql"},
 		},
 		Resource: &runtimev1.Resource_Model{
-			Model: &runtimev1.ModelV2{
+			Model: &runtimev1.Model{
 				Spec: &runtimev1.ModelSpec{
 					RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 					InputConnector:  "duckdb",
@@ -103,8 +107,8 @@ measures:
 	mvSpec := &runtimev1.MetricsViewSpec{
 		Connector:   "duckdb",
 		Model:       "bar",
-		Dimensions:  []*runtimev1.MetricsViewSpec_DimensionV2{{Name: "a", DisplayName: "A", Column: "a"}},
-		Measures:    []*runtimev1.MetricsViewSpec_MeasureV2{{Name: "b", DisplayName: "B", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE}},
+		Dimensions:  []*runtimev1.MetricsViewSpec_Dimension{{Name: "a", DisplayName: "A", Column: "a"}},
+		Measures:    []*runtimev1.MetricsViewSpec_Measure{{Name: "b", DisplayName: "B", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE}},
 		DisplayName: "Foobar",
 	}
 	testruntime.RequireResource(t, rt, id, &runtimev1.Resource{
@@ -115,7 +119,7 @@ measures:
 			FilePaths: []string{"/metrics/foobar.yaml"},
 		},
 		Resource: &runtimev1.Resource_MetricsView{
-			MetricsView: &runtimev1.MetricsViewV2{
+			MetricsView: &runtimev1.MetricsView{
 				Spec: mvSpec,
 				State: &runtimev1.MetricsViewState{
 					ValidSpec: &runtimev1.MetricsViewSpec{
@@ -123,8 +127,8 @@ measures:
 						Table:       "bar",
 						Model:       "bar",
 						DisplayName: "Foobar",
-						Dimensions:  []*runtimev1.MetricsViewSpec_DimensionV2{{Name: "a", DisplayName: "A", Column: "a"}},
-						Measures:    []*runtimev1.MetricsViewSpec_MeasureV2{{Name: "b", DisplayName: "B", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE}},
+						Dimensions:  []*runtimev1.MetricsViewSpec_Dimension{{Name: "a", DisplayName: "A", Column: "a"}},
+						Measures:    []*runtimev1.MetricsViewSpec_Measure{{Name: "b", DisplayName: "B", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE}},
 					},
 				},
 			},
@@ -150,7 +154,7 @@ path
 			ReconcileError: "Table with name foo does not exist",
 		},
 		Resource: &runtimev1.Resource_Model{
-			Model: &runtimev1.ModelV2{
+			Model: &runtimev1.Model{
 				Spec: &runtimev1.ModelSpec{
 					RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 					InputConnector:  "duckdb",
@@ -173,7 +177,7 @@ path
 			ReconcileError: "does not exist",
 		},
 		Resource: &runtimev1.Resource_MetricsView{
-			MetricsView: &runtimev1.MetricsViewV2{
+			MetricsView: &runtimev1.MetricsView{
 				Spec:  mvSpec,
 				State: &runtimev1.MetricsViewState{},
 			},
@@ -209,21 +213,25 @@ path: data/foo.csv
 	testruntime.RequireReconcileState(t, rt, id, 2, 0, 0)
 	testruntime.RequireResource(t, rt, id, &runtimev1.Resource{
 		Meta: &runtimev1.ResourceMeta{
-			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindSource, Name: "foo"},
+			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "foo"},
 			Owner:     runtime.GlobalProjectParserName,
 			FilePaths: []string{"/sources/foo.yaml"},
 		},
-		Resource: &runtimev1.Resource_Source{
-			Source: &runtimev1.SourceV2{
-				Spec: &runtimev1.SourceSpec{
-					SourceConnector: "local_file",
-					SinkConnector:   "duckdb",
-					Properties:      must(structpb.NewStruct(map[string]any{"path": "data/foo.csv"})),
-					RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+		Resource: &runtimev1.Resource_Model{
+			Model: &runtimev1.Model{
+				Spec: &runtimev1.ModelSpec{
+					InputConnector:   "local_file",
+					OutputConnector:  "duckdb",
+					InputProperties:  must(structpb.NewStruct(map[string]any{"path": "data/foo.csv", "local_files_hash": localFileHash(t, rt, id, []string{"data/foo.csv"})})),
+					OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
+					RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
+					DefinedAsSource:  true,
 				},
-				State: &runtimev1.SourceState{
-					Connector: "duckdb",
-					Table:     "foo",
+				State: &runtimev1.ModelState{
+					ExecutorConnector: "duckdb",
+					ResultConnector:   "duckdb",
+					ResultProperties:  must(structpb.NewStruct(map[string]any{"table": "foo", "used_model_name": true, "view": false})),
+					ResultTable:       "foo",
 				},
 			},
 		},
@@ -237,7 +245,7 @@ path: data/foo.csv
 1,2,3,4,5
 `,
 	})
-	testruntime.RefreshAndWait(t, rt, id, &runtimev1.ResourceName{Kind: runtime.ResourceKindSource, Name: "foo"})
+	testruntime.RefreshAndWait(t, rt, id, &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "foo"})
 	testruntime.RequireReconcileState(t, rt, id, 2, 0, 0)
 	testruntime.RequireOLAPTable(t, rt, id, "foo")
 	testruntime.RequireOLAPTableCount(t, rt, id, "foo", 1)
@@ -251,7 +259,7 @@ path: data/foo.csv
 	testruntime.RequireNoOLAPTable(t, rt, id, "foo")
 
 	// Reconcile the source and verify the table is added back
-	testruntime.ReconcileAndWait(t, rt, id, &runtimev1.ResourceName{Kind: runtime.ResourceKindSource, Name: "foo"})
+	testruntime.ReconcileAndWait(t, rt, id, &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "foo"})
 	testruntime.RequireReconcileState(t, rt, id, 2, 0, 0)
 	testruntime.RequireOLAPTable(t, rt, id, "foo")
 	testruntime.RequireOLAPTableCount(t, rt, id, "foo", 1)
@@ -278,21 +286,25 @@ path: data/foo.csv
 	testruntime.RequireReconcileState(t, rt, id, 2, 0, 0)
 	testruntime.RequireResource(t, rt, id, &runtimev1.Resource{
 		Meta: &runtimev1.ResourceMeta{
-			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindSource, Name: "foo"},
+			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "foo"},
 			Owner:     runtime.GlobalProjectParserName,
 			FilePaths: []string{"/sources/foo.yaml"},
 		},
-		Resource: &runtimev1.Resource_Source{
-			Source: &runtimev1.SourceV2{
-				Spec: &runtimev1.SourceSpec{
-					SourceConnector: "local_file",
-					SinkConnector:   "duckdb",
-					Properties:      must(structpb.NewStruct(map[string]any{"path": "data/foo.csv"})),
-					RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+		Resource: &runtimev1.Resource_Model{
+			Model: &runtimev1.Model{
+				Spec: &runtimev1.ModelSpec{
+					InputConnector:   "local_file",
+					OutputConnector:  "duckdb",
+					InputProperties:  must(structpb.NewStruct(map[string]any{"path": "data/foo.csv", "local_files_hash": localFileHash(t, rt, id, []string{"data/foo.csv"})})),
+					OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
+					RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
+					DefinedAsSource:  true,
 				},
-				State: &runtimev1.SourceState{
-					Connector: "duckdb",
-					Table:     "foo",
+				State: &runtimev1.ModelState{
+					ExecutorConnector: "duckdb",
+					ResultConnector:   "duckdb",
+					ResultProperties:  must(structpb.NewStruct(map[string]any{"table": "foo", "used_model_name": true, "view": false})),
+					ResultTable:       "foo",
 				},
 			},
 		},
@@ -372,6 +384,7 @@ func TestSourceRefreshSchedule(t *testing.T) {
 		"/sources/foo.yaml": `
 connector: local_file
 path: data/foo.csv
+invalidate_on_change: false
 refresh:
   every: 1
 `,
@@ -457,8 +470,8 @@ path: data/foo.csv
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 2, 1, 1)
-	// Data is from the source and model did not override it
-	testruntime.RequireOLAPTableCount(t, rt, id, "foo", 3)
+	// Data is from the source and model overrides it
+	testruntime.RequireOLAPTableCount(t, rt, id, "foo", 1)
 
 	// TODO: any other cases?
 }
@@ -563,12 +576,6 @@ path: data/foo.csv
 	anotherModelRes.Meta.Refs[0].Kind = runtime.ResourceKindModel
 	testruntime.RequireResource(t, rt, id, anotherModelRes)
 	testruntime.RequireOLAPTable(t, rt, id, "bar_another")
-
-	// Rename the source to the model's name
-	testruntime.RenameFile(t, rt, id, "/sources/foo.yaml", "/sources/Bar_New.yaml")
-	testruntime.ReconcileParserAndWait(t, rt, id)
-	testruntime.RequireReconcileState(t, rt, id, 3, 1, 1)
-	testruntime.RequireOLAPTable(t, rt, id, "Bar_New")
 }
 
 func TestRenameToOther(t *testing.T) {
@@ -1081,7 +1088,7 @@ path: data/foo.csv
 	awaitIdle()
 	testruntime.RequireReconcileState(t, rt, id, 2, 0, 0)
 	testruntime.RequireOLAPTable(t, rt, id, "foo")
-	_, sourceRes := newSource("foo", "data/foo.csv")
+	_, sourceRes := newSource("foo", "data/foo.csv", localFileHash(t, rt, id, []string{"data/foo.csv"}))
 	testruntime.RequireResource(t, rt, id, sourceRes)
 
 	testruntime.PutFiles(t, rt, id, map[string]string{
@@ -1142,34 +1149,38 @@ measures:
 	testruntime.RequireResource(t, rt, id, metricsRes)
 }
 
-func newSource(name, path string) (*runtimev1.SourceV2, *runtimev1.Resource) {
-	source := &runtimev1.SourceV2{
-		Spec: &runtimev1.SourceSpec{
-			SourceConnector: "local_file",
-			SinkConnector:   "duckdb",
-			Properties:      must(structpb.NewStruct(map[string]any{"path": path})),
-			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+func newSource(name, path, localFileHash string) (*runtimev1.Model, *runtimev1.Resource) {
+	source := &runtimev1.Model{
+		Spec: &runtimev1.ModelSpec{
+			InputConnector:   "local_file",
+			OutputConnector:  "duckdb",
+			InputProperties:  must(structpb.NewStruct(map[string]any{"path": path, "local_files_hash": localFileHash})),
+			OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
+			RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
+			DefinedAsSource:  true,
 		},
-		State: &runtimev1.SourceState{
-			Connector: "duckdb",
-			Table:     name,
+		State: &runtimev1.ModelState{
+			ExecutorConnector: "duckdb",
+			ResultConnector:   "duckdb",
+			ResultProperties:  must(structpb.NewStruct(map[string]any{"table": name, "used_model_name": true, "view": false})),
+			ResultTable:       name,
 		},
 	}
 	sourceRes := &runtimev1.Resource{
 		Meta: &runtimev1.ResourceMeta{
-			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindSource, Name: name},
+			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: name},
 			Owner:     runtime.GlobalProjectParserName,
 			FilePaths: []string{fmt.Sprintf("/sources/%s.yaml", name)},
 		},
-		Resource: &runtimev1.Resource_Source{
-			Source: source,
+		Resource: &runtimev1.Resource_Model{
+			Model: source,
 		},
 	}
 	return source, sourceRes
 }
 
-func newModel(query, name, source string) (*runtimev1.ModelV2, *runtimev1.Resource) {
-	model := &runtimev1.ModelV2{
+func newModel(query, name, source string) (*runtimev1.Model, *runtimev1.Resource) {
+	model := &runtimev1.Model{
 		Spec: &runtimev1.ModelSpec{
 			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 			InputConnector:  "duckdb",
@@ -1186,7 +1197,7 @@ func newModel(query, name, source string) (*runtimev1.ModelV2, *runtimev1.Resour
 	modelRes := &runtimev1.Resource{
 		Meta: &runtimev1.ResourceMeta{
 			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: name},
-			Refs:      []*runtimev1.ResourceName{{Kind: runtime.ResourceKindSource, Name: source}},
+			Refs:      []*runtimev1.ResourceName{{Kind: runtime.ResourceKindModel, Name: source}},
 			Owner:     runtime.GlobalProjectParserName,
 			FilePaths: []string{fmt.Sprintf("/models/%s.sql", name)},
 		},
@@ -1197,51 +1208,51 @@ func newModel(query, name, source string) (*runtimev1.ModelV2, *runtimev1.Resour
 	return model, modelRes
 }
 
-func newMetricsView(name, model string, measures, dimensions []string) (*runtimev1.MetricsViewV2, *runtimev1.Resource) {
-	metrics := &runtimev1.MetricsViewV2{
+func newMetricsView(name, model string, measures, dimensions []string) (*runtimev1.MetricsView, *runtimev1.Resource) {
+	metrics := &runtimev1.MetricsView{
 		Spec: &runtimev1.MetricsViewSpec{
 			Connector:   "duckdb",
 			Model:       model,
-			DisplayName: rillv1.ToDisplayName(name),
-			Measures:    make([]*runtimev1.MetricsViewSpec_MeasureV2, len(measures)),
-			Dimensions:  make([]*runtimev1.MetricsViewSpec_DimensionV2, len(dimensions)),
+			DisplayName: parser.ToDisplayName(name),
+			Measures:    make([]*runtimev1.MetricsViewSpec_Measure, len(measures)),
+			Dimensions:  make([]*runtimev1.MetricsViewSpec_Dimension, len(dimensions)),
 		},
 		State: &runtimev1.MetricsViewState{
 			ValidSpec: &runtimev1.MetricsViewSpec{
 				Connector:   "duckdb",
 				Table:       model,
 				Model:       model,
-				DisplayName: rillv1.ToDisplayName(name),
-				Measures:    make([]*runtimev1.MetricsViewSpec_MeasureV2, len(measures)),
-				Dimensions:  make([]*runtimev1.MetricsViewSpec_DimensionV2, len(dimensions)),
+				DisplayName: parser.ToDisplayName(name),
+				Measures:    make([]*runtimev1.MetricsViewSpec_Measure, len(measures)),
+				Dimensions:  make([]*runtimev1.MetricsViewSpec_Dimension, len(dimensions)),
 			},
 		},
 	}
 
 	for i, measure := range measures {
 		name := fmt.Sprintf("measure_%d", i)
-		metrics.Spec.Measures[i] = &runtimev1.MetricsViewSpec_MeasureV2{
+		metrics.Spec.Measures[i] = &runtimev1.MetricsViewSpec_Measure{
 			Name:        name,
-			DisplayName: rillv1.ToDisplayName(name),
+			DisplayName: parser.ToDisplayName(name),
 			Expression:  measure,
 			Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 		}
-		metrics.State.ValidSpec.Measures[i] = &runtimev1.MetricsViewSpec_MeasureV2{
+		metrics.State.ValidSpec.Measures[i] = &runtimev1.MetricsViewSpec_Measure{
 			Name:        name,
-			DisplayName: rillv1.ToDisplayName(name),
+			DisplayName: parser.ToDisplayName(name),
 			Expression:  measure,
 			Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 		}
 	}
 	for i, dimension := range dimensions {
-		metrics.Spec.Dimensions[i] = &runtimev1.MetricsViewSpec_DimensionV2{
+		metrics.Spec.Dimensions[i] = &runtimev1.MetricsViewSpec_Dimension{
 			Name:        dimension,
-			DisplayName: rillv1.ToDisplayName(dimension),
+			DisplayName: parser.ToDisplayName(dimension),
 			Column:      dimension,
 		}
-		metrics.State.ValidSpec.Dimensions[i] = &runtimev1.MetricsViewSpec_DimensionV2{
+		metrics.State.ValidSpec.Dimensions[i] = &runtimev1.MetricsViewSpec_Dimension{
 			Name:        dimension,
-			DisplayName: rillv1.ToDisplayName(dimension),
+			DisplayName: parser.ToDisplayName(dimension),
 			Column:      dimension,
 		}
 	}
@@ -1317,4 +1328,15 @@ func must[T any](v T, err error) T {
 		panic(err)
 	}
 	return v
+}
+
+func localFileHash(t *testing.T, rt *runtime.Runtime, id string, paths []string) string {
+	repo, release, err := rt.Repo(context.Background(), id)
+	require.NoError(t, err)
+	defer func() {
+		release()
+	}()
+	localFileHash, err := repo.FileHash(context.Background(), paths)
+	require.NoError(t, err)
+	return localFileHash
 }

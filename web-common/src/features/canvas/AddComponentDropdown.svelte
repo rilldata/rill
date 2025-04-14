@@ -1,7 +1,7 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { chartMetadata } from "@rilldata/web-common/features/canvas/components/charts/util";
-  import { PlusCircle } from "lucide-svelte";
+  import { Plus, PlusCircle } from "lucide-svelte";
   import type { ComponentType, SvelteComponent } from "svelte";
   import type { ChartType } from "./components/charts/types";
   import type { CanvasComponentType } from "./components/types";
@@ -9,8 +9,6 @@
   import ChartIcon from "./icons/ChartIcon.svelte";
   import TableIcon from "./icons/TableIcon.svelte";
   import TextIcon from "./icons/TextIcon.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
   type MenuItem = {
     id: CanvasComponentType;
@@ -20,7 +18,9 @@
 
   // Function to get a random chart type
   function getRandomChartType(): ChartType {
-    const chartTypes = chartMetadata.map((chart) => chart.type);
+    const chartTypes = chartMetadata
+      .map((chart) => chart.type)
+      .filter((t) => t !== "stacked_bar_normalized");
     const randomIndex = Math.floor(Math.random() * chartTypes.length);
     return chartTypes[randomIndex];
   }
@@ -32,22 +32,33 @@
     { id: "markdown", label: "Text", icon: TextIcon },
     { id: "kpi_grid", label: "KPI", icon: BigNumberIcon },
     { id: "image", label: "Image", icon: ChartIcon },
+    { id: "leaderboard", label: "Leaderboard", icon: TableIcon },
   ];
 
   export let disabled = false;
   export let componentForm = false;
+  export let floatingForm = false;
   export let open = false;
+  export let rowIndex: number | undefined = undefined;
+  export let columnIndex: number | undefined = undefined;
   export let onItemClick: (type: CanvasComponentType) => void;
-  export let onMouseEnter: () => void;
+  export let onMouseEnter: () => void = () => {};
+  export let onOpenChange: (isOpen: boolean) => void = () => {};
 
   // Wrapper function to handle chart item click with randomization
   function handleChartItemClick() {
     const randomChartType = getRandomChartType();
     onItemClick(randomChartType);
   }
+
+  function getAriaLabel(row: number | undefined, column: number | undefined) {
+    return `Insert widget${row !== undefined ? ` in row ${row + 1}` : ""}${
+      column !== undefined ? ` at column ${column + 1}` : ""
+    }`;
+  }
 </script>
 
-<DropdownMenu.Root bind:open>
+<DropdownMenu.Root bind:open {onOpenChange}>
   <DropdownMenu.Trigger asChild let:builder>
     {#if componentForm}
       <button
@@ -58,29 +69,47 @@
         <PlusCircle class="w-6 h-6 text-slate-500" />
         <span class="text-sm font-medium text-slate-500">Add widget</span>
       </button>
-    {:else}
-      <Tooltip distance={8} location="top">
-        <button
-          {disabled}
-          {...builder}
-          use:builder.action
-          on:mouseenter={onMouseEnter}
-          class="pointer-events-auto disabled:pointer-events-none h-7 px-2 grid place-content-center z-50 hover:bg-gray-100 text-slate-500 disabled:opacity-50"
-        >
-          <PlusCircle size="15px" />
-        </button>
+    {:else if floatingForm}
+      <button
+        {...builder}
+        use:builder.action
+        class:pr-3.5={open}
+        aria-label="Add widget"
+        class="shadow-lg flex group hover:rounded-3xl w-fit gap-x-1 p-2 hover:pr-3.5 absolute bottom-3 right-3 items-center justify-center z-50 rounded-full bg-primary-600 text-white hover:bg-primary-500"
+      >
+        <Plus size="20px" />
 
-        <TooltipContent slot="tooltip-content">Insert widget</TooltipContent>
-      </Tooltip>
+        <span
+          class:not-sr-only={open}
+          class="sr-only group-hover:not-sr-only font-semibold w-fit"
+        >
+          Add widget
+        </span>
+      </button>
+    {:else}
+      <button
+        {disabled}
+        use:builder.action
+        {...builder}
+        aria-label={getAriaLabel(rowIndex, columnIndex)}
+        title="Insert widget"
+        class:bg-gray-50={open}
+        class="pointer-events-auto active:bg-gray-100 disabled:pointer-events-none h-7 px-2 grid place-content-center z-50 hover:bg-gray-50 text-slate-500 disabled:opacity-50"
+        on:mouseenter={onMouseEnter}
+      >
+        <PlusCircle size="15px" />
+      </button>
     {/if}
   </DropdownMenu.Trigger>
 
-  <DropdownMenu.Content align={componentForm ? "center" : "start"}>
+  <DropdownMenu.Content
+    align={componentForm || floatingForm ? "center" : "start"}
+  >
     <div class="flex flex-col" role="presentation" on:mouseenter={onMouseEnter}>
       {#each menuItems as { id, label, icon } (id)}
         <DropdownMenu.Item
+          class="flex flex-row gap-x-2"
           on:click={() => {
-            open = false;
             if (id === "bar_chart") {
               handleChartItemClick();
             } else {
@@ -88,10 +117,8 @@
             }
           }}
         >
-          <div class="flex flex-row gap-x-2">
-            <svelte:component this={icon} />
-            {label}
-          </div>
+          <svelte:component this={icon} />
+          {label}
         </DropdownMenu.Item>
       {/each}
     </div>

@@ -1,6 +1,12 @@
 <script lang="ts">
   import { writable } from "svelte/store";
-  import type { V1MemberUser, V1UserInvite } from "@rilldata/web-admin/client";
+  import type {
+    RpcStatus,
+    V1ListOrganizationInvitesResponse,
+    V1ListOrganizationMemberUsersResponse,
+    V1OrganizationMemberUser,
+    V1UserInvite,
+  } from "@rilldata/web-admin/client";
   import OrgUsersTableUserCompositeCell from "./OrgUsersTableUserCompositeCell.svelte";
   import OrgUsersTableActionsCell from "./OrgUsersTableActionsCell.svelte";
   import OrgUsersTableRoleCell from "./OrgUsersTableRoleCell.svelte";
@@ -18,15 +24,24 @@
   } from "@tanstack/svelte-table";
   import { createVirtualizer } from "@tanstack/svelte-virtual";
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
-  import type { InfiniteQueryObserverResult } from "@tanstack/svelte-query";
+  import type {
+    InfiniteData,
+    InfiniteQueryObserverResult,
+  } from "@tanstack/svelte-query";
 
-  interface OrgUser extends V1MemberUser, V1UserInvite {
+  interface OrgUser extends V1OrganizationMemberUser, V1UserInvite {
     invitedBy?: string;
   }
 
   export let data: OrgUser[];
-  export let usersQuery: InfiniteQueryObserverResult;
-  export let invitesQuery: InfiniteQueryObserverResult;
+  export let usersQuery: InfiniteQueryObserverResult<
+    InfiniteData<V1ListOrganizationMemberUsersResponse, unknown>,
+    RpcStatus
+  >;
+  export let invitesQuery: InfiniteQueryObserverResult<
+    InfiniteData<V1ListOrganizationInvitesResponse, unknown>,
+    RpcStatus
+  >;
   export let currentUserEmail: string;
 
   const ROW_HEIGHT = 69;
