@@ -19,8 +19,20 @@
     LEADERBOARD_WRAPPER_PADDING,
     MIN_DIMENSION_COLUMN_WIDTH,
   } from "./util";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 
   export let component: LeaderboardComponent;
+
+  const StateManagers = getStateManagers();
+  const {
+    selectors: {
+      // FIXME: move to leaderboardProperties?
+      leaderboard: {
+        leaderboardShowContextForAllMeasures,
+        leaderboardSortByMeasureName,
+      },
+    },
+  } = StateManagers;
 
   let metricsViewName: string;
   let leaderboardMeasureNames: string[] = [];
@@ -168,9 +180,9 @@
                 {instanceId}
                 {isValidPercentOfTotal}
                 {metricsViewName}
-                {activeMeasureName}
+                leaderboardSortByMeasureName={$leaderboardSortByMeasureName}
                 {leaderboardMeasureNames}
-                visibleMeasures={leaderboardMeasureNames}
+                leaderboardShowContextForAllMeasures={$leaderboardShowContextForAllMeasures}
                 {whereFilter}
                 {dimensionThresholdFilters}
                 tableWidth={dimensionColumnWidth + totalContextWidth}
@@ -201,11 +213,9 @@
                 formatters={measureFormatters}
                 {toggleSort}
                 {toggleDimensionValueSelection}
-                sortBy={$sortByMeasure}
                 measureLabel={(measureName) =>
                   visibleMeasures.find((m) => m.name === measureName)
                     ?.displayName || measureName}
-                leaderboardMeasureCountFeatureFlag={true}
               />
             </div>
           {/if}

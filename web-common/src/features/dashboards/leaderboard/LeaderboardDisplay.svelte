@@ -6,7 +6,6 @@
     V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { featureFlags } from "../../feature-flags";
   import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardControls from "./LeaderboardControls.svelte";
@@ -94,6 +93,7 @@
               {metricsViewName}
               leaderboardSortByMeasureName={$leaderboardSortByMeasureName}
               leaderboardMeasureNames={$leaderboardMeasureNames}
+              leaderboardShowContextForAllMeasures={$leaderboardShowContextForAllMeasures}
               {whereFilter}
               {dimensionThresholdFilters}
               {instanceId}
@@ -125,7 +125,6 @@
               {toggleDimensionValueSelection}
               {toggleComparisonDimension}
               measureLabel={$measureLabel}
-              leaderboardShowContextForAllMeasures={$leaderboardShowContextForAllMeasures}
             />
           {/if}
         {/each}

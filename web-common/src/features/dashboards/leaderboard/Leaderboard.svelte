@@ -51,9 +51,9 @@
   export let dimensionThresholdFilters: DimensionThresholdFilter[];
   export let leaderboardSortByMeasureName: string;
   export let leaderboardMeasureNames: string[];
+  export let leaderboardShowContextForAllMeasures: boolean;
   export let metricsViewName: string;
   export let sortType: SortType;
-  export let sortBy: string | null;
   export let slice = 7;
   export let tableWidth: number;
   export let sortedAscending: boolean;
@@ -63,11 +63,8 @@
   export let isBeingCompared: boolean;
   export let parentElement: HTMLElement;
   export let suppressTooltip = false;
-  export let leaderboardMeasureCountFeatureFlag: boolean;
   export let allowExpandTable = true;
   export let allowDimensionComparison = true;
-  export let leaderboardShowAllMeasures: boolean;
-  export let leaderboardShowContextForAllMeasures: boolean;
   export let formatters: Record<
     string,
     (value: number | string | null | undefined) => string | null | undefined
