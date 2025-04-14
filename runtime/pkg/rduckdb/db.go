@@ -189,17 +189,17 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 
 	bgctx, cancel := context.WithCancel(context.Background())
 	db := &db{
-		opts:             opts,
-		localPath:        opts.LocalPath,
-		remote:           opts.Remote,
-		writeSem:         semaphore.NewWeighted(1),
-		metaSem:          semaphore.NewWeighted(1),
-		localDirty:       true,
-		writesInProgress: make(map[string]any),
-		progressMu:       sync.Mutex{},
-		logger:           opts.Logger,
-		ctx:              bgctx,
-		cancel:           cancel,
+		opts:               opts,
+		localPath:          opts.LocalPath,
+		remote:             opts.Remote,
+		writeSem:           semaphore.NewWeighted(1),
+		metaSem:            semaphore.NewWeighted(1),
+		localDirty:         true,
+		writesInProgress:   make(map[string]any),
+		writesInProgressMu: sync.Mutex{},
+		logger:             opts.Logger,
+		ctx:                bgctx,
+		cancel:             cancel,
 	}
 	// create local path
 	err = os.MkdirAll(db.localPath, fs.ModePerm)
@@ -292,6 +292,8 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 	// always create new connection for write queries
 	// we switch schemas during writes and failure to switch back to default schema can lead to query failures
 	db.write.SetMaxIdleConns(0)
+	// only allow upto 5 concurrent ingestion queries
+	db.write.SetMaxOpenConns(5)
 
 	go db.localDBMonitor()
 	return db, nil
@@ -319,8 +321,8 @@ type db struct {
 	// writeInProgress tracks table names for which there is a write operation in progress.
 	// This is to prevent concurrent writes operating on the same table which can corrupt the database.
 	// Using a separate mutex and not writeSem to allow calling untrackWrite without acquiring writeSem.
-	writesInProgress map[string]any
-	progressMu       sync.Mutex
+	writesInProgress   map[string]any
+	writesInProgressMu sync.Mutex
 
 	logger *zap.Logger
 
@@ -893,7 +895,7 @@ func (d *db) acquireWriteConn(ctx context.Context, dbPath, table string, attachE
 		}
 
 		// detach can take long time if duckdb runs compaction so we need to set a timeout to not block the caller for too long
-		ctx, cancel := graceful.WithMinimumDuration(ctx, 5*time.Second)
+		ctx, cancel := graceful.WithMinimumDuration(ctx, 15*time.Second)
 		defer cancel()
 
 		_, err := conn.ExecContext(ctx, "DETACH "+attachName)
@@ -1449,8 +1451,8 @@ func (d *db) duckdbOnGCS() (bool, error) {
 // trackWrite tracks the write operation for the given table name.
 // It returns an error if a write operation is already in progress for the same table name.
 func (d *db) trackWrite(name string) error {
-	d.progressMu.Lock()
-	defer d.progressMu.Unlock()
+	d.writesInProgressMu.Lock()
+	defer d.writesInProgressMu.Unlock()
 	_, ok := d.writesInProgress[name]
 	if ok {
 		return fmt.Errorf("write operation already in progress for table %q", name)
@@ -1463,8 +1465,8 @@ func (d *db) trackWrite(name string) error {
 // It should only be called with writeSem acquired.
 // It is expected to be called after the write operation is completed and just before returning to the caller.
 func (d *db) untrackWrite(name string) {
-	d.progressMu.Lock()
-	defer d.progressMu.Unlock()
+	d.writesInProgressMu.Lock()
+	defer d.writesInProgressMu.Unlock()
 	delete(d.writesInProgress, name)
 }
 
