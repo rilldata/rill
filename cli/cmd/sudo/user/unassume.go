@@ -31,7 +31,7 @@ func UnassumeUser(ctx context.Context, ch *cmdutil.Helper) error {
 
 	// Revoke the current token if it's not expired
 	expiryTime, err := ch.DotRill.GetRepresentingUserAccessTokenExpiry()
-	if err == nil && expiryTime != nil && time.Now().Before(*expiryTime) {
+	if err == nil && time.Now().Before(expiryTime) {
 		_, err = client.RevokeCurrentAuthToken(ctx, &adminv1.RevokeCurrentAuthTokenRequest{})
 		if err != nil {
 			ch.Printf("Failed to revoke token. Clearing local token anyway.\n")
@@ -39,7 +39,7 @@ func UnassumeUser(ctx context.Context, ch *cmdutil.Helper) error {
 	}
 
 	// Clear local token and expiry
-	err = ch.DotRill.SetRepresentingUserAccessTokenExpiry(nil)
+	err = ch.DotRill.SetRepresentingUserAccessTokenExpiry(time.Time{})
 	if err != nil {
 		return err
 	}

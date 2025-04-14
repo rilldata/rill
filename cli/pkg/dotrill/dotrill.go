@@ -154,25 +154,25 @@ func (d DotRill) SetAccessToken(token string) error {
 }
 
 // GetRepresentingUserAccessTokenExpiry loads the current auth token expiry
-func (d DotRill) GetRepresentingUserAccessTokenExpiry() (*time.Time, error) {
+func (d DotRill) GetRepresentingUserAccessTokenExpiry() (time.Time, error) {
 	expiryStr, err := d.Get(CredentialsFilename, RepresentingUserAccessTokenExpiryCredentialsKey)
 	if err != nil {
-		return nil, err
+		return time.Time{}, err
 	}
 	if expiryStr == "" {
-		return nil, nil
+		return time.Time{}, nil
 	}
 	expiry, err := time.Parse(time.RFC3339Nano, expiryStr)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse token expiry: %w", err)
+		return time.Time{}, fmt.Errorf("failed to parse token expiry: %w", err)
 	}
-	return &expiry, nil
+	return expiry, nil
 }
 
 // SetRepresentingUserAccessTokenExpiry saves an auth token expiry
-func (d DotRill) SetRepresentingUserAccessTokenExpiry(expiry *time.Time) error {
+func (d DotRill) SetRepresentingUserAccessTokenExpiry(expiry time.Time) error {
 	var expiryStr string
-	if expiry != nil {
+	if !expiry.IsZero() {
 		expiryStr = expiry.Format(time.RFC3339Nano)
 	}
 	return d.Set(CredentialsFilename, RepresentingUserAccessTokenExpiryCredentialsKey, expiryStr)
