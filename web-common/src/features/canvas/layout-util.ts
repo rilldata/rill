@@ -23,6 +23,7 @@ export const initialHeights: Record<CanvasComponentType, number> = {
   image: 80,
   table: 300,
   pivot: 300,
+  leaderboard: 300,
 };
 
 export const MIN_HEIGHT = 40;
