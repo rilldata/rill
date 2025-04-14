@@ -1,8 +1,4 @@
 import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
-import type {
-  CommonChartProperties,
-  FieldConfig,
-} from "@rilldata/web-common/features/canvas/components/charts/types";
 import {
   commonOptions,
   getFilterOptions,
@@ -12,8 +8,10 @@ import type {
   ComponentInputParam,
   InputParams,
 } from "@rilldata/web-common/features/canvas/inspector/types";
+import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
-import { get, writable, type Writable } from "svelte/store";
+import { get, writable, type Readable, type Writable } from "svelte/store";
 import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
 import type {
   ComponentCommonProperties,
@@ -21,6 +19,11 @@ import type {
 } from "../types";
 import type { ChartType } from "./";
 import Chart from "./Chart.svelte";
+import type {
+  ChartDataQuery,
+  CommonChartProperties,
+  FieldConfig,
+} from "./types";
 
 // Base interface for all chart configurations
 export type BaseChartConfig = ComponentFilterProperties &
@@ -70,6 +73,11 @@ export abstract class BaseChart<
     AllKeys<TConfig>,
     ComponentInputParam
   >;
+
+  abstract createChartDataQuery(
+    ctx: CanvasStore,
+    timeAndFilterStore: Readable<TimeAndFilterStore>,
+  ): ChartDataQuery;
 
   protected getDefaultFieldConfig(): Partial<FieldConfig> {
     return {

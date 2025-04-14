@@ -1,5 +1,20 @@
+import type {
+  V1Expression,
+  V1MetricsViewAggregationDimension,
+  V1MetricsViewAggregationMeasure,
+  V1MetricsViewAggregationSort,
+} from "@rilldata/web-common/runtime-client";
+import { type V1MetricsViewAggregationResponseDataItem } from "@rilldata/web-common/runtime-client";
+import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { ComponentType, SvelteComponent } from "svelte";
+import { type Readable } from "svelte/store";
 import type { ChartType } from "./";
+
+export type ChartDataQuery = Readable<{
+  isFetching: boolean;
+  error: HTTPError | null;
+  data: V1MetricsViewAggregationResponseDataItem[] | undefined;
+}>;
 
 export type ChartSortDirection = "x" | "y" | "-x" | "-y";
 
@@ -42,4 +57,12 @@ export interface TooltipValue {
   format?: string;
   formatType?: string;
   type: "quantitative" | "ordinal" | "temporal" | "nominal";
+}
+
+export interface ChartQueryConfig {
+  measures: V1MetricsViewAggregationMeasure[];
+  dimensions: V1MetricsViewAggregationDimension[];
+  sort?: V1MetricsViewAggregationSort[];
+  where?: V1Expression;
+  limit?: string;
 }

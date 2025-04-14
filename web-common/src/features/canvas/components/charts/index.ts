@@ -9,11 +9,11 @@ export type ChartComponent = typeof CartesianChartComponent;
 export type ChartSpec = CartesianChartSpec | CircularChartSpec;
 
 export type ChartType =
-  | "line_chart"
   | "bar_chart"
+  | "line_chart"
+  | "area_chart"
   | "stacked_bar"
-  | "stacked_bar_normalized"
-  | "area_chart";
+  | "stacked_bar_normalized";
 
 export function getChartComponent(type: ChartType): ChartComponent {
   switch (type) {

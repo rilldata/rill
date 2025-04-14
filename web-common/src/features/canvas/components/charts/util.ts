@@ -8,7 +8,7 @@ import { sanitizeValueForVega } from "@rilldata/web-common/features/templates/ch
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import merge from "deepmerge";
 import type { Config } from "vega-lite";
-import type { ChartType } from "./";
+import type { ChartSpec, ChartType } from "./";
 import { generateVLAreaChartSpec } from "./cartesian-charts/area/spec";
 import { generateVLBarChartSpec } from "./cartesian-charts/bar-chart/spec";
 import type { CartesianChartSpec } from "./cartesian-charts/CartesianChart";
@@ -124,9 +124,53 @@ export function sanitizeFieldName(fieldName: string) {
   return `rill_${sanitizedFieldName}`;
 }
 
-// export function getMeasureForMetricView(
-//   spec: Record<string, unknown>,
-//   metricsView: MetricsView,
-// ) {
-//   return metricsView.measures.find((measure) => measure.name === yField);
-// }
+export interface FieldsByType {
+  measures: string[];
+  dimensions: string[];
+  timeDimensions: string[];
+}
+
+export function getFieldsByType(spec: ChartSpec): FieldsByType {
+  const measures: string[] = [];
+  const dimensions: string[] = [];
+  const timeDimensions: string[] = [];
+
+  // Recursively check all properties for FieldConfig objects
+  const checkFields = (obj: unknown): void => {
+    if (!obj || typeof obj !== "object") {
+      return;
+    }
+
+    // Check if current object is a FieldConfig with type and field
+    if ("type" in obj && "field" in obj && typeof obj.field === "string") {
+      const type = obj.type as string;
+      const field = obj.field;
+
+      switch (type) {
+        case "quantitative":
+          measures.push(field);
+          break;
+        case "nominal":
+          dimensions.push(field);
+          break;
+        case "temporal":
+          timeDimensions.push(field);
+          break;
+      }
+      return;
+    }
+
+    Object.values(obj).forEach((value) => {
+      if (typeof value === "object" && value !== null) {
+        checkFields(value);
+      }
+    });
+  };
+
+  checkFields(spec);
+  return {
+    measures,
+    dimensions,
+    timeDimensions,
+  };
+}

@@ -16,7 +16,7 @@ type CircularChartEncoding = {
 };
 export type CircularChartSpec = BaseChartConfig & CircularChartEncoding;
 
-export class CartesianChartComponent extends BaseChart<CircularChartSpec> {
+export class CircularChartComponent extends BaseChart<CircularChartSpec> {
   constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
     super(resource, parent, path);
   }

@@ -6,11 +6,10 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
-  import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
   import type { View } from "vega-typings";
   import type { ChartSpec } from "./";
   import type { BaseChart } from "./BaseChart";
-  import { getChartData, validateChartSchema } from "./selector";
+  import { getChartData } from "./selector";
   import {
     generateSpec,
     getChartTitle,
@@ -18,6 +17,7 @@
     mergedVlConfig,
     sanitizeFieldName,
   } from "./util";
+  import { validateChartSchema } from "./validate";
 
   export let component: BaseChart<ChartSpec>;
 
@@ -33,7 +33,7 @@
   $: store = getCanvasStore(canvasName);
   $: ({
     canvasEntity: {
-      spec: { getMeasureForMetricView },
+      spec: { getMeasuresForMetricView },
     },
   } = store);
 
@@ -54,7 +54,7 @@
 
   $: schema = $schemaStore;
 
-  $: chartQuery = getChartData(store, chartSpec, timeAndFilterStore);
+  $: chartQuery = getChartData(store, component, chartSpec, timeAndFilterStore);
 
   $: ({ isFetching, data, error } = $chartQuery);
   $: hasNoData = !isFetching && data.length === 0;
@@ -66,13 +66,25 @@
     dimension_filters,
   };
 
-  $: measure = getMeasureForMetricView(chartSpec.y?.field, metrics_view);
+  $: measures = getMeasuresForMetricView(metrics_view);
 
-  $: measureName = sanitizeFieldName($measure?.name || "measure");
-
-  $: measureFormatter = createMeasureValueFormatter<null | undefined>(
-    $measure as MetricsViewSpecMeasure,
+  // TODO: Move this to a central cached store
+  $: measureFormatters = $measures.reduce(
+    (acc, measure) => ({
+      ...acc,
+      [sanitizeFieldName(measure.name || "measure")]:
+        createMeasureValueFormatter<null | undefined>(measure),
+    }),
+    {},
   );
+
+  $: expressionFunctions = $measures.reduce((acc, measure) => {
+    const fieldName = sanitizeFieldName(measure.name || "measure");
+    return {
+      ...acc,
+      [fieldName]: { fn: (val) => measureFormatters[fieldName](val) },
+    };
+  }, {});
 
   $: config = vl_config ? mergedVlConfig(vl_config) : undefined;
 </script>
@@ -105,9 +117,7 @@
           data={{ "metrics-view": data }}
           {spec}
           renderer={isChartLineLike(chartType) ? "svg" : "canvas"}
-          expressionFunctions={{
-            [measureName]: { fn: (val) => measureFormatter(val) },
-          }}
+          {expressionFunctions}
           {config}
         />
       {/if}
