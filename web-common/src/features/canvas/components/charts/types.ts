@@ -1,4 +1,5 @@
 import type { ComponentType, SvelteComponent } from "svelte";
+import type { ChartType } from "./";
 
 export type ChartSortDirection = "x" | "y" | "-x" | "-y";
 
@@ -27,13 +28,6 @@ export interface ChartConfig extends CommonChartProperties {
   tooltip?: FieldConfig;
   vl_config?: string;
 }
-
-export type ChartType =
-  | "line_chart"
-  | "bar_chart"
-  | "stacked_bar"
-  | "stacked_bar_normalized"
-  | "area_chart";
 
 export interface ChartMetadata {
   type: ChartType;

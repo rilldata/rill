@@ -1,6 +1,5 @@
 import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
 import type {
-  ChartType,
   CommonChartProperties,
   FieldConfig,
 } from "@rilldata/web-common/features/canvas/components/charts/types";
@@ -20,6 +19,7 @@ import type {
   ComponentCommonProperties,
   ComponentFilterProperties,
 } from "../types";
+import type { ChartType } from "./";
 import Chart from "./Chart.svelte";
 
 // Base interface for all chart configurations

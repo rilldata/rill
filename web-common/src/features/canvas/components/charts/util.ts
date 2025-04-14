@@ -8,6 +8,7 @@ import { sanitizeValueForVega } from "@rilldata/web-common/features/templates/ch
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import merge from "deepmerge";
 import type { Config } from "vega-lite";
+import type { ChartType } from "./";
 import { generateVLAreaChartSpec } from "./cartesian-charts/area/spec";
 import { generateVLBarChartSpec } from "./cartesian-charts/bar-chart/spec";
 import type { CartesianChartSpec } from "./cartesian-charts/CartesianChart";
@@ -15,7 +16,7 @@ import { generateVLLineChartSpec } from "./cartesian-charts/line-chart/spec";
 import { generateVLStackedBarChartSpec } from "./cartesian-charts/stacked-bar/default";
 import { generateVLStackedBarNormalizedSpec } from "./cartesian-charts/stacked-bar/normalized";
 import type { ChartDataResult } from "./selector";
-import type { ChartMetadata, ChartType } from "./types";
+import type { ChartMetadata } from "./types";
 
 export function generateSpec(
   chartType: ChartType,

@@ -1,9 +1,6 @@
 <script lang="ts">
   import VegaLiteRenderer from "@rilldata/web-common/components/vega/VegaLiteRenderer.svelte";
   import ComponentHeader from "@rilldata/web-common/features/canvas/ComponentHeader.svelte";
-  import type { BaseChart } from "@rilldata/web-common/features/canvas/components/charts/BaseChart";
-  import type { CartesianChartSpec } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/CartesianChart";
-  import type { CircularChartSpec } from "@rilldata/web-common/features/canvas/components/charts/circular-charts/CircularChart";
   import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
@@ -11,6 +8,8 @@
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
   import type { View } from "vega-typings";
+  import type { ChartSpec } from "./";
+  import type { BaseChart } from "./BaseChart";
   import { getChartData, validateChartSchema } from "./selector";
   import {
     generateSpec,
@@ -20,7 +19,7 @@
     sanitizeFieldName,
   } from "./util";
 
-  export let component: BaseChart<CartesianChartSpec | CircularChartSpec>;
+  export let component: BaseChart<ChartSpec>;
 
   $: ({
     specStore,
