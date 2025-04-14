@@ -59,7 +59,7 @@ test.describe("Embeds", () => {
     expect(
       logMessages.some((msg) =>
         msg.includes(
-          `{"id":1337,"result":{"state":"f=advertiser_name+IN+('Instacart')"}}`,
+          `{"id":1337,"result":{"state":"view=explore&tr=P7D&tz=UTC&compare_tr=&grain=day&f=advertiser_name+IN+('Instacart')&measures=*&dims=*&expand_dim=&sort_by=overall_spend&sort_type=value&sort_dir=DESC&leaderboard_measure_count=1"}}`,
         ),
       ),
     ).toBeTruthy();
