@@ -98,9 +98,6 @@
     leaderboardMeasureNames.includes(m.name as string),
   );
 
-  $: activeMeasureName =
-    $sortByMeasure || leaderboardMeasureNames?.[0] || "measure";
-
   $: measureFormatters = Object.fromEntries(
     visibleMeasures.map((m) => [
       m.name,
