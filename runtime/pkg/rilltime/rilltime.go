@@ -403,7 +403,7 @@ func (o *Ordinal) eval(evalOpts EvalOptions, start, cur, end time.Time, tz *time
 	start = truncateWithCorrection(start, o.tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 
 	// update cur to match the shifted ordinal
-	cur = timeutil.CopyTimeTill(start, cur, o.tg, tz)
+	cur = timeutil.CopyTimeComponentsUntil(start, cur, o.tg)
 
 	updatedEnd := timeutil.OffsetTime(start, o.tg, 1)
 
@@ -595,7 +595,7 @@ func (a *AbsoluteTime) eval(evalOpts EvalOptions, start, cur, end time.Time, tz 
 	absEnd := timeutil.OffsetTime(absStart, a.tg, 1)
 
 	// update cur to match the absolute time
-	absCur := timeutil.CopyTimeTill(absStart, cur, a.tg, tz)
+	absCur := timeutil.CopyTimeComponentsUntil(absStart, cur, a.tg)
 
 	return absStart, absCur, absEnd
 }

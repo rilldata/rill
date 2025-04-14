@@ -2,11 +2,10 @@ package timeutil
 
 import (
 	"time"
-
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-
 	// Load IANA time zone data
 	_ "time/tzdata"
+
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
 // TimeGrain is extension of std time package with Week and Quarter added
@@ -212,7 +211,13 @@ func OffsetTime(tm time.Time, tg TimeGrain, n int) time.Time {
 	return tm
 }
 
-func CopyTimeTill(from, to time.Time, tg TimeGrain, tz *time.Location) time.Time {
+// CopyTimeComponentsUntil Copies components of `from` into `to` starting from year and going down all the way to `until` (inclusive).
+func CopyTimeComponentsUntil(from, to time.Time, until TimeGrain) time.Time {
+	tz := from.Location()
+	if to.Location() != tz {
+		to = to.In(tz)
+	}
+
 	year := to.Year()
 	month := to.Month()
 	day := to.Day()
@@ -221,7 +226,7 @@ func CopyTimeTill(from, to time.Time, tg TimeGrain, tz *time.Location) time.Time
 	second := to.Second()
 
 	g := TimeGrainYear
-	for g >= tg {
+	for g >= until {
 		switch g {
 		case TimeGrainUnspecified:
 		case TimeGrainMillisecond:

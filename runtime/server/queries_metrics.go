@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -429,7 +428,7 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 
 	var tz *time.Location
 	if req.TimeZone != "" {
-		tz, err = time.LoadLocation(strings.Trim(req.TimeZone, "{}"))
+		tz, err = time.LoadLocation(req.TimeZone)
 		if err != nil {
 			return nil, err
 		}
@@ -459,7 +458,7 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 		timeRanges[i] = &runtimev1.TimeRange{
 			Start:        timestamppb.New(start),
 			End:          timestamppb.New(end),
-			RoundToGrain: queries.ConvToAPITimeGrain(grain),
+			RoundToGrain: queries.TimeGrainToAPI(grain),
 			// for a reference
 			Expression: tr,
 		}

@@ -9,7 +9,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
 
-func convFromAPITimeGrain(tg runtimev1.TimeGrain) timeutil.TimeGrain {
+func TimeGrainFromAPI(tg runtimev1.TimeGrain) timeutil.TimeGrain {
 	switch tg {
 	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
 		return timeutil.TimeGrainMillisecond
@@ -33,7 +33,7 @@ func convFromAPITimeGrain(tg runtimev1.TimeGrain) timeutil.TimeGrain {
 	return timeutil.TimeGrainUnspecified
 }
 
-func ConvToAPITimeGrain(tg timeutil.TimeGrain) runtimev1.TimeGrain {
+func TimeGrainToAPI(tg timeutil.TimeGrain) runtimev1.TimeGrain {
 	switch tg {
 	case timeutil.TimeGrainUnspecified:
 		return runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED
@@ -167,10 +167,10 @@ func ResolveTimeRange(tr *runtimev1.TimeRange, mv *runtimev1.MetricsViewSpec) (t
 			fmoy = 1
 		}
 		if !start.IsZero() {
-			start = timeutil.TruncateTime(start, convFromAPITimeGrain(tr.RoundToGrain), tz, fdow, fmoy)
+			start = timeutil.TruncateTime(start, TimeGrainFromAPI(tr.RoundToGrain), tz, fdow, fmoy)
 		}
 		if !end.IsZero() {
-			end = timeutil.TruncateTime(end, convFromAPITimeGrain(tr.RoundToGrain), tz, fdow, fmoy)
+			end = timeutil.TruncateTime(end, TimeGrainFromAPI(tr.RoundToGrain), tz, fdow, fmoy)
 		}
 	}
 
