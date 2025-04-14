@@ -98,7 +98,7 @@ func (e *Executor) CacheKey(ctx context.Context) ([]byte, bool, error) {
 		return []byte(ts.Watermark.Format(time.RFC3339)), true, nil
 	}
 
-	res, err := e.olap.Execute(ctx, &drivers.Statement{
+	res, err := e.olap.Query(ctx, &drivers.Statement{
 		Query:    spec.CacheKeySql,
 		Priority: e.priority,
 	})
@@ -224,7 +224,7 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 		return nil, err
 	}
 
-	res, err := e.olap.Execute(ctx, &drivers.Statement{
+	res, err := e.olap.Query(ctx, &drivers.Statement{
 		Query:            sql,
 		Args:             args,
 		Priority:         e.priority,
@@ -242,6 +242,11 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Time) (*drivers.Result, error) {
 	if !e.security.CanAccess() {
 		return nil, runtime.ErrForbidden
+	}
+
+	err := qry.Validate()
+	if err != nil {
+		return nil, err
 	}
 
 	// preserve the original limit, required in 2 phase comparison
@@ -296,7 +301,7 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 			return nil, err
 		}
 
-		res, err = e.olap.Execute(ctx, &drivers.Statement{
+		res, err = e.olap.Query(ctx, &drivers.Statement{
 			Query:            sql,
 			Args:             args,
 			Priority:         e.priority,
@@ -336,7 +341,7 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		}
 
 		// Use DuckDB to read the Parquet file into a *drivers.Result
-		res, err = duck.Execute(ctx, &drivers.Statement{
+		res, err = duck.Query(ctx, &drivers.Statement{
 			Query:            fmt.Sprintf("SELECT * FROM '%s'", path),
 			Priority:         e.priority,
 			ExecutionTimeout: defaultInteractiveTimeout,
@@ -473,6 +478,7 @@ func (e *Executor) Search(ctx context.Context, qry *SearchQuery, executionTime *
 			Offset:              nil,
 			TimeZone:            "",
 			UseDisplayNames:     false,
+			Rows:                false,
 		} //exhaustruct:enforce
 		q.Where = whereExprForSearch(qry.Where, d, qry.Search)
 
@@ -502,7 +508,7 @@ func (e *Executor) Search(ctx context.Context, qry *SearchQuery, executionTime *
 		finalArgs = append(finalArgs, args...)
 	}
 
-	res, err := e.olap.Execute(ctx, &drivers.Statement{
+	res, err := e.olap.Query(ctx, &drivers.Statement{
 		Query:            finalSQL.String(),
 		Args:             finalArgs,
 		Priority:         e.priority,
@@ -553,6 +559,7 @@ func (e *Executor) executeSearchInDruid(ctx context.Context, qry *SearchQuery, e
 		Offset:              nil,
 		TimeZone:            "",
 		UseDisplayNames:     false,
+		Rows:                false,
 	} //exhaustruct:enforce
 
 	if err := e.rewriteQueryTimeRanges(ctx, q, executionTime); err != nil {
@@ -577,7 +584,7 @@ func (e *Executor) executeSearchInDruid(ctx context.Context, qry *SearchQuery, e
 	if a.Root.Where != nil {
 		// NOTE :: this does not work for measure filters.
 		// The query planner resolves them to joins instead of filters.
-		rows, err := e.olap.Execute(ctx, &drivers.Statement{
+		rows, err := e.olap.Query(ctx, &drivers.Statement{
 			Query:            fmt.Sprintf("EXPLAIN PLAN FOR SELECT 1 FROM %s WHERE %s", *a.Root.FromTable, a.Root.Where.Expr),
 			Args:             a.Root.Where.Args,
 			Priority:         e.priority,

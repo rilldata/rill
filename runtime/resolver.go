@@ -15,6 +15,8 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/jsonval"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var ErrMetricsViewCachingDisabled = errors.New("metrics_cache_key: caching is disabled")
@@ -101,12 +103,22 @@ type ResolveOptions struct {
 
 // Resolve resolves a query using the given options.
 // The caller must call Close on the result when done consuming it.
-func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (ResolverResult, error) {
+func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (res ResolverResult, resErr error) {
 	// Since claims don't really make sense for some resolver use cases, it's easy to forget to set them.
 	// Adding an early panic to catch this.
 	if opts.Claims == nil {
 		panic("received nil claims")
 	}
+
+	ctx, span := tracer.Start(ctx, "runtime.Resolve", trace.WithAttributes(attribute.String("resolver", opts.Resolver)))
+	var cacheHit bool
+	defer func() {
+		span.SetAttributes(attribute.Bool("cache_hit", cacheHit))
+		if resErr != nil {
+			span.SetAttributes(attribute.String("err", resErr.Error()))
+		}
+		span.End()
+	}()
 
 	// Initialize the resolver
 	initializer, ok := ResolverInitializers[opts.Resolver]
@@ -132,6 +144,7 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (ResolverRe
 		return nil, err
 	}
 	if !ok {
+		cacheHit = false
 		// If not cacheable, just resolve and return
 		return resolver.ResolveInteractive(ctx)
 	}
@@ -179,18 +192,20 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (ResolverRe
 
 	// Try to get from cache
 	if val, ok := r.queryCache.cache.Get(key); ok {
+		cacheHit = true
 		return val.(*cachedResolverResult).copy(), nil
 	}
-
 	// Load with singleflight
 	val, err := r.queryCache.singleflight.Do(ctx, key, func(ctx context.Context) (any, error) {
 		// Try cache again
 		if val, ok := r.queryCache.cache.Get(key); ok {
+			cacheHit = true
 			return val.(*cachedResolverResult), nil
 		}
 
 		// Resolve
 		// NOTE: We can under no circumstances return the res directly since we're in a singleflight and results can have iterator state.
+		cacheHit = false
 		res, err := resolver.ResolveInteractive(ctx)
 		if err != nil {
 			return nil, err

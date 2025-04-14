@@ -45,7 +45,6 @@ import type { SortingState } from "@tanstack/svelte-table";
 
 /**
  * Converts a V1ExplorePreset to our internal metrics explore state.
- * V1ExplorePreset could come from url state, bookmark, alert or report.
  */
 export function convertPresetToExploreState(
   metricsView: V1MetricsViewSpec,
@@ -148,6 +147,7 @@ function fromTimeRangesParams(
     preset.comparisonMode ===
     V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
   ) {
+    partialExploreState.selectedComparisonTimeRange = undefined;
     partialExploreState.showTimeComparison = true;
   }
 
@@ -170,6 +170,11 @@ function fromTimeRangesParams(
         getSingleFieldError("compare dimension", preset.comparisonDimension),
       );
     }
+  } else if (
+    preset.comparisonMode !==
+    V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_DIMENSION
+  ) {
+    partialExploreState.selectedComparisonDimension = "";
   }
 
   if (preset.selectTimeRange) {
@@ -273,9 +278,9 @@ function fromExploreUrlParams(
       DashboardState_LeaderboardSortType.UNSPECIFIED;
   }
 
-  if (preset.exploreLeaderboardMeasureCount !== undefined) {
-    partialExploreState.leaderboardMeasureCount =
-      preset.exploreLeaderboardMeasureCount;
+  if (preset.exploreLeaderboardMeasures !== undefined) {
+    partialExploreState.leaderboardMeasureNames =
+      preset.exploreLeaderboardMeasures;
   }
 
   if (preset.exploreExpandedDimension !== undefined) {

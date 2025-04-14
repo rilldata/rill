@@ -31,6 +31,8 @@
   export let isTimeComparisonActive: boolean;
   export let leaderboardMeasureNames: string[] = [];
   export let suppressTooltip: boolean;
+  export let leaderboardShowContextForAllMeasures: boolean;
+  export let leaderboardSortByMeasureName: string | null;
   export let isValidPercentOfTotal: (measureName: string) => boolean;
   export let toggleDimensionValueSelection: (
     dimensionName: string,
@@ -42,6 +44,13 @@
     string,
     (value: number | string | null | undefined) => string | null | undefined
   >;
+
+  function shouldShowContextColumns(measureName: string): boolean {
+    return (
+      leaderboardShowContextForAllMeasures ||
+      measureName === leaderboardSortByMeasureName
+    );
+  }
 
   let hovered = false;
   let valueRect = new DOMRect(0, 0, DEFAULT_COLUMN_WIDTH);
@@ -199,8 +208,7 @@
   //     name,
   //     length
   //       ? `linear-gradient(to right, ${barColor}
-  //   ${length}px, transparent ${length}px)`
-  //       : undefined,
+  //   ${length}px, transparent ${length}px)`  //       : undefined,
   //   ]),
   // );
 
@@ -299,7 +307,7 @@
       {/if}
     </td>
 
-    {#if isValidPercentOfTotal(measureName)}
+    {#if isValidPercentOfTotal(measureName) && shouldShowContextColumns(measureName)}
       <td
         data-comparison-cell
         title={pctOfTotals[measureName]?.toString() || ""}
@@ -318,7 +326,7 @@
       </td>
     {/if}
 
-    {#if isTimeComparisonActive}
+    {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
       <td
         data-comparison-cell
         title={deltaAbsMap[measureName]?.toString() || ""}
@@ -342,7 +350,7 @@
       </td>
     {/if}
 
-    {#if isTimeComparisonActive}
+    {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
       <td
         data-comparison-cell
         title={deltaRels[measureName]?.toString() || ""}

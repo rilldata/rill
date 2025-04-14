@@ -4,7 +4,8 @@
   export let zIndex: number;
   export let type: string | undefined = undefined;
 
-  $: expandable = type === "kpi_grid" || type === "markdown";
+  $: expandable =
+    type === "kpi_grid" || type === "markdown" || type === "leaderboard";
   $: minHeight = getInitialHeight(type) + "px";
 </script>
 

@@ -26,7 +26,7 @@ func TestExecute(t *testing.T) {
 
 	// Create test table with all types
 	// need to remove INSTALL spatial when we upgrade to duckdb1.2 also change st_read to read_xlsx in csv export
-	result, err := olap.Execute(context.Background(), &drivers.Statement{
+	result, err := olap.Query(context.Background(), &drivers.Statement{
 		Query: `CREATE TABLE all_types (
 			id INTEGER PRIMARY KEY,
 			small_int SMALLINT,
@@ -115,7 +115,7 @@ func TestExecute(t *testing.T) {
 		require.True(t, stat.Size() > 0)
 
 		// Read back the exported file and verify contents
-		compareResult, err := olap.Execute(context.Background(), &drivers.Statement{
+		compareResult, err := olap.Query(context.Background(), &drivers.Statement{
 			Query: fmt.Sprintf(`
 				WITH 
 				actual AS (SELECT * FROM read_parquet('%s')),
@@ -166,7 +166,7 @@ func TestExecute(t *testing.T) {
 		require.True(t, stat.Size() > 0)
 
 		// Read back and verify contents
-		compareResult, err := olap.Execute(context.Background(), &drivers.Statement{
+		compareResult, err := olap.Query(context.Background(), &drivers.Statement{
 			Query: fmt.Sprintf(`
 				WITH 
 				actual AS (SELECT * FROM read_csv('%s')),
@@ -217,7 +217,7 @@ func TestExecute(t *testing.T) {
 		require.True(t, stat.Size() > 0)
 
 		// Read back and verify contents
-		compareResult, err := olap.Execute(context.Background(), &drivers.Statement{
+		compareResult, err := olap.Query(context.Background(), &drivers.Statement{
 			Query: fmt.Sprintf(`
 				WITH 
 				actual AS (SELECT * FROM st_read('%s')),

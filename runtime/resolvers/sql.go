@@ -14,6 +14,8 @@ import (
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/queries"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -48,6 +50,12 @@ func newSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolve
 	if err := mapstructure.Decode(opts.Properties, props); err != nil {
 		return nil, err
 	}
+
+	span := trace.SpanFromContext(ctx)
+	if span.SpanContext().IsValid() {
+		span.SetAttributes(attribute.String("sql", props.SQL))
+	}
+
 	// trim semicolon
 	props.SQL = strings.TrimSuffix(strings.TrimSpace(props.SQL), ";")
 
@@ -108,7 +116,7 @@ func (r *sqlResolver) Refs() []*runtimev1.ResourceName {
 }
 
 func (r *sqlResolver) Validate(ctx context.Context) error {
-	_, err := r.olap.Execute(ctx, &drivers.Statement{
+	_, err := r.olap.Query(ctx, &drivers.Statement{
 		Query:  r.sql,
 		DryRun: true,
 	})
@@ -120,7 +128,7 @@ func (r *sqlResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverR
 	// Adding +1 to the limit so we can return a nice error message if the limit is exceeded.
 	sql := fmt.Sprintf("SELECT * FROM (%s\n) LIMIT %d", r.sql, r.interactiveRowLimit+1)
 
-	res, err := r.olap.Execute(ctx, &drivers.Statement{
+	res, err := r.olap.Query(ctx, &drivers.Statement{
 		Query:    sql,
 		Priority: r.priority,
 	})
@@ -158,7 +166,7 @@ func (r *sqlResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runt
 }
 
 func (r *sqlResolver) generalExport(ctx context.Context, w io.Writer, filename string, opts *runtime.ExportOptions) error {
-	res, err := r.olap.Execute(ctx, &drivers.Statement{
+	res, err := r.olap.Query(ctx, &drivers.Statement{
 		Query:    r.sql,
 		Priority: opts.Priority,
 	})

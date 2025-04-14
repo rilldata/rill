@@ -29,7 +29,7 @@ func (p *inputProps) Validate() error {
 
 type objectStoreToSelfExecutor struct {
 	objectStore drivers.Handle
-	c           *connection
+	c           *Connection
 }
 
 var _ drivers.ModelExecutor = &objectStoreToSelfExecutor{}
