@@ -660,15 +660,12 @@ func (d *db) RenameTable(ctx context.Context, oldName, newName string) error {
 	if err != nil {
 		return err
 	}
+	defer d.untrackWrite(oldName)
 	err = d.trackWrite(newName)
 	if err != nil {
-		d.untrackWrite(oldName)
 		return err
 	}
-	defer func() {
-		d.untrackWrite(oldName)
-		d.untrackWrite(newName)
-	}()
+	defer d.untrackWrite(newName)
 
 	err = d.writeSem.Acquire(ctx, 1)
 	if err != nil {
