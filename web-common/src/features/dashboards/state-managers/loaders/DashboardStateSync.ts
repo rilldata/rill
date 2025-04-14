@@ -1,6 +1,7 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
 import { DashboardStateDataLoader } from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateDataLoader";
+import { saveMostRecentExploreState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-explore-state";
 import {
   metricsExplorerStore,
   useExploreState,
@@ -104,6 +105,11 @@ export class DashboardStateSync {
       exploreSpec,
       timeControlsState,
     );
+    saveMostRecentExploreState(
+      this.exploreName,
+      this.extraPrefix,
+      updatedExploreState,
+    );
 
     console.log("INIT", redirectUrl.search);
     // using `replaceState` directly messes up the navigation entries,
@@ -164,6 +170,11 @@ export class DashboardStateSync {
       exploreSpec,
       timeControlsState,
     );
+    saveMostRecentExploreState(
+      this.exploreName,
+      this.extraPrefix,
+      updatedExploreState,
+    );
 
     this.updating = false;
     // redirect loop breaker
@@ -204,6 +215,11 @@ export class DashboardStateSync {
       exploreState,
       exploreSpec,
       timeControlsState,
+    );
+    saveMostRecentExploreState(
+      this.exploreName,
+      this.extraPrefix,
+      exploreState,
     );
 
     this.updating = false;

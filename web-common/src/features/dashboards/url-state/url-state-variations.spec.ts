@@ -459,6 +459,7 @@ const TestCases: {
 
 describe("Human readable URL state variations", () => {
   beforeEach(() => {
+    localStorage.clear();
     sessionStorage.clear();
     metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
   });

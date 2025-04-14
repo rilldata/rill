@@ -6,6 +6,8 @@ import {
 import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
 import { cascadingExploreStateMerge } from "@rilldata/web-common/features/dashboards/state-managers/cascading-explore-state-merge";
 import { getPartialExploreStateFromSessionStorage } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
+import { getMostRecentExploreState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-explore-state";
+import { correctExploreState } from "@rilldata/web-common/features/dashboards/stores/correct-explore-state";
 import { getExploreStateFromYAMLConfig } from "@rilldata/web-common/features/dashboards/stores/get-explore-state-from-yaml-config";
 import { getRillDefaultExploreState } from "@rilldata/web-common/features/dashboards/stores/get-rill-default-explore-state";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
@@ -53,6 +55,10 @@ export class DashboardStateDataLoader {
       | undefined;
     errors: Error[];
   }>;
+
+  private readonly mostRecentPartialExploreState: CompoundQueryResult<
+    Partial<MetricsExplorerEntity> | undefined
+  >;
 
   /**
    * The explore state used to populate the store with initial explore. (TODO: update this)
@@ -227,12 +233,35 @@ export class DashboardStateDataLoader {
       },
     );
 
+    this.mostRecentPartialExploreState = getCompoundQuery(
+      [this.validSpecQuery],
+      ([validSpecResp]) => {
+        const metricsViewSpec = validSpecResp?.metricsView ?? {};
+        const exploreSpec = validSpecResp?.explore ?? {};
+
+        const mostRecentPartialExploreState = getMostRecentExploreState(
+          exploreName,
+          storageNamespacePrefix,
+        );
+        if (!mostRecentPartialExploreState) return undefined;
+
+        correctExploreState(
+          metricsViewSpec,
+          exploreSpec,
+          mostRecentPartialExploreState,
+        );
+
+        return mostRecentPartialExploreState;
+      },
+    );
+
     this.initExploreState = getCompoundQuery(
       [
         this.rillDefaultExploreState,
         this.exploreStateFromYAMLConfig,
         this.exploreStateFromSessionStorage,
         this.partialExploreStateFromUrlForInitAndErrors,
+        this.mostRecentPartialExploreState,
         ...(bookmarkOrTokenExploreState ? [bookmarkOrTokenExploreState] : []),
       ],
       ([
@@ -240,6 +269,7 @@ export class DashboardStateDataLoader {
         exploreStateFromYAMLConfig,
         exploreStateFromSessionStorage,
         partialExploreStateFromUrlForInitAndErrors,
+        mostRecentPartialExploreState,
         bookmarkOrTokenExploreState,
       ]) => {
         if (!rillDefaultExploreState || !exploreStateFromYAMLConfig) {
@@ -251,6 +281,8 @@ export class DashboardStateDataLoader {
           exploreStateFromSessionStorage,
           // Next priority is the state loaded from url params. It will be undefined if there are no params.
           partialExploreStateFromUrlForInitAndErrors?.partialExploreStateFromUrlForInit,
+          // Next priority is the most recent state user had visited. This is a small subset of the full state.
+          mostRecentPartialExploreState,
           // Next priority is one of the other source defined.
           // For cloud dashboard it would be home bookmark if present.
           // For shared url it would be the saved state in token
@@ -283,6 +315,9 @@ export class DashboardStateDataLoader {
     const rillDefaultExploreState = get(this.rillDefaultExploreState);
     const exploreStateFromYAMLConfig = get(this.exploreStateFromYAMLConfig);
     const explorePresetFromYAMLConfig = get(this.explorePresetFromYAMLConfig);
+    const mostRecentPartialExploreState = get(
+      this.mostRecentPartialExploreState,
+    );
     if (
       !rillDefaultExploreState ||
       !explorePresetFromYAMLConfig.data ||
@@ -319,6 +354,8 @@ export class DashboardStateDataLoader {
       skipSessionStorage ? undefined : exploreStateFromSessionStorage,
       // Next priority is the state loaded from url params. It will be undefined if there are no params.
       partialExploreStateFromUrl,
+      // Next priority is the most recent state user had visited. This is a small subset of the full state.
+      mostRecentPartialExploreState,
       // Next priority is one of the other source defined.
       // For cloud dashboard it would be home bookmark if present.
       // For shared url it would be the saved state in token

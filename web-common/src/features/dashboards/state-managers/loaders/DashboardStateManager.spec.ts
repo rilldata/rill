@@ -1,6 +1,7 @@
 import { type CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
 import { useDashboardFetchMocksForComponentTests } from "@rilldata/web-common/features/dashboards/filters/test/filter-test-utils";
 import { setExploreStateForWebView } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
+import { setMostRecentExploreState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-explore-state";
 import DashboardStateManagerTest from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/DashboardStateManagerTest.svelte";
 import {
   type HoistedPageForExploreTests,
@@ -29,7 +30,10 @@ import {
   type DashboardTimeControls,
   TimeComparisonOption,
 } from "@rilldata/web-common/lib/time/types";
-import { DashboardState_LeaderboardSortDirection } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
+import {
+  DashboardState_LeaderboardSortDirection,
+  DashboardState_LeaderboardSortType,
+} from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   V1ExploreComparisonMode,
   V1TimeGrain,
@@ -103,7 +107,7 @@ describe("DashboardStateManager", () => {
         allDimensionsVisible: false,
 
         leaderboardSortByMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
-        leaderboardContextColumn: undefined,
+        dashboardSortType: DashboardState_LeaderboardSortType.PERCENT,
         sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
       };
     const PageURLForRillDefaultState =
@@ -163,6 +167,57 @@ describe("DashboardStateManager", () => {
       ]);
     });
 
+    it("Should load most recent dashboard state", async () => {
+      setMostRecentExploreState(AD_BIDS_EXPLORE_NAME, undefined, {
+        visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
+        allMeasuresVisible: false,
+        visibleDimensions: [AD_BIDS_DOMAIN_DIMENSION],
+        allDimensionsVisible: false,
+
+        leaderboardSortByMeasureName: AD_BIDS_BID_PRICE_MEASURE,
+        sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
+        dashboardSortType: DashboardState_LeaderboardSortType.VALUE,
+      });
+      renderDashboardStateManager(BookmarkSourceQueryResult);
+      await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
+
+      assertExploreStateSubset({
+        ...ExploreStateSubsetForRillDefaultState,
+
+        visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
+        allMeasuresVisible: false,
+        visibleDimensions: [AD_BIDS_DOMAIN_DIMENSION],
+        allDimensionsVisible: false,
+
+        leaderboardSortByMeasureName: AD_BIDS_BID_PRICE_MEASURE,
+        sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
+        dashboardSortType: DashboardState_LeaderboardSortType.VALUE,
+
+        // Remaining settings from yaml defaults
+        selectedTimeRange: {
+          name: "PT24H",
+          interval: V1TimeGrain.TIME_GRAIN_HOUR,
+        } as DashboardTimeControls,
+        showTimeComparison: true,
+        selectedComparisonTimeRange: {
+          name: TimeComparisonOption.CONTIGUOUS,
+        } as DashboardTimeControls,
+      });
+      const initUrlSearch =
+        "view=explore&tr=PT24H&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=hour&f=&measures=bid_price&dims=domain&expand_dim=&sort_by=bid_price&sort_type=value&sort_dir=ASC&leaderboard_measure_count=1";
+      pageMock.assertSearchParams(initUrlSearch);
+
+      pageMock.popState("");
+      await waitFor(() =>
+        assertExploreStateSubset(ExploreStateSubsetForRillDefaultState),
+      );
+      // only 2 urls should in history
+      expect(pageMock.urlSearchHistory).toEqual([
+        initUrlSearch,
+        PageURLForRillDefaultState,
+      ]);
+    });
+
     it("Should load from session dashboard state", async () => {
       setExploreStateForWebView(
         AD_BIDS_EXPLORE_NAME,
@@ -189,7 +244,7 @@ describe("DashboardStateManager", () => {
         allDimensionsVisible: false,
 
         leaderboardSortByMeasureName: AD_BIDS_BID_PRICE_MEASURE,
-        leaderboardContextColumn: undefined,
+        dashboardSortType: DashboardState_LeaderboardSortType.PERCENT,
         sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
       });
       const initUrlSearch =
@@ -221,7 +276,7 @@ describe("DashboardStateManager", () => {
         allDimensionsVisible: false,
 
         leaderboardSortByMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
-        leaderboardContextColumn: undefined,
+        dashboardSortType: DashboardState_LeaderboardSortType.PERCENT,
         sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
       };
     const PageURLForRillDefaultState =
@@ -241,6 +296,47 @@ describe("DashboardStateManager", () => {
 
       assertExploreStateSubset(ExploreStateSubsetForRillDefaultState);
       expect(pageMock.urlSearchHistory).toEqual([PageURLForRillDefaultState]);
+    });
+
+    it("Should load most recent dashboard state", async () => {
+      setMostRecentExploreState(AD_BIDS_EXPLORE_NAME, undefined, {
+        visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
+        allMeasuresVisible: false,
+        visibleDimensions: [AD_BIDS_DOMAIN_DIMENSION],
+        allDimensionsVisible: false,
+
+        leaderboardSortByMeasureName: AD_BIDS_BID_PRICE_MEASURE,
+        sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
+        dashboardSortType: DashboardState_LeaderboardSortType.VALUE,
+      });
+      renderDashboardStateManager();
+      await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
+
+      assertExploreStateSubset({
+        ...ExploreStateSubsetForRillDefaultState,
+
+        visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
+        allMeasuresVisible: false,
+        visibleDimensions: [AD_BIDS_DOMAIN_DIMENSION],
+        allDimensionsVisible: false,
+
+        leaderboardSortByMeasureName: AD_BIDS_BID_PRICE_MEASURE,
+        sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
+        dashboardSortType: DashboardState_LeaderboardSortType.VALUE,
+      });
+      const initUrlSearch =
+        "view=explore&f=&measures=bid_price&dims=domain&expand_dim=&sort_by=bid_price&sort_type=value&sort_dir=ASC&leaderboard_measure_count=1";
+      pageMock.assertSearchParams(initUrlSearch);
+
+      pageMock.popState("");
+      await waitFor(() =>
+        assertExploreStateSubset(ExploreStateSubsetForRillDefaultState),
+      );
+      // only 2 urls should in history
+      expect(pageMock.urlSearchHistory).toEqual([
+        initUrlSearch,
+        PageURLForRillDefaultState,
+      ]);
     });
 
     it("Should load from session dashboard state", async () => {
@@ -264,7 +360,7 @@ describe("DashboardStateManager", () => {
         allDimensionsVisible: false,
 
         leaderboardSortByMeasureName: AD_BIDS_BID_PRICE_MEASURE,
-        leaderboardContextColumn: undefined,
+        dashboardSortType: DashboardState_LeaderboardSortType.PERCENT,
         sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
       });
       const initUrlSearch =
@@ -320,7 +416,7 @@ function assertExploreStateSubset(
     allDimensionsVisible: curExploreState.allDimensionsVisible,
 
     leaderboardSortByMeasureName: curExploreState.leaderboardSortByMeasureName,
-    leaderboardContextColumn: curExploreState.leaderboardContextColumn,
+    dashboardSortType: curExploreState.dashboardSortType,
     sortDirection: curExploreState.sortDirection,
   };
   expect(curExploreStateSubset).toEqual(exploreStateSubset);
