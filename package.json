@@ -24,7 +24,7 @@
     "@types/eslint": "^8.56.9",
     "eslint": "8.57.0",
     "eslint-config-prettier": "^9.1.0",
-    "eslint-plugin-playwright": "^1.6.0",
+    "eslint-plugin-playwright": "1.6.0",
     "eslint-plugin-svelte": "2.37.0",
     "eslint-plugin-vitest": "^0.5.4",
     "husky": "^8.0.0",
