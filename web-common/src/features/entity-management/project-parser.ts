@@ -24,7 +24,9 @@ export async function waitForProjectParserVersion(
   instanceId: string,
   version: number,
 ) {
-  while (true) {
+  let currentVersion = 0;
+
+  while (currentVersion < version) {
     const projectParserQuery = queryClient.getQueryData<V1GetResourceResponse>(
       getRuntimeServiceGetResourceQueryKey(instanceId, {
         "name.kind": ResourceKind.ProjectParser,
@@ -36,10 +38,12 @@ export async function waitForProjectParserVersion(
       throw new Error("Project parser version not found");
     }
 
-    if (Number(projectParserQuery.resource.meta.version) >= version) {
-      return;
-    }
+    currentVersion = Number(projectParserQuery.resource.meta.version);
 
+    // If the current version is greater than or equal to the target version, we're done
+    if (currentVersion >= version) return;
+
+    // Wait before checking again
     await new Promise((resolve) => setTimeout(resolve, 300));
   }
 }
