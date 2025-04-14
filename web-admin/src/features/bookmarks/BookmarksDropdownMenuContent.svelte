@@ -12,7 +12,6 @@
     DropdownMenuLabel,
     DropdownMenuSeparator,
   } from "@rilldata/web-common/components/dropdown-menu";
-  import HomeBookmarkPlus from "@rilldata/web-common/components/icons/HomeBookmarkPlus.svelte";
   import { Search } from "@rilldata/web-common/components/search";
   import { BookmarkPlusIcon } from "lucide-svelte";
 

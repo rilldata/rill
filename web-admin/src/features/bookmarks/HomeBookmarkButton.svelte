@@ -42,7 +42,7 @@
         builders={[builder]}
         compact
         type="secondary"
-        label="Bookmark dropdown"
+        label="Home bookmark dropdown"
         highlight={open || isHomeBookmarkActive}
       >
         <HomeBookmark
@@ -67,12 +67,14 @@
           </div>
         </div>
       </DropdownMenuItem>
-      <BookmarkItem
-        bookmark={homeBookmark}
-        {onEdit}
-        {onDelete}
-        readOnly={!manageProject}
-      />
+      {#if homeBookmark}
+        <BookmarkItem
+          bookmark={homeBookmark}
+          {onEdit}
+          {onDelete}
+          readOnly={!manageProject}
+        />
+      {/if}
     </DropdownMenuContent>
   </DropdownMenu>
 {:else}

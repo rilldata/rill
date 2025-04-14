@@ -191,79 +191,6 @@ export function getPrettySelectedTimeRange(
   );
 }
 
-export function getHomeBookmarkButtonUrl(
-  projectId: string,
-  instanceId: string,
-  metricsViewName: string,
-  exploreName: string,
-) {
-  // Since there is a single non-query store here (useExploreState) we cannot use getCompoundQuery
-  return derived(
-    [
-      useExploreValidSpec(instanceId, exploreName),
-      useMetricsViewTimeRange(
-        instanceId,
-        metricsViewName,
-        undefined,
-        queryClient,
-      ),
-      useExploreState(exploreName),
-      getHomeBookmarkExploreState(
-        projectId,
-        instanceId,
-        metricsViewName,
-        exploreName,
-      ),
-      page,
-    ],
-    ([
-      exploreSpecResp,
-      timeRangeResp,
-      exploreState,
-      homeBookmarkExploreState,
-      pageState,
-    ]) => {
-      if (
-        !exploreSpecResp.data?.metricsView ||
-        !exploreSpecResp.data?.explore ||
-        !homeBookmarkExploreState.data
-      ) {
-        return "";
-      }
-
-      const exploreSpec = exploreSpecResp.data.explore;
-      const metricsViewSpec = exploreSpecResp.data.metricsView;
-
-      const finalExploreState = {
-        ...(exploreState ?? {}),
-        ...homeBookmarkExploreState.data,
-      } as MetricsExplorerEntity;
-
-      const defaultExploreUrlParams = getDefaultExploreUrlParams(
-        metricsViewSpec,
-        exploreSpec,
-        timeRangeResp.data?.timeRangeSummary,
-      );
-      const timeControlState = getTimeControlState(
-        metricsViewSpec,
-        exploreSpec,
-        timeRangeResp.data?.timeRangeSummary,
-        finalExploreState,
-      );
-
-      const url = new URL(pageState.url);
-      const homeBookmarkURLParams = getCleanedUrlParamsForGoto(
-        exploreSpec,
-        finalExploreState,
-        timeControlState,
-        defaultExploreUrlParams,
-        url,
-      );
-      return homeBookmarkURLParams.toString();
-    },
-  );
-}
-
 function parseBookmark(
   bookmarkResource: V1Bookmark,
   metricsViewSpec: V1MetricsViewSpec,
@@ -363,21 +290,4 @@ export function isBookmarkActive(entry: BookmarkEntry, curUrl: URL) {
   }
 
   return bookmarkUrl.search === curUrl.search;
-}
-
-export function someNonHomeBookmarkIsActive(
-  categorizeBookmarks: Bookmarks,
-  pageUrl: URL,
-) {
-  const someSharedBookmarkActive = categorizeBookmarks.shared.some((bookmark) =>
-    isBookmarkActive(bookmark, pageUrl),
-  );
-  if (someSharedBookmarkActive) return true;
-
-  const somePersonalBookmarkActive = categorizeBookmarks.personal.some(
-    (bookmark) => isBookmarkActive(bookmark, pageUrl),
-  );
-  if (somePersonalBookmarkActive) return true;
-
-  return false;
 }

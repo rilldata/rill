@@ -132,7 +132,7 @@
     bookmark = editingBookmark;
   }}
   onDelete={deleteBookmark}
-  manageProject={$projectPermissions.data?.manageProject}
+  {manageProject}
 />
 
 <DropdownMenu bind:open typeahead={false}>
@@ -141,7 +141,7 @@
       builders={[builder]}
       compact
       type="secondary"
-      label="Bookmark dropdown"
+      label="Other bookmark dropdown"
       highlight={open}
     >
       <BookmarkIcon class="inline-flex" size="16px" />
@@ -155,7 +155,7 @@
     }}
     onDelete={deleteBookmark}
     {categorizedBookmarks}
-    manageProject={$projectPermissions.data?.manageProject}
+    {manageProject}
   />
 </DropdownMenu>
 
