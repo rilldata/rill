@@ -1,14 +1,24 @@
 import type { FieldConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
 import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
+import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
 import type {
   V1MetricsViewSpec,
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
+import {
+  createQueryServiceMetricsViewAggregation,
+  type V1MetricsViewAggregationDimension,
+  type V1MetricsViewAggregationMeasure,
+} from "@rilldata/web-common/runtime-client";
+import { keepPreviousData } from "@tanstack/svelte-query";
+import { derived, get, type Readable } from "svelte/store";
 import type {
   CanvasEntity,
   ComponentPath,
 } from "../../../stores/canvas-entity";
 import { BaseChart, type BaseChartConfig } from "../BaseChart";
+import type { ChartDataQuery } from "../types";
 
 type CircularChartEncoding = {
   measure?: FieldConfig;
@@ -26,6 +36,61 @@ export class CircularChartComponent extends BaseChart<CircularChartSpec> {
       measure: { type: "positional", label: "Measure" },
       color: { type: "mark", label: "Color", meta: { type: "color" } },
     };
+  }
+
+  createChartDataQuery(
+    ctx: CanvasStore,
+    timeAndFilterStore: Readable<TimeAndFilterStore>,
+  ): ChartDataQuery {
+    const config = get(this.specStore);
+
+    let measures: V1MetricsViewAggregationMeasure[] = [];
+    let dimensions: V1MetricsViewAggregationDimension[] = [];
+
+    if (config.measure?.field) {
+      measures = [{ name: config.measure.field }];
+    }
+
+    let limit: number;
+    if (config.color?.field) {
+      limit = config.color.limit ?? 20;
+      dimensions = [{ name: config.color.field }];
+    }
+
+    return derived(
+      [ctx.runtime, timeAndFilterStore],
+      ([runtime, $timeAndFilterStore], set) => {
+        const { timeRange, where } = $timeAndFilterStore;
+        const enabled = !!timeRange?.start && !!timeRange?.end;
+
+        const dataQuery = createQueryServiceMetricsViewAggregation(
+          runtime.instanceId,
+          config.metrics_view,
+          {
+            measures,
+            dimensions,
+            where,
+            timeRange,
+            limit: limit.toString(),
+          },
+          {
+            query: {
+              enabled,
+              placeholderData: keepPreviousData,
+            },
+          },
+          ctx.queryClient,
+        );
+
+        return derived(dataQuery, ($dataQuery) => {
+          return {
+            isFetching: $dataQuery.isFetching,
+            error: $dataQuery.error,
+            data: $dataQuery?.data?.data,
+          };
+        }).subscribe(set);
+      },
+    );
   }
 
   static newComponentSpec(

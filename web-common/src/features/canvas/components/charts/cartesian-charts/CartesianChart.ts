@@ -212,7 +212,7 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
     };
   }
 
-  protected vegaSortToAggregationSort(
+  private vegaSortToAggregationSort(
     sort: ChartSortDirection | undefined,
     config: CartesianChartSpec,
   ): V1MetricsViewAggregationSort | undefined {

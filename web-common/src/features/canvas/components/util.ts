@@ -66,6 +66,7 @@ const CHART_TYPES = [
   "stacked_bar",
   "stacked_bar_normalized",
   "area_chart",
+  "pie_chart",
 ] as const;
 const NON_CHART_TYPES = [
   "markdown",
@@ -111,6 +112,7 @@ export const COMPONENT_CLASS_MAP: Record<
   line_chart: getChartComponent("line_chart"),
   stacked_bar: getChartComponent("stacked_bar"),
   stacked_bar_normalized: getChartComponent("stacked_bar_normalized"),
+  pie_chart: getChartComponent("pie_chart"),
   area_chart: getChartComponent("area_chart"),
 } as const;
 
@@ -127,6 +129,7 @@ const DISPLAY_MAP: Record<CanvasComponentType, string> = {
   stacked_bar: "Chart",
   stacked_bar_normalized: "Chart",
   area_chart: "Chart",
+  pie_chart: "Chart",
 } as const;
 
 export function createComponent(

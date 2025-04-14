@@ -15,12 +15,13 @@ import type { CartesianChartSpec } from "./cartesian-charts/CartesianChart";
 import { generateVLLineChartSpec } from "./cartesian-charts/line-chart/spec";
 import { generateVLStackedBarChartSpec } from "./cartesian-charts/stacked-bar/default";
 import { generateVLStackedBarNormalizedSpec } from "./cartesian-charts/stacked-bar/normalized";
+import { generateVLPieChartSpec } from "./circular-charts/pie";
 import type { ChartDataResult } from "./selector";
 import type { ChartMetadata } from "./types";
 
 export function generateSpec(
   chartType: ChartType,
-  rillChartSpec: CartesianChartSpec,
+  rillChartSpec: ChartSpec,
   data: ChartDataResult,
 ) {
   if (data.isFetching || data.error) return {};
@@ -35,8 +36,8 @@ export function generateSpec(
       return generateVLLineChartSpec(rillChartSpec, data);
     case "area_chart":
       return generateVLAreaChartSpec(rillChartSpec, data);
-    // case "pie_chart":
-    //   return generateVLPieChartSpec(rillChartSpec, data);
+    case "pie_chart":
+      return generateVLPieChartSpec(rillChartSpec, data);
   }
 }
 
