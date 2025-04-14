@@ -125,7 +125,7 @@ func getPaymentCustomerFromStripeCustomer(c *stripe.Customer) *Customer {
 		Name:               c.Name,
 		Email:              c.Email,
 		HasPaymentMethod:   i.Next(),
-		HasBillableAddress: c.Address != nil && c.Address.PostalCode != "",
+		HasBillableAddress: c.Address != nil,
 		TaxExempt:          c.Address != nil && c.Address.Country != "US" && c.Address.Country != "CA",
 	}
 }

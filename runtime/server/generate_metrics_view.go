@@ -276,7 +276,7 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 			measure.Name += "_measure"
 		}
 
-		spec.Measures = append(spec.Measures, &runtimev1.MetricsViewSpec_MeasureV2{
+		spec.Measures = append(spec.Measures, &runtimev1.MetricsViewSpec_Measure{
 			Name:         measure.Name,
 			DisplayName:  measure.DisplayName,
 			Expression:   measure.Expression,

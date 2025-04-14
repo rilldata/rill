@@ -13,7 +13,6 @@
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
   import { onDestroy } from "svelte";
@@ -23,43 +22,52 @@
   import { getStateManagers } from "../state-managers/state-managers";
   import SelectAllButton from "./SelectAllButton.svelte";
   import { getDimensionTableExportQuery } from "./dimension-table-export";
+  import LeaderboardAdvancedActions from "@rilldata/web-common/components/menu/LeaderboardAdvancedActions.svelte";
 
   export let dimensionName: string;
-  export let isFetching: boolean;
   export let areAllTableRowsSelected = false;
   export let isRowsEmpty = true;
   export let searchText: string;
-  export let onToggleSearchItems: () => void;
   export let hideStartPivotButton = false;
+  export let onToggleSearchItems: () => void;
 
   const stateManagers = getStateManagers();
   const {
     selectors: {
       sorting: { sortedByDimensionValue },
       dimensions: { getDimensionDisplayName },
-
       dimensionFilters: { isFilterExcludeMode },
       measures: { visibleMeasures },
+      leaderboard: {
+        leaderboardShowContextForAllMeasures,
+        leaderboardMeasureNames,
+      },
     },
     actions: {
       sorting: { toggleSort },
       dimensions: { setPrimaryDimension },
       dimensionsFilter: { toggleDimensionFilterMode },
+      leaderboard: {
+        setLeaderboardShowContextForAllMeasures,
+        setLeaderboardSortByMeasureName,
+      },
     },
+    timeRangeSummaryStore,
     dashboardStore,
     exploreName,
   } = stateManagers;
 
   const { adminServer, exports } = featureFlags;
 
+  $: exploreHasTimeDimension = !!$timeRangeSummaryStore.data;
+
   $: excludeMode = $isFilterExcludeMode(dimensionName);
 
   $: filterKey = excludeMode ? "exclude" : "include";
   $: otherFilterKey = excludeMode ? "include" : "exclude";
 
-  $: metricsViewProto = $dashboardStore.proto;
-
   let searchBarOpen = false;
+  let isLeaderboardActionsOpen = false;
 
   function closeSearchBar() {
     searchText = "";
@@ -77,7 +85,19 @@
     if ($sortedByDimensionValue) {
       toggleSort(SortType.VALUE);
     }
+
+    // Reset expanded dimension
     setPrimaryDimension("");
+
+    // If user previously sorted by a measure that is not in the leaderboard measure names in expanded view,
+    // we need to set a new sort measure from the available leaderboard measures
+    if (
+      !$leaderboardMeasureNames.includes(
+        $dashboardStore.leaderboardSortByMeasureName,
+      )
+    ) {
+      setLeaderboardSortByMeasureName($leaderboardMeasureNames[0]);
+    }
   };
   function toggleFilterMode() {
     toggleDimensionFilterMode(dimensionName);
@@ -131,16 +151,12 @@
   });
 </script>
 
-<div class="flex justify-between items-center p-1 pr-5 h-7">
+<div class="flex justify-start items-center p-1 pr-5 h-7 gap-x-2">
   <button class="flex items-center" on:click={() => goBackToLeaderboard()}>
-    {#if isFetching}
-      <DelayedSpinner isLoading={isFetching} size="16px" />
-    {:else}
-      <Button type="link" forcedStyle="padding: 0; gap: 0px;">
-        <Back size="16px" />
-        <span>All Dimensions</span>
-      </Button>
-    {/if}
+    <Button type="link" forcedStyle="padding: 0; gap: 4px;">
+      <Back size="16px" />
+      <span>All Dimensions</span>
+    </Button>
   </button>
 
   <!-- We fix the height to avoid a layout shift when the Search component is expanded. -->
@@ -194,11 +210,10 @@
     {#if $exports}
       <ExportMenu
         label="Export dimension table data"
-        includeScheduledReport={$adminServer}
+        includeScheduledReport={$adminServer && exploreHasTimeDimension}
         getQuery={(isScheduled) =>
           getDimensionTableExportQuery(stateManagers, isScheduled)}
         exploreName={$exploreName}
-        {metricsViewProto}
       />
     {/if}
     {#if !hideStartPivotButton}
@@ -211,6 +226,11 @@
         Start Pivot
       </button>
     {/if}
+    <LeaderboardAdvancedActions
+      isOpen={isLeaderboardActionsOpen}
+      leaderboardShowContextForAllMeasures={$leaderboardShowContextForAllMeasures}
+      {setLeaderboardShowContextForAllMeasures}
+    />
   </div>
 </div>
 

@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"maps"
+	"net/url"
+	"os"
 	"strings"
 
 	"github.com/mitchellh/mapstructure"
@@ -136,8 +138,17 @@ func objectStoreSecretSQL(ctx context.Context, path, model, inputConnector strin
 			fmt.Fprintf(&sb, ", SESSION_TOKEN %s", safeSQLString(s3Config.SessionToken))
 		}
 		if s3Config.Endpoint != "" {
+			uri, err := url.Parse(s3Config.Endpoint)
+			if err == nil && uri.Scheme != "" { // let duckdb raise an error if the endpoint is invalid
+				// for duckdb the endpoint should not have a scheme
+				s3Config.Endpoint = strings.TrimPrefix(s3Config.Endpoint, uri.Scheme+"://")
+				if uri.Scheme == "http" {
+					sb.WriteString(", USE_SSL false")
+				}
+			}
 			sb.WriteString(", ENDPOINT ")
 			sb.WriteString(safeSQLString(s3Config.Endpoint))
+			sb.WriteString(", URL_STYLE path")
 		}
 		if s3Config.Region != "" {
 			sb.WriteString(", REGION ")
@@ -148,11 +159,11 @@ func objectStoreSecretSQL(ctx context.Context, path, model, inputConnector strin
 			if !ok {
 				return "", fmt.Errorf("internal error: invalid input handle type")
 			}
-			url, err := globutil.ParseBucketURL(path)
+			uri, err := globutil.ParseBucketURL(path)
 			if err != nil {
 				return "", fmt.Errorf("failed to parse path %q, %w", path, err)
 			}
-			reg, err := conn.GetBucketRegion(ctx, url.Host)
+			reg, err := conn.GetBucketRegion(ctx, uri.Host)
 			if err != nil {
 				return "", fmt.Errorf("failed to get bucket region: %w. Set `region` in model yaml", err)
 			}
@@ -197,7 +208,13 @@ func objectStoreSecretSQL(ctx context.Context, path, model, inputConnector strin
 		if azureConfig.ConnectionString != "" {
 			fmt.Fprintf(&sb, ", CONNECTION_STRING %s", safeSQLString(azureConfig.ConnectionString))
 		} else if azureConfig.AllowHostAccess {
-			sb.WriteString(", PROVIDER CREDENTIAL_CHAIN")
+			// backwards compatibility for allowing azure_storage_connection_string to be set as env variable which duckdb does not (keys are different)
+			connectionString := os.Getenv("AZURE_STORAGE_CONNECTION_STRING")
+			if connectionString != "" {
+				fmt.Fprintf(&sb, ", CONNECTION_STRING %s", safeSQLString(connectionString))
+			} else {
+				sb.WriteString(", PROVIDER CREDENTIAL_CHAIN")
+			}
 		}
 		if azureConfig.Account != "" {
 			fmt.Fprintf(&sb, ", ACCOUNT_NAME %s", safeSQLString(azureConfig.Account))

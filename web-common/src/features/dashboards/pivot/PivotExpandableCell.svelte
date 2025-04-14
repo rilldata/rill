@@ -9,18 +9,21 @@
   export let assembled = true;
 </script>
 
-<div class="flex gap-x-1" style:padding-left={`${row.depth * 14}px`}>
+<div
+  role="presentation"
+  class="dimension-cell pointer-events-none"
+  style:padding-left="{row.depth * 14}px"
+  class:-ml-1={assembled && row.getCanExpand()}
+  class:cursor-pointer={assembled && row.getCanExpand()}
+>
   {#if value === "LOADING_CELL"}
     <span class="loading-cell" />
   {:else if assembled && row.getCanExpand()}
-    <button
-      on:click|stopPropagation={row.getToggleExpandedHandler()}
-      class="cursor-pointer px-0.5 -m-1 pointer-events-auto"
-    >
-      <div class:rotate={row.getIsExpanded()} class="transition-transform">
+    <div class="caret" class:expanded={row.getIsExpanded()}>
+      <div class:rotate={row.getIsExpanded()}>
         <ChevronRight size="16px" color="#9CA3AF" />
       </div>
-    </button>
+    </div>
   {:else if row.depth >= 1}
     <Spacer size="16px" />
   {/if}
@@ -43,5 +46,20 @@
 
   .rotate {
     @apply transform rotate-90;
+  }
+
+  .dimension-cell {
+    @apply flex gap-x-0.5;
+  }
+
+  .caret {
+    @apply opacity-0;
+  }
+  .dimension-cell:hover .caret {
+    @apply opacity-100;
+  }
+
+  .caret.expanded {
+    @apply opacity-100;
   }
 </style>

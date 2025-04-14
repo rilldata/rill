@@ -1,11 +1,9 @@
 package org
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/dotrill"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
@@ -27,7 +25,8 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 				name = args[0]
 			}
 
-			if len(args) == 0 && ch.Interactive {
+			// Only prompt interactively if no name is provided via args or flags
+			if name == "" && ch.Interactive {
 				err = cmdutil.SetFlagsByInputPrompts(*cmd, "name")
 				if err != nil {
 					return err
@@ -43,12 +42,12 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 					return err
 				}
 
-				fmt.Printf("Org name %q already exists\n", name)
+				ch.Printf("Org name %q already exists\n", name)
 				return nil
 			}
 
 			// Switching to the created org
-			err = dotrill.SetDefaultOrg(res.Organization.Name)
+			err = ch.DotRill.SetDefaultOrg(res.Organization.Name)
 			if err != nil {
 				return err
 			}

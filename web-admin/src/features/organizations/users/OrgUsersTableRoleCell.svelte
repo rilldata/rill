@@ -33,13 +33,14 @@
         },
       });
 
-      await queryClient.invalidateQueries(
-        getAdminServiceListOrganizationMemberUsersQueryKey(organization),
-      );
+      await queryClient.invalidateQueries({
+        queryKey:
+          getAdminServiceListOrganizationMemberUsersQueryKey(organization),
+      });
 
-      await queryClient.invalidateQueries(
-        getAdminServiceListOrganizationInvitesQueryKey(organization),
-      );
+      await queryClient.invalidateQueries({
+        queryKey: getAdminServiceListOrganizationInvitesQueryKey(organization),
+      });
 
       eventBus.emit("notification", {
         message: "User role updated",

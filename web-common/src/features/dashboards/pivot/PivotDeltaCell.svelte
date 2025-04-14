@@ -6,11 +6,13 @@
 
 {#if assembled}
   {#if value !== null && value !== undefined}
-    <span class={value > 0 ? "text-gray-500" : "text-red-500"}
-      >{formattedValue}</span
+    <span
+      class="pointer-events-none {value > 0 ? 'text-gray-500' : 'text-red-500'}"
     >
+      {formattedValue}
+    </span>
   {:else}
-    <span class="text-gray-400">-</span>
+    <span class="text-gray-400 pointer-events-none">-</span>
   {/if}
 {:else}
   <span class="loading-cell" />

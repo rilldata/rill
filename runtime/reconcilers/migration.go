@@ -7,8 +7,8 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	compilerv1 "github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/parser"
 )
 
 func init() {
@@ -114,43 +114,42 @@ func (r *MigrationReconciler) executeMigration(ctx context.Context, self *runtim
 	}
 	defer release()
 
-	sql, err := compilerv1.ResolveTemplate(spec.Sql, compilerv1.TemplateData{
+	sql, err := parser.ResolveTemplate(spec.Sql, parser.TemplateData{
 		Environment: inst.Environment,
 		User:        map[string]interface{}{},
 		Variables:   inst.ResolveVariables(false),
 		ExtraProps: map[string]interface{}{
 			"version": version,
 		},
-		Self: compilerv1.TemplateResource{
+		Self: parser.TemplateResource{
 			Meta:  self.Meta,
 			Spec:  spec,
 			State: state,
 		},
-		Resolve: func(ref compilerv1.ResourceName) (string, error) {
+		Resolve: func(ref parser.ResourceName) (string, error) {
 			return olap.Dialect().EscapeIdentifier(ref.Name), nil
 		},
-		Lookup: func(name compilerv1.ResourceName) (compilerv1.TemplateResource, error) {
-			if name.Kind == compilerv1.ResourceKindUnspecified {
-				return compilerv1.TemplateResource{}, fmt.Errorf("can't resolve name %q without type specified", name.Name)
+		Lookup: func(name parser.ResourceName) (parser.TemplateResource, error) {
+			if name.Kind == parser.ResourceKindUnspecified {
+				return parser.TemplateResource{}, fmt.Errorf("can't resolve name %q without type specified", name.Name)
 			}
-			res, err := r.C.Get(ctx, runtime.ResourceNameFromCompiler(name), false)
+			res, err := r.C.Get(ctx, runtime.ResourceNameFromParser(name), false)
 			if err != nil {
-				return compilerv1.TemplateResource{}, err
+				return parser.TemplateResource{}, err
 			}
-			return compilerv1.TemplateResource{
+			return parser.TemplateResource{
 				Meta:  res.Meta,
 				Spec:  res.Resource.(*runtimev1.Resource_Model).Model.Spec,
 				State: res.Resource.(*runtimev1.Resource_Model).Model.State,
 			}, nil
 		},
-	})
+	}, false)
 	if err != nil {
 		return fmt.Errorf("failed to resolve template: %w", err)
 	}
 
 	return olap.Exec(ctx, &drivers.Statement{
-		Query:       sql,
-		Priority:    100,
-		LongRunning: true,
+		Query:    sql,
+		Priority: 100,
 	})
 }

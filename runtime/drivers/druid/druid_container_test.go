@@ -137,7 +137,7 @@ func testIngest(t *testing.T, coordinatorURL string) {
 
 func testCount(t *testing.T, olap drivers.OLAPStore) {
 	qry := fmt.Sprintf("SELECT count(*) FROM %s", testTable)
-	rows, err := olap.Execute(context.Background(), &drivers.Statement{Query: qry})
+	rows, err := olap.Query(context.Background(), &drivers.Statement{Query: qry})
 	require.NoError(t, err)
 
 	var count int
@@ -151,7 +151,7 @@ func testCount(t *testing.T, olap drivers.OLAPStore) {
 func testMax(t *testing.T, olap drivers.OLAPStore) {
 	qry := fmt.Sprintf("SELECT max(id) FROM %s", testTable)
 	expectedValue := 16000
-	rows, err := olap.Execute(context.Background(), &drivers.Statement{Query: qry})
+	rows, err := olap.Query(context.Background(), &drivers.Statement{Query: qry})
 	require.NoError(t, err)
 
 	var count int
@@ -163,7 +163,7 @@ func testMax(t *testing.T, olap drivers.OLAPStore) {
 
 func testTimeFloor(t *testing.T, olap drivers.OLAPStore) {
 	qry := fmt.Sprintf("SELECT time_floor(__time, 'P1D', null, CAST(? AS VARCHAR)) FROM %s", testTable)
-	rows, err := olap.Execute(context.Background(), &drivers.Statement{
+	rows, err := olap.Query(context.Background(), &drivers.Statement{
 		Query: qry,
 		Args:  []any{"Asia/Kathmandu"},
 	})
@@ -179,6 +179,7 @@ func testTimeFloor(t *testing.T, olap drivers.OLAPStore) {
 		require.Equal(t, 15, tm.Minute())
 		count += 1
 	}
+	require.NoError(t, rows.Err())
 	require.Equal(t, 9, count)
 }
 

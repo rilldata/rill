@@ -31,58 +31,42 @@ var (
 // and ensuredCtx wraps a background context (ensuring it can never be cancelled).
 type WithConnectionFunc func(wrappedCtx context.Context, ensuredCtx context.Context, conn *sql.Conn) error
 
-type CreateTableOptions struct {
-	View         bool
-	BeforeCreate string
-	AfterCreate  string
-	TableOpts    map[string]any
-}
-
-// TableWriteMetrics reports metrics for an execution that mutates table data.
-type TableWriteMetrics struct {
-	// Duration is the time taken to run user queries only.
-	Duration time.Duration
-}
-
-type InsertTableOptions struct {
-	BeforeInsert string
-	AfterInsert  string
-	ByName       bool
-	InPlace      bool
-	Strategy     IncrementalStrategy
-	UniqueKey    []string
-}
-
 // OLAPStore is implemented by drivers that are capable of storing, transforming and serving analytical queries.
-// NOTE crud APIs are not safe to be called with `WithConnection`
 type OLAPStore interface {
+	// Dialect is the SQL dialect that the driver uses.
 	Dialect() Dialect
-	WithConnection(ctx context.Context, priority int, longRunning bool, fn WithConnectionFunc) error
-	Exec(ctx context.Context, stmt *Statement) error
-	Execute(ctx context.Context, stmt *Statement) (*Result, error)
-	InformationSchema() InformationSchema
-
-	CreateTableAsSelect(ctx context.Context, name, sql string, opts *CreateTableOptions) (*TableWriteMetrics, error)
-	InsertTableAsSelect(ctx context.Context, name, sql string, opts *InsertTableOptions) (*TableWriteMetrics, error)
-	DropTable(ctx context.Context, name string) error
-	RenameTable(ctx context.Context, name, newName string) error
-	AddTableColumn(ctx context.Context, tableName, columnName string, typ string) error
-	AlterTableColumn(ctx context.Context, tableName, columnName string, newType string) error
-
+	// MayBeScaledToZero returns true if the driver might currently be scaled to zero.
 	MayBeScaledToZero(ctx context.Context) bool
+	// WithConnection acquires a connection from the pool and keeps it open until the callback returns.
+	WithConnection(ctx context.Context, priority int, fn WithConnectionFunc) error
+	// Exec executes a query against the OLAP driver.
+	Exec(ctx context.Context, stmt *Statement) error
+	// Query executes a query against the OLAP driver and returns an iterator for the resulting rows and schema.
+	// The result MUST be closed after use.
+	Query(ctx context.Context, stmt *Statement) (*Result, error)
+	// InformationSchema enables introspecting the tables and views available in the OLAP driver.
+	InformationSchema() InformationSchema
 }
 
 // Statement wraps a query to execute against an OLAP driver.
 type Statement struct {
-	Query       string
-	Args        []any
-	DryRun      bool
-	Priority    int
-	LongRunning bool
-	// *Cache configs are used to send olap specific cache configs to underlying drivers on per query basis. For example,
-	// both Druid and ClickHouse supports specifying if cache should be used for the query or not and if the query results should be populated in cache or not.
-	UseCache         *bool // can be used to enable/disable cache for the query
-	PopulateCache    *bool // can be used to enable/disable cache population for the query results
+	// Query is the SQL query to execute.
+	Query string
+	// Args are positional arguments to bind to the query.
+	Args []any
+	// DryRun indicates if the query should be parsed and validated, but not actually executed.
+	DryRun bool
+	// Priority provides a query priority if the driver supports it (a higher value indicates a higher priority).
+	Priority int
+	// UseCache explicitly enables/disables reading from database-level caches (if supported by the driver).
+	// If not set, the driver will use its default behavior.
+	UseCache *bool
+	// PopulateCache explicitly enables/disables writing to database-level caches (if supported by the driver).
+	// If not set, the driver will use its default behavior.
+	PopulateCache *bool
+	// ExecutionTimeout provides a timeout for query execution.
+	// Unlike a timeout on ctx, it will be enforced only for query execution, not for time spent waiting in queues.
+	// It may not be supported by all drivers.
 	ExecutionTimeout time.Duration
 }
 
@@ -167,9 +151,12 @@ func (r *Result) Close() error {
 // InformationSchema contains information about existing tables in an OLAP driver.
 // Table lookups should be case insensitive.
 type InformationSchema interface {
+	// All returns metadata about all tables and views.
+	// The like argument can optionally be passed to filter the tables by name.
 	All(ctx context.Context, like string) ([]*Table, error)
+	// Lookup returns metadata about a specific tables and views.
 	Lookup(ctx context.Context, db, schema, name string) (*Table, error)
-	// LoadPhysicalSize populates the PhysicalSizeBytes field of the tables.
+	// LoadPhysicalSize populates the PhysicalSizeBytes field of table metadata.
 	// It should be called after All or Lookup and not on manually created tables.
 	LoadPhysicalSize(ctx context.Context, tables []*Table) error
 }
@@ -186,16 +173,6 @@ type Table struct {
 	UnsupportedCols         map[string]string
 	PhysicalSizeBytes       int64
 }
-
-// IncrementalStrategy is a strategy to use for incrementally inserting data into a SQL table.
-type IncrementalStrategy string
-
-const (
-	IncrementalStrategyUnspecified        IncrementalStrategy = ""
-	IncrementalStrategyAppend             IncrementalStrategy = "append"
-	IncrementalStrategyMerge              IncrementalStrategy = "merge"
-	IncrementalStrategyPartitionOverwrite IncrementalStrategy = "partition_overwrite"
-)
 
 // Dialect enumerates OLAP query languages.
 type Dialect int
@@ -297,7 +274,7 @@ func (d Dialect) EscapeTable(db, schema, table string) string {
 	return sb.String()
 }
 
-func (d Dialect) DimensionSelect(db, dbSchema, table string, dim *runtimev1.MetricsViewSpec_DimensionV2) (dimSelect, unnestClause string) {
+func (d Dialect) DimensionSelect(db, dbSchema, table string, dim *runtimev1.MetricsViewSpec_Dimension) (dimSelect, unnestClause string) {
 	colName := d.EscapeIdentifier(dim.Name)
 	if !dim.Unnest || d == DialectDruid {
 		return fmt.Sprintf(`(%s) as %s`, d.MetricsViewDimensionExpression(dim), colName), ""
@@ -317,7 +294,7 @@ func (d Dialect) DimensionSelect(db, dbSchema, table string, dim *runtimev1.Metr
 	return sel, fmt.Sprintf(`, LATERAL UNNEST(%s) %s(%s)`, dim.Expression, unnestTableName, unnestColName)
 }
 
-func (d Dialect) DimensionSelectPair(db, dbSchema, table string, dim *runtimev1.MetricsViewSpec_DimensionV2) (expr, alias, unnestClause string) {
+func (d Dialect) DimensionSelectPair(db, dbSchema, table string, dim *runtimev1.MetricsViewSpec_Dimension) (expr, alias, unnestClause string) {
 	colName := d.EscapeIdentifier(dim.Name)
 	if !dim.Unnest || d == DialectDruid {
 		return d.MetricsViewDimensionExpression(dim), colName, ""
@@ -348,7 +325,7 @@ func (d Dialect) AutoUnnest(expr string) string {
 	return expr
 }
 
-func (d Dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsViewSpec_DimensionV2) string {
+func (d Dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsViewSpec_Dimension) string {
 	if dimension.Expression != "" {
 		return dimension.Expression
 	}
@@ -387,7 +364,7 @@ func (d Dialect) JoinOnExpression(lhs, rhs string) string {
 	return fmt.Sprintf("%s IS NOT DISTINCT FROM %s", lhs, rhs)
 }
 
-func (d Dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_DimensionV2, grain runtimev1.TimeGrain, tz string, firstDayOfWeek, firstMonthOfYear int) (string, error) {
+func (d Dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain runtimev1.TimeGrain, tz string, firstDayOfWeek, firstMonthOfYear int) (string, error) {
 	if tz == "UTC" || tz == "Etc/UTC" {
 		tz = ""
 	}
@@ -680,6 +657,10 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, []any, erro
 		}
 
 		rows++
+	}
+	err := result.Err()
+	if err != nil {
+		return "", nil, nil, err
 	}
 
 	if d == DialectDruid || d == DialectDuckDB || d == DialectPinot {

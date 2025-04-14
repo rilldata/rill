@@ -12,6 +12,7 @@
     getAlertQueryArgsFromFormValues,
   } from "@rilldata/web-common/features/alerts/form-utils";
   import { getEmptyMeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+  import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import {
     mapSelectedComparisonTimeRangeToV1TimeRange,
@@ -43,6 +44,7 @@
     selectors: {
       timeRangeSelectors: { timeControlsState },
     },
+    validSpecStore,
   } = getStateManagers();
   const timeControls = get(timeControlsState);
 
@@ -69,19 +71,21 @@
     timeRange,
   );
 
+  $: exploreSpec = $validSpecStore.data?.explore ?? {};
+
   const formState = createForm<AlertFormValues>({
     initialValues: {
       name: "",
       measure:
         $dashboardStore.tdd.expandedMeasureName ??
-        $dashboardStore.leaderboardMeasureName ??
+        $dashboardStore.leaderboardSortByMeasureName ??
         "",
       splitByDimension: dimension,
       evaluationInterval: "",
       criteria: [
         {
           ...getEmptyMeasureFilterEntry(),
-          measure: $dashboardStore.leaderboardMeasureName ?? "",
+          measure: $dashboardStore.leaderboardSortByMeasureName ?? "",
         },
       ],
       criteriaOperation: V1Operation.OPERATION_AND,
@@ -106,6 +110,7 @@
       metricsViewName: $metricsViewName,
       exploreName: $exploreName,
       whereFilter: $dashboardStore.whereFilter,
+      dimensionsWithInlistFilter: $dashboardStore.dimensionsWithInlistFilter,
       dimensionThresholdFilters: $dashboardStore.dimensionThresholdFilters,
       timeRange: timeRange
         ? {
@@ -146,12 +151,16 @@
               renotify: !!values.snooze,
               renotifyAfterSeconds: values.snooze ? Number(values.snooze) : 0,
               webOpenPath: `/explore/${$exploreName}`,
+              webOpenState: getProtoFromDashboardState(
+                $dashboardStore,
+                exploreSpec,
+              ),
             },
           },
         });
-        await queryClient.invalidateQueries(
-          getRuntimeServiceListResourcesQueryKey(instanceId),
-        );
+        await queryClient.invalidateQueries({
+          queryKey: getRuntimeServiceListResourcesQueryKey(instanceId),
+        });
         dispatch("close");
         eventBus.emit("notification", {
           message: "Alert created",

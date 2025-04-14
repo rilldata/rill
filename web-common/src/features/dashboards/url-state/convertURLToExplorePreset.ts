@@ -31,8 +31,8 @@ import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
 import { validateISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import { DashboardState } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
-  type MetricsViewSpecDimensionV2,
-  type MetricsViewSpecMeasureV2,
+  type MetricsViewSpecDimension,
+  type MetricsViewSpecMeasure,
   V1ExploreComparisonMode,
   type V1ExplorePreset,
   type V1ExploreSpec,
@@ -100,13 +100,19 @@ export function convertURLToExplorePreset(
   }
 
   if (searchParams.has(ExploreStateURLParams.Filters)) {
-    const { expr, errors: filterErrors } = fromFilterUrlParam(
+    const {
+      expr,
+      dimensionsWithInlistFilter,
+      errors: filterErrors,
+    } = fromFilterUrlParam(
       searchParams.get(ExploreStateURLParams.Filters) as string,
       measures,
       dimensions,
     );
     if (filterErrors) errors.push(...filterErrors);
     if (expr) preset.where = expr;
+    if (dimensionsWithInlistFilter)
+      preset.dimensionsWithInlistFilter = dimensionsWithInlistFilter;
   }
 
   const { preset: trPreset, errors: trErrors } = fromTimeRangesParams(
@@ -151,6 +157,29 @@ export function convertURLToExplorePreset(
     }
   }
 
+  // Validate that the measures here are actually present and visible.
+  // Unset if any are invalid.
+  if (searchParams.has(ExploreStateURLParams.LeaderboardMeasures)) {
+    const leaderboardMeasures = searchParams.get(
+      ExploreStateURLParams.LeaderboardMeasures,
+    ) as string;
+    const measuresList = leaderboardMeasures.split(",");
+
+    // Check if all measures exist and are visible
+    const allMeasuresValid = measuresList.every(
+      (measure) =>
+        measures.has(measure) &&
+        (!preset.measures || preset.measures.includes(measure)),
+    );
+
+    if (allMeasuresValid) {
+      preset.exploreLeaderboardMeasures = measuresList;
+    } else {
+      // Unset leaderboard measures if any are invalid
+      preset.exploreLeaderboardMeasures = [];
+    }
+  }
+
   return { preset, errors };
 }
 
@@ -184,14 +213,17 @@ function fromLegacyStateUrlParam(
 
 function fromFilterUrlParam(
   filter: string,
-  measures: Map<string, MetricsViewSpecMeasureV2>,
-  dimensions: Map<string, MetricsViewSpecDimensionV2>,
+  measures: Map<string, MetricsViewSpecMeasure>,
+  dimensions: Map<string, MetricsViewSpecDimension>,
 ): {
   expr?: V1Expression;
+  dimensionsWithInlistFilter?: string[];
   errors?: Error[];
 } {
   try {
-    let expr = convertFilterParamToExpression(filter);
+    const { expr: exprFromFilter, dimensionsWithInlistFilter } =
+      convertFilterParamToExpression(filter);
+    let expr = exprFromFilter;
     if (!expr) {
       return {
         expr: createAndExpression([]),
@@ -241,7 +273,7 @@ function fromFilterUrlParam(
     if (missingFields.length) {
       errors.push(getMultiFieldError("filter field", missingFields));
     }
-    return { expr, errors };
+    return { expr, dimensionsWithInlistFilter, errors };
   } catch (e) {
     return {
       errors: [new Error("Selected filter is invalid: " + stripParserError(e))],
@@ -251,7 +283,7 @@ function fromFilterUrlParam(
 
 export function fromTimeRangesParams(
   searchParams: URLSearchParams,
-  dimensions: Map<string, MetricsViewSpecDimensionV2>,
+  dimensions: Map<string, MetricsViewSpecDimension>,
 ) {
   const preset: V1ExplorePreset = {};
   const errors: Error[] = [];
@@ -312,8 +344,13 @@ export function fromTimeRangesParams(
         V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_NONE;
     } else if (dimensions.has(comparisonDimension)) {
       preset.comparisonDimension = comparisonDimension;
-      preset.comparisonMode ??=
-        V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_DIMENSION;
+      if (
+        preset.comparisonMode !==
+        V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
+      ) {
+        preset.comparisonMode =
+          V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_DIMENSION;
+      }
     } else {
       errors.push(
         getSingleFieldError("compare dimension", comparisonDimension),
@@ -336,8 +373,8 @@ export function fromTimeRangesParams(
 
 function fromExploreUrlParams(
   searchParams: URLSearchParams,
-  measures: Map<string, MetricsViewSpecMeasureV2>,
-  dimensions: Map<string, MetricsViewSpecDimensionV2>,
+  measures: Map<string, MetricsViewSpecMeasure>,
+  dimensions: Map<string, MetricsViewSpecDimension>,
   explore: V1ExploreSpec,
 ) {
   const preset: V1ExplorePreset = {};
@@ -436,7 +473,7 @@ function fromExploreUrlParams(
 
 function fromTimeDimensionUrlParams(
   searchParams: URLSearchParams,
-  measures: Map<string, MetricsViewSpecMeasureV2>,
+  measures: Map<string, MetricsViewSpecMeasure>,
 ) {
   const preset: V1ExplorePreset = {};
   const errors: Error[] = [];
@@ -472,8 +509,8 @@ function fromTimeDimensionUrlParams(
 
 function fromPivotUrlParams(
   searchParams: URLSearchParams,
-  measures: Map<string, MetricsViewSpecMeasureV2>,
-  dimensions: Map<string, MetricsViewSpecDimensionV2>,
+  measures: Map<string, MetricsViewSpecMeasure>,
+  dimensions: Map<string, MetricsViewSpecDimension>,
 ) {
   const preset: V1ExplorePreset = {};
   const errors: Error[] = [];

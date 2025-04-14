@@ -4,7 +4,6 @@
   import CanvasEditor from "@rilldata/web-common/features/canvas/CanvasEditor.svelte";
   import CanvasThemeProvider from "@rilldata/web-common/features/canvas/CanvasThemeProvider.svelte";
   import VisualCanvasEditing from "@rilldata/web-common/features/canvas/inspector/VisualCanvasEditing.svelte";
-  import StateManagersProvider from "@rilldata/web-common/features/canvas/state-managers/StateManagersProvider.svelte";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import {
@@ -13,7 +12,6 @@
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import { mapParseErrorsToLines } from "@rilldata/web-common/features/metrics-views/errors";
-  import ViewSelector from "@rilldata/web-common/features/visual-editing/ViewSelector.svelte";
   import {
     WorkspaceContainer,
     WorkspaceHeader,
@@ -23,7 +21,9 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import PreviewButton from "../explores/PreviewButton.svelte";
-  import RowBasedCanvas from "../canvas/RowBasedCanvas.svelte";
+  import CanvasBuilder from "../canvas/CanvasBuilder.svelte";
+  import DelayedSpinner from "../entity-management/DelayedSpinner.svelte";
+  import { useCanvas } from "../canvas/selector";
 
   export let fileArtifact: FileArtifact;
 
@@ -54,7 +54,6 @@
   $: selectedViewStore = workspace.view;
   $: selectedView = $selectedViewStore ?? "code";
 
-  $: canvasResource = data?.canvas;
   $: canvasName = getNameFromFile(filePath);
 
   $: ({ instanceId } = $runtime);
@@ -65,6 +64,10 @@
   );
 
   $: mainError = lineBasedRuntimeErrors?.at(0);
+
+  $: canvasResolverQuery = useCanvas(instanceId, canvasName);
+  $: canvasResolverQueryResult = $canvasResolverQuery;
+  $: canvasData = canvasResolverQueryResult.data;
 
   async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(
@@ -78,69 +81,66 @@
 </script>
 
 {#key canvasName}
-  <StateManagersProvider {canvasName}>
-    <CanvasThemeProvider>
-      <WorkspaceContainer>
-        <WorkspaceHeader
-          slot="header"
-          {filePath}
-          resource={data}
-          hasUnsavedChanges={$hasUnsavedChanges}
-          titleInput={fileName}
-          onTitleChange={onChangeCallback}
-          resourceKind={ResourceKind.Canvas}
-        >
-          <div class="flex gap-x-2" slot="cta">
-            <PreviewButton
-              href="/canvas/{canvasName}"
-              disabled={allErrors.length > 0 || resourceIsReconciling}
-              reconciling={resourceIsReconciling}
-            />
+  <CanvasThemeProvider {canvasName}>
+    <WorkspaceContainer>
+      <WorkspaceHeader
+        slot="header"
+        {filePath}
+        resource={data}
+        hasUnsavedChanges={$hasUnsavedChanges}
+        titleInput={fileName}
+        codeToggle
+        onTitleChange={onChangeCallback}
+        resourceKind={ResourceKind.Canvas}
+      >
+        <div class="flex gap-x-2" slot="cta">
+          <PreviewButton
+            href="/canvas/{canvasName}"
+            disabled={allErrors.length > 0 || resourceIsReconciling}
+            reconciling={resourceIsReconciling}
+          />
+        </div>
+      </WorkspaceHeader>
 
-            <!-- <AddComponentMenu {addComponent} /> -->
-            <ViewSelector
-              allowSplit={false}
-              bind:selectedView={$selectedViewStore}
+      <WorkspaceEditorContainer
+        slot="body"
+        error={mainError}
+        showError={!!$remoteContent && selectedView === "code"}
+      >
+        {#if selectedView === "code"}
+          <CanvasEditor
+            bind:autoSave={$autoSave}
+            {canvasName}
+            {fileArtifact}
+            {lineBasedRuntimeErrors}
+          />
+        {:else if selectedView === "viz"}
+          {#if mainError}
+            <ErrorPage
+              body={mainError.message}
+              fatal
+              detail={allErrors.map((error) => error.message).join("\n")}
+              header="Unable to load canvas preview"
+              statusCode={404}
             />
-          </div>
-        </WorkspaceHeader>
-
-        <WorkspaceEditorContainer
-          slot="body"
-          error={mainError}
-          showError={!!$remoteContent && selectedView === "code"}
-        >
-          {#if selectedView === "code"}
-            <CanvasEditor
-              bind:autoSave={$autoSave}
+          {:else if canvasResolverQueryResult.isLoading}
+            <DelayedSpinner isLoading={true} size="48px" />
+          {:else if canvasData}
+            <CanvasBuilder
               {canvasName}
+              openSidebar={workspace.inspector.open}
               {fileArtifact}
-              {lineBasedRuntimeErrors}
             />
-          {:else if selectedView === "viz"}
-            {#if mainError}
-              <ErrorPage
-                body={mainError.message}
-                fatal
-                detail={allErrors.map((error) => error.message).join("\n")}
-                header="Unable to load canvas preview"
-                statusCode={404}
-              />
-            {:else if canvasResource}
-              <RowBasedCanvas
-                openSidebar={workspace.inspector.open}
-                {fileArtifact}
-              />
-            {/if}
           {/if}
-        </WorkspaceEditorContainer>
+        {/if}
+      </WorkspaceEditorContainer>
 
-        <VisualCanvasEditing
-          {fileArtifact}
-          autoSave={selectedView === "viz" || $autoSave}
-          slot="inspector"
-        />
-      </WorkspaceContainer>
-    </CanvasThemeProvider>
-  </StateManagersProvider>
+      <VisualCanvasEditing
+        {canvasName}
+        {fileArtifact}
+        autoSave={selectedView === "viz" || $autoSave}
+        slot="inspector"
+      />
+    </WorkspaceContainer>
+  </CanvasThemeProvider>
 {/key}

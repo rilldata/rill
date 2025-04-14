@@ -36,8 +36,8 @@ import {
   PivotElement,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
-  type MetricsViewSpecDimensionV2,
-  type MetricsViewSpecMeasureV2,
+  type MetricsViewSpecDimension,
+  type MetricsViewSpecMeasure,
   V1ExploreComparisonMode,
   type V1ExplorePreset,
   type V1ExploreSpec,
@@ -78,6 +78,9 @@ export function convertLegacyStateToExplorePreset(
     // TODO: correct older values that would have strings for non-strings
   } else if (legacyState.where) {
     preset.where = fromExpressionProto(legacyState.where);
+  }
+  if (legacyState.dimensionsWithInlistFilter) {
+    preset.dimensionsWithInlistFilter = legacyState.dimensionsWithInlistFilter;
   }
   if (legacyState.having) {
     preset.where ??= createAndExpression([]);
@@ -125,7 +128,7 @@ export function convertLegacyStateToExplorePreset(
 
 function fromLegacyTimeRangeFields(
   legacyState: DashboardState,
-  dimensions: Map<string, MetricsViewSpecDimensionV2>,
+  dimensions: Map<string, MetricsViewSpecDimension>,
 ) {
   const preset: V1ExplorePreset = {};
   const errors: Error[] = [];
@@ -183,8 +186,8 @@ function fromLegacyTimeRangeFields(
 
 function fromLegacyExploreFields(
   legacyState: DashboardState,
-  measures: Map<string, MetricsViewSpecMeasureV2>,
-  dimensions: Map<string, MetricsViewSpecDimensionV2>,
+  measures: Map<string, MetricsViewSpecMeasure>,
+  dimensions: Map<string, MetricsViewSpecDimension>,
   explore: V1ExploreSpec,
 ) {
   const preset: V1ExplorePreset = {};
@@ -245,6 +248,10 @@ function fromLegacyExploreFields(
       FromLegacySortTypeMap[legacyState.leaderboardSortType];
   }
 
+  if (legacyState.leaderboardMeasures) {
+    preset.exploreLeaderboardMeasures = legacyState.leaderboardMeasures;
+  }
+
   if (legacyState.selectedDimension) {
     if (dimensions.has(legacyState.selectedDimension)) {
       preset.exploreExpandedDimension = legacyState.selectedDimension;
@@ -267,7 +274,7 @@ function fromLegacyExploreFields(
 
 function fromLegacyTimeDimensionFields(
   legacyState: DashboardState,
-  measures: Map<string, MetricsViewSpecMeasureV2>,
+  measures: Map<string, MetricsViewSpecMeasure>,
 ) {
   const preset: V1ExplorePreset = {};
   const errors: Error[] = [];
@@ -297,8 +304,8 @@ function fromLegacyTimeDimensionFields(
 
 function fromLegacyPivotFields(
   legacyState: DashboardState,
-  measures: Map<string, MetricsViewSpecMeasureV2>,
-  dimensions: Map<string, MetricsViewSpecDimensionV2>,
+  measures: Map<string, MetricsViewSpecMeasure>,
+  dimensions: Map<string, MetricsViewSpecDimension>,
 ) {
   const preset: V1ExplorePreset = {};
   const errors: Error[] = [];

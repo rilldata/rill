@@ -2,10 +2,14 @@ package druid
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/XSAM/otelsql"
 	"github.com/jmoiron/sqlx"
@@ -98,6 +102,10 @@ type configProperties struct {
 	SSL bool `mapstructure:"ssl"`
 	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute.
 	LogQueries bool `mapstructure:"log_queries"`
+	// MaxOpenConns is the maximum number of open connections to the database. Set to 0 to use the default value or -1 for unlimited.
+	MaxOpenConns int `mapstructure:"max_open_conns"`
+	// SkipVersionCheck skips the version check.
+	SkipVersionCheck bool `mapstructure:"skip_version_check"`
 }
 
 // Opens a connection to Apache Druid using HTTP API.
@@ -122,8 +130,12 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	if err != nil {
 		return nil, err
 	}
-	// very roughly approximating num queries required for a typical page load
-	db.SetMaxOpenConns(20)
+
+	maxOpenConns := conf.MaxOpenConns
+	if maxOpenConns == 0 {
+		maxOpenConns = 20 // default value
+	}
+	db.SetMaxOpenConns(maxOpenConns)
 
 	err = otelsql.RegisterDBStatsMetrics(db, otelsql.WithAttributes(attribute.String("instance_id", instanceID)))
 	if err != nil {
@@ -134,6 +146,13 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	err = dbx.Ping()
 	if err != nil {
 		return nil, fmt.Errorf("druid: %w", err)
+	}
+
+	if !conf.SkipVersionCheck {
+		err = d.checkVersion(dsn)
+		if err != nil {
+			return nil, fmt.Errorf("druid: %w", err)
+		}
 	}
 
 	conn := &connection{
@@ -154,6 +173,53 @@ func (d *driver) HasAnonymousSourceAccess(ctx context.Context, src map[string]an
 
 func (d *driver) TertiarySourceConnectors(ctx context.Context, src map[string]any, logger *zap.Logger) ([]string, error) {
 	return nil, fmt.Errorf("not implemented")
+}
+
+func (d driver) checkVersion(dsn string) error {
+	parsedURL, err := url.Parse(dsn)
+	if err != nil {
+		return err
+	}
+	parsedURL.Path = "/status"
+	statusURL := parsedURL.String()
+
+	req, err := http.NewRequest(http.MethodGet, statusURL, http.NoBody)
+	if err != nil {
+		return err
+	}
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("druid version check failed with status code: %d", resp.StatusCode)
+	}
+
+	var statusResponse struct {
+		Version string `json:"version"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&statusResponse); err != nil {
+		return fmt.Errorf("failed to decode Druid status response: %w", err)
+	}
+
+	if statusResponse.Version != "" {
+		majorVersion := strings.Split(statusResponse.Version, ".")[0]
+		if ver, err := strconv.Atoi(majorVersion); err == nil {
+			if ver < 28 {
+				return fmt.Errorf("druid version %s is not supported, please use 28.0.0 or higher", statusResponse.Version)
+			}
+		} else {
+			return fmt.Errorf("failed to parse Druid version: %w", err)
+		}
+	} else {
+		return fmt.Errorf("druid version information not found in the response")
+	}
+
+	return nil
 }
 
 type connection struct {
@@ -239,11 +305,6 @@ func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bo
 	return nil, false
 }
 
-// AsTransporter implements drivers.Connection.
-func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
-	return nil, false
-}
-
 // AsFileStore implements drivers.Connection.
 func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 	return nil, false
@@ -257,10 +318,6 @@ func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
 // AsNotifier implements drivers.Connection.
 func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
-}
-
-func (c *connection) AcquireLongRunning(ctx context.Context) (func(), error) {
-	return func() {}, nil
 }
 
 func dsnFromConfig(conf *configProperties) (string, error) {

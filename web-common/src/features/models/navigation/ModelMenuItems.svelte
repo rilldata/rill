@@ -1,15 +1,23 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
-  import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes";
+  import {
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { WandIcon } from "lucide-svelte";
   import ExploreIcon from "../../../components/icons/ExploreIcon.svelte";
   import MetricsViewIcon from "../../../components/icons/MetricsViewIcon.svelte";
-  import { V1ReconcileStatus } from "../../../runtime-client";
+  import Model from "../../../components/icons/Model.svelte";
+  import { behaviourEvent } from "../../../metrics/initMetrics";
+  import { V1ReconcileStatus, type V1Resource } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
+  import { createModelFromTable } from "../../connectors/olap/createModel";
+  import { getScreenNameFromPage } from "../../file-explorer/telemetry";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
 
   const { ai } = featureFlags;
@@ -23,12 +31,40 @@
 
   $: modelHasError = fileArtifact.getHasErrors(queryClient, instanceId);
   $: modelQuery = fileArtifact.getResource(queryClient, instanceId);
-  $: connector = $modelQuery.data?.model?.spec?.outputConnector;
+  $: connector = ($modelQuery.data as V1Resource | undefined)?.model?.spec
+    ?.outputConnector;
   $: modelIsIdle =
     $modelQuery.data?.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;
   $: disableCreateDashboard = $modelHasError || !modelIsIdle;
   $: tableName = $modelQuery.data?.model?.state?.resultTable ?? "";
+
+  async function handleCreateModel() {
+    try {
+      const previousActiveEntity = getScreenNameFromPage();
+      const addDevLimit = false; // Typically, the `dev` limit would be applied on the Source itself
+      const [newModelPath, newModelName] = await createModelFromTable(
+        queryClient,
+        connector as string,
+        "",
+        "",
+        tableName,
+        addDevLimit,
+      );
+
+      await goto(`/files${newModelPath}`);
+
+      await behaviourEvent?.fireNavigationEvent(
+        newModelName,
+        BehaviourEventMedium.Menu,
+        MetricsEventSpace.LeftPanel,
+        previousActiveEntity,
+        MetricsEventScreenName.Model,
+      );
+    } catch (err) {
+      console.error(err);
+    }
+  }
 
   $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
     instanceId,
@@ -52,6 +88,11 @@
     MetricsEventSpace.LeftPanel,
   );
 </script>
+
+<NavigationMenuItem on:click={handleCreateModel}>
+  <Model slot="icon" />
+  Create new model
+</NavigationMenuItem>
 
 <NavigationMenuItem
   disabled={disableCreateDashboard}

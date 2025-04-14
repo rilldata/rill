@@ -20,7 +20,7 @@
     createQueryServiceTableColumns,
     createRuntimeServiceAnalyzeConnectors,
     createRuntimeServiceGetInstance,
-    type MetricsViewSpecDimensionV2,
+    type MetricsViewSpecDimension,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -41,7 +41,7 @@
   import { useSources } from "../sources/selectors";
   import AlertConfirmation from "../visual-metrics-editing/AlertConfirmation.svelte";
   import MetricsTable from "../visual-metrics-editing/MetricsTable.svelte";
-  import Sidebar from "../visual-metrics-editing/Sidebar.svelte";
+  import VisualMetricsSidebar from "../visual-metrics-editing/VisualMetricsSidebar.svelte";
   import type { Confirmation, ItemType } from "../visual-metrics-editing/lib";
   import {
     editingItemData,
@@ -275,7 +275,7 @@
 
   function createDimensions(
     rawDimensions: YAMLSeq<YAMLMap<string, string>>,
-    metricsViewDimensions: MetricsViewSpecDimensionV2[],
+    metricsViewDimensions: MetricsViewSpecDimension[],
   ) {
     return rawDimensions.items.map((item, i) => {
       return new YAMLDimension(
@@ -788,7 +788,7 @@
   {#if $editingItemData !== null}
     {@const { index, type } = $editingItemData}
     {#key editingItem}
-      <Sidebar
+      <VisualMetricsSidebar
         item={editingItem ??
           (type === "measures" ? new YAMLMeasure() : new YAMLDimension())}
         {type}

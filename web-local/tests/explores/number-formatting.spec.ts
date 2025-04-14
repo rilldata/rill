@@ -1,5 +1,5 @@
 import { expect } from "@playwright/test";
-import { interactWithTimeRangeMenu } from "../utils/metricsViewHelpers";
+import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions";
 import { ResourceWatcher } from "../utils/ResourceWatcher";
 import { gotoNavEntry } from "../utils/waitHelpers";
 import { test } from "../setup/base";
@@ -110,11 +110,14 @@ dimensions:
      *
      ******************/
 
-    const measuresButton = page.getByRole("button", {
-      name: "Select a measure to filter by",
-    });
+    const measuresButton = page.getByTestId(
+      "leaderboard-measure-names-dropdown",
+    );
     await measuresButton.click();
-    await page.getByRole("option", { name: "USD" }).click();
+    await page
+      .getByRole("menuitem", { name: "USD" })
+      .filter({ has: page.getByText("USD") })
+      .click();
     await page
       .getByRole("menu", { name: "Showing USD" })
       .waitFor({ state: "hidden" });
@@ -124,7 +127,10 @@ dimensions:
       page.getByRole("row", { name: "null $98.8k 33%" }),
     ).toBeVisible();
     await measuresButton.click();
-    await page.getByRole("option", { name: "percentage" }).click();
+    await page
+      .getByRole("menuitem", { name: "percentage" })
+      .filter({ has: page.getByText("percentage") })
+      .click();
     await expect(measuresButton).toHaveText("Showing percentage");
     await expect(
       page.getByRole("row", { name: "null 9.9M% 33%" }),
@@ -132,26 +138,32 @@ dimensions:
 
     // try interval_ms...
     await measuresButton.click();
-    await page.getByRole("option", { name: "interval_ms" }).click();
+    await page
+      .getByRole("menuitem", { name: "interval_ms" })
+      .filter({ has: page.getByText("interval_ms") })
+      .click();
     await expect(measuresButton).toHaveText("Showing interval_ms");
     // ...and add a time comparison to check deltas
     await interactWithTimeRangeMenu(page, async () => {
       await page.getByRole("menuitem", { name: "Last 4 Weeks" }).click();
     });
-    await page.getByRole("button", { name: "Comparing" }).click();
+    await page.getByLabel("Toggle time comparison").click();
 
     await expect(
-      page.getByRole("row", { name: "null 27 s -4.3 s -14%" }),
+      page.getByRole("row", { name: "null 27 s 33% -4.3 s -14%" }),
     ).toBeVisible();
 
     // try No Format...
     await measuresButton.click();
-    await page.getByRole("option", { name: "No Format" }).click();
+    await page
+      .getByRole("menuitem", { name: "No Format" })
+      .filter({ has: page.getByText("No Format") })
+      .click();
     await expect(measuresButton).toHaveText("Showing No Format");
 
     await expect(
       page.getByRole("row", {
-        name: "null 26,643 -4,349 -14%",
+        name: "null 26,643 33% -4,349 -14%",
       }),
     ).toBeVisible();
 

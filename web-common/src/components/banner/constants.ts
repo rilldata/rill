@@ -1,4 +1,4 @@
-export const BillingBannerID = "banner";
+export const BillingBannerID = "billing";
 export const TokenBannerID = "token";
 export const DashboardBannerID = "dashboard";
 

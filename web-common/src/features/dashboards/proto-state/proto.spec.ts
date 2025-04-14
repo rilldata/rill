@@ -46,7 +46,7 @@ describe("toProto/fromProto", () => {
       interval: V1TimeGrain.TIME_GRAIN_HOUR,
     } as any;
     const newState = getDashboardStateFromUrl(
-      getProtoFromDashboardState(metricsExplorer),
+      getProtoFromDashboardState(metricsExplorer, AD_BIDS_EXPLORE_INIT),
       AD_BIDS_METRICS_INIT_WITH_TIME,
       AD_BIDS_EXPLORE_INIT,
       AD_BIDS_SCHEMA,

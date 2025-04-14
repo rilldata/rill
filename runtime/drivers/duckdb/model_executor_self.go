@@ -32,11 +32,6 @@ func (e *selfToSelfExecutor) Concurrency(desired int) (int, bool) {
 }
 
 func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
-	olap, ok := e.c.AsOLAP(e.c.instanceID)
-	if !ok {
-		return nil, fmt.Errorf("output connector is not OLAP")
-	}
-
 	inputProps := &ModelInputProperties{}
 	if err := mapstructure.WeakDecode(opts.InputProperties, inputProps); err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
@@ -76,7 +71,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 	if scheme, secretSQL, ast, ok := objectStoreRef(ctx, inputProps, opts); ok {
 		if secretSQL != "" {
 			inputProps.PreExec = secretSQL
-		} else if scheme == "gcs" || scheme == "gs" {
+		} else if scheme == "gcs" {
 			// rewrite duckdb sql with locally downloaded files
 			handle, release, err := opts.Env.AcquireConnector(ctx, scheme)
 			if err != nil {
@@ -108,7 +103,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		if opts.Env.StageChanges {
 			stagingTableName = stagingTableNameFor(tableName)
 		}
-		_ = olap.DropTable(ctx, stagingTableName)
+		_ = e.c.dropTable(ctx, stagingTableName)
 
 		// Create the table
 		if inputProps.Database != "" {
@@ -125,46 +120,51 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 			}
 			res, err := e.createFromExternalDuckDB(ctx, inputProps, stagingTableName)
 			if err != nil {
-				_ = olap.DropTable(ctx, stagingTableName)
+				_ = e.c.dropTable(ctx, stagingTableName)
 				return nil, fmt.Errorf("failed to create model: %w", err)
 			}
 			duration = res.Duration
 		} else {
-			createTableOpts := &drivers.CreateTableOptions{
-				View:         asView,
-				BeforeCreate: inputProps.PreExec,
-				AfterCreate:  inputProps.PostExec,
+			createTableOpts := &createTableOptions{
+				view:         asView,
+				beforeCreate: inputProps.PreExec,
+				afterCreate:  inputProps.PostExec,
 			}
-			res, err := olap.CreateTableAsSelect(ctx, stagingTableName, inputProps.SQL, createTableOpts)
+			if inputProps.InitQueries != "" {
+				createTableOpts.initQueries = []string{inputProps.InitQueries}
+			}
+			res, err := e.c.createTableAsSelect(ctx, stagingTableName, inputProps.SQL, createTableOpts)
 			if err != nil {
-				_ = olap.DropTable(ctx, stagingTableName)
+				_ = e.c.dropTable(ctx, stagingTableName)
 				return nil, fmt.Errorf("failed to create model: %w", err)
 			}
-			duration = res.Duration
+			duration = res.duration
 		}
 
 		// Rename the staging table to the final table name
 		if stagingTableName != tableName {
-			err := olapForceRenameTable(ctx, olap, stagingTableName, asView, tableName)
+			err := e.c.forceRenameTable(ctx, stagingTableName, asView, tableName)
 			if err != nil {
 				return nil, fmt.Errorf("failed to rename staged model: %w", err)
 			}
 		}
 	} else {
 		// Insert into the table
-		insertTableOpts := &drivers.InsertTableOptions{
+		insertTableOpts := &InsertTableOptions{
 			BeforeInsert: inputProps.PreExec,
 			AfterInsert:  inputProps.PostExec,
 			ByName:       false,
-			InPlace:      true,
 			Strategy:     outputProps.IncrementalStrategy,
 			UniqueKey:    outputProps.UniqueKey,
 		}
-		res, err := olap.InsertTableAsSelect(ctx, tableName, inputProps.SQL, insertTableOpts)
+		if inputProps.InitQueries != "" {
+			insertTableOpts.InitQueries = []string{inputProps.InitQueries}
+		}
+		res, err := e.c.insertTableAsSelect(ctx, tableName, inputProps.SQL, insertTableOpts)
 		if err != nil {
 			return nil, fmt.Errorf("failed to incrementally insert into table: %w", err)
 		}
-		duration = res.Duration
+		duration = res.duration
 	}
 
 	// Build result props
@@ -269,6 +269,9 @@ func objectStoreRef(ctx context.Context, props *ModelInputProperties, opts *driv
 	}
 
 	if uri.Scheme == "s3" || uri.Scheme == "azure" || uri.Scheme == "gcs" || uri.Scheme == "gs" {
+		if uri.Scheme == "gs" {
+			uri.Scheme = "gcs"
+		}
 		// for s3 and azure we can just set a duckdb secret and ingest data using duckdb's native support for s3 and azure
 		handle, release, err := opts.Env.AcquireConnector(ctx, uri.Scheme)
 		if err != nil {
@@ -303,7 +306,12 @@ func rewriteDuckDBSQL(ctx context.Context, props *ModelInputProperties, inputHan
 		return nil, err
 	}
 	defer func() {
-		_ = iter.Close()
+		// closing the iterator deletes the files
+		// only delete the files if there was an error
+		// the caller will call release once the files are no longer needed
+		if retErr != nil {
+			_ = iter.Close()
+		}
 	}()
 	for {
 		localFiles, err := iter.Next()
@@ -319,4 +327,54 @@ func rewriteDuckDBSQL(ctx context.Context, props *ModelInputProperties, inputHan
 	// Rewrite the SQL
 	props.SQL, err = rewriteSQL(ast, files)
 	return func() { _ = iter.Close() }, err
+}
+
+func rewriteSQL(ast *duckdbsql.AST, allFiles []string) (string, error) {
+	err := ast.RewriteTableRefs(func(table *duckdbsql.TableRef) (*duckdbsql.TableRef, bool) {
+		return &duckdbsql.TableRef{
+			Paths:      allFiles,
+			Function:   table.Function,
+			Properties: table.Properties,
+			Params:     table.Params,
+		}, true
+	})
+	if err != nil {
+		return "", err
+	}
+	sql, err := ast.Format()
+	if err != nil {
+		return "", err
+	}
+	return sql, nil
+}
+
+// rewriteLocalPaths rewrites a DuckDB SQL statement such that relative paths become absolute paths relative to the basePath,
+// and if allowHostAccess is false, returns an error if any of the paths resolve to a path outside of the basePath.
+func rewriteLocalPaths(ast *duckdbsql.AST, basePath string, allowHostAccess bool) (string, error) {
+	var resolveErr error
+	err := ast.RewriteTableRefs(func(t *duckdbsql.TableRef) (*duckdbsql.TableRef, bool) {
+		res := make([]string, 0)
+		for _, p := range t.Paths {
+			resolved, err := fileutil.ResolveLocalPath(p, basePath, allowHostAccess)
+			if err != nil {
+				resolveErr = err
+				return nil, false
+			}
+			res = append(res, resolved)
+		}
+		return &duckdbsql.TableRef{
+			Function:   t.Function,
+			Paths:      res,
+			Properties: t.Properties,
+			Params:     t.Params,
+		}, true
+	})
+	if resolveErr != nil {
+		return "", resolveErr
+	}
+	if err != nil {
+		return "", err
+	}
+
+	return ast.Format()
 }

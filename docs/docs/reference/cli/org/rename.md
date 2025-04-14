@@ -13,9 +13,9 @@ rill org rename [flags]
 ### Flags
 
 ```
-      --org string        Current Org Name
-      --new-name string   New Org Name
-      --force             Force rename org without confirmation prompt
+      --org string            Current org name
+      --new-name string       New org name
+      --display-name string   New display name
 ```
 
 ### Global flags

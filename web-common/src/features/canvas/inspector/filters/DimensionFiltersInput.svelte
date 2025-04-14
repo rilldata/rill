@@ -2,7 +2,7 @@
   import { Button } from "@rilldata/web-common/components/button";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
-  import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import AdvancedFilter from "@rilldata/web-common/features/dashboards/filters/AdvancedFilter.svelte";
   import FilterButton from "@rilldata/web-common/features/dashboards/filters/FilterButton.svelte";
   import DimensionFilter from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilter.svelte";
@@ -11,31 +11,37 @@
   import { isExpressionUnsupported } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import { flip } from "svelte/animate";
+  import type { CanvasComponentState } from "../../stores/canvas-component";
 
   export let metricsView: string;
-  export let selectedComponentName: string;
+  export let componentStore: CanvasComponentState;
+  export let excludedDimensions: string[];
   export let id: string;
   export let filter: string;
+  export let canvasName: string;
   export let onChange: (filter: string) => void = () => {};
 
-  const {
+  $: ({
     canvasEntity: {
-      useComponent,
       spec: { getDimensionsForMetricView, getSimpleMeasuresForMetricView },
     },
-  } = getCanvasStateManagers();
+  } = getCanvasStore(canvasName));
 
   let filterToggle = false;
 
   $: showFilter = !!filter || filterToggle;
-  $: componentStore = useComponent(selectedComponentName);
 
   $: allDimensions = getDimensionsForMetricView(metricsView);
+  $: allValidDimensions = $allDimensions.filter(
+    (d) => !excludedDimensions.includes(d.name || (d.column as string)),
+  );
   $: allSimpleMeasures = getSimpleMeasuresForMetricView(metricsView);
 
   $: ({
     whereFilter,
     toggleDimensionValueSelection,
+    applyDimensionInListMode,
+    applyDimensionContainsMode,
     removeDimensionFilter,
     toggleDimensionFilterMode,
     setMeasureFilter,
@@ -53,7 +59,7 @@
   } = componentStore.localFilters);
 
   $: dimensionIdMap = getMapFromArray(
-    $allDimensions,
+    allValidDimensions,
     (dimension) => (dimension.name || dimension.column) as string,
   );
 
@@ -131,7 +137,7 @@
       <InputLabel small label="Filters" {id} />
 
       <FilterButton
-        allDimensions={$allDimensions}
+        allDimensions={allValidDimensions}
         filteredSimpleMeasures={$allSimpleMeasures}
         dimensionHasFilter={$dimensionHasFilter}
         measureHasFilter={$measureHasFilter}
@@ -145,8 +151,8 @@
         {#if isComplexFilter}
           <AdvancedFilter advancedFilter={$whereFilter} />
         {:else if allDimensionFilters.length || allMeasureFilters.length}
-          {#each allDimensionFilters as { name, label, selectedValues } (name)}
-            {@const dimension = $allDimensions.find(
+          {#each allDimensionFilters as { name, label, mode, selectedValues, inputText } (name)}
+            {@const dimension = allValidDimensions.find(
               (d) => d.name === name || d.column === name,
             )}
             {@const dimensionName = dimension?.name || dimension?.column}
@@ -158,7 +164,9 @@
                   smallChip
                   {name}
                   {label}
+                  {mode}
                   {selectedValues}
+                  {inputText}
                   timeStart={new Date(0).toISOString()}
                   timeEnd={new Date().toISOString()}
                   timeControlsReady
@@ -167,6 +175,10 @@
                   onToggleFilterMode={() => toggleDimensionFilterMode(name)}
                   onSelect={(value) =>
                     toggleDimensionValueSelection(name, value, true)}
+                  onApplyInList={(values) =>
+                    applyDimensionInListMode(name, values)}
+                  onApplyContainsMode={(searchText) =>
+                    applyDimensionContainsMode(name, searchText)}
                 />
               {/if}
             </div>
@@ -174,7 +186,7 @@
           {#each allMeasureFilters as { name, label, dimensionName, filter } (name)}
             <div animate:flip={{ duration: 200 }}>
               <MeasureFilter
-                allDimensions={$allDimensions}
+                allDimensions={allValidDimensions}
                 {name}
                 {label}
                 {dimensionName}

@@ -9,6 +9,7 @@
   import {
     useAlert,
     useAlertDashboardName,
+    useAlertDashboardState,
     useIsAlertCreatedByCode,
   } from "@rilldata/web-admin/features/alerts/selectors";
   import ProjectAccessControls from "@rilldata/web-admin/features/projects/ProjectAccessControls.svelte";
@@ -50,10 +51,12 @@
   $: alertSpec = $alertQuery.data?.resource?.alert?.spec;
 
   $: metricsViewAggregationRequest = JSON.parse(
-    alertSpec?.resolverProperties?.query_args_json ||
+    (alertSpec?.resolverProperties?.query_args_json as string) ||
       alertSpec?.queryArgsJson ||
       "{}",
   ) as V1MetricsViewAggregationRequest;
+
+  $: dashboardState = useAlertDashboardState(instanceId, alertSpec);
 
   $: snoozeLabel = humaniseAlertSnoozeOption(alertSpec);
 
@@ -70,9 +73,9 @@
       project,
       name: $alertQuery.data.resource.meta.name.name,
     });
-    await queryClient.invalidateQueries(
-      getRuntimeServiceListResourcesQueryKey(instanceId),
-    );
+    await queryClient.invalidateQueries({
+      queryKey: getRuntimeServiceListResourcesQueryKey(instanceId),
+    });
     // goto only after invalidate is complete
     goto(`/${organization}/${project}/-/alerts`);
   }
@@ -177,6 +180,8 @@
     <AlertFilters
       {metricsViewName}
       filters={metricsViewAggregationRequest?.where}
+      dimensionsWithInlistFilter={$dashboardState.data
+        ?.dimensionsWithInlistFilter ?? []}
       timeRange={metricsViewAggregationRequest?.timeRange}
       comparisonTimeRange={metricsViewAggregationRequest?.comparisonTimeRange}
     />

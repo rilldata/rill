@@ -1,8 +1,7 @@
 import { expect } from "@playwright/test";
-import { interactWithTimeRangeMenu } from "../utils/metricsViewHelpers";
+import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions";
 import { ResourceWatcher } from "../utils/ResourceWatcher";
 import { gotoNavEntry } from "../utils/waitHelpers";
-import { clickMenuButton } from "../utils/commonHelpers";
 import { test } from "../setup/base";
 
 test.describe("leaderboard context column", () => {
@@ -51,16 +50,9 @@ test.describe("leaderboard context column", () => {
     await watcher.updateAndWaitForDashboard(metricsWithValidPercentOfTotal);
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
 
-    async function clickMenuItem(itemName: string, wait = true) {
-      await clickMenuButton(page, itemName, "option");
-      if (wait) {
-        await page.getByRole("menu").waitFor({ state: "hidden" });
-      }
-    }
-
-    const measuresButton = page.getByRole("button", {
-      name: "Select a measure to filter by",
-    });
+    const measuresButton = page.getByTestId(
+      "leaderboard-measure-names-dropdown",
+    );
 
     async function escape() {
       await page.keyboard.press("Escape");
@@ -102,7 +94,7 @@ test.describe("leaderboard context column", () => {
       await page.getByRole("menuitem", { name: "Last 6 Hours" }).click();
     });
     // enable comparisons which should automatically enable a time comparison (including context column)
-    await page.getByRole("button", { name: "Comparing" }).click();
+    await page.getByLabel("Toggle time comparison").click();
 
     // This regex matches a line that:
     // - starts with "Facebook"
@@ -139,7 +131,10 @@ test.describe("leaderboard context column", () => {
 
     // Switch to measure "total bid price"
     await measuresButton.click();
-    await clickMenuItem("Total Bid Price", false);
+    await page
+      .getByRole("menuitem", { name: "Total Bid Price" })
+      .filter({ has: page.getByText("Total Bid Price") })
+      .click();
     await escape();
     await expect(measuresButton).toHaveText("Showing Total Bid Price");
 
@@ -188,7 +183,10 @@ test.describe("leaderboard context column", () => {
 
     // Switch to measure "total rows" (no valid_percent_of_total)
     await measuresButton.click();
-    await clickMenuItem("Total Rows");
+    await page
+      .getByRole("menuitem", { name: "Total Rows" })
+      .filter({ has: page.getByText("Total Rows") })
+      .click();
     await expect(measuresButton).toHaveText("Showing Total rows");
     // check that the percent of total column is hidden
     await expect(percentOfTotalColumn).not.toBeVisible();

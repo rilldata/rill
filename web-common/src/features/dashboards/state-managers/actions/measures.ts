@@ -3,33 +3,58 @@ import type { DashboardMutables } from "./types";
 export const toggleMeasureVisibility = (
   { dashboard }: DashboardMutables,
   allMeasures: string[],
-  measureName?: string,
+  measureName: string,
 ) => {
-  if (measureName) {
-    const deleted = dashboard.visibleMeasureKeys.delete(measureName);
-    if (!deleted) {
-      dashboard.visibleMeasureKeys.add(measureName);
-    } else if (
-      dashboard.leaderboardMeasureName === measureName &&
-      dashboard.visibleMeasureKeys.size > 0
+  const index = dashboard.visibleMeasures.indexOf(measureName);
+  if (index > -1) {
+    dashboard.visibleMeasures.splice(index, 1);
+    if (
+      dashboard.leaderboardSortByMeasureName === measureName &&
+      dashboard.visibleMeasures.length > 1
     ) {
-      dashboard.leaderboardMeasureName = dashboard.visibleMeasureKeys
-        .keys()
-        .next().value;
+      dashboard.leaderboardSortByMeasureName = dashboard.visibleMeasures[0];
     }
   } else {
-    const allSelected =
-      dashboard.visibleMeasureKeys.size === allMeasures.length;
-
-    dashboard.visibleMeasureKeys = new Set(
-      allSelected ? allMeasures.slice(0, 1) : allMeasures,
-    );
+    dashboard.visibleMeasures.push(measureName);
   }
 
   dashboard.allMeasuresVisible =
-    dashboard.visibleMeasureKeys.size === allMeasures.length;
+    dashboard.visibleMeasures.length === allMeasures.length;
+};
+
+export const toggleAllMeasuresVisibility = (
+  { dashboard }: DashboardMutables,
+  allMeasures: string[],
+) => {
+  const allSelected = dashboard.visibleMeasures.length === allMeasures.length;
+
+  dashboard.visibleMeasures = allSelected
+    ? allMeasures.slice(0, 1)
+    : [...allMeasures];
+  dashboard.allMeasuresVisible = !dashboard.allMeasuresVisible;
+};
+
+export const setMeasureVisibility = (
+  { dashboard }: DashboardMutables,
+  measures: string[],
+  allMeasures: string[],
+) => {
+  dashboard.visibleMeasures = measures;
+
+  // If the current leaderboard measure is hidden, select a new one from visible measures
+  if (
+    !measures.includes(dashboard.leaderboardSortByMeasureName) &&
+    measures.length > 0
+  ) {
+    dashboard.leaderboardSortByMeasureName = measures[0];
+  }
+
+  dashboard.allMeasuresVisible =
+    dashboard.visibleMeasures.length === allMeasures.length;
 };
 
 export const measureActions = {
   toggleMeasureVisibility,
+  toggleAllMeasuresVisibility,
+  setMeasureVisibility,
 };

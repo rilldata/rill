@@ -61,7 +61,7 @@ func (e *olapToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 	}
 
 	// Execute the SQL
-	res, err := e.olap.Execute(ctx, &drivers.Statement{
+	res, err := e.olap.Query(ctx, &drivers.Statement{
 		Query:    inputProps.SQL,
 		Args:     inputProps.Args,
 		Priority: opts.Priority,
@@ -142,20 +142,33 @@ func writeCSV(res *drivers.Result, fw io.Writer) error {
 		for i, v := range vals {
 			v := *(v.(*any))
 
-			v, err := jsonval.ToValue(v, res.Schema.Fields[i].Type)
+			val, err := jsonval.ToValue(v, res.Schema.Fields[i].Type)
 			if err != nil {
 				return fmt.Errorf("failed to convert to JSON value: %w", err)
 			}
 
 			var s string
-			if v != nil {
-				tmp, err := json.Marshal(v)
-				if err != nil {
-					return fmt.Errorf("failed to marshal JSON value: %w", err)
+			if val != nil {
+				switch tval := val.(type) {
+				case string:
+					s = tval
+				case time.Time:
+					t := res.Schema.Fields[i].Type
+					if t != nil && t.Code == runtimev1.Type_CODE_DATE {
+						s = tval.In(time.UTC).Format(time.DateOnly)
+					} else if t != nil && t.Code == runtimev1.Type_CODE_TIME {
+						s = tval.In(time.UTC).Format(time.TimeOnly)
+					} else {
+						s = tval.In(time.UTC).Format(time.DateTime) // this format is auto converted to datetime in excel
+					}
+				default:
+					mres, err := json.Marshal(tval)
+					if err != nil {
+						return fmt.Errorf("failed to marshal JSON value: %w", err)
+					}
+					s = jsonval.TrimQuotes(string(mres))
 				}
-				s = string(tmp)
 			}
-
 			strs[i] = s
 		}
 
@@ -203,22 +216,34 @@ func writeXLSX(res *drivers.Result, fw io.Writer) error {
 
 		for i, v := range vals {
 			v := *(v.(*any))
-			res, err := jsonval.ToValue(v, res.Schema.Fields[i].Type)
+			jval, err := jsonval.ToValue(v, res.Schema.Fields[i].Type)
 			if err != nil {
 				return fmt.Errorf("failed to convert to JSON value: %w", err)
 			}
 
-			switch res.(type) {
-			case nil:
-				res = ""
-			case []any, map[string]any:
-				res, err = json.Marshal(res)
-				if err != nil {
-					return fmt.Errorf("failed to marshal JSON value: %w", err)
+			var s any
+			if jval != nil {
+				switch tval := jval.(type) {
+				case time.Time:
+					t := res.Schema.Fields[i].Type
+					if t != nil && t.Code == runtimev1.Type_CODE_DATE {
+						s = tval.In(time.UTC).Format(time.DateOnly)
+					} else if t != nil && t.Code == runtimev1.Type_CODE_TIME {
+						s = tval.In(time.UTC).Format(time.TimeOnly)
+					} else {
+						s = tval
+					}
+				case []any, map[string]any:
+					mres, err := json.Marshal(tval)
+					if err != nil {
+						return fmt.Errorf("failed to marshal JSON value: %w", err)
+					}
+					s = jsonval.TrimQuotes(string(mres))
+				default:
+					s = tval
 				}
 			}
-
-			row[i] = res
+			row[i] = s
 		}
 
 		cell, err := excelize.CoordinatesToCellName(1, idx)
@@ -334,12 +359,15 @@ func writeParquet(res *drivers.Result, fw io.Writer) error {
 					return err
 				}
 				recordBuilder.Field(i).(*array.TimestampBuilder).Append(tmp)
-			case runtimev1.Type_CODE_STRING, runtimev1.Type_CODE_INTERVAL, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_ARRAY, runtimev1.Type_CODE_STRUCT, runtimev1.Type_CODE_MAP, runtimev1.Type_CODE_JSON, runtimev1.Type_CODE_UUID:
+			case runtimev1.Type_CODE_STRING, runtimev1.Type_CODE_DATE:
+				v, _ := v.(string)
+				recordBuilder.Field(i).(*array.StringBuilder).Append(v)
+			case runtimev1.Type_CODE_INTERVAL, runtimev1.Type_CODE_ARRAY, runtimev1.Type_CODE_STRUCT, runtimev1.Type_CODE_MAP, runtimev1.Type_CODE_JSON, runtimev1.Type_CODE_UUID:
 				res, err := json.Marshal(v)
 				if err != nil {
 					return fmt.Errorf("failed to convert to JSON value: %w", err)
 				}
-				recordBuilder.Field(i).(*array.StringBuilder).Append(string(res))
+				recordBuilder.Field(i).(*array.StringBuilder).Append(jsonval.TrimQuotes(string(res)))
 			case runtimev1.Type_CODE_BYTES:
 				v, _ := v.([]byte)
 				recordBuilder.Field(i).(*array.BinaryBuilder).Append(v)

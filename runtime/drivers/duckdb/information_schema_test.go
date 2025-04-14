@@ -10,16 +10,16 @@ import (
 )
 
 func TestInformationSchemaAll(t *testing.T) {
-	conn := prepareConn(t)
+	conn := prepareConn(t).(*connection)
 	olap, _ := conn.AsOLAP("")
 
-	opts := &drivers.CreateTableOptions{
-		View: true,
+	opts := &createTableOptions{
+		view: true,
 	}
-	_, err := olap.CreateTableAsSelect(context.Background(), "model", "select 1, 2, 3", opts)
+	_, err := conn.createTableAsSelect(context.Background(), "model", "select 1, 2, 3", opts)
 	require.NoError(t, err)
 
-	_, err = olap.CreateTableAsSelect(context.Background(), "source", "select 4, 5, 6", &drivers.CreateTableOptions{})
+	_, err = conn.createTableAsSelect(context.Background(), "source", "select 4, 5, 6", &createTableOptions{})
 	require.NoError(t, err)
 
 	tables, err := olap.InformationSchema().All(context.Background(), "")
@@ -43,11 +43,11 @@ func TestInformationSchemaAll(t *testing.T) {
 }
 
 func TestInformationSchemaAllLike(t *testing.T) {
-	conn := prepareConn(t)
+	conn := prepareConn(t).(*connection)
 	olap, _ := conn.AsOLAP("")
 
-	opts := &drivers.CreateTableOptions{View: true}
-	_, err := olap.CreateTableAsSelect(context.Background(), "model", "select 1, 2, 3", opts)
+	opts := &createTableOptions{view: true}
+	_, err := conn.createTableAsSelect(context.Background(), "model", "select 1, 2, 3", opts)
 	require.NoError(t, err)
 
 	tables, err := olap.InformationSchema().All(context.Background(), "%odel")
@@ -62,12 +62,12 @@ func TestInformationSchemaAllLike(t *testing.T) {
 }
 
 func TestInformationSchemaLookup(t *testing.T) {
-	conn := prepareConn(t)
+	conn := prepareConn(t).(*connection)
 	olap, _ := conn.AsOLAP("")
 	ctx := context.Background()
 
-	opts := &drivers.CreateTableOptions{View: true}
-	_, err := olap.CreateTableAsSelect(context.Background(), "model", "select 1, 2, 3", opts)
+	opts := &createTableOptions{view: true}
+	_, err := conn.createTableAsSelect(context.Background(), "model", "select 1, 2, 3", opts)
 	require.NoError(t, err)
 
 	table, err := olap.InformationSchema().Lookup(ctx, "", "", "foo")

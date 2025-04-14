@@ -1,4 +1,4 @@
-import { QueryClient } from "@rilldata/svelte-query";
+import { QueryClient } from "@tanstack/svelte-query";
 import { createStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
@@ -66,7 +66,7 @@ export function getInitExploreStateForTest(
   const defaultExplorePreset = getDefaultExplorePreset(
     exploreSpec,
     metricsViewSpec,
-    timeRangeSummary,
+    timeRangeSummary?.timeRangeSummary,
   );
   const { partialExploreState } = convertPresetToExploreState(
     metricsViewSpec,
@@ -117,13 +117,14 @@ export function assertMetricsViewRaw(
   const metricsView = get(metricsExplorerStore).entities[name];
   expect(metricsView.whereFilter).toEqual(filters);
   expect(metricsView.selectedTimeRange).toEqual(timeRange);
-  expect(metricsView.leaderboardMeasureName).toEqual(selectedMeasure);
+  expect(metricsView.leaderboardSortByMeasureName).toEqual(selectedMeasure);
 }
 
 export function initStateManagers(metricsViewName?: string) {
   metricsViewName ??= AD_BIDS_NAME;
   const exploreName = metricsViewName + "_explore";
 
+  metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
   initAdBidsInStore();
 
   const queryClient = new QueryClient({

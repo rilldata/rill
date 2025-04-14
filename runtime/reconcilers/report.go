@@ -2,10 +2,12 @@ package reconcilers
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -394,26 +396,65 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	}
 	defer release()
 
-	var ownerID string
+	var ownerID, explore, canvas, webOpenMode string
 	if id, ok := rep.Spec.Annotations["admin_owner_user_id"]; ok {
 		ownerID = id
 	}
+	if e, ok := rep.Spec.Annotations["explore"]; ok {
+		explore = e
+	}
+	if c, ok := rep.Spec.Annotations["canvas"]; ok {
+		canvas = c
+	}
+	if w, ok := rep.Spec.Annotations["web_open_mode"]; ok {
+		webOpenMode = w
+		if webOpenMode == "" { // backwards compatibility
+			webOpenMode = "recipient"
+		}
+	}
 
+	if webOpenMode != "none" && explore == "" { // backwards compatibility, try to find explore
+		if path, ok := rep.Spec.Annotations["web_open_path"]; ok {
+			// parse path, extract explore name, it will be like /explore/{explore}
+			if strings.HasPrefix(path, "/explore/") {
+				explore = path[9:]
+				if explore[len(explore)-1] == '/' {
+					explore = explore[:len(explore)-1]
+				}
+			}
+		}
+		// still not found, try to extract mv from query args
+		if explore == "" && rep.Spec.QueryArgsJson != "" {
+			m := make(map[string]interface{})
+			err := json.Unmarshal([]byte(rep.Spec.QueryArgsJson), &m)
+			if err == nil {
+				if v, ok := m["metricsView"]; ok {
+					explore = v.(string)
+				} else if v, ok = m["metrics_view_name"]; ok {
+					explore = v.(string)
+				} else if v, ok = m["metrics_view"]; ok {
+					explore = v.(string)
+				}
+			}
+		}
+		if explore == "" { // still not found
+			webOpenMode = "none"
+		}
+	}
+
+	anonRecipients := false
 	var emailRecipients []string
 	for _, notifier := range rep.Spec.Notifiers {
 		if notifier.Connector == "email" {
 			emailRecipients = pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
+		} else {
+			anonRecipients = true
 		}
 	}
 
-	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, ownerID, emailRecipients, t)
+	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, ownerID, explore, canvas, webOpenMode, emailRecipients, anonRecipients, t)
 	if err != nil {
 		return false, fmt.Errorf("failed to get report metadata: %w", err)
-	}
-
-	internalUsersExportURL, err := createExportURL(meta.BaseURLs.ExportURL, rep.Spec.ExportFormat.String(), t, int(rep.Spec.ExportLimit))
-	if err != nil {
-		return false, err
 	}
 
 	sent := false
@@ -429,23 +470,19 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 					ReportTime:     t,
 					DownloadFormat: formatExportFormat(rep.Spec.ExportFormat),
 				}
-				openURL := meta.BaseURLs.OpenURL
-				exportURL := internalUsersExportURL.String()
-				editURL := meta.BaseURLs.EditURL
-				if urls, ok := meta.RecipientURLs[recipient]; ok {
-					openURL = urls.OpenURL
-					editURL = urls.EditURL
-					u, err := createExportURL(urls.ExportURL, rep.Spec.ExportFormat.String(), t, int(rep.Spec.ExportLimit))
-					if err != nil {
-						return false, err
-					}
-					exportURL = u.String()
-					opts.External = true
+				urls, ok := meta.RecipientURLs[recipient]
+				if !ok {
+					return false, fmt.Errorf("failed to get recipient URLs for %q", recipient)
 				}
-				opts.OpenLink = openURL
-				opts.DownloadLink = exportURL
-				opts.EditLink = editURL
-				err := r.C.Runtime.Email.SendScheduledReport(opts)
+				opts.OpenLink = urls.OpenURL
+				u, err := createExportURL(urls.ExportURL, rep.Spec.ExportFormat.String(), t, int(rep.Spec.ExportLimit))
+				if err != nil {
+					return false, err
+				}
+				opts.DownloadLink = u.String()
+				opts.EditLink = urls.EditURL
+				opts.UnsubscribeLink = urls.UnsubscribeURL
+				err = r.C.Runtime.Email.SendScheduledReport(opts)
 				sent = true
 				if err != nil {
 					return true, fmt.Errorf("failed to generate report for %q: %w", recipient, err)
@@ -462,13 +499,21 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 				if err != nil {
 					return err
 				}
+				urls, ok := meta.RecipientURLs[""]
+				if !ok {
+					return fmt.Errorf("failed to get recipient URLs for anon user")
+				}
+				u, err := createExportURL(urls.ExportURL, rep.Spec.ExportFormat.String(), t, int(rep.Spec.ExportLimit))
+				if err != nil {
+					return err
+				}
 				msg := &drivers.ScheduledReport{
-					DisplayName:    rep.Spec.DisplayName,
-					ReportTime:     t,
-					DownloadFormat: formatExportFormat(rep.Spec.ExportFormat),
-					OpenLink:       meta.BaseURLs.OpenURL,
-					DownloadLink:   internalUsersExportURL.String(),
-					EditLink:       meta.BaseURLs.EditURL,
+					DisplayName:     rep.Spec.DisplayName,
+					ReportTime:      t,
+					DownloadFormat:  formatExportFormat(rep.Spec.ExportFormat),
+					OpenLink:        urls.OpenURL,
+					DownloadLink:    u.String(),
+					UnsubscribeLink: urls.UnsubscribeURL,
 				}
 				start := time.Now()
 				defer func() {
