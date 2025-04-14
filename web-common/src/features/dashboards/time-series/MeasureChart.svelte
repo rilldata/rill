@@ -56,7 +56,7 @@
   export let zone: string;
 
   export let showComparison = false;
-  export let isInTimeDimensionView: boolean;
+  export let showTimeDimensionDetail: boolean;
   export let data;
   export let dimensionData: DimensionDataItem[] = [];
   export let xAccessor = "ts";
@@ -257,7 +257,7 @@
     on:scrub-move={(e) => scrub?.moveScrub(e)}
     on:scrub-start={(e) => scrub?.startScrub(e)}
     overflowHidden={false}
-    right={isInTimeDimensionView ? 20 : 40}
+    right={showTimeDimensionDetail ? 20 : 40}
     shareYScale={false}
     top={4}
     {width}

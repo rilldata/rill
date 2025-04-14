@@ -442,7 +442,7 @@ func DuckDBCopyExport(ctx context.Context, w io.Writer, opts *runtime.ExportOpti
 		sql += " (FORMAT CSV, HEADER)"
 	}
 
-	rows, err := olap.Execute(ctx, &drivers.Statement{
+	rows, err := olap.Query(ctx, &drivers.Statement{
 		Query:            sql,
 		Args:             args,
 		Priority:         opts.Priority,

@@ -21,6 +21,7 @@ import {
   type MetricsViewSpecDimension,
   type MetricsViewSpecMeasure,
   TypeCode,
+  V1ExploreComparisonMode,
   type V1ExplorePreset,
   V1ExploreSortType,
   type V1ExploreSpec,
@@ -196,6 +197,11 @@ export const AD_BIDS_METRICS_3_MEASURES_DIMENSIONS: V1MetricsViewSpec = {
   dimensions: AD_BIDS_THREE_DIMENSIONS,
   timeDimension: AD_BIDS_TIMESTAMP_DIMENSION,
 };
+export const AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME: V1MetricsViewSpec =
+  {
+    ...AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+    timeDimension: AD_BIDS_TIMESTAMP_DIMENSION,
+  };
 
 export const AD_BIDS_EXPLORE_INIT: V1ExploreSpec = {
   displayName: AD_BIDS_EXPLORE_NAME,
@@ -236,11 +242,18 @@ export const AD_BIDS_EXPLORE_WITH_BOOL_DIMENSION: V1ExploreSpec = {
     AD_BIDS_PUBLISHER_IS_NULL_DOMAIN,
   ],
 };
+export const AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS: V1ExploreSpec = {
+  displayName: AD_BIDS_EXPLORE_NAME,
+  metricsView: AD_BIDS_METRICS_NAME,
+  measures: AD_BIDS_THREE_MEASURES.map((m) => m.name!),
+  dimensions: AD_BIDS_THREE_DIMENSIONS.map((d) => d.name!),
+};
 
 export const AD_BIDS_PRESET: V1ExplorePreset = {
   timeRange: "P7D",
   timezone: "Asia/Kathmandu",
   compareTimeRange: "rill-PP",
+  comparisonMode: V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME,
   measures: [AD_BIDS_IMPRESSIONS_MEASURE],
   dimensions: [AD_BIDS_PUBLISHER_DIMENSION],
   exploreSortBy: AD_BIDS_IMPRESSIONS_MEASURE,
@@ -370,7 +383,6 @@ export const CUSTOM_TEST_CONTROLS = {
 export const AD_BIDS_PIVOT_ENTITY: Partial<MetricsExplorerEntity> = {
   activePage: DashboardState_ActivePage.PIVOT,
   pivot: {
-    active: true,
     rows: [
       {
         id: AD_BIDS_PUBLISHER_DIMENSION,

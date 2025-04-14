@@ -6,6 +6,8 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 func init() {
@@ -32,6 +34,15 @@ func newBuiltinSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 	args := &builtinSQLArgs{}
 	if err := mapstructure.Decode(opts.Args, args); err != nil {
 		return nil, err
+	}
+
+	// Set the span attributes
+	span := trace.SpanFromContext(ctx)
+	if span.SpanContext().IsValid() {
+		span.SetAttributes(
+			attribute.String("sql", args.SQL),
+			attribute.String("connector", args.Connector),
+		)
 	}
 
 	// Rewrite to the regular SQL resolver

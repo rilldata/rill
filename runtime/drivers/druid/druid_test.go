@@ -16,7 +16,7 @@ import (
 func TestScan(t *testing.T) {
 	_, olap := acquireTestDruid(t)
 
-	rows, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT 1, 'hello world', true, null, CAST('2024-01-01T00:00:00Z' AS TIMESTAMP)"})
+	rows, err := olap.Query(context.Background(), &drivers.Statement{Query: "SELECT 1, 'hello world', true, null, CAST('2024-01-01T00:00:00Z' AS TIMESTAMP)"})
 	require.NoError(t, err)
 
 	var i int

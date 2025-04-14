@@ -6,8 +6,14 @@ import {
   type V1CanvasSpec,
   type V1ComponentSpec,
   type V1MetricsViewSpec,
+  type V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import { derived, get, type Readable } from "svelte/store";
+import {
+  ResourceKind,
+  useFilteredResources,
+} from "../../entity-management/resource-selectors";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
 export class CanvasResolvedSpec {
   canvasSpec: Readable<V1CanvasSpec | undefined>;
@@ -15,9 +21,10 @@ export class CanvasResolvedSpec {
   isLoading: Readable<boolean>;
   metricViewNames: Readable<string[]>;
 
-  getMetricsViewFromName: (
-    metricViewName: string,
-  ) => Readable<V1MetricsViewSpec | undefined>;
+  getMetricsViewFromName: (metricViewName: string) => Readable<{
+    metricsView: V1MetricsViewSpec | undefined;
+    isLoading: boolean;
+  }>;
   /** Measure Selectors */
   getMeasuresForMetricView: (
     metricViewName: string,
@@ -58,6 +65,10 @@ export class CanvasResolvedSpec {
     componentName: string,
   ) => Readable<V1ComponentSpec | undefined>;
 
+  allMetricsViews: ReturnType<
+    typeof useFilteredResources<Array<V1Resource | undefined>>
+  >;
+
   constructor(validSpecStore: CanvasSpecResponseStore) {
     this.canvasSpec = derived(validSpecStore, ($validSpecStore) => {
       return $validSpecStore.data?.canvas;
@@ -69,6 +80,11 @@ export class CanvasResolvedSpec {
 
     this.metricViewNames = derived(validSpecStore, ($validSpecStore) =>
       Object.keys($validSpecStore?.data?.metricsViews || {}),
+    );
+
+    this.allMetricsViews = useFilteredResources(
+      get(runtime).instanceId,
+      ResourceKind.MetricsView,
     );
 
     this.components = derived(validSpecStore, ($validSpecStore) => {
@@ -85,10 +101,13 @@ export class CanvasResolvedSpec {
     });
 
     this.getMetricsViewFromName = (metricViewName: string) =>
-      derived(validSpecStore, ($validSpecStore) => {
-        const metricsView = $validSpecStore.data?.metricsViews[metricViewName];
-        if (!metricsView) return;
-        return metricsView.state?.validSpec;
+      derived(this.allMetricsViews, ($metricsViews) => {
+        return {
+          metricsView: $metricsViews?.data?.find(
+            (res) => res?.meta?.name?.name === metricViewName,
+          )?.metricsView?.state?.validSpec,
+          isLoading: $metricsViews?.isLoading,
+        };
       });
 
     this.getMeasuresForMetricView = (metricViewName: string) =>
@@ -213,32 +232,6 @@ export class CanvasResolvedSpec {
       });
     };
   }
-
-  getComponentNameFromPos = (pos: {
-    row: number;
-    column: number;
-  }): Readable<string | undefined> => {
-    return derived(this.canvasSpec, (canvasSpec) => {
-      const componentName =
-        canvasSpec?.rows?.[pos.row]?.items?.[pos.column]?.component;
-      if (!componentName) return undefined;
-      return componentName;
-    });
-  };
-
-  getComponentFromIndex = (pos: {
-    row: number;
-    column: number;
-  }): Readable<V1ComponentSpec | undefined> => {
-    const componentName = this.getComponentNameFromPos(pos);
-    return derived(
-      [componentName, this.components],
-      ([componentName, components]) => {
-        if (!componentName) return undefined;
-        return components[componentName];
-      },
-    );
-  };
 
   getDimensionsFromMeasure = (
     measureName: string,

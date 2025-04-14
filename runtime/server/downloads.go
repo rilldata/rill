@@ -225,9 +225,11 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 		}
 
 		q = &queries.TableHead{
-			TableName: r.TableName,
-			Limit:     int(r.Limit),
-			Result:    nil,
+			Connector:      r.Connector,
+			Database:       r.Database,
+			DatabaseSchema: r.DatabaseSchema,
+			TableName:      r.TableName,
+			Limit:          int(r.Limit),
 		}
 	default:
 		http.Error(w, fmt.Sprintf("unsupported request type: %s", reflect.TypeOf(v).Name()), http.StatusBadRequest)

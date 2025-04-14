@@ -25,7 +25,7 @@ func TestExecute(t *testing.T) {
 	require.True(t, ok)
 
 	// Create test table with all types
-	result, err := olap.Execute(context.Background(), &drivers.Statement{
+	result, err := olap.Query(context.Background(), &drivers.Statement{
 		Query: `CREATE TABLE all_types (
 			id INTEGER PRIMARY KEY,
 			small_int SMALLINT,
@@ -113,7 +113,7 @@ func TestExecute(t *testing.T) {
 		require.True(t, stat.Size() > 0)
 
 		// Read back and verify contents
-		compareResult, err := olap.Execute(context.Background(), &drivers.Statement{
+		compareResult, err := olap.Query(context.Background(), &drivers.Statement{
 			Query: fmt.Sprintf(`
 				WITH 
 				actual AS (SELECT * FROM read_csv_auto('%s')),

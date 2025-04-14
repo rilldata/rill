@@ -149,7 +149,7 @@ export function createStateManagers({
       return getDefaultExplorePreset(
         validSpec.data?.explore ?? {},
         validSpec.data.metricsView ?? {},
-        timeRangeSummary.data,
+        timeRangeSummary.data?.timeRangeSummary,
       );
     },
   );

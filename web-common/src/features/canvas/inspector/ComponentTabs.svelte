@@ -1,18 +1,12 @@
 <script lang="ts">
   import type { CanvasComponentType } from "@rilldata/web-common/features/canvas/components/types";
-  import {
-    getComponentRegistry,
-    isChartComponentType,
-  } from "@rilldata/web-common/features/canvas/components/util";
-  import { hasComponentFilters } from "@rilldata/web-common/features/canvas/inspector/util";
+  import { isChartComponentType } from "@rilldata/web-common/features/canvas/components/util";
   import Tab from "@rilldata/web-common/features/dashboards/tab-bar/Tab.svelte";
   import { onMount } from "svelte";
 
   export let currentTab = "options";
   export let componentType: CanvasComponentType;
-
-  const componentsRegistry = getComponentRegistry();
-  $: hasFilters = hasComponentFilters(componentsRegistry[componentType]);
+  export let hasFilters: boolean;
 
   const tabs = [
     {

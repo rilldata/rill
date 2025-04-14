@@ -45,7 +45,6 @@ import type { SortingState } from "@tanstack/svelte-table";
 
 /**
  * Converts a V1ExplorePreset to our internal metrics explore state.
- * V1ExplorePreset could come from url state, bookmark, alert or report.
  */
 export function convertPresetToExploreState(
   metricsView: V1MetricsViewSpec,
@@ -148,6 +147,7 @@ function fromTimeRangesParams(
     preset.comparisonMode ===
     V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
   ) {
+    partialExploreState.selectedComparisonTimeRange = undefined;
     partialExploreState.showTimeComparison = true;
   }
 
@@ -170,6 +170,11 @@ function fromTimeRangesParams(
         getSingleFieldError("compare dimension", preset.comparisonDimension),
       );
     }
+  } else if (
+    preset.comparisonMode !==
+    V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_DIMENSION
+  ) {
+    partialExploreState.selectedComparisonDimension = "";
   }
 
   if (preset.selectTimeRange) {
@@ -421,13 +426,12 @@ function fromPivotUrlParams(
     hasSomePivotFields = true;
   }
 
-  const pivotIsActive = preset.view === V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT;
+  const showPivot = preset.view === V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT;
 
-  if (!hasSomePivotFields && !pivotIsActive) {
+  if (!hasSomePivotFields && !showPivot) {
     return {
       partialExploreState: {
         pivot: {
-          active: false,
           rows: [],
           columns: [],
           sorting: [],
@@ -470,7 +474,6 @@ function fromPivotUrlParams(
   return {
     partialExploreState: {
       pivot: {
-        active: pivotIsActive,
         rows: rowDimensions,
         columns: colChips,
         sorting,

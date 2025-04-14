@@ -51,7 +51,7 @@ func Test_connection_CreateTableAsSelect(t *testing.T) {
 		t.Run(tt.testName, func(t *testing.T) {
 			_, err := tt.c.CreateTableAsSelect(ctx, tt.name, sql, &drivers.CreateTableOptions{View: tt.view})
 			require.NoError(t, err)
-			res, err := tt.c.Execute(ctx, &drivers.Statement{Query: fmt.Sprintf("SELECT count(*) FROM %q", tt.name)})
+			res, err := tt.c.Query(ctx, &drivers.Statement{Query: fmt.Sprintf("SELECT count(*) FROM %q", tt.name)})
 			require.NoError(t, err)
 			require.True(t, res.Next())
 			var count int
@@ -60,7 +60,7 @@ func Test_connection_CreateTableAsSelect(t *testing.T) {
 			require.NoError(t, res.Close())
 
 			if tt.tableAsView {
-				res, err := tt.c.Execute(ctx, &drivers.Statement{Query: fmt.Sprintf("SELECT count(*) FROM information_schema.tables WHERE table_name='%s' AND table_type='VIEW'", tt.name)})
+				res, err := tt.c.Query(ctx, &drivers.Statement{Query: fmt.Sprintf("SELECT count(*) FROM information_schema.tables WHERE table_name='%s' AND table_type='VIEW'", tt.name)})
 				require.NoError(t, err)
 				require.True(t, res.Next())
 				var count int
@@ -90,7 +90,7 @@ func Test_connection_CreateTableAsSelectMultipleTimes(t *testing.T) {
 	_, err = c.CreateTableAsSelect(context.Background(), "test-select-multiple", "select fail query", &drivers.CreateTableOptions{})
 	require.Error(t, err)
 
-	res, err := c.Execute(context.Background(), &drivers.Statement{Query: fmt.Sprintf("SELECT * FROM %q", "test-select-multiple")})
+	res, err := c.Query(context.Background(), &drivers.Statement{Query: fmt.Sprintf("SELECT * FROM %q", "test-select-multiple")})
 	require.NoError(t, err)
 	require.True(t, res.Next())
 	var name string
@@ -115,7 +115,7 @@ func Test_connection_DropTable(t *testing.T) {
 	err = c.DropTable(context.Background(), "test-drop")
 	require.NoError(t, err)
 
-	res, err := c.Execute(context.Background(), &drivers.Statement{Query: "SELECT count(*) FROM information_schema.tables WHERE table_name='test-drop' AND table_type='VIEW'"})
+	res, err := c.Query(context.Background(), &drivers.Statement{Query: "SELECT count(*) FROM information_schema.tables WHERE table_name='test-drop' AND table_type='VIEW'"})
 	require.NoError(t, err)
 	require.True(t, res.Next())
 	var count int
@@ -152,7 +152,7 @@ func Test_connection_InsertTableAsSelect_WithAppendStrategy(t *testing.T) {
 	_, err = c.InsertTableAsSelect(context.Background(), "test-insert", "select 3", opts)
 	require.Error(t, err)
 
-	res, err := c.Execute(context.Background(), &drivers.Statement{Query: "SELECT count(*) FROM 'test-insert'"})
+	res, err := c.Query(context.Background(), &drivers.Statement{Query: "SELECT count(*) FROM 'test-insert'"})
 	require.NoError(t, err)
 	require.True(t, res.Next())
 	var count int
@@ -183,7 +183,7 @@ func Test_connection_InsertTableAsSelect_WithMergeStrategy(t *testing.T) {
 	_, err = c.InsertTableAsSelect(context.Background(), "test-merge", "SELECT range, 'merge' AS strategy FROM range(2, 4)", opts)
 	require.NoError(t, err)
 
-	res, err := c.Execute(context.Background(), &drivers.Statement{Query: "SELECT range, strategy FROM 'test-merge' ORDER BY range"})
+	res, err := c.Query(context.Background(), &drivers.Statement{Query: "SELECT range, strategy FROM 'test-merge' ORDER BY range"})
 	require.NoError(t, err)
 
 	var results []struct {
@@ -228,7 +228,7 @@ func Test_connection_RenameTable(t *testing.T) {
 	err = c.RenameTable(context.Background(), "test-rename", "rename-test")
 	require.NoError(t, err)
 
-	res, err := c.Execute(context.Background(), &drivers.Statement{Query: "SELECT count(*) FROM 'rename-test'"})
+	res, err := c.Query(context.Background(), &drivers.Statement{Query: "SELECT count(*) FROM 'rename-test'"})
 	require.NoError(t, err)
 	require.True(t, res.Next())
 	var count int
@@ -254,7 +254,7 @@ func Test_connection_RenameToExistingTable(t *testing.T) {
 	err = c.RenameTable(context.Background(), "_tmp_source", "source")
 	require.NoError(t, err)
 
-	res, err := c.Execute(context.Background(), &drivers.Statement{Query: "SELECT * FROM 'source'"})
+	res, err := c.Query(context.Background(), &drivers.Statement{Query: "SELECT * FROM 'source'"})
 	require.NoError(t, err)
 	require.True(t, res.Next())
 	var num int
@@ -276,7 +276,7 @@ func Test_connection_AddTableColumn(t *testing.T) {
 	_, err = c.CreateTableAsSelect(context.Background(), "test alter column", "select 1 as data", &drivers.CreateTableOptions{})
 	require.NoError(t, err)
 
-	res, err := c.Execute(context.Background(), &drivers.Statement{Query: "SELECT data_type FROM information_schema.columns WHERE table_name='test alter column'"})
+	res, err := c.Query(context.Background(), &drivers.Statement{Query: "SELECT data_type FROM information_schema.columns WHERE table_name='test alter column'"})
 	require.NoError(t, err)
 	require.True(t, res.Next())
 	var typ string
@@ -287,7 +287,7 @@ func Test_connection_AddTableColumn(t *testing.T) {
 	err = c.AlterTableColumn(context.Background(), "test alter column", "data", "VARCHAR")
 	require.NoError(t, err)
 
-	res, err = c.Execute(context.Background(), &drivers.Statement{Query: "SELECT data_type FROM information_schema.columns WHERE table_name='test alter column' AND table_schema=current_schema()"})
+	res, err = c.Query(context.Background(), &drivers.Statement{Query: "SELECT data_type FROM information_schema.columns WHERE table_name='test alter column' AND table_schema=current_schema()"})
 	require.NoError(t, err)
 	require.True(t, res.Next())
 	require.NoError(t, res.Scan(&typ))
@@ -311,7 +311,7 @@ func Test_connection_RenameToExistingTableOld(t *testing.T) {
 	err = c.RenameTable(context.Background(), "_tmp_source", "source")
 	require.NoError(t, err)
 
-	res, err := c.Execute(context.Background(), &drivers.Statement{Query: "SELECT * FROM 'source'"})
+	res, err := c.Query(context.Background(), &drivers.Statement{Query: "SELECT * FROM 'source'"})
 	require.NoError(t, err)
 	require.True(t, res.Next())
 	var num int
@@ -355,7 +355,7 @@ func Test_connection_CreateTableAsSelectWithComments(t *testing.T) {
 }
 
 func verifyCount(t *testing.T, c *connection, table string, expected int) {
-	res, err := c.Execute(context.Background(), &drivers.Statement{Query: fmt.Sprintf("SELECT count(*) from %s", table)})
+	res, err := c.Query(context.Background(), &drivers.Statement{Query: fmt.Sprintf("SELECT count(*) from %s", table)})
 	require.NoError(t, err)
 	require.True(t, res.Next())
 	var count int
