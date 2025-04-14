@@ -52,7 +52,7 @@ jobs:
       - name: lint and type checks for web local
         if: steps.filter.outputs.local == 'true'
         run: |-
-          npx eslint web-local/src --quiet
+          NODE_OPTIONS='--max-old-space-size=4096' npx eslint web-local/src --quiet
           npx eslint web-local/tests --quiet
           npm run check -w web-local
 
