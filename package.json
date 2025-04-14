@@ -39,5 +39,8 @@
     "*.{svelte,ts}": [
       "prettier --write"
     ]
+  },
+  "overrides": {
+    "@sveltejs/vite-plugin-svelte": "^3.1.2"
   }
 }
