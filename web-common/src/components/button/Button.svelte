@@ -41,6 +41,7 @@
   export let gray = false;
   export let danger = false;
   export let preload = true;
+  export let highlight = false;
   export let loadingCopy = "Loading";
   // needed to set certain style that could be overridden by the style block in this component
   export let forcedStyle = "";
@@ -73,6 +74,7 @@
   class:wide
   class:compact
   class:rounded
+  class:highlight
   class:!w-fit={fit}
   class:whitespace-nowrap={noWrap}
   class:danger={status === "error" || danger}
@@ -373,6 +375,11 @@
 
   .dashed {
     @apply border border-dashed;
+  }
+
+  /* TODO: variants for types like danger */
+  .highlight {
+    @apply bg-primary-100;
   }
 
   /* ADD BUTTON STYLES */

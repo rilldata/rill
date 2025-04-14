@@ -1,46 +1,102 @@
 <script lang="ts">
-  import { getHomeBookmarkButtonUrl } from "@rilldata/web-admin/features/bookmarks/selectors";
+  import { page } from "$app/stores";
+  import BookmarkItem from "@rilldata/web-admin/features/bookmarks/BookmarksDropdownMenuItem.svelte";
+  import { type BookmarkEntry } from "@rilldata/web-admin/features/bookmarks/selectors";
   import { Button } from "@rilldata/web-common/components/button";
+  import {
+    DropdownMenu,
+    DropdownMenuTrigger,
+    DropdownMenuContent,
+    DropdownMenuItem,
+  } from "@rilldata/web-common/components/dropdown-menu";
   import HomeBookmark from "@rilldata/web-common/components/icons/HomeBookmark.svelte";
+  import HomeBookmarkPlus from "@rilldata/web-common/components/icons/HomeBookmarkPlus.svelte";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import { clearExploreSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   export let organization: string;
-  export let projectId: string;
   export let project: string;
-  export let metricsViewName: string;
   export let exploreName: string;
+  export let homeBookmark: BookmarkEntry | undefined;
+  export let manageProject: boolean;
+  export let onCreate: () => void;
+  export let onEdit: (bookmark: BookmarkEntry) => void;
+  export let onDelete: (bookmark: BookmarkEntry) => Promise<void>;
 
-  $: ({ instanceId } = $runtime);
-
-  $: homeBookmarkUrl = getHomeBookmarkButtonUrl(
-    projectId,
-    instanceId,
-    metricsViewName,
-    exploreName,
-  );
+  $: homeBookmarkUrl = homeBookmark?.url ?? "";
 
   function goToDashboardHome() {
     // Without clearing sessions empty, DashboardStateDataLoader will load from session for explore view
     clearExploreSessionStore(exploreName, `${organization}__${project}__`);
   }
+
+  $: isHomeBookmarkActive = homeBookmark?.url === $page.url.toString();
+
+  let open = false;
 </script>
 
-<Tooltip.Root portal="body">
-  <Tooltip.Trigger asChild let:builder>
-    <Button
-      type="secondary"
-      compact
-      preload={false}
-      href={$homeBookmarkUrl}
-      on:click={goToDashboardHome}
-      class="border border-primary-300"
-      builders={[builder]}
-      label="Go to home bookmark"
-    >
-      <HomeBookmark size="16px" />
-    </Button>
-  </Tooltip.Trigger>
-  <Tooltip.Content side="bottom">Return to dashboard home</Tooltip.Content>
-</Tooltip.Root>
+{#if manageProject}
+  <DropdownMenu bind:open typeahead={false}>
+    <DropdownMenuTrigger asChild let:builder>
+      <Button
+        builders={[builder]}
+        compact
+        type="secondary"
+        label="Bookmark dropdown"
+        highlight={open || isHomeBookmarkActive}
+      >
+        <HomeBookmark
+          size="16px"
+          className={isHomeBookmarkActive
+            ? "text-primary-600"
+            : "text-primary-800"}
+        />
+      </Button>
+    </DropdownMenuTrigger>
+    <DropdownMenuContent class="w-[330px]">
+      <DropdownMenuItem on:click={onCreate}>
+        <div class="flex flex-row gap-x-2">
+          <HomeBookmarkPlus size="16px" />
+          <div>
+            <div class="text-xs font-medium text-gray-700 h-4">
+              Bookmark current view as Home.
+            </div>
+            <div class="text-[11px] font-normal text-gray-500 h-4">
+              This will be everyone’s main view for this dashboard.
+            </div>
+          </div>
+        </div>
+      </DropdownMenuItem>
+      <BookmarkItem
+        bookmark={homeBookmark}
+        {onEdit}
+        {onDelete}
+        readOnly={!manageProject}
+      />
+    </DropdownMenuContent>
+  </DropdownMenu>
+{:else}
+  <Tooltip.Root portal="body">
+    <Tooltip.Trigger asChild let:builder>
+      <Button
+        type="secondary"
+        compact
+        preload={false}
+        href={homeBookmarkUrl}
+        on:click={goToDashboardHome}
+        class="border border-primary-300"
+        builders={[builder]}
+        label="Go to home bookmark"
+        highlight={isHomeBookmarkActive}
+      >
+        <HomeBookmark
+          size="16px"
+          className={isHomeBookmarkActive
+            ? "text-primary-600"
+            : "text-primary-800"}
+        />
+      </Button>
+    </Tooltip.Trigger>
+    <Tooltip.Content side="bottom">Return to dashboard home</Tooltip.Content>
+  </Tooltip.Root>
+{/if}

@@ -223,13 +223,12 @@ export function getHomeBookmarkButtonUrl(
       homeBookmarkExploreState,
       pageState,
     ]) => {
-      const baseUrlPath = pageState.url.pathname;
       if (
         !exploreSpecResp.data?.metricsView ||
         !exploreSpecResp.data?.explore ||
         !homeBookmarkExploreState.data
       ) {
-        return baseUrlPath;
+        return "";
       }
 
       const exploreSpec = exploreSpecResp.data.explore;
@@ -259,8 +258,8 @@ export function getHomeBookmarkButtonUrl(
         timeControlState,
         defaultExploreUrlParams,
         url,
-      ).toString();
-      return `${baseUrlPath}?${homeBookmarkURLParams}`;
+      );
+      return homeBookmarkURLParams.toString();
     },
   );
 }
@@ -364,4 +363,21 @@ export function isBookmarkActive(entry: BookmarkEntry, curUrl: URL) {
   }
 
   return bookmarkUrl.search === curUrl.search;
+}
+
+export function someNonHomeBookmarkIsActive(
+  categorizeBookmarks: Bookmarks,
+  pageUrl: URL,
+) {
+  const someSharedBookmarkActive = categorizeBookmarks.shared.some((bookmark) =>
+    isBookmarkActive(bookmark, pageUrl),
+  );
+  if (someSharedBookmarkActive) return true;
+
+  const somePersonalBookmarkActive = categorizeBookmarks.personal.some(
+    (bookmark) => isBookmarkActive(bookmark, pageUrl),
+  );
+  if (somePersonalBookmarkActive) return true;
+
+  return false;
 }
