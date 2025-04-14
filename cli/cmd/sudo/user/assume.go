@@ -81,7 +81,7 @@ func AssumeCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// Set the representing user token expiry
-			err = ch.DotRill.SetRepresentingUserAccessTokenExpiry(&expiry)
+			err = ch.DotRill.SetRepresentingUserAccessTokenExpiry(expiry)
 			if err != nil {
 				return err
 			}

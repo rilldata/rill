@@ -209,23 +209,22 @@ func TestRepresentingUserAccessTokenExpiry(t *testing.T) {
 	// Test empty expiry
 	expiry, err := d.GetRepresentingUserAccessTokenExpiry()
 	require.NoError(t, err)
-	require.Nil(t, expiry)
+	require.Zero(t, expiry)
 
 	// Test setting and getting a valid expiry
 	now := time.Now().Add(1 * time.Hour)
-	err = d.SetRepresentingUserAccessTokenExpiry(&now)
+	err = d.SetRepresentingUserAccessTokenExpiry(now)
 	require.NoError(t, err)
 
 	expiry, err = d.GetRepresentingUserAccessTokenExpiry()
 	require.NoError(t, err)
-	require.NotNil(t, expiry)
 	require.True(t, expiry.Equal(now))
 
-	// Test setting and getting nil expiry
-	err = d.SetRepresentingUserAccessTokenExpiry(nil)
+	// Test setting and getting zero value expiry
+	err = d.SetRepresentingUserAccessTokenExpiry(time.Time{})
 	require.NoError(t, err)
 
 	expiry, err = d.GetRepresentingUserAccessTokenExpiry()
 	require.NoError(t, err)
-	require.Nil(t, expiry)
+	require.Zero(t, expiry)
 }

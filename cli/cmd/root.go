@@ -64,7 +64,7 @@ func Run(ctx context.Context, ver cmdutil.Version) {
 		expiryTime, err := ch.DotRill.GetRepresentingUserAccessTokenExpiry()
 		if err != nil {
 			ch.PrintfWarn("Could not parse token expiry %v\n\n", err)
-		} else if expiryTime != nil && time.Now().After(*expiryTime) {
+		} else if time.Now().After(expiryTime) {
 			// If the assumed user's token has expired, silently unassume and revert to the original user before executing the command.
 			err := sudouser.UnassumeUser(ctx, ch)
 			if err != nil {
