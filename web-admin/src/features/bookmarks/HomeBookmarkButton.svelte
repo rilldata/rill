@@ -8,6 +8,7 @@
     DropdownMenuTrigger,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuSeparator,
   } from "@rilldata/web-common/components/dropdown-menu";
   import HomeBookmark from "@rilldata/web-common/components/icons/HomeBookmark.svelte";
   import HomeBookmarkPlus from "@rilldata/web-common/components/icons/HomeBookmarkPlus.svelte";
@@ -20,17 +21,17 @@
   export let homeBookmark: BookmarkEntry | undefined;
   export let manageProject: boolean;
   export let onCreate: () => void;
-  export let onEdit: (bookmark: BookmarkEntry) => void;
   export let onDelete: (bookmark: BookmarkEntry) => Promise<void>;
 
-  $: homeBookmarkUrl = homeBookmark?.url ?? "";
+  $: homeBookmarkUrl =
+    homeBookmark?.url ??
+    `${$page.url.protocol}//${$page.url.host}${$page.url.pathname}`;
+  $: isHomeBookmarkActive = homeBookmarkUrl === $page.url.toString();
 
   function goToDashboardHome() {
     // Without clearing sessions empty, DashboardStateDataLoader will load from session for explore view
     clearExploreSessionStore(exploreName, `${organization}__${project}__`);
   }
-
-  $: isHomeBookmarkActive = homeBookmark?.url === $page.url.toString();
 
   let open = false;
 </script>
@@ -43,7 +44,7 @@
         compact
         type="secondary"
         label="Home bookmark dropdown"
-        highlight={open || isHomeBookmarkActive}
+        active={open || isHomeBookmarkActive}
       >
         <HomeBookmark
           size="16px"
@@ -67,13 +68,30 @@
           </div>
         </div>
       </DropdownMenuItem>
+      <DropdownMenuSeparator />
       {#if homeBookmark}
         <BookmarkItem
           bookmark={homeBookmark}
-          {onEdit}
           {onDelete}
           readOnly={!manageProject}
         />
+      {:else}
+        <DropdownMenuItem class="py-2">
+          <a
+            href={homeBookmarkUrl}
+            on:click={goToDashboardHome}
+            class="flex flex-row gap-x-2 w-full min-h-7"
+          >
+            <HomeBookmark size="16px" className="text-gray-700" />
+            <div class="flex flex-col gap-y-0.5">
+              <div
+                class="text-xs font-medium text-gray-700 h-4 text-ellipsis overflow-hidden"
+              >
+                Go to home
+              </div>
+            </div>
+          </a>
+        </DropdownMenuItem>
       {/if}
     </DropdownMenuContent>
   </DropdownMenu>
@@ -89,7 +107,7 @@
         class="border border-primary-300"
         builders={[builder]}
         label="Go to home bookmark"
-        highlight={isHomeBookmarkActive}
+        active={isHomeBookmarkActive}
       >
         <HomeBookmark
           size="16px"

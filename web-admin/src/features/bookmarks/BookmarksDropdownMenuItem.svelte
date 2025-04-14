@@ -16,12 +16,14 @@
   export let bookmark: BookmarkEntry;
   export let readOnly = false;
 
-  export let onEdit: (bookmark: BookmarkEntry) => void;
+  export let onClick: () => void = () => {};
+  export let onEdit: ((bookmark: BookmarkEntry) => void) | undefined =
+    undefined;
   export let onDelete: (bookmark: BookmarkEntry) => Promise<void>;
 
   function editBookmark(e) {
     e.skipSelection = true;
-    onEdit(bookmark);
+    onEdit?.(bookmark);
   }
 
   let disableDelete = false;
@@ -70,7 +72,11 @@
     tabindex="-1"
     aria-label={`${bookmark.resource.displayName ?? ""} Bookmark Entry`}
   >
-    <a href={bookmark.url} class="flex flex-row gap-x-2 w-full min-h-7">
+    <a
+      href={bookmark.url}
+      class="flex flex-row gap-x-2 w-full min-h-7"
+      on:click={onClick}
+    >
       <svelte:component this={icon} size="16px" className="text-gray-700" />
       <div class="flex flex-col gap-y-0.5">
         <div
@@ -90,12 +96,14 @@
     {#if !readOnly}
       <div class="flex flex-row justify-end gap-x-2 items-start w-20">
         {#if hovered}
-          <button
-            on:click={editBookmark}
-            class="bg-gray-100 hover:bg-primary-100 px-2 h-7 text-gray-400 hover:text-gray-500"
-          >
-            <EditIcon size="16px" />
-          </button>
+          {#if onEdit}
+            <button
+              on:click={editBookmark}
+              class="bg-gray-100 hover:bg-primary-100 px-2 h-7 text-gray-400 hover:text-gray-500"
+            >
+              <EditIcon size="16px" />
+            </button>
+          {/if}
           <button
             on:click={deleteBookmark}
             class="bg-gray-100 hover:bg-primary-100 px-2 h-7 text-gray-400 hover:text-gray-500"

@@ -127,10 +127,6 @@
   {exploreName}
   homeBookmark={categorizedBookmarks.home}
   onCreate={createHomeBookmark}
-  onEdit={(editingBookmark) => {
-    showDialog = true;
-    bookmark = editingBookmark;
-  }}
   onDelete={deleteBookmark}
   {manageProject}
 />
@@ -142,7 +138,7 @@
       compact
       type="secondary"
       label="Other bookmark dropdown"
-      highlight={open}
+      active={open}
     >
       <BookmarkIcon class="inline-flex" size="16px" />
     </Button>

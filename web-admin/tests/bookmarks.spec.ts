@@ -313,7 +313,9 @@ test.describe("Bookmarks", () => {
       const menuItem = adminPage.getByLabel("Home Bookmark Entry");
       await menuItem.hover();
       await menuItem.getByRole("button", { name: "Delete bookmark" }).click();
-      await expect(adminPage.getByText("Bookmark Home deleted")).toBeVisible();
+      await expect(
+        adminPage.getByText("Bookmark Go to home deleted"),
+      ).toBeVisible();
     });
 
     // TODO: verify editing home bookmark. since these are changing in a future feature, these tests should be part of that PR
