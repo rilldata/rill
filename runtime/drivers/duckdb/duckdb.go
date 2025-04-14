@@ -452,15 +452,15 @@ func (c *connection) reopenDB(ctx context.Context) error {
 	}
 	dbInitQueries = append(dbInitQueries,
 		"INSTALL 'json'",
-		"LOAD 'json'",
-		"INSTALL 'icu'",
-		"LOAD 'icu'",
-		"INSTALL 'parquet'",
-		"LOAD 'parquet'",
-		"INSTALL 'httpfs'",
-		"LOAD 'httpfs'",
 		"INSTALL 'sqlite'",
+		"INSTALL 'icu'",
+		"INSTALL 'parquet'",
+		"INSTALL 'httpfs'",
+		"LOAD 'json'",
 		"LOAD 'sqlite'",
+		"LOAD 'icu'",
+		"LOAD 'parquet'",
+		"LOAD 'httpfs'",
 		"SET GLOBAL timezone='UTC'",
 		"SET GLOBAL old_implicit_casting = true", // Implicit Cast to VARCHAR
 		"SET GLOBAL allow_community_extensions = false", // This locks the configuration, so it can't later be enabled.
@@ -496,6 +496,7 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		WriteSettings:   c.config.writeSettings(),
 		DBInitQueries:   dbInitQueries,
 		ConnInitQueries: connInitQueries,
+		LogQueries:      c.config.LogQueries,
 		Logger:          c.logger,
 		OtelAttributes:  []attribute.KeyValue{attribute.String("instance_id", c.instanceID)},
 	})

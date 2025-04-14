@@ -8,8 +8,8 @@ import { URI_DIMENSION_SUFFIX } from "@rilldata/web-common/features/dashboards/l
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
-  MetricsViewSpecDimensionV2,
-  MetricsViewSpecMeasureV2,
+  MetricsViewSpecDimension,
+  MetricsViewSpecMeasure,
   QueryServiceMetricsViewAggregationBody,
   V1Expression,
   V1MetricsViewAggregationMeasure,
@@ -21,7 +21,7 @@ import type { TimeControlState } from "./time-controls/time-control-store";
 const countRegex = /count(?=[^(]*\()/i;
 const sumRegex = /sum(?=[^(]*\()/i;
 
-export function isSummableMeasure(measure: MetricsViewSpecMeasureV2): boolean {
+export function isSummableMeasure(measure: MetricsViewSpecMeasure): boolean {
   const expression = measure.expression?.toLowerCase();
   return (
     !!(expression?.match(countRegex) || expression?.match(sumRegex)) ||
@@ -36,7 +36,7 @@ export function isSummableMeasure(measure: MetricsViewSpecMeasureV2): boolean {
  * are consistent in how we handle this.
  */
 export function getDimensionColumn(
-  dimension: MetricsViewSpecDimensionV2,
+  dimension: MetricsViewSpecDimension,
 ): string {
   return (dimension?.column || dimension?.name) as string;
 }

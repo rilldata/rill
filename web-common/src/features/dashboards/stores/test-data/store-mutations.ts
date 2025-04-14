@@ -157,6 +157,18 @@ export const AD_BIDS_SET_PREVIOUS_WEEK_COMPARE_TIME_RANGE_FILTER: TestDashboardM
 export const AD_BIDS_DISABLE_COMPARE_TIME_RANGE_FILTER: TestDashboardMutation =
   () => metricsExplorerStore.displayTimeComparison(AD_BIDS_EXPLORE_NAME, false);
 
+export const AD_BIDS_SET_PUBLISHER_COMPARE_DIMENSION: TestDashboardMutation =
+  () =>
+    metricsExplorerStore.setComparisonDimension(
+      AD_BIDS_EXPLORE_NAME,
+      AD_BIDS_PUBLISHER_DIMENSION,
+    );
+export const AD_BIDS_SET_DOMAIN_COMPARE_DIMENSION: TestDashboardMutation = () =>
+  metricsExplorerStore.setComparisonDimension(
+    AD_BIDS_EXPLORE_NAME,
+    AD_BIDS_DOMAIN_DIMENSION,
+  );
+
 export const AD_BIDS_TOGGLE_IMPRESSIONS_MEASURE_VISIBILITY: TestDashboardMutation =
   (mut) => {
     toggleMeasureVisibility(

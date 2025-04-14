@@ -450,7 +450,7 @@ func (s *Server) applyMetricsViewSecurity(r *runtimev1.Resource, security *runti
 		return r
 	}
 
-	mv = proto.Clone(mv).(*runtimev1.MetricsViewV2)
+	mv = proto.Clone(mv).(*runtimev1.MetricsView)
 
 	if specChanged {
 		mv.Spec.Dimensions = specDims
@@ -470,19 +470,19 @@ func (s *Server) applyMetricsViewSecurity(r *runtimev1.Resource, security *runti
 }
 
 // applyMetricsViewSpecSecurity rewrites a metrics view spec based on the field access conditions of a security policy.
-func (s *Server) applyMetricsViewSpecSecurity(spec *runtimev1.MetricsViewSpec, policy *runtime.ResolvedSecurity) ([]*runtimev1.MetricsViewSpec_DimensionV2, []*runtimev1.MetricsViewSpec_MeasureV2, bool) {
+func (s *Server) applyMetricsViewSpecSecurity(spec *runtimev1.MetricsViewSpec, policy *runtime.ResolvedSecurity) ([]*runtimev1.MetricsViewSpec_Dimension, []*runtimev1.MetricsViewSpec_Measure, bool) {
 	if spec == nil {
 		return nil, nil, false
 	}
 
-	var dims []*runtimev1.MetricsViewSpec_DimensionV2
+	var dims []*runtimev1.MetricsViewSpec_Dimension
 	for _, dim := range spec.Dimensions {
 		if policy.CanAccessField(dim.Name) {
 			dims = append(dims, dim)
 		}
 	}
 
-	var ms []*runtimev1.MetricsViewSpec_MeasureV2
+	var ms []*runtimev1.MetricsViewSpec_Measure
 	for _, m := range spec.Measures {
 		if policy.CanAccessField(m.Name) {
 			ms = append(ms, m)

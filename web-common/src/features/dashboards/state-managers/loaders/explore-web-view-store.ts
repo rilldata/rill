@@ -1,6 +1,7 @@
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
+import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
 import {
   ExploreUrlWebView,
@@ -14,7 +15,6 @@ import {
   V1ExploreWebView,
   type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
-import { convertExploreStateToURLSearchParams } from "web-common/src/features/dashboards/url-state/convertExploreStateToURLSearchParams";
 import { copyUrlSearchParamsForView } from "web-common/src/features/dashboards/url-state/explore-web-view-specific-url-params";
 
 export function getKeyForSessionStore(
@@ -45,11 +45,10 @@ export function updateExploreSessionStore(
   if (!curWebView) return;
 
   // Build the url search params for the entire state
-  const urlSearchParams = convertExploreStateToURLSearchParams(
-    exploreState,
+  const urlSearchParams = convertPartialExploreStateToUrlParams(
     exploreSpec,
+    exploreState,
     timeControlsState,
-    {},
   );
   try {
     // Store the full url for the web view

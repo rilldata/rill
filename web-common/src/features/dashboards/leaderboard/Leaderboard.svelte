@@ -3,7 +3,7 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
   import type {
-    MetricsViewSpecDimensionV2,
+    MetricsViewSpecDimension,
     V1Expression,
     V1MetricsViewAggregationMeasure,
     V1TimeRange,
@@ -23,6 +23,7 @@
     additionalMeasures,
     getFiltersForOtherDimensions,
   } from "../selectors";
+  import type { selectedDimensionValuesV2 } from "../state-managers/selectors/dimension-filters";
   import {
     createAndExpression,
     createOrExpression,
@@ -30,6 +31,7 @@
     sanitiseExpression,
   } from "../stores/filter-utils";
   import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
+  import DelayedLoadingRows from "./DelayedLoadingRows.svelte";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
   import LeaderboardRow from "./LeaderboardRow.svelte";
   import {
@@ -38,17 +40,12 @@
     getSort,
     prepareLeaderboardItemData,
   } from "./leaderboard-utils";
-  import { valueColumn, COMPARISON_COLUMN_WIDTH } from "./leaderboard-widths";
-  import DelayedLoadingRows from "./DelayedLoadingRows.svelte";
-  import type { selectedDimensionValuesV2 } from "../state-managers/selectors/dimension-filters";
+  import { COMPARISON_COLUMN_WIDTH, valueColumn } from "./leaderboard-widths";
 
-  const slice = 7;
   const gutterWidth = 24;
-  const queryLimit = 8;
-  const maxValuesToShow = 15;
 
   // FIXME: clean up `sortBy` and `activeMeasureName`
-  export let dimension: MetricsViewSpecDimensionV2;
+  export let dimension: MetricsViewSpecDimension;
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
   export let selectedValues: ReturnType<typeof selectedDimensionValuesV2>;
@@ -61,6 +58,7 @@
   export let metricsViewName: string;
   export let sortType: SortType;
   export let sortBy: string | null;
+  export let slice = 7;
   export let tableWidth: number;
   export let sortedAscending: boolean;
   export let isValidPercentOfTotal: (measureName: string) => boolean;
@@ -71,6 +69,8 @@
   export let parentElement: HTMLElement;
   export let suppressTooltip = false;
   export let leaderboardMeasureCountFeatureFlag: boolean;
+  export let allowExpandTable = true;
+  export let allowDimensionComparison = true;
   export let measureLabel: (measureName: string) => string;
   export let formatters: Record<
     string,
@@ -82,11 +82,11 @@
     keepPillVisible?: boolean | undefined,
     isExclusiveFilter?: boolean | undefined,
   ) => void;
-  export let setPrimaryDimension: (dimensionName: string) => void;
+  export let setPrimaryDimension: (dimensionName: string) => void = () => {};
   export let toggleSort: (sortType: DashboardState_LeaderboardSortType) => void;
   export let toggleComparisonDimension: (
     dimensionName: string | undefined,
-  ) => void;
+  ) => void = () => {};
 
   const observer = new IntersectionObserver(
     ([entry]) => {
@@ -106,6 +106,9 @@
   let container: HTMLElement;
   let visible = false;
   let hovered: boolean;
+
+  $: queryLimit = slice + 1;
+  $: maxValuesToShow = slice * 2;
 
   $: ({
     name: dimensionName = "",
@@ -334,6 +337,8 @@
     </colgroup>
 
     <LeaderboardHeader
+      {allowDimensionComparison}
+      {allowExpandTable}
       {hovered}
       displayName={displayName || dimensionName}
       dimensionDescription={description}
@@ -400,7 +405,7 @@
     </tbody>
   </table>
 
-  {#if showExpandTable}
+  {#if allowExpandTable && showExpandTable}
     <Tooltip location="right">
       <button
         class="transition-color ui-copy-muted table-message"

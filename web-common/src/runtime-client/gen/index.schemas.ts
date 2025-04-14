@@ -4,16 +4,6 @@
  * rill/runtime/v1/schema.proto
  * OpenAPI spec version: version not set
  */
-export type BucketExtractPolicyStrategy =
-  (typeof BucketExtractPolicyStrategy)[keyof typeof BucketExtractPolicyStrategy];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const BucketExtractPolicyStrategy = {
-  STRATEGY_UNSPECIFIED: "STRATEGY_UNSPECIFIED",
-  STRATEGY_HEAD: "STRATEGY_HEAD",
-  STRATEGY_TAIL: "STRATEGY_TAIL",
-} as const;
-
 export interface ColumnTimeSeriesRequestBasicMeasure {
   id?: string;
   expression?: string;
@@ -58,46 +48,7 @@ export interface MetricsViewSearchResponseSearchResult {
   value?: unknown;
 }
 
-/**
- * Deprecated: Now defined in the Explore resource.
- */
-export interface MetricsViewSpecAvailableComparisonOffset {
-  offset?: string;
-  /** Used to override the range for the comparison with something other than the selected range. */
-  range?: string;
-}
-
-/**
- * Deprecated: Now defined in the Explore resource.
- */
-export interface MetricsViewSpecAvailableTimeRange {
-  range?: string;
-  /** Available comparison offsets for this time range. */
-  comparisonOffsets?: MetricsViewSpecAvailableComparisonOffset[];
-}
-
-/**
- * DEPRECATED FIELDS
-Deprecated: Now defined in the Explore resource.
- */
-export type MetricsViewSpecComparisonMode =
-  (typeof MetricsViewSpecComparisonMode)[keyof typeof MetricsViewSpecComparisonMode];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const MetricsViewSpecComparisonMode = {
-  COMPARISON_MODE_UNSPECIFIED: "COMPARISON_MODE_UNSPECIFIED",
-  COMPARISON_MODE_NONE: "COMPARISON_MODE_NONE",
-  COMPARISON_MODE_TIME: "COMPARISON_MODE_TIME",
-  COMPARISON_MODE_DIMENSION: "COMPARISON_MODE_DIMENSION",
-} as const;
-
-export interface MetricsViewSpecDimensionSelector {
-  name?: string;
-  timeGrain?: V1TimeGrain;
-  desc?: boolean;
-}
-
-export interface MetricsViewSpecDimensionV2 {
+export interface MetricsViewSpecDimension {
   name?: string;
   displayName?: string;
   description?: string;
@@ -110,20 +61,15 @@ export interface MetricsViewSpecDimensionV2 {
   lookupValueColumn?: string;
 }
 
-export type MetricsViewSpecMeasureType =
-  (typeof MetricsViewSpecMeasureType)[keyof typeof MetricsViewSpecMeasureType];
+export interface MetricsViewSpecDimensionSelector {
+  name?: string;
+  timeGrain?: V1TimeGrain;
+  desc?: boolean;
+}
 
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const MetricsViewSpecMeasureType = {
-  MEASURE_TYPE_UNSPECIFIED: "MEASURE_TYPE_UNSPECIFIED",
-  MEASURE_TYPE_SIMPLE: "MEASURE_TYPE_SIMPLE",
-  MEASURE_TYPE_DERIVED: "MEASURE_TYPE_DERIVED",
-  MEASURE_TYPE_TIME_COMPARISON: "MEASURE_TYPE_TIME_COMPARISON",
-} as const;
+export type MetricsViewSpecMeasureFormatD3Locale = { [key: string]: unknown };
 
-export type MetricsViewSpecMeasureV2FormatD3Locale = { [key: string]: unknown };
-
-export interface MetricsViewSpecMeasureV2 {
+export interface MetricsViewSpecMeasure {
   name?: string;
   displayName?: string;
   description?: string;
@@ -135,10 +81,21 @@ export interface MetricsViewSpecMeasureV2 {
   referencedMeasures?: string[];
   formatPreset?: string;
   formatD3?: string;
-  formatD3Locale?: MetricsViewSpecMeasureV2FormatD3Locale;
+  formatD3Locale?: MetricsViewSpecMeasureFormatD3Locale;
   validPercentOfTotal?: boolean;
   treatNullsAs?: string;
 }
+
+export type MetricsViewSpecMeasureType =
+  (typeof MetricsViewSpecMeasureType)[keyof typeof MetricsViewSpecMeasureType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const MetricsViewSpecMeasureType = {
+  MEASURE_TYPE_UNSPECIFIED: "MEASURE_TYPE_UNSPECIFIED",
+  MEASURE_TYPE_SIMPLE: "MEASURE_TYPE_SIMPLE",
+  MEASURE_TYPE_DERIVED: "MEASURE_TYPE_DERIVED",
+  MEASURE_TYPE_TIME_COMPARISON: "MEASURE_TYPE_TIME_COMPARISON",
+} as const;
 
 export interface MetricsViewSpecMeasureWindow {
   partition?: boolean;
@@ -397,26 +354,6 @@ export interface V1BigQueryListDatasetsResponse {
 export interface V1BigQueryListTablesResponse {
   nextPageToken?: string;
   names?: string[];
-}
-
-export interface V1BucketExtractPolicy {
-  rowsStrategy?: BucketExtractPolicyStrategy;
-  rowsLimitBytes?: string;
-  filesStrategy?: BucketExtractPolicyStrategy;
-  filesLimit?: string;
-}
-
-export interface V1BucketPlanner {
-  spec?: V1BucketPlannerSpec;
-  state?: V1BucketPlannerState;
-}
-
-export interface V1BucketPlannerSpec {
-  extractPolicy?: V1BucketExtractPolicy;
-}
-
-export interface V1BucketPlannerState {
-  region?: string;
 }
 
 export type V1BuiltinMeasure =
@@ -703,8 +640,6 @@ export type V1ConnectorConfig = { [key: string]: string };
 
 export type V1ConnectorProvisionArgs = { [key: string]: unknown };
 
-export type V1ConnectorConfigFromVariables = { [key: string]: string };
-
 export interface V1Connector {
   /** Type of the connector. One of the infra driver supported. */
   type?: string;
@@ -713,7 +648,6 @@ export interface V1Connector {
   templatedProperties?: string[];
   provision?: boolean;
   provisionArgs?: V1ConnectorProvisionArgs;
-  configFromVariables?: V1ConnectorConfigFromVariables;
 }
 
 /**
@@ -742,21 +676,12 @@ export type V1ConnectorSpecProperties = { [key: string]: string };
 
 export type V1ConnectorSpecProvisionArgs = { [key: string]: unknown };
 
-/**
- * DEPRECATED: properties_from_variables stores properties whose value is a variable.
-NOTE : properties_from_variables and properties both should be used to get all properties.
- */
-export type V1ConnectorSpecPropertiesFromVariables = { [key: string]: string };
-
 export interface V1ConnectorSpec {
   driver?: string;
   properties?: V1ConnectorSpecProperties;
   templatedProperties?: string[];
   provision?: boolean;
   provisionArgs?: V1ConnectorSpecProvisionArgs;
-  /** DEPRECATED: properties_from_variables stores properties whose value is a variable.
-NOTE : properties_from_variables and properties both should be used to get all properties. */
-  propertiesFromVariables?: V1ConnectorSpecPropertiesFromVariables;
 }
 
 export interface V1ConnectorState {
@@ -1222,6 +1147,11 @@ export interface V1MapType {
   valueType?: Runtimev1Type;
 }
 
+export interface V1MetricsView {
+  spec?: V1MetricsViewSpec;
+  state?: V1MetricsViewState;
+}
+
 export interface V1MetricsViewAggregationDimension {
   name?: string;
   timeGrain?: V1TimeGrain;
@@ -1457,35 +1387,13 @@ export interface V1MetricsViewSpec {
   smallestTimeGrain?: V1TimeGrain;
   /** Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension). */
   watermarkExpression?: string;
-  dimensions?: MetricsViewSpecDimensionV2[];
-  measures?: MetricsViewSpecMeasureV2[];
+  dimensions?: MetricsViewSpecDimension[];
+  measures?: MetricsViewSpecMeasure[];
   securityRules?: V1SecurityRule[];
   /** ISO 8601 weekday number to use as the base for time aggregations by week. Defaults to 1 (Monday). */
   firstDayOfWeek?: number;
   /** Month number to use as the base for time aggregations by year. Defaults to 1 (January). */
   firstMonthOfYear?: number;
-  /** List of selected dimensions by defaults.
-Deprecated: Now defined in the Explore resource. */
-  defaultDimensions?: string[];
-  /** List of selected measures by defaults.
-Deprecated: Now defined in the Explore resource. */
-  defaultMeasures?: string[];
-  /** Default time range for the dashboard. It should be a valid ISO 8601 duration string.
-Deprecated: Now defined in the Explore resource. */
-  defaultTimeRange?: string;
-  defaultComparisonMode?: MetricsViewSpecComparisonMode;
-  /** If comparison mode is dimension then this determines which is the default dimension.
-Deprecated: Now defined in the Explore resource. */
-  defaultComparisonDimension?: string;
-  /** Default theme to apply.
-Deprecated: Now defined in the Explore resource. */
-  defaultTheme?: string;
-  /** List of available time ranges with comparison ranges that would replace the default list.
-Deprecated: Now defined in the Explore resource. */
-  availableTimeRanges?: MetricsViewSpecAvailableTimeRange[];
-  /** Available time zones list preferred time zones using IANA location identifiers.
-Deprecated: Now defined in the Explore resource. */
-  availableTimeZones?: string[];
   /** Cache controls for the metrics view. */
   cacheEnabled?: boolean;
   cacheKeySql?: string;
@@ -1578,11 +1486,6 @@ export interface V1MetricsViewTotalsResponse {
   data?: V1MetricsViewTotalsResponseData;
 }
 
-export interface V1MetricsViewV2 {
-  spec?: V1MetricsViewSpec;
-  state?: V1MetricsViewState;
-}
-
 export interface V1Migration {
   spec?: V1MigrationSpec;
   state?: V1MigrationState;
@@ -1596,6 +1499,11 @@ export interface V1MigrationSpec {
 
 export interface V1MigrationState {
   version?: number;
+}
+
+export interface V1Model {
+  spec?: V1ModelSpec;
+  state?: V1ModelState;
 }
 
 export type V1ModelPartitionData = { [key: string]: unknown };
@@ -1684,11 +1592,6 @@ This is not the time it took to refresh the model which also includes other stuf
   totalExecutionDurationMs?: string;
   /** latest_execution_duration_ms is the time user queries took to execute in the last successful refresh. */
   latestExecutionDurationMs?: string;
-}
-
-export interface V1ModelV2 {
-  spec?: V1ModelSpec;
-  state?: V1ModelState;
 }
 
 export type V1NotifierProperties = { [key: string]: unknown };
@@ -1789,22 +1692,6 @@ export interface V1ProjectParserState {
   currentCommitSha?: string;
   currentCommitOn?: string;
   watching?: boolean;
-}
-
-/**
- * DEPRECATED (2024-08-28): Use a RefreshTrigger that targets the project parser instead.
- */
-export interface V1PullTrigger {
-  spec?: V1PullTriggerSpec;
-  state?: V1PullTriggerState;
-}
-
-export interface V1PullTriggerSpec {
-  [key: string]: unknown;
-}
-
-export interface V1PullTriggerState {
-  [key: string]: unknown;
 }
 
 export interface V1PutFileResponse {
@@ -1996,16 +1883,14 @@ export interface V1ResolveComponentResponse {
 export interface V1Resource {
   meta?: V1ResourceMeta;
   projectParser?: V1ProjectParser;
-  source?: V1SourceV2;
-  model?: V1ModelV2;
-  metricsView?: V1MetricsViewV2;
+  source?: V1Source;
+  model?: V1Model;
+  metricsView?: V1MetricsView;
   explore?: V1Explore;
   migration?: V1Migration;
   report?: V1Report;
   alert?: V1Alert;
-  pullTrigger?: V1PullTrigger;
   refreshTrigger?: V1RefreshTrigger;
-  bucketPlanner?: V1BucketPlanner;
   theme?: V1Theme;
   component?: V1Component;
   canvas?: V1Canvas;
@@ -2105,6 +1990,11 @@ export interface V1SecurityRuleRowFilter {
   expression?: V1Expression;
 }
 
+export interface V1Source {
+  spec?: V1SourceSpec;
+  state?: V1SourceState;
+}
+
 export type V1SourceSpecProperties = { [key: string]: unknown };
 
 export interface V1SourceSpec {
@@ -2123,11 +2013,6 @@ export interface V1SourceState {
   table?: string;
   specHash?: string;
   refreshedOn?: string;
-}
-
-export interface V1SourceV2 {
-  spec?: V1SourceSpec;
-  state?: V1SourceState;
 }
 
 export interface V1StringListValue {

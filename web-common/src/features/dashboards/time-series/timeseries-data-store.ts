@@ -22,6 +22,7 @@ import {
   type CreateQueryResult,
 } from "@tanstack/svelte-query";
 import { type Readable, type Writable, derived, writable } from "svelte/store";
+import { DashboardState_ActivePage } from "../../../proto/gen/rill/ui/v1/dashboard_pb";
 import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
 import {
   type DimensionDataItem,
@@ -128,8 +129,12 @@ export function createTimeSeriesDataStore(
 
       const allMeasures = explore?.measures ?? [];
       let measures = allMeasures;
+      const showTimeDimensionDetail = Boolean(
+        dashboardStore?.activePage ===
+          DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL,
+      );
       const expandedMeasuerName = dashboardStore?.tdd?.expandedMeasureName;
-      if (expandedMeasuerName) {
+      if (showTimeDimensionDetail && expandedMeasuerName) {
         measures = allMeasures.filter(
           (measure) => measure === expandedMeasuerName,
         );

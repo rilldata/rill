@@ -1,42 +1,46 @@
 <script lang="ts">
-  import { type CanvasComponentObj } from "@rilldata/web-common/features/canvas/components/util";
+  import type { LeaderboardSpec } from "@rilldata/web-common/features/canvas/components/leaderboard";
   import DimensionFiltersInput from "@rilldata/web-common/features/canvas/inspector/filters/DimensionFiltersInput.svelte";
   import TimeFiltersInput from "@rilldata/web-common/features/canvas/inspector/filters/TimeFiltersInput.svelte";
-  import { type V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
-  import { onMount } from "svelte";
+  import type { BaseCanvasComponent } from "../../components/BaseCanvasComponent";
+  import type { ComponentSpec } from "../../components/types";
+  import type { AllKeys, FilterInputParam } from "../types";
 
-  export let selectedComponentName: string;
-  export let component: CanvasComponentObj;
-  export let paramValues: V1ComponentSpecRendererProperties;
-  export let canvasName: string;
+  export let component: BaseCanvasComponent;
 
-  $: localParamValues = localParamValues || {};
-  let oldParamValuesRef: V1ComponentSpecRendererProperties = {};
+  $: ({
+    specStore,
+    type,
+    state: componentStore,
+    parent: { name: canvasName },
+  } = component);
 
-  // TODO: Make this robust possibly a store.
-  $: if (JSON.stringify(paramValues) !== JSON.stringify(oldParamValuesRef)) {
-    localParamValues = structuredClone(paramValues) || {};
-    oldParamValuesRef = paramValues;
-  }
+  $: localParamValues = $specStore;
 
   $: inputParams = component.inputParams().filter;
 
   $: metricsView =
-    "metrics_view" in paramValues ? (paramValues.metrics_view as string) : null;
+    "metrics_view" in localParamValues ? localParamValues.metrics_view : null;
 
-  onMount(() => {
-    localParamValues = structuredClone(paramValues) || {};
-  });
+  $: excludedDimensions =
+    type === "leaderboard"
+      ? (localParamValues as LeaderboardSpec).dimensions
+      : [];
+
+  $: entries = Object.entries(inputParams) as [
+    AllKeys<ComponentSpec>,
+    FilterInputParam,
+  ][];
 </script>
 
 <div>
-  {#each Object.entries(inputParams) as [key, config] (key)}
+  {#each entries as [key, config] (key)}
     <div class="component-param">
       {#if config.type === "time_filters"}
         <TimeFiltersInput
           {canvasName}
-          {selectedComponentName}
           id={key}
+          {componentStore}
           timeFilter={localParamValues[key]}
           showComparison={config?.meta?.hasComparison}
           showGrain={config?.meta?.hasGrain}
@@ -49,7 +53,8 @@
         <DimensionFiltersInput
           {canvasName}
           {metricsView}
-          {selectedComponentName}
+          {componentStore}
+          {excludedDimensions}
           id={key}
           filter={localParamValues[key]}
           onChange={async (filter) => {

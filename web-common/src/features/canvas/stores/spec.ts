@@ -1,13 +1,19 @@
 import type { CanvasSpecResponseStore } from "@rilldata/web-common/features/canvas/types";
 import {
   MetricsViewSpecMeasureType,
-  type MetricsViewSpecDimensionV2,
-  type MetricsViewSpecMeasureV2,
+  type MetricsViewSpecDimension,
+  type MetricsViewSpecMeasure,
   type V1CanvasSpec,
   type V1ComponentSpec,
   type V1MetricsViewSpec,
+  type V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import { derived, get, type Readable } from "svelte/store";
+import {
+  ResourceKind,
+  useFilteredResources,
+} from "../../entity-management/resource-selectors";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
 export class CanvasResolvedSpec {
   canvasSpec: Readable<V1CanvasSpec | undefined>;
@@ -15,48 +21,53 @@ export class CanvasResolvedSpec {
   isLoading: Readable<boolean>;
   metricViewNames: Readable<string[]>;
 
-  getMetricsViewFromName: (
-    metricViewName: string,
-  ) => Readable<V1MetricsViewSpec | undefined>;
+  getMetricsViewFromName: (metricViewName: string) => Readable<{
+    metricsView: V1MetricsViewSpec | undefined;
+    isLoading: boolean;
+  }>;
   /** Measure Selectors */
   getMeasuresForMetricView: (
     metricViewName: string,
-  ) => Readable<MetricsViewSpecMeasureV2[]>;
+  ) => Readable<MetricsViewSpecMeasure[]>;
 
   getSimpleMeasuresForMetricView: (
     metricViewName: string,
-  ) => Readable<MetricsViewSpecMeasureV2[]>;
+  ) => Readable<MetricsViewSpecMeasure[]>;
 
   getMeasureForMetricView: (
     measureName: string | undefined,
     metricViewName: string,
-  ) => Readable<MetricsViewSpecMeasureV2 | undefined>;
+  ) => Readable<MetricsViewSpecMeasure | undefined>;
 
-  allSimpleMeasures: Readable<MetricsViewSpecMeasureV2[]>;
+  allSimpleMeasures: Readable<MetricsViewSpecMeasure[]>;
 
   metricsViewMeasureMap: Readable<Record<string, Set<string>>>;
 
   /** Dimension Selectors */
   getDimensionsForMetricView: (
     metricViewName: string,
-  ) => Readable<MetricsViewSpecDimensionV2[]>;
+  ) => Readable<MetricsViewSpecDimension[]>;
 
   getDimensionForMetricView: (
     dimensionName: string,
     metricViewName: string,
-  ) => Readable<MetricsViewSpecDimensionV2 | undefined>;
+  ) => Readable<MetricsViewSpecDimension | undefined>;
 
   getTimeDimensionForMetricView: (
     metricViewName: string,
   ) => Readable<string | undefined>;
 
-  allDimensions: Readable<MetricsViewSpecDimensionV2[]>;
+  allDimensions: Readable<MetricsViewSpecDimension[]>;
   metricsViewDimensionsMap: Readable<Record<string, Set<string>>>;
 
   /** Component Selectors */
   getComponentResourceFromName: (
     componentName: string,
   ) => Readable<V1ComponentSpec | undefined>;
+
+  allMetricsViews: ReturnType<
+    typeof useFilteredResources<Array<V1Resource | undefined>>
+  >;
 
   constructor(validSpecStore: CanvasSpecResponseStore) {
     this.canvasSpec = derived(validSpecStore, ($validSpecStore) => {
@@ -69,6 +80,11 @@ export class CanvasResolvedSpec {
 
     this.metricViewNames = derived(validSpecStore, ($validSpecStore) =>
       Object.keys($validSpecStore?.data?.metricsViews || {}),
+    );
+
+    this.allMetricsViews = useFilteredResources(
+      get(runtime).instanceId,
+      ResourceKind.MetricsView,
     );
 
     this.components = derived(validSpecStore, ($validSpecStore) => {
@@ -85,10 +101,13 @@ export class CanvasResolvedSpec {
     });
 
     this.getMetricsViewFromName = (metricViewName: string) =>
-      derived(validSpecStore, ($validSpecStore) => {
-        const metricsView = $validSpecStore.data?.metricsViews[metricViewName];
-        if (!metricsView) return;
-        return metricsView.state?.validSpec;
+      derived(this.allMetricsViews, ($metricsViews) => {
+        return {
+          metricsView: $metricsViews?.data?.find(
+            (res) => res?.meta?.name?.name === metricViewName,
+          )?.metricsView?.state?.validSpec,
+          isLoading: $metricsViews?.isLoading,
+        };
       });
 
     this.getMeasuresForMetricView = (metricViewName: string) =>
@@ -117,7 +136,7 @@ export class CanvasResolvedSpec {
       ).flatMap((metricsView) =>
         this.filterSimpleMeasures(metricsView?.state?.validSpec?.measures),
       );
-      const uniqueByName = new Map<string, MetricsViewSpecMeasureV2>();
+      const uniqueByName = new Map<string, MetricsViewSpecMeasure>();
       for (const measure of measures) {
         uniqueByName.set(measure.name as string, measure);
       }
@@ -131,7 +150,7 @@ export class CanvasResolvedSpec {
       ).flatMap(
         (metricsView) => metricsView?.state?.validSpec?.dimensions || [],
       );
-      const uniqueByName = new Map<string, MetricsViewSpecDimensionV2>();
+      const uniqueByName = new Map<string, MetricsViewSpecDimension>();
       for (const dimension of dimensions) {
         uniqueByName.set(
           (dimension.name || dimension.column) as string,
@@ -214,35 +233,9 @@ export class CanvasResolvedSpec {
     };
   }
 
-  getComponentNameFromPos = (pos: {
-    row: number;
-    column: number;
-  }): Readable<string | undefined> => {
-    return derived(this.canvasSpec, (canvasSpec) => {
-      const componentName =
-        canvasSpec?.rows?.[pos.row]?.items?.[pos.column]?.component;
-      if (!componentName) return undefined;
-      return componentName;
-    });
-  };
-
-  getComponentFromIndex = (pos: {
-    row: number;
-    column: number;
-  }): Readable<V1ComponentSpec | undefined> => {
-    const componentName = this.getComponentNameFromPos(pos);
-    return derived(
-      [componentName, this.components],
-      ([componentName, components]) => {
-        if (!componentName) return undefined;
-        return components[componentName];
-      },
-    );
-  };
-
   getDimensionsFromMeasure = (
     measureName: string,
-  ): MetricsViewSpecDimensionV2[] => {
+  ): MetricsViewSpecDimension[] => {
     const metricsMeasureMap = get(this.metricsViewMeasureMap);
     let metricViewName: string | undefined;
     for (const [key, value] of Object.entries(metricsMeasureMap)) {
@@ -264,8 +257,8 @@ export class CanvasResolvedSpec {
   };
 
   private filterSimpleMeasures = (
-    measures: MetricsViewSpecMeasureV2[] | undefined,
-  ): MetricsViewSpecMeasureV2[] => {
+    measures: MetricsViewSpecMeasure[] | undefined,
+  ): MetricsViewSpecMeasure[] => {
     return (
       measures?.filter(
         (m) =>

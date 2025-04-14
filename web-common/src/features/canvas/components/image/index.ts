@@ -1,11 +1,14 @@
 import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
 import {
+  type CanvasComponentType,
   type ComponentAlignment,
   type ComponentCommonProperties,
 } from "@rilldata/web-common/features/canvas/components/types";
 import { commonOptions } from "@rilldata/web-common/features/canvas/components/util";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
-import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
+import type { V1Resource } from "@rilldata/web-common/runtime-client";
+import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
+import Image from "./Image.svelte";
 
 export { default as Image } from "./Image.svelte";
 
@@ -23,16 +26,14 @@ export class ImageComponent extends BaseCanvasComponent<ImageSpec> {
   minSize = { width: 1, height: 1 };
   defaultSize = { width: 2, height: 2 };
   resetParams = [];
+  type: CanvasComponentType = "image";
+  component = Image;
 
-  constructor(
-    fileArtifact: FileArtifact | undefined = undefined,
-    path: (string | number)[] = [],
-    initialSpec: Partial<ImageSpec> = {},
-  ) {
+  constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
     const defaultSpec: ImageSpec = {
       url: "",
     };
-    super(fileArtifact, path, defaultSpec, initialSpec);
+    super(resource, parent, path, defaultSpec);
   }
 
   isValid(spec: ImageSpec): boolean {
@@ -54,7 +55,7 @@ export class ImageComponent extends BaseCanvasComponent<ImageSpec> {
     };
   }
 
-  newComponentSpec(): ImageSpec {
+  static newComponentSpec(): ImageSpec {
     return {
       url: "https://cdn.prod.website-files.com/659ddac460dbacbdc813b204/660b0f85094eb576187342cf_rill_logo_sq_gradient.svg",
     };

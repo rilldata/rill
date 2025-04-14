@@ -37,7 +37,7 @@ func (e *Executor) resolveDuckDBClickHouseAndPinot(ctx context.Context) (Timesta
 		filter,
 	)
 
-	rows, err := e.olap.Execute(ctx, &drivers.Statement{
+	rows, err := e.olap.Query(ctx, &drivers.Statement{
 		Query:            rangeSQL,
 		Priority:         e.priority,
 		ExecutionTimeout: defaultExecutionTimeout,
@@ -91,7 +91,7 @@ func (e *Executor) resolveDruid(ctx context.Context) (TimestampsResult, error) {
 			filter,
 		)
 
-		rows, err := e.olap.Execute(ctx, &drivers.Statement{
+		rows, err := e.olap.Query(ctx, &drivers.Statement{
 			Query:            minSQL,
 			Priority:         e.priority,
 			ExecutionTimeout: defaultExecutionTimeout,
@@ -127,7 +127,7 @@ func (e *Executor) resolveDruid(ctx context.Context) (TimestampsResult, error) {
 			filter,
 		)
 
-		rows, err := e.olap.Execute(ctx, &drivers.Statement{
+		rows, err := e.olap.Query(ctx, &drivers.Statement{
 			Query:            maxSQL,
 			Priority:         e.priority,
 			ExecutionTimeout: defaultExecutionTimeout,
@@ -163,7 +163,7 @@ func (e *Executor) resolveDruid(ctx context.Context) (TimestampsResult, error) {
 				filter,
 			)
 
-			rows, err := e.olap.Execute(ctx, &drivers.Statement{
+			rows, err := e.olap.Query(ctx, &drivers.Statement{
 				Query:            maxSQL,
 				Priority:         e.priority,
 				ExecutionTimeout: defaultExecutionTimeout,

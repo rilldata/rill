@@ -1,11 +1,11 @@
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as Select from "@rilldata/web-common/components/select";
-  import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
+  import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
 
   export let leaderboardSortByMeasureName: string;
-  export let activeLeaderboardMeasure: MetricsViewSpecMeasureV2 | undefined;
-  export let measures: MetricsViewSpecMeasureV2[];
+  export let activeLeaderboardMeasure: MetricsViewSpecMeasure | undefined;
+  export let measures: MetricsViewSpecMeasure[];
   export let setLeaderboardSortByMeasureName: (name: string) => void;
 
   let active = false;
