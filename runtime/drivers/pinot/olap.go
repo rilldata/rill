@@ -59,7 +59,7 @@ func (c *connection) WithConnection(ctx context.Context, priority int, longRunni
 }
 
 func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
-	res, err := c.Execute(ctx, stmt)
+	res, err := c.Query(ctx, stmt)
 	if err != nil {
 		return err
 	}
@@ -69,7 +69,7 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 	return res.Close()
 }
 
-func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
+func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
 	if c.logQueries {
 		c.logger.Info("pinot query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
 	}

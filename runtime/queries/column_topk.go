@@ -74,7 +74,7 @@ func (q *ColumnTopK) Resolve(ctx context.Context, rt *runtime.Runtime, instanceI
 	)
 
 	// Run query
-	rows, err := olap.Execute(ctx, &drivers.Statement{
+	rows, err := olap.Query(ctx, &drivers.Statement{
 		Query:            qry,
 		Priority:         priority,
 		ExecutionTimeout: defaultExecutionTimeout,

@@ -335,8 +335,13 @@ export function fromTimeRangesParams(
         V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_NONE;
     } else if (dimensions.has(comparisonDimension)) {
       preset.comparisonDimension = comparisonDimension;
-      preset.comparisonMode ??=
-        V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_DIMENSION;
+      if (
+        preset.comparisonMode !==
+        V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
+      ) {
+        preset.comparisonMode =
+          V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_DIMENSION;
+      }
     } else {
       errors.push(
         getSingleFieldError("compare dimension", comparisonDimension),

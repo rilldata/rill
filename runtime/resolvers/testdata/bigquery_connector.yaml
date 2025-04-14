@@ -55,7 +55,7 @@ tests:
   - name: query_all_external_google_sheet_duckdb
     resolver: sql
     properties:
-      sql: "select * from external_google_sheet_duckdb order by int_col"
+      sql: "select bool_col,date_col,datetime_col,float_col,int_col,string_col,time_col,timestamp_col from external_google_sheet_duckdb order by int_col"
     result_csv: |
       bool_col,date_col,datetime_col,float_col,int_col,string_col,time_col,timestamp_col
       false,1970-01-01,1970-01-01T00:00:00Z,0,0,,0001-01-01T00:00:00Z,1970-01-01T00:00:00Z

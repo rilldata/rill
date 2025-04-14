@@ -136,10 +136,10 @@
 
     {#if $tableVisible}
       <WorkspaceTableContainer {filePath}>
-        {#if !allErrors.length}
+        {#if connector && tableName}
           <ConnectedPreviewTable
             {connector}
-            table={tableName ?? ""}
+            table={tableName}
             loading={resourceIsReconciling}
           />
         {/if}

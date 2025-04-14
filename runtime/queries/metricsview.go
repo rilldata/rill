@@ -69,7 +69,7 @@ func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, nam
 }
 
 func metricsQuery(ctx context.Context, olap drivers.OLAPStore, priority int, sql string, args []any) ([]*runtimev1.MetricsViewColumn, []*structpb.Struct, error) {
-	rows, err := olap.Execute(ctx, &drivers.Statement{
+	rows, err := olap.Query(ctx, &drivers.Statement{
 		Query:            sql,
 		Args:             args,
 		Priority:         priority,
@@ -751,7 +751,7 @@ func DuckDBCopyExport(ctx context.Context, w io.Writer, opts *runtime.ExportOpti
 		sql += " (FORMAT CSV, HEADER)"
 	}
 
-	rows, err := olap.Execute(ctx, &drivers.Statement{
+	rows, err := olap.Query(ctx, &drivers.Statement{
 		Query:            sql,
 		Args:             args,
 		Priority:         opts.Priority,

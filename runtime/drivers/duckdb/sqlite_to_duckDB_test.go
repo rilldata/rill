@@ -62,7 +62,7 @@ func Test_sqliteToDuckDB_Transfer(t *testing.T) {
 	_, err = me.Execute(context.Background(), execOpts)
 	require.NoError(t, err)
 
-	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT count(*) from sink"})
+	res, err := olap.Query(context.Background(), &drivers.Statement{Query: "SELECT count(*) from sink"})
 	require.NoError(t, err)
 	res.Next()
 	var count int
