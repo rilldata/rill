@@ -47,7 +47,6 @@
     specStore,
     timeAndFilterStore,
     leaderboardState,
-    sortByMeasure,
     toggleSort,
     parent: { name: canvasName },
   } = component);
