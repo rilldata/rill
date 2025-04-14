@@ -14,7 +14,7 @@ func TestInformationSchemaAll(t *testing.T) {
 	olap, _ := conn.AsOLAP("")
 
 	opts := &createTableOptions{
-		View: true,
+		view: true,
 	}
 	_, err := conn.createTableAsSelect(context.Background(), "model", "select 1, 2, 3", opts)
 	require.NoError(t, err)
@@ -46,7 +46,7 @@ func TestInformationSchemaAllLike(t *testing.T) {
 	conn := prepareConn(t).(*connection)
 	olap, _ := conn.AsOLAP("")
 
-	opts := &createTableOptions{View: true}
+	opts := &createTableOptions{view: true}
 	_, err := conn.createTableAsSelect(context.Background(), "model", "select 1, 2, 3", opts)
 	require.NoError(t, err)
 
@@ -66,7 +66,7 @@ func TestInformationSchemaLookup(t *testing.T) {
 	olap, _ := conn.AsOLAP("")
 	ctx := context.Background()
 
-	opts := &createTableOptions{View: true}
+	opts := &createTableOptions{view: true}
 	_, err := conn.createTableAsSelect(context.Background(), "model", "select 1, 2, 3", opts)
 	require.NoError(t, err)
 

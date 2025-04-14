@@ -58,7 +58,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 	}
 
 	var (
-		metrics *TableWriteMetrics
+		metrics *tableWriteMetrics
 		err     error
 	)
 	if !opts.IncrementalRun {
@@ -69,12 +69,12 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 
 		// Drop the staging view/table if it exists.
 		// NOTE: This intentionally drops the end table if not staging changes.
-		_ = e.c.DropTable(ctx, stagingTableName)
+		_ = e.c.dropTable(ctx, stagingTableName)
 
 		// Create the table
-		metrics, err = e.c.CreateTableAsSelect(ctx, stagingTableName, inputProps.SQL, mustToMap(outputProps))
+		metrics, err = e.c.createTableAsSelect(ctx, stagingTableName, inputProps.SQL, mustToMap(outputProps))
 		if err != nil {
-			_ = e.c.DropTable(ctx, stagingTableName)
+			_ = e.c.dropTable(ctx, stagingTableName)
 			return nil, fmt.Errorf("failed to create model: %w", err)
 		}
 
@@ -87,7 +87,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		}
 	} else {
 		// Insert into the table
-		metrics, err = e.c.InsertTableAsSelect(ctx, tableName, inputProps.SQL, &InsertTableOptions{
+		metrics, err = e.c.insertTableAsSelect(ctx, tableName, inputProps.SQL, &InsertTableOptions{
 			Strategy: outputProps.IncrementalStrategy,
 		})
 		if err != nil {
@@ -112,7 +112,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		Connector:    opts.OutputConnector,
 		Properties:   resultPropsMap,
 		Table:        tableName,
-		ExecDuration: metrics.Duration,
+		ExecDuration: metrics.duration,
 	}, nil
 }
 

@@ -14,13 +14,13 @@ import (
 	"go.uber.org/zap"
 )
 
-// TableWriteMetrics reports metrics for an execution that mutates table data.
-type TableWriteMetrics struct {
-	// Duration is the time taken to run user queries only.
-	Duration time.Duration
+// tableWriteMetrics reports metrics for an execution that mutates table data.
+type tableWriteMetrics struct {
+	// duration is the time taken to run user queries only.
+	duration time.Duration
 }
 
-func (c *Connection) CreateTableAsSelect(ctx context.Context, name, sql string, tableOpts map[string]any) (*TableWriteMetrics, error) {
+func (c *Connection) createTableAsSelect(ctx context.Context, name, sql string, tableOpts map[string]any) (*tableWriteMetrics, error) {
 	ctx = contextWithQueryID(ctx)
 	outputProps := &ModelOutputProperties{}
 	if err := mapstructure.WeakDecode(tableOpts, outputProps); err != nil {
@@ -40,13 +40,13 @@ func (c *Connection) CreateTableAsSelect(ctx context.Context, name, sql string, 
 		if err != nil {
 			return nil, err
 		}
-		return &TableWriteMetrics{Duration: time.Since(t)}, nil
+		return &tableWriteMetrics{duration: time.Since(t)}, nil
 	} else if outputProps.Typ == "DICTIONARY" {
 		err := c.createDictionary(ctx, name, sql, outputProps)
 		if err != nil {
 			return nil, err
 		}
-		return &TableWriteMetrics{Duration: time.Since(t)}, nil
+		return &tableWriteMetrics{duration: time.Since(t)}, nil
 	}
 	// on replicated databases `create table t as select * from ...` is prohibited
 	// so we need to create a table first and then insert data into it
@@ -61,14 +61,14 @@ func (c *Connection) CreateTableAsSelect(ctx context.Context, name, sql string, 
 	if err != nil {
 		return nil, err
 	}
-	return &TableWriteMetrics{Duration: time.Since(t)}, nil
+	return &tableWriteMetrics{duration: time.Since(t)}, nil
 }
 
 type InsertTableOptions struct {
 	Strategy drivers.IncrementalStrategy
 }
 
-func (c *Connection) InsertTableAsSelect(ctx context.Context, name, sql string, opts *InsertTableOptions) (*TableWriteMetrics, error) {
+func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, opts *InsertTableOptions) (*tableWriteMetrics, error) {
 	ctx = contextWithQueryID(ctx)
 	if opts.Strategy == drivers.IncrementalStrategyAppend {
 		t := time.Now()
@@ -79,7 +79,7 @@ func (c *Connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		if err != nil {
 			return nil, err
 		}
-		return &TableWriteMetrics{Duration: time.Since(t)}, nil
+		return &tableWriteMetrics{duration: time.Since(t)}, nil
 	}
 
 	if opts.Strategy == drivers.IncrementalStrategyPartitionOverwrite {
@@ -134,7 +134,7 @@ func (c *Connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		if err != nil {
 			return nil, err
 		}
-		metrics := &TableWriteMetrics{Duration: time.Since(t)}
+		metrics := &tableWriteMetrics{duration: time.Since(t)}
 		// list partitions from the temp table
 		partitions, err := c.getTablePartitions(ctx, tempName)
 		if err != nil {
@@ -182,12 +182,12 @@ func (c *Connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		if err != nil {
 			return nil, err
 		}
-		return &TableWriteMetrics{Duration: time.Since(t)}, nil
+		return &tableWriteMetrics{duration: time.Since(t)}, nil
 	}
 	return nil, fmt.Errorf("incremental insert strategy %q not supported", opts.Strategy)
 }
 
-func (c *Connection) DropTable(ctx context.Context, name string) error {
+func (c *Connection) dropTable(ctx context.Context, name string) error {
 	ctx = contextWithQueryID(ctx)
 	typ, onCluster, err := informationSchema{c: c}.entityType(ctx, c.config.Database, name)
 	if err != nil {
@@ -237,7 +237,7 @@ func (c *Connection) DropTable(ctx context.Context, name string) error {
 	}
 }
 
-func (c *Connection) RenameTable(ctx context.Context, oldName, newName string) error {
+func (c *Connection) renameEntity(ctx context.Context, oldName, newName string) error {
 	ctx = contextWithQueryID(ctx)
 	typ, onCluster, err := informationSchema{c: c}.entityType(ctx, c.config.Database, oldName)
 	if err != nil {
@@ -384,7 +384,7 @@ func (c *Connection) renameTable(ctx context.Context, oldName, newName, onCluste
 		return err
 	}
 	// drop the old table
-	return c.DropTable(context.Background(), oldName)
+	return c.dropTable(context.Background(), oldName)
 }
 
 func (c *Connection) createTable(ctx context.Context, name, sql string, outputProps *ModelOutputProperties) error {

@@ -134,7 +134,7 @@ func (e *warehouseToSelfExecutor) queryAndInsert(ctx context.Context, opts *driv
 			if err != nil {
 				return fmt.Errorf("failed to incrementally insert into table: %w", err)
 			}
-			execDuration += metrics.Duration
+			execDuration += metrics.duration
 			continue
 		}
 
@@ -147,7 +147,7 @@ func (e *warehouseToSelfExecutor) queryAndInsert(ctx context.Context, opts *driv
 			if err != nil {
 				return fmt.Errorf("failed to insert into table: %w", err)
 			}
-			execDuration += metrics.Duration
+			execDuration += metrics.duration
 			continue
 		}
 
@@ -155,7 +155,7 @@ func (e *warehouseToSelfExecutor) queryAndInsert(ctx context.Context, opts *driv
 		if err != nil {
 			return fmt.Errorf("failed to create table: %w", err)
 		}
-		execDuration += metrics.Duration
+		execDuration += metrics.duration
 
 		create = false
 	}

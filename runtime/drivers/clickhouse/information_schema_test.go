@@ -1,4 +1,4 @@
-package clickhouse_test
+package clickhouse
 
 import (
 	"context"

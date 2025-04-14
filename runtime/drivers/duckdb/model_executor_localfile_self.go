@@ -93,7 +93,7 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 	}
 
 	// create the table
-	metrics, err := e.c.createTableAsSelect(ctx, stagingTableName, "SELECT * FROM "+from, &createTableOptions{View: asView})
+	metrics, err := e.c.createTableAsSelect(ctx, stagingTableName, "SELECT * FROM "+from, &createTableOptions{view: asView})
 	if err != nil {
 		_ = e.c.dropTable(ctx, stagingTableName)
 		return nil, fmt.Errorf("failed to create model: %w", err)
@@ -124,6 +124,6 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 		Connector:    opts.OutputConnector,
 		Properties:   resultPropsMap,
 		Table:        tableName,
-		ExecDuration: metrics.Duration,
+		ExecDuration: metrics.duration,
 	}, nil
 }

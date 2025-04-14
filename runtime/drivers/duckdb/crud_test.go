@@ -49,7 +49,7 @@ func Test_connection_CreateTableAsSelect(t *testing.T) {
 	sql := "SELECT 1"
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
-			_, err := tt.c.createTableAsSelect(ctx, tt.name, sql, &createTableOptions{View: tt.view})
+			_, err := tt.c.createTableAsSelect(ctx, tt.name, sql, &createTableOptions{view: tt.view})
 			require.NoError(t, err)
 			res, err := tt.c.Query(ctx, &drivers.Statement{Query: fmt.Sprintf("SELECT count(*) FROM %q", tt.name)})
 			require.NoError(t, err)
@@ -305,7 +305,7 @@ func Test_connection_CreateTableAsSelectWithComments(t *testing.T) {
 	_, err = normalConn.createTableAsSelect(ctx, "test", sql, &createTableOptions{})
 	require.NoError(t, err)
 
-	_, err = normalConn.createTableAsSelect(ctx, "test_view", sql, &createTableOptions{View: true})
+	_, err = normalConn.createTableAsSelect(ctx, "test_view", sql, &createTableOptions{view: true})
 	require.NoError(t, err)
 
 	sql = `
@@ -315,7 +315,7 @@ func Test_connection_CreateTableAsSelectWithComments(t *testing.T) {
 	_, err = normalConn.createTableAsSelect(ctx, "test", sql, &createTableOptions{})
 	require.NoError(t, err)
 
-	_, err = normalConn.createTableAsSelect(ctx, "test_view", sql, &createTableOptions{View: true})
+	_, err = normalConn.createTableAsSelect(ctx, "test_view", sql, &createTableOptions{view: true})
 	require.NoError(t, err)
 }
 

@@ -126,19 +126,19 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 			duration = res.Duration
 		} else {
 			createTableOpts := &createTableOptions{
-				View:         asView,
-				BeforeCreate: inputProps.PreExec,
-				AfterCreate:  inputProps.PostExec,
+				view:         asView,
+				beforeCreate: inputProps.PreExec,
+				afterCreate:  inputProps.PostExec,
 			}
 			if inputProps.InitQueries != "" {
-				createTableOpts.InitQueries = []string{inputProps.InitQueries}
+				createTableOpts.initQueries = []string{inputProps.InitQueries}
 			}
 			res, err := e.c.createTableAsSelect(ctx, stagingTableName, inputProps.SQL, createTableOpts)
 			if err != nil {
 				_ = e.c.dropTable(ctx, stagingTableName)
 				return nil, fmt.Errorf("failed to create model: %w", err)
 			}
-			duration = res.Duration
+			duration = res.duration
 		}
 
 		// Rename the staging table to the final table name
@@ -164,7 +164,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		if err != nil {
 			return nil, fmt.Errorf("failed to incrementally insert into table: %w", err)
 		}
-		duration = res.Duration
+		duration = res.duration
 	}
 
 	// Build result props

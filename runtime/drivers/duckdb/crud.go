@@ -14,14 +14,14 @@ import (
 )
 
 type tableWriteMetrics struct {
-	Duration time.Duration
+	duration time.Duration
 }
 
 type createTableOptions struct {
-	View         bool
-	InitQueries  []string
-	BeforeCreate string
-	AfterCreate  string
+	view         bool
+	initQueries  []string
+	beforeCreate string
+	afterCreate  string
 }
 
 func (c *connection) createTableAsSelect(ctx context.Context, name, sql string, opts *createTableOptions) (*tableWriteMetrics, error) {
@@ -33,21 +33,21 @@ func (c *connection) createTableAsSelect(ctx context.Context, name, sql string, 
 		_ = release()
 	}()
 	var beforeCreateFn, afterCreateFn func(ctx context.Context, conn *sqlx.Conn) error
-	if opts.BeforeCreate != "" {
+	if opts.beforeCreate != "" {
 		beforeCreateFn = func(ctx context.Context, conn *sqlx.Conn) error {
-			_, err := conn.ExecContext(ctx, opts.BeforeCreate)
+			_, err := conn.ExecContext(ctx, opts.beforeCreate)
 			return err
 		}
 	}
-	if opts.AfterCreate != "" {
+	if opts.afterCreate != "" {
 		afterCreateFn = func(ctx context.Context, conn *sqlx.Conn) error {
-			_, err := conn.ExecContext(ctx, opts.AfterCreate)
+			_, err := conn.ExecContext(ctx, opts.afterCreate)
 			return err
 		}
 	}
 	res, err := db.CreateTableAsSelect(ctx, name, sql, &rduckdb.CreateTableOptions{
-		View:           opts.View,
-		InitQueries:    opts.InitQueries,
+		View:           opts.view,
+		InitQueries:    opts.initQueries,
 		BeforeCreateFn: beforeCreateFn,
 		AfterCreateFn:  afterCreateFn,
 	})
@@ -55,7 +55,7 @@ func (c *connection) createTableAsSelect(ctx context.Context, name, sql string, 
 		return nil, c.checkErr(err)
 	}
 	return &tableWriteMetrics{
-		Duration: res.Duration,
+		duration: res.Duration,
 	}, nil
 }
 
@@ -100,7 +100,7 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 			return nil, c.checkErr(err)
 		}
 		return &tableWriteMetrics{
-			Duration: res.Duration,
+			duration: res.Duration,
 		}, nil
 	}
 
@@ -160,7 +160,7 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 			return nil, c.checkErr(err)
 		}
 		return &tableWriteMetrics{
-			Duration: res.Duration,
+			duration: res.Duration,
 		}, nil
 	}
 
