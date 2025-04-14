@@ -52,7 +52,8 @@ jobs:
       - name: lint and type checks for web local
         if: steps.filter.outputs.local == 'true'
         run: |-
-          npx eslint web-local --quiet
+          npx eslint web-local/src --quiet
+          npx eslint web-local/tests --quiet
           npm run check -w web-local
 
       - name: lint and type checks for web admin
