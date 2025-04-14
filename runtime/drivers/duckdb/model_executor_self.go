@@ -103,7 +103,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		if opts.Env.StageChanges {
 			stagingTableName = stagingTableNameFor(tableName)
 		}
-		_ = e.c.DropTable(ctx, stagingTableName)
+		_ = e.c.dropTable(ctx, stagingTableName)
 
 		// Create the table
 		if inputProps.Database != "" {
@@ -120,12 +120,12 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 			}
 			res, err := e.createFromExternalDuckDB(ctx, inputProps, stagingTableName)
 			if err != nil {
-				_ = e.c.DropTable(ctx, stagingTableName)
+				_ = e.c.dropTable(ctx, stagingTableName)
 				return nil, fmt.Errorf("failed to create model: %w", err)
 			}
 			duration = res.Duration
 		} else {
-			createTableOpts := &CreateTableOptions{
+			createTableOpts := &createTableOptions{
 				View:         asView,
 				BeforeCreate: inputProps.PreExec,
 				AfterCreate:  inputProps.PostExec,
@@ -133,9 +133,9 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 			if inputProps.InitQueries != "" {
 				createTableOpts.InitQueries = []string{inputProps.InitQueries}
 			}
-			res, err := e.c.CreateTableAsSelect(ctx, stagingTableName, inputProps.SQL, createTableOpts)
+			res, err := e.c.createTableAsSelect(ctx, stagingTableName, inputProps.SQL, createTableOpts)
 			if err != nil {
-				_ = e.c.DropTable(ctx, stagingTableName)
+				_ = e.c.dropTable(ctx, stagingTableName)
 				return nil, fmt.Errorf("failed to create model: %w", err)
 			}
 			duration = res.Duration
@@ -160,7 +160,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		if inputProps.InitQueries != "" {
 			insertTableOpts.InitQueries = []string{inputProps.InitQueries}
 		}
-		res, err := e.c.InsertTableAsSelect(ctx, tableName, inputProps.SQL, insertTableOpts)
+		res, err := e.c.insertTableAsSelect(ctx, tableName, inputProps.SQL, insertTableOpts)
 		if err != nil {
 			return nil, fmt.Errorf("failed to incrementally insert into table: %w", err)
 		}

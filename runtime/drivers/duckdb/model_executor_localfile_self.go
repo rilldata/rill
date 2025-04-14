@@ -70,7 +70,7 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 	if opts.Env.StageChanges {
 		stagingTableName = stagingTableNameFor(tableName)
 	}
-	_ = e.c.DropTable(ctx, stagingTableName)
+	_ = e.c.dropTable(ctx, stagingTableName)
 
 	// get the local file path
 	localPaths, err := e.from.FilePaths(ctx, opts.InputProperties)
@@ -93,9 +93,9 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 	}
 
 	// create the table
-	metrics, err := e.c.CreateTableAsSelect(ctx, stagingTableName, "SELECT * FROM "+from, &CreateTableOptions{View: asView})
+	metrics, err := e.c.createTableAsSelect(ctx, stagingTableName, "SELECT * FROM "+from, &createTableOptions{View: asView})
 	if err != nil {
-		_ = e.c.DropTable(ctx, stagingTableName)
+		_ = e.c.dropTable(ctx, stagingTableName)
 		return nil, fmt.Errorf("failed to create model: %w", err)
 	}
 

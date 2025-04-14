@@ -153,7 +153,6 @@ func testInformationSchemaLookup(t *testing.T, conn drivers.Handle) {
 }
 
 func prepareConn(t *testing.T, conn drivers.Handle) {
-
 	olap, ok := conn.AsOLAP("")
 	require.True(t, ok)
 

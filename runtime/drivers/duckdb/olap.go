@@ -151,7 +151,7 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 		return nil, err
 	}
 
-	schema, err := RowsToSchema(rows)
+	schema, err := rowsToSchema(rows)
 	if err != nil {
 		if cancelFunc != nil {
 			cancelFunc()

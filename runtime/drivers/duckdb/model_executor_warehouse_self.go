@@ -51,13 +51,13 @@ func (e *warehouseToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 		}
 
 		// NOTE: This intentionally drops the end table if not staging changes.
-		_ = e.c.DropTable(ctx, stagingTableName)
+		_ = e.c.dropTable(ctx, stagingTableName)
 	}
 
 	err := e.queryAndInsert(ctx, opts, stagingTableName, outputProps)
 	if err != nil {
 		if !opts.IncrementalRun {
-			_ = e.c.DropTable(ctx, stagingTableName)
+			_ = e.c.dropTable(ctx, stagingTableName)
 		}
 		return nil, err
 	}
@@ -130,7 +130,7 @@ func (e *warehouseToSelfExecutor) queryAndInsert(ctx context.Context, opts *driv
 				Strategy:  outputProps.IncrementalStrategy,
 				UniqueKey: outputProps.UniqueKey,
 			}
-			metrics, err := e.c.InsertTableAsSelect(ctx, outputTable, qry, insertOpts)
+			metrics, err := e.c.insertTableAsSelect(ctx, outputTable, qry, insertOpts)
 			if err != nil {
 				return fmt.Errorf("failed to incrementally insert into table: %w", err)
 			}
@@ -143,7 +143,7 @@ func (e *warehouseToSelfExecutor) queryAndInsert(ctx context.Context, opts *driv
 				ByName:   false,
 				Strategy: drivers.IncrementalStrategyAppend,
 			}
-			metrics, err := e.c.InsertTableAsSelect(ctx, outputTable, qry, insertOpts)
+			metrics, err := e.c.insertTableAsSelect(ctx, outputTable, qry, insertOpts)
 			if err != nil {
 				return fmt.Errorf("failed to insert into table: %w", err)
 			}
@@ -151,7 +151,7 @@ func (e *warehouseToSelfExecutor) queryAndInsert(ctx context.Context, opts *driv
 			continue
 		}
 
-		metrics, err := e.c.CreateTableAsSelect(ctx, outputTable, qry, &CreateTableOptions{})
+		metrics, err := e.c.createTableAsSelect(ctx, outputTable, qry, &createTableOptions{})
 		if err != nil {
 			return fmt.Errorf("failed to create table: %w", err)
 		}

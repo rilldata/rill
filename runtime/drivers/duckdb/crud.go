@@ -13,18 +13,18 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/rduckdb"
 )
 
-type TableWriteMetrics struct {
+type tableWriteMetrics struct {
 	Duration time.Duration
 }
 
-type CreateTableOptions struct {
+type createTableOptions struct {
 	View         bool
 	InitQueries  []string
 	BeforeCreate string
 	AfterCreate  string
 }
 
-func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, opts *CreateTableOptions) (*TableWriteMetrics, error) {
+func (c *connection) createTableAsSelect(ctx context.Context, name, sql string, opts *createTableOptions) (*tableWriteMetrics, error) {
 	db, release, err := c.acquireDB()
 	if err != nil {
 		return nil, err
@@ -54,7 +54,7 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, 
 	if err != nil {
 		return nil, c.checkErr(err)
 	}
-	return &TableWriteMetrics{
+	return &tableWriteMetrics{
 		Duration: res.Duration,
 	}, nil
 }
@@ -68,7 +68,7 @@ type InsertTableOptions struct {
 	UniqueKey    []string
 }
 
-func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, opts *InsertTableOptions) (*TableWriteMetrics, error) {
+func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, opts *InsertTableOptions) (*tableWriteMetrics, error) {
 	db, release, err := c.acquireDB()
 	if err != nil {
 		return nil, err
@@ -99,7 +99,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		if err != nil {
 			return nil, c.checkErr(err)
 		}
-		return &TableWriteMetrics{
+		return &tableWriteMetrics{
 			Duration: res.Duration,
 		}, nil
 	}
@@ -159,7 +159,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		if err != nil {
 			return nil, c.checkErr(err)
 		}
-		return &TableWriteMetrics{
+		return &tableWriteMetrics{
 			Duration: res.Duration,
 		}, nil
 	}
@@ -167,7 +167,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 	return nil, fmt.Errorf("incremental insert strategy %q not supported", opts.Strategy)
 }
 
-func (c *connection) DropTable(ctx context.Context, name string) error {
+func (c *connection) dropTable(ctx context.Context, name string) error {
 	db, release, err := c.acquireDB()
 	if err != nil {
 		return err
@@ -179,7 +179,7 @@ func (c *connection) DropTable(ctx context.Context, name string) error {
 	return c.checkErr(err)
 }
 
-func (c *connection) RenameTable(ctx context.Context, oldName, newName string) error {
+func (c *connection) renameTable(ctx context.Context, oldName, newName string) error {
 	db, release, err := c.acquireDB()
 	if err != nil {
 		return err
@@ -191,7 +191,7 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string) e
 	return c.checkErr(err)
 }
 
-func RowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
+func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 	if r == nil {
 		return nil, nil
 	}

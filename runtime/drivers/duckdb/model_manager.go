@@ -116,8 +116,8 @@ func (c *connection) Exists(ctx context.Context, res *drivers.ModelResult) (bool
 }
 
 func (c *connection) Delete(ctx context.Context, res *drivers.ModelResult) error {
-	_ = c.DropTable(ctx, stagingTableNameFor(res.Table))
-	return c.DropTable(ctx, res.Table)
+	_ = c.dropTable(ctx, stagingTableNameFor(res.Table))
+	return c.dropTable(ctx, res.Table)
 }
 
 func (c *connection) MergePartitionResults(a, b *drivers.ModelResult) (*drivers.ModelResult, error) {
@@ -149,7 +149,7 @@ func (c *connection) forceRenameTable(ctx context.Context, fromName string, from
 	// Renaming a table to the same name with different casing is not supported. Workaround by renaming to a temporary name first.
 	if strings.EqualFold(fromName, toName) {
 		tmpName := fmt.Sprintf("__rill_tmp_rename_%s_%s", typ, toName)
-		err := c.RenameTable(ctx, fromName, tmpName)
+		err := c.renameTable(ctx, fromName, tmpName)
 		if err != nil {
 			return err
 		}
@@ -157,7 +157,7 @@ func (c *connection) forceRenameTable(ctx context.Context, fromName string, from
 	}
 
 	// Do the rename
-	return c.RenameTable(ctx, fromName, toName)
+	return c.renameTable(ctx, fromName, toName)
 }
 
 // stagingTableName returns a stable temporary table name for a destination table.
