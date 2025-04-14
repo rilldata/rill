@@ -95,10 +95,22 @@ func RefreshAndWait(t testing.TB, rt *runtime.Runtime, id string, n *runtimev1.R
 }
 
 func RequireReconcileState(t testing.TB, rt *runtime.Runtime, id string, lenResources, lenReconcileErrs, lenParseErrs int) {
-	ctrl, err := rt.Controller(context.Background(), id)
-	require.NoError(t, err)
+	var (
+		rs  []*runtimev1.Resource
+		err error
+	)
+	for range 5 {
+		ctrl, err := rt.Controller(context.Background(), id)
+		require.NoError(t, err)
 
-	rs, err := ctrl.List(context.Background(), "", "", false)
+		rs, err = ctrl.List(context.Background(), "", "", false)
+		if err != nil && strings.Contains(err.Error(), "controller is closed") {
+			// controller can be closed if a connector resource requests for controller restart. Retry a few times.
+			time.Sleep(100 * time.Millisecond)
+			continue
+		}
+		require.NoError(t, err)
+	}
 	require.NoError(t, err)
 
 	var reconcileErrs, parseErrs []string
