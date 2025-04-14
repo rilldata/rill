@@ -1,4 +1,4 @@
-package testruntime
+package testclickhouse
 
 import (
 	"context"
@@ -7,15 +7,66 @@ import (
 	goruntime "runtime"
 
 	"github.com/docker/go-connections/nat"
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/modules/clickhouse"
 	tc "github.com/testcontainers/testcontainers-go/modules/compose"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-func ClickhouseCluster(t TestingT) (string, string) {
+// TestingT satisfies both *testing.T and *testing.B.
+type TestingT interface {
+	Name() string
+	TempDir() string
+	FailNow()
+	Errorf(format string, args ...interface{})
+	Cleanup(f func())
+}
+
+// Start starts a ClickHouse container for testing.
+// It returns the DSN for connecting to the container.
+// The container is automatically terminated when the test ends.
+func Start(t TestingT) string {
+	_, currentFile, _, _ := goruntime.Caller(0)
+	testdataPath := filepath.Join(currentFile, "..", "testdata")
+
+	ctx := context.Background()
+	clickHouseContainer, err := clickhouse.Run(
+		ctx,
+		"clickhouse/clickhouse-server:24.6.2.17",
+		clickhouse.WithUsername("clickhouse"),
+		clickhouse.WithPassword("clickhouse"),
+		clickhouse.WithConfigFile(filepath.Join(testdataPath, "clickhouse-config.xml")),
+		testcontainers.CustomizeRequestOption(func(req *testcontainers.GenericContainerRequest) error {
+			cf := testcontainers.ContainerFile{
+				HostFilePath:      filepath.Join(testdataPath, "users.xml"),
+				ContainerFilePath: "/etc/clickhouse-server/users.xml",
+				FileMode:          0o755,
+			}
+			req.Files = append(req.Files, cf)
+			return nil
+		}),
+	)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		err := clickHouseContainer.Terminate(ctx)
+		require.NoError(t, err)
+	})
+
+	host, err := clickHouseContainer.Host(ctx)
+	require.NoError(t, err)
+	port, err := clickHouseContainer.MappedPort(ctx, "9000/tcp")
+	require.NoError(t, err)
+
+	dsn := fmt.Sprintf("clickhouse://clickhouse:clickhouse@%v:%v", host, port.Port())
+	return dsn
+}
+
+// StartCluster starts a ClickHouse cluster for testing.
+// It returns the DSN for connecting to the cluster and the cluster name.
+// The cluster is automatically terminated when the test ends.
+func StartCluster(t TestingT) (string, string) {
 	_, currentFile, _, _ := goruntime.Caller(0)
 
 	compose, err := tc.NewDockerCompose(filepath.Join(currentFile, "..", "testdata", "ch_cluster_2S_2R", "docker-compose.yaml"))
@@ -65,58 +116,4 @@ func ClickhouseCluster(t TestingT) (string, string) {
 	host, err := container.Host(ctx)
 	require.NoError(t, err, "container.Host()")
 	return fmt.Sprintf("clickhouse://default@%s:%s", host, port.Port()), "cluster_2S_2R"
-}
-
-func NewInstanceWithClickhouseProject(t TestingT, withCluster bool) (*runtime.Runtime, string) {
-	dsn, cluster := ClickhouseCluster(t)
-	rt := New(t)
-	_, currentFile, _, _ := goruntime.Caller(0)
-	projectPath := filepath.Join(currentFile, "..", "testdata", "ad_bids_clickhouse")
-
-	olapConfig := map[string]string{"dsn": dsn}
-	if withCluster {
-		olapConfig["cluster"] = cluster
-		olapConfig["log_queries"] = "true"
-	}
-	inst := &drivers.Instance{
-		Environment:      "test",
-		OLAPConnector:    "duckdb",
-		RepoConnector:    "repo",
-		CatalogConnector: "catalog",
-		Connectors: []*runtimev1.Connector{
-			{
-				Type:   "file",
-				Name:   "repo",
-				Config: map[string]string{"dsn": projectPath},
-			},
-			{
-				Type:   "clickhouse",
-				Name:   "clickhouse",
-				Config: olapConfig,
-			},
-			{
-				Type: "sqlite",
-				Name: "catalog",
-				// Setting a test-specific name ensures a unique connection when "cache=shared" is enabled.
-				// "cache=shared" is needed to prevent threading problems.
-				Config: map[string]string{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())},
-			},
-		},
-		Variables: map[string]string{"rill.stage_changes": "false"},
-	}
-
-	err := rt.CreateInstance(context.Background(), inst)
-	require.NoError(t, err)
-	require.NotEmpty(t, inst.ID)
-
-	ctrl, err := rt.Controller(context.Background(), inst.ID)
-	require.NoError(t, err)
-
-	_, err = ctrl.Get(context.Background(), runtime.GlobalProjectParserName, false)
-	require.NoError(t, err)
-
-	err = ctrl.WaitUntilIdle(context.Background(), false)
-	require.NoError(t, err)
-
-	return rt, inst.ID
 }
