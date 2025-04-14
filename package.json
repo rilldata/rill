@@ -21,7 +21,7 @@
     "local-test": "cd web-local && npx playwright test --headed --project=e2e-chrome -g"
   },
   "devDependencies": {
-    "@types/eslint": "^8.56.9",
+    "@types/eslint": "8.56.9",
     "eslint": "8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-playwright": "1.6.0",
