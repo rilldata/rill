@@ -213,6 +213,7 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 	}
 
 	if qry.Rows {
+		// when Rows is set that means we want underlying rows from the model that why adding * as dim field which will also avoid using AS clause
 		ast.dimFields = append(ast.dimFields, FieldNode{
 			Name: "*",
 			Expr: "*",
