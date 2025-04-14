@@ -54,16 +54,16 @@ export function getCleanedUrlParamsForGoto(
   );
 
   // Remove params with default values
-  [...stateParams.entries()].forEach(([key, value]) => {
-    const defaultValue = defaultExploreUrlParams.get(key);
-    if (
-      (defaultValue === null && value !== "") ||
-      (defaultValue !== null && value !== defaultValue)
-    ) {
-      return;
-    }
-    stateParams.delete(key);
-  });
+  // [...stateParams.entries()].forEach(([key, value]) => {
+  //   const defaultValue = defaultExploreUrlParams.get(key);
+  //   if (
+  //     (defaultValue === null && value !== "") ||
+  //     (defaultValue !== null && value !== defaultValue)
+  //   ) {
+  //     return;
+  //   }
+  //   stateParams.delete(key);
+  // });
 
   if (!urlForCompressionCheck) return stateParams;
 

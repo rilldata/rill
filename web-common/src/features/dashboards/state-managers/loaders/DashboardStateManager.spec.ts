@@ -40,9 +40,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const hoistedPage: HoistedPageForExploreTests = vi.hoisted(() => ({}) as any);
 
+vi.stubEnv("TZ", "UTC");
+
 vi.mock("$app/navigation", () => {
   return {
-    goto: (url) => hoistedPage.goto(url),
+    goto: (url, opts) => hoistedPage.goto(url, opts),
     afterNavigate: (cb) => hoistedPage.afterNavigate(cb),
   };
 });
@@ -86,23 +88,26 @@ describe("DashboardStateManager", () => {
   });
 
   describe("Dashboards with timeseries", () => {
-    const ExploreStateSubsetForBaseState: Partial<MetricsExplorerEntity> = {
-      selectedTimeRange: {
-        name: "P7D",
-        interval: V1TimeGrain.TIME_GRAIN_DAY,
-      } as DashboardTimeControls,
-      showTimeComparison: false,
-      selectedComparisonTimeRange: undefined,
+    const ExploreStateSubsetForRillDefaultState: Partial<MetricsExplorerEntity> =
+      {
+        selectedTimeRange: {
+          name: "P7D",
+          interval: V1TimeGrain.TIME_GRAIN_DAY,
+        } as DashboardTimeControls,
+        showTimeComparison: false,
+        selectedComparisonTimeRange: undefined,
 
-      visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE],
-      allMeasuresVisible: false,
-      visibleDimensions: [AD_BIDS_PUBLISHER_DIMENSION],
-      allDimensionsVisible: false,
+        visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE],
+        allMeasuresVisible: false,
+        visibleDimensions: [AD_BIDS_PUBLISHER_DIMENSION],
+        allDimensionsVisible: false,
 
-      leaderboardSortByMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
-      leaderboardContextColumn: undefined,
-      sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
-    };
+        leaderboardSortByMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
+        leaderboardContextColumn: undefined,
+        sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
+      };
+    const PageURLForRillDefaultState =
+      "view=explore&tr=P7D&tz=Asia%2FKathmandu&compare_tr=&grain=day&f=&measures=impressions&dims=publisher&expand_dim=&sort_by=impressions&sort_type=percent&sort_dir=ASC&leaderboard_measure_count=1";
     const BookmarkSourceQueryResult = readable({
       data: {
         selectedTimeRange: {
@@ -123,9 +128,8 @@ describe("DashboardStateManager", () => {
       renderDashboardStateManager();
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
 
-      assertExploreStateSubset(ExploreStateSubsetForBaseState);
-      // no additional goto is called
-      expect(pageMock.urlSearchHistory).toEqual([]);
+      assertExploreStateSubset(ExploreStateSubsetForRillDefaultState);
+      expect(pageMock.urlSearchHistory).toEqual([PageURLForRillDefaultState]);
     });
 
     it("Should load 'other source' of dashboard state", async () => {
@@ -133,7 +137,7 @@ describe("DashboardStateManager", () => {
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
 
       assertExploreStateSubset({
-        ...ExploreStateSubsetForBaseState,
+        ...ExploreStateSubsetForRillDefaultState,
 
         selectedTimeRange: {
           name: "PT24H",
@@ -144,15 +148,19 @@ describe("DashboardStateManager", () => {
           name: TimeComparisonOption.CONTIGUOUS,
         } as DashboardTimeControls,
       });
-      const initUrlSearch = "tr=PT24H&compare_tr=rill-PP&grain=hour";
+      const initUrlSearch =
+        "view=explore&tr=PT24H&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=hour&f=&measures=impressions&dims=publisher&expand_dim=&sort_by=impressions&sort_type=percent&sort_dir=ASC&leaderboard_measure_count=1";
       pageMock.assertSearchParams(initUrlSearch);
 
       pageMock.popState("");
       await waitFor(() =>
-        assertExploreStateSubset(ExploreStateSubsetForBaseState),
+        assertExploreStateSubset(ExploreStateSubsetForRillDefaultState),
       );
       // only 2 urls should in history
-      expect(pageMock.urlSearchHistory).toEqual([initUrlSearch, ""]);
+      expect(pageMock.urlSearchHistory).toEqual([
+        initUrlSearch,
+        PageURLForRillDefaultState,
+      ]);
     });
 
     it("Should load from session dashboard state", async () => {
@@ -185,33 +193,39 @@ describe("DashboardStateManager", () => {
         sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
       });
       const initUrlSearch =
-        "tr=P14D&compare_tr=rill-PW&measures=bid_price&dims=domain&sort_by=bid_price&sort_dir=DESC";
+        "view=explore&tr=P14D&tz=Asia%2FKathmandu&compare_tr=rill-PW&grain=day&f=&measures=bid_price&dims=domain&expand_dim=&sort_by=bid_price&sort_type=percent&sort_dir=DESC&leaderboard_measure_count=1";
       pageMock.assertSearchParams(initUrlSearch);
 
       pageMock.popState("");
       await waitFor(() =>
-        assertExploreStateSubset(ExploreStateSubsetForBaseState),
+        assertExploreStateSubset(ExploreStateSubsetForRillDefaultState),
       );
       // only 2 urls should in history
-      expect(pageMock.urlSearchHistory).toEqual([initUrlSearch, ""]);
+      expect(pageMock.urlSearchHistory).toEqual([
+        initUrlSearch,
+        PageURLForRillDefaultState,
+      ]);
     });
   });
 
   describe("Dashboards without timeseries", () => {
-    const ExploreStateSubsetForBaseState: Partial<MetricsExplorerEntity> = {
-      selectedTimeRange: undefined,
-      showTimeComparison: false,
-      selectedComparisonTimeRange: undefined,
+    const ExploreStateSubsetForRillDefaultState: Partial<MetricsExplorerEntity> =
+      {
+        selectedTimeRange: undefined,
+        showTimeComparison: false,
+        selectedComparisonTimeRange: undefined,
 
-      visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE],
-      allMeasuresVisible: false,
-      visibleDimensions: [AD_BIDS_PUBLISHER_DIMENSION],
-      allDimensionsVisible: false,
+        visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE],
+        allMeasuresVisible: false,
+        visibleDimensions: [AD_BIDS_PUBLISHER_DIMENSION],
+        allDimensionsVisible: false,
 
-      leaderboardSortByMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
-      leaderboardContextColumn: undefined,
-      sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
-    };
+        leaderboardSortByMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
+        leaderboardContextColumn: undefined,
+        sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
+      };
+    const PageURLForRillDefaultState =
+      "view=explore&f=&measures=impressions&dims=publisher&expand_dim=&sort_by=impressions&sort_type=percent&sort_dir=ASC&leaderboard_measure_count=1";
 
     beforeEach(() => {
       mocks.mockMetricsView(AD_BIDS_METRICS_NAME, AD_BIDS_METRICS_INIT);
@@ -225,9 +239,8 @@ describe("DashboardStateManager", () => {
       renderDashboardStateManager();
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
 
-      assertExploreStateSubset(ExploreStateSubsetForBaseState);
-      // no additional goto is called
-      expect(pageMock.urlSearchHistory).toEqual([]);
+      assertExploreStateSubset(ExploreStateSubsetForRillDefaultState);
+      expect(pageMock.urlSearchHistory).toEqual([PageURLForRillDefaultState]);
     });
 
     it("Should load from session dashboard state", async () => {
@@ -255,15 +268,18 @@ describe("DashboardStateManager", () => {
         sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
       });
       const initUrlSearch =
-        "measures=bid_price&dims=domain&sort_by=bid_price&sort_dir=DESC";
+        "view=explore&f=&measures=bid_price&dims=domain&expand_dim=&sort_by=bid_price&sort_type=percent&sort_dir=DESC&leaderboard_measure_count=1";
       pageMock.assertSearchParams(initUrlSearch);
 
       pageMock.popState("");
       await waitFor(() =>
-        assertExploreStateSubset(ExploreStateSubsetForBaseState),
+        assertExploreStateSubset(ExploreStateSubsetForRillDefaultState),
       );
       // only 2 urls should in history
-      expect(pageMock.urlSearchHistory).toEqual([initUrlSearch, ""]);
+      expect(pageMock.urlSearchHistory).toEqual([
+        initUrlSearch,
+        PageURLForRillDefaultState,
+      ]);
     });
   });
 });

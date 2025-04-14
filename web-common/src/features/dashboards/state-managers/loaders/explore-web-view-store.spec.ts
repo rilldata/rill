@@ -64,14 +64,14 @@ const TestCases: {
       view: "explore",
       mutations: [],
       expectedSearch:
-        "tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&sort_type=percent",
+        "view=explore&tr=P7D&tz=UTC&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=&sort_by=impressions&sort_type=percent&sort_dir=DESC&leaderboard_measure_count=1",
     },
     view: {
       view: "tdd",
       additionalParams: "&measure=" + AD_BIDS_IMPRESSIONS_MEASURE,
       mutations: [AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD],
       expectedSearch:
-        "view=tdd&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions&chart_type=stacked_bar",
+        "view=tdd&tr=P7D&tz=UTC&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions&chart_type=stacked_bar",
     },
   },
   {
@@ -80,14 +80,14 @@ const TestCases: {
       view: "explore",
       mutations: [AD_BIDS_OPEN_PUB_DIMENSION_TABLE],
       expectedSearch:
-        "tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=publisher&sort_type=percent",
+        "view=explore&tr=P7D&tz=UTC&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=publisher&sort_by=impressions&sort_type=percent&sort_dir=DESC&leaderboard_measure_count=1",
     },
     view: {
       view: "tdd",
       additionalParams: "&measure=" + AD_BIDS_IMPRESSIONS_MEASURE,
       mutations: [AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD],
       expectedSearch:
-        "view=tdd&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions&chart_type=stacked_bar",
+        "view=tdd&tr=P7D&tz=UTC&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions&chart_type=stacked_bar",
     },
   },
 
@@ -97,7 +97,7 @@ const TestCases: {
       view: "explore",
       mutations: [],
       expectedSearch:
-        "tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&sort_type=percent",
+        "view=explore&tr=P7D&tz=UTC&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=&sort_by=impressions&sort_type=percent&sort_dir=DESC&leaderboard_measure_count=1",
     },
     view: {
       view: "pivot",
@@ -106,7 +106,7 @@ const TestCases: {
         AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC,
       ],
       expectedSearch:
-        "view=pivot&tr=P7D&compare_tr=rill-PP&f=publisher+IN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC&table_mode=nest",
+        "view=pivot&tr=P7D&tz=UTC&compare_tr=rill-PP&f=publisher+IN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC&table_mode=nest",
     },
   },
   {
@@ -115,7 +115,7 @@ const TestCases: {
       view: "explore",
       mutations: [AD_BIDS_OPEN_PUB_DIMENSION_TABLE],
       expectedSearch:
-        "tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=publisher&sort_type=percent",
+        "view=explore&tr=P7D&tz=UTC&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=publisher&sort_by=impressions&sort_type=percent&sort_dir=DESC&leaderboard_measure_count=1",
     },
     view: {
       view: "pivot",
@@ -124,7 +124,7 @@ const TestCases: {
         AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC,
       ],
       expectedSearch:
-        "view=pivot&tr=P7D&compare_tr=rill-PP&f=publisher+IN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC&table_mode=nest",
+        "view=pivot&tr=P7D&tz=UTC&compare_tr=rill-PP&f=publisher+IN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC&table_mode=nest",
     },
   },
   {
@@ -134,7 +134,7 @@ const TestCases: {
       additionalParams: "&measure=" + AD_BIDS_IMPRESSIONS_MEASURE,
       mutations: [AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD],
       expectedSearch:
-        "view=tdd&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions&chart_type=stacked_bar",
+        "view=tdd&tr=P7D&tz=UTC&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions&chart_type=stacked_bar",
     },
     view: {
       view: "pivot",
@@ -143,7 +143,7 @@ const TestCases: {
         AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC,
       ],
       expectedSearch:
-        "view=pivot&tr=P7D&compare_tr=rill-PP&f=publisher+IN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC&table_mode=nest",
+        "view=pivot&tr=P7D&tz=UTC&compare_tr=rill-PP&f=publisher+IN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC&table_mode=nest",
     },
   },
 ];

@@ -60,7 +60,7 @@ export class DashboardStateSync {
       [
         dataLoader.validSpecQuery,
         dataLoader.fullTimeRangeQuery,
-        dataLoader.defaultExploreState,
+        dataLoader.exploreStateFromYAMLConfig,
       ],
       ([validSpecResp, metricsViewTimeRangeResp, defaultExploreState]) => {
         const metricsViewSpec = validSpecResp.data?.metricsView;
@@ -119,7 +119,7 @@ export class DashboardStateSync {
     this.unsubExploreState?.();
   }
 
-  private handleExploreInit(initExploreState: MetricsExplorerEntity) {
+  private handleExploreInit(initExploreState: Partial<MetricsExplorerEntity>) {
     if (this.initialized) return;
 
     const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
@@ -156,6 +156,7 @@ export class DashboardStateSync {
       timeControlsState,
     );
 
+    console.log("INIT", redirectUrl.search);
     // using `replaceState` directly messes up the navigation entries,
     // `from` and `to` have the old url before being replaced in `afterNavigate` calls leading to incorrect handling.
     return goto(redirectUrl, {
@@ -224,6 +225,7 @@ export class DashboardStateSync {
       return;
     }
 
+    console.log("URLChange", redirectUrl.search);
     // using `replaceState` directly messes up the navigation entries,
     // `from` and `to` have the old url before being replaced in `afterNavigate` calls leading to incorrect handling.
     return goto(redirectUrl, {
@@ -267,6 +269,7 @@ export class DashboardStateSync {
       return;
     }
 
+    console.log("GOTO", newUrl.search);
     // dashboard changed so we should update the url
     return goto(newUrl);
   }
