@@ -49,18 +49,6 @@ export const setMeasureVisibility = (
     dashboard.leaderboardSortByMeasureName = measures[0];
   }
 
-  // Update leaderboardMeasureNames to only include visible measures
-  if (dashboard.leaderboardMeasureNames) {
-    dashboard.leaderboardMeasureNames =
-      dashboard.leaderboardMeasureNames.filter((name) =>
-        measures.includes(name),
-      );
-    // If no leaderboard measures are visible, set to the first visible measure
-    if (dashboard.leaderboardMeasureNames.length === 0 && measures.length > 0) {
-      dashboard.leaderboardMeasureNames = [measures[0]];
-    }
-  }
-
   dashboard.allMeasuresVisible =
     dashboard.visibleMeasures.length === allMeasures.length;
 };
