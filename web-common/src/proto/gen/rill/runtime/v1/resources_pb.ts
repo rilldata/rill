@@ -1546,9 +1546,19 @@ export class MetricsViewSpec_DimensionV2 extends Message<MetricsViewSpec_Dimensi
   /**
    * Lookup fields for the dimension
    *
-   * @generated from field: rill.runtime.v1.MetricsViewSpec.Lookup lookup = 8;
+   * @generated from field: string lookup_table = 8;
    */
-  lookup?: MetricsViewSpec_Lookup;
+  lookupTable = "";
+
+  /**
+   * @generated from field: string lookup_key_column = 9;
+   */
+  lookupKeyColumn = "";
+
+  /**
+   * @generated from field: string lookup_value_column = 10;
+   */
+  lookupValueColumn = "";
 
   constructor(data?: PartialMessage<MetricsViewSpec_DimensionV2>) {
     super();
@@ -1565,7 +1575,9 @@ export class MetricsViewSpec_DimensionV2 extends Message<MetricsViewSpec_Dimensi
     { no: 6, name: "expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "unnest", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "uri", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 8, name: "lookup", kind: "message", T: MetricsViewSpec_Lookup },
+    { no: 8, name: "lookup_table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "lookup_key_column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "lookup_value_column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_DimensionV2 {
@@ -1582,55 +1594,6 @@ export class MetricsViewSpec_DimensionV2 extends Message<MetricsViewSpec_Dimensi
 
   static equals(a: MetricsViewSpec_DimensionV2 | PlainMessage<MetricsViewSpec_DimensionV2> | undefined, b: MetricsViewSpec_DimensionV2 | PlainMessage<MetricsViewSpec_DimensionV2> | undefined): boolean {
     return proto3.util.equals(MetricsViewSpec_DimensionV2, a, b);
-  }
-}
-
-/**
- * @generated from message rill.runtime.v1.MetricsViewSpec.Lookup
- */
-export class MetricsViewSpec_Lookup extends Message<MetricsViewSpec_Lookup> {
-  /**
-   * @generated from field: string table = 1;
-   */
-  table = "";
-
-  /**
-   * @generated from field: string key_column = 2;
-   */
-  keyColumn = "";
-
-  /**
-   * @generated from field: string value_column = 3;
-   */
-  valueColumn = "";
-
-  constructor(data?: PartialMessage<MetricsViewSpec_Lookup>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.MetricsViewSpec.Lookup";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "key_column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "value_column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Lookup {
-    return new MetricsViewSpec_Lookup().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewSpec_Lookup {
-    return new MetricsViewSpec_Lookup().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewSpec_Lookup {
-    return new MetricsViewSpec_Lookup().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: MetricsViewSpec_Lookup | PlainMessage<MetricsViewSpec_Lookup> | undefined, b: MetricsViewSpec_Lookup | PlainMessage<MetricsViewSpec_Lookup> | undefined): boolean {
-    return proto3.util.equals(MetricsViewSpec_Lookup, a, b);
   }
 }
 

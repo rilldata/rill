@@ -3090,19 +3090,14 @@ definitions:
         type: boolean
       uri:
         type: string
-      lookup:
-        $ref: '#/definitions/MetricsViewSpecLookup'
+      lookupTable:
+        type: string
         title: Lookup fields for the dimension
+      lookupKeyColumn:
+        type: string
+      lookupValueColumn:
+        type: string
     title: Dimensions are columns to filter and group by
-  MetricsViewSpecLookup:
-    type: object
-    properties:
-      table:
-        type: string
-      keyColumn:
-        type: string
-      valueColumn:
-        type: string
   MetricsViewSpecMeasureType:
     type: string
     enum:

@@ -1341,6 +1341,13 @@ func (a *AST) convertToCTE(n *SelectNode) {
 	a.CTEs = append(a.CTEs, n)
 }
 
+type lookupMeta struct {
+	table    string
+	keyExpr  string
+	keyCol   string
+	valueCol string
+}
+
 // hasName checks if the given name is present as either a dimension or measure field in the node.
 // It relies on field names always resolving to the same value regardless of where in the AST they're referenced.
 // I.e. a name always corresponds to a dimension/measure name in the metrics view or as a computed field in the query.

@@ -105,13 +105,9 @@ export interface MetricsViewSpecDimensionV2 {
   expression?: string;
   unnest?: boolean;
   uri?: string;
-  lookup?: MetricsViewSpecLookup;
-}
-
-export interface MetricsViewSpecLookup {
-  table?: string;
-  keyColumn?: string;
-  valueColumn?: string;
+  lookupTable?: string;
+  lookupKeyColumn?: string;
+  lookupValueColumn?: string;
 }
 
 export type MetricsViewSpecMeasureType =

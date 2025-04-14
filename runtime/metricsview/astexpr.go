@@ -19,6 +19,19 @@ func (ast *AST) sqlForExpression(e *Expression, n *SelectNode, pseudoHaving, vis
 		out:          &strings.Builder{},
 	}
 
+	dictMeta := make(map[string]*lookupMeta)
+	for _, dim := range ast.metricsView.Dimensions {
+		if dim.LookupTable != "" {
+			dictMeta[dim.Name] = &lookupMeta{
+				table:    dim.LookupTable,
+				keyExpr:  dim.Column,
+				keyCol:   dim.LookupKeyColumn,
+				valueCol: dim.LookupValueColumn,
+			}
+		}
+	}
+	b.lookupMeta = dictMeta
+
 	err := b.writeExpression(e)
 	if err != nil {
 		return "", nil, err
@@ -34,6 +47,7 @@ type sqlExprBuilder struct {
 	visible      bool
 	out          *strings.Builder
 	args         []any
+	lookupMeta   map[string]*lookupMeta
 }
 
 // writeExpression writes the SQL expression for the given expression.
@@ -53,10 +67,6 @@ func (b *sqlExprBuilder) writeExpression(e *Expression) error {
 	}
 	if e.Condition != nil {
 		return b.writeCondition(e.Condition)
-	}
-	if e.Identifier != "" {
-		b.writeString(b.ast.dialect.EscapeIdentifier(e.Identifier))
-		return nil
 	}
 	return errors.New("invalid expression")
 }
@@ -83,12 +93,6 @@ func (b *sqlExprBuilder) writeValue(val any) error {
 }
 
 func (b *sqlExprBuilder) writeSubquery(sub *Subquery) error {
-	if sub.RawSQL != "" {
-		b.writeString("(")
-		b.writeString(sub.RawSQL)
-		b.writeString(")")
-		return nil
-	}
 	// We construct a Query that combines the parent Query's contextual info with that of the Subquery.
 	outer := b.ast.query
 	inner := &Query{
@@ -219,7 +223,12 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 
 		// If not unnested, write the expression as-is
 		if !unnest {
-			return b.writeBinaryConditionInner(nil, right, leftExpr, op)
+			if lm, ok := b.lookupMeta[left.Name]; ok {
+				leftExpr = fmt.Sprintf("%s IN (SELECT %s FROM dictionary(%s) WHERE %s ", b.ast.dialect.EscapeIdentifier(lm.keyExpr), b.ast.dialect.EscapeIdentifier(lm.keyCol), b.ast.dialect.EscapeIdentifier(lm.table), b.ast.dialect.EscapeIdentifier(lm.valueCol))
+				return b.writeBinaryConditionInner(nil, right, leftExpr, op, true)
+			}
+
+			return b.writeBinaryConditionInner(nil, right, leftExpr, op, false)
 		}
 
 		// Generate unnest join
@@ -231,7 +240,7 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 		if auto {
 			// Means the DB automatically unnests, so we can treat it as a normal value
 			leftExpr = b.ast.dialect.AutoUnnest(leftExpr)
-			return b.writeBinaryConditionInner(nil, right, leftExpr, op)
+			return b.writeBinaryConditionInner(nil, right, leftExpr, op, false)
 		}
 		unnestColAlias := b.ast.sqlForMember(unnestTableAlias, left.Name)
 
@@ -256,7 +265,7 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 		b.writeString("EXISTS (SELECT 1 FROM ")
 		b.writeString(unnestFrom)
 		b.writeString(" WHERE ")
-		err = b.writeBinaryConditionInner(nil, right, unnestColAlias, op)
+		err = b.writeBinaryConditionInner(nil, right, unnestColAlias, op, false)
 		if err != nil {
 			return err
 		}
@@ -265,10 +274,10 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 	}
 
 	// Handle netiher side is a name
-	return b.writeBinaryConditionInner(left, right, "", op)
+	return b.writeBinaryConditionInner(left, right, "", op, false)
 }
 
-func (b *sqlExprBuilder) writeBinaryConditionInner(left, right *Expression, leftOverride string, op Operator) error {
+func (b *sqlExprBuilder) writeBinaryConditionInner(left, right *Expression, leftOverride string, op Operator, leftOverrideNeedsClosure bool) error {
 	var joiner string
 	switch op {
 	case OperatorEq:
@@ -288,9 +297,9 @@ func (b *sqlExprBuilder) writeBinaryConditionInner(left, right *Expression, left
 	case OperatorNilike:
 		return b.writeILikeCondition(left, right, leftOverride, true)
 	case OperatorIn:
-		return b.writeInCondition(left, right, leftOverride, false)
+		return b.writeInCondition(left, right, leftOverride, false, leftOverrideNeedsClosure)
 	case OperatorNin:
-		return b.writeInCondition(left, right, leftOverride, true)
+		return b.writeInCondition(left, right, leftOverride, true, leftOverrideNeedsClosure)
 	default:
 		return fmt.Errorf("invalid binary condition operator %q", op)
 	}
@@ -298,7 +307,11 @@ func (b *sqlExprBuilder) writeBinaryConditionInner(left, right *Expression, left
 	b.writeByte('(')
 
 	if leftOverride != "" {
-		b.writeParenthesizedString(leftOverride)
+		if leftOverrideNeedsClosure {
+			b.writeString(leftOverride)
+		} else {
+			b.writeParenthesizedString(leftOverride)
+		}
 	} else {
 		err := b.writeExpression(left)
 		if err != nil {
@@ -324,6 +337,10 @@ func (b *sqlExprBuilder) writeBinaryConditionInner(left, right *Expression, left
 	}
 
 	b.writeByte(')')
+
+	if leftOverrideNeedsClosure {
+		b.writeByte(')')
+	}
 
 	return nil
 }
@@ -414,20 +431,24 @@ func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverri
 	return nil
 }
 
-func (b *sqlExprBuilder) writeInCondition(left, right *Expression, leftOverride string, not bool) error {
+func (b *sqlExprBuilder) writeInCondition(left, right *Expression, leftOverride string, not, leftOverrideNeedsClosure bool) error {
 	if right.Value != nil {
 		vals, ok := right.Value.([]any)
 		if !ok {
 			return fmt.Errorf("the right value must be a list of values for an IN condition")
 		}
 
-		return b.writeInConditionForValues(left, leftOverride, vals, not)
+		return b.writeInConditionForValues(left, leftOverride, vals, not, leftOverrideNeedsClosure)
 	}
 
 	b.writeByte('(')
 
 	if leftOverride != "" {
-		b.writeParenthesizedString(leftOverride)
+		if leftOverrideNeedsClosure {
+			b.writeString(leftOverride)
+		} else {
+			b.writeParenthesizedString(leftOverride)
+		}
 	} else {
 		err := b.writeExpression(left)
 		if err != nil {
@@ -448,10 +469,14 @@ func (b *sqlExprBuilder) writeInCondition(left, right *Expression, leftOverride 
 
 	b.writeByte(')')
 
+	if leftOverrideNeedsClosure {
+		b.writeByte(')')
+	}
+
 	return nil
 }
 
-func (b *sqlExprBuilder) writeInConditionForValues(left *Expression, leftOverride string, vals []any, not bool) error {
+func (b *sqlExprBuilder) writeInConditionForValues(left *Expression, leftOverride string, vals []any, not, leftOverrideNeedsClosure bool) error {
 	var hasNull, hasNonNull bool
 	for _, v := range vals {
 		if v == nil {
@@ -477,7 +502,11 @@ func (b *sqlExprBuilder) writeInConditionForValues(left *Expression, leftOverrid
 
 	if hasNonNull {
 		if leftOverride != "" {
-			b.writeParenthesizedString(leftOverride)
+			if leftOverrideNeedsClosure {
+				b.writeString(leftOverride)
+			} else {
+				b.writeParenthesizedString(leftOverride)
+			}
 		} else {
 			err := b.writeExpression(left)
 			if err != nil {
@@ -506,6 +535,10 @@ func (b *sqlExprBuilder) writeInConditionForValues(left *Expression, leftOverrid
 			b.args = append(b.args, val)
 		}
 		b.writeByte(')')
+
+		if leftOverrideNeedsClosure {
+			b.writeByte(')')
+		}
 	}
 
 	if hasNull {
@@ -518,7 +551,11 @@ func (b *sqlExprBuilder) writeInConditionForValues(left *Expression, leftOverrid
 		}
 
 		if leftOverride != "" {
-			b.writeParenthesizedString(leftOverride)
+			if leftOverrideNeedsClosure {
+				b.writeString(leftOverride)
+			} else {
+				b.writeParenthesizedString(leftOverride)
+			}
 		} else {
 			err := b.writeExpression(left)
 			if err != nil {
@@ -531,13 +568,21 @@ func (b *sqlExprBuilder) writeInConditionForValues(left *Expression, leftOverrid
 		} else {
 			b.writeString(" IS NULL")
 		}
+
+		if leftOverrideNeedsClosure {
+			b.writeByte(')')
+		}
 	}
 
 	// When you have "dim NOT IN (...)", then NULL values are always excluded. We need to explicitly include it.
 	if not && !hasNull {
 		b.writeString(" OR ")
 		if leftOverride != "" {
-			b.writeParenthesizedString(leftOverride)
+			if leftOverrideNeedsClosure {
+				b.writeString(leftOverride)
+			} else {
+				b.writeParenthesizedString(leftOverride)
+			}
 		} else {
 			err := b.writeExpression(left)
 			if err != nil {
@@ -545,6 +590,10 @@ func (b *sqlExprBuilder) writeInConditionForValues(left *Expression, leftOverrid
 			}
 		}
 		b.writeString(" IS NULL")
+
+		if leftOverrideNeedsClosure {
+			b.writeByte(')')
+		}
 	}
 
 	b.writeByte(')')

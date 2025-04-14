@@ -351,8 +351,8 @@ func (d Dialect) AutoUnnest(expr string) string {
 }
 
 func (d Dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsViewSpec_DimensionV2) string {
-	if dimension.Lookup != nil {
-		return d.DictGetExpr(dimension.Lookup.Table, dimension.Lookup.ValueColumn, dimension.Column)
+	if dimension.LookupTable != "" {
+		return d.DictGetExpr(dimension.LookupTable, dimension.LookupValueColumn, dimension.Column)
 	}
 	if dimension.Expression != "" {
 		return dimension.Expression
