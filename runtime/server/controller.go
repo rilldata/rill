@@ -732,21 +732,3 @@ func must[T any](v T, err error) T {
 	}
 	return v
 }
-
-func writeSSEEvent(w http.ResponseWriter, event string, id string, data interface{}) error {
-	if id != "" {
-		fmt.Fprintf(w, "id: %s\n", id)
-	}
-
-	if event != "" {
-		fmt.Fprintf(w, "event: %s\n", event)
-	}
-
-	jsonData, err := json.Marshal(data)
-	if err != nil {
-		return err
-	}
-
-	fmt.Fprintf(w, "data: %s\n\n", jsonData)
-	return nil
-}
