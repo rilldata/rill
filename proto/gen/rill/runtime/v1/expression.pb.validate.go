@@ -500,8 +500,6 @@ func (m *Subquery) validate(all bool) error {
 		}
 	}
 
-	// no validation rules for RawSql
-
 	if len(errors) > 0 {
 		return SubqueryMultiError(errors)
 	}

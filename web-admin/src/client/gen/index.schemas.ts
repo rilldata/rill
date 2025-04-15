@@ -1087,7 +1087,6 @@ export interface V1Subquery {
   measures?: string[];
   where?: V1Expression;
   having?: V1Expression;
-  rawSql?: string;
 }
 
 export interface V1Subscription {

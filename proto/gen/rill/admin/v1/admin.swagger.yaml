@@ -5344,8 +5344,6 @@ definitions:
         $ref: '#/definitions/v1Expression'
       having:
         $ref: '#/definitions/v1Expression'
-      rawSql:
-        type: string
   v1Subscription:
     type: object
     properties:

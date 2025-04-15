@@ -17,18 +17,18 @@ import (
 // MetricsViewYAML is the raw structure of a MetricsView resource defined in YAML
 type MetricsViewYAML struct {
 	commonYAML        `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
-	DisplayName       string           `yaml:"display_name"`
-	Title             string           `yaml:"title"` // Deprecated: use display_name
-	Description       string           `yaml:"description"`
-	Model             string           `yaml:"model"`
-	Database          string           `yaml:"database"`
-	DatabaseSchema    string           `yaml:"database_schema"`
-	Table             string           `yaml:"table"`
-	TimeDimension     string           `yaml:"timeseries"`
-	Watermark         string           `yaml:"watermark"`
-	SmallestTimeGrain string           `yaml:"smallest_time_grain"`
-	FirstDayOfWeek    uint32           `yaml:"first_day_of_week"`
-	FirstMonthOfYear  uint32           `yaml:"first_month_of_year"`
+	DisplayName       string `yaml:"display_name"`
+	Title             string `yaml:"title"` // Deprecated: use display_name
+	Description       string `yaml:"description"`
+	Model             string `yaml:"model"`
+	Database          string `yaml:"database"`
+	DatabaseSchema    string `yaml:"database_schema"`
+	Table             string `yaml:"table"`
+	TimeDimension     string `yaml:"timeseries"`
+	Watermark         string `yaml:"watermark"`
+	SmallestTimeGrain string `yaml:"smallest_time_grain"`
+	FirstDayOfWeek    uint32 `yaml:"first_day_of_week"`
+	FirstMonthOfYear  uint32 `yaml:"first_month_of_year"`
 	Dimensions        []*struct {
 		Name            string
 		DisplayName     string `yaml:"display_name"`
@@ -820,7 +820,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 
 	for _, dim := range tmp.Dimensions {
 		if dim == nil || dim.Ignore {
-			continue
+			continuegit
 		}
 
 		// all dict fields should be defined or none
@@ -831,7 +831,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 				return fmt.Errorf("column is required if lookup fields are defined, containing values to be looked up")
 			}
 		} else {
-			return fmt.Errorf("all lookup fields should be defined")
+			return fmt.Errorf("all lookup fields - lookup_table, lookup_key_column and lookup_value_column should be defined")
 		}
 
 		spec.Dimensions = append(spec.Dimensions, &runtimev1.MetricsViewSpec_Dimension{

@@ -223,11 +223,6 @@ export class Subquery extends Message<Subquery> {
    */
   having?: Expression;
 
-  /**
-   * @generated from field: string raw_sql = 5;
-   */
-  rawSql = "";
-
   constructor(data?: PartialMessage<Subquery>) {
     super();
     proto3.util.initPartial(data, this);
@@ -240,7 +235,6 @@ export class Subquery extends Message<Subquery> {
     { no: 2, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 3, name: "where", kind: "message", T: Expression },
     { no: 4, name: "having", kind: "message", T: Expression },
-    { no: 5, name: "raw_sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Subquery {
