@@ -121,7 +121,7 @@
   {/if}
   <div class="flex flex-row gap-1.5 items-center">
     <div
-      class="flex flex-row items-center bg-white rounded-sm px-1 py-[3px] w-full {contentClassName}"
+      class="flex flex-row items-center bg-surface rounded-sm px-1 py-[3px] w-full {contentClassName}"
       class:border={!hasSomeErrors}
       class:border-gray-300={!hasSomeErrors}
       class:outline={focused || hasSomeErrors}

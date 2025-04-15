@@ -319,7 +319,7 @@
   thead tr th {
     @apply border-t border-gray-200;
     @apply text-left font-semibold text-gray-500;
-    @apply sticky top-0 z-10 bg-white;
+    @apply sticky top-0 z-10 bg-surface;
   }
   thead tr th:first-child {
     @apply border-l rounded-tl-sm;

@@ -32,7 +32,5 @@
     @apply inline-block;
     border-radius: 2px;
     position: relative;
-    mix-blend-mode: screen;
-    background-blend-mode: screen;
   }
 </style>

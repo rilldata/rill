@@ -306,7 +306,7 @@
   }
 
   .valid:hover {
-    @apply bg-white;
+    @apply bg-surface;
   }
 
   .rounded {

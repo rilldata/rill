@@ -154,7 +154,7 @@
 
   .time {
     @apply rounded-2xl;
-    @apply bg-white border-slate-200 text-slate-800;
+    @apply bg-surface border-slate-200 text-slate-800;
   }
 
   .time:hover,

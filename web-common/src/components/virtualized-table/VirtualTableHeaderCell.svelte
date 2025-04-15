@@ -52,7 +52,7 @@
 
 <style lang="postcss">
   th {
-    @apply truncate p-0 bg-white;
+    @apply truncate p-0 bg-surface;
     height: var(--header-height);
   }
 

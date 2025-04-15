@@ -85,7 +85,7 @@
 
 <!-- 802px = 1px border on each side of the form + 3 tabs with a 200px fixed-width -->
 <form
-  class="transform bg-white rounded-md flex flex-col w-[802px]"
+  class="transform bg-surface rounded-md flex flex-col w-[802px]"
   id={formId}
   on:submit|preventDefault={handleSubmit}
 >

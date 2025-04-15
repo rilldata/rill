@@ -76,7 +76,7 @@
     @apply w-[34px] h-[26px] rounded-2xl;
     @apply flex items-center justify-center;
 
-    @apply bg-white;
+    @apply bg-surface;
   }
 
   button.addBorder {

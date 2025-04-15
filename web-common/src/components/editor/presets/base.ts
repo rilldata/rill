@@ -1,7 +1,7 @@
 import { acceptCompletion } from "@codemirror/autocomplete";
 import { indentWithTab } from "@codemirror/commands";
 import { lineStatus } from "../line-status";
-import { editorTheme } from "../theme";
+import { editorTheme, oneDarkHighlightStyle } from "../theme";
 import { indentationMarkers } from "@replit/codemirror-indentation-markers";
 import {
   keymap,
@@ -15,7 +15,6 @@ import {
 } from "@codemirror/view";
 import { EditorState, Prec } from "@codemirror/state";
 import {
-  defaultHighlightStyle,
   syntaxHighlighting,
   indentOnInput,
   bracketMatching,
@@ -48,7 +47,7 @@ export const base = () => [
   dropCursor(),
   EditorState.allowMultipleSelections.of(true),
   indentOnInput(),
-  syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+  syntaxHighlighting(oneDarkHighlightStyle, { fallback: true }),
   bracketMatching(),
   closeBrackets(),
   autocompletion(),

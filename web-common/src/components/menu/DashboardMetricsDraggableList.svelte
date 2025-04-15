@@ -246,7 +246,7 @@
         on:mousedown={handleMouseDown}
       >
         <header
-          class="flex-none flex w-full py-1.5 pb-1 justify-between px-2 sticky top-0 from-white from-80% to-transparent bg-gradient-to-b z-10"
+          class="flex-none flex w-full py-1.5 pb-1 justify-between px-2 sticky top-0 from-popover from-80% to-transparent bg-gradient-to-b z-10"
         >
           <h3 class="uppercase text-gray-500 font-semibold">
             Shown {type === "measure" ? "Measures" : "Dimensions"}
@@ -409,10 +409,10 @@
         <span class="flex-none h-px bg-slate-200 w-full" />
         <div class="hidden-section flex flex-col flex-1 min-h-0 p-1.5 pt-0">
           <header
-            class="flex-none flex py-1.5 justify-between px-2 sticky top-0 from-white from-80% to-transparent bg-gradient-to-b"
+            class="flex-none flex py-1.5 justify-between px-2 sticky top-0 from-popover from-80% to-transparent bg-gradient-to-b"
           >
             <h3
-              class="uppercase text-xs text-gray-500 font-semibold from-white from-80% to-transparent bg-gradient-to-b"
+              class="uppercase text-xs text-gray-500 font-semibold from-popover from-80% to-transparent bg-gradient-to-b"
             >
               Hidden {type === "measure" ? "Measures" : "Dimensions"}
             </h3>

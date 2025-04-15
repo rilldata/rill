@@ -10,6 +10,7 @@
     createLocalServiceGetMetadata,
   } from "@rilldata/web-common/runtime-client/local-service";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
+  import ThemeToggle from "../themes/ThemeToggle.svelte";
 
   $: user = createLocalServiceGetCurrentUser({
     query: {
@@ -103,5 +104,6 @@
         </DropdownMenu.Item>
       {/if}
     </DropdownMenu.Content>
+    <ThemeToggle />
   </DropdownMenu.Root>
 {/if}

@@ -267,7 +267,7 @@
   }
 
   .header-cell {
-    @apply px-2 bg-white size-full;
+    @apply px-2 bg-surface size-full;
     @apply flex items-center gap-x-1 w-full truncate;
     @apply text-gray-800 font-medium;
     height: var(--header-height);
@@ -283,7 +283,7 @@
 
   /* The totals row */
   .with-measure tbody > tr:nth-of-type(2) {
-    @apply bg-white sticky z-20;
+    @apply bg-surface sticky z-20;
     top: var(--total-header-height);
   }
 

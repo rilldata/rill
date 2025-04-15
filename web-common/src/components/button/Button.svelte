@@ -121,11 +121,11 @@
   /* PRIMARY STYLES */
 
   .primary {
-    @apply bg-primary-600 text-white;
+    @apply bg-primary-500 text-white;
   }
 
   .primary:hover {
-    @apply bg-primary-700;
+    @apply bg-primary-600;
   }
 
   .primary:active,
@@ -300,7 +300,7 @@
   }
 
   .danger.secondary {
-    @apply bg-white;
+    @apply bg-surface;
     @apply text-red-500;
     @apply border-red-500;
   }
@@ -388,7 +388,7 @@
     @apply w-[34px] h-[26px] rounded-2xl;
     @apply flex items-center justify-center;
     @apply border border-dashed border-slate-300;
-    @apply bg-white px-0;
+    @apply bg-surface px-0;
   }
 
   .gray:not(:hover) {
