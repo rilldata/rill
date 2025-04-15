@@ -37,9 +37,6 @@ func (r *Runtime) AcquireSystemHandle(ctx context.Context, connector string) (dr
 
 // AcquireHandle returns instance specific handle
 func (r *Runtime) AcquireHandle(ctx context.Context, instanceID, connector string) (drivers.Handle, func(), error) {
-	if connector == "gs" {
-		connector = "gcs"
-	}
 	cfg, err := r.ConnectorConfig(ctx, instanceID, connector)
 	if err != nil {
 		return nil, nil, err

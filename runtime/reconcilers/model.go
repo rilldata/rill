@@ -719,7 +719,7 @@ func (r *ModelReconciler) resolveAndSyncPartitions(ctx context.Context, self *ru
 
 	// Log
 	count := batchStartIdx + len(batch)
-	defer r.C.Logger.Info("Resolved model partitions", zap.String("model", self.Meta.Name.Name), zap.Int("partitions", count), zap.Any("batch", batch), observability.ZapCtx(ctx))
+	defer r.C.Logger.Info("Resolved model partitions", zap.String("model", self.Meta.Name.Name), zap.Int("partitions", count), observability.ZapCtx(ctx))
 
 	// Flush the remaining rows not handled in the loop
 	return r.syncPartitions(ctx, mdl, batchStartIdx, batch)
