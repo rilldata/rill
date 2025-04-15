@@ -19,6 +19,7 @@
     DimensionFilterMode,
     DimensionFilterModeOptions,
   } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-mode";
+  import { splitDimensionSearchText } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/split-dimension-search-text";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { fly } from "svelte/transition";
   import {
@@ -169,11 +170,7 @@
     // Do not check search text and possibly switch to InList when mode is Contains
     if (curMode === DimensionFilterMode.Contains) return;
 
-    let values = inputText.split(BulkValueSplitRegex);
-    if (values.length > 0 && values[values.length - 1] === "") {
-      // Remove the last empty value when the last character is a comma/newline
-      values = values.slice(0, values.length - 1);
-    }
+    const values = splitDimensionSearchText(inputText);
 
     if (values.length <= 1) {
       if (curMode === DimensionFilterMode.InList) {
