@@ -1,4 +1,3 @@
-import type { QueryObserverResult } from "@tanstack/svelte-query";
 import { KPIGridComponent } from "@rilldata/web-common/features/canvas/components/kpi-grid";
 import type {
   ComponentInputParam,
@@ -11,8 +10,12 @@ import type {
   V1MetricsViewSpec,
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
+import type { QueryObserverResult } from "@tanstack/svelte-query";
+import type { CanvasEntity, ComponentPath } from "../stores/canvas-entity";
+import type { BaseCanvasComponent } from "./BaseCanvasComponent";
 import { ChartComponent } from "./charts";
 import { ImageComponent } from "./image";
+import { LeaderboardComponent } from "./leaderboard";
 import { MarkdownCanvasComponent } from "./markdown";
 import { PivotCanvasComponent } from "./pivot";
 import type {
@@ -20,8 +23,6 @@ import type {
   ComponentCommonProperties,
   ComponentSpec,
 } from "./types";
-import type { CanvasEntity, ComponentPath } from "../stores/canvas-entity";
-import type { BaseCanvasComponent } from "./BaseCanvasComponent";
 
 export const commonOptions: Record<
   keyof ComponentCommonProperties,
@@ -72,6 +73,7 @@ const NON_CHART_TYPES = [
   "image",
   "table",
   "pivot",
+  "leaderboard",
 ] as const;
 const ALL_COMPONENT_TYPES = [...CHART_TYPES, ...NON_CHART_TYPES] as const;
 
@@ -101,6 +103,7 @@ export const COMPONENT_CLASS_MAP: Record<
   markdown: MarkdownCanvasComponent,
   kpi_grid: KPIGridComponent,
   image: ImageComponent,
+  leaderboard: LeaderboardComponent,
   table: PivotCanvasComponent,
   pivot: PivotCanvasComponent,
   bar_chart: ChartComponent,
@@ -117,6 +120,7 @@ const DISPLAY_MAP: Record<CanvasComponentType, string> = {
   table: "Table",
   pivot: "Pivot",
   image: "Image",
+  leaderboard: "Leaderboard",
   bar_chart: "Chart",
   line_chart: "Chart",
   stacked_bar: "Chart",

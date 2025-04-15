@@ -158,7 +158,9 @@ describe.skip("dashboard-stores", () => {
     const mock = createValidSpecQueryMock();
     const { stateManagers } = initStateManagers();
     const {
-      actions: { setLeaderboardSortByMeasureName },
+      actions: {
+        leaderboard: { setLeaderboardSortByMeasureName },
+      },
     } = stateManagers;
     assertMetricsView(AD_BIDS_EXPLORE_NAME);
 
@@ -333,7 +335,9 @@ describe.skip("dashboard-stores", () => {
       const mock = createValidSpecQueryMock();
       const { stateManagers } = initStateManagers();
       const {
-        actions: { setLeaderboardSortByMeasureName },
+        actions: {
+          leaderboard: { setLeaderboardSortByMeasureName },
+        },
       } = stateManagers;
       setLeaderboardSortByMeasureName(AD_BIDS_BID_PRICE_MEASURE);
 
