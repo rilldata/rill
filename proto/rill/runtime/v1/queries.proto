@@ -406,6 +406,8 @@ message MetricsViewAggregationRequest {
   MetricsViewFilter filter = 14; // Deprecated. should be removed once UI is moved to use new filters
   bool exact = 17;
   bool fill_missing = 21;
+  // Optional. Defaults to false. Used to fetch rows from underlying model
+  bool rows = 22;
 }
 
 message MetricsViewAggregationResponse {
