@@ -820,7 +820,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 
 	for _, dim := range tmp.Dimensions {
 		if dim == nil || dim.Ignore {
-			continuegit
+			continue
 		}
 
 		// all dict fields should be defined or none

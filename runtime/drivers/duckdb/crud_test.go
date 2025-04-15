@@ -49,7 +49,7 @@ func Test_connection_CreateTableAsSelect(t *testing.T) {
 	sql := "SELECT 1"
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
-			_, err := tt.c.CreateTableAsSelect(ctx, tt.name, sql, &drivers.CreateTableOptions{View: tt.view})
+			_, err := tt.c.createTableAsSelect(ctx, tt.name, sql, &createTableOptions{view: tt.view})
 			require.NoError(t, err)
 			res, err := tt.c.Query(ctx, &drivers.Statement{Query: fmt.Sprintf("SELECT count(*) FROM %q", tt.name)})
 			require.NoError(t, err)
@@ -81,13 +81,13 @@ func Test_connection_CreateTableAsSelectMultipleTimes(t *testing.T) {
 	require.NoError(t, c.Migrate(context.Background()))
 	c.AsOLAP("default")
 
-	_, err = c.CreateTableAsSelect(context.Background(), "test-select-multiple", "select 1", &drivers.CreateTableOptions{})
+	_, err = c.createTableAsSelect(context.Background(), "test-select-multiple", "select 1", &createTableOptions{})
 	require.NoError(t, err)
 	time.Sleep(2 * time.Millisecond)
-	_, err = c.CreateTableAsSelect(context.Background(), "test-select-multiple", "select 'hello'", &drivers.CreateTableOptions{})
+	_, err = c.createTableAsSelect(context.Background(), "test-select-multiple", "select 'hello'", &createTableOptions{})
 	require.NoError(t, err)
 
-	_, err = c.CreateTableAsSelect(context.Background(), "test-select-multiple", "select fail query", &drivers.CreateTableOptions{})
+	_, err = c.createTableAsSelect(context.Background(), "test-select-multiple", "select fail query", &createTableOptions{})
 	require.Error(t, err)
 
 	res, err := c.Query(context.Background(), &drivers.Statement{Query: fmt.Sprintf("SELECT * FROM %q", "test-select-multiple")})
@@ -109,10 +109,10 @@ func Test_connection_DropTable(t *testing.T) {
 	require.NoError(t, c.Migrate(context.Background()))
 	c.AsOLAP("default")
 
-	_, err = c.CreateTableAsSelect(context.Background(), "test-drop", "select 1", &drivers.CreateTableOptions{})
+	_, err = c.createTableAsSelect(context.Background(), "test-drop", "select 1", &createTableOptions{})
 	require.NoError(t, err)
 
-	err = c.DropTable(context.Background(), "test-drop")
+	err = c.dropTable(context.Background(), "test-drop")
 	require.NoError(t, err)
 
 	res, err := c.Query(context.Background(), &drivers.Statement{Query: "SELECT count(*) FROM information_schema.tables WHERE table_name='test-drop' AND table_type='VIEW'"})
@@ -133,23 +133,21 @@ func Test_connection_InsertTableAsSelect_WithAppendStrategy(t *testing.T) {
 	require.NoError(t, c.Migrate(context.Background()))
 	c.AsOLAP("default")
 
-	_, err = c.CreateTableAsSelect(context.Background(), "test-insert", "select 1", &drivers.CreateTableOptions{})
+	_, err = c.createTableAsSelect(context.Background(), "test-insert", "select 1", &createTableOptions{})
 	require.NoError(t, err)
 
-	opts := &drivers.InsertTableOptions{
+	opts := &InsertTableOptions{
 		ByName:   false,
-		InPlace:  true,
 		Strategy: drivers.IncrementalStrategyAppend,
 	}
-	_, err = c.InsertTableAsSelect(context.Background(), "test-insert", "select 2", opts)
+	_, err = c.insertTableAsSelect(context.Background(), "test-insert", "select 2", opts)
 	require.NoError(t, err)
 
-	opts = &drivers.InsertTableOptions{
+	opts = &InsertTableOptions{
 		ByName:   true,
-		InPlace:  true,
 		Strategy: drivers.IncrementalStrategyAppend,
 	}
-	_, err = c.InsertTableAsSelect(context.Background(), "test-insert", "select 3", opts)
+	_, err = c.insertTableAsSelect(context.Background(), "test-insert", "select 3", opts)
 	require.Error(t, err)
 
 	res, err := c.Query(context.Background(), &drivers.Statement{Query: "SELECT count(*) FROM 'test-insert'"})
@@ -171,16 +169,15 @@ func Test_connection_InsertTableAsSelect_WithMergeStrategy(t *testing.T) {
 	require.NoError(t, c.Migrate(context.Background()))
 	c.AsOLAP("default")
 
-	_, err = c.CreateTableAsSelect(context.Background(), "test-merge", "SELECT range, 'insert' AS strategy FROM range(0, 4)", &drivers.CreateTableOptions{})
+	_, err = c.createTableAsSelect(context.Background(), "test-merge", "SELECT range, 'insert' AS strategy FROM range(0, 4)", &createTableOptions{})
 	require.NoError(t, err)
 
-	opts := &drivers.InsertTableOptions{
+	opts := &InsertTableOptions{
 		ByName:    false,
-		InPlace:   true,
 		Strategy:  drivers.IncrementalStrategyMerge,
 		UniqueKey: []string{"range"},
 	}
-	_, err = c.InsertTableAsSelect(context.Background(), "test-merge", "SELECT range, 'merge' AS strategy FROM range(2, 4)", opts)
+	_, err = c.insertTableAsSelect(context.Background(), "test-merge", "SELECT range, 'merge' AS strategy FROM range(2, 4)", opts)
 	require.NoError(t, err)
 
 	res, err := c.Query(context.Background(), &drivers.Statement{Query: "SELECT range, strategy FROM 'test-merge' ORDER BY range"})
@@ -222,10 +219,10 @@ func Test_connection_RenameTable(t *testing.T) {
 	require.NoError(t, c.Migrate(context.Background()))
 	c.AsOLAP("default")
 
-	_, err = c.CreateTableAsSelect(context.Background(), "test-rename", "select 1", &drivers.CreateTableOptions{})
+	_, err = c.createTableAsSelect(context.Background(), "test-rename", "select 1", &createTableOptions{})
 	require.NoError(t, err)
 
-	err = c.RenameTable(context.Background(), "test-rename", "rename-test")
+	err = c.renameTable(context.Background(), "test-rename", "rename-test")
 	require.NoError(t, err)
 
 	res, err := c.Query(context.Background(), &drivers.Statement{Query: "SELECT count(*) FROM 'rename-test'"})
@@ -245,13 +242,13 @@ func Test_connection_RenameToExistingTable(t *testing.T) {
 	require.NoError(t, c.Migrate(context.Background()))
 	c.AsOLAP("default")
 
-	_, err = c.CreateTableAsSelect(context.Background(), "source", "SELECT 1 AS data", &drivers.CreateTableOptions{})
+	_, err = c.createTableAsSelect(context.Background(), "source", "SELECT 1 AS data", &createTableOptions{})
 	require.NoError(t, err)
 
-	_, err = c.CreateTableAsSelect(context.Background(), "_tmp_source", "SELECT 2 AS DATA", &drivers.CreateTableOptions{})
+	_, err = c.createTableAsSelect(context.Background(), "_tmp_source", "SELECT 2 AS DATA", &createTableOptions{})
 	require.NoError(t, err)
 
-	err = c.RenameTable(context.Background(), "_tmp_source", "source")
+	err = c.renameTable(context.Background(), "_tmp_source", "source")
 	require.NoError(t, err)
 
 	res, err := c.Query(context.Background(), &drivers.Statement{Query: "SELECT * FROM 'source'"})
@@ -263,38 +260,6 @@ func Test_connection_RenameToExistingTable(t *testing.T) {
 	require.NoError(t, res.Close())
 }
 
-func Test_connection_AddTableColumn(t *testing.T) {
-	temp := t.TempDir()
-	os.Mkdir(temp, fs.ModePerm)
-
-	handle, err := Driver{}.Open("default", map[string]any{}, storage.MustNew(temp, nil), activity.NewNoopClient(), zap.NewNop())
-	require.NoError(t, err)
-	c := handle.(*connection)
-	require.NoError(t, c.Migrate(context.Background()))
-	c.AsOLAP("default")
-
-	_, err = c.CreateTableAsSelect(context.Background(), "test alter column", "select 1 as data", &drivers.CreateTableOptions{})
-	require.NoError(t, err)
-
-	res, err := c.Query(context.Background(), &drivers.Statement{Query: "SELECT data_type FROM information_schema.columns WHERE table_name='test alter column'"})
-	require.NoError(t, err)
-	require.True(t, res.Next())
-	var typ string
-	require.NoError(t, res.Scan(&typ))
-	require.Equal(t, "INTEGER", typ)
-	require.NoError(t, res.Close())
-
-	err = c.AlterTableColumn(context.Background(), "test alter column", "data", "VARCHAR")
-	require.NoError(t, err)
-
-	res, err = c.Query(context.Background(), &drivers.Statement{Query: "SELECT data_type FROM information_schema.columns WHERE table_name='test alter column' AND table_schema=current_schema()"})
-	require.NoError(t, err)
-	require.True(t, res.Next())
-	require.NoError(t, res.Scan(&typ))
-	require.Equal(t, "VARCHAR", typ)
-	require.NoError(t, res.Close())
-}
-
 func Test_connection_RenameToExistingTableOld(t *testing.T) {
 	handle, err := Driver{}.Open("default", map[string]any{}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
@@ -302,13 +267,13 @@ func Test_connection_RenameToExistingTableOld(t *testing.T) {
 	require.NoError(t, c.Migrate(context.Background()))
 	c.AsOLAP("default")
 
-	_, err = c.CreateTableAsSelect(context.Background(), "source", "SELECT 1 AS data", &drivers.CreateTableOptions{})
+	_, err = c.createTableAsSelect(context.Background(), "source", "SELECT 1 AS data", &createTableOptions{})
 	require.NoError(t, err)
 
-	_, err = c.CreateTableAsSelect(context.Background(), "_tmp_source", "SELECT 2 AS DATA", &drivers.CreateTableOptions{})
+	_, err = c.createTableAsSelect(context.Background(), "_tmp_source", "SELECT 2 AS DATA", &createTableOptions{})
 	require.NoError(t, err)
 
-	err = c.RenameTable(context.Background(), "_tmp_source", "source")
+	err = c.renameTable(context.Background(), "_tmp_source", "source")
 	require.NoError(t, err)
 
 	res, err := c.Query(context.Background(), &drivers.Statement{Query: "SELECT * FROM 'source'"})
@@ -337,20 +302,20 @@ func Test_connection_CreateTableAsSelectWithComments(t *testing.T) {
 		-- that was a stupid query
 		-- I hope to write not so stupid query
 	`
-	_, err = normalConn.CreateTableAsSelect(ctx, "test", sql, &drivers.CreateTableOptions{})
+	_, err = normalConn.createTableAsSelect(ctx, "test", sql, &createTableOptions{})
 	require.NoError(t, err)
 
-	_, err = normalConn.CreateTableAsSelect(ctx, "test_view", sql, &drivers.CreateTableOptions{View: true})
+	_, err = normalConn.createTableAsSelect(ctx, "test_view", sql, &createTableOptions{view: true})
 	require.NoError(t, err)
 
 	sql = `
 		with r as (select 1 as id ) 	
 		select * from r
 	`
-	_, err = normalConn.CreateTableAsSelect(ctx, "test", sql, &drivers.CreateTableOptions{})
+	_, err = normalConn.createTableAsSelect(ctx, "test", sql, &createTableOptions{})
 	require.NoError(t, err)
 
-	_, err = normalConn.CreateTableAsSelect(ctx, "test_view", sql, &drivers.CreateTableOptions{View: true})
+	_, err = normalConn.createTableAsSelect(ctx, "test_view", sql, &createTableOptions{view: true})
 	require.NoError(t, err)
 }
 
