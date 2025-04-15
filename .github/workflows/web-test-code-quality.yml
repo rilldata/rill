@@ -52,13 +52,18 @@ jobs:
       - name: lint and type checks for web local
         if: steps.filter.outputs.local == 'true'
         run: |-
-          npm run build -w web-local
-          npx eslint web-local --quiet --debug
+          cd web-local
+          npx svelte-kit sync
+          cd ..
+          npx eslint web-local --quiet
           npm run check -w web-local
 
       - name: lint and type checks for web admin
         if: steps.filter.outputs.admin == 'true'
         run: |-
+          cd web-admin
+          npx svelte-kit sync
+          cd ..
           npx eslint web-admin --quiet
           npx svelte-check --workspace web-admin --no-tsconfig
 
