@@ -87,7 +87,7 @@ test.describe("Bookmarks", () => {
       // NOTE: comparison time range is not added for filter-only as per requirement
       assertUrlParams(
         adminPage,
-        `view=tdd&tr=PT6H&tz=UTC&compare_tr=&grain=hour&f=app_site_name IN ('FuboTV','Philo')&measure=requests&chart_type=timeseries`,
+        `view=tdd&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=app_site_name IN ('FuboTV','Philo')&measure=requests&chart_type=timeseries`,
       );
     });
 
@@ -186,7 +186,7 @@ test.describe("Bookmarks", () => {
       // make sure the url has the correct params
       assertUrlParams(
         adminPage,
-        `view=explore&tr=PT6H&tz=UTC&compare_tr=rill-PP&grain=hour&f=app_site_name IN ('FuboTV','Philo')&measures=*&dims=*&expand_dim=app_site_domain&sort_by=requests&sort_type=value&sort_dir=DESC&leaderboard_measure_count=1`,
+        `view=explore&tr=PT6H&tz=UTC&compare_tr=rill-PP&grain=hour&compare_dim=&f=app_site_name IN ('FuboTV','Philo')&measures=*&dims=*&expand_dim=app_site_domain&sort_by=requests&sort_type=value&sort_dir=DESC&leaderboard_measures=requests`,
       );
     });
 
@@ -254,7 +254,7 @@ test.describe("Bookmarks", () => {
       // make sure the url has the correct params
       assertUrlParams(
         adminPage,
-        `view=explore&tr=PT24H&tz=UTC&compare_tr=&grain=hour&f=app_site_domain IN ('Not Available') AND pub_name IN ('Not Available')&measures=*&dims=*&expand_dim=&sort_by=requests&sort_type=value&sort_dir=DESC&leaderboard_measure_count=1`,
+        `view=explore&tr=PT24H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=app_site_domain IN ('Not Available') AND pub_name IN ('Not Available')&measures=*&dims=*&expand_dim=&sort_by=requests&sort_type=value&sort_dir=DESC&leaderboard_measures=requests`,
       );
 
       // Open the bookmarks dropdown

@@ -403,7 +403,7 @@ const TestCases: {
       AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC,
     ],
     expectedSearch:
-      "view=pivot&tr=PT6H&tz=UTC&compare_tr=&compare_dim=&f=&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC&table_mode=nest",
+      "view=pivot&tr=PT6H&tz=UTC&compare_tr=&f=&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC&table_mode=nest",
   },
   {
     title: "Pivot with no preset, open and close pivot",
@@ -423,7 +423,7 @@ const TestCases: {
       AD_BIDS_TOGGLE_PIVOT_TABLE_MODE,
     ],
     expectedSearch:
-      "view=pivot&tr=PT6H&tz=UTC&compare_tr=&compare_dim=&f=&rows=&cols=domain%2Ctime.day%2Cimpressions&sort_by=&table_mode=flat",
+      "view=pivot&tr=PT6H&tz=UTC&compare_tr=&f=&rows=&cols=domain%2Ctime.day%2Cimpressions&sort_by=&table_mode=flat",
     legacyNotSupported: true,
   },
   {
@@ -434,7 +434,7 @@ const TestCases: {
     ],
     preset: AD_BIDS_PIVOT_PRESET,
     expectedSearch:
-      "view=pivot&tr=PT6H&tz=UTC&compare_tr=&compare_dim=&f=&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC&table_mode=nest",
+      "view=pivot&tr=PT6H&tz=UTC&compare_tr=&f=&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC&table_mode=nest",
   },
   {
     title: "Pivot with preset and pivot in state different as preset",
@@ -444,7 +444,7 @@ const TestCases: {
     ],
     preset: AD_BIDS_PIVOT_PRESET,
     expectedSearch:
-      "view=pivot&tr=PT6H&tz=UTC&compare_tr=&compare_dim=&f=&rows=domain%2Ctime.day&cols=impressions&sort_by=impressions&sort_dir=DESC&table_mode=nest",
+      "view=pivot&tr=PT6H&tz=UTC&compare_tr=&f=&rows=domain%2Ctime.day&cols=impressions&sort_by=impressions&sort_dir=DESC&table_mode=nest",
   },
   {
     title: "Pivot with preset and no pivot in state different as preset",

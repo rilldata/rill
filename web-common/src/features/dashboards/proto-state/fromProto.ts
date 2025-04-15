@@ -227,7 +227,7 @@ export function getDashboardStateFromProto(
     entity.leaderboardShowContextForAllMeasures =
       dashboard.leaderboardShowContextForAllMeasures;
   }
-  if (dashboard.leaderboardMeasures) {
+  if (dashboard.leaderboardMeasures?.length) {
     entity.leaderboardMeasureNames = dashboard.leaderboardMeasures;
   }
 

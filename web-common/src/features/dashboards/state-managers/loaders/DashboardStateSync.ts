@@ -78,7 +78,6 @@ export class DashboardStateSync {
     const exploreSpec = validSpecData?.explore ?? {};
     const pageState = get(page);
 
-    this.initialized = true;
     metricsExplorerStore.init(this.exploreName, initExploreState);
     // Get time controls state after explore state is initialized.
     const timeControlsState = get(this.timeControlStore);
@@ -92,6 +91,7 @@ export class DashboardStateSync {
     redirectUrl.search = exploreStateParams.toString();
 
     if (redirectUrl.search === pageState.url.search) {
+      this.initialized = true;
       return;
     }
 
@@ -105,7 +105,10 @@ export class DashboardStateSync {
       timeControlsState,
     );
 
-    console.log("INIT", redirectUrl.search);
+    console.log(
+      `INIT: ${pageState.url.search} =${redirectUrl.search === pageState.url.search ? "X" : "="}> ${redirectUrl.search}`,
+    );
+    this.initialized = true;
     // using `replaceState` directly messes up the navigation entries,
     // `from` and `to` have the old url before being replaced in `afterNavigate` calls leading to incorrect handling.
     return goto(redirectUrl, {
@@ -120,8 +123,7 @@ export class DashboardStateSync {
     urlSearchParams: URLSearchParams,
     type: AfterNavigate["type"],
   ) {
-    if (!get(metricsExplorerStore).entities[this.exploreName] || this.updating)
-      return;
+    if (this.updating || !this.initialized) return;
 
     const partialExplore = this.dataLoader.getExploreStateFromURLParams(
       urlSearchParams,
@@ -171,7 +173,9 @@ export class DashboardStateSync {
       return;
     }
 
-    console.log("URLChange", redirectUrl.search);
+    console.log(
+      `URLChange: ${pageState.url.search} =${redirectUrl.search === pageState.url.search ? "X" : "="}> ${redirectUrl.search}`,
+    );
     // using `replaceState` directly messes up the navigation entries,
     // `from` and `to` have the old url before being replaced in `afterNavigate` calls leading to incorrect handling.
     return goto(redirectUrl, {
@@ -181,7 +185,7 @@ export class DashboardStateSync {
   }
 
   private gotoNewState(exploreState: MetricsExplorerEntity) {
-    if (this.updating) return;
+    if (this.updating || !this.initialized) return;
     this.updating = true;
 
     const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
@@ -212,7 +216,9 @@ export class DashboardStateSync {
       return;
     }
 
-    console.log("GOTO", newUrl.search);
+    console.log(
+      `GOTO: ${pageState.url.search} =${newUrl.search === pageState.url.search ? "X" : "="}> ${newUrl.search}`,
+    );
     // dashboard changed so we should update the url
     return goto(newUrl);
   }

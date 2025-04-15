@@ -64,14 +64,14 @@ const TestCases: {
       view: "explore",
       mutations: [],
       expectedSearch:
-        "view=explore&tr=P7D&tz=UTC&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=&sort_by=impressions&sort_type=percent&sort_dir=DESC&leaderboard_measure_count=1",
+        "view=explore&tr=P7D&tz=UTC&compare_tr=rill-PP&grain=day&compare_dim=&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=&sort_by=impressions&sort_type=percent&sort_dir=DESC&leaderboard_measures=impressions",
     },
     view: {
       view: "tdd",
       additionalParams: "&measure=" + AD_BIDS_IMPRESSIONS_MEASURE,
       mutations: [AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD],
       expectedSearch:
-        "view=tdd&tr=P7D&tz=UTC&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions&chart_type=stacked_bar",
+        "view=tdd&tr=P7D&tz=UTC&compare_tr=rill-PP&grain=day&compare_dim=&f=publisher+IN+%28%27Google%27%29&measure=impressions&chart_type=stacked_bar",
     },
   },
   {
@@ -80,14 +80,14 @@ const TestCases: {
       view: "explore",
       mutations: [AD_BIDS_OPEN_PUB_DIMENSION_TABLE],
       expectedSearch:
-        "view=explore&tr=P7D&tz=UTC&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=publisher&sort_by=impressions&sort_type=percent&sort_dir=DESC&leaderboard_measure_count=1",
+        "view=explore&tr=P7D&tz=UTC&compare_tr=rill-PP&grain=day&compare_dim=&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=publisher&sort_by=impressions&sort_type=percent&sort_dir=DESC&leaderboard_measures=impressions",
     },
     view: {
       view: "tdd",
       additionalParams: "&measure=" + AD_BIDS_IMPRESSIONS_MEASURE,
       mutations: [AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD],
       expectedSearch:
-        "view=tdd&tr=P7D&tz=UTC&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions&chart_type=stacked_bar",
+        "view=tdd&tr=P7D&tz=UTC&compare_tr=rill-PP&grain=day&compare_dim=&f=publisher+IN+%28%27Google%27%29&measure=impressions&chart_type=stacked_bar",
     },
   },
 
@@ -97,7 +97,7 @@ const TestCases: {
       view: "explore",
       mutations: [],
       expectedSearch:
-        "view=explore&tr=P7D&tz=UTC&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=&sort_by=impressions&sort_type=percent&sort_dir=DESC&leaderboard_measure_count=1",
+        "view=explore&tr=P7D&tz=UTC&compare_tr=rill-PP&grain=day&compare_dim=&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=&sort_by=impressions&sort_type=percent&sort_dir=DESC&leaderboard_measures=impressions",
     },
     view: {
       view: "pivot",
@@ -115,7 +115,7 @@ const TestCases: {
       view: "explore",
       mutations: [AD_BIDS_OPEN_PUB_DIMENSION_TABLE],
       expectedSearch:
-        "view=explore&tr=P7D&tz=UTC&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=publisher&sort_by=impressions&sort_type=percent&sort_dir=DESC&leaderboard_measure_count=1",
+        "view=explore&tr=P7D&tz=UTC&compare_tr=rill-PP&grain=day&compare_dim=&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=publisher&sort_by=impressions&sort_type=percent&sort_dir=DESC&leaderboard_measures=impressions",
     },
     view: {
       view: "pivot",
@@ -134,7 +134,7 @@ const TestCases: {
       additionalParams: "&measure=" + AD_BIDS_IMPRESSIONS_MEASURE,
       mutations: [AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD],
       expectedSearch:
-        "view=tdd&tr=P7D&tz=UTC&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions&chart_type=stacked_bar",
+        "view=tdd&tr=P7D&tz=UTC&compare_tr=rill-PP&grain=day&compare_dim=&f=publisher+IN+%28%27Google%27%29&measure=impressions&chart_type=stacked_bar",
     },
     view: {
       view: "pivot",

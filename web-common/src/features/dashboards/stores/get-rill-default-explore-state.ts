@@ -44,6 +44,8 @@ export function getRillDefaultExploreState(
     ),
     ...getRillDefaultExploreViewState(exploreSpec),
 
+    selectedComparisonDimension: "",
+
     tdd: {
       expandedMeasureName: "",
       chartType: TDDChart.DEFAULT,
@@ -101,6 +103,8 @@ function getRillDefaultExploreTimeState(
 function getRillDefaultExploreViewState(
   exploreSpec: V1ExploreSpec,
 ): Partial<MetricsExplorerEntity> {
+  const defaultMeasure = exploreSpec.measures?.[0];
+
   return {
     visibleMeasures: exploreSpec.measures ?? [],
     allMeasuresVisible: true,
@@ -108,11 +112,12 @@ function getRillDefaultExploreViewState(
     visibleDimensions: exploreSpec.dimensions ?? [],
     allDimensionsVisible: true,
 
-    leaderboardSortByMeasureName: exploreSpec.measures?.[0],
+    leaderboardSortByMeasureName: defaultMeasure,
     dashboardSortType: DashboardState_LeaderboardSortType.VALUE,
     sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
 
-    leaderboardMeasureCount: 1,
+    leaderboardMeasureNames: defaultMeasure ? [defaultMeasure] : [],
+    leaderboardShowContextForAllMeasures: false,
 
     selectedDimensionName: "",
   };
