@@ -1,10 +1,9 @@
 // //@ts-check
-
 import js from "@eslint/js";
 import eslintConfigPrettier from "eslint-config-prettier";
+import eslintPluginSvelte from "eslint-plugin-svelte";
 import globals from "globals";
 import tsEslint from "typescript-eslint";
-import eslintPluginSvelte from "eslint-plugin-svelte";
 // import vitest from "eslint-plugin-vitest";
 import playwright from "eslint-plugin-playwright";
 
@@ -97,6 +96,11 @@ export default [
       "svelte/require-store-reactive-access": "warn",
       //   "svelte/require-event-dispatcher-types": "warn",
       //   "svelte/sort-attributes": "warn",
+    },
+  },
+  {
+    rules: {
+      "svelte/no-inner-declarations": "off", // This rule isn't working
     },
   },
 ];
