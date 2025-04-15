@@ -5,7 +5,7 @@ import {
   createSingleLayerBaseSpec,
   createXEncoding,
 } from "../builder";
-import type { ChartDataResult } from "../selector";
+import type { ChartDataResult } from "../types";
 import type { CircularChartSpec } from "./CircularChart";
 
 export function generateVLPieChartSpec(

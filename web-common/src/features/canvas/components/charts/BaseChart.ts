@@ -21,6 +21,7 @@ import type { ChartType } from "./";
 import Chart from "./Chart.svelte";
 import type {
   ChartDataQuery,
+  ChartFieldsMap,
   CommonChartProperties,
   FieldConfig,
 } from "./types";
@@ -78,6 +79,8 @@ export abstract class BaseChart<
     ctx: CanvasStore,
     timeAndFilterStore: Readable<TimeAndFilterStore>,
   ): ChartDataQuery;
+
+  abstract chartTitle(fields: ChartFieldsMap): string;
 
   protected getDefaultFieldConfig(): Partial<FieldConfig> {
     return {

@@ -82,7 +82,7 @@ const ALL_COMPONENT_TYPES = [...CHART_TYPES, ...NON_CHART_TYPES] as const;
 type ChartType = (typeof CHART_TYPES)[number];
 type TableType = (typeof TABLE_TYPES)[number];
 
-interface BaseCanvasComponentConstructor<
+export interface BaseCanvasComponentConstructor<
   T extends ComponentSpec = ComponentSpec,
 > {
   new (
@@ -98,38 +98,41 @@ interface BaseCanvasComponentConstructor<
 }
 
 // Component type to class mapping
-export const COMPONENT_CLASS_MAP: Record<
-  CanvasComponentType,
-  BaseCanvasComponentConstructor
-> = {
+const baseComponentMap = {
   markdown: MarkdownCanvasComponent,
   kpi_grid: KPIGridComponent,
   image: ImageComponent,
   leaderboard: LeaderboardComponent,
   table: PivotCanvasComponent,
   pivot: PivotCanvasComponent,
-  bar_chart: getChartComponent("bar_chart"),
-  line_chart: getChartComponent("line_chart"),
-  stacked_bar: getChartComponent("stacked_bar"),
-  stacked_bar_normalized: getChartComponent("stacked_bar_normalized"),
-  pie_chart: getChartComponent("pie_chart"),
-  area_chart: getChartComponent("area_chart"),
+} as const;
+
+const chartComponentMap = Object.fromEntries(
+  CHART_TYPES.map((type) => [type, getChartComponent(type)]),
+) as Record<ChartType, BaseCanvasComponentConstructor>;
+
+export const COMPONENT_CLASS_MAP = {
+  ...baseComponentMap,
+  ...chartComponentMap,
 } as const;
 
 // Component display names mapping
-const DISPLAY_MAP: Record<CanvasComponentType, string> = {
+const baseDisplayMap = {
   kpi_grid: "KPI Grid",
   markdown: "Markdown",
   table: "Table",
   pivot: "Pivot",
   image: "Image",
   leaderboard: "Leaderboard",
-  bar_chart: "Chart",
-  line_chart: "Chart",
-  stacked_bar: "Chart",
-  stacked_bar_normalized: "Chart",
-  area_chart: "Chart",
-  pie_chart: "Chart",
+} as const;
+
+const chartDisplayMap = Object.fromEntries(
+  CHART_TYPES.map((type) => [type, "Chart"]),
+) as Record<ChartType, string>;
+
+const DISPLAY_MAP = {
+  ...baseDisplayMap,
+  ...chartDisplayMap,
 } as const;
 
 export function createComponent(

@@ -12,7 +12,6 @@
   import { getChartData } from "./selector";
   import {
     generateSpec,
-    getChartTitle,
     isChartLineLike,
     mergedVlConfig,
     sanitizeFieldName,
@@ -100,7 +99,7 @@
     {:else}
       <ComponentHeader
         faint={!title}
-        title={title || getChartTitle(chartSpec, $chartQuery)}
+        title={title || component.chartTitle($chartQuery?.fields)}
         {description}
         {filters}
       />

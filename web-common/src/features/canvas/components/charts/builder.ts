@@ -1,5 +1,4 @@
 import type { CartesianChartSpec } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/CartesianChart";
-import type { ChartDataResult } from "@rilldata/web-common/features/canvas/components/charts/selector";
 import type {
   FieldConfig,
   TooltipValue,
@@ -15,6 +14,7 @@ import type {
 import type { Encoding } from "vega-lite/build/src/encoding";
 import type { TopLevelParameter } from "vega-lite/build/src/spec/toplevel";
 import type { TopLevelUnitSpec } from "vega-lite/build/src/spec/unit";
+import type { ChartDataResult } from "./types";
 
 export function createMultiLayerBaseSpec() {
   const baseSpec: VisualizationSpec = {

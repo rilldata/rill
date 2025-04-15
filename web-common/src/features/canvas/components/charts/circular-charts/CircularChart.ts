@@ -1,4 +1,7 @@
-import type { FieldConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
+import type {
+  ChartFieldsMap,
+  FieldConfig,
+} from "@rilldata/web-common/features/canvas/components/charts/types";
 import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
@@ -91,6 +94,19 @@ export class CircularChartComponent extends BaseChart<CircularChartSpec> {
         }).subscribe(set);
       },
     );
+  }
+
+  chartTitle(fields: ChartFieldsMap) {
+    const config = get(this.specStore);
+    const { measure, color } = config;
+    const measureLabel = measure?.field
+      ? fields[measure.field]?.displayName || measure.field
+      : "";
+    const colorLabel = color?.field
+      ? fields[color.field]?.displayName || color.field
+      : "";
+
+    return colorLabel ? `${measureLabel} split by ${colorLabel}` : measureLabel;
   }
 
   static newComponentSpec(

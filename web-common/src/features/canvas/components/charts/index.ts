@@ -1,3 +1,4 @@
+import type { BaseCanvasComponentConstructor } from "@rilldata/web-common/features/canvas/components/util";
 import type { CartesianChartSpec } from "./cartesian-charts/CartesianChart";
 import { CartesianChartComponent } from "./cartesian-charts/CartesianChart";
 import {
@@ -21,7 +22,9 @@ export type ChartType =
   | "stacked_bar_normalized"
   | "pie_chart";
 
-export function getChartComponent(type: ChartType): ChartComponent {
+export function getChartComponent(
+  type: ChartType,
+): BaseCanvasComponentConstructor {
   switch (type) {
     case "bar_chart":
     case "line_chart":

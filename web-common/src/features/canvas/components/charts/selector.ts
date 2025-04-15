@@ -6,31 +6,10 @@ import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import {
   type MetricsViewSpecDimension,
   type MetricsViewSpecMeasure,
-  type V1MetricsViewAggregationResponseDataItem,
 } from "@rilldata/web-common/runtime-client";
-import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import { derived, type Readable } from "svelte/store";
+import type { ChartDataResult, TimeDimensionDefinition } from "./types";
 import { getFieldsByType, timeGrainToVegaTimeUnitMap } from "./util";
-
-export type ChartDataResult = {
-  data: V1MetricsViewAggregationResponseDataItem[];
-  isFetching: boolean;
-  fields: Record<
-    string,
-    | MetricsViewSpecMeasure
-    | MetricsViewSpecDimension
-    | TimeDimensionDefinition
-    | undefined
-  >;
-  error?: HTTPError | null;
-};
-
-export interface TimeDimensionDefinition {
-  field: string;
-  displayName: string;
-  timeUnit?: string;
-  format?: string;
-}
 
 export function getChartData(
   ctx: CanvasStore,

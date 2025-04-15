@@ -11,13 +11,11 @@ import type { Config } from "vega-lite";
 import type { ChartSpec, ChartType } from "./";
 import { generateVLAreaChartSpec } from "./cartesian-charts/area/spec";
 import { generateVLBarChartSpec } from "./cartesian-charts/bar-chart/spec";
-import type { CartesianChartSpec } from "./cartesian-charts/CartesianChart";
 import { generateVLLineChartSpec } from "./cartesian-charts/line-chart/spec";
 import { generateVLStackedBarChartSpec } from "./cartesian-charts/stacked-bar/default";
 import { generateVLStackedBarNormalizedSpec } from "./cartesian-charts/stacked-bar/normalized";
 import { generateVLPieChartSpec } from "./circular-charts/pie";
-import type { ChartDataResult } from "./selector";
-import type { ChartMetadata } from "./types";
+import type { ChartDataResult, ChartMetadata } from "./types";
 
 export function generateSpec(
   chartType: ChartType,
@@ -74,30 +72,6 @@ export function mergedVlConfig(config: string): Config {
   ) => [...sourceArray, ...destinationArray];
 
   return merge(defaultConfig, parsedConfig, { arrayMerge: reverseArrayMerge });
-}
-
-export function getChartTitle(
-  config: CartesianChartSpec,
-  data: ChartDataResult,
-) {
-  const xLabel = config.x?.field
-    ? data.fields[config.x.field]?.displayName || config.x.field
-    : "";
-
-  const yLabel = config.y?.field
-    ? data.fields[config.y.field]?.displayName || config.y.field
-    : "";
-
-  const colorLabel =
-    typeof config.color === "object" && config.color?.field
-      ? data.fields[config.color.field]?.displayName || config.color.field
-      : "";
-
-  const preposition = xLabel === "Time" ? "over" : "per";
-
-  return colorLabel
-    ? `${yLabel} ${preposition} ${xLabel} split by ${colorLabel}`
-    : `${yLabel} ${preposition} ${xLabel}`;
 }
 
 export const timeGrainToVegaTimeUnitMap: Record<V1TimeGrain, string> = {

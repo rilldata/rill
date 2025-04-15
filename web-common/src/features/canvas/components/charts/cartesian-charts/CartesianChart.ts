@@ -24,7 +24,12 @@ import type {
   ComponentPath,
 } from "../../../stores/canvas-entity";
 import { BaseChart, type BaseChartConfig } from "../BaseChart";
-import type { ChartDataQuery, ChartSortDirection, FieldConfig } from "../types";
+import type {
+  ChartDataQuery,
+  ChartFieldsMap,
+  ChartSortDirection,
+  FieldConfig,
+} from "../types";
 
 export type CartesianChartSpec = BaseChartConfig & {
   x?: FieldConfig;
@@ -225,5 +230,23 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
       name: field,
       desc: sort === "-x" || sort === "-y",
     };
+  }
+
+  chartTitle(fields: ChartFieldsMap) {
+    const config = get(this.specStore);
+    const { x, y, color } = config;
+    const xLabel = x?.field ? fields[x.field]?.displayName || x.field : "";
+    const yLabel = y?.field ? fields[y.field]?.displayName || y.field : "";
+
+    const colorLabel =
+      typeof color === "object" && color?.field
+        ? fields[color.field]?.displayName || color.field
+        : "";
+
+    const preposition = xLabel === "Time" ? "over" : "per";
+
+    return colorLabel
+      ? `${yLabel} ${preposition} ${xLabel} split by ${colorLabel}`
+      : `${yLabel} ${preposition} ${xLabel}`;
   }
 }

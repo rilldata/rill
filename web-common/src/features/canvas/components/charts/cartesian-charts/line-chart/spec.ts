@@ -9,7 +9,7 @@ import {
   createXEncoding,
   createYEncoding,
 } from "../../builder";
-import type { ChartDataResult } from "../../selector";
+import type { ChartDataResult } from "../../types";
 import type { CartesianChartSpec } from "../CartesianChart";
 
 export function generateVLLineChartSpec(

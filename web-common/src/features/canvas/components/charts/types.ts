@@ -4,7 +4,11 @@ import type {
   V1MetricsViewAggregationMeasure,
   V1MetricsViewAggregationSort,
 } from "@rilldata/web-common/runtime-client";
-import { type V1MetricsViewAggregationResponseDataItem } from "@rilldata/web-common/runtime-client";
+import {
+  type MetricsViewSpecDimension,
+  type MetricsViewSpecMeasure,
+  type V1MetricsViewAggregationResponseDataItem,
+} from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { ComponentType, SvelteComponent } from "svelte";
 import { type Readable } from "svelte/store";
@@ -15,6 +19,27 @@ export type ChartDataQuery = Readable<{
   error: HTTPError | null;
   data: V1MetricsViewAggregationResponseDataItem[] | undefined;
 }>;
+
+export type ChartFieldsMap = Record<
+  string,
+  | MetricsViewSpecMeasure
+  | MetricsViewSpecDimension
+  | TimeDimensionDefinition
+  | undefined
+>;
+export type ChartDataResult = {
+  data: V1MetricsViewAggregationResponseDataItem[];
+  isFetching: boolean;
+  fields: ChartFieldsMap;
+  error?: HTTPError | null;
+};
+
+export interface TimeDimensionDefinition {
+  field: string;
+  displayName: string;
+  timeUnit?: string;
+  format?: string;
+}
 
 export type ChartSortDirection = "x" | "y" | "-x" | "-y";
 

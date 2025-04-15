@@ -1,6 +1,6 @@
 import type { VisualizationSpec } from "svelte-vega";
 import { createEncoding, createSingleLayerBaseSpec } from "../../builder";
-import type { ChartDataResult } from "../../selector";
+import type { ChartDataResult } from "../../types";
 import type { CartesianChartSpec } from "../CartesianChart";
 
 export function generateVLStackedBarChartSpec(
