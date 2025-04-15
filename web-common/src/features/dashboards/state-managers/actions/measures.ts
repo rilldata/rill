@@ -49,6 +49,13 @@ export const setMeasureVisibility = (
     dashboard.leaderboardSortByMeasureName = measures[0];
   }
 
+  // Update leaderboard measure names to only include visible measures, maintaining their order
+  if (dashboard.leaderboardMeasureNames) {
+    dashboard.leaderboardMeasureNames = dashboard.leaderboardMeasureNames
+      .filter((name) => measures.includes(name))
+      .sort((a, b) => measures.indexOf(a) - measures.indexOf(b));
+  }
+
   dashboard.allMeasuresVisible =
     dashboard.visibleMeasures.length === allMeasures.length;
 };
