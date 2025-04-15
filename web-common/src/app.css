@@ -782,8 +782,9 @@ body {
   font-size: 12px;
 
   /* Use this for a few keyboard characters in tooltips, etc. */
-  --system: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
-    Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  --system:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 
   --monospace: "Source Code Variable";
   margin: 0;

@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build && cp _redirects build",
+    "build": "npm run generate:sveltekit -w web-common && vite build && cp _redirects build",
     "preview": "vite preview",
     "test": "playwright test",
     "test:setup": "E2E_NO_TEARDOWN=true playwright test --project=setup",
