@@ -16,9 +16,14 @@ export const leaderboardMeasureNames = ({
     visibleMeasuresList.map((measure) => measure.name),
   );
 
-  const filteredNames = dashboard.leaderboardMeasureNames?.filter((name) =>
-    visibleMeasureNames.has(name),
-  );
+  // Filter and sort the leaderboard measure names based on the order in visibleMeasures
+  const filteredNames = dashboard.leaderboardMeasureNames
+    ?.filter((name) => visibleMeasureNames.has(name))
+    .sort((a, b) => {
+      const aIndex = visibleMeasuresList.findIndex((m) => m.name === a);
+      const bIndex = visibleMeasuresList.findIndex((m) => m.name === b);
+      return aIndex - bIndex;
+    });
 
   return filteredNames?.length
     ? filteredNames
@@ -33,8 +38,6 @@ export const leaderboardShowContextForAllMeasures = ({
 
 export const leaderboardSelectors = {
   leaderboardSortByMeasureName,
-
   leaderboardMeasureNames,
-
   leaderboardShowContextForAllMeasures,
 };
