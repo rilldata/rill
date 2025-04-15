@@ -51,11 +51,11 @@ import {
   AD_BIDS_TOGGLE_IMPRESSIONS_MEASURE_VISIBILITY,
   AD_BIDS_TOGGLE_PIVOT,
   AD_BIDS_TOGGLE_PIVOT_TABLE_MODE,
-  AD_BIDS_SET_LEADERBOARD_MEASURE_COUNT,
   applyMutationsToDashboard,
   type TestDashboardMutation,
   AD_BIDS_SET_PUBLISHER_COMPARE_DIMENSION,
   AD_BIDS_SET_DOMAIN_COMPARE_DIMENSION,
+  AD_BIDS_MEASURE_NAMES_BID_PRICE_AND_IMPRESSIONS,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { getCleanedUrlParamsForGoto } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
@@ -96,7 +96,7 @@ const TestCases: {
       AD_BIDS_APPLY_DOMAIN_CONTAINS_FILTER,
     ],
     expectedSearch:
-      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=publisher+IN+LIST+%28%27Facebook%27%2C%27Google%27%29+AND+domain+LIKE+%27%25%25oo%25%25%27&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measure_count=1",
+      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=publisher+IN+LIST+%28%27Facebook%27%2C%27Google%27%29+AND+domain+LIKE+%27%25%25oo%25%25%27&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measures=impressions",
   },
 
   {
@@ -106,7 +106,7 @@ const TestCases: {
       AD_BIDS_SET_KATHMANDU_TIMEZONE,
     ],
     expectedSearch:
-      "view=explore&tr=P4W&tz=Asia%2FKathmandu&compare_tr=&grain=week&compare_dim=&f=&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measure_count=1",
+      "view=explore&tr=P4W&tz=Asia%2FKathmandu&compare_tr=&grain=week&compare_dim=&f=&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measures=impressions",
   },
   {
     title: "Time range with preset and state matching preset",
@@ -116,7 +116,7 @@ const TestCases: {
     ],
     preset: AD_BIDS_PRESET,
     expectedSearch:
-      "view=explore&tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PW&grain=day&compare_dim=&f=&measures=impressions&dims=publisher&expand_dim=&sort_by=impressions&sort_type=percent&sort_dir=ASC&leaderboard_measure_count=1",
+      "view=explore&tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PW&grain=day&compare_dim=&f=&measures=impressions&dims=publisher&expand_dim=&sort_by=impressions&sort_type=percent&sort_dir=ASC&leaderboard_measures=impressions",
     extraExploreState: {
       selectedComparisonTimeRange: {
         name: "rill-PP",
@@ -128,7 +128,7 @@ const TestCases: {
     mutations: [AD_BIDS_SET_P4W_TIME_RANGE_FILTER, AD_BIDS_SET_LA_TIMEZONE],
     preset: AD_BIDS_PRESET,
     expectedSearch:
-      "view=explore&tr=P4W&tz=America%2FLos_Angeles&compare_tr=rill-PP&grain=week&compare_dim=&f=&measures=impressions&dims=publisher&expand_dim=&sort_by=impressions&sort_type=percent&sort_dir=ASC&leaderboard_measure_count=1",
+      "view=explore&tr=P4W&tz=America%2FLos_Angeles&compare_tr=rill-PP&grain=week&compare_dim=&f=&measures=impressions&dims=publisher&expand_dim=&sort_by=impressions&sort_type=percent&sort_dir=ASC&leaderboard_measures=impressions",
     extraExploreState: {
       selectedComparisonTimeRange: {
         name: "rill-PP",
@@ -140,7 +140,7 @@ const TestCases: {
     mutations: [AD_BIDS_SET_ALL_TIME_RANGE_FILTER],
     preset: AD_BIDS_PRESET,
     expectedSearch:
-      "view=explore&tr=inf&tz=Asia%2FKathmandu&compare_tr=&grain=day&compare_dim=&f=&measures=impressions&dims=publisher&expand_dim=&sort_by=impressions&sort_type=percent&sort_dir=ASC&leaderboard_measure_count=1",
+      "view=explore&tr=inf&tz=Asia%2FKathmandu&compare_tr=&grain=day&compare_dim=&f=&measures=impressions&dims=publisher&expand_dim=&sort_by=impressions&sort_type=percent&sort_dir=ASC&leaderboard_measures=impressions",
   },
 
   {
@@ -150,7 +150,7 @@ const TestCases: {
       AD_BIDS_SET_PREVIOUS_WEEK_COMPARE_TIME_RANGE_FILTER,
     ],
     expectedSearch:
-      "view=explore&tr=P4W&tz=UTC&compare_tr=rill-PW&grain=week&compare_dim=&f=&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measure_count=1",
+      "view=explore&tr=P4W&tz=UTC&compare_tr=rill-PW&grain=week&compare_dim=&f=&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measures=impressions",
   },
   {
     title: "Time range comparison with preset and state matching preset",
@@ -160,7 +160,7 @@ const TestCases: {
     ],
     preset: AD_BIDS_PRESET,
     expectedSearch:
-      "view=explore&tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=day&compare_dim=&f=&measures=impressions&dims=publisher&expand_dim=&sort_by=impressions&sort_type=percent&sort_dir=ASC&leaderboard_measure_count=1",
+      "view=explore&tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=day&compare_dim=&f=&measures=impressions&dims=publisher&expand_dim=&sort_by=impressions&sort_type=percent&sort_dir=ASC&leaderboard_measures=impressions",
   },
   {
     title: "Time range comparison with preset and state not matching preset",
@@ -170,7 +170,7 @@ const TestCases: {
     ],
     preset: AD_BIDS_PRESET,
     expectedSearch:
-      "view=explore&tr=P4W&tz=Asia%2FKathmandu&compare_tr=rill-PW&grain=week&compare_dim=&f=&measures=impressions&dims=publisher&expand_dim=&sort_by=impressions&sort_type=percent&sort_dir=ASC&leaderboard_measure_count=1",
+      "view=explore&tr=P4W&tz=Asia%2FKathmandu&compare_tr=rill-PW&grain=week&compare_dim=&f=&measures=impressions&dims=publisher&expand_dim=&sort_by=impressions&sort_type=percent&sort_dir=ASC&leaderboard_measures=impressions",
   },
   {
     title: "Time range comparison enable and disable",
@@ -181,7 +181,7 @@ const TestCases: {
     ],
     preset: AD_BIDS_PRESET,
     expectedSearch:
-      "view=explore&tr=P4W&tz=Asia%2FKathmandu&compare_tr=&grain=week&compare_dim=&f=&measures=impressions&dims=publisher&expand_dim=&sort_by=impressions&sort_type=percent&sort_dir=ASC&leaderboard_measure_count=1",
+      "view=explore&tr=P4W&tz=Asia%2FKathmandu&compare_tr=&grain=week&compare_dim=&f=&measures=impressions&dims=publisher&expand_dim=&sort_by=impressions&sort_type=percent&sort_dir=ASC&leaderboard_measures=impressions",
     legacyNotSupported: true,
   },
   {
@@ -192,7 +192,7 @@ const TestCases: {
       comparisonMode: V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME,
     },
     expectedSearch:
-      "view=explore&tr=P9D&tz=UTC&compare_tr=&grain=day&compare_dim=&f=&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measure_count=1",
+      "view=explore&tr=P9D&tz=UTC&compare_tr=&grain=day&compare_dim=&f=&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measures=impressions",
     legacyNotSupported: true,
   },
 
@@ -200,7 +200,7 @@ const TestCases: {
     title: "Dimension comparison without preset",
     mutations: [AD_BIDS_SET_PUBLISHER_COMPARE_DIMENSION],
     expectedSearch:
-      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=publisher&f=&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measure_count=1",
+      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=publisher&f=&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measures=impressions",
   },
   {
     title: "Dimension comparison with preset and matching preset",
@@ -210,7 +210,7 @@ const TestCases: {
       comparisonMode: V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_DIMENSION,
     },
     expectedSearch:
-      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=publisher&f=&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measure_count=1",
+      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=publisher&f=&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measures=impressions",
   },
   {
     title: "Dimension comparison with preset and not matching preset",
@@ -220,7 +220,7 @@ const TestCases: {
       comparisonMode: V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_DIMENSION,
     },
     expectedSearch:
-      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=domain&f=&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measure_count=1",
+      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=domain&f=&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measures=impressions",
   },
 
   {
@@ -231,7 +231,7 @@ const TestCases: {
       AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY,
     ],
     expectedSearch:
-      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=&measures=impressions&dims=publisher&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measure_count=1",
+      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=&measures=impressions&dims=publisher&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measures=impressions",
   },
   {
     title:
@@ -244,7 +244,7 @@ const TestCases: {
       AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY,
     ],
     expectedSearch:
-      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measure_count=1",
+      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measures=impressions",
   },
   {
     title:
@@ -259,7 +259,7 @@ const TestCases: {
     ],
     preset: AD_BIDS_PRESET,
     expectedSearch:
-      "view=explore&tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=day&compare_dim=&f=&measures=impressions&dims=publisher&expand_dim=&sort_by=impressions&sort_type=percent&sort_dir=ASC&leaderboard_measure_count=1",
+      "view=explore&tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=day&compare_dim=&f=&measures=impressions&dims=publisher&expand_dim=&sort_by=impressions&sort_type=percent&sort_dir=ASC&leaderboard_measures=impressions",
   },
   {
     title:
@@ -271,7 +271,7 @@ const TestCases: {
     ],
     preset: AD_BIDS_PRESET,
     expectedSearch:
-      "view=explore&tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=day&compare_dim=&f=&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=percent&sort_dir=ASC&leaderboard_measure_count=1",
+      "view=explore&tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=day&compare_dim=&f=&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=percent&sort_dir=ASC&leaderboard_measures=impressions",
   },
   {
     title: "Show and hide measures/dimensions",
@@ -282,7 +282,7 @@ const TestCases: {
       AD_BIDS_TOGGLE_BID_PUBLISHER_DIMENSION_VISIBILITY,
     ],
     expectedSearch:
-      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=&measures=bid_price%2Cimpressions&dims=domain%2Cpublisher&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measure_count=1",
+      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=&measures=bid_price%2Cimpressions&dims=domain%2Cpublisher&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measures=impressions",
   },
 
   {
@@ -290,14 +290,14 @@ const TestCases: {
       "Leaderboard configs with no preset and leaderboard sort measure in state different than default",
     mutations: [AD_BIDS_SORT_BY_DELTA_ABS_VALUE, AD_BIDS_SORT_ASC_BY_BID_PRICE],
     expectedSearch:
-      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=&measures=*&dims=*&expand_dim=&sort_by=bid_price&sort_type=delta_abs&sort_dir=ASC&leaderboard_measure_count=1",
+      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=&measures=*&dims=*&expand_dim=&sort_by=bid_price&sort_type=delta_abs&sort_dir=ASC&leaderboard_measures=impressions",
   },
   {
     title:
       "Leaderboard configs with no preset and leaderboard sort measure in state same as default",
     mutations: [AD_BIDS_SORT_BY_VALUE, AD_BIDS_SORT_DESC_BY_IMPRESSIONS],
     expectedSearch:
-      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measure_count=1",
+      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measures=impressions",
   },
   {
     title:
@@ -305,7 +305,7 @@ const TestCases: {
     mutations: [AD_BIDS_SORT_BY_PERCENT_VALUE, AD_BIDS_SORT_ASC_BY_IMPRESSIONS],
     preset: AD_BIDS_PRESET,
     expectedSearch:
-      "view=explore&tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=day&compare_dim=&f=&measures=impressions&dims=publisher&expand_dim=&sort_by=impressions&sort_type=percent&sort_dir=ASC&leaderboard_measure_count=1",
+      "view=explore&tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=day&compare_dim=&f=&measures=impressions&dims=publisher&expand_dim=&sort_by=impressions&sort_type=percent&sort_dir=ASC&leaderboard_measures=impressions",
   },
   {
     title:
@@ -316,20 +316,19 @@ const TestCases: {
     ],
     preset: AD_BIDS_PRESET,
     expectedSearch:
-      "view=explore&tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=day&compare_dim=&f=&measures=impressions&dims=publisher&expand_dim=&sort_by=bid_price&sort_type=delta_abs&sort_dir=DESC&leaderboard_measure_count=1",
+      "view=explore&tr=P7D&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=day&compare_dim=&f=&measures=impressions&dims=publisher&expand_dim=&sort_by=bid_price&sort_type=delta_abs&sort_dir=DESC&leaderboard_measures=impressions",
   },
   {
-    title: "Leaderboard measure count persists in URL",
-    mutations: [AD_BIDS_SET_LEADERBOARD_MEASURE_COUNT],
+    title: "Leaderboard configs with multiple measures",
+    mutations: [AD_BIDS_MEASURE_NAMES_BID_PRICE_AND_IMPRESSIONS],
     expectedSearch:
-      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measure_count=4",
+      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measures=bid_price%2Cimpressions",
   },
-
   {
     title: "Dimension table with no preset and dimension table active in state",
     mutations: [AD_BIDS_OPEN_PUB_DIMENSION_TABLE],
     expectedSearch:
-      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=&measures=*&dims=*&expand_dim=publisher&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measure_count=1",
+      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=&measures=*&dims=*&expand_dim=publisher&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measures=impressions",
   },
   {
     title: "Dimension table with no preset and open and close dimension table",
@@ -338,7 +337,7 @@ const TestCases: {
       AD_BIDS_CLOSE_DIMENSION_TABLE,
     ],
     expectedSearch:
-      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measure_count=1",
+      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measures=impressions",
   },
   {
     title:
@@ -346,7 +345,7 @@ const TestCases: {
     mutations: [AD_BIDS_OPEN_DOM_DIMENSION_TABLE],
     preset: AD_BIDS_DIMENSION_TABLE_PRESET,
     expectedSearch:
-      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=&measures=*&dims=*&expand_dim=domain&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measure_count=1",
+      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=&measures=*&dims=*&expand_dim=domain&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measures=impressions",
   },
   {
     title:
@@ -354,7 +353,7 @@ const TestCases: {
     mutations: [AD_BIDS_OPEN_PUB_DIMENSION_TABLE],
     preset: AD_BIDS_DIMENSION_TABLE_PRESET,
     expectedSearch:
-      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=&measures=*&dims=*&expand_dim=publisher&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measure_count=1",
+      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=&measures=*&dims=*&expand_dim=publisher&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measures=impressions",
   },
   {
     title:
@@ -362,7 +361,7 @@ const TestCases: {
     mutations: [AD_BIDS_CLOSE_DIMENSION_TABLE],
     preset: AD_BIDS_DIMENSION_TABLE_PRESET,
     expectedSearch:
-      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measure_count=1",
+      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measures=impressions",
     legacyNotSupported: true,
   },
 
@@ -377,7 +376,7 @@ const TestCases: {
     title: "Time dimensional details with no preset, open and close TDD",
     mutations: [AD_BIDS_OPEN_IMP_TDD, AD_BIDS_CLOSE_TDD],
     expectedSearch:
-      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measure_count=1",
+      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measures=impressions",
   },
   {
     title:
@@ -393,7 +392,7 @@ const TestCases: {
     mutations: [AD_BIDS_CLOSE_TDD],
     preset: AD_BIDS_TIME_DIMENSION_DETAILS_PRESET,
     expectedSearch:
-      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measure_count=1",
+      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measures=impressions",
     legacyNotSupported: true,
   },
 
@@ -414,7 +413,7 @@ const TestCases: {
       AD_BIDS_TOGGLE_PIVOT,
     ],
     expectedSearch:
-      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measure_count=1",
+      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measures=impressions",
     legacyNotSupported: true,
   },
   {
@@ -452,7 +451,7 @@ const TestCases: {
     mutations: [AD_BIDS_TOGGLE_PIVOT],
     preset: AD_BIDS_PIVOT_PRESET,
     expectedSearch:
-      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measure_count=1",
+      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measures=impressions",
     legacyNotSupported: true,
   },
 ];

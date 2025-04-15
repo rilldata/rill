@@ -3,7 +3,6 @@ import {
   MeasureFilterType,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
 import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
-import { setLeaderboardSortByMeasureName } from "@rilldata/web-common/features/dashboards/state-managers/actions/core-actions";
 import {
   applyDimensionContainsMode,
   applyDimensionInListMode,
@@ -50,6 +49,10 @@ import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimensio
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import {
+  setLeaderboardMeasureNames,
+  setLeaderboardSortByMeasureName,
+} from "../../state-managers/actions/leaderboard";
 
 export type TestDashboardMutation = (mut: DashboardMutables) => void;
 export const AD_BIDS_APPLY_PUB_DIMENSION_FILTER: TestDashboardMutation = (
@@ -222,6 +225,15 @@ export const AD_BIDS_SORT_DESC_BY_BID_PRICE: TestDashboardMutation = (mut) => {
   setLeaderboardSortByMeasureName(mut, AD_BIDS_BID_PRICE_MEASURE);
   setSortDescending(mut);
 };
+
+export const AD_BIDS_MEASURE_NAMES_BID_PRICE_AND_IMPRESSIONS: TestDashboardMutation =
+  (mut) => {
+    setLeaderboardMeasureNames(mut, [
+      AD_BIDS_BID_PRICE_MEASURE,
+      AD_BIDS_IMPRESSIONS_MEASURE,
+    ]);
+  };
+
 export const AD_BIDS_SORT_BY_VALUE: TestDashboardMutation = (mut) => {
   toggleSort(mut, DashboardState_LeaderboardSortType.VALUE);
 };
@@ -354,12 +366,6 @@ export const AD_BIDS_TOGGLE_PIVOT_TABLE_MODE: TestDashboardMutation = () =>
       },
     ],
   );
-
-export const AD_BIDS_SET_LEADERBOARD_MEASURE_COUNT: TestDashboardMutation = (
-  mut,
-) => {
-  mut.dashboard.leaderboardMeasureCount = 4;
-};
 
 export const AD_BIDS_OPEN_PUB_IMP_PIVOT: TestDashboardMutation = () =>
   metricsExplorerStore.createPivot(
