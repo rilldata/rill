@@ -1,0 +1,59 @@
+project_files:
+  duckdb_data.yaml:
+    type: model
+    connector: duckdb
+    sql: |
+      select '2024-01-01T00:00:00Z'::TIMESTAMP as time, 'DK' as country, 1 as val union all
+      select '2024-01-02T00:00:00Z'::TIMESTAMP as time, 'US' as country, 2 as val union all
+      select '2024-01-03T00:00:00Z'::TIMESTAMP as time, 'US' as country, 3 as val union all
+      select '2024-01-04T00:00:00Z'::TIMESTAMP as time, 'US' as country, 4 as val union all
+      select '2024-01-05T00:00:00Z'::TIMESTAMP as time, 'DK' as country, 5 as val
+  duckdb_metrics.yaml:
+    type: metrics_view
+    model: duckdb_data
+    timeseries: time
+    dimensions:
+      - column: country
+    measures:
+      - name: count
+        expression: count(*)
+      - name: sum
+        expression: sum(val)
+tests:
+  - name: metrics_rows_with_a_measure_based_filter
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics
+      time_range:
+        end: 2024-01-05T00:00:00Z
+        start: 2024-01-01T00:00:00Z
+      where:
+        cond:
+          op: in
+          exprs:
+            - name: country
+            - subquery:
+                dimension:
+                  name: country
+                measures:
+                  - name: sum
+                having:
+                  cond:
+                    op: and
+                    exprs:
+                      - cond:
+                          op: gt
+                          exprs:
+                            - name: sum
+                            - val: 5
+      rows: true
+    result:
+      - time: "2024-01-02T00:00:00Z"
+        country: US
+        val: 2
+      - time: "2024-01-03T00:00:00Z"
+        country: US
+        val: 3
+      - time: "2024-01-04T00:00:00Z"
+        country: US
+        val: 4
