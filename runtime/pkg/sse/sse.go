@@ -63,7 +63,7 @@ func (es *EventServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
-	//nolint:bodyclose
+	//nolint:bodyclose // does not have a body
 	respController := http.NewResponseController(w)
 
 	client := &Client{
