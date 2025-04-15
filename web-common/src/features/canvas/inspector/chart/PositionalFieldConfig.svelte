@@ -2,11 +2,12 @@
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import type { FieldConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
   import SingleFieldInput from "@rilldata/web-common/features/canvas/inspector/SingleFieldInput.svelte";
+  import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import FieldConfigDropdown from "./FieldConfigDropdown.svelte";
 
   export let key: string;
-  export let config: { label?: string };
+  export let config: ComponentInputParam;
   export let metricsView: string;
   export let fieldConfig: FieldConfig;
   export let canvasName: string;
@@ -19,7 +20,8 @@
     },
   } = getCanvasStore(canvasName));
 
-  $: isDimension = key === "x";
+  $: isDimension = config.meta?.chartFieldInput?.type === "dimension";
+
   $: timeDimension = getTimeDimensionForMetricView(metricsView);
 
   function updateFieldConfig(fieldName: string) {
@@ -56,7 +58,14 @@
 <div class="gap-y-1">
   <div class="flex justify-between items-center">
     <InputLabel small label={config.label ?? key} id={key} />
-    <FieldConfigDropdown {key} {fieldConfig} onChange={updateFieldProperty} />
+    {#if Object.keys(config.meta?.chartFieldInput ?? {}).length > 1}
+      <FieldConfigDropdown
+        {fieldConfig}
+        label={config.label ?? key}
+        onChange={updateFieldProperty}
+        chartFieldInput={config.meta?.chartFieldInput}
+      />
+    {/if}
   </div>
 
   <SingleFieldInput

@@ -7,6 +7,7 @@ import { getRillTheme } from "@rilldata/web-common/components/vega/vega-config";
 import { sanitizeValueForVega } from "@rilldata/web-common/features/templates/charts/utils";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import merge from "deepmerge";
+import { PieChart } from "lucide-svelte";
 import type { Config } from "vega-lite";
 import type { ChartSpec, ChartType } from "./";
 import { generateVLAreaChartSpec } from "./cartesian-charts/area/spec";
@@ -49,6 +50,7 @@ export const chartMetadata: ChartMetadata[] = [
     icon: StackedBarFull,
   },
   { type: "area_chart", title: "Stacked Area", icon: StackedArea },
+  { type: "pie_chart", title: "Pie", icon: PieChart },
 ];
 
 export function isChartLineLike(chartType: ChartType) {

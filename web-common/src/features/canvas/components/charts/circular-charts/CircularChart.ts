@@ -36,8 +36,26 @@ export class CircularChartComponent extends BaseChart<CircularChartSpec> {
 
   protected getChartSpecificOptions(): Record<string, ComponentInputParam> {
     return {
-      measure: { type: "positional", label: "Measure" },
-      color: { type: "mark", label: "Color", meta: { type: "color" } },
+      color: {
+        type: "positional",
+        label: "Color",
+        meta: {
+          chartFieldInput: {
+            type: "dimension",
+            nullSelector: true,
+            limitSelector: true,
+          },
+        },
+      },
+      measure: {
+        type: "positional",
+        label: "Measure",
+        meta: {
+          chartFieldInput: {
+            type: "measure",
+          },
+        },
+      },
     };
   }
 
@@ -129,13 +147,11 @@ export class CircularChartComponent extends BaseChart<CircularChartSpec> {
       color: {
         type: "nominal",
         field: randomDimension,
-        sort: "-y",
-        limit: 20,
+        limit: 10,
       },
       measure: {
         type: "quantitative",
         field: randomMeasure,
-        zeroBasedOrigin: true,
       },
     };
   }

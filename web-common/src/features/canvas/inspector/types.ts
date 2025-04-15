@@ -17,6 +17,15 @@ export type FilterInputTypes = "time_filters" | "dimension_filters";
 
 export type FieldType = "measure" | "dimension" | "time";
 
+export type ChartFieldInput = {
+  type: FieldType;
+  axisTitleSelector?: boolean;
+  originSelector?: boolean;
+  sortSelector?: boolean;
+  limitSelector?: boolean;
+  nullSelector?: boolean;
+};
+
 export interface ComponentInputParam {
   type: InputType;
   label?: string;
@@ -26,6 +35,7 @@ export interface ComponentInputParam {
   meta?: {
     allowedTypes?: FieldType[]; // Specify which field types are allowed for multi-field selection
     defaultAlignment?: ComponentAlignment;
+    chartFieldInput?: ChartFieldInput;
     [key: string]: any;
   };
 }

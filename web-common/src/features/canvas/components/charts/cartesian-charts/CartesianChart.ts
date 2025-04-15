@@ -44,8 +44,30 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
 
   protected getChartSpecificOptions(): Record<string, ComponentInputParam> {
     return {
-      x: { type: "positional", label: "X-axis" },
-      y: { type: "positional", label: "Y-axis" },
+      x: {
+        type: "positional",
+        label: "X-axis",
+        meta: {
+          chartFieldInput: {
+            type: "dimension",
+            axisTitleSelector: true,
+            sortSelector: true,
+            limitSelector: true,
+            nullSelector: true,
+          },
+        },
+      },
+      y: {
+        type: "positional",
+        label: "Y-axis",
+        meta: {
+          chartFieldInput: {
+            type: "measure",
+            axisTitleSelector: true,
+            originSelector: true,
+          },
+        },
+      },
       color: { type: "mark", label: "Color", meta: { type: "color" } },
     };
   }
