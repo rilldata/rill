@@ -10,12 +10,12 @@ import (
 	"net/http"
 	"slices"
 	"strings"
-	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/pkg/sse"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
@@ -107,22 +107,13 @@ func (s *Server) WatchResourcesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// SSE headers
-	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Connection", "keep-alive")
+	eventServer := sse.New()
 
-	flusher, ok := w.(http.Flusher)
-	if !ok {
-		http.Error(w, "streaming not supported", http.StatusInternalServerError)
-		return
-	}
-
-	// Handle initial replay of existing resources
 	if replay {
 		rs, err := ctrl.List(ctx, kind, "", false)
 		if err != nil {
 			s.logger.Info("failed to list resources for replay", zap.Error(err))
+			http.Error(w, "internal server error", http.StatusInternalServerError)
 			return
 		}
 
@@ -141,12 +132,12 @@ func (s *Server) WatchResourcesHandler(w http.ResponseWriter, r *http.Request) {
 				Resource: r,
 			}
 
-			// Generate a unique ID for each event based on resource name
 			eventID := fmt.Sprintf("%s-%s", r.Meta.Name.Kind, r.Meta.Name.Name)
-			if err := writeSSEEvent(w, "write", eventID, resp); err != nil {
-				return
-			}
-			flusher.Flush()
+			eventServer.Publish(sse.Event{
+				Type: "write",
+				ID:   eventID,
+				Data: resp,
+			})
 		}
 	}
 
@@ -154,69 +145,48 @@ func (s *Server) WatchResourcesHandler(w http.ResponseWriter, r *http.Request) {
 	clientCtx, clientCancel := context.WithCancel(ctx)
 	defer clientCancel()
 
-	// Detect client disconnect
 	go func() {
-		<-r.Context().Done()
-		clientCancel()
-	}()
+		defer clientCancel()
 
-	// Add heartbeat goroutine to keep connection alive
-	heartbeatTicker := time.NewTicker(30 * time.Second)
-	go func() {
-		for {
-			select {
-			case <-heartbeatTicker.C:
-				if err := writeSSEEvent(w, "", "", "heartbeat"); err != nil {
+		err := ctrl.Subscribe(clientCtx, func(e runtimev1.ResourceEvent, n *runtimev1.ResourceName, r *runtimev1.Resource) {
+			if r != nil { // r is nil for deletion events
+				var access bool
+				var err error
+				r, access, err = s.applySecurityPolicy(clientCtx, instanceID, r)
+				if err != nil {
+					s.logger.Info("failed to apply security policy", zap.String("name", n.Name), zap.Error(err))
 					return
 				}
-				flusher.Flush()
-			case <-clientCtx.Done():
-				heartbeatTicker.Stop()
-				return
+				if !access {
+					return
+				}
 			}
+
+			resp := &runtimev1.WatchResourcesResponse{
+				Event:    e,
+				Name:     n,
+				Resource: r,
+			}
+
+			eventType := resourceEventToString(e)
+
+			var eventID string
+			if n != nil {
+				eventID = fmt.Sprintf("%s-%s", n.Kind, n.Name)
+			}
+
+			eventServer.Publish(sse.Event{
+				Type: eventType,
+				ID:   eventID,
+				Data: resp,
+			})
+		})
+		if err != nil {
+			s.logger.Info("subscription ended with error", zap.Error(err))
 		}
 	}()
 
-	// Subscribe to resource events
-	err = ctrl.Subscribe(clientCtx, func(e runtimev1.ResourceEvent, n *runtimev1.ResourceName, r *runtimev1.Resource) {
-		if r != nil { // r is nil for deletion events
-			var access bool
-			var err error
-			r, access, err = s.applySecurityPolicy(clientCtx, instanceID, r)
-			if err != nil {
-				s.logger.Info("failed to apply security policy", zap.String("name", n.Name), zap.Error(err))
-				return
-			}
-			if !access {
-				return
-			}
-		}
-
-		resp := &runtimev1.WatchResourcesResponse{
-			Event:    e,
-			Name:     n,
-			Resource: r,
-		}
-
-		// Generate event type string based on the ResourceEvent enum
-		eventType := resourceEventToString(e)
-
-		// Generate a unique ID for each event
-		var eventID string
-		if n != nil {
-			eventID = fmt.Sprintf("%s-%s", n.Kind, n.Name)
-		}
-
-		// Use writeSSEEvent instead of writeJSONResponse
-		if err := writeSSEEvent(w, eventType, eventID, resp); err != nil {
-			s.logger.Info("failed to send resource event", zap.Error(err))
-			return
-		}
-		flusher.Flush()
-	})
-	if err != nil {
-		s.logger.Info("subscription ended with error", zap.Error(err))
-	}
+	eventServer.ServeHTTP(w, r)
 }
 
 // Helper function to convert ResourceEvent enum to string
