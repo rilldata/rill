@@ -55,25 +55,12 @@
       </Button>
     </DropdownMenuTrigger>
     <DropdownMenuContent class="w-[330px]">
-      <DropdownMenuItem on:click={onCreate}>
-        <div class="flex flex-row gap-x-2">
-          <HomeBookmarkPlus size="16px" />
-          <div>
-            <div class="text-xs font-medium text-gray-700 h-4">
-              Bookmark current view as Home.
-            </div>
-            <div class="text-[11px] font-normal text-gray-500 h-4">
-              This will be everyone’s main view for this dashboard.
-            </div>
-          </div>
-        </div>
-      </DropdownMenuItem>
-      <DropdownMenuSeparator />
       {#if homeBookmark}
         <BookmarkItem
           bookmark={homeBookmark}
           {onDelete}
           readOnly={!manageProject}
+          showDeleteTooltip
         />
       {:else}
         <DropdownMenuItem class="py-2">
@@ -87,12 +74,26 @@
               <div
                 class="text-xs font-medium text-gray-700 h-4 text-ellipsis overflow-hidden"
               >
-                Go to home
+                Go to Home
               </div>
             </div>
           </a>
         </DropdownMenuItem>
       {/if}
+      <DropdownMenuSeparator />
+      <DropdownMenuItem on:click={onCreate}>
+        <div class="flex flex-row gap-x-2">
+          <HomeBookmarkPlus size="16px" />
+          <div>
+            <div class="text-xs font-medium text-gray-700 h-4">
+              Bookmark current view as Home.
+            </div>
+            <div class="text-[11px] font-normal text-gray-500 h-4">
+              This will be everyone’s main view for this dashboard.
+            </div>
+          </div>
+        </div>
+      </DropdownMenuItem>
     </DropdownMenuContent>
   </DropdownMenu>
 {:else}

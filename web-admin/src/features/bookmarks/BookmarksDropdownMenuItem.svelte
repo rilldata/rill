@@ -12,6 +12,8 @@
   import FilterOutline from "@rilldata/web-common/components/icons/FilterOutline.svelte";
   import HomeBookmark from "@rilldata/web-common/components/icons/HomeBookmark.svelte";
   import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
+  import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
+  import { builderActions, getAttrs } from "bits-ui";
 
   export let bookmark: BookmarkEntry;
   export let readOnly = false;
@@ -20,6 +22,10 @@
   export let onEdit: ((bookmark: BookmarkEntry) => void) | undefined =
     undefined;
   export let onDelete: (bookmark: BookmarkEntry) => Promise<void>;
+  // having tooltip for non-home bookmark has an issue where the tooltip persists when moving between edit and delete.
+  // since we do not show the edit for home bookmark this is a temporary patch.
+  // TODO: figure out why the tooltips persist
+  export let showDeleteTooltip = false;
 
   function editBookmark(e) {
     e.skipSelection = true;
@@ -104,15 +110,26 @@
               <EditIcon size="16px" />
             </button>
           {/if}
-          <button
-            on:click={deleteBookmark}
-            class="bg-gray-100 hover:bg-primary-100 px-2 h-7 text-gray-400 hover:text-gray-500"
-            disabled={disableDelete}
-            aria-disabled={disableDelete}
-            aria-label="Delete bookmark"
-          >
-            <Trash size="16px" />
-          </button>
+          <Tooltip.Root portal="body">
+            <Tooltip.Trigger asChild let:builder>
+              <button
+                on:click={deleteBookmark}
+                class="bg-gray-100 hover:bg-primary-100 px-2 h-7 text-gray-400 hover:text-gray-500"
+                disabled={disableDelete}
+                aria-disabled={disableDelete}
+                aria-label="Delete bookmark"
+                {...getAttrs([builder])}
+                use:builderActions={{ builders: [builder] }}
+              >
+                <Trash size="16px" />
+              </button>
+            </Tooltip.Trigger>
+            {#if showDeleteTooltip}
+              <Tooltip.Content side="bottom">
+                Delete {bookmark.resource.default ? "Home " : ""}bookmark
+              </Tooltip.Content>
+            {/if}
+          </Tooltip.Root>
         {/if}
       </div>
     {/if}
