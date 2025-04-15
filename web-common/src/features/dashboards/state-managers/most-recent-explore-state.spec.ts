@@ -71,13 +71,14 @@ const TestCases: {
     ],
 
     expectedUrlSearch:
-      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&f=&measures=bid_price&dims=publisher&expand_dim=&sort_by=bid_price&sort_type=percent&sort_dir=ASC&leaderboard_measure_count=1",
+      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=&measures=bid_price&dims=publisher&expand_dim=&sort_by=bid_price&sort_type=percent&sort_dir=ASC&leaderboard_measures=bid_price",
     expectedExplore: {
       allMeasuresVisible: false,
       visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
       allDimensionsVisible: false,
       visibleDimensions: [AD_BIDS_PUBLISHER_DIMENSION],
       leaderboardSortByMeasureName: AD_BIDS_BID_PRICE_MEASURE,
+      leaderboardMeasureNames: [AD_BIDS_BID_PRICE_MEASURE],
       sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
       dashboardSortType: DashboardState_LeaderboardSortType.PERCENT,
     },
@@ -85,17 +86,18 @@ const TestCases: {
   {
     title: "Changes to dashboard using url",
     urlSearch:
-      "view=explore&tr=P4W&tz=UTC&compare_tr=&grain=week&f=publisher in ('Google')&measures=bid_price&dims=publisher&expand_dim=&sort_by=bid_price&sort_type=percent&sort_dir=ASC&leaderboard_measure_count=1",
+      "view=explore&tr=P4W&tz=UTC&compare_tr=&grain=week&compare_dim=&f=publisher in ('Google')&measures=bid_price&dims=publisher&expand_dim=&sort_by=bid_price&sort_type=percent&sort_dir=ASC&leaderboard_measures=bid_price",
     mutations: [],
 
     expectedUrlSearch:
-      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&f=&measures=bid_price&dims=publisher&expand_dim=&sort_by=bid_price&sort_type=percent&sort_dir=ASC&leaderboard_measure_count=1",
+      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=&measures=bid_price&dims=publisher&expand_dim=&sort_by=bid_price&sort_type=percent&sort_dir=ASC&leaderboard_measures=bid_price",
     expectedExplore: {
       allMeasuresVisible: false,
       visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
       allDimensionsVisible: false,
       visibleDimensions: [AD_BIDS_PUBLISHER_DIMENSION],
       leaderboardSortByMeasureName: AD_BIDS_BID_PRICE_MEASURE,
+      leaderboardMeasureNames: [AD_BIDS_BID_PRICE_MEASURE],
       sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
       dashboardSortType: DashboardState_LeaderboardSortType.PERCENT,
     },

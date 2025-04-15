@@ -11,6 +11,7 @@ import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/s
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
   AD_BIDS_BID_PRICE_MEASURE,
+  AD_BIDS_COUNTRY_DIMENSION,
   AD_BIDS_DOMAIN_DIMENSION,
   AD_BIDS_EXPLORE_INIT,
   AD_BIDS_EXPLORE_NAME,
@@ -20,6 +21,7 @@ import {
   AD_BIDS_METRICS_NAME,
   AD_BIDS_PRESET,
   AD_BIDS_PRESET_WITHOUT_TIMESTAMP,
+  AD_BIDS_PUBLISHER_COUNT_MEASURE,
   AD_BIDS_PUBLISHER_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import { ExploreUrlWebView } from "@rilldata/web-common/features/dashboards/url-state/mappers";
@@ -191,6 +193,7 @@ describe("DashboardStateManager", () => {
         allDimensionsVisible: false,
 
         leaderboardSortByMeasureName: AD_BIDS_BID_PRICE_MEASURE,
+        leaderboardMeasureNames: [AD_BIDS_BID_PRICE_MEASURE],
         sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
         dashboardSortType: DashboardState_LeaderboardSortType.VALUE,
 
@@ -205,7 +208,7 @@ describe("DashboardStateManager", () => {
         } as DashboardTimeControls,
       });
       const initUrlSearch =
-        "view=explore&tr=PT24H&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=hour&compare_dim=&f=&measures=bid_price&dims=domain&expand_dim=&sort_by=bid_price&sort_type=value&sort_dir=ASC&leaderboard_measures=impressions";
+        "view=explore&tr=PT24H&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=hour&compare_dim=&f=&measures=bid_price&dims=domain&expand_dim=&sort_by=bid_price&sort_type=value&sort_dir=ASC&leaderboard_measures=bid_price";
       pageMock.assertSearchParams(initUrlSearch);
 
       pageMock.popState("");
@@ -331,6 +334,49 @@ describe("DashboardStateManager", () => {
       });
       const initUrlSearch =
         "view=explore&f=&measures=bid_price&dims=domain&expand_dim=&sort_by=bid_price&sort_type=value&sort_dir=ASC&leaderboard_measures=bid_price";
+      pageMock.assertSearchParams(initUrlSearch);
+
+      pageMock.popState("");
+      await waitFor(() =>
+        assertExploreStateSubset(ExploreStateSubsetForRillDefaultState),
+      );
+      // only 2 urls should in history
+      expect(pageMock.urlSearchHistory).toEqual([
+        initUrlSearch,
+        PageURLForRillDefaultState,
+      ]);
+    });
+
+    it("Should validate most recent dashboard state and correct invalid fields", async () => {
+      setMostRecentExploreState(AD_BIDS_EXPLORE_NAME, undefined, {
+        visibleMeasures: [AD_BIDS_PUBLISHER_COUNT_MEASURE],
+        allMeasuresVisible: false,
+        visibleDimensions: [AD_BIDS_COUNTRY_DIMENSION],
+        allDimensionsVisible: false,
+
+        leaderboardSortByMeasureName: AD_BIDS_PUBLISHER_COUNT_MEASURE,
+        leaderboardMeasureNames: [AD_BIDS_PUBLISHER_COUNT_MEASURE],
+        sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
+        dashboardSortType: DashboardState_LeaderboardSortType.VALUE,
+      });
+      renderDashboardStateManager();
+      await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
+
+      assertExploreStateSubset({
+        ...ExploreStateSubsetForRillDefaultState,
+
+        visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE],
+        allMeasuresVisible: false,
+        visibleDimensions: [AD_BIDS_PUBLISHER_DIMENSION],
+        allDimensionsVisible: false,
+
+        leaderboardSortByMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
+        leaderboardMeasureNames: [AD_BIDS_IMPRESSIONS_MEASURE],
+        sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
+        dashboardSortType: DashboardState_LeaderboardSortType.VALUE,
+      });
+      const initUrlSearch =
+        "view=explore&f=&measures=impressions&dims=publisher&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=ASC&leaderboard_measures=impressions";
       pageMock.assertSearchParams(initUrlSearch);
 
       pageMock.popState("");

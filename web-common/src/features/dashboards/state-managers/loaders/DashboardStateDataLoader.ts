@@ -56,10 +56,6 @@ export class DashboardStateDataLoader {
     errors: Error[];
   }>;
 
-  private readonly mostRecentPartialExploreState: CompoundQueryResult<
-    Partial<MetricsExplorerEntity> | undefined
-  >;
-
   /**
    * The explore state used to populate the store with initial explore. (TODO: update this)
    * 1. If state is present in the url, use it.
@@ -233,48 +229,38 @@ export class DashboardStateDataLoader {
       },
     );
 
-    this.mostRecentPartialExploreState = getCompoundQuery(
-      [this.validSpecQuery],
-      ([validSpecResp]) => {
-        const metricsViewSpec = validSpecResp?.metricsView ?? {};
-        const exploreSpec = validSpecResp?.explore ?? {};
+    this.initExploreState = getCompoundQuery(
+      [
+        this.validSpecQuery,
+        this.rillDefaultExploreState,
+        this.exploreStateFromYAMLConfig,
+        this.exploreStateFromSessionStorage,
+        this.partialExploreStateFromUrlForInitAndErrors,
+        ...(bookmarkOrTokenExploreState ? [bookmarkOrTokenExploreState] : []),
+      ],
+      ([
+        validSpecResp,
+        rillDefaultExploreState,
+        exploreStateFromYAMLConfig,
+        exploreStateFromSessionStorage,
+        partialExploreStateFromUrlForInitAndErrors,
+        bookmarkOrTokenExploreState,
+      ]) => {
+        const metricsViewSpec = validSpecResp?.metricsView;
+        const exploreSpec = validSpecResp?.explore;
+        if (
+          !metricsViewSpec ||
+          !exploreSpec ||
+          !rillDefaultExploreState ||
+          !exploreStateFromYAMLConfig
+        ) {
+          return undefined;
+        }
 
         const mostRecentPartialExploreState = getMostRecentExploreState(
           exploreName,
           storageNamespacePrefix,
         );
-        if (!mostRecentPartialExploreState) return undefined;
-
-        correctExploreState(
-          metricsViewSpec,
-          exploreSpec,
-          mostRecentPartialExploreState,
-        );
-
-        return mostRecentPartialExploreState;
-      },
-    );
-
-    this.initExploreState = getCompoundQuery(
-      [
-        this.rillDefaultExploreState,
-        this.exploreStateFromYAMLConfig,
-        this.exploreStateFromSessionStorage,
-        this.partialExploreStateFromUrlForInitAndErrors,
-        this.mostRecentPartialExploreState,
-        ...(bookmarkOrTokenExploreState ? [bookmarkOrTokenExploreState] : []),
-      ],
-      ([
-        rillDefaultExploreState,
-        exploreStateFromYAMLConfig,
-        exploreStateFromSessionStorage,
-        partialExploreStateFromUrlForInitAndErrors,
-        mostRecentPartialExploreState,
-        bookmarkOrTokenExploreState,
-      ]) => {
-        if (!rillDefaultExploreState || !exploreStateFromYAMLConfig) {
-          return undefined;
-        }
 
         const exploreStateOrder = [
           // 1st priority is the state from session storage.
@@ -295,8 +281,11 @@ export class DashboardStateDataLoader {
 
         const initExploreState = cascadingExploreStateMerge(exploreStateOrder);
 
+        const { correctedExploreState: correctedInitExploreState } =
+          correctExploreState(metricsViewSpec, exploreSpec, initExploreState);
+
         // since we use defaultExploreState further down to calculate default url params we should make a copy to avoid changes to defaultExploreState
-        return structuredClone(initExploreState);
+        return structuredClone(correctedInitExploreState);
       },
     );
   }
@@ -315,8 +304,9 @@ export class DashboardStateDataLoader {
     const rillDefaultExploreState = get(this.rillDefaultExploreState);
     const exploreStateFromYAMLConfig = get(this.exploreStateFromYAMLConfig);
     const explorePresetFromYAMLConfig = get(this.explorePresetFromYAMLConfig);
-    const mostRecentPartialExploreState = get(
-      this.mostRecentPartialExploreState,
+    const mostRecentPartialExploreState = getMostRecentExploreState(
+      this.exploreName,
+      this.storageNamespacePrefix,
     );
     if (
       !rillDefaultExploreState?.data ||
@@ -368,6 +358,11 @@ export class DashboardStateDataLoader {
       rillDefaultExploreState.data,
     ].filter(Boolean) as Partial<MetricsExplorerEntity>[];
 
-    return cascadingExploreStateMerge(exploreStateOrder);
+    const finalExploreState = cascadingExploreStateMerge(exploreStateOrder);
+
+    const { correctedExploreState: correctedFinalExploreState } =
+      correctExploreState(metricsViewSpec, exploreSpec, finalExploreState);
+
+    return correctedFinalExploreState;
   }
 }

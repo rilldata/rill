@@ -1,0 +1,139 @@
+import { correctExploreState } from "@rilldata/web-common/features/dashboards/stores/correct-explore-state";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import {
+  AD_BIDS_BID_PRICE_MEASURE,
+  AD_BIDS_DOMAIN_DIMENSION,
+  AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS,
+  AD_BIDS_IMPRESSIONS_MEASURE,
+  AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+  AD_BIDS_PUBLISHER_COUNT_MEASURE,
+  AD_BIDS_PUBLISHER_DIMENSION,
+} from "@rilldata/web-common/features/dashboards/stores/test-data/data";
+import { describe, it, expect } from "vitest";
+
+const TestCases: {
+  title: string;
+  exploreState: Partial<MetricsExplorerEntity>;
+  expectedCorrectState: Partial<MetricsExplorerEntity>;
+  expectedErrorMessages: string[];
+}[] = [
+  {
+    title: "Some invalid selected measures/dimensions",
+    exploreState: {
+      visibleMeasures: [
+        AD_BIDS_IMPRESSIONS_MEASURE,
+        "invalid_measure",
+        AD_BIDS_BID_PRICE_MEASURE,
+      ],
+      allMeasuresVisible: true,
+      visibleDimensions: [
+        AD_BIDS_PUBLISHER_DIMENSION,
+        "invalid_dimension",
+        AD_BIDS_DOMAIN_DIMENSION,
+      ],
+      allDimensionsVisible: true,
+    },
+    expectedCorrectState: {
+      visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE, AD_BIDS_BID_PRICE_MEASURE],
+      allMeasuresVisible: false,
+      visibleDimensions: [
+        AD_BIDS_PUBLISHER_DIMENSION,
+        AD_BIDS_DOMAIN_DIMENSION,
+      ],
+      allDimensionsVisible: false,
+    },
+    expectedErrorMessages: [
+      `Selected measure: "invalid_measure" is not valid.`,
+      `Selected dimension: "invalid_dimension" is not valid.`,
+    ],
+  },
+  {
+    title: "All invalid selected measures/dimensions",
+    exploreState: {
+      visibleMeasures: [
+        "invalid_measure_1",
+        "invalid_measure_2",
+        "invalid_measure_3",
+      ],
+      allMeasuresVisible: true,
+      visibleDimensions: [
+        "invalid_dimension_1",
+        "invalid_dimension_2",
+        "invalid_dimension_3",
+      ],
+      allDimensionsVisible: true,
+    },
+    expectedCorrectState: {
+      visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE],
+      allMeasuresVisible: false,
+      visibleDimensions: [AD_BIDS_PUBLISHER_DIMENSION],
+      allDimensionsVisible: false,
+    },
+    expectedErrorMessages: [
+      `Selected measures: "invalid_measure_1,invalid_measure_2,invalid_measure_3" are not valid.`,
+      `Selected dimensions: "invalid_dimension_1,invalid_dimension_2,invalid_dimension_3" are not valid.`,
+    ],
+  },
+
+  {
+    title: "Hidden sort settings",
+    exploreState: {
+      visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE, AD_BIDS_BID_PRICE_MEASURE],
+      allMeasuresVisible: false,
+      leaderboardSortByMeasureName: AD_BIDS_PUBLISHER_COUNT_MEASURE,
+      leaderboardMeasureNames: [
+        AD_BIDS_PUBLISHER_COUNT_MEASURE,
+        AD_BIDS_BID_PRICE_MEASURE,
+      ],
+    },
+    expectedCorrectState: {
+      visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE, AD_BIDS_BID_PRICE_MEASURE],
+      allMeasuresVisible: false,
+      leaderboardSortByMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
+      leaderboardMeasureNames: [AD_BIDS_BID_PRICE_MEASURE],
+    },
+    expectedErrorMessages: [
+      `Selected sort by measure: "publisher_count" is not valid.`,
+      `Selected leaderboard measure: "publisher_count" is not valid.`,
+    ],
+  },
+  {
+    title: "All invalid sort settings",
+    exploreState: {
+      visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE, AD_BIDS_BID_PRICE_MEASURE],
+      allMeasuresVisible: false,
+      leaderboardSortByMeasureName: "invalid_measure_1",
+      leaderboardMeasureNames: ["invalid_measure_1", "invalid_measure_2"],
+    },
+    expectedCorrectState: {
+      visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE, AD_BIDS_BID_PRICE_MEASURE],
+      allMeasuresVisible: false,
+      leaderboardSortByMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
+      leaderboardMeasureNames: [AD_BIDS_IMPRESSIONS_MEASURE],
+    },
+    expectedErrorMessages: [
+      `Selected sort by measure: "invalid_measure_1" is not valid.`,
+      `Selected leaderboard measures: "invalid_measure_1,invalid_measure_2" are not valid.`,
+    ],
+  },
+];
+
+describe("correctExploreState", () => {
+  for (const {
+    title,
+    exploreState,
+    expectedCorrectState,
+    expectedErrorMessages,
+  } of TestCases) {
+    it(title, () => {
+      const { correctedExploreState, errors } = correctExploreState(
+        AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+        AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS,
+        exploreState,
+      );
+
+      expect(correctedExploreState).toEqual(expectedCorrectState);
+      expect(errors.map((e) => e.message)).toEqual(expectedErrorMessages);
+    });
+  }
+});

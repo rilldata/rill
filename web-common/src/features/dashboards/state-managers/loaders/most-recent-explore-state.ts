@@ -45,7 +45,11 @@ export function saveMostRecentExploreState(
       allMeasuresVisible: exploreState.allMeasuresVisible,
       visibleDimensions: exploreState.visibleDimensions,
       allDimensionsVisible: exploreState.allDimensionsVisible,
+
       leaderboardSortByMeasureName: exploreState.leaderboardSortByMeasureName,
+      leaderboardMeasureNames: exploreState.leaderboardMeasureNames,
+      leaderboardShowContextForAllMeasures:
+        exploreState.leaderboardShowContextForAllMeasures,
       sortDirection: exploreState.sortDirection,
       dashboardSortType: exploreState.dashboardSortType,
     });
