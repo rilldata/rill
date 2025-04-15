@@ -14,6 +14,10 @@ export function generateVLPieChartSpec(
 ): VisualizationSpec {
   const spec = createSingleLayerBaseSpec("arc");
 
+  spec.mark = {
+    type: "arc",
+    innerRadius: 30,
+  };
   const theta = createXEncoding(config.measure, data);
   const color = createColorEncoding(config.color, data);
   const tooltip = createDefaultTooltipEncoding(

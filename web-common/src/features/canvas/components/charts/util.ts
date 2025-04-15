@@ -1,4 +1,5 @@
 import BarChart from "@rilldata/web-common/components/icons/BarChart.svelte";
+import Donut from "@rilldata/web-common/components/icons/Donut.svelte";
 import LineChart from "@rilldata/web-common/components/icons/LineChart.svelte";
 import StackedArea from "@rilldata/web-common/components/icons/StackedArea.svelte";
 import StackedBar from "@rilldata/web-common/components/icons/StackedBar.svelte";
@@ -7,7 +8,6 @@ import { getRillTheme } from "@rilldata/web-common/components/vega/vega-config";
 import { sanitizeValueForVega } from "@rilldata/web-common/features/templates/charts/utils";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import merge from "deepmerge";
-import { PieChart } from "lucide-svelte";
 import type { Config } from "vega-lite";
 import type { ChartSpec, ChartType } from "./";
 import { generateVLAreaChartSpec } from "./cartesian-charts/area/spec";
@@ -50,7 +50,7 @@ export const chartMetadata: ChartMetadata[] = [
     icon: StackedBarFull,
   },
   { type: "area_chart", title: "Stacked Area", icon: StackedArea },
-  { type: "pie_chart", title: "Pie", icon: PieChart },
+  { type: "pie_chart", title: "Pie", icon: Donut },
 ];
 
 export function isChartLineLike(chartType: ChartType) {
