@@ -5,6 +5,8 @@ import type {
 import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
+import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
+import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type {
   V1MetricsViewSpec,
   V1Resource,
@@ -73,9 +75,11 @@ export class CircularChartComponent extends BaseChart<CircularChartSpec> {
     }
 
     let limit: number;
+    let showNull = false;
     if (config.color?.field) {
       limit = config.color.limit ?? 20;
       dimensions = [{ name: config.color.field }];
+      showNull = !!config.color.showNull;
     }
 
     return derived(
@@ -84,13 +88,23 @@ export class CircularChartComponent extends BaseChart<CircularChartSpec> {
         const { timeRange, where } = $timeAndFilterStore;
         const enabled = !!timeRange?.start && !!timeRange?.end;
 
+        let mergedWhere = where;
+        if (!showNull && config.color?.field) {
+          const excludeNullFilter = createInExpression(
+            config.color?.field,
+            [null],
+            true,
+          );
+          mergedWhere = mergeFilters(where, excludeNullFilter);
+        }
+
         const dataQuery = createQueryServiceMetricsViewAggregation(
           runtime.instanceId,
           config.metrics_view,
           {
             measures,
             dimensions,
-            where,
+            where: mergedWhere,
             timeRange,
             limit: limit.toString(),
           },
