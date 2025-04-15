@@ -7,6 +7,8 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime"
 	metricssqlparser "github.com/rilldata/rill/runtime/pkg/metricssql"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 func init() {
@@ -32,6 +34,11 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 	}
 	if props.SQL == "" {
 		return nil, errors.New(`metrics SQL: missing required property "sql"`)
+	}
+
+	span := trace.SpanFromContext(ctx)
+	if span.SpanContext().IsValid() {
+		span.SetAttributes(attribute.String("metrics_sql", props.SQL))
 	}
 
 	instance, err := opts.Runtime.Instance(ctx, opts.InstanceID)

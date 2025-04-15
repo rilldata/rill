@@ -9,6 +9,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
@@ -54,7 +55,7 @@ measures:
 			FilePaths: []string{"/sources/foo.yaml"},
 		},
 		Resource: &runtimev1.Resource_Model{
-			Model: &runtimev1.ModelV2{
+			Model: &runtimev1.Model{
 				Spec: &runtimev1.ModelSpec{
 					InputConnector:   "local_file",
 					OutputConnector:  "duckdb",
@@ -84,7 +85,7 @@ measures:
 			FilePaths: []string{"/models/bar.sql"},
 		},
 		Resource: &runtimev1.Resource_Model{
-			Model: &runtimev1.ModelV2{
+			Model: &runtimev1.Model{
 				Spec: &runtimev1.ModelSpec{
 					RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 					InputConnector:  "duckdb",
@@ -107,8 +108,8 @@ measures:
 	mvSpec := &runtimev1.MetricsViewSpec{
 		Connector:   "duckdb",
 		Model:       "bar",
-		Dimensions:  []*runtimev1.MetricsViewSpec_DimensionV2{{Name: "a", DisplayName: "A", Column: "a"}},
-		Measures:    []*runtimev1.MetricsViewSpec_MeasureV2{{Name: "b", DisplayName: "B", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE}},
+		Dimensions:  []*runtimev1.MetricsViewSpec_Dimension{{Name: "a", DisplayName: "A", Column: "a"}},
+		Measures:    []*runtimev1.MetricsViewSpec_Measure{{Name: "b", DisplayName: "B", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE}},
 		DisplayName: "Foobar",
 	}
 	testruntime.RequireResource(t, rt, id, &runtimev1.Resource{
@@ -119,7 +120,7 @@ measures:
 			FilePaths: []string{"/metrics/foobar.yaml"},
 		},
 		Resource: &runtimev1.Resource_MetricsView{
-			MetricsView: &runtimev1.MetricsViewV2{
+			MetricsView: &runtimev1.MetricsView{
 				Spec: mvSpec,
 				State: &runtimev1.MetricsViewState{
 					ValidSpec: &runtimev1.MetricsViewSpec{
@@ -127,8 +128,8 @@ measures:
 						Table:       "bar",
 						Model:       "bar",
 						DisplayName: "Foobar",
-						Dimensions:  []*runtimev1.MetricsViewSpec_DimensionV2{{Name: "a", DisplayName: "A", Column: "a"}},
-						Measures:    []*runtimev1.MetricsViewSpec_MeasureV2{{Name: "b", DisplayName: "B", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE}},
+						Dimensions:  []*runtimev1.MetricsViewSpec_Dimension{{Name: "a", DisplayName: "A", Column: "a"}},
+						Measures:    []*runtimev1.MetricsViewSpec_Measure{{Name: "b", DisplayName: "B", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE}},
 					},
 				},
 			},
@@ -154,7 +155,7 @@ path
 			ReconcileError: "Table with name foo does not exist",
 		},
 		Resource: &runtimev1.Resource_Model{
-			Model: &runtimev1.ModelV2{
+			Model: &runtimev1.Model{
 				Spec: &runtimev1.ModelSpec{
 					RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 					InputConnector:  "duckdb",
@@ -177,7 +178,7 @@ path
 			ReconcileError: "does not exist",
 		},
 		Resource: &runtimev1.Resource_MetricsView{
-			MetricsView: &runtimev1.MetricsViewV2{
+			MetricsView: &runtimev1.MetricsView{
 				Spec:  mvSpec,
 				State: &runtimev1.MetricsViewState{},
 			},
@@ -218,7 +219,7 @@ path: data/foo.csv
 			FilePaths: []string{"/sources/foo.yaml"},
 		},
 		Resource: &runtimev1.Resource_Model{
-			Model: &runtimev1.ModelV2{
+			Model: &runtimev1.Model{
 				Spec: &runtimev1.ModelSpec{
 					InputConnector:   "local_file",
 					OutputConnector:  "duckdb",
@@ -250,10 +251,24 @@ path: data/foo.csv
 	testruntime.RequireOLAPTable(t, rt, id, "foo")
 	testruntime.RequireOLAPTableCount(t, rt, id, "foo", 1)
 
-	// Delete the underlying table
-	olap, release, err := rt.OLAP(context.Background(), id, "")
+	// Get the model and the ModelManager for its output
+	ctrl, err := rt.Controller(context.Background(), id)
 	require.NoError(t, err)
-	err = olap.DropTable(context.Background(), "foo")
+	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "foo"}, false)
+	require.NoError(t, err)
+	fooModel := r.GetModel()
+	h, release, err := rt.AcquireHandle(context.Background(), id, fooModel.State.ResultConnector)
+	require.NoError(t, err)
+	defer release()
+	modelManager, ok := h.AsModelManager(id)
+	require.True(t, ok)
+
+	// Delete the underlying table
+	modelManager.Delete(context.Background(), &drivers.ModelResult{
+		Connector:  fooModel.State.ResultConnector,
+		Properties: fooModel.State.ResultProperties.AsMap(),
+		Table:      fooModel.State.ResultTable,
+	})
 	require.NoError(t, err)
 	release()
 	testruntime.RequireNoOLAPTable(t, rt, id, "foo")
@@ -291,7 +306,7 @@ path: data/foo.csv
 			FilePaths: []string{"/sources/foo.yaml"},
 		},
 		Resource: &runtimev1.Resource_Model{
-			Model: &runtimev1.ModelV2{
+			Model: &runtimev1.Model{
 				Spec: &runtimev1.ModelSpec{
 					InputConnector:   "local_file",
 					OutputConnector:  "duckdb",
@@ -1149,8 +1164,8 @@ measures:
 	testruntime.RequireResource(t, rt, id, metricsRes)
 }
 
-func newSource(name, path, localFileHash string) (*runtimev1.ModelV2, *runtimev1.Resource) {
-	source := &runtimev1.ModelV2{
+func newSource(name, path, localFileHash string) (*runtimev1.Model, *runtimev1.Resource) {
+	source := &runtimev1.Model{
 		Spec: &runtimev1.ModelSpec{
 			InputConnector:   "local_file",
 			OutputConnector:  "duckdb",
@@ -1179,8 +1194,8 @@ func newSource(name, path, localFileHash string) (*runtimev1.ModelV2, *runtimev1
 	return source, sourceRes
 }
 
-func newModel(query, name, source string) (*runtimev1.ModelV2, *runtimev1.Resource) {
-	model := &runtimev1.ModelV2{
+func newModel(query, name, source string) (*runtimev1.Model, *runtimev1.Resource) {
+	model := &runtimev1.Model{
 		Spec: &runtimev1.ModelSpec{
 			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 			InputConnector:  "duckdb",
@@ -1208,14 +1223,14 @@ func newModel(query, name, source string) (*runtimev1.ModelV2, *runtimev1.Resour
 	return model, modelRes
 }
 
-func newMetricsView(name, model string, measures, dimensions []string) (*runtimev1.MetricsViewV2, *runtimev1.Resource) {
-	metrics := &runtimev1.MetricsViewV2{
+func newMetricsView(name, model string, measures, dimensions []string) (*runtimev1.MetricsView, *runtimev1.Resource) {
+	metrics := &runtimev1.MetricsView{
 		Spec: &runtimev1.MetricsViewSpec{
 			Connector:   "duckdb",
 			Model:       model,
 			DisplayName: parser.ToDisplayName(name),
-			Measures:    make([]*runtimev1.MetricsViewSpec_MeasureV2, len(measures)),
-			Dimensions:  make([]*runtimev1.MetricsViewSpec_DimensionV2, len(dimensions)),
+			Measures:    make([]*runtimev1.MetricsViewSpec_Measure, len(measures)),
+			Dimensions:  make([]*runtimev1.MetricsViewSpec_Dimension, len(dimensions)),
 		},
 		State: &runtimev1.MetricsViewState{
 			ValidSpec: &runtimev1.MetricsViewSpec{
@@ -1223,21 +1238,21 @@ func newMetricsView(name, model string, measures, dimensions []string) (*runtime
 				Table:       model,
 				Model:       model,
 				DisplayName: parser.ToDisplayName(name),
-				Measures:    make([]*runtimev1.MetricsViewSpec_MeasureV2, len(measures)),
-				Dimensions:  make([]*runtimev1.MetricsViewSpec_DimensionV2, len(dimensions)),
+				Measures:    make([]*runtimev1.MetricsViewSpec_Measure, len(measures)),
+				Dimensions:  make([]*runtimev1.MetricsViewSpec_Dimension, len(dimensions)),
 			},
 		},
 	}
 
 	for i, measure := range measures {
 		name := fmt.Sprintf("measure_%d", i)
-		metrics.Spec.Measures[i] = &runtimev1.MetricsViewSpec_MeasureV2{
+		metrics.Spec.Measures[i] = &runtimev1.MetricsViewSpec_Measure{
 			Name:        name,
 			DisplayName: parser.ToDisplayName(name),
 			Expression:  measure,
 			Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 		}
-		metrics.State.ValidSpec.Measures[i] = &runtimev1.MetricsViewSpec_MeasureV2{
+		metrics.State.ValidSpec.Measures[i] = &runtimev1.MetricsViewSpec_Measure{
 			Name:        name,
 			DisplayName: parser.ToDisplayName(name),
 			Expression:  measure,
@@ -1245,12 +1260,12 @@ func newMetricsView(name, model string, measures, dimensions []string) (*runtime
 		}
 	}
 	for i, dimension := range dimensions {
-		metrics.Spec.Dimensions[i] = &runtimev1.MetricsViewSpec_DimensionV2{
+		metrics.Spec.Dimensions[i] = &runtimev1.MetricsViewSpec_Dimension{
 			Name:        dimension,
 			DisplayName: parser.ToDisplayName(dimension),
 			Column:      dimension,
 		}
-		metrics.State.ValidSpec.Dimensions[i] = &runtimev1.MetricsViewSpec_DimensionV2{
+		metrics.State.ValidSpec.Dimensions[i] = &runtimev1.MetricsViewSpec_Dimension{
 			Name:        dimension,
 			DisplayName: parser.ToDisplayName(dimension),
 			Column:      dimension,

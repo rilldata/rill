@@ -121,8 +121,8 @@ export function getProtoFromDashboardState(
 
   state.selectedTimezone = metrics.selectedTimezone;
 
-  if (metrics.leaderboardMeasureName) {
-    state.leaderboardMeasure = metrics.leaderboardMeasureName;
+  if (metrics.leaderboardSortByMeasureName) {
+    state.leaderboardMeasure = metrics.leaderboardSortByMeasureName;
   }
 
   if (metrics.leaderboardMeasureCount) {
@@ -313,7 +313,6 @@ const mapPivotDimensions: (
 function toPivotProto(pivotState: PivotState): PartialMessage<DashboardState> {
   const pivotColumns = splitPivotChips(pivotState.columns);
   return {
-    pivotIsActive: pivotState.active,
     pivotRowAllDimensions: pivotState.rows.map(mapPivotDimensions),
     pivotColumnAllDimensions: pivotColumns.dimension.map(mapPivotDimensions),
     pivotColumnMeasures: pivotColumns.measure.map((m) => m.id),

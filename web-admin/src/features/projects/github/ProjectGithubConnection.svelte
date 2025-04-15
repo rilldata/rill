@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { createAdminServiceGetProject } from "@rilldata/web-admin/client";
+  import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import ConnectToGithubButton from "@rilldata/web-admin/features/projects/github/ConnectToGithubButton.svelte";
   import DisconnectProjectConfirmDialog from "@rilldata/web-admin/features/projects/github/DisconnectProjectConfirmDialog.svelte";
   import {
@@ -8,16 +10,14 @@
   import GithubRepoSelectionDialog from "@rilldata/web-admin/features/projects/github/GithubRepoSelectionDialog.svelte";
   import { useGithubLastSynced } from "@rilldata/web-admin/features/projects/selectors";
   import { Button, IconButton } from "@rilldata/web-common/components/button";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import DisconnectIcon from "@rilldata/web-common/components/icons/DisconnectIcon.svelte";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
+  import { getRepoNameFromGithubUrl } from "@rilldata/web-common/features/project/github-utils";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { createAdminServiceGetProject } from "@rilldata/web-admin/client";
-  import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
-  import { getRepoNameFromGithubUrl } from "@rilldata/web-common/features/project/github-utils";
-  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
 
   export let organization: string;
   export let project: string;
@@ -25,11 +25,12 @@
   $: ({ instanceId } = $runtime);
 
   $: proj = createAdminServiceGetProject(organization, project);
-  $: isGithubConnected = !!$proj.data?.project?.githubUrl;
-  $: repoName =
-    $proj.data?.project?.githubUrl &&
-    getRepoNameFromGithubUrl($proj.data.project.githubUrl);
-  $: subpath = $proj.data?.project?.subpath;
+  $: ({
+    project: { githubUrl, subpath, prodBranch },
+  } = $proj.data);
+
+  $: isGithubConnected = !!githubUrl;
+  $: repoName = getRepoNameFromGithubUrl(githubUrl);
   $: githubLastSynced = useGithubLastSynced(instanceId);
   $: dashboardsLastUpdated = useDashboardsLastUpdated(
     instanceId,
@@ -128,6 +129,12 @@
             </span>
           </div>
         {/if}
+        <div class="flex items-center">
+          <span class="font-mono">branch</span>
+          <span class="text-gray-800">
+            : {prodBranch}
+          </span>
+        </div>
         {#if lastUpdated}
           <span class="text-gray-500 text-[11px] leading-4">
             Synced {lastUpdated.toLocaleString(undefined, {

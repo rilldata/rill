@@ -2,8 +2,8 @@ import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/d
 import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
   V1Operation,
-  type MetricsViewSpecDimensionV2,
-  type MetricsViewSpecMeasureV2,
+  type MetricsViewSpecDimension,
+  type MetricsViewSpecMeasure,
   type V1Condition,
   type V1Expression,
   type V1Subquery,
@@ -393,8 +393,8 @@ export function isExpressionUnsupported(expression: V1Expression) {
 export function buildValidMetricsViewFilter(
   filter: V1Expression,
   dtf: DimensionThresholdFilter[],
-  dimensions: MetricsViewSpecDimensionV2[],
-  measures: MetricsViewSpecMeasureV2[],
+  dimensions: MetricsViewSpecDimension[],
+  measures: MetricsViewSpecMeasure[],
 ) {
   const whereFilter =
     filterIdentifiers(filter, (e, ident) => {

@@ -1,18 +1,17 @@
-import type { CreateQueryOptions, QueryFunction } from "@rilldata/svelte-query";
-import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
-import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
+import type {
+  CreateQueryOptions,
+  QueryFunction,
+  QueryClient,
+} from "@tanstack/svelte-query";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   createRuntimeServiceGetExplore,
-  getQueryServiceMetricsViewTimeRangeQueryKey,
   getRuntimeServiceGetExploreQueryKey,
-  queryServiceMetricsViewTimeRange,
   runtimeServiceGetExplore,
   type RpcStatus,
   type V1ExploreSpec,
   type V1GetExploreResponse,
   type V1MetricsViewSpec,
-  type V1MetricsViewTimeRangeResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client";
 import { error } from "@sveltejs/kit";
@@ -20,11 +19,14 @@ import { error } from "@sveltejs/kit";
 export function useExplore(
   instanceId: string,
   exploreName: string,
-  queryOptions?: CreateQueryOptions<
-    V1GetExploreResponse,
-    ErrorType<RpcStatus>,
-    V1GetExploreResponse
+  queryOptions?: Partial<
+    CreateQueryOptions<
+      V1GetExploreResponse,
+      ErrorType<RpcStatus>,
+      V1GetExploreResponse
+    >
   >,
+  queryClient?: QueryClient,
 ) {
   return createRuntimeServiceGetExplore(
     instanceId,
@@ -32,6 +34,7 @@ export function useExplore(
     {
       query: queryOptions,
     },
+    queryClient,
   );
 }
 
@@ -42,34 +45,31 @@ export type ExploreValidSpecResponse = {
 export function useExploreValidSpec(
   instanceId: string,
   exploreName: string,
-  queryOptions?: CreateQueryOptions<
-    V1GetExploreResponse,
-    ErrorType<RpcStatus>,
-    ExploreValidSpecResponse
+  queryOptions?: Partial<
+    CreateQueryOptions<
+      V1GetExploreResponse,
+      ErrorType<RpcStatus>,
+      ExploreValidSpecResponse
+    >
   >,
+  queryClient?: QueryClient,
 ) {
-  const defaultQueryOptions: CreateQueryOptions<
-    V1GetExploreResponse,
-    ErrorType<RpcStatus>,
-    ExploreValidSpecResponse
-  > = {
-    select: (data) =>
-      <ExploreValidSpecResponse>{
-        explore: data.explore?.explore?.state?.validSpec,
-        metricsView: data.metricsView?.metricsView?.state?.validSpec,
-      },
-    queryClient,
-    enabled: !!exploreName,
-  };
   return createRuntimeServiceGetExplore(
     instanceId,
     { name: exploreName },
     {
       query: {
-        ...defaultQueryOptions,
+        select: (data) =>
+          <ExploreValidSpecResponse>{
+            explore: data.explore?.explore?.state?.validSpec,
+            metricsView: data.metricsView?.metricsView?.state?.validSpec,
+          },
+
+        enabled: !!exploreName,
         ...queryOptions,
       },
     },
+    queryClient,
   );
 }
 
@@ -101,43 +101,8 @@ export async function fetchExploreSpec(
     throw error(404, "Metrics view not found");
   }
 
-  const metricsViewSpec =
-    metricsViewResource.metricsView.state?.validSpec ?? {};
-  const exploreSpec = exploreResource.explore.state?.validSpec ?? {};
-
-  let fullTimeRange: V1MetricsViewTimeRangeResponse | undefined = undefined;
-  const metricsViewName = exploreSpec.metricsView;
-  if (metricsViewSpec.timeDimension && metricsViewName) {
-    fullTimeRange = await queryClient.fetchQuery({
-      queryFn: () =>
-        queryServiceMetricsViewTimeRange(instanceId, metricsViewName, {}),
-      queryKey: getQueryServiceMetricsViewTimeRangeQueryKey(
-        instanceId,
-        metricsViewName,
-        {},
-      ),
-      staleTime: Infinity,
-      cacheTime: Infinity,
-    });
-  }
-
-  const defaultExplorePreset = getDefaultExplorePreset(
-    exploreSpec,
-    metricsViewSpec,
-    fullTimeRange,
-  );
-  const { partialExploreState: exploreStateFromYAMLConfig, errors } =
-    convertPresetToExploreState(
-      metricsViewSpec,
-      exploreSpec,
-      defaultExplorePreset,
-    );
-
   return {
     explore: exploreResource,
     metricsView: metricsViewResource,
-    defaultExplorePreset,
-    exploreStateFromYAMLConfig,
-    errors,
   };
 }

@@ -3,8 +3,8 @@
   import DragHandle from "@rilldata/web-common/components/icons/DragHandle.svelte";
   import { clamp } from "@rilldata/web-common/lib/clamp";
   import type {
-    MetricsViewSpecMeasureV2,
-    MetricsViewSpecDimensionV2,
+    MetricsViewSpecMeasure,
+    MetricsViewSpecDimension,
   } from "@rilldata/web-common/runtime-client";
   import { Button } from "../button";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
@@ -17,7 +17,7 @@
   const ITEM_HEIGHT = 28;
   const THROTTLE_MS = 16; // ~60fps = 60 frames per second = 1000ms / 60 frames = ~16.67ms per frame
 
-  type SelectableItem = MetricsViewSpecMeasureV2 | MetricsViewSpecDimensionV2;
+  type SelectableItem = MetricsViewSpecMeasure | MetricsViewSpecDimension;
 
   export let selectedItems: string[];
   export let allItems: SelectableItem[] = [];
@@ -299,11 +299,20 @@
                     style:height="{ITEM_HEIGHT}px"
                     class="w-full flex gap-x-1 flex-none px-2 py-1 pointer-events-auto cursor-grab items-center hover:bg-slate-50 rounded-sm"
                     class:cursor-not-allowed={selectedItems.length === 1}
+                    on:keydown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        selectedItems = selectedItems.filter((_, j) => j !== i);
+                        onSelectedChange(selectedItems);
+                      }
+                    }}
                   >
                     <DragHandle size="16px" className="text-gray-400" />
 
-                    {allItemsMap.get(id)?.displayName ??
-                      `Unknown ${type === "measure" ? "measure" : "dimension"}`}
+                    <span class="truncate flex-1 text-left pointer-events-none"
+                      >{allItemsMap.get(id)?.displayName ??
+                        `Unknown ${type === "measure" ? "measure" : "dimension"}`}</span
+                    >
 
                     <button
                       class="ml-auto hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
@@ -340,7 +349,6 @@
                 </Tooltip.Content>
               </Tooltip.Root>
             {:else}
-              <!-- FIXME: hoist to DraggableListItem -->
               <div
                 role="presentation"
                 data-index={i}
@@ -363,11 +371,20 @@
                 style:height="{ITEM_HEIGHT}px"
                 class="w-full flex gap-x-1 flex-none px-2 py-1 pointer-events-auto cursor-grab items-center hover:bg-slate-50 rounded-sm"
                 class:cursor-not-allowed={selectedItems.length === 1}
+                on:keydown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    selectedItems = selectedItems.filter((_, j) => j !== i);
+                    onSelectedChange(selectedItems);
+                  }
+                }}
               >
                 <DragHandle size="16px" className="text-gray-400" />
 
-                {allItemsMap.get(id)?.displayName ??
-                  `Unknown ${type === "measure" ? "measure" : "dimension"}`}
+                <span class="truncate flex-1 text-left pointer-events-none"
+                  >{allItemsMap.get(id)?.displayName ??
+                    `Unknown ${type === "measure" ? "measure" : "dimension"}`}</span
+                >
 
                 <button
                   class="ml-auto hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
@@ -381,8 +398,6 @@
                   disabled={selectedItems.length === 1}
                   class:pointer-events-none={selectedItems.length === 1}
                   class:opacity-50={selectedItems.length === 1}
-                  aria-label="Toggle visibility"
-                  data-testid="toggle-visibility-button"
                 >
                   <EyeIcon size="14px" color="#6b7280" />
                 </button>
@@ -393,10 +408,7 @@
       </div>
       {#if selectedItems.length < allItems.length}
         <span class="flex-none h-px bg-slate-200 w-full" />
-        <div
-          class="hidden-section flex flex-col flex-1 min-h-0 p-1.5 pt-0"
-          data-testid="hidden-section"
-        >
+        <div class="hidden-section flex flex-col flex-1 min-h-0 p-1.5 pt-0">
           <header
             class="flex-none flex py-1.5 justify-between px-2 sticky top-0 from-white from-80% to-transparent bg-gradient-to-b"
           >
@@ -425,29 +437,100 @@
             {#each filteredHiddenItems as [id = "", item], i (i)}
               {@const elementId = `hidden-${type === "measure" ? "measures" : "dimensions"}-${id}`}
               {@const isDragItem = dragId === elementId}
-              <div
-                data-index={i + selectedItems.length - 1}
-                id={elementId}
-                data-item-name={id}
-                class:z-50={isDragItem}
-                class:opacity-0={isDragItem}
-                style:height="{ITEM_HEIGHT}px"
-                class="w-full flex gap-x-1 px-2 py-1 justify-between pointer-events-auto items-center p-1 rounded-sm"
-              >
-                {item.displayName}
+              {#if item.description}
+                <Tooltip.Root openDelay={200} portal="body">
+                  <Tooltip.Trigger>
+                    <div
+                      data-index={i + selectedItems.length - 1}
+                      id={elementId}
+                      data-item-name={id}
+                      class:z-50={isDragItem}
+                      class:opacity-0={isDragItem}
+                      style:height="{ITEM_HEIGHT}px"
+                      class="w-full flex gap-x-1 px-2 py-1 justify-between pointer-events-auto items-center p-1 rounded-sm hover:bg-slate-50 cursor-pointer"
+                      on:click={() => {
+                        selectedItems = [...selectedItems, id];
+                        onSelectedChange(selectedItems);
+                      }}
+                      on:keydown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          selectedItems = [...selectedItems, id];
+                          onSelectedChange(selectedItems);
+                        }
+                      }}
+                      role="presentation"
+                    >
+                      <span
+                        class="truncate flex-1 text-left pointer-events-none"
+                        >{item.displayName}</span
+                      >
 
-                <button
-                  class="hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
+                      <button
+                        class="hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
+                        on:click|stopPropagation={() => {
+                          selectedItems = [...selectedItems, id];
+                          onSelectedChange(selectedItems);
+                        }}
+                        aria-label="Toggle visibility"
+                        data-testid="toggle-visibility-button"
+                      >
+                        <EyeOffIcon size="14px" color="#9ca3af" />
+                      </button>
+                    </div>
+                  </Tooltip.Trigger>
+
+                  <Tooltip.Content
+                    side="right"
+                    sideOffset={12}
+                    class="z-popover"
+                  >
+                    <div
+                      class="bg-gray-800 text-gray-50 rounded p-2 pt-1 pb-1 shadow-md pointer-events-none z-50"
+                    >
+                      {item.description}
+                    </div>
+                  </Tooltip.Content>
+                </Tooltip.Root>
+              {:else}
+                <div
+                  data-index={i + selectedItems.length - 1}
+                  id={elementId}
+                  data-item-name={id}
+                  class:z-50={isDragItem}
+                  class:opacity-0={isDragItem}
+                  style:height="{ITEM_HEIGHT}px"
+                  class="w-full flex gap-x-1 px-2 py-1 justify-between pointer-events-auto items-center p-1 rounded-sm hover:bg-slate-50 cursor-pointer"
                   on:click={() => {
                     selectedItems = [...selectedItems, id];
                     onSelectedChange(selectedItems);
                   }}
-                  aria-label="Toggle visibility"
-                  data-testid="toggle-visibility-button"
+                  on:keydown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      selectedItems = [...selectedItems, id];
+                      onSelectedChange(selectedItems);
+                    }
+                  }}
+                  role="presentation"
                 >
-                  <EyeOffIcon size="14px" color="#9ca3af" />
-                </button>
-              </div>
+                  <span class="truncate flex-1 text-left pointer-events-none"
+                    >{item.displayName}</span
+                  >
+
+                  <button
+                    class="hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
+                    on:click|stopPropagation={() => {
+                      selectedItems = [...selectedItems, id];
+                      onSelectedChange(selectedItems);
+                    }}
+                    aria-label="Toggle visibility"
+                    data-testid="toggle-visibility-button"
+                  >
+                    <EyeOffIcon size="14px" color="#9ca3af" />
+                  </button>
+                </div>
+              {/if}
             {/each}
           {/if}
         </div>

@@ -23,6 +23,8 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/globutil"
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"github.com/rilldata/rill/runtime/pkg/typepb"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 )
@@ -115,6 +117,18 @@ func newGlob(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolv
 	props := &globProps{}
 	if err := mapstructureutil.WeakDecode(propsMap, props); err != nil {
 		return nil, err
+	}
+
+	// set props to span attributes
+	span := trace.SpanFromContext(ctx)
+	if span.SpanContext().IsValid() {
+		span.SetAttributes(
+			attribute.String("connector", props.Connector),
+			attribute.String("path", props.Path),
+			attribute.String("partition", string(props.Partition)),
+			attribute.Bool("rollup_files", props.RollupFiles),
+			attribute.String("transform_sql", props.TransformSQL),
+		)
 	}
 
 	// Parse the bucket URI without the path (e.g. for "s3://bucket/path", it is "s3://bucket")
@@ -312,7 +326,7 @@ func (r *globResolver) transformResult(ctx context.Context, rows []map[string]an
 	defer os.Remove(jsonFile)
 
 	var result []map[string]any
-	err = olap.WithConnection(ctx, 0, false, func(wrappedCtx context.Context, ensuredCtx context.Context, _ *databasesql.Conn) error {
+	err = olap.WithConnection(ctx, 0, func(wrappedCtx context.Context, ensuredCtx context.Context, _ *databasesql.Conn) error {
 		// Load the JSON file into a temporary table
 		err = olap.Exec(wrappedCtx, &drivers.Statement{
 			Query: fmt.Sprintf("CREATE TEMPORARY TABLE %s AS (SELECT * FROM read_ndjson_auto(%s))", olap.Dialect().EscapeIdentifier(r.tmpTableName), olap.Dialect().EscapeStringValue(jsonFile)),
@@ -335,7 +349,7 @@ func (r *globResolver) transformResult(ctx context.Context, rows []map[string]an
 		}()
 
 		// Execute the transform SQL
-		rows, err := olap.Execute(wrappedCtx, &drivers.Statement{
+		rows, err := olap.Query(wrappedCtx, &drivers.Statement{
 			Query: sql,
 		})
 		if err != nil {

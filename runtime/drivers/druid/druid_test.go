@@ -16,7 +16,7 @@ import (
 func TestScan(t *testing.T) {
 	_, olap := acquireTestDruid(t)
 
-	rows, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT 1, 'hello world', true, null, CAST('2024-01-01T00:00:00Z' AS TIMESTAMP)"})
+	rows, err := olap.Query(context.Background(), &drivers.Statement{Query: "SELECT 1, 'hello world', true, null, CAST('2024-01-01T00:00:00Z' AS TIMESTAMP)"})
 	require.NoError(t, err)
 
 	var i int
@@ -46,4 +46,12 @@ func acquireTestDruid(t *testing.T) (drivers.Handle, drivers.OLAPStore) {
 	require.True(t, ok)
 
 	return conn, olap
+}
+
+func TestPing(t *testing.T) {
+	conn, _ := acquireTestDruid(t)
+
+	// Test that ping works
+	err := conn.Ping(context.Background())
+	require.NoError(t, err)
 }

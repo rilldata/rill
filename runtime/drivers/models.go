@@ -96,6 +96,17 @@ type ModelResult struct {
 	ExecDuration time.Duration
 }
 
+// IncrementalStrategy is a strategy to use for incrementally inserting data into a SQL table.
+type IncrementalStrategy string
+
+const (
+	IncrementalStrategyUnspecified        IncrementalStrategy = ""
+	IncrementalStrategyAppend             IncrementalStrategy = "append"
+	IncrementalStrategyMerge              IncrementalStrategy = "merge"
+	IncrementalStrategyPartitionOverwrite IncrementalStrategy = "partition_overwrite"
+)
+
+// FileFormat is a file format for importing or exporting data.
 type FileFormat string
 
 const (

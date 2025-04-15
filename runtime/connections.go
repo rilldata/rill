@@ -315,14 +315,6 @@ func ResolveConnectorProperties(environment string, vars map[string]string, c *r
 		res = make(map[string]string)
 	}
 
-	// DEPRECATED: ConfigFromVariables is deprecated, keeping this for short-term backwards compatibility.
-	for k, v := range c.ConfigFromVariables {
-		val, ok := vars[v]
-		if ok {
-			res[k] = val
-		}
-	}
-
 	// Resolve templating in properties that use it
 	for _, k := range c.TemplatedProperties {
 		v, ok := res[k]

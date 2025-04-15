@@ -17,7 +17,7 @@
   import WorkspaceTableContainer from "@rilldata/web-common/layout/workspace/WorkspaceTableContainer.svelte";
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import type { V1ModelV2 } from "@rilldata/web-common/runtime-client";
+  import type { V1Model } from "@rilldata/web-common/runtime-client";
   import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
   import { isProfilingQuery } from "@rilldata/web-common/runtime-client/query-matcher";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -48,10 +48,10 @@
   $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
   $: resource = $resourceQuery.data;
   $: model = $resourceQuery.data?.model;
-  $: connector = (model as V1ModelV2)?.spec?.outputConnector as string;
+  $: connector = (model as V1Model)?.spec?.outputConnector as string;
   const database = ""; // models use the default database
   const databaseSchema = ""; // models use the default databaseSchema
-  $: tableName = (model as V1ModelV2)?.state?.resultTable as string;
+  $: tableName = (model as V1Model)?.state?.resultTable as string;
 
   $: refreshedOn = model?.state?.refreshedOn;
   $: resourceIsReconciling = resourceIsLoading($resourceQuery.data);
@@ -136,10 +136,10 @@
 
     {#if $tableVisible}
       <WorkspaceTableContainer {filePath}>
-        {#if !allErrors.length}
+        {#if connector && tableName}
           <ConnectedPreviewTable
             {connector}
-            table={tableName ?? ""}
+            table={tableName}
             loading={resourceIsReconciling}
           />
         {/if}

@@ -113,7 +113,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		timezone = q.TimeZone
 	}
 
-	return olap.WithConnection(ctx, priority, false, func(ctx context.Context, ensuredCtx context.Context, _ *sql.Conn) error {
+	return olap.WithConnection(ctx, priority, func(ctx context.Context, ensuredCtx context.Context, _ *sql.Conn) error {
 		tsAlias := tempName("_ts_")
 		temporaryTableName := tempName("_timeseries_")
 
@@ -154,7 +154,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 			})
 		}()
 
-		rows, err := olap.Execute(ctx, &drivers.Statement{
+		rows, err := olap.Query(ctx, &drivers.Statement{
 			Query:            fmt.Sprintf(`SELECT * FROM %q`, temporaryTableName),
 			Priority:         priority,
 			ExecutionTimeout: defaultExecutionTimeout,
@@ -465,7 +465,7 @@ func (q *ColumnTimeseries) CreateTimestampRollupReduction(
 	}
 
 	if rowCount < int64(q.Pixels*4) {
-		rows, err := olap.Execute(ctx, &drivers.Statement{
+		rows, err := olap.Query(ctx, &drivers.Statement{
 			Query:            `SELECT ` + safeTimestampColumnName + ` as ts, "` + valueColumn + `"::DOUBLE as count FROM "` + tableName + `"`,
 			Priority:         priority,
 			ExecutionTimeout: defaultExecutionTimeout,
@@ -540,7 +540,7 @@ func (q *ColumnTimeseries) CreateTimestampRollupReduction(
       ORDER BY bin
     `
 
-	rows, err := olap.Execute(ctx, &drivers.Statement{
+	rows, err := olap.Query(ctx, &drivers.Statement{
 		Query:            querySQL,
 		Priority:         priority,
 		ExecutionTimeout: defaultExecutionTimeout,
@@ -605,7 +605,7 @@ func (q *ColumnTimeseries) CreateTimestampRollupReduction(
 }
 
 func (q *ColumnTimeseries) resolveRowCount(ctx context.Context, olap drivers.OLAPStore, priority int) (int64, error) {
-	rows, err := olap.Execute(ctx, &drivers.Statement{
+	rows, err := olap.Query(ctx, &drivers.Statement{
 		Query:    fmt.Sprintf("SELECT count(*) AS count FROM %s", olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName)),
 		Priority: priority,
 	})
