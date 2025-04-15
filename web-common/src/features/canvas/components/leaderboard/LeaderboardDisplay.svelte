@@ -35,7 +35,6 @@
     specStore,
     timeAndFilterStore,
     leaderboardState,
-    sortByMeasure,
     toggleSort,
     parent: { name: canvasName },
   } = component);
@@ -85,9 +84,6 @@
   $: visibleMeasures = $allMeasures.filter((m) =>
     leaderboardMeasureNames.includes(m.name as string),
   );
-
-  $: activeMeasureName =
-    $sortByMeasure || leaderboardMeasureNames?.[0] || "measure";
 
   $: measureFormatters = Object.fromEntries(
     visibleMeasures.map((m) => [
@@ -168,9 +164,10 @@
                 {instanceId}
                 {isValidPercentOfTotal}
                 {metricsViewName}
-                {activeMeasureName}
+                leaderboardSortByMeasureName={$leaderboardState.leaderboardSortByMeasureName ??
+                  leaderboardMeasureNames?.[0]}
                 {leaderboardMeasureNames}
-                visibleMeasures={leaderboardMeasureNames}
+                leaderboardShowContextForAllMeasures={true}
                 {whereFilter}
                 {dimensionThresholdFilters}
                 tableWidth={dimensionColumnWidth + totalContextWidth}
@@ -201,11 +198,9 @@
                 formatters={measureFormatters}
                 {toggleSort}
                 {toggleDimensionValueSelection}
-                sortBy={$sortByMeasure}
                 measureLabel={(measureName) =>
                   visibleMeasures.find((m) => m.name === measureName)
                     ?.displayName || measureName}
-                leaderboardMeasureCountFeatureFlag={true}
               />
             </div>
           {/if}

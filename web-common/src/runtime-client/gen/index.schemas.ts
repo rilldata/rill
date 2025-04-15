@@ -801,6 +801,8 @@ If not found in `time_ranges`, it should be added to the list. */
   exploreSortType?: V1ExploreSortType;
   exploreExpandedDimension?: string;
   exploreLeaderboardMeasureCount?: number;
+  exploreLeaderboardMeasures?: string[];
+  exploreLeaderboardShowContextForAllMeasures?: boolean;
   timeDimensionMeasure?: string;
   timeDimensionChartType?: string;
   timeDimensionPin?: boolean;
@@ -1222,6 +1224,7 @@ export interface V1MetricsViewAggregationRequest {
   filter?: V1MetricsViewFilter;
   exact?: boolean;
   fillMissing?: boolean;
+  rows?: boolean;
 }
 
 export type V1MetricsViewAggregationResponseDataItem = {
@@ -2475,6 +2478,7 @@ export type QueryServiceMetricsViewAggregationBody = {
   filter?: V1MetricsViewFilter;
   exact?: boolean;
   fillMissing?: boolean;
+  rows?: boolean;
 };
 
 export type QueryServiceMetricsViewComparisonBody = {

@@ -43,12 +43,10 @@ func TestServer_MetricsViewRows_Granularity(t *testing.T) {
 	tr, err := server.MetricsViewRows(testCtx(), &runtimev1.MetricsViewRowsRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
-		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
 	})
 	require.NoError(t, err)
 	require.Equal(t, 2, len(tr.Data))
-	require.Equal(t, 12, len(tr.Meta))
-	require.Equal(t, "timestamp__day", tr.Meta[0].Name)
+	require.Equal(t, 11, len(tr.Meta))
 }
 
 /*
@@ -64,15 +62,12 @@ func TestServer_MetricsViewRows_Granularity_Kathmandu(t *testing.T) {
 	tr, err := server.MetricsViewRows(testCtx(), &runtimev1.MetricsViewRowsRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
-		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_HOUR,
 		TimeStart:       parseTimeToProtoTimeStamps(t, "2022-01-01T14:15:00Z"),
 		TimeEnd:         parseTimeToProtoTimeStamps(t, "2022-01-01T15:15:00Z"),
 		TimeZone:        "Asia/Kathmandu",
 	})
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tr.Data))
-	require.Equal(t, "timestamp__hour", tr.Meta[0].Name)
-	require.Equal(t, "2022-01-01T14:15:00Z", tr.Data[0].Fields["timestamp__hour"].GetStringValue())
 }
 
 func TestServer_MetricsViewRows_export_xlsx(t *testing.T) {
@@ -85,7 +80,6 @@ func TestServer_MetricsViewRows_export_xlsx(t *testing.T) {
 
 	q := &queries.MetricsViewRows{
 		MetricsViewName:    mvName,
-		TimeGranularity:    runtimev1.TimeGrain_TIME_GRAIN_DAY,
 		MetricsView:        mv,
 		ResolvedMVSecurity: security,
 	}
@@ -102,9 +96,9 @@ func TestServer_MetricsViewRows_export_xlsx(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, 3, len(rows))
-	require.Equal(t, []string{"timestamp", "publisher", "domain", "bid_price", "volume", "impressions", "ad words", "clicks", "numeric_dim", "device"}, rows[0][2:])
-	require.Equal(t, []string{"2022-01-01T14:49:50.459Z", "", "msn.com", "2", "4", "2", "cars", "", "1", "iphone"}, rows[1][2:])
-	require.Equal(t, []string{"2022-01-02T11:58:12.475Z", "Yahoo", "yahoo.com", "2", "4", "1", "cars", "1", "1"}, rows[2][2:])
+	require.Equal(t, []string{"timestamp", "publisher", "domain", "bid_price", "volume", "impressions", "ad words", "clicks", "numeric_dim", "device"}, rows[0][1:])
+	require.Equal(t, []string{"1/1/22 14:49", "", "msn.com", "2", "4", "2", "cars", "", "1", "iphone"}, rows[1][1:])
+	require.Equal(t, []string{"1/2/22 11:58", "Yahoo", "yahoo.com", "2", "4", "1", "cars", "1", "1"}, rows[2][1:])
 }
 
 func getColumnChunk(tbl arrow.Table, col int) arrow.Array {
@@ -121,7 +115,6 @@ func TestServer_MetricsViewRows_parquet_export(t *testing.T) {
 
 	q := &queries.MetricsViewRows{
 		MetricsViewName:    mvName,
-		TimeGranularity:    runtimev1.TimeGrain_TIME_GRAIN_DAY,
 		MetricsView:        mv,
 		ResolvedMVSecurity: security,
 	}
@@ -172,12 +165,6 @@ func TestServer_MetricsViewRows_parquet_export(t *testing.T) {
 	*/
 	index := 0
 	flds := arrowRdr.Manifest.Fields
-	require.Equal(t, "timestamp__day", flds[index].Field.Name)
-	require.Equal(t, arrow.TIMESTAMP, flds[index].Field.Type.ID())
-	td := getColumnChunk(tbl, index).(*array.Timestamp)
-	defer td.Release()
-	require.Equal(t, "2023-01-01T00:00:00Z", td.Value(0).ToTime(arrow.Microsecond).Format(time.RFC3339))
-	index++
 
 	require.Equal(t, "tint1", flds[index].Field.Name)
 	require.Equal(t, arrow.INT8, flds[index].Field.Type.ID())
@@ -341,7 +328,6 @@ func TestServer_MetricsViewRows_export_csv(t *testing.T) {
 
 	q := &queries.MetricsViewRows{
 		MetricsViewName:    mvName,
-		TimeGranularity:    runtimev1.TimeGrain_TIME_GRAIN_DAY,
 		MetricsView:        mv,
 		ResolvedMVSecurity: security,
 	}
