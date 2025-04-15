@@ -55,7 +55,6 @@ test.describe("Embeds", () => {
       iframe?.contentWindow?.postMessage({ id: 1337, method: "getState" }, "*");
     });
 
-    console.log(logMessages);
     await embedPage.waitForTimeout(500);
     expect(
       logMessages.some((msg) =>

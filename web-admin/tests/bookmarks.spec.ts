@@ -303,7 +303,7 @@ test.describe("Bookmarks", () => {
       // make sure the url has the correct params
       assertUrlParams(
         adminPage,
-        `tr=PT24H&grain=hour&f=app_site_domain IN ('Not Available') AND pub_name IN ('Not Available')`,
+        `view=explore&tr=PT24H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=app_site_domain IN ('Not Available') AND pub_name IN ('Not Available')&measures=*&dims=*&expand_dim=&sort_by=requests&sort_type=value&sort_dir=DESC&leaderboard_measures=requests`,
       );
     });
 
