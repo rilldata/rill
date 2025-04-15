@@ -3289,6 +3289,8 @@ func (m *MetricsViewAggregationRequest) validate(all bool) error {
 
 	// no validation rules for FillMissing
 
+	// no validation rules for Rows
+
 	if len(errors) > 0 {
 		return MetricsViewAggregationRequestMultiError(errors)
 	}
