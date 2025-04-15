@@ -763,19 +763,6 @@ func must[T any](v T, err error) T {
 	return v
 }
 
-func writeJSONResponse(w http.ResponseWriter, data interface{}) error {
-	jsonData, err := json.Marshal(struct {
-		Result interface{} `json:"result"`
-	}{
-		Result: data,
-	})
-	if err != nil {
-		return err
-	}
-	_, err = fmt.Fprintf(w, "%s\n", jsonData)
-	return err
-}
-
 func writeSSEEvent(w http.ResponseWriter, event string, id string, data interface{}) error {
 	if id != "" {
 		fmt.Fprintf(w, "id: %s\n", id)
