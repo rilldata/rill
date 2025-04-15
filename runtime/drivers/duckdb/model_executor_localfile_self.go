@@ -70,7 +70,7 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 	if opts.Env.StageChanges {
 		stagingTableName = stagingTableNameFor(tableName)
 	}
-	_ = e.c.DropTable(ctx, stagingTableName)
+	_ = e.c.dropTable(ctx, stagingTableName)
 
 	// get the local file path
 	localPaths, err := e.from.FilePaths(ctx, opts.InputProperties)
@@ -93,15 +93,15 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 	}
 
 	// create the table
-	metrics, err := e.c.CreateTableAsSelect(ctx, stagingTableName, "SELECT * FROM "+from, &drivers.CreateTableOptions{View: asView})
+	metrics, err := e.c.createTableAsSelect(ctx, stagingTableName, "SELECT * FROM "+from, &createTableOptions{view: asView})
 	if err != nil {
-		_ = e.c.DropTable(ctx, stagingTableName)
+		_ = e.c.dropTable(ctx, stagingTableName)
 		return nil, fmt.Errorf("failed to create model: %w", err)
 	}
 
 	// Rename the staging table to the final table name
 	if stagingTableName != tableName {
-		err = olapForceRenameTable(ctx, e.c, stagingTableName, asView, tableName)
+		err = e.c.forceRenameTable(ctx, stagingTableName, asView, tableName)
 		if err != nil {
 			return nil, fmt.Errorf("failed to rename staged model: %w", err)
 		}
@@ -124,6 +124,6 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 		Connector:    opts.OutputConnector,
 		Properties:   resultPropsMap,
 		Table:        tableName,
-		ExecDuration: metrics.Duration,
+		ExecDuration: metrics.duration,
 	}, nil
 }

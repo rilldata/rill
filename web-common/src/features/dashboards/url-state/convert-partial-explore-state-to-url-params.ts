@@ -137,6 +137,8 @@ export function convertPartialExploreStateToUrlParams(
       // Since we do a shallow merge, we cannot remove time grain from the state for pivot as it is a deeper key.
       // So this is a patch to remove it from the final url.
       searchParams.delete(ExploreStateURLParams.TimeGrain);
+      // TODO: fix the need for this once we move out of V1ExplorePreset in converting url to explore state
+      searchParams.delete(ExploreStateURLParams.ComparisonDimension);
       break;
   }
 
@@ -260,7 +262,12 @@ function toExploreUrlParams(
     sd === SortDirection.ASCENDING ? "ASC" : "DESC",
   );
 
-  maybeSetParam(searchParams, partialExploreState, "leaderboardMeasureCount");
+  maybeSetParam(
+    searchParams,
+    partialExploreState,
+    "leaderboardMeasureNames",
+    (names) => names?.join(","),
+  );
 
   return searchParams;
 }

@@ -1,9 +1,7 @@
 import { page } from "$app/stores";
 import {
-  adminServiceListBookmarks,
   createAdminServiceGetCurrentUser,
   createAdminServiceListBookmarks,
-  getAdminServiceListBookmarksQueryKey,
   type V1Bookmark,
   type V1ListBookmarksResponse,
 } from "@rilldata/web-admin/client";
@@ -50,19 +48,6 @@ export type Bookmarks = {
   personal: BookmarkEntry[];
   shared: BookmarkEntry[];
 };
-
-export async function fetchBookmarks(projectId: string, exploreName: string) {
-  const params = {
-    projectId,
-    resourceKind: ResourceKind.Explore,
-    resourceName: exploreName,
-  };
-  const bookmarksResp = await queryClient.fetchQuery({
-    queryKey: getAdminServiceListBookmarksQueryKey(params),
-    queryFn: ({ signal }) => adminServiceListBookmarks(params, signal),
-  });
-  return bookmarksResp.bookmarks ?? [];
-}
 
 export function getBookmarks(projectId: string, exploreName: string) {
   return derived(createAdminServiceGetCurrentUser(), (userResp, set) =>
@@ -251,6 +236,13 @@ function parseBookmark(
   };
 }
 
+// These are the only parameters that are stored in a filter-only bookmark
+const filterOnlyParams = new Set([
+  ExploreStateURLParams.Filters,
+  ExploreStateURLParams.TimeRange,
+  ExploreStateURLParams.TimeGrain,
+]) as Set<string>;
+
 function isFilterOnlyBookmark(
   bookmarkState: Partial<MetricsExplorerEntity>,
   metricsViewSpec: V1MetricsViewSpec,
@@ -275,14 +267,20 @@ function isFilterOnlyBookmark(
     ),
   );
 
-  // These are the only parameters that are stored in a filter-only bookmark
-  const allowedFilterParams = new Set([
-    ExploreStateURLParams.Filters,
-    ExploreStateURLParams.TimeRange,
-    ExploreStateURLParams.TimeGrain,
-  ]) as Set<string>;
-
   // Check if all the bookmark's search params are in the allowed list
   const urlParams = Array.from(searchParams.keys());
-  return urlParams.every((param) => allowedFilterParams.has(param));
+  return urlParams.every((param) => filterOnlyParams.has(param));
+}
+
+export function isBookmarkActive(entry: BookmarkEntry, curUrl: URL) {
+  const bookmarkUrl = new URL(entry.url);
+
+  if (entry.filtersOnly) {
+    return bookmarkUrl.searchParams.entries().every(([key, value]) => {
+      const curValue = curUrl.searchParams.get(key);
+      return curValue === value;
+    });
+  }
+
+  return bookmarkUrl.search === curUrl.search;
 }

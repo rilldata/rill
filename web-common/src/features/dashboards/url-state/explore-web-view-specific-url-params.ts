@@ -13,9 +13,10 @@ export const ExploreWebViewSpecificURLParams: Record<
     ExploreStateURLParams.SortBy,
     ExploreStateURLParams.SortType,
     ExploreStateURLParams.SortDirection,
-    ExploreStateURLParams.LeaderboardMeasureCount,
+    ExploreStateURLParams.LeaderboardMeasures,
     ExploreStateURLParams.TimeGrain,
     ExploreStateURLParams.HighlightedTimeRange,
+    ExploreStateURLParams.ComparisonDimension,
   ],
   tdd: [
     ExploreStateURLParams.WebView,
@@ -24,6 +25,7 @@ export const ExploreWebViewSpecificURLParams: Record<
     ExploreStateURLParams.Pin,
     ExploreStateURLParams.TimeGrain,
     ExploreStateURLParams.HighlightedTimeRange,
+    ExploreStateURLParams.ComparisonDimension,
   ],
   pivot: [
     ExploreStateURLParams.WebView,
@@ -46,12 +48,14 @@ export const ExploreWebViewCommonURLParams: Partial<
     tdd: [
       ExploreStateURLParams.TimeGrain,
       ExploreStateURLParams.HighlightedTimeRange,
+      ExploreStateURLParams.ComparisonDimension,
     ],
   },
   tdd: {
     explore: [
       ExploreStateURLParams.TimeGrain,
       ExploreStateURLParams.HighlightedTimeRange,
+      ExploreStateURLParams.ComparisonDimension,
     ],
   },
 };

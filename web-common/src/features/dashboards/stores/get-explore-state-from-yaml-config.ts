@@ -1,10 +1,16 @@
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import { getGrainForRange } from "@rilldata/web-common/features/dashboards/stores/get-rill-default-explore-state";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { getValidComparisonOption } from "@rilldata/web-common/features/dashboards/time-controls/time-range-store";
 import { ToLegacySortTypeMap } from "@rilldata/web-common/features/dashboards/url-state/legacyMappers";
 import { FromURLParamTimeGrainMap } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import { arrayUnorderedEquals } from "@rilldata/web-common/lib/arrayUtils";
-import { type DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
+import { ISODurationToTimePreset } from "@rilldata/web-common/lib/time/ranges";
+import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
+import {
+  type DashboardTimeControls,
+  TimeRangePreset,
+} from "@rilldata/web-common/lib/time/types";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   V1ExploreComparisonMode,
@@ -57,14 +63,22 @@ function getExploreTimeStateFromYAMLConfig(
   }
 
   switch (defaultPreset.comparisonMode) {
-    case V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME:
+    case V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME: {
       exploreTimeState.showTimeComparison = true;
-      if (defaultPreset.compareTimeRange) {
-        exploreTimeState.selectedComparisonTimeRange = {
-          name: defaultPreset.compareTimeRange,
-        } as DashboardTimeControls;
+      let comparisonTimeRangeName = defaultPreset.compareTimeRange;
+      if (!comparisonTimeRangeName) {
+        comparisonTimeRangeName = getDefaultComparisonTimeRangeName(
+          exploreSpec,
+          defaultPreset.timeRange ?? TimeRangePreset.LAST_12_MONTHS,
+          defaultPreset.timezone,
+          timeRangeSummary,
+        );
       }
+      exploreTimeState.selectedComparisonTimeRange = {
+        name: comparisonTimeRangeName,
+      } as DashboardTimeControls;
       break;
+    }
 
     case V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_DIMENSION:
       exploreTimeState.selectedComparisonDimension =
@@ -72,6 +86,38 @@ function getExploreTimeStateFromYAMLConfig(
   }
 
   return exploreTimeState;
+}
+
+function getDefaultComparisonTimeRangeName(
+  exploreSpec: V1ExploreSpec,
+  timeRangeName: string,
+  timezone: string | undefined,
+  timeRangeSummary: V1TimeRangeSummary,
+) {
+  const timePreset = ISODurationToTimePreset(timeRangeName, true);
+  if (!timePreset) return undefined;
+
+  const allTimeRange = {
+    name: TimeRangePreset.ALL_TIME,
+    start: new Date(timeRangeSummary.min!),
+    end: new Date(timeRangeSummary.max!),
+  };
+
+  const timeRange = isoDurationToFullTimeRange(
+    timePreset,
+    allTimeRange.start,
+    allTimeRange.end,
+    timezone,
+  );
+
+  const comparisonTimeRangeNmae = getValidComparisonOption(
+    exploreSpec.timeRanges,
+    timeRange,
+    undefined,
+    allTimeRange,
+  );
+
+  return comparisonTimeRangeNmae;
 }
 
 function getExploreViewStateFromYAMLConfig(
@@ -113,9 +159,14 @@ function getExploreViewStateFromYAMLConfig(
     );
   }
 
-  if (defaultPreset.exploreLeaderboardMeasureCount) {
-    exploreViewState.leaderboardMeasureCount =
-      defaultPreset.exploreLeaderboardMeasureCount;
+  if (defaultPreset.exploreLeaderboardMeasures?.length) {
+    exploreViewState.leaderboardMeasureNames =
+      defaultPreset.exploreLeaderboardMeasures;
+  }
+
+  if (defaultPreset.exploreLeaderboardShowContextForAllMeasures !== undefined) {
+    exploreViewState.leaderboardShowContextForAllMeasures =
+      defaultPreset.exploreLeaderboardShowContextForAllMeasures;
   }
 
   if (defaultPreset.exploreExpandedDimension) {

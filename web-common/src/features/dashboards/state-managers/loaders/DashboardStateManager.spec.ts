@@ -107,11 +107,12 @@ describe("DashboardStateManager", () => {
         allDimensionsVisible: false,
 
         leaderboardSortByMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
+        leaderboardMeasureNames: [AD_BIDS_IMPRESSIONS_MEASURE],
         dashboardSortType: DashboardState_LeaderboardSortType.PERCENT,
         sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
       };
     const PageURLForRillDefaultState =
-      "view=explore&tr=P7D&tz=Asia%2FKathmandu&compare_tr=&grain=day&f=&measures=impressions&dims=publisher&expand_dim=&sort_by=impressions&sort_type=percent&sort_dir=ASC&leaderboard_measure_count=1";
+      "view=explore&tr=P7D&tz=Asia%2FKathmandu&compare_tr=&grain=day&compare_dim=&f=&measures=impressions&dims=publisher&expand_dim=&sort_by=impressions&sort_type=percent&sort_dir=ASC&leaderboard_measures=impressions";
     const BookmarkSourceQueryResult = readable({
       data: {
         selectedTimeRange: {
@@ -153,7 +154,7 @@ describe("DashboardStateManager", () => {
         } as DashboardTimeControls,
       });
       const initUrlSearch =
-        "view=explore&tr=PT24H&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=hour&f=&measures=impressions&dims=publisher&expand_dim=&sort_by=impressions&sort_type=percent&sort_dir=ASC&leaderboard_measure_count=1";
+        "view=explore&tr=PT24H&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=hour&compare_dim=&f=&measures=impressions&dims=publisher&expand_dim=&sort_by=impressions&sort_type=percent&sort_dir=ASC&leaderboard_measures=impressions";
       pageMock.assertSearchParams(initUrlSearch);
 
       pageMock.popState("");
@@ -204,7 +205,7 @@ describe("DashboardStateManager", () => {
         } as DashboardTimeControls,
       });
       const initUrlSearch =
-        "view=explore&tr=PT24H&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=hour&f=&measures=bid_price&dims=domain&expand_dim=&sort_by=bid_price&sort_type=value&sort_dir=ASC&leaderboard_measure_count=1";
+        "view=explore&tr=PT24H&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=hour&compare_dim=&f=&measures=bid_price&dims=domain&expand_dim=&sort_by=bid_price&sort_type=value&sort_dir=ASC&leaderboard_measures=impressions";
       pageMock.assertSearchParams(initUrlSearch);
 
       pageMock.popState("");
@@ -223,7 +224,7 @@ describe("DashboardStateManager", () => {
         AD_BIDS_EXPLORE_NAME,
         undefined,
         ExploreUrlWebView.Explore,
-        "view=explore&tr=P14D&compare_tr=rill-PW&grain=day&measures=bid_price&dims=domain&sort_by=bid_price&sort_dir=DESC",
+        "view=explore&tr=P14D&compare_tr=rill-PW&grain=day&measures=bid_price&dims=domain&sort_by=bid_price&sort_dir=DESC&leaderboard_measures=bid_price",
       );
       renderDashboardStateManager(BookmarkSourceQueryResult);
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
@@ -244,11 +245,12 @@ describe("DashboardStateManager", () => {
         allDimensionsVisible: false,
 
         leaderboardSortByMeasureName: AD_BIDS_BID_PRICE_MEASURE,
+        leaderboardMeasureNames: [AD_BIDS_BID_PRICE_MEASURE],
         dashboardSortType: DashboardState_LeaderboardSortType.PERCENT,
         sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
       });
       const initUrlSearch =
-        "view=explore&tr=P14D&tz=Asia%2FKathmandu&compare_tr=rill-PW&grain=day&f=&measures=bid_price&dims=domain&expand_dim=&sort_by=bid_price&sort_type=percent&sort_dir=DESC&leaderboard_measure_count=1";
+        "view=explore&tr=P14D&tz=Asia%2FKathmandu&compare_tr=rill-PW&grain=day&compare_dim=&f=&measures=bid_price&dims=domain&expand_dim=&sort_by=bid_price&sort_type=percent&sort_dir=DESC&leaderboard_measures=bid_price";
       pageMock.assertSearchParams(initUrlSearch);
 
       pageMock.popState("");
@@ -276,11 +278,12 @@ describe("DashboardStateManager", () => {
         allDimensionsVisible: false,
 
         leaderboardSortByMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
+        leaderboardMeasureNames: [AD_BIDS_IMPRESSIONS_MEASURE],
         dashboardSortType: DashboardState_LeaderboardSortType.PERCENT,
         sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
       };
     const PageURLForRillDefaultState =
-      "view=explore&f=&measures=impressions&dims=publisher&expand_dim=&sort_by=impressions&sort_type=percent&sort_dir=ASC&leaderboard_measure_count=1";
+      "view=explore&f=&measures=impressions&dims=publisher&expand_dim=&sort_by=impressions&sort_type=percent&sort_dir=ASC&leaderboard_measures=impressions";
 
     beforeEach(() => {
       mocks.mockMetricsView(AD_BIDS_METRICS_NAME, AD_BIDS_METRICS_INIT);
@@ -306,6 +309,7 @@ describe("DashboardStateManager", () => {
         allDimensionsVisible: false,
 
         leaderboardSortByMeasureName: AD_BIDS_BID_PRICE_MEASURE,
+        leaderboardMeasureNames: [AD_BIDS_BID_PRICE_MEASURE],
         sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
         dashboardSortType: DashboardState_LeaderboardSortType.VALUE,
       });
@@ -321,11 +325,12 @@ describe("DashboardStateManager", () => {
         allDimensionsVisible: false,
 
         leaderboardSortByMeasureName: AD_BIDS_BID_PRICE_MEASURE,
+        leaderboardMeasureNames: [AD_BIDS_BID_PRICE_MEASURE],
         sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
         dashboardSortType: DashboardState_LeaderboardSortType.VALUE,
       });
       const initUrlSearch =
-        "view=explore&f=&measures=bid_price&dims=domain&expand_dim=&sort_by=bid_price&sort_type=value&sort_dir=ASC&leaderboard_measure_count=1";
+        "view=explore&f=&measures=bid_price&dims=domain&expand_dim=&sort_by=bid_price&sort_type=value&sort_dir=ASC&leaderboard_measures=bid_price";
       pageMock.assertSearchParams(initUrlSearch);
 
       pageMock.popState("");
@@ -344,7 +349,7 @@ describe("DashboardStateManager", () => {
         AD_BIDS_EXPLORE_NAME,
         undefined,
         ExploreUrlWebView.Explore,
-        "view=explore&measures=bid_price&dims=domain&sort_by=bid_price&sort_dir=DESC",
+        "view=explore&measures=bid_price&dims=domain&sort_by=bid_price&sort_dir=DESC&leaderboard_measures=bid_price",
       );
       renderDashboardStateManager();
 
@@ -360,11 +365,12 @@ describe("DashboardStateManager", () => {
         allDimensionsVisible: false,
 
         leaderboardSortByMeasureName: AD_BIDS_BID_PRICE_MEASURE,
+        leaderboardMeasureNames: [AD_BIDS_BID_PRICE_MEASURE],
         dashboardSortType: DashboardState_LeaderboardSortType.PERCENT,
         sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
       });
       const initUrlSearch =
-        "view=explore&f=&measures=bid_price&dims=domain&expand_dim=&sort_by=bid_price&sort_type=percent&sort_dir=DESC&leaderboard_measure_count=1";
+        "view=explore&f=&measures=bid_price&dims=domain&expand_dim=&sort_by=bid_price&sort_type=percent&sort_dir=DESC&leaderboard_measures=bid_price";
       pageMock.assertSearchParams(initUrlSearch);
 
       pageMock.popState("");
@@ -416,6 +422,7 @@ function assertExploreStateSubset(
     allDimensionsVisible: curExploreState.allDimensionsVisible,
 
     leaderboardSortByMeasureName: curExploreState.leaderboardSortByMeasureName,
+    leaderboardMeasureNames: curExploreState.leaderboardMeasureNames,
     dashboardSortType: curExploreState.dashboardSortType,
     sortDirection: curExploreState.sortDirection,
   };

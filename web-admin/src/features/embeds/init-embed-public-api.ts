@@ -1,6 +1,6 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
-import { getCleanedUrlParamsForGoto } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
+import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
 import { derived, get, type Readable } from "svelte/store";
 import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import {
@@ -33,9 +33,7 @@ export default function initEmbedPublicAPI(): () => void {
       }
 
       return decodeURIComponent(
-        // to not change the existing behaviour of not adding default params, we use getCleanedUrlParamsForGoto
-        // TODO: revisit to see if we can send the full params
-        getCleanedUrlParamsForGoto(
+        convertPartialExploreStateToUrlParams(
           exploreSpec,
           $dashboardStore,
           timeControlsState,
@@ -66,7 +64,7 @@ export default function initEmbedPublicAPI(): () => void {
       );
     }
     const stateString = decodeURIComponent(
-      getCleanedUrlParamsForGoto(
+      convertPartialExploreStateToUrlParams(
         exploreSpec,
         dashboard,
         timeControlsState,

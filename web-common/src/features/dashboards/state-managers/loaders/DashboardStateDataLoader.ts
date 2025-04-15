@@ -319,9 +319,9 @@ export class DashboardStateDataLoader {
       this.mostRecentPartialExploreState,
     );
     if (
-      !rillDefaultExploreState ||
-      !explorePresetFromYAMLConfig.data ||
-      !exploreStateFromYAMLConfig
+      !rillDefaultExploreState?.data ||
+      !explorePresetFromYAMLConfig?.data ||
+      !exploreStateFromYAMLConfig?.data
     ) {
       return undefined;
     }
@@ -363,9 +363,9 @@ export class DashboardStateDataLoader {
         ? get(this.bookmarkOrTokenExploreState).data
         : undefined,
       // Next priority is the defaults from yaml config.
-      exploreStateFromYAMLConfig,
+      exploreStateFromYAMLConfig.data,
       // Finally the fallback of rill default explore which will have the complete set of config.
-      rillDefaultExploreState,
+      rillDefaultExploreState.data,
     ].filter(Boolean) as Partial<MetricsExplorerEntity>[];
 
     return cascadingExploreStateMerge(exploreStateOrder);

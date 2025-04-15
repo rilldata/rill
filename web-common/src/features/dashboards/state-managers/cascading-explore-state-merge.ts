@@ -1,49 +1,41 @@
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 
-const ShallowMergeKeys: (keyof MetricsExplorerEntity)[] = [
-  "activePage",
-
-  "visibleMeasures",
-  "allMeasuresVisible",
-  "visibleDimensions",
-  "allDimensionsVisible",
-  "leaderboardSortByMeasureName",
-  "leaderboardMeasureCount",
-  "dashboardSortType",
-  "sortDirection",
-
-  "whereFilter",
-  "dimensionsWithInlistFilter",
-  "dimensionThresholdFilters",
-
-  "selectedScrubRange",
-  "selectedTimezone",
-  "showTimeComparison",
-
-  "selectedDimensionName",
-];
-const OneLevelDeepShallowMergeKeys: (keyof MetricsExplorerEntity)[] = [
+const OneLevelDeepShallowMergeKeys = new Set<keyof MetricsExplorerEntity>([
   "selectedTimeRange",
   "selectedComparisonTimeRange",
   "tdd",
   "pivot",
-];
+]);
 
 export function cascadingExploreStateMerge(
   exploreStatesInOrder: Partial<MetricsExplorerEntity>[],
 ) {
   const finalExplorePreset: Partial<MetricsExplorerEntity> = {};
 
-  ShallowMergeKeys.forEach((key) => {
-    const firstMatchingState = exploreStatesInOrder.find((o) => {
-      const v = o[key];
-      return v !== undefined && v !== null;
-    });
-    if (!firstMatchingState) return;
+  const shallowKeySeen = new Set<string>();
+  // Merge all keys not part of OneLevelDeepShallowMergeKeys. This allows for future keys to be merged without changes.
+  exploreStatesInOrder.forEach((state) => {
+    Object.keys(state).forEach((key: keyof MetricsExplorerEntity) => {
+      if (
+        // Since the states are in order a key found 1st should only be merged once.
+        // So ignore keys we have already seen
+        shallowKeySeen.has(key) ||
+        // Ignore one level deep merges, they are merged separately
+        OneLevelDeepShallowMergeKeys.has(key)
+      )
+        return;
 
-    (finalExplorePreset as any)[key] = firstMatchingState[key];
+      const v = state[key];
+      // Skip undefined/null values these are values that are not set in the state,
+      // but because of certain deserializers, and it's needing to be backwards compatible we need this check.
+      if (v === undefined || v === null) return;
+
+      shallowKeySeen.add(key);
+      (finalExplorePreset as any)[key] = state[key];
+    });
   });
 
+  // Merge keys that are one level deep, these are merged as a shallow merge but one level deep.
   OneLevelDeepShallowMergeKeys.forEach((levelOneKey) => {
     const oneLevelDeepState = {} as any;
 
