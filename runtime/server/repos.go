@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -144,7 +145,7 @@ func (s *Server) WatchFilesHandler(w http.ResponseWriter, req *http.Request) {
 		}
 	})
 
-	if err != nil && err != context.Canceled && !strings.Contains(err.Error(), "client disconnected") {
+	if err != nil && err != context.Canceled && !errors.Is(err, context.Canceled) {
 		s.logger.Info("watch error", zap.Error(err))
 	}
 }
