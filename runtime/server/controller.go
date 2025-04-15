@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"slices"
 	"strings"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -106,12 +107,10 @@ func (s *Server) WatchResourcesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Set up streaming response headers
-	w.Header().Set("Content-Type", "application/json")
+	// SSE headers
+	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
-	w.Header().Set("Transfer-Encoding", "chunked")
-	w.WriteHeader(http.StatusOK)
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {
@@ -142,8 +141,9 @@ func (s *Server) WatchResourcesHandler(w http.ResponseWriter, r *http.Request) {
 				Resource: r,
 			}
 
-			if err := writeJSONResponse(w, resp); err != nil {
-				s.logger.Info("failed to send resource event", zap.Error(err))
+			// Generate a unique ID for each event based on resource name
+			eventID := fmt.Sprintf("%s-%s", r.Meta.Name.Kind, r.Meta.Name.Name)
+			if err := writeSSEEvent(w, "write", eventID, resp); err != nil {
 				return
 			}
 			flusher.Flush()
@@ -158,6 +158,23 @@ func (s *Server) WatchResourcesHandler(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		<-r.Context().Done()
 		clientCancel()
+	}()
+
+	// Add heartbeat goroutine to keep connection alive
+	heartbeatTicker := time.NewTicker(30 * time.Second)
+	go func() {
+		for {
+			select {
+			case <-heartbeatTicker.C:
+				if err := writeSSEEvent(w, "", "", "heartbeat"); err != nil {
+					return
+				}
+				flusher.Flush()
+			case <-clientCtx.Done():
+				heartbeatTicker.Stop()
+				return
+			}
+		}
 	}()
 
 	// Subscribe to resource events
@@ -181,15 +198,38 @@ func (s *Server) WatchResourcesHandler(w http.ResponseWriter, r *http.Request) {
 			Resource: r,
 		}
 
-		if err := writeJSONResponse(w, resp); err != nil {
+		// Generate event type string based on the ResourceEvent enum
+		eventType := resourceEventToString(e)
+
+		// Generate a unique ID for each event
+		var eventID string
+		if n != nil {
+			eventID = fmt.Sprintf("%s-%s", n.Kind, n.Name)
+		}
+
+		// Use writeSSEEvent instead of writeJSONResponse
+		if err := writeSSEEvent(w, eventType, eventID, resp); err != nil {
 			s.logger.Info("failed to send resource event", zap.Error(err))
 			return
 		}
 		flusher.Flush()
 	})
-
 	if err != nil {
 		s.logger.Info("subscription ended with error", zap.Error(err))
+	}
+}
+
+// Helper function to convert ResourceEvent enum to string
+func resourceEventToString(e runtimev1.ResourceEvent) string {
+	switch e {
+	case runtimev1.ResourceEvent_RESOURCE_EVENT_WRITE:
+		return "write"
+	case runtimev1.ResourceEvent_RESOURCE_EVENT_DELETE:
+		return "delete"
+	case runtimev1.ResourceEvent_RESOURCE_EVENT_UNSPECIFIED:
+		return "unspecified"
+	default:
+		return "unknown"
 	}
 }
 
@@ -734,4 +774,22 @@ func writeJSONResponse(w http.ResponseWriter, data interface{}) error {
 	}
 	_, err = fmt.Fprintf(w, "%s\n", jsonData)
 	return err
+}
+
+func writeSSEEvent(w http.ResponseWriter, event string, id string, data interface{}) error {
+	if id != "" {
+		fmt.Fprintf(w, "id: %s\n", id)
+	}
+
+	if event != "" {
+		fmt.Fprintf(w, "event: %s\n", event)
+	}
+
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+
+	fmt.Fprintf(w, "data: %s\n\n", jsonData)
+	return nil
 }
