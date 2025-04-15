@@ -145,7 +145,7 @@ func (s *Server) WatchFilesHandler(w http.ResponseWriter, req *http.Request) {
 		}
 	})
 
-	if err != nil && err != context.Canceled && !errors.Is(err, context.Canceled) {
+	if err != nil && !errors.Is(err, context.Canceled) {
 		s.logger.Info("watch error", zap.Error(err))
 	}
 }
