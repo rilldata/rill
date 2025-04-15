@@ -27,7 +27,10 @@ import {
   type DashboardTimeControls,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
-import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
+import {
+  DashboardState_ActivePage,
+  DashboardState_LeaderboardSortType,
+} from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   type MetricsViewSpecDimension,
   type MetricsViewSpecMeasure,
@@ -271,7 +274,8 @@ function fromExploreUrlParams(
     preset.exploreSortType !== V1ExploreSortType.EXPLORE_SORT_TYPE_UNSPECIFIED
   ) {
     partialExploreState.dashboardSortType = Number(
-      ToLegacySortTypeMap[preset.exploreSortType],
+      ToLegacySortTypeMap[preset.exploreSortType] ??
+        DashboardState_LeaderboardSortType.UNSPECIFIED,
     );
   }
 
