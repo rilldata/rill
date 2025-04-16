@@ -1,5 +1,6 @@
 import BarChart from "@rilldata/web-common/components/icons/BarChart.svelte";
 import Donut from "@rilldata/web-common/components/icons/Donut.svelte";
+import Heatmap from "@rilldata/web-common/components/icons/Heatmap.svelte";
 import LineChart from "@rilldata/web-common/components/icons/LineChart.svelte";
 import StackedArea from "@rilldata/web-common/components/icons/StackedArea.svelte";
 import StackedBar from "@rilldata/web-common/components/icons/StackedBar.svelte";
@@ -15,7 +16,10 @@ import { generateVLBarChartSpec } from "./cartesian-charts/bar-chart/spec";
 import { generateVLLineChartSpec } from "./cartesian-charts/line-chart/spec";
 import { generateVLStackedBarChartSpec } from "./cartesian-charts/stacked-bar/default";
 import { generateVLStackedBarNormalizedSpec } from "./cartesian-charts/stacked-bar/normalized";
+import type { CircularChartSpec } from "./circular-charts/CircularChart";
 import { generateVLPieChartSpec } from "./circular-charts/pie";
+import type { HeatmapChartSpec } from "./heatmap-charts/HeatmapChart";
+import { generateVLHeatmapSpec } from "./heatmap-charts/spec";
 import type { ChartDataResult, ChartMetadata } from "./types";
 
 export function generateSpec(
@@ -36,7 +40,11 @@ export function generateSpec(
     case "area_chart":
       return generateVLAreaChartSpec(rillChartSpec, data);
     case "pie_chart":
-      return generateVLPieChartSpec(rillChartSpec, data);
+      // Type assertion since we know this chart type will only be used with CircularChartSpec
+      return generateVLPieChartSpec(rillChartSpec as CircularChartSpec, data);
+    case "heatmap":
+      // Type assertion since we know this chart type will only be used with HeatmapChartSpec
+      return generateVLHeatmapSpec(rillChartSpec as HeatmapChartSpec, data);
   }
 }
 
@@ -51,6 +59,7 @@ export const chartMetadata: ChartMetadata[] = [
   },
   { type: "area_chart", title: "Stacked Area", icon: StackedArea },
   { type: "pie_chart", title: "Pie", icon: Donut },
+  { type: "heatmap", title: "Heatmap", icon: Heatmap },
 ];
 
 export function isChartLineLike(chartType: ChartType) {

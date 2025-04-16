@@ -67,6 +67,7 @@ const CHART_TYPES = [
   "stacked_bar_normalized",
   "area_chart",
   "pie_chart",
+  "heatmap",
 ] as const;
 const NON_CHART_TYPES = [
   "markdown",

@@ -28,7 +28,7 @@ export function createMultiLayerBaseSpec() {
 }
 
 export function createSingleLayerBaseSpec(
-  mark: "line" | "bar" | "point" | "area" | "arc",
+  mark: "line" | "bar" | "point" | "area" | "arc" | "rect",
 ): TopLevelUnitSpec<Field> {
   return {
     $schema: "https://vega.github.io/schema/vega-lite/v5.json",

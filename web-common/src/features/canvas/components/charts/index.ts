@@ -5,14 +5,22 @@ import {
   CircularChartComponent,
   type CircularChartSpec,
 } from "./circular-charts/CircularChart";
+import {
+  HeatmapChartComponent,
+  type HeatmapChartSpec,
+} from "./heatmap-charts/HeatmapChart";
 
 export { default as Chart } from "./Chart.svelte";
 
 export type ChartComponent =
   | typeof CartesianChartComponent
-  | typeof CircularChartComponent;
+  | typeof CircularChartComponent
+  | typeof HeatmapChartComponent;
 
-export type ChartSpec = CartesianChartSpec | CircularChartSpec;
+export type ChartSpec =
+  | CartesianChartSpec
+  | CircularChartSpec
+  | HeatmapChartSpec;
 
 export type ChartType =
   | "bar_chart"
@@ -20,7 +28,8 @@ export type ChartType =
   | "area_chart"
   | "stacked_bar"
   | "stacked_bar_normalized"
-  | "pie_chart";
+  | "pie_chart"
+  | "heatmap";
 
 export function getChartComponent(
   type: ChartType,
@@ -34,6 +43,8 @@ export function getChartComponent(
       return CartesianChartComponent;
     case "pie_chart":
       return CircularChartComponent;
+    case "heatmap":
+      return HeatmapChartComponent;
     default:
       throw new Error(`Unsupported chart type: ${type}`);
   }
