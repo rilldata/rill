@@ -145,9 +145,7 @@ func (s *Server) WatchResourcesHandler(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 
-			eventServer.Publish("resources", &sse.Event{
-				Data: data,
-			})
+			eventServer.Publish("resources", &sse.Event{Data: data})
 		}
 	}
 
@@ -178,9 +176,7 @@ func (s *Server) WatchResourcesHandler(w http.ResponseWriter, r *http.Request) {
 				s.logger.Warn("failed to marshal watch event", zap.Error(err))
 			}
 
-			eventServer.Publish("resources", &sse.Event{
-				Data: data,
-			})
+			eventServer.Publish("resources", &sse.Event{Data: data})
 		})
 		if err != nil {
 			s.logger.Info("subscription ended with error", zap.Error(err))

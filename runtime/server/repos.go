@@ -100,17 +100,13 @@ func (s *Server) WatchFilesHandler(w http.ResponseWriter, req *http.Request) {
 				IsDir: f.IsDir,
 			}
 
-			eventID := fmt.Sprintf("write-%s", f.Path)
-
 			data, err := protojson.Marshal(event)
 			if err != nil {
 				s.logger.Warn("failed to marshal replay event", zap.Error(err))
 				continue
 			}
 
-			eventServer.Publish(eventID, &sse.Event{
-				Data: data,
-			})
+			eventServer.Publish("files", &sse.Event{Data: data})
 		}
 	}
 
@@ -134,9 +130,7 @@ func (s *Server) WatchFilesHandler(w http.ResponseWriter, req *http.Request) {
 					continue
 				}
 
-				eventServer.Publish("files", &sse.Event{
-					Data: data,
-				})
+				eventServer.Publish("files", &sse.Event{Data: data})
 			}
 		})
 
