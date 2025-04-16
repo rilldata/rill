@@ -225,6 +225,7 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
 
     return {
       metrics_view: metricsViewName,
+      color: "hsl(246, 66%, 50%)",
       x: {
         type: timeDimension ? "temporal" : "nominal",
         field: timeDimension || randomDimension,
