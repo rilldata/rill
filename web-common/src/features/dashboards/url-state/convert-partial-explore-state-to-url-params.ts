@@ -25,6 +25,7 @@ import {
   ExploreStateKeyToURLParamMap,
   ExploreStateURLParams,
 } from "@rilldata/web-common/features/dashboards/url-state/url-params";
+import { stripDefaultUrlParams } from "@rilldata/web-common/features/dashboards/url-state/url-params-strip-utils";
 import { arrayOrderedEquals } from "@rilldata/web-common/lib/arrayUtils";
 import {
   TimeComparisonOption,
@@ -53,30 +54,23 @@ export function getCleanedUrlParamsForGoto(
     timeControlsState,
   );
 
-  // Remove params with default values
-  [...stateParams.entries()].forEach(([key, value]) => {
-    const defaultValue = defaultExploreUrlParams.get(key);
-    if (
-      (defaultValue === null && value !== "") ||
-      (defaultValue !== null && value !== defaultValue)
-    ) {
-      return;
-    }
-    stateParams.delete(key);
-  });
+  const strippedUrlParams = stripDefaultUrlParams(
+    stateParams,
+    defaultExploreUrlParams,
+  );
 
-  if (!urlForCompressionCheck) return stateParams;
+  if (!urlForCompressionCheck) return strippedUrlParams;
 
   // compression
   const urlCopy = new URL(urlForCompressionCheck);
-  urlCopy.search = stateParams.toString();
+  urlCopy.search = strippedUrlParams.toString();
   const shouldCompress = shouldCompressParams(urlCopy);
-  if (!shouldCompress) return stateParams;
+  if (!shouldCompress) return strippedUrlParams;
 
   const compressedUrlParams = new URLSearchParams();
   compressedUrlParams.set(
     ExploreStateURLParams.GzippedParams,
-    compressUrlParams(stateParams.toString()),
+    compressUrlParams(strippedUrlParams.toString()),
   );
   return compressedUrlParams;
 }

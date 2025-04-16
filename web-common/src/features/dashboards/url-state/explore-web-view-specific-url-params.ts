@@ -93,3 +93,18 @@ export function copyUrlSearchParamsForView(
     },
   );
 }
+
+export function paramValidInBothViews(
+  view1: ExploreUrlWebView,
+  view2: ExploreUrlWebView,
+  param: ExploreStateURLParams,
+) {
+  return (
+    view1 === view2 ||
+    // If the param is not specific to a web view then it is valid for both views
+    !ExploreURLParamsSpecificToSomeWebView.has(param) ||
+    // Else we have a map that defines whether a param is actually shared.
+    // There are cases where param name is same but they mean different things. EG: sort_by is different in explore and pivot views
+    ExploreWebViewCommonURLParams[view1]?.[view2]?.includes(param)
+  );
+}
