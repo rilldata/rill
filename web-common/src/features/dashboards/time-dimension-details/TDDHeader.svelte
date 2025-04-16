@@ -30,7 +30,6 @@
   } from "@rilldata/web-common/lib/time/types";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-  import { fly } from "svelte/transition";
   import Pivot from "../../../components/icons/Pivot.svelte";
   import ExportMenu from "../../exports/ExportMenu.svelte";
   import { featureFlags } from "../../feature-flags";
@@ -236,45 +235,16 @@
 
   {#if comparing === "dimension"}
     <div class="flex items-center gap-x-1" style:cursor="pointer">
-      {#if !isRowsEmpty}
-        <SelectAllButton
-          {areAllTableRowsSelected}
-          on:toggle-all-search-items={onToggleSearchItems}
-        />
-      {/if}
+      <SelectAllButton
+        {areAllTableRowsSelected}
+        disabled={isRowsEmpty}
+        on:toggle-all-search-items={onToggleSearchItems}
+      />
 
-      {#if !searchToggle}
-        <button
-          class="flex items-center ui-copy-icon px-1.5"
-          in:fly|global={{ x: 10, duration: 300 }}
-          style:grid-column-gap=".2rem"
-          on:click={() => (searchToggle = !searchToggle)}
-        >
-          <SearchIcon size="16px" />
-          <span> Search </span>
-        </button>
-      {:else}
-        <div
-          transition:slideRight={{ leftOffset: 8 }}
-          class="flex items-center gap-x-1 px-1.5"
-        >
-          <Search bind:value={$dimensionSearchText} on:submit={onSubmit} />
-          <button
-            class="ui-copy-icon"
-            style:cursor="pointer"
-            on:click={() => closeSearchBar()}
-          >
-            <Close />
-          </button>
-        </div>
-      {/if}
-
-      <Tooltip distance={16} location="left">
-        <div class="ui-copy-icon px-1.5" style:grid-column-gap=".4rem">
-          <Switch checked={excludeMode} on:click={() => toggleFilterMode()}>
-            Exclude
-          </Switch>
-        </div>
+      <Tooltip distance={8} location="top">
+        <Button type="toolbar" on:click={() => toggleFilterMode()}>
+          <Switch checked={excludeMode}>Exclude</Switch>
+        </Button>
         <TooltipContent slot="tooltip-content">
           <TooltipTitle>
             <svelte:fragment slot="name">
@@ -288,6 +258,27 @@
         </TooltipContent>
       </Tooltip>
 
+      {#if !searchToggle}
+        <Button type="toolbar" on:click={() => (searchToggle = !searchToggle)}>
+          <SearchIcon size="16px" />
+          <span>Search</span>
+        </Button>
+      {:else}
+        <div
+          transition:slideRight={{}}
+          class="flex items-center gap-x-1 px-1.5"
+        >
+          <Search bind:value={$dimensionSearchText} on:submit={onSubmit} />
+          <button
+            class="ui-copy-icon"
+            style:cursor="pointer"
+            on:click={() => closeSearchBar()}
+          >
+            <Close />
+          </button>
+        </div>
+      {/if}
+
       {#if $exports}
         <ExportMenu
           label="Export table data"
@@ -297,6 +288,7 @@
           {exploreName}
         />
       {/if}
+
       {#if !hideStartPivotButton}
         <Button
           compact
@@ -323,6 +315,6 @@
 
 <style lang="postcss">
   .tdd-header {
-    @apply grid justify-between grid-flow-col items-center mr-4 py-2 px-4 h-11;
+    @apply grid justify-between grid-flow-col items-center py-2 px-4 h-11;
   }
 </style>
