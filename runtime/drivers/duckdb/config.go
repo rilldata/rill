@@ -23,6 +23,8 @@ type config struct {
 	MemoryLimitGB int `mapstructure:"memory_limit_gb"`
 	// ReadWriteRatio is the ratio of resources to allocate to the read DB. If set, CPU and MemoryLimitGB are distributed based on this ratio.
 	ReadWriteRatio float64 `mapstructure:"read_write_ratio"`
+	// WriteConnLimit is the maximum number of concurrent write connections allowed.
+	WriteConnLimit int `mapstructure:"write_conn_limit"`
 	// BootQueries is SQL to execute when initializing a new connection. It runs before any extensions are loaded or default settings are set.
 	BootQueries string `mapstructure:"boot_queries"`
 	// InitSQL is SQL to execute when initializing a new connection. It runs after extensions are loaded and and default settings are set.

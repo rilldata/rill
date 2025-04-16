@@ -496,6 +496,7 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		ReadWriteRatio:  c.config.ReadWriteRatio,
 		ReadSettings:    c.config.readSettings(),
 		WriteSettings:   c.config.writeSettings(),
+		WriteConnLimit:  c.config.WriteConnLimit,
 		DBInitQueries:   dbInitQueries,
 		ConnInitQueries: connInitQueries,
 		LogQueries:      c.config.LogQueries,
