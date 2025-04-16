@@ -231,7 +231,7 @@
 
   .measure-name {
     @apply w-full truncate flex-none;
-    @apply text-center font-medium text-sm text-gray-600;
+    @apply text-center font-medium text-sm text-gray-700;
   }
 
   .spark-right .measure-name {
@@ -239,7 +239,7 @@
   }
 
   .big-number {
-    @apply text-3xl font-medium text-gray-600;
+    @apply text-3xl font-medium text-gray-700;
   }
 
   .hovered-value {

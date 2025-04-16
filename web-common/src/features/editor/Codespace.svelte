@@ -187,4 +187,8 @@
   :global(.cm-mergeViewEditor:first-of-type) {
     @apply border-r;
   }
+
+  :global(.ͼ2) {
+    --indent-marker-bg-color: var(--color-gray-300);
+  }
 </style>

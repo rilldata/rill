@@ -368,18 +368,6 @@ export const defaultPrimaryColors: LightnessMap = {
   950: "246 57% 20%",
 };
 
-// backup pallette of primary colors
-// useful for testing application of colors
-// export const defaultPrimaryColors = Object.fromEntries(
-//   [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950].map((n) => [
-//     n,
-//     `lch(${(100 * (1000 - n)) / 1000}% 64 139)`,
-//   ]),
-// );
-
-/**
- * Rill secondary brand colors.
- */
 export const defaultSecondaryColors = {
   50: "199 100% 97%",
   100: "202 100% 94%",

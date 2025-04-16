@@ -475,7 +475,7 @@
 
     --accent-foreground: var(--color-gray-900);
 
-    --accent: var(--color-gray-200);
+    --accent: var(--color-gray-100);
 
     --muted: var(--color-gray-200);
   }
@@ -484,9 +484,10 @@
     color-scheme: dark;
     color: var(--color-gray-900);
 
-    --background: oklch(0% 0.0042 277.7);
-    --surface: var(--color-gray-50);
+    --background: oklch(0% 0 0);
+    --surface: var(--color-gray-100);
     --popover: var(--color-gray-100);
+    --accent: var(--color-gray-200);
 
     --color-primary-50: var(--color-primary-dark-50);
     --color-primary-100: var(--color-primary-dark-100);
@@ -782,9 +783,8 @@ body {
   font-size: 12px;
 
   /* Use this for a few keyboard characters in tooltips, etc. */
-  --system:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
-    sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  --system: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 
   --monospace: "Source Code Variable";
   margin: 0;

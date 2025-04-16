@@ -19,6 +19,7 @@
   import { parseDocument } from "yaml";
   import InputWithConfirm from "../components/forms/InputWithConfirm.svelte";
   import { fileArtifacts } from "../features/entity-management/file-artifacts";
+  import ThemeToggle from "@rilldata/web-common/features/themes/ThemeToggle.svelte";
 
   export let mode: string;
 
@@ -110,7 +111,7 @@
     />
   {/if}
 
-  <div class="ml-auto flex gap-x-2">
+  <div class="ml-auto flex gap-x-2 h-full w-fit items-center py-2">
     {#if mode === "Preview"}
       {#if route.id?.includes("explore")}
         <ExplorePreviewCTAs exploreName={dashboardName} />
@@ -122,6 +123,8 @@
       {/if}
       <LocalAvatarButton />
     {/if}
+    <!-- <button class="size-full bg-red-400"> hello </button> -->
+    <ThemeToggle />
   </div>
 </header>
 
