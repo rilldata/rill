@@ -51,11 +51,6 @@ jobs:
       with:
         go-version: 1.23
 
-    - name: Set up NodeJS
-      uses: actions/setup-node@v4
-      with:
-        node-version-file: '.nvmrc'
-
     - name: Apply Migrations
       env:
         RILL_ADMIN_DATABASE_DRIVER: postgres
