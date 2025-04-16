@@ -12,7 +12,7 @@
   const { retryAttempts: fileAttempts, closed: fileWatcherClosed } =
     fileWatcher;
   const { retryAttempts: resourceAttempts, closed: resourceWatcherClosed } =
-    fileWatcher;
+    resourceWatcher;
 
   export let host: string;
   export let instanceId: string;
