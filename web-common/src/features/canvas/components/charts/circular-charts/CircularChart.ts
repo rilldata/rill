@@ -28,6 +28,7 @@ import type { ChartDataQuery } from "../types";
 type CircularChartEncoding = {
   measure?: FieldConfig;
   color?: FieldConfig;
+  innerRadius?: number;
 };
 export type CircularChartSpec = BaseChartConfig & CircularChartEncoding;
 
@@ -57,6 +58,10 @@ export class CircularChartComponent extends BaseChart<CircularChartSpec> {
             type: "measure",
           },
         },
+      },
+      innerRadius: {
+        type: "number",
+        label: "Inner Radius",
       },
     };
   }
@@ -158,6 +163,7 @@ export class CircularChartComponent extends BaseChart<CircularChartSpec> {
 
     return {
       metrics_view: metricsViewName,
+      innerRadius: 0,
       color: {
         type: "nominal",
         field: randomDimension,

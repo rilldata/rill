@@ -16,7 +16,7 @@ export function generateVLPieChartSpec(
 
   spec.mark = {
     type: "arc",
-    innerRadius: 30,
+    innerRadius: config.innerRadius || 0,
   };
   const theta = createXEncoding(config.measure, data);
   const color = createColorEncoding(config.color, data);
