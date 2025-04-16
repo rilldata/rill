@@ -10,9 +10,16 @@ import {
   type V1MetricsViewAggregationResponseDataItem,
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
-import type { ComponentType, SvelteComponent } from "svelte";
 import { type Readable } from "svelte/store";
-import type { ChartType } from "./";
+
+export type ChartType =
+  | "bar_chart"
+  | "line_chart"
+  | "area_chart"
+  | "stacked_bar"
+  | "stacked_bar_normalized"
+  | "pie_chart"
+  | "heatmap";
 
 export type ChartDataQuery = Readable<{
   isFetching: boolean;
@@ -67,12 +74,6 @@ export interface ChartConfig extends CommonChartProperties {
   color?: FieldConfig | string;
   tooltip?: FieldConfig;
   vl_config?: string;
-}
-
-export interface ChartMetadata {
-  type: ChartType;
-  icon: ComponentType<SvelteComponent>;
-  title: string;
 }
 
 /** Temporary solution for the lack of vega lite type exports */

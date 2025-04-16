@@ -3,10 +3,13 @@
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import type { ChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
+  import {
+    CHART_CONFIG,
+    CHART_TYPES,
+    type ChartSpec,
+    type ChartType,
+  } from "@rilldata/web-common/features/canvas/components/charts";
   import type { BaseChart } from "@rilldata/web-common/features/canvas/components/charts/BaseChart";
-  import type { ChartMetadata } from "@rilldata/web-common/features/canvas/components/charts/types";
-  import { chartMetadata } from "@rilldata/web-common/features/canvas/components/charts/util";
 
   export let component: BaseChart<ChartSpec>;
 
@@ -14,27 +17,27 @@
 
   $: type = $chartType;
 
-  function selectChartType(chartType: ChartMetadata) {
-    component.updateChartType(chartType.type);
+  function selectChartType(chartType: ChartType) {
+    component.updateChartType(chartType);
   }
 </script>
 
 <div class="section">
   <InputLabel small label="Chart type" id="chart-components" />
   <div class="chart-icons">
-    {#each chartMetadata as chart, i (i)}
+    {#each CHART_TYPES as chart, i (i)}
       <Tooltip distance={8} location="right">
         <Button
           square
           small
           type="secondary"
-          selected={type === chart.type}
+          selected={type === chart}
           on:click={() => selectChartType(chart)}
         >
-          <svelte:component this={chart.icon} size="20px" />
+          <svelte:component this={CHART_CONFIG[chart].icon} size="20px" />
         </Button>
         <TooltipContent slot="tooltip-content">
-          {chart.title}
+          {CHART_CONFIG[chart].title}
         </TooltipContent>
       </Tooltip>
     {/each}

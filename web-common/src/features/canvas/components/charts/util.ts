@@ -1,26 +1,10 @@
-import BarChart from "@rilldata/web-common/components/icons/BarChart.svelte";
-import Donut from "@rilldata/web-common/components/icons/Donut.svelte";
-import Heatmap from "@rilldata/web-common/components/icons/Heatmap.svelte";
-import LineChart from "@rilldata/web-common/components/icons/LineChart.svelte";
-import StackedArea from "@rilldata/web-common/components/icons/StackedArea.svelte";
-import StackedBar from "@rilldata/web-common/components/icons/StackedBar.svelte";
-import StackedBarFull from "@rilldata/web-common/components/icons/StackedBarFull.svelte";
 import { getRillTheme } from "@rilldata/web-common/components/vega/vega-config";
 import { sanitizeValueForVega } from "@rilldata/web-common/features/templates/charts/utils";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import merge from "deepmerge";
 import type { Config } from "vega-lite";
-import type { ChartSpec, ChartType } from "./";
-import { generateVLAreaChartSpec } from "./cartesian-charts/area/spec";
-import { generateVLBarChartSpec } from "./cartesian-charts/bar-chart/spec";
-import { generateVLLineChartSpec } from "./cartesian-charts/line-chart/spec";
-import { generateVLStackedBarChartSpec } from "./cartesian-charts/stacked-bar/default";
-import { generateVLStackedBarNormalizedSpec } from "./cartesian-charts/stacked-bar/normalized";
-import type { CircularChartSpec } from "./circular-charts/CircularChart";
-import { generateVLPieChartSpec } from "./circular-charts/pie";
-import type { HeatmapChartSpec } from "./heatmap-charts/HeatmapChart";
-import { generateVLHeatmapSpec } from "./heatmap-charts/spec";
-import type { ChartDataResult, ChartMetadata } from "./types";
+import { CHART_CONFIG, type ChartSpec } from "./";
+import type { ChartDataResult, ChartType } from "./types";
 
 export function generateSpec(
   chartType: ChartType,
@@ -28,39 +12,8 @@ export function generateSpec(
   data: ChartDataResult,
 ) {
   if (data.isFetching || data.error) return {};
-  switch (chartType) {
-    case "bar_chart":
-      return generateVLBarChartSpec(rillChartSpec, data);
-    case "stacked_bar":
-      return generateVLStackedBarChartSpec(rillChartSpec, data);
-    case "stacked_bar_normalized":
-      return generateVLStackedBarNormalizedSpec(rillChartSpec, data);
-    case "line_chart":
-      return generateVLLineChartSpec(rillChartSpec, data);
-    case "area_chart":
-      return generateVLAreaChartSpec(rillChartSpec, data);
-    case "pie_chart":
-      // Type assertion since we know this chart type will only be used with CircularChartSpec
-      return generateVLPieChartSpec(rillChartSpec as CircularChartSpec, data);
-    case "heatmap":
-      // Type assertion since we know this chart type will only be used with HeatmapChartSpec
-      return generateVLHeatmapSpec(rillChartSpec as HeatmapChartSpec, data);
-  }
+  return CHART_CONFIG[chartType].generateSpec(rillChartSpec, data);
 }
-
-export const chartMetadata: ChartMetadata[] = [
-  { type: "line_chart", title: "Line", icon: LineChart },
-  { type: "bar_chart", title: "Bar", icon: BarChart },
-  { type: "stacked_bar", title: "Stacked Bar", icon: StackedBar },
-  {
-    type: "stacked_bar_normalized",
-    title: "Stacked Bar Normalized",
-    icon: StackedBarFull,
-  },
-  { type: "area_chart", title: "Stacked Area", icon: StackedArea },
-  { type: "pie_chart", title: "Pie", icon: Donut },
-  { type: "heatmap", title: "Heatmap", icon: Heatmap },
-];
 
 export function isChartLineLike(chartType: ChartType) {
   return chartType === "line_chart" || chartType === "area_chart";

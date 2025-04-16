@@ -12,6 +12,7 @@ import { ResourceKind } from "../entity-management/resource-selectors";
 import type { CanvasComponentType } from "./components/types";
 import { COMPONENT_CLASS_MAP } from "./components/util";
 
+// TODO: Move this individual component class
 export const initialHeights: Record<CanvasComponentType, number> = {
   line_chart: 320,
   bar_chart: 320,

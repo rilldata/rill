@@ -2,8 +2,8 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { Plus, PlusCircle } from "lucide-svelte";
   import type { ComponentType, SvelteComponent } from "svelte";
-  import type { ChartType } from "./components/charts";
-  import { chartMetadata } from "./components/charts/util";
+  import { CHART_TYPES } from "./components/charts";
+  import type { ChartType } from "./components/charts/types";
   import type { CanvasComponentType } from "./components/types";
   import BigNumberIcon from "./icons/BigNumberIcon.svelte";
   import ChartIcon from "./icons/ChartIcon.svelte";
@@ -18,11 +18,11 @@
 
   // Function to get a random chart type
   function getRandomChartType(): ChartType {
-    const chartTypes = chartMetadata
-      .map((chart) => chart.type)
-      .filter((t) => t !== "stacked_bar_normalized");
+    const chartTypes = CHART_TYPES.filter(
+      (t) => t !== "stacked_bar_normalized",
+    );
     const randomIndex = Math.floor(Math.random() * chartTypes.length);
-    return chartTypes[randomIndex];
+    return chartTypes[randomIndex] as ChartType;
   }
 
   // Create menu items with a function to get random chart type when clicked

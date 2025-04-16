@@ -17,11 +17,11 @@ import type {
   ComponentCommonProperties,
   ComponentFilterProperties,
 } from "../types";
-import type { ChartType } from "./";
 import Chart from "./Chart.svelte";
 import type {
   ChartDataQuery,
   ChartFieldsMap,
+  ChartType,
   CommonChartProperties,
   FieldConfig,
 } from "./types";
