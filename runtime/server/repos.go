@@ -7,10 +7,10 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/r3labs/sse/v2"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
-	"github.com/rilldata/rill/runtime/pkg/sse"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
@@ -79,6 +79,12 @@ func (s *Server) WatchFilesHandler(w http.ResponseWriter, req *http.Request) {
 	defer release()
 
 	eventServer := sse.New()
+	eventServer.CreateStream("files")
+	eventServer.Headers = map[string]string{
+		"Content-Type":  "text/event-stream",
+		"Cache-Control": "no-cache",
+		"Connection":    "keep-alive",
+	}
 
 	if replay {
 		files, err := repo.ListRecursive(ctx, "**", false)
@@ -96,10 +102,14 @@ func (s *Server) WatchFilesHandler(w http.ResponseWriter, req *http.Request) {
 
 			eventID := fmt.Sprintf("write-%s", f.Path)
 
-			eventServer.Publish(sse.Event{
-				Type: "write",
-				ID:   eventID,
-				Data: event,
+			data, err := protojson.Marshal(event)
+			if err != nil {
+				s.logger.Warn("failed to marshal replay event", zap.Error(err))
+				continue
+			}
+
+			eventServer.Publish(eventID, &sse.Event{
+				Data: data,
 			})
 		}
 	}
@@ -112,29 +122,20 @@ func (s *Server) WatchFilesHandler(w http.ResponseWriter, req *http.Request) {
 
 		err := repo.Watch(clientCtx, func(events []drivers.WatchEvent) {
 			for _, event := range events {
-				response := &runtimev1.WatchFilesResponse{
+				e := &runtimev1.WatchFilesResponse{
 					Event: event.Type,
 					Path:  event.Path,
 					IsDir: event.Dir,
 				}
 
-				// Convert event type to string
-				eventType := "unknown"
-				switch event.Type {
-				case runtimev1.FileEvent_FILE_EVENT_WRITE:
-					eventType = "write"
-				case runtimev1.FileEvent_FILE_EVENT_DELETE:
-					eventType = "delete"
-				case runtimev1.FileEvent_FILE_EVENT_UNSPECIFIED:
-					eventType = "unspecified"
+				data, err := protojson.Marshal(e)
+				if err != nil {
+					s.logger.Warn("failed to marshal watch event", zap.Error(err))
+					continue
 				}
 
-				eventID := fmt.Sprintf("%s-%s", eventType, event.Path)
-
-				eventServer.Publish(sse.Event{
-					Type: eventType,
-					ID:   eventID,
-					Data: response,
+				eventServer.Publish("files", &sse.Event{
+					Data: data,
 				})
 			}
 		})

@@ -17,10 +17,10 @@
   export let host: string;
   export let instanceId: string;
 
-  $: fileWatcher.watch(`${host}/v1/instances/${instanceId}/files/watch`);
+  $: fileWatcher.watch(`${host}/v1/instances/${instanceId}/files/watch?stream=files`);
 
   $: resourceWatcher.watch(
-    `${host}/v1/instances/${instanceId}/resources/-/watch`,
+    `${host}/v1/instances/${instanceId}/resources/-/watch?stream=resources`,
   );
 
   $: failed = $fileAttempts >= 2 || $resourceAttempts >= 2;

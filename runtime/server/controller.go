@@ -11,16 +11,17 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/r3labs/sse/v2"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
-	"github.com/rilldata/rill/runtime/pkg/sse"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -108,6 +109,12 @@ func (s *Server) WatchResourcesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	eventServer := sse.New()
+	eventServer.CreateStream("resources")
+	eventServer.Headers = map[string]string{
+		"Content-Type":  "text/event-stream",
+		"Cache-Control": "no-cache",
+		"Connection":    "keep-alive",
+	}
 
 	if replay {
 		rs, err := ctrl.List(ctx, kind, "", false)
@@ -127,16 +134,19 @@ func (s *Server) WatchResourcesHandler(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 
-			resp := &runtimev1.WatchResourcesResponse{
+			e := &runtimev1.WatchResourcesResponse{
 				Event:    runtimev1.ResourceEvent_RESOURCE_EVENT_WRITE,
 				Resource: r,
 			}
 
-			eventID := fmt.Sprintf("%s-%s", r.Meta.Name.Kind, r.Meta.Name.Name)
-			eventServer.Publish(sse.Event{
-				Type: "write",
-				ID:   eventID,
-				Data: resp,
+			data, err := protojson.Marshal(e)
+			if err != nil {
+				s.logger.Warn("failed to marshal watch event", zap.Error(err))
+				continue
+			}
+
+			eventServer.Publish("resources", &sse.Event{
+				Data: data,
 			})
 		}
 	}
@@ -162,14 +172,15 @@ func (s *Server) WatchResourcesHandler(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
-			resp := &runtimev1.WatchResourcesResponse{Event: e, Name: n, Resource: r}
-
-			var eventID string
-			if n != nil {
-				eventID = fmt.Sprintf("%s-%s", n.Kind, n.Name)
+			res := &runtimev1.WatchResourcesResponse{Event: e, Name: n, Resource: r}
+			data, err := protojson.Marshal(res)
+			if err != nil {
+				s.logger.Warn("failed to marshal watch event", zap.Error(err))
 			}
 
-			eventServer.Publish(sse.Event{ID: eventID, Type: e.String(), Data: resp})
+			eventServer.Publish("resources", &sse.Event{
+				Data: data,
+			})
 		})
 		if err != nil {
 			s.logger.Info("subscription ended with error", zap.Error(err))
