@@ -1,27 +1,20 @@
 <script lang="ts">
-  import { Button, Switch } from "@rilldata/web-common/components/button";
+  import { Button } from "@rilldata/web-common/components/button";
   import Back from "@rilldata/web-common/components/icons/Back.svelte";
-  import Close from "@rilldata/web-common/components/icons/Close.svelte";
-  import SearchIcon from "@rilldata/web-common/components/icons/Search.svelte";
   import LeaderboardAdvancedActions from "@rilldata/web-common/components/menu/LeaderboardAdvancedActions.svelte";
-  import { Search } from "@rilldata/web-common/components/search";
-  import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
-  import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { onDestroy } from "svelte";
-  import Pivot from "../../../components/icons/Pivot.svelte";
-  import { slideRight } from "../../../lib/transitions";
   import ExportMenu from "../../exports/ExportMenu.svelte";
   import { SortType } from "../proto-state/derived-types";
   import { getStateManagers } from "../state-managers/state-managers";
-  import SelectAllButton from "./SelectAllButton.svelte";
+  import ExcludeButton from "../toolbars/ExcludeButton.svelte";
+  import SearchButton from "../toolbars/SearchButton.svelte";
+  import SelectAllButton from "../toolbars/SelectAllButton.svelte";
+  import StartPivotButton from "../toolbars/StartPivotButton.svelte";
   import { getDimensionTableExportQuery } from "./dimension-table-export";
 
   export let dimensionName: string;
@@ -63,21 +56,16 @@
 
   $: excludeMode = $isFilterExcludeMode(dimensionName);
 
-  $: filterKey = excludeMode ? "exclude" : "include";
-  $: otherFilterKey = excludeMode ? "include" : "exclude";
-
-  let searchBarOpen = false;
   let isLeaderboardActionsOpen = false;
 
-  function closeSearchBar() {
+  function resetSearchText() {
     searchText = "";
-    searchBarOpen = false;
   }
 
   function onSubmit() {
     if (!areAllTableRowsSelected) {
       onToggleSearchItems();
-      closeSearchBar();
+      resetSearchText();
     }
   }
 
@@ -163,46 +151,20 @@
     </Button>
 
     <!-- We fix the height to avoid a layout shift when the Search component is expanded. -->
-    <div class="shrink-0 flex items-center gap-x-1 cursor-pointer h-9">
+    <div class="shrink-0 flex items-center gap-x-1 h-9">
       <SelectAllButton
         {areAllTableRowsSelected}
         disabled={isRowsEmpty}
         on:toggle-all-search-items={onToggleSearchItems}
       />
 
-      <Tooltip distance={8} location="top">
-        <Button type="toolbar" on:click={() => toggleFilterMode()}>
-          <Switch checked={excludeMode}>Exclude</Switch>
-        </Button>
-        <TooltipContent slot="tooltip-content">
-          <TooltipTitle>
-            <svelte:fragment slot="name">
-              Output {filterKey}s selected values
-            </svelte:fragment>
-          </TooltipTitle>
-          <TooltipShortcutContainer>
-            <div>Toggle to {otherFilterKey} values</div>
-            <Shortcut>Click</Shortcut>
-          </TooltipShortcutContainer>
-        </TooltipContent>
-      </Tooltip>
+      <ExcludeButton {excludeMode} onClick={toggleFilterMode} />
 
-      {#if searchBarOpen || (searchText && searchText !== "")}
-        <div class="flex items-center gap-x-2 p-1.5" transition:slideRight={{}}>
-          <Search bind:value={searchText} on:submit={onSubmit} />
-          <button class="ui-copy-icon" on:click={() => closeSearchBar()}>
-            <Close />
-          </button>
-        </div>
-      {:else}
-        <Button
-          type="toolbar"
-          on:click={() => (searchBarOpen = !searchBarOpen)}
-        >
-          <SearchIcon size="16px" />
-          <span>Search</span>
-        </Button>
-      {/if}
+      <SearchButton
+        bind:value={searchText}
+        {onSubmit}
+        onClose={resetSearchText}
+      />
 
       {#if $exports}
         <ExportMenu
@@ -213,17 +175,11 @@
           exploreName={$exploreName}
         />
       {/if}
+
       {#if !hideStartPivotButton}
-        <Button
-          type="toolbar"
-          on:click={() => {
-            startPivotForDimensionTable();
-          }}
-        >
-          <Pivot size="16px" />
-          Start Pivot
-        </Button>
+        <StartPivotButton onClick={startPivotForDimensionTable} />
       {/if}
+
       <LeaderboardAdvancedActions
         isOpen={isLeaderboardActionsOpen}
         leaderboardShowContextForAllMeasures={$leaderboardShowContextForAllMeasures}

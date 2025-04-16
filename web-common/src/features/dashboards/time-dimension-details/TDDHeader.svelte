@@ -1,18 +1,7 @@
 <script lang="ts">
-  import { Switch } from "@rilldata/web-common/components/button";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import Close from "@rilldata/web-common/components/icons/Close.svelte";
   import Column from "@rilldata/web-common/components/icons/Column.svelte";
   import Row from "@rilldata/web-common/components/icons/Row.svelte";
-  import SearchIcon from "@rilldata/web-common/components/icons/Search.svelte";
-  import { Search } from "@rilldata/web-common/components/search";
   import SearchableFilterChip from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterChip.svelte";
-  import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
-  import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
-  import SelectAllButton from "@rilldata/web-common/features/dashboards/dimension-table/SelectAllButton.svelte";
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -28,14 +17,16 @@
     TimeGrain,
     TimeRange,
   } from "@rilldata/web-common/lib/time/types";
-  import { slideRight } from "@rilldata/web-common/lib/transitions";
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-  import Pivot from "../../../components/icons/Pivot.svelte";
   import ExportMenu from "../../exports/ExportMenu.svelte";
   import { featureFlags } from "../../feature-flags";
   import { PivotChipType } from "../pivot/types";
   import { useTimeControlStore } from "../time-controls/time-control-store";
   import TimeGrainSelector from "../time-controls/TimeGrainSelector.svelte";
+  import ExcludeButton from "../toolbars/ExcludeButton.svelte";
+  import SearchButton from "../toolbars/SearchButton.svelte";
+  import SelectAllButton from "../toolbars/SelectAllButton.svelte";
+  import StartPivotButton from "../toolbars/StartPivotButton.svelte";
   import { getTDDExportQuery } from "./tdd-export";
   import type { TDDComparison } from "./types";
 
@@ -82,14 +73,8 @@
   $: excludeMode =
     $dashboardStore?.dimensionFilterExcludeMode.get(dimensionName) ?? false;
 
-  $: filterKey = excludeMode ? "exclude" : "include";
-  $: otherFilterKey = excludeMode ? "include" : "exclude";
-
-  let searchToggle = false;
-
   function closeSearchBar() {
     dimensionSearchText.set("");
-    searchToggle = false;
   }
 
   function onSubmit() {
@@ -241,43 +226,13 @@
         on:toggle-all-search-items={onToggleSearchItems}
       />
 
-      <Tooltip distance={8} location="top">
-        <Button type="toolbar" on:click={() => toggleFilterMode()}>
-          <Switch checked={excludeMode}>Exclude</Switch>
-        </Button>
-        <TooltipContent slot="tooltip-content">
-          <TooltipTitle>
-            <svelte:fragment slot="name">
-              Output {filterKey}s selected values
-            </svelte:fragment>
-          </TooltipTitle>
-          <TooltipShortcutContainer>
-            <div>Toggle to {otherFilterKey} values</div>
-            <Shortcut>Click</Shortcut>
-          </TooltipShortcutContainer>
-        </TooltipContent>
-      </Tooltip>
+      <ExcludeButton {excludeMode} onClick={toggleFilterMode} />
 
-      {#if !searchToggle}
-        <Button type="toolbar" on:click={() => (searchToggle = !searchToggle)}>
-          <SearchIcon size="16px" />
-          <span>Search</span>
-        </Button>
-      {:else}
-        <div
-          transition:slideRight={{}}
-          class="flex items-center gap-x-1 px-1.5"
-        >
-          <Search bind:value={$dimensionSearchText} on:submit={onSubmit} />
-          <button
-            class="ui-copy-icon"
-            style:cursor="pointer"
-            on:click={() => closeSearchBar()}
-          >
-            <Close />
-          </button>
-        </div>
-      {/if}
+      <SearchButton
+        bind:value={$dimensionSearchText}
+        {onSubmit}
+        onClose={closeSearchBar}
+      />
 
       {#if $exports}
         <ExportMenu
@@ -290,16 +245,7 @@
       {/if}
 
       {#if !hideStartPivotButton}
-        <Button
-          compact
-          type="toolbar"
-          on:click={() => {
-            startPivotForTDD();
-          }}
-        >
-          <Pivot size="16px" />
-          Start Pivot
-        </Button>
+        <StartPivotButton onClick={startPivotForTDD} />
       {/if}
     </div>
   {/if}
