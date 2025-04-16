@@ -22,41 +22,15 @@ const (
 
 var _ drivers.OLAPStore = &connection{}
 
-// AddTableColumn implements drivers.OLAPStore.
-func (c *connection) AddTableColumn(ctx context.Context, tableName, columnName, typ string) error {
-	return fmt.Errorf("druid: data transformation not yet supported")
-}
-
-// AlterTableColumn implements drivers.OLAPStore.
-func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName, newType string) error {
-	return fmt.Errorf("druid: data transformation not yet supported")
-}
-
-// CreateTableAsSelect implements drivers.OLAPStore.
-func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, opts *drivers.CreateTableOptions) (*drivers.TableWriteMetrics, error) {
-	return nil, fmt.Errorf("druid: data transformation not yet supported")
-}
-
-// InsertTableAsSelect implements drivers.OLAPStore.
-func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, opts *drivers.InsertTableOptions) (*drivers.TableWriteMetrics, error) {
-	return nil, fmt.Errorf("druid: data transformation not yet supported")
-}
-
-// DropTable implements drivers.OLAPStore.
-func (c *connection) DropTable(ctx context.Context, name string) error {
-	return fmt.Errorf("druid: data transformation not yet supported")
-}
-
-// RenameTable implements drivers.OLAPStore.
-func (c *connection) RenameTable(ctx context.Context, name, newName string) error {
-	return fmt.Errorf("druid: data transformation not yet supported")
-}
-
 func (c *connection) Dialect() drivers.Dialect {
 	return drivers.DialectDruid
 }
 
-func (c *connection) WithConnection(ctx context.Context, priority int, longRunning bool, fn drivers.WithConnectionFunc) error {
+func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
+	return false
+}
+
+func (c *connection) WithConnection(ctx context.Context, priority int, fn drivers.WithConnectionFunc) error {
 	return fmt.Errorf("druid: WithConnection not supported")
 }
 
@@ -143,10 +117,6 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 	})
 
 	return r, nil
-}
-
-func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
-	return false
 }
 
 func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {

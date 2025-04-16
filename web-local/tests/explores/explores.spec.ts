@@ -428,10 +428,17 @@ dimensions:
     await expect(page.getByText("Avg Bid Price $3.01")).toBeVisible();
 
     // Change the leaderboard metric
-    await page
-      .getByRole("button", { name: "Select a measure to filter by" })
-      .click();
-    await page.getByRole("option", { name: "Avg Bid Price" }).click();
+    await page.getByTestId("leaderboard-measure-names-dropdown").click();
+
+    // Wait for the menu to be visible
+    await page.getByRole("menu").waitFor({ state: "visible" });
+
+    // Wait for and click the Avg Bid Price menu item
+    const avgBidPriceMenuItem = page
+      .getByRole("menuitem", { name: "Avg Bid Price" })
+      .filter({ has: page.getByText("Avg Bid Price") });
+    await avgBidPriceMenuItem.waitFor({ state: "visible" });
+    await avgBidPriceMenuItem.click();
 
     // Check domain and sample value in leaderboard
     await expect(page.getByText("Domain Name")).toBeVisible();
