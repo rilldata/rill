@@ -1,0 +1,10 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "metrics_view_field_selectors.schema.json",
+    "title": "MetricsViewFieldSelectorsYAML",
+    "type": "array",
+    "items": {
+      "$ref": "metrics_view_field_selector.schema.json"
+    }
+  }
+  

@@ -1,0 +1,134 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "metrics_view.schema.json",
+    "title": "MetricsView",
+    "type": "object",
+    "properties": {
+        "display_name": {
+            "type": "string"
+        },
+        "description": {
+            "type": "string"
+        },
+        "model": {
+            "type": "string"
+        },
+        "database": {
+            "type": "string"
+        },
+        "database_schema": {
+            "type": "string"
+        },
+        "table": {
+            "type": "string"
+        },
+        "timeseries": {
+            "type": "string"
+        },
+        "watermark": {
+            "type": "string"
+        },
+        "smallest_time_grain": {
+            "type": "string"
+        },
+        "first_day_of_week": {
+            "type": "integer"
+        },
+        "first_month_of_year": {
+            "type": "integer"
+        },
+        "dimensions": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "display_name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "column": {
+                        "type": "string"
+                    },
+                    "expression": {
+                        "type": "string"
+                    },
+                    "unnest": {
+                        "type": "boolean"
+                    },
+                    "uri": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "name"
+                ]
+            }
+        },
+        "measures": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "display_name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "type": {
+                        "type": "string"
+                    },
+                    "expression": {
+                        "type": "string"
+                    },
+                    "window": {
+                        "$ref": "metrics_view_measure_window.schema.json"
+                    },
+                    "per": {
+                        "$ref": "metrics_view_field_selectors.schema.json"
+                    },
+                    "requires": {
+                        "$ref": "metrics_view_field_selectors.schema.json"
+                    },
+                    "format_preset": {
+                        "type": "string"
+                    },
+                    "format_d3": {
+                        "type": "string"
+                    },
+                    "format_d3_locale": {
+                        "type": "object",
+                        "additionalProperties": true
+                    },
+                    "valid_percent_of_total": {
+                        "type": "boolean"
+                    },
+                    "treat_nulls_as": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "name",
+                    "type"
+                ]
+            }
+        },
+        "security": {
+            "$ref": "security_policy.schema.json"
+        }
+    },
+    "required": [
+        "display_name",
+        "model",
+        "dimensions",
+        "measures"
+    ]
+}

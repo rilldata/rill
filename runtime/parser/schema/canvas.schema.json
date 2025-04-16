@@ -1,0 +1,109 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "canvas.schema.json",
+    "type": "object",
+    "properties": {
+      "display_name": {
+        "type": "string"
+      },
+      "banner": {
+        "type": "string"
+      },
+      "max_width": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "gap_x": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "gap_y": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "theme": {
+        "anyOf": [
+          { "type": "string" },
+          { "type": "object", "additionalProperties": true }
+        ]
+      },
+      "allow_custom_time_range": {
+        "type": "boolean"
+      },
+      "time_ranges": {
+        "type": "array",
+        "items": {
+          "$ref": "explore_time_range.schema.json"
+        }
+      },
+      "time_zones": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "filters": {
+        "type": "object",
+        "properties": {
+          "enable": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "defaults": {
+        "type": "object",
+        "properties": {
+          "time_range": {
+            "type": "string"
+          },
+          "comparison_mode": {
+            "type": "string"
+          },
+          "comparison_dimension": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "variables": {
+        "type": "array",
+        "items": {
+          "$ref": "component_variable.schema.json"
+        }
+      },
+      "rows": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "height": {
+              "type": "string"
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "width": {
+                    "type": "string"
+                  },
+                  "component": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": true
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "security": {
+        "$ref": "security_policy.schema.json"
+      }
+    },
+    "required": ["rows"],
+    "additionalProperties": false
+  }
+  

@@ -1,0 +1,110 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "alert.schema.json",
+    "type": "object",
+    "properties": {
+        "display_name": {
+            "type": "string"
+        },
+        "refresh": {
+            "$ref": "schedule.schema.json"
+        },
+        "watermark": {
+            "type": "string",
+            "enum": [
+                "trigger_time",
+                "inherit"
+            ]
+        },
+        "intervals": {
+            "type": "object",
+            "properties": {
+                "duration": {
+                    "type": "string"
+                },
+                "limit": {
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "check_unclosed": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "timeout": {
+            "type": "string"
+        },
+        "data": {
+            "$ref": "api.data.schema.json"
+        },
+        "for": {
+            "type": "object",
+            "oneOf": [
+                {
+                    "required": [
+                        "user_id"
+                    ],
+                    "properties": {
+                        "user_id": {
+                            "type": "string"
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                {
+                    "required": [
+                        "user_email"
+                    ],
+                    "properties": {
+                        "user_email": {
+                            "type": "string",
+                            "format": "email"
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                {
+                    "required": [
+                        "attributes"
+                    ],
+                    "properties": {
+                        "attributes": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "additionalProperties": false
+                }
+            ]
+        },
+        "on_recover": {
+            "type": "boolean"
+        },
+        "on_fail": {
+            "type": "boolean"
+        },
+        "on_error": {
+            "type": "boolean"
+        },
+        "renotify": {
+            "type": "boolean"
+        },
+        "renotify_after": {
+            "type": "string"
+        },
+        "notify": {
+            "$ref" : "notify.schema.json"
+        },
+        "annotations": {
+            "type": "object",
+            "additionalProperties": {
+                "type": "string"
+            }
+        }
+    },
+    "required": [
+        "refresh",
+        "data",
+        "notify"
+    ]
+}

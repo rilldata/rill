@@ -1,0 +1,25 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "metrics_view_measure_window.schema.json",
+    "title": "MetricsViewMeasureWindow",
+    "type": "object",
+    "properties": {
+      "partition": {
+        "type": "boolean"
+      },
+      "order": {
+        "type": "array",
+        "items": {
+          "$ref": "metrics_view_field_selector.schema.json"
+        }
+      },
+      "order_time": {
+        "type": "boolean"
+      },
+      "frame": {
+        "type": "string"
+      }
+    },
+    "additionalProperties": false
+  }
+  

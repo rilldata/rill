@@ -1,0 +1,61 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "model.schema.json",
+    "type": "object",
+    "properties": {
+        "refresh": {
+            "$ref": "schedule.schema.json"
+        },
+        "timeout": {
+            "type": "string"
+        },
+        "incremental": {
+            "type": "boolean"
+        },
+        "state": {
+            "$ref": "api.data.schema.json"
+        },
+        "partitions": {
+            "$ref": "api.data.schema.json"
+        },
+        "partitions_watermark": {
+            "type": "string"
+        },
+        "partitions_concurrency": {
+            "type": "integer",
+            "minimum": 0
+        },
+        "stage": {
+            "type": "object",
+            "properties": {
+                "connector": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "connector"
+            ],
+            "additionalProperties": true
+        },
+        "output": {
+            "type": "object",
+            "properties": {
+                "connector": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "connector"
+            ],
+            "additionalProperties": true
+        },
+        "materialize": {
+            "type": "boolean"
+        },
+        "defined_as_source": {
+            "type": "boolean"
+        }
+    },
+    "required": [],
+    "additionalProperties": true
+}

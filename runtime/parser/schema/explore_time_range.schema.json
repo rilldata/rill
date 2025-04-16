@@ -1,0 +1,29 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "explore_time_range.schema.json",
+    "type": "object",
+    "properties": {
+      "range": {
+        "type": "string"
+      },
+      "comparison_time_ranges": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "offset": {
+              "type": "string"
+            },
+            "range": {
+              "type": "string"
+            }
+          },
+          "required": ["offset", "range"],
+          "additionalProperties": false
+        }
+      }
+    },
+    "required": ["range"],
+    "additionalProperties": false
+  }
+  

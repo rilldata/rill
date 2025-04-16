@@ -1,0 +1,27 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "explore_field_selector.schema.json",
+    "type": "object",
+    "properties": {
+      "all": {
+        "type": "boolean"
+      },
+      "fields": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "regex": {
+        "type": "string"
+      },
+      "duckDBExpression": {
+        "type": "string"
+      },
+      "invert": {
+        "type": "boolean"
+      }
+    },
+    "additionalProperties": false
+  }
+  

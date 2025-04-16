@@ -1,0 +1,91 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "explore.schema.json",
+    "title": "Explore",
+    "type": "object",
+    "properties": {
+        "display_name": {
+            "type": "string"
+        },
+        "description": {
+            "type": "string"
+        },
+        "banner": {
+            "type": "string"
+        },
+        "metrics_view": {
+            "type": "string"
+        },
+        "dimensions": {
+            "$ref": "explore_field_selector.schema.json"
+        },
+        "measures": {
+            "$ref": "explore_field_selector.schema.json"
+        },
+        "theme": {
+            "oneOf": [
+                {
+                    "type": "string"
+                },
+                {
+                    "$ref": "theme.schema.json"
+                }
+            ]
+        },
+        "time_ranges": {
+            "type": "array",
+            "items": {
+                "$ref": "explore_time_range.schema.json"
+            }
+        },
+        "time_zones": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "lock_time_zone": {
+            "type": "boolean"
+        },
+        "allow_custom_time_range": {
+            "type": "boolean"
+        },
+        "defaults": {
+            "type": "object",
+            "properties": {
+                "dimensions": {
+                    "$ref": "explore_field_selector.schema.json"
+                },
+                "measures": {
+                    "$ref": "explore_field_selector.schema.json"
+                },
+                "time_range": {
+                    "type": "string"
+                },
+                "comparison_mode": {
+                    "type": "string"
+                },
+                "comparison_dimension": {
+                    "type": "string"
+                }
+            },
+            "additionalProperties": false
+        },
+        "embeds": {
+            "type": "object",
+            "properties": {
+                "hide_pivot": {
+                    "type": "boolean"
+                }
+            },
+            "additionalProperties": false
+        },
+        "security": {
+            "$ref": "security.schema.json"
+        }
+    },
+    "required": [
+        "display_name",
+        "metrics_view"
+    ]
+}

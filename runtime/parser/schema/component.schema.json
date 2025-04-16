@@ -1,0 +1,24 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "component.schema.json",
+    "type": "object",
+    "properties": {
+      "display_name": {
+        "type": "string"
+      },
+      "description": {
+        "type": "string"
+      },
+      "input": {
+        "type": "array",
+        "items": {
+          "$ref": "component_variable.schema.json"
+        }
+      },
+      "output": {
+        "$ref": "component_variable.schema.json"
+      },
+      "additionalProperties": true
+    }
+  }
+  

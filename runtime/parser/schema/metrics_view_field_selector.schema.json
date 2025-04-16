@@ -1,0 +1,23 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "metrics_view_field_selector.schema.json",
+    "title": "MetricsViewFieldSelectorYAML",
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "time_grain": {
+      "type": "integer",
+      "description": "Enum:\n 0 = TIME_GRAIN_UNSPECIFIED\n 1 = TIME_GRAIN_MILLISECOND\n 2 = TIME_GRAIN_SECOND\n 3 = TIME_GRAIN_MINUTE\n 4 = TIME_GRAIN_HOUR\n 5 = TIME_GRAIN_DAY\n 6 = TIME_GRAIN_WEEK\n 7 = TIME_GRAIN_MONTH\n 8 = TIME_GRAIN_QUARTER\n 9 = TIME_GRAIN_YEAR",
+      "minimum": 0,
+      "maximum": 9
+    },
+      "descending": {
+        "type": "boolean"
+      }
+    },
+    "required": ["name"],
+    "additionalProperties": false
+  }
+  
