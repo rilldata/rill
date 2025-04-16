@@ -7,9 +7,9 @@
     CHART_CONFIG,
     CHART_TYPES,
     type ChartSpec,
-    type ChartType,
   } from "@rilldata/web-common/features/canvas/components/charts";
   import type { BaseChart } from "@rilldata/web-common/features/canvas/components/charts/BaseChart";
+  import type { ChartType } from "@rilldata/web-common/features/canvas/components/charts/types";
 
   export let component: BaseChart<ChartSpec>;
 
