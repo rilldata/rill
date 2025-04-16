@@ -1,27 +1,40 @@
 {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "explore_field_selector.schema.json",
-    "type": "object",
-    "properties": {
-      "all": {
-        "type": "boolean"
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "explore_field_selector.schema.json",
+  "description": "FieldSelector can be:\n1. The string '*'\n2. An array of strings\n3. An object with one of: 'regex', 'expr', or 'exclude'",
+  "oneOf": [
+    {
+      "type": "string",
+      "const": "*",
+      "description": "Matches all fields"
+    },
+    {
+      "type": "array",
+      "items": {
+        "type": "string"
       },
-      "fields": {
-        "type": "array",
-        "items": {
+      "description": "Explicit list of fields"
+    },
+    {
+      "type": "object",
+      "description": "Advanced matching using regex, DuckDB expression, or exclusion",
+      "properties": {
+        "regex": {
           "type": "string"
+        },
+        "expr": {
+          "type": "string"
+        },
+        "exclude": {
+          "$ref": "explore_field_selector.schema.json"
         }
       },
-      "regex": {
-        "type": "string"
-      },
-      "duckDBExpression": {
-        "type": "string"
-      },
-      "invert": {
-        "type": "boolean"
-      }
-    },
-    "additionalProperties": false
-  }
-  
+      "additionalProperties": false,
+      "oneOf": [
+        { "required": ["regex"] },
+        { "required": ["expr"] },
+        { "required": ["exclude"] }
+      ]
+    }
+  ]
+}

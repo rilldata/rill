@@ -81,11 +81,10 @@
             "additionalProperties": false
         },
         "security": {
-            "$ref": "security.schema.json"
+            "$ref": "security_policy.schema.json"
         }
     },
     "required": [
-        "display_name",
         "metrics_view"
     ]
 }

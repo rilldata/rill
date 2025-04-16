@@ -61,11 +61,12 @@
                         "type": "boolean"
                     },
                     "uri": {
-                        "type": "string"
+                        "type": ["string","boolean"]
                     }
                 },
-                "required": [
-                    "name"
+                "anyOf": [
+                    { "required": ["column"] },
+                    { "required": ["expression"] }
                 ]
             }
         },
@@ -114,21 +115,16 @@
                     "treat_nulls_as": {
                         "type": "string"
                     }
-                },
-                "required": [
-                    "name",
-                    "type"
-                ]
-            }
+                }
+            },
+            "minItems": 1
         },
         "security": {
             "$ref": "security_policy.schema.json"
         }
     },
-    "required": [
-        "display_name",
-        "model",
-        "dimensions",
-        "measures"
+    "oneOf": [
+        { "required": ["table","dimensions","measures"] },
+        { "required": ["model","dimensions","measures"] }
     ]
 }

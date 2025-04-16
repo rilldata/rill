@@ -41,7 +41,7 @@
     },
     "oneOf": [
         {
-            "$ref": "api.data.schema.json"
+            "$ref": "data.schema.json"
         }
     ]
 }

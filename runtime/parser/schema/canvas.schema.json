@@ -86,7 +86,7 @@
                 "type": "object",
                 "properties": {
                   "width": {
-                    "type": "string"
+                    "type": ["string","integer"]
                   },
                   "component": {
                     "type": "string"
@@ -103,7 +103,6 @@
         "$ref": "security_policy.schema.json"
       }
     },
-    "required": ["rows"],
-    "additionalProperties": false
+    "required": ["rows"]
   }
   

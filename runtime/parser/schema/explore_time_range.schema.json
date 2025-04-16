@@ -1,29 +1,41 @@
 {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "explore_time_range.schema.json",
-    "type": "object",
-    "properties": {
-      "range": {
-        "type": "string"
-      },
-      "comparison_time_ranges": {
-        "type": "array",
-        "items": {
-          "type": "object",
-          "properties": {
-            "offset": {
-              "type": "string"
-            },
-            "range": {
-              "type": "string"
-            }
-          },
-          "required": ["offset", "range"],
-          "additionalProperties": false
-        }
-      }
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "explore_time_range.schema.json",
+  "description": "ExploreTimeRange can be a string or an object with a 'range' and optional 'comparison_offsets'.",
+  "oneOf": [
+    {
+      "type": "string",
+      "description": "Short form for setting just the time range."
     },
-    "required": ["range"],
-    "additionalProperties": false
-  }
-  
+    {
+      "type": "object",
+      "properties": {
+        "range": {
+          "type": "string"
+        },
+        "comparison_offsets": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "string",
+                "description": "Offset string only (range is inferred)"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "offset": { "type": "string" },
+                  "range": { "type": "string" }
+                },
+                "required": ["offset", "range"],
+                "additionalProperties": false
+              }
+            ]
+          }
+        }
+      },
+      "required": ["range"],
+      "additionalProperties": false
+    }
+  ]
+}

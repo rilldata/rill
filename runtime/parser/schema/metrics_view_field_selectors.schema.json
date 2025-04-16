@@ -1,10 +1,16 @@
 {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "metrics_view_field_selectors.schema.json",
-    "title": "MetricsViewFieldSelectorsYAML",
-    "type": "array",
-    "items": {
-      "$ref": "metrics_view_field_selector.schema.json"
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "metrics_view_field_selectors.schema.json",
+  "anyOf": [
+    {
+      "type": "string"
+    },
+    {
+      "type": "array",
+      "items": {
+        "$ref": "metrics_view_field_selector.schema.json"
+      },
+      "minItems": 1
     }
-  }
-  
+  ]
+}

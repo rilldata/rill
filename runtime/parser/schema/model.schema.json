@@ -12,11 +12,14 @@
         "incremental": {
             "type": "boolean"
         },
+        "sql": {
+            "type": "string"
+        },
         "state": {
-            "$ref": "api.data.schema.json"
+            "$ref": "data.schema.json"
         },
         "partitions": {
-            "$ref": "api.data.schema.json"
+            "$ref": "data.schema.json"
         },
         "partitions_watermark": {
             "type": "string"
