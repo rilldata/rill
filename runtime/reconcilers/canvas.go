@@ -82,8 +82,8 @@ func (r *CanvasReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 		c.State.ValidSpec = nil
 	} else {
 		// When StageChanges is enabled, we want to make a best effort to serve the canvas anyway.
-		// If all the components referenced by the spec have a ValidSpec, we'll try to serve the canvas.
-		validComponents, err := r.checkComponentsValidSpec(ctx, self.Meta.Refs)
+		// If any of the components referenced by the spec have a ValidSpec, we'll try to serve the canvas.
+		validComponents, err := r.checkAnyComponentHasValidSpec(ctx, self.Meta.Refs)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
 		}
@@ -103,8 +103,7 @@ func (r *CanvasReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 	return runtime.ReconcileResult{Err: validateErr}
 }
 
-func (r *CanvasReconciler) checkComponentsValidSpec(ctx context.Context, refs []*runtimev1.ResourceName) (bool, error) {
-	var n int
+func (r *CanvasReconciler) checkAnyComponentHasValidSpec(ctx context.Context, refs []*runtimev1.ResourceName) (bool, error) {
 	for _, ref := range refs {
 		if ref.Kind != runtime.ResourceKindComponent {
 			continue
@@ -116,13 +115,10 @@ func (r *CanvasReconciler) checkComponentsValidSpec(ctx context.Context, refs []
 			}
 			return false, err
 		}
-		if res.GetComponent().State.ValidSpec == nil {
-			return false, nil
+		if res.GetComponent().State.ValidSpec != nil {
+			// Found component ref with a valid spec
+			return true, nil
 		}
-		n++
-	}
-	if n > 0 {
-		return true, nil
 	}
 	return false, nil
 }
