@@ -162,24 +162,14 @@ func (s *Server) WatchResourcesHandler(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
-			resp := &runtimev1.WatchResourcesResponse{
-				Event:    e,
-				Name:     n,
-				Resource: r,
-			}
-
-			eventType := resourceEventToString(e)
+			resp := &runtimev1.WatchResourcesResponse{Event: e, Name: n, Resource: r}
 
 			var eventID string
 			if n != nil {
 				eventID = fmt.Sprintf("%s-%s", n.Kind, n.Name)
 			}
 
-			eventServer.Publish(sse.Event{
-				Type: eventType,
-				ID:   eventID,
-				Data: resp,
-			})
+			eventServer.Publish(sse.Event{ID: eventID, Type: e.String(), Data: resp})
 		})
 		if err != nil {
 			s.logger.Info("subscription ended with error", zap.Error(err))
@@ -187,20 +177,6 @@ func (s *Server) WatchResourcesHandler(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	eventServer.ServeHTTP(w, r)
-}
-
-// Helper function to convert ResourceEvent enum to string
-func resourceEventToString(e runtimev1.ResourceEvent) string {
-	switch e {
-	case runtimev1.ResourceEvent_RESOURCE_EVENT_WRITE:
-		return "write"
-	case runtimev1.ResourceEvent_RESOURCE_EVENT_DELETE:
-		return "delete"
-	case runtimev1.ResourceEvent_RESOURCE_EVENT_UNSPECIFIED:
-		return "unspecified"
-	default:
-		return "unknown"
-	}
 }
 
 // WatchResources implements runtimev1.RuntimeServiceServer

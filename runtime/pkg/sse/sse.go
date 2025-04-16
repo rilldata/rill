@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-const DefaultHeartbeat = 15 * time.Second
+const DefaultHeartbeat = 30 * time.Second
 
 // Client represents a connected client.
 type Client struct {
@@ -61,6 +61,7 @@ func (es *EventServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("X-Accel-Buffering", "no")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	//nolint:bodyclose // does not have a body
