@@ -24,16 +24,19 @@
   $: metricsViewName = exploreSpec?.metricsView ?? "";
   $: exploreStore = useExploreState(exploreName);
 
-  $: dataLoader = new DashboardStateDataLoader(
-    instanceId,
-    metricsViewName,
-    exploreName,
-    storageNamespacePrefix,
-    bookmarkOrTokenExploreState,
-  );
+  let dataLoader: DashboardStateDataLoader | undefined;
+  $: if (metricsViewName) {
+    dataLoader = new DashboardStateDataLoader(
+      instanceId,
+      metricsViewName,
+      exploreName,
+      storageNamespacePrefix,
+      bookmarkOrTokenExploreState,
+    );
+  }
 
   let stateSync: DashboardStateSync | undefined;
-  $: {
+  $: if (dataLoader) {
     stateSync?.teardown();
     stateSync = new DashboardStateSync(
       instanceId,
@@ -44,13 +47,19 @@
     );
   }
 
-  $: ({ initExploreState } = dataLoader);
+  let initExploreState:
+    | CompoundQueryResult<MetricsExplorerEntity | undefined>
+    | undefined;
+  $: if (dataLoader) ({ initExploreState } = dataLoader);
+
   let error: HTTPError | null;
   let isLoading: boolean;
-  $: ({ isLoading, error } = $initExploreState as {
-    isLoading: boolean;
-    error: HTTPError | null;
-  });
+  $: if (initExploreState) {
+    ({ isLoading, error } = $initExploreState as {
+      isLoading: boolean;
+      error: HTTPError | null;
+    });
+  }
 
   afterNavigate(({ from, to, type }) => {
     if (!from?.url || !to?.url || !stateSync) return;

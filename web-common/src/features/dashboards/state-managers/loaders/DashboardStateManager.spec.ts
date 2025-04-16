@@ -108,7 +108,7 @@ describe("DashboardStateManager", () => {
         sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
       };
     const PageURLForRillDefaultState =
-      "view=explore&tr=P7D&tz=Asia%2FKathmandu&compare_tr=&grain=day&compare_dim=&f=&measures=impressions&dims=publisher&expand_dim=&sort_by=impressions&sort_type=percent&sort_dir=ASC&leaderboard_measures=impressions";
+      "tr=P7D&tz=Asia%2FKathmandu&grain=day&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC";
     const BookmarkSourceQueryResult = readable({
       data: {
         selectedTimeRange: {
@@ -150,7 +150,7 @@ describe("DashboardStateManager", () => {
         } as DashboardTimeControls,
       });
       const initUrlSearch =
-        "view=explore&tr=PT24H&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=hour&compare_dim=&f=&measures=impressions&dims=publisher&expand_dim=&sort_by=impressions&sort_type=percent&sort_dir=ASC&leaderboard_measures=impressions";
+        "tr=PT24H&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=hour&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC";
       pageMock.assertSearchParams(initUrlSearch);
 
       pageMock.popState("");
@@ -195,7 +195,7 @@ describe("DashboardStateManager", () => {
         sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
       });
       const initUrlSearch =
-        "view=explore&tr=P14D&tz=Asia%2FKathmandu&compare_tr=rill-PW&grain=day&compare_dim=&f=&measures=bid_price&dims=domain&expand_dim=&sort_by=bid_price&sort_type=percent&sort_dir=DESC&leaderboard_measures=bid_price";
+        "tr=P14D&tz=Asia%2FKathmandu&compare_tr=rill-PW&grain=day&measures=bid_price&dims=domain&sort_by=bid_price&sort_type=percent&leaderboard_measures=bid_price";
       pageMock.assertSearchParams(initUrlSearch);
 
       pageMock.popState("");
@@ -214,7 +214,7 @@ describe("DashboardStateManager", () => {
     const ExploreStateSubsetForRillDefaultState: Partial<MetricsExplorerEntity> =
       {
         selectedTimeRange: undefined,
-        showTimeComparison: false,
+        showTimeComparison: undefined,
         selectedComparisonTimeRange: undefined,
 
         visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE],
@@ -228,7 +228,7 @@ describe("DashboardStateManager", () => {
         sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
       };
     const PageURLForRillDefaultState =
-      "view=explore&f=&measures=impressions&dims=publisher&expand_dim=&sort_by=impressions&sort_type=percent&sort_dir=ASC&leaderboard_measures=impressions";
+      "measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC";
 
     beforeEach(() => {
       mocks.mockMetricsView(AD_BIDS_METRICS_NAME, AD_BIDS_METRICS_INIT);
@@ -258,7 +258,7 @@ describe("DashboardStateManager", () => {
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
       assertExploreStateSubset({
         selectedTimeRange: undefined,
-        showTimeComparison: false,
+        showTimeComparison: undefined,
         selectedComparisonTimeRange: undefined,
 
         visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
@@ -272,12 +272,17 @@ describe("DashboardStateManager", () => {
         sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
       });
       const initUrlSearch =
-        "view=explore&f=&measures=bid_price&dims=domain&expand_dim=&sort_by=bid_price&sort_type=percent&sort_dir=DESC&leaderboard_measures=bid_price";
+        "measures=bid_price&dims=domain&sort_by=bid_price&sort_type=percent&leaderboard_measures=bid_price";
       pageMock.assertSearchParams(initUrlSearch);
 
       pageMock.popState("");
       await waitFor(() =>
-        assertExploreStateSubset(ExploreStateSubsetForRillDefaultState),
+        assertExploreStateSubset({
+          ...ExploreStateSubsetForRillDefaultState,
+          // Some inconsistency with converting url to explore state in session storage.
+          // TODO: revisit once we move out of using explore preset
+          showTimeComparison: false,
+        }),
       );
       // only 2 urls should in history
       expect(pageMock.urlSearchHistory).toEqual([

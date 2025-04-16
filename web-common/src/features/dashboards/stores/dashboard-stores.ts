@@ -2,7 +2,6 @@ import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboar
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { getWhereFilterExpressionIndex } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import { AdvancedMeasureCorrector } from "@rilldata/web-common/features/dashboards/stores/AdvancedMeasureCorrector";
-import { getFullInitExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import {
   createAndExpression,
   filterExpressions,
@@ -159,13 +158,14 @@ function syncDimensions(
 }
 
 const metricsViewReducers = {
-  init(name: string, initState: Partial<MetricsExplorerEntity> = {}) {
+  init(name: string, initState: MetricsExplorerEntity) {
     update((state) => {
       // TODO: revisit this during the url state / restore user refactor
       initState.dimensionFilterExcludeMode = includeExcludeModeFromFilters(
         initState.whereFilter,
       );
-      state.entities[name] = getFullInitExploreState(name, initState);
+      state.entities[name] = structuredClone(initState);
+      state.entities[name].name = name;
 
       return state;
     });
@@ -209,6 +209,8 @@ const metricsViewReducers = {
     partialExploreState: Partial<MetricsExplorerEntity>,
     metricsView: V1MetricsViewSpec,
   ) {
+    partialExploreState = structuredClone(partialExploreState);
+
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       for (const key in partialExploreState) {
         metricsExplorer[key] = partialExploreState[key];

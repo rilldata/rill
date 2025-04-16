@@ -71,11 +71,16 @@ export class DashboardStateSync {
     this.unsubExploreState?.();
   }
 
-  private handleExploreInit(initExploreState: Partial<MetricsExplorerEntity>) {
+  private handleExploreInit(initExploreState: MetricsExplorerEntity) {
     if (this.initialized) return;
 
     const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
     const exploreSpec = validSpecData?.explore ?? {};
+    const { data: rillDefaultExploreURLParams } = get(
+      this.dataLoader.rillDefaultExploreURLParams,
+    );
+    if (!rillDefaultExploreURLParams) return;
+
     const pageState = get(page);
 
     metricsExplorerStore.init(this.exploreName, initExploreState);
@@ -86,10 +91,14 @@ export class DashboardStateSync {
       exploreSpec,
       initExploreState,
       timeControlsState,
+      rillDefaultExploreURLParams,
       pageState.url,
     );
     redirectUrl.search = exploreStateParams.toString();
 
+    console.log(
+      `INIT: ${pageState.url.search} =${redirectUrl.search === pageState.url.search ? "X" : "="}> ${redirectUrl.search}`,
+    );
     if (redirectUrl.search === pageState.url.search) {
       this.initialized = true;
       return;
@@ -122,6 +131,16 @@ export class DashboardStateSync {
   ) {
     if (this.updating || !this.initialized) return;
 
+    this.updating = true;
+
+    const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
+    const metricsViewSpec = validSpecData?.metricsView ?? {};
+    const exploreSpec = validSpecData?.explore ?? {};
+    const { data: rillDefaultExploreURLParams } = get(
+      this.dataLoader.rillDefaultExploreURLParams,
+    );
+    if (!rillDefaultExploreURLParams) return;
+
     const partialExplore = this.dataLoader.getExploreStateFromURLParams(
       urlSearchParams,
       type,
@@ -131,10 +150,6 @@ export class DashboardStateSync {
     // This shouldn't ideally happen.
     if (!partialExplore) return;
 
-    this.updating = true;
-    const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
-    const metricsViewSpec = validSpecData?.metricsView ?? {};
-    const exploreSpec = validSpecData?.explore ?? {};
     const pageState = get(page);
 
     const redirectUrl = new URL(pageState.url);
@@ -145,11 +160,13 @@ export class DashboardStateSync {
     );
     // Get time controls state after explore state is updated.
     const timeControlsState = get(this.timeControlStore);
-    // if we added extra url params from session storage then update the url
+    // Get the updated URL, this could be different from the page url if we added extra state.
+    // The extra state could come from session storage, home bookmark or yaml defaults
     const exploreStateParams = getCleanedUrlParamsForGoto(
       exploreSpec,
       partialExplore,
       timeControlsState,
+      rillDefaultExploreURLParams,
       pageState.url,
     );
     redirectUrl.search = exploreStateParams.toString();
@@ -165,6 +182,9 @@ export class DashboardStateSync {
     );
 
     this.updating = false;
+    console.log(
+      `URL: ${pageState.url.search} =${redirectUrl.search === pageState.url.search ? "X" : "="}> ${redirectUrl.search}`,
+    );
     // redirect loop breaker
     if (redirectUrl.search === pageState.url.search) {
       return;
@@ -179,12 +199,17 @@ export class DashboardStateSync {
   }
 
   private gotoNewState(exploreState: MetricsExplorerEntity) {
-    if (this.updating || !this.initialized) return;
+    if (this.updating) return;
     this.updating = true;
 
     const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
     const exploreSpec = validSpecData?.explore ?? {};
     const timeControlsState = get(this.timeControlStore);
+    const { data: rillDefaultExploreURLParams } = get(
+      this.dataLoader.rillDefaultExploreURLParams,
+    );
+    if (!rillDefaultExploreURLParams) return;
+
     const pageState = get(page);
 
     const newUrl = new URL(pageState.url);
@@ -192,6 +217,7 @@ export class DashboardStateSync {
       exploreSpec,
       exploreState,
       timeControlsState,
+      rillDefaultExploreURLParams,
       newUrl,
     );
     newUrl.search = exploreStateParams.toString();
@@ -205,6 +231,9 @@ export class DashboardStateSync {
     );
 
     this.updating = false;
+    console.log(
+      `GOTO: ${pageState.url.search} =${newUrl.search === pageState.url.search ? "X" : "="}> ${newUrl.search}`,
+    );
     // redirect loop breaker
     if (newUrl.search === pageState.url.search) {
       return;

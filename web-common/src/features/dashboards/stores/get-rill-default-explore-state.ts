@@ -1,3 +1,7 @@
+import {
+  contextColWidthDefaults,
+  LeaderboardContextColumn,
+} from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import { getDefaultTimeGrain } from "@rilldata/web-common/features/dashboards/time-controls/time-range-utils";
 import { DEFAULT_TIMEZONES } from "@rilldata/web-common/lib/time/config";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
@@ -30,12 +34,14 @@ export function getRillDefaultExploreState(
   exploreSpec: V1ExploreSpec,
   timeRangeSummary: V1TimeRangeSummary | undefined,
 ) {
-  return <Partial<MetricsExplorerEntity>>{
+  return <MetricsExplorerEntity>{
     activePage: DashboardState_ActivePage.DEFAULT,
 
     whereFilter: createAndExpression([]),
     dimensionThresholdFilters: [],
     dimensionsWithInlistFilter: [],
+    dimensionFilterExcludeMode: new Map(),
+    temporaryFilterName: null,
 
     ...getRillDefaultExploreTimeState(
       metricsViewSpec,
@@ -64,6 +70,8 @@ export function getRillDefaultExploreState(
       activeCell: null,
       tableMode: "nest",
     },
+
+    contextColumnWidths: { ...contextColWidthDefaults },
   };
 }
 
@@ -115,6 +123,8 @@ function getRillDefaultExploreViewState(
     leaderboardSortByMeasureName: defaultMeasure,
     dashboardSortType: DashboardState_LeaderboardSortType.VALUE,
     sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
+    // Deprecated
+    leaderboardContextColumn: LeaderboardContextColumn.HIDDEN,
 
     leaderboardMeasureNames: defaultMeasure ? [defaultMeasure] : [],
     leaderboardShowContextForAllMeasures: false,

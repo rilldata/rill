@@ -25,6 +25,7 @@ import {
   ExploreStateKeyToURLParamMap,
   ExploreStateURLParams,
 } from "@rilldata/web-common/features/dashboards/url-state/url-params";
+import { stripDefaultUrlParams } from "@rilldata/web-common/features/dashboards/url-state/url-params-strip-utils";
 import { arrayOrderedEquals } from "@rilldata/web-common/lib/arrayUtils";
 import {
   TimeComparisonOption,
@@ -43,6 +44,7 @@ export function getCleanedUrlParamsForGoto(
   exploreSpec: V1ExploreSpec,
   partialExploreState: Partial<MetricsExplorerEntity>,
   timeControlsState: TimeControlState | undefined,
+  defaultExploreUrlParams: URLSearchParams,
   urlForCompressionCheck?: URL,
 ) {
   // Create params from the explore state
@@ -52,20 +54,24 @@ export function getCleanedUrlParamsForGoto(
     timeControlsState,
   );
 
-  // TODO: do we want to keep default params from the rill default dashboard?
+  // Remove params with default values
+  const strippedStateParams = stripDefaultUrlParams(
+    stateParams,
+    defaultExploreUrlParams,
+  );
 
-  if (!urlForCompressionCheck) return stateParams;
+  if (!urlForCompressionCheck) return strippedStateParams;
 
   // compression
   const urlCopy = new URL(urlForCompressionCheck);
-  urlCopy.search = stateParams.toString();
+  urlCopy.search = strippedStateParams.toString();
   const shouldCompress = shouldCompressParams(urlCopy);
-  if (!shouldCompress) return stateParams;
+  if (!shouldCompress) return strippedStateParams;
 
   const compressedUrlParams = new URLSearchParams();
   compressedUrlParams.set(
     ExploreStateURLParams.GzippedParams,
-    compressUrlParams(stateParams.toString()),
+    compressUrlParams(strippedStateParams.toString()),
   );
   return compressedUrlParams;
 }
