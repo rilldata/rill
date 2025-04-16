@@ -47,6 +47,7 @@ export class CircularChartComponent extends BaseChart<CircularChartSpec> {
             type: "dimension",
             nullSelector: true,
             limitSelector: true,
+            hideTimeDimension: true,
           },
         },
       },

@@ -20,6 +20,7 @@ export type FieldType = "measure" | "dimension" | "time";
 export type ChartFieldInput = {
   type: FieldType;
   axisTitleSelector?: boolean;
+  hideTimeDimension?: boolean;
   originSelector?: boolean;
   sortSelector?: boolean;
   limitSelector?: boolean;

@@ -20,7 +20,9 @@
     },
   } = getCanvasStore(canvasName));
 
-  $: isDimension = config.meta?.chartFieldInput?.type === "dimension";
+  $: chartFieldInput = config.meta?.chartFieldInput;
+
+  $: isDimension = chartFieldInput?.type === "dimension";
 
   $: timeDimension = getTimeDimensionForMetricView(metricsView);
 
@@ -58,12 +60,12 @@
 <div class="gap-y-1">
   <div class="flex justify-between items-center">
     <InputLabel small label={config.label ?? key} id={key} />
-    {#if Object.keys(config.meta?.chartFieldInput ?? {}).length > 1}
+    {#if Object.keys(chartFieldInput ?? {}).length > 1}
       <FieldConfigDropdown
         {fieldConfig}
         label={config.label ?? key}
         onChange={updateFieldProperty}
-        chartFieldInput={config.meta?.chartFieldInput}
+        {chartFieldInput}
       />
     {/if}
   </div>
@@ -73,7 +75,7 @@
     metricName={metricsView}
     id={`${key}-field`}
     type={isDimension ? "dimension" : "measure"}
-    includeTime
+    includeTime={!chartFieldInput?.hideTimeDimension}
     selectedItem={fieldConfig?.field}
     onSelect={async (field) => {
       updateFieldConfig(field);
