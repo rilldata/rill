@@ -144,6 +144,15 @@ func Test_Eval_watermark_on_boundary(t *testing.T) {
 		{"2D of -2D", "2025-03-02T00:00:00Z", "2025-03-04T00:00:00Z", timeutil.TimeGrainDay},
 		{"D", "2025-03-05T00:00:00Z", "2025-03-06T00:00:00Z", timeutil.TimeGrainHour},
 		{"D~", "2025-03-06T00:00:00Z", "2025-03-07T00:00:00Z", timeutil.TimeGrainHour},
+
+		{"MTD", "2025-03-01T00:00:00Z", "2025-03-06T00:00:00Z", timeutil.TimeGrainDay},
+		{"MTD by H", "2025-03-01T00:00:00Z", "2025-03-06T00:00:00Z", timeutil.TimeGrainHour},
+		{"MTD of -1M", "2025-02-01T00:00:00Z", "2025-02-06T00:00:00Z", timeutil.TimeGrainDay},
+		{"MTD of -1Y", "2024-03-01T00:00:00Z", "2024-03-06T00:00:00Z", timeutil.TimeGrainDay},
+		{"MTD~", "2025-03-01T00:00:00Z", "2025-03-07T00:00:00Z", timeutil.TimeGrainDay},
+		{"MTD~ by H", "2025-03-01T00:00:00Z", "2025-03-07T00:00:00Z", timeutil.TimeGrainHour},
+		{"MTD~ of -1M", "2025-02-01T00:00:00Z", "2025-02-07T00:00:00Z", timeutil.TimeGrainDay},
+		{"MTD~ of -1Y", "2024-03-01T00:00:00Z", "2024-03-07T00:00:00Z", timeutil.TimeGrainDay},
 	}
 
 	for _, testCase := range testCases {
