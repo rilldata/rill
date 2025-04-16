@@ -19,6 +19,9 @@ func Test_Eval(t *testing.T) {
 		end       string
 		grain     timeutil.TimeGrain
 	}{
+		{"s by s", "2025-03-10T06:32:35Z", "2025-03-10T06:32:36Z", timeutil.TimeGrainSecond},
+		{"s~ by s", "2025-03-10T06:32:36Z", "2025-03-10T06:32:37Z", timeutil.TimeGrainSecond},
+
 		{"m", "2025-03-10T06:31:00Z", "2025-03-10T06:32:00Z", timeutil.TimeGrainSecond},
 		{"m by s", "2025-03-10T06:31:00Z", "2025-03-10T06:32:00Z", timeutil.TimeGrainSecond},
 		{"0m", "2025-03-10T06:31:00Z", "2025-03-10T06:32:00Z", timeutil.TimeGrainSecond},
@@ -139,6 +142,8 @@ func Test_Eval_watermark_on_boundary(t *testing.T) {
 		{"2D", "2025-03-04T00:00:00Z", "2025-03-06T00:00:00Z", timeutil.TimeGrainDay},
 		{"2D~", "2025-03-05T00:00:00Z", "2025-03-07T00:00:00Z", timeutil.TimeGrainDay},
 		{"2D of -2D", "2025-03-02T00:00:00Z", "2025-03-04T00:00:00Z", timeutil.TimeGrainDay},
+		{"D", "2025-03-05T00:00:00Z", "2025-03-06T00:00:00Z", timeutil.TimeGrainHour},
+		{"D~", "2025-03-06T00:00:00Z", "2025-03-07T00:00:00Z", timeutil.TimeGrainHour},
 	}
 
 	for _, testCase := range testCases {

@@ -212,19 +212,19 @@ func OffsetTime(tm time.Time, tg TimeGrain, n int) time.Time {
 	return tm
 }
 
-// CopyTimeComponentsUntil Copies components of `from` into `to` starting from year and going down all the way to `until` (inclusive).
-func CopyTimeComponentsUntil(from, to time.Time, until TimeGrain) time.Time {
-	tz := from.Location()
-	if to.Location() != tz {
-		to = to.In(tz)
+// CopyTimeComponentsUntil Copies components of `src` into `tar` starting from year and going down all the way to `until` (inclusive).
+func CopyTimeComponentsUntil(src, tar time.Time, until TimeGrain) time.Time {
+	tz := src.Location()
+	if tar.Location() != tz {
+		tar = tar.In(tz)
 	}
 
-	year := to.Year()
-	month := to.Month()
-	day := to.Day()
-	hour := to.Hour()
-	minute := to.Minute()
-	second := to.Second()
+	year := tar.Year()
+	month := tar.Month()
+	day := tar.Day()
+	hour := tar.Hour()
+	minute := tar.Minute()
+	second := tar.Second()
 
 	g := TimeGrainYear
 	for g >= until {
@@ -232,23 +232,23 @@ func CopyTimeComponentsUntil(from, to time.Time, until TimeGrain) time.Time {
 		case TimeGrainUnspecified:
 		case TimeGrainMillisecond:
 		case TimeGrainSecond:
-			second = from.Second()
+			second = src.Second()
 		case TimeGrainMinute:
-			minute = from.Minute()
+			minute = src.Minute()
 		case TimeGrainHour:
-			hour = from.Hour()
+			hour = src.Hour()
 		case TimeGrainDay:
-			day = from.Day()
+			day = src.Day()
 		case TimeGrainWeek:
-			toWeekday := to.Weekday()
+			toWeekday := tar.Weekday()
 			if toWeekday == 0 {
 				toWeekday = 7
 			}
-			day = from.Day() - int(from.Weekday()-toWeekday)
+			day = src.Day() - int(src.Weekday()-toWeekday)
 		case TimeGrainMonth, TimeGrainQuarter:
-			month = from.Month()
+			month = src.Month()
 		case TimeGrainYear:
-			year = from.Year()
+			year = src.Year()
 		}
 
 		g--
