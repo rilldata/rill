@@ -1,4 +1,5 @@
 import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
+import { CHART_CONFIG } from "@rilldata/web-common/features/canvas/components/charts";
 import {
   commonOptions,
   getFilterOptions,
@@ -10,7 +11,10 @@ import type {
 } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
-import type { V1Resource } from "@rilldata/web-common/runtime-client";
+import type {
+  V1MetricsViewSpec,
+  V1Resource,
+} from "@rilldata/web-common/runtime-client";
 import { get, writable, type Readable, type Writable } from "svelte/store";
 import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
 import type {
@@ -90,23 +94,58 @@ export abstract class BaseChart<
     };
   }
 
-  updateChartType(key: ChartType) {
+  updateChartType(
+    key: ChartType,
+    metricsViewSpec: V1MetricsViewSpec | undefined,
+  ) {
     if (!this.parent.fileArtifact) return;
+
     const currentSpec = get(this.specStore);
-
     const parentPath = this.pathInYAML.slice(0, -1);
-
     this.chartType.set(key);
 
     const parseDocumentStore = this.parent.parsedContent;
     const parsedDocument = get(parseDocumentStore);
-
     const { updateEditorContent } = this.parent.fileArtifact;
 
+    const newSpecForKey = CHART_CONFIG[key].component.newComponentSpec(
+      currentSpec.metrics_view,
+      metricsViewSpec,
+    );
+
+    const commonProps = this.extractCommonProperties(currentSpec);
+    const mergedSpec = {
+      ...newSpecForKey,
+      ...commonProps,
+    };
+
+    // Preserve the width from the current chart
     const width = parsedDocument.getIn([...parentPath, "width"]);
 
-    parsedDocument.setIn(parentPath, { [key]: currentSpec, width });
+    // Update the chart type and spec
+    this.chartType.set(key);
+    parsedDocument.setIn(parentPath, { [key]: mergedSpec, width });
 
     updateEditorContent(parsedDocument.toString(), false, true);
+  }
+
+  private extractCommonProperties(spec: TConfig): Partial<BaseChartConfig> {
+    const {
+      metrics_view,
+      title,
+      description,
+      vl_config,
+      time_filters,
+      dimension_filters,
+    } = spec;
+
+    return {
+      metrics_view,
+      title,
+      description,
+      vl_config,
+      time_filters,
+      dimension_filters,
+    };
   }
 }

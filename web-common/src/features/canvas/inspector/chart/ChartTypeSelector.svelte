@@ -13,12 +13,21 @@
 
   export let component: BaseChart<ChartSpec>;
 
-  $: ({ chartType } = component);
+  $: ({
+    parent: {
+      spec: { getMetricsViewFromName },
+    },
+    chartType,
+    specStore,
+  } = component);
+
+  $: _metricViewSpec = getMetricsViewFromName($specStore.metrics_view);
+  $: metricsViewSpec = $_metricViewSpec.metricsView;
 
   $: type = $chartType;
 
   function selectChartType(chartType: ChartType) {
-    component.updateChartType(chartType);
+    component.updateChartType(chartType, metricsViewSpec);
   }
 </script>
 
