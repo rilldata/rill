@@ -284,19 +284,18 @@
   /* TOOLBAR STYLES */
 
   .toolbar {
-    @apply text-slate-600;
-    @apply h-6 px-1.5;
+    @apply font-normal text-gray-700;
+    @apply h-6 px-1.5 rounded-sm;
     @apply gap-x-1.5;
-    @apply rounded-sm;
   }
 
   .toolbar:hover {
-    @apply bg-gray-200;
+    @apply bg-slate-600/15;
   }
 
   .toolbar:active,
   .toolbar.selected {
-    @apply text-slate-800;
+    @apply bg-slate-600/15;
   }
 
   .toolbar:disabled {

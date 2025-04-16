@@ -3,9 +3,11 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
+  import { Inspect } from "lucide-svelte";
   import { createEventDispatcher } from "svelte";
   import { Button } from "../../../components/button";
 
+  export let disabled = false;
   export let areAllTableRowsSelected: boolean;
 
   const dispatch = createEventDispatcher();
@@ -24,7 +26,14 @@
       </TooltipShortcutContainer>
     {/if}
   </TooltipContent>
-  <Button type="toolbar" on:click={() => dispatch("toggle-all-search-items")}>
-    {areAllTableRowsSelected ? "Deselect all" : "Select all"}
+  <Button
+    type="toolbar"
+    on:click={() => dispatch("toggle-all-search-items")}
+    {disabled}
+  >
+    <div class="ui-copy-icon">
+      <Inspect size={16} />
+    </div>
+    {areAllTableRowsSelected && !disabled ? "Deselect all" : "Select all"}
   </Button>
 </Tooltip>

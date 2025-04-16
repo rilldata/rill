@@ -15,10 +15,9 @@
   import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import { slideRight } from "@rilldata/web-common/lib/transitions";
   import { onDestroy } from "svelte";
-  import { fly } from "svelte/transition";
   import Pivot from "../../../components/icons/Pivot.svelte";
+  import { slideRight } from "../../../lib/transitions";
   import ExportMenu from "../../exports/ExportMenu.svelte";
   import { SortType } from "../proto-state/derived-types";
   import { getStateManagers } from "../state-managers/state-managers";
@@ -152,87 +151,85 @@
   });
 </script>
 
-<div class="flex justify-start items-center p-1 h-7 gap-x-2">
-  <button class="flex items-center" on:click={() => goBackToLeaderboard()}>
-    <Button type="link" forcedStyle="padding: 0; gap: 4px;">
+<div class="flex-none overflow-x-auto" style="height: 50px">
+  <div class="flex justify-start items-center p-1 h-7 gap-x-2">
+    <Button
+      type="link"
+      forcedStyle="padding: 0; gap: 4px;"
+      on:click={() => goBackToLeaderboard()}
+    >
       <Back size="16px" />
       <span>All Dimensions</span>
     </Button>
-  </button>
 
-  <!-- We fix the height to avoid a layout shift when the Search component is expanded. -->
-  <div class="flex items-center gap-x-1 cursor-pointer h-9">
-    {#if !isRowsEmpty}
+    <!-- We fix the height to avoid a layout shift when the Search component is expanded. -->
+    <div class="shrink-0 flex items-center gap-x-1 cursor-pointer h-9">
       <SelectAllButton
         {areAllTableRowsSelected}
+        disabled={isRowsEmpty}
         on:toggle-all-search-items={onToggleSearchItems}
       />
-    {/if}
-    {#if searchBarOpen || (searchText && searchText !== "")}
-      <div
-        transition:slideRight={{ leftOffset: 8 }}
-        class="flex items-center gap-x-2 p-1.5"
-      >
-        <Search bind:value={searchText} on:submit={onSubmit} />
-        <button class="ui-copy-icon" on:click={() => closeSearchBar()}>
-          <Close />
-        </button>
-      </div>
-    {:else}
-      <button
-        class="flex items-center gap-x-2 p-1.5 text-gray-700"
-        in:fly|global={{ x: 10, duration: 300 }}
-        on:click={() => (searchBarOpen = !searchBarOpen)}
-      >
-        <SearchIcon size="16px" />
-        <span>Search</span>
-      </button>
-    {/if}
 
-    <Tooltip distance={16} location="left">
-      <div class="flex items-center gap-x-1 px-1.5 ui-copy-icon">
-        <Switch checked={excludeMode} on:click={() => toggleFilterMode()}>
-          Exclude
-        </Switch>
-      </div>
-      <TooltipContent slot="tooltip-content">
-        <TooltipTitle>
-          <svelte:fragment slot="name">
-            Output {filterKey}s selected values
-          </svelte:fragment>
-        </TooltipTitle>
-        <TooltipShortcutContainer>
-          <div>Toggle to {otherFilterKey} values</div>
-          <Shortcut>Click</Shortcut>
-        </TooltipShortcutContainer>
-      </TooltipContent>
-    </Tooltip>
+      <Tooltip distance={8} location="top">
+        <Button type="toolbar" on:click={() => toggleFilterMode()}>
+          <Switch checked={excludeMode}>Exclude</Switch>
+        </Button>
+        <TooltipContent slot="tooltip-content">
+          <TooltipTitle>
+            <svelte:fragment slot="name">
+              Output {filterKey}s selected values
+            </svelte:fragment>
+          </TooltipTitle>
+          <TooltipShortcutContainer>
+            <div>Toggle to {otherFilterKey} values</div>
+            <Shortcut>Click</Shortcut>
+          </TooltipShortcutContainer>
+        </TooltipContent>
+      </Tooltip>
 
-    {#if $exports}
-      <ExportMenu
-        label="Export dimension table data"
-        includeScheduledReport={$adminServer && exploreHasTimeDimension}
-        getQuery={(isScheduled) =>
-          getDimensionTableExportQuery(stateManagers, isScheduled)}
-        exploreName={$exploreName}
+      {#if searchBarOpen || (searchText && searchText !== "")}
+        <div class="flex items-center gap-x-2 p-1.5" transition:slideRight={{}}>
+          <Search bind:value={searchText} on:submit={onSubmit} />
+          <button class="ui-copy-icon" on:click={() => closeSearchBar()}>
+            <Close />
+          </button>
+        </div>
+      {:else}
+        <Button
+          type="toolbar"
+          on:click={() => (searchBarOpen = !searchBarOpen)}
+        >
+          <SearchIcon size="16px" />
+          <span>Search</span>
+        </Button>
+      {/if}
+
+      {#if $exports}
+        <ExportMenu
+          label="Export dimension table data"
+          includeScheduledReport={$adminServer && exploreHasTimeDimension}
+          getQuery={(isScheduled) =>
+            getDimensionTableExportQuery(stateManagers, isScheduled)}
+          exploreName={$exploreName}
+        />
+      {/if}
+      {#if !hideStartPivotButton}
+        <Button
+          type="toolbar"
+          on:click={() => {
+            startPivotForDimensionTable();
+          }}
+        >
+          <Pivot size="16px" />
+          Start Pivot
+        </Button>
+      {/if}
+      <LeaderboardAdvancedActions
+        isOpen={isLeaderboardActionsOpen}
+        leaderboardShowContextForAllMeasures={$leaderboardShowContextForAllMeasures}
+        {setLeaderboardShowContextForAllMeasures}
       />
-    {/if}
-    {#if !hideStartPivotButton}
-      <Button
-        type="toolbar"
-        on:click={() => {
-          startPivotForDimensionTable();
-        }}
-      >
-        <Pivot size="16px" />
-        Start Pivot
-      </Button>
-    {/if}
-    <LeaderboardAdvancedActions
-      isOpen={isLeaderboardActionsOpen}
-      leaderboardShowContextForAllMeasures={$leaderboardShowContextForAllMeasures}
-      {setLeaderboardShowContextForAllMeasures}
-    />
+    </div>
   </div>
 </div>
 
