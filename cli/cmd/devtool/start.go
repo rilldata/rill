@@ -28,6 +28,7 @@ import (
 )
 
 const (
+	composeFile    = "cli/cmd/devtool/data/cloud-deps.docker-compose.yml"
 	minGoVersion   = "1.23"
 	minNodeVersion = "18"
 	stateDirLocal  = "dev-project"
@@ -387,8 +388,6 @@ func (s cloud) resetState(ctx context.Context) (err error) {
 	}()
 
 	_ = os.RemoveAll(stateDirectory())
-
-	composeFile := "cli/cmd/devtool/data/cloud-deps.docker-compose.yml"
 
 	// tear down all containers regardless of profile
 	return newCmd(ctx, "docker", "compose", "--env-file", ".env", "-f", composeFile, "down", "--volumes").Run()
