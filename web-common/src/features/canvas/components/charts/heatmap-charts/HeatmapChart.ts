@@ -7,7 +7,6 @@ import {
   createQueryServiceMetricsViewAggregation,
   type V1MetricsViewAggregationDimension,
   type V1MetricsViewAggregationMeasure,
-  type V1MetricsViewAggregationSort,
   type V1MetricsViewSpec,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
@@ -40,8 +39,6 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
           chartFieldInput: {
             type: "dimension",
             axisTitleSelector: true,
-            sortSelector: true,
-            limitSelector: true,
             nullSelector: true,
           },
         },
@@ -53,8 +50,6 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
           chartFieldInput: {
             type: "dimension",
             axisTitleSelector: true,
-            sortSelector: true,
-            limitSelector: true,
             nullSelector: true,
           },
         },
@@ -65,7 +60,6 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
         meta: {
           chartFieldInput: {
             type: "measure",
-            axisTitleSelector: true,
           },
         },
       },
@@ -85,9 +79,6 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
       measures = [{ name: config.color.field }];
     }
 
-    let xSort: V1MetricsViewAggregationSort | undefined;
-    let ySort: V1MetricsViewAggregationSort | undefined;
-
     if (config.x?.field) {
       dimensions = [...dimensions, { name: config.x.field }];
     }
@@ -101,7 +92,7 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
       ([runtime, $timeAndFilterStore], set) => {
         const { timeRange, where } = $timeAndFilterStore;
 
-        let outerWhere = where;
+        let combinedWhere = where;
 
         // Handle null filtering for both x and y dimensions
         if (config.x?.field && !config.x.showNull) {
@@ -110,7 +101,7 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
             [null],
             true,
           );
-          outerWhere = mergeFilters(outerWhere, excludeNullFilter);
+          combinedWhere = mergeFilters(combinedWhere, excludeNullFilter);
         }
 
         if (config.y?.field && !config.y.showNull) {
@@ -119,7 +110,7 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
             [null],
             true,
           );
-          outerWhere = mergeFilters(outerWhere, excludeNullFilter);
+          combinedWhere = mergeFilters(combinedWhere, excludeNullFilter);
         }
 
         const enabled = !!timeRange?.start && !!timeRange?.end;
@@ -130,8 +121,12 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
           {
             measures,
             dimensions,
-            sort: [...(xSort ? [xSort] : []), ...(ySort ? [ySort] : [])],
-            where: outerWhere,
+            sort: [
+              ...(config.x?.field
+                ? [{ name: config.x.field, desc: true }]
+                : []),
+            ],
+            where: combinedWhere,
             timeRange,
             limit: "5000", // Higher limit for heatmap to show more data points
           },
