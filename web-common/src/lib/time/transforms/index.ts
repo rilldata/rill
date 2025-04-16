@@ -32,7 +32,7 @@ export function getStartOfPeriod(
   zone = "UTC",
 ): Date {
   const date = DateTime.fromJSDate(referenceTime, { zone });
-  return date.startOf(TimeUnit[period]).toJSDate();
+  return date.startOf(TimeUnit[period], { useLocaleWeeks: true }).toJSDate();
 }
 
 /** Returns the end of the period that the reference time is in. */
@@ -42,7 +42,7 @@ export function getEndOfPeriod(
   zone = "UTC",
 ): Date {
   const date = DateTime.fromJSDate(referenceTime, { zone });
-  return date.endOf(TimeUnit[period]).toJSDate();
+  return date.endOf(TimeUnit[period], { useLocaleWeeks: true }).toJSDate();
 }
 
 /** Offsets a date by a certain ISO duration amount. */

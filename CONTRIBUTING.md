@@ -15,7 +15,7 @@ If you're a Rill team member, you can run `rill devtool start` from the project 
 This is a full list of development dependencies:
 
 - [Docker](https://www.docker.com)
-- [Node.js 18](https://nodejs.org/en/) (we recommend installing it with [nvm](https://github.com/nvm-sh/nvm))
+- [Node.js 20](https://nodejs.org/en/) (we recommend installing it with [nvm](https://github.com/nvm-sh/nvm))
 - [Go 1.23](https://go.dev) (on macOS, install with `brew install go`)
 - [Buf](https://buf.build) (Protocol Buffers) (on macOS, install with `brew install bufbuild/buf/buf`)
 

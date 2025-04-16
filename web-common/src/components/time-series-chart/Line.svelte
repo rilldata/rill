@@ -1,12 +1,11 @@
 <script lang="ts">
-  import { line, curveLinear, area } from "d3-shape";
-  import type { ScaleTime, ScaleLinear } from "d3-scale";
-  import { MainLineColor } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
   import {
     MainAreaColorGradientDark,
     MainAreaColorGradientLight,
+    MainLineColor,
   } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
-  import type { V1TimeSeriesValue } from "@rilldata/web-common/runtime-client";
+  import type { ScaleLinear, ScaleTime } from "d3-scale";
+  import { area, curveLinear, line } from "d3-shape";
   import type { Interval } from "luxon";
 
   type DataPoint = {
@@ -29,7 +28,7 @@
     .y(valueAccessor)
     .curve(curveFunction);
 
-  $: areaFunction = area<V1TimeSeriesValue>()
+  $: areaFunction = area<DataPoint>()
     .defined(isDefined)
     .x(dateAccessor)
     .y0(valueAccessor)
@@ -48,8 +47,10 @@
     return xScale(d.interval.start.toJSDate());
   }
 
-  function valueAccessor(d: DataPoint) {
-    return d?.value !== null && d?.value !== undefined ? yScale(d.value) : null;
+  function valueAccessor(d: DataPoint): number {
+    // We can safely assert this will be a number because we're using .defined()
+    // to filter out null/undefined values before this accessor is called
+    return yScale(d.value as number);
   }
 </script>
 

@@ -6,13 +6,15 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
-  import type { ApplicationBuildMetadata } from "@rilldata/web-common/layout/build-metadata";
-  import { getContext } from "svelte";
-  import type { Writable } from "svelte/store";
   import { fly } from "svelte/transition";
+  import { createLocalServiceGetMetadata } from "@rilldata/web-common/runtime-client/local-service";
 
-  const appBuildMetaStore: Writable<ApplicationBuildMetadata> =
-    getContext("rill:app:metadata");
+  const metadataQuery = createLocalServiceGetMetadata();
+
+  $: ({ data } = $metadataQuery);
+
+  $: version = data?.version;
+  $: commitHash = data?.buildCommit;
 
   const lineItems = [
     {
@@ -80,10 +82,8 @@
       </Tooltip>
     </span>
     <span class="truncate">
-      version {$appBuildMetaStore.version
-        ? $appBuildMetaStore.version
-        : "unknown (built from source)"}{$appBuildMetaStore.commitHash
-        ? ` – ${$appBuildMetaStore.commitHash}`
+      version {version || "unknown (built from source)"}{commitHash
+        ? ` – ${commitHash}`
         : ""}
     </span>
   </div>
