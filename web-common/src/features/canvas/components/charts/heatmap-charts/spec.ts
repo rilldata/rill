@@ -2,6 +2,7 @@ import type { Field } from "vega-lite/build/src/channeldef";
 import type { TopLevelUnitSpec } from "vega-lite/build/src/spec/unit";
 import {
   createColorEncoding,
+  createConfig,
   createDefaultTooltipEncoding,
   createSingleLayerBaseSpec,
   createXEncoding,
@@ -16,6 +17,15 @@ export function generateVLHeatmapSpec(
 ): TopLevelUnitSpec<Field> {
   const spec = createSingleLayerBaseSpec("rect");
 
+  const vegaConfig = createConfig(config, {
+    axis: { grid: true, tickBand: "extent" },
+    axisX: {
+      grid: true,
+      gridDash: [],
+      tickBand: "extent",
+    },
+  });
+
   return {
     ...spec,
     encoding: {
@@ -27,13 +37,6 @@ export function generateVLHeatmapSpec(
         data,
       ),
     },
-    config: {
-      axis: { grid: true, tickBand: "extent" },
-      axisX: {
-        grid: true,
-        gridDash: [],
-        tickBand: "extent",
-      },
-    },
+    ...(vegaConfig && { config: vegaConfig }),
   };
 }

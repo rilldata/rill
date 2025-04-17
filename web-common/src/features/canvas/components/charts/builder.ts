@@ -1,11 +1,16 @@
+import type { ChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
 import type { CartesianChartSpec } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/CartesianChart";
 import type {
   FieldConfig,
   TooltipValue,
 } from "@rilldata/web-common/features/canvas/components/charts/types";
-import { sanitizeFieldName } from "@rilldata/web-common/features/canvas/components/charts/util";
+import {
+  mergedVlConfig,
+  sanitizeFieldName,
+} from "@rilldata/web-common/features/canvas/components/charts/util";
 import { sanitizeValueForVega } from "@rilldata/web-common/features/templates/charts/utils";
 import type { VisualizationSpec } from "svelte-vega";
+import type { Config } from "vega-lite";
 import type {
   ColorDef,
   Field,
@@ -14,6 +19,7 @@ import type {
 import type { Encoding } from "vega-lite/build/src/encoding";
 import type { TopLevelParameter } from "vega-lite/build/src/spec/toplevel";
 import type { TopLevelUnitSpec } from "vega-lite/build/src/spec/unit";
+import type { ExprRef, SignalRef } from "vega-typings";
 import type { ChartDataResult } from "./types";
 
 export function createMultiLayerBaseSpec() {
@@ -160,6 +166,14 @@ export function createDefaultTooltipEncoding(
   }
 
   return tooltip;
+}
+
+export function createConfig(
+  config: ChartSpec,
+  chartVLConfig?: Config<ExprRef | SignalRef> | undefined,
+): Config<ExprRef | SignalRef> | undefined {
+  const userProvidedConfig = config.vl_config;
+  return mergedVlConfig(userProvidedConfig, chartVLConfig);
 }
 
 export function createEncoding(

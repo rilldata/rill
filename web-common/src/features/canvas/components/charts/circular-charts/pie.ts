@@ -1,6 +1,7 @@
 import type { VisualizationSpec } from "svelte-vega";
 import {
   createColorEncoding,
+  createConfig,
   createDefaultTooltipEncoding,
   createSingleLayerBaseSpec,
   createXEncoding,
@@ -13,6 +14,7 @@ export function generateVLPieChartSpec(
   data: ChartDataResult,
 ): VisualizationSpec {
   const spec = createSingleLayerBaseSpec("arc");
+  const vegaConfig = createConfig(config);
 
   spec.mark = {
     type: "arc",
@@ -32,5 +34,6 @@ export function generateVLPieChartSpec(
       color,
       tooltip,
     },
+    ...(vegaConfig && { config: vegaConfig }),
   };
 }

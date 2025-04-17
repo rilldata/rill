@@ -1,6 +1,7 @@
 import type { TooltipValue } from "@rilldata/web-common/features/canvas/components/charts/types";
 import type { VisualizationSpec } from "svelte-vega";
 import {
+  createConfig,
   createDefaultTooltipEncoding,
   createEncoding,
   createSingleLayerBaseSpec,
@@ -14,6 +15,7 @@ export function generateVLStackedBarNormalizedSpec(
 ): VisualizationSpec {
   const spec = createSingleLayerBaseSpec("bar");
   const baseEncoding = createEncoding(config, data);
+  const vegaConfig = createConfig(config);
 
   if (baseEncoding.y && config.y?.field) {
     const yField = config.y.field;
@@ -77,5 +79,8 @@ export function generateVLStackedBarNormalizedSpec(
   }
 
   spec.encoding = baseEncoding;
-  return spec;
+  return {
+    ...spec,
+    ...(vegaConfig && { config: vegaConfig }),
+  };
 }

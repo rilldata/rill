@@ -4,6 +4,7 @@ import { sanitizeValueForVega } from "@rilldata/web-common/features/templates/ch
 import type { VisualizationSpec } from "svelte-vega";
 import {
   createColorEncoding,
+  createConfig,
   createDefaultTooltipEncoding,
   createMultiLayerBaseSpec,
   createXEncoding,
@@ -16,6 +17,7 @@ export function generateVLAreaChartSpec(
   data: ChartDataResult,
 ): VisualizationSpec {
   const spec = createMultiLayerBaseSpec();
+  const vegaConfig = createConfig(config);
 
   const colorField =
     typeof config.color === "object" ? config.color.field : undefined;
@@ -135,5 +137,8 @@ export function generateVLAreaChartSpec(
     },
   ];
 
-  return spec;
+  return {
+    ...spec,
+    ...(vegaConfig && { config: vegaConfig }),
+  };
 }

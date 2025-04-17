@@ -1,4 +1,3 @@
-import { getRillTheme } from "@rilldata/web-common/components/vega/vega-config";
 import { sanitizeValueForVega } from "@rilldata/web-common/features/templates/charts/utils";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import merge from "deepmerge";
@@ -19,23 +18,30 @@ export function isChartLineLike(chartType: ChartType) {
   return chartType === "line_chart" || chartType === "area_chart";
 }
 
-export function mergedVlConfig(config: string): Config {
-  const defaultConfig = getRillTheme(true);
+export function mergedVlConfig(
+  userProvidedConfig: string | undefined,
+  specConfig: Config | undefined,
+): Config | undefined {
+  if (!userProvidedConfig) return specConfig;
+
+  const validSpecConfig = specConfig || {};
   let parsedConfig: Config;
 
   try {
-    parsedConfig = JSON.parse(config) as Config;
+    parsedConfig = JSON.parse(userProvidedConfig) as Config;
   } catch {
     console.warn("Invalid JSON config");
-    return defaultConfig;
+    return specConfig;
   }
 
-  const reverseArrayMerge = (
+  const replaceByClonedSource = (
     destinationArray: unknown[],
     sourceArray: unknown[],
-  ) => [...sourceArray, ...destinationArray];
+  ) => sourceArray;
 
-  return merge(defaultConfig, parsedConfig, { arrayMerge: reverseArrayMerge });
+  return merge(validSpecConfig, parsedConfig, {
+    arrayMerge: replaceByClonedSource,
+  });
 }
 
 export const timeGrainToVegaTimeUnitMap: Record<V1TimeGrain, string> = {

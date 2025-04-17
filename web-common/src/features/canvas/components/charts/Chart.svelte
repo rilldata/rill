@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { getRillTheme } from "@rilldata/web-common/components/vega/vega-config";
   import VegaLiteRenderer from "@rilldata/web-common/components/vega/VegaLiteRenderer.svelte";
   import ComponentHeader from "@rilldata/web-common/features/canvas/ComponentHeader.svelte";
   import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
@@ -10,12 +11,7 @@
   import type { ChartSpec } from "./";
   import type { BaseChart } from "./BaseChart";
   import { getChartData } from "./selector";
-  import {
-    generateSpec,
-    isChartLineLike,
-    mergedVlConfig,
-    sanitizeFieldName,
-  } from "./util";
+  import { generateSpec, isChartLineLike, sanitizeFieldName } from "./util";
   import { validateChartSchema } from "./validate";
 
   export let component: BaseChart<ChartSpec>;
@@ -84,8 +80,6 @@
       [fieldName]: { fn: (val) => measureFormatters[fieldName](val) },
     };
   }, {});
-
-  $: config = vl_config ? mergedVlConfig(vl_config) : undefined;
 </script>
 
 <div class="size-full flex flex-col overflow-hidden">
@@ -117,7 +111,7 @@
           {spec}
           renderer={isChartLineLike(chartType) ? "svg" : "canvas"}
           {expressionFunctions}
-          {config}
+          config={getRillTheme(true)}
         />
       {/if}
     {/if}
