@@ -34,6 +34,8 @@
     TimeRangePreset,
     type AvailableTimeGrain,
   } from "@rilldata/web-common/lib/time/types";
+  import { Button } from "../../../components/button";
+  import Pivot from "../../../components/icons/Pivot.svelte";
   import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
   import { TIME_GRAIN } from "../../../lib/time/config";
   import { DashboardState_ActivePage } from "../../../proto/gen/rill/ui/v1/dashboard_pb";
@@ -319,14 +321,16 @@
       />
 
       {#if !hideStartPivotButton}
-        <button
-          class="h-6 px-1.5 py-px rounded-sm hover:bg-gray-200 text-gray-700 ml-auto"
+        <div class="grow" />
+        <Button
+          type="toolbar"
           on:click={() => {
             startPivotForTimeseries();
           }}
         >
+          <Pivot size="16px" />
           Start Pivot
-        </button>
+        </Button>
       {/if}
     {/if}
   </div>
