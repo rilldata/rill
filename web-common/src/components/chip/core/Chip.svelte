@@ -170,7 +170,7 @@
   }
 
   .guest {
-    @apply rounded-2xl;
+    @apply rounded-2xl h-[18px] text-xs;
     @apply bg-amber-50 border-amber-300 text-amber-600;
     @apply font-normal;
   }
