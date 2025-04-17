@@ -14,10 +14,12 @@
   export let email: string;
   export let role: string;
   export let isCurrentUser: boolean;
+  export let currentUserRole: string;
 
   let isDropdownOpen = false;
 
   $: organization = $page.params.organization;
+  $: isAdmin = currentUserRole === "admin";
 
   const queryClient = useQueryClient();
   const setOrganizationMemberUserRole =
@@ -55,7 +57,7 @@
   }
 </script>
 
-{#if !isCurrentUser}
+{#if !isCurrentUser && isAdmin}
   <DropdownMenu.Root bind:open={isDropdownOpen}>
     <DropdownMenu.Trigger
       class="w-18 flex flex-row gap-1 items-center rounded-sm {isDropdownOpen

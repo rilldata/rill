@@ -161,6 +161,7 @@
         usersQuery={$orgMemberUsersInfiniteQuery}
         invitesQuery={$orgInvitesInfiniteQuery}
         currentUserEmail={$currentUser.data?.user.email}
+        currentUserRole={$currentUser.data?.user.role}
       />
     </div>
   {/if}
