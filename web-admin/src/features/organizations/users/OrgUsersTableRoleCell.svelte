@@ -62,7 +62,7 @@
         ? 'bg-slate-200'
         : 'hover:bg-slate-100'} px-2 py-1"
     >
-      {role ? `Org ${role}` : "-"}
+      <span class="capitalize">{role ? `${role}` : "-"}</span>
       {#if isDropdownOpen}
         <CaretUpIcon size="12px" />
       {:else}
@@ -110,6 +110,6 @@
   </DropdownMenu.Root>
 {:else}
   <div class="w-18 flex flex-row gap-1 items-center rounded-sm px-2 py-1">
-    <span>Org {role}</span>
+    <span class="capitalize">{role}</span>
   </div>
 {/if}

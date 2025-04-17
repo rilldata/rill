@@ -72,6 +72,7 @@
           pendingAcceptance: Boolean(row.original.invitedBy),
           isCurrentUser: row.original.userEmail === currentUserEmail,
           photoUrl: row.original.userPhotoUrl,
+          role: row.original.roleName,
         }),
       meta: {
         widthPercent: 5,
@@ -79,7 +80,7 @@
     },
     {
       accessorKey: "roleName",
-      header: "Role",
+      header: "Organization Role",
       cell: ({ row }) =>
         flexRender(OrgUsersTableRoleCell, {
           email: row.original.userEmail,

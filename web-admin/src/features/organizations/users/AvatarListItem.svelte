@@ -1,5 +1,6 @@
 <script lang="ts">
   import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
+  import Chip from "@rilldata/web-common/components/chip/core/Chip.svelte";
   import { getRandomBgColor } from "@rilldata/web-common/features/themes/color-config";
   import { cn } from "@rilldata/web-common/lib/shadcn";
 
@@ -10,6 +11,7 @@
   export let pendingAcceptance: boolean = false;
   export let shape: "circle" | "square" = "circle";
   export let count: number = 0;
+  export let role: string;
 
   function getInitials(name: string) {
     return name.charAt(0).toUpperCase();
@@ -35,11 +37,16 @@
     </div>
   {/if}
   <div class="flex flex-col text-left">
-    <span class="text-sm font-medium text-gray-900">
+    <span class="text-sm font-medium text-gray-900 flex flex-row gap-x-1">
       {name}
       <span class="text-gray-500 font-normal">
         {isCurrentUser ? "(You)" : ""}
       </span>
+      {#if role === "guest"}
+        <Chip type="guest" label="Guest" compact readOnly>
+          <svelte:fragment slot="body">Guest</svelte:fragment>
+        </Chip>
+      {/if}
     </span>
     {#if pendingAcceptance || email}
       <span class="text-xs text-gray-500">

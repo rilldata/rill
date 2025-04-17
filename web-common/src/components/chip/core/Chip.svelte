@@ -11,7 +11,8 @@
   export let removable = false;
   export let active = false;
   export let readOnly = false;
-  export let type: "measure" | "dimension" | "time" | "special" = "dimension";
+  export let type: "measure" | "dimension" | "time" | "special" | "guest" =
+    "dimension";
   export let exclude = false;
   export let grab = false;
   export let compact = false;
@@ -166,6 +167,18 @@
   .time.active,
   .time:active {
     @apply border-slate-400;
+  }
+
+  .guest {
+    @apply rounded-2xl;
+    @apply bg-amber-50 border-amber-300 text-amber-600;
+    @apply font-normal;
+  }
+
+  .guest:hover,
+  .guest:active,
+  .guest.active {
+    @apply bg-amber-100;
   }
 
   .compact {
