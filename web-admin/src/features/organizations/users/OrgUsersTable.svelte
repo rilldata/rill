@@ -43,6 +43,7 @@
     RpcStatus
   >;
   export let currentUserEmail: string;
+  export let currentUserRole: string;
 
   const ROW_HEIGHT = 69;
   const OVERSCAN = 5;
@@ -86,6 +87,7 @@
           email: row.original.userEmail,
           role: row.original.roleName,
           isCurrentUser: row.original.userEmail === currentUserEmail,
+          currentUserRole: currentUserRole,
         }),
       meta: {
         widthPercent: 5,
@@ -100,6 +102,7 @@
         flexRender(OrgUsersTableActionsCell, {
           email: row.original.userEmail,
           isCurrentUser: row.original.userEmail === currentUserEmail,
+          currentUserRole: currentUserRole,
         }),
       meta: {
         widthPercent: 0,
