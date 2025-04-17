@@ -82,7 +82,7 @@ func (r *ComponentReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 		c.State.ValidSpec = nil
 	} else {
 		// When StageChanges is enabled, we want to make a best effort to serve the canvas anyway.
-		// If all the components referenced by the spec have a ValidSpec, we'll try to serve the canvas.
+		// If the metrics view(s) referenced by the spec have a ValidSpec, we'll consider the component valid.
 		validMetrics, err := r.checkMetricsViewsValidSpec(ctx, self.Meta.Refs)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
@@ -103,6 +103,8 @@ func (r *ComponentReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 	return runtime.ReconcileResult{Err: validateErr}
 }
 
+// checkMetricsViewsValidSpec returns true if any of the metrics views referenced by the component have a valid spec.
+// Note that it returns false if no metrics views are referenced.
 func (r *ComponentReconciler) checkMetricsViewsValidSpec(ctx context.Context, refs []*runtimev1.ResourceName) (bool, error) {
 	var n int
 	for _, ref := range refs {
