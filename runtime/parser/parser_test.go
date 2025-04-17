@@ -1064,7 +1064,7 @@ dev:
 		ModelSpec: &runtimev1.ModelSpec{
 			InputConnector:   "s3",
 			OutputConnector:  "duckdb",
-			InputProperties:  must(structpb.NewStruct(map[string]any{"path": "world", "limit": 100000, "sql": "SELECT 20"})),
+			InputProperties:  must(structpb.NewStruct(map[string]any{"path": "world", "limit": 10000, "sql": "SELECT 20"})),
 			OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
 			RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true, Cron: "0 0 * * *"},
 			DefinedAsSource:  true,
