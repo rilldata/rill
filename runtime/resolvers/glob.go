@@ -140,6 +140,9 @@ func newGlob(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolv
 
 	// If connector is not specified outright, infer it from the path (e.g. for "s3://bucket/path", the connector becomes "s3").
 	if props.Connector == "" {
+		if bucketURI.Scheme == "gs" {
+			bucketURI.Scheme = "gcs"
+		}
 		props.Connector = bucketURI.Scheme
 	}
 
