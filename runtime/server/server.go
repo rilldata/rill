@@ -176,7 +176,7 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 	}
 
 	// Add gRPC-gateway on httpMux
-	httpMux.Handle("/", transcoder)
+	httpMux.Handle("/v1/", transcoder)
 
 	// Add HTTP handler for
 	httpMux.Handle("/v1/instances/{instance_id}/files/watch", auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.WatchFilesHandler)))
