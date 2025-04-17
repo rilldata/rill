@@ -203,13 +203,13 @@
               <GlobalDimensionSearch />
             {/if}
             {#if $user.isSuccess && $user.data.user && !onPublicURLPage}
-              {#if $alertsFlag}
-                <CreateAlert />
-              {/if}
               <Bookmarks
                 metricsViewName={exploreSpec.metricsView}
                 exploreName={dashboard}
               />
+              {#if $alertsFlag}
+                <CreateAlert />
+              {/if}
               <ShareDashboardPopover {createMagicAuthTokens} />
             {/if}
           </StateManagersProvider>
