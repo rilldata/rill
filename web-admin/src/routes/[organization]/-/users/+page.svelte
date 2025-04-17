@@ -82,37 +82,44 @@
     ...coerceInvitesToUsers(allOrgInvitesRows),
   ];
 
-  // Search by email or name
-  // Member users have a userName field, invites do not
-  $: filteredUsers = combinedRows.filter((user) => {
-    const searchLower = searchText.toLowerCase();
-    const matchesSearch =
-      (user.userEmail?.toLowerCase() || "").includes(searchLower) ||
-      ("userName" in user &&
-        (user.userName?.toLowerCase() || "").includes(searchLower));
+  // Filter by role
+  // Filter by search text
+  $: filteredUsers = combinedRows
+    .filter((user) => {
+      const searchLower = searchText.toLowerCase();
+      const matchesSearch =
+        (user.userEmail?.toLowerCase() || "").includes(searchLower) ||
+        ("userName" in user &&
+          (user.userName?.toLowerCase() || "").includes(searchLower));
 
-    let matchesRole = false;
+      let matchesRole = false;
 
-    if (filterSelection === "all") {
-      // All org users (members + guests)
-      matchesRole = !("invitedBy" in user);
-    } else if (filterSelection === "members") {
-      // Only members (org admin, editor, viewer)
-      matchesRole =
-        !("invitedBy" in user) &&
-        (user.roleName === "admin" ||
-          user.roleName === "editor" ||
-          user.roleName === "viewer");
-    } else if (filterSelection === "guests") {
-      // Only guests
-      matchesRole = user.roleName === "guest";
-    } else if (filterSelection === "pending") {
-      // Only users with pending invites
-      matchesRole = "invitedBy" in user;
-    }
+      if (filterSelection === "all") {
+        // All org users (members + guests)
+        matchesRole = !("invitedBy" in user);
+      } else if (filterSelection === "members") {
+        // Only members (org admin, editor, viewer)
+        matchesRole =
+          !("invitedBy" in user) &&
+          (user.roleName === "admin" ||
+            user.roleName === "editor" ||
+            user.roleName === "viewer");
+      } else if (filterSelection === "guests") {
+        // Only guests
+        matchesRole = user.roleName === "guest";
+      } else if (filterSelection === "pending") {
+        // Only users with pending invites
+        matchesRole = "invitedBy" in user;
+      }
 
-    return matchesSearch && matchesRole;
-  });
+      return matchesSearch && matchesRole;
+    })
+    .sort((a, b) => {
+      // Sort by current user first
+      if (a.userEmail === $currentUser.data?.user.email) return -1;
+      if (b.userEmail === $currentUser.data?.user.email) return 1;
+      return 0;
+    });
 
   const currentUser = createAdminServiceGetCurrentUser();
 </script>
