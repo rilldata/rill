@@ -3,13 +3,1585 @@
     "$id": "https://rilldata.com/schemas/rill.schema.json",
     "title": "Rill Schema",
     "$comment": "This base rill schema",
-    "oneOf": [
-      {
-        "$ref": "./rillyaml.schema.json"
-      },
-      {
-        "$ref": "./resource.schema.json"
-      }
-    ]
-  }
-  
+    "type": "object",
+    "if": {
+        "required": [
+            "type"
+        ]
+    },
+    "then": {
+        "$ref": "#/$defs/resource"
+    },
+    "else": {
+        "$ref": "#/$defs/rillyaml"
+    },
+    "$defs": {
+        "resource": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "alert",
+                        "api",
+                        "canvas",
+                        "component",
+                        "connector",
+                        "explore",
+                        "metrics_view",
+                        "migration",
+                        "model",
+                        "report",
+                        "theme"
+                    ]
+                },
+                "version": {
+                    "type": "integer",
+                    "description": "Version of the parser to use for this file. Enables backwards compatibility for breaking changes."
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Name is usually inferred from the filename, but can be specified manually."
+                },
+                "namespace": {
+                    "type": "string",
+                    "description": "Optional value to group resources by. Prepended to the resource name as <namespace>/<name>."
+                },
+                "connector": {
+                    "type": "string",
+                    "description": "Names the connector to use for this resource."
+                },
+                "refs": {
+                    "type": "array",
+                    "items": {
+                        "oneOf": [
+                            {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9_-]+(/[A-Za-z0-9_-]+)?$",
+                                "description": "A string reference like 'resource-name' or 'Kind/resource-name'."
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "type": {
+                                        "type": "string"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "minLength": 1
+                                    }
+                                },
+                                "required": [
+                                    "name"
+                                ],
+                                "additionalProperties": false,
+                                "description": "An object reference with at least a 'name' and 'type'."
+                            }
+                        ]
+                    },
+                    "description": "List of resource references, each as a string or map."
+                },
+                "parser": {
+                    "type": "object",
+                    "properties": {
+                        "templating": {
+                            "type": "boolean"
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                "sql": {
+                    "type": "string"
+                },
+                "env": {
+                    "type": "object"
+                },
+                "environment_overrides": {
+                    "type": "object"
+                },
+                "dev": {
+                    "type": "object"
+                },
+                "prod": {
+                    "type": "object"
+                }
+            },
+            "allOf": [
+                {
+                    "if": {
+                        "properties": {
+                            "type": {
+                                "const": "alert"
+                            }
+                        }
+                    },
+                    "then": {
+                        "$ref": "#/$defs/alert"
+                    }
+                },
+                {
+                    "if": {
+                        "properties": {
+                            "type": {
+                                "const": "api"
+                            }
+                        }
+                    },
+                    "then": {
+                        "$ref": "#/$defs/api"
+                    }
+                },
+                {
+                    "if": {
+                        "properties": {
+                            "type": {
+                                "const": "canvas"
+                            }
+                        }
+                    },
+                    "then": {
+                        "$ref": "#/$defs/canvas"
+                    }
+                },
+                {
+                    "if": {
+                        "properties": {
+                            "type": {
+                                "const": "component"
+                            }
+                        }
+                    },
+                    "then": {
+                        "$ref": "#/$defs/component"
+                    }
+                },
+                {
+                    "if": {
+                        "properties": {
+                            "type": {
+                                "const": "connector"
+                            }
+                        }
+                    },
+                    "then": {
+                        "$ref": "#/$defs/connector"
+                    }
+                },
+                {
+                    "if": {
+                        "properties": {
+                            "type": {
+                                "const": "explore"
+                            }
+                        }
+                    },
+                    "then": {
+                        "$ref": "#/$defs/explore"
+                    }
+                },
+                {
+                    "if": {
+                        "properties": {
+                            "type": {
+                                "const": "metrics_view"
+                            }
+                        }
+                    },
+                    "then": {
+                        "$ref": "#/$defs/metrics_view"
+                    }
+                },
+                {
+                    "if": {
+                        "properties": {
+                            "type": {
+                                "const": "migration"
+                            }
+                        }
+                    },
+                    "then": {
+                        "$ref": "#/$defs/migration"
+                    }
+                },
+                {
+                    "if": {
+                        "properties": {
+                            "type": {
+                                "const": "model"
+                            }
+                        }
+                    },
+                    "then": {
+                        "$ref": "#/$defs/model"
+                    }
+                },
+                {
+                    "if": {
+                        "properties": {
+                            "type": {
+                                "const": "report"
+                            }
+                        }
+                    },
+                    "then": {
+                        "$ref": "#/$defs/report"
+                    }
+                },
+                {
+                    "if": {
+                        "properties": {
+                            "type": {
+                                "const": "theme"
+                            }
+                        }
+                    },
+                    "then": {
+                        "$ref": "#/$defs/theme"
+                    }
+                }
+            ]
+        },
+        "rillyaml": {
+            "type": "object",
+            "properties": {
+                "compiler": {
+                    "type": "string"
+                },
+                "rill_version": {},
+                "display_name": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "olap_connector": {
+                    "type": "string"
+                },
+                "connectors": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string"
+                            },
+                            "name": {
+                                "type": "string"
+                            },
+                            "defaults": {
+                                "type": "object"
+                            }
+                        },
+                        "required": [
+                            "type",
+                            "name"
+                        ],
+                        "additionalProperties": false
+                    }
+                },
+                "env": {
+                    "type": "object"
+                },
+                "environment_overrides": {
+                    "type": "object"
+                },
+                "dev": {
+                    "type": "object"
+                },
+                "prod": {
+                    "type": "object"
+                },
+                "models": {
+                    "$ref": "#/$defs/model"
+                },
+                "metrics_views": {
+                    "$ref": "#/$defs/metrics_view"
+                },
+                "explores": {
+                    "$ref": "#/$defs/explore"
+                },
+                "migrations": {
+                    "$ref": "#/$defs/migration"
+                },
+                "features": {
+                    "oneOf": [
+                        {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "boolean"
+                            }
+                        },
+                        {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    ]
+                },
+                "public_paths": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "ignore_paths": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "mock_users": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "email": {
+                                "type": "string"
+                            },
+                            "name": {
+                                "type": "string"
+                            },
+                            "admin": {
+                                "type": "boolean"
+                            },
+                            "groups": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "alert": {
+            "type": "object",
+            "properties": {
+                "display_name": {
+                    "type": "string"
+                },
+                "refresh": {
+                    "$ref": "#/$defs/partial_schedule"
+                },
+                "watermark": {
+                    "type": "string",
+                    "enum": [
+                        "trigger_time",
+                        "inherit"
+                    ]
+                },
+                "intervals": {
+                    "type": "object",
+                    "properties": {
+                        "duration": {
+                            "type": "string"
+                        },
+                        "limit": {
+                            "type": "integer",
+                            "minimum": 0
+                        },
+                        "check_unclosed": {
+                            "type": "boolean"
+                        }
+                    }
+                },
+                "timeout": {
+                    "type": "string"
+                },
+                "data": {
+                    "$ref": "#/$defs/partial_data"
+                },
+                "for": {
+                    "type": "object",
+                    "oneOf": [
+                        {
+                            "required": [
+                                "user_id"
+                            ],
+                            "properties": {
+                                "user_id": {
+                                    "type": "string"
+                                }
+                            },
+                            "additionalProperties": false
+                        },
+                        {
+                            "required": [
+                                "user_email"
+                            ],
+                            "properties": {
+                                "user_email": {
+                                    "type": "string",
+                                    "format": "email"
+                                }
+                            },
+                            "additionalProperties": false
+                        },
+                        {
+                            "required": [
+                                "attributes"
+                            ],
+                            "properties": {
+                                "attributes": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    ]
+                },
+                "on_recover": {
+                    "type": "boolean"
+                },
+                "on_fail": {
+                    "type": "boolean"
+                },
+                "on_error": {
+                    "type": "boolean"
+                },
+                "renotify": {
+                    "type": "boolean"
+                },
+                "renotify_after": {
+                    "type": "string"
+                },
+                "notify": {
+                    "$ref": "#/$defs/partial_notify"
+                },
+                "annotations": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                }
+            },
+            "required": [
+                "refresh",
+                "data",
+                "notify"
+            ]
+        },
+        "api": {
+            "type": "object",
+            "properties": {
+                "openapi": {
+                    "type": "object",
+                    "properties": {
+                        "summary": {
+                            "type": "string"
+                        },
+                        "request": {
+                            "type": "object",
+                            "properties": {
+                                "parameters": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "additionalProperties": true
+                                    }
+                                }
+                            }
+                        },
+                        "response": {
+                            "type": "object",
+                            "properties": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": {
+                    "$ref": "#/$defs/partial_security_policy"
+                },
+                "skip_nested_security": {
+                    "type": "boolean"
+                }
+            },
+            "oneOf": [
+                {
+                    "$ref": "#/$defs/partial_data"
+                }
+            ]
+        },
+        "canvas": {
+            "type": "object",
+            "properties": {
+                "display_name": {
+                    "type": "string"
+                },
+                "banner": {
+                    "type": "string"
+                },
+                "max_width": {
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "gap_x": {
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "gap_y": {
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "theme": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    ]
+                },
+                "allow_custom_time_range": {
+                    "type": "boolean"
+                },
+                "time_ranges": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/partial_explore_time_range"
+                    }
+                },
+                "time_zones": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "filters": {
+                    "type": "object",
+                    "properties": {
+                        "enable": {
+                            "type": "boolean"
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                "defaults": {
+                    "type": "object",
+                    "properties": {
+                        "time_range": {
+                            "type": "string"
+                        },
+                        "comparison_mode": {
+                            "type": "string"
+                        },
+                        "comparison_dimension": {
+                            "type": "string"
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                "variables": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/partial_component_variable"
+                    }
+                },
+                "rows": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "height": {
+                                "type": "string"
+                            },
+                            "items": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "width": {
+                                            "type": [
+                                                "string",
+                                                "integer"
+                                            ]
+                                        },
+                                        "component": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "additionalProperties": true
+                                }
+                            }
+                        },
+                        "additionalProperties": false
+                    }
+                },
+                "security": {
+                    "$ref": "#/$defs/partial_security_policy"
+                }
+            },
+            "required": [
+                "rows"
+            ]
+        },
+        "component": {
+            "type": "object",
+            "properties": {
+                "display_name": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "input": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/partial_component_variable"
+                    }
+                },
+                "output": {
+                    "$ref": "#/$defs/partial_component_variable"
+                },
+                "additionalProperties": true
+            }
+        },
+        "connector": {
+            "type": "object",
+            "properties": {
+                "driver": {
+                    "type": "string",
+                    "description": "Driver name"
+                },
+                "managed": {
+                    "description": "Boolean or map of properties",
+                    "anyOf": [
+                        {
+                            "type": "boolean"
+                        },
+                        {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    ]
+                },
+                "additionalProperties": true
+            }
+        },
+        "explore": {
+            "type": "object",
+            "properties": {
+                "display_name": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "banner": {
+                    "type": "string"
+                },
+                "metrics_view": {
+                    "type": "string"
+                },
+                "dimensions": {
+                    "$ref": "#/$defs/partial_explore_field_selector"
+                },
+                "measures": {
+                    "$ref": "#/$defs/partial_explore_field_selector"
+                },
+                "theme": {
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "$ref": "#/$defs/theme"
+                        }
+                    ]
+                },
+                "time_ranges": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/partial_explore_time_range"
+                    }
+                },
+                "time_zones": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "lock_time_zone": {
+                    "type": "boolean"
+                },
+                "allow_custom_time_range": {
+                    "type": "boolean"
+                },
+                "defaults": {
+                    "type": "object",
+                    "properties": {
+                        "dimensions": {
+                            "$ref": "#/$defs/partial_explore_field_selector"
+                        },
+                        "measures": {
+                            "$ref": "#/$defs/partial_explore_field_selector"
+                        },
+                        "time_range": {
+                            "type": "string"
+                        },
+                        "comparison_mode": {
+                            "type": "string"
+                        },
+                        "comparison_dimension": {
+                            "type": "string"
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                "embeds": {
+                    "type": "object",
+                    "properties": {
+                        "hide_pivot": {
+                            "type": "boolean"
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                "security": {
+                    "$ref": "#/$defs/partial_security_policy"
+                }
+            }
+        },
+        "metrics_view": {
+            "type": "object",
+            "properties": {
+                "display_name": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "model": {
+                    "type": "string"
+                },
+                "database": {
+                    "type": "string"
+                },
+                "database_schema": {
+                    "type": "string"
+                },
+                "table": {
+                    "type": "string"
+                },
+                "timeseries": {
+                    "type": "string"
+                },
+                "watermark": {
+                    "type": "string"
+                },
+                "smallest_time_grain": {
+                    "type": "string"
+                },
+                "first_day_of_week": {
+                    "type": "integer"
+                },
+                "first_month_of_year": {
+                    "type": "integer"
+                },
+                "dimensions": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string"
+                            },
+                            "display_name": {
+                                "type": "string"
+                            },
+                            "description": {
+                                "type": "string"
+                            },
+                            "column": {
+                                "type": "string"
+                            },
+                            "expression": {
+                                "type": "string"
+                            },
+                            "unnest": {
+                                "type": "boolean"
+                            },
+                            "uri": {
+                                "type": [
+                                    "string",
+                                    "boolean"
+                                ]
+                            }
+                        },
+                        "anyOf": [
+                            {
+                                "required": [
+                                    "column"
+                                ]
+                            },
+                            {
+                                "required": [
+                                    "expression"
+                                ]
+                            }
+                        ]
+                    }
+                },
+                "measures": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string"
+                            },
+                            "display_name": {
+                                "type": "string"
+                            },
+                            "description": {
+                                "type": "string"
+                            },
+                            "type": {
+                                "type": "string"
+                            },
+                            "expression": {
+                                "type": "string"
+                            },
+                            "window": {
+                                "description": "A measure window can be defined as a keyword string (e.g., 'time' or 'all') or an object with detailed window configuration.",
+                                "anyOf": [
+                                    {
+                                        "type": "string",
+                                        "enum": [
+                                            "time",
+                                            "true",
+                                            "all"
+                                        ],
+                                        "description": "Shorthand: 'time' or 'true' means time-partitioned, 'all' means non-partitioned."
+                                    },
+                                    {
+                                        "type": "object",
+                                        "properties": {
+                                            "partition": {
+                                                "type": "boolean"
+                                            },
+                                            "order": {
+                                                "$ref": "#/$defs/partial_metrics_view_field_selectors"
+                                            },
+                                            "frame": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "additionalProperties": false
+                                    }
+                                ]
+                            },
+                            "per": {
+                                "$ref": "#/$defs/partial_metrics_view_field_selectors"
+                            },
+                            "requires": {
+                                "$ref": "#/$defs/partial_metrics_view_field_selectors"
+                            },
+                            "format_preset": {
+                                "type": "string"
+                            },
+                            "format_d3": {
+                                "type": "string"
+                            },
+                            "format_d3_locale": {
+                                "type": "object",
+                                "additionalProperties": true
+                            },
+                            "valid_percent_of_total": {
+                                "type": "boolean"
+                            },
+                            "treat_nulls_as": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "minItems": 1
+                },
+                "security": {
+                    "$ref": "#/$defs/partial_security_policy"
+                }
+            }
+        },
+        "migration": {
+            "type": "object",
+            "properties": {
+                "max_version": {
+                    "type": "integer",
+                    "minimum": 0
+                }
+            }
+        },
+        "model": {
+            "type": "object",
+            "properties": {
+                "refresh": {
+                    "$ref": "#/$defs/partial_schedule"
+                },
+                "timeout": {
+                    "type": "string"
+                },
+                "incremental": {
+                    "type": "boolean"
+                },
+                "state": {
+                    "$ref": "#/$defs/partial_data"
+                },
+                "partitions": {
+                    "$ref": "#/$defs/partial_data"
+                },
+                "partitions_watermark": {
+                    "type": "string"
+                },
+                "partitions_concurrency": {
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "stage": {
+                    "type": "object",
+                    "properties": {
+                        "connector": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "connector"
+                    ],
+                    "additionalProperties": true
+                },
+                "output": {
+                    "type": "object",
+                    "properties": {
+                        "connector": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "connector"
+                    ],
+                    "additionalProperties": true
+                },
+                "materialize": {
+                    "type": "boolean"
+                },
+                "defined_as_source": {
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "type"
+            ]
+        },
+        "report": {
+            "type": "object",
+            "properties": {
+                "display_name": {
+                    "type": "string"
+                },
+                "refresh": {
+                    "$ref": "#/$defs/partial_schedule"
+                },
+                "watermark": {
+                    "type": "string",
+                    "enum": [
+                        "trigger_time",
+                        "inherit"
+                    ]
+                },
+                "intervals": {
+                    "type": "object",
+                    "properties": {
+                        "duration": {
+                            "type": "string"
+                        },
+                        "limit": {
+                            "type": "integer"
+                        },
+                        "check_unclosed": {
+                            "type": "boolean"
+                        }
+                    },
+                    "required": [
+                        "duration",
+                        "limit",
+                        "check_unclosed"
+                    ],
+                    "additionalProperties": false
+                },
+                "timeout": {
+                    "type": "string"
+                },
+                "query": {
+                    "type": "object",
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "minLength": 1
+                        },
+                        "args": {
+                            "type": "object",
+                            "additionalProperties": true
+                        },
+                        "args_json": {
+                            "type": "string",
+                            "minLength": 1
+                        }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                        "name"
+                    ]
+                },
+                "export": {
+                    "type": "object",
+                    "properties": {
+                        "format": {
+                            "type": "string",
+                            "enum": [
+                                "csv",
+                                "xlsx",
+                                "parquet"
+                            ]
+                        },
+                        "limit": {
+                            "type": "integer"
+                        }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                        "format"
+                    ]
+                },
+                "notify": {
+                    "$ref": "#/$defs/partial_notify"
+                },
+                "annotations": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                }
+            },
+            "required": [
+                "query",
+                "notify",
+                "export"
+            ]
+        },
+        "theme": {
+            "type": "object",
+            "properties": {
+                "colors": {
+                    "type": "object",
+                    "properties": {
+                        "primary": {
+                            "type": "string"
+                        },
+                        "secondary": {
+                            "type": "string"
+                        }
+                    },
+                    "anyOf": [
+                        {
+                            "required": [
+                                "primary"
+                            ]
+                        },
+                        {
+                            "required": [
+                                "secondary"
+                            ]
+                        }
+                    ]
+                }
+            },
+            "required": [
+                "colors"
+            ]
+        },
+        "partial_component_variable": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "value": {
+                    "description": "The value can be of any type.",
+                    "type": [
+                        "string",
+                        "number",
+                        "boolean",
+                        "object",
+                        "array",
+                        "null"
+                    ]
+                }
+            },
+            "required": [
+                "name",
+                "type"
+            ],
+            "additionalProperties": false
+        },
+        "partial_data": {
+            "type": "object",
+            "oneOf": [
+                {
+                    "properties": {
+                        "sql": {
+                            "type": "string"
+                        },
+                        "connector": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "sql"
+                    ]
+                },
+                {
+                    "properties": {
+                        "metrics_sql": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "metrics_sql"
+                    ]
+                },
+                {
+                    "properties": {
+                        "api": {
+                            "type": "string"
+                        },
+                        "args": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "required": [
+                        "api"
+                    ]
+                },
+                {
+                    "properties": {
+                        "glob": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            ]
+                        }
+                    },
+                    "required": [
+                        "glob"
+                    ]
+                },
+                {
+                    "properties": {
+                        "resource_status": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "required": [
+                        "resource_status"
+                    ]
+                }
+            ]
+        },
+        "partial_explore_field_selector": {
+            "description": "FieldSelector can be:\n1. The string '*'\n2. An array of strings\n3. An object with one of: 'regex', 'expr', or 'exclude'",
+            "oneOf": [
+                {
+                    "type": "string",
+                    "const": "*",
+                    "description": "Matches all fields"
+                },
+                {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "Explicit list of fields"
+                },
+                {
+                    "type": "object",
+                    "description": "Advanced matching using regex, DuckDB expression, or exclusion",
+                    "properties": {
+                        "regex": {
+                            "type": "string"
+                        },
+                        "expr": {
+                            "type": "string"
+                        },
+                        "exclude": {
+                            "$ref": "#/$defs/partial_explore_field_selector"
+                        }
+                    },
+                    "additionalProperties": false,
+                    "oneOf": [
+                        {
+                            "required": [
+                                "regex"
+                            ]
+                        },
+                        {
+                            "required": [
+                                "expr"
+                            ]
+                        },
+                        {
+                            "required": [
+                                "exclude"
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        "partial_explore_time_range": {
+            "description": "ExploreTimeRange can be a string or an object with a 'range' and optional 'comparison_offsets'.",
+            "oneOf": [
+                {
+                    "type": "string",
+                    "description": "Short form for setting just the time range."
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "range": {
+                            "type": "string"
+                        },
+                        "comparison_offsets": {
+                            "type": "array",
+                            "items": {
+                                "oneOf": [
+                                    {
+                                        "type": "string",
+                                        "description": "Offset string only (range is inferred)"
+                                    },
+                                    {
+                                        "type": "object",
+                                        "properties": {
+                                            "offset": {
+                                                "type": "string"
+                                            },
+                                            "range": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "required": [
+                                            "offset",
+                                            "range"
+                                        ],
+                                        "additionalProperties": false
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "required": [
+                        "range"
+                    ],
+                    "additionalProperties": false
+                }
+            ]
+        },
+        "partial_metrics_view_field_selectors": {
+            "anyOf": [
+                {
+                    "type": "string"
+                },
+                {
+                    "type": "array",
+                    "items": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "description": "Shorthand field selector, interpreted as the name."
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "time_grain": {
+                                        "type": "string",
+                                        "description": "Time grain for time-based dimensions.",
+                                        "enum": [
+                                            "",
+                                            "ms",
+                                            "millisecond",
+                                            "s",
+                                            "second",
+                                            "min",
+                                            "minute",
+                                            "h",
+                                            "hour",
+                                            "d",
+                                            "day",
+                                            "w",
+                                            "week",
+                                            "month",
+                                            "q",
+                                            "quarter",
+                                            "y",
+                                            "year"
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "name"
+                                ],
+                                "additionalProperties": false
+                            }
+                        ]
+                    },
+                    "minItems": 1
+                }
+            ]
+        },
+        "partial_notify": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "object",
+                    "properties": {
+                        "recipients": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "minItems": 1
+                        }
+                    },
+                    "required": [
+                        "recipients"
+                    ],
+                    "additionalProperties": false
+                },
+                "slack": {
+                    "type": "object",
+                    "properties": {
+                        "users": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "minItems": 1
+                        },
+                        "channels": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "minItems": 1
+                        },
+                        "webhooks": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "minItems": 1
+                        }
+                    },
+                    "anyOf": [
+                        {
+                            "required": [
+                                "users"
+                            ]
+                        },
+                        {
+                            "required": [
+                                "channels"
+                            ]
+                        },
+                        {
+                            "required": [
+                                "webhooks"
+                            ]
+                        }
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            "anyOf": [
+                {
+                    "required": [
+                        "email"
+                    ]
+                },
+                {
+                    "required": [
+                        "slack"
+                    ]
+                }
+            ]
+        },
+        "partial_schedule": {
+            "type": "object",
+            "properties": {
+                "ref_update": {
+                    "type": "boolean"
+                },
+                "cron": {
+                    "type": "string",
+                    "description": "Cron expression to schedule the alert"
+                },
+                "every": {
+                    "type": "string",
+                    "description": "Interval duration (e.g. '1h', '30m')"
+                },
+                "time_zone": {
+                    "type": "string",
+                    "description": "Time zone identifier, e.g. 'UTC' or 'America/Los_Angeles'"
+                },
+                "disable": {
+                    "type": "boolean"
+                },
+                "run_in_dev": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "partial_security_policy": {
+            "type": "object",
+            "properties": {
+                "access": {
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "boolean"
+                        }
+                    ],
+                    "description": "Expression that controls general access. Can be a boolean or a string expression."
+                },
+                "row_filter": {
+                    "type": "string"
+                },
+                "include": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "if": {
+                                "type": "string"
+                            },
+                            "names": {
+                                "anyOf": [
+                                    {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    {
+                                        "type": "string",
+                                        "enum": [
+                                            "*"
+                                        ]
+                                    }
+                                ]
+                            }
+                        },
+                        "required": [
+                            "if",
+                            "names"
+                        ]
+                    }
+                },
+                "exclude": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "if": {
+                                "type": "string"
+                            },
+                            "names": {
+                                "anyOf": [
+                                    {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    {
+                                        "type": "string",
+                                        "enum": [
+                                            "*"
+                                        ]
+                                    }
+                                ]
+                            }
+                        },
+                        "required": [
+                            "if",
+                            "names"
+                        ]
+                    }
+                },
+                "rules": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string",
+                                "enum": [
+                                    "access",
+                                    "field_access",
+                                    "row_filter"
+                                ]
+                            },
+                            "action": {
+                                "type": "string",
+                                "enum": [
+                                    "allow",
+                                    "deny"
+                                ]
+                            },
+                            "if": {
+                                "type": "string"
+                            },
+                            "names": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "all": {
+                                "type": "boolean"
+                            },
+                            "sql": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "type"
+                        ]
+                    }
+                }
+            }
+        }
+    }
+}
