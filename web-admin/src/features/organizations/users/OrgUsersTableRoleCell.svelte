@@ -10,6 +10,7 @@
   import { page } from "$app/stores";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import OrgUpgradeGuestConfirmDialog from "./OrgUpgradeGuestConfirmDialog.svelte";
 
   export let email: string;
   export let role: string;
@@ -17,9 +18,12 @@
   export let currentUserRole: string;
 
   let isDropdownOpen = false;
+  let isUpgradeConfirmOpen = false;
+  let newRole = "";
 
   $: organization = $page.params.organization;
   $: isAdmin = currentUserRole === "admin";
+  $: isGuest = role === "guest";
 
   const queryClient = useQueryClient();
   const setOrganizationMemberUserRole =
@@ -27,6 +31,12 @@
 
   async function handleSetRole(role: string) {
     try {
+      if (isGuest) {
+        newRole = role;
+        isUpgradeConfirmOpen = true;
+        return;
+      }
+
       await $setOrganizationMemberUserRole.mutateAsync({
         organization: organization,
         email: email,
@@ -51,6 +61,37 @@
       console.error("Error updating user role", error);
       eventBus.emit("notification", {
         message: "Error updating user role",
+        type: "error",
+      });
+    }
+  }
+
+  async function handleUpgrade(email: string, role: string) {
+    try {
+      await $setOrganizationMemberUserRole.mutateAsync({
+        organization: organization,
+        email: email,
+        data: {
+          role: role,
+        },
+      });
+
+      await queryClient.invalidateQueries({
+        queryKey:
+          getAdminServiceListOrganizationMemberUsersQueryKey(organization),
+      });
+
+      await queryClient.invalidateQueries({
+        queryKey: getAdminServiceListOrganizationInvitesQueryKey(organization),
+      });
+
+      eventBus.emit("notification", {
+        message: `Guest upgraded to ${role}`,
+      });
+    } catch (error) {
+      console.error("Error upgrading user role", error);
+      eventBus.emit("notification", {
+        message: "Error upgrading user role",
         type: "error",
       });
     }
@@ -115,3 +156,10 @@
     <span class="capitalize">{role}</span>
   </div>
 {/if}
+
+<OrgUpgradeGuestConfirmDialog
+  bind:open={isUpgradeConfirmOpen}
+  {email}
+  {newRole}
+  onUpgrade={handleUpgrade}
+/>
