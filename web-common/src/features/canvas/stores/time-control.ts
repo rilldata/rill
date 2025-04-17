@@ -33,6 +33,7 @@ import {
   runtime,
   type Runtime,
 } from "@rilldata/web-common/runtime-client/runtime-store";
+import { Settings } from "luxon";
 import {
   derived,
   get,
@@ -40,6 +41,7 @@ import {
   type Readable,
   type Writable,
 } from "svelte/store";
+import { normalizeWeekday } from "../../dashboards/time-controls/new-time-controls";
 
 type AllTimeRange = TimeRange & { isFetching: boolean };
 
@@ -146,6 +148,19 @@ export class TimeControls {
         if (!spec?.data || !selectedTimeRange) {
           return undefined;
         }
+
+        // TODO: figure out a better way of handling this property
+        // when it's not consistent across all metrics views - bgh
+        const firstMetricsView = Object.values(spec.data.metricsViews)?.[0];
+        const firstDayOfWeekOfFirstMetricsView =
+          firstMetricsView?.state?.validSpec?.firstDayOfWeek;
+
+        Settings.defaultWeekSettings = {
+          firstDay: normalizeWeekday(firstDayOfWeekOfFirstMetricsView),
+          weekend: [6, 7],
+          minimalDays: 4,
+        };
+
         const { defaultPreset } = spec.data?.canvas || {};
         const defaultTimeRange = isoDurationToFullTimeRange(
           defaultPreset?.timeRange,
@@ -282,7 +297,6 @@ export class TimeControls {
 
         this.selectedComparisonTimeRange.set(newComparisonRange);
 
-        console.log({ isLocalComponentControl });
         if (
           defaultPreset?.comparisonMode ===
             V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME &&

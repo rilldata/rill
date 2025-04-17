@@ -10,7 +10,6 @@
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardControls from "./LeaderboardControls.svelte";
   import { COMPARISON_COLUMN_WIDTH, valueColumn } from "./leaderboard-widths";
-  import { featureFlags } from "../../feature-flags";
 
   export let metricsViewName: string;
   export let whereFilter: V1Expression;
@@ -18,8 +17,6 @@
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
   export let timeControlsReady: boolean;
-  export let activeMeasureName: string;
-  export let leaderboardMeasureNames: string[];
 
   const StateManagers = getStateManagers();
   const {
@@ -28,8 +25,13 @@
       dimensionFilters: { isFilterExcludeMode },
       dimensions: { visibleDimensions },
       comparison: { isBeingCompared: isBeingComparedReadable },
-      sorting: { sortedAscending, sortType, sortByMeasure },
-      measures: { measureLabel, isMeasureValidPercentOfTotal, visibleMeasures },
+      sorting: { sortedAscending, sortType },
+      measures: { measureLabel, isMeasureValidPercentOfTotal },
+      leaderboard: {
+        leaderboardShowContextForAllMeasures,
+        leaderboardMeasureNames,
+        leaderboardSortByMeasureName,
+      },
     },
     actions: {
       dimensions: { setPrimaryDimension },
@@ -44,19 +46,18 @@
   let parentElement: HTMLDivElement;
   let suppressTooltip = false;
 
-  const { leaderboardMeasureCount: leaderboardMeasureCountFeatureFlag } =
-    featureFlags;
-
   $: ({ instanceId } = $runtime);
 
   // Reset column widths when the measure changes
-  $: if (activeMeasureName) {
+  $: if ($leaderboardSortByMeasureName) {
     valueColumn.reset();
   }
 
   $: dimensionColumnWidth = 164;
 
-  $: showPercentOfTotal = $isMeasureValidPercentOfTotal(activeMeasureName);
+  $: showPercentOfTotal = $isMeasureValidPercentOfTotal(
+    $leaderboardSortByMeasureName,
+  );
   $: showDeltaPercent = !!comparisonTimeRange;
 
   $: tableWidth =
@@ -67,10 +68,6 @@
       : showPercentOfTotal
         ? COMPARISON_COLUMN_WIDTH
         : 0);
-
-  $: validVisibleMeasures = $visibleMeasures
-    .map((m) => m.name)
-    .filter((name) => name !== undefined);
 </script>
 
 <div class="flex flex-col overflow-hidden size-full" aria-label="Leaderboards">
@@ -94,10 +91,9 @@
             <Leaderboard
               isValidPercentOfTotal={$isMeasureValidPercentOfTotal}
               {metricsViewName}
-              sortBy={$sortByMeasure}
-              {activeMeasureName}
-              {leaderboardMeasureNames}
-              visibleMeasures={validVisibleMeasures}
+              leaderboardSortByMeasureName={$leaderboardSortByMeasureName}
+              leaderboardMeasureNames={$leaderboardMeasureNames}
+              leaderboardShowContextForAllMeasures={$leaderboardShowContextForAllMeasures}
               {whereFilter}
               {dimensionThresholdFilters}
               {instanceId}
@@ -121,15 +117,14 @@
                 timeRange.end,
               )}
               isBeingCompared={$isBeingComparedReadable(dimension.name)}
-              formatters={$leaderboardMeasureCountFeatureFlag
+              formatters={$leaderboardMeasureNames.length > 1
                 ? $measureFormatters
-                : { [activeMeasureName]: $activeMeasureFormatter }}
+                : { [$leaderboardSortByMeasureName]: $activeMeasureFormatter }}
               {setPrimaryDimension}
               {toggleSort}
               {toggleDimensionValueSelection}
               {toggleComparisonDimension}
               measureLabel={$measureLabel}
-              leaderboardMeasureCountFeatureFlag={$leaderboardMeasureCountFeatureFlag}
             />
           {/if}
         {/each}
