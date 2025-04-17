@@ -93,6 +93,22 @@ export function createBetweenExpression(
   }
 }
 
+export function isBetweenExpression(expr: V1Expression): boolean {
+  if (!expr.cond || expr.cond.exprs?.length !== 2) return false;
+
+  const isBetween =
+    expr.cond.op === V1Operation.OPERATION_AND &&
+    expr.cond.exprs[0].cond?.op === V1Operation.OPERATION_GT &&
+    expr.cond.exprs[1].cond?.op === V1Operation.OPERATION_LT;
+
+  const isNotBetween =
+    expr.cond.op === V1Operation.OPERATION_OR &&
+    expr.cond.exprs[0].cond?.op === V1Operation.OPERATION_LTE &&
+    expr.cond.exprs[1].cond?.op === V1Operation.OPERATION_GTE;
+
+  return isBetween || isNotBetween;
+}
+
 export function createSubQueryExpression(
   dimension: string,
   measures: string[],
@@ -359,6 +375,18 @@ export function isJoinerExpression(expression: V1Expression | undefined) {
   );
 }
 
+export function unwrapRedundantJoinerExpression(
+  expression: V1Expression | undefined,
+) {
+  if (
+    !expression ||
+    !isJoinerExpression(expression) ||
+    (expression.cond?.exprs?.length && expression.cond.exprs.length > 1)
+  )
+    return expression;
+  return expression.cond?.exprs?.[0];
+}
+
 const SupportedOperations = new Set<V1Operation>([
   V1Operation.OPERATION_IN,
   V1Operation.OPERATION_NIN,
@@ -381,7 +409,7 @@ export function isExpressionUnsupported(expression: V1Expression) {
     if (
       subqueryExpr?.subquery?.having?.cond?.exprs?.length &&
       isJoinerExpression(subqueryExpr.subquery.having) &&
-      subqueryExpr.subquery.having.cond.exprs.length > 1
+      !isBetweenExpression(subqueryExpr.subquery.having)
     ) {
       return true;
     }

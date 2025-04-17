@@ -7,10 +7,12 @@ import {
   createAndExpression,
   createSubQueryExpression,
   filterExpressions,
+  isBetweenExpression,
   isExpressionUnsupported,
   isJoinerExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
 
 export function mergeDimensionAndMeasureFilters(
@@ -39,21 +41,24 @@ export function splitWhereFilter(whereFilter: V1Expression | undefined) {
   const dimensionThresholdFilters: DimensionThresholdFilter[] = [];
   whereFilter?.cond?.exprs?.filter((e) => {
     const subqueryExpr = e.cond?.exprs?.[1];
-    if (subqueryExpr?.subquery) {
-      const filters = isJoinerExpression(subqueryExpr.subquery.having)
-        ? (subqueryExpr.subquery.having?.cond?.exprs
-            ?.map(mapExprToMeasureFilter)
-            .filter(Boolean) as MeasureFilterEntry[])
-        : [mapExprToMeasureFilter(subqueryExpr.subquery.having)];
-
-      dimensionThresholdFilters.push({
-        name: subqueryExpr.subquery.dimension ?? "",
-        filters: filters.filter(Boolean) as MeasureFilterEntry[],
-      });
+    if (!subqueryExpr?.subquery?.having) {
+      dimensionFilters.cond?.exprs?.push(e);
       return;
     }
 
-    dimensionFilters.cond?.exprs?.push(e);
+    const isValidMeasureFilter =
+      !isJoinerExpression(subqueryExpr.subquery.having) ||
+      isBetweenExpression(subqueryExpr.subquery.having);
+    const filters = isValidMeasureFilter
+      ? [mapExprToMeasureFilter(subqueryExpr.subquery.having)]
+      : (subqueryExpr.subquery.having?.cond?.exprs
+          ?.map(mapExprToMeasureFilter)
+          .filter(Boolean) as MeasureFilterEntry[]);
+
+    dimensionThresholdFilters.push({
+      name: subqueryExpr.subquery.dimension ?? "",
+      filters: filters.filter(Boolean) as MeasureFilterEntry[],
+    });
   });
 
   return { dimensionFilters, dimensionThresholdFilters };

@@ -8,6 +8,7 @@ import {
   createAndExpression,
   createSubQueryExpression,
   getAllIdentifiers,
+  unwrapRedundantJoinerExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { ExploreStateDefaultChartType } from "@rilldata/web-common/features/dashboards/url-state/defaults";
 import {
@@ -89,7 +90,11 @@ export function convertLegacyStateToExplorePreset(
       if (!h.filter) return;
       const expr = fromExpressionProto(h.filter);
       exprs.push(
-        createSubQueryExpression(h.name, getAllIdentifiers(expr), expr),
+        createSubQueryExpression(
+          h.name,
+          getAllIdentifiers(expr),
+          unwrapRedundantJoinerExpression(expr),
+        ),
       );
     });
   }
