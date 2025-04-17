@@ -6,17 +6,14 @@
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
-  import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
-  import {
-    createQueryServiceMetricsViewAggregation,
-    type V1Expression,
-  } from "@rilldata/web-common/runtime-client";
+  import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { get } from "svelte/store";
   import { useExploreState } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import ExportMenu from "../../exports/ExportMenu.svelte";
   import { featureFlags } from "../../feature-flags";
   import { mergeDimensionAndMeasureFilters } from "../filters/measure-filters/measure-filter-utils";
+  import type { PivotFilter } from "../pivot/types";
   import RowsViewer from "./RowsViewer.svelte";
 
   const { exports } = featureFlags;
@@ -48,32 +45,29 @@
   $: ({ instanceId } = $runtime);
 
   $: exploreState = useExploreState(exploreName);
+  $: ({ whereFilter, dimensionThresholdFilters } = $exploreState);
   $: pivotDataStore = usePivotForExplore(stateManagers);
+  $: ({ activeCellFilters } = $pivotDataStore);
   $: showPivot = $showPivotStore;
-  $: activeCellFilters = $pivotDataStore.activeCellFilters;
+  $: isPivotCellSelected = Boolean(showPivot && activeCellFilters);
 
-  let filters: V1Expression | undefined;
-  let timeRange: TimeRangeString = {
-    start: $timeControlsStore.timeStart,
-    end: $timeControlsStore.timeEnd,
-  };
-  $: if (showPivot && activeCellFilters) {
-    if (!isOpen && !manualClose) {
-      height = PIVOT_HEIGHT_EXPANDED;
-      isOpen = true;
-    }
-    filters = sanitiseExpression(activeCellFilters.filters, undefined);
-    timeRange = activeCellFilters.timeRange;
-    label = "Model data for selected cell";
-  } else {
-    timeRange.start = $timeControlsStore.timeStart;
-    let maybeEnd = $timeControlsStore.timeEnd;
-    if (maybeEnd) {
-      timeRange.end = new Date(new Date(maybeEnd).valueOf() + 1).toISOString();
-    }
-    filters = sanitiseExpression($exploreState.whereFilter, undefined);
-    label = DEFAULT_LABEL;
-  }
+  $: label = isPivotCellSelected
+    ? "Model data for selected cell"
+    : DEFAULT_LABEL;
+
+  $: timeRange = isPivotCellSelected
+    ? (activeCellFilters as PivotFilter).timeRange
+    : {
+        start: $timeControlsStore.timeStart,
+        end: $timeControlsStore.timeEnd,
+      };
+
+  $: filters = isPivotCellSelected
+    ? sanitiseExpression((activeCellFilters as PivotFilter).filters, undefined)
+    : sanitiseExpression(
+        mergeDimensionAndMeasureFilters(whereFilter, dimensionThresholdFilters),
+        undefined,
+      );
 
   $: filteredTotalsQuery = createQueryServiceMetricsViewAggregation(
     instanceId,
@@ -122,6 +116,12 @@
       const denominator = $totalsQuery.data.data?.[0]["count"] as number;
       rowCountlabel = `${formatCompactInteger(numerator)} of ${formatCompactInteger(denominator)} rows`;
     }
+  }
+
+  // Clicking on a pivot cell should open the rows viewer, if it is not already open and hasn't been manually closed
+  $: if (isPivotCellSelected && !isOpen && !manualClose) {
+    height = PIVOT_HEIGHT_EXPANDED;
+    isOpen = true;
   }
 
   function toggle() {
