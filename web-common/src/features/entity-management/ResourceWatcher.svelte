@@ -19,10 +19,12 @@
 
   $: fileWatcher.watch(
     `${host}/v1/instances/${instanceId}/files/watch?stream=files`,
+    true,
   );
 
   $: resourceWatcher.watch(
     `${host}/v1/instances/${instanceId}/resources/-/watch?stream=resources`,
+    true,
   );
 
   $: failed = $fileAttempts >= 2 || $resourceAttempts >= 2;
