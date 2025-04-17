@@ -122,9 +122,5 @@
         "security": {
             "$ref": "security_policy.schema.json"
         }
-    },
-    "oneOf": [
-        { "required": ["table","dimensions","measures"] },
-        { "required": ["model","dimensions","measures"] }
-    ]
+    }
 }

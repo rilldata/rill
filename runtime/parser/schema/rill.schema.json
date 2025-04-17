@@ -1,0 +1,15 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://rilldata.com/schemas/rill.schema.json",
+    "title": "Rill Schema",
+    "$comment": "This base rill schema",
+    "oneOf": [
+      {
+        "$ref": "./rillyaml.schema.json"
+      },
+      {
+        "$ref": "./resource.schema.json"
+      }
+    ]
+  }
+  

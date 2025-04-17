@@ -58,7 +58,5 @@
         "defined_as_source": {
             "type": "boolean"
         }
-    },
-    "required": [],
-    "additionalProperties": true
+    }
 }

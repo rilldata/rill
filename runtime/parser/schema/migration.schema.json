@@ -1,0 +1,13 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "migration.schema.json",
+    "title": "MigrationYAML",
+    "type": "object",
+    "properties": {
+      "max_version": {
+        "type": "integer",
+        "minimum": 0
+      }
+    }
+  }
+  

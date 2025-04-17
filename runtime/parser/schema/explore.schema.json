@@ -83,8 +83,5 @@
         "security": {
             "$ref": "security_policy.schema.json"
         }
-    },
-    "required": [
-        "metrics_view"
-    ]
+    }
 }
