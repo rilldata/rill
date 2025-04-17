@@ -43,11 +43,7 @@
   const {
     selectors: {
       dimensionFilters: { unselectedDimensionValues },
-      dimensionTable: {
-        virtualizedTableColumns,
-        selectedDimensionValueNames,
-        prepareDimTableRows,
-      },
+      dimensionTable: { virtualizedTableColumns, prepareDimTableRows },
       sorting: { sortedAscending, sortType },
       leaderboard: {
         leaderboardShowContextForAllMeasures,
@@ -67,6 +63,15 @@
   $: ({ name: dimensionName = "" } = dimension);
 
   $: ({ instanceId } = $runtime);
+
+  $: selectedValues = selectedDimensionValuesV2(
+    $runtime.instanceId,
+    [metricsViewName],
+    $dashboardStore.whereFilter,
+    dimensionName,
+    timeRange.start,
+    timeRange.end,
+  );
 
   $: filterSet = getDimensionFilterWithSearch(
     whereFilter,
@@ -170,7 +175,7 @@
   $: tableRows = $prepareDimTableRows($sortedQuery, unfilteredTotal);
 
   $: areAllTableRowsSelected = tableRows.every((row) =>
-    $selectedDimensionValueNames.includes(row[dimensionName] as string),
+    $selectedValues.data?.includes(row[dimensionName] as string),
   );
 
   function onSelectItem(event) {
@@ -245,14 +250,7 @@
           isFetching={$sortedQuery?.isFetching}
           {dimensionName}
           {columns}
-          selectedValues={selectedDimensionValuesV2(
-            $runtime.instanceId,
-            [metricsViewName],
-            $dashboardStore.whereFilter,
-            dimensionName,
-            timeRange.start,
-            timeRange.end,
-          )}
+          {selectedValues}
           rows={tableRows}
         />
       </div>
