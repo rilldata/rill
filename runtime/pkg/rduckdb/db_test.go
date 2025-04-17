@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/require"
@@ -479,16 +481,113 @@ func TestViews(t *testing.T) {
 	require.NoError(t, testDB.Close())
 }
 
-func TestNoConfigUpdate(t *testing.T) {
-	db, _, _ := prepareDB(t)
+func TestConcurrentWrites(t *testing.T) {
+	localDir := filepath.Join(t.TempDir(), "directory with space's and sp$ci@l chars")
+	require.NoError(t, os.MkdirAll(localDir, 0755))
+	defer os.RemoveAll(localDir)
+
 	ctx := context.Background()
-	_, err := db.CreateTableAsSelect(ctx, "test", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{
-		BeforeCreateFn: func(ctx context.Context, conn *sqlx.Conn) error {
-			_, err := conn.ExecContext(ctx, "SET secret_directory = '/tmp'")
-			return err
-		},
+	db, err := NewDB(ctx, &DBOptions{
+		LocalPath:      localDir,
+		MemoryLimitGB:  2,
+		CPU:            1,
+		ReadWriteRatio: 0.5,
+		DBInitQueries:  []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
+		Logger:         zap.NewNop(),
 	})
-	require.Error(t, err, "the configuration has been locked")
+	require.NoError(t, err)
+
+	// create 3 tables concurrently
+	var wg sync.WaitGroup
+	wg.Add(3)
+	for i := range 3 {
+		go func() {
+			defer wg.Done()
+			_, err := db.CreateTableAsSelect(ctx, fmt.Sprintf("test%d", i), "WITH cte AS (SELECT * FROM range(1, 10_000)) SELECT unnest(range(1, cte.range)) FROM cte", &CreateTableOptions{})
+			require.NoError(t, err)
+		}()
+	}
+	wg.Wait()
+	tables, err := db.Schema(ctx, "", "")
+	require.NoError(t, err)
+	require.Len(t, tables, 3)
+
+	// mutate all 3 tables concurrently
+	wg.Add(3)
+	for i := range 3 {
+		go func() {
+			defer wg.Done()
+			_, err := db.MutateTable(ctx, fmt.Sprintf("test%d", i), nil, func(ctx context.Context, conn *sqlx.Conn) error {
+				_, err := conn.ExecContext(ctx, fmt.Sprintf("INSERT INTO test%d WITH cte AS (SELECT * FROM range(1, 10_000)) SELECT unnest(range(1, cte.range)) FROM cte", i))
+				return err
+			})
+			require.NoError(t, err)
+		}()
+	}
+	wg.Wait()
+	tables, err = db.Schema(ctx, "", "")
+	require.NoError(t, err)
+	require.Len(t, tables, 3)
+
+	// rename all 3 tables concurrently
+	wg.Add(3)
+	for i := range 3 {
+		go func() {
+			defer wg.Done()
+			err := db.RenameTable(ctx, fmt.Sprintf("test%d", i), fmt.Sprintf("test%d_renamed", i))
+			require.NoError(t, err)
+		}()
+	}
+	wg.Wait()
+	tables, err = db.Schema(ctx, "", "")
+	require.NoError(t, err)
+	require.Len(t, tables, 3)
+
+	// drop all 3 tables concurrently
+	wg.Add(3)
+	for i := range 3 {
+		go func() {
+			defer wg.Done()
+			err := db.DropTable(ctx, fmt.Sprintf("test%d_renamed", i))
+			require.NoError(t, err)
+		}()
+	}
+	wg.Wait()
+	tables, err = db.Schema(ctx, "", "")
+	require.NoError(t, err)
+	require.Len(t, tables, 0)
+}
+
+func TestConcurrentWritesFail(t *testing.T) {
+	localDir := t.TempDir()
+	ctx := context.Background()
+	db, err := NewDB(ctx, &DBOptions{
+		LocalPath:      localDir,
+		MemoryLimitGB:  2,
+		CPU:            1,
+		ReadWriteRatio: 0.5,
+		DBInitQueries:  []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
+		Logger:         zap.NewNop(),
+	})
+	require.NoError(t, err)
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+	ctx, cancel := context.WithCancel(ctx)
+	go func() {
+		defer wg.Done()
+		_, _ = db.CreateTableAsSelect(ctx, "test", "WITH cte AS (SELECT * FROM range(1, 1000_000_000)) SELECT unnest(range(1, cte.range)) FROM cte", &CreateTableOptions{})
+	}()
+
+	time.Sleep(100 * time.Millisecond)
+
+	go func() {
+		defer wg.Done()
+		_, err := db.CreateTableAsSelect(ctx, "test", "WITH cte AS (SELECT * FROM range(1, 1000_000_000)) SELECT unnest(range(1, cte.range)) FROM cte", &CreateTableOptions{})
+		require.Error(t, err, "write operation already in progress for table 'test'")
+	}()
+	cancel()
+	wg.Wait()
 }
 
 func prepareDB(t *testing.T) (db DB, localDir, remoteDir string) {
