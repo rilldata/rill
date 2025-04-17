@@ -633,7 +633,7 @@ func (h *Handle) download() error {
 
 	err = archive.Download(ctx, h.archiveDownloadURL, downloadDst, h.projPath, true, false)
 	if err != nil {
-		return err
+		return fmt.Errorf("download: %w", err)
 	}
 	h.cloned = true
 	return nil
