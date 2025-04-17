@@ -56,6 +56,30 @@ export const ExploreWebViewCommonURLParams: Partial<
   },
 };
 
+// Sparse map of keys that are common by name between some but mean different things.
+// TODO: build this automatically given ExploreWebViewSpecificURLParams and ExploreWebViewCommonURLParams
+export const ExploreWebViewCommonNameDifferentMeaningURLParams: Partial<
+  Record<
+    ExploreUrlWebView,
+    Partial<Record<ExploreUrlWebView, ExploreStateURLParams[]>>
+  >
+> = {
+  explore: {
+    pivot: [
+      ExploreStateURLParams.SortBy,
+      ExploreStateURLParams.SortType,
+      ExploreStateURLParams.SortDirection,
+    ],
+  },
+  pivot: {
+    explore: [
+      ExploreStateURLParams.SortBy,
+      ExploreStateURLParams.SortType,
+      ExploreStateURLParams.SortDirection,
+    ],
+  },
+};
+
 const ExploreURLParamsSpecificToSomeWebView = new Set(
   Object.values(ExploreWebViewSpecificURLParams).flat(),
 );
@@ -94,17 +118,12 @@ export function copyUrlSearchParamsForView(
   );
 }
 
-export function paramValidInBothViews(
+export function isParamCommonButDifferentMeaning(
   view1: ExploreUrlWebView,
   view2: ExploreUrlWebView,
   param: ExploreStateURLParams,
 ) {
-  return (
-    view1 === view2 ||
-    // If the param is not specific to a web view then it is valid for both views
-    !ExploreURLParamsSpecificToSomeWebView.has(param) ||
-    // Else we have a map that defines whether a param is actually shared.
-    // There are cases where param name is same but they mean different things. EG: sort_by is different in explore and pivot views
-    ExploreWebViewCommonURLParams[view1]?.[view2]?.includes(param)
-  );
+  return ExploreWebViewCommonNameDifferentMeaningURLParams[view1]?.[
+    view2
+  ]?.includes(param);
 }

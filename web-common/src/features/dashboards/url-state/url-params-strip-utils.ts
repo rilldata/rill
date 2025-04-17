@@ -1,4 +1,4 @@
-import { paramValidInBothViews } from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-specific-url-params";
+import { isParamCommonButDifferentMeaning } from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-specific-url-params";
 import { ExploreUrlWebView } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 
@@ -16,24 +16,22 @@ export function stripDefaultUrlParams(
     ) as ExploreUrlWebView | null) ?? ExploreUrlWebView.Explore;
 
   const strippedUrlParams = new URLSearchParams();
-  searchParams.forEach((value, key) => {
+  searchParams.forEach((value, key: ExploreStateURLParams) => {
+    const defaultValue = defaultUrlParams.get(key);
+
     if (
-      !paramValidInBothViews(
-        currentView,
-        defaultView,
-        key as ExploreStateURLParams,
-      )
+      // if there is no default value then skip setting if the value is empty then skip adding it.
+      (defaultValue === null && value === "") ||
+      // else if there is a default value,
+      (defaultValue !== null &&
+        // make sure it is not one of the common param name but different meaning
+        !isParamCommonButDifferentMeaning(currentView, defaultView, key) &&
+        // and values match then skip adding it
+        value === defaultValue)
     ) {
-      // If the param is not valid in both views then checking equality doesn't make sense.
-      // So set it and return early.
-      strippedUrlParams.set(key, value);
       return;
     }
 
-    const defaultValue = defaultUrlParams.get(key);
-    if (defaultValue !== null && value === defaultValue) {
-      return;
-    }
     strippedUrlParams.set(key, value);
   });
   return strippedUrlParams;
