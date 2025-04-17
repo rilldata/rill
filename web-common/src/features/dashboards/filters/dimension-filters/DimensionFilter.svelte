@@ -390,9 +390,7 @@
           <LoadingSpinner />
         </div>
       {:else if error}
-        <div class="min-h-9 p-3 text-center text-red-600 text-xs">
-          {error}
-        </div>
+        <div class="min-h-9 p-3 text-center text-red-600 text-xs">error</div>
       {:else if correctedSearchResults}
         <DropdownMenu.Group class="px-1" aria-label={`${name} results`}>
           {#each correctedSearchResults as name (name)}

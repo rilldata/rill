@@ -19,19 +19,17 @@
   import { mergeDimensionAndMeasureFilters } from "../filters/measure-filters/measure-filter-utils";
   import { getSort } from "../leaderboard/leaderboard-utils";
   import { getFiltersForOtherDimensions } from "../selectors";
-  import { getMeasuresForDimensionTable } from "../state-managers/selectors/dashboard-queries";
-  import { dimensionSearchText } from "../stores/dashboard-stores";
+  import { getMeasuresForDimensionOrLeaderboardDisplay } from "../state-managers/selectors/dashboard-queries";
   import { sanitiseExpression } from "../stores/filter-utils";
   import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
   import DimensionHeader from "./DimensionHeader.svelte";
   import DimensionTable from "./DimensionTable.svelte";
   import { getDimensionFilterWithSearch } from "./dimension-table-utils";
-  import { featureFlags } from "../../feature-flags";
   import { selectedDimensionValuesV2 } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
+  import { dimensionSearchText } from "../stores/dashboard-stores";
 
   const queryLimit = 250;
 
-  export let activeMeasureName: string;
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
   export let whereFilter: V1Expression;
@@ -51,6 +49,10 @@
         prepareDimTableRows,
       },
       sorting: { sortedAscending, sortType },
+      leaderboard: {
+        leaderboardShowContextForAllMeasures,
+        leaderboardSortByMeasureName,
+      },
     },
     actions: {
       dimensionsFilter: {
@@ -61,9 +63,6 @@
     },
     dashboardStore,
   } = getStateManagers();
-
-  const { leaderboardMeasureCount: leaderboardMeasureCountFeatureFlag } =
-    featureFlags;
 
   $: ({ name: dimensionName = "" } = dimension);
 
@@ -99,7 +98,7 @@
     },
   );
 
-  $: unfilteredTotal = $leaderboardMeasureCountFeatureFlag
+  $: unfilteredTotal = $leaderboardShowContextForAllMeasures
     ? visibleMeasureNames.reduce(
         (acc, measureName) => {
           acc[measureName] =
@@ -108,26 +107,29 @@
         },
         {} as { [key: string]: number },
       )
-    : (($totalsQuery?.data?.data?.[0]?.[activeMeasureName] as number) ?? 0);
+    : (($totalsQuery?.data?.data?.[0]?.[
+        $leaderboardSortByMeasureName
+      ] as number) ?? 0);
 
   $: columns = $virtualizedTableColumns(
     $totalsQuery,
-    $leaderboardMeasureCountFeatureFlag ? visibleMeasureNames : undefined,
+    $leaderboardShowContextForAllMeasures ? visibleMeasureNames : undefined,
   );
 
   $: measures = [
-    // Get base measures
-    ...getMeasuresForDimensionTable(
-      $leaderboardMeasureCountFeatureFlag ? null : activeMeasureName,
+    ...getMeasuresForDimensionOrLeaderboardDisplay(
+      $leaderboardShowContextForAllMeasures
+        ? null
+        : $leaderboardSortByMeasureName,
       dimensionThresholdFilters,
       visibleMeasureNames,
     ).map((name) => ({ name }) as V1MetricsViewAggregationMeasure),
 
     // Add comparison measures if comparison time range exists
     ...(comparisonTimeRange
-      ? ($leaderboardMeasureCountFeatureFlag
+      ? ($leaderboardShowContextForAllMeasures
           ? visibleMeasureNames
-          : [activeMeasureName]
+          : [$leaderboardSortByMeasureName]
         ).flatMap((name) => getComparisonRequestMeasures(name))
       : []),
   ];
@@ -135,7 +137,7 @@
   $: sort = getSort(
     $sortedAscending,
     $sortType,
-    activeMeasureName,
+    $leaderboardSortByMeasureName,
     dimensionName,
     !!comparisonTimeRange,
   );
@@ -230,7 +232,6 @@
         {dimensionName}
         {areAllTableRowsSelected}
         isRowsEmpty={!tableRows.length}
-        isFetching={$sortedQuery?.isFetching}
         {hideStartPivotButton}
         bind:searchText={$dimensionSearchText}
         onToggleSearchItems={toggleAllSearchItems}

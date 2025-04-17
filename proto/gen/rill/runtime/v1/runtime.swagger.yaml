@@ -4273,6 +4273,13 @@ definitions:
       exploreLeaderboardMeasureCount:
         type: integer
         format: int64
+        title: Deprecated
+      exploreLeaderboardMeasures:
+        type: array
+        items:
+          type: string
+      exploreLeaderboardShowContextForAllMeasures:
+        type: boolean
       timeDimensionMeasure:
         type: string
       timeDimensionChartType:

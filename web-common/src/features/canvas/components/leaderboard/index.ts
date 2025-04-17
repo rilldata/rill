@@ -17,7 +17,7 @@ import type {
   V1MetricsViewSpec,
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
-import { derived, get, writable, type Writable } from "svelte/store";
+import { get, writable, type Writable } from "svelte/store";
 import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
 import type {
   CanvasComponentType,
@@ -115,15 +115,6 @@ export class LeaderboardComponent extends BaseCanvasComponent<LeaderboardSpec> {
       dimensions,
       num_rows: 7,
     };
-  }
-
-  get sortByMeasure() {
-    return derived(this.leaderboardState, (state) => {
-      return state.sortType !== SortType.DIMENSION &&
-        state.sortType !== SortType.UNSPECIFIED
-        ? state.leaderboardSortByMeasureName
-        : null;
-    });
   }
 
   validateAndResetSortMeasure = (spec: LeaderboardSpec) => {

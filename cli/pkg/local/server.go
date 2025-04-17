@@ -73,7 +73,7 @@ func (s *Server) RegisterHandlers(mux *http.ServeMux, httpPort int, secure, enab
 
 	// endpoints for searching and viewing trace data collected on local
 	mux.Handle("/local/debug/trace", s.traceHandler())
-	mux.Handle("/trace-viewer", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	mux.Handle("/traces", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		data, err := traceViewerFS.ReadFile("embed/file-trace-viewer.html")
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to read trace viewer file: %s", err), http.StatusInternalServerError)

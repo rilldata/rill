@@ -20,7 +20,7 @@ describe("getDefaultExploreUrlParams", () => {
       AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
     );
     expect(defaultExploreUrlParams.toString()).toEqual(
-      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measure_count=1",
+      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measures=impressions",
     );
   });
 
@@ -43,13 +43,16 @@ describe("getDefaultExploreUrlParams", () => {
           exploreSortBy: AD_BIDS_BID_PRICE_MEASURE,
           exploreSortAsc: true,
           exploreSortType: V1ExploreSortType.EXPLORE_SORT_TYPE_PERCENT,
-          exploreLeaderboardMeasureCount: 2,
+          exploreLeaderboardMeasures: [
+            AD_BIDS_BID_PRICE_MEASURE,
+            AD_BIDS_PUBLISHER_COUNT_MEASURE,
+          ],
         },
       },
       AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
     );
     expect(defaultExploreUrlParams.toString()).toEqual(
-      "view=explore&tr=P7D&tz=Asia%2FKolkata&compare_tr=&grain=day&compare_dim=&f=&measures=bid_price%2Cpublisher_count&dims=domain%2Ccountry&expand_dim=&sort_by=bid_price&sort_type=percent&sort_dir=ASC&leaderboard_measure_count=2",
+      "view=explore&tr=P7D&tz=Asia%2FKolkata&compare_tr=&grain=day&compare_dim=&f=&measures=bid_price%2Cpublisher_count&dims=domain%2Ccountry&expand_dim=&sort_by=bid_price&sort_type=percent&sort_dir=ASC&leaderboard_measures=bid_price%2Cpublisher_count",
     );
   });
 });
