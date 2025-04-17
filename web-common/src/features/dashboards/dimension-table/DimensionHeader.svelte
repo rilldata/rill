@@ -139,7 +139,7 @@
   });
 </script>
 
-<div class="flex-none overflow-x-auto" style="height: 50px">
+<div class="flex-none overflow-x-auto" style="height: 40px">
   <div class="flex justify-start items-center p-1 h-7 gap-x-2">
     <Button
       type="link"
