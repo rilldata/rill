@@ -10,6 +10,7 @@
   /* Aria label for input */
   export let label = "Search";
   export let placeholder = "Search";
+  export let multiline = false;
   export let border = true;
   export let background = true;
   export let large = false;
@@ -18,7 +19,7 @@
   export let forcedInputStyle = "";
 
   /* Reference of input DOM element */
-  let ref: HTMLInputElement;
+  let ref: HTMLInputElement | HTMLTextAreaElement;
 
   const dispatch = createEventDispatcher();
 
@@ -36,6 +37,27 @@
     // Keep ref optional here. If component is unmounted before this animation frame runs, ref will be null and throw a TypeError
     if (autofocus) window.requestAnimationFrame(() => ref?.focus());
   });
+
+  const BaseHeight = 28;
+  const HeightPerLine = 16;
+  const MaxLines = 5;
+
+  // For tailwind compiler: h-[28px] h-[44px] h-[60px] h-[76px] h-[92px]
+  let height = "h-[28px]";
+  function updateHeight(value: string) {
+    const lines = value.split("\n").length;
+    const correctedLines = Math.max(
+      // Show minimum of 1 line
+      1,
+      // We expand the input only till MaxLines
+      Math.min(lines, MaxLines),
+    );
+
+    height = `h-[${BaseHeight + (correctedLines - 1) * HeightPerLine}px]`;
+    console.log(lines, correctedLines, height);
+  }
+
+  $: if (multiline && typeof value === "string") updateHeight(value);
 </script>
 
 <form
@@ -52,24 +74,42 @@
   >
     <Search size={large ? "18px" : "16px"} />
   </button>
-  <input
-    bind:this={ref}
-    type="text"
-    autocomplete="off"
-    class:focus={showBorderOnFocus}
-    class:bg-slate-50={background}
-    class:border
-    class:border-gray-200={border}
-    class="outline-none rounded-[2px] block w-full pl-8 p-1 {forcedInputStyle}"
-    class:h-full={large}
-    {disabled}
-    {placeholder}
-    bind:value
-    on:input
-    on:paste
-    on:keydown={handleKeyDown}
-    aria-label={label}
-  />
+  {#if multiline}
+    <textarea
+      bind:this={ref}
+      autocomplete="off"
+      class:focus={showBorderOnFocus}
+      class:bg-slate-50={background}
+      class:border
+      class:border-gray-200={border}
+      class="outline-none rounded-[2px] block w-full pl-8 p-1 {forcedInputStyle} {height} resize-none"
+      class:h-full={large}
+      {disabled}
+      {placeholder}
+      bind:value
+      on:input
+      on:keydown={handleKeyDown}
+      aria-label={label}
+    />
+  {:else}
+    <input
+      bind:this={ref}
+      type="text"
+      autocomplete="off"
+      class:focus={showBorderOnFocus}
+      class:bg-slate-50={background}
+      class:border
+      class:border-gray-200={border}
+      class="outline-none rounded-[2px] block w-full pl-8 p-1 {forcedInputStyle}"
+      class:h-full={large}
+      {disabled}
+      {placeholder}
+      bind:value
+      on:input
+      on:keydown={handleKeyDown}
+      aria-label={label}
+    />
+  {/if}
 </form>
 
 <style lang="postcss">

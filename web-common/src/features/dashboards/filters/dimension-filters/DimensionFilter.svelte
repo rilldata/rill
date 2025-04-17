@@ -1,7 +1,3 @@
-<script context="module">
-  const BulkValueSplitRegex = /\s*[,\n]\s*/;
-</script>
-
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
   import { Chip } from "@rilldata/web-common/components/chip";
@@ -245,18 +241,6 @@
         break;
     }
   }
-
-  // Pasting a text with new line is not supported in input element.
-  // So we need to manually replace newlines to commas.
-  function onPaste(e: ClipboardEvent) {
-    e.stopPropagation();
-    e.preventDefault();
-
-    const pastedData = e.clipboardData?.getData("Text");
-    if (!pastedData) return;
-
-    curSearchText = pastedData.replace(/[\n\r]/g, ",");
-  }
 </script>
 
 <svelte:window
@@ -345,8 +329,8 @@
           retainValueOnMount
           placeholder={searchPlaceholder}
           on:submit={onApply}
-          on:paste={onPaste}
           forcedInputStyle="rounded-l-none"
+          multiline
         />
       </div>
       {#if showExtraInfo}
