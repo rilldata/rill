@@ -22,6 +22,7 @@
   import { isProfilingQuery } from "@rilldata/web-common/runtime-client/query-matcher";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { fade, slide } from "svelte/transition";
+  import ReconcilingSpinner from "../entity-management/ReconcilingSpinner.svelte";
 
   export let fileArtifact: FileArtifact;
 
@@ -136,12 +137,10 @@
 
     {#if $tableVisible}
       <WorkspaceTableContainer {filePath}>
-        {#if connector && tableName}
-          <ConnectedPreviewTable
-            {connector}
-            table={tableName}
-            loading={resourceIsReconciling}
-          />
+        {#if resourceIsReconciling}
+          <ReconcilingSpinner />
+        {:else if connector && tableName}
+          <ConnectedPreviewTable {connector} table={tableName} />
         {/if}
         <svelte:fragment slot="error">
           {#if allErrors.length > 0}
