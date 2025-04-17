@@ -55,7 +55,7 @@
   $: tableName = (model as V1Model)?.state?.resultTable as string;
 
   $: refreshedOn = model?.state?.refreshedOn;
-  $: resourceIsReconciling = resourceIsLoading($resourceQuery.data);
+  $: isResourceReconciling = resourceIsLoading($resourceQuery.data);
 
   async function save() {
     httpRequestQueue.removeByName(assetName);
@@ -137,7 +137,7 @@
 
     {#if $tableVisible}
       <WorkspaceTableContainer {filePath}>
-        {#if resourceIsReconciling}
+        {#if isResourceReconciling}
           <ReconcilingSpinner />
         {:else if connector && tableName}
           <ConnectedPreviewTable {connector} table={tableName} />
@@ -169,5 +169,6 @@
     hasUnsavedChanges={$hasUnsavedChanges}
     {resource}
     isEmpty={!$remoteContent?.length}
+    {isResourceReconciling}
   />
 </WorkspaceContainer>
