@@ -12,7 +12,6 @@ import {
   isJoinerExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
 
 export function mergeDimensionAndMeasureFilters(

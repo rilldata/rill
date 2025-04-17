@@ -202,8 +202,10 @@ export function filterExpressions(
   checker: (e: V1Expression) => boolean,
 ): V1Expression | undefined {
   if (expr.subquery) {
+    const newSubquery = filterSubQuery(expr.subquery, checker);
+    if (!newSubquery.having && !newSubquery.where) return undefined;
     return {
-      subquery: filterSubQuery(expr.subquery, checker),
+      subquery: newSubquery,
     };
   }
 
