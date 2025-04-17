@@ -150,8 +150,7 @@
       <span>All Dimensions</span>
     </Button>
 
-    <!-- We fix the height to avoid a layout shift when the Search component is expanded. -->
-    <div class="shrink-0 flex items-center gap-x-1 h-9">
+    <div class="shrink-0 flex items-center gap-x-1">
       <SelectAllButton
         {areAllTableRowsSelected}
         disabled={isRowsEmpty}
