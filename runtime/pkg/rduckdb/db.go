@@ -87,9 +87,9 @@ type DBOptions struct {
 	ReadSettings map[string]string
 	// WriteSettings are settings applied the write duckDB handle.
 	WriteSettings map[string]string
-	// WriteConnLimit is the maximum number of concurrent connections to the write duckDB handle.
+	// WritePoolSize is the maximum number of concurrent connections to the write duckDB handle.
 	// If val is zero then a default value is used.
-	WriteConnLimit int `mapstructure:"write_conn_limit"`
+	WritePoolSize int `mapstructure:"write_conn_limit"`
 	// DBInitQueries are run when the database is first created. These are typically global duckdb configurations.
 	DBInitQueries []string
 	// ConnInitQueries are run when a new connection is created. These are typically local duckdb configurations.
@@ -296,7 +296,7 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 	// we switch schemas during writes and failure to switch back to default schema can lead to query failures
 	db.write.SetMaxIdleConns(0)
 	// limit the number of open connections to the write db which limits the number of concurrent ingestions
-	limit := db.opts.WriteConnLimit
+	limit := db.opts.WritePoolSize
 	if limit <= 0 {
 		limit = 5
 	}
