@@ -220,6 +220,9 @@ func (s *Service) UpdateDeploymentsForProject(ctx context.Context, p *database.P
 		grp.Go(func() error {
 			err := s.UpdateDeployment(ctx, d, opts)
 			if err != nil {
+				if ctx.Err() != nil {
+					return ctx.Err()
+				}
 				if p.ProdDeploymentID != nil && *p.ProdDeploymentID == d.ID {
 					prodErr = err
 				}
@@ -227,6 +230,11 @@ func (s *Service) UpdateDeploymentsForProject(ctx context.Context, p *database.P
 			}
 			return nil
 		})
+	}
+
+	err = grp.Wait()
+	if err != nil {
+		return err
 	}
 
 	return prodErr
